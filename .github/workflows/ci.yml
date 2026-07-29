@@ -238,6 +238,13 @@ jobs:
       - name: Initialise workspace (bundled self-describing model)
         run: uv run arch-init
 
+      - name: Import authoring guidance (published default source from config/settings.yaml)
+        # The guidance cache is license-gated and gitignored, so a fresh checkout has none —
+        # but the wizard's composed domain-context block (asserted by
+        # guidance-and-schema-authoring.spec.ts) only renders from imported guidance. This is
+        # the same documented setup step users run (docs/02-installation.md).
+        run: uv run arch-import-guidance
+
       - name: Initialise the confidential assurance store (enables the assurance module)
         run: uv run arch-assurance init
 
