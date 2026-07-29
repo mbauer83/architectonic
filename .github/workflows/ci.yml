@@ -225,10 +225,15 @@ jobs:
         run: |
           # The committed enterprise-repository is a gitlink, so a plain checkout leaves it
           # empty. arch-init's local: spec requires a model/ dir; give it an empty, valid
-          # repo (model/ + the engagement's schemata) so global/enterprise views render.
+          # repo (model/ + the engagement's config and schemata) so global/enterprise views
+          # render. Copy ONLY those two: a definition lives in exactly one tier, and copying
+          # the whole .arch-repo (viewpoints.yaml above all) makes every engagement-authored
+          # viewpoint slug a duplicate across the enterprise|engagement catalog union — the
+          # backend then refuses to boot ("Duplicate viewpoint slug").
           rm -rf enterprise-repository
-          mkdir -p enterprise-repository/model
-          cp -r engagements/ENG-ARCH-REPO/architecture-repository/.arch-repo enterprise-repository/.arch-repo
+          mkdir -p enterprise-repository/model enterprise-repository/.arch-repo
+          cp engagements/ENG-ARCH-REPO/architecture-repository/.arch-repo/config.yaml enterprise-repository/.arch-repo/
+          cp -r engagements/ENG-ARCH-REPO/architecture-repository/.arch-repo/schemata enterprise-repository/.arch-repo/schemata
 
       - name: Initialise workspace (bundled self-describing model)
         run: uv run arch-init

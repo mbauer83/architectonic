@@ -36,7 +36,7 @@ _ENABLED = os.environ.get("ARCH_DOCKER_ACCEPTANCE") == "1"
 _IMAGE = os.environ.get("ARCH_DOCKER_IMAGE", "architectonic:upgrade-acceptance")
 _VOLUME_EXPORT = os.environ.get("ARCH_DOCKER_VOLUME_EXPORT")
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
-_HISTORY_COMMIT = "05c336f"
+_HISTORY_COMMIT = "85803c3"  # the published initial commit — the oldest upgradeable model state
 _ENGAGEMENT_SUBTREE = "engagements/ENG-ARCH-REPO/architecture-repository"
 
 

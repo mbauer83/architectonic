@@ -2,7 +2,7 @@
 whose ``ViewpointApplication`` pins an engagement-only viewpoint definition, or a version the
 enterprise repo lacks, blocks promotion — the exact-version rule is never silently
 reinterpreted (D8). Two resolutions, keyed by viewpoint slug and supplied by the caller:
-``"promote_alongside"`` (bring the engagement definition into the enterprise catalog — only
+``"promote_alongside"`` (move the engagement definition into the enterprise catalog — only
 valid when the enterprise catalog has no entry at all for the slug) and ``"repin"`` (rewrite
 the promoted application(s) to the enterprise's current version — only valid when the
 enterprise catalog already carries *some* version of the slug).
@@ -217,6 +217,18 @@ def apply_viewpoint_resolutions(
         ent_own = load_viewpoint_catalog_file(enterprise_root)
         remaining = tuple(entry for entry in ent_own.entries if entry.slug != slug)
         write_viewpoint_catalog_file(enterprise_root, ViewpointCatalog(entries=(*remaining, eng_def)))
+        # Complete the MOVE: a definition lives in exactly one tier, and the loaders'
+        # ``enterprise | engagement`` union enforces that at every process start — an
+        # engagement copy left behind would crash the next boot with a duplicate slug.
+        # Engagement-side consumers keep resolving the slug through the enterprise
+        # baseline, at the same version just promoted.
+        eng_catalog_path = viewpoint_declarations_path(engagement_root)
+        backups.append(
+            (eng_catalog_path, eng_catalog_path.read_bytes() if eng_catalog_path.exists() else None)
+        )
+        eng_own = load_viewpoint_catalog_file(engagement_root)
+        eng_remaining = tuple(entry for entry in eng_own.entries if entry.slug != slug)
+        write_viewpoint_catalog_file(engagement_root, ViewpointCatalog(entries=eng_remaining))
 
     for dep in deps:
         if dep.status != "version_mismatch" or resolved.get(dep.slug) != "repin" or dep.enterprise_version is None:

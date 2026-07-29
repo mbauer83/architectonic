@@ -19,7 +19,11 @@ from src.domain.concept_scope import ConceptScope
 from src.domain.modules.module_types import EntityTypeName
 from src.domain.viewpoints.viewpoint_criteria import AttributeCondition, EntityCriteriaGroup, ValueRef
 from src.domain.viewpoints.viewpoints import ExecutableViewpointQuery, ViewpointCatalog, ViewpointDefinition
-from src.infrastructure.viewpoint_declarations import load_viewpoint_catalog_file, write_viewpoint_catalog_file
+from src.infrastructure.viewpoint_declarations import (
+    load_viewpoint_catalog_file,
+    load_viewpoint_catalog_for_repos,
+    write_viewpoint_catalog_file,
+)
 from src.infrastructure.write.artifact_write._promote_file_ops import rewrite_viewpoint_pin
 from src.infrastructure.write.artifact_write._promote_viewpoints import (
     ViewpointDependency,
@@ -241,7 +245,48 @@ class TestApplyViewpointResolutions:
         )
         written = load_viewpoint_catalog_file(ent_root)
         assert written.get("my-vp") == _role_definition(version=2)
-        assert len(backups) == 1  # pre-write state backed up for rollback safety
+        assert len(backups) == 2  # both catalogs (enterprise write, engagement removal) backed up
+
+    def test_promote_alongside_moves_the_definition_out_of_the_engagement_catalog(
+        self, roots: tuple[Path, Path]
+    ) -> None:
+        """A definition lives in exactly one tier: the move must complete, not copy."""
+        eng_root, ent_root = roots
+        write_viewpoint_catalog_file(
+            eng_root, ViewpointCatalog(entries=(_role_definition(version=2), _def(slug="stays", version=1)))
+        )
+        deps = [
+            ViewpointDependency(
+                target_id="DGM@1", target_kind="diagram", slug="my-vp", pinned_version=2,
+                status="engagement_only", enterprise_version=None,
+            )
+        ]
+        apply_viewpoint_resolutions(
+            deps, {"my-vp": "promote_alongside"}, engagement_root=eng_root, enterprise_root=ent_root,
+            registry=MagicMock(), backups=[],
+        )
+        eng_after = load_viewpoint_catalog_file(eng_root)
+        assert eng_after.get("my-vp") is None
+        assert eng_after.get("stays") is not None
+
+    def test_the_two_repo_catalogs_still_load_after_promote_alongside(self, roots: tuple[Path, Path]) -> None:
+        """Regression: the engagement copy left behind made the next process start crash —
+        ``enterprise | engagement`` raised "Duplicate viewpoint slug" (first seen as the CI
+        e2e job's `arch-assurance init` failing on a scaffolded enterprise repo)."""
+        eng_root, ent_root = roots
+        write_viewpoint_catalog_file(eng_root, ViewpointCatalog(entries=(_role_definition(version=2),)))
+        deps = [
+            ViewpointDependency(
+                target_id="DGM@1", target_kind="diagram", slug="my-vp", pinned_version=2,
+                status="engagement_only", enterprise_version=None,
+            )
+        ]
+        apply_viewpoint_resolutions(
+            deps, {"my-vp": "promote_alongside"}, engagement_root=eng_root, enterprise_root=ent_root,
+            registry=MagicMock(), backups=[],
+        )
+        merged = load_viewpoint_catalog_for_repos(enterprise_root=ent_root, engagement_root=eng_root)
+        assert merged.get("my-vp") == _role_definition(version=2)
 
     def test_promote_alongside_replaces_existing_slug_not_duplicates(self, roots: tuple[Path, Path]) -> None:
         eng_root, ent_root = roots

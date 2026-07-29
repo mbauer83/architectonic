@@ -1,13 +1,15 @@
 # ArchiMate 4.0 Conformance
 
-This page states, per the ArchiMate 4.0 specification's own conformance section, what this
-implementation supports and in which implementation-defined manner — concisely, and only
-where behavior is stated elsewhere in these docs does it link out rather than repeat. It is
-not a usage guide; see the linked pages for how to use any of this.
+This page states what this implementation supports for each requirement in the ArchiMate
+4.0 specification's conformance section, and in which implementation-defined manner. Where
+a behavior is already documented elsewhere in these docs, this page links there instead of
+repeating it. It is not a usage guide; see the linked pages for how to use any of this.
 
 > The model aims for conformance with the **ArchiMate 4.0** standard; conformance has not
 > been independently verified, so no conformance claim is made. The Open Group's own
-> conformance section lists six requirements for an implementation; each is described below.
+> conformance section lists six requirements for an implementation; each is described
+> below, followed by the exchange-format requirement (§7) that the Open Group's
+> product-conformance requirements state separately from the language specification.
 
 &nbsp;
 
@@ -151,14 +153,19 @@ repo-authored definitions beyond this starting set.
 
 &nbsp;
 
-## Also supported: model exchange (not part of the language conformance section)
+## 7 — Model exchange
 
-C19C v3.1 model-exchange import/export (a separate Open Group interoperability standard,
-not part of the ArchiMate language conformance section above) is available via the
-`arch-exchange` CLI: import applies the standard's Appendix E.4 migration table (3.x
-layer-specific types → the ArchiMate 4 base type plus specialization); export inverts it.
-Composition is never downgraded to association on either path, and every unmapped or
-out-of-scope item is reported by kind and reason, never silently dropped. See
+The exchange file format is specified in a separate Open Group standard (C19C) rather than
+in the language specification's conformance section, but the Open Group's
+product-conformance requirements make supporting it a requirement of its own: "each
+conforming product shall support the ArchiMate Model Exchange File Format" (published for
+ArchiMate 3.0 — the most recent revision of that document at the time of writing).
+
+C19C v3.1 model-exchange import/export is available via the `arch-exchange` CLI: import
+applies the standard's Appendix E.4 migration table (3.x layer-specific types → the
+ArchiMate 4 base type plus specialization); export inverts it. Composition is never
+downgraded to association on either path, and every unmapped or out-of-scope item is
+reported by kind and reason, never silently dropped. See
 [Model exchange](cli-and-backend.md#model-exchange) for usage.
 
 ---
