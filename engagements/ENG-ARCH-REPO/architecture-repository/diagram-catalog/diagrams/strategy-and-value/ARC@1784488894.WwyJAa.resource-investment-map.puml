@@ -25,7 +25,8 @@ connection-ids-used:
 - RES@1784482462.dz41en---CAP@1784482422.FMvdNM@@archimate-assignment
 - RES@1784482471.0mpHI----CAP@1784482433.Eb_x83@@archimate-assignment
 - RES@1784482482.H7YRYJ---CAP@1784482433.Eb_x83@@archimate-assignment
-last-updated: '2026-07-29T14:08:39Z'
+- RES@1784482462.dz41en---CAP@1784482442.0kQIHh@@archimate-assignment
+last-updated: '2026-07-29T21:15:27Z'
 ---
 @startuml resource-investment-map
 hide stereotype
@@ -68,27 +69,26 @@ top to bottom direction
 title Resource Investment Map
 
 rectangle "Capabilities" <<StrategyGrouping>> as GRPT_1 {
-  rectangle "<$archimate_capability{scale=1.2}> Integrated Safety, Security & Compliance Assurance" <<capability>> as CAP_Eb_x83
-  rectangle "<$archimate_capability{scale=1.2}> Agent-Native Architecture Collaboration" <<capability>> as CAP_db4AQh
+  rectangle "<$archimate_capability{scale=1.2}> Architecture Analysis & Visualization" <<capability>> as CAP_0kQIHh
   rectangle "<$archimate_capability{scale=1.2}> Tiered Knowledge Governance" <<capability>> as CAP_FMvdNM
   rectangle "<$archimate_capability{scale=1.2}> Architecture Knowledge Management" <<capability>> as CAP_pLMHKe
+  rectangle "<$archimate_capability{scale=1.2}> Integrated Safety, Security & Compliance Assurance" <<capability>> as CAP_Eb_x83
+  rectangle "<$archimate_capability{scale=1.2}> Agent-Native Architecture Collaboration" <<capability>> as CAP_db4AQh
 }
-CAP_Eb_x83 -[hidden]right- CAP_db4AQh
-CAP_db4AQh -[hidden]right- CAP_FMvdNM
+CAP_0kQIHh -[hidden]right- CAP_FMvdNM
 CAP_FMvdNM -[hidden]right- CAP_pLMHKe
+CAP_pLMHKe -[hidden]right- CAP_Eb_x83
+CAP_0kQIHh -[hidden]down- CAP_db4AQh
 
 rectangle "Resources" <<StrategyGrouping>> as GRPT_2 {
-  rectangle "<$archimate_resource{scale=1.2}> Assurance Knowledge Base" <<resource>> as RES_0mpHI_
-  rectangle "<$archimate_resource{scale=1.2}> Modelling & Method Guidance Corpus" <<resource>> as RES_H7YRYJ
   rectangle "<$archimate_resource{scale=1.2}> Recursive Self-Model (ENG-ARCH-REPO)" <<resource>> as RES_JnWnY1
   rectangle "<$archimate_resource{scale=1.2}> Enterprise Architecture Knowledge Base" <<resource>> as RES_dz41en
+  rectangle "<$archimate_resource{scale=1.2}> Assurance Knowledge Base" <<resource>> as RES_0mpHI_
+  rectangle "<$archimate_resource{scale=1.2}> Modelling & Method Guidance Corpus" <<resource>> as RES_H7YRYJ
 }
-RES_0mpHI_ -[hidden]right- RES_H7YRYJ
-RES_H7YRYJ -[hidden]right- RES_JnWnY1
 RES_JnWnY1 -[hidden]right- RES_dz41en
-
-rectangle "<$archimate_capability{scale=1.2}> Architecture Analysis & Visualization" <<capability>> as CAP_0kQIHh
-GRPT_2 -[hidden]down- CAP_0kQIHh
+RES_dz41en -[hidden]right- RES_0mpHI_
+RES_0mpHI_ -[hidden]right- RES_H7YRYJ
 
 ' Connections
 RES_JnWnY1 -up-> CAP_pLMHKe
@@ -97,5 +97,6 @@ RES_H7YRYJ -up-> CAP_db4AQh
 RES_dz41en -up-> CAP_FMvdNM
 RES_0mpHI_ -up-> CAP_Eb_x83
 RES_H7YRYJ -up-> CAP_Eb_x83
+RES_dz41en -up-> CAP_0kQIHh
 
 @enduml
