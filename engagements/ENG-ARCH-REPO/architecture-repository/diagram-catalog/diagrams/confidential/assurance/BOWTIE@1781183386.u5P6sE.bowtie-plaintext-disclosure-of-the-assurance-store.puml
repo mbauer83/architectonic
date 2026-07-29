@@ -1,0 +1,78 @@
+---
+artifact-id: BOWTIE@1781183386.u5P6sE.bowtie-plaintext-disclosure-of-the-assurance-store
+artifact-type: diagram
+name: "Bowtie \u2014 Plaintext Disclosure of the Assurance Store"
+version: 0.1.0
+status: draft
+diagram-type: bowtie
+diagram-entities:
+  nodes:
+  - node_id: t1
+    name: Under-cleared or pre-check access request
+    node_type: threat
+    role: threat
+  - node_id: t2
+    name: Unattended persistent unlock (never re-locks)
+    node_type: threat
+    role: threat
+  - node_id: bl1
+    name: "Fail-closed clearance \u2265 TLP check (C1)"
+    node_type: barrier
+    role: barrier_left
+  - node_id: bl2
+    name: Activation-window re-lock (C2)
+    node_type: barrier
+    role: barrier_left
+  - node_id: te
+    name: Assurance store readable in plaintext outside the gated interface
+    node_type: top-event
+    role: top_event
+  - node_id: br1
+    name: Tamper-evident audit archive (C3)
+    node_type: barrier
+    role: barrier_right
+  - node_id: c1
+    name: Disclosure of confidential assurance evidence
+    node_type: consequence
+    role: consequence
+  edges:
+  - source_id: t1
+    target_id: bl1
+    label: ''
+  - source_id: bl1
+    target_id: te
+    label: ''
+  - source_id: t2
+    target_id: bl2
+    label: ''
+  - source_id: bl2
+    target_id: te
+    label: ''
+  - source_id: te
+    target_id: br1
+    label: ''
+  - source_id: br1
+    target_id: c1
+    label: detect
+last-updated: '2026-07-05'
+---
+@startuml Bowtie_Plaintext_Disclosure_of_the_Assurance_Store
+title Bowtie — Plaintext Disclosure of the Assurance Store
+left to right direction
+
+component "Under-cleared or pre-check access request" <<threat>> as t1 #FFD0D0
+component "Unattended persistent unlock (never re-locks)" <<threat>> as t2 #FFD0D0
+card "Fail-closed clearance ≥ TLP check (C1)" <<barrier>> as bl1 #D0FFD0
+card "Activation-window re-lock (C2)" <<barrier>> as bl2 #D0FFD0
+component "Assurance store readable in plaintext outside the gated interface" <<top-event>> as te #FFB060
+card "Tamper-evident audit archive (C3)" <<barrier>> as br1 #D0FFD0
+component "Disclosure of confidential assurance evidence" <<consequence>> as c1 #FFD0D0
+
+t1 --> bl1
+bl1 --> te
+t2 --> bl2
+bl2 --> te
+te --> br1
+br1 --> c1 : detect
+
+@enduml

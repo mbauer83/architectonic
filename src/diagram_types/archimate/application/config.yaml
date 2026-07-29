@@ -1,0 +1,28 @@
+name: archimate-application
+ontology: archimate_4
+filter:
+  hierarchy_level:
+    index: 0
+    values: [application, common]
+includes: []
+grouping:
+  by_field: hierarchy_0
+  stereotype_pattern: "{hierarchy_0|capitalize}Grouping"
+layout:
+  nesting_connection_classes: [nesting]
+  flow_connection_classes: [dynamic]
+  # An event between two members of a process reads as part of the orchestrated
+  # sequence — the renderer may nest it visually inside that process.
+  flow_through_entity_types: [event]
+guidance:
+  when_to_use: >-
+    Use when modeling software components, services, interfaces, and data. Captures what applications
+    do and what data they manage — the application layer of the architecture.
+  when_not_to_use: >-
+    Do not use for business process modeling (use archimate-business) or infrastructure and
+    deployment (use archimate-technology).
+
+ui:
+  label: ArchiMate Application
+  description: >-
+    The application layer: software components, services, interfaces, and the data they manage.

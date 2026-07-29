@@ -1,0 +1,104 @@
+---
+artifact-id: ARC@1785029420.TkPlLF.the-double-bind-and-the-response
+artifact-type: diagram
+name: "The Double Bind \u2014 and the Response"
+version: 0.1.0
+status: draft
+keywords:
+- motivation
+- double-bind
+- response
+- social
+- compact
+diagram-type: archimate-motivation
+entity-ids-used:
+- ASS@1780220699.CK90bp.autonomy-at-agentic-velocity-threatens-unity-of-effort
+- ASS@1776628138.a6vxyj.centralized-governance-cannot-scale-at-agentic-velocity
+- GOL@1784845186.7RZp1S.enable-coherent-traceable-enterprise-action
+- GOL@1780220699.FCfDuc.sustain-unity-of-effort-at-agentic-velocity
+- GOL@1784845186.L4Ceuf.preserve-local-autonomy
+connection-ids-used:
+- ASS@1780220699.CK90bp---GOL@1780220699.FCfDuc@@archimate-influence
+- ASS@1776628138.a6vxyj---GOL@1780220699.FCfDuc@@archimate-influence
+- GOL@1780220699.FCfDuc---GOL@1784845186.L4Ceuf@@archimate-aggregation
+- GOL@1780220699.FCfDuc---GOL@1784845186.7RZp1S@@archimate-aggregation
+authored-groupings:
+- label: The Double Bind
+  stereotype: MotivationGrouping
+  entity-ids:
+  - ASS@1780220699.CK90bp.autonomy-at-agentic-velocity-threatens-unity-of-effort
+  - ASS@1776628138.a6vxyj.centralized-governance-cannot-scale-at-agentic-velocity
+- label: One Intent
+  stereotype: MotivationGrouping
+  entity-ids:
+  - GOL@1780220699.FCfDuc.sustain-unity-of-effort-at-agentic-velocity
+- label: Two Means
+  stereotype: MotivationGrouping
+  entity-ids:
+  - GOL@1784845186.L4Ceuf.preserve-local-autonomy
+  - GOL@1784845186.7RZp1S.enable-coherent-traceable-enterprise-action
+last-updated: '2026-07-29T13:29:47Z'
+---
+@startuml the-double-bind---and-the-response
+hide stereotype
+
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 12
+skinparam shadowing false
+skinparam roundcorner 4
+skinparam backgroundColor #FAFAFA
+
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 80
+!define Rel_Triggering(from, to, label) from --> to
+!define Rel_Realization(from, to, label) from ..|> to
+!define Rel_Realization_Up(from, to, label) from ..|> to
+!define Rel_Serving(from, to, label) from --> to
+!define Rel_Association(from, to, label) from -- to
+!define Rel_Association_Left(from, to, label) from -- to
+!define Rel_Association_Right(from, to, label) from -- to
+!define Rel_Access(from, to, label) from ..> to
+!define Rel_Influence(from, to, label) from ..> to
+skinparam rectangle<<MotivationGrouping>> {
+  BackgroundColor #F7EEF9
+  BorderColor #7B3F9A
+}
+skinparam rectangle<<assessment>> {
+  BackgroundColor #EDD6F0
+  BorderColor #7B3F9A
+}
+skinparam rectangle<<goal>> {
+  BackgroundColor #EDD6F0
+  BorderColor #7B3F9A
+}
+sprite $archimate_assessment <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.5 3h11a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H6l-2 3 1-3H2.5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"  fill="#252327" stroke="none"/></svg>
+sprite $archimate_goal <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="4.8"  fill="none" stroke="#252327" stroke-width="1.3"/><circle cx="8" cy="8" r="2.9"  fill="none" stroke="#252327" stroke-width="1.3"/><circle cx="8" cy="8" r="1.3" fill="#252327" stroke="none"  stroke-width="1.3"/></svg>
+
+top to bottom direction
+
+title The Double Bind — and the Response
+
+rectangle "The Double Bind" <<MotivationGrouping>> as GRPA_1 {
+  rectangle "<$archimate_assessment{scale=1.2}> Autonomy at Agentic Velocity Threatens Unity of Effort" <<assessment>> as ASS_CK90bp
+  rectangle "<$archimate_assessment{scale=1.2}> Centralized Governance Cannot Scale at Agentic Velocity" <<assessment>> as ASS_a6vxyj
+}
+ASS_CK90bp -[hidden]right- ASS_a6vxyj
+
+rectangle "One Intent" <<MotivationGrouping>> as GRPA_2 {
+  rectangle "<$archimate_goal{scale=1.2}> Sustain Unity of Effort at Agentic Velocity" <<goal>> as GOL_FCfDuc
+}
+
+rectangle "Two Means" <<MotivationGrouping>> as GRPA_3 {
+  rectangle "<$archimate_goal{scale=1.2}> Preserve Local Autonomy" <<goal>> as GOL_L4Ceuf
+  rectangle "<$archimate_goal{scale=1.2}> Enable Coherent, Traceable Enterprise Action" <<goal>> as GOL_7RZp1S
+}
+GOL_L4Ceuf -[hidden]right- GOL_7RZp1S
+
+' Connections
+ASS_CK90bp .down.> GOL_FCfDuc : <color:#b91c1c><b>-</b></color>
+ASS_a6vxyj .down.> GOL_FCfDuc
+GOL_FCfDuc -down-> GOL_L4Ceuf
+GOL_FCfDuc -down-> GOL_7RZp1S
+
+@enduml

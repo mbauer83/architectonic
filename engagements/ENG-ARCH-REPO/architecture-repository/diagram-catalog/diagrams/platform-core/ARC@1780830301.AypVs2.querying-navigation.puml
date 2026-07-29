@@ -1,0 +1,79 @@
+---
+artifact-id: ARC@1780830301.AypVs2.querying-navigation
+artifact-type: diagram
+name: Querying & Navigation
+version: 0.1.0
+status: draft
+diagram-type: archimate-layered
+entity-ids-used:
+- FNC@1776633706.3jpc7O.metadata-filter
+- FNC@1777390452.3seqIw.retrieve-architectural-context
+- FNC@1776633080.BdEMPx.graph-traversal
+- FNC@1776633704.bFY40B.full-text-search
+- FNC@1777390444.lLdx12.discover-relevant-architecture-content
+- SRV@1712870400.Qr8St8.discovery-querying-stats-service
+connection-ids-used:
+- FNC@1777390452.3seqIw---FNC@1777390444.lLdx12@@archimate-triggering
+- FNC@1777390444.lLdx12---SRV@1712870400.Qr8St8@@archimate-realization
+- FNC@1777390444.lLdx12---FNC@1776633080.BdEMPx@@archimate-triggering
+- FNC@1777390444.lLdx12---FNC@1776633704.bFY40B@@archimate-triggering
+- FNC@1777390444.lLdx12---FNC@1776633706.3jpc7O@@archimate-triggering
+last-updated: '2026-07-29T13:30:04Z'
+---
+@startuml querying---navigation
+hide stereotype
+
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 12
+skinparam shadowing false
+skinparam roundcorner 4
+skinparam backgroundColor #FAFAFA
+
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 80
+!define Rel_Triggering(from, to, label) from --> to
+!define Rel_Realization(from, to, label) from ..|> to
+!define Rel_Realization_Up(from, to, label) from ..|> to
+!define Rel_Serving(from, to, label) from --> to
+!define Rel_Association(from, to, label) from -- to
+!define Rel_Association_Left(from, to, label) from -- to
+!define Rel_Association_Right(from, to, label) from -- to
+!define Rel_Access(from, to, label) from ..> to
+!define Rel_Influence(from, to, label) from ..> to
+skinparam rectangle<<function>> {
+  BackgroundColor #E0D8CC
+  BorderColor #8C7E6A
+}
+skinparam rectangle<<service>> {
+  BackgroundColor #E0D8CC
+  BorderColor #8C7E6A
+}
+sprite $archimate_function <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.9 11.7V5.4L8 3.1l5.1 2.3v6.3L8 9.2z"  fill="#252327" stroke="none"/></svg>
+sprite $archimate_service <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3.2 4.1h7.2a2.8 2.8 0 0 1 0 7.8H3.2a2.8 2.8 0 0 1 0-7.8z"  fill="#252327" stroke="none"/></svg>
+
+top to bottom direction
+
+title Querying & Navigation
+
+rectangle "<$archimate_function{scale=1.2}> Retrieve Architectural Context\n«Application Function»" <<function>> as FNC_3seqIw
+
+rectangle "<$archimate_function{scale=1.2}> Discover Relevant Architecture Content\n«Application Function»" <<function>> as FNC_lLdx12
+
+rectangle "<$archimate_service{scale=1.2}> Discovery, Querying & Stats Service\n«Application Service»" <<service>> as SRV_Qr8St8
+
+rectangle "<$archimate_function{scale=1.2}> Metadata Filter\n«Application Function»" <<function>> as FNC_3jpc7O
+rectangle "<$archimate_function{scale=1.2}> Graph Traversal\n«Application Function»" <<function>> as FNC_BdEMPx
+rectangle "<$archimate_function{scale=1.2}> Full-Text Search\n«Application Function»" <<function>> as FNC_bFY40B
+FNC_3jpc7O -[hidden]right- FNC_BdEMPx
+FNC_BdEMPx -[hidden]right- FNC_bFY40B
+SRV_Qr8St8 -[hidden]down- FNC_3jpc7O
+
+' Connections
+FNC_3seqIw --> FNC_lLdx12
+FNC_lLdx12 ..|> SRV_Qr8St8
+FNC_lLdx12 --> FNC_BdEMPx
+FNC_lLdx12 --> FNC_bFY40B
+FNC_lLdx12 --> FNC_3jpc7O
+
+@enduml

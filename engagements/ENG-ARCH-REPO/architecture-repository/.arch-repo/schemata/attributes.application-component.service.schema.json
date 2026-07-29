@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "attributes.application-component.service.schema.json",
+  "title": "Application Component (Service) Attribute Schema",
+  "description": "Attributes for a 'service' application component: a deployable service.",
+  "type": "object",
+  "required": [],
+  "properties": {
+    "Programming Languages & Versions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "One entry per language, including version."
+    },
+    "Frameworks & Versions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "One entry per framework, including version."
+    },
+    "Runtime Environments": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "One entry per runtime environment."
+    },
+    "Communication Protocols & Versions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "One entry per protocol, including version."
+    },
+    "Owner": {
+      "type": "string",
+      "description": "Responsible party for the service."
+    },
+    "Source Repository": {
+      "type": "string",
+      "format": "uri",
+      "description": "Where the code lives. Informative only \u2014 declared as format: uri, but the validator runs no format checker, so any string is accepted."
+    },
+    "Lifecycle State": {
+      "type": "string",
+      "enum": [
+        "Planned",
+        "In Development",
+        "Active",
+        "Deprecated",
+        "Retired"
+      ],
+      "description": "Portfolio lifecycle stage of this component."
+    }
+  },
+  "additionalProperties": true
+}

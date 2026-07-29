@@ -1,0 +1,1994 @@
+viewpoints:
+- slug: organization
+  version: 1
+  name: Organization
+  description: Organization (Table C-2, composition). Starting point for modeling, not a normative or
+    exhaustive list.
+  purpose:
+  - designing
+  - deciding
+  - informing
+  content:
+  - details
+  stakeholders:
+  - Enterprise Architects
+  - Process Architects
+  - Domain Architects
+  - managers
+  - employees
+  - shareholders
+  concerns:
+  - identification of competencies, authority, and responsibilities
+  scope:
+    entity_types:
+    - and-junction
+    - business-actor
+    - business-interface
+    - collaboration
+    - grouping
+    - location
+    - or-junction
+    - role
+  query:
+    query_schema: 1
+    entity_criteria:
+      kind: group
+      conjunction: and
+      children:
+      - kind: condition
+        attribute: type
+        comparator: in
+        value:
+        - and-junction
+        - business-actor
+        - business-interface
+        - collaboration
+        - grouping
+        - location
+        - or-junction
+        - role
+  presentation:
+    representation: diagram
+  representation_types:
+  - archimate-business
+- slug: application-structure
+  version: 2
+  name: Application Structure
+  description: Application Structure (Table C-3, composition). Starting point for modeling, not a normative
+    or exhaustive list.
+  purpose:
+  - designing
+  content:
+  - details
+  stakeholders:
+  - Application Architects
+  - Solution Architects
+  concerns:
+  - application structure
+  - consistency and completeness
+  - reduction of complexity
+  scope:
+    entity_types:
+    - and-junction
+    - application-component
+    - application-interface
+    - collaboration
+    - data-object
+    - grouping
+    - or-junction
+  query:
+    query_schema: 1
+    entity_criteria:
+      kind: group
+      conjunction: and
+      children:
+      - kind: condition
+        attribute: type
+        comparator: in
+        value:
+        - and-junction
+        - application-component
+        - application-interface
+        - collaboration
+        - data-object
+        - grouping
+        - or-junction
+  presentation:
+    representation: diagram
+  representation_types:
+  - archimate-application
+- slug: information-structure
+  version: 1
+  name: Information Structure
+  description: Information Structure (Table C-4, composition). Starting point for modeling, not a normative
+    or exhaustive list.
+  purpose:
+  - designing
+  content:
+  - details
+  stakeholders:
+  - Domain Architects
+  - Information Architects
+  concerns:
+  - structure and dependencies of the used data and information
+  - consistency
+  - completeness
+  scope:
+    entity_types:
+    - and-junction
+    - artifact
+    - business-object
+    - data-object
+    - grouping
+    - meaning
+    - or-junction
+  query:
+    query_schema: 1
+    entity_criteria:
+      kind: group
+      conjunction: and
+      children:
+      - kind: condition
+        attribute: type
+        comparator: in
+        value:
+        - and-junction
+        - artifact
+        - business-object
+        - data-object
+        - grouping
+        - meaning
+        - or-junction
+  presentation:
+    representation: diagram
+  representation_types:
+  - archimate-layered
+- slug: technology
+  version: 1
+  name: Technology
+  description: Technology (Table C-5, composition). Starting point for modeling, not a normative or exhaustive
+    list.
+  purpose:
+  - designing
+  content:
+  - details
+  stakeholders:
+  - Infrastructure Architects
+  - Operational Managers
+  concerns:
+  - stability
+  - security
+  - dependencies
+  - costs of the infrastructure
+  scope:
+    entity_types:
+    - and-junction
+    - artifact
+    - collaboration
+    - communication-network
+    - device
+    - event
+    - function
+    - grouping
+    - location
+    - or-junction
+    - path
+    - process
+    - service
+    - system-software
+    - technology-interface
+    - technology-node
+  query:
+    query_schema: 1
+    entity_criteria:
+      kind: group
+      conjunction: and
+      children:
+      - kind: condition
+        attribute: type
+        comparator: in
+        value:
+        - and-junction
+        - artifact
+        - collaboration
+        - communication-network
+        - device
+        - event
+        - function
+        - grouping
+        - location
+        - or-junction
+        - path
+        - process
+        - service
+        - system-software
+        - technology-interface
+        - technology-node
+  presentation:
+    representation: diagram
+  representation_types:
+  - archimate-technology
+- slug: layered
+  version: 2
+  name: Layered
+  description: Layered (Table C-6, composition). Starting point for modeling, not a normative or exhaustive
+    list.
+  purpose:
+  - designing
+  - deciding
+  - informing
+  content:
+  - overview
+  stakeholders:
+  - Enterprise Architects
+  - Process Architects
+  - Application Architects
+  - Infrastructure Architects
+  - Domain Architects
+  concerns:
+  - consistency
+  - reduction of complexity
+  - impact of change
+  - flexibility
+  query:
+    query_schema: 1
+    entity_criteria:
+      kind: group
+      conjunction: and
+      children:
+      - kind: condition
+        attribute: domain
+        comparator: in
+        value:
+        - application
+        - business
+        - common
+        - technology
+  presentation:
+    representation: exploration
+  representation_types:
+  - archimate-layered
+- slug: physical
+  version: 1
+  name: Physical
+  description: Physical (Table C-7, composition). Starting point for modeling, not a normative or exhaustive
+    list.
+  purpose:
+  - designing
+  content:
+  - details
+  stakeholders:
+  - Infrastructure Architects
+  - Operational Managers
+  concerns:
+  - relationships and dependencies of the physical environment and how this relates to IT infrastructure
+  scope:
+    entity_types:
+    - and-junction
+    - communication-network
+    - device
+    - distribution-network
+    - equipment
+    - facility
+    - grouping
+    - location
+    - material
+    - or-junction
+    - path
+    - technology-node
+  query:
+    query_schema: 1
+    entity_criteria:
+      kind: group
+      conjunction: and
+      children:
+      - kind: condition
+        attribute: type
+        comparator: in
+        value:
+        - and-junction
+        - communication-network
+        - device
+        - distribution-network
+        - equipment
+        - facility
+        - grouping
+        - location
+        - material
+        - or-junction
+        - path
+        - technology-node
+  presentation:
+    representation: diagram
+  representation_types:
+  - archimate-technology
+- slug: product
+  version: 2
+  name: Product
+  description: Product (Table C-8, support). Starting point for modeling, not a normative or exhaustive
+    list.
+  purpose:
+  - designing
+  - deciding
+  content:
+  - overview
+  stakeholders:
+  - Product Developers
+  - Product Managers
+  - Process Architects
+  - Domain Architects
+  concerns:
+  - product development
+  - value offered by the products of the enterprise
+  scope:
+    entity_types:
+    - application-component
+    - application-interface
+    - artifact
+    - business-actor
+    - business-interface
+    - business-object
+    - collaboration
+    - data-object
+    - event
+    - function
+    - material
+    - process
+    - product
+    - role
+    - service
+    - value
+  query:
+    query_schema: 1
+    entity_criteria:
+      kind: group
+      conjunction: and
+      children:
+      - kind: condition
+        attribute: type
+        comparator: in
+        value:
+        - application-component
+        - application-interface
+        - artifact
+        - business-actor
+        - business-interface
+        - business-object
+        - collaboration
+        - data-object
+        - event
+        - function
+        - material
+        - process
+        - product
+        - role
+        - service
+        - value
+  presentation:
+    representation: exploration
+  representation_types:
+  - archimate-layered
+- slug: application-usage
+  version: 2
+  name: Application Usage
+  description: Application Usage (Table C-9, support). Starting point for modeling, not a normative or
+    exhaustive list.
+  purpose:
+  - designing
+  - deciding
+  content:
+  - overview
+  stakeholders:
+  - Enterprise Architects
+  - Process Architects
+  - Application Architects
+  - Operational Managers
+  concerns:
+  - consistency and completeness
+  - reduction of complexity
+  scope:
+    entity_types:
+    - application-component
+    - application-interface
+    - business-actor
+    - business-object
+    - collaboration
+    - data-object
+    - event
+    - function
+    - process
+    - role
+    - service
+  query:
+    query_schema: 1
+    entity_criteria:
+      kind: group
+      conjunction: and
+      children:
+      - kind: condition
+        attribute: type
+        comparator: in
+        value:
+        - application-component
+        - application-interface
+        - business-actor
+        - business-object
+        - collaboration
+        - data-object
+        - event
+        - function
+        - process
+        - role
+        - service
+  presentation:
+    representation: exploration
+  representation_types:
+  - archimate-layered
+- slug: technology-usage
+  version: 2
+  name: Technology Usage
+  description: Technology Usage (Table C-10, support). Starting point for modeling, not a normative or
+    exhaustive list.
+  purpose:
+  - designing
+  content:
+  - details
+  stakeholders:
+  - Application Architects
+  - Infrastructure Architects
+  - Operational Managers
+  concerns:
+  - dependencies
+  - performance
+  - scalability
+  scope:
+    entity_types:
+    - and-junction
+    - application-component
+    - artifact
+    - collaboration
+    - communication-network
+    - data-object
+    - device
+    - event
+    - function
+    - grouping
+    - or-junction
+    - path
+    - process
+    - service
+    - system-software
+    - technology-interface
+    - technology-node
+  query:
+    query_schema: 1
+    entity_criteria:
+      kind: group
+      conjunction: and
+      children:
+      - kind: condition
+        attribute: type
+        comparator: in
+        value:
+        - and-junction
+        - application-component
+        - artifact
+        - collaboration
+        - communication-network
+        - data-object
+        - device
+        - event
+        - function
+        - grouping
+        - or-junction
+        - path
+        - process
+        - service
+        - system-software
+        - technology-interface
+        - technology-node
+  presentation:
+    representation: diagram
+  representation_types:
+  - archimate-technology
+- slug: process-cooperation
+  version: 1
+  name: Process Cooperation
+  description: Process Cooperation (Table C-11, cooperation). Starting point for modeling, not a normative
+    or exhaustive list.
+  purpose:
+  - designing
+  - deciding
+  content:
+  - coherence
+  stakeholders:
+  - Process Architects
+  - Domain Architects
+  - Operational Managers
+  concerns:
+  - dependencies between processes
+  - consistency and completeness
+  - responsibilities
+  scope:
+    entity_types:
+    - and-junction
+    - application-component
+    - application-interface
+    - business-actor
+    - business-interface
+    - business-object
+    - collaboration
+    - data-object
+    - event
+    - function
+    - grouping
+    - location
+    - or-junction
+    - process
+    - role
+    - service
+  query:
+    query_schema: 1
+    entity_criteria:
+      kind: group
+      conjunction: and
+      children:
+      - kind: condition
+        attribute: type
+        comparator: in
+        value:
+        - and-junction
+        - application-component
+        - application-interface
+        - business-actor
+        - business-interface
+        - business-object
+        - collaboration
+        - data-object
+        - event
+        - function
+        - grouping
+        - location
+        - or-junction
+        - process
+        - role
+        - service
+  presentation:
+    representation: exploration
+  representation_types:
+  - archimate-layered
+- slug: application-cooperation
+  version: 1
+  name: Application Cooperation
+  description: Application Cooperation (Table C-12, cooperation). Starting point for modeling, not a normative
+    or exhaustive list.
+  purpose:
+  - designing
+  content:
+  - coherence
+  stakeholders:
+  - Enterprise Architects
+  - Process Architects
+  - Application Architects
+  - Domain Architects
+  concerns:
+  - relationships and dependencies between applications
+  - orchestration/choreography of services
+  - consistency and completeness
+  - reduction of complexity
+  scope:
+    entity_types:
+    - and-junction
+    - application-component
+    - application-interface
+    - collaboration
+    - data-object
+    - event
+    - function
+    - grouping
+    - location
+    - or-junction
+    - process
+    - service
+  query:
+    query_schema: 1
+    entity_criteria:
+      kind: group
+      conjunction: and
+      children:
+      - kind: condition
+        attribute: type
+        comparator: in
+        value:
+        - and-junction
+        - application-component
+        - application-interface
+        - collaboration
+        - data-object
+        - event
+        - function
+        - grouping
+        - location
+        - or-junction
+        - process
+        - service
+  presentation:
+    representation: exploration
+  representation_types:
+  - archimate-application
+- slug: service-realization
+  version: 1
+  name: Service Realization
+  description: Service Realization (Table C-13, realization). Starting point for modeling, not a normative
+    or exhaustive list.
+  purpose:
+  - designing
+  - deciding
+  content:
+  - coherence
+  stakeholders:
+  - Process Architects
+  - Domain Architects
+  - Product Managers
+  - Operational Managers
+  concerns:
+  - added value of processes
+  - consistency and completeness
+  - responsibilities
+  scope:
+    entity_types:
+    - and-junction
+    - application-component
+    - application-interface
+    - business-actor
+    - business-interface
+    - business-object
+    - collaboration
+    - data-object
+    - event
+    - function
+    - grouping
+    - or-junction
+    - process
+    - role
+    - service
+  query:
+    query_schema: 1
+    entity_criteria:
+      kind: group
+      conjunction: and
+      children:
+      - kind: condition
+        attribute: type
+        comparator: in
+        value:
+        - and-junction
+        - application-component
+        - application-interface
+        - business-actor
+        - business-interface
+        - business-object
+        - collaboration
+        - data-object
+        - event
+        - function
+        - grouping
+        - or-junction
+        - process
+        - role
+        - service
+  presentation:
+    representation: exploration
+  representation_types:
+  - archimate-layered
+- slug: implementation-and-deployment
+  version: 1
+  name: Implementation and Deployment
+  description: Implementation and Deployment (Table C-14, realization). Starting point for modeling, not
+    a normative or exhaustive list.
+  purpose:
+  - designing
+  - deciding
+  content:
+  - coherence
+  stakeholders:
+  - Application Architects
+  - Domain Architects
+  concerns:
+  - structure of application platforms and how they relate to supporting technology
+  scope:
+    entity_types:
+    - and-junction
+    - application-component
+    - application-interface
+    - artifact
+    - collaboration
+    - data-object
+    - event
+    - function
+    - grouping
+    - or-junction
+    - path
+    - process
+    - service
+    - system-software
+    - technology-interface
+  query:
+    query_schema: 1
+    entity_criteria:
+      kind: group
+      conjunction: and
+      children:
+      - kind: condition
+        attribute: type
+        comparator: in
+        value:
+        - and-junction
+        - application-component
+        - application-interface
+        - artifact
+        - collaboration
+        - data-object
+        - event
+        - function
+        - grouping
+        - or-junction
+        - path
+        - process
+        - service
+        - system-software
+        - technology-interface
+  presentation:
+    representation: exploration
+  representation_types:
+  - archimate-layered
+- slug: stakeholder
+  version: 1
+  name: Stakeholder
+  description: Stakeholder (Table C-15, motivation). Starting point for modeling, not a normative or exhaustive
+    list.
+  purpose:
+  - designing
+  - deciding
+  - informing
+  content:
+  - coherence
+  stakeholders:
+  - Stakeholders
+  - Business Managers
+  - Enterprise Architects
+  - ICT Architects
+  - Business Analysts
+  - Requirements Managers
+  concerns:
+  - architecture mission and strategy
+  - motivation
+  scope:
+    entity_types:
+    - and-junction
+    - assessment
+    - driver
+    - goal
+    - grouping
+    - or-junction
+    - outcome
+    - stakeholder
+  query:
+    query_schema: 1
+    entity_criteria:
+      kind: group
+      conjunction: and
+      children:
+      - kind: condition
+        attribute: type
+        comparator: in
+        value:
+        - and-junction
+        - assessment
+        - driver
+        - goal
+        - grouping
+        - or-junction
+        - outcome
+        - stakeholder
+  presentation:
+    representation: exploration
+  representation_types:
+  - archimate-motivation
+- slug: goal-realization
+  version: 2
+  name: Goal Realization
+  description: 'Goal Realization (Table C-16, realization). Assessed targets are goals: a goal is REALIZED
+    iff it has an incoming archimate-realization (direct, or derived up to 4 modeled hops); realized targets
+    band green and unrealized ones red, while the elements realizing them are included as unbanded context.
+    Shows existing realization links only — it does not isolate gaps; use the coverage-gap views for gap
+    analysis. Starting point for modeling, not a normative or exhaustive list.'
+  purpose:
+  - designing
+  - deciding
+  content:
+  - coherence
+  stakeholders:
+  - Stakeholders
+  - Business Managers
+  - Enterprise Architects
+  - ICT Architects
+  - Business Analysts
+  - Requirements Managers
+  concerns:
+  - architecture mission, strategy and tactics
+  - motivation
+  query:
+    query_schema: 1
+    entity_criteria:
+      kind: group
+      conjunction: and
+      children:
+      - kind: condition
+        attribute: type
+        comparator: eq
+        value: goal
+    include_connected:
+    - direction: incoming
+      connection_criteria: &id001
+        kind: group
+        conjunction: and
+        children:
+        - kind: condition
+          attribute: type
+          comparator: eq
+          value: archimate-realization
+    - direction: incoming
+      traversal: derived
+      max_hops: 4
+      connection_criteria: *id001
+    connections:
+      traversal: both
+  presentation:
+    representation: exploration
+    target_types:
+    - goal
+    styling_rules:
+    - capability: node_color
+      applies_to:
+      - goal
+      mode: match
+      match_criteria:
+        kind: group
+        conjunction: and
+        children:
+        - kind: incident
+          direction: incoming
+          traversal: both
+          max_hops: 4
+          connection_criteria: &id002
+            kind: group
+            conjunction: and
+            children:
+            - kind: condition
+              attribute: type
+              comparator: eq
+              value: archimate-realization
+      value: positive
+    - capability: node_color
+      applies_to:
+      - goal
+      mode: match
+      match_criteria:
+        kind: group
+        conjunction: and
+        children:
+        - kind: incident
+          direction: incoming
+          traversal: both
+          max_hops: 4
+          connection_criteria: *id002
+          negate: true
+      value: critical
+  representation_types:
+  - archimate-motivation
+  selection_mode: query
+- slug: requirements-realization
+  version: 2
+  name: Requirements Realization
+  description: 'Requirements Realization (Table C-17, realization). Assessed targets are requirements:
+    a requirement is REALIZED iff it has an incoming archimate-realization (direct, or derived up to 4
+    modeled hops); realized targets band green and unrealized ones red, while the elements realizing them
+    are included as unbanded context. Shows existing realization links only — it does not isolate gaps;
+    use the requirements-coverage-gaps view for gap analysis. Starting point for modeling, not a normative
+    or exhaustive list.'
+  purpose:
+  - designing
+  - deciding
+  - informing
+  content:
+  - coherence
+  stakeholders:
+  - Enterprise Architects
+  - ICT Architects
+  - Business Analysts
+  - Requirements Managers
+  concerns:
+  - architecture strategy and tactics
+  - motivation
+  query:
+    query_schema: 1
+    entity_criteria:
+      kind: group
+      conjunction: and
+      children:
+      - kind: condition
+        attribute: type
+        comparator: eq
+        value: requirement
+    include_connected:
+    - direction: incoming
+      connection_criteria: &id003
+        kind: group
+        conjunction: and
+        children:
+        - kind: condition
+          attribute: type
+          comparator: eq
+          value: archimate-realization
+    - direction: incoming
+      traversal: derived
+      max_hops: 4
+      connection_criteria: *id003
+    connections:
+      traversal: both
+  presentation:
+    representation: exploration
+    target_types:
+    - requirement
+    styling_rules:
+    - capability: node_color
+      applies_to:
+      - requirement
+      mode: match
+      match_criteria:
+        kind: group
+        conjunction: and
+        children:
+        - kind: incident
+          direction: incoming
+          traversal: both
+          max_hops: 4
+          connection_criteria: *id002
+      value: positive
+    - capability: node_color
+      applies_to:
+      - requirement
+      mode: match
+      match_criteria:
+        kind: group
+        conjunction: and
+        children:
+        - kind: incident
+          direction: incoming
+          traversal: both
+          max_hops: 4
+          connection_criteria: *id002
+          negate: true
+      value: critical
+  representation_types:
+  - archimate-motivation
+  selection_mode: query
+- slug: motivation
+  version: 2
+  name: Motivation
+  description: Motivation (Table C-18, motivation). Starting point for modeling, not a normative or exhaustive
+    list.
+  purpose:
+  - designing
+  - deciding
+  - informing
+  content:
+  - coherence
+  stakeholders:
+  - Enterprise Architects
+  - ICT Architects
+  - Business Analysts
+  - Requirements Managers
+  concerns:
+  - architecture strategy and tactics
+  - motivation
+  scope:
+    entity_types:
+    - and-junction
+    - assessment
+    - driver
+    - goal
+    - grouping
+    - meaning
+    - or-junction
+    - outcome
+    - principle
+    - requirement
+    - stakeholder
+    - value
+  query:
+    query_schema: 1
+    entity_criteria:
+      kind: group
+      conjunction: and
+      children:
+      - kind: condition
+        attribute: type
+        comparator: in
+        value:
+        - and-junction
+        - assessment
+        - driver
+        - goal
+        - grouping
+        - meaning
+        - or-junction
+        - outcome
+        - principle
+        - requirement
+        - stakeholder
+        - value
+  presentation:
+    representation: exploration
+  representation_types:
+  - archimate-motivation
+- slug: strategy
+  version: 2
+  name: Strategy
+  description: Strategy (Table C-19, strategy). Starting point for modeling, not a normative or exhaustive
+    list.
+  purpose:
+  - designing
+  - deciding
+  content:
+  - overview
+  stakeholders:
+  - CxOs
+  - Business Managers
+  - Enterprise Architects
+  - Business Architects
+  concerns:
+  - strategy development
+  scope:
+    entity_types:
+    - capability
+    - course-of-action
+    - outcome
+    - resource
+    - value-stream
+  query:
+    query_schema: 1
+    entity_criteria:
+      kind: group
+      conjunction: and
+      children:
+      - kind: condition
+        attribute: type
+        comparator: in
+        value:
+        - capability
+        - course-of-action
+        - outcome
+        - resource
+        - value-stream
+  presentation:
+    representation: exploration
+  representation_types:
+  - archimate-strategy
+- slug: capability-map
+  version: 4
+  name: Capability Map
+  description: Capability Map (Table C-20, strategy). Starting point for modeling, not a normative or
+    exhaustive list. Per C.3.2 it can be used as an investment heat map once a repo-defined numeric investment
+    attribute exists; no such attribute is modeled today, so no heat-map rule ships with it.
+  purpose:
+  - designing
+  - deciding
+  content:
+  - overview
+  stakeholders:
+  - Business Managers
+  - Enterprise Architects
+  - Business Architects
+  concerns:
+  - architecture strategy and tactics
+  - motivation
+  scope:
+    entity_types:
+    - capability
+    - outcome
+    - resource
+  query:
+    query_schema: 1
+    entity_criteria:
+      kind: group
+      conjunction: and
+      children:
+      - kind: condition
+        attribute: type
+        comparator: in
+        value:
+        - capability
+        - outcome
+        - resource
+  presentation:
+    representation: exploration
+    target_types:
+    - capability
+    - resource
+  representation_types:
+  - archimate-strategy
+  selection_mode: query
+- slug: value-stream
+  version: 2
+  name: Value Stream
+  description: Value Stream (Table C-21, strategy). Starting point for modeling, not a normative or exhaustive
+    list.
+  purpose:
+  - designing
+  - deciding
+  content:
+  - overview
+  stakeholders:
+  - Business Managers
+  - Enterprise Architects
+  - Business Architects
+  concerns:
+  - architecture strategy and tactics
+  - motivation
+  scope:
+    entity_types:
+    - capability
+    - outcome
+    - stakeholder
+    - value
+    - value-stream
+  query:
+    query_schema: 1
+    entity_criteria:
+      kind: group
+      conjunction: and
+      children:
+      - kind: condition
+        attribute: type
+        comparator: in
+        value:
+        - capability
+        - outcome
+        - stakeholder
+        - value
+        - value-stream
+  presentation:
+    representation: exploration
+  representation_types:
+  - archimate-strategy
+- slug: outcome-realization
+  version: 2
+  name: Outcome Realization
+  description: 'Outcome Realization (Table C-22, realization). Assessed targets are outcomes: a outcome
+    is REALIZED iff it has an incoming archimate-realization (direct, or derived up to 4 modeled hops);
+    realized targets band green and unrealized ones red, while the elements realizing them are included
+    as unbanded context. Shows existing realization links only — it does not isolate gaps; use the coverage-gap
+    views for gap analysis. Starting point for modeling, not a normative or exhaustive list.'
+  purpose:
+  - designing
+  - deciding
+  content:
+  - coherence
+  stakeholders:
+  - Business Managers
+  - Enterprise Architects
+  - Business Architects
+  concerns:
+  - business-oriented results
+  query:
+    query_schema: 1
+    entity_criteria:
+      kind: group
+      conjunction: and
+      children:
+      - kind: condition
+        attribute: type
+        comparator: eq
+        value: outcome
+    include_connected:
+    - direction: incoming
+      connection_criteria: &id004
+        kind: group
+        conjunction: and
+        children:
+        - kind: condition
+          attribute: type
+          comparator: eq
+          value: archimate-realization
+    - direction: incoming
+      traversal: derived
+      max_hops: 4
+      connection_criteria: *id004
+    connections:
+      traversal: both
+  presentation:
+    representation: exploration
+    target_types:
+    - outcome
+    styling_rules:
+    - capability: node_color
+      applies_to:
+      - outcome
+      mode: match
+      match_criteria:
+        kind: group
+        conjunction: and
+        children:
+        - kind: incident
+          direction: incoming
+          traversal: both
+          max_hops: 4
+          connection_criteria: *id002
+      value: positive
+    - capability: node_color
+      applies_to:
+      - outcome
+      mode: match
+      match_criteria:
+        kind: group
+        conjunction: and
+        children:
+        - kind: incident
+          direction: incoming
+          traversal: both
+          max_hops: 4
+          connection_criteria: *id002
+          negate: true
+      value: critical
+  representation_types:
+  - archimate-strategy
+  selection_mode: query
+- slug: resource-map
+  version: 3
+  name: Resource Map
+  description: Resource Map (Table C-23, strategy). Starting point for modeling, not a normative or exhaustive
+    list. Per C.3.5, "can be used as a heat map to identify areas of investment" — ships a heat-map style
+    rule on a repo-defined `investment_level` profile attribute (1 low to 5 high); absent the attribute,
+    resources render in the default style.
+  purpose:
+  - designing
+  - deciding
+  content:
+  - overview
+  stakeholders:
+  - Business Managers
+  - Enterprise Architects
+  - Business Architects
+  concerns:
+  - architecture strategy and tactics
+  - motivation
+  scope:
+    entity_types:
+    - capability
+    - resource
+    - work-package
+  query:
+    query_schema: 1
+    entity_criteria:
+      kind: group
+      conjunction: and
+      children:
+      - kind: condition
+        attribute: type
+        comparator: in
+        value:
+        - capability
+        - resource
+        - work-package
+  presentation:
+    representation: exploration
+    styling_rules:
+    - capability: node_color
+      mode: scale
+      scale_attribute: investment_level
+      scale_min: 1
+      scale_max: 5
+      scale_tokens:
+      - heat-low
+      - heat-high
+  representation_types:
+  - archimate-strategy
+- slug: project
+  version: 2
+  name: Project
+  description: Project (Table C-24, implementation-and-migration). Starting point for modeling, not a
+    normative or exhaustive list.
+  purpose:
+  - deciding
+  - informing
+  content:
+  - overview
+  stakeholders:
+  - Operational Managers
+  - Enterprise Architects
+  - ICT Architects
+  - employees
+  - shareholders
+  concerns:
+  - architecture vision and policies
+  - motivation
+  scope:
+    entity_types:
+    - business-actor
+    - deliverable
+    - event
+    - goal
+    - outcome
+    - role
+    - work-package
+  query:
+    query_schema: 1
+    entity_criteria:
+      kind: group
+      conjunction: and
+      children:
+      - kind: condition
+        attribute: type
+        comparator: in
+        value:
+        - business-actor
+        - deliverable
+        - event
+        - goal
+        - outcome
+        - role
+        - work-package
+  presentation:
+    representation: table
+  representation_types:
+  - archimate-implementation
+- slug: migration
+  version: 2
+  name: Migration
+  description: Migration (Table C-25, implementation-and-migration). Starting point for modeling, not
+    a normative or exhaustive list.
+  purpose:
+  - designing
+  - deciding
+  - informing
+  content:
+  - overview
+  stakeholders:
+  - Enterprise Architects
+  - Process Architects
+  - Application Architects
+  - Infrastructure Architects
+  - Domain Architects
+  - employees
+  - shareholders
+  concerns:
+  - history of models
+  scope:
+    entity_types:
+    - deliverable
+    - plateau
+    - work-package
+  query:
+    query_schema: 1
+    entity_criteria:
+      kind: group
+      conjunction: and
+      children:
+      - kind: condition
+        attribute: type
+        comparator: in
+        value:
+        - deliverable
+        - plateau
+        - work-package
+  presentation:
+    representation: table
+  representation_types:
+  - archimate-implementation
+- slug: implementation-and-migration
+  version: 2
+  name: Implementation and Migration
+  description: Implementation and Migration (Table C-26, implementation-and-migration). Starting point
+    for modeling, not a normative or exhaustive list.
+  purpose:
+  - deciding
+  - informing
+  content:
+  - overview
+  stakeholders:
+  - Operational Managers
+  - Enterprise Architects
+  - ICT Architects
+  - employees
+  - shareholders
+  concerns:
+  - architecture vision and policies
+  - motivation
+  scope:
+    entity_types:
+    - business-actor
+    - deliverable
+    - event
+    - goal
+    - location
+    - plateau
+    - requirement
+    - role
+    - work-package
+  query:
+    query_schema: 1
+    entity_criteria:
+      kind: group
+      conjunction: and
+      children:
+      - kind: condition
+        attribute: type
+        comparator: in
+        value:
+        - business-actor
+        - deliverable
+        - event
+        - goal
+        - location
+        - plateau
+        - requirement
+        - role
+        - work-package
+  presentation:
+    representation: table
+  representation_types:
+  - archimate-implementation
+- slug: element-dependents
+  version: 1
+  name: Element Dependents (Impact of Change)
+  description: A tool-specific capability, not part of the ArchiMate standard's example viewpoints. Shows
+    every element that transitively depends on a chosen element, so an architect can see what is affected
+    if it changes.
+  purpose:
+  - deciding
+  content:
+  - coherence
+  stakeholders:
+  - enterprise-architects
+  - operational-managers
+  concerns:
+  - what is affected if this element changes
+  query:
+    query_schema: 1
+    parameters:
+    - name: anchor
+      type: entity-id
+      required: true
+      description: The element whose dependents are analyzed
+    entity_criteria:
+      kind: group
+      conjunction: and
+      children:
+      - kind: condition
+        attribute: id
+        comparator: eq
+        value:
+          from: parameter
+          name: anchor
+    include_connected:
+    - traversal: derived
+      include_potential: false
+      max_hops: 4
+      direction: incoming
+    connections:
+      enabled: true
+      traversal: both
+    derived:
+    - name: impact-distance
+      traversal: derived
+      direction: incoming
+      reduce: min
+      of: relationship.hops
+  presentation:
+    representation: exploration
+  representation_types:
+  - archimate-layered
+- slug: element-dependencies
+  version: 1
+  name: Element Dependencies
+  description: A tool-specific capability, not part of the ArchiMate standard's example viewpoints. Shows
+    every element a chosen element transitively depends on, mirroring element-dependents outward instead
+    of inward.
+  purpose:
+  - deciding
+  content:
+  - coherence
+  stakeholders:
+  - enterprise-architects
+  - operational-managers
+  concerns:
+  - what does this element depend on
+  query:
+    query_schema: 1
+    parameters:
+    - name: anchor
+      type: entity-id
+      required: true
+      description: The element whose dependencies are analyzed
+    entity_criteria:
+      kind: group
+      conjunction: and
+      children:
+      - kind: condition
+        attribute: id
+        comparator: eq
+        value:
+          from: parameter
+          name: anchor
+    include_connected:
+    - traversal: derived
+      include_potential: false
+      max_hops: 4
+      direction: outgoing
+    connections:
+      enabled: true
+      traversal: both
+    derived:
+    - name: impact-distance
+      traversal: derived
+      direction: outgoing
+      reduce: min
+      of: relationship.hops
+  presentation:
+    representation: exploration
+  representation_types:
+  - archimate-layered
+- slug: process-technology-support
+  version: 1
+  name: Process Technology Support
+  description: A tool-specific capability, not part of the ArchiMate standard's example viewpoints. Shows
+    which technology-domain elements indirectly support a chosen business process, skipping the intervening
+    application layer so the focus stays on infrastructure dependency.
+  purpose:
+  - deciding
+  content:
+  - coherence
+  stakeholders:
+  - enterprise-architects
+  - infrastructure-architects
+  concerns:
+  - what technology indirectly supports this process
+  query:
+    query_schema: 1
+    parameters:
+    - name: anchor
+      type: entity-id
+      required: true
+      description: The process whose technology support is analyzed
+    entity_criteria:
+      kind: group
+      conjunction: and
+      children:
+      - kind: condition
+        attribute: id
+        comparator: eq
+        value:
+          from: parameter
+          name: anchor
+    include_connected:
+    - traversal: derived
+      include_potential: true
+      max_hops: 4
+      direction: incoming
+      neighbor_criteria:
+        kind: group
+        conjunction: and
+        children:
+        - kind: condition
+          attribute: domain
+          comparator: eq
+          value: technology
+    connections:
+      enabled: true
+      traversal: both
+  presentation:
+    representation: diagram
+  representation_types:
+  - archimate-layered
+- slug: requirements-coverage-gaps
+  version: 1
+  name: Requirements Coverage (gaps)
+  description: 'Coverage table over every requirement: a requirement with no incoming archimate-realization
+    (direct, or derived up to 4 modeled hops) is badged critical — the gap set. Realized requirements
+    are badged positive. The critical rule''s applied count in the execution outcomes IS the gap count.'
+  purpose:
+  - deciding
+  - informing
+  content:
+  - overview
+  stakeholders:
+  - Enterprise Architects
+  - ICT Architects
+  - Business Analysts
+  - Requirements Managers
+  concerns:
+  - requirements coverage
+  - traceability
+  selection_mode: query
+  query:
+    query_schema: 1
+    entity_criteria:
+      kind: group
+      conjunction: and
+      children:
+      - kind: condition
+        attribute: type
+        comparator: eq
+        value: requirement
+  presentation:
+    representation: table
+    target_types:
+    - requirement
+    columns:
+    - label: Requirement
+      source: name
+    - label: Status
+      source: status
+    - label: Group
+      source: group
+    group_by: group
+    styling_rules:
+    - capability: badges
+      applies_to:
+      - requirement
+      mode: match
+      match_criteria:
+        kind: group
+        conjunction: and
+        children:
+        - kind: incident
+          direction: incoming
+          traversal: both
+          max_hops: 4
+          connection_criteria: *id002
+      value: positive
+    - capability: badges
+      applies_to:
+      - requirement
+      mode: match
+      match_criteria:
+        kind: group
+        conjunction: and
+        children:
+        - kind: incident
+          direction: incoming
+          traversal: both
+          max_hops: 4
+          connection_criteria: *id002
+          negate: true
+      value: critical
+- slug: component-traceability-gaps
+  version: 1
+  name: Component Traceability (gaps)
+  description: 'Coverage table over every application component: a component conforms iff a forward structural
+    chain (composition/aggregation/assignment/realization, direct or derived up to 4 modeled hops) reaches
+    a goal or requirement; non-conforming components are badged critical — the gap set. The critical rule''s
+    applied count in the execution outcomes IS the gap count.'
+  purpose:
+  - deciding
+  - informing
+  content:
+  - overview
+  stakeholders:
+  - Enterprise Architects
+  - ICT Architects
+  concerns:
+  - traceability
+  - governance
+  selection_mode: query
+  query:
+    query_schema: 1
+    entity_criteria:
+      kind: group
+      conjunction: and
+      children:
+      - kind: condition
+        attribute: type
+        comparator: eq
+        value: application-component
+  presentation:
+    representation: table
+    target_types:
+    - application-component
+    columns:
+    - label: Component
+      source: name
+    - label: Status
+      source: status
+    - label: Group
+      source: group
+    group_by: group
+    styling_rules:
+    - capability: badges
+      applies_to:
+      - application-component
+      mode: match
+      match_criteria:
+        kind: group
+        conjunction: and
+        children:
+        - kind: incident
+          direction: outgoing
+          traversal: both
+          max_hops: 4
+          connection_criteria: &id005
+            kind: group
+            conjunction: and
+            children:
+            - kind: condition
+              attribute: type
+              comparator: in
+              value:
+              - archimate-composition
+              - archimate-aggregation
+              - archimate-assignment
+              - archimate-realization
+          endpoint_criteria: &id006
+            kind: group
+            conjunction: and
+            children:
+            - kind: condition
+              attribute: type
+              comparator: in
+              value:
+              - goal
+              - requirement
+      value: positive
+    - capability: badges
+      applies_to:
+      - application-component
+      mode: match
+      match_criteria:
+        kind: group
+        conjunction: and
+        children:
+        - kind: incident
+          direction: outgoing
+          traversal: both
+          max_hops: 4
+          connection_criteria: *id005
+          endpoint_criteria: *id006
+          negate: true
+      value: critical
+- slug: security-posture
+  version: 1
+  name: Security Posture
+  description: A tool-specific capability, not part of the ArchiMate standard's example
+    viewpoints. Application components colored by the maximum CVSS score of their open
+    vulnerability findings, read from the ACTIVE security-signal snapshot through the
+    signal-metrics capability (exposure-filtered, snapshot-pinned). With the assurance
+    store locked or signals unconfigured the diagram renders with default styling plus
+    an explicit "signals unavailable" note — never with stale or mixed values. Styled
+    output is classification-bearing and ephemeral; persisting it into a git-tracked
+    artifact is refused, and downloads go through the stamped export path only.
+  purpose:
+  - deciding
+  - informing
+  content:
+  - overview
+  stakeholders:
+  - Safety / Security Analysts
+  - Enterprise Architects
+  concerns:
+  - security posture
+  - supply-chain risk
+  selection_mode: query
+  query:
+    query_schema: 1
+    entity_criteria:
+      kind: group
+      conjunction: and
+      children:
+      - kind: condition
+        attribute: type
+        comparator: in
+        value:
+        - application-component
+    derived:
+    - name: max_cvss
+      source: security-signal
+      metric: max_cvss_score
+  presentation:
+    representation: exploration
+    styling_rules:
+    - capability: node_color
+      mode: scale
+      scale_attribute: derived.max_cvss
+      scale_min: 0
+      scale_max: 10
+      scale_tokens:
+      - heat-low
+      - heat-high
+  representation_types:
+  - archimate-layered
+- slug: motivation-coverage
+  version: 1
+  name: Motivation Coverage (branch-complete)
+  description: 'Branch-complete realization over the motivation chain: a goal is covered only
+    when EVERY modeled branch (goal -> outcome -> requirement) terminates in a requirement that
+    something legitimately realizes. Reports full realization rather than existential
+    reachability, so a goal whose second outcome has no requirement is an honest gap instead of
+    a false green. A direct requirement -influence-> goal is a shortcut branch (gap, flagged);
+    a plain association is reported as ambiguous rather than asserted as realization. The
+    behaviour/business/application columns are DIAGNOSTIC observations, never gaps — an
+    application-only requirement passes overall. Complements requirements-coverage-gaps, which
+    answers the narrower question "does this requirement have any incoming realization?".'
+  purpose:
+  - deciding
+  - informing
+  content:
+  - coherence
+  stakeholders:
+  - Enterprise Architects
+  - Business Analysts
+  - Requirements Managers
+  concerns:
+  - motivation coverage
+  - traceability
+  - realization completeness
+  selection_mode: query
+  query:
+    query_schema: 1
+    entity_criteria:
+      kind: group
+      conjunction: and
+      children:
+      - kind: condition
+        attribute: type
+        comparator: in
+        value:
+          from: parameter
+          name: scope
+      - kind: condition
+        attribute: group
+        comparator: in
+        value:
+          from: parameter
+          name: group
+    parameters:
+    - name: scope
+      type: string
+      cardinality: many
+      allowed_values:
+      - goal
+      - outcome
+      - requirement
+      min_items: 1
+      required: false
+      default:
+      - goal
+      - outcome
+      - requirement
+      description: Which motivation row types the coverage table reports on.
+    - name: gaps_only
+      type: boolean
+      required: false
+      default: false
+      description: Keep only rows whose composed verdict is a gap.
+    - name: group
+      type: slug
+      cardinality: many
+      min_items: 1
+      required: false
+      description: Restrict rows to these model groups. Omit to report on every group.
+    trace_patterns:
+    - name: motivation
+      kind: branch-complete-realization
+      applies_to:
+      - goal
+      - outcome
+      branches:
+        goal_to_outcome:
+          kind: stored-edge
+          connection: archimate-realization
+          direction: incoming
+          endpoint:
+            type: outcome
+        outcome_to_requirement:
+          kind: stored-edge
+          connection: archimate-realization
+          direction: incoming
+          endpoint:
+            type: requirement
+      shortcuts:
+      - kind: diagnostic-edge
+        connection: archimate-influence
+        direction: incoming
+        endpoint:
+          type: requirement
+        status: shortcut
+      - kind: diagnostic-edge
+        connection: archimate-association
+        direction: incoming
+        endpoint:
+          type: requirement
+        status: ambiguous_link
+      leaf:
+        kind: none
+    - name: overall_realization
+      kind: branch-complete-realization
+      applies_to:
+      - goal
+      - outcome
+      - requirement
+      branches:
+        ref: motivation
+      leaf:
+        kind: derived-reachability
+        connection: archimate-realization
+        traversal: direct_and_derived
+        max_hops: 4
+        endpoint:
+          registry: permitted-realizers-of-requirement
+    - name: behavior_coverage
+      kind: branch-complete-realization
+      applies_to:
+      - goal
+      - outcome
+      - requirement
+      branches:
+        ref: motivation
+      diagnostic: true
+      leaf:
+        kind: derived-reachability
+        connection: archimate-realization
+        traversal: direct_and_derived
+        max_hops: 4
+        endpoint:
+          domain: common
+          class: behavior-element
+    - name: business_coverage
+      kind: branch-complete-realization
+      applies_to:
+      - goal
+      - outcome
+      - requirement
+      branches:
+        ref: motivation
+      diagnostic: true
+      leaf:
+        kind: derived-reachability
+        connection: archimate-realization
+        traversal: direct_and_derived
+        max_hops: 4
+        endpoint:
+          domain: business
+    - name: application_coverage
+      kind: branch-complete-realization
+      applies_to:
+      - goal
+      - outcome
+      - requirement
+      branches:
+        ref: motivation
+      diagnostic: true
+      leaf:
+        kind: derived-reachability
+        connection: archimate-realization
+        traversal: direct_and_derived
+        max_hops: 4
+        endpoint:
+          domain: application
+  presentation:
+    representation: table
+    target_types:
+    - goal
+    - outcome
+    - requirement
+    columns:
+    - label: Element
+      source: name
+    - label: Type
+      source: type
+    - label: Status
+      source: status
+    - label: Group
+      source: group
+    group_by: type

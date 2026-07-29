@@ -1,0 +1,14 @@
+{
+  "abbreviation": "SPC",
+  "name": "Specification",
+  "frontmatter_schema": {
+    "type": "object",
+    "required": ["title", "status"],
+    "properties": {
+      "title": {"type": "string"},
+      "status": {"type": "string", "enum": ["draft", "accepted", "rejected", "superseded"]},
+      "keywords": {"type": "array", "items": {"type": "string"}}
+    }
+  },
+  "required_sections": ["Scope", "Summary", "Specification"]
+}

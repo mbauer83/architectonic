@@ -1,0 +1,30 @@
+name: archimate-layered
+ontology: archimate_4
+filter:
+  hierarchy_level:
+    index: 0
+    values: [motivation, strategy, business, application, technology, implementation, common]
+includes: []
+grouping:
+  by_field: hierarchy_0
+  stereotype_pattern: "{hierarchy_0|capitalize}Grouping"
+layout:
+  nesting_connection_classes: [nesting]
+  flow_connection_classes: [dynamic]
+  # An event between two members of a process reads as part of the orchestrated
+  # sequence — the renderer may nest it visually inside that process.
+  flow_through_entity_types: [event]
+guidance:
+  when_to_use: >-
+    Use when the story spans multiple architecture layers and cross-layer traceability matters more
+    than per-layer focus. Good for impact analysis, end-to-end traceability, or executive overview
+    diagrams that show how motivation connects through strategy, business, and application.
+  when_not_to_use: >-
+    Avoid when the content is primarily within one layer — the diagram becomes harder to read when
+    layers are mixed without a clear cross-layer narrative. Prefer the domain-specific kinds for
+    focused per-layer views.
+
+ui:
+  label: ArchiMate Layered
+  description: >-
+    Cross-layer traceability, from motivation through business and application to technology.

@@ -1,0 +1,185 @@
+---
+artifact-id: GSN@1781338120.3U4cRc.assurance-case-confidential-assurance-store-gsn
+artifact-type: diagram
+name: "Assurance Case \u2014 Confidential Assurance Store (GSN)"
+version: 0.1.0
+status: draft
+diagram-type: gsn
+diagram-entities:
+  nodes:
+  - node_id: c1
+    name: The confidential assurance store and its functions (the STPA-Sec subject
+      system)
+    gsn_type: context
+  - node_id: c2
+    name: 'Operating scope: STPA-Sec disclosure analysis; EU AI Act Art. 12 record-keeping'
+    gsn_type: context
+  - node_id: g1
+    name: The confidential assurance store is acceptably protected against evidence
+      disclosure
+    gsn_type: goal
+  - node_id: s1
+    name: 'Prove the store keeps evidence confidential across its access lifecycle:
+      fail-closed entry, bounded activation, and tamper-evident recording'
+    gsn_type: strategy
+  - node_id: a1
+    name: 'Deployment honours the supported boundary: loopback bind, or non-loopback
+      only behind an authenticated perimeter; application-level authentication is
+      out of scope'
+    gsn_type: assumption
+  - node_id: j1
+    name: These three properties are the STPA-Sec mitigations for the identified evidence-disclosure
+      loss scenarios, so the decomposition is complete
+    gsn_type: justification
+  - node_id: g11
+    name: "Access is denied unless requestor clearance \u2265 entry TLP (fail-closed)"
+    gsn_type: goal
+  - node_id: g12
+    name: The store re-locks at the end of the authorized activation window
+    gsn_type: goal
+  - node_id: g13
+    name: Every significant operation is recorded in a tamper-evident archive
+    gsn_type: goal
+  - node_id: sn1
+    name: 'Negative-leak verification: above-ceiling names, IDs, edge-topology and
+      counts are never returned (test_assurance_exposure.py; test_assurance_http_read.py)'
+    gsn_type: solution
+  - node_id: sn2
+    name: 'Lock-lifecycle verification: the store re-locks and serves nothing while
+      locked (test_assurance_store.py::test_unlock_and_lock)'
+    gsn_type: solution
+  - node_id: sn3
+    name: Hash-chain integrity verification and the append-only audit log as Art.
+      12 record-keeping evidence (test_assurance_archive.py::test_verify_chain_with_entries)
+    gsn_type: solution
+  edges:
+  - source_id: g1
+    target_id: c1
+    conn_type: in-context-of
+  - source_id: g1
+    target_id: c2
+    conn_type: in-context-of
+  - source_id: g1
+    target_id: s1
+    conn_type: supported-by
+  - source_id: s1
+    target_id: a1
+    conn_type: in-context-of
+  - source_id: s1
+    target_id: j1
+    conn_type: in-context-of
+  - source_id: s1
+    target_id: g11
+    conn_type: supported-by
+  - source_id: s1
+    target_id: g12
+    conn_type: supported-by
+  - source_id: s1
+    target_id: g13
+    conn_type: supported-by
+  - source_id: g11
+    target_id: sn1
+    conn_type: supported-by
+  - source_id: g12
+    target_id: sn2
+    conn_type: supported-by
+  - source_id: g13
+    target_id: sn3
+    conn_type: supported-by
+last-updated: '2026-07-05'
+---
+@startuml Assurance_Case_Confidential_Assurance_Store_GSN
+title Assurance Case — Confidential Assurance Store (GSN)
+top to bottom direction
+' GSN Community Standard v3 semantic notation primitives.
+' The GSN renderer consumes these stable macro calls for its native SVG.
+' The declarations below remain a valid PlantUML fallback for source portability.
+
+hide stereotype
+allowmixing
+skinparam shadowing false
+skinparam defaultFontName SansSerif
+skinparam defaultFontColor #111827
+skinparam ArrowColor #20242A
+skinparam ArrowThickness 1.2
+skinparam rectangle {
+  BorderColor #20242A
+  BackgroundColor #FFFFFF
+  BackgroundColor<<GsnGoal>> #D0E8FF
+  BackgroundColor<<GsnContext>> #FFFFD0
+  BackgroundColor<<GsnUndeveloped>> #FFFFFF
+}
+skinparam hexagon {
+  BorderColor #20242A
+  BackgroundColor<<GsnStrategy>> #E8E0FF
+}
+skinparam usecase {
+  BorderColor #20242A
+  BackgroundColor #FFFFFF
+  BackgroundColor<<GsnSolution>> #D0FFD8
+  BackgroundColor<<GsnAssumption>> #FFE8D0
+  BackgroundColor<<GsnJustification>> #FFD0E8
+}
+
+!procedure $GsnGoal($alias, $label)
+rectangle "$label" as $alias <<GsnGoal>>
+!endprocedure
+
+!procedure $GsnStrategy($alias, $label)
+hexagon "$label" as $alias <<GsnStrategy>>
+!endprocedure
+
+!procedure $GsnSolution($alias, $label)
+usecase "$label" as $alias <<GsnSolution>>
+!endprocedure
+
+!procedure $GsnContext($alias, $label)
+rectangle "$label" as $alias <<GsnContext>>
+!endprocedure
+
+!procedure $GsnAssumption($alias, $label)
+usecase "$label" as $alias <<GsnAssumption>>
+!endprocedure
+
+!procedure $GsnJustification($alias, $label)
+usecase "$label" as $alias <<GsnJustification>>
+!endprocedure
+
+!procedure $GsnUndeveloped($alias, $label)
+rectangle "$label" as $alias <<GsnUndeveloped>>
+!endprocedure
+
+!procedure $GsnSupportedBy($source, $target)
+$source --> $target : supported-by
+!endprocedure
+
+!procedure $GsnInContextOf($source, $target)
+$source --|> $target : in-context-of
+!endprocedure
+
+$GsnContext(c1, "C: The confidential assurance store\nand its functions (the STPA-Sec\nsubject system)")
+$GsnContext(c2, "C: Operating scope: STPA-Sec\ndisclosure analysis; EU AI Act Art. 12\nrecord-keeping")
+$GsnGoal(g1, "G: The confidential assurance store is\nacceptably protected against evidence\ndisclosure")
+$GsnStrategy(s1, "S: Prove the store keeps evidence\nconfidential across its access\nlifecycle: fail-closed entry, bounded\nactivation, and tamper-evident\nrecording")
+$GsnAssumption(a1, "A: Deployment honours the supported\nboundary: loopback bind, or non-\nloopback only behind an authenticated\nperimeter; application-level\nauthentication is out of scope")
+$GsnJustification(j1, "J: These three properties are the\nSTPA-Sec mitigations for the\nidentified evidence-disclosure loss\nscenarios, so the decomposition is\ncomplete")
+$GsnGoal(g11, "G: Access is denied unless requestor\nclearance ≥ entry TLP (fail-closed)")
+$GsnGoal(g12, "G: The store re-locks at the end of\nthe authorized activation window")
+$GsnGoal(g13, "G: Every significant operation is\nrecorded in a tamper-evident archive")
+$GsnSolution(sn1, "Sn: Negative-leak\nverification: above-\nceiling names, IDs,\nedge-topology and\ncounts are never\nreturned\n(test_assurance_exposure.py;\ntest_assurance_http_read.py)")
+$GsnSolution(sn2, "Sn: Lock-lifecycle\nverification: the\nstore re-locks and\nserves nothing while\nlocked\n(test_assurance_store.py::test_unlock_and_lock)")
+$GsnSolution(sn3, "Sn: Hash-chain\nintegrity\nverification and the\nappend-only audit\nlog as Art. 12\nrecord-keeping\nevidence\n(test_assurance_archive.py::test_verify_chain_with_entries)")
+
+$GsnInContextOf(g1, c1)
+$GsnInContextOf(g1, c2)
+$GsnSupportedBy(g1, s1)
+$GsnInContextOf(s1, a1)
+$GsnInContextOf(s1, j1)
+$GsnSupportedBy(s1, g11)
+$GsnSupportedBy(s1, g12)
+$GsnSupportedBy(s1, g13)
+$GsnSupportedBy(g11, sn1)
+$GsnSupportedBy(g12, sn2)
+$GsnSupportedBy(g13, sn3)
+
+@enduml

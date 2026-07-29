@@ -1,0 +1,12 @@
+enterprise:
+  git:
+    # https, not ssh: `arch-init` clones this during quickstart step 4 and hard-fails if it
+    # cannot, so the shipped default must work for someone with no GitHub key configured.
+    url: https://github.com/mbauer83/global-architecture-repository.git
+    branch: main
+    path: enterprise-repository
+engagements:
+  active: ENG-ARCH-REPO
+  available:
+    ENG-ARCH-REPO:
+      local: engagements/ENG-ARCH-REPO/architecture-repository

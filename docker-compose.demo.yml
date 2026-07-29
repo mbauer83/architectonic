@@ -1,0 +1,81 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# The demo, in one command:
+#
+#   docker compose -f docker-compose.demo.yml up -d --build
+#
+# Then open http://localhost:8000. Tear it down with
+# `docker compose -f docker-compose.demo.yml down -v`.
+#
+# STANDALONE, deliberately: this file does not read, extend, or override
+# `docker-compose.yml`. That one is yours to configure for a real deployment, and
+# nothing here can disturb it — different image tag, different volume names,
+# different project name, no `.env` required. The demo and your deployment can
+# even run side by side (change ARCH_DEMO_PORT if 8000 is taken).
+#
+# What it sets up, which is what the README quickstart does by hand:
+#   * the bundled self-describing model as the engagement tier, mounted
+#     read-only and copied into the demo-data volume on first start — authoring
+#     edits the volume copy (never your clone) and survives `down`, while
+#     `down -v` deletes it;
+#   * the public demo repository as the enterprise tier, cloned on first start;
+#   * the assurance capability, with the encrypted store created, unlocked, and
+#     seeded from the analysis that ships with the model;
+#   * authoring guidance, imported from the source named in config/settings.yaml.
+#
+# ARCH_DEMO is one switch for the last two; every step it turns on is only a
+# default, so `ARCH_ENABLE_ASSURANCE=false docker compose -f docker-compose.demo.yml
+# up` gives a demo without the assurance side.
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: architectonic-demo
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: architectonic:demo
+    restart: unless-stopped
+    environment:
+      ARCH_DEMO: "true"
+      ARCH_WORKSPACE_CONFIG: /app/arch-workspace.demo.yaml
+      ARCH_BACKEND_STATE_DIR: /app/.arch
+      # The demo model is public and its assurance content is published, so nothing
+      # is withheld from the surfaces. A real deployment leaves this at the code
+      # default (TLP:AMBER) — see docs/04-assurance/storage-and-confidentiality.md.
+      ARCH_MAX_CLASSIFICATION: "TLP:RED"
+      # NOT A SECRET, and not a template to copy. A one-command demo cannot prompt
+      # for a passphrase, and this one encrypts a throwaway store, in a throwaway
+      # volume, holding only the already-published self-model analysis. A real
+      # deployment supplies its own via .env and never commits it.
+      ARCH_ASSURANCE_MASTER_PASSWORD: "demo-only-not-a-secret"
+    ports:
+      - "${ARCH_DEMO_PORT:-8000}:8000"
+    volumes:
+      # The demo workspace declaration, and the model it seeds from. Both are
+      # READ-ONLY: on first start the entrypoint copies the model into the demo's
+      # own volume and git-inits it there. Two reasons it cannot be used in place —
+      # the model is a subdirectory of this repository rather than a git repo of its
+      # own (and the upgrade preflight needs one), and the container's runtime uid
+      # cannot write files your user owns. Working on a copy also means the demo
+      # can never modify your clone.
+      - ./arch-workspace.demo.yaml:/app/arch-workspace.demo.yaml:ro
+      - ./engagements/ENG-ARCH-REPO/architecture-repository:/opt/demo-model:ro
+      # Demo-scoped state. Named apart from the deployment volumes so a
+      # `down -v` here can never reach a real store.
+      - demo-state:/app/.arch
+      - demo-data:/data
+      - demo-assurance:/app/.arch-assurance
+      - demo-home:/home/arch
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+volumes:
+  demo-state:
+  demo-data:
+  demo-assurance:
+  demo-home:

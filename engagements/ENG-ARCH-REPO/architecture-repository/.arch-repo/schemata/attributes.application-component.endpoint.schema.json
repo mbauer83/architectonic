@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "attributes.application-component.endpoint.schema.json",
+  "title": "Application Component (Endpoint) Attribute Schema",
+  "description": "Attributes for an 'endpoint' application component: an exposed access point.",
+  "type": "object",
+  "required": [],
+  "properties": {
+    "Communication Protocol & Version": {
+      "type": "string",
+      "description": "e.g. 'HTTP/1.1 + SSE'."
+    },
+    "Authentication Method": {
+      "type": "string",
+      "description": "How access is guarded."
+    },
+    "Lifecycle State": {
+      "type": "string",
+      "enum": [
+        "Planned",
+        "In Development",
+        "Active",
+        "Deprecated",
+        "Retired"
+      ],
+      "description": "Portfolio lifecycle stage of this component."
+    }
+  },
+  "additionalProperties": true
+}

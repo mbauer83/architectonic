@@ -1,0 +1,9 @@
+name: matrix
+includes: []
+grouping: {}
+layout: {}
+
+ui:
+  label: Relationship Matrix
+  description: >-
+    A table of relationships between two sets of entities, such as requirements against the components that realise them.

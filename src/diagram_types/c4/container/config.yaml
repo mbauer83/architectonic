@@ -1,0 +1,39 @@
+name: c4-container
+
+guidance:
+  when_to_use: >-
+    Show the main deployable or runtime containers inside one software system and how people and
+    external systems interact with them. Use this for the C4 level-2 zoom into one system.
+    Authoring steps: (1) create an application-component or service entity for the software system in scope;
+    (2) create application-component, service, or data-object entities for each container inside it;
+    (3) create business-actor/role entities for persons and application-component/service for external systems;
+    (4) call artifact_authoring_guidance(diagram_type="c4-container") for the diagram_entities schema;
+    (5) create the diagram — set _scope_entity_id to the scope system's entity_id, add containers in the
+    container array each with their entity_id, reference persons and external systems similarly.
+  when_not_to_use: >-
+    Do not use when the question is still only about system context, when the internals of a single
+    container are the focus, when you need full ArchiMate cross-layer semantics, or when you need a
+    process flow such as a UML activity diagram.
+
+ui:
+  label: C4 Container
+  description: C4 level 2. Shows one software system boundary and its internal containers.
+  entity_search_filter: false
+  type_ui_slots:
+    c4_editor: c4-editor-container
+  diagram_only_types:
+    - entity_type: person
+      label: Person
+      plural: People
+    - entity_type: software-system
+      label: Software System
+      plural: Software Systems
+    - entity_type: container
+      label: Container
+      plural: Containers
+
+c4:
+  scope_entity_type: software-system
+  scope_render_mode: boundary
+  internal_entity_types:
+    - container

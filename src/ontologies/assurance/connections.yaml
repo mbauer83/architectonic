@@ -1,0 +1,239 @@
+# Assurance Ontology — connection types & permitted relationships
+#
+# All assurance connections are stored assurance-side (one-way persistence rule).
+# Cross-module refs (assurance→architecture) are handled via the arch_refs
+# reference-type catalog (`reference_types` below), never as connections in this
+# registry. External-vocabulary citations (obligation → scheme:code) are node
+# attributes validated against the reference vocabulary, not edges.
+#
+# The canonical control loop has FOUR positions (Leveson, *Engineering a Safer World* ch. 4;
+# STPA Handbook §2.2): controller, actuator, controlled process, sensor. Both intermediaries are
+# `control-structure-node`s distinguished by `node_role`, and their position on a loop path is
+# expressed, not implied:
+#   * execution path — `control-action --acts-through--> control-structure-node` names the actuator
+#     (or control-action channel) a command is effected through, while `acts-on` continues to name
+#     the ultimate controlled process. Sibling names, one preposition apart, both active-voice and
+#     both pointing the way the command flows: an action acts ON what it controls, THROUGH what
+#     effects it. An actuator therefore never reads as a second commanded process.
+#   * sensing path — needs no new relation: `feedback` is already legal between two
+#     control-structure-nodes, so `process --feedback--> sensor --feedback--> controller` chains.
+# The asymmetry is deliberate and follows from the model: a control action is a NODE (relations can
+# hang off it) while feedback is an EDGE (nothing can), so only the execution path needed a relation.
+# Both intermediaries matter because the Handbook's loss-scenario classes are organised around them
+# — improper execution of a correct control action (actuator/control path) and inadequate feedback
+# (sensor/feedback path) — and `loss-scenario --concerns--> control-structure-node` is what lets such
+# a scenario name the element whose failure it describes.
+#
+# A bowtie draws barriers on both sides of the top event, and which side a constraint belongs on is
+# stated rather than guessed. The threat side is already covered by provenance: a constraint that
+# `derives` from a hazard, unsafe control action or loss scenario addresses that threat, so it stands
+# left of the top event. Nothing could express the other side, because a `loss` is downstream of the
+# hazard and never derives a constraint — hence `assurance-constraint --mitigates--> loss`, for a
+# barrier that does not stop the hazard occurring but limits the damage once it has (detection,
+# recovery, containment). There is deliberately no converse `prevents` relation: it would restate the
+# `derives` provenance a threat-side constraint already carries, and one fact with two spellings is
+# how vocabularies drift apart.
+#
+# `detects` passes the same test `prevents` failed, which is why it exists where `prevents` does not.
+# It says: this control reveals THIS FAILURE MODE before its effect propagates. Nothing else can say
+# that. `derives` names the prevention side — the control that stops the failure happening — and
+# `mitigates` has the wrong subject and the wrong meaning: it targets a `loss` and limits damage once
+# a hazard has occurred, whereas detectability is a property of a failure mode. So `detects` carries
+# information no existing relation does, and it is separated from `mitigates` by target type as well
+# as by question.
+#
+# `detects` does NOT place a barrier on a bowtie. Bowtie sides are decided by `mitigates` and by
+# `derives` provenance alone; a detecting control keeps whatever position its provenance gives it.
+# The near-synonymy with the "detection, recovery, containment" wording above is exactly why this is
+# written down: reading `detects` as a consequence-side barrier would silently move barriers.
+#
+# Relationship vocabulary follows the STPA Handbook: `leads-to` is strictly
+# causal between chain elements (UCA → hazard → loss; the handbook reserves
+# "violate" for constraints); `explains` is the scenario's epistemic relation to
+# whatever it describes the causal pathway for — a type-a scenario explains a
+# UCA, a type-b scenario (improper execution/integration of a correct control
+# action) explains a hazard directly, bypassing any UCA; system-level
+# constraints derive from hazards and controller constraints from unsafe control
+# actions; controllers are RESPONSIBLE FOR enforcing constraints
+# (responsibilities refine system-level constraints); a risk owner is
+# ACCOUNTABLE FOR a risk (ISO 31000 risk ownership).
+
+matrix_abbreviations:
+  AT: acts-through
+  LT: leads-to
+  EX: explains
+  DV: derives
+  RF: refines
+  RS: responsible-for
+  MI: mitigates
+  AF: accountable-for
+  EV: evidenced-by
+  AS: assesses
+  TB: treated-by
+  CW: complies-with
+  DT: detects
+
+connection_types:
+  assurance:
+
+    # ── Control-structure loops ──────────────────────────────────────────────
+    issues:
+      puml_arrow: "-->"
+      symmetric: false
+      classes: []
+
+    acts-on:
+      puml_arrow: "-->"
+      symmetric: false
+      classes: []
+
+    acts-through:
+      puml_arrow: "-->"
+      symmetric: false
+      classes: []
+
+    feedback:
+      puml_arrow: "<--"
+      symmetric: false
+      classes: []
+
+    # ── STPA/CAST causal chain ───────────────────────────────────────────────
+    concerns:
+      puml_arrow: "..>"
+      symmetric: false
+      classes: []
+
+    by-controller:
+      puml_arrow: "-->"
+      symmetric: false
+      classes: []
+
+    leads-to:
+      puml_arrow: "-->"
+      symmetric: false
+      classes: []
+
+    explains:
+      puml_arrow: "..>"
+      symmetric: false
+      classes: []
+
+    derives:
+      puml_arrow: "..>"
+      symmetric: false
+      classes: []
+
+    # ── Constraint linkage, responsibility & evidence ────────────────────────
+    refines:
+      puml_arrow: "..>"
+      symmetric: false
+      classes: []
+
+    responsible-for:
+      puml_arrow: "-->"
+      symmetric: false
+      classes: []
+
+    # A barrier that limits a loss the hazard has already caused, rather than preventing the hazard
+    # — the consequence side of a bowtie. See the header note on why there is no `prevents` converse.
+    mitigates:
+      puml_arrow: "-->"
+      symmetric: false
+      classes: []
+
+    evidenced-by:
+      puml_arrow: "..>"
+      symmetric: false
+      classes: []
+
+    # A control that reveals a failure mode before its effect propagates. See the header note on
+    # why this is not `mitigates` and why it never moves a bowtie barrier.
+    detects:
+      puml_arrow: "..>"
+      symmetric: false
+      classes: []
+
+    # ── GRC ──────────────────────────────────────────────────────────────────
+    accountable-for:
+      puml_arrow: "-->"
+      symmetric: false
+      classes: []
+
+    assesses:
+      puml_arrow: "..>"
+      symmetric: false
+      classes: []
+
+    treated-by:
+      puml_arrow: "-->"
+      symmetric: false
+      classes: []
+
+    complies-with:
+      puml_arrow: "..>"
+      symmetric: false
+      classes: []
+
+    # ── CAST ─────────────────────────────────────────────────────────────────
+    investigates:
+      puml_arrow: "-->"
+      symmetric: false
+      classes: []
+
+# Cross-module architecture references (arch_refs ref_type catalog). These are
+# NEVER node-pair matrix entries — they bind assurance nodes to architecture
+# artifacts and are validated against this catalog, not permitted_relationships.
+reference_types:
+  binds-to: >-
+    Binds an assurance node (control-structure node, evidence) to the
+    architecture entity it represents or draws on.
+  refines-requirement: >-
+    Links an assurance-constraint to the ArchiMate requirement it refines
+    (implementation reuses the requirement's realized-by edges). Deliberately
+    named apart from the refines edge (constraint refining constraint).
+  evidenced-by-artifact: >-
+    Substantiates an assurance node directly by an architecture artifact —
+    the lightweight alternative to an evidence node when no confidential
+    evidence content exists. Deliberately named apart from the
+    evidenced-by edge (assurance-constraint → evidence node).
+  purl: >-
+    Component identity reference (Package URL) for supply-chain
+    reconciliation.
+
+# Permitted relationships: the EXHAUSTIVE node-pair legality matrix for
+# assurance edges — an edge create outside it is rejected with a typed error.
+permitted_relationships:
+  - [control-structure-node, control-action, [issues]]
+  - [control-action, control-structure-node, [acts-on]]
+  - [control-action, control-structure-node, [acts-through]]
+  - [control-structure-node, control-structure-node, [feedback]]
+  - [unsafe-control-action, control-action, [concerns]]
+  - [unsafe-control-action, control-structure-node, [by-controller]]
+  - [unsafe-control-action, hazard, [leads-to]]
+  - [hazard, loss, [leads-to]]
+  - [loss-scenario, unsafe-control-action, [explains]]
+  - [loss-scenario, hazard, [explains]]
+  - [loss-scenario, control-structure-node, [concerns]]
+  - [hazard, assurance-constraint, [derives]]
+  - [unsafe-control-action, assurance-constraint, [derives]]
+  - [loss-scenario, assurance-constraint, [derives]]
+  - [incident, assurance-constraint, [derives]]
+  - [corrective-action, assurance-constraint, [derives]]
+  - [assurance-constraint, assurance-constraint, [refines]]
+  - [hazard, hazard, [refines]]
+  - [assurance-constraint, loss, [mitigates]]
+  - [control-structure-node, assurance-constraint, [responsible-for]]
+  - [control-structure-node, risk, [accountable-for]]
+  - [assurance-constraint, evidence, [evidenced-by]]
+  - [risk, hazard, [assesses]]
+  - [risk, assurance-constraint, [treated-by]]
+  - [assurance-constraint, obligation, [complies-with]]
+  - [incident, control-structure-node, [investigates]]
+  - [incident, hazard, [investigates]]
+  # Failure modes attach to the existing causal spine rather than beside it: the effect of a
+  # failure IS a hazard already on that spine, and the cause is the same causal-story concept a
+  # loss scenario already carries. No parallel effect or consequence vocabulary is introduced.
+  - [failure-mode, hazard, [leads-to]]
+  - [loss-scenario, failure-mode, [explains]]
+  - [failure-mode, assurance-constraint, [derives]]
+  - [assurance-constraint, failure-mode, [detects]]

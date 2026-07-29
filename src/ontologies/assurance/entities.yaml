@@ -1,0 +1,235 @@
+# Assurance Ontology — entity type definitions
+#
+# STPA / CAST / GRC entity types. Stored in the ConfidentialAssuranceStore
+# (SQLCipher), not in git-backed architecture model files.
+#
+# Fields:
+#   prefix          – short ID prefix (e.g. LSS, HAZ)
+#   hierarchy       – domain path segments; loader appends artifact_type
+#   classes         – abstract classification classes
+#   create_when     – when to create this type
+#   never_create_when – when not to
+
+element_classes:
+  assurance-element:
+    description: Root class for all assurance ontology elements
+  loss-element:
+    description: An undesirable stakeholder-level outcome (STAMP loss)
+  hazard-element:
+    description: A system state or condition that can lead to a loss under worst-case environment
+  control-structure-element:
+    description: A node in the STAMP hierarchical control structure
+  constraint-element:
+    description: A safety or security constraint derived from hazard analysis
+  risk-element:
+    description: A risk entity that evaluates a hazard/loss-scenario and its treatment
+  incident-element:
+    description: An actual occurred loss event under CAST investigation
+  obligation-element:
+    description: A compliance obligation instance (assurance-owned, confidential)
+  evidence-element:
+    description: An evidence artifact substantiating an assurance claim
+  failure-element:
+    description: A way one component or function fails to perform as intended
+
+entity_types:
+
+  # ── STPA/CAST/GRC — Core ─────────────────────────────────────────────────
+
+  loss:
+    prefix: LSS
+    hierarchy: [assurance]
+    classes: [loss-element, assurance-element]
+    create_when: >
+      Create a loss to represent an unacceptable outcome that stakeholders must avoid.
+      A loss is the top-level anchor of a STPA/CAST analysis — everything traces back to it.
+      Examples: loss of life, property damage, regulatory non-compliance, breach of privacy.
+    never_create_when: >
+      Never model a hazard, constraint, or specific scenario as a loss. A loss is a final,
+      stakeholder-relevant outcome, not an intermediate system state.
+
+  hazard:
+    prefix: HAZ
+    hierarchy: [assurance]
+    classes: [hazard-element, assurance-element]
+    create_when: >
+      Create a hazard to represent a system-level state or set of conditions that, combined
+      with worst-case environmental conditions, can lead to a loss (STPA-Sec: also a vulnerable
+      system state exploitable by a threat actor). Use concern_class to distinguish safety vs
+      security hazards. Hazards lead to losses; unsafe control actions lead to hazards.
+    never_create_when: >
+      Never model a specific unsafe control action or a loss scenario as a hazard. A hazard
+      describes the system state, not the causal chain that produced it or the outcome it causes.
+
+  control-structure-node:
+    prefix: CSN
+    hierarchy: [assurance]
+    classes: [control-structure-element, assurance-element]
+    create_when: >
+      Create a control-structure-node to model a controller or controlled process in the STAMP
+      control structure. Use node_role to classify (controller / controlled-process / actuator /
+      sensor). Set binding_status to indicate whether this node is bound to an architecture entity.
+      An unbound-pending node signals a modeling gap in the architecture.
+    never_create_when: >
+      Never create a CSN to represent an abstract concept, a loss, or a hazard. CSNs are structural
+      nodes in the control hierarchy — they issue or receive control actions.
+
+  control-action:
+    prefix: CAC
+    hierarchy: [assurance]
+    classes: [control-structure-element, assurance-element]
+    create_when: >
+      Create a control-action to represent a specific command or signal that a controller issues
+      to a controlled process. Every UCA must reference exactly one control-action. This gives each
+      UCA a stable referent and enables the UCA matrix analysis.
+    never_create_when: >
+      Never model a high-level process or behavior as a control-action. A control-action is the
+      specific unit of control — one actionable signal on one control loop.
+
+  unsafe-control-action:
+    prefix: UCA
+    hierarchy: [assurance]
+    classes: [hazard-element, assurance-element]
+    create_when: >
+      Create an unsafe-control-action (UCA) to represent one STPA guideword scenario for one control
+      action: (1) not-provided — the action is never issued; (2) provided-in-unsafe-context — a
+      well-formed command issued in a state where it must not be; (3) provided-incorrectly — issuing
+      it is called for, but its content or parameters are wrong; (4) wrong-timing — too early, too
+      late, or out of order; (5) wrong-duration — for an action held over time, ended early or
+      continued too long. Guidewords 2 and 3 are both "providing causes a hazard", kept apart because
+      a wrong context is answered by a guard on state and a wrong command by validating the command.
+      Each UCA must reference exactly one control-action (concerns edge) and a controller (by-controller),
+      and must be traceable to one or more hazards (leads-to edge).
+      Set uca_type to one of: not-provided | provided-in-unsafe-context | provided-incorrectly |
+      wrong-timing | wrong-duration.
+      Set mode=hypothesized for STPA; mode=observed for CAST.
+    never_create_when: >
+      Never model a hazard, loss, or constraint as a UCA. A UCA is a specific failure of a
+      specific control action in a specific context.
+
+  assurance-constraint:
+    prefix: ACN
+    hierarchy: [assurance]
+    classes: [constraint-element, assurance-element]
+    create_when: >
+      Create an assurance-constraint to represent a safety or security constraint derived from
+      hazard/UCA/loss-scenario analysis. This is SEPARATE from ArchiMate requirements — it carries
+      the concern_class, disposition, and integrity level of the constraint. Link it to an ArchiMate
+      requirement via a refines-requirement architecture reference (implementation reuses the requirement's
+      realized-by edges); the refines edge is assurance-internal (constraint refining constraint).
+      Mandatory: concern_class, and for safety/security constraints an incoming responsible-for
+      connection from the controller responsible for enforcing it.
+    never_create_when: >
+      Never reuse an ArchiMate requirement as an assurance-constraint. The constraint holds the
+      safety/security framing; the requirement holds the functional statement. They are linked, not merged.
+
+  loss-scenario:
+    # LOS, not the LSC this once declared. Every loss scenario ever written carries LOS, because the
+    # store's own prefix map had no entry for this type and fell back to the first three letters.
+    # Those ids are frozen: the append-only, hash-chained archive records them, so rewriting them
+    # would have to rewrite history that exists to be unrewritable. A declaration nothing implements
+    # is the half of the disagreement worth correcting.
+    prefix: LOS
+    hierarchy: [assurance]
+    classes: [hazard-element, assurance-element]
+    create_when: >
+      Create a loss-scenario to describe the causal factors behind unsafe control. The two
+      handbook scenario types share one node type, distinguished by the scenario_type
+      attribute: 'unsafe-control' (type a — explains one or more UCAs: why the controller
+      provides them) and 'improper-execution' (type b — explains a hazard directly: a correct
+      control action improperly executed, not executed, or improperly integrated on its way
+      through actuators and the controlled process, so no UCA is involved). Each loss-scenario
+      derives one or more assurance-constraints. In CAST, loss-scenarios with mode=observed
+      represent actual causal sequences.
+    never_create_when: >
+      Never model a UCA as a loss-scenario, and never subtype a hazard by its causal path —
+      the hazard is the same system state however it arises; the pathway distinction belongs
+      on the scenario (scenario_type), matching how STPA tools classify causal analysis by
+      control-loop element rather than by hazard taxonomy.
+
+  failure-mode:
+    prefix: FMD
+    hierarchy: [assurance]
+    classes: [failure-element, assurance-element]
+    create_when: >
+      Create a failure-mode for a way one component or function fails to perform as intended —
+      enumerated per architecture element against the failure guidewords (no-function,
+      partial-function, excessive-function, intermittent-function, unintended-function). Bind it
+      to the architecture entity it belongs to with a binds-to architecture reference, and link
+      its effect to an existing hazard with leads-to. Set failure_type to the guideword, and
+      mode to hypothesized for a design analysis or observed for a failure seen in the field.
+      A cell examined and judged not credible is recorded too, with assessment_state
+      not-credible plus who decided and why — that is a finding, and it counts as coverage.
+    never_create_when: >
+      Never model a control or coordination flaw as a failure-mode — where no component failed,
+      the finding is an unsafe control action or a loss scenario. Never model the consequence of
+      a failure as a failure-mode; the consequence is the hazard it leads to, and a failure mode
+      naming an outcome creates a second consequence vocabulary beside the hazard spine. Never
+      use one failure-mode for a failure spanning several components: name one component's
+      failure each, and link them to the same hazard.
+
+  risk:
+    prefix: RSK
+    hierarchy: [assurance]
+    classes: [risk-element, assurance-element]
+    create_when: >
+      Create a risk entity to evaluate a hazard or loss-scenario from a GRC perspective.
+      A risk is optional — constraints are valid without a risk entity. Set treatment to one of:
+      mitigate | transfer | avoid | accept (accept only for non-safety concern_class).
+      Link via assesses→hazard and treated-by→assurance-constraint; give it an owner via an
+      incoming accountable-for connection from an organizational control-structure node
+      (ISO 31000 risk ownership).
+    never_create_when: >
+      Never use a risk entity to replace or "close" a safety/security constraint. A risk entity
+      is an evaluation overlay — it can never be a precondition for a constraint's existence.
+
+  incident:
+    prefix: INC
+    hierarchy: [assurance]
+    classes: [incident-element, assurance-element]
+    create_when: >
+      Create an incident for CAST analysis — an actual occurred loss event under investigation.
+      The incident anchors the CAST control-structure-as-existed reconstruction. Requires a sealed
+      analysis_baseline (seal a baseline before creating observed UCAs/scenarios).
+    never_create_when: >
+      Never create an incident for a hypothetical hazard. Incidents are actual, occurred events.
+
+  corrective-action:
+    prefix: CRA
+    hierarchy: [assurance]
+    classes: [assurance-element]
+    create_when: >
+      Create a corrective-action to represent a recommendation from a CAST investigation or
+      GRC audit. Corrective actions derive assurance-constraints that enter the GRC lifecycle.
+    never_create_when: >
+      Never create a corrective-action for a proactive (STPA) finding — use assurance-constraint directly.
+
+  obligation:
+    prefix: OBL
+    hierarchy: [assurance]
+    classes: [obligation-element, assurance-element]
+    create_when: >
+      Create an obligation to represent a compliance instance — "does our system comply with
+      requirement X of standard/regulation Y?" The public framework catalog entry is referenced
+      via the cites attribute (scheme:code, e.g. ISO26262:6-8), validated against the reference
+      vocabulary. Status and evidence are assurance-owned.
+    never_create_when: >
+      Never model an obligation in the ArchiMate motivation layer — obligation status and evidence
+      are confidential and must live in the assurance store.
+
+  evidence:
+    prefix: EVD
+    hierarchy: [assurance]
+    classes: [evidence-element, assurance-element]
+    create_when: >
+      Create an evidence node to represent an artifact that substantiates an assurance claim —
+      a test report, analysis result, audit record, or review outcome referenced by
+      evidenced-by edges from assurance-constraints and consumed as a solution in assurance
+      cases. Where the evidence corresponds to an architecture artifact (a component, test
+      suite, or document in any implementing domain), bind it via a binds-to architecture
+      reference; an unbound evidence node is flagged as pending, not rejected, because
+      confidential-only evidence legitimately has no architecture counterpart.
+    never_create_when: >
+      Never create an evidence node for a claim itself (that is the assurance-constraint) or
+      for raw data with no substantiating role. Evidence is assurance-owned and confidential;
+      never duplicate its content into the architecture repository.

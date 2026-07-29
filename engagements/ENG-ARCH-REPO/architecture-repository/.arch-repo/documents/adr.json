@@ -1,0 +1,37 @@
+{
+  "abbreviation": "ADR",
+  "name": "Architecture Decision Record",
+  "subdirectory": "adr",
+  "frontmatter_schema": {
+    "type": "object",
+    "required": ["title", "status"],
+    "properties": {
+      "title": {"type": "string"},
+      "status": {"type": "string", "enum": ["draft", "accepted", "rejected", "superseded"]},
+      "deciders": {"type": "array", "items": {"type": "string"}},
+      "date": {"type": "string"}
+    }
+  },
+  "suggested_entity_type_connections": ["@all"],
+  "sections": [
+    {
+      "name": "Context",
+      "suggested_entity_type_connections": ["driver", "assessment", "principle", "requirement"]
+    },
+    {
+      "name": "Decision",
+      "suggested_entity_type_connections": [
+        "requirement",
+        "application-component",
+        "application-interface",
+        "business-object",
+        "data-object",
+        "service"
+      ]
+    },
+    {
+      "name": "Consequences",
+      "suggested_entity_type_connections": ["outcome", "requirement"]
+    }
+  ]
+}

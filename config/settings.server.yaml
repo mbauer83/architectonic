@@ -1,0 +1,47 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Backend settings for a server deployment. Mounted read-write at
+# /app/config/settings.yaml so the assurance CLI can persist the active backend.
+# Storage backend selection is driven by .env (the entrypoint asserts it here);
+# everything else below is declarative.
+# ─────────────────────────────────────────────────────────────────────────────
+
+backend:
+  port: 8000
+  min_log_level: INFO
+  # No log_path: the container runs `arch-backend` in the FOREGROUND (see
+  # docker/entrypoint.sh), so its diagnostics go to stdout/stderr where `docker logs` and any
+  # orchestrator's log driver can collect them. `log_path` only takes effect when the process
+  # detaches (`--daemon`, or a backgrounded TTY job), which this deployment never does — naming
+  # one here would advertise a file that never fills.
+
+diagrams:
+  archimate_type_markers: icons
+  sprite_scale: 1.5
+  render_dpi: 150
+  plantuml_limit_size: 16384
+
+repo_init:
+  default_branch: main
+  commit_author_name: Architecture Bot
+  commit_author_email: architecture-bot@example.com
+
+# Assurance module. Disabled by default — the no-assurance deployment. The
+# entrypoint enables it (and the storage backend) when ARCH_ENABLE_ASSURANCE=true.
+modules:
+  assurance:
+    enabled: false
+
+storage:
+  assurance:
+    store_backend: sqlcipher
+    signals_backend: sqlcipher-colocated
+    archive_backend: standard
+    # TLP exposure ceiling — highest classification served over REST/MCP.
+    # TLP:WHITE | TLP:GREEN | TLP:AMBER | TLP:RED
+    # This is the project's own FOSS dogfooding self-model — its assurance content
+    # is public, so the ceiling is TLP:RED (nothing withheld). The code default
+    # (src/config/settings.py) stays TLP:AMBER for real deployments.
+    max_classification: TLP:RED
+
+validation:
+  datatype_type_references_blocking: true

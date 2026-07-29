@@ -1,0 +1,97 @@
+# C19C v3.1 <-> ArchiMate 4 declarative mapping table (D10, parent plan §4.5, WU-F3a).
+#
+# Import direction only for now (WU-F3a); the export direction (WU-F3b) will extend the
+# loader that reads this file, not this file's shape. Each `elements`/`relationships` row
+# is a concrete C19C `ElementTypeEnum`/`RelationshipTypeEnum` value (the `xsi:type`) mapped
+# to an ArchiMate 4 base type plus, where the standard's Common Domain generalization
+# collapsed several 3.x layer-specific types into one, the shipped specialization slug.
+# `warning` marks a lossy case documented in REVIEW-archimate-exchange-readiness.md (no
+# shipped ArchiMate 4 specialization for that 3.x concept yet).
+
+elements:
+  BusinessActor: {type: business-actor}
+  BusinessRole: {type: role, specialization: business-role}
+  BusinessCollaboration: {type: collaboration, specialization: business-collaboration}
+  BusinessInterface: {type: business-interface}
+  BusinessProcess: {type: process, specialization: business-process}
+  BusinessFunction: {type: function, specialization: business-function}
+  BusinessInteraction:
+    type: process
+    specialization: business-process
+    warning: "no shipped ArchiMate 4 interaction specialization; mapped to business-process"
+  BusinessEvent: {type: event, specialization: business-event}
+  BusinessService: {type: service, specialization: business-service}
+  BusinessObject: {type: business-object}
+  Contract: {type: business-object, specialization: contract}
+  Representation: {type: business-object, specialization: representation}
+  Product: {type: product}
+  ApplicationComponent: {type: application-component}
+  ApplicationCollaboration: {type: collaboration, specialization: application-collaboration}
+  ApplicationInterface: {type: application-interface}
+  ApplicationFunction: {type: function, specialization: application-function}
+  ApplicationInteraction:
+    type: process
+    specialization: application-process
+    warning: "no shipped ArchiMate 4 interaction specialization; mapped to application-process"
+  ApplicationProcess: {type: process, specialization: application-process}
+  ApplicationEvent: {type: event, specialization: application-event}
+  ApplicationService: {type: service, specialization: application-service}
+  DataObject: {type: data-object}
+  Node: {type: technology-node}
+  Device: {type: device}
+  SystemSoftware: {type: system-software}
+  TechnologyCollaboration: {type: collaboration, specialization: technology-collaboration}
+  TechnologyInterface: {type: technology-interface}
+  Path: {type: path}
+  CommunicationNetwork: {type: communication-network}
+  TechnologyFunction: {type: function, specialization: technology-function}
+  TechnologyProcess: {type: process, specialization: technology-process}
+  TechnologyInteraction:
+    type: process
+    specialization: technology-process
+    warning: "no shipped ArchiMate 4 interaction specialization; mapped to technology-process"
+  TechnologyEvent: {type: event, specialization: technology-event}
+  TechnologyService: {type: service, specialization: technology-service}
+  Artifact: {type: artifact}
+  Equipment: {type: equipment}
+  Facility: {type: facility}
+  DistributionNetwork: {type: distribution-network}
+  Material: {type: material}
+  Stakeholder: {type: stakeholder}
+  Driver: {type: driver}
+  Assessment: {type: assessment}
+  Goal: {type: goal}
+  Outcome: {type: outcome}
+  Principle: {type: principle}
+  Requirement: {type: requirement}
+  Constraint: {type: requirement, specialization: constraint}
+  Meaning: {type: meaning}
+  Value: {type: value}
+  Resource: {type: resource}
+  Capability: {type: capability}
+  CourseOfAction: {type: course-of-action}
+  ValueStream: {type: value-stream}
+  WorkPackage: {type: work-package}
+  Deliverable: {type: deliverable}
+  ImplementationEvent:
+    type: event
+    warning: "no shipped implementation-event specialization; mapped to generic event"
+  Plateau: {type: plateau}
+  Gap: {type: assessment, specialization: gap}
+  Grouping: {type: grouping}
+  Location: {type: location}
+  AndJunction: {type: and-junction}
+  OrJunction: {type: or-junction}
+
+relationships:
+  Composition: {type: archimate-composition}
+  Aggregation: {type: archimate-aggregation}
+  Assignment: {type: archimate-assignment}
+  Realization: {type: archimate-realization}
+  Serving: {type: archimate-serving}
+  Access: {type: archimate-access}
+  Influence: {type: archimate-influence}
+  Triggering: {type: archimate-triggering}
+  Flow: {type: archimate-flow}
+  Specialization: {type: archimate-specialization}
+  Association: {type: archimate-association}

@@ -1,0 +1,132 @@
+---
+artifact-id: ARC@1777455142.cFB8Hs.the-forces-shaping-this-system
+artifact-type: diagram
+name: The Forces Shaping This System
+version: 0.1.0
+status: draft
+keywords:
+- motivation
+- drivers
+- assessments
+- forces
+- double-bind
+diagram-type: archimate-motivation
+manual-layout: true
+entity-ids-used:
+- ASS@1776628142.9YWsDh.implicit-system-interdependencies-are-unmaintainable-without-explicit-models
+- ASS@1780220699.CK90bp.autonomy-at-agentic-velocity-threatens-unity-of-effort
+- ASS@1776628134.EI3FpR.ai-generated-change-volume-outpaces-architectural-planning-and-review-capacity
+- ASS@1776628138.a6vxyj.centralized-governance-cannot-scale-at-agentic-velocity
+- ASS@1776628140.s68vVo.llm-based-agents-cannot-effectively-use-unstructured-architectural-knowledge
+- DRV@1784845186.4NvckD.demand-for-faster-product-and-service-learning-cycles
+- DRV@1776628131.GR9prv.ai-assisted-and-agentic-development-as-a-dominant-production-mode
+- DRV@1712870400.Rt6Yu2.increasing-demand-for-more-autonomy-of-teams-systems
+- DRV@1712870400.Ui5Op3.rising-software-complexity-interdependence
+connection-ids-used:
+- DRV@1712870400.Ui5Op3---ASS@1776628142.9YWsDh@@archimate-influence
+- DRV@1776628131.GR9prv---ASS@1776628134.EI3FpR@@archimate-influence
+- DRV@1776628131.GR9prv---ASS@1776628140.s68vVo@@archimate-influence
+- DRV@1776628131.GR9prv---ASS@1780220699.CK90bp@@archimate-influence
+- DRV@1776628131.GR9prv---ASS@1776628138.a6vxyj@@archimate-influence
+- DRV@1784845186.4NvckD---ASS@1780220699.CK90bp@@archimate-influence
+- DRV@1712870400.Rt6Yu2---ASS@1780220699.CK90bp@@archimate-influence
+- DRV@1712870400.Rt6Yu2---ASS@1776628138.a6vxyj@@archimate-influence
+authored-groupings:
+- label: Forces
+  stereotype: MotivationGrouping
+  entity-ids:
+  - DRV@1712870400.Ui5Op3.rising-software-complexity-interdependence
+  - DRV@1776628131.GR9prv.ai-assisted-and-agentic-development-as-a-dominant-production-mode
+  - DRV@1784845186.4NvckD.demand-for-faster-product-and-service-learning-cycles
+  - DRV@1712870400.Rt6Yu2.increasing-demand-for-more-autonomy-of-teams-systems
+- label: Immediate Implications
+  stereotype: MotivationGrouping
+  entity-ids:
+  - ASS@1776628142.9YWsDh.implicit-system-interdependencies-are-unmaintainable-without-explicit-models
+  - ASS@1776628134.EI3FpR.ai-generated-change-volume-outpaces-architectural-planning-and-review-capacity
+  - ASS@1776628140.s68vVo.llm-based-agents-cannot-effectively-use-unstructured-architectural-knowledge
+- label: The Double Bind
+  stereotype: MotivationGrouping
+  entity-ids:
+  - ASS@1780220699.CK90bp.autonomy-at-agentic-velocity-threatens-unity-of-effort
+  - ASS@1776628138.a6vxyj.centralized-governance-cannot-scale-at-agentic-velocity
+last-updated: '2026-07-29T13:29:40Z'
+---
+@startuml
+hide stereotype
+
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 12
+skinparam shadowing false
+skinparam roundcorner 4
+skinparam backgroundColor #FAFAFA
+
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 80
+!define Rel_Triggering(from, to, label) from --> to
+!define Rel_Realization(from, to, label) from ..|> to
+!define Rel_Realization_Up(from, to, label) from ..|> to
+!define Rel_Serving(from, to, label) from --> to
+!define Rel_Association(from, to, label) from -- to
+!define Rel_Association_Left(from, to, label) from -- to
+!define Rel_Association_Right(from, to, label) from -- to
+!define Rel_Access(from, to, label) from ..> to
+!define Rel_Influence(from, to, label) from ..> to
+skinparam rectangle<<MotivationGrouping>> {
+  BackgroundColor #F7EEF9
+  BorderColor #7B3F9A
+}
+skinparam rectangle<<assessment>> {
+  BackgroundColor #EDD6F0
+  BorderColor #7B3F9A
+}
+skinparam rectangle<<driver>> {
+  BackgroundColor #EDD6F0
+  BorderColor #7B3F9A
+}
+sprite $archimate_assessment <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.5 3h11a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H6l-2 3 1-3H2.5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"  fill="#252327" stroke="none"/></svg>
+sprite $archimate_driver <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="4.6"  fill="none" stroke="#252327" stroke-width="1.3"/><circle cx="8" cy="8" r="1.7"  fill="none" stroke="#252327" stroke-width="1.3"/><path d="M7.35 2.30v3.00h1.30V2.30z" fill="#252327"/><path d="M7.35 10.70v3.00h1.30V10.70z" fill="#252327"/><path d="M2.30 7.35h3.00v1.30H2.30z" fill="#252327"/><path d="M10.70 7.35h3.00v1.30H10.70z" fill="#252327"/><path d="M3.54 4.46L4.46 3.54L6.56 5.64L5.64 6.56z" fill="#252327"/><path d="M9.44 10.36L10.36 9.44L12.46 11.54L11.54 12.46z" fill="#252327"/><path d="M11.54 3.54L12.46 4.46L10.36 6.56L9.44 5.64z" fill="#252327"/><path d="M5.64 9.44L6.56 10.36L4.46 12.46L3.54 11.54z" fill="#252327"/></svg>
+top to bottom direction
+skinparam nodesep 40
+skinparam ranksep 60
+
+title The Forces Shaping This System
+
+rectangle "Forces" <<MotivationGrouping>> {
+  rectangle "<$archimate_driver{scale=1.25}> Rising Software Complexity & Interdependence" <<driver>> as DRV_Ui5Op3
+  rectangle "<$archimate_driver{scale=1.25}> AI-Assisted and Agentic Development as a Dominant Production Mode" <<driver>> as DRV_GR9prv
+  rectangle "<$archimate_driver{scale=1.25}> Demand for Faster Product and Service Learning Cycles" <<driver>> as DRV_4NvckD
+  rectangle "<$archimate_driver{scale=1.25}> Increasing Demand for More Autonomy of Teams & Systems" <<driver>> as DRV_Rt6Yu2
+  DRV_Ui5Op3 -[hidden]right- DRV_GR9prv
+  DRV_GR9prv -[hidden]right- DRV_4NvckD
+  DRV_4NvckD -[hidden]right- DRV_Rt6Yu2
+}
+
+rectangle "Immediate Implications" <<MotivationGrouping>> {
+  rectangle "<$archimate_assessment{scale=1.25}> Implicit System Interdependencies Are Unmaintainable Without Explicit Models" <<assessment>> as ASS_9YWsDh
+  rectangle "<$archimate_assessment{scale=1.25}> AI-Generated Change Volume Outpaces Architectural Planning and Review Capacity" <<assessment>> as ASS_EI3FpR
+  rectangle "<$archimate_assessment{scale=1.25}> LLM-Based Agents Cannot Effectively Use Unstructured Architectural Knowledge" <<assessment>> as ASS_s68vVo
+  ASS_9YWsDh -[hidden]down- ASS_EI3FpR
+  ASS_EI3FpR -[hidden]down- ASS_s68vVo
+}
+
+rectangle "The Double Bind" <<MotivationGrouping>> {
+  rectangle "<$archimate_assessment{scale=1.25}> Autonomy at Agentic Velocity Threatens Unity of Effort" <<assessment>> as ASS_CK90bp
+  rectangle "<$archimate_assessment{scale=1.25}> Centralized Governance Cannot Scale at Agentic Velocity" <<assessment>> as ASS_a6vxyj
+  ASS_CK90bp -[hidden]down- ASS_a6vxyj
+}
+
+DRV_GR9prv -[hidden]down- ASS_9YWsDh
+DRV_4NvckD -[hidden]down- ASS_CK90bp
+
+DRV_Ui5Op3 ..> ASS_9YWsDh
+DRV_GR9prv ..> ASS_EI3FpR
+DRV_GR9prv ..> ASS_s68vVo
+DRV_GR9prv ..> ASS_CK90bp
+DRV_GR9prv ..> ASS_a6vxyj
+DRV_4NvckD ..> ASS_CK90bp
+DRV_Rt6Yu2 ..> ASS_CK90bp
+DRV_Rt6Yu2 ..> ASS_a6vxyj
+
+@enduml

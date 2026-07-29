@@ -1,0 +1,163 @@
+entity_types:
+  person:
+    create_when: Use for people interacting with the container or its major components.
+    never_create_when: Do not use for software systems or internal components.
+    permitted_mappings:
+      entity_types:
+        - business-actor
+        - role
+      sources:
+        - ontology: archimate-4-0
+          entity_type: business-actor
+          transparent: true
+        - ontology: archimate-4-0
+          entity_type: role
+          transparent: true
+    properties:
+      description:
+        type: string
+        required: false
+      external:
+        type: boolean
+        required: false
+  software-system:
+    create_when: >-
+      Use for neighboring or external software systems around the container in scope.
+      Link entity_id to an application-component or service model entity when the system is internally managed;
+      entity_id is optional for third-party systems you do not own.
+    never_create_when: Do not use for the container in scope or its internal components.
+    permitted_mappings:
+      entity_types:
+        - application-component
+        - service
+      sources:
+        - ontology: archimate-4-0
+          entity_type: application-component
+          transparent: true
+        - ontology: archimate-4-0
+          entity_type: service
+          transparent: true
+    properties:
+      description:
+        type: string
+        required: false
+      technology:
+        type: string
+        required: false
+      external:
+        type: boolean
+        required: false
+  container:
+    create_when: >-
+      Use for the container in scope (set _scope_entity_id at diagram level and link entity_id to an
+      application-component, service, or data-object model entity — required for cross-diagram navigation)
+      and for nearby peer or external containers (entity_id optional for containers you do not manage).
+    never_create_when: Do not use for a whole system boundary at container level or for fine-grained internal parts that belong as components.
+    permitted_mappings:
+      entity_types:
+        - application-component
+        - service
+        - data-object
+      sources:
+        - ontology: archimate-4-0
+          entity_type: application-component
+          transparent: true
+        - ontology: archimate-4-0
+          entity_type: service
+          transparent: true
+        - ontology: archimate-4-0
+          entity_type: data-object
+          transparent: true
+    properties:
+      description:
+        type: string
+        required: false
+      technology:
+        type: string
+        required: false
+      shape:
+        type: string
+        enum: ["", "Container", "ContainerDb", "ContainerQueue"]
+        required: false
+      external:
+        type: boolean
+        required: false
+  component:
+    create_when: >-
+      Use for major internal building blocks inside the container in scope. Link entity_id to an
+      application-component, function, or service model entity — components that matter architecturally
+      should be first-class model entities.
+    never_create_when: Do not use for the whole container or for code-level classes and methods.
+    permitted_mappings:
+      entity_types:
+        - application-component
+        - function
+        - service
+      sources:
+        - ontology: archimate-4-0
+          entity_type: application-component
+          transparent: true
+        - ontology: archimate-4-0
+          entity_type: function
+          transparent: true
+        - ontology: archimate-4-0
+          entity_type: service
+          transparent: true
+    properties:
+      description:
+        type: string
+        required: false
+      technology:
+        type: string
+        required: false
+      shape:
+        type: string
+        enum: ["", "Component", "ComponentDb", "ComponentQueue"]
+        required: false
+      external:
+        type: boolean
+        required: false
+
+connection_types:
+  c4-uses:
+    embedding: none
+    cascade_delete_source: false
+
+permitted_relationships:
+  - [person, software-system, [c4-uses]]
+  - [person, container, [c4-uses]]
+  - [person, component, [c4-uses]]
+  - [software-system, container, [c4-uses]]
+  - [software-system, component, [c4-uses]]
+  - [container, software-system, [c4-uses]]
+  - [container, container, [c4-uses]]
+  - [container, component, [c4-uses]]
+  - [component, container, [c4-uses]]
+  - [component, component, [c4-uses]]
+  - [component, software-system, [c4-uses]]
+
+allowed_bindings:
+  entity:
+    person:
+      correspondence_kinds: [represents, refines, traces-to]
+      default_correspondence_kind: represents
+      target_forms: [entity-id, diagram-local]
+    software-system:
+      correspondence_kinds: [represents, refines, traces-to]
+      default_correspondence_kind: represents
+      target_forms: [entity-id, diagram-local]
+    container:
+      correspondence_kinds: [represents, refines, traces-to]
+      default_correspondence_kind: represents
+      target_forms: [entity-id, diagram-local]
+    component:
+      correspondence_kinds: [represents, refines, traces-to]
+      default_correspondence_kind: represents
+      target_forms: [entity-id, diagram-local]
+  connection:
+    c4-uses:
+      target_connection_types: [serving, flow, access, association]
+      target_connection_classes: [dependency, flow]
+      correspondence_kinds: [abstracts, represents, traces-to]
+      default_correspondence_kind: abstracts
+      target_forms: [connection-id, connection-ids]

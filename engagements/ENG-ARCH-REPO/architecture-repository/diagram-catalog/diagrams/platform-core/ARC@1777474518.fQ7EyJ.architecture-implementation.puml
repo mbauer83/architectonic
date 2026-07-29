@@ -1,0 +1,87 @@
+---
+artifact-id: ARC@1777474518.fQ7EyJ.architecture-implementation
+artifact-type: diagram
+name: Architecture Implementation
+version: 0.1.0
+status: draft
+diagram-type: archimate-layered
+entity-ids-used:
+- FNC@1777409722.4LZhtI.implement-the-change
+- FNC@1777390454.4ce2Qt.synthesize-deliver-implementation-guidance
+- FNC@1777409722.LxeSn1.record-implementation-decisions
+- FNC@1777409722.TSs7wk.plan-implementation-approach
+- FNC@1777474430.fCdnJ2.refine-architecture-content-after-implementation
+- FNC@1777390444.lLdx12.discover-relevant-architecture-content
+- PRC@1776635645.GHVpDA.provide-implementation-guidance
+connection-ids-used:
+- FNC@1777390444.lLdx12---FNC@1777409722.TSs7wk@@archimate-triggering
+- FNC@1777409722.4LZhtI---FNC@1777409722.LxeSn1@@archimate-triggering
+- FNC@1777409722.TSs7wk---FNC@1777390454.4ce2Qt@@archimate-triggering
+- FNC@1777390454.4ce2Qt---FNC@1777409722.4LZhtI@@archimate-triggering
+- FNC@1777409722.LxeSn1---FNC@1777474430.fCdnJ2@@archimate-triggering
+- PRC@1776635645.GHVpDA---FNC@1777390444.lLdx12@@archimate-aggregation
+- PRC@1776635645.GHVpDA---FNC@1777390454.4ce2Qt@@archimate-composition
+- PRC@1776635645.GHVpDA---FNC@1777409722.4LZhtI@@archimate-composition
+- PRC@1776635645.GHVpDA---FNC@1777409722.LxeSn1@@archimate-composition
+- PRC@1776635645.GHVpDA---FNC@1777409722.TSs7wk@@archimate-composition
+- PRC@1776635645.GHVpDA---FNC@1777474430.fCdnJ2@@archimate-composition
+last-updated: '2026-07-29T13:30:02Z'
+---
+@startuml architecture-implementation
+hide stereotype
+
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 12
+skinparam shadowing false
+skinparam roundcorner 4
+skinparam backgroundColor #FAFAFA
+
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 80
+!define Rel_Triggering(from, to, label) from --> to
+!define Rel_Realization(from, to, label) from ..|> to
+!define Rel_Realization_Up(from, to, label) from ..|> to
+!define Rel_Serving(from, to, label) from --> to
+!define Rel_Association(from, to, label) from -- to
+!define Rel_Association_Left(from, to, label) from -- to
+!define Rel_Association_Right(from, to, label) from -- to
+!define Rel_Access(from, to, label) from ..> to
+!define Rel_Influence(from, to, label) from ..> to
+skinparam rectangle<<function>> {
+  BackgroundColor #E0D8CC
+  BorderColor #8C7E6A
+}
+skinparam rectangle<<process>> {
+  BackgroundColor #E0D8CC
+  BorderColor #8C7E6A
+}
+sprite $archimate_function <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.9 11.7V5.4L8 3.1l5.1 2.3v6.3L8 9.2z"  fill="#252327" stroke="none"/></svg>
+sprite $archimate_process <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.6 4.1h6.3V2.8l4.5 5.2-4.5 5.2v-1.3H2.6z"  fill="#252327" stroke="none"/></svg>
+
+top to bottom direction
+
+title Architecture Implementation
+
+rectangle "<$archimate_process{scale=1.2}> Architecture Implementation\n«Business Process»" <<process>> as PRC_GHVpDA {
+  rectangle "<$archimate_function{scale=1.2}> Implement the Change\n«Business Function»" <<function>> as FNC_4LZhtI
+  rectangle "<$archimate_function{scale=1.2}> Synthesize & Deliver Implementation Guidance\n«Business Function»" <<function>> as FNC_4ce2Qt
+  rectangle "<$archimate_function{scale=1.2}> Record Implementation Decisions\n«Business Function»" <<function>> as FNC_LxeSn1
+  rectangle "<$archimate_function{scale=1.2}> Plan Implementation Approach\n«Business Function»" <<function>> as FNC_TSs7wk
+  rectangle "<$archimate_function{scale=1.2}> Refine Architecture Content after Implementation\n«Business Function»" <<function>> as FNC_fCdnJ2
+  rectangle "<$archimate_function{scale=1.2}> Discover Relevant Architecture Content\n«Application Function»" <<function>> as FNC_lLdx12
+  FNC_lLdx12 -[hidden]right- FNC_TSs7wk
+  FNC_TSs7wk -[hidden]right- FNC_4ce2Qt
+  FNC_4ce2Qt -[hidden]right- FNC_4LZhtI
+  FNC_4LZhtI -[hidden]right- FNC_LxeSn1
+  FNC_LxeSn1 -[hidden]right- FNC_fCdnJ2
+}
+
+' Connections
+FNC_lLdx12 --> FNC_TSs7wk
+FNC_4LZhtI --> FNC_LxeSn1
+FNC_TSs7wk --> FNC_4ce2Qt
+FNC_4ce2Qt --> FNC_4LZhtI
+FNC_LxeSn1 --> FNC_fCdnJ2
+
+@enduml

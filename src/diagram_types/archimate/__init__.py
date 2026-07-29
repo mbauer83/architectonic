@@ -1,0 +1,1 @@
+"""ArchiMate diagram type family."""

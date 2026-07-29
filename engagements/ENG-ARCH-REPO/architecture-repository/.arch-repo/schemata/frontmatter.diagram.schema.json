@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "frontmatter.diagram.schema.json",
+  "title": "Diagram Frontmatter Schema",
+  "description": "JSON Schema for diagram file frontmatter. Extends tool-required base fields.",
+  "type": "object",
+  "required": [
+    "artifact-id",
+    "artifact-type",
+    "name",
+    "diagram-type",
+    "version",
+    "status",
+    "last-updated"
+  ],
+  "properties": {
+    "artifact-id": {
+      "type": "string",
+      "pattern": "^[A-Z]{2,6}@\\d+\\.[A-Za-z0-9_-]+\\..+$"
+    },
+    "artifact-type": {
+      "type": "string",
+      "enum": ["diagram"]
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "diagram-type": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "active", "deprecated"]
+    },
+    "keywords": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "last-updated": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,113 @@
+---
+artifact-id: ACT@1781338474.NTuMXo.promote-engagement-work-to-the-enterprise-baseline
+artifact-type: diagram
+name: Promote Engagement Work to the Enterprise Repository
+version: 0.1.0
+status: draft
+diagram-type: activity
+diagram-entities:
+  swimlane:
+  - id: author
+    label: Author / AI Agent
+  - id: backend
+    label: Architecture Backend
+  - id: verifier
+    label: Verifier
+  action:
+  - id: a1
+    label: Select entities & connections to promote
+  - id: a2
+    label: Detect & resolve name/id conflicts (accept / enterprise / merge)
+  - id: a3
+    label: "Check engagement schemata \u2287 enterprise"
+  - id: a4
+    label: Promote to enterprise working branch
+  - id: a5
+    label: Submit branch for review (open PR)
+  - id: a6
+    label: Block promotion with per-violation errors
+  decision:
+  - id: d1
+    condition: "Engagement schemata \u2287 enterprise"
+    then_label: 'yes'
+    else_label: 'no'
+connections:
+- id: l1
+  conn_type: step-in-lane
+  source: a1
+  target: author
+- id: l2
+  conn_type: step-in-lane
+  source: a2
+  target: backend
+- id: l3
+  conn_type: step-in-lane
+  source: a3
+  target: verifier
+- id: l4
+  conn_type: step-in-lane
+  source: d1
+  target: verifier
+- id: l5
+  conn_type: step-in-lane
+  source: a4
+  target: backend
+- id: l6
+  conn_type: step-in-lane
+  source: a5
+  target: author
+- id: l7
+  conn_type: step-in-lane
+  source: a6
+  target: backend
+- id: f1
+  conn_type: step-flow
+  source: a1
+  target: a2
+- id: f2
+  conn_type: step-flow
+  source: a2
+  target: a3
+- id: f3
+  conn_type: step-flow
+  source: a3
+  target: d1
+- id: t1
+  conn_type: step-then
+  source: d1
+  target: a4
+- id: f4
+  conn_type: step-flow
+  source: a4
+  target: a5
+- id: e1
+  conn_type: step-else
+  source: d1
+  target: a6
+last-updated: '2026-07-06'
+---
+@startuml promote-engagement-work-to-the-enterprise-repository
+skinparam hyperlinkColor #252327
+skinparam hyperlinkUnderline false
+title Promote Engagement Work to the Enterprise Repository
+
+|Author / AI Agent|
+start
+
+:[[arch://a1 Select entities & connections to promote]];
+|Architecture Backend|
+:[[arch://a2 Detect & resolve name/id conflicts (accept / enterprise / merge)]];
+|Verifier|
+:[[arch://a3 Check engagement schemata ⊇ enterprise]];
+if ([[arch://d1 Engagement schemata ⊇ enterprise?]]) then (yes)
+|Architecture Backend|
+:[[arch://a4 Promote to enterprise working branch]];
+|Author / AI Agent|
+:[[arch://a5 Submit branch for review (open PR)]];
+else (no)
+|Architecture Backend|
+:[[arch://a6 Block promotion with per-violation errors]];
+endif
+
+stop
+@enduml

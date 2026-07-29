@@ -1,0 +1,5 @@
+applied_upgrade_steps:
+- d9-multiplicity-rename
+- viewpoint-selection-mode-stamp
+format_contract_version: '1'
+required_defaults_policy: strict

@@ -1,0 +1,28 @@
+name: archimate-technology
+ontology: archimate_4
+filter:
+  hierarchy_level:
+    index: 0
+    values: [technology, common]
+includes: []
+grouping:
+  by_field: hierarchy_0
+  stereotype_pattern: "{hierarchy_0|capitalize}Grouping"
+layout:
+  nesting_connection_classes: [nesting]
+  flow_connection_classes: [dynamic]
+  # An event between two members of a process reads as part of the orchestrated
+  # sequence — the renderer may nest it visually inside that process.
+  flow_through_entity_types: [event]
+guidance:
+  when_to_use: >-
+    Use when modeling infrastructure: nodes, devices, networks, system software, technology services,
+    and deployed artifacts. Captures the physical and runtime environment.
+  when_not_to_use: >-
+    Do not use for application logic (use archimate-application) or business processes
+    (use archimate-business).
+
+ui:
+  label: ArchiMate Technology
+  description: >-
+    Infrastructure: nodes, devices, networks, system software, technology services, and artifacts.

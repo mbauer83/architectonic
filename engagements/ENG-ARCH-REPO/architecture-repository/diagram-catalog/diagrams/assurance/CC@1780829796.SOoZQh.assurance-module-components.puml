@@ -1,0 +1,127 @@
+---
+artifact-id: CC@1780829796.SOoZQh.assurance-module-components
+artifact-type: diagram
+name: "Assurance Module \u2014 Components"
+version: 0.1.0
+status: draft
+keywords:
+- c4
+- component
+- assurance
+diagram-type: c4-component
+entity-ids-used:
+- APP@1780656430.m-U5S1.assurance-mcp-endpoint-adapter
+- APP@1780656431.E0fzqZ.confidential-assurance-store
+- APP@1780656431.GnsLC8.assurance-archive
+- APP@1780656431.XFD85E.assurance-verifier
+- APP@1780656431.e2zPs6.supply-chain-vulnerability-connector
+- APP@1780783993.JqIBPJ.supply-chain-signal-sources
+- DOB@1780656431.ApaPcg.assurance-knowledge-base
+- DOB@1780656431.dRnK-o.bill-of-materials
+- DOB@1780656431.p04R7k.security-signals-store
+- GRP@1780819145.rW_2nX.assurance-module
+- DOB@1780656431.H-xFye.assurance-audit-log
+- APP@1782080485.uTC8zx.assurance-write-queue
+- APP@1782080489.XWVKAX.assurance-read-connection-pool
+- APP@1782080499.KqDjXG.unified-assurance-diagram-surface
+- APP@1776149382.lmO0mp.gui-authoring-tool
+- APP@1783872532.OZbaBh.repository-upgrade-framework
+- DOB@1784532438.IU4RE4.security-signal-snapshot
+- DOB@1784532443.6ruT_G.security-posture-metrics
+connection-ids-used:
+- APP@1780656430.m-U5S1.assurance-mcp-endpoint-adapter---DOB@1780656431.ApaPcg.assurance-knowledge-base@@archimate-access
+- APP@1780656431.E0fzqZ.confidential-assurance-store---DOB@1780656431.ApaPcg.assurance-knowledge-base@@archimate-access
+- APP@1780656431.XFD85E.assurance-verifier---DOB@1780656431.ApaPcg.assurance-knowledge-base@@archimate-access
+- APP@1780656431.e2zPs6.supply-chain-vulnerability-connector---DOB@1780656431.dRnK-o.bill-of-materials@@archimate-access
+- APP@1780656431.e2zPs6.supply-chain-vulnerability-connector---DOB@1780656431.p04R7k.security-signals-store@@archimate-access
+- APP@1780783993.JqIBPJ.supply-chain-signal-sources---APP@1780656431.e2zPs6.supply-chain-vulnerability-connector@@archimate-serving
+- APP@1780656431.GnsLC8.assurance-archive---DOB@1780656431.H-xFye.assurance-audit-log@@archimate-access
+- APP@1780656430.m-U5S1---DOB@1780656431.ApaPcg@@archimate-access
+- APP@1780656431.E0fzqZ---DOB@1780656431.ApaPcg@@archimate-access
+- APP@1780656431.GnsLC8---DOB@1780656431.H-xFye@@archimate-access
+- APP@1780656431.XFD85E---DOB@1780656431.ApaPcg@@archimate-access
+- APP@1780656431.e2zPs6---DOB@1780656431.dRnK-o@@archimate-access
+- APP@1780656431.e2zPs6---DOB@1780656431.p04R7k@@archimate-access
+- APP@1780783993.JqIBPJ---APP@1780656431.e2zPs6@@archimate-serving
+- APP@1782080485.uTC8zx---DOB@1780656431.ApaPcg@@archimate-access
+- APP@1782080489.XWVKAX---DOB@1780656431.ApaPcg@@archimate-access
+- APP@1782080499.KqDjXG---DOB@1780656431.ApaPcg@@archimate-access
+- APP@1783872532.OZbaBh---DOB@1780656431.ApaPcg@@archimate-access
+- APP@1783872532.OZbaBh---DOB@1780656431.p04R7k@@archimate-access
+- FNC@1784532421.PILDZV---APP@1776149382.lmO0mp@@archimate-association
+- FNC@1784532421.PILDZV---DOB@1784532438.IU4RE4@@archimate-access
+- FNC@1784532421.PILDZV---DOB@1784532443.6ruT_G@@archimate-access
+diagram-entities: {}
+bindings:
+- id: bind-scope
+  subject:
+    kind: diagram
+  correspondence_kind: scoped-by
+  target:
+    entity_id: GRP@1780819145.rW_2nX.assurance-module
+last-updated: '2026-07-29T13:29:27Z'
+---
+@startuml assurance-module---components
+!include <C4/C4_Component>
+left to right direction
+skinparam shadowing false
+skinparam linetype ortho
+skinparam defaultTextAlignment center
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
+
+title Assurance Module — Components
+
+System_Boundary(GRP_rW_2nX, "Assurance Module") {
+  Component(APP_E0fzqZ, "Confidential Assurance Store", "")
+  Component(APP_GnsLC8, "Assurance Archive", "")
+  Component(APP_XFD85E, "Assurance Verifier", "")
+  Component(APP_e2zPs6, "Supply-Chain & Vulnerability Connector", "")
+  Component(DOB_ApaPcg, "Assurance Knowledge Base", "")
+  Component(DOB_dRnK_o, "Bill of Materials", "")
+  Component(DOB_p04R7k, "Security Signals Store", "")
+  APP_E0fzqZ -[hidden]right- APP_GnsLC8
+  APP_GnsLC8 -[hidden]right- APP_XFD85E
+  APP_XFD85E -[hidden]right- APP_e2zPs6
+  APP_e2zPs6 -[hidden]right- DOB_ApaPcg
+  DOB_ApaPcg -[hidden]right- DOB_dRnK_o
+  DOB_dRnK_o -[hidden]right- DOB_p04R7k
+
+}
+
+System_Ext(APP_lmO0mp, "GUI Authoring Tool")
+System_Ext(APP_m_U5S1, "Assurance MCP Endpoint Adapter")
+System_Ext(APP_JqIBPJ, "Supply-Chain Signal Sources")
+System_Ext(APP_uTC8zx, "Assurance Write Queue")
+System_Ext(APP_XWVKAX, "Assurance Read Connection Pool")
+System_Ext(APP_KqDjXG, "Unified Assurance Diagram Surface")
+System_Ext(APP_OZbaBh, "Repository Upgrade Framework")
+System_Ext(DOB_H_xFye, "Assurance Audit Log")
+System_Ext(DOB_IU4RE4, "Security Signal Snapshot")
+System_Ext(DOB_6ruT_G, "Security Posture Metrics")
+
+GRP_rW_2nX -[hidden]right- APP_lmO0mp
+APP_lmO0mp -[hidden]right- APP_m_U5S1
+APP_m_U5S1 -[hidden]right- APP_JqIBPJ
+APP_JqIBPJ -[hidden]right- APP_uTC8zx
+APP_uTC8zx -[hidden]right- APP_XWVKAX
+APP_XWVKAX -[hidden]right- APP_KqDjXG
+APP_KqDjXG -[hidden]right- APP_OZbaBh
+APP_OZbaBh -[hidden]right- DOB_H_xFye
+DOB_H_xFye -[hidden]right- DOB_IU4RE4
+DOB_IU4RE4 -[hidden]right- DOB_6ruT_G
+
+
+APP_m_U5S1 --> DOB_ApaPcg : accesses
+APP_E0fzqZ --> DOB_ApaPcg : accesses
+APP_GnsLC8 --> DOB_H_xFye : accesses
+APP_XFD85E --> DOB_ApaPcg : accesses
+APP_e2zPs6 --> DOB_dRnK_o : accesses
+APP_e2zPs6 --> DOB_p04R7k : accesses
+APP_e2zPs6 --> APP_JqIBPJ : uses
+APP_uTC8zx --> DOB_ApaPcg : accesses
+APP_XWVKAX --> DOB_ApaPcg : accesses
+APP_KqDjXG --> DOB_ApaPcg : accesses
+APP_OZbaBh --> DOB_ApaPcg : accesses
+APP_OZbaBh --> DOB_p04R7k : accesses
+@enduml

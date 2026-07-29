@@ -1,0 +1,28 @@
+name: archimate-strategy
+ontology: archimate_4
+filter:
+  hierarchy_level:
+    index: 0
+    values: [strategy, common]
+includes: []
+grouping:
+  by_field: hierarchy_0
+  stereotype_pattern: "{hierarchy_0|capitalize}Grouping"
+layout:
+  nesting_connection_classes: [nesting]
+  flow_connection_classes: [dynamic]
+  # An event between two members of a process reads as part of the orchestrated
+  # sequence — the renderer may nest it visually inside that process.
+  flow_through_entity_types: [event]
+guidance:
+  when_to_use: >-
+    Use when modeling capability-based planning: what the organization has (resources), what it can
+    do (capabilities), and how it acts (courses of action). Bridges motivation to business execution.
+  when_not_to_use: >-
+    Do not use for detailed operational processes (use archimate-business), software components
+    (use archimate-application), or motivation/requirements (use archimate-motivation).
+
+ui:
+  label: ArchiMate Strategy
+  description: >-
+    Capability-based planning: resources, capabilities, courses of action, and value streams.

@@ -1,0 +1,111 @@
+{
+  "ecosystem": "native",
+  "description": "System / native runtime components bundled in or invoked by the Docker image (Debian trixie apt packages + the PlantUML jar + the base image). Hand-curated from the §10b.2 setup determinations; the license gate does not introspect apt/OCI layers, so this file is the reviewed source of truth for their obligations. purl/source URLs are the corresponding-source pointers for the copyleft components.",
+  "count": 11,
+  "components": [
+    {
+      "name": "PlantUML",
+      "version": "1.2026.3",
+      "license": "GPL-3.0-or-later",
+      "bucket": "review",
+      "exposure": "fetched from Maven Central at build time by `get-plantuml` (unmodified jar, not in this repo); present in a built image; invoked arm's-length (java -jar)",
+      "source_url": "https://github.com/plantuml/plantuml/releases/tag/v1.2026.3",
+      "obligation": "Not conveyed by this project: the jar is not in the repository — the build downloads it from Maven Central, so upstream is the distributor to whoever builds. No GPLv3 §6 obligation arises here. Nor does the GPL reach this project's own code: PlantUML is executed as a separate process (java -jar), so no combined work is formed, and §5's aggregate paragraph independently covers a built image holding the jar beside MIT-licensed code. If YOU publish an image built from this Dockerfile you convey the jar and §6 becomes yours — see 'If you redistribute a built image' below.",
+      "license_text": "licenses/texts/GPL-3.0-or-later.txt"
+    },
+    {
+      "name": "OpenJDK (openjdk-21-jre-headless via default-jre-headless)",
+      "version": "21 (Debian trixie)",
+      "license": "GPL-2.0-only WITH Classpath-exception-2.0",
+      "bucket": "allow",
+      "exposure": "apt-fetched from Debian at build time; present in a built image; runs the PlantUML jar",
+      "source_url": "https://openjdk.org/ + Debian: apt-get source openjdk-21",
+      "obligation": "Not conveyed by this project: `apt-get install` during the build fetches it from Debian, which discharges its own GPLv2 §3 duty by keeping source in the archive, so no §3 obligation arises here. The Classpath Exception is not what permits running programs on the JRE — GPLv2 §0 leaves running unrestricted — it permits linking independent modules against the class libraries; nothing here links, we execute `java` as a separate process. If YOU publish a built image you convey the JRE binary and §3 becomes yours — see 'If you redistribute a built image' below.",
+      "license_text": "licenses/texts/GPL-2.0-only.txt + licenses/texts/Classpath-exception-2.0.txt"
+    },
+    {
+      "name": "Graphviz",
+      "version": "Debian trixie",
+      "license": "EPL-1.0",
+      "bucket": "allow",
+      "exposure": "apt-fetched from Debian at build time; present in a built image; invoked by PlantUML (shells out to dot); unmodified",
+      "source_url": "https://gitlab.com/graphviz/graphviz",
+      "obligation": "Not conveyed by this project (apt-fetched from Debian at build time). EPL-1.0 is weak copyleft scoped per Contribution — not per file, which is MPL's model. Used unmodified and invoked as a separate process, so this project contributes nothing under the EPL and no project source becomes EPL. A redistributor of a built image is the one EPL-1.0 §3(b) addresses (state that source is available and how to get it).",
+      "license_text": "licenses/texts/EPL-1.0.txt"
+    },
+    {
+      "name": "git",
+      "version": "Debian trixie",
+      "license": "GPL-2.0-only",
+      "bucket": "review",
+      "exposure": "apt-fetched from Debian at build time; present in a built image; invoked arm's-length (separate process) for repository sync",
+      "source_url": "https://git-scm.com/ + Debian: apt-get source git",
+      "obligation": "Not conveyed by this project (apt-fetched from Debian at build time), so no GPLv2 §3 obligation arises here. git is only ever executed as a separate process — no linking into project code — so its GPL does not reach this project's own sources. A redistributor of a built image conveys the binary and takes on §3.",
+      "license_text": "licenses/texts/GPL-2.0-only.txt"
+    },
+    {
+      "name": "openssh-client",
+      "version": "Debian trixie",
+      "license": "SSH-OpenSSH (BSD-style, permissive)",
+      "bucket": "allow",
+      "exposure": "invoked (ssh transport for git)",
+      "source_url": "https://www.openssh.com/",
+      "obligation": "Permissive; ship notice."
+    },
+    {
+      "name": "curl",
+      "version": "Debian trixie",
+      "license": "curl (MIT/X-style, permissive)",
+      "bucket": "allow",
+      "exposure": "invoked (container healthcheck)",
+      "source_url": "https://curl.se/docs/copyright.html",
+      "obligation": "Permissive; ship notice."
+    },
+    {
+      "name": "ca-certificates",
+      "version": "Debian trixie",
+      "license": "MPL-2.0 (Mozilla CA bundle) + public-domain certs",
+      "bucket": "allow",
+      "exposure": "apt-fetched from Debian at build time; present in a built image (TLS trust store)",
+      "source_url": "https://salsa.debian.org/debian/ca-certificates",
+      "obligation": "Not conveyed by this project (apt-fetched from Debian at build time). The Mozilla CA bundle is MPL-2.0 (file-level weak copyleft); the remaining certificates are public domain. Unmodified and not linked, so no project file becomes MPL-covered. MPL-2.0 §3.2's source-availability duty falls on whoever conveys the Executable Form — a redistributor of a built image.",
+      "license_text": "licenses/texts/MPL-2.0.txt"
+    },
+    {
+      "name": "fonts-dejavu-core",
+      "version": "Debian trixie",
+      "license": "Bitstream-Vera + DejaVu (permissive, notice-required)",
+      "bucket": "allow",
+      "exposure": "bundled; rendered into diagrams by PlantUML/Graphviz",
+      "source_url": "https://dejavu-fonts.github.io/",
+      "obligation": "Permissive with attribution; ship the font license notice."
+    },
+    {
+      "name": "libfontconfig1",
+      "version": "Debian trixie",
+      "license": "MIT (fontconfig)",
+      "bucket": "allow",
+      "exposure": "bundled runtime library (font matching)",
+      "source_url": "https://gitlab.freedesktop.org/fontconfig/fontconfig",
+      "obligation": "Permissive; ship notice."
+    },
+    {
+      "name": "libharfbuzz0b",
+      "version": "Debian trixie",
+      "license": "MIT (Old MIT / HarfBuzz)",
+      "bucket": "allow",
+      "exposure": "bundled runtime library (text shaping)",
+      "source_url": "https://github.com/harfbuzz/harfbuzz",
+      "obligation": "Permissive; ship notice."
+    },
+    {
+      "name": "python:3.13-slim-trixie (runtime base image)",
+      "version": "3.13-slim-trixie",
+      "license": "PSF-2.0 (Python) + Debian trixie main (DFSG-free)",
+      "bucket": "allow",
+      "exposure": "redistributed as the image base layer",
+      "source_url": "https://hub.docker.com/_/python + https://www.debian.org/distrib/packages",
+      "obligation": "Debian main is DFSG-free (no non-free packages pulled); ship the aggregate notice. Build-only images (node:20-alpine, ghcr.io/astral-sh/uv:python3.13-trixie-slim) are NOT shipped (multi-stage) and are out of redistribution scope."
+    }
+  ]
+}

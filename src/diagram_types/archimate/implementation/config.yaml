@@ -1,0 +1,28 @@
+name: archimate-implementation
+ontology: archimate_4
+filter:
+  hierarchy_level:
+    index: 0
+    values: [implementation]
+includes: []
+grouping:
+  by_field: hierarchy_0
+  stereotype_pattern: "{hierarchy_0|capitalize}Grouping"
+layout:
+  nesting_connection_classes: [nesting]
+  flow_connection_classes: [dynamic]
+  # An event between two members of a process reads as part of the orchestrated
+  # sequence — the renderer may nest it visually inside that process.
+  flow_through_entity_types: [event]
+guidance:
+  when_to_use: >-
+    Use when modeling planned change: work packages, deliverables, implementation events, and
+    plateaus. Suitable for roadmaps, migration planning, and program delivery tracking.
+  when_not_to_use: >-
+    Do not use for steady-state architecture views. Use only when the diagram represents a
+    transition or program, not a target-state architecture.
+
+ui:
+  label: ArchiMate Implementation & Migration
+  description: >-
+    Planned change: work packages, deliverables, implementation events, and plateaus.

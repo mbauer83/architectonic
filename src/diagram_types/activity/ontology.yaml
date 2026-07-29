@@ -1,0 +1,174 @@
+connection_types:
+  step-in-lane:
+    embedding: none
+    cascade_delete_source: false
+
+  step-note-of:
+    embedding: property
+    embed_key: note
+    cascade_delete_source: true
+
+  swimlane-maps-to: {}
+
+  step-flow:
+    embedding: none
+    cascade_delete_source: false
+
+  step-then:
+    embedding: none
+    cascade_delete_source: false
+
+  step-else:
+    embedding: none
+    cascade_delete_source: false
+
+  step-fork-branch:
+    embedding: none
+    cascade_delete_source: false
+
+  step-contains:
+    embedding: none
+    cascade_delete_source: false
+
+entity_types:
+  swimlane:
+    classes: [grouping]
+    min: 2
+    create_when: >-
+      Represents one parallel track in the process. Each lane maps to one actor,
+      role, or system. Optionally link to a model entity for traceability.
+    never_create_when: >-
+      Do not create a swimlane when the process has only one actor, role, or system.
+    permitted_mappings:
+      entity_types: [role, business-actor, application-component]
+      entity_classes: []
+      sources:
+        - ontology: archimate-4-0
+          entity_type: role
+        - ontology: archimate-4-0
+          entity_type: business-actor
+        - ontology: archimate-4-0
+          entity_type: application-component
+    mapping_required: false
+    properties: {}
+
+  action:
+    classes: [control-flow, step]
+    managed_fields:
+      type: "required — auto-set to entity_type"
+      label: "optional"
+    create_when: >-
+      Use for a single task or operation performed by one actor or system in one lane.
+      Provide a meaningful label. Add a step-in-lane connection to the owning swimlane.
+      Optionally add a binding to an ArchiMate behavior element (business-process,
+      application-function, etc.) for model traceability.
+      Connect to the next step via step-flow, or to a decision via step-then / step-else.
+    never_create_when: >-
+      Do not use for branching logic (use decision) or concurrent parallel work (use fork).
+    required_connections:
+      - connection_type: step-in-lane
+        target: swimlane
+        cardinality: [1, 1]
+    properties:
+      link:
+        type: string
+        required: false
+        description: URL attached to the action label as a hyperlink
+
+  decision:
+    classes: [control-flow, step]
+    managed_fields:
+      type: "required — auto-set to entity_type"
+      label: "optional"
+    create_when: >-
+      Use when the flow branches on a condition. Connect one step-then and one step-else
+      to the first steps of each branch. Add a step-in-lane connection to the owning
+      swimlane. After the branches merge, connect the decision via step-flow to the
+      continuation step.
+    never_create_when: >-
+      Do not use for concurrent parallel execution — use fork for that.
+    required_connections:
+      - connection_type: step-in-lane
+        target: swimlane
+        cardinality: [1, 1]
+      - connection_type: step-then
+        target: "@step"
+        cardinality: [1, 1]
+      - connection_type: step-else
+        target: "@step"
+        cardinality: [1, 1]
+    properties:
+      condition:   {type: string, required: true,  description: Condition text shown in the diamond}
+      then_label:  {type: string, required: true,  description: Label on yes/true branch arrow}
+      else_label:  {type: string, required: true,  description: Label on no/false branch arrow}
+
+  fork:
+    classes: [control-flow, step]
+    managed_fields:
+      type: "required — auto-set to entity_type"
+      label: "optional"
+    create_when: >-
+      Use when two or more steps execute concurrently. All branches run simultaneously
+      and are joined before the flow continues. Add a step-in-lane connection to the
+      owning swimlane. Connect each branch's first step via a step-fork-branch connection.
+    never_create_when: >-
+      Do not use for mutually exclusive branches — use decision for that.
+    required_connections:
+      - connection_type: step-in-lane
+        target: swimlane
+        cardinality: [1, 1]
+      - connection_type: step-fork-branch
+        target: "@step"
+        cardinality: [2, null]
+    properties: {}
+
+  partition:
+    classes: [step]
+    managed_fields:
+      type: "required — auto-set to entity_type"
+      label: "optional"
+    create_when: >-
+      Use to group a named set of steps into a visual partition block within the diagram.
+      Connect the first contained step via step-contains. Subsequent contained steps are
+      chained with step-flow within the partition.
+    never_create_when: >-
+      Do not use for actor/system separation — use swimlanes for that.
+    required_connections:
+      - connection_type: step-contains
+        target: "@step"
+        cardinality: [1, null]
+    properties:
+      label:
+        type: string
+        required: false
+        description: Display label for the partition block
+
+  note:
+    classes: [annotation]
+    required_connections:
+      - connection_type: step-note-of
+        target: "@step"
+        cardinality: [1, 1]
+    properties:
+      side: {type: string, enum: [left, right], required: false}
+      text: {type: string, required: true}
+
+permitted_relationships:
+  - [swimlane, business-actor,         [swimlane-maps-to]]
+  - [swimlane, role,                   [swimlane-maps-to]]
+  - [swimlane, application-component,  [swimlane-maps-to]]
+
+allowed_bindings:
+  entity:
+    swimlane:
+      correspondence_kinds: [represents, traces-to]
+      default_correspondence_kind: represents
+      target_forms: [entity-id, diagram-local]
+    action:
+      correspondence_kinds: [represents, refines, traces-to]
+      default_correspondence_kind: represents
+      target_forms: [entity-id, diagram-local]
+    decision:
+      correspondence_kinds: [represents, refines, traces-to]
+      default_correspondence_kind: refines
+      target_forms: [entity-id, diagram-local]

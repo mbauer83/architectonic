@@ -1,0 +1,253 @@
+---
+artifact-id: ARC@1783185029.4Ayzz3.one-enterprise-repository-many-engagements
+artifact-type: diagram
+name: One Enterprise Repository, Many Engagements
+version: 0.1.0
+status: draft
+keywords:
+- repository
+- promotion
+- two-tier
+- enterprise
+- engagement
+diagram-type: archimate-layered
+entity-ids-used:
+- REQ@1712870400.kOU3al.two-tiered-repository
+- REQ@1712870400.Gg4Hh4.promotion-mechanism-to-enterprise-repo
+- OUT@1776629112.edEkJa.proven-patterns-promoted-and-adopted-across-engagements
+- GOL@1776628205.kCcPph.enable-cross-engagement-architectural-reuse
+- GOL@1712870400.Lm2Bn2.enable-concurrent-staged-collaborative-planning
+- BOB@1712870400.6Uok0b.enterprise-repository
+- BOB@1712870400.so7gfN.engagement-repository
+- PRC@1712870400.0Rz5Ex.promote-artifacts
+- SRV@1712870400.Uv9Wx9.repository-promotion-service
+- DOB@1777293141.4dO6js.global-entity-reference-file
+- ACT@1712870400.Nn7Oo7.architect
+- ACT@1712870400.Pp8Qq8.developer
+- ROL@1776633082.udXPfB.ai-agent
+- OUT@1783330223.620dTh.engagements-plan-concurrently-against-a-shared-staged-baseline
+- GOL@1712870400.Lm2Bn2.enable-concurrent-staged-collaborative-planning
+connection-ids-used:
+- ACT@1712870400.Nn7Oo7---BOB@1712870400.so7gfN@@archimate-assignment
+- ACT@1712870400.Pp8Qq8---BOB@1712870400.so7gfN@@archimate-assignment
+- PRC@1712870400.0Rz5Ex---BOB@1712870400.6Uok0b@@archimate-access
+- BOB@1712870400.6Uok0b---BOB@1712870400.so7gfN@@archimate-association
+- DOB@1777293141.4dO6js---BOB@1712870400.6Uok0b@@archimate-association
+- PRC@1712870400.0Rz5Ex---BOB@1712870400.so7gfN@@archimate-access
+- DOB@1777293141.4dO6js---BOB@1712870400.so7gfN@@archimate-association
+- ROL@1776633082.udXPfB---BOB@1712870400.so7gfN@@archimate-association
+- OUT@1776629112.edEkJa---GOL@1776628205.kCcPph@@archimate-realization
+- REQ@1712870400.Gg4Hh4---OUT@1776629112.edEkJa@@archimate-realization
+- REQ@1712870400.kOU3al---OUT@1776629112.edEkJa@@archimate-realization
+- PRC@1712870400.0Rz5Ex---SRV@1712870400.Uv9Wx9@@archimate-realization
+- SRV@1712870400.Uv9Wx9---REQ@1712870400.Gg4Hh4@@archimate-realization
+- PRC@1712870400.0Rz5Ex---DOB@1777293141.4dO6js@@archimate-access
+- REQ@1712870400.kOU3al---OUT@1783330223.620dTh@@archimate-realization
+- OUT@1783330223.620dTh---GOL@1712870400.Lm2Bn2@@archimate-realization
+diagram-entities:
+  occurrence:
+  - id: occ-engagement-repository-team-b
+  - id: occ-architect-team-b
+  - id: occ-developer-team-b
+  - id: occ-ai-agent-team-b
+connections:
+- artifact_id: BOB@1712870400.6Uok0b---BOB@1712870400.so7gfN@@archimate-association
+  include_multiplicity: true
+  include_description: true
+bindings:
+- id: bind-occ-engagement-repository-team-b
+  subject:
+    kind: entity
+    id: occ-engagement-repository-team-b
+  correspondence_kind: represents
+  target:
+    entity_id: BOB@1712870400.so7gfN.engagement-repository
+- id: bind-occ-architect-team-b
+  subject:
+    kind: entity
+    id: occ-architect-team-b
+  correspondence_kind: represents
+  target:
+    entity_id: ACT@1712870400.Nn7Oo7.architect
+- id: bind-occ-developer-team-b
+  subject:
+    kind: entity
+    id: occ-developer-team-b
+  correspondence_kind: represents
+  target:
+    entity_id: ACT@1712870400.Pp8Qq8.developer
+- id: bind-occ-ai-agent-team-b
+  subject:
+    kind: entity
+    id: occ-ai-agent-team-b
+  correspondence_kind: represents
+  target:
+    entity_id: ROL@1776633082.udXPfB.ai-agent
+last-updated: '2026-07-26T00:33:48Z'
+---
+@startuml
+hide stereotype
+
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 12
+skinparam shadowing false
+skinparam roundcorner 4
+skinparam backgroundColor #FAFAFA
+
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 80
+!define Rel_Triggering(from, to, label) from --> to
+!define Rel_Realization(from, to, label) from ..|> to
+!define Rel_Realization_Up(from, to, label) from ..|> to
+!define Rel_Serving(from, to, label) from --> to
+!define Rel_Association(from, to, label) from -- to
+!define Rel_Association_Left(from, to, label) from -- to
+!define Rel_Association_Right(from, to, label) from -- to
+!define Rel_Access(from, to, label) from ..> to
+!define Rel_Influence(from, to, label) from ..> to
+skinparam rectangle<<ApplicationGrouping>> {
+  BackgroundColor #E8F8FF
+  BorderColor #0078A0
+}
+skinparam rectangle<<BusinessGrouping>> {
+  BackgroundColor #FFFDEC
+  BorderColor #B8860B
+}
+skinparam rectangle<<CommonGrouping>> {
+  BackgroundColor #EDE8E1
+  BorderColor #8C7E6A
+}
+skinparam rectangle<<MotivationGrouping>> {
+  BackgroundColor #F7EEF9
+  BorderColor #7B3F9A
+}
+skinparam rectangle<<business_actor>> {
+  BackgroundColor #FFFAC8
+  BorderColor #B8860B
+}
+skinparam rectangle<<business_object>> {
+  BackgroundColor #FFFAC8
+  BorderColor #B8860B
+}
+skinparam rectangle<<data_object>> {
+  BackgroundColor #CCF2FF
+  BorderColor #0078A0
+}
+skinparam rectangle<<goal>> {
+  BackgroundColor #EDD6F0
+  BorderColor #7B3F9A
+}
+skinparam rectangle<<outcome>> {
+  BackgroundColor #EDD6F0
+  BorderColor #7B3F9A
+}
+skinparam rectangle<<process>> {
+  BackgroundColor #E0D8CC
+  BorderColor #8C7E6A
+}
+skinparam rectangle<<requirement>> {
+  BackgroundColor #EDD6F0
+  BorderColor #7B3F9A
+}
+skinparam rectangle<<role>> {
+  BackgroundColor #E0D8CC
+  BorderColor #8C7E6A
+}
+skinparam rectangle<<service>> {
+  BackgroundColor #E0D8CC
+  BorderColor #8C7E6A
+}
+sprite $archimate_business_actor <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="4" r="1.9"  fill="none" stroke="#252327" stroke-width="1.3"/><path d="M7.35 5.90v4.10h1.30V5.90z" fill="#252327"/><path d="M5.68 13.54L4.72 12.66L7.52 9.56L8.48 10.44z" fill="#252327"/><path d="M7.52 10.44L8.48 9.56L11.28 12.66L10.32 13.54z" fill="#252327"/><path d="M5.00 7.45h6.00v1.30H5.00z" fill="#252327"/></svg>
+sprite $archimate_business_object <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.90 4.20h10.20v1.30H2.90z" fill="#252327"/><path d="M2.90 10.50h10.20v1.30H2.90z" fill="#252327"/><path d="M2.90 5.50v5.00h1.30V5.50z" fill="#252327"/><path d="M11.80 5.50v5.00h1.30V5.50z" fill="#252327"/><path d="M2.90 5.65h10.20v1.30H2.90z" fill="#252327"/></svg>
+sprite $archimate_data_object <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3.00 3.80h10.00v1.30H3.00z" fill="#252327"/><path d="M3.00 10.90h10.00v1.30H3.00z" fill="#252327"/><path d="M3.00 5.10v5.80h1.30V5.10z" fill="#252327"/><path d="M11.70 5.10v5.80h1.30V5.10z" fill="#252327"/><path d="M3.00 4.95h10.00v1.30H3.00z" fill="#252327"/></svg>
+sprite $archimate_goal <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="4.8"  fill="none" stroke="#252327" stroke-width="1.3"/><circle cx="8" cy="8" r="2.9"  fill="none" stroke="#252327" stroke-width="1.3"/><circle cx="8" cy="8" r="1.3" fill="#252327" stroke="none"  stroke-width="1.3"/></svg>
+sprite $archimate_outcome <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="7.4" cy="8.6" r="4.3"  fill="none" stroke="#252327" stroke-width="1.3"/><circle cx="7.4" cy="8.6" r="2.2"  fill="none" stroke="#252327" stroke-width="1.3"/><path d="M10.18 6.93L9.42 5.87L12.52 3.67L13.28 4.73z" fill="#252327"/><path d="M10.20 7.25h2.50v1.30H10.20z" fill="#252327"/><circle cx="7.4" cy="8.6" r=".9" fill="#252327" stroke="none"  stroke-width="1.3"/></svg>
+sprite $archimate_process <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.6 4.1h6.3V2.8l4.5 5.2-4.5 5.2v-1.3H2.6z"  fill="#252327" stroke="none"/></svg>
+sprite $archimate_requirement <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M4.4 4.2h8L10.8 11.8h-8z"  fill="#252327" stroke="none"/></svg>
+sprite $archimate_role <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3 3.5h7.8a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H3z"  fill="#252327" stroke="none"/></svg>
+sprite $archimate_service <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3.2 4.1h7.2a2.8 2.8 0 0 1 0 7.8H3.2a2.8 2.8 0 0 1 0-7.8z"  fill="#252327" stroke="none"/></svg>
+top to bottom direction
+
+title One Enterprise Repository, Many Engagements
+
+rectangle "Motivation" <<MotivationGrouping>> {
+  rectangle "<$archimate_requirement{scale=1.2}> Two-Tiered Repository" <<requirement>> as REQ_kOU3al
+  rectangle "<$archimate_requirement{scale=1.2}> Promotion Mechanism" <<requirement>> as REQ_Gg4Hh4
+  rectangle "<$archimate_outcome{scale=1.2}> Proven Patterns Promoted and Adopted Across Engagements" <<outcome>> as OUT_edEkJa
+  rectangle "<$archimate_outcome{scale=1.2}> Engagements Plan Concurrently Against a Shared, Staged Baseline" <<outcome>> as OUT_620dTh
+  rectangle "<$archimate_goal{scale=1.2}> Enable Cross-Engagement Architectural Reuse" <<goal>> as GOL_kCcPph
+  rectangle "<$archimate_goal{scale=1.2}> Plan Collaboratively in a Unified, Staged Repository System" <<goal>> as GOL_Lm2Bn2
+}
+
+rectangle "Common" <<CommonGrouping>> {
+  rectangle "<$archimate_process{scale=1.2}> Promote Artifacts" <<process>> as PRC_0Rz5Ex
+  rectangle "<$archimate_service{scale=1.2}> Repository Promotion Service" <<service>> as SRV_Uv9Wx9
+}
+
+rectangle "Business" <<BusinessGrouping>> {
+  rectangle "<$archimate_business_object{scale=1.2}> Enterprise Repository" <<business_object>> as BOB_6Uok0b
+}
+
+rectangle "Team / Project A" <<BusinessGrouping>> {
+  rectangle "<$archimate_business_object{scale=1.2}> Engagement Repository" <<business_object>> as BOB_so7gfN
+  rectangle "<$archimate_business_actor{scale=1.2}> Architect" <<business_actor>> as ACT_Nn7Oo7
+  rectangle "<$archimate_business_actor{scale=1.2}> Developer" <<business_actor>> as ACT_Pp8Qq8
+  rectangle "<$archimate_role{scale=1.2}> AI Agent" <<role>> as ROL_udXPfB
+}
+
+rectangle "Team / Project B" <<BusinessGrouping>> {
+  rectangle "<$archimate_business_object{scale=1.2}> Engagement Repository" <<business_object>> as BOB_so7gfN__2
+  rectangle "<$archimate_business_actor{scale=1.2}> Architect" <<business_actor>> as ACT_Nn7Oo7__2
+  rectangle "<$archimate_business_actor{scale=1.2}> Developer" <<business_actor>> as ACT_Pp8Qq8__2
+  rectangle "<$archimate_role{scale=1.2}> AI Agent" <<role>> as ROL_udXPfB__2
+}
+
+rectangle "Application" <<ApplicationGrouping>> {
+  rectangle "<$archimate_data_object{scale=1.2}> Global Entity Reference File" <<data_object>> as DOB_4dO6js
+}
+
+' --- Auto-layout: spread and position groupings ---
+REQ_kOU3al -[hidden]right- REQ_Gg4Hh4
+REQ_Gg4Hh4 -[hidden]right- OUT_edEkJa
+OUT_edEkJa -[hidden]right- OUT_620dTh
+OUT_620dTh -[hidden]right- GOL_kCcPph
+GOL_kCcPph -[hidden]right- GOL_Lm2Bn2
+PRC_0Rz5Ex -[hidden]right- SRV_Uv9Wx9
+BOB_so7gfN -[hidden]right- ACT_Nn7Oo7
+ACT_Nn7Oo7 -[hidden]right- ACT_Pp8Qq8
+ACT_Pp8Qq8 -[hidden]right- ROL_udXPfB
+BOB_so7gfN__2 -[hidden]right- ACT_Nn7Oo7__2
+ACT_Nn7Oo7__2 -[hidden]right- ACT_Pp8Qq8__2
+ACT_Pp8Qq8__2 -[hidden]right- ROL_udXPfB__2
+BOB_6Uok0b -[hidden]down- BOB_so7gfN
+BOB_so7gfN -[hidden]right- BOB_so7gfN__2
+
+' Connections
+ACT_Nn7Oo7 --> BOB_so7gfN
+ACT_Pp8Qq8 --> BOB_so7gfN
+PRC_0Rz5Ex -down-> BOB_6Uok0b
+BOB_6Uok0b -- BOB_so7gfN : 1 -> 1..* | An enterprise repository serves and receives promotions from one or more engagement repositories.
+DOB_4dO6js -up- BOB_6Uok0b
+PRC_0Rz5Ex -down-> BOB_so7gfN
+DOB_4dO6js -up- BOB_so7gfN
+ROL_udXPfB -down- BOB_so7gfN
+OUT_edEkJa ..|> GOL_kCcPph
+REQ_Gg4Hh4 ..|> OUT_edEkJa
+REQ_kOU3al ..|> OUT_edEkJa
+PRC_0Rz5Ex ..|> SRV_Uv9Wx9
+SRV_Uv9Wx9 .up.|> REQ_Gg4Hh4
+
+' Team / Project B — same model entities as Team A, drawn at their occurrences
+ACT_Nn7Oo7__2 --> BOB_so7gfN__2
+ACT_Pp8Qq8__2 --> BOB_so7gfN__2
+ROL_udXPfB__2 -down- BOB_so7gfN__2
+BOB_6Uok0b -- BOB_so7gfN__2
+DOB_4dO6js -up- BOB_so7gfN__2
+' Promotion produces the per-engagement global entity reference files
+Rel_Access(PRC_0Rz5Ex, DOB_4dO6js, "")
+' Two-tier structure realizes concurrent planning, which realizes the collaborative-planning goal
+Rel_Realization(REQ_kOU3al, OUT_620dTh, "")
+Rel_Realization(OUT_620dTh, GOL_Lm2Bn2, "")
+
+@enduml

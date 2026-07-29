@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "attributes.control-structure-node.schema.json",
+  "title": "Control Structure Node Attribute Schema",
+  "description": "Attribute schema for Properties table in Control Structure Node entities.",
+  "type": "object",
+  "required": [],
+  "properties": {
+    "node_role": {
+      "type": "string",
+      "enum": [
+        "controller",
+        "controlled-process",
+        "actuator",
+        "sensor"
+      ]
+    },
+    "binding_status": {
+      "type": "string",
+      "enum": [
+        "bound",
+        "unbound-pending",
+        "out-of-scope"
+      ],
+      "default": "unbound-pending"
+    },
+    "granularity_note": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

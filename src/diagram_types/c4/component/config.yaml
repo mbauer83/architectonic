@@ -1,0 +1,42 @@
+name: c4-component
+
+guidance:
+  when_to_use: >-
+    Show the major components inside one container and how nearby people, systems, or containers
+    interact with them. Use this for the C4 level-3 zoom into one container.
+    Authoring steps: (1) create an application-component, service, or data-object entity for the
+    container in scope; (2) create application-component, function, or service entities for each
+    component inside it; (3) create model entities for persons, external systems, and peer containers
+    as needed; (4) call artifact_authoring_guidance(diagram_type="c4-component") for the schema;
+    (5) create the diagram — set _scope_entity_id to the scope container's entity_id, add components
+    in the component array each with their entity_id, reference other elements similarly.
+  when_not_to_use: >-
+    Do not use when container-level structure is enough, when the audience needs implementation-level
+    code structure, when you need full ArchiMate cross-layer semantics, or when you need a process
+    flow such as a UML activity diagram.
+
+ui:
+  label: C4 Component
+  description: C4 level 3. Shows one container boundary and its internal components.
+  entity_search_filter: false
+  type_ui_slots:
+    c4_editor: c4-editor-component
+  diagram_only_types:
+    - entity_type: person
+      label: Person
+      plural: People
+    - entity_type: software-system
+      label: Software System
+      plural: Software Systems
+    - entity_type: container
+      label: Container
+      plural: Containers
+    - entity_type: component
+      label: Component
+      plural: Components
+
+c4:
+  scope_entity_type: container
+  scope_render_mode: boundary
+  internal_entity_types:
+    - component

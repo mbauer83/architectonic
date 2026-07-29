@@ -1,0 +1,150 @@
+---
+artifact-id: ARC@1780656726.axtzLq.assurance-methods-roles
+artifact-type: diagram
+name: Assurance Methods & Roles
+version: 0.1.0
+status: draft
+keywords:
+- assurance
+- methods
+- roles
+- processes
+- analysis
+diagram-type: archimate-layered
+manual-layout: true
+entity-ids-used:
+- BOB@1780656241.B33tSQ.assurance-analysis
+- BOB@1780656241.GCbVtL.grc-assessment
+- BOB@1780656241.H-uAJl.cast-investigation
+- BOB@1780656241.U1Yo1s.stpa-analysis
+- BOB@1780656241.f_Hz7r.assurance-case
+- PRC@1780656241.7YyhMi.manage-risk-compliance
+- PRC@1780656241.TfWiGw.conduct-hazard-analysis
+- PRC@1780656241.bWETd2.build-assurance-case
+- PRC@1780656241.lXql_n.investigate-incident
+- ROL@1780656241.abNYhO.risk-compliance-officer
+- ROL@1780656241.yswDMB.safety-security-analyst
+- SRV@1780656241.ooK3YN.assurance-service
+connection-ids-used:
+- BOB@1780656241.GCbVtL---BOB@1780656241.B33tSQ@@archimate-specialization
+- BOB@1780656241.H-uAJl---BOB@1780656241.B33tSQ@@archimate-specialization
+- BOB@1780656241.U1Yo1s---BOB@1780656241.B33tSQ@@archimate-specialization
+- BOB@1780656241.f_Hz7r---BOB@1780656241.B33tSQ@@archimate-specialization
+- PRC@1780656241.7YyhMi---BOB@1780656241.GCbVtL@@archimate-access
+- PRC@1780656241.lXql_n---BOB@1780656241.H-uAJl@@archimate-access
+- PRC@1780656241.TfWiGw---BOB@1780656241.U1Yo1s@@archimate-access
+- PRC@1780656241.bWETd2---BOB@1780656241.f_Hz7r@@archimate-access
+- ROL@1780656241.abNYhO---PRC@1780656241.7YyhMi@@archimate-assignment
+- PRC@1780656241.7YyhMi---SRV@1780656241.ooK3YN@@archimate-realization
+- ROL@1780656241.yswDMB---PRC@1780656241.TfWiGw@@archimate-assignment
+- PRC@1780656241.TfWiGw---SRV@1780656241.ooK3YN@@archimate-realization
+- ROL@1780656241.yswDMB---PRC@1780656241.bWETd2@@archimate-assignment
+- PRC@1780656241.bWETd2---SRV@1780656241.ooK3YN@@archimate-realization
+- ROL@1780656241.yswDMB---PRC@1780656241.lXql_n@@archimate-assignment
+- PRC@1780656241.lXql_n---SRV@1780656241.ooK3YN@@archimate-realization
+last-updated: '2026-07-29T13:29:19Z'
+---
+@startuml assurance-methods---roles
+
+top to bottom direction
+hide stereotype
+
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 12
+skinparam shadowing false
+skinparam roundcorner 4
+skinparam backgroundColor #FAFAFA
+
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 80
+!define Rel_Triggering(from, to, label) from --> to
+!define Rel_Realization(from, to, label) from ..|> to
+!define Rel_Realization_Up(from, to, label) from ..|> to
+!define Rel_Serving(from, to, label) from --> to
+!define Rel_Association(from, to, label) from -- to
+!define Rel_Association_Left(from, to, label) from -- to
+!define Rel_Association_Right(from, to, label) from -- to
+!define Rel_Access(from, to, label) from ..> to
+!define Rel_Influence(from, to, label) from ..> to
+skinparam rectangle<<BusinessGrouping>> {
+  BackgroundColor #FFFDEC
+  BorderColor #B8860B
+}
+skinparam rectangle<<CommonGrouping>> {
+  BackgroundColor #EDE8E1
+  BorderColor #8C7E6A
+}
+skinparam rectangle<<business_object>> {
+  BackgroundColor #FFFAC8
+  BorderColor #B8860B
+}
+skinparam rectangle<<process>> {
+  BackgroundColor #E0D8CC
+  BorderColor #8C7E6A
+}
+skinparam rectangle<<role>> {
+  BackgroundColor #E0D8CC
+  BorderColor #8C7E6A
+}
+skinparam rectangle<<service>> {
+  BackgroundColor #E0D8CC
+  BorderColor #8C7E6A
+}
+sprite $archimate_business_object <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.90 4.20h10.20v1.30H2.90z" fill="#252327"/><path d="M2.90 10.50h10.20v1.30H2.90z" fill="#252327"/><path d="M2.90 5.50v5.00h1.30V5.50z" fill="#252327"/><path d="M11.80 5.50v5.00h1.30V5.50z" fill="#252327"/><path d="M2.90 5.65h10.20v1.30H2.90z" fill="#252327"/></svg>
+sprite $archimate_process <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.6 4.1h6.3V2.8l4.5 5.2-4.5 5.2v-1.3H2.6z"  fill="#252327" stroke="none"/></svg>
+sprite $archimate_role <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3 3.5h7.8a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H3z"  fill="#252327" stroke="none"/></svg>
+sprite $archimate_service <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3.2 4.1h7.2a2.8 2.8 0 0 1 0 7.8H3.2a2.8 2.8 0 0 1 0-7.8z"  fill="#252327" stroke="none"/></svg>
+
+title Assurance Methods & Roles
+
+rectangle "Common" <<CommonGrouping>> {
+  rectangle "<$archimate_process{scale=1.2}> Manage Risk & Compliance\n«Business Process»" <<process>> as PRC_7YyhMi
+  rectangle "<$archimate_process{scale=1.2}> Conduct Hazard Analysis\n«Business Process»" <<process>> as PRC_TfWiGw
+  rectangle "<$archimate_process{scale=1.2}> Build Assurance Case\n«Business Process»" <<process>> as PRC_bWETd2
+  rectangle "<$archimate_process{scale=1.2}> Investigate Incident\n«Business Process»" <<process>> as PRC_lXql_n
+  rectangle "<$archimate_role{scale=1.2}> Risk & Compliance Officer\n«Business Role»" <<role>> as ROL_abNYhO
+  rectangle "<$archimate_role{scale=1.2}> Safety / Security Analyst\n«Business Role»" <<role>> as ROL_yswDMB
+  rectangle "<$archimate_service{scale=1.2}> Assurance Service\n«Business Service»" <<service>> as SRV_ooK3YN
+}
+
+rectangle "Business" <<BusinessGrouping>> {
+  rectangle "<$archimate_business_object{scale=1.2}> Assurance Analysis" <<business_object>> as BOB_B33tSQ
+  rectangle "<$archimate_business_object{scale=1.2}> GRC Assessment" <<business_object>> as BOB_GCbVtL
+  rectangle "<$archimate_business_object{scale=1.2}> CAST Investigation" <<business_object>> as BOB_H_uAJl
+  rectangle "<$archimate_business_object{scale=1.2}> STPA Analysis" <<business_object>> as BOB_U1Yo1s
+  rectangle "<$archimate_business_object{scale=1.2}> Assurance Case" <<business_object>> as BOB_f_Hz7r
+}
+
+' --- Auto-layout: spread elements within groupings ---
+ROL_abNYhO -[hidden]right- PRC_7YyhMi
+PRC_7YyhMi -[hidden]right- ROL_yswDMB
+ROL_yswDMB -[hidden]right- PRC_TfWiGw
+PRC_TfWiGw -[hidden]right- PRC_bWETd2
+PRC_bWETd2 -[hidden]right- PRC_lXql_n
+PRC_lXql_n -[hidden]right- SRV_ooK3YN
+BOB_GCbVtL -[hidden]right- BOB_H_uAJl
+BOB_H_uAJl -[hidden]right- BOB_U1Yo1s
+BOB_U1Yo1s -[hidden]right- BOB_f_Hz7r
+BOB_f_Hz7r -[hidden]right- BOB_B33tSQ
+
+
+' Connections
+BOB_GCbVtL --|> BOB_B33tSQ
+BOB_H_uAJl --|> BOB_B33tSQ
+BOB_U1Yo1s --|> BOB_B33tSQ
+BOB_f_Hz7r --|> BOB_B33tSQ
+PRC_7YyhMi -down-> BOB_GCbVtL
+PRC_lXql_n -down-> BOB_H_uAJl
+PRC_TfWiGw -down-> BOB_U1Yo1s
+PRC_bWETd2 -down-> BOB_f_Hz7r
+ROL_abNYhO --> PRC_7YyhMi
+PRC_7YyhMi ..|> SRV_ooK3YN
+ROL_yswDMB --> PRC_TfWiGw
+PRC_TfWiGw ..|> SRV_ooK3YN
+ROL_yswDMB --> PRC_bWETd2
+PRC_bWETd2 ..|> SRV_ooK3YN
+ROL_yswDMB --> PRC_lXql_n
+PRC_lXql_n ..|> SRV_ooK3YN
+
+@enduml

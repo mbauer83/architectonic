@@ -1,0 +1,180 @@
+---
+artifact-id: ARC@1784483996.YRywG6.value-stream-deliver-an-architecture-aligned-change
+artifact-type: diagram
+name: 'Value Stream: Deliver an Architecture-Aligned Change'
+version: 0.1.0
+status: active
+diagram-type: archimate-layered
+viewpoint:
+  slug: value-stream
+  version: 2
+entity-ids-used:
+- CAP@1784482442.0kQIHh.architecture-analysis-visualization
+- CAP@1784482422.FMvdNM.tiered-knowledge-governance
+- CAP@1784482412.db4AQh.agent-native-architecture-collaboration
+- CAP@1784482403.pLMHKe.architecture-knowledge-management
+- STK@1712870400.K9xTq2.developer
+- STK@1712870400.aB3dE1.architect
+- VAL@1784845185.2xkN4J.enterprise-efficiency-solution-fitness
+- VAL@1784845186.56mLXu.local-efficiency
+- VAL@1784482961.LK3Cht.architectural-clarity-at-agentic-velocity
+- VAL@1784845185.-RyIvn.team-solution-fitness
+- VAL@1784845184.pIkrDX.unity-of-effort
+- VS@1784483016.C4pV9I.implement-with-architectural-guidance
+- VS@1784482984.VZ-P2h.deliver-an-architecture-aligned-change
+- VS@1784483005._fm4gq.scope-plan-an-architecture-change
+- VS@1784483026.nf-e3Y.feed-implementation-learnings-back-into-the-architecture-model
+- VS@1784483014.xrSjjJ.model-validate-the-architectural-design
+- VS@1784483024.z1Yg0V.confirm-architecture-alignment
+connection-ids-used:
+- CAP@1784482403.pLMHKe---VS@1784483005._fm4gq@@archimate-serving
+- CAP@1784482403.pLMHKe---VS@1784483014.xrSjjJ@@archimate-serving
+- CAP@1784482403.pLMHKe---VS@1784483026.nf-e3Y@@archimate-serving
+- CAP@1784482412.db4AQh---VS@1784482984.VZ-P2h@@archimate-serving
+- CAP@1784482412.db4AQh---VS@1784483005._fm4gq@@archimate-serving
+- CAP@1784482412.db4AQh---VS@1784483014.xrSjjJ@@archimate-serving
+- CAP@1784482412.db4AQh---VS@1784483016.C4pV9I@@archimate-serving
+- CAP@1784482422.FMvdNM---VS@1784483026.nf-e3Y@@archimate-serving
+- CAP@1784482442.0kQIHh---VS@1784482984.VZ-P2h@@archimate-serving
+- CAP@1784482442.0kQIHh---VS@1784483024.z1Yg0V@@archimate-serving
+- STK@1712870400.K9xTq2---VS@1784482984.VZ-P2h@@archimate-association
+- VAL@1784482961.LK3Cht---STK@1712870400.K9xTq2@@archimate-association
+- STK@1712870400.aB3dE1---VS@1784482984.VZ-P2h@@archimate-association
+- VAL@1784482961.LK3Cht---STK@1712870400.aB3dE1@@archimate-association
+- VS@1784482984.VZ-P2h---VAL@1784482961.LK3Cht@@archimate-association
+- VS@1784483005._fm4gq---VS@1784483014.xrSjjJ@@archimate-flow
+- VS@1784483014.xrSjjJ---VS@1784483016.C4pV9I@@archimate-flow
+- VS@1784483016.C4pV9I---VS@1784483024.z1Yg0V@@archimate-flow
+- VS@1784483024.z1Yg0V---VS@1784483026.nf-e3Y@@archimate-flow
+- VS@1784482984.VZ-P2h---VS@1784483016.C4pV9I@@archimate-composition
+- VS@1784482984.VZ-P2h---VS@1784483005._fm4gq@@archimate-composition
+- VS@1784482984.VZ-P2h---VS@1784483026.nf-e3Y@@archimate-composition
+- VS@1784482984.VZ-P2h---VS@1784483014.xrSjjJ@@archimate-composition
+- VS@1784482984.VZ-P2h---VS@1784483024.z1Yg0V@@archimate-composition
+- CAP@1784482403.pLMHKe---VS@1784482984.VZ-P2h@@archimate-serving
+- CAP@1784482422.FMvdNM---VS@1784482984.VZ-P2h@@archimate-serving
+last-updated: '2026-07-29T14:08:36Z'
+---
+@startuml value-stream--deliver-an-architecture-aligned-change
+hide stereotype
+
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 12
+skinparam shadowing false
+skinparam roundcorner 4
+skinparam backgroundColor #FAFAFA
+
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 80
+!define Rel_Triggering(from, to, label) from --> to
+!define Rel_Realization(from, to, label) from ..|> to
+!define Rel_Realization_Up(from, to, label) from ..|> to
+!define Rel_Serving(from, to, label) from --> to
+!define Rel_Association(from, to, label) from -- to
+!define Rel_Association_Left(from, to, label) from -- to
+!define Rel_Association_Right(from, to, label) from -- to
+!define Rel_Access(from, to, label) from ..> to
+!define Rel_Influence(from, to, label) from ..> to
+skinparam rectangle<<MotivationGrouping>> {
+  BackgroundColor #F7EEF9
+  BorderColor #7B3F9A
+}
+skinparam rectangle<<StrategyGrouping>> {
+  BackgroundColor #FAF0D9
+  BorderColor #8B6914
+}
+skinparam rectangle<<capability>> {
+  BackgroundColor #F5DEB3
+  BorderColor #8B6914
+}
+skinparam rectangle<<stakeholder>> {
+  BackgroundColor #EDD6F0
+  BorderColor #7B3F9A
+}
+skinparam rectangle<<value>> {
+  BackgroundColor #EDD6F0
+  BorderColor #7B3F9A
+}
+skinparam rectangle<<value_stream>> {
+  BackgroundColor #F5DEB3
+  BorderColor #8B6914
+}
+sprite $archimate_capability <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3.10 11.25h9.80v1.30H3.10z" fill="#252327"/><path d="M4.00 8.80h1.90v3.10H4.00z" fill="#252327"/><path d="M6.80 6.80h1.90v5.10H6.80z" fill="#252327"/><path d="M9.60 4.70h1.90v7.20H9.60z" fill="#252327"/></svg>
+sprite $archimate_stakeholder <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3.1 4.1h7.3L13 8l-2.6 3.9H3.1L5.6 8z"  fill="#252327" stroke="none"/></svg>
+sprite $archimate_value <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><ellipse cx="8" cy="8" rx="6.5" ry="4"  fill="none" stroke="#252327" stroke-width="1.3"/></svg>
+sprite $archimate_value_stream <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.5 5h7l2.5 3-2.5 3h-7l2-3z"  fill="#252327" stroke="none"/></svg>
+
+title Value Stream: Deliver an Architecture-Aligned Change
+
+rectangle "Motivation" <<MotivationGrouping>> as DOM_motivation {
+  rectangle "<$archimate_value{scale=1.2}> Architectural Clarity at Agentic Velocity" <<value>> as VAL_LK3Cht
+
+  rectangle "Stakeholders" <<MotivationGrouping>> as GRPT_motivation_1 {
+    rectangle "<$archimate_stakeholder{scale=1.2}> Developer" <<stakeholder>> as STK_K9xTq2
+    rectangle "<$archimate_stakeholder{scale=1.2}> Architect" <<stakeholder>> as STK_aB3dE1
+  }
+  STK_K9xTq2 -[hidden]right- STK_aB3dE1
+
+  rectangle "Values" <<MotivationGrouping>> as GRPT_motivation_2 {
+    rectangle "<$archimate_value{scale=1.2}> Enterprise Efficiency & Solution Fitness" <<value>> as VAL_2xkN4J
+    rectangle "<$archimate_value{scale=1.2}> Local Efficiency" <<value>> as VAL_56mLXu
+    rectangle "<$archimate_value{scale=1.2}> Team Solution Fitness" <<value>> as VAL__RyIvn
+    rectangle "<$archimate_value{scale=1.2}> Unity of Effort" <<value>> as VAL_pIkrDX
+  }
+  VAL_2xkN4J -[hidden]down- VAL_56mLXu
+  VAL_56mLXu -[hidden]down- VAL__RyIvn
+  VAL__RyIvn -[hidden]down- VAL_pIkrDX
+  GRPT_motivation_1 -[hidden]down- GRPT_motivation_2
+
+}
+
+rectangle "Strategy" <<StrategyGrouping>> as DOM_strategy {
+  rectangle "Capabilities" <<StrategyGrouping>> as GRPT_strategy_1 {
+    rectangle "<$archimate_capability{scale=1.2}> Architecture Analysis & Visualization" <<capability>> as CAP_0kQIHh
+    rectangle "<$archimate_capability{scale=1.2}> Tiered Knowledge Governance" <<capability>> as CAP_FMvdNM
+    rectangle "<$archimate_capability{scale=1.2}> Agent-Native Architecture Collaboration" <<capability>> as CAP_db4AQh
+    rectangle "<$archimate_capability{scale=1.2}> Architecture Knowledge Management" <<capability>> as CAP_pLMHKe
+  }
+  CAP_0kQIHh -[hidden]right- CAP_FMvdNM
+  CAP_FMvdNM -[hidden]right- CAP_db4AQh
+  CAP_db4AQh -[hidden]right- CAP_pLMHKe
+
+  rectangle "<$archimate_value_stream{scale=1.2}> Deliver an Architecture-Aligned Change" <<value_stream>> as VS_VZ_P2h {
+    rectangle "<$archimate_value_stream{scale=1.2}> Implement with Architectural Guidance" <<value_stream>> as VS_C4pV9I
+    rectangle "<$archimate_value_stream{scale=1.2}> Scope & Plan an Architecture Change" <<value_stream>> as VS__fm4gq
+    rectangle "<$archimate_value_stream{scale=1.2}> Feed Implementation Learnings Back into the Architecture Model" <<value_stream>> as VS_nf_e3Y
+    rectangle "<$archimate_value_stream{scale=1.2}> Model & Validate the Architectural Design" <<value_stream>> as VS_xrSjjJ
+    rectangle "<$archimate_value_stream{scale=1.2}> Confirm Architecture Alignment" <<value_stream>> as VS_z1Yg0V
+    VS__fm4gq -[hidden]down- VS_xrSjjJ
+    VS_xrSjjJ -[hidden]down- VS_C4pV9I
+    VS_C4pV9I -[hidden]down- VS_z1Yg0V
+    VS_z1Yg0V -[hidden]down- VS_nf_e3Y
+  }
+
+}
+
+' Connections
+CAP_pLMHKe --> VS__fm4gq
+CAP_pLMHKe --> VS_xrSjjJ
+CAP_pLMHKe --> VS_nf_e3Y
+CAP_db4AQh --> VS_VZ_P2h
+CAP_db4AQh --> VS__fm4gq
+CAP_db4AQh --> VS_xrSjjJ
+CAP_db4AQh --> VS_C4pV9I
+CAP_FMvdNM --> VS_nf_e3Y
+CAP_0kQIHh --> VS_VZ_P2h
+CAP_0kQIHh --> VS_z1Yg0V
+STK_K9xTq2 -down- VS_VZ_P2h
+VAL_LK3Cht -- STK_K9xTq2
+STK_aB3dE1 -down- VS_VZ_P2h
+VAL_LK3Cht -- STK_aB3dE1
+VS_VZ_P2h -up- VAL_LK3Cht
+VS__fm4gq ..> VS_xrSjjJ
+VS_xrSjjJ ..> VS_C4pV9I
+VS_C4pV9I ..> VS_z1Yg0V
+VS_z1Yg0V ..> VS_nf_e3Y
+CAP_pLMHKe --> VS_VZ_P2h
+CAP_FMvdNM --> VS_VZ_P2h
+
+@enduml

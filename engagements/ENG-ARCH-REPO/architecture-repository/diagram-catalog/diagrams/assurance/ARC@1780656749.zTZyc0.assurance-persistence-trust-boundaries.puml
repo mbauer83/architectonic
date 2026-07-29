@@ -1,0 +1,134 @@
+---
+artifact-id: ARC@1780656749.zTZyc0.assurance-persistence-trust-boundaries
+artifact-type: diagram
+name: Assurance Persistence & Trust Boundaries
+version: 0.1.0
+status: draft
+keywords:
+- assurance
+- persistence
+- storage
+- trust
+- encryption
+- SQLCipher
+diagram-type: archimate-layered
+manual-layout: true
+entity-ids-used:
+- APP@1780656431.E0fzqZ.confidential-assurance-store
+- APP@1780656431.GnsLC8.assurance-archive
+- APP@1780656431.e2zPs6.supply-chain-vulnerability-connector
+- ART@1780656477.X7EfZb.security-signals-database
+- ART@1780656477.tkNvK_.encrypted-assurance-database
+- DOB@1780656431.ApaPcg.assurance-knowledge-base
+- DOB@1780656431.H-xFye.assurance-audit-log
+- DOB@1780656431.p04R7k.security-signals-store
+- SSW@1780656477.OCX11y.os-keychain
+- SSW@1780656477.kIOyT2.pocketbase
+- SSW@1780656477.nhzGvk.sqlcipher
+connection-ids-used:
+- SSW@1780656477.OCX11y---APP@1780656431.E0fzqZ@@archimate-serving
+- SSW@1780656477.kIOyT2---APP@1780656431.E0fzqZ@@archimate-serving
+- SSW@1780656477.nhzGvk---APP@1780656431.E0fzqZ@@archimate-serving
+- APP@1780656431.E0fzqZ---DOB@1780656431.ApaPcg@@archimate-access
+- APP@1780656431.GnsLC8---DOB@1780656431.H-xFye@@archimate-access
+- APP@1780656431.e2zPs6---DOB@1780656431.p04R7k@@archimate-access
+- ART@1780656477.X7EfZb---DOB@1780656431.p04R7k@@archimate-realization
+- ART@1780656477.tkNvK_---DOB@1780656431.ApaPcg@@archimate-realization
+- ART@1780656477.tkNvK_---DOB@1780656431.H-xFye@@archimate-realization
+last-updated: '2026-07-29T13:29:24Z'
+---
+@startuml assurance-persistence---trust-boundaries
+
+top to bottom direction
+hide stereotype
+
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 12
+skinparam shadowing false
+skinparam roundcorner 4
+skinparam backgroundColor #FAFAFA
+
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 80
+!define Rel_Triggering(from, to, label) from --> to
+!define Rel_Realization(from, to, label) from ..|> to
+!define Rel_Realization_Up(from, to, label) from ..|> to
+!define Rel_Serving(from, to, label) from --> to
+!define Rel_Association(from, to, label) from -- to
+!define Rel_Association_Left(from, to, label) from -- to
+!define Rel_Association_Right(from, to, label) from -- to
+!define Rel_Access(from, to, label) from ..> to
+!define Rel_Influence(from, to, label) from ..> to
+skinparam rectangle<<ApplicationGrouping>> {
+  BackgroundColor #E8F8FF
+  BorderColor #0078A0
+}
+skinparam rectangle<<TechnologyGrouping>> {
+  BackgroundColor #E8FFEE
+  BorderColor #2E7D32
+}
+skinparam rectangle<<application_component>> {
+  BackgroundColor #CCF2FF
+  BorderColor #0078A0
+}
+skinparam rectangle<<artifact>> {
+  BackgroundColor #CCFFCC
+  BorderColor #2E7D32
+}
+skinparam rectangle<<data_object>> {
+  BackgroundColor #CCF2FF
+  BorderColor #0078A0
+}
+skinparam rectangle<<system_software>> {
+  BackgroundColor #CCFFCC
+  BorderColor #2E7D32
+}
+sprite $archimate_application_component <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M4 4.2h7.4v7.6H4z"  fill="#252327" stroke="none"/><path d="M2.30 4.95h1.70v1.30H2.30z" fill="#252327"/><path d="M2.30 7.35h1.70v1.30H2.30z" fill="#252327"/><path d="M2.30 9.75h1.70v1.30H2.30z" fill="#252327"/><path d="M11.40 4.95h1.40v1.30H11.40z" fill="#252327"/><path d="M11.40 7.35h1.40v1.30H11.40z" fill="#252327"/><path d="M11.40 9.75h1.40v1.30H11.40z" fill="#252327"/></svg>
+sprite $archimate_artifact <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M4 3.5h5.8l2.2 2.2v6.8H4z"  fill="#252327" stroke="none"/><path d="M9.15 3.50v2.20h1.30V3.50z" fill="#252327"/><path d="M9.80 5.05h2.20v1.30H9.80z" fill="#252327"/></svg>
+sprite $archimate_data_object <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3.00 3.80h10.00v1.30H3.00z" fill="#252327"/><path d="M3.00 10.90h10.00v1.30H3.00z" fill="#252327"/><path d="M3.00 5.10v5.80h1.30V5.10z" fill="#252327"/><path d="M11.70 5.10v5.80h1.30V5.10z" fill="#252327"/><path d="M3.00 4.95h10.00v1.30H3.00z" fill="#252327"/></svg>
+sprite $archimate_system_software <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="7.2" cy="8" r="3.3"  fill="none" stroke="#252327" stroke-width="1.3"/><circle cx="9.8" cy="8.8" r="3.3"  fill="none" stroke="#252327" stroke-width="1.3"/></svg>
+
+title Assurance Persistence & Trust Boundaries
+
+rectangle "Application" <<ApplicationGrouping>> {
+  rectangle "<$archimate_application_component{scale=1.2}> Confidential Assurance Store\n«Module»" <<application_component>> as APP_E0fzqZ
+  rectangle "<$archimate_application_component{scale=1.2}> Assurance Archive\n«Module»" <<application_component>> as APP_GnsLC8
+  rectangle "<$archimate_application_component{scale=1.2}> Supply-Chain & Vulnerability Connector\n«Module»" <<application_component>> as APP_e2zPs6
+  rectangle "<$archimate_data_object{scale=1.2}> Assurance Knowledge Base" <<data_object>> as DOB_ApaPcg
+  rectangle "<$archimate_data_object{scale=1.2}> Assurance Audit Log" <<data_object>> as DOB_H_xFye
+  rectangle "<$archimate_data_object{scale=1.2}> Security Signals Store" <<data_object>> as DOB_p04R7k
+}
+
+rectangle "Technology" <<TechnologyGrouping>> {
+  rectangle "<$archimate_artifact{scale=1.2}> Security Signals Database" <<artifact>> as ART_X7EfZb
+  rectangle "<$archimate_artifact{scale=1.2}> Encrypted Assurance Database" <<artifact>> as ART_tkNvK_
+  rectangle "<$archimate_system_software{scale=1.2}> OS Keychain" <<system_software>> as SSW_OCX11y
+  rectangle "<$archimate_system_software{scale=1.2}> PocketBase" <<system_software>> as SSW_kIOyT2
+  rectangle "<$archimate_system_software{scale=1.2}> SQLCipher" <<system_software>> as SSW_nhzGvk
+}
+
+' --- Auto-layout: spread elements within groupings ---
+APP_E0fzqZ -[hidden]right- APP_GnsLC8
+APP_GnsLC8 -[hidden]right- APP_e2zPs6
+APP_e2zPs6 -[hidden]right- DOB_ApaPcg
+DOB_ApaPcg -[hidden]right- DOB_H_xFye
+DOB_H_xFye -[hidden]right- DOB_p04R7k
+ART_X7EfZb -[hidden]right- ART_tkNvK_
+ART_tkNvK_ -[hidden]right- SSW_OCX11y
+SSW_OCX11y -[hidden]right- SSW_kIOyT2
+SSW_kIOyT2 -[hidden]right- SSW_nhzGvk
+
+
+' Connections
+SSW_OCX11y -up-> APP_E0fzqZ
+SSW_kIOyT2 -up-> APP_E0fzqZ
+SSW_nhzGvk -up-> APP_E0fzqZ
+APP_E0fzqZ --> DOB_ApaPcg
+APP_GnsLC8 --> DOB_H_xFye
+APP_e2zPs6 --> DOB_p04R7k
+ART_X7EfZb .up.|> DOB_p04R7k
+ART_tkNvK_ .up.|> DOB_ApaPcg
+ART_tkNvK_ .up.|> DOB_H_xFye
+
+@enduml

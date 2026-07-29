@@ -1,0 +1,30 @@
+name: archimate-motivation
+ontology: archimate_4
+filter:
+  hierarchy_level:
+    index: 0
+    values: [motivation]
+includes: []
+grouping:
+  by_field: hierarchy_0
+  stereotype_pattern: "{hierarchy_0|capitalize}Grouping"
+layout:
+  nesting_connection_classes: [nesting]
+  flow_connection_classes: [dynamic]
+  # An event between two members of a process reads as part of the orchestrated
+  # sequence — the renderer may nest it visually inside that process.
+  flow_through_entity_types: [event]
+guidance:
+  when_to_use: >-
+    Use when modeling WHY: stakeholder concerns, business drivers, goals, outcomes, principles,
+    requirements, and assumptions. Typically the first diagram for a new initiative — captures
+    motivation before processes or systems are defined.
+  when_not_to_use: >-
+    Do not use for process flows or system decomposition. Prefer archimate-business for operational
+    process modeling, archimate-application for software structure, archimate-strategy for
+    capability planning.
+
+ui:
+  label: ArchiMate Motivation
+  description: >-
+    Why the architecture exists: stakeholders, drivers, goals, principles, and requirements.

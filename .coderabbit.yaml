@@ -1,0 +1,6 @@
+reviews:
+  path_filters:
+    # Submodules — CodeRabbit cannot review their internals and dirty-state
+    # findings are pre-existing/unrelated to the current branch's changes.
+    - "!enterprise-repository/**"
+    - "!engagements/**"

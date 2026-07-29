@@ -1,0 +1,450 @@
+{
+  "ecosystem": "python",
+  "count": 74,
+  "components": [
+    {
+      "name": "aiosqlite",
+      "version": "0.22.1",
+      "license": "MIT License",
+      "bucket": "allow"
+    },
+    {
+      "name": "alembic",
+      "version": "1.18.4",
+      "license": "MIT",
+      "bucket": "allow"
+    },
+    {
+      "name": "annotated-doc",
+      "version": "0.0.4",
+      "license": "MIT",
+      "bucket": "allow"
+    },
+    {
+      "name": "annotated-types",
+      "version": "0.7.0",
+      "license": "MIT License",
+      "bucket": "allow"
+    },
+    {
+      "name": "anyio",
+      "version": "4.13.0",
+      "license": "MIT",
+      "bucket": "allow"
+    },
+    {
+      "name": "attrs",
+      "version": "26.1.0",
+      "license": "MIT",
+      "bucket": "allow"
+    },
+    {
+      "name": "azure-core",
+      "version": "1.41.0",
+      "license": "MIT",
+      "bucket": "allow"
+    },
+    {
+      "name": "azure-identity",
+      "version": "1.25.3",
+      "license": "MIT",
+      "bucket": "allow"
+    },
+    {
+      "name": "azure-storage-blob",
+      "version": "12.30.0",
+      "license": "MIT License",
+      "bucket": "allow"
+    },
+    {
+      "name": "boto3",
+      "version": "1.43.25",
+      "license": "Apache-2.0",
+      "bucket": "allow"
+    },
+    {
+      "name": "botocore",
+      "version": "1.43.25",
+      "license": "Apache-2.0",
+      "bucket": "allow"
+    },
+    {
+      "name": "certifi",
+      "version": "2026.2.25",
+      "license": "Mozilla Public License 2.0 (MPL 2.0)",
+      "bucket": "allow"
+    },
+    {
+      "name": "cffi",
+      "version": "2.0.0",
+      "license": "MIT",
+      "bucket": "allow"
+    },
+    {
+      "name": "charset-normalizer",
+      "version": "3.4.7",
+      "license": "MIT",
+      "bucket": "allow"
+    },
+    {
+      "name": "click",
+      "version": "8.4.2",
+      "license": "BSD-3-Clause",
+      "bucket": "allow"
+    },
+    {
+      "name": "colorama",
+      "version": "0.4.6",
+      "license": "BSD-3-Clause",
+      "bucket": "allow"
+    },
+    {
+      "name": "cryptography",
+      "version": "49.0.0",
+      "license": "Apache-2.0 OR BSD-3-Clause",
+      "bucket": "allow"
+    },
+    {
+      "name": "cvss",
+      "version": "3.6",
+      "license": "GNU Lesser General Public License v3 or later (LGPLv3+)",
+      "bucket": "review"
+    },
+    {
+      "name": "defusedxml",
+      "version": "0.7.1",
+      "license": "Python Software Foundation License",
+      "bucket": "allow"
+    },
+    {
+      "name": "fastapi",
+      "version": "0.139.2",
+      "license": "MIT",
+      "bucket": "allow"
+    },
+    {
+      "name": "greenlet",
+      "version": "3.4.0",
+      "license": "MIT AND PSF-2.0",
+      "bucket": "allow"
+    },
+    {
+      "name": "h11",
+      "version": "0.16.0",
+      "license": "MIT License",
+      "bucket": "allow"
+    },
+    {
+      "name": "httpcore",
+      "version": "1.0.9",
+      "license": "BSD-3-Clause",
+      "bucket": "allow"
+    },
+    {
+      "name": "httptools",
+      "version": "0.8.0",
+      "license": "MIT",
+      "bucket": "allow"
+    },
+    {
+      "name": "httpx",
+      "version": "0.28.1",
+      "license": "BSD License",
+      "bucket": "allow"
+    },
+    {
+      "name": "httpx-sse",
+      "version": "0.4.3",
+      "license": "MIT",
+      "bucket": "allow"
+    },
+    {
+      "name": "idna",
+      "version": "3.18",
+      "license": "BSD-3-Clause",
+      "bucket": "allow"
+    },
+    {
+      "name": "isodate",
+      "version": "0.7.2",
+      "license": "BSD License",
+      "bucket": "allow"
+    },
+    {
+      "name": "jaraco-classes",
+      "version": "3.4.0",
+      "license": "MIT License",
+      "bucket": "allow"
+    },
+    {
+      "name": "jaraco-context",
+      "version": "6.1.2",
+      "license": "MIT",
+      "bucket": "allow"
+    },
+    {
+      "name": "jaraco-functools",
+      "version": "4.5.0",
+      "license": "MIT",
+      "bucket": "allow"
+    },
+    {
+      "name": "jeepney",
+      "version": "0.9.0",
+      "license": "MIT",
+      "bucket": "allow"
+    },
+    {
+      "name": "jmespath",
+      "version": "1.1.0",
+      "license": "MIT License",
+      "bucket": "allow"
+    },
+    {
+      "name": "jsonschema",
+      "version": "4.26.0",
+      "license": "MIT",
+      "bucket": "allow"
+    },
+    {
+      "name": "jsonschema-specifications",
+      "version": "2025.9.1",
+      "license": "MIT",
+      "bucket": "allow"
+    },
+    {
+      "name": "keyring",
+      "version": "25.7.0",
+      "license": "MIT",
+      "bucket": "allow"
+    },
+    {
+      "name": "keyrings-alt",
+      "version": "5.0.2",
+      "license": "MIT License",
+      "bucket": "allow"
+    },
+    {
+      "name": "lxml",
+      "version": "6.1.1",
+      "license": "BSD-3-Clause",
+      "bucket": "allow"
+    },
+    {
+      "name": "mako",
+      "version": "1.3.12",
+      "license": "MIT License",
+      "bucket": "allow"
+    },
+    {
+      "name": "markupsafe",
+      "version": "3.0.3",
+      "license": "BSD-3-Clause",
+      "bucket": "allow"
+    },
+    {
+      "name": "mcp",
+      "version": "1.28.1",
+      "license": "MIT License",
+      "bucket": "allow"
+    },
+    {
+      "name": "more-itertools",
+      "version": "11.1.0",
+      "license": "MIT",
+      "bucket": "allow"
+    },
+    {
+      "name": "msal",
+      "version": "1.37.0",
+      "license": "MIT License",
+      "bucket": "allow"
+    },
+    {
+      "name": "msal-extensions",
+      "version": "1.3.1",
+      "license": "MIT License",
+      "bucket": "allow"
+    },
+    {
+      "name": "packageurl-python",
+      "version": "0.17.6",
+      "license": "MIT License",
+      "bucket": "allow"
+    },
+    {
+      "name": "pycparser",
+      "version": "3.0",
+      "license": "BSD-3-Clause",
+      "bucket": "allow"
+    },
+    {
+      "name": "pydantic",
+      "version": "2.12.5",
+      "license": "MIT",
+      "bucket": "allow"
+    },
+    {
+      "name": "pydantic-core",
+      "version": "2.41.5",
+      "license": "MIT",
+      "bucket": "allow"
+    },
+    {
+      "name": "pydantic-settings",
+      "version": "2.14.2",
+      "license": "MIT",
+      "bucket": "allow"
+    },
+    {
+      "name": "pyjwt",
+      "version": "2.13.0",
+      "license": "MIT",
+      "bucket": "allow"
+    },
+    {
+      "name": "python-dateutil",
+      "version": "2.9.0.post0",
+      "license": "Apache Software License; BSD License",
+      "bucket": "allow"
+    },
+    {
+      "name": "python-dotenv",
+      "version": "1.2.2",
+      "license": "BSD-3-Clause",
+      "bucket": "allow"
+    },
+    {
+      "name": "python-frontmatter",
+      "version": "1.1.0",
+      "license": "MIT License",
+      "bucket": "allow"
+    },
+    {
+      "name": "python-multipart",
+      "version": "0.0.32",
+      "license": "Apache-2.0",
+      "bucket": "allow"
+    },
+    {
+      "name": "pywin32",
+      "version": "311",
+      "license": "PSF-2.0",
+      "bucket": "allow"
+    },
+    {
+      "name": "pywin32-ctypes",
+      "version": "0.2.3",
+      "license": "BSD-3-Clause",
+      "bucket": "allow"
+    },
+    {
+      "name": "pyyaml",
+      "version": "6.0.3",
+      "license": "MIT License",
+      "bucket": "allow"
+    },
+    {
+      "name": "referencing",
+      "version": "0.37.0",
+      "license": "MIT",
+      "bucket": "allow"
+    },
+    {
+      "name": "requests",
+      "version": "2.34.2",
+      "license": "Apache Software License",
+      "bucket": "allow"
+    },
+    {
+      "name": "rpds-py",
+      "version": "0.30.0",
+      "license": "MIT",
+      "bucket": "allow"
+    },
+    {
+      "name": "s3transfer",
+      "version": "0.18.0",
+      "license": "Apache Software License",
+      "bucket": "allow"
+    },
+    {
+      "name": "secretstorage",
+      "version": "3.5.0",
+      "license": "BSD-3-Clause",
+      "bucket": "allow"
+    },
+    {
+      "name": "six",
+      "version": "1.17.0",
+      "license": "MIT License",
+      "bucket": "allow"
+    },
+    {
+      "name": "sqlalchemy",
+      "version": "2.0.49",
+      "license": "MIT",
+      "bucket": "allow"
+    },
+    {
+      "name": "sqlcipher3",
+      "version": "0.6.2",
+      "license": "MIT",
+      "bucket": "allow"
+    },
+    {
+      "name": "sse-starlette",
+      "version": "3.3.4",
+      "license": "BSD-3-Clause",
+      "bucket": "allow"
+    },
+    {
+      "name": "starlette",
+      "version": "1.3.1",
+      "license": "BSD-3-Clause",
+      "bucket": "allow"
+    },
+    {
+      "name": "typing-extensions",
+      "version": "4.15.0",
+      "license": "PSF-2.0",
+      "bucket": "allow"
+    },
+    {
+      "name": "typing-inspection",
+      "version": "0.4.2",
+      "license": "MIT",
+      "bucket": "allow"
+    },
+    {
+      "name": "urllib3",
+      "version": "2.7.0",
+      "license": "MIT",
+      "bucket": "allow"
+    },
+    {
+      "name": "uvicorn",
+      "version": "0.51.0",
+      "license": "BSD-3-Clause",
+      "bucket": "allow"
+    },
+    {
+      "name": "uvloop",
+      "version": "0.22.1",
+      "license": "Apache Software License; MIT License",
+      "bucket": "allow"
+    },
+    {
+      "name": "watchfiles",
+      "version": "1.1.1",
+      "license": "MIT License",
+      "bucket": "allow"
+    },
+    {
+      "name": "websockets",
+      "version": "16.0",
+      "license": "BSD-3-Clause",
+      "bucket": "allow"
+    }
+  ]
+}

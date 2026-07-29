@@ -1,0 +1,170 @@
+specializations:
+  entity:
+    role:
+      - slug: business-role
+        name: Business Role
+      - slug: application-role
+        name: Application Role
+      - slug: technology-role
+        name: Technology Role
+    collaboration:
+      - slug: business-collaboration
+        name: Business Collaboration
+      - slug: application-collaboration
+        name: Application Collaboration
+      - slug: technology-collaboration
+        name: Technology Collaboration
+    service:
+      - slug: business-service
+        name: Business Service
+      - slug: application-service
+        name: Application Service
+      - slug: technology-service
+        name: Technology Service
+      - slug: ai-inference-service
+        name: AI Inference Service
+        description: >-
+          A served model-inference endpoint — the exposed capability a client calls to get
+          predictions. Distinct from the model artefact it fronts (`ai-model`) and from the
+          engine that executes it (`ai-runtime`); one inference service may serve several
+          models. Appears in the AIBOM as a service-typed AI component.
+        create_when: A model's inference capability is exposed as a callable endpoint or API.
+        never_create_when: >-
+          The element is the trained model artefact itself (use `ai-model`) or the serving
+          engine/framework (use `ai-runtime`).
+        profiles: [ai-supplier, ai-licensing]
+    process:
+      - slug: business-process
+        name: Business Process
+      - slug: application-process
+        name: Application Process
+      - slug: technology-process
+        name: Technology Process
+    function:
+      - slug: business-function
+        name: Business Function
+      - slug: application-function
+        name: Application Function
+      - slug: technology-function
+        name: Technology Function
+    event:
+      - slug: business-event
+        name: Business Event
+      - slug: application-event
+        name: Application Event
+      - slug: technology-event
+        name: Technology Event
+    business-object:
+      - slug: contract
+        name: Contract
+      - slug: representation
+        name: Representation
+    requirement:
+      - slug: constraint
+        name: Constraint
+    assessment:
+      - slug: gap
+        name: Gap
+    application-component:
+      - slug: service
+        name: Service
+      - slug: module
+        name: Module
+      - slug: endpoint
+        name: Endpoint
+      - slug: ai-model
+        name: AI Model
+        description: >-
+          A deployed or embedded machine-learning model — the trained artefact (weights plus
+          architecture). The core AIBOM entity: its provenance, licensing, and model card are
+          what a CycloneDX ML-BOM documents. Distinct from the endpoint that serves it
+          (`ai-inference-service`) and the engine that runs it (`ai-runtime`).
+        create_when: A trained ML model is deployed, embedded, or otherwise a component of the system.
+        never_create_when: >-
+          The element is the served endpoint (use `ai-inference-service`), the serving engine
+          (use `ai-runtime`), or an agentic application built on a model (use `ai-agent`).
+        profiles: [ai-supplier, ai-licensing]
+        attributes:
+          # The CycloneDX modelCard: authored model characteristics (AIBOM D3/D4 — flat
+          # scalars + string arrays; the exporter lifts these into the nested modelCard).
+          Approach: { type: string, level: recommended, enum: [Supervised, Unsupervised, Semi-supervised, Self-supervised, Reinforcement Learning] }
+          Task: { type: string, level: recommended }
+          Architecture Family: { type: string, level: recommended }
+          Model Architecture: { type: string, level: optional }
+          Inputs: { type: string, level: optional }
+          Outputs: { type: string, level: optional }
+          Performance Metrics: { type: array, level: recommended, items: { type: string } }
+          Technical Limitations: { type: array, level: recommended, items: { type: string } }
+          Performance Tradeoffs: { type: array, level: optional, items: { type: string } }
+          Ethical Considerations: { type: array, level: recommended, items: { type: string } }
+          Environmental Considerations: { type: array, level: optional, items: { type: string } }
+          Fairness Assessments: { type: array, level: optional, items: { type: string } }
+      - slug: ai-agent
+        name: AI Agent
+        description: >-
+          An AI application component built on one or more models — whether an autonomous
+          agent (a plan/act/observe loop that chooses its own actions) or a deterministic
+          pipeline (RAG, prompt-routing, tool-routing). The two sit on one control-flow
+          spectrum and neither is a distinct BOM component type, so they are one
+          specialization; note which in the description or an attribute. Uses models, prompt
+          assets, vector stores, and tool interfaces via typed relations.
+        create_when: >-
+          A component orchestrates model calls with tools, retrieval, or a decision loop to
+          deliver an application capability.
+        never_create_when: The element is the bare model artefact (`ai-model`) or a served endpoint.
+        profiles: [ai-supplier, ai-licensing]
+        attributes:
+          Control Flow: { type: string, level: recommended, enum: [Autonomous Loop, Deterministic Pipeline] }
+    data-object:
+      - slug: ai-dataset
+        name: AI Dataset
+        description: >-
+          Training, evaluation, or fine-tuning data for a model. Its provenance and
+          classification feed the AIBOM's dataset linkage and the model card's data
+          considerations. A data-object because it is passive data, not a served capability.
+        create_when: A dataset is used to train, evaluate, or fine-tune a model in the system.
+        never_create_when: The data is a prompt asset (`ai-prompt-asset`) or an embedding index (`ai-vector-store`).
+        profiles: [ai-supplier, ai-licensing]
+        attributes:
+          Dataset Role: { type: string, level: recommended, enum: [Training, Evaluation, Fine-tuning] }
+      - slug: ai-prompt-asset
+        name: AI Prompt Asset
+        description: >-
+          A governed prompt artefact — a system prompt, prompt template, or instruction set
+          consumed by an agent or model. Tracked so prompt content is versioned and
+          reviewable like any other supply-chain input.
+        create_when: A system prompt or prompt template is a managed, reusable artefact.
+        never_create_when: The content is training data (`ai-dataset`) or an embedding store (`ai-vector-store`).
+      - slug: ai-vector-store
+        name: AI Vector Store
+        description: >-
+          An embedding / vector index used for retrieval (RAG). Its contents and source
+          documents are retrieval provenance for anything an agent grounds on it.
+        create_when: An embedding index backs retrieval-augmented generation or semantic search.
+        never_create_when: The store is raw training data (`ai-dataset`) or prompt content (`ai-prompt-asset`).
+    system-software:
+      - slug: ai-runtime
+        name: AI Runtime
+        description: >-
+          The serving engine or inference framework that executes a model — e.g. vLLM,
+          TensorRT, ONNX Runtime, llama.cpp. Technology-layer system software: it is what
+          runs the model, distinct from the model artefact (`ai-model`) and the exposed
+          endpoint (`ai-inference-service`).
+        create_when: A dedicated engine or framework executes model inference.
+        never_create_when: The element is the model (`ai-model`) or the served endpoint (`ai-inference-service`).
+        profiles: [ai-supplier, ai-licensing]
+    application-interface:
+      - slug: ai-tool-interface
+        name: AI Tool Interface
+        description: >-
+          The tool / function surface an AI agent can invoke — the callable actions exposed
+          to a model or agent (function calling, tool schemas). The agent's action surface in
+          the AIBOM's dependency graph.
+        create_when: An agent or model is given a set of callable tools or functions.
+        never_create_when: The element is a general application interface with no AI-agent tool semantics.
+  connection:
+    archimate-assignment:
+      - slug: responsibility-assignment
+        name: Responsibility Assignment
+      - slug: behavior-assignment
+        name: Behavior Assignment

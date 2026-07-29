@@ -1,0 +1,35 @@
+backend:
+  log_path: .arch/backend.log
+  min_log_level: INFO
+  port: 8000
+diagrams:
+  archimate_type_markers: icons
+  plantuml_limit_size: 16384
+  render_dpi: 150
+  sprite_scale: 1.5
+guidance:
+  default_source: https://raw.githubusercontent.com/mbauer83/architecture-modeling-guidance/refs/heads/main/guidance.yaml
+modules:
+  sysml_v2_min:
+    enabled: false
+repo_init:
+  commit_author_email: architecture-bot@example.com
+  commit_author_name: Architecture Bot
+  default_branch: main
+  engagement: {}
+storage:
+  assurance:
+    activation_policy: manual
+    max_classification: TLP:RED
+    signals_backend: sqlcipher-colocated
+    store_backend: sqlcipher
+  read_model: {}
+validation:
+  datatype_type_references_blocking: true
+viewpoints:
+  derivation_max_hops: 4
+  derivation_max_relationships: 20000
+  derivation_time_budget_seconds: 2.0
+  max_derived_attributes: 8
+  max_query_bindings: 8
+  max_query_parameters: 4

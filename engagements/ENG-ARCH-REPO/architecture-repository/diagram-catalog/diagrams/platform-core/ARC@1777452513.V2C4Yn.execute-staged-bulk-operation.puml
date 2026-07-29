@@ -1,0 +1,169 @@
+---
+artifact-id: ARC@1777452513.V2C4Yn.execute-staged-bulk-operation
+artifact-type: diagram
+name: Execute Staged Write Transaction
+version: 0.1.0
+status: draft
+keywords:
+- workflow
+- write
+- transactional
+- staging
+- process
+- idempotency
+diagram-type: archimate-application
+entity-ids-used:
+- APP@1777399924.5n_KQJ.bulk-write-handler
+- APP@1777399925.HOOYAQ.staged-write-transaction-manager
+- APP@1777399926.PDJI8F.operation-registry
+- APP@1777399925.WK_78v.bulk-delete-handler
+- DOB@1777399930.hExrX3.operation-record
+- DOB@1777399929.hhYsiw.staged-repository
+- EVT@1777399929.BKj6NZ.staged-repository-committed
+- FNC@1777399927.6PI0kV.verify-staged-repository
+- FNC@1777399926.DrKMhV.resolve-operation-idempotency
+- FNC@1777399927.g3H3mK.apply-operations-to-staging
+- FNC@1777399927.hbgFU3.create-staging-repository
+- FNC@1777399928.tRAV0x.commit-staged-repository
+- PRC@1777399926.gtgYvQ.execute-staged-write-transaction
+connection-ids-used:
+- FNC@1777399926.DrKMhV---FNC@1777399927.hbgFU3@@archimate-triggering
+- FNC@1777399927.hbgFU3---FNC@1777399927.g3H3mK@@archimate-triggering
+- FNC@1777399927.g3H3mK---FNC@1777399927.6PI0kV@@archimate-triggering
+- FNC@1777399927.6PI0kV---FNC@1777399928.tRAV0x@@archimate-triggering
+- FNC@1777399928.tRAV0x---EVT@1777399929.BKj6NZ@@archimate-triggering
+- FNC@1777399926.DrKMhV---DOB@1777399930.hExrX3@@archimate-access
+- FNC@1777399927.hbgFU3---DOB@1777399929.hhYsiw@@archimate-access
+- PRC@1777399926.gtgYvQ---FNC@1777399926.DrKMhV@@archimate-composition
+- PRC@1777399926.gtgYvQ---FNC@1777399927.hbgFU3@@archimate-composition
+- PRC@1777399926.gtgYvQ---FNC@1777399927.g3H3mK@@archimate-composition
+- PRC@1777399926.gtgYvQ---FNC@1777399927.6PI0kV@@archimate-composition
+- PRC@1777399926.gtgYvQ---FNC@1777399928.tRAV0x@@archimate-composition
+- APP@1777399924.5n_KQJ---PRC@1777399926.gtgYvQ@@archimate-assignment
+- APP@1777399925.WK_78v---PRC@1777399926.gtgYvQ@@archimate-assignment
+- APP@1777399925.HOOYAQ---PRC@1777399926.gtgYvQ@@archimate-assignment
+- APP@1777399926.PDJI8F---PRC@1777399926.gtgYvQ@@archimate-assignment
+authored-groupings:
+- label: Performed By
+  stereotype: ApplicationGrouping
+  entity-ids:
+  - APP@1777399925.HOOYAQ.staged-write-transaction-manager
+  - APP@1777399924.5n_KQJ.bulk-write-handler
+  - APP@1777399925.WK_78v.bulk-delete-handler
+  - APP@1777399926.PDJI8F.operation-registry
+- label: State
+  stereotype: ApplicationGrouping
+  entity-ids:
+  - DOB@1777399930.hExrX3.operation-record
+  - DOB@1777399929.hhYsiw.staged-repository
+last-updated: '2026-07-29T13:29:52Z'
+---
+@startuml execute-staged-write-transaction
+hide stereotype
+
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 12
+skinparam shadowing false
+skinparam roundcorner 4
+skinparam backgroundColor #FAFAFA
+
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 80
+!define Rel_Triggering(from, to, label) from --> to
+!define Rel_Realization(from, to, label) from ..|> to
+!define Rel_Realization_Up(from, to, label) from ..|> to
+!define Rel_Serving(from, to, label) from --> to
+!define Rel_Association(from, to, label) from -- to
+!define Rel_Association_Left(from, to, label) from -- to
+!define Rel_Association_Right(from, to, label) from -- to
+!define Rel_Access(from, to, label) from ..> to
+!define Rel_Influence(from, to, label) from ..> to
+skinparam rectangle<<ApplicationGrouping>> {
+  BackgroundColor #E8F8FF
+  BorderColor #0078A0
+}
+skinparam rectangle<<CommonGrouping>> {
+  BackgroundColor #EDE8E1
+  BorderColor #8C7E6A
+}
+skinparam rectangle<<application_component>> {
+  BackgroundColor #CCF2FF
+  BorderColor #0078A0
+}
+skinparam rectangle<<data_object>> {
+  BackgroundColor #CCF2FF
+  BorderColor #0078A0
+}
+skinparam rectangle<<event>> {
+  BackgroundColor #E0D8CC
+  BorderColor #8C7E6A
+}
+skinparam rectangle<<function>> {
+  BackgroundColor #E0D8CC
+  BorderColor #8C7E6A
+}
+skinparam rectangle<<process>> {
+  BackgroundColor #E0D8CC
+  BorderColor #8C7E6A
+}
+sprite $archimate_application_component <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M4 4.2h7.4v7.6H4z"  fill="#252327" stroke="none"/><path d="M2.30 4.95h1.70v1.30H2.30z" fill="#252327"/><path d="M2.30 7.35h1.70v1.30H2.30z" fill="#252327"/><path d="M2.30 9.75h1.70v1.30H2.30z" fill="#252327"/><path d="M11.40 4.95h1.40v1.30H11.40z" fill="#252327"/><path d="M11.40 7.35h1.40v1.30H11.40z" fill="#252327"/><path d="M11.40 9.75h1.40v1.30H11.40z" fill="#252327"/></svg>
+sprite $archimate_data_object <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3.00 3.80h10.00v1.30H3.00z" fill="#252327"/><path d="M3.00 10.90h10.00v1.30H3.00z" fill="#252327"/><path d="M3.00 5.10v5.80h1.30V5.10z" fill="#252327"/><path d="M11.70 5.10v5.80h1.30V5.10z" fill="#252327"/><path d="M3.00 4.95h10.00v1.30H3.00z" fill="#252327"/></svg>
+sprite $archimate_event <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3.1 4h5.6a3.8 3.8 0 0 1 0 8H3.1l2.1-4z"  fill="#252327" stroke="none"/></svg>
+sprite $archimate_function <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.9 11.7V5.4L8 3.1l5.1 2.3v6.3L8 9.2z"  fill="#252327" stroke="none"/></svg>
+sprite $archimate_process <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.6 4.1h6.3V2.8l4.5 5.2-4.5 5.2v-1.3H2.6z"  fill="#252327" stroke="none"/></svg>
+
+title Execute Staged Write Transaction
+
+rectangle "Performed By" <<ApplicationGrouping>> as GRPA_1 {
+  rectangle "<$archimate_application_component{scale=1.2}> Staged Write Transaction Manager\n«Module»" <<application_component>> as APP_HOOYAQ
+  rectangle "<$archimate_application_component{scale=1.2}> Bulk Write Handler\n«Module»" <<application_component>> as APP_5n_KQJ
+  rectangle "<$archimate_application_component{scale=1.2}> Bulk Delete Handler\n«Module»" <<application_component>> as APP_WK_78v
+  rectangle "<$archimate_application_component{scale=1.2}> Operation Registry\n«Module»" <<application_component>> as APP_PDJI8F
+}
+APP_HOOYAQ -[hidden]right- APP_5n_KQJ
+APP_5n_KQJ -[hidden]right- APP_WK_78v
+APP_WK_78v -[hidden]right- APP_PDJI8F
+
+rectangle "State" <<ApplicationGrouping>> as GRPA_2 {
+  rectangle "<$archimate_data_object{scale=1.2}> Operation Record" <<data_object>> as DOB_hExrX3
+  rectangle "<$archimate_data_object{scale=1.2}> Staged Repository" <<data_object>> as DOB_hhYsiw
+}
+DOB_hExrX3 -[hidden]right- DOB_hhYsiw
+GRPA_1 -[hidden]down- GRPA_2
+
+rectangle "Common" <<CommonGrouping>> as DOM_common {
+  rectangle "<$archimate_process{scale=1.2}> Execute Staged Write Transaction\n«Application Process»" <<process>> as PRC_gtgYvQ {
+    rectangle "<$archimate_function{scale=1.2}> Verify Staged Repository\n«Application Function»" <<function>> as FNC_6PI0kV
+    rectangle "<$archimate_function{scale=1.2}> Resolve Operation Idempotency\n«Application Function»" <<function>> as FNC_DrKMhV
+    rectangle "<$archimate_function{scale=1.2}> Apply Operations to Staging\n«Application Function»" <<function>> as FNC_g3H3mK
+    rectangle "<$archimate_function{scale=1.2}> Create Staging Repository\n«Application Function»" <<function>> as FNC_hbgFU3
+    rectangle "<$archimate_function{scale=1.2}> Commit Staged Repository\n«Application Function»" <<function>> as FNC_tRAV0x
+    FNC_DrKMhV -[hidden]down- FNC_hbgFU3
+    FNC_hbgFU3 -[hidden]down- FNC_g3H3mK
+    FNC_g3H3mK -[hidden]down- FNC_6PI0kV
+    FNC_6PI0kV -[hidden]down- FNC_tRAV0x
+  }
+
+  rectangle "<$archimate_event{scale=1.2}> Staged Repository Committed\n«Application Event»" <<event>> as EVT_BKj6NZ
+
+}
+
+rectangle "Application" <<ApplicationGrouping>> as DOM_application {
+}
+DOM_common -[hidden]down- DOM_application
+
+' Connections
+FNC_DrKMhV --> FNC_hbgFU3
+FNC_hbgFU3 --> FNC_g3H3mK
+FNC_g3H3mK --> FNC_6PI0kV
+FNC_6PI0kV --> FNC_tRAV0x
+FNC_tRAV0x --> EVT_BKj6NZ
+FNC_DrKMhV --> DOB_hExrX3
+FNC_hbgFU3 --> DOB_hhYsiw
+APP_5n_KQJ --> PRC_gtgYvQ
+APP_WK_78v --> PRC_gtgYvQ
+APP_HOOYAQ --> PRC_gtgYvQ
+APP_PDJI8F --> PRC_gtgYvQ
+
+@enduml

@@ -1,0 +1,147 @@
+entity_types:
+  person:
+    create_when: Use for people interacting with containers inside the system in scope.
+    never_create_when: Do not use for software systems or internal container building blocks.
+    permitted_mappings:
+      entity_types:
+        - business-actor
+        - role
+      sources:
+        - ontology: archimate-4-0
+          entity_type: business-actor
+          transparent: true
+        - ontology: archimate-4-0
+          entity_type: role
+          transparent: true
+    properties:
+      description:
+        type: string
+        required: false
+      external:
+        type: boolean
+        required: false
+  software-system:
+    create_when: >-
+      Use for the software system boundary in scope (set _scope_entity_id at diagram level and link entity_id to an
+      application-component or service model entity — required for cross-diagram navigation) and for surrounding
+      software systems (entity_id optional for third-party systems you do not manage).
+    never_create_when: Do not use for internal containers of the system in scope.
+    permitted_mappings:
+      entity_types:
+        - application-component
+        - service
+      sources:
+        - ontology: archimate-4-0
+          entity_type: application-component
+          transparent: true
+        - ontology: archimate-4-0
+          entity_type: service
+          transparent: true
+    properties:
+      description:
+        type: string
+        required: false
+      technology:
+        type: string
+        required: false
+      external:
+        type: boolean
+        required: false
+  container:
+    create_when: >-
+      Use for deployable applications, databases, queues, or similar runtime units inside the system in scope.
+      Link entity_id to an application-component, service, or data-object model entity — containers are
+      first-class architectural entities and their model backing enables cross-diagram navigation.
+    never_create_when: Do not use for whole systems at system-context level or for fine-grained internal implementation parts that belong in a component view.
+    permitted_mappings:
+      entity_types:
+        - application-component
+        - service
+        - data-object
+      sources:
+        - ontology: archimate-4-0
+          entity_type: application-component
+          transparent: true
+        - ontology: archimate-4-0
+          entity_type: service
+          transparent: true
+        - ontology: archimate-4-0
+          entity_type: data-object
+          transparent: true
+    properties:
+      description:
+        type: string
+        required: false
+      technology:
+        type: string
+        required: false
+      shape:
+        type: string
+        enum: ["", "Container", "ContainerDb", "ContainerQueue"]
+        required: false
+      external:
+        type: boolean
+        required: false
+
+connection_types:
+  c4-uses:
+    embedding: none
+    cascade_delete_source: false
+
+permitted_relationships:
+  - [person, software-system, [c4-uses]]
+  - [person, container, [c4-uses]]
+  - [software-system, person, [c4-uses]]
+  - [software-system, software-system, [c4-uses]]
+  - [software-system, container, [c4-uses]]
+  - [container, software-system, [c4-uses]]
+  - [container, container, [c4-uses]]
+  - [container, person, [c4-uses]]
+
+bridges:
+  - name: c4-container-to-archimate-active
+    version: 1
+    from: {module: c4-container, type: container}
+    to:
+      module: archimate-4-0
+      types: [application-component]
+    preserves_classes: [active-structure-element]
+    correspondence_kind: represents
+  - name: c4-container-to-archimate-service
+    version: 1
+    from: {module: c4-container, type: container}
+    to:
+      module: archimate-4-0
+      types: [service]
+    preserves_classes: [behavior-element]
+    correspondence_kind: represents
+  - name: c4-container-to-archimate-data
+    version: 1
+    from: {module: c4-container, type: container}
+    to:
+      module: archimate-4-0
+      types: [data-object]
+    preserves_classes: [passive-structure-element]
+    correspondence_kind: represents
+
+allowed_bindings:
+  entity:
+    person:
+      correspondence_kinds: [represents, refines, traces-to]
+      default_correspondence_kind: represents
+      target_forms: [entity-id, diagram-local]
+    software-system:
+      correspondence_kinds: [represents, refines, traces-to]
+      default_correspondence_kind: represents
+      target_forms: [entity-id, diagram-local]
+    container:
+      correspondence_kinds: [represents, refines, traces-to]
+      default_correspondence_kind: represents
+      target_forms: [entity-id, diagram-local]
+  connection:
+    c4-uses:
+      target_connection_types: [serving, flow, access, association]
+      target_connection_classes: [dependency, flow]
+      correspondence_kinds: [abstracts, represents, traces-to]
+      default_correspondence_kind: abstracts
+      target_forms: [connection-id, connection-ids]

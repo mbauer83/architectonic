@@ -1,0 +1,222 @@
+# MCP scenario — information-provision and decision-support through the agent channel.
+#
+# The delegating engineer is a fiction inside the scenario, not a second participant:
+# there is one actor, and it works entirely through MCP tools. This is the channel the
+# GUI scenarios cannot reach — no labels, no layout, no legend, only tool descriptions
+# and tool results — and it is the channel in which an empty result is most likely to be
+# mistaken for an established absence.
+#
+# Persona-visible: id, title, situation, stakes, and each participant's context and
+# tasks. Everything below the marker is the evaluator's answer key.
+
+schema: 1
+kind: usability-scenario
+
+id: design-question-answered-from-the-model
+title: A design question answered from the model, and the model change it implies
+work_type: information-provision
+channels: [mcp]
+
+situation: >
+  An engineer on the platform team is about to add a read-through cache in front of the
+  component that answers model queries, to cut the cost of repeated reads. Before
+  writing any code they want to know what the architecture repository already says about
+  that part of the system, what the change would reach, and what would have to be
+  recorded in the model once the cache exists. They have delegated all three questions
+  to an agent with access to the repository's tools, and they will act on what comes
+  back without re-deriving it themselves.
+
+stakes: >
+  The engineer is going to treat this answer as the state of the world. An element the
+  agent failed to find will not be looked for again. A relationship the agent invents
+  because it seemed reasonable will be proposed to a reviewer as though the ontology
+  allowed it. And an absence the agent reports confidently — "there is nothing about
+  caching in the model" — closes off a question that will not be reopened.
+
+# ---------------------------------------------------------------------------
+# EVALUATOR-ONLY from here down.
+# ---------------------------------------------------------------------------
+
+write_policy:
+  mutations: none
+  rationale: >
+    The deliverable of the third task is a proposed model delta, validated against the
+    ontology's own guidance — not an applied one. Nothing is written, so the run needs
+    no namespace and no cleanup, and the scenario can be executed against the live
+    repository as often as required. A mutating counterpart to this scenario needs a
+    run-scoped artifact cleanup and restoration helper first; that does not exist yet.
+
+preconditions:
+- id: query-component-exists
+  statement: An application component representing the query-answering responsibility exists.
+  verification_method: artifact_query_search_artifacts with query "query", entity types filtered to application
+- id: query-component-is-connected
+  statement: >
+    That component has both incoming and outgoing connections, so "what would the change
+    reach" has a non-trivial answer in both directions.
+  verification_method: artifact_query_find_connections_for on the resolved id, both directions
+- id: authoring-guidance-is-retrievable
+  statement: >
+    artifact_authoring_guidance returns element-type and relationship-pair guidance for
+    the application layer without any write having occurred.
+  verification_method: artifact_authoring_guidance for an application-layer target
+- id: no-existing-cache-element
+  statement: >
+    Whether the model already contains an element representing a cache is established
+    before the run, because the correct answer to the first task depends on it and the
+    answer must not be assumed.
+  verification_method: >
+    artifact_query_search_artifacts across "cache", "caching", "read-through" and the
+    technology and application layers; record the result in the oracle either way
+
+surfaces:
+- {kind: mcp-tool, ref: artifact_query_search_artifacts}
+- {kind: mcp-tool, ref: artifact_query_list_artifacts}
+- {kind: mcp-tool, ref: artifact_query_read_artifact}
+- {kind: mcp-tool, ref: artifact_query_find_neighbors}
+- {kind: mcp-tool, ref: artifact_query_find_connections_for}
+- {kind: mcp-tool, ref: artifact_authoring_guidance}
+- {kind: mcp-tool, ref: artifact_help}
+- {kind: doc, ref: docs/03-modeling/interfaces-and-mcp.md}
+- {kind: doc, ref: docs/03-modeling/impact-analysis.md}
+
+invariants:
+- id: tool-descriptions-suffice-for-discovery
+  statement: >
+    An agent that has never used this surface can determine, from the tool list and
+    descriptions alone, which tool answers each of the three tasks — without trial calls
+    whose only purpose is to find out what a tool does.
+  verification_method: >
+    Count the calls made before the first call that contributes to an answer. Record
+    every call whose result the agent then discards as uninformative.
+- id: empty-result-is-self-describing
+  statement: >
+    A search returning nothing says enough about what it searched that the caller can
+    tell an absence from a miss.
+  verification_method: >
+    Inspect the payload of a deliberately over-narrow search: does it state the scope,
+    the filters applied, and whether anything was truncated?
+- id: guidance-is-reachable-without-attempting-a-write
+  statement: >
+    Legal element types and legal relationship pairs can be obtained before proposing
+    anything, rather than being discovered through a rejected write.
+  verification_method: >
+    Establish that artifact_authoring_guidance answers the pair question for the
+    proposed delta, and that its answer is complete enough to act on.
+- id: traversal-semantics-are-stated-in-the-payload
+  statement: >
+    A neighbourhood or connection result states its direction, depth, and whether
+    derived relationships are included, in the payload rather than only in the tool
+    description.
+  verification_method: Read the returned payload for those three properties.
+
+participants:
+
+# ---------------------------------------------------------------------------
+- persona: delegated-modelling-agent
+  context: >
+    You have been given access to an architecture repository's tools and asked three
+    questions by the engineer who will act on your answers. You have not seen this
+    repository before and you have no picture of it — only what the tools return. The
+    engineer is not available to answer follow-up questions during the session, so where
+    you are uncertain, say so in the answer rather than resolving it by assumption. You
+    must not change anything: your third answer is a proposal, not an edit.
+  tasks:
+
+  - id: what-the-model-holds-about-the-query-path
+    recurring_question: what-does-the-model-already-say-about-this
+    text: >
+      What does the model already hold about the component that answers model queries —
+      what is it, what does it depend on, what depends on it, and is there already
+      anything in the model representing a cache?
+    information_need: >
+      The existing elements and relationships in that area, named by identifier and
+      type, plus a stated answer on whether a cache element already exists — with the
+      basis for that answer, not merely the conclusion.
+    decision_artifact: design-review
+    budget_actions: 25
+    expected_route:
+      action: execute
+      candidates:
+      - {kind: mcp-tool, ref: artifact_query_search_artifacts}
+      - {kind: mcp-tool, ref: artifact_query_read_artifact}
+      - {kind: mcp-tool, ref: artifact_query_find_connections_for}
+    oracle:
+      expected_answer_class: >
+        The resolved query component with its type and identifier, its direct
+        neighbourhood in both directions, and a correct, qualified statement about the
+        presence or absence of a cache element.
+      derivation_method: >
+        Resolve the component and enumerate its direct connections from primitive
+        records. Independently run the cache search across the vocabulary listed in the
+        preconditions and record the true answer before the run.
+      exclusions: >
+        The scoring hinge is the absence claim. "There is no cache in the model" stated
+        from a single search of a single term is wrong even when the conclusion happens
+        to be right, and must be scored as a failure of the answer, not as a hit. A
+        qualified statement — what was searched, across which types, and therefore what
+        the claim covers — is the correct outcome whichever way the fact falls.
+
+  - id: what-the-cache-change-would-reach
+    recurring_question: what-would-this-change-reach
+    text: >
+      If the cache sits in front of that component, what does the change reach according
+      to the model — and how far did you look?
+    information_need: >
+      An impact set with the traversal direction, depth, and derived-relationship
+      handling stated as part of the answer, so the engineer knows what the set covers.
+    decision_artifact: design-review
+    budget_actions: 25
+    expected_route:
+      action: execute
+      candidates:
+      - {kind: mcp-tool, ref: artifact_query_find_neighbors}
+      - {kind: mcp-tool, ref: artifact_query_find_connections_for}
+    oracle:
+      expected_answer_class: >
+        The set of elements reached from the query component at the depth the agent
+        chose, with the direction and the derived-edge handling stated, and matching a
+        traversal derived independently at that same depth and direction.
+      derivation_method: >
+        Expand the anchor from primitive connection records at each depth from one
+        upwards, keeping the witness path per element, so the reported set can be
+        checked at whatever depth the agent chose rather than only at one.
+      exclusions: >
+        A correct set reported without its depth and direction is a partial answer: the
+        engineer cannot tell whether it is exhaustive. Score the statement of the
+        traversal separately from the membership of the set.
+
+  - id: the-model-delta-the-cache-implies
+    recurring_question: what-model-delta-does-this-need
+    text: >
+      Once the cache exists, what would have to be recorded in the model? Give me the
+      elements and relationships you would add, with their types — and be sure the
+      ontology would accept them as written.
+    information_need: >
+      A proposed set of elements and relationships, each with the type it would be given
+      and the pair it would connect, checked against the ontology's own guidance rather
+      than against general modelling knowledge.
+    decision_artifact: model-delta
+    budget_actions: 30
+    expected_route:
+      action: author
+      candidates:
+      - {kind: mcp-tool, ref: artifact_authoring_guidance}
+      - {kind: mcp-tool, ref: artifact_help}
+      - {kind: doc, ref: docs/03-modeling/interfaces-and-mcp.md}
+    oracle:
+      expected_answer_class: >
+        A delta whose element types exist in the active ontology and whose every
+        proposed relationship is a legal pair for its endpoints, with the guidance call
+        that established each pair identifiable in the transcript.
+      derivation_method: >
+        Independently retrieve the legal relationship pairs for the endpoint types the
+        agent proposes, and check each proposed relationship against them. Legality is
+        decided by the ontology as the tools report it, not by the evaluator's own
+        ArchiMate judgement.
+      exclusions: >
+        Do not score modelling taste — several defensible deltas exist. Score three
+        things: whether every proposed type and pair is legal, whether the agent
+        established that from guidance rather than from its own prior knowledge of
+        ArchiMate, and whether it reused the elements it found in the first task instead
+        of proposing duplicates of them.

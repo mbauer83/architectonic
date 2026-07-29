@@ -1,0 +1,130 @@
+---
+artifact-id: ARC@1784484032.lRUkii.value-stream-adopt-the-platform
+artifact-type: diagram
+name: 'Value Stream: Adopt the Platform'
+version: 0.1.0
+status: active
+diagram-type: archimate-layered
+viewpoint:
+  slug: value-stream
+  version: 2
+entity-ids-used:
+- CAP@1784482412.db4AQh.agent-native-architecture-collaboration
+- CAP@1784482403.pLMHKe.architecture-knowledge-management
+- STK@1784482958.KNwgP7.platform-adopter
+- VAL@1784482981.bisnF2.low-friction-adoption
+- VS@1784483095.Az7GVi.install-configure-the-platform
+- VS@1784483097.CBbqVO.import-authoring-guidance
+- VS@1784483084.Io9UQd.discover-evaluate-the-platform
+- VS@1784483003.klQ_6-.adopt-the-platform
+- VS@1784483104.lVJLuL.model-the-first-engagement
+connection-ids-used:
+- CAP@1784482403.pLMHKe---VS@1784483003.klQ_6-@@archimate-serving
+- CAP@1784482403.pLMHKe---VS@1784483095.Az7GVi@@archimate-serving
+- CAP@1784482403.pLMHKe---VS@1784483104.lVJLuL@@archimate-serving
+- CAP@1784482412.db4AQh---VS@1784483097.CBbqVO@@archimate-serving
+- CAP@1784482412.db4AQh---VS@1784483104.lVJLuL@@archimate-serving
+- STK@1784482958.KNwgP7---VS@1784483003.klQ_6-@@archimate-association
+- VAL@1784482981.bisnF2---STK@1784482958.KNwgP7@@archimate-association
+- VS@1784483003.klQ_6----VAL@1784482981.bisnF2@@archimate-association
+- VS@1784483084.Io9UQd---VS@1784483095.Az7GVi@@archimate-flow
+- VS@1784483095.Az7GVi---VS@1784483097.CBbqVO@@archimate-flow
+- VS@1784483097.CBbqVO---VS@1784483104.lVJLuL@@archimate-flow
+- VS@1784483003.klQ_6----VS@1784483095.Az7GVi@@archimate-composition
+- VS@1784483003.klQ_6----VS@1784483097.CBbqVO@@archimate-composition
+- VS@1784483003.klQ_6----VS@1784483084.Io9UQd@@archimate-composition
+- VS@1784483003.klQ_6----VS@1784483104.lVJLuL@@archimate-composition
+last-updated: '2026-07-29T13:30:34Z'
+---
+@startuml value-stream--adopt-the-platform
+hide stereotype
+
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 12
+skinparam shadowing false
+skinparam roundcorner 4
+skinparam backgroundColor #FAFAFA
+
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 80
+!define Rel_Triggering(from, to, label) from --> to
+!define Rel_Realization(from, to, label) from ..|> to
+!define Rel_Realization_Up(from, to, label) from ..|> to
+!define Rel_Serving(from, to, label) from --> to
+!define Rel_Association(from, to, label) from -- to
+!define Rel_Association_Left(from, to, label) from -- to
+!define Rel_Association_Right(from, to, label) from -- to
+!define Rel_Access(from, to, label) from ..> to
+!define Rel_Influence(from, to, label) from ..> to
+skinparam rectangle<<MotivationGrouping>> {
+  BackgroundColor #F7EEF9
+  BorderColor #7B3F9A
+}
+skinparam rectangle<<StrategyGrouping>> {
+  BackgroundColor #FAF0D9
+  BorderColor #8B6914
+}
+skinparam rectangle<<capability>> {
+  BackgroundColor #F5DEB3
+  BorderColor #8B6914
+}
+skinparam rectangle<<stakeholder>> {
+  BackgroundColor #EDD6F0
+  BorderColor #7B3F9A
+}
+skinparam rectangle<<value>> {
+  BackgroundColor #EDD6F0
+  BorderColor #7B3F9A
+}
+skinparam rectangle<<value_stream>> {
+  BackgroundColor #F5DEB3
+  BorderColor #8B6914
+}
+sprite $archimate_capability <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3.10 11.25h9.80v1.30H3.10z" fill="#252327"/><path d="M4.00 8.80h1.90v3.10H4.00z" fill="#252327"/><path d="M6.80 6.80h1.90v5.10H6.80z" fill="#252327"/><path d="M9.60 4.70h1.90v7.20H9.60z" fill="#252327"/></svg>
+sprite $archimate_stakeholder <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3.1 4.1h7.3L13 8l-2.6 3.9H3.1L5.6 8z"  fill="#252327" stroke="none"/></svg>
+sprite $archimate_value <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><ellipse cx="8" cy="8" rx="6.5" ry="4"  fill="none" stroke="#252327" stroke-width="1.3"/></svg>
+sprite $archimate_value_stream <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.5 5h7l2.5 3-2.5 3h-7l2-3z"  fill="#252327" stroke="none"/></svg>
+
+title Value Stream: Adopt the Platform
+
+rectangle "Motivation" <<MotivationGrouping>> as DOM_motivation {
+  rectangle "<$archimate_value{scale=1.2}> Low-Friction Adoption" <<value>> as VAL_bisnF2
+
+  rectangle "<$archimate_stakeholder{scale=1.2}> Platform Adopter" <<stakeholder>> as STK_KNwgP7
+
+}
+
+rectangle "Strategy" <<StrategyGrouping>> as DOM_strategy {
+  rectangle "Capabilities" <<StrategyGrouping>> as GRPT_strategy_1 {
+    rectangle "<$archimate_capability{scale=1.2}> Agent-Native Architecture Collaboration" <<capability>> as CAP_db4AQh
+    rectangle "<$archimate_capability{scale=1.2}> Architecture Knowledge Management" <<capability>> as CAP_pLMHKe
+  }
+  CAP_db4AQh -[hidden]right- CAP_pLMHKe
+
+  rectangle "<$archimate_value_stream{scale=1.2}> Adopt the Platform" <<value_stream>> as VS_klQ_6_ {
+    rectangle "<$archimate_value_stream{scale=1.2}> Install & Configure the Platform" <<value_stream>> as VS_Az7GVi
+    rectangle "<$archimate_value_stream{scale=1.2}> Import Authoring Guidance" <<value_stream>> as VS_CBbqVO
+    rectangle "<$archimate_value_stream{scale=1.2}> Discover & Evaluate the Platform" <<value_stream>> as VS_Io9UQd
+    rectangle "<$archimate_value_stream{scale=1.2}> Model the First Engagement" <<value_stream>> as VS_lVJLuL
+    VS_Io9UQd -[hidden]down- VS_Az7GVi
+    VS_Az7GVi -[hidden]down- VS_CBbqVO
+    VS_CBbqVO -[hidden]down- VS_lVJLuL
+  }
+
+}
+
+' Connections
+CAP_pLMHKe --> VS_klQ_6_
+CAP_pLMHKe --> VS_Az7GVi
+CAP_pLMHKe --> VS_lVJLuL
+CAP_db4AQh --> VS_CBbqVO
+CAP_db4AQh --> VS_lVJLuL
+STK_KNwgP7 -down- VS_klQ_6_
+VAL_bisnF2 -- STK_KNwgP7
+VS_klQ_6_ -up- VAL_bisnF2
+VS_Io9UQd ..> VS_Az7GVi
+VS_Az7GVi ..> VS_CBbqVO
+VS_CBbqVO ..> VS_lVJLuL
+
+@enduml

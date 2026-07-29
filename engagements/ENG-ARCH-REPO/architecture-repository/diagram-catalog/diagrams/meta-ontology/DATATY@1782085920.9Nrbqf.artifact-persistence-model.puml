@@ -1,0 +1,323 @@
+---
+artifact-id: DATATY@1782085920.9Nrbqf.artifact-persistence-model
+artifact-type: diagram
+name: Artifact Persistence Model
+version: 0.1.0
+status: draft
+keywords:
+- meta-ontology
+- datatype
+- self-model
+- persistence
+diagram-type: datatype
+diagram-format-version: 2
+entity-ids-used:
+- DOB@1777239363.QQQFYs.entity-file
+- DOB@1777239299.LeI0v-.outgoing-connections-file
+- DOB@1777239791.4Z28xK.textual-diagram-representation
+- DOB@1777241098.oTbZxl.document-markdown-file
+- DOB@1777239887.V-MgY1.yaml-artifact-frontmatter
+diagram-entities:
+  classifier:
+  - id: CLF@1782085920.ShZ_Qq.artifact
+    classifier_kind: class
+    label: Artifact
+    is_abstract: true
+    role: Any versioned, self-describing model element persisted as a single markdown
+      file; the aggregate root of the file-based repository.
+    internal_consistency_criteria:
+    - 'status must be one of: draft, in-review, accepted, deprecated, superseded'
+    - artifact_id prefix must match the element's declared type
+    external_consistency_criteria:
+    - every artifact_id referenced by a connection endpoint must resolve to an existing
+      Artifact
+    tags:
+    - meta-ontology
+    - aggregate-root
+    attributes:
+    - id: a_aid
+      name: artifact_id
+      type:
+        kind: primitive
+        name: String
+      role: Stable identity token PREFIX@epoch.random.slug; immutable, rename-free
+    - id: a_name
+      name: name
+      type:
+        kind: primitive
+        name: String
+    - id: a_status
+      name: status
+      type:
+        kind: primitive
+        name: String
+    - id: a_ver
+      name: version
+      type:
+        kind: primitive
+        name: String
+    - id: a_path
+      name: path
+      type:
+        kind: primitive
+        name: String
+      role: Filesystem location, derived from id + type
+    identity:
+    - a_aid
+    unique_keys:
+    - name: path
+      attribute_ids:
+      - a_path
+  - id: CLF@1782085920.wrZtUi.entity
+    classifier_kind: class
+    label: Entity
+    role: "A model node (stakeholder, requirement, component, \u2026) persisted as\
+      \ an entity file."
+    internal_consistency_criteria: []
+    external_consistency_criteria: []
+    attributes:
+    - id: en_dom
+      name: domain
+      type:
+        kind: primitive
+        name: String
+    - id: en_cls
+      name: element_class
+      type:
+        kind: primitive
+        name: String
+      optional: true
+  - id: CLF@1782085920.LEgkrJ.connection
+    classifier_kind: class
+    label: Connection
+    role: A directed, typed relationship between two artifacts, stored in the source's
+      outgoing-connections file.
+    internal_consistency_criteria:
+    - source_id and target_id must differ
+    external_consistency_criteria:
+    - conn_type must be permitted between the endpoint types by the ontology
+    attributes:
+    - id: cn_src
+      name: source_id
+      type:
+        kind: primitive
+        name: String
+    - id: cn_tgt
+      name: target_id
+      type:
+        kind: primitive
+        name: String
+    - id: cn_typ
+      name: conn_type
+      type:
+        kind: primitive
+        name: String
+    - id: cn_sc
+      name: src_cardinality
+      type:
+        kind: primitive
+        name: String
+      optional: true
+    - id: cn_tc
+      name: tgt_cardinality
+      type:
+        kind: primitive
+        name: String
+      optional: true
+    identity:
+    - cn_src
+    - cn_typ
+    - cn_tgt
+  - id: CLF@1782085920.ntOKAT.diagram
+    classifier_kind: class
+    label: Diagram
+    role: A view persisted as PlantUML with typed frontmatter and a rendered image.
+    internal_consistency_criteria: []
+    external_consistency_criteria: []
+    attributes:
+    - id: dg_typ
+      name: diagram_type
+      type:
+        kind: primitive
+        name: String
+    - id: dg_puml
+      name: puml
+      type:
+        kind: primitive
+        name: String
+    - id: dg_png
+      name: rendered_png
+      type:
+        kind: primitive
+        name: String
+      optional: true
+  - id: CLF@1782085920.5QwRvq.document
+    classifier_kind: class
+    label: Document
+    role: Narrative content (ADR, standard, guide) persisted as a markdown document.
+    internal_consistency_criteria: []
+    external_consistency_criteria: []
+    attributes:
+    - id: do_typ
+      name: doc_type
+      type:
+        kind: primitive
+        name: String
+    - id: do_body
+      name: body
+      type:
+        kind: primitive
+        name: String
+  - id: CLF@1782085920.GKQcVR.frontmatter
+    classifier_kind: datatype
+    label: Frontmatter
+    role: The YAML frontmatter block carrying typed metadata for an artifact; a value
+      object equal by content.
+    internal_consistency_criteria:
+    - artifact_type must be declared by some registered ontology or diagram type
+    external_consistency_criteria: []
+    attributes:
+    - id: fm_typ
+      name: artifact_type
+      type:
+        kind: primitive
+        name: String
+    - id: fm_kw
+      name: keywords
+      type:
+        kind: primitive
+        name: String
+      multiplicity: '*'
+    - id: fm_prov
+      name: provenance_note
+      type:
+        kind: primitive
+        name: String
+      optional: true
+  generalization_set:
+  - id: GSET@1782085920.phIA2g.artifact-kind
+    label: artifact-kind
+    is_covering: true
+    is_disjoint: true
+connections:
+- id: g1
+  conn_type: dt-generalization
+  source: CLF@1782085920.wrZtUi.entity
+  target: CLF@1782085920.ShZ_Qq.artifact
+  generalization_set: GSET@1782085920.phIA2g.artifact-kind
+- id: g2
+  conn_type: dt-generalization
+  source: CLF@1782085920.LEgkrJ.connection
+  target: CLF@1782085920.ShZ_Qq.artifact
+  generalization_set: GSET@1782085920.phIA2g.artifact-kind
+- id: g3
+  conn_type: dt-generalization
+  source: CLF@1782085920.ntOKAT.diagram
+  target: CLF@1782085920.ShZ_Qq.artifact
+  generalization_set: GSET@1782085920.phIA2g.artifact-kind
+- id: g4
+  conn_type: dt-generalization
+  source: CLF@1782085920.5QwRvq.document
+  target: CLF@1782085920.ShZ_Qq.artifact
+  generalization_set: GSET@1782085920.phIA2g.artifact-kind
+- id: comp1
+  conn_type: dt-composition
+  source: CLF@1782085920.ShZ_Qq.artifact
+  target: CLF@1782085920.GKQcVR.frontmatter
+  tgt_cardinality: '1'
+bindings:
+- id: bind-CLF@1782085920.wrZtUi.entity
+  subject:
+    kind: entity
+    id: CLF@1782085920.wrZtUi.entity
+  correspondence_kind: represents
+  target:
+    entity_id: DOB@1777239363.QQQFYs.entity-file
+- id: bind-CLF@1782085920.LEgkrJ.connection
+  subject:
+    kind: entity
+    id: CLF@1782085920.LEgkrJ.connection
+  correspondence_kind: represents
+  target:
+    entity_id: DOB@1777239299.LeI0v-.outgoing-connections-file
+- id: bind-CLF@1782085920.ntOKAT.diagram
+  subject:
+    kind: entity
+    id: CLF@1782085920.ntOKAT.diagram
+  correspondence_kind: represents
+  target:
+    entity_id: DOB@1777239791.4Z28xK.textual-diagram-representation
+- id: bind-CLF@1782085920.5QwRvq.document
+  subject:
+    kind: entity
+    id: CLF@1782085920.5QwRvq.document
+  correspondence_kind: represents
+  target:
+    entity_id: DOB@1777241098.oTbZxl.document-markdown-file
+- id: bind-CLF@1782085920.GKQcVR.frontmatter
+  subject:
+    kind: entity
+    id: CLF@1782085920.GKQcVR.frontmatter
+  correspondence_kind: represents
+  target:
+    entity_id: DOB@1777239887.V-MgY1.yaml-artifact-frontmatter
+last-updated: '2026-07-29T13:29:33Z'
+---
+@startuml Artifact Persistence Model
+title Artifact Persistence Model
+skinparam linetype ortho
+
+abstract class "Artifact" as _CLF_1782085920_ShZ_Qq_artifact {
+  + artifact_id : String {id}
+  + name : String
+  + status : String
+  + version : String
+  + path : String {unique:path}
+}
+note right of _CLF_1782085920_ShZ_Qq_artifact
+«unique path» (path)
+end note
+
+class "Entity" as _CLF_1782085920_wrZtUi_entity {
+  + domain : String
+  + element_class : String {optional}
+}
+
+class "Connection" as _CLF_1782085920_LEgkrJ_connection {
+  + source_id : String {id}
+  + target_id : String {id}
+  + conn_type : String {id}
+  + src_cardinality : String {optional}
+  + tgt_cardinality : String {optional}
+}
+note right of _CLF_1782085920_LEgkrJ_connection
+«identity» (source_id, conn_type, target_id)
+end note
+
+class "Diagram" as _CLF_1782085920_ntOKAT_diagram {
+  + diagram_type : String
+  + puml : String
+  + rendered_png : String {optional}
+}
+
+class "Document" as _CLF_1782085920_5QwRvq_document {
+  + doc_type : String
+  + body : String
+}
+
+class "Frontmatter" as _CLF_1782085920_GKQcVR_frontmatter <<datatype>> {
+  + artifact_type : String
+  + keywords : String [*]
+  + provenance_note : String {optional}
+}
+
+_CLF_1782085920_wrZtUi_entity --|> _CLF_1782085920_ShZ_Qq_artifact
+_CLF_1782085920_LEgkrJ_connection --|> _CLF_1782085920_ShZ_Qq_artifact
+_CLF_1782085920_ntOKAT_diagram --|> _CLF_1782085920_ShZ_Qq_artifact
+_CLF_1782085920_5QwRvq_document --|> _CLF_1782085920_ShZ_Qq_artifact
+_CLF_1782085920_ShZ_Qq_artifact *-- _CLF_1782085920_GKQcVR_frontmatter
+note bottom of _CLF_1782085920_ShZ_Qq_artifact
+GeneralizationSet «artifact-kind» {complete, disjoint}
+end note
+
+@enduml

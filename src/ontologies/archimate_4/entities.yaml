@@ -1,0 +1,408 @@
+# Entity Ontology — ArchiMate 4.0 entity type definitions
+#
+# Single source of truth for entity type metadata, classification hierarchy,
+# and domain assignments.  Loaded by src/ontologies/archimate_4/_loader.py.
+#
+# Fields per entity type:
+#   prefix              – short ID prefix (e.g. STK, DRV)
+#   hierarchy           – domain-level path segments under model/; the loader
+#                         appends the artifact_type name as the final segment
+#   element_classes     – ArchiMate 4.0 abstract classification classes
+#   create_when         - A brief description for when to model something as this type
+#   never_create_when   - A brief description for when never to model something as this type
+
+# ArchiMate layer hierarchy for canvas ordering: motivation above strategy, both
+# above business/application/technology which center around common; implementation
+# & migration outermost. Not strictly one-dimensional, but the reading order is.
+domain_order: [motivation, strategy, business, common, application, technology, implementation]
+
+element_classes:
+  motivation-element:
+    description: ArchiMate motivation layer element
+  structure-element:
+    description: Static structural element (ArchiMate)
+  behavior-element:
+    description: Dynamic/behavioral element (ArchiMate)
+  strategy-behavior-element:
+    description: Strategy-layer behavioral element
+  active-structure-element:
+    description: Active structure element that can perform behavior
+  internal-active-structure-element:
+    description: Active structure element that is internal to the enterprise
+  external-active-structure-element:
+    description: Active structure element that is external (interface)
+  technology-internal-active-structure-element:
+    description: Technology-layer internal active structure element
+  passive-structure-element:
+    description: Passive structure element (data, objects, artifacts)
+  composite-element:
+    description: Composite element that aggregates others (products, plateaus)
+  internal-behavior-element:
+    description: Behavioral element representing internal behavior
+  junction:
+    description: Junction element for combining or splitting relationships
+  internal:
+    description: Internal system element not directly modelable by users
+
+# ── Which elements act ────────────────────────────────────────────────────────
+# A behavioural element is one that does something which can be done well or badly: a component, a
+# service, a function, a process, a device. Declared here because it is a fact about ArchiMate's own
+# vocabulary; consumers ask for the resolved set and never see a class name. The failure-mode
+# surfaces are the first caller — a failure mode enumerates ways something malfunctions, and a goal
+# does not malfunction, it is met or missed.
+behavioral_element_classes:
+  - active-structure-element   # its own description: "can perform behavior"
+  - behavior-element
+
+# Subtracted because ArchiMate's taxonomy is coarser than the question here: capability, course of
+# action and value stream all declare `behavior-element` alongside this one, and a capability does
+# not malfunction — it is held or missing.
+non_behavioral_element_classes:
+  - strategy-behavior-element
+
+# Additive, for a type whose class does not capture that it acts. Empty: the classes above resolve
+# every case in this ontology today, and an entry here is a hint that the taxonomy wants attention.
+behavioral_element_types: []
+
+# Subtractive counterpart, for a class that is ever mostly behavioural with one exception inside it.
+# Empty for the same reason. An explicit exclusion here outranks an explicit inclusion above.
+non_behavioral_element_types: []
+
+
+entity_types:
+
+  # ── Motivation Domain ────────────────────────────────────────────────────
+  stakeholder:
+    prefix: STK
+    hierarchy: [motivation]
+    classes: [motivation-element]
+    create_when: ""
+    never_create_when: ""
+
+  driver:
+    prefix: DRV
+    hierarchy: [motivation]
+    classes: [motivation-element]
+    create_when: ""
+    never_create_when: ""
+
+  assessment:
+    prefix: ASS
+    hierarchy: [motivation]
+    classes: [motivation-element]
+    create_when: ""
+    never_create_when: ""
+
+  goal:
+    prefix: GOL
+    hierarchy: [motivation]
+    classes: [motivation-element]
+    create_when: ""
+    never_create_when: ""
+
+  outcome:
+    prefix: OUT
+    hierarchy: [motivation]
+    classes: [motivation-element]
+    create_when: ""
+    never_create_when: ""
+
+  principle:
+    prefix: PRI
+    hierarchy: [motivation]
+    classes: [motivation-element]
+    create_when: ""
+    never_create_when: ""
+
+  requirement:
+    prefix: REQ
+    hierarchy: [motivation]
+    classes: [motivation-element]
+    create_when: ""
+    never_create_when: ""
+
+  meaning:
+    prefix: MEA
+    hierarchy: [motivation]
+    classes: [motivation-element]
+    create_when: ""
+    never_create_when: ""
+
+  value:
+    prefix: VAL
+    hierarchy: [motivation]
+    classes: [motivation-element]
+    create_when: ""
+    never_create_when: ""
+
+
+  # ── Strategy Domain ──────────────────────────────────────────────────────
+  capability:
+    prefix: CAP
+    hierarchy: [strategy]
+    classes: [behavior-element, strategy-behavior-element]
+    create_when: ""
+    never_create_when: ""
+
+  value-stream:
+    prefix: VS
+    hierarchy: [strategy]
+    classes: [behavior-element, strategy-behavior-element]
+    create_when: ""
+    never_create_when: ""
+
+  resource:
+    prefix: RES
+    hierarchy: [strategy]
+    classes: [structure-element]
+    create_when: ""
+    never_create_when: ""
+
+  course-of-action:
+    prefix: COA
+    hierarchy: [strategy]
+    classes: [behavior-element, strategy-behavior-element]
+    create_when: ""
+    never_create_when: ""
+
+  # ── Common Domain (domain-neutral behavioral elements) ───────────────────
+  service:
+    prefix: SRV
+    hierarchy: [common]
+    classes: [behavior-element]
+    create_when: ""
+    never_create_when: ""
+
+  process:
+    prefix: PRC
+    hierarchy: [common]
+    classes: [behavior-element, internal-behavior-element]
+    create_when: ""
+    never_create_when: ""
+
+  function:
+    prefix: FNC
+    hierarchy: [common]
+    classes: [behavior-element, internal-behavior-element]
+    create_when: ""
+    never_create_when: ""
+
+  event:
+    prefix: EVT
+    hierarchy: [common]
+    classes: [behavior-element]
+    create_when: ""
+    never_create_when: ""
+
+  role:
+    prefix: ROL
+    hierarchy: [common]
+    classes: [active-structure-element, internal-active-structure-element]
+    create_when: ""
+    never_create_when: ""
+
+  collaboration:
+    prefix: COL
+    hierarchy: [common]
+    classes: [active-structure-element, internal-active-structure-element]
+    create_when: ""
+    never_create_when: ""
+
+  path:
+    prefix: PTH
+    hierarchy: [common]
+    classes: [active-structure-element]
+    create_when: ""
+    never_create_when: ""
+
+  and-junction:
+    prefix: JNA
+    hierarchy: [common]
+    classes: [junction]
+    create_when: ""
+    never_create_when: ""
+
+  or-junction:
+    prefix: JNO
+    hierarchy: [common]
+    classes: [junction]
+    create_when: ""
+    never_create_when: ""
+
+  grouping:
+    prefix: GRP
+    hierarchy: [common]
+    classes: [composite-element]
+    create_when: ""
+    never_create_when: ""
+
+  location:
+    prefix: LOC
+    hierarchy: [common]
+    classes: [composite-element]
+    create_when: ""
+    never_create_when: ""
+
+
+  # ── Business Domain ──────────────────────────────────────────────────────
+  business-actor:
+    prefix: ACT
+    hierarchy: [business]
+    classes: [active-structure-element, internal-active-structure-element]
+    create_when: ""
+    never_create_when: ""
+
+  business-interface:
+    prefix: BIF
+    hierarchy: [business]
+    classes: [active-structure-element, external-active-structure-element]
+    create_when: ""
+    never_create_when: ""
+
+  business-object:
+    prefix: BOB
+    hierarchy: [business]
+    classes: [passive-structure-element]
+    create_when: ""
+    never_create_when: ""
+
+  product:
+    prefix: PRD
+    hierarchy: [business]
+    classes: [composite-element]
+    create_when: ""
+    never_create_when: ""
+
+  # ── Application Domain ───────────────────────────────────────────────────
+  application-component:
+    prefix: APP
+    hierarchy: [application]
+    classes: [active-structure-element, internal-active-structure-element]
+    create_when: ""
+    never_create_when: ""
+
+  application-interface:
+    prefix: AIF
+    hierarchy: [application]
+    classes: [active-structure-element, external-active-structure-element]
+    create_when: ""
+    never_create_when: ""
+
+  data-object:
+    prefix: DOB
+    hierarchy: [application]
+    classes: [passive-structure-element]
+    create_when: ""
+    never_create_when: ""
+
+  # ── Technology Domain ────────────────────────────────────────────────────
+  technology-node:
+    prefix: NOD
+    hierarchy: [technology]
+    classes: [active-structure-element, internal-active-structure-element, technology-internal-active-structure-element]
+    create_when: ""
+    never_create_when: ""
+
+  device:
+    prefix: DEV
+    hierarchy: [technology]
+    classes: [active-structure-element, internal-active-structure-element, technology-internal-active-structure-element]
+    create_when: ""
+    never_create_when: ""
+
+  system-software:
+    prefix: SSW
+    hierarchy: [technology]
+    classes: [active-structure-element, internal-active-structure-element, technology-internal-active-structure-element]
+    create_when: ""
+    never_create_when: ""
+
+  technology-interface:
+    prefix: TIF
+    hierarchy: [technology]
+    classes: [active-structure-element, external-active-structure-element]
+    create_when: ""
+    never_create_when: ""
+
+  communication-network:
+    prefix: NET
+    hierarchy: [technology]
+    classes: [active-structure-element]
+    create_when: ""
+    never_create_when: ""
+
+  artifact:
+    prefix: ART
+    hierarchy: [technology]
+    classes: [passive-structure-element]
+    create_when: ""
+    never_create_when: ""
+
+  equipment:
+    prefix: EQP
+    hierarchy: [technology]
+    classes: [active-structure-element, internal-active-structure-element, technology-internal-active-structure-element]
+    create_when: ""
+    never_create_when: ""
+
+  facility:
+    prefix: FAC
+    hierarchy: [technology]
+    classes: [active-structure-element, internal-active-structure-element, technology-internal-active-structure-element]
+    create_when: ""
+    never_create_when: ""
+
+  distribution-network:
+    prefix: DIS
+    hierarchy: [technology]
+    classes: [active-structure-element]
+    create_when: ""
+    never_create_when: ""
+
+  material:
+    prefix: MAT
+    hierarchy: [technology]
+    classes: [passive-structure-element]
+    create_when: ""
+    never_create_when: ""
+
+  # ── Implementation & Migration Domain ────────────────────────────────────
+  work-package:
+    prefix: WP
+    hierarchy: [implementation]
+    classes: [behavior-element]
+    create_when: ""
+    never_create_when: ""
+
+  deliverable:
+    prefix: DEL
+    hierarchy: [implementation]
+    classes: [passive-structure-element]
+    create_when: ""
+    never_create_when: ""
+
+  plateau:
+    prefix: PLT
+    hierarchy: [implementation]
+    classes: [composite-element]
+    create_when: ""
+    never_create_when: ""
+
+  # ── Cross-repo Reference ─────────────────────────────────────────────────
+  # NOT an ArchiMate element.  Created automatically as a per-engagement proxy
+  # for a global (enterprise) entity.  May not be created or edited directly;
+  # only produced by the connection-to-global-entity mechanism.
+  #
+  # Connection surface: a GAR carries EXACTLY the permitted connections of the
+  # entity type (and specialization) it references — resolved per instance at
+  # validation time (src/application/global_reference_endpoints.py), since a
+  # type-level pair rule cannot express it. One tier invariant on top: the
+  # global object (and thus its reference) is never the SOURCE of a directed
+  # relationship — only incoming and symmetric relationships may attach.
+  global-artifact-reference:
+    prefix: GAR
+    hierarchy: [common]
+    internal: true              # not a modelling element — skipped by domain display
+    classes: [internal]
+    create_when: ""
+    never_create_when: ""

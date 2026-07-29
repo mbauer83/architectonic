@@ -1,0 +1,170 @@
+---
+artifact-id: ARC@1777452513.R4UzcD.from-write-to-consistent-state
+artifact-type: diagram
+name: From Write to Consistent State
+version: 0.1.0
+status: draft
+keywords:
+- workflow
+- write
+- consistency
+- indexing
+- pipeline
+- events
+diagram-type: archimate-application
+entity-ids-used:
+- APP@1776149382.lmO0mp.gui-authoring-tool
+- EVT@1777399929.BKj6NZ.staged-repository-committed
+- EVT@1777390507.UCrh3V.architecture-repository-change-detected
+- EVT@1776633084.b6XB2D.repository-indexed
+- EVT@1777399928.diAYsj.bulk-write-requested
+- EVT@1777390504.hDF1Qz.artifacts-promoted
+- EVT@1777399929.m-E9P1.bulk-delete-requested
+- EVT@1777390505.tTktu8.artifact-write-requested
+- FNC@1777390460.3ZsfnT.broadcast-model-update
+- FNC@1776637537.YD31f3.enqueue-write-commands
+- FNC@1776633702.b3mOTJ.build-connection-graph
+- FNC@1777390446.dxb6ru.index-repository
+- PRC@1777399926.gtgYvQ.execute-staged-write-transaction
+- PRC@1777409610.wqtZ0P.coordinate-repository-state
+- FNC@1776633708.n_JYA2.alias-resolution
+connection-ids-used:
+- EVT@1777390505.tTktu8---FNC@1776637537.YD31f3@@archimate-triggering
+- EVT@1777399928.diAYsj---FNC@1776637537.YD31f3@@archimate-triggering
+- EVT@1777399929.m-E9P1---FNC@1776637537.YD31f3@@archimate-triggering
+- FNC@1776637537.YD31f3---PRC@1777399926.gtgYvQ@@archimate-triggering
+- PRC@1777399926.gtgYvQ---EVT@1777399929.BKj6NZ@@archimate-triggering
+- EVT@1777399929.BKj6NZ---FNC@1777390446.dxb6ru@@archimate-triggering
+- EVT@1777390504.hDF1Qz---FNC@1777390446.dxb6ru@@archimate-triggering
+- EVT@1777390507.UCrh3V---FNC@1777390446.dxb6ru@@archimate-triggering
+- FNC@1777390446.dxb6ru---EVT@1776633084.b6XB2D@@archimate-triggering
+- EVT@1776633084.b6XB2D---FNC@1777390460.3ZsfnT@@archimate-triggering
+- FNC@1777390460.3ZsfnT---APP@1776149382.lmO0mp@@archimate-association
+- PRC@1777409610.wqtZ0P---FNC@1776637537.YD31f3@@archimate-composition
+- PRC@1777409610.wqtZ0P---PRC@1777399926.gtgYvQ@@archimate-aggregation
+- PRC@1777409610.wqtZ0P---FNC@1777390446.dxb6ru@@archimate-composition
+- FNC@1777390446.dxb6ru---FNC@1776633702.b3mOTJ@@archimate-composition
+- PRC@1777409610.wqtZ0P---FNC@1777390460.3ZsfnT@@archimate-composition
+- FNC@1777390446.dxb6ru---FNC@1776633708.n_JYA2@@archimate-composition
+authored-groupings:
+- label: Write Requests
+  stereotype: CommonGrouping
+  entity-ids:
+  - EVT@1777390505.tTktu8.artifact-write-requested
+  - EVT@1777399928.diAYsj.bulk-write-requested
+  - EVT@1777399929.m-E9P1.bulk-delete-requested
+- label: Change Events
+  stereotype: CommonGrouping
+  entity-ids:
+  - EVT@1777390504.hDF1Qz.artifacts-promoted
+  - EVT@1777390507.UCrh3V.architecture-repository-change-detected
+last-updated: '2026-07-29T13:29:49Z'
+---
+@startuml from-write-to-consistent-state
+hide stereotype
+
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 12
+skinparam shadowing false
+skinparam roundcorner 4
+skinparam backgroundColor #FAFAFA
+
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 80
+!define Rel_Triggering(from, to, label) from --> to
+!define Rel_Realization(from, to, label) from ..|> to
+!define Rel_Realization_Up(from, to, label) from ..|> to
+!define Rel_Serving(from, to, label) from --> to
+!define Rel_Association(from, to, label) from -- to
+!define Rel_Association_Left(from, to, label) from -- to
+!define Rel_Association_Right(from, to, label) from -- to
+!define Rel_Access(from, to, label) from ..> to
+!define Rel_Influence(from, to, label) from ..> to
+skinparam rectangle<<ApplicationGrouping>> {
+  BackgroundColor #E8F8FF
+  BorderColor #0078A0
+}
+skinparam rectangle<<CommonGrouping>> {
+  BackgroundColor #EDE8E1
+  BorderColor #8C7E6A
+}
+skinparam rectangle<<application_component>> {
+  BackgroundColor #CCF2FF
+  BorderColor #0078A0
+}
+skinparam rectangle<<event>> {
+  BackgroundColor #E0D8CC
+  BorderColor #8C7E6A
+}
+skinparam rectangle<<function>> {
+  BackgroundColor #E0D8CC
+  BorderColor #8C7E6A
+}
+skinparam rectangle<<process>> {
+  BackgroundColor #E0D8CC
+  BorderColor #8C7E6A
+}
+sprite $archimate_application_component <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M4 4.2h7.4v7.6H4z"  fill="#252327" stroke="none"/><path d="M2.30 4.95h1.70v1.30H2.30z" fill="#252327"/><path d="M2.30 7.35h1.70v1.30H2.30z" fill="#252327"/><path d="M2.30 9.75h1.70v1.30H2.30z" fill="#252327"/><path d="M11.40 4.95h1.40v1.30H11.40z" fill="#252327"/><path d="M11.40 7.35h1.40v1.30H11.40z" fill="#252327"/><path d="M11.40 9.75h1.40v1.30H11.40z" fill="#252327"/></svg>
+sprite $archimate_event <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3.1 4h5.6a3.8 3.8 0 0 1 0 8H3.1l2.1-4z"  fill="#252327" stroke="none"/></svg>
+sprite $archimate_function <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.9 11.7V5.4L8 3.1l5.1 2.3v6.3L8 9.2z"  fill="#252327" stroke="none"/></svg>
+sprite $archimate_process <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.6 4.1h6.3V2.8l4.5 5.2-4.5 5.2v-1.3H2.6z"  fill="#252327" stroke="none"/></svg>
+
+title From Write to Consistent State
+
+rectangle "Write Requests" <<CommonGrouping>> as GRPA_1 {
+  rectangle "<$archimate_event{scale=1.2}> Artifact Write Requested\n«Application Event»" <<event>> as EVT_tTktu8
+  rectangle "<$archimate_event{scale=1.2}> Bulk Write Requested\n«Application Event»" <<event>> as EVT_diAYsj
+  rectangle "<$archimate_event{scale=1.2}> Bulk Delete Requested\n«Application Event»" <<event>> as EVT_m_E9P1
+}
+EVT_tTktu8 -[hidden]right- EVT_diAYsj
+EVT_diAYsj -[hidden]right- EVT_m_E9P1
+
+rectangle "Change Events" <<CommonGrouping>> as GRPA_2 {
+  rectangle "<$archimate_event{scale=1.2}> Artifacts Promoted\n«Application Event»" <<event>> as EVT_hDF1Qz
+  rectangle "<$archimate_event{scale=1.2}> Architecture Repository Change Detected\n«Application Event»" <<event>> as EVT_UCrh3V
+}
+EVT_hDF1Qz -[hidden]right- EVT_UCrh3V
+GRPA_1 -[hidden]down- GRPA_2
+
+rectangle "Common" <<CommonGrouping>> as DOM_common {
+  rectangle "<$archimate_process{scale=1.2}> Coordinate Repository State\n«Application Process»" <<process>> as PRC_wqtZ0P {
+    rectangle "<$archimate_event{scale=1.2}> Staged Repository Committed\n«Application Event»" <<event>> as EVT_BKj6NZ
+    rectangle "<$archimate_event{scale=1.2}> Repository Indexed\n«Application Event»" <<event>> as EVT_b6XB2D
+    rectangle "<$archimate_function{scale=1.2}> Broadcast Model Update\n«Application Function»" <<function>> as FNC_3ZsfnT
+    rectangle "<$archimate_function{scale=1.2}> Enqueue Write Commands\n«Application Function»" <<function>> as FNC_YD31f3
+    rectangle "<$archimate_function{scale=1.2}> Index Repository\n«Application Function»" <<function>> as FNC_dxb6ru {
+      rectangle "<$archimate_function{scale=1.2}> Build Connection Graph\n«Application Function»" <<function>> as FNC_b3mOTJ
+      rectangle "<$archimate_function{scale=1.2}> Alias Resolution\n«Application Function»" <<function>> as FNC_n_JYA2
+      FNC_b3mOTJ -[hidden]down- FNC_n_JYA2
+    }
+    rectangle "<$archimate_process{scale=1.2}> Execute Staged Write Transaction\n«Application Process»" <<process>> as PRC_gtgYvQ
+    FNC_YD31f3 -[hidden]down- PRC_gtgYvQ
+    PRC_gtgYvQ -[hidden]down- EVT_BKj6NZ
+    EVT_BKj6NZ -[hidden]down- FNC_dxb6ru
+    FNC_dxb6ru -[hidden]down- EVT_b6XB2D
+    EVT_b6XB2D -[hidden]down- FNC_3ZsfnT
+  }
+
+}
+
+rectangle "Application" <<ApplicationGrouping>> as DOM_application {
+  rectangle "<$archimate_application_component{scale=1.2}> GUI Authoring Tool\n«Service»" <<application_component>> as APP_lmO0mp
+
+}
+DOM_common -[hidden]down- DOM_application
+
+' Connections
+EVT_tTktu8 --> FNC_YD31f3
+EVT_diAYsj --> FNC_YD31f3
+EVT_m_E9P1 --> FNC_YD31f3
+FNC_YD31f3 --> PRC_gtgYvQ
+PRC_gtgYvQ --> EVT_BKj6NZ
+EVT_BKj6NZ --> FNC_dxb6ru
+EVT_hDF1Qz --> FNC_dxb6ru
+EVT_UCrh3V --> FNC_dxb6ru
+FNC_dxb6ru --> EVT_b6XB2D
+EVT_b6XB2D --> FNC_3ZsfnT
+FNC_3ZsfnT -- APP_lmO0mp
+
+@enduml

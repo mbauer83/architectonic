@@ -1,0 +1,155 @@
+---
+artifact-id: SEQ@1781338373.XPtsGv.from-a-write-to-a-consistent-broadcast-state
+artifact-type: diagram
+name: From a Write to a Consistent, Broadcast State
+version: 0.1.0
+status: draft
+diagram-type: sequence
+diagram-entities:
+  lifeline:
+  - id: author
+    label: Author or AI Agent
+    participant_type: actor
+  - id: mcp
+    label: MCP / REST Write Surface
+    participant_type: boundary
+  - id: queue
+    label: Write Request Queue
+    participant_type: queue
+  - id: verifier
+    label: Model Verifier
+    participant_type: control
+  - id: publisher
+    label: Staged Write Transaction Manager
+    participant_type: control
+  - id: git
+    label: Git Repository
+    participant_type: database
+  - id: gui
+    label: GUI (SSE)
+    participant_type: boundary
+  message:
+  - id: m1
+    label: create / edit artifact
+    arrow: sync
+  - id: m2
+    label: enqueue write (all surfaces, serialized)
+    arrow: sync
+  - id: m3
+    label: 'verify: schema, references, diagram syntax'
+    arrow: sync
+  - id: m4
+    label: valid
+    arrow: reply
+  - id: m5
+    label: publish verified change
+    arrow: sync
+  - id: m6
+    label: 'one file: atomic replace / many files: M4 manifest'
+    arrow: sync
+  - id: m7
+    label: committed + index refreshed
+    arrow: reply
+  - id: m8
+    label: broadcast model update
+    arrow: async
+  - id: m9
+    label: artifact ids + result
+    arrow: reply
+connections:
+- id: c1
+  conn_type: seq-from
+  source: m1
+  target: author
+- id: c2
+  conn_type: seq-to
+  source: m1
+  target: mcp
+- id: c3
+  conn_type: seq-from
+  source: m2
+  target: mcp
+- id: c4
+  conn_type: seq-to
+  source: m2
+  target: queue
+- id: c5
+  conn_type: seq-from
+  source: m3
+  target: queue
+- id: c6
+  conn_type: seq-to
+  source: m3
+  target: verifier
+- id: c7
+  conn_type: seq-from
+  source: m4
+  target: verifier
+- id: c8
+  conn_type: seq-to
+  source: m4
+  target: queue
+- id: c9
+  conn_type: seq-from
+  source: m5
+  target: queue
+- id: c10
+  conn_type: seq-to
+  source: m5
+  target: publisher
+- id: c11
+  conn_type: seq-from
+  source: m6
+  target: publisher
+- id: c12
+  conn_type: seq-to
+  source: m6
+  target: git
+- id: c13
+  conn_type: seq-from
+  source: m7
+  target: publisher
+- id: c14
+  conn_type: seq-to
+  source: m7
+  target: queue
+- id: c15
+  conn_type: seq-from
+  source: m8
+  target: queue
+- id: c16
+  conn_type: seq-to
+  source: m8
+  target: gui
+- id: c17
+  conn_type: seq-from
+  source: m9
+  target: mcp
+- id: c18
+  conn_type: seq-to
+  source: m9
+  target: author
+last-updated: '2026-07-27T19:09:23Z'
+---
+@startuml from-a-write-to-a-consistent--broadcast-state
+title From a Write to a Consistent, Broadcast State
+
+actor "Author or AI Agent" as author
+boundary "MCP / REST Write Surface" as mcp
+queue "Write Request Queue" as queue
+control "Model Verifier" as verifier
+control "Staged Write Transaction Manager" as publisher
+database "Git Repository" as git
+boundary "GUI (SSE)" as gui
+
+author -> mcp: create / edit artifact
+mcp -> queue: enqueue write (all surfaces, serialized)
+queue -> verifier: verify: schema, references, diagram syntax
+verifier --> queue: valid
+queue -> publisher: publish verified change
+publisher -> git: one file: atomic replace / many files: M4 manifest
+publisher --> queue: committed + index refreshed
+queue ->> gui: broadcast model update
+mcp --> author: artifact ids + result
+
+@enduml

@@ -1,0 +1,11 @@
+name: uca-matrix
+
+ui:
+  label: UCA Matrix
+  description: >-
+    Unsafe Control Actions enumerated per control-action, grouped by UCA type.
+
+# UCAs are STPA's step 4; CAST reuses the same guidewords for observed control actions
+# (mode=observed).
+assurance:
+  methods: [STPA, CAST]

@@ -1,0 +1,47 @@
+# AIBOM derivation-role default bindings for the archimate-4 module.
+#
+# Each role (closed vocabulary — see src/domain/assurance/aibom_roles.py) binds to the connection
+# type(s) and target specialization(s) that realise it in THIS module's conventions. A
+# repository with different conventions overrides a role in `.arch-repo/aibom-roles.yaml`
+# (merged per-role over these defaults). An unbound role is a coverage finding, never a
+# silently empty BOM.
+#
+# The dataset roles (trained-on / evaluated-on / fine-tuned-from) share a default connection
+# binding — a model accesses its data objects — and are distinguished by the dataset's own
+# `Dataset Role` attribute (Training / Evaluation / Fine-tuning); a repo that models them
+# with distinct connection types can override each separately.
+#
+# NOTE for Stream B: PLAN §3 sources `componentData.governance` from `accountable-for` /
+# `responsible-for`, which are CONFIDENTIAL assurance (GRC) relations the public AIBOM
+# derivation cannot see. The default below binds `governed-by` to the architecture-layer
+# `archimate-assignment` (assignment of an accountable active-structure element). Whether
+# governance should additionally read assurance-store accountability edges is a Stream-B
+# question recorded in the ledger.
+roles:
+  trained-on:
+    connection_types: [archimate-access]
+    target_specializations: [ai-dataset]
+  evaluated-on:
+    connection_types: [archimate-access]
+    target_specializations: [ai-dataset]
+  fine-tuned-from:
+    connection_types: [archimate-access]
+    target_specializations: [ai-dataset]
+  embeds-into:
+    connection_types: [archimate-access]
+    target_specializations: [ai-vector-store]
+  served-by:
+    connection_types: [archimate-serving]
+    target_specializations: [ai-inference-service]
+  uses-tool:
+    connection_types: [archimate-access, archimate-serving]
+    target_specializations: [ai-tool-interface]
+  consumes-prompt:
+    connection_types: [archimate-access]
+    target_specializations: [ai-prompt-asset]
+  guarded-by:
+    connection_types: [archimate-association]
+    target_specializations: []
+  governed-by:
+    connection_types: [archimate-assignment]
+    target_specializations: []

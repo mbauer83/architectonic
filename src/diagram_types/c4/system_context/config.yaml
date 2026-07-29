@@ -1,0 +1,35 @@
+name: c4-system-context
+
+guidance:
+  when_to_use: >-
+    Show one software system in scope together with the people and software systems around it.
+    Use this instead of an ArchiMate overview when the audience needs the simple C4 level-1 context view.
+    Authoring steps: (1) create an application-component or service model entity for the system in scope;
+    (2) create business-actor or role model entities for each person interacting with it;
+    (3) optionally create application-component or service entities for external peer systems you manage;
+    (4) call artifact_authoring_guidance(diagram_type="c4-system-context") for the diagram_entities schema;
+    (5) create the diagram — set _scope_entity_id to the scope system's entity_id, reference all others
+    via entity_id in their respective arrays, mark external systems with external: true.
+  when_not_to_use: >-
+    Do not use when the main question is about internal containers or components, when you need
+    ArchiMate layer semantics across multiple domains, or when you need a behavioral flow such as
+    a UML activity diagram.
+
+ui:
+  label: C4 System Context
+  description: C4 level 1. Shows one software system in scope plus surrounding people and systems.
+  entity_search_filter: false
+  type_ui_slots:
+    c4_editor: c4-editor-context
+  diagram_only_types:
+    - entity_type: person
+      label: Person
+      plural: People
+    - entity_type: software-system
+      label: Software System
+      plural: Software Systems
+
+c4:
+  scope_entity_type: software-system
+  scope_render_mode: node
+  internal_entity_types: []

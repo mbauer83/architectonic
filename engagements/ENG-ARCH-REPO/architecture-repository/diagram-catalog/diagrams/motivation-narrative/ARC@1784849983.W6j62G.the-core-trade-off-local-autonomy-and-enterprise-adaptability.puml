@@ -1,0 +1,124 @@
+---
+artifact-id: ARC@1784849983.W6j62G.the-core-trade-off-local-autonomy-and-enterprise-adaptability
+artifact-type: diagram
+name: "The Core Trade-off \u2014 Differentiation and Integration"
+version: 0.1.0
+status: draft
+keywords:
+- motivation
+- values
+- trade-off
+- differentiation
+- integration
+- unity-of-effort
+- viability
+diagram-type: archimate-motivation
+entity-ids-used:
+- VAL@1784845185.2xkN4J.enterprise-efficiency-solution-fitness
+- VAL@1784845186.56mLXu.local-efficiency
+- VAL@1784845185.-RyIvn.team-solution-fitness
+- VAL@1784845185.fduAv-.local-autonomy
+- VAL@1784845186.hFq7vl.enterprise-viability
+- VAL@1784845184.pIkrDX.unity-of-effort
+- VAL@1784845185.tL9l4U.enterprise-adaptability
+connection-ids-used:
+- VAL@1784845185.tL9l4U---VAL@1784845186.hFq7vl@@archimate-influence
+- VAL@1784845185.2xkN4J---VAL@1784845186.hFq7vl@@archimate-influence
+- VAL@1784845184.pIkrDX---VAL@1784845185.tL9l4U@@archimate-influence
+- VAL@1784845184.pIkrDX---VAL@1784845185.2xkN4J@@archimate-influence
+- VAL@1784845185.fduAv----VAL@1784845184.pIkrDX@@archimate-influence
+- VAL@1784845184.pIkrDX---VAL@1784845186.56mLXu@@archimate-influence
+- VAL@1784845185.fduAv----VAL@1784845185.-RyIvn@@archimate-influence
+- VAL@1784845185.fduAv----VAL@1784845186.56mLXu@@archimate-influence
+- VAL@1784845184.pIkrDX---VAL@1784845185.fduAv-@@archimate-influence
+authored-groupings:
+- label: What Is Ultimately at Stake
+  stereotype: MotivationGrouping
+  entity-ids:
+  - VAL@1784845186.hFq7vl.enterprise-viability
+- label: Enterprise / Product Worth
+  stereotype: MotivationGrouping
+  entity-ids:
+  - VAL@1784845185.tL9l4U.enterprise-adaptability
+  - VAL@1784845185.2xkN4J.enterprise-efficiency-solution-fitness
+- label: The Integration Pull
+  stereotype: MotivationGrouping
+  entity-ids:
+  - VAL@1784845184.pIkrDX.unity-of-effort
+- label: "The Differentiation Pull \u2014 Team / Local Worth"
+  stereotype: MotivationGrouping
+  entity-ids:
+  - VAL@1784845185.-RyIvn.team-solution-fitness
+  - VAL@1784845185.fduAv-.local-autonomy
+  - VAL@1784845186.56mLXu.local-efficiency
+last-updated: '2026-07-29T13:29:45Z'
+---
+@startuml the-core-trade-off---differentiation-and-integration
+hide stereotype
+
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 12
+skinparam shadowing false
+skinparam roundcorner 4
+skinparam backgroundColor #FAFAFA
+
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 80
+!define Rel_Triggering(from, to, label) from --> to
+!define Rel_Realization(from, to, label) from ..|> to
+!define Rel_Realization_Up(from, to, label) from ..|> to
+!define Rel_Serving(from, to, label) from --> to
+!define Rel_Association(from, to, label) from -- to
+!define Rel_Association_Left(from, to, label) from -- to
+!define Rel_Association_Right(from, to, label) from -- to
+!define Rel_Access(from, to, label) from ..> to
+!define Rel_Influence(from, to, label) from ..> to
+skinparam rectangle<<MotivationGrouping>> {
+  BackgroundColor #F7EEF9
+  BorderColor #7B3F9A
+}
+skinparam rectangle<<value>> {
+  BackgroundColor #EDD6F0
+  BorderColor #7B3F9A
+}
+sprite $archimate_value <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><ellipse cx="8" cy="8" rx="6.5" ry="4"  fill="none" stroke="#252327" stroke-width="1.3"/></svg>
+
+top to bottom direction
+
+title The Core Trade-off — Differentiation and Integration
+
+rectangle "What Is Ultimately at Stake" <<MotivationGrouping>> as GRPA_1 {
+  rectangle "<$archimate_value{scale=1.2}> Enterprise Viability" <<value>> as VAL_hFq7vl
+}
+
+rectangle "Enterprise / Product Worth" <<MotivationGrouping>> as GRPA_2 {
+  rectangle "<$archimate_value{scale=1.2}> Enterprise Adaptability" <<value>> as VAL_tL9l4U
+  rectangle "<$archimate_value{scale=1.2}> Enterprise Efficiency & Solution Fitness" <<value>> as VAL_2xkN4J
+}
+VAL_tL9l4U -[hidden]right- VAL_2xkN4J
+
+rectangle "The Integration Pull" <<MotivationGrouping>> as GRPA_3 {
+  rectangle "<$archimate_value{scale=1.2}> Unity of Effort" <<value>> as VAL_pIkrDX
+}
+
+rectangle "The Differentiation Pull — Team / Local Worth" <<MotivationGrouping>> as GRPA_4 {
+  rectangle "<$archimate_value{scale=1.2}> Team Solution Fitness" <<value>> as VAL__RyIvn
+  rectangle "<$archimate_value{scale=1.2}> Local Autonomy" <<value>> as VAL_fduAv_
+  rectangle "<$archimate_value{scale=1.2}> Local Efficiency" <<value>> as VAL_56mLXu
+}
+VAL__RyIvn -[hidden]right- VAL_fduAv_
+VAL_fduAv_ -[hidden]right- VAL_56mLXu
+
+' Connections
+VAL_tL9l4U .up.> VAL_hFq7vl : <color:#15803d><b>+</b></color>
+VAL_2xkN4J .up.> VAL_hFq7vl : <color:#15803d><b>+</b></color>
+VAL_pIkrDX .up.> VAL_tL9l4U : <color:#15803d><b>+</b></color>
+VAL_pIkrDX .up.> VAL_2xkN4J : <color:#15803d><b>+</b></color>
+VAL_fduAv_ .up.> VAL_pIkrDX : <color:#b91c1c><b>-</b></color> when uncoordinated
+VAL_pIkrDX .down.> VAL_56mLXu : (-) short-term | (+) medium- and long-term
+VAL_fduAv_ .left.> VAL__RyIvn : <color:#15803d><b>+</b></color>
+VAL_fduAv_ .right.> VAL_56mLXu : <color:#15803d><b>+</b></color>
+VAL_pIkrDX .down.> VAL_fduAv_ : (-) short-term | (+) medium- and long-term
+
+@enduml

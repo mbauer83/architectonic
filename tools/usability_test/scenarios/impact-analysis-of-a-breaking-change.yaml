@@ -1,0 +1,278 @@
+# GUI scenario — impact-analysis work.
+#
+# Persona-visible: id, title, situation, stakes, and each participant's context and
+# tasks (id, text, information_need, decision_artifact, budget_actions). Everything
+# else in this file is the evaluator's answer key and must never reach a persona
+# context; tools/usability_test/compose_brief.py is the only sanctioned way to build a
+# brief and enforces that split by allowlist.
+
+schema: 1
+kind: usability-scenario
+
+id: impact-analysis-of-a-breaking-change
+title: Impact analysis of a breaking change, two days before a release
+work_type: impact-analysis
+channels: [gui]
+
+situation: >
+  Two days before a scheduled release, an engineer proposes replacing how the platform
+  indexes model content: the component that maintains the artifact index would change
+  the shape of what it stores, and everything reading the index would have to change
+  with it. The proposal arrived as a pull request with a one-line description. Nobody in
+  the room knows how far it reaches. There is an architecture repository for this
+  platform, and the question is whether it can answer that in the time available.
+
+stakes: >
+  If the reach is underestimated, the release ships with something broken in a part of
+  the system nobody thought to test. If it is overestimated, a good change is deferred
+  for a quarter on a guess. Either way the decision is made today, from whatever
+  evidence can be produced today.
+
+# ---------------------------------------------------------------------------
+# EVALUATOR-ONLY from here down.
+# ---------------------------------------------------------------------------
+
+write_policy:
+  mutations: none
+  rationale: >
+    Every task is answerable from shipped surfaces. Nothing in this scenario requires
+    creating a definition, so the run needs no namespace and no cleanup.
+
+preconditions:
+- id: index-component-exists
+  statement: >
+    An application component representing the artifact indexing responsibility exists
+    and is findable by an engineer's own vocabulary ("index", "indexer").
+  verification_method: artifact_query_search_artifacts with query "index", entity types filtered to application
+- id: index-component-has-incoming-dependencies
+  statement: The indexing component has incoming dependency paths, so a blast radius is non-empty.
+  verification_method: artifact_query_find_connections_for on the resolved id, direction incoming
+- id: motivation-population-exists
+  statement: >
+    Goals and outcomes exist and are connected to application-layer elements, so the
+    question of which commitments a technical change puts at risk is answerable at all.
+  verification_method: artifact_query_list_artifacts for goal and outcome types, then find_neighbors on a sample
+- id: derived-edges-are-distinguishable
+  statement: >
+    At least one result in this scenario contains a derived connection, so the
+    modelled-versus-derived distinction is actually exercised rather than assumed.
+  verification_method: artifact_query_find_neighbors with derived traversal enabled on the resolved anchor
+
+surfaces:
+- {kind: gui-route, ref: /search}
+- {kind: gui-route, ref: /entity}
+- {kind: gui-route, ref: /entities}
+- {kind: gui-route, ref: /graph}
+- {kind: gui-route, ref: /viewpoints}
+- {kind: gui-route, ref: /diagrams}
+- {kind: viewpoint, ref: element-dependents}
+- {kind: viewpoint, ref: element-dependencies}
+- {kind: viewpoint, ref: application-structure}
+- {kind: viewpoint, ref: goal-realization}
+- {kind: doc, ref: docs/03-modeling/impact-analysis.md}
+
+invariants:
+- id: anchored-counts-agree-across-surfaces
+  statement: >
+    The same anchor and traversal depth yields the same element count in the graph
+    exploration header, in the viewpoint execution result, and in the underlying query
+    result, at the same index generation.
+  verification_method: >
+    Execute the anchored route once per surface at a fixed depth; compare the counts in
+    the DOM against the API response; abort the pair if the index generation changes
+    between the two reads.
+- id: derived-edges-are-marked-everywhere
+  statement: >
+    A derived connection is visually and textually distinguishable from a modelled one
+    on every surface that renders it, and the distinction is explained without leaving
+    the surface.
+  verification_method: >
+    Identify a derived edge in the API response, locate it on each rendering surface,
+    and record whether its rendering differs from a modelled edge and whether a legend
+    or tooltip says what the difference means.
+- id: traversal-depth-is-stated
+  statement: >
+    Every impact result states the traversal depth and direction that produced it,
+    rather than presenting a set whose reach the reader must infer.
+  verification_method: Read the result header and any export for an explicit statement of depth and direction.
+- id: empty-is-distinguished-from-absent
+  statement: >
+    A result with no matches is distinguishable from a result the surface could not
+    compute, and neither is rendered as a bare empty area.
+  verification_method: Provoke both states and compare what the surface says.
+
+participants:
+
+# ---------------------------------------------------------------------------
+- persona: development-lead
+  context: >
+    You are the lead of the team that owns the change. You wrote none of it, you will
+    have to defend the decision either way, and the release is in two days. You have
+    used this architecture tool a few times before but never for something this
+    load-bearing. The component being changed is the one that maintains the artifact
+    index; find it by whatever name the tool knows it by.
+  tasks:
+
+  - id: blast-radius-of-the-index-change
+    recurring_question: what-breaks-downstream
+    text: >
+      What would break if the artifact index changes shape? Give me the set of things
+      that read it, directly and indirectly.
+    information_need: >
+      An anchored set of dependent elements with the direction and the reach of the
+      traversal stated, specific enough that each entry can be turned into a
+      verification task.
+    decision_artifact: ticket
+    budget_actions: 25
+    expected_route:
+      action: execute
+      candidates:
+      - {kind: gui-route, ref: /graph}
+      - {kind: viewpoint, ref: element-dependents}
+      - {kind: gui-route, ref: /entity}
+    oracle:
+      expected_answer_class: >
+        The incoming-dependency closure of the indexing component, as a set of element
+        identifiers, together with the depth at which each was reached.
+      derivation_method: >
+        From primitive records only: resolve the anchor with
+        artifact_query_search_artifacts, then expand incoming connections with
+        artifact_query_find_connections_for level by level, recording the witness path
+        for each element. Do not derive the expected set by running a second viewpoint —
+        two viewpoints share a derivation engine and therefore share its failure modes.
+      exclusions: >
+        Elements reached only through outgoing edges are not dependents and must not
+        appear. Elements reached only via a derived edge belong in the set only if the
+        surface marks them as derived; if the surface silently mixes them with modelled
+        edges, that is the finding.
+
+  - id: modelled-or-derived-in-the-blast-radius
+    text: >
+      Of the things in that impact set, which are connected by something somebody
+      actually modelled, and which did the tool work out for itself? I need to know
+      before I put this in a ticket.
+    information_need: >
+      A per-edge distinction between modelled and derived, discoverable from the result
+      itself rather than from documentation read in advance.
+    decision_artifact: ticket
+    budget_actions: 15
+    expected_route:
+      action: execute
+      candidates:
+      - {kind: gui-route, ref: /graph}
+      - {kind: doc, ref: docs/03-modeling/impact-analysis.md}
+    oracle:
+      expected_answer_class: >
+        The partition of the impact set's edges into modelled and derived, matching the
+        provenance recorded on each connection record.
+      derivation_method: >
+        Compare the connection records returned by artifact_query_find_connections_for
+        against the traversal output that includes derived relationships; the difference
+        is the derived set.
+      exclusions: >
+        Whether the persona can state the distinction is the measure, not whether the
+        distinction exists in the data. A persona who has to leave the result surface to
+        find out what a dashed line means has not been told by the result.
+
+  - id: what-the-model-cannot-say-about-this-change
+    text: >
+      What does this analysis not cover? I am about to tell four people this list is
+      complete.
+    information_need: >
+      An explicit account of the analysis's limits — what kinds of coupling the model
+      does not record — sourced from the product rather than invented by the reader.
+    decision_artifact: design-review
+    budget_actions: 12
+    expected_route:
+      action: consult-docs
+      candidates:
+      - {kind: doc, ref: docs/03-modeling/impact-analysis.md}
+      - {kind: doc, ref: docs/03-modeling/coverage-semantics.md}
+    oracle:
+      expected_answer_class: >
+        A statement that the model records the couplings that were modelled and no
+        others, that derived edges follow declared derivation rules, and that runtime or
+        implicit coupling absent from the model is absent from the answer.
+      derivation_method: >
+        Read the two documentation pages and record which of these limits they state
+        explicitly and which the reader must infer.
+      exclusions: >
+        A persona asserting completeness without qualification is the failure mode this
+        task exists to detect, and it is a high-severity one: the whole set is about to
+        be presented as exhaustive.
+
+# ---------------------------------------------------------------------------
+- persona: product-owner
+  context: >
+    You are in the same room and you do not care how the index works. You have never opened
+    the architecture repository yourself — someone else has always brought you a picture of
+    it. You care whether deferring this change, or shipping it and breaking something, puts
+    any of the commitments you have made at risk. You have fifteen minutes before you have
+    to say something in the release meeting, and whatever you say has to be on one slide.
+  expertise_overrides:
+    # The systems modelled here serve architecture management, which is not this persona's
+    # domain: they own an eight-person SaaS product. Left at the persona's default they would
+    # read as at home in a domain they have no stake in.
+    solution_domain: aware
+  tasks:
+
+  - id: which-commitments-does-this-change-touch
+    recurring_question: which-commitments-are-actually-built
+    text: >
+      Which of the things we promised depend on the part of the system that is
+      changing?
+    information_need: >
+      A short list of commitments connected to the affected components, in language that
+      does not require explaining the model to the audience.
+    decision_artifact: slide
+    budget_actions: 15
+    expected_route:
+      action: execute
+      candidates:
+      - {kind: viewpoint, ref: goal-realization}
+      - {kind: gui-route, ref: /graph}
+      - {kind: gui-route, ref: /search}
+    oracle:
+      expected_answer_class: >
+        The motivation-layer elements reachable from the affected components through
+        realization paths, reduced to those an outside reader would recognize as
+        commitments.
+      derivation_method: >
+        Take the impact set from the development lead's oracle, expand each element
+        towards the motivation layer with artifact_query_find_neighbors, and keep the
+        goal and outcome elements found.
+      exclusions: >
+        A result that returns the entire motivation layer has not answered this — the
+        question is which commitments this change touches, not which commitments exist.
+        Record whether the surface offers any way to narrow it.
+
+  - id: one-picture-for-the-release-meeting
+    recurring_question: what-else-does-dropping-this-affect
+    text: >
+      Give me one picture I can put on a slide that shows what this change reaches,
+      that four non-engineers will understand without me narrating it.
+    information_need: >
+      A single exportable picture, small enough to read on a slide, whose labels make
+      sense without modelling vocabulary.
+    decision_artifact: slide
+    budget_actions: 15
+    expected_route:
+      action: author
+      candidates:
+      - {kind: gui-route, ref: /graph}
+      - {kind: gui-route, ref: /diagrams}
+      - {kind: viewpoint, ref: element-dependents}
+    oracle:
+      expected_answer_class: >
+        Either an export of a filtered anchored result, or the recognition that no
+        shipped surface produces a slide-sized picture without narrowing that this
+        persona cannot perform.
+      derivation_method: >
+        Establish the element count of the unfiltered anchored result from the probe. If
+        it exceeds what fits legibly on a slide, the correct outcome is either a
+        narrowing the persona can actually reach within budget, or the recognition that
+        it cannot be reached — not a screenshot of an unreadable graph.
+      exclusions: >
+        Judge the artifact the persona produced, not the surface's aesthetics. A picture
+        with fifty unlabelled nodes presented as a slide is a failure of the task even
+        though the surface rendered it correctly.

@@ -1,0 +1,62 @@
+# Codex CLI profiles for the usability-scenario-run skill (see its harness-setup.md).
+# Merge into ~/.codex/config.toml (or keep separate and pass each setting via
+# `-c key=value`). Substitute the model ids with the exact identifiers your Codex
+# tenant exposes for the GPT-5.6 family (check with `codex /model` or your model list):
+#   Sol   -> frontier class   (orchestrator, heuristic pass A)
+#   Terra -> Opus-class       (all personas, heuristic pass B, FMEA calibrator)
+#   Luna  -> mid class        (NOT used for personas or judgement; optional glue only)
+#
+# Key-name caveat: written against Codex CLI config syntax as of early 2026
+# (model / model_reasoning_effort / approval_policy / sandbox_mode / [profiles.*] /
+# [mcp_servers.*]). Verify against `codex --help` for your installed version.
+
+# Playwright MCP server — each codex process spawns its OWN instance (stdio), so every
+# GUI-channel persona subprocess gets a fresh browser: stronger isolation than a shared
+# browser.
+[mcp_servers.playwright]
+command = "npx"
+args = ["-y", "@playwright/mcp@latest"]
+
+# The product's own read surface, for MCP-channel personas. Read servers only: a persona
+# is never given a mutating tool, and on this harness that restriction is enforced by
+# which servers the profile can reach rather than by prompt text. A scenario whose tasks
+# need the non-mutating authoring-guidance tool has to be run on the Claude Code harness,
+# whose per-agent tool allowlist can admit that one tool without admitting the writes
+# that share its server.
+[mcp_servers.arch-repo-read]
+command = "uv"
+args = ["run", "arch-mcp-stdio-read"]
+
+[mcp_servers.arch-assurance-read]
+command = "uv"
+args = ["run", "arch-mcp-stdio-assurance-read"]
+
+[profiles.usability-orchestrator]
+model = "gpt-5.6-sol"
+model_reasoning_effort = "high"
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"   # writes run artifacts under test-results/ and the report
+
+[profiles.usability-persona]
+model = "gpt-5.6-terra"
+model_reasoning_effort = "medium"  # uniform for ALL personas — never vary per persona
+approval_policy = "never"
+sandbox_mode = "read-only"         # personas never write files; logs come back on stdout
+
+[profiles.usability-heuristic-a]
+model = "gpt-5.6-sol"
+model_reasoning_effort = "high"
+approval_policy = "never"
+sandbox_mode = "read-only"
+
+[profiles.usability-heuristic-b]
+model = "gpt-5.6-terra"            # deliberately a different class than pass A
+model_reasoning_effort = "high"
+approval_policy = "never"
+sandbox_mode = "read-only"
+
+[profiles.usability-fmea]
+model = "gpt-5.6-terra"
+model_reasoning_effort = "high"
+approval_policy = "never"
+sandbox_mode = "read-only"

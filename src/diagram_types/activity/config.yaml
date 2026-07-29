@@ -1,0 +1,46 @@
+name: activity
+includes: []
+grouping: {}
+layout: {}
+element_classes:
+  step:
+    description: An entity type that can appear in a step sequence array
+  grouping:
+    description: A grouping or partitioning entity; appears as a top-level collection in diagram-entities
+  annotation:
+    description: An annotation attached to another entity as a named property
+  control-flow:
+    description: Participates in control flow within an activity
+guidance:
+  when_to_use: >-
+    Use when modeling a process as a granular sequence of steps (actions, decisions, forks - potentially grouped in partitions)
+    across parallel tracks (swimlanes). Suitable for business workflows, system interaction flows, or operational procedures.
+  when_not_to_use: >-
+    Do not use for static structure or high-level process modeling - prefer archimate for these cases.
+ui:
+  label: Activity Diagram
+  description: UML activity diagram with swimlanes.
+  entity_search_filter: false
+  diagram_only_types:
+    - entity_type: swimlane
+      label: Swimlane
+      plural: Swimlanes
+
+    - entity_type: action
+      label: Action
+      plural: Actions
+
+    - entity_type: decision
+      label: Decision
+      plural: Decisions
+
+    - entity_type: fork
+      label: Fork / Join
+      plural: Forks
+
+    - entity_type: partition
+      label: Partition
+      plural: Partitions
+
+  type_ui_slots:
+    step_editor: activity-steps

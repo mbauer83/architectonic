@@ -1,0 +1,16 @@
+{
+  "abbreviation": "STD",
+  "name": "Standard",
+  "frontmatter_schema": {
+    "type": "object",
+    "required": ["title", "status", "applies_to"],
+    "properties": {
+      "title": {"type": "string"},
+      "status": {"type": "string", "enum": ["draft", "accepted", "rejected", "superseded"]},
+      "applies_to": {"type": "array", "items": {"type": "string"}}
+    }
+  },
+  "required_sections": ["Scope", "Motivation", "Summary", "Specification"],
+  "required_entity_type_connections": ["requirement"],
+  "suggested_entity_type_connections": ["principle", "goal"]
+}

@@ -1,0 +1,135 @@
+---
+artifact-id: ARC@1777470600.cwupfB.reverse-architecture
+artifact-type: diagram
+name: Reverse Architecture
+version: 0.1.0
+status: draft
+diagram-type: archimate-layered
+entity-ids-used:
+- FNC@1777390445.NGjUCa.verify-artifact-integrity-coherence
+- FNC@1777390465.SXt2mM.check-model-coverage
+- FNC@1777390462.erPw5B.explore-system-structure
+- FNC@1777390444.lLdx12.discover-relevant-architecture-content
+- FNC@1777390463.oRz6Qe.map-elements-to-architecture-concepts
+- FNC@1777409722.rkx32U.determine-required-changes-to-architecture-content
+- FNC@1777409722.saMRQ0.author-architecture-documents
+- FNC@1777390449.uzJGYp.author-diagrams
+- FNC@1777390448.yuFXVJ.author-model-artifacts
+- JNA@1777468802.Ps7rVy.reverse-architecture-join-parallel-model-discovery-archimate-mapping
+- JNA@1777468790.zGOowi.reverse-architecture-fork-parallel-model-discovery-archimate-mapping
+- JNO@1777467627.chqH1_.inclusive-or-for-architecture-work
+- PRC@1777293168.CYgU64.reverse-architecture
+connection-ids-used:
+- FNC@1777390465.SXt2mM---FNC@1777409722.rkx32U@@archimate-triggering
+- FNC@1777390463.oRz6Qe---FNC@1777390444.lLdx12@@archimate-association
+- FNC@1777390448.yuFXVJ---FNC@1777390445.NGjUCa@@archimate-triggering
+- FNC@1777390449.uzJGYp---FNC@1777390445.NGjUCa@@archimate-triggering
+- FNC@1777409722.saMRQ0---FNC@1777390445.NGjUCa@@archimate-triggering
+- FNC@1777390462.erPw5B---JNA@1777468790.zGOowi@@archimate-triggering
+- JNA@1777468790.zGOowi---FNC@1777390444.lLdx12@@archimate-triggering
+- JNA@1777468790.zGOowi---FNC@1777390463.oRz6Qe@@archimate-triggering
+- FNC@1777390444.lLdx12---JNA@1777468802.Ps7rVy@@archimate-triggering
+- FNC@1777390463.oRz6Qe---JNA@1777468802.Ps7rVy@@archimate-triggering
+- JNA@1777468802.Ps7rVy---FNC@1777390465.SXt2mM@@archimate-triggering
+- FNC@1777409722.rkx32U---JNO@1777467627.chqH1_@@archimate-triggering
+- JNO@1777467627.chqH1_---FNC@1777390448.yuFXVJ@@archimate-triggering
+- JNO@1777467627.chqH1_---FNC@1777390449.uzJGYp@@archimate-triggering
+- JNO@1777467627.chqH1_---FNC@1777409722.saMRQ0@@archimate-triggering
+- PRC@1777293168.CYgU64---FNC@1777390445.NGjUCa@@archimate-aggregation
+- PRC@1777293168.CYgU64---FNC@1777390444.lLdx12@@archimate-aggregation
+- PRC@1777293168.CYgU64---FNC@1777409722.rkx32U@@archimate-aggregation
+- PRC@1777293168.CYgU64---FNC@1777409722.saMRQ0@@archimate-aggregation
+- PRC@1777293168.CYgU64---FNC@1777390449.uzJGYp@@archimate-aggregation
+- PRC@1777293168.CYgU64---FNC@1777390448.yuFXVJ@@archimate-aggregation
+- PRC@1777293168.CYgU64---FNC@1777390462.erPw5B@@archimate-composition
+- PRC@1777293168.CYgU64---FNC@1777390463.oRz6Qe@@archimate-composition
+- PRC@1777293168.CYgU64---FNC@1777390465.SXt2mM@@archimate-composition
+last-updated: '2026-07-29T13:29:57Z'
+---
+@startuml reverse-architecture
+hide stereotype
+
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 12
+skinparam shadowing false
+skinparam roundcorner 4
+skinparam backgroundColor #FAFAFA
+
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 80
+!define Rel_Triggering(from, to, label) from --> to
+!define Rel_Realization(from, to, label) from ..|> to
+!define Rel_Realization_Up(from, to, label) from ..|> to
+!define Rel_Serving(from, to, label) from --> to
+!define Rel_Association(from, to, label) from -- to
+!define Rel_Association_Left(from, to, label) from -- to
+!define Rel_Association_Right(from, to, label) from -- to
+!define Rel_Access(from, to, label) from ..> to
+!define Rel_Influence(from, to, label) from ..> to
+skinparam rectangle<<function>> {
+  BackgroundColor #E0D8CC
+  BorderColor #8C7E6A
+}
+skinparam rectangle<<process>> {
+  BackgroundColor #E0D8CC
+  BorderColor #8C7E6A
+}
+sprite $archimate_function <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.9 11.7V5.4L8 3.1l5.1 2.3v6.3L8 9.2z"  fill="#252327" stroke="none"/></svg>
+sprite $archimate_process <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.6 4.1h6.3V2.8l4.5 5.2-4.5 5.2v-1.3H2.6z"  fill="#252327" stroke="none"/></svg>
+
+top to bottom direction
+
+title Reverse Architecture
+
+rectangle "<$archimate_process{scale=1.2}> Reverse Architecture\n«Business Process»" <<process>> as PRC_CYgU64 {
+  rectangle "<$archimate_function{scale=1.2}> Verify Artifact Integrity & Coherence\n«Application Function»" <<function>> as FNC_NGjUCa
+  rectangle "<$archimate_function{scale=1.2}> Check Model Coverage\n«Application Function»" <<function>> as FNC_SXt2mM
+  rectangle "<$archimate_function{scale=1.2}> Explore System Structure\n«Application Function»" <<function>> as FNC_erPw5B
+  rectangle "<$archimate_function{scale=1.2}> Discover Relevant Architecture Content\n«Application Function»" <<function>> as FNC_lLdx12
+  rectangle "<$archimate_function{scale=1.2}> Map Elements to Architecture Concepts\n«Business Function»" <<function>> as FNC_oRz6Qe
+  rectangle "<$archimate_function{scale=1.2}> Determine Required Changes to Architecture Content\n«Business Function»" <<function>> as FNC_rkx32U
+  rectangle "<$archimate_function{scale=1.2}> Author Architecture Documents\n«Business Function»" <<function>> as FNC_saMRQ0
+  rectangle "<$archimate_function{scale=1.2}> Author Diagrams\n«Business Function»" <<function>> as FNC_uzJGYp
+  rectangle "<$archimate_function{scale=1.2}> Author Model Artifacts\n«Business Function»" <<function>> as FNC_yuFXVJ
+  circle " " as JNA_Ps7rVy
+  circle " " as JNA_zGOowi
+  circle " " as JNO_chqH1_
+  FNC_erPw5B -[hidden]right- JNA_zGOowi
+  JNA_zGOowi -[hidden]right- FNC_lLdx12
+  FNC_lLdx12 -[hidden]down- FNC_oRz6Qe
+  FNC_oRz6Qe -[hidden]right- JNA_Ps7rVy
+  JNA_Ps7rVy -[hidden]right- FNC_SXt2mM
+  FNC_SXt2mM -[hidden]right- FNC_rkx32U
+  FNC_rkx32U -[hidden]right- JNO_chqH1_
+  JNO_chqH1_ -[hidden]right- FNC_saMRQ0
+  FNC_saMRQ0 -[hidden]down- FNC_uzJGYp
+  FNC_uzJGYp -[hidden]down- FNC_yuFXVJ
+  FNC_yuFXVJ -[hidden]right- FNC_NGjUCa
+  JNA_zGOowi -[hidden]right- FNC_lLdx12
+  JNA_zGOowi -[hidden]right- FNC_oRz6Qe
+  FNC_lLdx12 -[hidden]right- JNA_Ps7rVy
+  FNC_oRz6Qe -[hidden]right- JNA_Ps7rVy
+  JNO_chqH1_ -[hidden]right- FNC_saMRQ0
+  JNO_chqH1_ -[hidden]right- FNC_uzJGYp
+  JNO_chqH1_ -[hidden]right- FNC_yuFXVJ
+}
+
+' Connections
+FNC_SXt2mM --> FNC_rkx32U
+FNC_oRz6Qe -up- FNC_lLdx12
+FNC_yuFXVJ --> FNC_NGjUCa
+FNC_uzJGYp --> FNC_NGjUCa
+FNC_saMRQ0 --> FNC_NGjUCa
+FNC_erPw5B --> JNA_zGOowi
+JNA_zGOowi --> FNC_lLdx12
+JNA_zGOowi --> FNC_oRz6Qe
+FNC_lLdx12 --> JNA_Ps7rVy
+FNC_oRz6Qe --> JNA_Ps7rVy
+JNA_Ps7rVy --> FNC_SXt2mM
+FNC_rkx32U --> JNO_chqH1_
+JNO_chqH1_ --> FNC_yuFXVJ
+JNO_chqH1_ --> FNC_uzJGYp
+JNO_chqH1_ --> FNC_saMRQ0
+
+@enduml

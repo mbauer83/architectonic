@@ -1,0 +1,129 @@
+---
+artifact-id: ARC@1784853495.iw836e.viewpoint-execution-saved-and-ephemeral-paths
+artifact-type: diagram
+name: "Viewpoint Execution \u2014 Saved and Ephemeral Paths"
+version: 0.1.0
+status: draft
+diagram-type: archimate-layered
+entity-ids-used:
+- APP@1776149382.lmO0mp.gui-authoring-tool
+- APP@1712870400.v9LvfK.query-engine
+- DOB@1784853343.CY3B-f.executable-viewpoint-query
+- DOB@1783870961.y7M3wz.viewpoint-definition
+- DOB@1784853344.zQzA5_.viewpoint-presentation-specification
+- FNC@1784853344.bsmo2W.compose-ephemeral-viewpoint
+- FNC@1784853344.qgicoe.execute-viewpoint-specification
+- REQ@1783870981.mdH8Uv.viewpoint-based-model-presentation
+connection-ids-used:
+- APP@1712870400.v9LvfK---APP@1776149382.lmO0mp@@archimate-serving
+- APP@1712870400.v9LvfK---DOB@1783870961.y7M3wz@@archimate-access
+- APP@1712870400.v9LvfK---FNC@1784853344.qgicoe@@archimate-assignment
+- APP@1776149382.lmO0mp---FNC@1784853344.bsmo2W@@archimate-assignment
+- FNC@1784853344.bsmo2W---DOB@1784853343.CY3B-f@@archimate-access
+- FNC@1784853344.qgicoe---DOB@1784853343.CY3B-f@@archimate-access
+- FNC@1784853344.bsmo2W---DOB@1784853344.zQzA5_@@archimate-access
+- FNC@1784853344.qgicoe---DOB@1784853344.zQzA5_@@archimate-access
+- FNC@1784853344.bsmo2W---FNC@1784853344.qgicoe@@archimate-triggering
+- FNC@1784853344.bsmo2W---REQ@1783870981.mdH8Uv@@archimate-realization
+- FNC@1784853344.qgicoe---REQ@1783870981.mdH8Uv@@archimate-realization
+- DOB@1783870961.y7M3wz---DOB@1784853343.CY3B-f@@archimate-composition
+- DOB@1783870961.y7M3wz---DOB@1784853344.zQzA5_@@archimate-composition
+last-updated: '2026-07-29T13:30:06Z'
+---
+@startuml viewpoint-execution---saved-and-ephemeral-paths
+hide stereotype
+
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 12
+skinparam shadowing false
+skinparam roundcorner 4
+skinparam backgroundColor #FAFAFA
+
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 80
+!define Rel_Triggering(from, to, label) from --> to
+!define Rel_Realization(from, to, label) from ..|> to
+!define Rel_Realization_Up(from, to, label) from ..|> to
+!define Rel_Serving(from, to, label) from --> to
+!define Rel_Association(from, to, label) from -- to
+!define Rel_Association_Left(from, to, label) from -- to
+!define Rel_Association_Right(from, to, label) from -- to
+!define Rel_Access(from, to, label) from ..> to
+!define Rel_Influence(from, to, label) from ..> to
+skinparam rectangle<<ApplicationGrouping>> {
+  BackgroundColor #E8F8FF
+  BorderColor #0078A0
+}
+skinparam rectangle<<CommonGrouping>> {
+  BackgroundColor #EDE8E1
+  BorderColor #8C7E6A
+}
+skinparam rectangle<<MotivationGrouping>> {
+  BackgroundColor #F7EEF9
+  BorderColor #7B3F9A
+}
+skinparam rectangle<<application_component>> {
+  BackgroundColor #CCF2FF
+  BorderColor #0078A0
+}
+skinparam rectangle<<data_object>> {
+  BackgroundColor #CCF2FF
+  BorderColor #0078A0
+}
+skinparam rectangle<<function>> {
+  BackgroundColor #E0D8CC
+  BorderColor #8C7E6A
+}
+skinparam rectangle<<requirement>> {
+  BackgroundColor #EDD6F0
+  BorderColor #7B3F9A
+}
+sprite $archimate_application_component <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M4 4.2h7.4v7.6H4z"  fill="#252327" stroke="none"/><path d="M2.30 4.95h1.70v1.30H2.30z" fill="#252327"/><path d="M2.30 7.35h1.70v1.30H2.30z" fill="#252327"/><path d="M2.30 9.75h1.70v1.30H2.30z" fill="#252327"/><path d="M11.40 4.95h1.40v1.30H11.40z" fill="#252327"/><path d="M11.40 7.35h1.40v1.30H11.40z" fill="#252327"/><path d="M11.40 9.75h1.40v1.30H11.40z" fill="#252327"/></svg>
+sprite $archimate_data_object <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3.00 3.80h10.00v1.30H3.00z" fill="#252327"/><path d="M3.00 10.90h10.00v1.30H3.00z" fill="#252327"/><path d="M3.00 5.10v5.80h1.30V5.10z" fill="#252327"/><path d="M11.70 5.10v5.80h1.30V5.10z" fill="#252327"/><path d="M3.00 4.95h10.00v1.30H3.00z" fill="#252327"/></svg>
+sprite $archimate_function <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.9 11.7V5.4L8 3.1l5.1 2.3v6.3L8 9.2z"  fill="#252327" stroke="none"/></svg>
+sprite $archimate_requirement <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M4.4 4.2h8L10.8 11.8h-8z"  fill="#252327" stroke="none"/></svg>
+
+title Viewpoint Execution — Saved and Ephemeral Paths
+
+rectangle "Motivation" <<MotivationGrouping>> as DOM_motivation {
+  rectangle "<$archimate_requirement{scale=1.2}> Viewpoint-Based Model Presentation" <<requirement>> as REQ_mdH8Uv
+
+}
+
+rectangle "Common" <<CommonGrouping>> as DOM_common {
+  rectangle "<$archimate_function{scale=1.2}> Compose Ephemeral Viewpoint\n«Application Function»" <<function>> as FNC_bsmo2W
+  rectangle "<$archimate_function{scale=1.2}> Execute Viewpoint Specification\n«Application Function»" <<function>> as FNC_qgicoe
+  FNC_bsmo2W -[hidden]down- FNC_qgicoe
+
+}
+
+rectangle "Application" <<ApplicationGrouping>> as DOM_application {
+  rectangle "Application Components" <<ApplicationGrouping>> as GRPT_application_1 {
+    rectangle "<$archimate_application_component{scale=1.2}> GUI Authoring Tool\n«Service»" <<application_component>> as APP_lmO0mp
+    rectangle "<$archimate_application_component{scale=1.2}> Query Engine\n«Module»" <<application_component>> as APP_v9LvfK
+  }
+  APP_lmO0mp -[hidden]right- APP_v9LvfK
+
+  rectangle "<$archimate_data_object{scale=1.2}> Viewpoint Definition" <<data_object>> as DOB_y7M3wz {
+    rectangle "<$archimate_data_object{scale=1.2}> Executable Viewpoint Query" <<data_object>> as DOB_CY3B_f
+    rectangle "<$archimate_data_object{scale=1.2}> Viewpoint Presentation Specification" <<data_object>> as DOB_zQzA5_
+    DOB_CY3B_f -[hidden]down- DOB_zQzA5_
+  }
+
+}
+
+' Connections
+APP_v9LvfK --> APP_lmO0mp
+APP_v9LvfK --> DOB_y7M3wz
+APP_v9LvfK -up-> FNC_qgicoe
+APP_lmO0mp -up-> FNC_bsmo2W
+FNC_bsmo2W --> DOB_CY3B_f
+FNC_qgicoe --> DOB_CY3B_f
+FNC_bsmo2W --> DOB_zQzA5_
+FNC_qgicoe --> DOB_zQzA5_
+FNC_bsmo2W --> FNC_qgicoe
+FNC_bsmo2W .up.|> REQ_mdH8Uv
+FNC_qgicoe .up.|> REQ_mdH8Uv
+
+@enduml

@@ -1,0 +1,78 @@
+entity_types:
+  person:
+    create_when: Use for human users, actors, or roles interacting with the system in scope.
+    never_create_when: Do not use for deployable software or internal application building blocks.
+    permitted_mappings:
+      entity_types:
+        - business-actor
+        - role
+      sources:
+        - ontology: archimate-4-0
+          entity_type: business-actor
+          transparent: true
+        - ontology: archimate-4-0
+          entity_type: role
+          transparent: true
+    properties:
+      description:
+        type: string
+        required: false
+      external:
+        type: boolean
+        required: false
+  software-system:
+    create_when: >-
+      Use for the software system in scope (set _scope_entity_id at diagram level and link entity_id to an
+      application-component or service model entity — required for cross-diagram navigation) and for peer or
+      external software systems around it (entity_id optional for third-party systems you do not manage).
+    never_create_when: Do not use for finer-grained deployable units inside a system when a container or component view is needed.
+    permitted_mappings:
+      entity_types:
+        - application-component
+        - service
+      sources:
+        - ontology: archimate-4-0
+          entity_type: application-component
+          transparent: true
+        - ontology: archimate-4-0
+          entity_type: service
+          transparent: true
+    properties:
+      description:
+        type: string
+        required: false
+      technology:
+        type: string
+        required: false
+      external:
+        type: boolean
+        required: false
+
+connection_types:
+  c4-uses:
+    embedding: none
+    cascade_delete_source: false
+
+permitted_relationships:
+  - [person, software-system, [c4-uses]]
+  - [software-system, person, [c4-uses]]
+  - [software-system, software-system, [c4-uses]]
+  - [person, person, [c4-uses]]
+
+allowed_bindings:
+  entity:
+    person:
+      correspondence_kinds: [represents, refines, traces-to]
+      default_correspondence_kind: represents
+      target_forms: [entity-id, diagram-local]
+    software-system:
+      correspondence_kinds: [represents, refines, traces-to]
+      default_correspondence_kind: represents
+      target_forms: [entity-id, diagram-local]
+  connection:
+    c4-uses:
+      target_connection_types: [serving, flow, access, association]
+      target_connection_classes: [dependency, flow]
+      correspondence_kinds: [abstracts, represents, traces-to]
+      default_correspondence_kind: abstracts
+      target_forms: [connection-id, connection-ids]

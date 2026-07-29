@@ -1,0 +1,12 @@
+name: fmea-matrix
+
+ui:
+  label: FMEA Matrix
+  description: >-
+    Failure modes enumerated per architecture element against the failure guidewords, with
+    derived severity and detectability, Action Priority, and the controls that answer each row.
+
+# The grid an FMEA is: components crossed with the failure guidewords. It has no place in
+# an STPA, which reasons about control rather than component behaviour.
+assurance:
+  methods: [FMEA]

@@ -1,0 +1,39 @@
+name: sequence
+includes: []
+grouping: {}
+layout: {}
+element_classes:
+  participant:
+    description: A named participant column (lifeline) in the sequence
+  message:
+    description: A temporal message between two participants
+guidance:
+  when_to_use: >-
+    Use for modeling ordered message flows between participants (actors, systems,
+    components, services). Suitable for API call flows, protocols, integration
+    scenarios, and behavior walkthroughs.
+  when_not_to_use: >-
+    Do not use for static structure or process modeling — prefer ArchiMate or
+    activity diagrams for those.
+ui:
+  label: Sequence Diagram
+  description: UML sequence diagram with lifelines and messages.
+  entity_search_filter: false
+  type_ui_slots:
+    sequence-editor: sequence-editor
+  diagram_only_types:
+    - entity_type: lifeline
+      label: Lifeline
+      plural: Lifelines
+
+    - entity_type: message
+      label: Message
+      plural: Messages
+
+    - entity_type: grouping
+      label: Grouping
+      plural: Groupings
+
+    - entity_type: note
+      label: Note
+      plural: Notes

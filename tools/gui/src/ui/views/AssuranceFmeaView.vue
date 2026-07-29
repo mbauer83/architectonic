@@ -1,0 +1,56 @@
+<script setup lang="ts">
+/**
+ * The failure-mode matrix as a standalone page, scoped by `?analysis=`.
+ *
+ * A page wrapper now: the grid itself is `FmeaMatrixPanel`, because there is one matrix per FMEA
+ * analysis and the derived-diagram surface has to draw the same grid. A single global matrix was the
+ * defect — with two FMEAs it showed both analyses' rows in one table, and the second analysis had
+ * nowhere of its own to put one.
+ *
+ * The two deliberate departures from a conventional FMEA worksheet are stated here rather than left
+ * for a practitioner to discover: there is no risk priority number, and the detection axis runs the
+ * other way. An expert who thinks the tool is wrong about those stops trusting the derived values.
+ */
+import { computed } from 'vue'
+import { RouterLink, useRoute } from 'vue-router'
+import FmeaMatrixPanel from '../components/FmeaMatrixPanel.vue'
+
+const route = useRoute()
+
+const analysisId = computed(() =>
+  typeof route.query['analysis'] === 'string' && route.query['analysis']
+    ? route.query['analysis']
+    : null)
+</script>
+
+<template>
+  <section class="fmea-page">
+    <h1 class="fmea-title">
+      FMEA Matrix
+    </h1>
+    <p class="fmea-note">
+      Severity and detectability are derived from the model. Occurrence is asked for only where it
+      could change the priority. There is no risk priority number: multiplying ordinals is not a
+      quantity. Detectability runs from <strong>very-low</strong> (nothing would catch it) to
+      <strong>very-high</strong> — the opposite direction to conventional FMEA detection numbers.
+    </p>
+    <p
+      v-if="!analysisId"
+      class="fmea-note fmea-note--scope"
+    >
+      Showing every failure mode in the store. Open one FMEA on its own from
+      <RouterLink to="/assurance/diagrams">
+        Derived diagrams
+      </RouterLink>.
+    </p>
+
+    <FmeaMatrixPanel :analysis-id="analysisId" />
+  </section>
+</template>
+
+<style scoped>
+.fmea-page { padding: 20px; }
+.fmea-title { font-size: 20px; margin: 0 0 8px; }
+.fmea-note { font-size: 13px; color: #4b5563; margin: 0 0 12px; max-width: 70ch; }
+.fmea-note--scope { color: #6b7280; }
+</style>

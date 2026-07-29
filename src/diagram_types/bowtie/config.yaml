@@ -1,0 +1,11 @@
+name: bowtie
+
+ui:
+  label: Bowtie
+  description: >-
+    Threat pathways, hazards, controls, and consequences from the assurance store.
+
+# A bowtie draws hazards, the barriers that hold them off and the losses beyond them —
+# STPA's proactive findings and CAST's reconstruction of an incident alike.
+assurance:
+  methods: [STPA, CAST]

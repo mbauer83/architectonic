@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "attributes.capability.schema.json",
+  "title": "Capability Attribute Schema",
+  "description": "Attribute schema for Properties table in Capability entities.",
+  "type": "object",
+  "required": ["Maturity"],
+  "properties": {
+    "Maturity": {
+      "type": "string",
+      "enum": ["Not Assessed", "Initial", "Developing", "Defined", "Managed", "Optimising"],
+      "default": "Not Assessed"
+    },
+    "Realizes": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,179 @@
+---
+artifact-id: ARC@1777452513.d8jG_4.what-we-are-trying-to-achieve
+artifact-type: diagram
+name: "What We Are Trying to Achieve \u2014 Goals & Outcomes"
+version: 0.1.0
+status: draft
+keywords:
+- motivation
+- goals
+- outcomes
+- realization
+- why
+- unity-of-effort
+diagram-type: archimate-motivation
+manual-layout: true
+entity-ids-used:
+- GOL@1784845186.7RZp1S.enable-coherent-traceable-enterprise-action
+- GOL@1780655839.AoatzG.provide-first-class-assurance-integrated-with-the-architecture-model
+- GOL@1780220699.FCfDuc.sustain-unity-of-effort-at-agentic-velocity
+- GOL@1784845186.L4Ceuf.preserve-local-autonomy
+- GOL@1712870400.Po1Qw3.maintain-a-coherent-traceable-architecture-model
+- GOL@1776628205.kCcPph.enable-cross-engagement-architectural-reuse
+- OUT@1783330223.620dTh.engagements-plan-concurrently-against-a-shared-staged-baseline
+- OUT@1784845187.CzOyck.proposed-and-enacted-changes-preserve-enterprise-coherence
+- OUT@1776629097.FXFGrO.architectural-guidance-available-without-specialist-dependency
+- OUT@1712870400.LrpdG0.increased-architectural-coherence-and-integrity
+- OUT@1776629101.a5mNob.changes-validated-against-architecture-before-implementation
+- OUT@1776629110.aOcRl9.architecture-governance-scales-without-proportional-coordination-overhead
+- OUT@1776629112.edEkJa.proven-patterns-promoted-and-adopted-across-engagements
+- OUT@1784845187.gUhH8d.proposed-changes-get-decentralized-architectural-assurance-context
+connection-ids-used:
+- OUT@1776629110.aOcRl9---GOL@1780220699.FCfDuc@@archimate-realization
+- GOL@1780220699.FCfDuc---GOL@1784845186.L4Ceuf@@archimate-aggregation
+- GOL@1780220699.FCfDuc---GOL@1784845186.7RZp1S@@archimate-aggregation
+- GOL@1712870400.Po1Qw3---GOL@1784845186.7RZp1S@@archimate-influence
+- OUT@1784845187.gUhH8d---GOL@1784845186.L4Ceuf@@archimate-realization
+- OUT@1776629097.FXFGrO---GOL@1784845186.L4Ceuf@@archimate-realization
+- OUT@1783330223.620dTh---GOL@1784845186.L4Ceuf@@archimate-realization
+- OUT@1784845187.CzOyck---GOL@1784845186.7RZp1S@@archimate-realization
+- OUT@1776629101.a5mNob---GOL@1784845186.7RZp1S@@archimate-realization
+- OUT@1712870400.LrpdG0---GOL@1712870400.Po1Qw3@@archimate-realization
+- OUT@1776629112.edEkJa---GOL@1776628205.kCcPph@@archimate-realization
+- GOL@1776628205.kCcPph---GOL@1784845186.7RZp1S@@archimate-influence
+- GOL@1780655839.AoatzG---GOL@1784845186.7RZp1S@@archimate-influence
+authored-groupings:
+- label: Apex Intent
+  stereotype: MotivationGrouping
+  entity-ids:
+  - GOL@1780220699.FCfDuc.sustain-unity-of-effort-at-agentic-velocity
+  - OUT@1776629110.aOcRl9.architecture-governance-scales-without-proportional-coordination-overhead
+- label: Bounded Local Autonomy
+  stereotype: MotivationGrouping
+  entity-ids:
+  - GOL@1784845186.L4Ceuf.preserve-local-autonomy
+  - OUT@1784845187.gUhH8d.proposed-changes-get-decentralized-architectural-assurance-context
+  - OUT@1776629097.FXFGrO.architectural-guidance-available-without-specialist-dependency
+  - OUT@1783330223.620dTh.engagements-plan-concurrently-against-a-shared-staged-baseline
+- label: Cross-Boundary Coherence
+  stereotype: MotivationGrouping
+  entity-ids:
+  - GOL@1784845186.7RZp1S.enable-coherent-traceable-enterprise-action
+  - GOL@1712870400.Po1Qw3.maintain-a-coherent-traceable-architecture-model
+  - OUT@1784845187.CzOyck.proposed-and-enacted-changes-preserve-enterprise-coherence
+  - OUT@1776629101.a5mNob.changes-validated-against-architecture-before-implementation
+  - OUT@1712870400.LrpdG0.increased-architectural-coherence-and-integrity
+- label: Reusable Shared Knowledge
+  stereotype: MotivationGrouping
+  entity-ids:
+  - GOL@1776628205.kCcPph.enable-cross-engagement-architectural-reuse
+  - OUT@1776629112.edEkJa.proven-patterns-promoted-and-adopted-across-engagements
+- label: Integrated Assurance
+  stereotype: MotivationGrouping
+  entity-ids:
+  - GOL@1780655839.AoatzG.provide-first-class-assurance-integrated-with-the-architecture-model
+last-updated: '2026-07-29T13:29:38Z'
+---
+@startuml
+hide stereotype
+
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 12
+skinparam shadowing false
+skinparam roundcorner 4
+skinparam backgroundColor #FAFAFA
+
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 80
+!define Rel_Triggering(from, to, label) from --> to
+!define Rel_Realization(from, to, label) from ..|> to
+!define Rel_Realization_Up(from, to, label) from ..|> to
+!define Rel_Serving(from, to, label) from --> to
+!define Rel_Association(from, to, label) from -- to
+!define Rel_Association_Left(from, to, label) from -- to
+!define Rel_Association_Right(from, to, label) from -- to
+!define Rel_Access(from, to, label) from ..> to
+!define Rel_Influence(from, to, label) from ..> to
+skinparam rectangle<<MotivationGrouping>> {
+  BackgroundColor #F7EEF9
+  BorderColor #7B3F9A
+}
+skinparam rectangle<<goal>> {
+  BackgroundColor #EDD6F0
+  BorderColor #7B3F9A
+}
+skinparam rectangle<<outcome>> {
+  BackgroundColor #EDD6F0
+  BorderColor #7B3F9A
+}
+sprite $archimate_goal <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="4.8"  fill="none" stroke="#252327" stroke-width="1.3"/><circle cx="8" cy="8" r="2.9"  fill="none" stroke="#252327" stroke-width="1.3"/><circle cx="8" cy="8" r="1.3" fill="#252327" stroke="none"  stroke-width="1.3"/></svg>
+sprite $archimate_outcome <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="7.4" cy="8.6" r="4.3"  fill="none" stroke="#252327" stroke-width="1.3"/><circle cx="7.4" cy="8.6" r="2.2"  fill="none" stroke="#252327" stroke-width="1.3"/><path d="M10.18 6.93L9.42 5.87L12.52 3.67L13.28 4.73z" fill="#252327"/><path d="M10.20 7.25h2.50v1.30H10.20z" fill="#252327"/><circle cx="7.4" cy="8.6" r=".9" fill="#252327" stroke="none"  stroke-width="1.3"/></svg>
+top to bottom direction
+skinparam nodesep 45
+skinparam ranksep 60
+
+title What We Are Trying to Achieve — Goals & Outcomes
+
+rectangle "Apex Intent" <<MotivationGrouping>> {
+  rectangle "<$archimate_goal{scale=1.2}> Sustain Unity of Effort at Agentic Velocity" <<goal>> as GOL_FCfDuc
+  rectangle "<$archimate_outcome{scale=1.2}> Governance Scales Without Proportional Coordination Overhead" <<outcome>> as OUT_aOcRl9
+  GOL_FCfDuc -[hidden]right- OUT_aOcRl9
+}
+
+rectangle "Bounded Local Autonomy" <<MotivationGrouping>> {
+  rectangle "<$archimate_goal{scale=1.2}> Preserve Local Autonomy" <<goal>> as GOL_L4Ceuf
+  rectangle "<$archimate_outcome{scale=1.2}> Decentralized Architecture & Assurance Context" <<outcome>> as OUT_gUhH8d
+  rectangle "<$archimate_outcome{scale=1.2}> Guidance Without Specialist Dependency" <<outcome>> as OUT_FXFGrO
+  rectangle "<$archimate_outcome{scale=1.2}> Concurrent Staged Planning" <<outcome>> as OUT_620dTh
+  OUT_gUhH8d -[hidden]right- OUT_FXFGrO
+  OUT_FXFGrO -[hidden]right- OUT_620dTh
+  GOL_L4Ceuf -[hidden]down- OUT_FXFGrO
+}
+
+rectangle "Cross-Boundary Coherence" <<MotivationGrouping>> {
+  rectangle "<$archimate_goal{scale=1.2}> Enable Coherent, Traceable Enterprise Action" <<goal>> as GOL_7RZp1S
+  rectangle "<$archimate_goal{scale=1.2}> Maintain a Coherent, Traceable Model" <<goal>> as GOL_Po1Qw3
+  rectangle "<$archimate_outcome{scale=1.2}> Changes Preserve Enterprise Coherence" <<outcome>> as OUT_CzOyck
+  rectangle "<$archimate_outcome{scale=1.2}> Validated Before Implementation" <<outcome>> as OUT_a5mNob
+  rectangle "<$archimate_outcome{scale=1.2}> Architectural Coherence & Integrity" <<outcome>> as OUT_LrpdG0
+  GOL_Po1Qw3 -[hidden]right- OUT_CzOyck
+  OUT_CzOyck -[hidden]right- OUT_a5mNob
+  GOL_7RZp1S -[hidden]down- OUT_CzOyck
+  GOL_Po1Qw3 -[hidden]down- OUT_LrpdG0
+}
+
+rectangle "Reusable Shared Knowledge" <<MotivationGrouping>> {
+  rectangle "<$archimate_goal{scale=1.2}> Enable Cross-Engagement Reuse" <<goal>> as GOL_kCcPph
+  rectangle "<$archimate_outcome{scale=1.2}> Proven Patterns Reused" <<outcome>> as OUT_edEkJa
+  GOL_kCcPph -[hidden]right- OUT_edEkJa
+}
+
+rectangle "Integrated Assurance" <<MotivationGrouping>> {
+  rectangle "<$archimate_goal{scale=1.2}> First-Class Integrated Assurance" <<goal>> as GOL_AoatzG
+}
+
+GOL_FCfDuc -[hidden]down- GOL_L4Ceuf
+OUT_aOcRl9 -[hidden]down- GOL_7RZp1S
+OUT_FXFGrO -[hidden]down- GOL_kCcPph
+OUT_a5mNob -[hidden]down- GOL_AoatzG
+
+OUT_aOcRl9 .left.|> GOL_FCfDuc
+
+GOL_FCfDuc -- GOL_L4Ceuf
+GOL_FCfDuc -- GOL_7RZp1S
+
+GOL_Po1Qw3 .up.> GOL_7RZp1S
+
+OUT_gUhH8d .up.|> GOL_L4Ceuf
+OUT_FXFGrO .up.|> GOL_L4Ceuf
+OUT_620dTh .up.|> GOL_L4Ceuf
+OUT_CzOyck .up.|> GOL_7RZp1S
+OUT_a5mNob .up.|> GOL_7RZp1S
+OUT_LrpdG0 .up.|> GOL_Po1Qw3
+OUT_edEkJa .left.|> GOL_kCcPph
+
+GOL_kCcPph -[dotted,norank]-> GOL_7RZp1S
+GOL_AoatzG -[dotted,norank]-> GOL_7RZp1S
+
+@enduml

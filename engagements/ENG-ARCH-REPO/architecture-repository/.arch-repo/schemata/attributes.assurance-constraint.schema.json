@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "attributes.assurance-constraint.schema.json",
+  "title": "Assurance Constraint Attribute Schema",
+  "description": "Attribute schema for Properties table in Assurance Constraint entities.",
+  "type": "object",
+  "required": [],
+  "properties": {
+    "concern_class": {
+      "type": "string",
+      "enum": [
+        "safety",
+        "security",
+        "operational",
+        "financial",
+        "privacy"
+      ]
+    },
+    "disposition": {
+      "type": "string",
+      "enum": [
+        "eliminated",
+        "prevented-by-design",
+        "controlled-with-evidence",
+        "alarp-justified",
+        "accepted",
+        "mitigate",
+        "transfer",
+        "avoid"
+      ]
+    },
+    "level": {
+      "type": "string",
+      "enum": [
+        "system",
+        "controller",
+        "technical"
+      ]
+    },
+    "tlp": {
+      "type": "string",
+      "enum": [
+        "TLP:WHITE",
+        "TLP:GREEN",
+        "TLP:AMBER",
+        "TLP:RED"
+      ]
+    },
+    "enforcement_status": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

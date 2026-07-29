@@ -1,0 +1,57 @@
+---
+artifact-id: CS@1781183304.5Ezxuv.stpa-control-structure-confidential-assurance-store-access
+artifact-type: diagram
+name: "STPA Control Structure \u2014 Confidential Assurance Store Access"
+version: 0.1.0
+status: draft
+diagram-type: control-structure
+diagram-entities:
+  nodes:
+  - node_id: csn-backend
+    name: Architecture Backend (assurance access controller)
+    node_type: control-structure-node
+    node_role: controller
+    binding_status: bound
+  - node_id: csn-cred
+    name: OS Credential Backend (Keychain/DPAPI)
+    node_type: control-structure-node
+    node_role: controlled-process
+    binding_status: bound
+  - node_id: csn-store
+    name: Confidential Assurance Store (SQLCipher)
+    node_type: control-structure-node
+    node_role: controlled-process
+    binding_status: bound
+  - node_id: ca-unlock
+    name: Open store / release key
+    node_type: control-action
+  edges:
+  - source_id: csn-backend
+    target_id: ca-unlock
+    conn_type: issues
+  - source_id: ca-unlock
+    target_id: csn-store
+    conn_type: acts-on
+  - source_id: csn-store
+    target_id: csn-backend
+    conn_type: feedback
+  - source_id: csn-cred
+    target_id: csn-backend
+    conn_type: feedback
+last-updated: '2026-07-05'
+---
+@startuml STPA_Control_Structure_Confidential_Assurance_Store_Access
+title STPA Control Structure — Confidential Assurance Store Access
+left to right direction
+
+component "Architecture Backend (assurance access controller)" <<controller>> as csn_backend #White
+component "OS Credential Backend (Keychain/DPAPI)" <<controlled-process>> as csn_cred #White
+component "Confidential Assurance Store (SQLCipher)" <<controlled-process>> as csn_store #White
+control "Open store / release key" as ca_unlock #White
+
+csn_backend --> ca_unlock : issues
+ca_unlock --> csn_store : acts-on
+csn_store ..> csn_backend : feedback
+csn_cred ..> csn_backend : feedback
+
+@enduml

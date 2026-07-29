@@ -1,0 +1,49 @@
+# ISO 26262 — Functional Safety for Road Vehicles (seed profile)
+# Scheme: ISO26262  Version: 2018
+# Source: ISO 26262:2018 — Road vehicles — Functional safety
+# Used with: obligation.cites = "ISO26262:<part>-<clause>"
+
+scheme: ISO26262
+version: "2018"
+description: >
+  ISO 26262 is the international standard for functional safety of electrical and
+  electronic systems in production automobiles. It defines the Automotive Safety
+  Integrity Level (ASIL) classification A–D plus QM.
+
+integrity_levels:
+  ASIL-A:
+    description: Lowest automotive safety integrity level (5% of max hazard exposure)
+  ASIL-B:
+    description: Intermediate automotive safety integrity level
+  ASIL-C:
+    description: High automotive safety integrity level
+  ASIL-D:
+    description: Highest automotive safety integrity level (continuous exposure)
+  QM:
+    description: Quality Management — no safety integrity requirement
+
+key_clauses:
+  "1":
+    label: Part 1 — Vocabulary
+  "2":
+    label: Part 2 — Management of functional safety
+  "3":
+    label: Part 3 — Concept phase
+  "4":
+    label: Part 4 — Product development at system level
+  "4-6":
+    label: Part 4 Clause 6 — Functional safety concept
+  "4-7":
+    label: Part 4 Clause 7 — Technical safety concept
+  "5":
+    label: Part 5 — Product development at hardware level
+  "6":
+    label: Part 6 — Product development at software level
+  "6-8":
+    label: Part 6 Clause 8 — Software unit design and implementation
+  "8":
+    label: Part 8 — Supporting processes
+  "9":
+    label: Part 9 — ASIL-oriented and safety-oriented analyses
+  "10":
+    label: Part 10 — Guidelines on ISO 26262

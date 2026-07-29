@@ -1,0 +1,13 @@
+' _archimate-relations.puml — ArchiMate relationship macros (Rel_* syntax)
+' Include after _archimate-stereotypes.puml / _archimate-glyphs.puml.
+' Provides macro aliases for the relationship types defined in connections.yaml.
+
+!define Rel_Triggering(from, to, label) from --> to
+!define Rel_Realization(from, to, label) from ..|> to
+!define Rel_Realization_Up(from, to, label) from ..|> to
+!define Rel_Serving(from, to, label) from --> to
+!define Rel_Association(from, to, label) from -- to
+!define Rel_Association_Left(from, to, label) from -- to
+!define Rel_Association_Right(from, to, label) from -- to
+!define Rel_Access(from, to, label) from ..> to
+!define Rel_Influence(from, to, label) from ..> to

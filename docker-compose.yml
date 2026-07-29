@@ -1,0 +1,99 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Architectonic — docker-compose deployment
+#
+# Default (no profiles): single `app` container serving GUI + REST + MCP on :8000,
+# with assurance OFF. Opt into more via profiles and .env:
+#
+#   docker compose up -d                              # GUI + MCP, no assurance
+#   docker compose --profile proxy up -d              # + Caddy TLS reverse proxy
+#   docker compose --profile pocketbase up -d         # + PocketBase assurance store
+#
+# Or set COMPOSE_PROFILES=proxy,pocketbase in .env to make a profile set sticky.
+# All configuration is declarative: secrets/toggles in .env, repos in
+# arch-workspace.server.yaml, backend settings in config/settings.yaml.
+# See docs/reference/docker-compose.md.
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: architectonic:${ARCH_IMAGE_TAG:-local}
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # Repos are resolved from the mounted workspace config (git-backed sync).
+      ARCH_WORKSPACE_CONFIG: /app/arch-workspace.yaml
+      ARCH_BACKEND_STATE_DIR: /app/.arch
+    ports:
+      # Direct access on the VPN. When fronting with the proxy profile you may
+      # restrict this to the loopback (ARCH_APP_BIND=127.0.0.1) or firewall it.
+      - "${ARCH_APP_BIND:-0.0.0.0}:${ARCH_APP_PORT:-8000}:8000"
+    volumes:
+      # Workspace declaration (operator-provided). Read-only: arch-init only reads
+      # it, so host ownership doesn't matter.
+      - ${ARCH_WORKSPACE_FILE:-./arch-workspace.server.yaml}:/app/arch-workspace.yaml:ro
+      # Backend settings are baked into the image (writable by the runtime user).
+      # To fully override them declaratively, mount a settings.yaml that is
+      # writable by the runtime uid (10001) and uncomment the next line:
+      # - ${ARCH_SETTINGS_FILE:-./config/settings.server.yaml}:/app/config/settings.yaml
+      # Writable state.
+      - arch-state:/app/.arch              # init-state, pid, logs
+      - arch-data:/data                    # cloned engagement/enterprise repos
+      - arch-assurance:/app/.arch-assurance # encrypted assurance store (sqlcipher)
+      - arch-home:/home/arch               # credential vault ($HOME/.config/...)
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      start_period: 40s
+      retries: 5
+
+  # ── Optional: TLS reverse proxy for VPN access (profile: proxy) ─────────────
+  caddy:
+    image: caddy:2-alpine
+    profiles: ["proxy"]
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "${ARCH_HTTPS_PORT:-443}:443"
+      - "${ARCH_HTTP_PORT:-80}:80"
+    environment:
+      ARCH_SITE_ADDRESS: ${ARCH_SITE_ADDRESS:-https://arch.internal}
+    volumes:
+      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+  # ── Optional: PocketBase assurance store backend (profile: pocketbase) ──────
+  # Set ARCH_ASSURANCE_STORE_BACKEND=pocketbase and ARCH_POCKETBASE_URL=http://pocketbase:8090
+  # in .env. One-time collection bootstrap is documented in docs/reference/docker-compose.md.
+  pocketbase:
+    image: ghcr.io/muchobien/pocketbase:latest
+    profiles: ["pocketbase"]
+    restart: unless-stopped
+    environment:
+      # First-run superuser; used for the one-time `arch-assurance pocketbase-init`.
+      - POCKETBASE_ADMIN_EMAIL=${ARCH_POCKETBASE_ADMIN_EMAIL:-}
+      - POCKETBASE_ADMIN_PASSWORD=${ARCH_POCKETBASE_ADMIN_PASSWORD:-}
+    ports:
+      - "${ARCH_POCKETBASE_BIND:-127.0.0.1}:8090:8090"
+    volumes:
+      - pocketbase-data:/pb_data
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8090/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  arch-state:
+  arch-data:
+  arch-assurance:
+  arch-home:
+  caddy-data:
+  caddy-config:
+  pocketbase-data:

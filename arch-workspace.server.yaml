@@ -1,0 +1,38 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Workspace declaration for a server deployment (git-backed, auto-synced).
+# Mounted read-only into the container at /app/arch-workspace.yaml.
+#
+# Credentials are supplied via .env (ARCH_GIT_HTTPS_USERNAME/_PASSWORD or
+# ARCH_GIT_SSH_PASSWORD) — never put secrets in this file. Clone targets live
+# under /data, which is a persistent named volume.
+# ─────────────────────────────────────────────────────────────────────────────
+
+engagement:
+  git:
+    url: https://your.git.host/org/engagement-architecture.git
+    branch: main
+    path: /data/engagement
+
+enterprise:
+  git:
+    url: https://your.git.host/org/global-architecture-repository.git
+    branch: main
+    path: /data/enterprise
+
+# Multiple engagements with an active selector (alternative form):
+# engagements:
+#   active: ENG-PRIMARY
+#   available:
+#     ENG-PRIMARY:
+#       git: { url: "https://your.git.host/org/eng-primary.git", branch: main, path: /data/eng-primary }
+#     ENG-SECONDARY:
+#       git: { url: "https://your.git.host/org/eng-secondary.git", branch: main, path: /data/eng-secondary }
+# enterprise:
+#   git: { url: "https://your.git.host/org/global-architecture-repository.git", branch: main, path: /data/enterprise }
+
+# To run against the bundled self-describing model instead of remote git, mount
+# the repo and use local paths:
+# engagement:
+#   local: /app/engagements/ENG-ARCH-REPO/architecture-repository
+# enterprise:
+#   local: /app/enterprise-repository

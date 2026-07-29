@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "attributes.driver.schema.json",
+  "title": "Driver Attribute Schema",
+  "description": "Attribute schema for Properties table in Driver entities.",
+  "type": "object",
+  "required": ["Category"],
+  "properties": {
+    "Category": {
+      "type": "string",
+      "enum": [
+        "Unspecified",
+        "External Trend",
+        "Internal Challenge",
+        "Market Gap",
+        "Organizational",
+        "Organizational Constraint",
+        "Organizational Trend",
+        "Regulatory & Standards Trend",
+        "Technical Trend",
+        "Technological",
+        "Technology Trend"
+      ],
+      "default": "Unspecified"
+    },
+    "Source": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

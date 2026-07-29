@@ -1,0 +1,154 @@
+# SysML v2 Minimum Ontology — entity type definitions
+#
+# Bounded first slice: definition/usage pairs for structure, behavior, interface,
+# data, and requirements. KerML expression/calculation semantics, the views &
+# viewpoints engine, the textual notation parser, and the SysML v2 REST/OSLC API
+# surface are deliberately excluded.
+#
+# Classes structure-element, behavior-element, and passive-structure-element are
+# declared in archimate_4 and re-used here — do not redeclare them.
+
+element_classes:
+  definition:
+    description: SysML v2 definition element (a structural or behavioral type)
+  usage:
+    description: SysML v2 usage element (contextual occurrence of a definition)
+  interface:
+    description: SysML v2 interface element (port definitions and usages)
+  requirement:
+    description: SysML v2 requirement element (definition or usage)
+
+entity_types:
+
+  # ── Structure ─────────────────────────────────────────────────────────────
+  part-definition:
+    prefix: PDF
+    hierarchy: [sysml]
+    classes: [definition, structure-element]
+    create_when: >-
+      Create a part-definition to model a structural type in SysML v2 — a named
+      classifier that describes the properties, ports, and actions that its
+      usages will have. Use when the same structural concept is reused across
+      multiple contexts or systems. Corresponds to ArchiMate application-component
+      or node via a bridge binding.
+    never_create_when: >-
+      Do not use part-definition for behavioral steps or flows — use
+      action-definition instead. Do not create a part-definition for a
+      one-off element that is never reused; prefer part-usage directly.
+
+  part-usage:
+    prefix: PU
+    hierarchy: [sysml]
+    classes: [usage, structure-element]
+    create_when: >-
+      Create a part-usage to represent a contextual occurrence of a part-definition
+      within a containing structure (e.g. a wheel-usage inside a car-definition).
+      Part-usages are the structural slots of a definition.
+    never_create_when: >-
+      Do not create a part-usage without identifying its typing definition
+      (via feature-typing). Do not use part-usage for behavioral steps or data flow.
+
+  # ── Behavior ──────────────────────────────────────────────────────────────
+  action-definition:
+    prefix: ADF
+    hierarchy: [sysml]
+    classes: [definition, behavior-element]
+    create_when: >-
+      Create an action-definition to model a reusable behavioral type: a named action
+      classifier whose usages perform the defined behavior in their context. Use when
+      the same behavior pattern applies in multiple system contexts. Aligns with
+      ArchiMate business/application/technology behavior elements via bridge bindings.
+    never_create_when: >-
+      Do not create an action-definition for one-off steps in a single action-usage
+      context — use action-usage directly. Do not use action-definition for structural
+      elements; use part-definition instead.
+
+  action-usage:
+    prefix: AU
+    hierarchy: [sysml]
+    classes: [usage, behavior-element]
+    create_when: >-
+      Create an action-usage to represent a contextual behavioral step inside a
+      containing action-definition or part-definition. Action-usages carry the
+      execution semantics of the behavior within a specific system context.
+    never_create_when: >-
+      Do not use action-usage for structural slots — use part-usage. Do not create
+      an action-usage without identifying its containing definition or typing.
+
+  # ── Interface (ports) ─────────────────────────────────────────────────────
+  port-definition:
+    prefix: PODF
+    hierarchy: [sysml]
+    classes: [definition, interface]
+    create_when: >-
+      Create a port-definition to model a reusable interface type that appears as a
+      connection point on structure elements. Port-definitions describe the protocol,
+      flow items, and directionality that port-usages will have.
+    never_create_when: >-
+      Do not use port-definition for behavioral steps or structural parts. Do not
+      create port-definitions when a simple flow-connection between parts suffices.
+
+  port-usage:
+    prefix: POU
+    hierarchy: [sysml]
+    classes: [usage, interface]
+    create_when: >-
+      Create a port-usage to represent a specific connection point on a part-usage
+      or part-definition, typed by a port-definition. Port-usages are the endpoints
+      of flow-connections in an internal block diagram.
+    never_create_when: >-
+      Do not use port-usage for behavioral steps. Do not create port-usages when the
+      boundary interaction point is already captured by a flow-connection directly
+      between part-usages.
+
+  # ── Data / items ──────────────────────────────────────────────────────────
+  item-definition:
+    prefix: IDF
+    hierarchy: [sysml]
+    classes: [definition, passive-structure-element]
+    create_when: >-
+      Create an item-definition to model a typed data or material item that flows
+      between parts or actions (analogous to ArchiMate data objects or artifacts).
+      Use when the same item type appears on multiple flow-connections.
+    never_create_when: >-
+      Do not create item-definitions for active behaviors or structure parts.
+      Do not create an item-definition for a one-off payload; prefer an
+      untyped flow-connection annotation instead.
+
+  item-usage:
+    prefix: IU
+    hierarchy: [sysml]
+    classes: [usage, passive-structure-element]
+    create_when: >-
+      Create an item-usage to represent a specific occurrence of an item-definition
+      flowing on a port-usage or as a parameter of an action-usage.
+    never_create_when: >-
+      Do not use item-usage for active structural parts or behavior steps.
+
+  # ── Requirements ──────────────────────────────────────────────────────────
+  requirement-definition:
+    prefix: RDF
+    hierarchy: [sysml]
+    classes: [definition, requirement]
+    create_when: >-
+      Create a requirement-definition to model a reusable requirement type that can
+      be instantiated as requirement-usages in multiple system contexts. Use for
+      standard/regulatory requirements applied across the system.
+    never_create_when: >-
+      Do not create requirement-definitions for single-use requirements — prefer
+      requirement-usage. Do not use requirement-definition for design decisions or
+      architectural goals — those belong in ArchiMate motivation elements.
+
+  requirement-usage:
+    prefix: RU
+    hierarchy: [sysml]
+    classes: [usage, requirement]
+    create_when: >-
+      Create a requirement-usage to represent a specific requirement applied in a
+      system context. Requirement-usages can be satisfied by action-usages or
+      part-usages via the satisfy connection. Corresponds to ArchiMate requirement
+      elements via bridge bindings.
+    never_create_when: >-
+      Do not use requirement-usage for architectural goals or outcomes — those belong
+      in ArchiMate motivation elements. Do not create requirement-usages without a
+      satisfy or trace connection to a fulfilling element.

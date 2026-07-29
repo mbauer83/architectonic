@@ -1,0 +1,92 @@
+model-projects:
+- slug: motivation-narrative
+  id: GRP@1783190272.5z1XxB
+  name: Motivation Narrative
+  description: Stakeholders, drivers, assessments, goals, outcomes, principles, and
+    requirements — the unity-of-effort/coherence story arc.
+- slug: platform-core
+  id: GRP@1783198306.Y98bAm
+  name: Platform Core
+  description: The core repository/model/diagram/document ontology and its authoring,
+    verification, search, and staging machinery — everything not specific to assurance,
+    promotion/tiering, or diagram-type authoring UX.
+- slug: assurance
+  id: GRP@1783198343.BWLfbI
+  name: Assurance
+  description: 'The assurance capability modeled as an architecture feature: STPA/CAST/GRC,
+    confidential storage, supply-chain/vulnerability signals, and the roles/processes/services
+    that operate it.'
+- slug: promotion-and-tiering
+  id: GRP@1783198348.Pesf9W
+  name: Promotion & Tiering
+  description: The two-tier enterprise/engagement repository relationship and the
+    promotion pipeline that moves artifacts between them.
+- slug: diagram-authoring
+  id: GRP@1783198352.5TDzLq
+  name: Diagram Authoring
+  description: Cross-cutting diagram-type rendering and authoring capability (PlantUML
+    rendering, scaffolding, diagram-type modules) — not the assurance-specific GSN
+    capability.
+- slug: strategy-and-value
+  id: GRP@1784482380.j78JVr
+  name: Strategy & Value
+  description: 'The product''s strategy domain: capabilities, value streams and stages,
+    values, courses of action, and strategic resources bridging the motivation and
+    business/application layers. Models the solution-as-product (stable abilities,
+    persona value streams, already-made strategic choices, accumulated strategic assets)
+    — no revenue/market/go-to-market content, no fictitious org structures. Maintenance:
+    owned by the repository owner; the review trigger is any business-model-level
+    change (public announcement, licensing or tier change) — never ordinary feature
+    work. Strategy-layer content is deliberately low-volatility; new entries must
+    pass the strategy-domain distinction litmus tests in the authoring guidance.'
+diagram-collections:
+- slug: meta-ontology
+  id: GRP@1782086787.3BRrmg
+  name: Meta Ontology
+- slug: motivation-narrative
+  id: GRP@1783198391.wu4AhB
+  name: Motivation Narrative
+  description: 'Overview and motivation-domain views: goals, outcomes, drivers, and
+    the unity-of-effort story.'
+- slug: platform-core
+  id: GRP@1783198395.Svin4q
+  name: Platform Core
+  description: 'Core repository/model behavior views: authoring, verification, staging,
+    sync, querying, and C4 system/container/component views.'
+- slug: assurance
+  id: GRP@1783198398.mpYBkG
+  name: Assurance
+  description: 'Assurance capability views: motivation, methods & roles, application/persistence
+    architecture, and the STPA/CAST/GSN/bowtie assurance-content diagrams.'
+- slug: promotion-and-tiering
+  id: GRP@1783198403.AOWxrT
+  name: Promotion & Tiering
+  description: The enterprise/engagement two-tier structure and the promotion workflow
+    between them.
+- slug: diagram-authoring
+  id: GRP@1783198409.9HJslP
+  name: Diagram Authoring
+  description: Diagram-type authoring capability views (e.g. datatype/ER diagram type
+    application view).
+- slug: confidential
+  id: GRP@1783240811.5kkTbK
+  name: Confidential
+- slug: strategy-and-value
+  id: GRP@1784488671.LTdR3m
+  name: Strategy And Value
+document-collections:
+- slug: platform-core
+  id: GRP@1783198413.qrAOwZ
+  name: Platform Core
+  description: Core architecture/engineering decisions and standards for the repository
+    platform itself.
+- slug: assurance
+  id: GRP@1783411088.Bmr1rG
+  name: Assurance
+- slug: promotion-and-tiering
+  id: GRP@1783411088.YSQzlI
+  name: Promotion And Tiering
+- slug: motivation-narrative
+  id: GRP@1784370259.CwFXGq
+  name: Motivation Narrative
+analysis-collections: []

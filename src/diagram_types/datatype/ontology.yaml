@@ -1,0 +1,296 @@
+entity_types:
+  classifier:
+    identity_scope: workspace
+    id_prefix: CLF
+    classes: []
+    create_when: >-
+      Use for each UML classifier in the data structure: set classifier_kind to class
+      (identity-bearing entity), datatype (value object / structured DataType),
+      enumeration (DataType with named literals), or primitive (leaf PrimitiveType).
+      A sum type / tagged union is an abstract class or datatype (is_abstract: true)
+      whose cases are joined by dt-generalization and grouped by a generalization_set;
+      there is no distinct "variant" kind. Optionally bind to a Data Object entity for
+      architectural traceability.
+    never_create_when: >-
+      Do not create a classifier for an operation, method, behaviour, service, or
+      process. This diagram type is restricted to data structure (attributes and
+      structural relations) only.
+    permitted_mappings:
+      entity_types: [data-object]
+      entity_classes: []
+      sources:
+        - ontology: archimate-4-0
+          entity_type: data-object
+    mapping_required: false
+    properties:
+      classifier_kind:
+        type: string
+        enum: [class, datatype, enumeration, primitive]
+        required: true
+        description: >-
+          UML classifier kind. class = identity-bearing entity (instances distinct
+          by identity). datatype = value object (instances equal by value). enumeration
+          = DataType with ordered EnumerationLiterals. primitive = leaf PrimitiveType
+          with no internal structure (Integer, String, …). A sum type / tagged union
+          is not a kind: it is an abstract class or datatype (is_abstract: true) whose
+          cases are joined by dt-generalization and grouped by a generalization_set
+          carrying {is_covering, is_disjoint}.
+      attributes:
+        type: array
+        required: false
+        description: >-
+          Typed attribute compartment (class, datatype, primitive kinds). Each entry:
+          id (string, stable internal identity — minted once, never displayed, used by
+          identity / unique_keys so renames are free), name (string, required, freely
+          renamable), optional type discriminated union ({kind: primitive, name:
+          "String"} or {kind: classifier, id: "CLF@…"}), multiplicity (UML collection
+          cardinality: 1 / 0..1 / 1..* / *), optional (bool — presence/nullability of a
+          product-type member, distinct from multiplicity), default (optional default
+          expression), and descriptive metadata: role (free-form, optional — a short
+          one-to-two-sentence summary of the attribute's purpose), provenance (free-form,
+          optional), and note (free-form, optional — longer remarks).
+        items:
+          type: object
+          required: [name]
+          properties:
+            id:
+              type: string
+              minLength: 1
+            name:
+              type: string
+              minLength: 1
+            type:
+              oneOf:
+                - type: object
+                  additionalProperties: false
+                  required: [kind, name]
+                  properties:
+                    kind:
+                      type: string
+                      const: primitive
+                    name:
+                      type: string
+                      minLength: 1
+                - type: object
+                  additionalProperties: false
+                  required: [kind, id]
+                  properties:
+                    kind:
+                      type: string
+                      const: classifier
+                    id:
+                      type: string
+                      pattern: '^[A-Z]+@[0-9]+\.[A-Za-z0-9_-]+\..+$'
+            multiplicity:
+              type: string
+            optional:
+              type: boolean
+            default:
+              type: string
+            role:
+              type: string
+            provenance:
+              type: string
+            note:
+              type: string
+      literals:
+        type: array
+        required: false
+        description: >-
+          EnumerationLiteral names (enumeration kind only). String list in
+          declaration order. Ignored for other classifier kinds.
+      is_abstract:
+        type: boolean
+        required: false
+        description: >-
+          Render as abstract classifier. Set true for the general end of a sum type
+          (the classifier whose cases are joined by dt-generalization).
+      identity:
+        type: array
+        required: false
+        description: >-
+          The composite primary key: an ordered, repetition-free list of attribute
+          ids (the `id` field of attributes declared by this classifier). At most one
+          identity per classifier (this single list is it). Order is significant.
+        uniqueItems: true
+        items:
+          type: string
+          minLength: 1
+      unique_keys:
+        type: array
+        required: false
+        description: >-
+          Unique keys (candidate keys). Many are allowed. Each is an ordered,
+          repetition-free list of attribute ids, with an optional name.
+        items:
+          type: object
+          required: [attribute_ids]
+          properties:
+            name:
+              type: string
+            attribute_ids:
+              type: array
+              minItems: 1
+              uniqueItems: true
+              items:
+                type: string
+                minLength: 1
+      role:
+        type: string
+        required: true
+        description: >-
+          Brief description of the data type's role in the system. Required for
+          classifiers with an attribute compartment and for the general end of a sum
+          type; may be empty for enumerations and attribute-less value datatypes.
+      internal_consistency_criteria:
+        type: array
+        required: true
+        description: >-
+          How values of this type's own attributes must relate to be valid
+          (free-form text, one rule per entry). Required but may be empty.
+        items:
+          type: string
+      external_consistency_criteria:
+        type: array
+        required: true
+        description: >-
+          Rules about how this type's data must relate to other data for the whole
+          to be consistent (free-form text, one rule per entry). Required but may be empty.
+        items:
+          type: string
+      tags:
+        type: array
+        required: false
+        description: Free-form classification tags.
+        items:
+          type: string
+      provenance:
+        type: string
+        required: false
+        description: Optional free-form note on where this data type / its definition comes from.
+      note:
+        type: string
+        required: false
+        description: Free-form note rendered next to the classifier.
+
+  generalization_set:
+    identity_scope: workspace
+    id_prefix: GSET
+    classes: []
+    create_when: >-
+      Create one for each UML GeneralizationSet: a named grouping of dt-generalization
+      relationships that share one general (target) classifier, carrying the
+      {is_covering, is_disjoint} constraints. A proper sum type / tagged union sets both
+      true. Each participating dt-generalization references this set by id.
+    never_create_when: >-
+      Do not create a generalization_set for a single, ungrouped specialization, or to
+      model anything other than the covering/disjoint constraints over a set of
+      generalizations.
+    permitted_mappings:
+      entity_types: []
+      entity_classes: []
+    mapping_required: false
+    properties:
+      is_covering:
+        type: boolean
+        required: false
+        description: >-
+          True = the cases exhaust all instances of the general classifier (complete).
+      is_disjoint:
+        type: boolean
+        required: false
+        description: True = the cases are mutually exclusive (disjoint).
+      note:
+        type: string
+        required: false
+        description: Free-form note.
+
+connection_types:
+  dt-association:
+    embedding: none
+    cascade_delete_source: false
+    symmetric: true
+    relationship_kind: association
+    puml_arrow: "--"
+    properties:
+      note: {type: string, required: false}
+
+  dt-aggregation:
+    embedding: none
+    cascade_delete_source: false
+    symmetric: false
+    relationship_kind: containment
+    puml_arrow: "o--"
+    properties:
+      note: {type: string, required: false}
+
+  dt-composition:
+    embedding: none
+    cascade_delete_source: false
+    symmetric: false
+    relationship_kind: containment
+    puml_arrow: "*--"
+    properties:
+      note: {type: string, required: false}
+
+  dt-generalization:
+    embedding: none
+    cascade_delete_source: false
+    symmetric: false
+    relationship_kind: generalization
+    puml_arrow: "--|>"
+    properties:
+      generalization_set:
+        type: string
+        required: false
+        description: >-
+          Id of the generalization_set this specialization belongs to. All
+          dt-generalizations sharing a set must share one general (target) classifier;
+          the set carries the {is_covering, is_disjoint} constraints.
+      note: {type: string, required: false}
+
+  dt-dependency:
+    embedding: none
+    cascade_delete_source: false
+    symmetric: false
+    relationship_kind: dependency
+    puml_arrow: "..>"
+    properties:
+      note: {type: string, required: false}
+
+permitted_relationships:
+  - [classifier, classifier, [dt-association, dt-aggregation, dt-composition,
+                               dt-generalization, dt-dependency]]
+
+allowed_bindings:
+  entity:
+    classifier:
+      correspondence_kinds: [represents, traces-to]
+      default_correspondence_kind: represents
+      target_forms: [entity-id, diagram-local]
+  connection:
+    dt-association:
+      target_connection_classes: [association]
+      correspondence_kinds: [represents, refines]
+      default_correspondence_kind: represents
+      target_forms: [connection-id]
+    dt-aggregation:
+      target_connection_classes: [containment]
+      correspondence_kinds: [represents, refines]
+      default_correspondence_kind: represents
+      target_forms: [connection-id]
+    dt-composition:
+      target_connection_classes: [containment]
+      correspondence_kinds: [represents, refines]
+      default_correspondence_kind: represents
+      target_forms: [connection-id]
+    dt-generalization:
+      target_connection_classes: [generalization]
+      correspondence_kinds: [represents, refines]
+      default_correspondence_kind: represents
+      target_forms: [connection-id]
+    dt-dependency:
+      target_connection_classes: [dependency]
+      correspondence_kinds: [represents, refines]
+      default_correspondence_kind: represents
+      target_forms: [connection-id]

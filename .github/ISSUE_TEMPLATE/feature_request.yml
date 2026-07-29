@@ -1,0 +1,14 @@
+name: Feature request / usability finding
+description: A capability that is missing, or an existing one that fights you
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem or friction
+      description: What were you trying to do, where did it resist?
+    validations: { required: true }
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would better look like? (optional)

@@ -1,0 +1,181 @@
+---
+artifact-id: ARC@1784483951.yBNaaU.strategy-overview
+artifact-type: diagram
+name: Strategy Overview
+version: 0.1.0
+status: active
+diagram-type: archimate-layered
+viewpoint:
+  slug: strategy
+  version: 2
+entity-ids-used:
+- CAP@1784482442.0kQIHh.architecture-analysis-visualization
+- CAP@1784482433.Eb_x83.integrated-safety-security-compliance-assurance
+- CAP@1784482422.FMvdNM.tiered-knowledge-governance
+- CAP@1784482412.db4AQh.agent-native-architecture-collaboration
+- CAP@1784482403.pLMHKe.architecture-knowledge-management
+- COA@1784483706.F9mwVZ.guidance-first-license-separated-method-content
+- COA@1784483697.FI0Xbj.dogfood-via-the-recursive-self-model
+- COA@1784483694.jckOJG.develop-privately-release-as-open-source
+- OUT@1712870400.LrpdG0.increased-architectural-coherence-and-integrity
+- OUT@1780655839.Vhhne7.assurance-analysis-surfaces-modeling-gaps
+- RES@1784482471.0mpHI-.assurance-knowledge-base
+- RES@1784482482.H7YRYJ.modelling-method-guidance-corpus
+- RES@1784482454.JnWnY1.recursive-self-model-eng-arch-repo
+- RES@1784482462.dz41en.enterprise-architecture-knowledge-base
+- VS@1784482984.VZ-P2h.deliver-an-architecture-aligned-change
+- VS@1784482992.fK25Bo.assure-a-system-release
+- VS@1784483003.klQ_6-.adopt-the-platform
+- VS@1784482994.vEQEgh.grow-reusable-enterprise-knowledge
+connection-ids-used:
+- RES@1784482454.JnWnY1---CAP@1784482403.pLMHKe@@archimate-assignment
+- RES@1784482462.dz41en---CAP@1784482403.pLMHKe@@archimate-assignment
+- CAP@1784482403.pLMHKe---COA@1784483697.FI0Xbj@@archimate-realization
+- CAP@1784482403.pLMHKe---VS@1784483003.klQ_6-@@archimate-serving
+- COA@1784483706.F9mwVZ---CAP@1784482412.db4AQh@@archimate-serving
+- RES@1784482482.H7YRYJ---CAP@1784482412.db4AQh@@archimate-assignment
+- CAP@1784482412.db4AQh---VS@1784482984.VZ-P2h@@archimate-serving
+- RES@1784482462.dz41en---CAP@1784482422.FMvdNM@@archimate-assignment
+- CAP@1784482422.FMvdNM---VS@1784482994.vEQEgh@@archimate-serving
+- RES@1784482471.0mpHI----CAP@1784482433.Eb_x83@@archimate-assignment
+- RES@1784482482.H7YRYJ---CAP@1784482433.Eb_x83@@archimate-assignment
+- CAP@1784482433.Eb_x83---COA@1784483697.FI0Xbj@@archimate-realization
+- CAP@1784482433.Eb_x83---VS@1784482992.fK25Bo@@archimate-serving
+- CAP@1784482442.0kQIHh---VS@1784482984.VZ-P2h@@archimate-serving
+- COA@1784483694.jckOJG---VS@1784483003.klQ_6-@@archimate-serving
+- RES@1784482454.JnWnY1---COA@1784483697.FI0Xbj@@archimate-assignment
+- COA@1784483697.FI0Xbj---OUT@1712870400.LrpdG0@@archimate-influence
+- COA@1784483697.FI0Xbj---OUT@1780655839.Vhhne7@@archimate-realization
+last-updated: '2026-07-29T13:30:23Z'
+---
+@startuml strategy-overview
+hide stereotype
+
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 12
+skinparam shadowing false
+skinparam roundcorner 4
+skinparam backgroundColor #FAFAFA
+
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 80
+!define Rel_Triggering(from, to, label) from --> to
+!define Rel_Realization(from, to, label) from ..|> to
+!define Rel_Realization_Up(from, to, label) from ..|> to
+!define Rel_Serving(from, to, label) from --> to
+!define Rel_Association(from, to, label) from -- to
+!define Rel_Association_Left(from, to, label) from -- to
+!define Rel_Association_Right(from, to, label) from -- to
+!define Rel_Access(from, to, label) from ..> to
+!define Rel_Influence(from, to, label) from ..> to
+skinparam rectangle<<MotivationGrouping>> {
+  BackgroundColor #F7EEF9
+  BorderColor #7B3F9A
+}
+skinparam rectangle<<StrategyGrouping>> {
+  BackgroundColor #FAF0D9
+  BorderColor #8B6914
+}
+skinparam rectangle<<capability>> {
+  BackgroundColor #F5DEB3
+  BorderColor #8B6914
+}
+skinparam rectangle<<course_of_action>> {
+  BackgroundColor #F5DEB3
+  BorderColor #8B6914
+}
+skinparam rectangle<<outcome>> {
+  BackgroundColor #EDD6F0
+  BorderColor #7B3F9A
+}
+skinparam rectangle<<resource>> {
+  BackgroundColor #F5DEB3
+  BorderColor #8B6914
+}
+skinparam rectangle<<value_stream>> {
+  BackgroundColor #F5DEB3
+  BorderColor #8B6914
+}
+sprite $archimate_capability <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3.10 11.25h9.80v1.30H3.10z" fill="#252327"/><path d="M4.00 8.80h1.90v3.10H4.00z" fill="#252327"/><path d="M6.80 6.80h1.90v5.10H6.80z" fill="#252327"/><path d="M9.60 4.70h1.90v7.20H9.60z" fill="#252327"/></svg>
+sprite $archimate_course_of_action <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="10.7" cy="5.4" r="2"  fill="none" stroke="#252327" stroke-width="1.3"/><circle cx="10.7" cy="5.4" r=".7" fill="#252327" stroke="none"  stroke-width="1.3"/><path d="M3.66 12.66L2.74 11.74L7.44 7.04L8.36 7.96z" fill="#252327"/><path d="M6.00 6.85h1.90v1.30H6.00z" fill="#252327"/><path d="M7.25 7.50v1.90h1.30V7.50z" fill="#252327"/></svg>
+sprite $archimate_outcome <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="7.4" cy="8.6" r="4.3"  fill="none" stroke="#252327" stroke-width="1.3"/><circle cx="7.4" cy="8.6" r="2.2"  fill="none" stroke="#252327" stroke-width="1.3"/><path d="M10.18 6.93L9.42 5.87L12.52 3.67L13.28 4.73z" fill="#252327"/><path d="M10.20 7.25h2.50v1.30H10.20z" fill="#252327"/><circle cx="7.4" cy="8.6" r=".9" fill="#252327" stroke="none"  stroke-width="1.3"/></svg>
+sprite $archimate_resource <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3 4h10v8H3z"  fill="#252327" stroke="none"/><path d="M3.00 5.85h10.00v1.30H3.00z" fill="#252327"/><path d="M5.35 4.00v8.00h1.30V4.00z" fill="#252327"/></svg>
+sprite $archimate_value_stream <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.5 5h7l2.5 3-2.5 3h-7l2-3z"  fill="#252327" stroke="none"/></svg>
+
+title Strategy Overview
+
+rectangle "Motivation" <<MotivationGrouping>> as DOM_motivation {
+  rectangle "Outcomes" <<MotivationGrouping>> as GRPT_motivation_1 {
+    rectangle "<$archimate_outcome{scale=1.2}> Increased Architectural Coherence and Integrity" <<outcome>> as OUT_LrpdG0
+    rectangle "<$archimate_outcome{scale=1.2}> Assurance Analysis Surfaces Modeling Gaps" <<outcome>> as OUT_Vhhne7
+  }
+  OUT_LrpdG0 -[hidden]down- OUT_Vhhne7
+
+}
+
+rectangle "Strategy" <<StrategyGrouping>> as DOM_strategy {
+  rectangle "Course Of Actions" <<StrategyGrouping>> as GRPT_strategy_1 {
+    rectangle "<$archimate_course_of_action{scale=1.2}> Guidance-First, License-Separated Method Content" <<course_of_action>> as COA_F9mwVZ
+    rectangle "<$archimate_course_of_action{scale=1.2}> Dogfood via the Recursive Self-Model" <<course_of_action>> as COA_FI0Xbj
+    rectangle "<$archimate_course_of_action{scale=1.2}> Develop Privately, Release as Open Source" <<course_of_action>> as COA_jckOJG
+  }
+  COA_F9mwVZ -[hidden]right- COA_FI0Xbj
+  COA_FI0Xbj -[hidden]right- COA_jckOJG
+
+  rectangle "Capabilities" <<StrategyGrouping>> as GRPT_strategy_2 {
+    rectangle "<$archimate_capability{scale=1.2}> Architecture Analysis & Visualization" <<capability>> as CAP_0kQIHh
+    rectangle "<$archimate_capability{scale=1.2}> Integrated Safety, Security & Compliance Assurance" <<capability>> as CAP_Eb_x83
+    rectangle "<$archimate_capability{scale=1.2}> Tiered Knowledge Governance" <<capability>> as CAP_FMvdNM
+    rectangle "<$archimate_capability{scale=1.2}> Agent-Native Architecture Collaboration" <<capability>> as CAP_db4AQh
+    rectangle "<$archimate_capability{scale=1.2}> Architecture Knowledge Management" <<capability>> as CAP_pLMHKe
+  }
+  CAP_0kQIHh -[hidden]right- CAP_Eb_x83
+  CAP_Eb_x83 -[hidden]right- CAP_FMvdNM
+  CAP_FMvdNM -[hidden]right- CAP_db4AQh
+  CAP_0kQIHh -[hidden]down- CAP_pLMHKe
+
+  rectangle "Resources" <<StrategyGrouping>> as GRPT_strategy_3 {
+    rectangle "<$archimate_resource{scale=1.2}> Assurance Knowledge Base" <<resource>> as RES_0mpHI_
+    rectangle "<$archimate_resource{scale=1.2}> Modelling & Method Guidance Corpus" <<resource>> as RES_H7YRYJ
+    rectangle "<$archimate_resource{scale=1.2}> Recursive Self-Model (ENG-ARCH-REPO)" <<resource>> as RES_JnWnY1
+    rectangle "<$archimate_resource{scale=1.2}> Enterprise Architecture Knowledge Base" <<resource>> as RES_dz41en
+  }
+  RES_0mpHI_ -[hidden]right- RES_H7YRYJ
+  RES_H7YRYJ -[hidden]right- RES_JnWnY1
+  RES_JnWnY1 -[hidden]right- RES_dz41en
+
+  rectangle "Value Streams" <<StrategyGrouping>> as GRPT_strategy_4 {
+    rectangle "<$archimate_value_stream{scale=1.2}> Deliver an Architecture-Aligned Change" <<value_stream>> as VS_VZ_P2h
+    rectangle "<$archimate_value_stream{scale=1.2}> Assure a System Release" <<value_stream>> as VS_fK25Bo
+    rectangle "<$archimate_value_stream{scale=1.2}> Adopt the Platform" <<value_stream>> as VS_klQ_6_
+    rectangle "<$archimate_value_stream{scale=1.2}> Grow Reusable Enterprise Knowledge" <<value_stream>> as VS_vEQEgh
+  }
+  VS_VZ_P2h -[hidden]right- VS_fK25Bo
+  VS_fK25Bo -[hidden]right- VS_klQ_6_
+  VS_klQ_6_ -[hidden]right- VS_vEQEgh
+  GRPT_strategy_3 -[hidden]down- GRPT_strategy_4
+
+}
+
+' Connections
+RES_JnWnY1 --> CAP_pLMHKe
+RES_dz41en --> CAP_pLMHKe
+CAP_pLMHKe ..|> COA_FI0Xbj
+CAP_pLMHKe --> VS_klQ_6_
+COA_F9mwVZ --> CAP_db4AQh
+RES_H7YRYJ --> CAP_db4AQh
+CAP_db4AQh --> VS_VZ_P2h
+RES_dz41en --> CAP_FMvdNM
+CAP_FMvdNM --> VS_vEQEgh
+RES_0mpHI_ --> CAP_Eb_x83
+RES_H7YRYJ --> CAP_Eb_x83
+CAP_Eb_x83 ..|> COA_FI0Xbj
+CAP_Eb_x83 --> VS_fK25Bo
+CAP_0kQIHh --> VS_VZ_P2h
+COA_jckOJG --> VS_klQ_6_
+RES_JnWnY1 --> COA_FI0Xbj
+COA_FI0Xbj .up.> OUT_LrpdG0
+COA_FI0Xbj .up.|> OUT_Vhhne7
+
+@enduml

@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "attributes.unsafe-control-action.schema.json",
+  "title": "Unsafe Control Action Attribute Schema",
+  "description": "Attribute schema for Properties table in Unsafe Control Action entities.",
+  "type": "object",
+  "required": [],
+  "properties": {
+    "uca_type": {
+      "type": "string",
+      "enum": [
+        "not-provided",
+        "provided",
+        "wrong-timing",
+        "stopped-too-soon"
+      ]
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "hypothesized",
+        "observed"
+      ]
+    },
+    "context": {
+      "type": "string"
+    },
+    "concern_class": {
+      "type": "string",
+      "enum": [
+        "safety",
+        "security",
+        "operational",
+        "financial",
+        "privacy"
+      ]
+    }
+  },
+  "additionalProperties": true
+}

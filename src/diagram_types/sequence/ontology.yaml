@@ -1,0 +1,129 @@
+connection_types:
+  seq-from:
+    embedding: none
+    cascade_delete_source: true
+
+  seq-to:
+    embedding: none
+    cascade_delete_source: true
+
+entity_types:
+  lifeline:
+    classes: [participant]
+    create_when: >-
+      Use for each participant (actor, system, component, service) in the sequence.
+      Set participant_type and optionally map to a model entity for traceability.
+      Array order = left-to-right position in the diagram.
+    never_create_when: >-
+      Do not create multiple lifelines for the same participant.
+    permitted_mappings:
+      entity_types: [role, business-actor, application-component, application-service, node]
+      entity_classes: []
+      sources:
+        - ontology: archimate-4-0
+          entity_type: role
+        - ontology: archimate-4-0
+          entity_type: business-actor
+        - ontology: archimate-4-0
+          entity_type: application-component
+        - ontology: archimate-4-0
+          entity_type: application-service
+        - ontology: archimate-4-0
+          entity_type: node
+    mapping_required: false
+    properties:
+      participant_type:
+        type: string
+        enum: [participant, actor, boundary, control, entity, database, queue]
+        required: false
+        description: UML participant stereotype (default participant)
+
+  message:
+    classes: [message]
+    create_when: >-
+      Use for each message or call between two lifelines. Array order = top-to-bottom
+      sequence. Set seq-from and seq-to connections to source and target lifelines.
+    never_create_when: >-
+      Do not create a message without seq-from and seq-to connections to lifelines.
+    required_connections:
+      - connection_type: seq-from
+        target: lifeline
+        cardinality: [1, 1]
+      - connection_type: seq-to
+        target: lifeline
+        cardinality: [1, 1]
+    properties:
+      arrow:
+        type: string
+        enum: [sync, async, reply, self, create, destroy]
+        required: false
+        description: Arrow notation style (default sync)
+      activate_target:
+        type: boolean
+        required: false
+        description: Activate target lifeline when this message arrives (PlantUML ++)
+      deactivate_target:
+        type: boolean
+        required: false
+        description: Deactivate target lifeline when this message arrives (PlantUML --)
+
+  grouping:
+    classes: [grouping]
+    create_when: >-
+      Use to group a contiguous span of messages into a combined fragment block.
+      Each operand has an optional guard and start_message_id / end_message_id.
+      alt uses ≥1 operands (first guard, remaining = else-if); par uses ≥1 parallel
+      flows; opt/loop/break/critical/group use exactly 1. Groupings may be nested.
+    never_create_when: >-
+      Do not use for a single unconditional message.
+    properties:
+      kind:
+        type: string
+        enum: [alt, opt, loop, par, break, critical, group]
+        required: true
+        description: Fragment kind
+      label:
+        type: string
+        required: false
+        description: Label for group kind or loop condition bound
+      operands:
+        type: array
+        required: true
+        description: >-
+          Operands array. Each entry has guard? (string), start_message_id (string),
+          end_message_id (string). alt/par use ≥1; others use exactly 1.
+
+  note:
+    classes: [annotation]
+    properties:
+      text:
+        type: string
+        required: true
+      placement:
+        type: string
+        enum: [left_of, right_of, over]
+        required: false
+        description: Note placement relative to lifeline(s) (default right_of)
+      lifeline_ids:
+        type: array
+        required: true
+        description: >-
+          IDs of lifelines this note is attached to.
+          left_of / right_of = exactly 1; over = 1..N.
+      after_message_id:
+        type: string
+        required: false
+        description: Message ID after which the note appears; omit to append at end
+
+permitted_relationships: []
+
+allowed_bindings:
+  entity:
+    lifeline:
+      correspondence_kinds: [represents, traces-to]
+      default_correspondence_kind: represents
+      target_forms: [entity-id, diagram-local]
+    message:
+      correspondence_kinds: [represents, abstracts, traces-to]
+      default_correspondence_kind: represents
+      target_forms: [connection-id, connection-ids, diagram-local]

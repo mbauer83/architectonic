@@ -1,0 +1,30 @@
+# Caddy reverse proxy for Architectonic (profile: proxy).
+#
+# Terminates TLS and forwards GUI + REST + all four MCP endpoints to the backend.
+# No application auth is configured — the VPN is the access boundary. Set the
+# site address via ARCH_SITE_ADDRESS in .env.
+#
+#   https://arch.internal   → internal/self-signed cert (Caddy's local CA)
+#   https://arch.example.com → set an email + real domain for automatic ACME TLS
+#
+# Server-Sent Events (/api/events) and MCP streamable-HTTP need unbuffered,
+# long-lived connections; reverse_proxy passes these through by default.
+
+{$ARCH_SITE_ADDRESS} {
+	encode zstd gzip
+
+	# MCP streamable-HTTP endpoints — disable response buffering for streaming.
+	@mcp path /mcp/*
+	reverse_proxy @mcp app:8000 {
+		flush_interval -1
+	}
+
+	# Server-Sent Events stream — no buffering.
+	@events path /api/events*
+	reverse_proxy @events app:8000 {
+		flush_interval -1
+	}
+
+	# Everything else: GUI SPA + REST API.
+	reverse_proxy app:8000
+}

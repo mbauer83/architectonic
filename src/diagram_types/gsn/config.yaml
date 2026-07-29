@@ -1,0 +1,6 @@
+name: gsn
+
+ui:
+  label: GSN Assurance Case
+  description: >-
+    An assurance case in Goal Structuring Notation, from the top claim through strategies to evidence.

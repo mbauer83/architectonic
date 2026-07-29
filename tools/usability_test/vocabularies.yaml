@@ -1,0 +1,179 @@
+# Controlled vocabularies for the persona/scenario usability framework.
+#
+# Single source of truth: the persona catalog, the scenario files, the brief composer
+# and the guard tests all resolve their controlled values here, so extending a
+# vocabulary is a data change rather than a code change. Every term carries a definition
+# because the terms are read by evaluators and by isolated persona contexts that have no
+# other context to disambiguate them.
+
+schema: 1
+kind: usability-vocabularies
+
+# How deeply a persona commands one axis of knowledge. Ordinal, low to high. This
+# replaces a single expert/non-expert flag, which could not express the common and
+# important case of someone who is an authority in their own field and a beginner at
+# architecture modelling.
+expertise_levels:
+- id: none
+  meaning: No working knowledge; the vocabulary itself is unfamiliar.
+- id: aware
+  meaning: Recognizes the terms and can follow a conversation, but cannot act unaided.
+- id: working
+  meaning: Performs routine tasks unaided; falls back to help or a colleague at the edges.
+- id: fluent
+  meaning: Performs non-routine tasks unaided and judges the quality of others' work.
+- id: authority
+  meaning: Sets the standard others follow; recognizes when the standard itself is wrong.
+
+# The axes every persona is graded on. Keeping the axes fixed is what makes personas
+# comparable to each other.
+#
+# `overridable` says whether a scenario may restate the axis for one participant
+# (`expertise_overrides`). Only an axis whose MEANING depends on the situation qualifies:
+# `solution_domain` names the domain of whatever is modelled, so it cannot be settled
+# until a scenario fixes that. The rest are properties of the person, and a scenario that
+# could restate them would make the same persona two different subjects — findings scored
+# against it would stop being comparable across runs. Someone who differs on those axes is
+# a different persona; write one.
+expertise_axes:
+- id: architecture_modelling
+  meaning: ArchiMate, C4 and modelling discipline generally — notation, semantics, layering.
+  overridable: false
+- id: solution_domain
+  meaning: The business and technical domain the modelled systems serve.
+  overridable: true
+- id: software_engineering
+  meaning: Building, operating and changing software systems.
+  overridable: false
+- id: assurance_and_compliance
+  meaning: Safety, security, risk and control-framework practice, and audit evidence.
+  overridable: false
+- id: product_familiarity
+  meaning: How well the persona already knows the product under evaluation — this
+    architecture repository. Not skill at product work; the axis measures what they arrive
+    knowing, which is what decides whether a first encounter can be read as one.
+  overridable: false
+
+# The surfaces through which work is done. A scenario's channels must be declared by at
+# least one participating persona.
+channels:
+- id: gui
+  meaning: The web interface at the frontend URL.
+- id: docs
+  meaning: README and the docs/ tree, read as documentation rather than as source.
+- id: mcp
+  meaning: The MCP tool surface, driven by an agent on the user's behalf.
+- id: cli
+  meaning: The arch-* command-line entry points.
+- id: rest
+  meaning: The REST API, called directly.
+
+# How willing a persona is to act on an answer they have not independently checked.
+risk_postures:
+- id: acts-on-plausible
+  meaning: Uses a result that looks right; verification is not part of the habit.
+- id: verifies-before-acting
+  meaning: Checks one or two load-bearing facts against another source before committing.
+- id: requires-evidence-trail
+  meaning: Will not act unless the answer carries provenance that survives challenge.
+
+# The concrete thing a task's answer has to feed. Naming it keeps "did this answer the
+# question?" decidable — the answer either fits the artifact or it does not.
+decision_artifacts:
+- id: slide
+  meaning: A picture or bullet list presented to a non-technical audience.
+- id: ticket
+  meaning: A work item with enough specificity to be estimated and assigned.
+- id: design-review
+  meaning: Material tabled at a technical review of a proposed design.
+- id: audit-evidence
+  meaning: An exportable artifact cited to an auditor, with provenance.
+- id: incident-note
+  meaning: A written finding recorded during or after an operational event.
+- id: go-no-go
+  meaning: A recommendation to proceed or not, with the exposure stated.
+- id: link
+  meaning: A durable URL handed to someone else as the answer.
+- id: worklist
+  meaning: An enumerated set of items to be worked through.
+- id: steering-recommendation
+  meaning: A recommendation put to an investment or steering forum.
+- id: governance-review
+  meaning: Material tabled at a review of standards, tiers or conformance.
+- id: model-delta
+  meaning: A proposed set of model changes, specific enough to be applied as written.
+- id: saved-definition
+  meaning: A persisted reusable definition — a viewpoint, a query, a profile — that others will run.
+
+# What the system SHOULD have led the persona to do. This is the answer key against
+# which a persona's chosen route is scored, and it also decides how the route is scored:
+# route-hit scoring applies only to `execute`, because only there is a specific existing
+# surface the correct answer. For every other action the scoring question is whether the
+# persona recognized the class of route at all — a confident near-fit pick on a
+# `recognize-product-gap` task is a false scent, and "nothing here fits, I would build
+# it" on an `author` task is a hit.
+route_actions:
+- id: execute
+  meaning: Run an existing surface as shipped; candidate routes name the surfaces that fit.
+  scoring: route-hit
+- id: author
+  meaning: Build something new (a viewpoint, a query, a diagram, a model delta).
+  scoring: route-class
+- id: fork
+  meaning: Copy the closest existing artifact and modify it.
+  scoring: route-class
+- id: consult-docs
+  meaning: The answer is documentation, not a result set.
+  scoring: route-class
+- id: recognize-fixture-gap
+  meaning: The surface works but the model lacks the data; recognizing that is the correct outcome.
+  scoring: route-class
+- id: recognize-product-gap
+  meaning: The product cannot answer this at all; recognizing that is the correct outcome.
+  scoring: route-class
+
+# The kinds of thing a route reference can point at. Every reference is resolved against
+# the running system by the guard tests, so a renamed route or a retired tool fails the
+# suite instead of silently rotting the answer key.
+route_kinds:
+- id: gui-route
+  meaning: A path in the frontend router.
+  resolution_source: tools/gui/src/ui/router/index.ts
+- id: mcp-tool
+  meaning: A tool registered on one of the four MCP servers.
+  resolution_source: src/infrastructure/mcp/
+- id: viewpoint
+  meaning: A slug in the shipped viewpoint library.
+  resolution_source: src/ontologies/archimate_4/viewpoints.yaml
+- id: doc
+  meaning: A documentation page.
+  resolution_source: docs/
+- id: cli
+  meaning: A console-script entry point.
+  resolution_source: pyproject.toml
+
+# The kind of work a scenario puts the product to. One scenario, one work type: a
+# scenario that needs two is two scenarios.
+work_types:
+- id: modelling
+  meaning: Creating and maintaining model content.
+- id: information-provision
+  meaning: Answering a question from what the model already holds.
+- id: decision-support
+  meaning: Turning what the model holds into a recommendation someone acts on.
+- id: impact-analysis
+  meaning: Establishing what a proposed or actual change reaches.
+- id: implementation-guidance
+  meaning: Telling an implementer what the architecture requires of their change.
+- id: assurance
+  meaning: Safety, security, GRC and supply-chain analysis and its evidence.
+
+# Whether a scenario is allowed to change repository state.
+mutation_policies:
+- id: none
+  meaning: Read-only. No repository state may change; no cleanup is required.
+- id: run-scoped
+  meaning: >
+    Writes are permitted only under the run's own namespace, must be recorded in the run
+    manifest as they happen, and must be removed and verified against the pre-run
+    baseline at the end of the run.

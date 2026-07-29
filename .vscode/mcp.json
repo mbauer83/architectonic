@@ -1,0 +1,20 @@
+{
+  "servers": {
+    "arch-repo-read": {
+      "command": "uv",
+      "args": ["run", "arch-mcp-stdio-read"]
+    },
+    "arch-repo-write": {
+      "command": "uv",
+      "args": ["run", "arch-mcp-stdio-write"]
+    },
+    "arch-assurance-read": {
+      "command": "uv",
+      "args": ["run", "arch-mcp-stdio-assurance-read"]
+    },
+    "arch-assurance-write": {
+      "command": "uv",
+      "args": ["run", "arch-mcp-stdio-assurance-write"]
+    }
+  }
+}

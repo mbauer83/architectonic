@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "attributes.business-object.schema.json",
+  "title": "Business Object Attribute Schema",
+  "description": "Attribute schema for Properties table in Business Object entities.",
+  "type": "object",
+  "required": [],
+  "properties": {
+    "Meaning": {
+      "type": "string",
+      "description": "What the object means to stakeholders."
+    },
+    "Provenance": {
+      "type": "string",
+      "description": "Where the content originates."
+    },
+    "Contained Information": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Information items the object carries."
+    },
+    "Internal Consistency Criteria": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Criteria that must hold within one instance."
+    },
+    "External Consistency Criteria": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Criteria against other objects or systems."
+    },
+    "Sensitivity": {
+      "type": "string",
+      "enum": [
+        "Public",
+        "Internal",
+        "Confidential",
+        "Strictly Confidential"
+      ],
+      "description": "Planner-friendly sensitivity of the object's content. Maps to TLP: Public\u2192WHITE, Internal\u2192GREEN, Confidential\u2192AMBER, Strictly Confidential\u2192RED."
+    },
+    "Lifecycle States": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "States an information-object INSTANCE passes through \u2014 distinct from the component-level 'Lifecycle State' enum."
+    }
+  },
+  "additionalProperties": true
+}

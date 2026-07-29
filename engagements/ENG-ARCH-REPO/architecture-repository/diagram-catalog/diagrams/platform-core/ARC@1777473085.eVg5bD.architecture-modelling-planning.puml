@@ -1,0 +1,115 @@
+---
+artifact-id: ARC@1777473085.eVg5bD.architecture-modelling-planning
+artifact-type: diagram
+name: Architecture Modelling & Planning
+version: 0.1.0
+status: draft
+diagram-type: archimate-layered
+entity-ids-used:
+- FNC@1777409722.ErTqVT.scope-formulate-modelling-task
+- FNC@1777472861.HgWMdN.decide-changes-to-plan-or-implement
+- FNC@1777390445.NGjUCa.verify-artifact-integrity-coherence
+- FNC@1777390444.lLdx12.discover-relevant-architecture-content
+- FNC@1777409722.rkx32U.determine-required-changes-to-architecture-content
+- FNC@1777409722.saMRQ0.author-architecture-documents
+- FNC@1777390449.uzJGYp.author-diagrams
+- FNC@1777390448.yuFXVJ.author-model-artifacts
+- JNO@1777467627.chqH1_.inclusive-or-for-architecture-work
+- PRC@1776635640.U4aAdh.architecture-modelling-planning
+connection-ids-used:
+- FNC@1777472861.HgWMdN---FNC@1777409722.rkx32U@@archimate-triggering
+- FNC@1777390444.lLdx12---FNC@1777472861.HgWMdN@@archimate-triggering
+- FNC@1777409722.ErTqVT---FNC@1777390444.lLdx12@@archimate-triggering
+- FNC@1777390448.yuFXVJ---FNC@1777390445.NGjUCa@@archimate-triggering
+- FNC@1777390449.uzJGYp---FNC@1777390445.NGjUCa@@archimate-triggering
+- FNC@1777409722.saMRQ0---FNC@1777390445.NGjUCa@@archimate-triggering
+- FNC@1777409722.rkx32U---JNO@1777467627.chqH1_@@archimate-triggering
+- JNO@1777467627.chqH1_---FNC@1777390448.yuFXVJ@@archimate-triggering
+- JNO@1777467627.chqH1_---FNC@1777390449.uzJGYp@@archimate-triggering
+- JNO@1777467627.chqH1_---FNC@1777409722.saMRQ0@@archimate-triggering
+- PRC@1776635640.U4aAdh---FNC@1777390445.NGjUCa@@archimate-aggregation
+- PRC@1776635640.U4aAdh---FNC@1777390444.lLdx12@@archimate-aggregation
+- PRC@1776635640.U4aAdh---FNC@1777409722.rkx32U@@archimate-aggregation
+- PRC@1776635640.U4aAdh---FNC@1777409722.saMRQ0@@archimate-aggregation
+- PRC@1776635640.U4aAdh---FNC@1777390449.uzJGYp@@archimate-aggregation
+- PRC@1776635640.U4aAdh---FNC@1777390448.yuFXVJ@@archimate-aggregation
+- FNC@1777390444.lLdx12---FNC@1777390448.yuFXVJ@@archimate-triggering
+- FNC@1777390444.lLdx12---FNC@1777409722.rkx32U@@archimate-triggering
+- PRC@1776635640.U4aAdh---FNC@1777409722.ErTqVT@@archimate-composition
+- PRC@1776635640.U4aAdh---FNC@1777472861.HgWMdN@@archimate-composition
+last-updated: '2026-07-29T13:29:59Z'
+---
+@startuml architecture-modelling---planning
+hide stereotype
+
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 12
+skinparam shadowing false
+skinparam roundcorner 4
+skinparam backgroundColor #FAFAFA
+
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 80
+!define Rel_Triggering(from, to, label) from --> to
+!define Rel_Realization(from, to, label) from ..|> to
+!define Rel_Realization_Up(from, to, label) from ..|> to
+!define Rel_Serving(from, to, label) from --> to
+!define Rel_Association(from, to, label) from -- to
+!define Rel_Association_Left(from, to, label) from -- to
+!define Rel_Association_Right(from, to, label) from -- to
+!define Rel_Access(from, to, label) from ..> to
+!define Rel_Influence(from, to, label) from ..> to
+skinparam rectangle<<function>> {
+  BackgroundColor #E0D8CC
+  BorderColor #8C7E6A
+}
+skinparam rectangle<<process>> {
+  BackgroundColor #E0D8CC
+  BorderColor #8C7E6A
+}
+sprite $archimate_function <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.9 11.7V5.4L8 3.1l5.1 2.3v6.3L8 9.2z"  fill="#252327" stroke="none"/></svg>
+sprite $archimate_process <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.6 4.1h6.3V2.8l4.5 5.2-4.5 5.2v-1.3H2.6z"  fill="#252327" stroke="none"/></svg>
+
+top to bottom direction
+
+title Architecture Modelling & Planning
+
+rectangle "<$archimate_process{scale=1.2}> Architecture Modelling & Planning\n«Business Process»" <<process>> as PRC_U4aAdh {
+  rectangle "<$archimate_function{scale=1.2}> Scope & Formulate Modelling Task\n«Business Function»" <<function>> as FNC_ErTqVT
+  rectangle "<$archimate_function{scale=1.2}> Decide Changes to Plan or Implement\n«Business Function»" <<function>> as FNC_HgWMdN
+  rectangle "<$archimate_function{scale=1.2}> Verify Artifact Integrity & Coherence\n«Application Function»" <<function>> as FNC_NGjUCa
+  rectangle "<$archimate_function{scale=1.2}> Discover Relevant Architecture Content\n«Application Function»" <<function>> as FNC_lLdx12
+  rectangle "<$archimate_function{scale=1.2}> Determine Required Changes to Architecture Content\n«Business Function»" <<function>> as FNC_rkx32U
+  rectangle "<$archimate_function{scale=1.2}> Author Architecture Documents\n«Business Function»" <<function>> as FNC_saMRQ0
+  rectangle "<$archimate_function{scale=1.2}> Author Diagrams\n«Business Function»" <<function>> as FNC_uzJGYp
+  rectangle "<$archimate_function{scale=1.2}> Author Model Artifacts\n«Business Function»" <<function>> as FNC_yuFXVJ
+  circle " " as JNO_chqH1_
+  FNC_ErTqVT -[hidden]right- FNC_lLdx12
+  FNC_lLdx12 -[hidden]right- FNC_HgWMdN
+  FNC_HgWMdN -[hidden]right- FNC_rkx32U
+  FNC_rkx32U -[hidden]right- JNO_chqH1_
+  JNO_chqH1_ -[hidden]right- FNC_saMRQ0
+  FNC_saMRQ0 -[hidden]down- FNC_uzJGYp
+  FNC_uzJGYp -[hidden]down- FNC_yuFXVJ
+  FNC_yuFXVJ -[hidden]right- FNC_NGjUCa
+  JNO_chqH1_ -[hidden]right- FNC_saMRQ0
+  JNO_chqH1_ -[hidden]right- FNC_uzJGYp
+  JNO_chqH1_ -[hidden]right- FNC_yuFXVJ
+}
+
+' Connections
+FNC_HgWMdN --> FNC_rkx32U
+FNC_lLdx12 --> FNC_HgWMdN
+FNC_ErTqVT --> FNC_lLdx12
+FNC_yuFXVJ --> FNC_NGjUCa
+FNC_uzJGYp --> FNC_NGjUCa
+FNC_saMRQ0 --> FNC_NGjUCa
+FNC_rkx32U --> JNO_chqH1_
+JNO_chqH1_ --> FNC_yuFXVJ
+JNO_chqH1_ --> FNC_uzJGYp
+JNO_chqH1_ --> FNC_saMRQ0
+FNC_lLdx12 --> FNC_yuFXVJ
+FNC_lLdx12 --> FNC_rkx32U
+
+@enduml

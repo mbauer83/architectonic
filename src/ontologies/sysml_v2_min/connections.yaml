@@ -1,0 +1,60 @@
+# SysML v2 Minimum Ontology — connection types and permitted relationship rules
+#
+# Rule format: [source, target, [connection-type-names]]
+#   source / target = entity type name, list, or @class reference
+#   @<cls>  = all entity types in this module with that class
+#   @all    = every entity type in this module
+#
+# Connection type names used in permitted_relationships must match the keys
+# under connection_types.sysml exactly (no prefix transformation applied).
+
+connection_types:
+  sysml:
+    feature-membership:
+      puml_arrow: "-->>"
+      symmetric: false
+      classes: [containment, membership]
+
+    specialization:
+      puml_arrow: "--|>"
+      symmetric: false
+      classes: [specialization]
+
+    feature-typing:
+      puml_arrow: "..>"
+      symmetric: false
+      classes: [typing]
+
+    flow-connection:
+      puml_arrow: "-->"
+      symmetric: false
+      classes: [flow]
+
+    allocation:
+      puml_arrow: "..|>"
+      symmetric: false
+      classes: [allocation, trace]
+
+    satisfy:
+      puml_arrow: "..>"
+      symmetric: false
+      classes: [trace, satisfy]
+
+# Permitted relationship rules use @class wildcards matching element_classes
+# declared in entities.yaml.
+#
+# - feature-membership: any definition → any usage (structural membership)
+# - specialization:     any definition → any definition (type hierarchy)
+# - feature-typing:     any usage → any definition (types a usage as a definition)
+# - flow-connection:    any usage → any usage (data/item flow between usages)
+# - allocation:         any usage → any usage (physical or logical allocation)
+# - satisfy:            requirement-usage → any usage or any definition
+
+permitted_relationships:
+  - ["@definition", "@usage", ["feature-membership"]]
+  - ["@definition", "@definition", ["specialization"]]
+  - ["@usage", "@definition", ["feature-typing"]]
+  - ["@usage", "@usage", ["flow-connection"]]
+  - ["@usage", "@usage", ["allocation"]]
+  - ["requirement-usage", "@usage", ["satisfy"]]
+  - ["requirement-usage", "@definition", ["satisfy"]]

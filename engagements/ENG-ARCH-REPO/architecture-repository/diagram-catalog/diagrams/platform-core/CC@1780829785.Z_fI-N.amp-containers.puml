@@ -1,0 +1,170 @@
+---
+artifact-id: CC@1780829785.Z_fI-N.amp-containers
+artifact-type: diagram
+name: "AMP \u2014 Containers"
+version: 0.1.0
+status: draft
+keywords:
+- c4
+- container
+- amp
+diagram-type: c4-container
+entity-ids-used:
+- ACT@1712870400.Nn7Oo7.architect
+- ACT@1712870400.OLWiNc.devops-engineer
+- ACT@1712870400.Pp8Qq8.developer
+- ACT@1712870400.Rr9Ss9.product-owner
+- ACT@1712870400.Ut1Vv1.upper-technical-management
+- APP@1712870400.kjC6ex.cli-tool
+- APP@1776149382.lmO0mp.gui-authoring-tool
+- APP@1777293133.OYEmP1.architecture-backend
+- APP@1780783671.hkrdtm.architecture-management-platform
+- APP@1780783708.Ne0utf.architecture-mcp-read-bridge
+- APP@1780783709.etTj9M.architecture-mcp-write-bridge
+- APP@1780783710.iu_kKL.assurance-mcp-read-bridge
+- APP@1780783711.js9xHR.assurance-mcp-write-bridge
+- APP@1780783991.v6AXNw.ai-agent-host
+- APP@1780783992.Je9pmw.git-hosting
+- APP@1780783993.JqIBPJ.supply-chain-signal-sources
+- ROL@1776633082.udXPfB.ai-agent
+- ROL@1780656241.abNYhO.risk-compliance-officer
+- ROL@1780656241.yswDMB.safety-security-analyst
+- GRP@1780819145.rW_2nX.assurance-module
+- APP@1781976554.AeU7V3.identifier-allocation-service
+- APP@1783872532.OZbaBh.repository-upgrade-framework
+connection-ids-used:
+- ACT@1712870400.Nn7Oo7.architect---APP@1776149382.lmO0mp.gui-authoring-tool@@archimate-association
+- ACT@1712870400.OLWiNc.devops-engineer---APP@1712870400.kjC6ex.cli-tool@@archimate-association
+- ACT@1712870400.Pp8Qq8.developer---APP@1712870400.kjC6ex.cli-tool@@archimate-association
+- ACT@1712870400.Rr9Ss9.product-owner---APP@1776149382.lmO0mp.gui-authoring-tool@@archimate-association
+- ACT@1712870400.Ut1Vv1.upper-technical-management---APP@1776149382.lmO0mp.gui-authoring-tool@@archimate-association
+- APP@1777293133.OYEmP1.architecture-backend---APP@1776149382.lmO0mp.gui-authoring-tool@@archimate-serving
+- APP@1777293133.OYEmP1.architecture-backend---APP@1780783708.Ne0utf.architecture-mcp-read-bridge@@archimate-serving
+- APP@1777293133.OYEmP1.architecture-backend---APP@1780783709.etTj9M.architecture-mcp-write-bridge@@archimate-serving
+- APP@1777293133.OYEmP1.architecture-backend---APP@1780783710.iu_kKL.assurance-mcp-read-bridge@@archimate-serving
+- APP@1777293133.OYEmP1.architecture-backend---APP@1780783711.js9xHR.assurance-mcp-write-bridge@@archimate-serving
+- APP@1780783991.v6AXNw.ai-agent-host---APP@1780783708.Ne0utf.architecture-mcp-read-bridge@@archimate-association
+- APP@1780783991.v6AXNw.ai-agent-host---APP@1780783709.etTj9M.architecture-mcp-write-bridge@@archimate-association
+- APP@1780783991.v6AXNw.ai-agent-host---APP@1780783710.iu_kKL.assurance-mcp-read-bridge@@archimate-association
+- APP@1780783991.v6AXNw.ai-agent-host---APP@1780783711.js9xHR.assurance-mcp-write-bridge@@archimate-association
+- APP@1780783992.Je9pmw.git-hosting---APP@1777293133.OYEmP1.architecture-backend@@archimate-serving
+- APP@1780783992.Je9pmw.git-hosting---APP@1777293134.tY3JIK.git-sync-service@@archimate-serving
+- APP@1780783993.JqIBPJ.supply-chain-signal-sources---APP@1777293133.OYEmP1.architecture-backend@@archimate-serving
+- ROL@1776633082.udXPfB.ai-agent---APP@1780783708.Ne0utf.architecture-mcp-read-bridge@@archimate-association
+- ROL@1780656241.abNYhO.risk-compliance-officer---APP@1780783710.iu_kKL.assurance-mcp-read-bridge@@archimate-association
+- ROL@1780656241.yswDMB.safety-security-analyst---APP@1780783710.iu_kKL.assurance-mcp-read-bridge@@archimate-association
+- APP@1780783993.JqIBPJ.supply-chain-signal-sources---APP@1780656431.e2zPs6.supply-chain-vulnerability-connector@@archimate-serving
+- APP@1781976554.AeU7V3.identifier-allocation-service---APP@1776633697.SCKD2U.diagram-scaffolder@@archimate-serving
+- ACT@1712870400.Nn7Oo7---APP@1776149382.lmO0mp@@archimate-association
+- ACT@1712870400.OLWiNc---APP@1712870400.kjC6ex@@archimate-association
+- ACT@1712870400.Pp8Qq8---APP@1712870400.kjC6ex@@archimate-association
+- ACT@1712870400.Rr9Ss9---APP@1776149382.lmO0mp@@archimate-association
+- ACT@1712870400.Ut1Vv1---APP@1776149382.lmO0mp@@archimate-association
+- APP@1777293133.OYEmP1---APP@1776149382.lmO0mp@@archimate-serving
+- APP@1777293133.OYEmP1---APP@1780783708.Ne0utf@@archimate-serving
+- APP@1777293133.OYEmP1---APP@1780783709.etTj9M@@archimate-serving
+- APP@1777293133.OYEmP1---APP@1780783710.iu_kKL@@archimate-serving
+- APP@1777293133.OYEmP1---APP@1780783711.js9xHR@@archimate-serving
+- APP@1780783991.v6AXNw---APP@1780783708.Ne0utf@@archimate-association
+- APP@1780783991.v6AXNw---APP@1780783709.etTj9M@@archimate-association
+- APP@1780783991.v6AXNw---APP@1780783710.iu_kKL@@archimate-association
+- APP@1780783991.v6AXNw---APP@1780783711.js9xHR@@archimate-association
+- APP@1780783992.Je9pmw---APP@1777293133.OYEmP1@@archimate-serving
+- APP@1780783992.Je9pmw---APP@1777293134.tY3JIK@@archimate-serving
+- APP@1780783993.JqIBPJ---APP@1777293133.OYEmP1@@archimate-serving
+- APP@1780783993.JqIBPJ---APP@1780656431.e2zPs6@@archimate-serving
+- APP@1781976554.AeU7V3---APP@1776633697.SCKD2U@@archimate-serving
+- ROL@1776633082.udXPfB---APP@1780783708.Ne0utf@@archimate-association
+- ROL@1780656241.abNYhO---APP@1780783710.iu_kKL@@archimate-association
+- ROL@1780656241.yswDMB---APP@1780783710.iu_kKL@@archimate-association
+- APP@1783872532.OZbaBh---DOB@1780656431.ApaPcg@@archimate-access
+- APP@1783872532.OZbaBh---DOB@1780656431.p04R7k@@archimate-access
+diagram-entities: {}
+bindings:
+- id: bind-scope
+  subject:
+    kind: diagram
+  correspondence_kind: scoped-by
+  target:
+    entity_id: APP@1780783671.hkrdtm.architecture-management-platform
+last-updated: '2026-07-29T13:30:09Z'
+---
+@startuml amp---containers
+!include <C4/C4_Component>
+left to right direction
+skinparam shadowing false
+skinparam linetype ortho
+skinparam defaultTextAlignment center
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
+
+title AMP — Containers
+
+System_Boundary(APP_hkrdtm, "Architecture Management Platform") {
+  Container(APP_kjC6ex, "CLI Tool", "")
+  Container(APP_lmO0mp, "GUI Authoring Tool", "")
+  Container(APP_OYEmP1, "Architecture Backend", "")
+  Container(APP_Ne0utf, "Architecture MCP Read Bridge", "")
+  Container(APP_etTj9M, "Architecture MCP Write Bridge", "")
+  Container(APP_iu_kKL, "Assurance MCP Read Bridge", "")
+  Container(APP_js9xHR, "Assurance MCP Write Bridge", "")
+  Container(GRP_rW_2nX, "Assurance Module", "")
+  APP_kjC6ex -[hidden]right- APP_lmO0mp
+  APP_lmO0mp -[hidden]right- APP_OYEmP1
+  APP_OYEmP1 -[hidden]right- APP_Ne0utf
+  APP_Ne0utf -[hidden]right- APP_etTj9M
+  APP_etTj9M -[hidden]right- APP_iu_kKL
+  APP_iu_kKL -[hidden]right- APP_js9xHR
+  APP_js9xHR -[hidden]right- GRP_rW_2nX
+
+}
+
+Person_Ext(ACT_Nn7Oo7, "Architect")
+Person_Ext(ACT_OLWiNc, "DevOps Engineer")
+Person_Ext(ACT_Pp8Qq8, "Developer")
+Person_Ext(ACT_Rr9Ss9, "Product Owner")
+Person_Ext(ACT_Ut1Vv1, "Upper Technical Management")
+System_Ext(APP_v6AXNw, "AI Agent Host")
+System_Ext(APP_Je9pmw, "Git Hosting")
+System_Ext(APP_JqIBPJ, "Supply-Chain Signal Sources")
+System_Ext(APP_AeU7V3, "Identifier Allocation Service")
+System_Ext(APP_OZbaBh, "Repository Upgrade Framework")
+Person_Ext(ROL_udXPfB, "AI Agent")
+Person_Ext(ROL_abNYhO, "Risk & Compliance Officer")
+Person_Ext(ROL_yswDMB, "Safety / Security Analyst")
+
+ACT_Nn7Oo7 -[hidden]right- ACT_OLWiNc
+ACT_OLWiNc -[hidden]right- ACT_Pp8Qq8
+ACT_Pp8Qq8 -[hidden]right- ACT_Rr9Ss9
+ACT_Rr9Ss9 -[hidden]right- ACT_Ut1Vv1
+ACT_Ut1Vv1 -[hidden]right- ROL_udXPfB
+ROL_udXPfB -[hidden]right- ROL_abNYhO
+ROL_abNYhO -[hidden]right- ROL_yswDMB
+ROL_yswDMB -[hidden]right- APP_hkrdtm
+APP_hkrdtm -[hidden]right- APP_v6AXNw
+APP_v6AXNw -[hidden]right- APP_Je9pmw
+APP_Je9pmw -[hidden]right- APP_JqIBPJ
+APP_JqIBPJ -[hidden]right- APP_AeU7V3
+APP_AeU7V3 -[hidden]right- APP_OZbaBh
+
+
+ACT_Nn7Oo7 --> APP_lmO0mp : uses
+ACT_OLWiNc --> APP_kjC6ex : uses
+ACT_Pp8Qq8 --> APP_kjC6ex : uses
+ACT_Rr9Ss9 --> APP_lmO0mp : uses
+ACT_Ut1Vv1 --> APP_lmO0mp : uses
+APP_lmO0mp --> APP_OYEmP1 : uses
+APP_Ne0utf --> APP_OYEmP1 : uses
+APP_etTj9M --> APP_OYEmP1 : uses
+APP_iu_kKL --> APP_OYEmP1 : uses
+APP_js9xHR --> APP_OYEmP1 : uses
+APP_v6AXNw --> APP_Ne0utf : uses
+APP_v6AXNw --> APP_etTj9M : uses
+APP_v6AXNw --> APP_iu_kKL : uses
+APP_v6AXNw --> APP_js9xHR : uses
+APP_OYEmP1 --> APP_Je9pmw : uses
+APP_OYEmP1 --> APP_JqIBPJ : uses
+ROL_udXPfB --> APP_Ne0utf : uses
+ROL_abNYhO --> APP_iu_kKL : uses
+ROL_yswDMB --> APP_iu_kKL : uses
+@enduml

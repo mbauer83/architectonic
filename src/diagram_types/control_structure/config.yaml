@@ -1,0 +1,10 @@
+name: control-structure
+
+ui:
+  label: Control Structure
+  description: >-
+    Block diagram of control-structure nodes with control-action and feedback edges.
+
+# STPA models the control structure it analyses; CAST reconstructs the one that existed.
+assurance:
+  methods: [STPA, CAST]

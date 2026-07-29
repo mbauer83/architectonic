@@ -1,0 +1,58 @@
+name: datatype
+
+guidance:
+  when_to_use: >-
+    Use to document data structures as a restricted UML class diagram. Model classifiers
+    (Class, DataType, Enumeration, Primitive) with typed attributes and UML structural
+    relations (association, aggregation, composition, generalization). A sum type / tagged
+    union is an abstract classifier whose cases are joined by generalization and grouped by
+    a generalization_set. Optionally bind classifiers to Data Object entities to trace
+    fine-grained schema to architectural data elements. Suitable for domain models, API
+    payloads, persisted record schemas, and value-type hierarchies.
+  when_not_to_use: >-
+    Do not use for process or interaction flows (use Sequence or Activity diagrams), for
+    component or deployment views (use ArchiMate or C4), or for documenting operations
+    and methods (this diagram is structure-only). Do not model infrastructure entities
+    or services here.
+
+ui:
+  label: Datatype Diagram
+  description: A UML class diagram restricted to data structure (no operations).
+  entity_search_filter: false
+  type_ui_slots:
+    datatype-editor: datatype-editor
+  primitive_types:
+    - String
+    - Integer
+    - Number
+    - Boolean
+    - Date
+    - DateTime
+    - UUID
+  diagram_only_types:
+    - entity_type: classifier
+      label: Classifier
+      plural: Classifiers
+      # SINGLE SOURCE OF TRUTH for this type's editable descriptive metadata (a property of the
+      # type, not of any view). The PATCH write-op whitelist and every edit surface derive from
+      # this — nothing is hand-listed elsewhere. Structural fields (name, type, classifier_kind,
+      # identity/keys, attribute order/existence) are deliberately absent: those are structural,
+      # not descriptive metadata. `control` names the input widget; order here is presentation
+      # order (role/summary first, note last).
+      editable_metadata:
+        entity:
+          - { field: role, control: summary }
+          - { field: provenance, control: text }
+          - { field: tags, control: tags }
+          - { field: note, control: notes }
+        subparts:
+          attributes:
+            - { field: role, control: summary }
+            - { field: multiplicity, control: text }
+            - { field: optional, control: boolean }
+            - { field: default, control: text }
+            - { field: provenance, control: text }
+            - { field: note, control: notes }
+    - entity_type: generalization_set
+      label: Generalization set
+      plural: Generalization sets

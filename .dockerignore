@@ -1,0 +1,50 @@
+# VCS & Python caches
+.git
+.github
+.venv
+__pycache__
+*.pyc
+*.pyo
+*.egg-info
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.hypothesis
+.coverage
+coverage.json
+coverage.xml
+htmlcov
+
+# GUI dev artefacts (the frontend stage builds these from source)
+tools/gui/node_modules
+tools/gui/dist
+
+# Not needed in the image
+tests/
+spec/
+test-results/
+.playwright-mcp/
+
+# Repos & content are git-cloned at runtime, not baked
+engagements/
+enterprise-repository/
+
+# Local state & secrets
+.arch
+.arch-assurance
+.env
+memory/
+
+# Planning docs & large reference assets (markdown is large; jar re-downloaded)
+PLAN-*.md
+TASKS-*.md
+ORCHESTRATION-*.md
+*.pdf
+plantuml.jar
+plans/
+
+# Editor / agent config
+.vscode
+.claude
+.agents
+.codex

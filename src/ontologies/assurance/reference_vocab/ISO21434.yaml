@@ -1,0 +1,38 @@
+# ISO/SAE 21434 — Road vehicles: Cybersecurity engineering (seed profile)
+# Scheme: ISO21434  Version: 2021
+# Source: ISO/SAE 21434:2021 — Road vehicles — Cybersecurity engineering
+
+scheme: ISO21434
+version: "2021"
+description: >
+  ISO/SAE 21434 specifies cybersecurity engineering requirements for road vehicles
+  throughout the lifecycle, including concept, product development, production, and
+  decommissioning. It defines the Cybersecurity Assurance Level (CAL) 1–4.
+
+assurance_levels:
+  CAL-1: {description: Lowest cybersecurity assurance level}
+  CAL-2: {description: Moderate cybersecurity assurance level}
+  CAL-3: {description: High cybersecurity assurance level}
+  CAL-4: {description: Highest cybersecurity assurance level}
+
+key_clauses:
+  "5":
+    label: Clause 5 — Organizational cybersecurity management
+  "6":
+    label: Clause 6 — Project-dependent cybersecurity management
+  "7":
+    label: Clause 7 — Distributed cybersecurity activities
+  "8":
+    label: Clause 8 — Continual cybersecurity activities
+  "9":
+    label: Clause 9 — Concept
+  "9-5":
+    label: Clause 9.5 — Threat analysis and risk assessment (TARA)
+  "10":
+    label: Clause 10 — Product development
+  "11":
+    label: Clause 11 — Cybersecurity validation
+  "12":
+    label: Clause 12 — Production
+  "13":
+    label: Clause 13 — Operations and maintenance

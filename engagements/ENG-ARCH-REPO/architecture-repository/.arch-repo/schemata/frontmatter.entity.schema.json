@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "frontmatter.entity.schema.json",
+  "title": "Entity Frontmatter Schema",
+  "description": "JSON Schema for entity file frontmatter. Extends the tool-required base fields; tool-required fields cannot be removed or overridden.",
+  "type": "object",
+  "required": [
+    "artifact-id",
+    "artifact-type",
+    "name",
+    "version",
+    "status",
+    "last-updated"
+  ],
+  "properties": {
+    "artifact-id": {
+      "type": "string",
+      "pattern": "^[A-Z]{2,6}@\\d+\\.[A-Za-z0-9_-]+\\..+$"
+    },
+    "artifact-type": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "active", "deprecated"]
+    },
+    "keywords": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "last-updated": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

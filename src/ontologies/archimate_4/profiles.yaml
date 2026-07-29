@@ -1,0 +1,36 @@
+# Named attribute-profile registry for the archimate-4 module.
+#
+# Reusable, opt-in attribute sets that several specializations may bind by name.
+# Distinct from a specialization's own 1:1 profile
+# (its inline `attributes:` in specializations.yaml, or its dedicated
+# `attributes.<type>.<slug>.schema.json` attachment), which stays the default.
+#
+# `profile_schema` is the declaration-format version (an unrecognised value is a hard,
+# typed error). Each profile carries its own content `version` so reconciliation can
+# distinguish a local customisation from an outdated base.
+#
+# Format:
+#   profile_schema: 1
+#   profiles:
+#     <profile-name>:
+#       version: <int>
+#       attributes:
+#         <Attribute Name>: { type: string, level: required|recommended|optional, enum: [...] }
+#
+# The AIBOM shared profiles: attribute sets several AI
+# specializations share — supply-chain provenance and licensing — declared ONCE and bound by
+# name from specializations.yaml. Per-specialization attributes (the model card) stay inline
+# on their own specialization; these are only the genuinely shared sets. No attribute here
+# redeclares one a base type already provides.
+profile_schema: 1
+profiles:
+  ai-supplier:
+    version: 1
+    attributes:
+      Supplier: { type: string, level: recommended }
+      Publisher: { type: string, level: optional }
+  ai-licensing:
+    version: 1
+    attributes:
+      Licenses: { type: array, level: recommended, items: { type: string } }
+      Hashes: { type: array, level: optional, items: { type: string } }

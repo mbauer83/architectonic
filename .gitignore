@@ -1,0 +1,78 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.mypy_cache/
+
+# Node / Vue SPA
+node_modules/
+tools/gui/dist/
+tools/gui/coverage/
+tools/gui/coverage-e2e/
+tools/gui/.nyc_output/
+
+# Docker / misc build artefacts
+tools/plantuml.jar
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# IDE / OS
+.DS_Store
+
+# Separate enterprise repository checked out alongside the workspace (its own git repo)
+.arch/
+src/tools/model_mcp/__pycache__/
+src/tools/model_write/__pycache__/
+*.pyc
+
+plantuml.jar
+.worktrees/
+
+.playwright-mcp/
+
+# PDFs — never commit reference documents; keep them local only
+*.pdf
+*.pdf:Zone.Identifier
+
+# C19C model/diagram/view exchange specs + example/interoperability-test snippets
+# (license-encumbered reference material for the ArchiMate 4 compliance plan's
+# WU-F1/F2/F3a/F3b exchange work — local reference only, never committed).
+/spec/
+
+# Guidance-cache files — license-encumbered spec prose, imported per repo via
+# arch-import-guidance; the per-repo ignore lives in <repo>/.arch-repo/.gitignore, this is
+# a belt-and-braces guard against a stray extract/import landing at the workspace root
+*.guidance.yaml
+*.guidance.meta.yaml
+
+# Coverage analysis artifacts
+.coverage
+.coverage.*
+coverage.xml
+coverage.json
+htmlcov/
+
+# Hypothesis / pytest / ruff caches
+.hypothesis/
+.pytest_cache/
+.ruff_cache/
+
+# Stray local screenshots (Playwright MCP cwd captures, etc.)
+/overview.png
+
+# Playwright/test run output
+test-results/
+
+# Local working checkouts of git-backed workspace repos (cloned by arch-init from
+# the remotes in arch-workspace.yaml; never committed into the superproject — they
+# were previously accidental gitlinks with no .gitmodules entry).
+/enterprise-repository/
+# Agent auto-memory working store (not project content)
+/memory/
+
+# Local, private workspace config (personal engagements / enterprise remotes)
+arch-workspace.private.yaml

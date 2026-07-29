@@ -1,0 +1,209 @@
+# Representative declarations are parsed, round-tripped, and validated against the profile
+# fixtures in this directory.
+viewpoints:
+  # 1. Simple: all application components (flat AND, one condition)
+  - slug: application-components
+    version: 1
+    name: Application Components
+    purpose: informing
+    content: overview
+    query:
+      query_schema: 1
+      entity_criteria:
+        kind: group
+        conjunction: and
+        children:
+          - kind: condition
+            attribute: type
+            comparator: in
+            value: [application-component]
+
+  # 2. Nested boolean + negation: active elements that are NOT deprecated,
+  #    in either the application or technology domain
+  - slug: active-app-tech
+    version: 1
+    name: Active Application & Technology
+    query:
+      query_schema: 1
+      entity_criteria:
+        kind: group
+        conjunction: and
+        children:
+          - kind: group
+            conjunction: or
+            children:
+              - kind: condition
+                attribute: domain
+                comparator: eq
+                value: application
+              - kind: condition
+                attribute: domain
+                comparator: eq
+                value: technology
+          - kind: condition
+            attribute: status
+            comparator: eq
+            value: deprecated
+            negate: true # matches when status != deprecated OR status missing
+
+  # 3. Incident predicate (criteria on BOTH legs of the hop) + neighbor inclusion +
+  #    endpoint ValueRef: components with at least one strong serving connection to a
+  #    business process; also include those served processes as context ("expanded"
+  #    membership); display only serving connections at least as strong as the
+  #    target's threshold
+  - slug: components-serving-processes
+    version: 2
+    name: Components Serving Processes
+    query:
+      query_schema: 1
+      entity_criteria:
+        kind: group
+        conjunction: and
+        children:
+          - kind: condition
+            attribute: type
+            comparator: eq
+            value: application-component
+          - kind: incident
+            direction: outgoing
+            connection_criteria:
+              kind: group
+              conjunction: and
+              children:
+                - kind: condition
+                  attribute: type
+                  comparator: eq
+                  value: archimate-serving
+                - kind: condition
+                  attribute: strength
+                  comparator: gte
+                  value: 3
+            endpoint_criteria:
+              kind: group
+              conjunction: and
+              children:
+                - kind: condition
+                  attribute: type
+                  comparator: eq
+                  value: process
+                - kind: condition
+                  attribute: specialization
+                  comparator: eq
+                  value: business-process
+      include_connected:
+        - direction: outgoing # relative to the primary (anchor) entities
+          connection_criteria:
+            kind: group
+            conjunction: and
+            children:
+              - kind: condition
+                attribute: type
+                comparator: eq
+                value: archimate-serving
+          neighbor_criteria:
+            kind: group
+            conjunction: and
+            children:
+              - kind: condition
+                attribute: type
+                comparator: eq
+                value: process
+              - kind: condition
+                attribute: specialization
+                comparator: eq
+                value: business-process
+      connections:
+        enabled: true
+        criteria:
+          kind: group
+          conjunction: and
+          children:
+            - kind: condition
+              attribute: type
+              comparator: eq
+              value: archimate-serving
+            - kind: condition
+              attribute: strength
+              comparator: gte
+              value: { from: target, attribute: threshold }
+
+  # 4. Presentation: table with columns, match-mode + range-mode styling
+  - slug: component-lifecycle-table
+    version: 1
+    name: Component Lifecycle
+    query:
+      query_schema: 1
+      entity_criteria:
+        kind: group
+        conjunction: and
+        children:
+          - kind: condition
+            attribute: type
+            comparator: eq
+            value: application-component
+    presentation:
+      representation: table
+      columns:
+        - { label: Name, source: name }
+        - { label: Status, source: status }
+        - { label: Risk, source: risk_score }
+      styling_rules:
+        - capability: badges
+          mode: match
+          match_criteria:
+            kind: group
+            conjunction: and
+            children:
+              - kind: condition
+                attribute: status
+                comparator: eq
+                value: deprecated
+          value: badge-warning
+        - capability: badges
+          mode: range
+          range_attribute: risk_score
+          range_bands:
+            - { minimum: null, maximum: 4, value: badge-ok } # [-inf, 4)
+            - { minimum: 4, maximum: 7, value: badge-caution } # [4, 7)
+            - { minimum: 7, maximum: null, value: badge-danger } # [7, inf)
+      default_style:
+        badges: badge-neutral
+
+  # 5. Matrix with disjoint criteria axes (requirements x components)
+  - slug: requirement-coverage
+    version: 1
+    name: Requirement Coverage
+    query:
+      query_schema: 1
+      entity_criteria:
+        kind: group # match-all base: each axis carries the full selection
+        conjunction: and
+        children: []
+      connections:
+        enabled: true
+        criteria:
+          kind: group
+          conjunction: and
+          children:
+            - kind: condition
+              attribute: type
+              comparator: eq
+              value: archimate-realization
+    presentation:
+      representation: matrix
+      row_criteria:
+        kind: group
+        conjunction: and
+        children:
+          - kind: condition
+            attribute: type
+            comparator: eq
+            value: requirement
+      column_criteria:
+        kind: group
+        conjunction: and
+        children:
+          - kind: condition
+            attribute: type
+            comparator: eq
+            value: application-component

@@ -1,0 +1,65 @@
+' GSN Community Standard v3 semantic notation primitives.
+' The GSN renderer consumes these stable macro calls for its native SVG.
+' The declarations below remain a valid PlantUML fallback for source portability.
+
+hide stereotype
+allowmixing
+skinparam shadowing false
+skinparam defaultFontName SansSerif
+skinparam defaultFontColor #111827
+skinparam ArrowColor #20242A
+skinparam ArrowThickness 1.2
+skinparam rectangle {
+  BorderColor #20242A
+  BackgroundColor #FFFFFF
+  BackgroundColor<<GsnGoal>> #D0E8FF
+  BackgroundColor<<GsnContext>> #FFFFD0
+  BackgroundColor<<GsnUndeveloped>> #FFFFFF
+}
+skinparam hexagon {
+  BorderColor #20242A
+  BackgroundColor<<GsnStrategy>> #E8E0FF
+}
+skinparam usecase {
+  BorderColor #20242A
+  BackgroundColor #FFFFFF
+  BackgroundColor<<GsnSolution>> #D0FFD8
+  BackgroundColor<<GsnAssumption>> #FFE8D0
+  BackgroundColor<<GsnJustification>> #FFD0E8
+}
+
+!procedure $GsnGoal($alias, $label)
+rectangle "$label" as $alias <<GsnGoal>>
+!endprocedure
+
+!procedure $GsnStrategy($alias, $label)
+hexagon "$label" as $alias <<GsnStrategy>>
+!endprocedure
+
+!procedure $GsnSolution($alias, $label)
+usecase "$label" as $alias <<GsnSolution>>
+!endprocedure
+
+!procedure $GsnContext($alias, $label)
+rectangle "$label" as $alias <<GsnContext>>
+!endprocedure
+
+!procedure $GsnAssumption($alias, $label)
+usecase "$label" as $alias <<GsnAssumption>>
+!endprocedure
+
+!procedure $GsnJustification($alias, $label)
+usecase "$label" as $alias <<GsnJustification>>
+!endprocedure
+
+!procedure $GsnUndeveloped($alias, $label)
+rectangle "$label" as $alias <<GsnUndeveloped>>
+!endprocedure
+
+!procedure $GsnSupportedBy($source, $target)
+$source --> $target : supported-by
+!endprocedure
+
+!procedure $GsnInContextOf($source, $target)
+$source --|> $target : in-context-of
+!endprocedure

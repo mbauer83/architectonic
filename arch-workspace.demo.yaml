@@ -1,0 +1,23 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Workspace declaration for the bundled demo, used by docker-compose.demo.yml.
+#
+# The engagement is the self-describing model that ships in this repository:
+# mounted read-only and copied into the demo-data volume on first start, so
+# authoring in the container edits the volume copy (never your clone). It
+# survives `docker compose down`; `down -v` deletes the volume and the work.
+#
+# The enterprise tier is the public demo repository, cloned on first start. You
+# can explore and preview promotion against it; completing a promotion needs
+# write access to the remote, which is why the README points you at your own.
+#
+# Not for a real deployment — use arch-workspace.server.yaml for that.
+# ─────────────────────────────────────────────────────────────────────────────
+
+engagement:
+  local: /data/engagement
+
+enterprise:
+  git:
+    url: https://github.com/mbauer83/global-architecture-repository.git
+    branch: main
+    path: /data/enterprise

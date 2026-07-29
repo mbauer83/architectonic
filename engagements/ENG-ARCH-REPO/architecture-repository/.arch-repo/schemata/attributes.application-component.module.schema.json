@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "attributes.application-component.module.schema.json",
+  "title": "Application Component (Module) Attribute Schema",
+  "description": "Attributes for a 'module' application component: an internal code module.",
+  "type": "object",
+  "required": [],
+  "properties": {
+    "Problem Domain": {
+      "type": "string",
+      "description": "The domain this module addresses."
+    },
+    "Lifecycle State": {
+      "type": "string",
+      "enum": [
+        "Planned",
+        "In Development",
+        "Active",
+        "Deprecated",
+        "Retired"
+      ],
+      "description": "Portfolio lifecycle stage of this component."
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,45 @@
+# STRIDE threat classification vocabulary
+# Scheme: STRIDE  Version: 2024
+# Source: Microsoft STRIDE threat modelling methodology
+# Used with: hazard.classification_scheme = "STRIDE", hazard.classification_code = <code>
+
+scheme: STRIDE
+version: "2024"
+description: Microsoft STRIDE threat model categories
+
+codes:
+  S:
+    label: Spoofing
+    description: >
+      An attacker impersonates another user, component, or system. Violates authentication.
+    examples: [identity spoofing, IP spoofing, session hijacking]
+
+  T:
+    label: Tampering
+    description: >
+      An attacker modifies data or code without authorization. Violates data integrity.
+    examples: [data modification in transit, config tampering, log deletion]
+
+  R:
+    label: Repudiation
+    description: >
+      A user or component denies performing an action. Violates non-repudiation.
+    examples: [deleting audit logs, denying a transaction, unsigned actions]
+
+  I:
+    label: Information Disclosure
+    description: >
+      Sensitive information is exposed to unauthorized parties. Violates confidentiality.
+    examples: [data leakage, overly verbose error messages, side-channel attacks]
+
+  D:
+    label: Denial of Service
+    description: >
+      A service becomes unavailable to legitimate users. Violates availability.
+    examples: [resource exhaustion, flood attacks, crash injection]
+
+  E:
+    label: Elevation of Privilege
+    description: >
+      An attacker gains capabilities beyond what is authorized. Violates authorization.
+    examples: [privilege escalation, SQL injection granting admin, kernel exploits]

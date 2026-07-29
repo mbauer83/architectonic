@@ -1,0 +1,295 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    name: Python · lint · types · tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y default-jre graphviz libsqlcipher-dev
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Install dependencies (all groups)
+        run: uv sync --all-groups
+
+      - name: Verify generated frontend types are in sync with the ontology
+        run: |
+          uv run tools/ontology/generate_types.py
+          git diff --exit-code -- tools/gui/src/domain/types.generated.ts \
+            || { echo "::error::types.generated.ts is stale — run 'uv run tools/ontology/generate_types.py' and commit"; exit 1; }
+
+      - name: Verify generated MCP documentation is in sync with registered tools
+        run: uv run tools/docs/generate_mcp_docs.py --check
+
+      - name: Verify generated diagram include files match the ontology
+        # Sprites and stereotypes are committed but generated, and only arch-init rewrites
+        # them — so an ontology change leaves every repository that merely upgraded
+        # rendering the previous glyphs, with nothing failing. Same drift class as
+        # types.generated.ts above, gated the same way.
+        run: |
+          uv run python -m src.infrastructure.rendering.generate_static_includes \
+            engagements/ENG-ARCH-REPO/architecture-repository --check
+
+      - name: Documentation links, anchors, and media references
+        run: uv run python tools/docs/check_doc_links.py
+
+      - name: Fetch the PlantUML runtime
+        run: uv run get-plantuml
+
+      - name: Ruff
+        run: uv run ruff check src
+
+      - name: Zuban (type check)
+        run: uv run zuban check
+
+      - name: Pytest (with coverage; fail_under ratchet from pyproject)
+        run: uv run pytest --tb=short -q --cov --cov-report=xml
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: coverage.xml
+          flags: backend
+          fail_ci_if_error: false
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  licenses:
+    name: Licenses · third-party inventory gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v5
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: tools/gui/package-lock.json
+
+      - name: Install Python dependencies (need uv export + installed metadata)
+        run: uv sync --all-groups --extra cloud-archive
+
+      - name: Install frontend production deps (need node_modules for `npm ls`)
+        working-directory: tools/gui
+        run: npm ci
+
+      - name: License gate (Python) — fail on denied/unknown/unacknowledged licenses
+        run: uv run python tools/licensing/check_licenses.py --ecosystem python --check
+
+      - name: License gate (npm) — fail on denied/unknown/unacknowledged licenses
+        run: uv run python tools/licensing/check_licenses.py --ecosystem npm --check
+
+      - name: THIRD-PARTY-NOTICES is regenerated from the inventories
+        run: uv run python tools/licensing/generate_notices.py --check
+
+  frontend:
+    name: Frontend · lint · types · tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tools/gui
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v5
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: tools/gui/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Unit tests + coverage (gates logic dirs; see vite.config.ts thresholds)
+        run: npm run test:coverage
+
+      - name: Upload frontend coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: tools/gui/coverage/lcov.info
+          flags: frontend
+          fail_ci_if_error: false
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Build
+        run: npm run build
+
+  e2e:
+    name: E2E · route-walk smoke
+    runs-on: ubuntu-latest
+    env:
+      # Belt-and-suspenders: even though the CI workspace below is local-only (so the
+      # backend's find_git_repos() returns nothing and the git-watcher never starts),
+      # make any stray git call fail fast instead of prompting.
+      GIT_TERMINAL_PROMPT: "0"
+      GIT_SSH_COMMAND: "ssh -o BatchMode=yes -o ConnectTimeout=5"
+      # Headless credential backend (Fernet vault) so `arch-assurance init` can provision a
+      # store without an OS keyring. The self-model repo contains assurance diagrams, so the
+      # assurance module must be enabled for the backend to validate and serve it. The store
+      # is ephemeral and empty — this value is not a secret.
+      ARCH_ASSURANCE_MASTER_PASSWORD: ci-ephemeral-not-a-secret
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y default-jre graphviz libsqlcipher-dev
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v5
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: tools/gui/package-lock.json
+
+      - name: Install Python dependencies
+        run: uv sync --all-groups
+
+      - name: Fetch the PlantUML runtime
+        run: uv run get-plantuml
+
+      - name: Build the GUI (instrumented for E2E coverage; served by the backend at /)
+        working-directory: tools/gui
+        env:
+          VITE_COVERAGE: "true"
+        run: |
+          npm ci
+          npm run build
+
+      - name: Install Playwright browser
+        working-directory: tools/gui
+        run: npx playwright install --with-deps chromium
+
+      - name: Write a local-only workspace (no git remotes → no watcher/auth in CI)
+        run: |
+          cat > arch-workspace.yaml <<'YAML'
+          engagement:
+            local: engagements/ENG-ARCH-REPO/architecture-repository
+          enterprise:
+            local: enterprise-repository
+          YAML
+
+      - name: Scaffold an empty local enterprise repo (gitlink is empty on CI checkout)
+        run: |
+          # The committed enterprise-repository is a gitlink, so a plain checkout leaves it
+          # empty. arch-init's local: spec requires a model/ dir; give it an empty, valid
+          # repo (model/ + the engagement's schemata) so global/enterprise views render.
+          rm -rf enterprise-repository
+          mkdir -p enterprise-repository/model
+          cp -r engagements/ENG-ARCH-REPO/architecture-repository/.arch-repo enterprise-repository/.arch-repo
+
+      - name: Initialise workspace (bundled self-describing model)
+        run: uv run arch-init
+
+      - name: Initialise the confidential assurance store (enables the assurance module)
+        run: uv run arch-assurance init
+
+      - name: Activate + seed the assurance store with the committed dogfood content
+        # `unlock` sets the activation gate; the policy decides whether the backend started below
+        # may open the store from it. The default is 'manual' — a NEW process starts locked, which is
+        # right for a workstation and wrong here: the backend starts after this step, unattended, and
+        # nothing would authorize it, so every assurance route would answer 423 and the route-walk
+        # would fail for a reason unrelated to what it tests. 'persistent' is the policy this shape of
+        # deployment exists for, exactly as the container entrypoint asserts it.
+        # `import` restores the published demo graph (all TLP:GREEN → publishable) so the assurance
+        # GUI/e2e tests run against real data instead of an empty store.
+        run: |
+          uv run arch-assurance use-backend sqlcipher --activation-policy persistent
+          uv run arch-assurance unlock
+          uv run arch-assurance import engagements/ENG-ARCH-REPO/architecture-repository/.arch-repo/assurance-seed.json --replace
+
+      - name: Start the backend (serves API + built SPA on :8000)
+        run: |
+          uv run arch-backend --daemon || {
+            echo "::group::backend.log"; cat .arch/backend.log 2>/dev/null || echo "(no backend.log written)"; echo "::endgroup::";
+            echo "::error::arch-backend --daemon did not come up"; exit 1;
+          }
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:8000/api/stats >/dev/null; then echo "backend up"; break; fi
+            sleep 2
+          done
+          curl -sf http://127.0.0.1:8000/api/stats >/dev/null || {
+            echo "::group::backend.log"; cat .arch/backend.log 2>/dev/null || echo "(no backend.log)"; echo "::endgroup::";
+            echo "::error::backend did not answer /api/stats in time"; exit 1;
+          }
+
+      - name: Run route-walk smoke test
+        working-directory: tools/gui
+        env:
+          E2E_BASE_URL: http://localhost:8000
+        run: npm run test:e2e
+
+      - name: Generate E2E coverage (lcov from .nyc_output; reachability, report-only)
+        if: always()
+        working-directory: tools/gui
+        run: npx nyc report --reporter=lcov --reporter=text-summary --report-dir=coverage-e2e --temp-dir=.nyc_output || true
+
+      - name: Upload E2E coverage to Codecov
+        if: always()
+        uses: codecov/codecov-action@v5
+        with:
+          files: tools/gui/coverage-e2e/lcov.info
+          flags: frontend-e2e
+          fail_ci_if_error: false
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: tools/gui/playwright-report/
+          retention-days: 7

@@ -1,0 +1,101 @@
+---
+artifact-id: ARC@1784484044.GU6kjx.capability-map
+artifact-type: diagram
+name: Capability Map
+version: 0.1.0
+status: active
+diagram-type: archimate-layered
+viewpoint:
+  slug: capability-map
+  version: 4
+entity-ids-used:
+- CAP@1784482442.0kQIHh.architecture-analysis-visualization
+- CAP@1784482433.Eb_x83.integrated-safety-security-compliance-assurance
+- CAP@1784482422.FMvdNM.tiered-knowledge-governance
+- CAP@1784482412.db4AQh.agent-native-architecture-collaboration
+- CAP@1784482403.pLMHKe.architecture-knowledge-management
+- RES@1784482471.0mpHI-.assurance-knowledge-base
+- RES@1784482482.H7YRYJ.modelling-method-guidance-corpus
+- RES@1784482454.JnWnY1.recursive-self-model-eng-arch-repo
+- RES@1784482462.dz41en.enterprise-architecture-knowledge-base
+connection-ids-used:
+- RES@1784482454.JnWnY1---CAP@1784482403.pLMHKe@@archimate-assignment
+- RES@1784482462.dz41en---CAP@1784482403.pLMHKe@@archimate-assignment
+- RES@1784482482.H7YRYJ---CAP@1784482412.db4AQh@@archimate-assignment
+- RES@1784482462.dz41en---CAP@1784482422.FMvdNM@@archimate-assignment
+- RES@1784482471.0mpHI----CAP@1784482433.Eb_x83@@archimate-assignment
+- RES@1784482482.H7YRYJ---CAP@1784482433.Eb_x83@@archimate-assignment
+last-updated: '2026-07-29T13:30:36Z'
+---
+@startuml capability-map
+hide stereotype
+
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 12
+skinparam shadowing false
+skinparam roundcorner 4
+skinparam backgroundColor #FAFAFA
+
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 80
+!define Rel_Triggering(from, to, label) from --> to
+!define Rel_Realization(from, to, label) from ..|> to
+!define Rel_Realization_Up(from, to, label) from ..|> to
+!define Rel_Serving(from, to, label) from --> to
+!define Rel_Association(from, to, label) from -- to
+!define Rel_Association_Left(from, to, label) from -- to
+!define Rel_Association_Right(from, to, label) from -- to
+!define Rel_Access(from, to, label) from ..> to
+!define Rel_Influence(from, to, label) from ..> to
+skinparam rectangle<<StrategyGrouping>> {
+  BackgroundColor #FAF0D9
+  BorderColor #8B6914
+}
+skinparam rectangle<<capability>> {
+  BackgroundColor #F5DEB3
+  BorderColor #8B6914
+}
+skinparam rectangle<<resource>> {
+  BackgroundColor #F5DEB3
+  BorderColor #8B6914
+}
+sprite $archimate_capability <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3.10 11.25h9.80v1.30H3.10z" fill="#252327"/><path d="M4.00 8.80h1.90v3.10H4.00z" fill="#252327"/><path d="M6.80 6.80h1.90v5.10H6.80z" fill="#252327"/><path d="M9.60 4.70h1.90v7.20H9.60z" fill="#252327"/></svg>
+sprite $archimate_resource <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3 4h10v8H3z"  fill="#252327" stroke="none"/><path d="M3.00 5.85h10.00v1.30H3.00z" fill="#252327"/><path d="M5.35 4.00v8.00h1.30V4.00z" fill="#252327"/></svg>
+
+top to bottom direction
+
+title Capability Map
+
+rectangle "Capabilities" <<StrategyGrouping>> as GRPT_1 {
+  rectangle "<$archimate_capability{scale=1.2}> Integrated Safety, Security & Compliance Assurance" <<capability>> as CAP_Eb_x83
+  rectangle "<$archimate_capability{scale=1.2}> Agent-Native Architecture Collaboration" <<capability>> as CAP_db4AQh
+  rectangle "<$archimate_capability{scale=1.2}> Tiered Knowledge Governance" <<capability>> as CAP_FMvdNM
+  rectangle "<$archimate_capability{scale=1.2}> Architecture Knowledge Management" <<capability>> as CAP_pLMHKe
+}
+CAP_Eb_x83 -[hidden]right- CAP_db4AQh
+CAP_db4AQh -[hidden]right- CAP_FMvdNM
+CAP_FMvdNM -[hidden]right- CAP_pLMHKe
+
+rectangle "Resources" <<StrategyGrouping>> as GRPT_2 {
+  rectangle "<$archimate_resource{scale=1.2}> Assurance Knowledge Base" <<resource>> as RES_0mpHI_
+  rectangle "<$archimate_resource{scale=1.2}> Modelling & Method Guidance Corpus" <<resource>> as RES_H7YRYJ
+  rectangle "<$archimate_resource{scale=1.2}> Recursive Self-Model (ENG-ARCH-REPO)" <<resource>> as RES_JnWnY1
+  rectangle "<$archimate_resource{scale=1.2}> Enterprise Architecture Knowledge Base" <<resource>> as RES_dz41en
+}
+RES_0mpHI_ -[hidden]right- RES_H7YRYJ
+RES_H7YRYJ -[hidden]right- RES_JnWnY1
+RES_JnWnY1 -[hidden]right- RES_dz41en
+
+rectangle "<$archimate_capability{scale=1.2}> Architecture Analysis & Visualization" <<capability>> as CAP_0kQIHh
+GRPT_2 -[hidden]down- CAP_0kQIHh
+
+' Connections
+RES_JnWnY1 -up-> CAP_pLMHKe
+RES_dz41en -up-> CAP_pLMHKe
+RES_H7YRYJ -up-> CAP_db4AQh
+RES_dz41en -up-> CAP_FMvdNM
+RES_0mpHI_ -up-> CAP_Eb_x83
+RES_H7YRYJ -up-> CAP_Eb_x83
+
+@enduml

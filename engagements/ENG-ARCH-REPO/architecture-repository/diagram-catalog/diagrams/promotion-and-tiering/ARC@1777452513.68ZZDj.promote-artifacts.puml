@@ -1,0 +1,138 @@
+---
+artifact-id: ARC@1777452513.68ZZDj.promote-artifacts
+artifact-type: diagram
+name: Promote Artifacts
+version: 0.1.0
+status: draft
+keywords:
+- workflow
+- promotion
+- enterprise
+- process
+- governance
+diagram-type: archimate-business
+entity-ids-used:
+- EVT@1777390508.Dm0CyE.promotion-plan-prepared
+- EVT@1777390509.fWpwu5.promotion-conflicts-detected
+- EVT@1777390504.hDF1Qz.artifacts-promoted
+- FNC@1777390498.54UnNB.validate-promotion-selection
+- FNC@1777390494.6xjXsw.execute-promotion
+- FNC@1777390500.A0dOFm.resolve-promotion-conflicts
+- FNC@1777390493.A-wFZl.run-quality-gates
+- FNC@1777390445.NGjUCa.verify-artifact-integrity-coherence
+- FNC@1777390496.Z2rrfP.select-artifacts-for-promotion
+- FNC@1777390497.ndMgDn.detect-promotion-conflicts
+- FNC@1777390501.wahMSm.replace-promoted-entities-with-grfs
+- PRC@1712870400.0Rz5Ex.promote-artifacts
+- SRV@1712870400.Uv9Wx9.repository-promotion-service
+connection-ids-used:
+- PRC@1712870400.0Rz5Ex---SRV@1712870400.Uv9Wx9@@archimate-realization
+- FNC@1777390496.Z2rrfP---FNC@1777390497.ndMgDn@@archimate-triggering
+- FNC@1777390497.ndMgDn---EVT@1777390508.Dm0CyE@@archimate-triggering
+- FNC@1777390497.ndMgDn---EVT@1777390509.fWpwu5@@archimate-triggering
+- EVT@1777390508.Dm0CyE---FNC@1777390498.54UnNB@@archimate-triggering
+- EVT@1777390509.fWpwu5---FNC@1777390500.A0dOFm@@archimate-triggering
+- FNC@1777390500.A0dOFm---FNC@1777390498.54UnNB@@archimate-triggering
+- FNC@1777390498.54UnNB---FNC@1777390493.A-wFZl@@archimate-triggering
+- FNC@1777390493.A-wFZl---FNC@1777390494.6xjXsw@@archimate-triggering
+- FNC@1777390494.6xjXsw---FNC@1777390501.wahMSm@@archimate-triggering
+- FNC@1777390494.6xjXsw---EVT@1777390504.hDF1Qz@@archimate-triggering
+- FNC@1777390501.wahMSm---FNC@1777390445.NGjUCa@@archimate-triggering
+- PRC@1712870400.0Rz5Ex---FNC@1777390498.54UnNB@@archimate-composition
+- PRC@1712870400.0Rz5Ex---FNC@1777390494.6xjXsw@@archimate-composition
+- PRC@1712870400.0Rz5Ex---FNC@1777390500.A0dOFm@@archimate-composition
+- PRC@1712870400.0Rz5Ex---FNC@1777390493.A-wFZl@@archimate-composition
+- PRC@1712870400.0Rz5Ex---FNC@1777390445.NGjUCa@@archimate-aggregation
+- PRC@1712870400.0Rz5Ex---FNC@1777390496.Z2rrfP@@archimate-composition
+- PRC@1712870400.0Rz5Ex---FNC@1777390497.ndMgDn@@archimate-composition
+- PRC@1712870400.0Rz5Ex---FNC@1777390501.wahMSm@@archimate-composition
+last-updated: '2026-07-29T13:30:21Z'
+---
+@startuml promote-artifacts
+hide stereotype
+
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 12
+skinparam shadowing false
+skinparam roundcorner 4
+skinparam backgroundColor #FAFAFA
+
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 80
+!define Rel_Triggering(from, to, label) from --> to
+!define Rel_Realization(from, to, label) from ..|> to
+!define Rel_Realization_Up(from, to, label) from ..|> to
+!define Rel_Serving(from, to, label) from --> to
+!define Rel_Association(from, to, label) from -- to
+!define Rel_Association_Left(from, to, label) from -- to
+!define Rel_Association_Right(from, to, label) from -- to
+!define Rel_Access(from, to, label) from ..> to
+!define Rel_Influence(from, to, label) from ..> to
+skinparam rectangle<<event>> {
+  BackgroundColor #E0D8CC
+  BorderColor #8C7E6A
+}
+skinparam rectangle<<function>> {
+  BackgroundColor #E0D8CC
+  BorderColor #8C7E6A
+}
+skinparam rectangle<<process>> {
+  BackgroundColor #E0D8CC
+  BorderColor #8C7E6A
+}
+skinparam rectangle<<service>> {
+  BackgroundColor #E0D8CC
+  BorderColor #8C7E6A
+}
+sprite $archimate_event <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3.1 4h5.6a3.8 3.8 0 0 1 0 8H3.1l2.1-4z"  fill="#252327" stroke="none"/></svg>
+sprite $archimate_function <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.9 11.7V5.4L8 3.1l5.1 2.3v6.3L8 9.2z"  fill="#252327" stroke="none"/></svg>
+sprite $archimate_process <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.6 4.1h6.3V2.8l4.5 5.2-4.5 5.2v-1.3H2.6z"  fill="#252327" stroke="none"/></svg>
+sprite $archimate_service <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3.2 4.1h7.2a2.8 2.8 0 0 1 0 7.8H3.2a2.8 2.8 0 0 1 0-7.8z"  fill="#252327" stroke="none"/></svg>
+
+top to bottom direction
+
+title Promote Artifacts
+
+rectangle "<$archimate_process{scale=1.2}> Promote Artifacts\n«Business Process»" <<process>> as PRC_0Rz5Ex {
+  rectangle "<$archimate_event{scale=1.2}> Promotion Plan Prepared\n«Application Event»" <<event>> as EVT_Dm0CyE
+  rectangle "<$archimate_event{scale=1.2}> Promotion Conflicts Detected\n«Application Event»" <<event>> as EVT_fWpwu5
+  rectangle "<$archimate_function{scale=1.2}> Validate Promotion Selection\n«Application Function»" <<function>> as FNC_54UnNB
+  rectangle "<$archimate_function{scale=1.2}> Execute Promotion\n«Application Function»" <<function>> as FNC_6xjXsw
+  rectangle "<$archimate_function{scale=1.2}> Resolve Promotion Conflicts\n«Business Function»" <<function>> as FNC_A0dOFm
+  rectangle "<$archimate_function{scale=1.2}> Run Quality Gates\n«Application Function»" <<function>> as FNC_A_wFZl
+  rectangle "<$archimate_function{scale=1.2}> Verify Artifact Integrity & Coherence\n«Application Function»" <<function>> as FNC_NGjUCa
+  rectangle "<$archimate_function{scale=1.2}> Select Artifacts for Promotion\n«Business Function»" <<function>> as FNC_Z2rrfP
+  rectangle "<$archimate_function{scale=1.2}> Detect Promotion Conflicts\n«Application Function»" <<function>> as FNC_ndMgDn
+  rectangle "<$archimate_function{scale=1.2}> Replace Promoted Entities with GRFs\n«Application Function»" <<function>> as FNC_wahMSm
+  FNC_Z2rrfP -[hidden]down- FNC_ndMgDn
+  FNC_ndMgDn -[hidden]down- EVT_Dm0CyE
+  EVT_Dm0CyE -[hidden]down- EVT_fWpwu5
+  EVT_fWpwu5 -[hidden]down- FNC_A0dOFm
+  FNC_A0dOFm -[hidden]down- FNC_54UnNB
+  FNC_54UnNB -[hidden]down- FNC_A_wFZl
+  FNC_A_wFZl -[hidden]down- FNC_6xjXsw
+  FNC_6xjXsw -[hidden]down- FNC_wahMSm
+  FNC_wahMSm -[hidden]down- FNC_NGjUCa
+}
+
+rectangle "<$archimate_service{scale=1.2}> Repository Promotion Service\n«Application Service»" <<service>> as SRV_Uv9Wx9
+
+rectangle "<$archimate_event{scale=1.2}> Artifacts Promoted\n«Application Event»" <<event>> as EVT_hDF1Qz
+SRV_Uv9Wx9 -[hidden]down- EVT_hDF1Qz
+
+' Connections
+PRC_0Rz5Ex ..|> SRV_Uv9Wx9
+FNC_Z2rrfP --> FNC_ndMgDn
+FNC_ndMgDn --> EVT_Dm0CyE
+FNC_ndMgDn --> EVT_fWpwu5
+EVT_Dm0CyE --> FNC_54UnNB
+EVT_fWpwu5 --> FNC_A0dOFm
+FNC_A0dOFm --> FNC_54UnNB
+FNC_54UnNB --> FNC_A_wFZl
+FNC_A_wFZl --> FNC_6xjXsw
+FNC_6xjXsw --> FNC_wahMSm
+FNC_6xjXsw --> EVT_hDF1Qz
+FNC_wahMSm --> FNC_NGjUCa
+
+@enduml

@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "frontmatter.outgoing.schema.json",
+  "title": "Outgoing Connections File Frontmatter Schema",
+  "description": "JSON Schema for .outgoing.md file frontmatter. Extends tool-required base fields.",
+  "type": "object",
+  "required": [
+    "source-entity",
+    "version",
+    "status",
+    "last-updated"
+  ],
+  "properties": {
+    "source-entity": {
+      "type": "string",
+      "pattern": "^[A-Z]{2,6}@\\d+\\.[A-Za-z0-9_-]+\\..+$"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "active", "deprecated"]
+    },
+    "last-updated": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

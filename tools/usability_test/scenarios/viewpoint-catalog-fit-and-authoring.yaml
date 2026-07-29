@@ -1,0 +1,811 @@
+# GUI scenario — does the curated viewpoint catalog answer people's standing questions,
+# and can they build one when it does not?
+#
+# Migrated from the first iteration of this framework, in which the persona catalog and
+# the harness were fused to this one feature. The questions, authoring challenges,
+# oracle notes and fixture preconditions are carried over as authored; what changed is
+# that they now hang off a scenario rather than off the personas, the viewpoint slugs
+# are typed route references, and the two redundant answer-key fields of the old schema
+# (`fit_kind` and `expected_catalog_action`, where a test asserted one was a pure
+# function of the other) have collapsed into `expected_route.action`.
+#
+# Persona-visible: id, title, situation, stakes, participant context, and task id, text,
+# information_need, decision_artifact and budget_actions. Everything else is the
+# evaluator's answer key.
+
+schema: 1
+kind: usability-scenario
+
+id: viewpoint-catalog-fit-and-authoring
+title: Finding a view that answers your question, and building one when none does
+work_type: information-provision
+channels: [gui]
+
+situation: >
+  The platform ships a catalog of viewpoints — named, curated ways of selecting and
+  presenting part of an architecture model — merged across the shipped library, the
+  enterprise tier and the local engagement. Anyone with a question about the modelled
+  system is expected to find the entry that answers it, run it, and read the result; and
+  where nothing fits, to fork the closest entry or build their own. Each of you arrives
+  with the questions you always have, and no prior knowledge of what this catalog
+  contains.
+
+stakes: >
+  A catalog that is browsed and abandoned is worse than no catalog: it costs the time it
+  took to browse and leaves the question unanswered. A catalog that returns a confident
+  wrong answer is worse again, because the answer gets used. And an authoring path that
+  only architects can walk means everyone else waits for an architect.
+
+# ---------------------------------------------------------------------------
+# EVALUATOR-ONLY from here down.
+# ---------------------------------------------------------------------------
+
+write_policy:
+  mutations: run-scoped
+  slug_prefix: usability-<RUN_ID>-
+  cleanup: tools/usability_test/cleanup_usability_viewpoints.py
+  rationale: >
+    The authoring tasks save real viewpoint definitions. Every saved slug must carry the
+    run prefix, be recorded in the run manifest as it is saved, and be removed and
+    verified against the pre-run catalog baseline at the end of the run. Pin state must
+    not be changed: the curation task is assessment-only.
+
+preconditions:
+- id: catalog-renders
+  statement: The viewpoints management page renders the merged catalog without console errors.
+  verification_method: load /viewpoints and read the console
+- id: catalog-baseline-captured
+  statement: >
+    A per-definition canonical hash and the pin list are captured before any persona
+    runs, so restoration can be verified rather than assumed.
+  verification_method: tools/usability_test/viewpoint_inventory.py --baseline
+- id: pre-existing-leftovers-recorded
+  statement: >
+    Any pre-existing slug matching the run-test naming patterns is recorded and left
+    untouched, so cleanup can never be asked to delete something it did not create.
+  verification_method: inspect the baseline for usability-* and *-copy slugs; report, do not touch
+
+surfaces:
+- {kind: gui-route, ref: /viewpoints}
+- {kind: gui-route, ref: /viewpoints/new}
+- {kind: gui-route, ref: /viewpoints/query}
+- {kind: gui-route, ref: /viewpoints/matrix}
+- {kind: gui-route, ref: /viewpoints/diagram}
+- {kind: gui-route, ref: /graph}
+- {kind: gui-route, ref: /entities}
+- {kind: doc, ref: docs/03-modeling/viewpoints.md}
+- {kind: doc, ref: docs/reference/viewpoints-schema.md}
+
+invariants:
+- id: counts-agree-across-surfaces-at-one-generation
+  statement: >
+    The same slug and parameters yield equal counts in the execution result, the
+    exploration header, the diagram entity list and the probe, at the same index
+    generation.
+  verification_method: Execute once per surface and compare; abort the pair if the generation changes between reads.
+- id: every-rendered-style-has-a-legend-entry
+  statement: >
+    Every style actually rendered has a corresponding legend explanation. An unused
+    legend entry is acceptable and recorded, not a failure.
+  verification_method: Map each rendered fill in the DOM to a legend entry.
+- id: anchor-marking-matches-the-data
+  statement: The anchor badge and halo appear exactly when the execution carries anchors, and name them.
+  verification_method: Compare the rendered anchor marking against the probe's anchor list.
+- id: no-styling-rule-is-a-silent-no-op
+  statement: >
+    Every authored style rule reports exactly one of: applied to at least one item,
+    valid but zero matches, unsupported on this representation, schema drift, or a
+    validation error. A rule with none of these observable outcomes is a silent no-op.
+  verification_method: Compare the authored rules against the per-item style map in the probe and the rendered DOM.
+- id: truncation-is-disclosed-wherever-the-result-appears
+  statement: A truncated result is disclosed on every surface that shows it, not only where it was produced.
+  verification_method: Force truncation with a limit and walk every surface showing the result.
+- id: forking-does-not-touch-the-source
+  statement: Saving a fork leaves the source definition's canonical hash unchanged.
+  verification_method: Re-hash the source definition after the fork and compare against the baseline.
+- id: interface-and-documentation-agree-on-terms
+  statement: The terminology the interface uses for viewpoint concepts matches the documentation's.
+  verification_method: Sample at least five terms across both.
+- id: execution-is-reproducible
+  statement: The same execution repeated at an unchanged index generation gives the same result.
+  verification_method: Execute twice and compare, confirming the generation did not move.
+
+participants:
+
+# ---------------------------------------------------------------------------
+- persona: product-owner
+  context: >
+    You have a roadmap conversation coming up and you have been told this catalog can
+    tell you things about what the team has actually built. You have never opened it
+    before.
+  tasks:
+  - id: realized-versus-aspirational-goals
+    recurring_question: which-commitments-are-actually-built
+    text: Which product goals are actually supported by something we built, and which are aspirational?
+    information_need: >
+      A gap list or picture separating realized from unrealized goals, defensible in a
+      roadmap discussion.
+    decision_artifact: slide
+    budget_actions: 15
+    preconditions: >
+      goal-realization admits only motivation-domain types; the realized/unrealized
+      split needs cross-domain realization traversal that no shipped view isolates.
+    expected_route:
+      action: author
+      candidates:
+      - {kind: viewpoint, ref: goal-realization}
+      - {kind: viewpoint, ref: requirements-realization}
+  - id: blast-radius-of-dropping-a-feature
+    recurring_question: what-else-does-dropping-this-affect
+    text: If we drop the promotion feature, what else is affected?
+    information_need: A blast-radius picture around one chosen element, small enough to read in a meeting.
+    decision_artifact: slide
+    budget_actions: 15
+    preconditions: the anchor entity for the promotion engine exists and has incoming dependency paths.
+    expected_route:
+      action: execute
+      candidates:
+      - {kind: viewpoint, ref: element-dependents}
+  - id: what-the-team-says-this-is-for
+    recurring_question: what-is-this-product-for
+    text: What are all the things the team says this product is for, in one slide-ready picture?
+    information_need: One exportable motivation overview of drivers and goals, in low-jargon language.
+    decision_artifact: slide
+    budget_actions: 15
+    preconditions: a motivation-domain population exists.
+    expected_route:
+      action: execute
+      candidates:
+      - {kind: viewpoint, ref: motivation}
+      - {kind: viewpoint, ref: stakeholder}
+      - {kind: viewpoint, ref: strategy}
+  - id: fork-goal-realization-down-to-goals-and-outcomes
+    text: From goal-realization, produce a variant showing only goals and outcomes, without requirements.
+    information_need: A saved variant of an existing definition, reached without building from blank.
+    decision_artifact: saved-definition
+    budget_actions: 20
+    preconditions: goal-realization executes against a non-empty motivation population.
+    expected_route:
+      action: fork
+      candidates:
+      - {kind: viewpoint, ref: goal-realization}
+
+# ---------------------------------------------------------------------------
+- persona: development-lead
+  context: >
+    Your team owns several of the components in this model. You have been pointed at the
+    catalog and told it answers dependency questions.
+  tasks:
+  - id: downstream-of-the-artifact-index
+    recurring_question: what-breaks-downstream
+    text: What breaks downstream if we change the artifact index?
+    information_need: An anchored impact set with direction and reach, verifiable against code knowledge.
+    decision_artifact: ticket
+    budget_actions: 25
+    preconditions: >
+      the oracle must fix the direct-versus-transitive semantics expected — derived
+      traversal, incoming direction, maximum hops.
+    expected_route:
+      action: execute
+      candidates:
+      - {kind: viewpoint, ref: element-dependents}
+  - id: backend-dependency-closure
+    recurring_question: direct-and-transitive-dependencies
+    text: Which application components does the backend depend on, direct and transitive?
+    information_need: A dependency closure from one component, distinguishing direct from derived.
+    decision_artifact: design-review
+    budget_actions: 25
+    preconditions: the oracle must state the expected direct and derived edges explicitly.
+    expected_route:
+      action: execute
+      candidates:
+      - {kind: viewpoint, ref: element-dependencies}
+      - {kind: viewpoint, ref: application-structure}
+  - id: inventory-of-one-project
+    recurring_question: what-is-in-this-bounded-context
+    text: Show everything in the assurance project only — what is in that bounded context?
+    information_need: A project-scoped inventory usable as a team boundary map.
+    decision_artifact: link
+    budget_actions: 25
+    preconditions: the group facet is populated and an assurance project exists.
+    expected_route:
+      action: author
+      candidates: []
+  - id: build-components-and-services-for-one-project
+    text: >
+      Build from scratch "components in a chosen project with their services", filtered
+      or parameterized by project, in the exploration representation, with distinct
+      colors for components and services.
+    information_need: A saved definition built from blank, parameterized rather than hard-coded.
+    decision_artifact: saved-definition
+    budget_actions: 30
+    preconditions: the group facet is populated; component and service types are present.
+    expected_route:
+      action: author
+      candidates: []
+
+# ---------------------------------------------------------------------------
+- persona: chief-technology-officer
+  context: >
+    You are evaluating whether this platform is worth adopting across the whole
+    engineering group, and you are giving it ten minutes.
+  tasks:
+  - id: capability-to-application-coverage
+    recurring_question: do-capabilities-map-to-systems
+    text: Do our capabilities map to actual applications — where are the gaps?
+    information_need: Capability coverage with the gaps visible, suitable for an investment conversation.
+    decision_artifact: steering-recommendation
+    budget_actions: 10
+    preconditions: >
+      requires a strategy-domain capability population; where the model has none,
+      capability-map returns entities with no connections plus a schema-drift warning,
+      and the correct outcome is recognizing the data gap.
+    expected_route:
+      action: recognize-fixture-gap
+      candidates:
+      - {kind: viewpoint, ref: capability-map}
+  - id: technology-footprint-with-dependents
+    recurring_question: technology-footprint-and-dependents
+    text: What is the technology footprint and what depends on each piece?
+    information_need: An inventory of runtimes and stores with their dependents, for risk and cost review.
+    decision_artifact: steering-recommendation
+    budget_actions: 10
+    preconditions: >
+      type-based scope also admits common events and functions — the oracle must state
+      the expected noise; this is not an honest footprint oracle by itself.
+    expected_route:
+      action: execute
+      candidates:
+      - {kind: viewpoint, ref: technology}
+      - {kind: viewpoint, ref: technology-usage}
+  - id: motivation-to-realization-in-one-view
+    text: Is there one view showing motivation through to realization end-to-end, for an audit?
+    information_need: A single traceability overview acceptable as audit evidence.
+    decision_artifact: audit-evidence
+    budget_actions: 10
+    preconditions: the layered view excludes motivation; no shipped view spans motivation through realization.
+    expected_route:
+      action: author
+      candidates:
+      - {kind: viewpoint, ref: layered}
+      - {kind: viewpoint, ref: motivation}
+  - id: cost-and-obsolescence-exposure
+    recurring_question: where-is-obsolescence-exposure
+    text: >
+      Which technology choices carry cost or obsolescence exposure, and which
+      capabilities depend on them?
+    information_need: An exposure-annotated technology list with the dependent business impact.
+    decision_artifact: go-no-go
+    budget_actions: 10
+    preconditions: >
+      no cost or lifecycle attributes exist in the model; this task tests the catalog's
+      honesty about its own limits.
+    expected_route:
+      action: recognize-product-gap
+      candidates: []
+  - id: recolor-capability-map-by-project
+    text: Via a fork, re-color the capability map by project — is that reachable without delegating it?
+    information_need: >
+      An assessment of whether the editor is reachable at all by someone who delegates
+      anything complicated.
+    decision_artifact: saved-definition
+    budget_actions: 15
+    preconditions: >
+      known to be fixture-degraded where the strategy domain is unpopulated; the task
+      probes editor reachability, not result quality.
+    expected_route:
+      action: fork
+      candidates:
+      - {kind: viewpoint, ref: capability-map}
+
+# ---------------------------------------------------------------------------
+- persona: platform-engineer
+  context: >
+    You are the person who gets paged. You want to know what the model says about the
+    infrastructure you operate, and you want exact numbers.
+  tasks:
+  - id: what-depends-on-the-database
+    recurring_question: what-runs-on-this-node
+    text: What runs on, or depends on, the SQLite database?
+    information_need: >
+      An anchored dependent set for one technology element, with counts; "runs on"
+      implies deployment semantics, not mere adjacency.
+    decision_artifact: incident-note
+    budget_actions: 20
+    preconditions: the oracle must distinguish deployment-semantic edges from generic connections.
+    expected_route:
+      action: execute
+      candidates:
+      - {kind: viewpoint, ref: element-dependents}
+      - {kind: viewpoint, ref: technology-usage}
+  - id: deployment-realization-mapping
+    recurring_question: what-realizes-what-in-deployment
+    text: Which artifacts and nodes realize which application components?
+    information_need: A deployment and realization mapping across the technology–application boundary.
+    decision_artifact: design-review
+    budget_actions: 20
+    preconditions: realization and assignment edges exist between the technology and application layers.
+    expected_route:
+      action: execute
+      candidates:
+      - {kind: viewpoint, ref: implementation-and-deployment}
+      - {kind: viewpoint, ref: technology}
+  - id: dead-technology-inventory
+    recurring_question: what-is-dead-inventory
+    text: Which technology elements are connected to nothing?
+    information_need: An absence result — elements with zero connections — as a cleanup worklist.
+    decision_artifact: worklist
+    budget_actions: 20
+    preconditions: a negated incident condition must be expressible in the query builder.
+    expected_route:
+      action: author
+      candidates: []
+  - id: technology-with-dependents-as-a-table
+    text: >
+      Build "technology elements plus their dependents" with a group filter excluding
+      the uncategorized group, in a table representation with a status column.
+    information_need: A saved definition combining a negated group filter with a tabular representation.
+    decision_artifact: saved-definition
+    budget_actions: 25
+    preconditions: a technology-domain population with status attributes exists.
+    expected_route:
+      action: author
+      candidates: []
+
+# ---------------------------------------------------------------------------
+- persona: due-diligence-consultant
+  context: >
+    You have forty-five minutes with this repository and you are writing a section of an
+    acquisition report. Everything you cite has to be exportable and defensible.
+  tasks:
+  - id: requirements-with-no-realization-path
+    recurring_question: what-is-unrealized
+    text: Which requirements have no realization path to any application element?
+    information_need: A defensible list of unrealized requirements for the report.
+    decision_artifact: audit-evidence
+    budget_actions: 35
+    preconditions: >
+      requirements-realization returns a large union rather than the isolated unrealized
+      requirements; the question needs a negated-path query plus an independent oracle.
+    expected_route:
+      action: author
+      candidates:
+      - {kind: viewpoint, ref: requirements-realization}
+  - id: status-distribution-of-the-model
+    recurring_question: how-current-is-this-model
+    text: How current is this model — statuses, drafts against accepted?
+    information_need: >
+      An exportable status distribution over the model; note that status is a lifecycle
+      field, not proof of currency.
+    decision_artifact: audit-evidence
+    budget_actions: 35
+    preconditions: >
+      the status facet is populated; last-updated data exists but no shipped view
+      exposes it.
+    expected_route:
+      action: author
+      candidates: []
+  - id: stakeholder-driver-goal-traceability-with-gaps
+    recurring_question: traceability-with-gaps-marked
+    text: Show stakeholder to driver to goal traceability with gaps marked.
+    information_need: Motivation traceability with explicit gap marking.
+    decision_artifact: audit-evidence
+    budget_actions: 35
+    preconditions: >
+      shipped views show the edges that are present but mark no gaps; gap marking needs
+      authored absence criteria.
+    expected_route:
+      action: author
+      candidates:
+      - {kind: viewpoint, ref: stakeholder}
+      - {kind: viewpoint, ref: motivation}
+      - {kind: viewpoint, ref: goal-realization}
+  - id: draft-motivation-elements-for-an-appendix
+    text: >
+      Build "all draft-status motivation elements", styled by status, as a matrix or
+      table for a report appendix.
+    information_need: A saved definition producing an appendix-ready tabulation.
+    decision_artifact: saved-definition
+    budget_actions: 40
+    preconditions: motivation elements with draft status exist.
+    expected_route:
+      action: author
+      candidates: []
+
+# ---------------------------------------------------------------------------
+- persona: solo-developer
+  context: >
+    Somebody linked you this tool. You have fifteen minutes and no intention of reading
+    anything first.
+  tasks:
+  - id: something-useful-in-one-click
+    recurring_question: show-me-something-useful-immediately
+    text: Show me something useful about this codebase in one click.
+    information_need: An immediately legible default view with zero configuration.
+    decision_artifact: link
+    budget_actions: 12
+    preconditions: none.
+    expected_route:
+      action: execute
+      candidates:
+      - {kind: viewpoint, ref: layered}
+      - {kind: viewpoint, ref: application-structure}
+  - id: neighbourhood-of-a-refactor-target
+    recurring_question: what-is-connected-to-this
+    text: What is connected to the thing I am about to refactor?
+    information_need: A fast anchored neighbourhood for any picked element.
+    decision_artifact: ticket
+    budget_actions: 12
+    preconditions: none.
+    expected_route:
+      action: execute
+      candidates:
+      - {kind: viewpoint, ref: element-dependents}
+  - id: my-own-view-without-a-query-language
+    recurring_question: can-i-make-my-own-without-a-query-language
+    text: Can I make my own view without learning a query language?
+    information_need: A copy-and-modify authoring path that never shows raw query syntax.
+    decision_artifact: link
+    budget_actions: 12
+    preconditions: a fork affordance is available on executed viewpoints.
+    expected_route:
+      action: fork
+      candidates: []
+  - id: fork-whatever-ran-first-and-recolor-it
+    text: >
+      Fork whatever you executed first, change one color to a custom hex value, save it
+      and run it again.
+    information_need: The number of actions to a first personally useful, saved result.
+    decision_artifact: saved-definition
+    budget_actions: 18
+    preconditions: any executable viewpoint — whichever was executed first.
+    expected_route:
+      action: fork
+      candidates: []
+
+# ---------------------------------------------------------------------------
+- persona: open-source-maintainer
+  context: >
+    You are rewriting CONTRIBUTING.md this week and looking for something to link that
+    explains the shape of the system to a first-time contributor.
+  tasks:
+  - id: an-overview-to-link-for-newcomers
+    recurring_question: what-do-i-link-for-newcomers
+    text: Which view do I link in CONTRIBUTING.md to explain the system's parts and boundaries?
+    information_need: A stable, legible overview link for newcomers; link durability matters.
+    decision_artifact: link
+    budget_actions: 20
+    preconditions: executed views must be reachable at a stable URL for linking to mean anything.
+    expected_route:
+      action: execute
+      candidates:
+      - {kind: viewpoint, ref: application-structure}
+      - {kind: viewpoint, ref: layered}
+  - id: what-belongs-to-which-subsystem
+    recurring_question: what-belongs-to-which-subsystem
+    text: What belongs to which subsystem, visually?
+    information_need: A composition view clustered by project.
+    decision_artifact: link
+    budget_actions: 20
+    preconditions: the group facet is populated.
+    expected_route:
+      action: author
+      candidates: []
+  - id: ripple-from-a-newcomers-first-change
+    recurring_question: where-would-a-newcomers-change-ripple
+    text: Where would a new contributor's change to the interface ripple to?
+    information_need: An anchored impact view around the interface component, readable by a newcomer.
+    decision_artifact: design-review
+    budget_actions: 20
+    preconditions: the component must be findable using a newcomer's search vocabulary.
+    expected_route:
+      action: execute
+      candidates:
+      - {kind: viewpoint, ref: element-dependents}
+  - id: a-contributor-view-forked-from-the-structure-view
+    text: >
+      Fork the application-structure view into a contributor view: clustered by project,
+      neutral colors except for emphasized entry points.
+    information_need: A saved, newcomer-readable variant reached by forking rather than authoring.
+    decision_artifact: saved-definition
+    budget_actions: 25
+    preconditions: application-structure executes; the group facet is populated.
+    expected_route:
+      action: fork
+      candidates:
+      - {kind: viewpoint, ref: application-structure}
+
+# ---------------------------------------------------------------------------
+- persona: software-architect
+  context: >
+    You know this system's code. You are here to find out whether the model is a design
+    instrument or a decoration, and you will push the edges deliberately. Source access
+    is granted only in a verification phase after your navigation tasks are complete.
+  tasks:
+  - id: where-does-layering-leak
+    recurring_question: where-does-layering-leak
+    text: >
+      Which application and domain elements depend on technology-layer elements directly
+      — where does layering leak?
+    information_need: A layering-violation list precise enough to file tickets from.
+    decision_artifact: ticket
+    budget_actions: 35
+    preconditions: >
+      a cross-layer dependency criterion must be expressible via the domain facet plus
+      an incident condition; note in the report if it is not.
+    expected_route:
+      action: author
+      candidates: []
+  - id: the-contract-surface-between-teams
+    recurring_question: what-is-the-contract-surface
+    text: Which services does each application component serve and consume — the contract surface?
+    information_need: A service-to-component contract map.
+    decision_artifact: design-review
+    budget_actions: 35
+    preconditions: serving and realization edges are populated in the application domain.
+    expected_route:
+      action: execute
+      candidates:
+      - {kind: viewpoint, ref: application-cooperation}
+      - {kind: viewpoint, ref: service-realization}
+      - {kind: viewpoint, ref: application-usage}
+  - id: telling-derived-from-modelled-before-citing
+    recurring_question: modelled-or-derived
+    text: >
+      Which connections in a result are derived rather than actually modelled, and can I
+      tell before citing the view?
+    information_need: >
+      A discoverable, legible modelled-versus-derived encoding in every representation.
+    decision_artifact: design-review
+    budget_actions: 35
+    preconditions: a result containing derived connections — any anchored impact execution.
+    expected_route:
+      action: consult-docs
+      candidates:
+      - {kind: doc, ref: docs/03-modeling/impact-analysis.md}
+      - {kind: doc, ref: docs/03-modeling/viewpoints.md}
+  - id: derived-attribute-driving-a-scale-color
+    text: >
+      Build a multi-hop derived traversal with a derived attribute — a dependency count,
+      say — driving a scale-mode color, in the exploration representation. Does
+      progressive disclosure hold at the deep end?
+    information_need: >
+      A saved definition at the complex end of the editor, and a judgement on whether
+      complexity was disclosed progressively.
+    decision_artifact: saved-definition
+    budget_actions: 40
+    preconditions: derived traversal is reachable from the query tab; a numeric derived attribute is expressible.
+    expected_route:
+      action: author
+      candidates: []
+
+# ---------------------------------------------------------------------------
+- persona: solution-architect
+  context: >
+    You present to a different audience every second day and you are assessing whether
+    this catalog can carry that. You also want to know what happens when a published
+    picture goes stale.
+  tasks:
+  - id: the-migration-picture
+    recurring_question: what-is-the-transition-picture
+    text: What is the migration picture — work packages, plateaus, what realizes what?
+    information_need: Transition-state views suitable for planning.
+    decision_artifact: steering-recommendation
+    budget_actions: 30
+    preconditions: >
+      requires an implementation-domain population of work packages and plateaus;
+      preflight and mark the task fixture-invalid if absent.
+    expected_route:
+      action: recognize-fixture-gap
+      candidates:
+      - {kind: viewpoint, ref: migration}
+      - {kind: viewpoint, ref: implementation-and-migration}
+      - {kind: viewpoint, ref: project}
+  - id: one-realization-chain-for-a-steering-meeting
+    recurring_question: one-realization-chain-for-executives
+    text: Give me one capability's full realization chain as a steering-meeting diagram.
+    information_need: An anchored, filtered realization chain coarse enough for executives.
+    decision_artifact: slide
+    budget_actions: 30
+    preconditions: >
+      requires a capability anchor with a realization chain; preflight and mark the task
+      fixture-invalid if the strategy domain is unpopulated.
+    expected_route:
+      action: recognize-fixture-gap
+      candidates:
+      - {kind: viewpoint, ref: service-realization}
+  - id: seeing-what-a-pinned-version-made-stale
+    text: >
+      When a diagram pins a viewpoint version and the definition evolves, how do I see
+      what is stale?
+    information_need: Version-pinning and staleness visibility across referencing diagrams.
+    decision_artifact: governance-review
+    budget_actions: 30
+    preconditions: >
+      at least one persisted diagram with a pinned viewpoint application must exist;
+      preflight and mark fixture-invalid if none does.
+    expected_route:
+      action: consult-docs
+      candidates:
+      - {kind: doc, ref: docs/03-modeling/viewpoints.md}
+      - {kind: doc, ref: docs/reference/viewpoints-schema.md}
+  - id: recent-change-and-its-effect-on-published-views
+    recurring_question: what-published-material-is-stale
+    text: What changed in the model recently, and which published views does that staleness affect?
+    information_need: Change-over-time awareness connected to published views.
+    decision_artifact: governance-review
+    budget_actions: 30
+    preconditions: no shipped change-over-time view exists; this task tests honesty about temporal limits.
+    expected_route:
+      action: recognize-product-gap
+      candidates: []
+  - id: two-audience-variants-of-one-realization-view
+    text: >
+      Fork a realization-style viewpoint twice into an executive variant and an
+      engineering variant, and judge fork-per-audience as a publishing model.
+    information_need: >
+      Two saved variants plus a judgement on the publishing model; the variants are then
+      evaluated by a fresh context in the target role, never by their author.
+    decision_artifact: saved-definition
+    budget_actions: 35
+    preconditions: a realization-style viewpoint executes; two forks are permitted by the run manifest.
+    expected_route:
+      action: fork
+      candidates:
+      - {kind: viewpoint, ref: service-realization}
+
+# ---------------------------------------------------------------------------
+- persona: enterprise-architect
+  context: >
+    You own the standard and the tiers. You are evaluating this both as the power user
+    you are and as the curator who will have to make it work for everyone who is not.
+  tasks:
+  - id: coverage-of-the-traceability-standard
+    recurring_question: where-is-the-standard-violated
+    text: >
+      Which model areas violate the standard that every component traces to a goal or a
+      requirement — coverage, not examples?
+    information_need: A conformance and coverage result usable in a governance review, with an independent oracle.
+    decision_artifact: governance-review
+    budget_actions: 35
+    preconditions: the oracle must be derived via model queries before the authored view is trusted.
+    expected_route:
+      action: author
+      candidates: []
+  - id: tier-hygiene-and-promotion-candidates
+    recurring_question: what-is-the-tier-hygiene
+    text: >
+      What is the tier hygiene — which engagement definitions duplicate shipped ones,
+      and what deserves promotion?
+    information_need: >
+      A tier and duplication overview; today only the management list's tier column
+      exists.
+    decision_artifact: governance-review
+    budget_actions: 35
+    preconditions: >
+      scale claims about twenty teams are out of scope for a catalog of this size —
+      report the result as inspection, not as evidence.
+    expected_route:
+      action: recognize-product-gap
+      candidates: []
+  - id: curating-a-starter-set-for-non-architects
+    recurring_question: can-i-curate-for-non-experts
+    text: Can I curate a pinned starter set for non-architect roles, and does it answer their questions?
+    information_need: >
+      An assessment of pin curation, plus evidence that the proposed set covers the
+      non-expert personas' questions — using blinded selection results only.
+    decision_artifact: governance-review
+    budget_actions: 35
+    preconditions: >
+      ASSESSMENT ONLY — pin state must not be mutated. The brief for this task may carry
+      a blinded aggregate of other personas' catalog selections: chosen entries and
+      confidence, with no persona identities and no correctness information.
+    expected_route:
+      action: consult-docs
+      candidates:
+      - {kind: doc, ref: docs/03-modeling/viewpoints.md}
+  - id: a-conformance-viewpoint-and-its-governance-cost
+    text: >
+      Build a conformance viewpoint — governed types lacking motivation traceability, a
+      negated incident condition — as a table or matrix, and assess the governance
+      implications of the forking model: fork sprawl, provenance, version pinning.
+    information_need: A saved conformance definition plus a curator's judgement on forking as a mechanism.
+    decision_artifact: saved-definition
+    budget_actions: 40
+    preconditions: governed types and motivation connections are present; the conformance oracle is derived first.
+    expected_route:
+      action: author
+      candidates: []
+
+# ---------------------------------------------------------------------------
+- persona: risk-and-compliance-officer
+  context: >
+    A customer audit is scheduled and you have been told the architecture repository can
+    produce some of the evidence. Everything you take from it has to end up in the pack.
+  tasks:
+  - id: requirement-to-implementation-coverage-export
+    recurring_question: is-every-requirement-implemented
+    text: >
+      Show evidence that every applicable requirement has an implementation path, and
+      export it for a control review.
+    information_need: >
+      A coverage table mapping requirement to realizing elements or to a gap, exportable
+      as audit evidence.
+    decision_artifact: audit-evidence
+    budget_actions: 25
+    preconditions: >
+      an independent oracle for the unrealized set is required; the existence of an
+      export path is itself under test.
+    expected_route:
+      action: author
+      candidates:
+      - {kind: viewpoint, ref: requirements-realization}
+  - id: what-a-policy-governs
+    recurring_question: what-does-this-policy-govern
+    text: Which parts of the system does a given policy or standard actually govern?
+    information_need: Traceability from a standard or policy document to the elements it governs.
+    decision_artifact: audit-evidence
+    budget_actions: 25
+    preconditions: >
+      standards and decision records exist as documents with entity references; whether
+      document-to-entity links are queryable from a viewpoint is itself a finding.
+    expected_route:
+      action: author
+      candidates: []
+  - id: unrealized-requirements-table-for-an-evidence-pack
+    text: >
+      Build a table viewpoint of requirements without realization, including a status
+      column, suitable for an evidence-pack appendix.
+    information_need: A saved, exportable tabulation fit to be filed as evidence.
+    decision_artifact: saved-definition
+    budget_actions: 30
+    preconditions: requirements with and without realization paths exist, oracle-verified.
+    expected_route:
+      action: author
+      candidates: []
+
+# ---------------------------------------------------------------------------
+- persona: safety-and-security-analyst
+  context: >
+    You are preparing a risk assessment and you want to see the control and data paths
+    around the parts of this system that hold confidential content.
+  tasks:
+  - id: what-governs-the-confidential-store
+    recurring_question: what-governs-this-security-relevant-component
+    text: >
+      Trace the confidential assurance store to the requirements and controls that
+      govern it and the technology it touches — what links are missing?
+    information_need: A traceability neighbourhood with explicit identification of missing links.
+    decision_artifact: incident-note
+    budget_actions: 25
+    preconditions: >
+      assurance-related entities exist in the model; missing-link marking still needs
+      analyst judgement — record what the view cannot say.
+    expected_route:
+      action: execute
+      candidates:
+      - {kind: viewpoint, ref: element-dependents}
+      - {kind: viewpoint, ref: element-dependencies}
+  - id: the-confidentiality-boundary-set
+    recurring_question: what-sits-on-the-confidentiality-boundary
+    text: >
+      Which components sit on the boundary between confidential assurance content and
+      the rest of the system?
+    information_need: The boundary set between the assurance grouping and the other groups.
+    decision_artifact: design-review
+    budget_actions: 25
+    preconditions: the group facet distinguishes assurance content; a cross-group incident condition is expressible.
+    expected_route:
+      action: author
+      candidates: []
+  - id: assurance-group-and-its-external-neighbours
+    text: >
+      Build a viewpoint of "elements in the assurance group plus their direct
+      non-assurance neighbours", with the boundary-crossing edges emphasized.
+    information_need: A saved definition that makes a confidentiality boundary legible.
+    decision_artifact: saved-definition
+    budget_actions: 30
+    preconditions: the assurance group is populated and has cross-group neighbours.
+    expected_route:
+      action: author
+      candidates: []

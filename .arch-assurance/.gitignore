@@ -1,0 +1,8 @@
+*.db
+*.db-wal
+*.db-shm
+# Any derived form of the confidential store — backups, snapshots, recovery
+# copies — must never reach git either. `*.db` alone did not cover e.g.
+# `store.db.locked-key-lost-<date>.bak`.
+*.db.*
+*.bak

@@ -1,0 +1,255 @@
+' _archimate-stereotypes.puml — ArchiMate skinparam definitions
+' Auto-generated — do not edit manually.
+
+hide stereotype
+
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 12
+skinparam shadowing false
+skinparam roundcorner 4
+skinparam backgroundColor #FAFAFA
+
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 80
+
+skinparam rectangle<<Grouping>> {
+  BackgroundColor #FFFFFF
+  BorderColor #9E9E9E
+}
+
+' ---------------------------------------------------------------------------
+' Motivation layer
+' ---------------------------------------------------------------------------
+skinparam rectangle<<MotivationGrouping>> {
+  BackgroundColor #F7EEF9
+  BorderColor #7B3F9A
+}
+skinparam rectangle<<assessment>> {
+  BackgroundColor #EDD6F0
+  BorderColor #7B3F9A
+}
+skinparam rectangle<<driver>> {
+  BackgroundColor #EDD6F0
+  BorderColor #7B3F9A
+}
+skinparam rectangle<<goal>> {
+  BackgroundColor #EDD6F0
+  BorderColor #7B3F9A
+}
+skinparam rectangle<<meaning>> {
+  BackgroundColor #EDD6F0
+  BorderColor #7B3F9A
+}
+skinparam rectangle<<outcome>> {
+  BackgroundColor #EDD6F0
+  BorderColor #7B3F9A
+}
+skinparam rectangle<<principle>> {
+  BackgroundColor #EDD6F0
+  BorderColor #7B3F9A
+}
+skinparam rectangle<<requirement>> {
+  BackgroundColor #EDD6F0
+  BorderColor #7B3F9A
+}
+skinparam rectangle<<stakeholder>> {
+  BackgroundColor #EDD6F0
+  BorderColor #7B3F9A
+}
+skinparam rectangle<<value>> {
+  BackgroundColor #EDD6F0
+  BorderColor #7B3F9A
+}
+
+' ---------------------------------------------------------------------------
+' Strategy layer
+' ---------------------------------------------------------------------------
+skinparam rectangle<<StrategyGrouping>> {
+  BackgroundColor #FAF0D9
+  BorderColor #8B6914
+}
+skinparam rectangle<<capability>> {
+  BackgroundColor #F5DEB3
+  BorderColor #8B6914
+}
+skinparam rectangle<<course_of_action>> {
+  BackgroundColor #F5DEB3
+  BorderColor #8B6914
+}
+skinparam rectangle<<resource>> {
+  BackgroundColor #F5DEB3
+  BorderColor #8B6914
+}
+skinparam rectangle<<value_stream>> {
+  BackgroundColor #F5DEB3
+  BorderColor #8B6914
+}
+
+' ---------------------------------------------------------------------------
+' Business layer
+' ---------------------------------------------------------------------------
+skinparam rectangle<<BusinessGrouping>> {
+  BackgroundColor #FFFDEC
+  BorderColor #B8860B
+}
+skinparam rectangle<<business_actor>> {
+  BackgroundColor #FFFAC8
+  BorderColor #B8860B
+}
+skinparam rectangle<<business_interface>> {
+  BackgroundColor #FFFAC8
+  BorderColor #B8860B
+}
+skinparam rectangle<<business_object>> {
+  BackgroundColor #FFFAC8
+  BorderColor #B8860B
+}
+skinparam rectangle<<product>> {
+  BackgroundColor #FFFAC8
+  BorderColor #B8860B
+}
+
+' ---------------------------------------------------------------------------
+' Common layer
+' ---------------------------------------------------------------------------
+skinparam rectangle<<CommonGrouping>> {
+  BackgroundColor #EDE8E1
+  BorderColor #8C7E6A
+}
+skinparam rectangle<<and_junction>> {
+  BackgroundColor #E0D8CC
+  BorderColor #8C7E6A
+}
+skinparam rectangle<<collaboration>> {
+  BackgroundColor #E0D8CC
+  BorderColor #8C7E6A
+}
+skinparam rectangle<<event>> {
+  BackgroundColor #E0D8CC
+  BorderColor #8C7E6A
+}
+skinparam rectangle<<function>> {
+  BackgroundColor #E0D8CC
+  BorderColor #8C7E6A
+}
+skinparam rectangle<<global_artifact_reference>> {
+  BackgroundColor #E0D8CC
+  BorderColor #8C7E6A
+}
+skinparam rectangle<<grouping>> {
+  BackgroundColor #E0D8CC
+  BorderColor #8C7E6A
+}
+skinparam rectangle<<location>> {
+  BackgroundColor #E0D8CC
+  BorderColor #8C7E6A
+}
+skinparam rectangle<<or_junction>> {
+  BackgroundColor #E0D8CC
+  BorderColor #8C7E6A
+}
+skinparam rectangle<<path>> {
+  BackgroundColor #E0D8CC
+  BorderColor #8C7E6A
+}
+skinparam rectangle<<process>> {
+  BackgroundColor #E0D8CC
+  BorderColor #8C7E6A
+}
+skinparam rectangle<<role>> {
+  BackgroundColor #E0D8CC
+  BorderColor #8C7E6A
+}
+skinparam rectangle<<service>> {
+  BackgroundColor #E0D8CC
+  BorderColor #8C7E6A
+}
+
+' ---------------------------------------------------------------------------
+' Application layer
+' ---------------------------------------------------------------------------
+skinparam rectangle<<ApplicationGrouping>> {
+  BackgroundColor #E8F8FF
+  BorderColor #0078A0
+}
+skinparam rectangle<<application_component>> {
+  BackgroundColor #CCF2FF
+  BorderColor #0078A0
+}
+skinparam rectangle<<application_interface>> {
+  BackgroundColor #CCF2FF
+  BorderColor #0078A0
+}
+skinparam rectangle<<data_object>> {
+  BackgroundColor #CCF2FF
+  BorderColor #0078A0
+}
+
+' ---------------------------------------------------------------------------
+' Technology layer
+' ---------------------------------------------------------------------------
+skinparam rectangle<<TechnologyGrouping>> {
+  BackgroundColor #E8FFEE
+  BorderColor #2E7D32
+}
+skinparam rectangle<<artifact>> {
+  BackgroundColor #CCFFCC
+  BorderColor #2E7D32
+}
+skinparam rectangle<<communication_network>> {
+  BackgroundColor #CCFFCC
+  BorderColor #2E7D32
+}
+skinparam rectangle<<device>> {
+  BackgroundColor #CCFFCC
+  BorderColor #2E7D32
+}
+skinparam rectangle<<distribution_network>> {
+  BackgroundColor #CCFFCC
+  BorderColor #2E7D32
+}
+skinparam rectangle<<equipment>> {
+  BackgroundColor #CCFFCC
+  BorderColor #2E7D32
+}
+skinparam rectangle<<facility>> {
+  BackgroundColor #CCFFCC
+  BorderColor #2E7D32
+}
+skinparam rectangle<<material>> {
+  BackgroundColor #CCFFCC
+  BorderColor #2E7D32
+}
+skinparam rectangle<<system_software>> {
+  BackgroundColor #CCFFCC
+  BorderColor #2E7D32
+}
+skinparam rectangle<<technology_interface>> {
+  BackgroundColor #CCFFCC
+  BorderColor #2E7D32
+}
+skinparam rectangle<<technology_node>> {
+  BackgroundColor #CCFFCC
+  BorderColor #2E7D32
+}
+
+' ---------------------------------------------------------------------------
+' Implementation layer
+' ---------------------------------------------------------------------------
+skinparam rectangle<<ImplementationGrouping>> {
+  BackgroundColor #FFF3E8
+  BorderColor #8D4E00
+}
+skinparam rectangle<<deliverable>> {
+  BackgroundColor #FFE4C4
+  BorderColor #8D4E00
+}
+skinparam rectangle<<plateau>> {
+  BackgroundColor #FFE4C4
+  BorderColor #8D4E00
+}
+skinparam rectangle<<work_package>> {
+  BackgroundColor #FFE4C4
+  BorderColor #8D4E00
+}

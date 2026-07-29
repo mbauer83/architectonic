@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "attributes.stakeholder.schema.json",
+  "title": "Stakeholder Attribute Schema",
+  "description": "Attribute schema for Properties table in Stakeholder entities.",
+  "type": "object",
+  "required": [],
+  "properties": {
+    "Category": {
+      "type": "string"
+    },
+    "Concerns": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

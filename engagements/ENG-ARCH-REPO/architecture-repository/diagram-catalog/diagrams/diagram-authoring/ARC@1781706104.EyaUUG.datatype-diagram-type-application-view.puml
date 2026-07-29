@@ -1,0 +1,118 @@
+---
+artifact-id: ARC@1781706104.EyaUUG.datatype-diagram-type-application-view
+artifact-type: diagram
+name: "Datatype Diagram Type \u2014 Application View"
+version: 0.1.0
+status: draft
+keywords:
+- datatype diagram
+- diagram type module
+- module catalog
+- verifier
+- consistency
+diagram-type: archimate-application
+entity-ids-used:
+- APP@1712870400.ca3vm7.model-verifier
+- APP@1781705596.n8Pikk.datatype-diagram-type-module
+- APP@1712870400.yNhgdh.module-catalog
+- APP@1777293136.yaxrWl.plantuml-renderer
+- FNC@1781705395.halAQt.validate-datatype-data-object-relationship-consistency
+- REQ@1781704600.TbcGSB.datatype-uml-class-diagram-authoring
+- REQ@1781704601.sbkuwf.datatype-data-object-relationship-consistency
+connection-ids-used:
+- APP@1781705596.n8Pikk---REQ@1781704600.TbcGSB@@archimate-realization
+- APP@1781705596.n8Pikk---FNC@1781705395.halAQt@@archimate-association
+- APP@1712870400.yNhgdh---APP@1781705596.n8Pikk@@archimate-composition
+- APP@1712870400.ca3vm7---FNC@1781705395.halAQt@@archimate-assignment
+connections:
+- connection_id: APP@1712870400.yNhgdh.module-catalog---APP@1781705596.n8Pikk.datatype-diagram-type-module@@archimate-aggregation
+- connection_id: APP@1781705596.n8Pikk.datatype-diagram-type-module---REQ@1781704600.TbcGSB.datatype-uml-class-diagram-authoring@@archimate-realization
+- connection_id: APP@1781705596.n8Pikk.datatype-diagram-type-module---FNC@1781705395.halAQt.validate-datatype-data-object-relationship-consistency@@archimate-association
+- connection_id: APP@1712870400.ca3vm7.model-verifier---FNC@1781705395.halAQt.validate-datatype-data-object-relationship-consistency@@archimate-assignment
+last-updated: '2026-07-29T13:29:30Z'
+---
+@startuml datatype-diagram-type---application-view
+hide stereotype
+
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 12
+skinparam shadowing false
+skinparam roundcorner 4
+skinparam backgroundColor #FAFAFA
+
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 80
+!define Rel_Triggering(from, to, label) from --> to
+!define Rel_Realization(from, to, label) from ..|> to
+!define Rel_Realization_Up(from, to, label) from ..|> to
+!define Rel_Serving(from, to, label) from --> to
+!define Rel_Association(from, to, label) from -- to
+!define Rel_Association_Left(from, to, label) from -- to
+!define Rel_Association_Right(from, to, label) from -- to
+!define Rel_Access(from, to, label) from ..> to
+!define Rel_Influence(from, to, label) from ..> to
+skinparam rectangle<<ApplicationGrouping>> {
+  BackgroundColor #E8F8FF
+  BorderColor #0078A0
+}
+skinparam rectangle<<CommonGrouping>> {
+  BackgroundColor #EDE8E1
+  BorderColor #8C7E6A
+}
+skinparam rectangle<<MotivationGrouping>> {
+  BackgroundColor #F7EEF9
+  BorderColor #7B3F9A
+}
+skinparam rectangle<<application_component>> {
+  BackgroundColor #CCF2FF
+  BorderColor #0078A0
+}
+skinparam rectangle<<function>> {
+  BackgroundColor #E0D8CC
+  BorderColor #8C7E6A
+}
+skinparam rectangle<<requirement>> {
+  BackgroundColor #EDD6F0
+  BorderColor #7B3F9A
+}
+sprite $archimate_application_component <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M4 4.2h7.4v7.6H4z"  fill="#252327" stroke="none"/><path d="M2.30 4.95h1.70v1.30H2.30z" fill="#252327"/><path d="M2.30 7.35h1.70v1.30H2.30z" fill="#252327"/><path d="M2.30 9.75h1.70v1.30H2.30z" fill="#252327"/><path d="M11.40 4.95h1.40v1.30H11.40z" fill="#252327"/><path d="M11.40 7.35h1.40v1.30H11.40z" fill="#252327"/><path d="M11.40 9.75h1.40v1.30H11.40z" fill="#252327"/></svg>
+sprite $archimate_function <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.9 11.7V5.4L8 3.1l5.1 2.3v6.3L8 9.2z"  fill="#252327" stroke="none"/></svg>
+sprite $archimate_requirement <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M4.4 4.2h8L10.8 11.8h-8z"  fill="#252327" stroke="none"/></svg>
+
+title Datatype Diagram Type — Application View
+
+rectangle "Motivation" <<MotivationGrouping>> as DOM_motivation {
+  rectangle "Requirements" <<MotivationGrouping>> as GRPT_motivation_1 {
+    rectangle "<$archimate_requirement{scale=1.2}> Datatype (UML Class) Diagram Authoring" <<requirement>> as REQ_TbcGSB
+    rectangle "<$archimate_requirement{scale=1.2}> Datatype–Data Object Relationship Consistency" <<requirement>> as REQ_sbkuwf
+  }
+  REQ_TbcGSB -[hidden]down- REQ_sbkuwf
+
+}
+
+rectangle "Common" <<CommonGrouping>> as DOM_common {
+  rectangle "<$archimate_function{scale=1.2}> Validate Datatype–Data Object Relationship Consistency\n«Application Function»" <<function>> as FNC_halAQt
+
+}
+DOM_motivation -[hidden]down- DOM_common
+
+rectangle "Application" <<ApplicationGrouping>> as DOM_application {
+  rectangle "Application Components" <<ApplicationGrouping>> as GRPT_application_1 {
+    rectangle "<$archimate_application_component{scale=1.2}> Model Verifier\n«Module»" <<application_component>> as APP_ca3vm7
+    rectangle "<$archimate_application_component{scale=1.2}> Module Catalog\n«Module»" <<application_component>> as APP_yNhgdh {
+      rectangle "<$archimate_application_component{scale=1.2}> Datatype Diagram Type Module\n«Module»" <<application_component>> as APP_n8Pikk
+    }
+    rectangle "<$archimate_application_component{scale=1.2}> PlantUML Renderer\n«Module»" <<application_component>> as APP_yaxrWl
+  }
+  APP_ca3vm7 -[hidden]down- APP_yNhgdh
+  APP_yNhgdh -[hidden]down- APP_yaxrWl
+
+}
+
+' Connections
+APP_n8Pikk ..|> REQ_TbcGSB
+APP_n8Pikk -- FNC_halAQt
+APP_ca3vm7 -up-> FNC_halAQt
+
+@enduml

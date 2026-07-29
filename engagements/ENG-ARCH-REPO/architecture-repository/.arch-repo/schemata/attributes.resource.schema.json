@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "attributes.resource.schema.json",
+  "title": "Resource Attribute Schema",
+  "description": "Attribute schema for Properties table in Resource entities.",
+  "type": "object",
+  "required": [],
+  "properties": {
+    "investment_level": {
+      "type": "integer",
+      "title": "Investment Level",
+      "minimum": 1,
+      "maximum": 5,
+      "description": "Relative investment concentration on this strategic asset, used by the shipped resource-map heat-map. Bands: 1 minimal upkeep \u00b7 2 sustaining \u00b7 3 steady investment \u00b7 4 growth focus \u00b7 5 primary focus."
+    }
+  },
+  "additionalProperties": true
+}

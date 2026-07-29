@@ -1,0 +1,187 @@
+---
+artifact-id: ARC@1780656714.9qoEQO.why-assurance-motivation-chain
+artifact-type: diagram
+name: "Why Assurance \u2014 Motivation Chain"
+version: 0.1.0
+status: draft
+keywords:
+- assurance
+- motivation
+- drivers
+- goals
+- outcomes
+diagram-type: archimate-motivation
+manual-layout: true
+entity-ids-used:
+- ASS@1780655839.6cIRhr.regulated-teams-need-traceable-assurance-records
+- ASS@1780655839.Cu2Joe.assurance-cannot-keep-pace-with-agentic-development-velocity
+- ASS@1780655839.pZWwv1.assurance-disconnected-from-architecture-loses-traceability
+- DRV@1780655839.52-qYT.safety-security-grc-capability-gap-for-small-teams
+- DRV@1780655839.AcMaI1.expanding-software-ai-assurance-obligations
+- DRV@1776628131.GR9prv.ai-assisted-and-agentic-development-as-a-dominant-production-mode
+- GOL@1780655839.AoatzG.provide-first-class-assurance-integrated-with-the-architecture-model
+- GOL@1780220699.FCfDuc.sustain-unity-of-effort-at-agentic-velocity
+- GOL@1780655839.kE3Tte.lower-the-barrier-to-rigorous-assurance-work
+- OUT@1780655839.CiC0ku.assurance-friction-and-guidance-overhead-reduced
+- OUT@1780655839.Vhhne7.assurance-analysis-surfaces-modeling-gaps
+- OUT@1780655839._FOogJ.assurance-findings-traceable-end-to-end-to-the-architecture-model
+- PRI@1784845187.E3_ttJ.governance-is-proportional-to-impact-and-risk
+connection-ids-used:
+- DRV@1780655839.AcMaI1---ASS@1780655839.6cIRhr@@archimate-influence
+- DRV@1780655839.AcMaI1---ASS@1780655839.pZWwv1@@archimate-influence
+- DRV@1780655839.52-qYT---ASS@1780655839.pZWwv1@@archimate-influence
+- DRV@1780655839.52-qYT---ASS@1780655839.Cu2Joe@@archimate-influence
+- DRV@1776628131.GR9prv---ASS@1780655839.Cu2Joe@@archimate-influence
+- ASS@1780655839.6cIRhr---GOL@1780655839.AoatzG@@archimate-influence
+- ASS@1780655839.pZWwv1---GOL@1780655839.AoatzG@@archimate-association
+- ASS@1780655839.Cu2Joe---GOL@1780655839.kE3Tte@@archimate-association
+- OUT@1780655839._FOogJ---GOL@1780655839.AoatzG@@archimate-realization
+- OUT@1780655839.Vhhne7---GOL@1780655839.AoatzG@@archimate-realization
+- OUT@1780655839.CiC0ku---GOL@1780655839.kE3Tte@@archimate-realization
+- GOL@1780655839.kE3Tte---GOL@1780220699.FCfDuc@@archimate-influence
+- PRI@1784845187.E3_ttJ---GOL@1780655839.kE3Tte@@archimate-influence
+authored-groupings:
+- label: Forces
+  stereotype: MotivationGrouping
+  entity-ids:
+  - DRV@1780655839.AcMaI1.expanding-software-ai-assurance-obligations
+  - DRV@1780655839.52-qYT.safety-security-grc-capability-gap-for-small-teams
+  - DRV@1776628131.GR9prv.ai-assisted-and-agentic-development-as-a-dominant-production-mode
+- label: Implications
+  stereotype: MotivationGrouping
+  entity-ids:
+  - ASS@1780655839.6cIRhr.regulated-teams-need-traceable-assurance-records
+  - ASS@1780655839.pZWwv1.assurance-disconnected-from-architecture-loses-traceability
+  - ASS@1780655839.Cu2Joe.assurance-cannot-keep-pace-with-agentic-development-velocity
+- label: Assurance Goals
+  stereotype: MotivationGrouping
+  entity-ids:
+  - GOL@1780655839.AoatzG.provide-first-class-assurance-integrated-with-the-architecture-model
+  - GOL@1780655839.kE3Tte.lower-the-barrier-to-rigorous-assurance-work
+- label: Expected Outcomes
+  stereotype: MotivationGrouping
+  entity-ids:
+  - OUT@1780655839._FOogJ.assurance-findings-traceable-end-to-end-to-the-architecture-model
+  - OUT@1780655839.Vhhne7.assurance-analysis-surfaces-modeling-gaps
+  - OUT@1780655839.CiC0ku.assurance-friction-and-guidance-overhead-reduced
+- label: Tie to the Apex Intent
+  stereotype: MotivationGrouping
+  entity-ids:
+  - GOL@1780220699.FCfDuc.sustain-unity-of-effort-at-agentic-velocity
+  - PRI@1784845187.E3_ttJ.governance-is-proportional-to-impact-and-risk
+last-updated: '2026-07-29T13:29:17Z'
+---
+@startuml
+hide stereotype
+
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 12
+skinparam shadowing false
+skinparam roundcorner 4
+skinparam backgroundColor #FAFAFA
+
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 80
+!define Rel_Triggering(from, to, label) from --> to
+!define Rel_Realization(from, to, label) from ..|> to
+!define Rel_Realization_Up(from, to, label) from ..|> to
+!define Rel_Serving(from, to, label) from --> to
+!define Rel_Association(from, to, label) from -- to
+!define Rel_Association_Left(from, to, label) from -- to
+!define Rel_Association_Right(from, to, label) from -- to
+!define Rel_Access(from, to, label) from ..> to
+!define Rel_Influence(from, to, label) from ..> to
+skinparam rectangle<<MotivationGrouping>> {
+  BackgroundColor #F7EEF9
+  BorderColor #7B3F9A
+}
+skinparam rectangle<<assessment>> {
+  BackgroundColor #EDD6F0
+  BorderColor #7B3F9A
+}
+skinparam rectangle<<driver>> {
+  BackgroundColor #EDD6F0
+  BorderColor #7B3F9A
+}
+skinparam rectangle<<goal>> {
+  BackgroundColor #EDD6F0
+  BorderColor #7B3F9A
+}
+skinparam rectangle<<outcome>> {
+  BackgroundColor #EDD6F0
+  BorderColor #7B3F9A
+}
+skinparam rectangle<<principle>> {
+  BackgroundColor #EDD6F0
+  BorderColor #7B3F9A
+}
+sprite $archimate_assessment <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.5 3h11a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H6l-2 3 1-3H2.5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"  fill="#252327" stroke="none"/></svg>
+sprite $archimate_driver <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="4.6"  fill="none" stroke="#252327" stroke-width="1.3"/><circle cx="8" cy="8" r="1.7"  fill="none" stroke="#252327" stroke-width="1.3"/><path d="M7.35 2.30v3.00h1.30V2.30z" fill="#252327"/><path d="M7.35 10.70v3.00h1.30V10.70z" fill="#252327"/><path d="M2.30 7.35h3.00v1.30H2.30z" fill="#252327"/><path d="M10.70 7.35h3.00v1.30H10.70z" fill="#252327"/><path d="M3.54 4.46L4.46 3.54L6.56 5.64L5.64 6.56z" fill="#252327"/><path d="M9.44 10.36L10.36 9.44L12.46 11.54L11.54 12.46z" fill="#252327"/><path d="M11.54 3.54L12.46 4.46L10.36 6.56L9.44 5.64z" fill="#252327"/><path d="M5.64 9.44L6.56 10.36L4.46 12.46L3.54 11.54z" fill="#252327"/></svg>
+sprite $archimate_goal <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="4.8"  fill="none" stroke="#252327" stroke-width="1.3"/><circle cx="8" cy="8" r="2.9"  fill="none" stroke="#252327" stroke-width="1.3"/><circle cx="8" cy="8" r="1.3" fill="#252327" stroke="none"  stroke-width="1.3"/></svg>
+sprite $archimate_outcome <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="7.4" cy="8.6" r="4.3"  fill="none" stroke="#252327" stroke-width="1.3"/><circle cx="7.4" cy="8.6" r="2.2"  fill="none" stroke="#252327" stroke-width="1.3"/><path d="M10.18 6.93L9.42 5.87L12.52 3.67L13.28 4.73z" fill="#252327"/><path d="M10.20 7.25h2.50v1.30H10.20z" fill="#252327"/><circle cx="7.4" cy="8.6" r=".9" fill="#252327" stroke="none"  stroke-width="1.3"/></svg>
+sprite $archimate_principle <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3.40 2.90h9.20v1.30H3.40z" fill="#252327"/><path d="M3.40 11.80h9.20v1.30H3.40z" fill="#252327"/><path d="M3.40 4.20v7.60h1.30V4.20z" fill="#252327"/><path d="M11.30 4.20v7.60h1.30V4.20z" fill="#252327"/><path d="M7.35 5.30v4.30h1.30V5.30z" fill="#252327"/></svg>
+top to bottom direction
+skinparam nodesep 40
+skinparam ranksep 55
+
+title Why Assurance — Motivation Chain
+
+rectangle "Forces" <<MotivationGrouping>> {
+  rectangle "<$archimate_driver{scale=1.2}> Expanding Software & AI Assurance Obligations" <<driver>> as DRV_AcMaI1
+  rectangle "<$archimate_driver{scale=1.2}> Safety, Security & GRC Capability Gap for Small Teams" <<driver>> as DRV_52_qYT
+  rectangle "<$archimate_driver{scale=1.2}> Agentic Development as Dominant Production Mode" <<driver>> as DRV_GR9prv
+  DRV_AcMaI1 -[hidden]right- DRV_52_qYT
+  DRV_52_qYT -[hidden]down- DRV_GR9prv
+}
+
+rectangle "Implications" <<MotivationGrouping>> {
+  rectangle "<$archimate_assessment{scale=1.2}> Regulated Teams Need Traceable Assurance Records" <<assessment>> as ASS_6cIRhr
+  rectangle "<$archimate_assessment{scale=1.2}> Assurance Disconnected from Architecture Loses Traceability" <<assessment>> as ASS_pZWwv1
+  rectangle "<$archimate_assessment{scale=1.2}> Assurance Cannot Keep Pace with Agentic Velocity" <<assessment>> as ASS_Cu2Joe
+  ASS_6cIRhr -[hidden]right- ASS_pZWwv1
+  ASS_pZWwv1 -[hidden]down- ASS_Cu2Joe
+}
+
+rectangle "Assurance Goals" <<MotivationGrouping>> {
+  rectangle "<$archimate_goal{scale=1.2}> First-Class Assurance Integrated with the Architecture Model" <<goal>> as GOL_AoatzG
+  rectangle "<$archimate_goal{scale=1.2}> Lower the Barrier to Rigorous Assurance Work" <<goal>> as GOL_kE3Tte
+  GOL_AoatzG -[hidden]right- GOL_kE3Tte
+}
+
+rectangle "Expected Outcomes" <<MotivationGrouping>> {
+  rectangle "<$archimate_outcome{scale=1.2}> Findings Traceable End-to-End to the Model" <<outcome>> as OUT__FOogJ
+  rectangle "<$archimate_outcome{scale=1.2}> Analysis Surfaces Modeling Gaps" <<outcome>> as OUT_Vhhne7
+  rectangle "<$archimate_outcome{scale=1.2}> Friction & Guidance Overhead Reduced" <<outcome>> as OUT_CiC0ku
+  OUT__FOogJ -[hidden]right- OUT_Vhhne7
+  OUT_Vhhne7 -[hidden]down- OUT_CiC0ku
+}
+
+rectangle "Tie to the Apex Intent" <<MotivationGrouping>> {
+  rectangle "<$archimate_goal{scale=1.2}> Sustain Unity of Effort at Agentic Velocity" <<goal>> as GOL_FCfDuc
+  rectangle "<$archimate_principle{scale=1.2}> Governance Is Proportional to Impact and Risk" <<principle>> as PRI_E3_ttJ
+  GOL_FCfDuc -[hidden]right- PRI_E3_ttJ
+}
+
+DRV_GR9prv -[hidden]down- ASS_6cIRhr
+ASS_Cu2Joe -[hidden]down- GOL_AoatzG
+OUT_CiC0ku -[hidden]down- GOL_FCfDuc
+
+DRV_AcMaI1 ..> ASS_6cIRhr
+DRV_AcMaI1 ..> ASS_pZWwv1
+DRV_52_qYT ..> ASS_pZWwv1
+DRV_52_qYT ..> ASS_Cu2Joe
+DRV_GR9prv ..> ASS_Cu2Joe
+
+ASS_6cIRhr ..> GOL_AoatzG
+ASS_pZWwv1 -- GOL_AoatzG
+ASS_Cu2Joe -- GOL_kE3Tte
+
+OUT__FOogJ .up.|> GOL_AoatzG
+OUT_Vhhne7 .up.|> GOL_AoatzG
+OUT_CiC0ku .up.|> GOL_kE3Tte
+
+GOL_kE3Tte -[dotted,norank]-> GOL_FCfDuc
+PRI_E3_ttJ -[dotted,norank]-> GOL_kE3Tte
+
+@enduml
