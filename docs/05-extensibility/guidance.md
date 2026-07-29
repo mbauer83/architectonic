@@ -11,9 +11,12 @@ comes from, how it is layered along a module's concept hierarchy, and how to imp
 ## Why guidance is imported, not bundled
 
 The `archimate_4` module ships its `create_when`/`never_create_when` slots **empty** —
-the authored guidance text derives from licensed material and lives outside this
-repository, never committed (the same rule that keeps the ArchiMate specification text
-out of git). Until an import has run, the guidance surfaces do not fall silent:
+guidance is a corpus of its own, published and versioned separately from the code and
+imported per deployment. Keeping it out of the module also keeps the mechanism open to
+corpora this project cannot ship: a deployment may import its own or third-party
+guidance whose license permits internal use but not redistribution, so imported guidance
+is never committed here, whatever its origin (the default source is the maintainer's own
+originally authored corpus). Until an import has run, the guidance surfaces do not fall silent:
 `artifact_authoring_guidance` (MCP) and `GET /api/authoring-guidance` (REST) return
 `guidance_status: "empty"` plus a `guidance_hint` naming the import command, and the GUI
 modeling wizard shows the same hint — never a blank string that could be misread as "no

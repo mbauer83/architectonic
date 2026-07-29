@@ -43,9 +43,11 @@ plantuml.jar
 # WU-F1/F2/F3a/F3b exchange work — local reference only, never committed).
 /spec/
 
-# Guidance-cache files — license-encumbered spec prose, imported per repo via
-# arch-import-guidance; the per-repo ignore lives in <repo>/.arch-repo/.gitignore, this is
-# a belt-and-braces guard against a stray extract/import landing at the workspace root
+# Guidance-cache files — deployment-local imported content (arch-import-guidance). A
+# deployment's corpus may be third-party material licensed for internal use only, so no
+# imported cache is ever committed, whatever its origin; the per-repo ignore lives in
+# <repo>/.arch-repo/.gitignore, this is a belt-and-braces guard against a stray
+# extract/import landing at the workspace root
 *.guidance.yaml
 *.guidance.meta.yaml
 

@@ -92,8 +92,8 @@ for the full mechanism and
 for the compiled-schema shape.
 
 Separately, **authoring guidance** (`create_when`/`never_create_when` prose per type) is a
-deployment-level, license-gated import (`arch-import-guidance`) layered over this
-mechanism — an authoring aid, not itself part of the standard's customization requirement.
+deployment-level import (`arch-import-guidance`) layered over this mechanism — an
+authoring aid, not itself part of the standard's customization requirement.
 
 &nbsp;
 

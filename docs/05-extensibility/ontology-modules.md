@@ -58,11 +58,13 @@ you start from a working module.
 
 &nbsp;
 
-## Guidance externalization (license compliance)
+## Guidance externalization
 
 A module's `create_when`/`never_create_when` slots may ship **empty** — `archimate_4`
-does, because its authored guidance text derives from licensed material that is never
-committed to this repository. Guidance is imported per deployment with
+does: its guidance is a separately published, independently versioned corpus, and the
+import mechanism must equally serve deployments whose own corpora are licensed for
+internal use only — so imported guidance is never committed, whatever its origin.
+Guidance is imported per deployment with
 `arch-import-guidance` and layered along the module's declared concept hierarchy
 (domain → entity type → specialization for `archimate_4`), with the empty state
 explicitly signaled rather than silently blank. The full story — hierarchy levels, the
