@@ -135,7 +135,11 @@ jobs:
         run: npm ci
 
       - name: ESLint
-        run: npm run lint
+        # Typed linting is CPU-bound and single-threaded by default; the hosted runner
+        # (4 vCPU / 16 GB) takes 20+ min cold. Workers each build their own type program
+        # (~2-3 GB), which the runner's memory accommodates — findings are identical to a
+        # serial run, only wall time changes.
+        run: npm run lint -- --concurrency auto
 
       - name: Type check
         run: npm run typecheck
