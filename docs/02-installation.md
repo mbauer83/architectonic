@@ -1,6 +1,6 @@
 # Installation & Setup
 
-> Full setup, per operating system. For the five-minute path, see the
+> Full setup, per operating system. For the 60-second path, see the
 > [Quickstart in the README](../README.md#quickstart).
 
 - [System requirements](#system-requirements)
@@ -111,6 +111,15 @@ credential storage. To use it in Docker, mount credentials or supply
 `ARCH_ASSURANCE_MASTER_PASSWORD` as an environment variable.
 
 ---
+> Use `uv sync`, not `pip install`. The `zuban` type checker ships in the `dev`
+> dependency group (`uv sync --group dev`, included in `--all-groups`).
+
+> **Running the project's commands.** `uv sync` installs this project's entry points
+> (`arch-backend`, `arch-init`, `get-plantuml`, `arch-assurance`, …) into `.venv/`, which is not
+> on your `PATH`. Every command below is therefore written as `uv run <command>`, which needs no
+> activation and always resolves the project's own environment. If you prefer the bare names,
+> activate the environment once per shell — `source .venv/bin/activate` (`.venv\Scripts\activate`
+> on Windows) — and drop the `uv run` prefix.
 
 &nbsp;
 
@@ -132,16 +141,6 @@ uv sync --extra s3-archive        # + boto3 for S3 Object Lock archive
 uv sync --extra azure-archive     # + azure-storage-blob + azure-identity for Azure archive
 uv sync --extra cloud-archive     # both S3 and Azure
 ```
-
-> Use `uv sync`, not `pip install`. The `zuban` type checker ships in the `dev`
-> dependency group (`uv sync --group dev`, included in `--all-groups`).
-
-> **Running the project's commands.** `uv sync` installs this project's entry points
-> (`arch-backend`, `arch-init`, `get-plantuml`, `arch-assurance`, …) into `.venv/`, which is not
-> on your `PATH`. Every command below is therefore written as `uv run <command>`, which needs no
-> activation and always resolves the project's own environment. If you prefer the bare names,
-> activate the environment once per shell — `source .venv/bin/activate` (`.venv\Scripts\activate`
-> on Windows) — and drop the `uv run` prefix.
 
 &nbsp;
 

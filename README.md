@@ -47,15 +47,16 @@ your own assurance content stays confidential by design.
 
 &nbsp;
 
-> **Trademarks and affiliation.** This is an independent open-source project. It is **not
-> affiliated with, endorsed by, or sponsored by** any of the standards bodies or rights-holders
-> whose notations and methods it supports. ArchiMate® is a registered trademark of **The Open
-> Group**; UML® and SysML® are registered trademarks of the **Object Management Group (OMG)**;
-> the **C4 model** is the work of **Simon Brown**; the **Goal Structuring Notation (GSN)**
-> Community Standard is published by the **Safety-Critical Systems Club (SCSC)**; **STPA** and
-> **CAST** are analysis methods developed at MIT. All trademarks, standards, and methods are the
-> property of their respective owners and are referenced here only to identify the notations this
-> tool interoperates with.
+## Ask the model itself
+
+Want to know something about this project — what it aims to achieve, whether it's for you,
+what affordances it offers, or the important design and implementation decisions behind it?
+Rather than reading the documentation, why not ask the model itself? 
+Spin up the bundled demo ([Quickstart](#quickstart)), connect the `arch-repo-read` 
+MCP server ([Give an AI agent access](#give-an-ai-agent-access)) to the AI model or agent of 
+your choice, and ask it to explore the self-describing architecture model in the `ENG-ARCH-REPO` engagement 
+repository to answer your questions.
+
 
 &nbsp;
 
@@ -81,7 +82,7 @@ your own assurance content stays confidential by design.
   but this has not been independently verified;
 - you want **WYSIWYG-first freeform diagramming** — diagrams here are typed views over the
   model, rendered by PlantUML and with limited styling options;
-- you need a centralized modeling suite with fine-grained per-user accounts, RBAC workflows,
+- you need a centralized modeling suite with fine-grained per-user accounts, **RBAC workflows**,
   and live-cursor co-editing as the primary collaboration model.
 
 More on the audience in [Who it serves](docs/01-motivation.md#who-it-serves).
@@ -103,19 +104,6 @@ More on the audience in [Who it serves](docs/01-motivation.md#who-it-serves).
 | 🛡️ | **First-class assurance** | Confidential STPA/CAST/GRC and FMEA analysis, linked to the model, with a tamper-evident archive. Failure modes attach to the hazards the analysis already states, so priority is derived rather than restated |
 | 🔧 | **Operational upgrades** | `arch-repair upgrade` migrates repositories and deployment data across format changes — dry-run first, resumable, Docker-integrated |
 | 🧩 | **Modular everywhere** | Pluggable ontologies, diagram types, schemata, and storage backends over a hexagonal core |
-
-&nbsp;
-
-## Ask the model itself
-
-Want to know something about this project — what it aims to achieve, whether it's for you,
-what affordances it offers, or the important design and implementation decisions behind it?
-Rather than reading the documentation, why not ask the model itself? Spin up the bundled demo self-model
-([Quickstart](#quickstart)), connect the `arch-repo-read` and `arch-repo-write` MCP servers
-([Give an AI agent access](#give-an-ai-agent-access)) to the AI model or agent of your choice,
-and ask it to explore the self-describing model in the `ENG-ARCH-REPO` engagement repository
-to answer your questions. The project models itself with the very tools it offers you, so its
-goals, capabilities, and architecture all live in the graph.
 
 &nbsp;
 
@@ -146,7 +134,7 @@ the [documentation](docs/index.md).
 
 ## Quickstart
 
-### The whole demo, in one command
+### The whole demo, in one docker command
 
 Docker is the only prerequisite:
 
@@ -156,7 +144,7 @@ docker compose -f docker-compose.demo.yml up -d --build
 # port 8000 taken? publish on another: ARCH_DEMO_PORT=8100 docker compose -f docker-compose.demo.yml up -d --build
 ```
 
-Then open **http://localhost:8000**. That gives you the bundled self-describing model, the demo
+Then open **http://localhost:8000** - the docker image builds the GUI for you. That gives you the bundled self-describing model, the demo
 enterprise tier, authoring guidance imported, and the encrypted assurance store created, unlocked
 and seeded with the analysis that ships with the model — everything the manual route below does,
 without a local Python or Java toolchain.
@@ -170,65 +158,7 @@ edits that volume copy — never the files in your clone — and survives
 your demo work. See
 [Docker Compose deployment](docs/reference/docker-compose.md) for the production file.
 
-&nbsp;
 
-### Or run it locally
-
-**Prerequisites:** Python 3.13, [`uv`](https://docs.astral.sh/uv/), Java 11+, and Graphviz
-≥ 2.49.0. Per-OS install steps (macOS, Debian/Ubuntu, WSL2, Docker) are in
-[Installation & Setup](docs/02-installation.md).
-
-```bash
-# 1. Clone
-git clone https://github.com/mbauer83/architectonic.git
-cd architectonic
-
-# 2. Install dependencies and the diagram runtime
-uv sync --group gui                  # add --group dev for the test/lint toolchain
-uv run get-plantuml && uv run check-diagram-runtime
-
-# 3. Build the GUI so the backend can serve it (one-off; skip if you only need REST/MCP)
-( cd tools/gui && npm install && npm run build )
-
-# 4. Resolve the workspace (bundled self-model + the public demo enterprise repo)
-uv run arch-init
-
-# 5. Import authoring guidance (once per machine; nothing is fetched until you ask)
-uv run arch-import-guidance
-
-# 6. Create the encrypted assurance store and load the demo analysis that ships with the model
-uv run arch-assurance init
-uv run arch-assurance seed
-
-# 7. Start the backend (REST :8000, MCP at :8000/mcp/{read,write})
-uv run arch-backend --daemon
-
-# 8. Authorize the running backend to open the store, and check what it sees
-uv run arch-assurance unlock && uv run arch-assurance status
-```
-
-**Why that order.** Steps 5 and 6 come *before* the backend starts, because both are read once at
-process start: the guidance overlay is loaded at bootstrap, and the assurance store's presence is
-what registers the four capability-gated diagram types (control-structure, UCA matrix, FMEA matrix,
-bowtie). Import guidance or create the store after the backend is up and you will need to restart
-it. Step 8 comes *after*, because `unlock` authorizes the process that is already running.
-
-`arch-assurance init` generates the store's encryption key into your OS keychain, scoped to that
-store's path; `seed` loads the bundled bundle from the engagement repository
-(`.arch-repo/assurance-seed.json`) and is idempotent, so re-seeding replaces rather than duplicates.
-With the shipped `manual` activation policy you re-run `unlock` after each backend restart — use
-`arch-assurance use-backend sqlcipher --activation-policy persistent` if you would rather the store
-open by itself.
-
-Commands are shown as `uv run <command>` because `uv sync` installs the project's entry points
-into `.venv/`, which is not on your `PATH`; activate the environment
-(`source .venv/bin/activate`) if you would rather type the bare names.
-
-The backend serves the compiled GUI at **http://localhost:8000** *only when
-`tools/gui/dist/` exists* (step 3). Without that build it exposes the REST and MCP
-APIs but no web UI. For live frontend work, run the Vite dev server instead of
-step 3 — see [Build and serve the GUI](docs/02-installation.md#6-build-and-serve-the-gui).
-The Docker image builds the GUI for you. Query the model directly with:
 
 ```bash
 curl http://localhost:8000/api/stats
@@ -299,8 +229,7 @@ The agent can then `artifact_query_search_artifacts`, walk the graph with
 ## Status
 
 Pre-1.0 and under active development. The model aims for conformance with the
-[ArchiMate 4.0 standard](docs/reference/archimate-4-conformance.md); conformance has not
-been independently verified, so no conformance claim is made.
+[ArchiMate 4.0 standard](docs/reference/archimate-4-conformance.md), but this has not been independently verified or certified, so no claim to such conformance is made.
 
 &nbsp;
 
@@ -338,11 +267,11 @@ these on every push and pull request.
 
 &nbsp;
 
-## How usability is checked
+## How usability is checked (eval harness)
 
 This repository carries a **persona and scenario framework** for
-agent-based usability review: declared target users, situations they meet the product in, the tasks those
-situations put to them, and an evaluator's answer key for each task.
+agent-based usability evaluation: declared target users, situations they meet the product in, 
+the tasks those situations put to them, and an evaluator's answer key for each task.
 
 A run puts one persona in one scenario, in one channel (the GUI, or the MCP surface an agent
 sees), with nothing but a composed brief — no repository history, no knowledge of how the feature
@@ -356,13 +285,25 @@ arises, and whether the product would even let you notice the problem. The mater
 this stage can otherwise only find by accident: the question a surface cannot answer, the affordance
 that is missing, the dead end, the answer that requires knowing an internal name. It is emphatically
 **not** a substitute for users. A simulated participant does not have a real practitioner's stake,
-habits, or blind spots, and it will not tell you what people actually value. Treat the findings as
-leads, weighted by their scores — not as evidence of what users want.
+habits, context, or blind spots, and it will not tell you what people actually value. Treat the findings 
+as leads, weighted by their scores — not as evidence of what users want.
 
 **Real experience is how it improves.** Personas and scenarios are declarative files precisely so
 that observed behaviour can be folded back into them: a misreading someone actually had becomes a
 task in a scenario, an unanticipated constraint becomes a line in a persona's profile, a term people
 kept stumbling over becomes a vocabulary entry. Pull-requests are not currently opened, as this is a personal project, but feedback is always welcome in the form of comments, personal communication or issues. 
+
+&nbsp;
+
+> **Trademarks and affiliation.** This is an independent open-source project. It is **not
+> affiliated with, endorsed by, or sponsored by** any of the standards bodies or rights-holders
+> whose notations and methods it supports. ArchiMate® is a registered trademark of **The Open
+> Group**; UML® and SysML® are registered trademarks of the **Object Management Group (OMG)**;
+> the **C4 model** is the work of **Simon Brown**; the **Goal Structuring Notation (GSN)**
+> Community Standard is published by the **Safety-Critical Systems Club (SCSC)**; **STPA** and
+> **CAST** are analysis methods developed at MIT. All trademarks, standards, and methods are the
+> property of their respective owners and are referenced here only to identify the notations this
+> tool interoperates with.
 
 &nbsp;
 
