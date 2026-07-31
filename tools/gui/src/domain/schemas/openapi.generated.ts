@@ -3601,6 +3601,16 @@ export interface components {
             /** Items */
             items: components["schemas"]["DiagramEntityItem"][];
         };
+        /**
+         * DiagramListResponse
+         * @description A page of diagrams, with the count of the *filtered* population.
+         */
+        DiagramListResponse: {
+            /** Items */
+            items: components["schemas"]["DiagramSummary"][];
+            /** Total */
+            total: number;
+        };
         /** DiagramPreviewBody */
         DiagramPreviewBody: {
             /** Connection Ids */
@@ -3633,6 +3643,43 @@ export interface components {
         DiagramReferenceListResponse: {
             /** Items */
             items: components["schemas"]["DiagramReference"][];
+        };
+        /**
+         * DiagramSummary
+         * @description One row of the diagram list.
+         */
+        DiagramSummary: {
+            /** Artifact Id */
+            artifact_id: string;
+            /** Diagram Type */
+            diagram_type: string;
+            /** Group */
+            group?: string | null;
+            /** Host Diagram Id */
+            host_diagram_id?: string | null;
+            /** Is Global */
+            is_global: boolean;
+            /**
+             * Keywords
+             * @default []
+             */
+            keywords: string[];
+            /** Last Updated */
+            last_updated?: string | null;
+            /** Name */
+            name: string;
+            /** Path */
+            path: string;
+            /** Status */
+            status: string;
+            /** Tlp */
+            tlp?: string | null;
+            /** Version */
+            version: string;
+            /** Viewpoint */
+            viewpoint?: {
+                [key: string]: unknown;
+            } | null;
         };
         /** DiagramTypeConnectionTypeListResponse */
         DiagramTypeConnectionTypeListResponse: {
@@ -9521,7 +9568,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["DiagramListResponse"];
                 };
             };
             /** @description Request validation failed */
@@ -10035,7 +10082,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["WriteResultResponse"];
                 };
             };
             /** @description Validation error (bad or ambiguous write) */

@@ -14,6 +14,7 @@ from src.infrastructure.app_bootstrap import complete_diagram_type_catalog, runt
 from src.infrastructure.gui.contracts.diagrams import (
     DiagramConnectionListResponse,
     DiagramEntityListResponse,
+    DiagramListResponse,
     DiagramReferenceListResponse,
 )
 from src.infrastructure.gui.routers import state as s
@@ -77,7 +78,8 @@ def _read_diagram_impl(id: str, catalogs: RuntimeCatalogs) -> dict[str, Any]:
     return result
 
 
-@router.get("/api/diagrams", tags=[TAG_DIAGRAMS], summary="List diagrams", response_model=OpenMapResponse)
+@router.get("/api/diagrams", tags=[TAG_DIAGRAMS], summary="List diagrams",
+    response_model=DiagramListResponse)
 def list_diagrams(
     diagram_type: str | None = None,
     status: str | None = None,

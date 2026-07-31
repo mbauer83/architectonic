@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import pytest
 
-from src.application.assurance_exposure import AssuranceExposurePolicy
 from src.application.assurance_gsn import list_publications, record_publication
 
 pytest.importorskip("sqlcipher3", reason="sqlcipher3 not installed")
