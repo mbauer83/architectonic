@@ -22,6 +22,7 @@ from pydantic import BaseModel
 
 from src.application.assurance_edge_catalog import build_edge_catalog
 from src.infrastructure.app_bootstrap import assurance_ontology_module, get_module_registry
+from src.infrastructure.gui.contracts.assurance_store import AssuranceStoreStatusResponse
 from src.infrastructure.gui.routers._assurance_aibom import aibom_router
 from src.infrastructure.gui.routers._assurance_analysis_routes import analysis_router
 from src.infrastructure.gui.routers._assurance_diagram_routes import diagram_router
@@ -60,7 +61,8 @@ class AssuranceReloadBody(BaseModel):
     authorize: bool | None = None
 
 
-@router.post("/api/assurance/reload", status_code=200)
+@router.post("/api/assurance/reload", status_code=200,
+    response_model=AssuranceStoreStatusResponse)
 def assurance_reload(body: AssuranceReloadBody | None = None) -> dict[str, object]:
     """Evict the assurance bundle cache and rebuild it, applying the activation policy.
 
@@ -98,7 +100,7 @@ def assurance_edge_catalog() -> JSONResponse:
     return JSONResponse(content=build_edge_catalog(assurance_ontology_module()))
 
 
-@router.get("/api/assurance/status")
+@router.get("/api/assurance/status", response_model=AssuranceStoreStatusResponse)
 def assurance_status() -> dict[str, object]:
     """Return confidential assurance store configuration and lock status.
 

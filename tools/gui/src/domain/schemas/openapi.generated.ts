@@ -3046,6 +3046,37 @@ export interface components {
             /** Authorize */
             authorize?: boolean | null;
         };
+        /**
+         * AssuranceStoreStatusResponse
+         * @description Whether the confidential store is configured, and whether it is open.
+         *
+         *     Always answerable, unlocked or not — this is the one assurance read that must work while the store
+         *     is locked, because it is what tells a client *that* it is locked. So it carries no store content
+         *     and needs no exposure filtering.
+         *
+         *     ``status`` is the field to branch on; the three booleans are the reasons behind it, and they do not
+         *     collapse into one. *Configured* means a database file exists and a key for it is in the credential
+         *     store. *Unlocked* means this process has been authorised to open it — a separate fact, because the
+         *     activation policy is ``manual`` and a restarted backend starts locked with the key still present.
+         *     A client that conflated them would tell the user to initialise a store that already exists.
+         */
+        AssuranceStoreStatusResponse: {
+            /** Configured */
+            configured: boolean;
+            /** Db Exists */
+            db_exists: boolean;
+            /** Key In Keychain */
+            key_in_keychain: boolean;
+            /** Module Class */
+            module_class: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "unlocked" | "locked" | "not_initialised";
+            /** Unlocked */
+            unlocked: boolean;
+        };
         /** Body_entities_allocate_identifiers */
         Body_entities_allocate_identifiers: {
             /** Diagram Type */
@@ -8302,9 +8333,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["AssuranceStoreStatusResponse"];
                 };
             };
             /** @description Request validation failed */
@@ -8615,9 +8644,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["AssuranceStoreStatusResponse"];
                 };
             };
             /** @description Request validation failed */
