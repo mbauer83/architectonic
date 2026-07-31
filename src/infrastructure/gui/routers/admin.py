@@ -15,8 +15,29 @@ from fastapi import APIRouter, HTTPException, Response, status
 from pydantic import BaseModel, ConfigDict
 
 from src.infrastructure.gui.routers import state as s
+from src.infrastructure.gui.routers._openapi import WRITE_RESPONSES, WriteResultResponse
 
 router = APIRouter(prefix="/admin/api", tags=["admin"])
+
+
+#: Every write here answers with the shared write result, so the model is declared once and the two
+#: alternative statuses are declared with it. The manifest has always named this contract; the
+#: decorators did not, which left seven operations counted as untyped while returning exactly the
+#: shape the closed model describes.
+#:
+#: A create answers 201 and names the resource in ``Location``; a dry run created nothing, so it
+#: answers 200 with its plan instead of claiming a resource that does not exist.
+_ADMIN_CREATE_RESPONSES: dict[int | str, Any] = {
+    **WRITE_RESPONSES,
+    200: {"model": WriteResultResponse, "description": "Dry-run plan; nothing was created"},
+}
+
+#: A committed delete answers 204 with no body — FastAPI refuses a response model on one, correctly.
+#: The dry-run outcome answers 200 with its plan.
+_ADMIN_DELETE_RESPONSES: dict[int | str, Any] = {
+    **WRITE_RESPONSES,
+    200: {"model": WriteResultResponse, "description": "Dry-run plan; nothing was deleted"},
+}
 
 
 def _created(result: Any, response: Response, location: str) -> dict[str, Any]:
@@ -90,7 +111,8 @@ class AdminEditEntityBody(BaseModel):
 
 
 
-@router.post("/entities", status_code=status.HTTP_201_CREATED)
+@router.post("/entities", status_code=status.HTTP_201_CREATED,
+    response_model=WriteResultResponse, responses=_ADMIN_CREATE_RESPONSES)
 def admin_create_entity(body: AdminCreateEntityBody, response: Response) -> dict[str, Any]:
     _require_admin()
     ent_root, _, verifier = s.get_admin_write_deps()
@@ -120,7 +142,8 @@ def admin_create_entity(body: AdminCreateEntityBody, response: Response) -> dict
     return _created(result, response, f"/admin/api/entities/{result.artifact_id}")
 
 
-@router.patch("/entities/{artifact_id}")
+@router.patch("/entities/{artifact_id}",
+    response_model=WriteResultResponse, responses=WRITE_RESPONSES)
 def admin_edit_entity(artifact_id: str, body: AdminEditEntityBody) -> dict[str, Any]:
     _require_admin()
     ent_root, registry, verifier = s.get_admin_write_deps()
@@ -151,7 +174,8 @@ def admin_edit_entity(artifact_id: str, body: AdminEditEntityBody) -> dict[str, 
     return s.write_result_to_dict(result)
 
 
-@router.delete("/entities/{artifact_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None)
+@router.delete("/entities/{artifact_id}", status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None, responses=_ADMIN_DELETE_RESPONSES)
 def admin_delete_entity(
     artifact_id: str, response: Response, dry_run: bool = True
 ) -> dict[str, Any] | None:
@@ -185,7 +209,8 @@ class AdminAddConnectionBody(BaseModel):
     dry_run: bool = True
 
 
-@router.post("/connections", status_code=status.HTTP_201_CREATED)
+@router.post("/connections", status_code=status.HTTP_201_CREATED,
+    response_model=WriteResultResponse, responses=_ADMIN_CREATE_RESPONSES)
 def admin_add_connection(body: AdminAddConnectionBody, response: Response) -> dict[str, Any]:
     _require_admin()
     ent_root, registry, verifier = s.get_admin_write_deps()
@@ -214,7 +239,7 @@ def admin_add_connection(body: AdminAddConnectionBody, response: Response) -> di
 
 
 @router.delete("/connections/{connection_id}", status_code=status.HTTP_204_NO_CONTENT,
-    response_model=None)
+    response_model=None, responses=_ADMIN_DELETE_RESPONSES)
 def admin_remove_connection(
     connection_id: str, response: Response, dry_run: bool = True
 ) -> dict[str, Any] | None:
@@ -265,7 +290,8 @@ class AdminCreateDiagramBody(BaseModel):
 
 
 
-@router.post("/diagrams", status_code=status.HTTP_201_CREATED)
+@router.post("/diagrams", status_code=status.HTTP_201_CREATED,
+    response_model=WriteResultResponse, responses=_ADMIN_CREATE_RESPONSES)
 def admin_create_diagram(body: AdminCreateDiagramBody, response: Response) -> dict[str, Any]:
     """Create a diagram in the enterprise (global) repository.
 
@@ -313,7 +339,7 @@ def admin_create_diagram(body: AdminCreateDiagramBody, response: Response) -> di
 
 
 @router.delete("/diagrams/{artifact_id}", status_code=status.HTTP_204_NO_CONTENT,
-    response_model=None)
+    response_model=None, responses=_ADMIN_DELETE_RESPONSES)
 def admin_delete_diagram(
     artifact_id: str, response: Response, dry_run: bool = True
 ) -> dict[str, Any] | None:

@@ -3,6 +3,10 @@
 Split out so both routers state their statuses the same way, and so neither file has to carry the
 declarations twice. Every status a handler can return is declared here: one the document does not
 mention is a contract no client can rely on.
+
+A dry run reports the same closed write result as the committed write — it differs in *status*, not in
+shape. Declaring it as an open map said otherwise, and that is what kept these operations counted as
+untyped while returning exactly what the manifest already named.
 """
 
 from __future__ import annotations
@@ -14,7 +18,7 @@ from fastapi import Response, status
 from src.infrastructure.gui.routers._openapi import (
     READ_RESPONSES,
     WRITE_RESPONSES,
-    OpenMapResponse,
+    WriteResultResponse,
 )
 
 #: A create answers 201 and names the resource in ``Location``; a dry run created nothing, so it
@@ -22,7 +26,7 @@ from src.infrastructure.gui.routers._openapi import (
 #: document does not mention is a contract no client can rely on.
 CREATE_RESPONSES: dict[int | str, Any] = {
     **WRITE_RESPONSES,
-    200: {"model": OpenMapResponse, "description": "Dry-run plan; nothing was created"},
+    200: {"model": WriteResultResponse, "description": "Dry-run plan; nothing was created"},
 }
 
 #: A detail route can also answer 404: an absent id names no resource.
@@ -30,7 +34,7 @@ DETAIL_RESPONSES: dict[int | str, Any] = {**WRITE_RESPONSES, **READ_RESPONSES}
 
 DELETE_RESPONSES: dict[int | str, Any] = {
     **DETAIL_RESPONSES,
-    200: {"model": OpenMapResponse, "description": "Dry-run plan; nothing was removed"},
+    200: {"model": WriteResultResponse, "description": "Dry-run plan; nothing was removed"},
 }
 
 

@@ -24,13 +24,13 @@ from src.infrastructure.gui.routers._diagram_write_responses import (
     created,
 )
 from src.infrastructure.gui.routers._matrix_markdown import build_matrix_markdown
-from src.infrastructure.gui.routers._openapi import TAG_DIAGRAMS, WRITE_RESPONSES, OpenMapResponse
+from src.infrastructure.gui.routers._openapi import TAG_DIAGRAMS, WRITE_RESPONSES, WriteResultResponse
 
 router = APIRouter(responses=WRITE_RESPONSES)
 
 
 @router.post("/api/matrices/preview", tags=[TAG_DIAGRAMS], summary="Preview a matrix write (dry-run)",
-    response_model=OpenMapResponse, responses=WRITE_RESPONSES)
+    response_model=WriteResultResponse, responses=WRITE_RESPONSES)
 def preview_matrix(body: MatrixPreviewBody) -> dict[str, Any]:
     repo = s.get_repo()
     repo_root, registry, _ = s.get_write_deps()
@@ -55,7 +55,7 @@ def preview_matrix(body: MatrixPreviewBody) -> dict[str, Any]:
 
 
 @router.post("/api/matrices", tags=[TAG_DIAGRAMS], summary="Create a matrix diagram",
-    response_model=OpenMapResponse, responses=CREATE_RESPONSES, status_code=status.HTTP_201_CREATED)
+    response_model=WriteResultResponse, responses=CREATE_RESPONSES, status_code=status.HTTP_201_CREATED)
 def create_matrix_gui(body: CreateMatrixBody, response: Response) -> dict[str, Any]:
     from src.infrastructure.write.artifact_write.matrix import create_matrix
 
@@ -97,7 +97,7 @@ def create_matrix_gui(body: CreateMatrixBody, response: Response) -> dict[str, A
 
 
 @router.put("/api/matrices/{artifact_id}", tags=[TAG_DIAGRAMS], summary="Replace a matrix diagram",
-    response_model=OpenMapResponse, responses=DETAIL_RESPONSES)
+    response_model=WriteResultResponse, responses=DETAIL_RESPONSES)
 def edit_matrix_gui(artifact_id: str, body: EditMatrixBody) -> dict[str, Any]:
     from src.infrastructure.write.artifact_write.matrix import create_matrix
 

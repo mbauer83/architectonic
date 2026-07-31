@@ -5179,19 +5179,62 @@ export interface operations {
             };
         };
         responses: {
+            /** @description Dry-run plan; nothing was created */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WriteResultResponse"];
+                };
+            };
             /** @description Successful Response */
             201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["WriteResultResponse"];
+                };
+            };
+            /** @description Validation error (bad or ambiguous write) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write forbidden (e.g. admin mode not enabled, or mutation denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
             /** @description Request validation failed */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write temporarily rejected by the workspace gate (retryable) */
+            423: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5223,6 +5266,15 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description Dry-run plan; nothing was deleted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WriteResultResponse"];
+                };
+            };
             /** @description Successful Response */
             204: {
                 headers: {
@@ -5230,8 +5282,44 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Validation error (bad or ambiguous write) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write forbidden (e.g. admin mode not enabled, or mutation denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description Request validation failed */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write temporarily rejected by the workspace gate (retryable) */
+            423: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5263,19 +5351,62 @@ export interface operations {
             };
         };
         responses: {
+            /** @description Dry-run plan; nothing was created */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WriteResultResponse"];
+                };
+            };
             /** @description Successful Response */
             201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["WriteResultResponse"];
+                };
+            };
+            /** @description Validation error (bad or ambiguous write) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write forbidden (e.g. admin mode not enabled, or mutation denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
             /** @description Request validation failed */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write temporarily rejected by the workspace gate (retryable) */
+            423: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5307,6 +5438,15 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description Dry-run plan; nothing was deleted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WriteResultResponse"];
+                };
+            };
             /** @description Successful Response */
             204: {
                 headers: {
@@ -5314,8 +5454,44 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Validation error (bad or ambiguous write) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write forbidden (e.g. admin mode not enabled, or mutation denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description Request validation failed */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write temporarily rejected by the workspace gate (retryable) */
+            423: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5347,19 +5523,62 @@ export interface operations {
             };
         };
         responses: {
+            /** @description Dry-run plan; nothing was created */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WriteResultResponse"];
+                };
+            };
             /** @description Successful Response */
             201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["WriteResultResponse"];
+                };
+            };
+            /** @description Validation error (bad or ambiguous write) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write forbidden (e.g. admin mode not enabled, or mutation denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
             /** @description Request validation failed */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write temporarily rejected by the workspace gate (retryable) */
+            423: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5391,6 +5610,15 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description Dry-run plan; nothing was deleted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WriteResultResponse"];
+                };
+            };
             /** @description Successful Response */
             204: {
                 headers: {
@@ -5398,8 +5626,44 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Validation error (bad or ambiguous write) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write forbidden (e.g. admin mode not enabled, or mutation denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description Request validation failed */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write temporarily rejected by the workspace gate (retryable) */
+            423: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5439,13 +5703,47 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["WriteResultResponse"];
+                };
+            };
+            /** @description Validation error (bad or ambiguous write) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write forbidden (e.g. admin mode not enabled, or mutation denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
             /** @description Request validation failed */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write temporarily rejected by the workspace gate (retryable) */
+            423: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -9073,7 +9371,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["WriteResultResponse"];
                 };
             };
             /** @description Successful Response */
@@ -9082,7 +9380,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["WriteResultResponse"];
                 };
             };
             /** @description Validation error (bad or ambiguous write) */
@@ -9211,7 +9509,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["WriteResultResponse"];
                 };
             };
             /** @description Validation error (bad or ambiguous write) */
@@ -9298,7 +9596,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["WriteResultResponse"];
                 };
             };
             /** @description Successful Response */
@@ -10262,7 +10560,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["WriteResultResponse"];
                 };
             };
             /** @description Successful Response */
@@ -10271,7 +10569,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["WriteResultResponse"];
                 };
             };
             /** @description Validation error (bad or ambiguous write) */
@@ -10485,7 +10783,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["WriteResultResponse"];
                 };
             };
             /** @description Validation error (bad or ambiguous write) */
@@ -11792,7 +12090,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["WriteResultResponse"];
                 };
             };
             /** @description Successful Response */
@@ -11801,7 +12099,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["WriteResultResponse"];
                 };
             };
             /** @description Validation error (bad or ambiguous write) */
@@ -11881,7 +12179,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["WriteResultResponse"];
                 };
             };
             /** @description Validation error (bad or ambiguous write) */
@@ -12017,7 +12315,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["WriteResultResponse"];
                 };
             };
             /** @description Validation error (bad or ambiguous write) */

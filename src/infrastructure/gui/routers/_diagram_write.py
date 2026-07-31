@@ -103,7 +103,8 @@ def preview_diagram(body: DiagramPreviewBody, catalogs: RuntimeCatalogs = Depend
 
 
 @router.post("/api/diagrams", tags=[TAG_DIAGRAMS], summary="Create a diagram",
-    response_model=OpenMapResponse, responses=CREATE_RESPONSES, status_code=status.HTTP_201_CREATED)
+    response_model=WriteResultResponse, responses=CREATE_RESPONSES,
+    status_code=status.HTTP_201_CREATED)
 def create_diagram_gui(body: CreateDiagramGuiBody, response: Response) -> dict[str, Any]:
     from src.application.identifier_allocator import get_default_allocator
     from src.application.modeling.artifact_write import prefix_for_diagram_type
@@ -162,7 +163,7 @@ def create_diagram_gui(body: CreateDiagramGuiBody, response: Response) -> dict[s
 
 
 @router.put("/api/diagrams/{artifact_id}", tags=[TAG_DIAGRAMS], summary="Replace a diagram",
-    response_model=OpenMapResponse, responses=DETAIL_RESPONSES)
+    response_model=WriteResultResponse, responses=DETAIL_RESPONSES)
 def edit_diagram_gui(artifact_id: str, body: EditDiagramGuiBody) -> dict[str, Any]:
     from src.infrastructure.rendering.diagram_builder import generate_archimate_puml_body
     from src.infrastructure.write.artifact_write.diagram_edit import edit_diagram

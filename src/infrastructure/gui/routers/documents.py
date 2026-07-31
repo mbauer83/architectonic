@@ -11,7 +11,13 @@ from pydantic import BaseModel
 from src.application.artifact_document_schema import get_document_subdirectory, load_document_schemata
 from src.infrastructure.gui.contracts.documents import DocumentDetailResponse, DocumentListResponse
 from src.infrastructure.gui.routers import state as s
-from src.infrastructure.gui.routers._openapi import READ_RESPONSES, TAG_DOCUMENTS, WRITE_RESPONSES, OpenMapResponse
+from src.infrastructure.gui.routers._openapi import (
+    READ_RESPONSES,
+    TAG_DOCUMENTS,
+    WRITE_RESPONSES,
+    OpenMapResponse,
+    WriteResultResponse,
+)
 
 router = APIRouter()
 
@@ -37,18 +43,6 @@ class EditDocumentRequest(BaseModel):
     version: str | None = None
     last_updated: str | None = None
     dry_run: bool = False
-
-
-def _write_result(result: Any) -> dict[str, Any]:
-    """The shape every document mutation reports. One place, so the three cannot drift apart."""
-    return {
-        "wrote": result.wrote,
-        "artifact_id": result.artifact_id,
-        "path": str(result.path),
-        "content": result.content,
-        "warnings": result.warnings,
-        "verification": result.verification,
-    }
 
 
 def _get_engagement_root() -> Path:
@@ -161,12 +155,12 @@ def read_document(artifact_id: str) -> dict[str, Any]:
 #: document does not mention is a contract the client cannot rely on.
 _CREATE_RESPONSES: dict[int | str, Any] = {
     **WRITE_RESPONSES,
-    200: {"model": OpenMapResponse, "description": "Dry-run plan; nothing was created"},
+    200: {"model": WriteResultResponse, "description": "Dry-run plan; nothing was created"},
 }
 
 
 @router.post("/api/documents", tags=[TAG_DOCUMENTS], summary="Create a document",
-    response_model=OpenMapResponse, responses=_CREATE_RESPONSES,
+    response_model=WriteResultResponse, responses=_CREATE_RESPONSES,
     status_code=status.HTTP_201_CREATED)
 def create_document(req: CreateDocumentRequest, response: Response) -> dict[str, Any]:
     from src.infrastructure.write.artifact_write.document import create_document as _create
@@ -196,11 +190,11 @@ def create_document(req: CreateDocumentRequest, response: Response) -> dict[str,
         response.headers["Location"] = f"/api/documents/{result.artifact_id}"
     else:
         response.status_code = status.HTTP_200_OK
-    return _write_result(result)
+    return s.write_result_to_dict(result)
 
 
 @router.patch("/api/documents/{artifact_id}", tags=[TAG_DOCUMENTS], summary="Edit a document",
-    response_model=OpenMapResponse, responses=WRITE_RESPONSES)
+    response_model=WriteResultResponse, responses=WRITE_RESPONSES)
 def edit_document(artifact_id: str, req: EditDocumentRequest) -> dict[str, Any]:
     from src.infrastructure.write.artifact_write.document import edit_document as _edit
 
@@ -222,7 +216,7 @@ def edit_document(artifact_id: str, req: EditDocumentRequest) -> dict[str, Any]:
         last_updated=req.last_updated,
         dry_run=req.dry_run,
     )
-    return _write_result(result)
+    return s.write_result_to_dict(result)
 
 
 #: A committed deletion has nothing to report, so 204 is the declared status and there is no
@@ -254,5 +248,5 @@ def delete_document(artifact_id: str, response: Response, dry_run: bool = False)
     # report, which is a body — and a body needs a status that permits one.
     if dry_run:
         response.status_code = status.HTTP_200_OK
-        return _write_result(result)
+        return s.write_result_to_dict(result)
     return None
