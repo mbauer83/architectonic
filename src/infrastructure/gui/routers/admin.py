@@ -14,6 +14,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Response, status
 from pydantic import BaseModel, ConfigDict
 
+from src.infrastructure.gui.contracts.platform import ServerInfoResponse
 from src.infrastructure.gui.routers import state as s
 from src.infrastructure.gui.routers._openapi import WRITE_RESPONSES, WriteResultResponse
 
@@ -69,7 +70,7 @@ def _require_admin() -> None:
 # ── Server info ───────────────────────────────────────────────────────────────
 
 
-@router.get("/server-info")
+@router.get("/server-info", response_model=ServerInfoResponse)
 def server_info() -> dict[str, Any]:
     """Return server configuration including admin-mode and read-only status."""
     return {

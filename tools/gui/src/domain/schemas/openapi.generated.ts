@@ -2893,6 +2893,18 @@ export interface components {
             [key: string]: unknown;
         };
         /**
+         * AllocatedIdentifierResponse
+         * @description A freshly minted workspace-scoped id for a diagram-owned entity.
+         *
+         *     One field, and deliberately an object rather than a bare string: an allocation may later need to
+         *     report the prefix it resolved or the generation it was minted against, and a top-level scalar cannot
+         *     grow either without breaking every caller.
+         */
+        AllocatedIdentifierResponse: {
+            /** Id */
+            id: string;
+        };
+        /**
          * AnalysisNodePageResponse
          * @description One page of the working set, with the role totals of the visible population.
          *
@@ -3841,6 +3853,16 @@ export interface components {
             retryable: boolean;
         };
         /**
+         * DeniedIntentResponse
+         * @description Whether one sync intent is currently refused, and under which code.
+         */
+        DeniedIntentResponse: {
+            /** Code */
+            code: string | null;
+            /** Denied */
+            denied: boolean;
+        };
+        /**
          * DerivedNeighbor
          * @description One neighbour a derivation inferred, with the witness a client needs to trust it.
          *
@@ -4362,6 +4384,14 @@ export interface components {
             pushed: boolean;
         };
         /**
+         * EngagementSyncStateResponse
+         * @description The engagement repository's state — local-only, so uncommitted work is all there is to report.
+         */
+        EngagementSyncStateResponse: {
+            /** Has Uncommitted Changes */
+            has_uncommitted_changes: boolean;
+        };
+        /**
          * EnterpriseSaveResponse
          * @description A commit on the enterprise working branch. No ``pushed``: enterprise work is published by
          *     ``submit``, which is a separate operation with its own review semantics.
@@ -4392,6 +4422,35 @@ export interface components {
             ok: boolean;
             /** Pushed At */
             pushed_at?: string;
+        };
+        /**
+         * EnterpriseSyncStateResponse
+         * @description The enterprise repository's state against its remote.
+         *
+         *     ``commits_ahead`` is absent rather than zero when the repository is not accumulating: the count is
+         *     only meaningful in that mode, and a zero would claim it had been measured.
+         */
+        EnterpriseSyncStateResponse: {
+            /** Branch */
+            branch: string | null;
+            /** Branch Tip */
+            branch_tip: string | null;
+            /** Commits Ahead */
+            commits_ahead?: number | null;
+            /** Commits Behind */
+            commits_behind: number | null;
+            /** Has Uncommitted Changes */
+            has_uncommitted_changes: boolean;
+            health: components["schemas"]["SyncHealthResponse"] | null;
+            /** Label */
+            label: string;
+            /** Pushed At */
+            pushed_at: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "synced" | "accumulating" | "pending";
         };
         /**
          * EnterpriseWithdrawResponse
@@ -5423,6 +5482,23 @@ export interface components {
             status: string;
         };
         /**
+         * ServerInfoResponse
+         * @description Which roots this backend serves, and whether it will accept writes.
+         *
+         *     The two roots are ``null`` when the installation has no such repository — distinct from an empty
+         *     string, which would read as "configured, at the filesystem root".
+         */
+        ServerInfoResponse: {
+            /** Admin Mode */
+            admin_mode: boolean;
+            /** Engagement Root */
+            engagement_root: string | null;
+            /** Enterprise Root */
+            enterprise_root: string | null;
+            /** Read Only */
+            read_only: boolean;
+        };
+        /**
          * SetEdgeLabelBody
          * @description The label itself, and nothing that names the edge — both are path identity now.
          *
@@ -5551,6 +5627,28 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /**
+         * SyncAuthorityResponse
+         * @description What the current authority state permits, per intent.
+         *
+         *     ``denied_intents`` is keyed by intent name — an open map because the intents are declared by the
+         *     mutation-authorization layer, and mirroring that vocabulary here would put it in two places.
+         */
+        SyncAuthorityResponse: {
+            /**
+             * Block Kind
+             * @enum {string}
+             */
+            block_kind: "none" | "read_only" | "sync_in_progress" | "sync_health";
+            /** Blocked Message */
+            blocked_message: string | null;
+            /** Blocked Reason */
+            blocked_reason: ("fetch_failed" | "upstream_missing" | "diverged" | "sync_state_unknown" | "state_file_corrupt" | "repository_uninitialized") | null;
+            /** Denied Intents */
+            denied_intents: {
+                [key: string]: components["schemas"]["DeniedIntentResponse"];
+            };
+        };
         /** SyncDiagramToModelBody */
         SyncDiagramToModelBody: {
             /**
@@ -5558,6 +5656,37 @@ export interface components {
              * @default true
              */
             dry_run: boolean;
+        };
+        /**
+         * SyncHealthResponse
+         * @description Why the enterprise sync is unhealthy, when it is.
+         *
+         *     The reason is the domain's own closed vocabulary rather than a string, so a client can branch on it
+         *     — and neither the message nor the timestamp is optional: the producer's ``SyncHealth`` declares both
+         *     as required, and publishing them as nullable would invite a null check for a case that cannot occur.
+         */
+        SyncHealthResponse: {
+            /** Message */
+            message: string;
+            /** Observed At */
+            observed_at: string;
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "fetch_failed" | "upstream_missing" | "diverged" | "sync_state_unknown" | "state_file_corrupt" | "repository_uninitialized";
+        };
+        /**
+         * SyncStatusResponse
+         * @description Both repositories' sync state, and what the authority currently permits.
+         *
+         *     Each repository is ``null`` when it is not configured, which is why neither is merged into the
+         *     envelope: a flat shape could not distinguish "no enterprise repository" from "clean".
+         */
+        SyncStatusResponse: {
+            authority: components["schemas"]["SyncAuthorityResponse"];
+            engagement: components["schemas"]["EngagementSyncStateResponse"] | null;
+            enterprise: components["schemas"]["EnterpriseSyncStateResponse"] | null;
         };
         /**
          * TaxonomyDomainResponse
@@ -6522,9 +6651,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["ServerInfoResponse"];
                 };
             };
             /** @description Request validation failed */
@@ -12822,7 +12949,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["AllocatedIdentifierResponse"];
                 };
             };
             /** @description Request validation failed */
@@ -13700,9 +13827,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["SyncStatusResponse"];
                 };
             };
             /** @description Request validation failed */

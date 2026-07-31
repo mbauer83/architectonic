@@ -14,7 +14,8 @@ from fastapi import APIRouter, Body, Depends, HTTPException
 from src.application.identifier_allocator import get_default_allocator
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
-from src.infrastructure.gui.routers._openapi import TAG_ENTITIES, OpenMapResponse
+from src.infrastructure.gui.contracts.platform import AllocatedIdentifierResponse
+from src.infrastructure.gui.routers._openapi import TAG_ENTITIES
 
 router = APIRouter()
 
@@ -34,7 +35,7 @@ class _AllocateRequest:
 
 
 @router.post("/api/identifiers/allocate", tags=[TAG_ENTITIES], summary="Allocate artifact identifiers",
-    response_model=OpenMapResponse)
+    response_model=AllocatedIdentifierResponse)
 def allocate_identifier(
     diagram_type: Annotated[str, Body()],
     entity_type: Annotated[str, Body()],

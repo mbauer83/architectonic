@@ -20,6 +20,7 @@ import asyncio
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
+from src.infrastructure.gui.contracts.platform import SyncStatusResponse
 from src.infrastructure.gui.contracts.sync import (
     EngagementSaveResponse,
     EnterpriseSaveResponse,
@@ -47,7 +48,7 @@ class WithdrawBody(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-@router.get("/api/sync/status")
+@router.get("/api/sync/status", response_model=SyncStatusResponse)
 async def sync_status() -> dict:
     """Return the cached sync state for all configured repositories."""
     return await sync_status_cache.get_sync_status()

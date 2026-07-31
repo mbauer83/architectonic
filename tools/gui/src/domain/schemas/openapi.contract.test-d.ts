@@ -6,7 +6,14 @@ import type {
   EntityTaxonomySchema,
   EntityTaxonomyTypeSchema,
 } from './entities'
-import type { ModuleSummaryListSchema, ModuleSummarySchema } from './server'
+import type { ModuleSummaryListSchema, ModuleSummarySchema, ServerInfoSchema } from './server'
+import type {
+  DeniedIntentSchema,
+  EnterpriseSyncStatusSchema,
+  SyncAuthoritySchema,
+  SyncHealthSchema,
+  SyncStatusSchema,
+} from './sync-status'
 import type { StatsSchema } from './stats'
 import type {
   AnalysisNotEmptyDetailsSchema,
@@ -95,6 +102,36 @@ describe('repository catalog', () => {
     >()
     expectTypeOf<SchemaType<typeof ModuleSummarySchema>>().toEqualTypeOf<
       Immutable<components['schemas']['LoadedModuleResponse']>
+    >()
+  })
+})
+
+describe('platform surface', () => {
+  it('decodes the server info the backend declares', () => {
+    expectTypeOf<SchemaType<typeof ServerInfoSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['ServerInfoResponse']>
+    >()
+  })
+
+  it('decodes the sync status, its closed vocabularies included', () => {
+    // These decoders predate the route having a schema, and they are *tighter* than a first-draft DTO
+    // would be: `status`, `block_kind` and `blocked_reason` are closed literals the domain already
+    // declares. Asserting every level is what makes the two definitions one — a literal added on the
+    // server without one here is a compile error rather than a value no branch handles.
+    expectTypeOf<SchemaType<typeof SyncStatusSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['SyncStatusResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof EnterpriseSyncStatusSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['EnterpriseSyncStateResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof SyncAuthoritySchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['SyncAuthorityResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof SyncHealthSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['SyncHealthResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof DeniedIntentSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['DeniedIntentResponse']>
     >()
   })
 })

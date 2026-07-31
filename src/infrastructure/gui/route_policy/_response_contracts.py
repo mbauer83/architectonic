@@ -17,7 +17,6 @@ from __future__ import annotations
 
 #: Operation ids whose declared success body is not yet the DTO the manifest names.
 UNTYPED_RESPONSE_OPERATIONS: frozenset[str] = frozenset({
-    "admin_read_server_info",
     "assurance_create_analysis",
     "assurance_create_edge",
     "assurance_create_group",
@@ -64,7 +63,6 @@ UNTYPED_RESPONSE_OPERATIONS: frozenset[str] = frozenset({
     "documents_list_document_types",
     "documents_read_document_schemata",
     "documents_search_reference_artifacts",
-    "entities_allocate_identifiers",
     "entities_search_artifacts",
     "entities_search_display_artifacts",
     "groups_list_groups",
@@ -72,7 +70,6 @@ UNTYPED_RESPONSE_OPERATIONS: frozenset[str] = frozenset({
     "promotion_execute_promotion",
     "promotion_plan_promotion",
     "sync_read_sync_changes",
-    "sync_read_sync_status",
     "taxonomy_read_authoring_guidance",
     "taxonomy_read_write_help",
     "viewpoints_execute_viewpoint",
