@@ -30,7 +30,7 @@ from src.infrastructure.assurance.signal_attribute_capability import (
     composed_signal_attribute_capability,
 )
 from src.infrastructure.gui.routers import state as s
-from src.infrastructure.gui.routers._openapi import TAG_VIEWPOINTS, OpenMapResponse
+from src.infrastructure.gui.routers._openapi import TAG_VIEWPOINTS, media_response
 from src.infrastructure.gui.routers._viewpoint_freshness import (
     fresh_viewpoints_runtime_catalogs_dependency,
 )
@@ -74,7 +74,9 @@ def signal_banner_for(
 
 
 @signal_render_router.post("/api/viewpoints/export-render", tags=[TAG_VIEWPOINTS],
-    summary="Export a viewpoint render", response_model=OpenMapResponse)
+    summary="Export a viewpoint render",
+    response_class=Response,
+    responses=media_response("image/svg+xml", "The stamped render, as attachment bytes"))
 def export_viewpoint_render(
     slug: Annotated[str | None, Body()] = None,
     query: Annotated[dict[str, object] | None, Body()] = None,

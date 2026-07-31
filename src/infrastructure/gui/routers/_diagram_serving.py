@@ -17,7 +17,7 @@ from src.application.repo_path_helpers import rendered_dir_for_diagram
 from src.config.repo_paths import DIAGRAM_CATALOG, DIAGRAMS, RENDERED
 from src.domain.ontology_representation.artifact_types import DiagramRecord
 from src.infrastructure.gui.routers import state as s
-from src.infrastructure.gui.routers._openapi import READ_RESPONSES, TAG_DIAGRAMS
+from src.infrastructure.gui.routers._openapi import READ_RESPONSES, TAG_DIAGRAMS, media_response
 
 router = APIRouter()
 
@@ -59,7 +59,8 @@ def _rendered_path(d: DiagramRecord, suffix: str) -> Path | None:
 
 
 @router.get("/api/diagram-images/{filename}", tags=[TAG_DIAGRAMS], summary="Serve a rendered diagram image",
-    responses=READ_RESPONSES)
+    response_class=FileResponse,
+    responses={**READ_RESPONSES, **media_response("image/png", "The rendered image")})
 def get_diagram_image(filename: str) -> FileResponse:
     repo_root = s.maybe_engagement_root()
     if repo_root is None:
@@ -79,7 +80,8 @@ def get_diagram_image(filename: str) -> FileResponse:
 
 
 @router.get("/api/diagrams/{artifact_id}/svg", tags=[TAG_DIAGRAMS], summary="Serve a diagram as SVG",
-    responses=READ_RESPONSES)
+    response_class=Response,
+    responses={**READ_RESPONSES, **media_response("image/svg+xml", "The rendered diagram")})
 def get_diagram_svg(artifact_id: str) -> Response:
     id = artifact_id
     repo_root = s.maybe_engagement_root()
@@ -123,7 +125,12 @@ def get_diagram_svg(artifact_id: str) -> Response:
 
 
 @router.get("/api/diagrams/{artifact_id}/download", tags=[TAG_DIAGRAMS],
-    summary="Download a diagram source file", responses=READ_RESPONSES)
+    summary="Download a diagram source file",
+    # Either image type, chosen by `format`; the attachment disposition is set by the handler.
+    response_class=FileResponse,
+    responses={**READ_RESPONSES,
+               200: {"content": {"image/svg+xml": {}, "image/png": {}},
+                     "description": "The rendered diagram, as an attachment"}})
 def download_diagram(artifact_id: str, format: Literal["png", "svg"] = "png") -> FileResponse:
     id = artifact_id
     repo_root = s.maybe_engagement_root()

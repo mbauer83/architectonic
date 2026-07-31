@@ -39,7 +39,7 @@ from src.infrastructure.assurance.signal_attribute_capability import (
 )
 from src.infrastructure.gui.routers import state as s
 from src.infrastructure.gui.routers._diagram_selection import resolve_diagram_selection
-from src.infrastructure.gui.routers._openapi import READ_RESPONSES, TAG_VIEWPOINTS, OpenMapResponse
+from src.infrastructure.gui.routers._openapi import READ_RESPONSES, TAG_VIEWPOINTS, OpenMapResponse, media_response
 from src.infrastructure.gui.routers._viewpoint_freshness import fresh_viewpoints_runtime_catalogs_dependency
 from src.infrastructure.gui.routers._viewpoint_request_parsing import (
     execution_error,
@@ -145,7 +145,8 @@ def execute_viewpoint(
 
 
 @router.post("/api/viewpoints/export-csv", tags=[TAG_VIEWPOINTS], summary="Execute a viewpoint and export CSV",
-    response_model=OpenMapResponse)
+    response_class=Response,
+    responses=media_response("text/csv", "The complete result set, as an attachment"))
 def export_viewpoint_csv(
     slug: Annotated[str | None, Body()] = None,
     query: Annotated[dict[str, object] | None, Body()] = None,

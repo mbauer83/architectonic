@@ -66,6 +66,25 @@ class WriteResultResponse(BaseModel):
     verification: dict[str, Any] | None = None
 
 
+
+def media_response(media_type: str, description: str) -> dict[int | str, Any]:
+    """Declare a success body that is not JSON — a rendered image, a CSV, an event stream.
+
+    FastAPI documents ``application/json`` unless told otherwise, so an operation returning bytes
+    published a JSON contract it never honoured: a generated client would decode the body as JSON and
+    fail on the first byte. Naming the real media type is what makes the manifest's ``media`` and
+    ``stream`` rows true rather than aspirational.
+
+    The content schema is deliberately empty: the bytes have a type, not a shape.
+
+    **Pass ``response_class`` on the route as well.** Without it FastAPI documents its own
+    ``application/json`` default *alongside* whatever this declares, and the operation then
+    advertises two content types of which one is a fiction. Any Response class whose
+    ``media_type`` is ``None`` (``Response``, ``FileResponse``, ``StreamingResponse``) suppresses
+    the default and leaves this declaration as the only one.
+    """
+    return {200: {"content": {media_type: {}}, "description": description}}
+
 # ── Error-response fragments (the statuses the handlers actually return) ─────────
 #
 # The schema is the typed envelope, not a hand-written ``{"detail": "<string>"}`` fragment. It

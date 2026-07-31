@@ -12,6 +12,7 @@ from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 
 from src.infrastructure.backend.shutdown import shutdown_signal
+from src.infrastructure.gui.routers._openapi import media_response
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -126,7 +127,9 @@ async def _event_stream(queue: asyncio.Queue[dict[str, Any]]) -> AsyncGenerator[
         await event_bus.unsubscribe(queue)
 
 
-@router.get("/api/events")
+@router.get("/api/events",
+    response_class=StreamingResponse,
+    responses=media_response("text/event-stream", "Server-sent events until the client leaves"))
 async def stream_events() -> StreamingResponse:
     """SSE endpoint for real-time event streaming."""
     queue = await event_bus.subscribe()

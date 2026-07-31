@@ -8956,13 +8956,13 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful Response */
+            /** @description The rendered image */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "image/png": unknown;
                 };
             };
             /** @description Artifact not found */
@@ -9782,13 +9782,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful Response */
+            /** @description The rendered diagram, as an attachment */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "image/png": unknown;
+                    "image/svg+xml": unknown;
                 };
             };
             /** @description Artifact not found */
@@ -10175,13 +10176,13 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful Response */
+            /** @description The rendered diagram */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "image/svg+xml": unknown;
                 };
             };
             /** @description Artifact not found */
@@ -11483,13 +11484,13 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful Response */
+            /** @description Server-sent events until the client leaves */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "text/event-stream": unknown;
                 };
             };
             /** @description Request validation failed */
@@ -13475,13 +13476,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Successful Response */
+            /** @description The complete result set, as an attachment */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "text/csv": unknown;
                 };
             };
             /** @description Request validation failed */
@@ -13517,13 +13518,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Successful Response */
+            /** @description The stamped render, as attachment bytes */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "image/svg+xml": unknown;
                 };
             };
             /** @description Request validation failed */
