@@ -298,3 +298,33 @@ class GsnPublicationListResponse(_Closed):
 
     publications: list[GsnPublication]
     visibility_limited: bool = False
+
+
+class AssuranceNodeCreatedResponse(_Closed):
+    """The node a create produced, identified and named.
+
+    Not the node record: a create answers with what it made, and a caller that wants the whole record
+    reads it at the node's own address. Echoing the full record here would make every create pay for a
+    read nobody asked for, and would put the node vocabulary in two places.
+
+    ``verification_findings`` is present only when the write produced findings — an empty list and an
+    absent key are the same news, and the absent one does not invite a caller to render "0 findings".
+    """
+
+    node_id: str
+    node_type: str
+    name: str
+    verification_findings: list[dict[str, Any]] | None = None
+
+
+class AssuranceNodeUpdatedResponse(_Closed):
+    """Which fields an edit actually changed.
+
+    ``updated`` is the fields the store wrote, not the fields the request offered: an edit that sends
+    a value identical to the stored one changes nothing, and a caller invalidating caches or writing
+    an audit line needs to know which it was.
+    """
+
+    node_id: str
+    updated: list[str]
+    verification_findings: list[dict[str, Any]] | None = None

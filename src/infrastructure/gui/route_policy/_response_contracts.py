@@ -1,13 +1,16 @@
-"""Operations whose response contract the manifest declares but the surface does not yet meet.
+"""Operations declared ``typed`` that do not yet serve a named, closed component.
 
-The manifest names a DTO for every operation. Most operations still answer with an open object —
-a model with ``extra="allow"``, which documents "an object" and promises nothing about its
-contents — or with an inline schema, or with ``application/json`` where the contract says media.
-This is the list of those, and it is the measure of the response-contract work remaining.
+The measure of the response-contract work remaining, and nothing more than that. It used to mean
+something subtly different and much less useful — "the DTO *name* in the manifest row is not the
+component being served" — which made every entry an adjudication: was the handler wrong, or was the
+name a Phase 0 guess about a shape nobody had modelled? Three times it was the name, and each time the
+work stopped to ask. The manifest now declares a *kind* rather than a name, so an entry here says one
+thing: this handler answers with an open model, an inline schema, or nothing at all, and it should
+answer with a closed DTO derived from what it returns.
 
-It shrinks per router as Phase 1 authors each surface's DTOs, and it is **empty** when the
-contract is complete. Nothing may be added: a new operation declares its DTO when it is written,
-which is cheap then and expensive later.
+It shrinks per surface as each is authored, and it is **empty** when the contract is complete. Nothing
+may be added: a new operation declares its DTO when it is written, which is cheap then and expensive
+later.
 """
 
 from __future__ import annotations
@@ -73,7 +76,6 @@ UNTYPED_RESPONSE_OPERATIONS: frozenset[str] = frozenset({
     "entities_search_artifacts",
     "entities_search_display_artifacts",
     "groups_list_groups",
-    "matrices_preview_matrix",
     "matrices_read_matrix_config",
     "promotion_execute_promotion",
     "promotion_plan_promotion",

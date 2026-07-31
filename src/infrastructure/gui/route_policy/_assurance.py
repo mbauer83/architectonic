@@ -19,7 +19,7 @@ indistinguishable from a read of an absent one, and an ETag would leak the diffe
 
 from __future__ import annotations
 
-from src.infrastructure.gui.route_policy._types import BODYLESS, RouteRow
+from src.infrastructure.gui.route_policy._types import BODYLESS, TYPED, RouteRow
 
 _ANALYSIS = ("analysis_id",)
 _NODE = ("node_id",)
@@ -27,18 +27,18 @@ _ARCH = ("arch_artifact_id",)
 _PARTICIPATION = ("analysis_id", "node_id")
 
 ANALYSIS_ROWS: tuple[RouteRow, ...] = (
-    RouteRow("GET", "/api/assurance/analyses", "collection", "assurance_list_analyses", "AnalysisListResponse"),
+    RouteRow("GET", "/api/assurance/analyses", "collection", "assurance_list_analyses", TYPED),
     RouteRow(
         "POST", "/api/assurance/analyses", "collection", "assurance_create_analysis",
-        "AnalysisDetailResponse", mutation_domain="assurance",
+        TYPED, mutation_domain="assurance",
     ),
     RouteRow(
         "GET", "/api/assurance/analyses/{analysis_id}", "detail", "assurance_read_analysis",
-        "AnalysisAggregateResponse", identity_parameters=_ANALYSIS,
+        TYPED, identity_parameters=_ANALYSIS,
     ),
     RouteRow(
         "PATCH", "/api/assurance/analyses/{analysis_id}", "detail", "assurance_update_analysis",
-        "AnalysisDetailResponse", identity_parameters=_ANALYSIS, mutation_domain="assurance",
+        TYPED, identity_parameters=_ANALYSIS, mutation_domain="assurance",
     ),
     RouteRow(
         "DELETE", "/api/assurance/analyses/{analysis_id}", "detail", "assurance_delete_analysis",
@@ -46,20 +46,20 @@ ANALYSIS_ROWS: tuple[RouteRow, ...] = (
     ),
     RouteRow(
         "PUT", "/api/assurance/analyses/{analysis_id}/group", "subresource", "assurance_file_analysis",
-        "AnalysisFilingResponse", identity_parameters=_ANALYSIS, mutation_domain="assurance",
+        TYPED, identity_parameters=_ANALYSIS, mutation_domain="assurance",
     ),
     RouteRow(
         "GET", "/api/assurance/analyses/{analysis_id}/nodes", "subresource",
-        "assurance_list_analysis_nodes", "AnalysisNodePageResponse", identity_parameters=_ANALYSIS,
+        "assurance_list_analysis_nodes", TYPED, identity_parameters=_ANALYSIS,
     ),
     RouteRow(
         "POST", "/api/assurance/analyses/{analysis_id}/nodes", "subresource",
-        "assurance_create_analysis_node", "AssuranceNodeDetailResponse",
+        "assurance_create_analysis_node", TYPED,
         identity_parameters=_ANALYSIS, mutation_domain="assurance",
     ),
     RouteRow(
         "GET", "/api/assurance/analyses/{analysis_id}/participating-nodes", "subresource",
-        "assurance_list_participating_nodes", "ParticipatingNodeListResponse",
+        "assurance_list_participating_nodes", TYPED,
         identity_parameters=_ANALYSIS,
     ),
     RouteRow(
@@ -74,49 +74,49 @@ ANALYSIS_ROWS: tuple[RouteRow, ...] = (
     ),
     RouteRow(
         "GET", "/api/assurance/analyses/{analysis_id}/matrix", "subresource",
-        "assurance_read_analysis_matrix", "FmeaMatrixResponse", identity_parameters=_ANALYSIS,
+        "assurance_read_analysis_matrix", TYPED, identity_parameters=_ANALYSIS,
     ),
     RouteRow(
         "GET", "/api/assurance/analyses/{analysis_id}/completeness", "subresource",
-        "assurance_read_analysis_completeness", "AnalysisCompletenessResponse",
+        "assurance_read_analysis_completeness", TYPED,
         identity_parameters=_ANALYSIS,
     ),
     RouteRow(
         "GET", "/api/assurance/analyses/{analysis_id}/gsn/publications", "subresource",
-        "assurance_list_gsn_publications", "GsnPublicationListResponse", identity_parameters=_ANALYSIS,
+        "assurance_list_gsn_publications", TYPED, identity_parameters=_ANALYSIS,
     ),
     RouteRow(
         "POST", "/api/assurance/analyses/{analysis_id}/gsn/publications", "subresource",
-        "assurance_record_gsn_publication", "GsnPublicationResponse",
+        "assurance_record_gsn_publication", TYPED,
         identity_parameters=_ANALYSIS, mutation_domain="assurance",
     ),
     RouteRow(
         "GET", "/api/assurance/analyses/{analysis_id}/gsn/draft", "subresource",
-        "assurance_read_gsn_draft", "GsnDraftResponse", identity_parameters=_ANALYSIS,
+        "assurance_read_gsn_draft", TYPED, identity_parameters=_ANALYSIS,
     ),
     RouteRow(
         "GET", "/api/assurance/analyses/{analysis_id}/gsn/rendered", "subresource",
-        "assurance_read_gsn_render", "GsnRenderResponse",
+        "assurance_read_gsn_render", TYPED,
         identity_parameters=_ANALYSIS, timeout_class="derived-graph",
     ),
     RouteRow(
         "GET", "/api/assurance/analyses/{analysis_id}/diagrams/{diagram_type}/rendered", "subresource",
-        "assurance_render_analysis_diagram", "AssuranceDiagramRenderResponse",
+        "assurance_render_analysis_diagram", TYPED,
         identity_parameters=("analysis_id", "diagram_type"), timeout_class="derived-graph",
     ),
 )
 
 NODE_ROWS: tuple[RouteRow, ...] = (
     RouteRow(
-        "GET", "/api/assurance/nodes", "collection", "assurance_list_nodes", "AssuranceNodeListResponse",
+        "GET", "/api/assurance/nodes", "collection", "assurance_list_nodes", TYPED,
     ),
     RouteRow(
         "GET", "/api/assurance/nodes/{node_id}", "detail", "assurance_read_node",
-        "AssuranceNodeDetailResponse", identity_parameters=_NODE,
+        TYPED, identity_parameters=_NODE,
     ),
     RouteRow(
         "PATCH", "/api/assurance/nodes/{node_id}", "detail", "assurance_update_node",
-        "AssuranceNodeDetailResponse", identity_parameters=_NODE, mutation_domain="assurance",
+        TYPED, identity_parameters=_NODE, mutation_domain="assurance",
     ),
     RouteRow(
         "DELETE", "/api/assurance/nodes/{node_id}", "detail", "assurance_delete_node", BODYLESS,
@@ -132,19 +132,19 @@ NODE_ROWS: tuple[RouteRow, ...] = (
     ),
     RouteRow(
         "POST", "/api/assurance/nodes/{node_id}/factor-assessments", "subresource",
-        "assurance_record_factor_assessment", "FactorAssessmentResponse",
+        "assurance_record_factor_assessment", TYPED,
         identity_parameters=_NODE, mutation_domain="assurance",
     ),
     RouteRow(
         "GET", "/api/assurance/nodes/{node_id}/neighbors", "subresource",
-        "assurance_read_node_neighbors", "AssuranceNeighborhoodResponse",
+        "assurance_read_node_neighbors", TYPED,
         identity_parameters=_NODE, timeout_class="derived-graph",
     ),
     RouteRow(
-        "GET", "/api/assurance/edges", "collection", "assurance_list_edges", "AssuranceEdgeListResponse",
+        "GET", "/api/assurance/edges", "collection", "assurance_list_edges", TYPED,
     ),
     RouteRow(
-        "POST", "/api/assurance/edges", "collection", "assurance_create_edge", "AssuranceEdgeResponse",
+        "POST", "/api/assurance/edges", "collection", "assurance_create_edge", TYPED,
         mutation_domain="assurance",
     ),
     RouteRow(
@@ -153,15 +153,15 @@ NODE_ROWS: tuple[RouteRow, ...] = (
     ),
     RouteRow(
         "GET", "/api/assurance/edge-catalog", "catalog", "assurance_read_edge_catalog",
-        "AssuranceEdgeCatalogResponse",
+        TYPED,
     ),
     RouteRow(
         "GET", "/api/assurance/groups", "collection", "assurance_list_groups",
-        "AssuranceGroupListResponse",
+        TYPED,
     ),
     RouteRow(
         "POST", "/api/assurance/groups", "collection", "assurance_create_group",
-        "AssuranceGroupResponse", mutation_domain="assurance",
+        TYPED, mutation_domain="assurance",
     ),
     RouteRow(
         "DELETE", "/api/assurance/groups/{group_id}", "detail", "assurance_delete_group", BODYLESS,
@@ -169,124 +169,124 @@ NODE_ROWS: tuple[RouteRow, ...] = (
     ),
     RouteRow(
         "GET", "/api/assurance/search", "collection", "assurance_search_nodes",
-        "AssuranceSearchResponse",
+        TYPED,
     ),
     RouteRow(
         "GET", "/api/assurance/guidance/{topic}", "detail", "assurance_read_guidance",
-        "AssuranceGuidanceResponse", identity_parameters=("topic",),
+        TYPED, identity_parameters=("topic",),
     ),
     RouteRow(
         "GET", "/api/assurance/diagrams", "collection", "assurance_list_diagrams",
-        "AssuranceDiagramListResponse",
+        TYPED,
     ),
 )
 
 STORE_ROWS: tuple[RouteRow, ...] = (
-    RouteRow("GET", "/api/assurance/status", "catalog", "assurance_read_store_status", "AssuranceStoreStatusResponse"),
-    RouteRow("GET", "/api/assurance/stats", "catalog", "assurance_read_stats", "AssuranceStatsResponse"),
-    RouteRow("GET", "/api/assurance/coverage", "catalog", "assurance_read_coverage", "AssuranceCoverageResponse"),
-    RouteRow("GET", "/api/assurance/risk-register", "catalog", "assurance_read_risk_register", "RiskRegisterResponse"),
+    RouteRow("GET", "/api/assurance/status", "catalog", "assurance_read_store_status", TYPED),
+    RouteRow("GET", "/api/assurance/stats", "catalog", "assurance_read_stats", TYPED),
+    RouteRow("GET", "/api/assurance/coverage", "catalog", "assurance_read_coverage", TYPED),
+    RouteRow("GET", "/api/assurance/risk-register", "catalog", "assurance_read_risk_register", TYPED),
     RouteRow(
-        "GET", "/api/assurance/verify", "catalog", "assurance_verify_store", "AssuranceVerifyResponse",
+        "GET", "/api/assurance/verify", "catalog", "assurance_verify_store", TYPED,
         timeout_class="derived-graph",
     ),
     RouteRow(
-        "GET", "/api/assurance/baselines", "collection", "assurance_list_baselines", "BaselineListResponse",
+        "GET", "/api/assurance/baselines", "collection", "assurance_list_baselines", TYPED,
     ),
     RouteRow(
-        "POST", "/api/assurance/baselines", "collection", "assurance_seal_baseline", "BaselineResponse",
+        "POST", "/api/assurance/baselines", "collection", "assurance_seal_baseline", TYPED,
         mutation_domain="assurance", timeout_class="derived-graph",
     ),
     RouteRow(
         "POST", "/api/assurance/arch-refs", "collection", "assurance_register_arch_ref",
-        "ArchReferenceResponse", mutation_domain="assurance",
+        TYPED, mutation_domain="assurance",
     ),
     RouteRow(
-        "POST", "/api/assurance/reload", "operation", "assurance_reload_store", "AssuranceReloadResponse",
+        "POST", "/api/assurance/reload", "operation", "assurance_reload_store", TYPED,
         mutation_domain="assurance",
     ),
     RouteRow(
         "POST", "/api/assurance/model-this", "operation", "assurance_model_this",
-        "AssuranceModelThisResponse", mutation_domain="assurance",
+        TYPED, mutation_domain="assurance",
     ),
 )
 
 SIGNAL_ROWS: tuple[RouteRow, ...] = (
     RouteRow(
         "GET", "/api/assurance/arch-artifacts/{arch_artifact_id}/lens", "subresource",
-        "assurance_read_arch_lens", "ArchLensResponse", identity_parameters=_ARCH,
+        "assurance_read_arch_lens", TYPED, identity_parameters=_ARCH,
     ),
     RouteRow(
         "GET", "/api/assurance/arch-artifacts/{arch_artifact_id}/security-components", "subresource",
-        "assurance_list_security_components", "SecurityComponentListResponse", identity_parameters=_ARCH,
+        "assurance_list_security_components", TYPED, identity_parameters=_ARCH,
     ),
     RouteRow(
         # Addressed by the internal ``SCM@…`` id, never by a PURL or a ``bom_ref``. Those are the
         # source's identifiers: their grammar carries structure a path segment cannot, and one
         # package appears under different ones across feeds. They stay on the row, and as filters.
         "GET", "/api/assurance/security-components/{component_id}", "detail",
-        "assurance_read_security_component", "SecurityComponentResponse",
+        "assurance_read_security_component", TYPED,
         identity_parameters=("component_id",),
     ),
     RouteRow(
         "GET", "/api/assurance/arch-artifacts/{arch_artifact_id}/security-findings", "subresource",
-        "assurance_list_security_findings", "SecurityFindingListResponse", identity_parameters=_ARCH,
+        "assurance_list_security_findings", TYPED, identity_parameters=_ARCH,
     ),
     RouteRow(
         "GET", "/api/assurance/arch-artifacts/{arch_artifact_id}/security-metrics", "subresource",
-        "assurance_read_security_metrics", "SecurityMetricsResponse", identity_parameters=_ARCH,
+        "assurance_read_security_metrics", TYPED, identity_parameters=_ARCH,
     ),
     RouteRow(
         "GET", "/api/assurance/arch-artifacts/{arch_artifact_id}/vex-assessments", "subresource",
-        "assurance_list_vex_assessments", "VexAssessmentListResponse", identity_parameters=_ARCH,
+        "assurance_list_vex_assessments", TYPED, identity_parameters=_ARCH,
     ),
     RouteRow(
         "POST", "/api/assurance/arch-artifacts/{arch_artifact_id}/vex-assessments", "subresource",
-        "assurance_record_vex_assessment", "VexAssessmentResponse",
+        "assurance_record_vex_assessment", TYPED,
         identity_parameters=_ARCH, mutation_domain="assurance",
     ),
     RouteRow(
         "POST", "/api/assurance/arch-artifacts/{arch_artifact_id}/security-snapshots", "subresource",
-        "assurance_ingest_security_signals", "SignalIngestResponse",
+        "assurance_ingest_security_signals", TYPED,
         identity_parameters=_ARCH, mutation_domain="assurance", timeout_class="derived-graph",
     ),
     RouteRow(
         "DELETE", "/api/assurance/arch-artifacts/{arch_artifact_id}/security-snapshots", "subresource",
-        "assurance_delete_anchor_security_snapshots", "SecuritySnapshotDeletionResponse",
+        "assurance_delete_anchor_security_snapshots", TYPED,
         identity_parameters=_ARCH, mutation_domain="assurance",
     ),
     RouteRow(
         "DELETE", "/api/assurance/security-snapshots/{snapshot_id}", "detail",
-        "assurance_delete_security_snapshot", "SecuritySnapshotDeletionResponse",
+        "assurance_delete_security_snapshot", TYPED,
         identity_parameters=("snapshot_id",), mutation_domain="assurance",
     ),
     RouteRow(
         "GET", "/api/assurance/security-stats", "catalog", "assurance_read_security_stats",
-        "SecuritySignalStatsResponse",
+        TYPED,
     ),
     RouteRow(
         "GET", "/api/assurance/signal-anchor-types", "catalog", "assurance_list_signal_anchor_types",
-        "SignalAnchorTypeListResponse",
+        TYPED,
     ),
     RouteRow(
         "GET", "/api/assurance/vulnerabilities/{identifier}/impact", "subresource",
-        "assurance_read_vulnerability_impact", "VulnerabilityImpactResponse",
+        "assurance_read_vulnerability_impact", TYPED,
         identity_parameters=("identifier",),
     ),
     RouteRow(
         "GET", "/api/assurance/aibom/coverage", "catalog", "assurance_read_aibom_coverage",
-        "AibomCoverageResponse",
+        TYPED,
     ),
     RouteRow(
         "GET", "/api/assurance/aibom/roles", "catalog", "assurance_list_aibom_roles",
-        "AibomRoleListResponse",
+        TYPED,
     ),
     RouteRow(
         "GET", "/api/assurance/aibom/scan", "collection", "assurance_scan_aibom_candidates",
-        "AibomScanResponse", timeout_class="derived-graph",
+        TYPED, timeout_class="derived-graph",
     ),
     RouteRow(
         "POST", "/api/assurance/aibom/export", "operation", "assurance_export_aibom",
-        "AibomExportResponse", timeout_class="derived-graph",
+        TYPED, timeout_class="derived-graph",
     ),
 )

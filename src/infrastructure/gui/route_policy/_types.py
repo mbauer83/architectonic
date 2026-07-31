@@ -55,17 +55,30 @@ ConditionalRead = Literal["none", "etag"]
 #: viewpoint execution and diagram rendering; ``streaming`` never times out.
 TimeoutClass = Literal["default", "derived-graph", "streaming"]
 
-#: Response contracts that are deliberately not a JSON DTO.
+#: What kind of success body an operation has — and deliberately *not* which DTO carries it.
+#:
+#: The column used to name the DTO. That conflated two different jobs: policy the manifest is the
+#: right owner of (where identity goes, what may be cached, what budget applies) with a *pointer* to a
+#: shape defined in ``contracts/``. A pointer to a class that does not exist is not a decision, it is
+#: a work item with a filename — and 82 of these rows were exactly that, which is why every second
+#: response-contract slice ended in "the name is wrong about the shape, please adjudicate". Three of
+#: them genuinely were: one name covered four unrelated sync outcomes, another a read envelope plus
+#: two write receipts.
+#:
+#: The DTO's identity belongs where the DTO is defined, and ``response_model=X`` on the handler is
+#: already that declaration. What the manifest usefully says is the *kind*: whether there is a typed
+#: JSON body at all. The fitness function then asks the served document whether a ``typed`` operation
+#: serves a named closed component — non-tautological, and with no name to disagree with.
+TYPED = "typed"
 BODYLESS = "bodyless"
 MEDIA = "media"
 STREAM = "stream"
-_CONTRACT_SENTINELS = frozenset({BODYLESS, MEDIA, STREAM})
+RESPONSE_KINDS = frozenset({TYPED, BODYLESS, MEDIA, STREAM})
 
 MUTATION_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
 _METHODS = MUTATION_METHODS | {"GET"}
 
 _PATH_PARAM_RE = re.compile(r"\{([A-Za-z_][A-Za-z0-9_]*)\}")
-_DTO_NAME_RE = re.compile(r"^[A-Z][A-Za-z0-9]*$")
 
 
 class RoutePolicyError(ValueError):
@@ -80,7 +93,7 @@ class RouteRow:
     template: str
     resource_kind: ResourceKind
     operation_id: str
-    response_contract: str
+    response_kind: str
     identity_parameters: tuple[str, ...] = ()
     mutation_domain: MutationDomain = "none"
     cache_directive: CacheDirective = "no-store"
@@ -121,13 +134,10 @@ class RouteRow:
             )
         if self.conditional_read == "etag" and self.method != "GET":
             raise RoutePolicyError(f"{self.operation_id}: only a GET may carry an ETag")
-        if (
-            self.response_contract not in _CONTRACT_SENTINELS
-            and not _DTO_NAME_RE.match(self.response_contract)
-        ):
+        if self.response_kind not in RESPONSE_KINDS:
             raise RoutePolicyError(
-                f"{self.operation_id}: response_contract must be a DTO class name or one of "
-                f"{sorted(_CONTRACT_SENTINELS)}, not {self.response_contract!r}"
+                f"{self.operation_id}: response_kind must be one of {sorted(RESPONSE_KINDS)}, "
+                f"not {self.response_kind!r}"
             )
 
     @property

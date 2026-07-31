@@ -9,137 +9,137 @@ removing it returns the whole collection.
 
 from __future__ import annotations
 
-from src.infrastructure.gui.route_policy._types import STREAM, RouteRow
+from src.infrastructure.gui.route_policy._types import STREAM, TYPED, RouteRow
 
 ENTITY_ROWS: tuple[RouteRow, ...] = (
     RouteRow(
-        "GET", "/api/entities", "collection", "entities_list_entities", "EntityListResponse",
+        "GET", "/api/entities", "collection", "entities_list_entities", TYPED,
         cache_directive="no-cache", conditional_read="etag",
     ),
     RouteRow(
-        "POST", "/api/entities", "collection", "entities_create_entity", "WriteResultResponse",
+        "POST", "/api/entities", "collection", "entities_create_entity", TYPED,
         mutation_domain="repository",
     ),
     RouteRow(
-        "GET", "/api/entities/{artifact_id}", "detail", "entities_read_entity", "EntityDetailResponse",
+        "GET", "/api/entities/{artifact_id}", "detail", "entities_read_entity", TYPED,
         identity_parameters=("artifact_id",), cache_directive="no-cache", conditional_read="etag",
     ),
     RouteRow(
-        "PATCH", "/api/entities/{artifact_id}", "detail", "entities_update_entity", "WriteResultResponse",
+        "PATCH", "/api/entities/{artifact_id}", "detail", "entities_update_entity", TYPED,
         identity_parameters=("artifact_id",), mutation_domain="repository",
     ),
     RouteRow(
-        "DELETE", "/api/entities/{artifact_id}", "detail", "entities_delete_entity", "WriteResultResponse",
+        "DELETE", "/api/entities/{artifact_id}", "detail", "entities_delete_entity", TYPED,
         identity_parameters=("artifact_id",), mutation_domain="repository",
     ),
     RouteRow(
         "GET", "/api/entities/{artifact_id}/context", "subresource", "entities_read_entity_context",
-        "EntityContextResponse",
+        TYPED,
         identity_parameters=("artifact_id",), cache_directive="no-cache", conditional_read="etag",
     ),
     RouteRow(
         "GET", "/api/entities/{artifact_id}/neighbors", "subresource", "connections_read_entity_neighbors",
-        "EntityNeighborhoodResponse",
+        TYPED,
         identity_parameters=("artifact_id",), cache_directive="no-cache", timeout_class="derived-graph",
     ),
     RouteRow(
         "GET", "/api/entities/{artifact_id}/display-item", "subresource", "diagrams_read_entity_display_item",
-        "EntityDisplayItemResponse",
+        TYPED,
         identity_parameters=("artifact_id",), cache_directive="no-cache",
     ),
     RouteRow(
         "GET", "/api/entity-schemata/{artifact_type}", "detail", "entities_read_entity_schema",
-        "EntitySchemaResponse",
+        TYPED,
         identity_parameters=("artifact_type",), cache_directive="no-cache",
     ),
 )
 
 CONNECTION_ROWS: tuple[RouteRow, ...] = (
     RouteRow(
-        "GET", "/api/connections", "collection", "connections_list_connections", "ConnectionListResponse",
+        "GET", "/api/connections", "collection", "connections_list_connections", TYPED,
         cache_directive="no-cache", conditional_read="etag",
     ),
     RouteRow(
-        "POST", "/api/connections", "collection", "connections_create_connection", "WriteResultResponse",
+        "POST", "/api/connections", "collection", "connections_create_connection", TYPED,
         mutation_domain="repository",
     ),
     RouteRow(
         "PATCH", "/api/connections/{connection_id}", "detail", "connections_update_connection",
-        "WriteResultResponse",
+        TYPED,
         identity_parameters=("connection_id",), mutation_domain="repository",
     ),
     RouteRow(
         "DELETE", "/api/connections/{connection_id}", "detail", "connections_delete_connection",
-        "WriteResultResponse",
+        TYPED,
         identity_parameters=("connection_id",), mutation_domain="repository",
     ),
     RouteRow(
         "PATCH", "/api/connections/{connection_id}/associated-entities", "subresource",
-        "connections_update_connection_associations", "WriteResultResponse",
+        "connections_update_connection_associations", TYPED,
         identity_parameters=("connection_id",), mutation_domain="repository",
     ),
     RouteRow(
         "POST", "/api/connections/cleanup-broken-refs", "operation", "connections_cleanup_broken_references",
-        "BrokenReferenceCleanupResponse",
+        TYPED,
         mutation_domain="repository", timeout_class="derived-graph",
     ),
 )
 
 SEARCH_ROWS: tuple[RouteRow, ...] = (
     RouteRow(
-        "GET", "/api/search", "collection", "entities_search_artifacts", "KeywordSearchResponse",
+        "GET", "/api/search", "collection", "entities_search_artifacts", TYPED,
         cache_directive="no-cache",
     ),
     RouteRow(
         "GET", "/api/artifact-search", "collection", "entities_search_display_artifacts",
-        "ArtifactSearchResponse", cache_directive="no-cache",
+        TYPED, cache_directive="no-cache",
     ),
     RouteRow(
         "GET", "/api/entity-display-search", "collection", "diagrams_search_entity_display_items",
-        "EntityDisplaySearchResponse", cache_directive="no-cache",
+        TYPED, cache_directive="no-cache",
     ),
     RouteRow(
         "GET", "/api/reference-search", "collection", "documents_search_reference_artifacts",
-        "ReferenceSearchResponse", cache_directive="no-cache",
+        TYPED, cache_directive="no-cache",
     ),
 )
 
 TAXONOMY_ROWS: tuple[RouteRow, ...] = (
     RouteRow(
-        "GET", "/api/stats", "catalog", "taxonomy_read_repository_stats", "RepositoryStatsResponse",
+        "GET", "/api/stats", "catalog", "taxonomy_read_repository_stats", TYPED,
         cache_directive="no-cache", conditional_read="etag",
     ),
     RouteRow(
         "GET", "/api/backend-identity", "catalog", "taxonomy_read_backend_identity",
-        "BackendIdentityResponse", cache_directive="private",
+        TYPED, cache_directive="private",
     ),
     RouteRow(
         "GET", "/api/entity-taxonomy", "catalog", "taxonomy_read_entity_taxonomy",
-        "EntityTaxonomyResponse", cache_directive="no-cache",
+        TYPED, cache_directive="no-cache",
     ),
     RouteRow(
         "GET", "/api/authoring-guidance", "catalog", "taxonomy_read_authoring_guidance",
-        "AuthoringGuidanceResponse", cache_directive="no-cache",
+        TYPED, cache_directive="no-cache",
     ),
     RouteRow(
-        "GET", "/api/write-help", "catalog", "taxonomy_read_write_help", "WriteHelpResponse",
+        "GET", "/api/write-help", "catalog", "taxonomy_read_write_help", TYPED,
         cache_directive="private",
     ),
     RouteRow(
-        "GET", "/api/modules", "catalog", "taxonomy_list_modules", "ModuleRegistryResponse",
+        "GET", "/api/modules", "catalog", "taxonomy_list_modules", TYPED,
         cache_directive="private",
     ),
     RouteRow(
-        "GET", "/api/ontology", "catalog", "connections_read_ontology", "OntologyClassificationResponse",
+        "GET", "/api/ontology", "catalog", "connections_read_ontology", TYPED,
         cache_directive="private",
     ),
     RouteRow(
         "GET", "/api/relation-notations", "catalog", "connections_read_relation_notations",
-        "RelationNotationResponse", cache_directive="private",
+        TYPED, cache_directive="private",
     ),
     RouteRow(
         "POST", "/api/identifiers/allocate", "operation", "entities_allocate_identifiers",
-        "IdentifierAllocationResponse",
+        TYPED,
     ),
     RouteRow("GET", "/api/events", "stream", "events_stream_events", STREAM, timeout_class="streaming"),
 )

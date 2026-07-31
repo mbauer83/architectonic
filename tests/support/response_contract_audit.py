@@ -1,11 +1,14 @@
-"""Audit the generated OpenAPI document against the response contracts the manifest declares.
+"""Audit the generated OpenAPI document against the response *kind* the manifest declares.
 
 One function, used by the fitness test and by nothing else, so the definition of "typed" lives in
-one place. An operation satisfies its contract when:
+one place. An operation satisfies its declared kind when:
 
-* a DTO row's success response is ``application/json`` whose schema is the named component, and
-  that component is **closed** — no ``additionalProperties: true``, which is how an ``extra="allow"``
-  model documents an object while promising nothing about it;
+* a ``typed`` row's success response is ``application/json`` whose schema is a **named, closed**
+  component — no ``additionalProperties: true``, which is how an ``extra="allow"`` model documents an
+  object while promising nothing about it. *Which* component is not checked here, deliberately: the
+  DTO's identity belongs to the handler that declares it and the module that defines it, and a name
+  repeated in the manifest was a second place to be wrong — three of them were wrong about the shape
+  they named. What the manifest usefully asserts is that there is a typed body at all;
 * a ``bodyless`` row declares 204 with no content — and may declare a 200 *alternative* (the
   dry-run plan of a deletion), which must itself be a named component;
 * a ``media`` or ``stream`` row's success response is not ``application/json``.
@@ -47,7 +50,7 @@ def contract_violation(
     row: RouteRow, operation: dict[str, Any], components: dict[str, Any]
 ) -> str | None:
     """Why *operation* does not satisfy *row*'s declared response contract, or None."""
-    if row.response_contract == BODYLESS:
+    if row.response_kind == BODYLESS:
         return _bodyless_violation(operation, components)
 
     found = _success_response(operation)
@@ -56,9 +59,9 @@ def contract_violation(
     _status, response = found
     content = response.get("content") or {}
 
-    if row.response_contract in (MEDIA, STREAM):
+    if row.response_kind in (MEDIA, STREAM):
         return (
-            f"declares application/json, but the contract is {row.response_contract}"
+            f"declares application/json, but the kind is {row.response_kind}"
             if "application/json" in content
             else None
         )
@@ -69,8 +72,6 @@ def contract_violation(
     name = _component_name(json_body.get("schema") or {})
     if name is None:
         return "declares an inline schema rather than a named component"
-    if name != row.response_contract:
-        return f"declares {name!r}, but the contract is {row.response_contract!r}"
     if not _is_closed(components.get(name) or {}):
         return f"{name!r} is open (additionalProperties: true), so it promises nothing"
     return None

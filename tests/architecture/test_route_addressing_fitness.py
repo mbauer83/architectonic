@@ -14,11 +14,10 @@ import pytest
 
 from src.infrastructure.gui.route_policy import (
     BODYLESS,
-    MEDIA,
+    RESPONSE_KINDS,
     RETIRED_PATH_LITERALS,
     RETIRED_ROUTES,
     ROUTE_POLICY,
-    STREAM,
     path_parameters,
 )
 from tests.support.retired_route_scan import (
@@ -120,21 +119,26 @@ def test_no_canonical_template_repeats_a_collection_in_the_singular() -> None:
         )
 
 
-def test_every_declared_status_has_a_typed_body_or_is_explicitly_bodyless() -> None:
-    """Phase 0's acceptance criterion, stated over the manifest: a row either names a DTO or
-    declares itself bodyless, media or a stream. ``None`` is not an option."""
-    for row in ROUTE_POLICY:
-        assert row.response_contract, row.operation_id
-        if row.response_contract in (BODYLESS, MEDIA, STREAM):
-            continue
-        assert row.response_contract[0].isupper(), row.operation_id
+def test_every_row_declares_a_response_kind_and_a_bodyless_row_is_a_mutation() -> None:
+    """The kind is declared, and ``bodyless`` is reserved for what genuinely has nothing to say.
 
+    This used to assert the column held a DTO *name* — that it was capitalised, that a bodyless row
+    was not a GET. The name is gone: it pointed at a shape defined in ``contracts/``, and a pointer to
+    a class that did not exist was a work item wearing the costume of a decision. What is left is
+    checkable without naming anything.
+    """
+    for row in ROUTE_POLICY:
+        assert row.response_kind in RESPONSE_KINDS, f"{row.operation_id}: {row.response_kind!r}"
+        if row.response_kind == BODYLESS:
+            assert row.method != "GET", (
+                f"{row.operation_id}: a read with nothing to return is a read nobody needs"
+            )
 
 def test_bodyless_responses_are_deletions_or_idempotent_relation_assertions() -> None:
     """204 is a promise that there is nothing to say, which is true of a deletion and of a
     ``PUT`` that re-asserts a relation whose address is the request URL — and of nothing else."""
     for row in ROUTE_POLICY:
-        if row.response_contract != BODYLESS:
+        if row.response_kind != BODYLESS:
             continue
         assert row.method in ("DELETE", "PUT"), row.operation_id
 

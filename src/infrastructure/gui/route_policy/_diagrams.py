@@ -10,34 +10,34 @@ the generic client timeout is not a promise this surface can keep.
 
 from __future__ import annotations
 
-from src.infrastructure.gui.route_policy._types import MEDIA, RouteRow
+from src.infrastructure.gui.route_policy._types import MEDIA, TYPED, RouteRow
 
 _ID = ("artifact_id",)
 
 DIAGRAM_ROWS: tuple[RouteRow, ...] = (
     RouteRow(
-        "GET", "/api/diagrams", "collection", "diagrams_list_diagrams", "DiagramListResponse",
+        "GET", "/api/diagrams", "collection", "diagrams_list_diagrams", TYPED,
         cache_directive="no-cache", conditional_read="etag",
     ),
     RouteRow(
-        "POST", "/api/diagrams", "collection", "diagrams_create_diagram", "WriteResultResponse",
+        "POST", "/api/diagrams", "collection", "diagrams_create_diagram", TYPED,
         mutation_domain="repository", timeout_class="derived-graph",
     ),
     RouteRow(
-        "GET", "/api/diagrams/{artifact_id}", "detail", "diagrams_read_diagram", "DiagramDetailResponse",
+        "GET", "/api/diagrams/{artifact_id}", "detail", "diagrams_read_diagram", TYPED,
         identity_parameters=_ID, cache_directive="no-cache",
     ),
     RouteRow(
-        "PUT", "/api/diagrams/{artifact_id}", "detail", "diagrams_replace_diagram", "WriteResultResponse",
+        "PUT", "/api/diagrams/{artifact_id}", "detail", "diagrams_replace_diagram", TYPED,
         identity_parameters=_ID, mutation_domain="repository", timeout_class="derived-graph",
     ),
     RouteRow(
-        "DELETE", "/api/diagrams/{artifact_id}", "detail", "diagrams_delete_diagram", "WriteResultResponse",
+        "DELETE", "/api/diagrams/{artifact_id}", "detail", "diagrams_delete_diagram", TYPED,
         identity_parameters=_ID, mutation_domain="repository",
     ),
     RouteRow(
         "GET", "/api/diagrams/{artifact_id}/entities", "subresource", "diagrams_list_diagram_entities",
-        "DiagramEntityListResponse",
+        TYPED,
         identity_parameters=_ID, cache_directive="no-cache", conditional_read="etag",
     ),
     # A construct the diagram owns, at the diagram's own address. Two segments for the two parts of
@@ -46,7 +46,7 @@ DIAGRAM_ROWS: tuple[RouteRow, ...] = (
     # entity address cannot carry these at all. Sub-entities of the diagram, addressed as such.
     RouteRow(
         "GET", "/api/diagrams/{artifact_id}/entities/{entity_type}/{local_id}", "detail",
-        "diagrams_read_diagram_entity", "EntityDetailResponse",
+        "diagrams_read_diagram_entity", TYPED,
         identity_parameters=("artifact_id", "entity_type", "local_id"),
         # No ETag: the conditional-read registry is a reviewed set of model-derived templates, and
         # claiming eligibility without being in it would be a promise the middleware does not keep.
@@ -55,11 +55,11 @@ DIAGRAM_ROWS: tuple[RouteRow, ...] = (
     ),
     RouteRow(
         "GET", "/api/diagrams/{artifact_id}/connections", "subresource", "diagrams_list_diagram_connections",
-        "DiagramConnectionListResponse", identity_parameters=_ID, cache_directive="no-cache",
+        TYPED, identity_parameters=_ID, cache_directive="no-cache",
     ),
     RouteRow(
         "GET", "/api/diagrams/{artifact_id}/context", "subresource", "diagrams_read_diagram_context",
-        "DiagramContextResponse", identity_parameters=_ID, cache_directive="no-cache",
+        TYPED, identity_parameters=_ID, cache_directive="no-cache",
     ),
     RouteRow(
         "GET", "/api/diagrams/{artifact_id}/svg", "subresource", "diagrams_read_diagram_svg", MEDIA,
@@ -71,41 +71,41 @@ DIAGRAM_ROWS: tuple[RouteRow, ...] = (
     ),
     RouteRow(
         "GET", "/api/diagrams/{artifact_id}/viewpoint-projection", "subresource",
-        "viewpoints_read_diagram_viewpoint_projection", "ViewpointProjectionResponse",
+        "viewpoints_read_diagram_viewpoint_projection", TYPED,
         identity_parameters=_ID, cache_directive="no-cache", timeout_class="derived-graph",
     ),
     RouteRow(
         "POST", "/api/diagrams/{artifact_id}/sync", "operation", "diagrams_sync_diagram_to_model",
-        "WriteResultResponse",
+        TYPED,
         identity_parameters=_ID, mutation_domain="repository", timeout_class="derived-graph",
     ),
     RouteRow(
         "PATCH", "/api/diagrams/{artifact_id}/entities/{classifier_id}/metadata", "subresource",
-        "diagrams_update_diagram_classifier_metadata", "WriteResultResponse",
+        "diagrams_update_diagram_classifier_metadata", TYPED,
         identity_parameters=("artifact_id", "classifier_id"), mutation_domain="repository",
     ),
     RouteRow(
         "PATCH", "/api/diagrams/{artifact_id}/entities/{classifier_id}/attributes/{attribute_id}/metadata",
-        "subresource", "diagrams_update_diagram_attribute_metadata", "WriteResultResponse",
+        "subresource", "diagrams_update_diagram_attribute_metadata", TYPED,
         identity_parameters=("artifact_id", "classifier_id", "attribute_id"),
         mutation_domain="repository",
     ),
     RouteRow(
         "PUT", "/api/diagrams/{artifact_id}/edges/{edge_key}/label", "subresource",
-        "diagrams_set_diagram_edge_label", "WriteResultResponse",
+        "diagrams_set_diagram_edge_label", TYPED,
         identity_parameters=("artifact_id", "edge_key"), mutation_domain="repository",
     ),
     RouteRow(
-        "POST", "/api/diagrams/preview", "operation", "diagrams_preview_diagram", "DiagramPreviewResponse",
+        "POST", "/api/diagrams/preview", "operation", "diagrams_preview_diagram", TYPED,
         timeout_class="derived-graph",
     ),
     RouteRow(
         "GET", "/api/diagram-entity-discovery", "collection", "diagrams_discover_diagram_entities",
-        "DiagramEntityDiscoveryResponse", cache_directive="no-cache", timeout_class="derived-graph",
+        TYPED, cache_directive="no-cache", timeout_class="derived-graph",
     ),
     RouteRow(
         "GET", "/api/diagram-refs", "collection", "diagrams_list_diagram_references",
-        "DiagramReferenceListResponse", cache_directive="no-cache",
+        TYPED, cache_directive="no-cache",
     ),
     RouteRow(
         "GET", "/api/diagram-images/{filename}", "detail", "diagrams_read_diagram_image", MEDIA,
@@ -115,50 +115,50 @@ DIAGRAM_ROWS: tuple[RouteRow, ...] = (
 
 MATRIX_ROWS: tuple[RouteRow, ...] = (
     RouteRow(
-        "POST", "/api/matrices", "collection", "matrices_create_matrix", "WriteResultResponse",
+        "POST", "/api/matrices", "collection", "matrices_create_matrix", TYPED,
         mutation_domain="repository", timeout_class="derived-graph",
     ),
     RouteRow(
-        "PUT", "/api/matrices/{artifact_id}", "detail", "matrices_replace_matrix", "WriteResultResponse",
+        "PUT", "/api/matrices/{artifact_id}", "detail", "matrices_replace_matrix", TYPED,
         identity_parameters=_ID, mutation_domain="repository", timeout_class="derived-graph",
     ),
     RouteRow(
         "GET", "/api/matrices/{artifact_id}/config", "subresource", "matrices_read_matrix_config",
-        "MatrixConfigResponse", identity_parameters=_ID, cache_directive="no-cache",
+        TYPED, identity_parameters=_ID, cache_directive="no-cache",
     ),
     RouteRow(
-        "POST", "/api/matrices/preview", "operation", "matrices_preview_matrix", "MatrixPreviewResponse",
+        "POST", "/api/matrices/preview", "operation", "matrices_preview_matrix", TYPED,
         timeout_class="derived-graph",
     ),
 )
 
 DIAGRAM_TYPE_ROWS: tuple[RouteRow, ...] = (
     RouteRow(
-        "GET", "/api/diagram-types", "catalog", "diagrams_list_diagram_types", "DiagramTypeListResponse",
+        "GET", "/api/diagram-types", "catalog", "diagrams_list_diagram_types", TYPED,
         cache_directive="private",
     ),
     RouteRow(
         "GET", "/api/diagram-types/{diagram_type}/ui-config", "subresource",
-        "diagrams_read_diagram_type_ui_config", "DiagramTypeUiConfigResponse",
+        "diagrams_read_diagram_type_ui_config", TYPED,
         identity_parameters=("diagram_type",), cache_directive="private",
     ),
     RouteRow(
         "GET", "/api/diagram-types/{diagram_type}/entity-types", "subresource",
-        "diagrams_list_diagram_type_entity_types", "DiagramTypeEntityTypeListResponse",
+        "diagrams_list_diagram_type_entity_types", TYPED,
         identity_parameters=("diagram_type",), cache_directive="private",
     ),
     RouteRow(
         "GET", "/api/diagram-types/{diagram_type}/connection-types", "subresource",
-        "diagrams_list_diagram_type_connection_types", "DiagramTypeConnectionTypeListResponse",
+        "diagrams_list_diagram_type_connection_types", TYPED,
         identity_parameters=("diagram_type",), cache_directive="private",
     ),
     RouteRow(
         "GET", "/api/diagram-types/datatype/types", "collection", "diagrams_list_datatype_types",
-        "DatatypeTypeListResponse", cache_directive="no-cache",
+        TYPED, cache_directive="no-cache",
     ),
     RouteRow(
         "GET", "/api/diagram-types/datatype/types/{type_id}/usages", "subresource",
-        "diagrams_list_datatype_type_usages", "DatatypeTypeUsageResponse",
+        "diagrams_list_datatype_type_usages", TYPED,
         identity_parameters=("type_id",), cache_directive="no-cache",
     ),
 )
