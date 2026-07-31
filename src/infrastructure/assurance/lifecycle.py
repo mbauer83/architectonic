@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import secrets
 import shutil
 from pathlib import Path
@@ -62,21 +63,26 @@ def init_store(db_path: Path, *, force: bool = False) -> dict[str, object]:
     key = secrets.token_hex(32)
     recovery_key = secrets.token_hex(32)
 
-    # Scoped to this db_path, so initialising a store here cannot reach the key of a store
-    # anywhere else — including the recovery key, which is written in the same breath and so was
-    # previously destroyed by the very operation it exists to insure against.
+    # ── Order of operations ───────────────────────────────────────────────────
     #
-    # Written *before* the old file is removed. The credential store is the step that can fail for
-    # reasons outside this process — the key files are deliberately chmod-protected, and that
-    # protection has stopped a write before — and removing the database first meant such a failure
-    # left neither a store nor a key. In this order it leaves the previous store exactly as it was.
-    _db_key_guard.store_db_key_for_new_store(db_path, key)
-    accounts.write(accounts.RECOVERY_KEY, db_path, recovery_key)
+    # The new store is built beside the old one, proven to open, and only then moved into place and
+    # its key recorded. Every earlier ordering had a failure mode that destroyed a key:
+    #
+    # * Removing the database first meant a failed credential write left neither a store nor a key.
+    # * Writing the credential first — the fix for that — meant a failed *creation* left a populated
+    #   store whose key had already been replaced. That is the key-loss shape itself, introduced by
+    #   the repair for the other one.
+    #
+    # Building elsewhere removes the choice. Until `os.replace` runs, the previous store and its
+    # previous key are both untouched and the operation is abandonable; after it, the file in place is
+    # the one the new key opens. The remaining window — dying between the replace and the credential
+    # write — loses the key to a *freshly created, empty* store, with the previous contents in the
+    # backup this function leaves behind. That is a nuisance rather than a loss, and it is the smallest
+    # window this can have while a key and a file live in two different places.
+    staging = db_path.with_name(db_path.name + ".initialising")
+    staging.unlink(missing_ok=True)
 
-    if db_path.exists():
-        db_path.unlink()
-
-    conn = sqlcipher3.connect(str(db_path))
+    conn = sqlcipher3.connect(str(staging))
     conn.execute(f"PRAGMA key = '{key}'")
     conn.executescript(ASSURANCE_PRAGMAS_SQL)
     conn.executescript(ASSURANCE_SCHEMA_SQL)
@@ -93,21 +99,33 @@ def init_store(db_path: Path, *, force: bool = False) -> dict[str, object]:
     conn.commit()
     conn.close()
 
-    # Re-open with a fresh connection to verify the stored key actually decrypts
-    # the DB before we return success. Catches any key-storage round-trip issues.
-    conn2 = sqlcipher3.connect(str(db_path))
-    conn2.execute(f"PRAGMA key = '{key}'")
-    try:
-        conn2.execute("SELECT count(*) FROM sqlite_master").fetchone()
-    except Exception as exc:
-        conn2.close()
-        db_path.unlink(missing_ok=True)
+    # Prove the new file opens with the new key before anything irreversible happens. `PRAGMA key`
+    # alone proves nothing — SQLCipher defers the check to the first page read — so this reads a page.
+    if not _db_key_guard.key_opens_store(staging, key):
+        staging.unlink(missing_ok=True)
         raise RuntimeError(
-            "Assurance store was written but cannot be re-opened with the generated key. "
-            "This indicates a keyring round-trip issue. "
-            "Run `arch-assurance init --force` again."
-        ) from exc
-    conn2.close()
+            f"A new assurance store was written to {staging} but cannot be re-opened with the "
+            "generated key, so it has been discarded. The existing store and its key are untouched."
+        )
+
+    # The previous contents, kept because the next line ends their reachability, and named for what it
+    # is: the copy someone goes looking for after a reinitialisation they did not intend. Taken here
+    # rather than earlier so an abandoned init leaves no stray backup behind.
+    if db_path.exists():
+        backup_store(
+            db_path,
+            backup_path=db_path.with_name(f"{db_path.name}.pre-init.{utc_now_compact()}.bak"),
+        )
+
+    # Atomic within the directory: after this the store at `db_path` is the one `key` opens, and
+    # there is no moment at which the path holds a file no key matches.
+    os.replace(staging, db_path)
+
+    # Scoped to this db_path, so initialising a store here cannot reach the key of a store anywhere
+    # else — including the recovery key, which is written in the same breath and so was once destroyed
+    # by the very operation it exists to insure against.
+    _db_key_guard.store_db_key_for_new_store(db_path, key)
+    accounts.write(accounts.RECOVERY_KEY, db_path, recovery_key)
 
     _add_to_gitignore(db_path.parent)
 

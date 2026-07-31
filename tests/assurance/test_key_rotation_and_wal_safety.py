@@ -29,6 +29,7 @@ from src.infrastructure.assurance import _credential_store as creds
 
 pytest.importorskip("sqlcipher3", reason="sqlcipher3 not installed")
 
+from src.infrastructure.assurance import lifecycle  # noqa: E402
 from src.infrastructure.assurance._sqlcipher_store import SQLCipherAssuranceStore  # noqa: E402
 from src.infrastructure.assurance.lifecycle import init_store, rotate_key  # noqa: E402
 
@@ -112,15 +113,35 @@ class TestRotationVerifiesBeforeItReplacesTheKey:
 
 
 class TestInitDoesNotDestroyAStoreItCannotReplace:
-    def test_a_credential_write_failure_leaves_the_existing_store_in_place(
+    """Whatever step of a reinitialisation fails, the previous contents stay reachable with the
+    previous key.
+
+    Stated that way rather than as "the file does not change", because the two orderings this has had
+    each protected one step and exposed another, and only the *outcome* distinguishes them:
+
+    * removing the database first — a failed credential write left neither a store nor a key;
+    * writing the credential first — a failed creation left a populated store whose key had already
+      been replaced, which is the unrecoverable shape.
+
+    The store is now built beside the old one and moved in atomically, so every failure leaves the old
+    contents either in place or in a backup the old key still opens. That is the property; where the
+    bytes happen to sit is not.
+    """
+
+    @staticmethod
+    def _openable_copies(tmp_path: Path, db_path: Path, key: str) -> list[Path]:
+        candidates = [db_path, *sorted(db_path.parent.glob(f"{db_path.name}*.bak"))]
+        return [p for p in candidates if p.exists() and _opens(p, key)]
+
+    def test_a_credential_write_failure_leaves_the_previous_store_recoverable(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """The credential write is the step that fails for reasons outside this process — the key
-        files are chmod-protected, and that protection has stopped a write before. Removing the
-        database first meant such a failure left neither a store nor a key."""
+        """The credential write is the step that fails for reasons outside this process — the key files
+        are chmod-protected, and that protection has stopped a write before."""
         db_path = tmp_path / "store.db"
         init_store(db_path)
-        existing = db_path.read_bytes()
+        old_key = accounts.read(accounts.DB_KEY, db_path)
+        assert old_key is not None
 
         def refuse(account: str, value: str) -> None:
             raise RuntimeError("credential store is read-only")
@@ -130,8 +151,30 @@ class TestInitDoesNotDestroyAStoreItCannotReplace:
         with pytest.raises(RuntimeError, match="read-only"):
             init_store(db_path, force=True)
 
-        assert db_path.exists(), "the store was removed before its replacement could be keyed"
+        assert self._openable_copies(tmp_path, db_path, old_key), (
+            "after a failed reinitialisation nothing on disk opens with the key that still exists"
+        )
+
+    def test_a_creation_failure_leaves_the_previous_store_untouched(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """The failure the other ordering could not survive. Nothing irreversible has happened yet, so
+        the store is exactly as it was — not merely recoverable."""
+        db_path = tmp_path / "store.db"
+        init_store(db_path)
+        existing = db_path.read_bytes()
+        old_key = accounts.read(accounts.DB_KEY, db_path)
+
+        monkeypatch.setattr(
+            lifecycle._db_key_guard, "key_opens_store", lambda *_a, **_k: False
+        )
+
+        with pytest.raises(RuntimeError, match="cannot be re-opened"):
+            init_store(db_path, force=True)
+
         assert db_path.read_bytes() == existing
+        assert accounts.read(accounts.DB_KEY, db_path) == old_key
+        assert not list(db_path.parent.glob("*.initialising")), "the abandoned store was left behind"
 
 
 class TestWriteAheadLogIsFlushedWhileItStillCan:

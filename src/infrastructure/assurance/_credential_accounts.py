@@ -51,22 +51,28 @@ def scoped_account(base: str, store_path: Path) -> str:
 def read(base: str, store_path: Path) -> str | None:
     """This store's secret: the scoped account, or the unscoped one it may predate.
 
-    A secret found only at the unscoped account is **copied to the scoped one**, so a store written
-    before scoping migrates itself on first use and needs no operator step. The copy cannot cause a
-    collision: it writes the scoped account and never touches the unscoped one, so a store at some
-    other path is unaffected either way.
+    **A read never writes.** It used to: a secret found only at the unscoped account was copied to the
+    scoped one, so a pre-scoping store migrated itself on first use. That copy destroyed the live store
+    on 2026-07-31, and the mechanism is worth stating exactly, because it defeated five rounds of
+    guards that were all built on the test side.
 
-    It also keeps the fallback from costing anything twice. A credential read is a round trip to the
-    OS backend — on WSL2 a `powershell.exe` spawn — and consulting two accounts on every read would
-    double that for the lifetime of the deployment.
+    ``creds.get`` returned ``None`` for a *failed* read as well as an absent one — on WSL2 it spawns
+    ``powershell.exe``, and under load that spawn can time out. So a transient failure to read the
+    scoped account was indistinguishable from the account not existing; the fallback then found a
+    stale unscoped key from a store two initialisations ago and wrote it over the live one. A read, in
+    a process no test guard covers, silently replaced the key with one that opened nothing.
+
+    ``creds.get`` now raises rather than flattening failure into absence, which removes the
+    misdiagnosis. Removing the write removes the consequence: with both gone there is no path from
+    reading a credential to losing one. The cost is that a pre-scoping store consults two accounts on
+    every read instead of migrating once — two ``powershell.exe`` spawns where there was one, for a
+    store nobody has any more. That is the right way round: the saving was never worth a destructive
+    write on the read path.
     """
     scoped = creds.get(scoped_account(base, store_path))
     if scoped is not None:
         return scoped
-    inherited = creds.get(base)
-    if inherited is not None:
-        write(base, store_path, inherited)
-    return inherited
+    return creds.get(base)
 
 
 def write(base: str, store_path: Path, value: str) -> None:

@@ -109,6 +109,56 @@ class TestWritingOverAProtectedFile:
         assert stat.S_IMODE(target.stat().st_mode) == 0o400
 
 
+class TestReadingReportsWhatItKnows:
+    """A read distinguishes "there is no such credential" from "I could not read it".
+
+    Flattening the two into ``None`` cost the live store on 2026-07-31: a ``powershell.exe`` spawn that
+    timed out under load looked exactly like an unconfigured store, and the caller acted on it. See
+    ``tests/assurance/test_credential_read_is_not_a_write.py`` for what the caller then did.
+    """
+
+    def test_a_missing_credential_reads_as_none(self, backend: Any) -> None:
+        assert backend.get("never-written") is None
+
+    def test_a_failed_read_raises_rather_than_reporting_absence(
+        self, backend: Any, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        target = backend._path(_ACCOUNT)  # noqa: SLF001
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text("clixml", encoding="utf-8")
+
+        def timing_out(*_args: object, **_kwargs: object) -> str:
+            raise subprocess.TimeoutExpired(cmd="powershell.exe", timeout=15)
+
+        monkeypatch.setattr(subprocess, "check_output", timing_out)
+
+        with pytest.raises(creds.CredentialUnavailable):
+            backend.get(_ACCOUNT)
+
+    def test_a_credential_that_decrypts_to_nothing_is_damaged_not_absent(
+        self, backend: Any, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """An existing file yielding an empty value is a broken credential. Reported as absence it
+        would invite exactly the same false-absence handling as a timeout."""
+        target = backend._path(_ACCOUNT)  # noqa: SLF001
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text("clixml", encoding="utf-8")
+        monkeypatch.setattr(subprocess, "check_output", lambda *_a, **_k: "   \n")
+
+        with pytest.raises(creds.CredentialUnavailable):
+            backend.get(_ACCOUNT)
+
+    def test_a_successful_read_returns_the_value(
+        self, backend: Any, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        target = backend._path(_ACCOUNT)  # noqa: SLF001
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text("clixml", encoding="utf-8")
+        monkeypatch.setattr(subprocess, "check_output", lambda *_a, **_k: "the-key\n")
+
+        assert backend.get(_ACCOUNT) == "the-key"
+
+
 class TestWritingANewFile:
     def test_it_is_protected_to_0600(self, backend: Any, monkeypatch: pytest.MonkeyPatch) -> None:
         """A credential is never left group- or world-readable, even for the moment before a

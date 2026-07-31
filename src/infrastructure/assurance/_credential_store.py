@@ -28,9 +28,25 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+class CredentialUnavailable(RuntimeError):
+    """The credential could not be read — as distinct from not existing.
+
+    The distinction is the whole reason this exists. A caller deciding what to do about a *missing*
+    credential (initialise a store, fall back to a legacy account, prompt an operator) must never make
+    that decision because a keychain was slow. Both used to arrive as ``None``.
+    """
+
+
 @runtime_checkable
 class _Backend(Protocol):
-    def get(self, account: str) -> str | None: ...
+    def get(self, account: str) -> str | None:
+        """The value, or ``None`` only if the credential does not exist.
+
+        Raises ``CredentialUnavailable`` when it exists and cannot be read. Every implementation owes
+        the caller this distinction; returning ``None`` for a failure is the defect that cost a store.
+        """
+        ...
+
     def set(self, account: str, value: str) -> None: ...
     def delete(self, account: str) -> None: ...
 
@@ -99,7 +115,17 @@ class _KeyringBackend:
         self._kr = cls()
 
     def get(self, account: str) -> str | None:
-        return self._kr.get_password(_SERVICE, account)
+        """``None`` only when the keychain holds no such account.
+
+        ``keyring`` raises for a locked or unavailable backend, and that must stay an error: a locked
+        Keychain reported as "no credential" reads as an unconfigured store.
+        """
+        try:
+            return self._kr.get_password(_SERVICE, account)
+        except Exception as exc:
+            raise CredentialUnavailable(
+                f"Could not read credential {account!r} from the OS keychain: {type(exc).__name__}."
+            ) from exc
 
     def set(self, account: str, value: str) -> None:
         self._kr.set_password(_SERVICE, account, value)
@@ -135,6 +161,15 @@ class _DPAPIBackend:
         return subprocess.check_output(["wslpath", "-w", str(path)], text=True).strip()
 
     def get(self, account: str) -> str | None:
+        """The stored value, ``None`` only when this credential does not exist.
+
+        A failure to read raises. It used to return ``None``, which made "the keychain could not
+        answer" indistinguishable from "there is no such credential" — and on WSL2 every read is a
+        ``powershell.exe`` spawn that can time out under load. A caller that treats absence as a
+        migration cue then acts on a false absence, which is how the live store's key was replaced by
+        a stale one on 2026-07-31. Absence is a fact about the store; a timeout is a fact about the
+        machine, and no caller can tell them apart once they are the same value.
+        """
         import subprocess  # noqa: PLC0415
         p = self._path(account)
         if not p.exists():
@@ -145,9 +180,20 @@ class _DPAPIBackend:
                  f"(Import-Clixml '{self._win(p)}').GetNetworkCredential().Password"],
                 text=True, timeout=15,
             )
-            return out.strip() or None
-        except Exception:  # noqa: BLE001
-            return None
+        except Exception as exc:
+            raise CredentialUnavailable(
+                f"Could not read credential {account!r}: {type(exc).__name__}. The credential exists "
+                "on disk; this is a failure to read it, not an absence. Retry once the machine is "
+                "less loaded — treating this as 'not configured' is how a live key gets replaced."
+            ) from exc
+        # An existing file that decrypts to nothing is a damaged credential, not an absent one:
+        # reporting it as absent would invite the same false-absence handling.
+        value = out.strip()
+        if not value:
+            raise CredentialUnavailable(
+                f"Credential {account!r} exists but decrypted to an empty value — it is damaged."
+            )
+        return value
 
     def set(self, account: str, value: str) -> None:
         """Write one credential, replacing any existing file — including a read-only one.
@@ -254,7 +300,20 @@ class _FernetVault:
         os.chmod(self._vault, 0o600)
 
     def get(self, account: str) -> str | None:
-        return self._load().get(account)
+        """``None`` only for an account this vault does not hold.
+
+        A vault that exists and will not decrypt — wrong master password, truncated file — raises,
+        because every account in it is then unreadable rather than absent. Reporting "absent" would
+        tell a caller the store was never configured.
+        """
+        try:
+            entries = self._load()
+        except Exception as exc:
+            raise CredentialUnavailable(
+                f"Could not open the credential vault at {self._vault}: {type(exc).__name__}. "
+                "Its accounts are unreadable, not absent."
+            ) from exc
+        return entries.get(account)
 
     def set(self, account: str, value: str) -> None:
         entries = self._load()
