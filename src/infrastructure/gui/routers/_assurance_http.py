@@ -7,7 +7,7 @@ separate so the route modules stay small and consistent.
 
 from __future__ import annotations
 
-from fastapi import status
+from fastapi import Response, status
 from fastapi.responses import JSONResponse
 
 from src.application.assurance_exposure import AssuranceExposurePolicy
@@ -63,3 +63,19 @@ def not_found_response() -> JSONResponse:
 
 def ok(payload: dict[str, object]) -> JSONResponse:
     return JSONResponse(content=payload, headers={"Cache-Control": NO_STORE})
+
+
+def deleted(response: JSONResponse) -> Response:
+    """Turn a successful mutation response into ``204`` with no body; pass a refusal through.
+
+    A deletion has nothing to describe, so it reports the absence it created rather than a result
+    object — the status convention this release adopts. Written once here rather than by restructuring
+    each of the three translators: they refuse over three different result unions, but they all agree
+    that success is 200, and that is the only thing this needs to know.
+
+    ``no-store`` rides on the 204 too. It is a header, and the confidentiality contract covers every
+    response this surface makes, not only the ones with bodies.
+    """
+    if response.status_code == 200:
+        return Response(status_code=204, headers={"Cache-Control": NO_STORE})
+    return response

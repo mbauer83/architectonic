@@ -21,7 +21,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Response, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
@@ -46,6 +46,7 @@ from src.infrastructure.gui.contracts.errors import (
 from src.infrastructure.gui.routers._assurance_http import (
     NO_STORE,
     build_policy,
+    deleted,
     locked_response,
     not_found,
     not_found_response,
@@ -125,14 +126,14 @@ def create_group(body: CreateGroupBody) -> JSONResponse:
     )))
 
 
-@grouping_router.delete("/api/assurance/groups/{group_id}", status_code=200)
-def delete_group(group_id: str) -> JSONResponse:
+@grouping_router.delete("/api/assurance/groups/{group_id}", status_code=204, response_model=None)
+def delete_group(group_id: str) -> Response:
     ctx = build_policy()[0]
     if not ctx.is_available():
         return locked_response()
-    return _translate(run_write(lambda: uc.delete_group(
+    return deleted(_translate(run_write(lambda: uc.delete_group(
         ctx.store, ctx.archive, group_id=group_id,
-    )))
+    ))))
 
 
 # ── Filing ─────────────────────────────────────────────────────────────────────

@@ -40,7 +40,13 @@ from src.infrastructure.gui.contracts.errors import (
     ProvenanceImmutableDetails,
 )
 from src.infrastructure.gui.routers._arch_entity_creator import GuiArchitectureEntityCreator
-from src.infrastructure.gui.routers._assurance_http import not_found, store_locked
+from src.infrastructure.gui.routers._assurance_http import (
+    deleted as deleted_response,
+)
+from src.infrastructure.gui.routers._assurance_http import (
+    not_found,
+    store_locked,
+)
 from src.infrastructure.mcp.assurance_mcp.context import get_assurance_context
 
 write_router = APIRouter()
@@ -126,7 +132,6 @@ def _translate(result: mutations.EdgeMutationResult) -> JSONResponse:
             headers={"Cache-Control": _NO_STORE},
         )
     return _ok(result)
-
 
 
 # ── Request bodies ─────────────────────────────────────────────────────────────
@@ -286,10 +291,12 @@ def edit_node(node_id: str, body: EditNodeBody) -> JSONResponse:
     )))
 
 
-@write_router.delete("/api/assurance/nodes/{node_id}", status_code=200)
-def delete_node(node_id: str) -> JSONResponse:
+@write_router.delete("/api/assurance/nodes/{node_id}", status_code=204, response_model=None)
+def delete_node(node_id: str) -> Response:
     ctx = get_assurance_context()
-    return _translate(run_write(lambda: mutations.delete_node(ctx.store, ctx.archive, node_id=node_id)))
+    return deleted_response(
+        _translate(run_write(lambda: mutations.delete_node(ctx.store, ctx.archive, node_id=node_id)))
+    )
 
 
 # ── Edge endpoints ─────────────────────────────────────────────────────────────
@@ -306,10 +313,12 @@ def add_edge(body: AddEdgeBody) -> JSONResponse:
     )))
 
 
-@write_router.delete("/api/assurance/edges/{edge_id}", status_code=200)
-def delete_edge(edge_id: str) -> JSONResponse:
+@write_router.delete("/api/assurance/edges/{edge_id}", status_code=204, response_model=None)
+def delete_edge(edge_id: str) -> Response:
     ctx = get_assurance_context()
-    return _translate(run_write(lambda: mutations.delete_edge(ctx.store, ctx.archive, edge_id=edge_id)))
+    return deleted_response(
+        _translate(run_write(lambda: mutations.delete_edge(ctx.store, ctx.archive, edge_id=edge_id)))
+    )
 
 
 # ── Baselines ─────────────────────────────────────────────────────────────────

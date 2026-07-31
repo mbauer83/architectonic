@@ -9,7 +9,7 @@ analysis-scoped STPA completeness.
 
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Response
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -31,6 +31,7 @@ from src.infrastructure.gui.contracts.errors import (
 from src.infrastructure.gui.routers._assurance_http import (
     NO_STORE,
     build_policy,
+    deleted,
     locked_response,
     not_found_response,
     ok,
@@ -154,15 +155,15 @@ def update_analysis(analysis_id: str, body: UpdateAnalysisBody) -> JSONResponse:
     return _translate_write(result)
 
 
-@analysis_router.delete("/api/assurance/analyses/{analysis_id}", status_code=200)
-def delete_analysis(analysis_id: str) -> JSONResponse:
+@analysis_router.delete("/api/assurance/analyses/{analysis_id}", status_code=204, response_model=None)
+def delete_analysis(analysis_id: str) -> Response:
     ctx = build_policy()[0]
     if not ctx.is_available():
         return locked_response()
     result = run_write(lambda: uc.delete_analysis(
         ctx.store, ctx.archive, analysis_id=analysis_id,
     ))
-    return _translate_write(result)
+    return deleted(_translate_write(result))
 
 
 def _translate_write(result: uc.AnalysisResult) -> JSONResponse:

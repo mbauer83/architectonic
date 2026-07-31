@@ -155,8 +155,12 @@ class TestGroupRoutes:
         )
 
         deleted = client.delete(f"/api/assurance/groups/{group_id}")
-        assert deleted.status_code == 200
-        assert deleted.json()["unfiled_analyses"] == [ids["stpa"]]
+        # 204 and no body. The deletion used to report which analyses it unfiled; the survivor read
+        # below is the stronger evidence for the same claim, because it asks the store rather than
+        # trusting the response to describe what it did.
+        assert deleted.status_code == 204
+        assert deleted.content == b""
+        assert deleted.headers["Cache-Control"] == "no-store"
 
         survivor = client.get(f"/api/assurance/analyses/{ids['stpa']}")
         assert survivor.status_code == 200

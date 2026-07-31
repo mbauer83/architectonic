@@ -341,8 +341,13 @@ def test_delete_node_success() -> None:
     ctx = _FakeContext(store)
     client = _make_client(ctx)
     resp = client.delete(f"/api/assurance/nodes/{nid}")
-    assert resp.status_code == 200
-    assert resp.json()["deleted"] == nid
+    # 204 and no body: a deletion has nothing to describe, and the id it removed is the one the
+    # caller just addressed. `no-store` rides on it anyway — the confidentiality contract covers
+    # every response this surface makes, not only the ones carrying a body.
+    assert resp.status_code == 204
+    assert resp.content == b""
+    assert resp.headers["Cache-Control"] == "no-store"
+    assert store.get_node(nid) is None
 
 
 def test_delete_node_not_found() -> None:
@@ -407,8 +412,9 @@ def test_delete_edge_success() -> None:
     ctx = _FakeContext(store)
     client = _make_client(ctx)
     resp = client.delete(f"/api/assurance/edges/{eid}")
-    assert resp.status_code == 200
-    assert resp.json()["deleted"] == eid
+    assert resp.status_code == 204
+    assert resp.content == b""
+    assert resp.headers["Cache-Control"] == "no-store"
 
 
 def test_delete_edge_not_found() -> None:
