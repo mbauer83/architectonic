@@ -130,7 +130,11 @@ TAXONOMY_ROWS: tuple[RouteRow, ...] = (
         cache_directive="private",
     ),
     RouteRow(
-        "GET", "/api/ontology", "catalog", "connections_read_ontology", TYPED,
+        "GET", "/api/ontology/classification", "catalog", "connections_read_ontology_classification",
+        TYPED, cache_directive="private",
+    ),
+    RouteRow(
+        "GET", "/api/ontology/pairs", "catalog", "connections_read_ontology_pair", TYPED,
         cache_directive="private",
     ),
     RouteRow(

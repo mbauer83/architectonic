@@ -18,6 +18,7 @@ import type { StatsSchema } from './stats'
 import type { DocumentTypeSchema, DocumentTypesSchema, SectionSpecSchema } from './documents'
 import type { GroupEntrySchema, GroupListSchema } from './groups'
 import type { MatrixConfigSchema, MatrixConnTypeConfigSchema } from './diagrams'
+import type { OntologyClassificationSchema, OntologyPairSchema } from './diagram-types'
 import type {
   AnalysisNotEmptyDetailsSchema,
   DenialDetailsSchema,
@@ -173,6 +174,19 @@ describe('groups and matrices', () => {
     >()
     expectTypeOf<SchemaType<typeof MatrixConnTypeConfigSchema>>().toEqualTypeOf<
       Immutable<components['schemas']['MatrixConnTypeConfig']>
+    >()
+  })
+})
+
+describe('ontology', () => {
+  it('decodes each of the two reads the split produced', () => {
+    // One address used to answer both shapes, selected by whether `target_type` was supplied. The client
+    // had already split it into two calls with two decoders; the URLs now agree with that.
+    expectTypeOf<SchemaType<typeof OntologyClassificationSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['OntologyClassificationResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof OntologyPairSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['OntologyPairResponse']>
     >()
   })
 })

@@ -271,9 +271,12 @@ export const makeHttpModelRepository = (): ModelRepository => ({
   getWriteHelp: () => fetchJson(buildUrl('/write-help'), WriteHelpSchema),
 
   getOntologyClassification: (sourceType: string) =>
-    fetchJson(buildUrl('/ontology', { source_type: sourceType }), OntologyClassificationSchema),
+    fetchJson(buildUrl('/ontology/classification', { source_type: sourceType }), OntologyClassificationSchema),
   getOntologyPair: (sourceType: string, targetType: string) =>
-    fetchJson(buildUrl('/ontology', { source_type: sourceType, target_type: targetType }), OntologyPairSchema),
+    fetchJson(
+      buildUrl('/ontology/pairs', { source_type: sourceType, target_type: targetType }),
+      OntologyPairSchema,
+    ),
   getAuthoringGuidance: (params) =>
     fetchJson(buildUrl('/authoring-guidance', {
       entity_type: params.entityTypes?.length ? params.entityTypes.join(',') : undefined,

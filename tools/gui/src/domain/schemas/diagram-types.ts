@@ -133,7 +133,12 @@ export const OntologyPairSchema = Schema.Struct({
   target_type: Schema.String,
   connection_types: Schema.Array(Schema.String),
   symmetric: Schema.Array(Schema.String),
-  relationship_kind_map: Schema.optional(Schema.Record({ key: Schema.String, value: Schema.Union(Schema.String, Schema.Null) })),
+  // Always present: the pair route builds it for every permitted type, with null where the ontology
+  // assigns no kind. Optional here described a response the route does not send.
+  relationship_kind_map: Schema.Record({
+    key: Schema.String,
+    value: Schema.NullOr(Schema.String),
+  }),
 })
 export type OntologyPair = typeof OntologyPairSchema.Type
 

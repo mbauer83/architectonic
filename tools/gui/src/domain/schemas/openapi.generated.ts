@@ -2211,15 +2211,45 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/ontology": {
+    "/api/ontology/classification": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Ontology classification / permitted pairs */
-        get: operations["connections_read_ontology"];
+        /**
+         * What one entity type may connect to
+         * @description Every relationship available from this type, grouped by direction.
+         *
+         *     Split from the pair read below. One address used to answer both, choosing the shape by whether
+         *     ``target_type`` was supplied, so no schema could describe it — and an invalid endpoint came back
+         *     as a 200 carrying an ``error`` string, which is a whole-operation failure wearing a success code.
+         */
+        get: operations["connections_read_ontology_classification"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ontology/pairs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Relationship types permitted between two entity types
+         * @description What may be drawn between this ordered pair.
+         *
+         *     ``target_type`` is required here, which is the point of the split: it is not a filter that
+         *     narrows the classification, it selects a different question with a different answer.
+         */
+        get: operations["connections_read_ontology_pair"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5227,6 +5257,55 @@ export interface components {
             capability: string;
             /** Remedy */
             remedy: string;
+        };
+        /**
+         * OntologyClassificationResponse
+         * @description What one entity type may connect to, grouped by direction.
+         *
+         *     Each map is keyed by the *other* entity type and lists the relationship types available in that
+         *     direction — open maps, because the keys are the ontology's own vocabulary. A symmetric relationship
+         *     appears under ``symmetric`` only, never in both directions, so a caller offering choices does not
+         *     show the same pair twice.
+         */
+        OntologyClassificationResponse: {
+            /** Incoming */
+            incoming: {
+                [key: string]: string[];
+            };
+            /** Outgoing */
+            outgoing: {
+                [key: string]: string[];
+            };
+            /** Source Type */
+            source_type: string;
+            /** Symmetric */
+            symmetric: {
+                [key: string]: string[];
+            };
+        };
+        /**
+         * OntologyPairResponse
+         * @description The relationship types permitted between one ordered pair of entity types.
+         *
+         *     Its own route rather than a variant of the classification: the two answer different questions and
+         *     share nothing but the word "ontology". They used to be one address returning whichever shape the
+         *     presence of ``target_type`` selected, which no single schema could describe honestly — and the client
+         *     had already split them into two calls with two decoders, so the URL was the only thing pretending
+         *     they were one operation.
+         */
+        OntologyPairResponse: {
+            /** Connection Types */
+            connection_types: string[];
+            /** Relationship Kind Map */
+            relationship_kind_map: {
+                [key: string]: string | null;
+            };
+            /** Source Type */
+            source_type: string;
+            /** Symmetric */
+            symmetric: string[];
+            /** Target Type */
+            target_type: string;
         };
         /**
          * OpenMapResponse
@@ -13516,13 +13595,11 @@ export interface operations {
             };
         };
     };
-    connections_read_ontology: {
+    connections_read_ontology_classification: {
         parameters: {
             query: {
                 source_id?: string | null;
                 source_type: string;
-                target_id?: string | null;
-                target_type?: string | null;
             };
             header?: never;
             path?: never;
@@ -13536,7 +13613,50 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["OntologyClassificationResponse"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    connections_read_ontology_pair: {
+        parameters: {
+            query: {
+                source_id?: string | null;
+                source_type: string;
+                target_id?: string | null;
+                target_type: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OntologyPairResponse"];
                 };
             };
             /** @description Request validation failed */

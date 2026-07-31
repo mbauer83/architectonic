@@ -27,6 +27,10 @@ from __future__ import annotations
 
 #: Every retired ``(METHOD, template)``, and the canonical operation that replaces it.
 RETIRED_ROUTES: dict[tuple[str, str], str] = {
+    # One address answered two questions, choosing its shape by whether `target_type` was supplied, and
+    # answered an invalid endpoint with a 200 carrying an error string. Split, because the two shapes are
+    # two operations — the GUI had already modelled them as two calls with two decoders.
+    ("GET", "/api/ontology"): "connections_read_ontology_classification",
     # ── entities ──────────────────────────────────────────────────────────────
     ("GET", "/api/entity"): "entities_read_entity",
     ("POST", "/api/entity"): "entities_create_entity",

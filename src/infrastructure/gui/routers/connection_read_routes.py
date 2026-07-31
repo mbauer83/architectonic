@@ -10,9 +10,14 @@ from fastapi import APIRouter, Depends, HTTPException
 from src.application.entity_type_predicates import is_internal_entity_type
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
-from src.infrastructure.gui.contracts.authoring_catalogs import RelationNotationsResponse
+from src.infrastructure.gui.contracts.authoring_catalogs import (
+    OntologyClassificationResponse,
+    OntologyPairResponse,
+    RelationNotationsResponse,
+)
 from src.infrastructure.gui.contracts.connections import ConnectionListResponse
 from src.infrastructure.gui.contracts.entities import DerivedNeighborhood, DirectNeighborhood
+from src.infrastructure.gui.contracts.errors import ApiError, FieldError, ValidationErrorDetails
 from src.infrastructure.gui.routers import state as s
 from src.infrastructure.gui.routers._global_search import (
     filter_global_hits,
@@ -119,36 +124,55 @@ def register_connection_read_routes(router: APIRouter) -> None:
         """
         return {"notations": catalogs.connections.all_relation_notations()}
 
-    @router.get("/api/ontology", tags=[TAG_CONNECTIONS], summary="Ontology classification / permitted pairs",
-        response_model=OpenMapResponse)
-    def get_ontology(
+    @router.get("/api/ontology/classification", tags=[TAG_CONNECTIONS],
+        summary="What one entity type may connect to", response_model=OntologyClassificationResponse)
+    def get_ontology_classification(
         source_type: str,
-        target_type: str | None = None,
+        source_id: str | None = None,
+        catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
+    ) -> dict[str, Any]:
+        """Every relationship available from this type, grouped by direction.
+
+        Split from the pair read below. One address used to answer both, choosing the shape by whether
+        ``target_type`` was supplied, so no schema could describe it — and an invalid endpoint came back
+        as a 200 carrying an ``error`` string, which is a whole-operation failure wearing a success code.
+        """
+        source, source_invalid = _resolve_effective_type(source_id, source_type)
+        if source_invalid:
+            raise _not_a_connection_endpoint("source_id")
+        return {"source_type": source_type, **catalogs.connections.classify_connections(source)}
+
+    @router.get("/api/ontology/pairs", tags=[TAG_CONNECTIONS],
+        summary="Relationship types permitted between two entity types",
+        response_model=OntologyPairResponse)
+    def get_ontology_pair(
+        source_type: str,
+        target_type: str,
         source_id: str | None = None,
         target_id: str | None = None,
         catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
     ) -> dict[str, Any]:
+        """What may be drawn between this ordered pair.
+
+        ``target_type`` is required here, which is the point of the split: it is not a filter that
+        narrows the classification, it selects a different question with a different answer.
+        """
         source, source_invalid = _resolve_effective_type(source_id, source_type)
-        target, target_invalid = _resolve_effective_type(target_id, target_type or "")
-        if source_invalid or target_invalid:
-            return {
-                "source_type": source_type,
-                "target_type": target_type,
-                "connection_types": [],
-                "error": "document/diagram global-artifact-references are not valid connection endpoints",
-            }
-        if target:
-            connection_types = catalogs.connections.permissible_connection_types(source, target)
-            return {
-                "source_type": source_type,
-                "target_type": target_type,
-                "connection_types": connection_types,
-                "symmetric": [item for item in connection_types if catalogs.connections.is_symmetric(item)],
-                "relationship_kind_map": {
-                    item: catalogs.connections.relationship_kind(item) for item in connection_types
-                },
-            }
-        return {"source_type": source_type, **catalogs.connections.classify_connections(source)}
+        target, target_invalid = _resolve_effective_type(target_id, target_type)
+        if source_invalid:
+            raise _not_a_connection_endpoint("source_id")
+        if target_invalid:
+            raise _not_a_connection_endpoint("target_id")
+        connection_types = catalogs.connections.permissible_connection_types(source, target)
+        return {
+            "source_type": source_type,
+            "target_type": target_type,
+            "connection_types": list(connection_types),
+            "symmetric": [item for item in connection_types if catalogs.connections.is_symmetric(item)],
+            "relationship_kind_map": {
+                item: catalogs.connections.relationship_kind(item) for item in connection_types
+            },
+        }
 
     @router.get("/api/write-help", tags=[TAG_TAXONOMY], summary="Catalog of writable types",
         response_model=OpenMapResponse)
@@ -157,6 +181,22 @@ def register_connection_read_routes(router: APIRouter) -> None:
 
         return write_help()
 
+
+
+def _not_a_connection_endpoint(field: str) -> ApiError:
+    """A document or diagram reference named as a connection endpoint.
+
+    422 rather than the 200-with-an-error-string this used to answer: the whole operation failed, and a
+    success status carrying an error is only defensible for a mixed result that says which parts
+    succeeded. Nothing here succeeded.
+    """
+    message = (
+        "document/diagram global-artifact-references are not valid connection endpoints"
+    )
+    return ApiError(
+        422, "validation_error", message,
+        ValidationErrorDetails(field_errors=[FieldError(field=field, message=message)]),
+    )
 
 def _resolve_effective_type(artifact_id: str | None, declared_type: str) -> tuple[str, bool]:
     if artifact_id is None:

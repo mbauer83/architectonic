@@ -151,3 +151,37 @@ class GroupListResponse(NullsOmitted):
     analysis_collections: list[GroupEntryResponse] | None = Field(
         default=None, alias="analysis-collections"
     )
+
+
+class OntologyClassificationResponse(_Closed):
+    """What one entity type may connect to, grouped by direction.
+
+    Each map is keyed by the *other* entity type and lists the relationship types available in that
+    direction — open maps, because the keys are the ontology's own vocabulary. A symmetric relationship
+    appears under ``symmetric`` only, never in both directions, so a caller offering choices does not
+    show the same pair twice.
+    """
+
+    source_type: str
+    outgoing: dict[str, list[str]]
+    incoming: dict[str, list[str]]
+    symmetric: dict[str, list[str]]
+
+
+class OntologyPairResponse(_Closed):
+    """The relationship types permitted between one ordered pair of entity types.
+
+    Its own route rather than a variant of the classification: the two answer different questions and
+    share nothing but the word "ontology". They used to be one address returning whichever shape the
+    presence of ``target_type`` selected, which no single schema could describe honestly — and the client
+    had already split them into two calls with two decoders, so the URL was the only thing pretending
+    they were one operation.
+    """
+
+    source_type: str
+    target_type: str
+    connection_types: list[str]
+    #: The subset of ``connection_types`` that are symmetric, so a caller need not ask per type.
+    symmetric: list[str]
+    #: Each permitted type's relationship kind, or null where the ontology assigns none.
+    relationship_kind_map: dict[str, str | None]

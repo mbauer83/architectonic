@@ -1,6 +1,7 @@
 """Tests for the GUI connections router.
 
-Covers: GET /api/connections, /api/entities/{artifact_id}/neighbors, /api/search, /api/ontology,
+Covers: GET /api/connections, /api/entities/{artifact_id}/neighbors, /api/search,
+/api/ontology/classification, /api/ontology/pairs,
 /api/write-help; POST /api/connections (dry_run), and the connection detail routes —
 PATCH/DELETE by composite id, plus its associated-entities sub-resource.
 """
@@ -245,13 +246,13 @@ class TestSearch:
 
 class TestGetOntology:
     def test_source_type_only(self, sync_client) -> None:
-        r = sync_client.get("/api/ontology?source_type=requirement")
+        r = sync_client.get("/api/ontology/classification?source_type=requirement")
         assert r.status_code == 200
         data = r.json()
         assert "source_type" in data
 
     def test_source_and_target_type(self, sync_client) -> None:
-        r = sync_client.get("/api/ontology?source_type=requirement&target_type=requirement")
+        r = sync_client.get("/api/ontology/pairs?source_type=requirement&target_type=requirement")
         assert r.status_code == 200
         data = r.json()
         assert "connection_types" in data

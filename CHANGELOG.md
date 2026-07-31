@@ -38,6 +38,13 @@ Provenance and Participation Are Three Relations*.
 - **An assurance not-found no longer echoes the identifier.** An absent record and one above the
   reader's clearance must be indistinguishable, and a body naming what was asked for invites the habit
   of trusting that it existed.
+- **`GET /api/ontology` becomes two routes.** It answered two different questions — what a type may
+  connect to, and what is permitted between an ordered pair — choosing the shape by whether
+  `target_type` was supplied, so no single schema could describe it. Ask
+  `GET /api/ontology/classification?source_type=` for the first and
+  `GET /api/ontology/pairs?source_type=&target_type=` for the second. Naming a document or diagram
+  reference as an endpoint now answers `422`; it used to answer `200` with an `error` string, which is a
+  whole-operation failure wearing a success code.
 - **Every response carries `X-Request-ID`**, echoed from the request when supplied.
 - **Every error response carries `Cache-Control: no-store`.**
 - **`POST /api/assurance/nodes` is gone.** A node is created inside its provenance analysis, at
@@ -150,6 +157,7 @@ Provenance and Participation Are Three Relations*.
 | `GET /api/entity-schemata` | `GET /api/entity-schemata/{artifact_type}` |
 | `GET /api/matrix-config` | `GET /api/matrices/{artifact_id}/config` |
 | `GET /api/neighbors` | `GET /api/entities/{artifact_id}/neighbors` |
+| `GET /api/ontology` | `GET /api/ontology/classification` |
 | `PATCH /api/group` | `PATCH /api/groups/{kind}/{slug}` |
 | `POST /admin/api/connection` | `POST /admin/api/connections` |
 | `POST /admin/api/connection/remove` | `DELETE /admin/api/connections/{connection_id}` |

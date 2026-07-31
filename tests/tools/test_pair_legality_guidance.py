@@ -7,7 +7,7 @@ Covers:
 - validation: filter with domain name + target → error
 - validation: filter with multiple types + target → error
 - unknown types return error with suggestions
-- results consistent with REST /api/ontology (parity test)
+- results consistent with REST /api/ontology/pairs (parity test)
 - MCP artifact_authoring_guidance passes target through
 """
 
@@ -176,7 +176,7 @@ class TestMcpAuthoringGuidancePairLegality:
 
 
 # ---------------------------------------------------------------------------
-# REST /api/ontology endpoint parity
+# REST /api/ontology/pairs endpoint parity
 # ---------------------------------------------------------------------------
 
 
@@ -194,25 +194,25 @@ def _ontology_rest_client():
 
 
 class TestRestOntologyEndpointParity:
-    """The pair_connection_guidance domain function must agree with /api/ontology REST output."""
+    """The pair_connection_guidance domain function must agree with /api/ontology/pairs REST output."""
 
     def test_rest_ontology_endpoint_returns_connection_types(self) -> None:
         client = _ontology_rest_client()
 
-        response = client.get("/api/ontology", params={"source_type": "requirement", "target_type": "goal"})
+        response = client.get("/api/ontology/pairs", params={"source_type": "requirement", "target_type": "goal"})
         assert "connection_types" in response.json(), (
-            "REST /api/ontology with source+target must return connection_types"
+            "REST /api/ontology/pairs must return connection_types"
         )
 
     def test_rest_and_domain_agree_on_permitted_types(self) -> None:
-        """REST /api/ontology and pair_connection_guidance outgoing+symmetric must cover the same types."""
+        """REST /api/ontology/pairs and pair_connection_guidance must cover the same types."""
         client = _ontology_rest_client()
 
         source, target = "application-component", "data-object"
         pg = pair_connection_guidance(source, target)
         guidance_types = set(pg.get("outgoing", [])) | set(pg.get("symmetric", []))
 
-        response = client.get("/api/ontology", params={"source_type": source, "target_type": target})
+        response = client.get("/api/ontology/pairs", params={"source_type": source, "target_type": target})
         rest_types = set(response.json().get("connection_types", []))
 
         assert guidance_types == rest_types, (

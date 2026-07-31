@@ -12,7 +12,7 @@ import { test, expect } from './coverage-fixture'
  *   3. <main> renders non-empty text   — catches "header only" blanks
  *
  * Detail routes are reached by clicking the first item in their list view so we never
- * hard-code artifact ids and we exercise the real `/api/ontology` and
+ * hard-code artifact ids and we exercise the real `/api/ontology/classification` and
  * `/api/diagrams/{artifact_id}/context` calls that the 422 bug broke.
  */
 
@@ -188,7 +188,7 @@ test('assurance node deep link: unknown id renders the indistinguishable not-fou
   expect(problems, `runtime problems:\n${problems.map((p) => `  [${p.kind}] ${p.detail}`).join('\n')}`).toEqual([])
 })
 
-test('entity detail renders (exercises /api/ontology connection editor)', async ({ page }) => {
+test('entity detail renders (exercises the ontology connection editor)', async ({ page }) => {
   const { problems } = watch(page)
   await page.goto('/entities', { waitUntil: 'load' })
   const firstEntity = page.locator('main a[href*="/entity?id="]').first()

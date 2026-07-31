@@ -50,7 +50,6 @@ UNTYPED_RESPONSE_OPERATIONS: frozenset[str] = frozenset({
     "assurance_search_nodes",
     "assurance_update_analysis",
     "connections_read_entity_neighbors",
-    "connections_read_ontology",
     "diagrams_discover_diagram_entities",
     "diagrams_list_diagram_types",
     "diagrams_preview_diagram",
