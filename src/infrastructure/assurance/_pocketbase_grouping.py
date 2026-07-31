@@ -22,7 +22,7 @@ from src.infrastructure.assurance._pocketbase_analysis import (
     ANALYSES_COLLECTION,
 )
 from src.infrastructure.assurance._pocketbase_analysis import (
-    list_analyses as list_analysis_records,
+    list_raw as list_analysis_records_raw,
 )
 from src.infrastructure.assurance._pocketbase_analysis import (
     update as update_analysis_record,
@@ -77,7 +77,8 @@ class RestGroupingStoreMixin:
     def delete_group(self, group_id: str) -> None:
         """Remove the group and unfile its analyses. Their content is untouched."""
         client = self._require_unlocked()
-        filed = list_analysis_records(
+        # Unprojected, because unfiling PATCHes each analysis at its PocketBase row id.
+        filed = list_analysis_records_raw(
             client, self._analyses_url(), self._filter, method=None, status=None
         )
         for analysis in filed:

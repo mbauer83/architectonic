@@ -40,7 +40,7 @@ def get(conn: Any, analysis_id: str) -> dict[str, object] | None:
     row = conn.execute(
         "SELECT * FROM assurance_analyses WHERE analysis_id = ?", (analysis_id,)
     ).fetchone()
-    return row if row else None
+    return analyses.as_analysis_record(row) if row else None
 
 
 def list_analyses(
@@ -53,7 +53,9 @@ def list_analyses(
     rows = conn.execute(
         f"SELECT * FROM assurance_analyses {clause} ORDER BY created_at", params
     ).fetchall()
-    return list(rows)
+    # Projected even though ``SELECT *`` already yields the canonical columns today: a column added
+    # by a later migration would otherwise reach a caller through this backend and no other.
+    return [analyses.as_analysis_record(row) for row in rows]
 
 
 def delete(conn: Any, analysis_id: str) -> None:

@@ -13,7 +13,7 @@ vocabulary constants and the record builder but persist via their own backends.
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -26,16 +26,58 @@ from src.infrastructure.assurance._id_utils import make_analysis_id
 __all__ = [
     "ANALYSES_DIR",
     "ANALYSIS_METHODS",
+    "ANALYSIS_RECORD_FIELDS",
     "ANALYSIS_STATUSES",
     "ANALYSIS_UPDATABLE",
     "FileAnalysisStoreMixin",
     "analysis_matches",
     "apply_analysis_update",
+    "as_analysis_record",
     "create_analysis_file",
     "list_analyses_files",
     "new_analysis_record",
     "update_analysis_file",
 ]
+
+#: The analysis record, field for field, as every backend must hand it back.
+#:
+#: It had no single answer before. SQLCipher's ``SELECT *`` returned nine columns; a file-backed
+#: record written before it was ever filed had eight, ``group_id`` simply absent; and PocketBase
+#: returned its own collection metadata — ``id``, ``collectionId``, ``collectionName``, ``created``,
+#: ``updated`` — alongside the eight. The port promises "an analysis record", so a caller that could
+#: not know which backend it was talking to could not know what it had, and no closed response
+#: contract could be published over it.
+ANALYSIS_RECORD_FIELDS: tuple[str, ...] = (
+    "analysis_id",
+    "group_id",
+    "name",
+    "method",
+    "architecture_anchor_id",
+    "status",
+    "tlp",
+    "created_at",
+    "updated_at",
+)
+
+
+def as_analysis_record(row: Mapping[str, object]) -> dict[str, object]:
+    """``row`` as the canonical record: exactly :data:`ANALYSIS_RECORD_FIELDS`, nothing else.
+
+    ``group_id`` is the only field a stored row may lack — an unfiled analysis, and every record any
+    file-backed store wrote before the field existed — so it reads as ``None`` rather than raising.
+    A store is not rewritten to add it: the record on disk stays as it was written, and filing it
+    later is what puts a value there.
+
+    A backend's own record identity is dropped here on purpose. It addresses the row inside that
+    backend and means nothing outside it, so passing it on would invite a caller to treat one
+    store's primary key as this system's.
+    """
+    missing = [
+        field for field in ANALYSIS_RECORD_FIELDS if field != "group_id" and field not in row
+    ]
+    if missing:
+        raise ValueError(f"stored analysis record is missing {', '.join(missing)}")
+    return {field: row.get(field) for field in ANALYSIS_RECORD_FIELDS}
 
 #: Directory holding the analysis records in the file-backed stores. Named here rather than
 #: spelled at each use site, because filing (`_grouping_records`) has to reach the same records
@@ -60,6 +102,10 @@ def new_analysis_record(
     now = _now_iso()
     return {
         "analysis_id": make_analysis_id(method, name),
+        # Unfiled: filing is a later gesture, and an analysis is worth recording before anyone has
+        # settled where it belongs. Written explicitly so a freshly created record already has the
+        # canonical field set rather than acquiring it the first time it is filed.
+        "group_id": None,
         "name": name,
         "method": method,
         "architecture_anchor_id": architecture_anchor_id,
@@ -197,7 +243,8 @@ class FileAnalysisStoreMixin:
 
     def get_analysis(self, analysis_id: str) -> dict[str, object] | None:
         self._require_unlocked()
-        return self._read(self._analyses_dir() / f"{analysis_id}.{self._ANALYSIS_EXT}")
+        record = self._read(self._analyses_dir() / f"{analysis_id}.{self._ANALYSIS_EXT}")
+        return None if record is None else as_analysis_record(record)
 
     def list_analyses(
         self,
@@ -206,9 +253,12 @@ class FileAnalysisStoreMixin:
         status: str | None = None,
     ) -> list[dict[str, object]]:
         self._require_unlocked()
-        return list_analyses_files(
-            self._read, self._analyses_dir(), self._ANALYSIS_EXT, method=method, status=status
-        )
+        return [
+            as_analysis_record(record)
+            for record in list_analyses_files(
+                self._read, self._analyses_dir(), self._ANALYSIS_EXT, method=method, status=status
+            )
+        ]
 
     def update_analysis(self, analysis_id: str, **attrs: object) -> None:
         self._require_unlocked()

@@ -20,7 +20,7 @@ borrowing ended and the nodes untouched.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterator
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
@@ -28,7 +28,7 @@ import pytest
 
 from src.application import assurance_analysis as uc
 from src.application import assurance_mutations as mutations
-from tests.assurance._pocketbase_stub import StubPocketBaseClient
+from tests.support.assurance_backends import ASSURANCE_BACKENDS, BACKEND_NAMES
 
 
 class _Archive:
@@ -40,71 +40,9 @@ class _Archive:
         return {"operation": operation}
 
 
-def _sqlcipher_store(tmp_path: Path) -> Iterator[Any]:
-    pytest.importorskip("sqlcipher3", reason="sqlcipher3 not installed")
-    from src.infrastructure.assurance._sqlcipher_store import SQLCipherAssuranceStore
-    from src.infrastructure.assurance.lifecycle import init_store
-
-    db_path = tmp_path / "conformance.db"
-    init_store(db_path)
-    store = SQLCipherAssuranceStore(db_path)
-    store.unlock()
-    yield store
-    store.lock()
-
-
-def _private_git_store(tmp_path: Path) -> Iterator[Any]:
-    from src.infrastructure.assurance._private_git_store import PrivateGitAssuranceStore
-
-    store = PrivateGitAssuranceStore(tmp_path / "assurance-repo")
-    store.unlock()
-    yield store
-    store.lock()
-
-
-def _encrypted_private_git_store(tmp_path: Path) -> Iterator[Any]:
-    from cryptography.fernet import Fernet  # type: ignore[import-untyped]
-
-    from src.infrastructure.assurance import _credential_store as creds
-    from src.infrastructure.assurance._encrypted_private_git_store import (
-        EncryptedPrivateGitAssuranceStore,
-    )
-
-    creds.set_credential("private-git-encryption-key", Fernet.generate_key().decode())
-    store = EncryptedPrivateGitAssuranceStore(tmp_path / ".arch-assurance-git")
-    store.unlock()
-    yield store
-    store.lock()
-
-
-def _pocketbase_store(_tmp_path: Path) -> Iterator[Any]:
-    """PocketBase against the shared stub transport rather than a live server.
-
-    What needs proving is that the adapter sweeps participation when an analysis goes — a running
-    PocketBase would test the server instead. The stub is the same one the other conformance runs
-    use: two fakes of one server drift apart.
-    """
-    from src.infrastructure.assurance._pocketbase_store import PocketBaseAssuranceStore
-
-    store = PocketBaseAssuranceStore("http://localhost:8090", "admin@example.com", "password")
-    store._client = StubPocketBaseClient()  # noqa: SLF001 — stands in for the authenticated client
-    yield store
-
-
-#: Backend name → a factory yielding an unlocked store. All four, because the port declares
-#: ``delete_analysis`` and a backend that sweeps nothing breaks it for whoever is configured to use
-#: that backend — at the moment they delete an analysis, not at startup.
-_BACKENDS: dict[str, Callable[[Path], Iterator[Any]]] = {
-    "sqlcipher": _sqlcipher_store,
-    "private-git": _private_git_store,
-    "encrypted-private-git": _encrypted_private_git_store,
-    "pocketbase": _pocketbase_store,
-}
-
-
-@pytest.fixture(params=sorted(_BACKENDS), ids=sorted(_BACKENDS))
+@pytest.fixture(params=BACKEND_NAMES, ids=BACKEND_NAMES)
 def store(request: pytest.FixtureRequest, tmp_path: Path) -> Iterator[Any]:
-    yield from _BACKENDS[request.param](tmp_path)
+    yield from ASSURANCE_BACKENDS[request.param](tmp_path)
 
 
 class TestDeletingAnAnalysisEndsParticipationOnly:

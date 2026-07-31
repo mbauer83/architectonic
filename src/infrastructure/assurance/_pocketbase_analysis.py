@@ -9,7 +9,11 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
-from src.infrastructure.assurance._analysis_records import apply_analysis_update, new_analysis_record
+from src.infrastructure.assurance._analysis_records import (
+    apply_analysis_update,
+    as_analysis_record,
+    new_analysis_record,
+)
 
 FilterFn = Callable[..., dict[str, str]]
 
@@ -33,11 +37,45 @@ def create(
     return str(rec["analysis_id"])
 
 
-def get(client: Any, url: str, filter_fn: FilterFn, analysis_id: str) -> dict[str, object] | None:
+def get_raw(client: Any, url: str, filter_fn: FilterFn, analysis_id: str) -> dict[str, object] | None:
+    """The PocketBase record as PocketBase returns it — collection metadata included.
+
+    For this backend's own use only. ``id`` is the collection's row identity, and the ``PATCH``/
+    ``DELETE`` URLs are addressed by it, so update and delete need the unprojected record. Nothing
+    outside this module and its grouping sibling may read it: it is a key in one store, not an
+    identity in this system.
+    """
     resp = client.get(url, params=filter_fn(analysis_id=analysis_id))
     resp.raise_for_status()
     items = resp.json().get("items", [])
     return items[0] if items else None
+
+
+def list_raw(
+    client: Any,
+    url: str,
+    filter_fn: FilterFn,
+    *,
+    method: str | None,
+    status: str | None,
+) -> list[dict[str, object]]:
+    """Every matching PocketBase record, unprojected. Same caveat as :func:`get_raw`."""
+    bindings: dict[str, str] = {}
+    if method:
+        bindings["method"] = method
+    if status:
+        bindings["status"] = status
+    params: dict[str, str | int] = {"perPage": 500}
+    params.update(filter_fn(**bindings))
+    resp = client.get(url, params=params)
+    resp.raise_for_status()
+    items: list[dict[str, object]] = resp.json().get("items", [])
+    return items
+
+
+def get(client: Any, url: str, filter_fn: FilterFn, analysis_id: str) -> dict[str, object] | None:
+    record = get_raw(client, url, filter_fn, analysis_id)
+    return None if record is None else as_analysis_record(record)
 
 
 def list_analyses(
@@ -48,16 +86,10 @@ def list_analyses(
     method: str | None,
     status: str | None,
 ) -> list[dict[str, object]]:
-    bindings: dict[str, str] = {}
-    if method:
-        bindings["method"] = method
-    if status:
-        bindings["status"] = status
-    params: dict[str, str | int] = {"perPage": 500}
-    params.update(filter_fn(**bindings))
-    resp = client.get(url, params=params)
-    resp.raise_for_status()
-    return resp.json().get("items", [])
+    return [
+        as_analysis_record(record)
+        for record in list_raw(client, url, filter_fn, method=method, status=status)
+    ]
 
 
 def update(client: Any, url: str, record_id: str, attrs: dict[str, object]) -> None:
@@ -122,7 +154,9 @@ class RestAnalysisStoreMixin:
 
     def update_analysis(self, analysis_id: str, **attrs: object) -> None:
         client = self._require_unlocked()
-        existing = self.get_analysis(analysis_id)
+        # ``get_raw``, not ``get_analysis``: the PATCH URL is addressed by PocketBase's own row id,
+        # which the canonical record deliberately does not carry.
+        existing = get_raw(client, self._analysis_url(), self._filter, analysis_id)
         if existing is None:
             raise RuntimeError(f"Analysis not found: {analysis_id}")
         update(client, self._analysis_url(), str(existing["id"]), attrs)
@@ -135,7 +169,7 @@ class RestAnalysisStoreMixin:
         whole mechanism. The nodes and their provenance are untouched.
         """
         client = self._require_unlocked()
-        existing = self.get_analysis(analysis_id)
+        existing = get_raw(client, self._analysis_url(), self._filter, analysis_id)
         if existing is None:
             return
         self.remove_all_analysis_members_of_analysis(analysis_id)
