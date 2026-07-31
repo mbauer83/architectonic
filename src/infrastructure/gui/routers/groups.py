@@ -13,9 +13,10 @@ from pydantic import BaseModel, ConfigDict
 from src.application.assurance_diagrams import assurance_surface_diagram_types
 from src.domain.repository.groups import GroupAxis, GroupEntry, GroupRegistry
 from src.infrastructure.app_bootstrap import complete_diagram_type_catalog
+from src.infrastructure.gui.contracts.authoring_catalogs import GroupListResponse
 from src.infrastructure.gui.contracts.groups import GroupOperationResponse
 from src.infrastructure.gui.routers import state as s
-from src.infrastructure.gui.routers._openapi import TAG_GROUPS, WRITE_RESPONSES, OpenMapResponse
+from src.infrastructure.gui.routers._openapi import TAG_GROUPS, WRITE_RESPONSES
 
 router = APIRouter()
 
@@ -106,7 +107,9 @@ def _axis_entries(
 
 
 @router.get("/api/groups", tags=[TAG_GROUPS], summary="List model-project groups with member counts",
-    response_model=OpenMapResponse)
+    # `exclude_none`: an axis the `kind` filter left out is absent, not an empty list — "not asked for"
+    # and "has no groups" are different answers and a client branches on them differently.
+    response_model=GroupListResponse, response_model_exclude_none=True)
 def list_groups(kind: str | None = None) -> dict[str, Any]:
     """Return groups from the registry, optionally filtered by axis."""
     repo_root = s.maybe_engagement_root()

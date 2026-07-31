@@ -16,6 +16,8 @@ import type {
 } from './sync-status'
 import type { StatsSchema } from './stats'
 import type { DocumentTypeSchema, DocumentTypesSchema, SectionSpecSchema } from './documents'
+import type { GroupEntrySchema, GroupListSchema } from './groups'
+import type { MatrixConfigSchema, MatrixConnTypeConfigSchema } from './diagrams'
 import type {
   AnalysisNotEmptyDetailsSchema,
   DenialDetailsSchema,
@@ -149,6 +151,28 @@ describe('authoring catalogs', () => {
     >()
     expectTypeOf<SchemaType<typeof SectionSpecSchema>>().toEqualTypeOf<
       Immutable<components['schemas']['DocumentSectionSpec']>
+    >()
+  })
+})
+
+describe('groups and matrices', () => {
+  it('decodes the group axes and their entries', () => {
+    // An axis the `kind` filter left out is absent; an axis with no groups is an empty list. Both are
+    // representable here, and the entry's ten fields are all required — eight were declared optional.
+    expectTypeOf<SchemaType<typeof GroupListSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['GroupListResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof GroupEntrySchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['GroupEntryResponse']>
+    >()
+  })
+
+  it('decodes the matrix config, nulls present rather than absent', () => {
+    expectTypeOf<SchemaType<typeof MatrixConfigSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['MatrixConfigResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof MatrixConnTypeConfigSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['MatrixConnTypeConfig']>
     >()
   })
 })

@@ -40,8 +40,10 @@ export const MatrixConfigSchema = Schema.Struct({
   version: Schema.String,
   keywords: Schema.Array(Schema.String),
   entity_ids: Schema.Array(Schema.String),
-  from_entity_ids: Schema.optional(Schema.NullOr(Schema.Array(Schema.String))),
-  to_entity_ids: Schema.optional(Schema.NullOr(Schema.Array(Schema.String))),
+  // Present and null for a square matrix, never absent: the route emits both keys unconditionally, and
+  // null says "no separate axis was authored" — a statement the absent case cannot make.
+  from_entity_ids: Schema.NullOr(Schema.Array(Schema.String)),
+  to_entity_ids: Schema.NullOr(Schema.Array(Schema.String)),
   conn_type_configs: Schema.Array(MatrixConnTypeConfigSchema),
   combined: Schema.Boolean,
   matrix_body: Schema.String,

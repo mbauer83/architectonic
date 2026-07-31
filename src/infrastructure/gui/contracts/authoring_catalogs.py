@@ -8,7 +8,7 @@ second place, and a term added to a module and not mirrored would fail its own r
 
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from src.infrastructure.gui.contracts.wire_nulls import NullsOmitted
 
@@ -102,3 +102,52 @@ class DocumentTypeListResponse(NullsOmitted):
     """
 
     document_types: list[DocumentTypeResponse]
+
+
+class GroupEntryResponse(NullsOmitted):
+    """One group within one axis, with its whole-catalog member count.
+
+    Every field is required. The domain's ``GroupEntry`` gives each a default and ``_entry_dict`` emits
+    all ten keys, so an absent one never reaches a client — the decoder that declared eight of them
+    optional was describing a response the route does not send, and every reader carried a fallback for
+    it.
+    """
+
+    #: Directory name, and the locator tools pass around.
+    slug: str
+    #: Stable opaque id (``GRP@…``); survives a rename or a move between tiers.
+    id: str
+    name: str
+    description: str
+    order: int
+    archived: bool
+    #: Model-project axis only: the group the GUI selects first.
+    default: bool
+    #: Model-project axis only: an ontology-framework restriction, empty when unrestricted.
+    meta_ontology: str
+    type_filter: list[str]
+    #: Members across the whole catalogue, not the currently loaded page — a badge computed from a
+    #: group-filtered list reads zero for every group that is not the active one.
+    member_count: int
+
+
+class GroupListResponse(NullsOmitted):
+    """The groups on each axis, filtered to one axis when the caller asked for one.
+
+    An axis is **absent** rather than empty when it was filtered out: an empty list means "this axis has
+    no groups", and the two must not read the same. The keys are hyphenated on the wire because that is
+    what the axis is called; the field names cannot be, hence the aliases.
+    """
+
+    model_config = ConfigDict(extra="forbid", protected_namespaces=(), populate_by_name=True)
+
+    model_projects: list[GroupEntryResponse] | None = Field(default=None, alias="model-projects")
+    diagram_collections: list[GroupEntryResponse] | None = Field(
+        default=None, alias="diagram-collections"
+    )
+    document_collections: list[GroupEntryResponse] | None = Field(
+        default=None, alias="document-collections"
+    )
+    analysis_collections: list[GroupEntryResponse] | None = Field(
+        default=None, alias="analysis-collections"
+    )

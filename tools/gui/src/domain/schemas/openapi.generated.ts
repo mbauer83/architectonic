@@ -4868,6 +4868,55 @@ export interface components {
             group_id?: string | null;
         };
         /**
+         * GroupEntryResponse
+         * @description One group within one axis, with its whole-catalog member count.
+         *
+         *     Every field is required. The domain's ``GroupEntry`` gives each a default and ``_entry_dict`` emits
+         *     all ten keys, so an absent one never reaches a client — the decoder that declared eight of them
+         *     optional was describing a response the route does not send, and every reader carried a fallback for
+         *     it.
+         */
+        GroupEntryResponse: {
+            /** Archived */
+            archived: boolean;
+            /** Default */
+            default: boolean;
+            /** Description */
+            description: string;
+            /** Id */
+            id: string;
+            /** Member Count */
+            member_count: number;
+            /** Meta Ontology */
+            meta_ontology: string;
+            /** Name */
+            name: string;
+            /** Order */
+            order: number;
+            /** Slug */
+            slug: string;
+            /** Type Filter */
+            type_filter: string[];
+        };
+        /**
+         * GroupListResponse
+         * @description The groups on each axis, filtered to one axis when the caller asked for one.
+         *
+         *     An axis is **absent** rather than empty when it was filtered out: an empty list means "this axis has
+         *     no groups", and the two must not read the same. The keys are hyphenated on the wire because that is
+         *     what the axis is called; the field names cannot be, hence the aliases.
+         */
+        GroupListResponse: {
+            /** Analysis-Collections */
+            "analysis-collections"?: components["schemas"]["GroupEntryResponse"][];
+            /** Diagram-Collections */
+            "diagram-collections"?: components["schemas"]["GroupEntryResponse"][];
+            /** Document-Collections */
+            "document-collections"?: components["schemas"]["GroupEntryResponse"][];
+            /** Model-Projects */
+            "model-projects"?: components["schemas"]["GroupEntryResponse"][];
+        };
+        /**
          * GroupOperationResponse
          * @description What a group operation did.
          *
@@ -5058,6 +5107,49 @@ export interface components {
             name: string;
             /** Requires */
             requires: string[];
+        };
+        /**
+         * MatrixConfigResponse
+         * @description A matrix diagram's authored configuration, parsed out of its PUML frontmatter.
+         *
+         *     ``from_entity_ids`` and ``to_entity_ids`` are **present and null** for a square matrix rather than
+         *     absent: null says "no separate axis was authored, so both axes are ``entity_ids``", which is a
+         *     different statement from a field that was never part of the response. The producer emits the keys
+         *     unconditionally, so the contract does too.
+         */
+        MatrixConfigResponse: {
+            /** Artifact Id */
+            artifact_id: string;
+            /** Combined */
+            combined: boolean;
+            /** Conn Type Configs */
+            conn_type_configs: components["schemas"]["MatrixConnTypeConfig"][];
+            /** Entity Ids */
+            entity_ids: string[];
+            /** From Entity Ids */
+            from_entity_ids: string[] | null;
+            /** Keywords */
+            keywords: string[];
+            /** Matrix Body */
+            matrix_body: string;
+            /** Name */
+            name: string;
+            /** Status */
+            status: string;
+            /** To Entity Ids */
+            to_entity_ids: string[] | null;
+            /** Version */
+            version: string;
+        };
+        /**
+         * MatrixConnTypeConfig
+         * @description One relationship type the matrix draws, and whether it is currently shown.
+         */
+        MatrixConnTypeConfig: {
+            /** Active */
+            active: boolean;
+            /** Conn Type */
+            conn_type: string;
         };
         /** MatrixPreviewBody */
         MatrixPreviewBody: {
@@ -12541,7 +12633,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["GroupListResponse"];
                 };
             };
             /** @description Request validation failed */
@@ -13276,7 +13368,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["MatrixConfigResponse"];
                 };
             };
             /** @description Artifact not found */

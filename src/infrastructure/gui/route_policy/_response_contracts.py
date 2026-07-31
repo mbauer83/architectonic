@@ -63,8 +63,6 @@ UNTYPED_RESPONSE_OPERATIONS: frozenset[str] = frozenset({
     "documents_search_reference_artifacts",
     "entities_search_artifacts",
     "entities_search_display_artifacts",
-    "groups_list_groups",
-    "matrices_read_matrix_config",
     "promotion_execute_promotion",
     "promotion_plan_promotion",
     "sync_read_sync_changes",

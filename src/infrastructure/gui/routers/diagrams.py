@@ -16,6 +16,7 @@ from src.infrastructure.gui.contracts.diagrams import (
     DiagramEntityListResponse,
     DiagramListResponse,
     DiagramReferenceListResponse,
+    MatrixConfigResponse,
 )
 from src.infrastructure.gui.routers import state as s
 from src.infrastructure.gui.routers._diagram_context import (
@@ -117,7 +118,7 @@ def read_diagram(
     "/api/matrices/{artifact_id}/config",
     tags=[TAG_DIAGRAMS],
     summary="Matrix diagram configuration",
-    response_model=OpenMapResponse,
+    response_model=MatrixConfigResponse,
     responses=READ_RESPONSES,
 )
 def get_matrix_config(artifact_id: str) -> dict[str, Any]:

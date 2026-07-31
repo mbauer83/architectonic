@@ -165,3 +165,37 @@ class DatatypeTypeUsageResponse(_Closed):
 
     type_id: str
     usages: list[DatatypeTypeUsage]
+
+
+class MatrixConnTypeConfig(_Closed):
+    """One relationship type the matrix draws, and whether it is currently shown."""
+
+    conn_type: str
+    active: bool
+
+
+class MatrixConfigResponse(_Closed):
+    """A matrix diagram's authored configuration, parsed out of its PUML frontmatter.
+
+    ``from_entity_ids`` and ``to_entity_ids`` are **present and null** for a square matrix rather than
+    absent: null says "no separate axis was authored, so both axes are ``entity_ids``", which is a
+    different statement from a field that was never part of the response. The producer emits the keys
+    unconditionally, so the contract does too.
+    """
+
+    artifact_id: str
+    name: str
+    status: str
+    version: str
+    keywords: list[str]
+    #: The population when both axes are the same — the square case.
+    entity_ids: list[str]
+    #: The row axis of an asymmetric matrix; null when the matrix is square.
+    from_entity_ids: list[str] | None
+    #: The column axis of an asymmetric matrix; null when the matrix is square.
+    to_entity_ids: list[str] | None
+    conn_type_configs: list[MatrixConnTypeConfig]
+    #: Whether the cells combine every active relationship type into one mark.
+    combined: bool
+    #: The diagram's authored PUML body, which the matrix owns rather than deriving.
+    matrix_body: str
