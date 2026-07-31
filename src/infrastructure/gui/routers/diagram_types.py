@@ -10,6 +10,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from src.application.assurance_diagrams import assurance_surface_diagram_types
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.infrastructure.app_bootstrap import complete_diagram_type_catalog, runtime_catalogs_dependency
+from src.infrastructure.gui.contracts.diagrams import (
+    DatatypeTypeListResponse,
+    DatatypeTypeUsageResponse,
+)
 from src.infrastructure.gui.routers import state as s
 from src.infrastructure.gui.routers._openapi import READ_RESPONSES, TAG_DIAGRAMS, OpenMapResponse
 
@@ -44,7 +48,7 @@ def read_diagram_kind_ui_config(
 
 
 @router.get("/api/diagram-types/datatype/types", tags=[TAG_DIAGRAMS], summary="Datatype classifier types",
-    response_model=OpenMapResponse)
+    response_model=DatatypeTypeListResponse)
 def query_datatype_type_catalog(
     query: str | None = None,
     scope: str | None = None,
@@ -80,7 +84,7 @@ def query_datatype_type_catalog(
 
 
 @router.get("/api/diagram-types/datatype/types/{type_id}/usages", tags=[TAG_DIAGRAMS],
-    summary="Usages of a datatype classifier type", response_model=OpenMapResponse)
+    summary="Usages of a datatype classifier type", response_model=DatatypeTypeUsageResponse)
 def query_datatype_type_usages(type_id: str) -> dict[str, Any]:
     from src.diagram_types.datatype._type_catalog import query_type_usages  # noqa: PLC0415
 

@@ -113,3 +113,55 @@ class DiagramListResponse(_Closed):
 
     total: int
     items: list[DiagramSummary]
+
+
+class DatatypeClassifierInfo(_Closed):
+    """One classifier a datatype diagram declares, as the picker needs it.
+
+    ``host_diagram_id`` is the diagram that owns it — a classifier is a diagram-local construct, so
+    it has no file of its own and its full identifier is composite (see ``_diagram_entity_extraction``).
+    Empty for a workspace-scoped type, which is the difference ``scope`` names.
+    """
+
+    type_id: str
+    label: str
+    kind: str
+    scope: str
+    host_diagram_id: str
+
+
+class DatatypeTypeListResponse(_Closed):
+    """A page of datatype classifier types, with the primitives they may be built from.
+
+    ``generation`` is the index generation the page was read at: a picker holding a page and then
+    resolving one of its entries needs to know the two came from the same model, and a stale page that
+    silently resolves against a newer index is how a deleted classifier gets offered.
+
+    ``next_cursor`` is null on the last page, following the house pagination convention — present and
+    null rather than absent, so a client can tell "no more" from "this server does not paginate".
+    """
+
+    generation: int
+    primitives: list[str]
+    classifiers: list[DatatypeClassifierInfo]
+    next_cursor: str | None
+
+
+class DatatypeTypeUsage(_Closed):
+    """One place a classifier type is referenced as an attribute's type."""
+
+    diagram_id: str
+    classifier_local_id: str
+    attr_name: str
+
+
+class DatatypeTypeUsageResponse(_Closed):
+    """Everywhere one classifier type is used.
+
+    ``type_id`` is echoed although the caller supplied it in the path: a client that fans out over
+    several types and collects the answers needs each one to say which question it answers, and
+    correlating by request order is the kind of thing that works until it does not.
+    """
+
+    type_id: str
+    usages: list[DatatypeTypeUsage]

@@ -59,8 +59,6 @@ UNTYPED_RESPONSE_OPERATIONS: frozenset[str] = frozenset({
     "connections_read_ontology",
     "connections_read_relation_notations",
     "diagrams_discover_diagram_entities",
-    "diagrams_list_datatype_type_usages",
-    "diagrams_list_datatype_types",
     "diagrams_list_diagram_types",
     "diagrams_preview_diagram",
     "diagrams_read_diagram",
