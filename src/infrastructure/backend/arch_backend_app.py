@@ -233,6 +233,7 @@ def _build_app(credentials: "GitCredentials | None" = None):  # type: ignore[no-
         reject_repeated_scalar_query_parameters,
     )
     from src.infrastructure.gui.contracts.operation_ids import manifest_operation_id
+    from src.infrastructure.gui.contracts.wire_nulls import install_wire_null_policy
     from src.infrastructure.gui.routers._openapi import APP_RESPONSES
     from src.infrastructure.gui.routers.admin import router as admin_router
     from src.infrastructure.gui.routers.assurance import router as assurance_router
@@ -337,6 +338,11 @@ def _build_app(credentials: "GitCredentials | None" = None):  # type: ignore[no-
     # The typed error envelope and the request id every error carries. Registered last so its
     # middleware is outermost and a failure anywhere inside still produces an envelope.
     install_error_contracts(app)
+    # The published document states what the wire actually carries: a DTO served only by
+    # null-omitting routes has its optionals declared absent-or-value rather than nullable, so the
+    # generated types are an oracle the frontend's decoders can be held against. Installed here and
+    # not after the routers because generation is lazy — nothing has asked for the document yet.
+    install_wire_null_policy(app)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["http://localhost:5173", "http://localhost:4173"],

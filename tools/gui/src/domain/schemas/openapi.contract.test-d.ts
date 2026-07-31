@@ -1,4 +1,5 @@
 import { describe, expectTypeOf, it } from 'vitest'
+import type { Immutable, SchemaType } from './contractOracle'
 import type { components } from './openapi.generated'
 import type {
   AnalysisNotEmptyDetailsSchema,
@@ -27,25 +28,6 @@ import type {
  * The schemas stay hand-written because they carry decode semantics generated types do not; the
  * generation supplies the check, not the decoder.
  */
-
-type SchemaType<S> = S extends { readonly Type: infer T } ? T : never
-
-/**
- * The oracle, with `readonly` applied throughout.
- *
- * Effect schemas decode arrays as `ReadonlyArray` on purpose — decoded data is not the caller's to
- * mutate — while `openapi-typescript` emits plain arrays because JSON Schema has no notion of
- * mutability. Making the schemas emit mutable arrays to satisfy a comparison would trade a real
- * property for a cosmetic one, so the modifier is normalised on the oracle side instead. `readonly`
- * is a modifier, not a shape: every structural difference still fails.
- */
-type Immutable<T> = T extends (infer E)[]
-  ? ReadonlyArray<Immutable<E>>
-  : T extends ReadonlyArray<infer E>
-    ? ReadonlyArray<Immutable<E>>
-    : T extends object
-      ? { readonly [K in keyof T]: Immutable<T[K]> }
-      : T
 
 describe('error envelope', () => {
   it('decodes exactly the envelope the backend declares', () => {

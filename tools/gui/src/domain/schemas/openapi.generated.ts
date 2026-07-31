@@ -432,7 +432,19 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * List Analysis Nodes
+         * @description A page of the working set this analysis reasons over — authored ∪ participating.
+         *
+         *     Paginated because an analysis's working set is unbounded: the aggregate read
+         *     (``GET /analyses/{id}``) returns a header and role counts, and the entries come from here. Each
+         *     item states its ``relationship`` explicitly, because a reader of a combined analysis who cannot
+         *     tell an authored node from a borrowed one reads another method's findings as this one's.
+         *
+         *     ``relationship`` narrows the collection rather than naming a second one: both readings are of the
+         *     same working set, and giving each its own path would put the same rows at two addresses.
+         */
+        get: operations["assurance_list_analysis_nodes"];
         put?: never;
         /**
          * Create Node
@@ -2811,6 +2823,34 @@ export interface components {
             [key: string]: unknown;
         };
         /**
+         * AnalysisNodePageResponse
+         * @description One page of the working set, with the role totals of the visible population.
+         *
+         *     The totals describe the analysis, not the page — a caller showing "12 authored, 3 borrowed"
+         *     would otherwise watch the numbers change as it scrolled. ``next_cursor`` is null on the last
+         *     page; it is opaque, and the only thing to do with it is hand it back.
+         *
+         *     ``next_cursor`` carries no default deliberately: the house pagination convention is
+         *     ``{"items": [...], "next_cursor": null}``, so the key is *always* present and a default would
+         *     publish it as possibly-absent — which is a different contract, and the one the client's
+         *     ``Schema.NullOr`` would then reject on the last page.
+         */
+        AnalysisNodePageResponse: {
+            /** Authored Total */
+            authored_total: number;
+            /** Items */
+            items: components["schemas"]["WorkingSetNodeItem"][];
+            /** Next Cursor */
+            next_cursor: string | null;
+            /** Referenced Total */
+            referenced_total: number;
+            /**
+             * Visibility Limited
+             * @default false
+             */
+            visibility_limited: boolean;
+        };
+        /**
          * AnalysisNotEmptyDetails
          * @description ``analysis_not_empty``: how many nodes the analysis authored.
          *
@@ -4068,27 +4108,27 @@ export interface components {
             /** Artifact Type */
             artifact_type: string;
             /** Conn In */
-            conn_in?: number | null;
+            conn_in?: number;
             /** Conn Out */
-            conn_out?: number | null;
+            conn_out?: number;
             /** Conn Sym */
-            conn_sym?: number | null;
+            conn_sym?: number;
             /** Domain */
             domain: string;
             /** Group */
-            group?: string | null;
+            group?: string;
             /** Host Diagram Id */
-            host_diagram_id?: string | null;
+            host_diagram_id?: string;
             /** Is Global */
             is_global: boolean;
             /** Last Updated */
-            last_updated?: string | null;
+            last_updated?: string;
             /** Name */
             name: string;
             /** Path */
             path: string;
             /** Specialization */
-            specialization?: string | null;
+            specialization?: string;
             /** Status */
             status: string;
             /** Subdomain */
@@ -4992,6 +5032,22 @@ export interface components {
              * @default false
              */
             confirm: boolean;
+        };
+        /**
+         * WorkingSetNodeItem
+         * @description One node of an analysis's working set, and how the analysis relates to it.
+         *
+         *     ``relationship`` is stated per item rather than left to the caller to derive by intersecting two
+         *     lists: a borrowed node has to look borrowed, and a reader of a combined analysis who loses that
+         *     distinction reads another method's findings as this one's.
+         */
+        WorkingSetNodeItem: {
+            node: components["schemas"]["AssuranceNodeRecord"];
+            /**
+             * Relationship
+             * @enum {string}
+             */
+            relationship: "authored" | "referenced";
         };
         /**
          * WriteResultResponse
@@ -6046,6 +6102,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    assurance_list_analysis_nodes: {
+        parameters: {
+            query?: {
+                cursor?: string | null;
+                limit?: number | null;
+                relationship?: ("authored" | "referenced") | null;
+            };
+            header?: never;
+            path: {
+                analysis_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisNodePageResponse"];
                 };
             };
             /** @description Request validation failed */

@@ -95,7 +95,13 @@ def get_backend_identity() -> dict[str, Any]:
 
 
 @router.get("/api/entities", tags=[TAG_ENTITIES], summary="List entities (AND-filtered by scope/type/domain)",
-    response_model=EntityListResponse)
+    # `exclude_none`: the client's schema reads these optionals as *absent or value*
+    # (`Schema.optional`), which is the shape the pre-DTO handler produced. A closed DTO fills an
+    # unset optional with null, and `host_diagram_id: null` fails that decode — every row silently
+    # dropped, so the list rendered empty with no error anywhere. The DTOs declare the same policy
+    # (`NullsOmitted`) so the published document says it too; the pair is held together by
+    # `tests/architecture/test_wire_null_policy.py`.
+    response_model=EntityListResponse, response_model_exclude_none=True)
 def list_entities(
     request: Request,
     domain: str | None = None,

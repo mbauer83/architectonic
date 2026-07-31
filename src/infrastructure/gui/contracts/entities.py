@@ -18,12 +18,14 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from src.infrastructure.gui.contracts.wire_nulls import NullsOmitted
+
 
 class _Closed(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
-class EntitySummary(_Closed):
+class EntitySummary(NullsOmitted):
     """One row of the entity list: enough to render, filter, link and badge.
 
     ``conn_in``/``conn_sym``/``conn_out`` are three numbers rather than one: a symmetric relation
@@ -50,7 +52,7 @@ class EntitySummary(_Closed):
     last_updated: str | None = None
 
 
-class EntityListResponse(_Closed):
+class EntityListResponse(NullsOmitted):
     """A page of entities, with the count of the *filtered* population.
 
     ``total`` is the size of the population the filters select, not of the page — a facet whose
@@ -62,13 +64,27 @@ class EntityListResponse(_Closed):
 
 
 class DocumentReference(_Closed):
-    """A document that cites this entity."""
+    """A document that cites this entity, and the link it cites it through.
 
-    artifact_id: str
-    doc_type: str
+    Mirrors ``application.document_links.DocumentEntityReference`` field for field, because that is
+    what the handler serialises — this contract is a projection of that output, not an independent
+    description of it. An earlier version of this DTO named ``artifact_id`` where the producer emits
+    ``document_id`` and omitted ``label``/``href`` altogether; being closed, it then rejected every
+    real reference and the detail read answered 500 for any entity a document cites.
+    ``test_document_reference_contract.py`` holds the two together.
+
+    ``label`` and ``href`` are the citation itself — the link text and the target as written. They
+    ride along because a reference list that cannot show *how* the document refers to the entity
+    makes the reader open the document to find out.
+    """
+
+    document_id: str
     title: str
+    doc_type: str
     path: str
-    section: str | None = None
+    section: str
+    label: str
+    href: str
 
 
 class EntityRecordFields(_Closed):

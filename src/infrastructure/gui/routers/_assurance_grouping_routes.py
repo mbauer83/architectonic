@@ -19,6 +19,8 @@ Exposure, in the terms `AssuranceExposurePolicy` already sets:
 
 from __future__ import annotations
 
+from typing import Literal
+
 from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -33,7 +35,9 @@ from src.application.assurance_analysis import (
 )
 from src.application.assurance_exposure import AssuranceExposurePolicy, Visible
 from src.application.assurance_legacy_invalid import LegacyInvalidNode
+from src.application.assurance_working_set_page import analysis_working_set_page
 from src.infrastructure.assurance.write_serialization import run_write
+from src.infrastructure.gui.contracts.assurance_signals import AnalysisNodePageResponse
 from src.infrastructure.gui.contracts.errors import (
     ApiError,
     InvalidParticipationDetails,
@@ -147,6 +151,43 @@ def file_analysis(analysis_id: str, body: FileAnalysisBody) -> JSONResponse:
 
 
 # ── Participation ──────────────────────────────────────────────────────────────
+
+
+@grouping_router.get("/api/assurance/analyses/{analysis_id}/nodes",
+    response_model=AnalysisNodePageResponse)
+def list_analysis_nodes(
+    analysis_id: str,
+    relationship: Literal["authored", "referenced"] | None = None,
+    limit: int | None = None,
+    cursor: str | None = None,
+) -> JSONResponse:
+    """A page of the working set this analysis reasons over — authored ∪ participating.
+
+    Paginated because an analysis's working set is unbounded: the aggregate read
+    (``GET /analyses/{id}``) returns a header and role counts, and the entries come from here. Each
+    item states its ``relationship`` explicitly, because a reader of a combined analysis who cannot
+    tell an authored node from a borrowed one reads another method's findings as this one's.
+
+    ``relationship`` narrows the collection rather than naming a second one: both readings are of the
+    same working set, and giving each its own path would put the same rows at two addresses.
+    """
+    ctx, pol = build_policy()
+    if pol.check_locked():
+        return locked_response()
+    if not _visible_analysis(ctx, pol, analysis_id):
+        return not_found_response()
+    page = analysis_working_set_page(
+        ctx.store, pol, analysis_id, relationship=relationship, limit=limit, cursor=cursor,
+    )
+    return ok({
+        "items": [
+            {"node": item.node, "relationship": item.relationship} for item in page.items
+        ],
+        "next_cursor": page.next_cursor,
+        "authored_total": page.authored_total,
+        "referenced_total": page.referenced_total,
+        "visibility_limited": pol.scope().visibility_limited,
+    })
 
 
 @grouping_router.get("/api/assurance/analyses/{analysis_id}/participating-nodes")

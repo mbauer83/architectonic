@@ -14,6 +14,7 @@ so the tests are robust to the inclusion mechanism.
 from __future__ import annotations
 
 from fastapi import APIRouter, FastAPI
+from fastapi.routing import APIRoute
 
 _MUTATION_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
 
@@ -44,3 +45,23 @@ def openapi_method_paths(surface: FastAPI | APIRouter) -> set[tuple[str, str]]:
 def openapi_mutation_routes(surface: FastAPI | APIRouter) -> set[tuple[str, str]]:
     """``(METHOD, path)`` pairs restricted to mutation methods (POST/PUT/PATCH/DELETE)."""
     return {mp for mp in openapi_method_paths(surface) if mp[0] in _MUTATION_METHODS}
+
+
+def api_routes(surface: FastAPI | APIRouter) -> list[APIRoute]:
+    """Every ``APIRoute`` the surface serves, with the lazy inclusion wrappers resolved.
+
+    The document above answers "which addresses"; this answers "declared with what" — response
+    model, serialization flags, endpoint signature — which the document deliberately does not say.
+    Walking ``.routes`` directly finds 13 of 161 operations, because an included router is a lazy
+    wrapper holding the real one in ``original_router`` (see the module docstring). Descending
+    through that wrapper is the only way to the route objects, and a test that skipped it would pass
+    by seeing almost nothing.
+    """
+    resolved: list[APIRoute] = []
+    for route in getattr(surface, "routes", []):
+        included = getattr(route, "original_router", None)
+        if included is not None:
+            resolved.extend(api_routes(included))
+        elif isinstance(route, APIRoute):
+            resolved.append(route)
+    return resolved

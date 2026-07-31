@@ -219,6 +219,38 @@ class AssuranceNodeRecord(_FeedShaped):
     """
 
 
+class WorkingSetNodeItem(_Closed):
+    """One node of an analysis's working set, and how the analysis relates to it.
+
+    ``relationship`` is stated per item rather than left to the caller to derive by intersecting two
+    lists: a borrowed node has to look borrowed, and a reader of a combined analysis who loses that
+    distinction reads another method's findings as this one's.
+    """
+
+    node: AssuranceNodeRecord
+    relationship: Literal["authored", "referenced"]
+
+
+class AnalysisNodePageResponse(_Closed):
+    """One page of the working set, with the role totals of the visible population.
+
+    The totals describe the analysis, not the page — a caller showing "12 authored, 3 borrowed"
+    would otherwise watch the numbers change as it scrolled. ``next_cursor`` is null on the last
+    page; it is opaque, and the only thing to do with it is hand it back.
+
+    ``next_cursor`` carries no default deliberately: the house pagination convention is
+    ``{"items": [...], "next_cursor": null}``, so the key is *always* present and a default would
+    publish it as possibly-absent — which is a different contract, and the one the client's
+    ``Schema.NullOr`` would then reject on the last page.
+    """
+
+    items: list[WorkingSetNodeItem]
+    next_cursor: str | None
+    authored_total: int
+    referenced_total: int
+    visibility_limited: bool = False
+
+
 class ArchLensResponse(_Closed):
     """The assurance findings that concern one architecture artifact.
 
