@@ -131,6 +131,11 @@ class EntityDetailResponse(EntityRecordFields):
     conn_out: int | None = None
     is_global: bool | None = None
     referenced_in_documents: list[DocumentReference] = []
+    # Set only for a construct a diagram owns — a GSN goal, a swimlane — and the field by which a
+    # display surface tells one from a model entity. The client's decoder has always declared it; the
+    # server had not, so reading such a construct failed its own response contract. Absent for a model
+    # entity rather than null, under this DTO's null-omitting policy.
+    host_diagram_id: str | None = None
 
 
 class EntityConnectionCounts(NullsOmitted):

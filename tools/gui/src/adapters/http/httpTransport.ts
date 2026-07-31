@@ -1,3 +1,9 @@
+import { parseDiagramLocalId } from '../../domain/diagramLocalIds'
+// CONSOLIDATION ITEM: percent-encoding an identifier for a URL segment is an addressing concern
+// used by both this adapter and the Vue router, but it lives in `ui/router/artifactRoutes`, so an
+// adapter reaches into the UI layer to get it. `HttpModelRepository` already does the same; this
+// does not widen the inversion, and the encoder's home is worth settling deliberately.
+import { encodeIdentitySegment } from '../../ui/router/artifactRoutes'
 import { Effect, Schema, ParseResult } from 'effect'
 import { NetworkError, NotFoundError } from '../../domain/errors'
 import { TIMEOUT_BUDGET_MS, timeoutBudgetForPath } from './routeTimeoutPolicy'
@@ -26,6 +32,25 @@ export const buildUrl = (
     }
   }
   return url.toString()
+}
+
+/**
+ * Where to read the entity `id` from.
+ *
+ * Turning identity into an address is this adapter's job, and there are two addresses because there
+ * are two kinds of thing. An ordinary artifact is a member of the entity collection. A construct a
+ * diagram owns is a sub-entity of that diagram, and *must* be addressed there: its identifier
+ * contains a slash (`…#nodes/g11`), a slash ends a URL path segment, and an encoded one is decoded
+ * back by the server before routing — so the flat address matches no route and answers 404.
+ */
+export const entityAddress = (id: string): string => {
+  const local = parseDiagramLocalId(id)
+  if (local === null) return buildUrl(`/entities/${encodeIdentitySegment(id)}`)
+  return buildUrl(
+    `/diagrams/${encodeIdentitySegment(local.diagramId)}`
+    + `/entities/${encodeIdentitySegment(local.entityType)}`
+    + `/${encodeIdentitySegment(local.localId)}`,
+  )
 }
 
 /** The abort budget for a URL, from its path's timeout class. `null` means never abort. */

@@ -45,9 +45,18 @@ class OpenMapResponse(DocumentedModel):
     documented as an object, no false precision, still no hand-written schema."""
 
 
-class WriteResultResponse(DocumentedModel):
+class WriteResultResponse(BaseModel):
     """The shape every mutation returns (mirrors ``state.write_result_to_dict`` and the
-    frontend ``WriteResultSchema``)."""
+    frontend ``WriteResultSchema``).
+
+    Closed, unlike the documented-but-open models above. It was open, which made the manifest name a
+    contract that promised nothing: `additionalProperties: true` says "these fields, and possibly
+    anything else", so a client could not rely on the shape and a fitness function could not tell the
+    difference between a typed mutation response and an untyped one. Every mutation returns exactly
+    ``state.write_result_to_dict``, so there is nothing extra to keep.
+    """
+
+    model_config = ConfigDict(extra="forbid")
 
     wrote: bool
     path: str

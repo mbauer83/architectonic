@@ -1587,6 +1587,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/diagrams/{artifact_id}/entities/{classifier_id}/attributes/{attribute_id}/metadata": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Patch one attribute's metadata on a diagram-entity
+         * @description The attribute's own address, split out of the classifier route.
+         *
+         *     One optional body field used to choose between editing the classifier and editing one of its
+         *     attributes — two different resources behind one address, which no cache directive, authorization
+         *     row or reader could tell apart. They are two addresses now, and the classifier body no longer
+         *     accepts the field.
+         */
+        patch: operations["diagrams_update_diagram_attribute_metadata"];
+        trace?: never;
+    };
     "/api/diagrams/{artifact_id}/entities/{classifier_id}/metadata": {
         parameters: {
             query?: never;
@@ -1602,6 +1627,36 @@ export interface paths {
         head?: never;
         /** Patch a diagram-entity's metadata */
         patch: operations["diagrams_update_diagram_classifier_metadata"];
+        trace?: never;
+    };
+    "/api/diagrams/{artifact_id}/entities/{entity_type}/{local_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read one diagram-owned construct
+         * @description A construct the diagram owns — a GSN goal, a swimlane — at the diagram's own address.
+         *
+         *     These are sub-entities of the diagram, and this is where they are addressed. They cannot be read
+         *     through the flat entity collection: their identifier is ``{diagram_id}#{entity_type}/{local_id}``
+         *     (``_diagram_entity_extraction.py``), so it contains a slash, and a slash in a path parameter ends
+         *     the segment — an encoded one is decoded back by the server before routing, so
+         *     ``/api/entities/GSN@…%23nodes%2Fg11`` does not match that route at all and answers 404.
+         *
+         *     Splitting the two composite parts into two segments is what removes the slash from any single
+         *     identifier, and it also says what was true all along: the type and the local id are the diagram's
+         *     coordinates for something inside it, not an opaque global id that happens to contain punctuation.
+         */
+        get: operations["diagrams_read_diagram_entity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/diagrams/{artifact_id}/svg": {
@@ -3978,6 +4033,8 @@ export interface components {
             };
             /** Group */
             group?: string;
+            /** Host Diagram Id */
+            host_diagram_id?: string;
             /** Is Global */
             is_global?: boolean;
             /**
@@ -4317,16 +4374,17 @@ export interface components {
         };
         /**
          * PatchDiagramEntityMetadataBody
-         * @description Targeted metadata edit for one datatype classifier, or one of its attributes.
+         * @description Targeted metadata edit for one datatype classifier, or for one of its attributes.
          *
-         *     The diagram and the classifier are path identity. ``attribute_id`` still selects between the
-         *     classifier's own metadata and one attribute's — the attribute-scoped route that would put it in
-         *     the path too is declared in the manifest and not yet mounted. ``patch`` carries only whitelisted
-         *     meta fields; the write op refuses structural keys.
+         *     Every identity is in the path — the diagram, the classifier, and for the attribute-scoped route
+         *     the attribute. ``attribute_id`` used to live *here*, where it selected between two different
+         *     addressed resources: present, the request edited an attribute; absent, the classifier. One body
+         *     field deciding which of two things is being written is the shape this redesign exists to remove,
+         *     and being closed (``extra="forbid"``) the model now rejects it outright rather than ignoring it.
+         *
+         *     ``patch`` carries only whitelisted meta fields; the write op refuses structural keys.
          */
         PatchDiagramEntityMetadataBody: {
-            /** Attribute Id */
-            attribute_id?: string | null;
             /**
              * Dry Run
              * @default true
@@ -5068,6 +5126,12 @@ export interface components {
          * WriteResultResponse
          * @description The shape every mutation returns (mirrors ``state.write_result_to_dict`` and the
          *     frontend ``WriteResultSchema``).
+         *
+         *     Closed, unlike the documented-but-open models above. It was open, which made the manifest name a
+         *     contract that promised nothing: `additionalProperties: true` says "these fields, and possibly
+         *     anything else", so a client could not rely on the shape and a fitness function could not tell the
+         *     difference between a typed mutation response and an untyped one. Every mutation returns exactly
+         *     ``state.write_result_to_dict``, so there is nothing extra to keep.
          */
         WriteResultResponse: {
             /** Artifact Id */
@@ -5087,8 +5151,6 @@ export interface components {
             warnings: string[];
             /** Wrote */
             wrote: boolean;
-        } & {
-            [key: string]: unknown;
         };
     };
     responses: never;
@@ -9585,12 +9647,13 @@ export interface operations {
             };
         };
     };
-    diagrams_update_diagram_classifier_metadata: {
+    diagrams_update_diagram_attribute_metadata: {
         parameters: {
             query?: never;
             header?: never;
             path: {
                 artifact_id: string;
+                attribute_id: string;
                 classifier_id: string;
             };
             cookie?: never;
@@ -9607,7 +9670,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["WriteResultResponse"];
                 };
             };
             /** @description Validation error (bad or ambiguous write) */
@@ -9648,6 +9711,138 @@ export interface operations {
             };
             /** @description Write temporarily rejected by the workspace gate (retryable) */
             423: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    diagrams_update_diagram_classifier_metadata: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifact_id: string;
+                classifier_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PatchDiagramEntityMetadataBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WriteResultResponse"];
+                };
+            };
+            /** @description Validation error (bad or ambiguous write) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write forbidden (e.g. admin mode not enabled, or mutation denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write temporarily rejected by the workspace gate (retryable) */
+            423: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    diagrams_read_diagram_entity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifact_id: string;
+                entity_type: string;
+                local_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityDetailResponse"];
+                };
+            };
+            /** @description Artifact not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

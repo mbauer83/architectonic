@@ -25,7 +25,12 @@ from src.infrastructure.gui.routers._diagram_write_responses import (
     DETAIL_RESPONSES,
     created,
 )
-from src.infrastructure.gui.routers._openapi import TAG_DIAGRAMS, WRITE_RESPONSES, OpenMapResponse
+from src.infrastructure.gui.routers._openapi import (
+    TAG_DIAGRAMS,
+    WRITE_RESPONSES,
+    OpenMapResponse,
+    WriteResultResponse,
+)
 
 router = APIRouter(responses=WRITE_RESPONSES)
 
@@ -209,11 +214,16 @@ def edit_diagram_gui(artifact_id: str, body: EditDiagramGuiBody) -> dict[str, An
     return s.write_result_to_dict(result)
 
 
-@router.patch("/api/diagrams/{artifact_id}/entities/{classifier_id}/metadata", tags=[TAG_DIAGRAMS],
-    summary="Patch a diagram-entity's metadata", response_model=OpenMapResponse)
-def patch_diagram_entity_metadata_gui(
-    artifact_id: str, classifier_id: str, body: PatchDiagramEntityMetadataBody
+def _patch_diagram_metadata(
+    *, operation_id: str, artifact_id: str, classifier_id: str, attribute_id: str | None,
+    body: PatchDiagramEntityMetadataBody,
 ) -> dict[str, Any]:
+    """The one write behind both metadata routes, differing only in what the path addressed.
+
+    Shared rather than duplicated: the two routes are the same mutation on two scopes, and the scope
+    is now decided by the address instead of by a body field. Each passes its own operation id, so
+    authorization stays per-operation.
+    """
     from src.application.candidate_repository import committed_repository  # noqa: PLC0415
     from src.infrastructure.write.artifact_write.diagram_entity_metadata_patch import (  # noqa: PLC0415
         patch_diagram_entity_metadata,
@@ -223,14 +233,14 @@ def patch_diagram_entity_metadata_gui(
     repo_root, _, verifier = s.get_write_deps()
     try:
         result = s.authorized_write(
-            "diagrams_update_diagram_classifier_metadata",
+            operation_id,
             patch_diagram_entity_metadata,
             repo_root=repo_root,
             verifier=verifier,
             clear_repo_caches=s.clear_caches,
             artifact_id=artifact_id,
             classifier_id=classifier_id,
-            attribute_id=body.attribute_id,
+            attribute_id=attribute_id,
             patch=body.patch,
             dry_run=body.dry_run,
             committed_repo=committed_repository(repo),
@@ -238,6 +248,38 @@ def patch_diagram_entity_metadata_gui(
     except ValueError as e:
         raise HTTPException(400, str(e))
     return s.write_result_to_dict(result)
+
+
+@router.patch("/api/diagrams/{artifact_id}/entities/{classifier_id}/metadata", tags=[TAG_DIAGRAMS],
+    summary="Patch a diagram-entity's metadata", response_model=WriteResultResponse)
+def patch_diagram_entity_metadata_gui(
+    artifact_id: str, classifier_id: str, body: PatchDiagramEntityMetadataBody
+) -> dict[str, Any]:
+    return _patch_diagram_metadata(
+        operation_id="diagrams_update_diagram_classifier_metadata",
+        artifact_id=artifact_id, classifier_id=classifier_id, attribute_id=None, body=body,
+    )
+
+
+@router.patch(
+    "/api/diagrams/{artifact_id}/entities/{classifier_id}/attributes/{attribute_id}/metadata",
+    tags=[TAG_DIAGRAMS], summary="Patch one attribute's metadata on a diagram-entity",
+    response_model=WriteResultResponse)
+def patch_diagram_attribute_metadata_gui(
+    artifact_id: str, classifier_id: str, attribute_id: str,
+    body: PatchDiagramEntityMetadataBody,
+) -> dict[str, Any]:
+    """The attribute's own address, split out of the classifier route.
+
+    One optional body field used to choose between editing the classifier and editing one of its
+    attributes — two different resources behind one address, which no cache directive, authorization
+    row or reader could tell apart. They are two addresses now, and the classifier body no longer
+    accepts the field.
+    """
+    return _patch_diagram_metadata(
+        operation_id="diagrams_update_diagram_attribute_metadata",
+        artifact_id=artifact_id, classifier_id=classifier_id, attribute_id=attribute_id, body=body,
+    )
 
 
 @router.post("/api/diagrams/{artifact_id}/sync", tags=[TAG_DIAGRAMS], summary="Sync a diagram to the model",

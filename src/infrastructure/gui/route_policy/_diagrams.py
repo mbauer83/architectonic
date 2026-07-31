@@ -40,6 +40,19 @@ DIAGRAM_ROWS: tuple[RouteRow, ...] = (
         "DiagramEntityListResponse",
         identity_parameters=_ID, cache_directive="no-cache", conditional_read="etag",
     ),
+    # A construct the diagram owns, at the diagram's own address. Two segments for the two parts of
+    # its composite identifier (`{diagram}#{entity_type}/{local_id}`), because a slash inside a single
+    # path parameter ends the segment — and an encoded one is decoded back before routing, so the flat
+    # entity address cannot carry these at all. Sub-entities of the diagram, addressed as such.
+    RouteRow(
+        "GET", "/api/diagrams/{artifact_id}/entities/{entity_type}/{local_id}", "detail",
+        "diagrams_read_diagram_entity", "EntityDetailResponse",
+        identity_parameters=("artifact_id", "entity_type", "local_id"),
+        # No ETag: the conditional-read registry is a reviewed set of model-derived templates, and
+        # claiming eligibility without being in it would be a promise the middleware does not keep.
+        # Worth adding deliberately later; not worth claiming now.
+        cache_directive="no-cache", conditional_read="none",
+    ),
     RouteRow(
         "GET", "/api/diagrams/{artifact_id}/connections", "subresource", "diagrams_list_diagram_connections",
         "DiagramConnectionListResponse", identity_parameters=_ID, cache_directive="no-cache",

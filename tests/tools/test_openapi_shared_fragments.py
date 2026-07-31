@@ -33,12 +33,18 @@ def test_application_wide_responses_document_validation_and_internal_failure() -
         assert body["model"] is ErrorEnvelope
 
 
-def test_write_result_model_carries_the_documented_fields_and_allows_extra() -> None:
+def test_write_result_model_is_closed_so_the_contract_it_names_means_something() -> None:
+    """It used to allow extra, and that made the manifest name a contract promising nothing.
+
+    ``additionalProperties: true`` says "these fields, and possibly anything else": a client cannot
+    rely on the shape, and a fitness function cannot tell a typed mutation response from an untyped
+    one — which is why seven operations sat in the untyped-response list while already declaring this
+    model. Every mutation returns exactly ``state.write_result_to_dict``, so there was never anything
+    extra to keep.
+    """
     schema = WriteResultResponse.model_json_schema()
     assert {"wrote", "path", "artifact_id"} <= set(schema["properties"])
-    # extra="allow" → a handler returning more than the model declares is documented, not
-    # filtered: the payload is never altered.
-    assert schema.get("additionalProperties") is not False
+    assert schema.get("additionalProperties") is False
 
 
 def test_open_map_response_is_an_object_that_allows_any_field() -> None:

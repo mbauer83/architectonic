@@ -211,7 +211,4 @@ LEGACY_ROUTES: dict[tuple[str, str], str] = {
 UNSERVED_OPERATIONS: frozenset[str] = frozenset({
     # New: reading back what was published, not only recording it.
     "assurance_list_gsn_publications",
-    # Split out of ``POST /api/diagram/entity-metadata``, whose optional ``attribute_id``
-    # selected between two different addressed resources.
-    "diagrams_update_diagram_attribute_metadata",
 })

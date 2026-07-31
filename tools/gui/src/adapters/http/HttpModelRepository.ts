@@ -49,8 +49,8 @@ import {
 } from '../../domain/schemas'
 import { SyncChangesResultSchema } from '../../domain/schemas-changes'
 import {
-  buildUrl, deleteNoContent, deleteReq, fetchJson, fetchJsonNotFound, fetchText, fetchWithTimeout,
-  patchJson, postJson, putJson,
+  buildUrl, deleteNoContent, deleteReq, entityAddress, fetchJson, fetchJsonNotFound, fetchText,
+  fetchWithTimeout, patchJson, postJson, putJson,
 } from './httpTransport'
 import { encodeIdentitySegment } from '../../ui/router/artifactRoutes'
 import { parseMarkdown } from '../../application/MarkdownService'
@@ -107,7 +107,7 @@ export const makeHttpModelRepository = (): ModelRepository => ({
     }), EntityTaxonomySchema),
 
   getEntity: (id: string) =>
-    fetchJsonNotFound(buildUrl(`/entities/${encodeIdentitySegment(id)}`), EntityDetailSchema, id).pipe(
+    fetchJsonNotFound(entityAddress(id), EntityDetailSchema, id).pipe(
       Effect.flatMap((entity) => {
         if (entity.content_text) {
           return parseMarkdown(entity.content_text, 'model').pipe(

@@ -50,14 +50,17 @@ class EditDiagramGuiBody(_Body):
 
 
 class PatchDiagramEntityMetadataBody(_Body):
-    """Targeted metadata edit for one datatype classifier, or one of its attributes.
+    """Targeted metadata edit for one datatype classifier, or for one of its attributes.
 
-    The diagram and the classifier are path identity. ``attribute_id`` still selects between the
-    classifier's own metadata and one attribute's — the attribute-scoped route that would put it in
-    the path too is declared in the manifest and not yet mounted. ``patch`` carries only whitelisted
-    meta fields; the write op refuses structural keys."""
+    Every identity is in the path — the diagram, the classifier, and for the attribute-scoped route
+    the attribute. ``attribute_id`` used to live *here*, where it selected between two different
+    addressed resources: present, the request edited an attribute; absent, the classifier. One body
+    field deciding which of two things is being written is the shape this redesign exists to remove,
+    and being closed (``extra="forbid"``) the model now rejects it outright rather than ignoring it.
 
-    attribute_id: str | None = None
+    ``patch`` carries only whitelisted meta fields; the write op refuses structural keys.
+    """
+
     patch: dict[str, Any]
     dry_run: bool = True
 

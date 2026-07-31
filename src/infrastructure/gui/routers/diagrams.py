@@ -26,6 +26,7 @@ from src.infrastructure.gui.routers._diagram_edge_label import router as _edge_l
 from src.infrastructure.gui.routers._diagram_palette import router as _palette_router
 from src.infrastructure.gui.routers._diagram_serving import _rendered_path
 from src.infrastructure.gui.routers._diagram_serving import router as _serving_router
+from src.infrastructure.gui.routers._diagram_sub_entity import router as _sub_entity_router
 from src.infrastructure.gui.routers._diagram_write import router as _write_router
 from src.infrastructure.gui.routers._matrix_write import router as _matrix_write_router
 from src.infrastructure.gui.routers._openapi import READ_RESPONSES, TAG_DIAGRAMS, OpenMapResponse
@@ -36,6 +37,7 @@ router.include_router(_matrix_write_router)
 router.include_router(_palette_router)
 router.include_router(_edge_label_router)
 router.include_router(_serving_router)
+router.include_router(_sub_entity_router)
 
 
 @_lru_cache(maxsize=1)
