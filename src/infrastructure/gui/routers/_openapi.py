@@ -32,17 +32,17 @@ TAG_TAXONOMY = "taxonomy"
 TAG_ASSURANCE = "assurance"
 
 
-class DocumentedModel(BaseModel):
-    """Base for response models: declares the fields worth documenting but keeps any extra
-    the handler returns (``extra="allow"`` → ``additionalProperties: true``), so annotating a
-    handler with one of these documents its shape without changing its payload."""
+class OpenMapResponse(BaseModel):
+    """A genuinely open/dynamic map (e.g. aggregate stats, composed authoring guidance) —
+    documented as an object, no false precision, still no hand-written schema.
+
+    ``extra="allow"`` → ``additionalProperties: true``: annotating a handler with this documents that
+    it returns an object without changing or constraining the payload. It is the *last* model in this
+    package that does so, which is why it no longer sits on a shared open base — a base class with one
+    subclass is a level of indirection describing a policy that has one member.
+    """
 
     model_config = ConfigDict(extra="allow")
-
-
-class OpenMapResponse(DocumentedModel):
-    """A genuinely open/dynamic map (e.g. aggregate stats, composed authoring guidance) —
-    documented as an object, no false precision, still no hand-written schema."""
 
 
 class WriteResultResponse(BaseModel):

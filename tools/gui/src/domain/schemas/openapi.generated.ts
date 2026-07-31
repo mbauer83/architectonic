@@ -4368,6 +4368,11 @@ export interface components {
          * OpenMapResponse
          * @description A genuinely open/dynamic map (e.g. aggregate stats, composed authoring guidance) —
          *     documented as an object, no false precision, still no hand-written schema.
+         *
+         *     ``extra="allow"`` → ``additionalProperties: true``: annotating a handler with this documents that
+         *     it returns an object without changing or constraining the payload. It is the *last* model in this
+         *     package that does so, which is why it no longer sits on a shared open base — a base class with one
+         *     subclass is a level of indirection describing a policy that has one member.
          */
         OpenMapResponse: {
             [key: string]: unknown;

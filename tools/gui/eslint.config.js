@@ -111,6 +111,28 @@ export default tseslint.config(
     },
   },
   {
+    // Layering: the inward-facing halves of the app may not reach into the Vue delivery layer.
+    //
+    // `domain/` is the model and its grammars; `adapters/` and `ports/` are how it reaches the
+    // outside. `ui/` is one particular delivery mechanism over all of them, so a dependency pointing
+    // that way is backwards — and it does not stay harmless. Three HTTP adapters imported the Vue
+    // router's identifier encoder, which refuses ids colliding with a *GUI* collection literal
+    // (`new`, `edit`, `groups`); the REST surface spells none of those beside an identifier, so they
+    // had inherited a rule that was not about them. The encoding now lives in
+    // `domain/identitySegments` and the guard stayed with the router that owns the collision.
+    files: ['src/domain/**/*.ts', 'src/adapters/**/*.ts', 'src/ports/**/*.ts'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [{
+          group: ['**/ui/**'],
+          message:
+            'domain/, adapters/ and ports/ must not import from ui/ — ui is a delivery layer over '
+            + 'them. Move the shared part inward (see domain/identitySegments) rather than reaching out.',
+        }],
+      }],
+    },
+  },
+  {
     // This config file itself runs in Node (env-gated fast tier below reads process.env).
     files: ['eslint.config.js'],
     languageOptions: {

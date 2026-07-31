@@ -1,6 +1,6 @@
 import type { EnterpriseAdminRepository } from '../../ports/EnterpriseAdminRepository'
 import { WriteResultSchema } from '../../domain/schemas/write-results'
-import { encodeIdentitySegment } from '../../ui/router/artifactRoutes'
+import { encodeIdentitySegment } from '../../domain/identitySegments'
 import { buildUrl, deleteNoContent, deleteReq, patchJson, postJson } from './httpTransport'
 
 /**

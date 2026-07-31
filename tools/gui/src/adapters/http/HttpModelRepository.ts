@@ -52,7 +52,7 @@ import {
   buildUrl, deleteNoContent, deleteReq, entityAddress, fetchJson, fetchJsonNotFound, fetchText,
   fetchWithTimeout, patchJson, postJson, putJson,
 } from './httpTransport'
-import { encodeIdentitySegment } from '../../ui/router/artifactRoutes'
+import { encodeIdentitySegment } from '../../domain/identitySegments'
 import { parseMarkdown } from '../../application/MarkdownService'
 import { enterpriseAdminMethods } from './HttpEnterpriseAdminRepository'
 import { viewpointMethods } from './HttpViewpointRepository'

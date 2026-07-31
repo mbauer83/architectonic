@@ -1,3 +1,4 @@
+import { encodeIdentitySegment as encodeSegment } from '../../domain/identitySegments'
 /**
  * The canonical GUI route catalog: templates and the typed builders that spell them.
  *
@@ -45,10 +46,14 @@ export class UnaddressableIdentityError extends Error {
  * Throws for an id that collides with a reserved literal segment. Emitting that URL would produce
  * a link that resolves to a different page than the caller asked for, which is worse than failing
  * where the mistake is.
+ *
+ * The *encoding* is `domain/identitySegments`; what this adds is the reserved-literal guard, which is
+ * about this router's own collection routes. The REST surface spells none of those literals beside an
+ * identifier, so its adapter uses the unguarded encoder rather than inheriting a rule about the GUI.
  */
 export const encodeIdentitySegment = (id: string): string => {
   if (RESERVED_SEGMENTS.has(id)) throw new UnaddressableIdentityError(id)
-  return encodeURIComponent(id)
+  return encodeSegment(id)
 }
 
 /** Route templates, in Vue Router's `:param` spelling. The SPA fallback mirrors these. */

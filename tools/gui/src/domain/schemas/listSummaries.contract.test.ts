@@ -3,12 +3,14 @@ import { Schema } from 'effect'
 import { EntitySummarySchema } from './entities'
 import { DocumentSummarySchema } from './documents'
 import { DiagramSummarySchema } from './diagram-types'
-import { tierFromIsGlobal } from '../../ui/components/TierBadge.helpers'
 
 /**
- * List-summary contracts: `is_global` is REQUIRED on entity, document, and
- * diagram list rows (the backend always emits it), and both badge variants
- * derive from it.
+ * List-summary contracts: `is_global` is REQUIRED on entity, document and diagram list rows — the
+ * backend always emits it, and a row without it must fail the decode rather than render a default.
+ *
+ * What the badge *derives* from it is asserted in `ui/components/__tests__/TierBadge.helpers.test.ts`,
+ * which owns that helper. Re-asserting it here duplicated a covered rule and reached from the domain
+ * into the delivery layer to do it — the layering rule in `eslint.config.js` now refuses that.
  */
 
 const ENTITY_ROW = {
@@ -48,7 +50,6 @@ describe('entity list summary contract', () => {
     for (const isGlobal of [true, false]) {
       const decoded = Schema.decodeUnknownSync(EntitySummarySchema)({ ...ENTITY_ROW, is_global: isGlobal })
       expect(decoded.is_global).toBe(isGlobal)
-      expect(tierFromIsGlobal(decoded.is_global)).toBe(isGlobal ? 'enterprise' : 'engagement')
     }
   })
 
@@ -62,7 +63,6 @@ describe('document list summary contract', () => {
     for (const isGlobal of [true, false]) {
       const decoded = Schema.decodeUnknownSync(DocumentSummarySchema)({ ...DOCUMENT_ROW, is_global: isGlobal })
       expect(decoded.is_global).toBe(isGlobal)
-      expect(tierFromIsGlobal(decoded.is_global)).toBe(isGlobal ? 'enterprise' : 'engagement')
     }
   })
 
@@ -76,7 +76,6 @@ describe('diagram list summary contract', () => {
     for (const isGlobal of [true, false]) {
       const decoded = Schema.decodeUnknownSync(DiagramSummarySchema)({ ...DIAGRAM_ROW, is_global: isGlobal })
       expect(decoded.is_global).toBe(isGlobal)
-      expect(tierFromIsGlobal(decoded.is_global)).toBe(isGlobal ? 'enterprise' : 'engagement')
     }
   })
 

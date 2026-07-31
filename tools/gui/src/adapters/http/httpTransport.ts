@@ -1,9 +1,5 @@
 import { parseDiagramLocalId } from '../../domain/diagramLocalIds'
-// CONSOLIDATION ITEM: percent-encoding an identifier for a URL segment is an addressing concern
-// used by both this adapter and the Vue router, but it lives in `ui/router/artifactRoutes`, so an
-// adapter reaches into the UI layer to get it. `HttpModelRepository` already does the same; this
-// does not widen the inversion, and the encoder's home is worth settling deliberately.
-import { encodeIdentitySegment } from '../../ui/router/artifactRoutes'
+import { encodeIdentitySegment } from '../../domain/identitySegments'
 import { Effect, Schema, ParseResult } from 'effect'
 import { NetworkError, NotFoundError } from '../../domain/errors'
 import { TIMEOUT_BUDGET_MS, timeoutBudgetForPath } from './routeTimeoutPolicy'

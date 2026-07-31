@@ -12,7 +12,7 @@ import {
   ViewpointReferencerListSchema,
   ViewpointSummarizeResultSchema,
 } from '../../domain/schemas/viewpoints'
-import { encodeIdentitySegment } from '../../ui/router/artifactRoutes'
+import { encodeIdentitySegment } from '../../domain/identitySegments'
 import {
   buildUrl,
   deleteNoContent,
