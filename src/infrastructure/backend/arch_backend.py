@@ -8,8 +8,9 @@ import os
 import subprocess
 import sys
 import time
+from collections.abc import Callable
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from src.application.artifact_query import ArtifactRepository
@@ -35,7 +36,7 @@ from src.infrastructure.backend.backend_state import (
     remove_backend_state,
     write_backend_state,
 )
-from src.infrastructure.backend.shutdown import DRAIN_SECONDS
+from src.infrastructure.backend.shutdown import DRAIN_SECONDS, shutdown_signal
 from src.infrastructure.gui import gui_server
 
 logger = logging.getLogger(__name__)
@@ -211,6 +212,40 @@ def _daemon_argv(argv: list[str] | None) -> list[str]:
     return [arg for arg in raw if arg not in ("--daemon", "--restart", "--stop")]
 
 
+
+class _AnnouncingServer(uvicorn.Server):
+    """A uvicorn server that announces the stop as the signal lands, not after the drain.
+
+    This ordering is the whole mechanism, and getting it wrong is invisible. uvicorn waits for open
+    connections *before* it runs the lifespan teardown, so announcing from the teardown — as this
+    first did — reaches the event streams only after the drain has already given up on them. The log
+    said so plainly: `Cancel 3 running task(s), timeout graceful shutdown exceeded`, and only then
+    the announcement. The streams were being severed, not ended; `timeout_graceful_shutdown` was
+    carrying the whole stop on its own and the signal clause was decorative.
+
+    `handle_exit` is uvicorn's own signal seam, so announcing here puts it before the drain: the
+    streams end themselves, the drain completes because the connections *closed*, and the timeout
+    goes back to being the backstop it is meant to be.
+    """
+
+    def handle_exit(self, sig: int, frame: object) -> None:
+        shutdown_signal.begin()
+        super().handle_exit(sig, frame)  # type: ignore[arg-type]
+
+
+def _serve(app: "Callable[..., Any]", *, host: str, port: int) -> None:
+    """Run the ASGI app under the shutdown contract in `backend.shutdown`.
+
+    `timeout_graceful_shutdown` is not optional: uvicorn's default is to wait for open connections
+    for ever, and one abandoned event stream is enough to make that never end.
+    """
+    config = uvicorn.Config(
+        app, host=host, port=port, log_level=backend_min_log_level().lower(),
+        timeout_graceful_shutdown=DRAIN_SECONDS,
+    )
+    _AnnouncingServer(config).run()
+
+
 # ── Foreground server ─────────────────────────────────────────────────────────
 
 def _run_foreground(args: argparse.Namespace, parser: argparse.ArgumentParser, resolved_port: int) -> None:
@@ -229,12 +264,7 @@ def _run_foreground(args: argparse.Namespace, parser: argparse.ArgumentParser, r
     write_backend_state(port=resolved_port)
     logger.info("Backend state file written for pid=%s port=%s", os.getpid(), resolved_port)
     try:
-        # `timeout_graceful_shutdown` is not optional here: uvicorn's default is to wait for
-        # open connections for ever. See `backend.shutdown` for the contract.
-        uvicorn.run(
-            app, host=args.host, port=resolved_port, log_level=backend_min_log_level().lower(),
-            timeout_graceful_shutdown=DRAIN_SECONDS,
-        )
+        _serve(app, host=args.host, port=resolved_port)
     except Exception:
         logger.exception("arch-backend terminated during startup")
         raise

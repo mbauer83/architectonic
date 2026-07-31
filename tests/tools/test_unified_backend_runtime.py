@@ -16,7 +16,6 @@ from src.infrastructure.backend import (
     backend_state,
 )
 from src.infrastructure.backend.arch_backend_app import _build_app
-from src.infrastructure.backend.shutdown import DRAIN_SECONDS
 from src.infrastructure.mcp import arch_mcp_stdio, arch_mcp_stdio_assurance
 
 
@@ -1121,7 +1120,7 @@ def test_arch_backend_redirects_stdio_when_background_tty_job(monkeypatch, tmp_p
         lambda repo_root, enterprise_root: (tmp_path, None),
     )
     monkeypatch.setattr(arch_backend, "_build_app", lambda credentials=None: object())
-    monkeypatch.setattr(arch_backend.uvicorn, "run", lambda app, **kwargs: None)
+    monkeypatch.setattr(arch_backend, "_serve", lambda app, **kwargs: None)
 
     arch_backend.main(["--repo-root", str(tmp_path)])
 
@@ -1194,22 +1193,19 @@ def test_arch_backend_restart_stops_then_returns_to_startup(monkeypatch, capsys,
     monkeypatch.setattr(arch_backend, "_build_app", lambda credentials=None: object())
     ran: dict[str, object] = {}
 
-    def fake_run(app, **kwargs: object) -> None:
+    def fake_serve(app, **kwargs: object) -> None:
         ran.update(kwargs)
 
-    monkeypatch.setattr(arch_backend.uvicorn, "run", fake_run)
+    # `_serve` is the seam, not `uvicorn.run`: the launch now builds a Config and runs an
+    # `_AnnouncingServer`, so a stub on `uvicorn.run` would miss and this test would start a real
+    # server and hang. What `_serve` passes uvicorn is asserted in `test_graceful_shutdown`.
+    monkeypatch.setattr(arch_backend, "_serve", fake_serve)
 
     arch_backend.main(["--restart", "--repo-root", str(tmp_path)])
 
     out = capsys.readouterr().out
     assert "stopped backend pid 123" in out
-    # `timeout_graceful_shutdown` among them, and not incidentally: uvicorn's default is to wait for
-    # open connections for ever, which is what made SIGTERM a no-op while an event stream was open.
-    # Asserted here because this is the only place the real launch path is driven.
-    assert ran == {
-        "host": "127.0.0.1", "port": 8000, "log_level": "warning",
-        "timeout_graceful_shutdown": DRAIN_SECONDS,
-    }
+    assert ran == {"host": "127.0.0.1", "port": 8000}
 
 
 def test_arch_backend_build_failure_does_not_write_backend_state(monkeypatch, tmp_path: Path) -> None:

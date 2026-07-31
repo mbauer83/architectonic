@@ -305,11 +305,15 @@ def _build_app(credentials: "GitCredentials | None" = None):  # type: ignore[no-
                 if sync_mgr is not None:
                     await sync_mgr.stop()
 
-            # Ordered and isolated — see `backend.shutdown` for why both matter. The signal comes
-            # first because until the open event streams end, uvicorn does not run this teardown at
-            # all; every step after it used to be unreachable on a signal.
+            # Ordered and isolated — see `backend.shutdown` for why both matter.
+            #
+            # The announcement is repeated here on purpose, and it is *not* what frees the drain:
+            # uvicorn waits for connections before running this teardown, so by now it is too late.
+            # `_AnnouncingServer.handle_exit` is what announces in time. This call covers the
+            # shutdowns no signal starts — a `TestClient` lifespan, a programmatic stop — and is
+            # idempotent, so the two cannot conflict.
             await run_teardown([
-                ("announce shutdown to open streams", shutdown_signal.begin),
+                ("announce shutdown (already announced on a signal)", shutdown_signal.begin),
                 ("release the assurance store", _release_assurance_store),
                 ("stop git-sync", stop_git_sync),
             ])

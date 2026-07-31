@@ -60,9 +60,56 @@ class TestTheBudgetIsOneDerivation:
             default = inspect.signature(function).parameters["timeout_s"].default
             assert default == STOP_DEADLINE_SECONDS, f"{function.__name__} has its own deadline"
 
-    # That the server is *launched* with the bounded drain is asserted where the launch path is
-    # actually driven, in `test_unified_backend_runtime`'s uvicorn fake — a source-level check here
-    # would restate the code rather than exercise it.
+    def test_the_server_is_launched_with_a_bounded_drain(self) -> None:
+        """uvicorn's default is to wait for open connections for ever, and that default is what let
+        one abandoned event stream make SIGTERM a no-op. Asserted on the Config the launch builds,
+        so it exercises the real path rather than restating the source."""
+        import uvicorn
+
+        from src.infrastructure.backend import arch_backend
+
+        launched: list[uvicorn.Server] = []
+        original = uvicorn.Server.run
+        uvicorn.Server.run = lambda self, sockets=None: launched.append(self)  # type: ignore[assignment,misc]
+        try:
+            arch_backend._serve(lambda *_a: None, host="127.0.0.1", port=8123)
+        finally:
+            uvicorn.Server.run = original  # type: ignore[assignment,misc]
+
+        assert len(launched) == 1
+        server = launched[0]
+        assert isinstance(server, arch_backend._AnnouncingServer), (
+            "a plain uvicorn.Server never announces the stop, so the streams would only be severed"
+        )
+        assert server.config.timeout_graceful_shutdown == DRAIN_SECONDS
+        assert server.config.port == 8123
+
+    def test_the_signal_is_announced_before_uvicorn_starts_draining(self) -> None:
+        """The clause the whole mechanism rests on, and the one that was silently wrong.
+
+        uvicorn waits for open connections *before* running the lifespan teardown, so announcing
+        from the teardown reaches the event streams only after the drain has given up on them. The
+        real log said it: ``Cancel 3 running task(s), timeout graceful shutdown exceeded``, and the
+        announcement after. The streams were being severed, not ending themselves, and every unit
+        test still passed because they call ``begin()`` directly.
+
+        So the announcement is asserted at uvicorn's own signal seam. If it moves back into the
+        teardown, this fails — which is what the earlier version had no way to say.
+        """
+        import signal as signal_module
+
+        import uvicorn
+
+        from src.infrastructure.backend.arch_backend import _AnnouncingServer
+
+        server = _AnnouncingServer(uvicorn.Config(app=lambda *a: None))
+        assert not shutdown_signal.is_set()
+
+        server.handle_exit(signal_module.SIGTERM, None)
+
+        assert shutdown_signal.is_set(), "the streams were not told before the drain began"
+        # And uvicorn's own handling still ran: announcing must not replace it.
+        assert server.should_exit is True
 
     def test_a_heartbeat_cannot_fit_inside_the_drain_budget(self) -> None:
         """Why the stream races the signal against its queue instead of polling on the heartbeat."""
