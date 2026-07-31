@@ -265,3 +265,36 @@ class ArchLensResponse(_Closed):
     count: int = 0
     visibility_limited: bool | None = None
     failure_mode_summary: dict[str, Any] | None = None
+
+
+class GsnSourceBinding(_Closed):
+    """One assurance node bound to one node of a published GSN diagram."""
+
+    assurance_node_id: str
+    gsn_node_id: str
+
+
+class GsnPublication(_Closed):
+    """One GSN diagram this analysis has been published to.
+
+    ``binding_count`` is the number of bindings *in this list*, not the number recorded: the read
+    filters by exposure before grouping, so a reader who may see two of five bound nodes is told two.
+    Reporting five would disclose the existence of three nodes they cannot see, and the count is the
+    obvious place for that to leak.
+    """
+
+    diagram_id: str
+    binding_count: int
+    source_bindings: list[GsnSourceBinding]
+
+
+class GsnPublicationListResponse(_Closed):
+    """Every GSN publication of one analysis.
+
+    Derived from the ``gsn-source`` arch-refs that recording leaves behind rather than from a
+    publications table — there is one fact, so recording and reading back cannot disagree. A diagram
+    with no bindings the reader may see is absent rather than listed with a count of zero.
+    """
+
+    publications: list[GsnPublication]
+    visibility_limited: bool = False

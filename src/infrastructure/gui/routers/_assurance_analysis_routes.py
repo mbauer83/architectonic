@@ -15,7 +15,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from src.application import assurance_analysis as uc
 from src.application.assurance_exposure import NotFound, Visible
-from src.application.assurance_gsn import build_gsn_draft, record_publication
+from src.application.assurance_gsn import build_gsn_draft, list_publications, record_publication
 from src.application.assurance_guidance import lookup as guidance_lookup
 from src.application.assurance_legacy_invalid import LegacyInvalidNode
 from src.application.verification.case_draft import case_completeness_from_records
@@ -23,6 +23,7 @@ from src.application.verification.cast_complete import run_cast_complete
 from src.application.verification.grc_complete import run_grc_complete
 from src.application.verification.stpa_complete import run_stpa_complete
 from src.infrastructure.assurance.write_serialization import run_write
+from src.infrastructure.gui.contracts.assurance_signals import GsnPublicationListResponse
 from src.infrastructure.gui.contracts.errors import (
     ApiError,
     LegacyInvalidDetails,
@@ -315,6 +316,33 @@ def gsn_rendered(analysis_id: str) -> JSONResponse:
         **result,
         "publishable": bool(result["publishable"]) and not visibility_limited,
         "visibility_limited": visibility_limited,
+    })
+
+
+@analysis_router.get("/api/assurance/analyses/{analysis_id}/gsn/publications",
+    response_model=GsnPublicationListResponse)
+def list_gsn_publications(analysis_id: str) -> JSONResponse:
+    """What this analysis has been published to, read back from the bindings recording left.
+
+    New in this release: recording a publication was possible and reading it back was not, so the
+    only way to learn whether an assurance case had been published was to look at a diagram and infer
+    it. 404 for an analysis the reader may not see, like every other route here — listing publications
+    of something whose existence is withheld would confirm it exists.
+    """
+    ctx, pol = build_policy()
+    if pol.check_locked():
+        return locked_response()
+    if not isinstance(pol.apply_analysis(ctx.store.get_analysis(analysis_id)), Visible):
+        return not_found_response()
+    visible, _withheld = pol.filter_nodes(ctx.store.list_nodes())
+    publications = list_publications(
+        ctx.store,
+        analysis_id=analysis_id,
+        visible_node_ids=frozenset(str(node.get("node_id", "")) for node in visible),
+    )
+    return ok({
+        "publications": publications,
+        "visibility_limited": pol.scope().visibility_limited,
     })
 
 

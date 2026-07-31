@@ -368,7 +368,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * List Gsn Publications
+         * @description What this analysis has been published to, read back from the bindings recording left.
+         *
+         *     New in this release: recording a publication was possible and reading it back was not, so the
+         *     only way to learn whether an assurance case had been published was to look at a diagram and infer
+         *     it. 404 for an analysis the reader may not see, like every other route here — listing publications
+         *     of something whose existence is withheld would confirm it exists.
+         */
+        get: operations["assurance_list_gsn_publications"];
         put?: never;
         /** Record Gsn Publication */
         post: operations["assurance_record_gsn_publication"];
@@ -4365,8 +4374,52 @@ export interface components {
             /** Slug */
             slug: string;
         };
+        /**
+         * GsnPublication
+         * @description One GSN diagram this analysis has been published to.
+         *
+         *     ``binding_count`` is the number of bindings *in this list*, not the number recorded: the read
+         *     filters by exposure before grouping, so a reader who may see two of five bound nodes is told two.
+         *     Reporting five would disclose the existence of three nodes they cannot see, and the count is the
+         *     obvious place for that to leak.
+         */
+        GsnPublication: {
+            /** Binding Count */
+            binding_count: number;
+            /** Diagram Id */
+            diagram_id: string;
+            /** Source Bindings */
+            source_bindings: components["schemas"]["GsnSourceBinding"][];
+        };
         /** GsnPublicationBinding */
         GsnPublicationBinding: {
+            /** Assurance Node Id */
+            assurance_node_id: string;
+            /** Gsn Node Id */
+            gsn_node_id: string;
+        };
+        /**
+         * GsnPublicationListResponse
+         * @description Every GSN publication of one analysis.
+         *
+         *     Derived from the ``gsn-source`` arch-refs that recording leaves behind rather than from a
+         *     publications table — there is one fact, so recording and reading back cannot disagree. A diagram
+         *     with no bindings the reader may see is absent rather than listed with a count of zero.
+         */
+        GsnPublicationListResponse: {
+            /** Publications */
+            publications: components["schemas"]["GsnPublication"][];
+            /**
+             * Visibility Limited
+             * @default false
+             */
+            visibility_limited: boolean;
+        };
+        /**
+         * GsnSourceBinding
+         * @description One assurance node bound to one node of a published GSN diagram.
+         */
+        GsnSourceBinding: {
             /** Assurance Node Id */
             assurance_node_id: string;
             /** Gsn Node Id */
@@ -6463,6 +6516,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    assurance_list_gsn_publications: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                analysis_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GsnPublicationListResponse"];
                 };
             };
             /** @description Request validation failed */

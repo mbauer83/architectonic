@@ -209,6 +209,4 @@ LEGACY_ROUTES: dict[tuple[str, str], str] = {
 #: the migration introduces, or the second half of a route that legacy code served as one
 #: body-discriminated union.
 UNSERVED_OPERATIONS: frozenset[str] = frozenset({
-    # New: reading back what was published, not only recording it.
-    "assurance_list_gsn_publications",
 })

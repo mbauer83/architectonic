@@ -170,3 +170,57 @@ def record_publication(
         },
     )
     return {"status": "published", "diagram_id": diagram_id, "binding_count": registered}
+
+
+#: The ref type `record_publication` writes for each bound source node. Reading publications back is
+#: a query over these: nothing stores a "publication" row, because a publication *is* the set of
+#: bindings plus the diagram they point at.
+GSN_SOURCE_REF_TYPE = "gsn-source"
+
+
+def list_publications(
+    store: ConfidentialAssuranceStore,
+    *,
+    analysis_id: str,
+    visible_node_ids: frozenset[str] | None = None,
+) -> list[dict[str, object]]:
+    """Which GSN diagrams this analysis has been published to, and what each one bound.
+
+    The inverse of :func:`record_publication`, derived rather than stored: a publication leaves
+    ``gsn-source`` arch-refs on the nodes it bound and an archive entry recording the act. Grouping
+    those refs by diagram reconstructs it, which is why recording and reading back cannot disagree —
+    there is one fact, not two representations of it.
+
+    ``visible_node_ids`` filters *before* grouping, not after. A publication whose only visible
+    binding is filtered away must not be reported with a binding count that includes the ones the
+    reader may not see: the count would be a disclosure, and a count of zero alongside a listed
+    diagram would be a puzzle. A diagram with no visible bindings is therefore not listed at all.
+    """
+    published: dict[str, list[dict[str, str]]] = {}
+    for node in store.list_nodes(analysis_id=analysis_id):
+        node_id = str(node.get("node_id", ""))
+        if visible_node_ids is not None and node_id not in visible_node_ids:
+            continue
+        for ref in store.list_arch_refs(assurance_node_id=node_id):
+            if str(ref.get("ref_type")) != GSN_SOURCE_REF_TYPE:
+                continue
+            target = str(ref.get("arch_artifact_id", ""))
+            diagram_id, _, local = target.partition("#")
+            if not diagram_id:
+                continue
+            gsn_node_id = local.removeprefix("nodes/")
+            published.setdefault(diagram_id, []).append(
+                {"assurance_node_id": node_id, "gsn_node_id": gsn_node_id}
+            )
+    # Deterministic ordering: the caller pages and diffs these, and dict insertion order here follows
+    # whatever order the store happened to return nodes in.
+    return [
+        {
+            "diagram_id": diagram_id,
+            "binding_count": len(bindings),
+            "source_bindings": sorted(
+                bindings, key=lambda b: (b["gsn_node_id"], b["assurance_node_id"])
+            ),
+        }
+        for diagram_id, bindings in sorted(published.items())
+    ]
