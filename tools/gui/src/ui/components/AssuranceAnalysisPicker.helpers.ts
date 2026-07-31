@@ -1,14 +1,20 @@
 // Pure helpers for the assurance analysis picker — unit-testable without a DOM.
 
-// The methods an analysis may have. Must match the backend's own tuple
-// (`src/domain/assurance/assurance_analysis.py`) — a method missing here cannot be picked or
-// filtered for, which is how FMEA analyses became unreachable from the matrix page. A test holds
-// the two lists equal.
-export const ANALYSIS_METHODS = ['STPA', 'CAST', 'GRC', 'FMEA'] as const
-export type AnalysisMethod = (typeof ANALYSIS_METHODS)[number]
+// The methods and statuses an analysis may have, from the decoder that is checked against the
+// backend's published vocabulary rather than restated here. This module held its own copy with a
+// comment asking a test to keep the two equal — and a method missing from that copy cannot be picked
+// or filtered for, which is how FMEA analyses became unreachable from the matrix page.
+import { Schema } from 'effect'
+import {
+  ANALYSIS_METHODS,
+  ANALYSIS_STATUSES,
+  AssuranceAnalysisListSchema,
+  type AnalysisMethod,
+  type AnalysisStatus,
+  type AssuranceAnalysisRecord,
+} from '../../domain/schemas/assurance-analyses'
 
-export const ANALYSIS_STATUSES = ['draft', 'active', 'completed', 'archived'] as const
-export type AnalysisStatus = (typeof ANALYSIS_STATUSES)[number]
+export { ANALYSIS_METHODS, ANALYSIS_STATUSES, type AnalysisMethod, type AnalysisStatus }
 
 /**
  * Admissible ArchiMate anchor types for an analysis's system-under-analysis.
@@ -25,18 +31,27 @@ export const ANALYSIS_ANCHOR_TYPES = [
   'system-software',
 ] as const
 
-export interface AnalysisSummary {
-  analysis_id: string
-  name: string
-  method: string
-  status?: string
-  tlp?: string
-  architecture_anchor_id?: string
-}
+/** One analysis as the picker needs it — the decoded record, not a looser restatement of it.
+ *
+ * It was an interface of its own declaring `status`, `tlp` and `architecture_anchor_id` optional, for
+ * a route that has always sent all three. A decoder more permissive than the server turns a genuinely
+ * missing field into a silently absent one, which is the direction that costs a rendered row. */
+export type AnalysisSummary = AssuranceAnalysisRecord
 
 export interface AnalysisOption {
   value: string
   label: string
+}
+
+/** The analyses out of a `GET /api/assurance/analyses` body, decoded rather than cast.
+ *
+ * The picker asserted `as { analyses: AnalysisSummary[] }` over `resp.json()`, which checks nothing
+ * and named a looser shape than the route sends. Here rather than in the component so it is unit-
+ * testable without a DOM, like everything else in this module. Throws on a body that does not match
+ * the contract — the caller already reports a failed load, and a silently mis-decoded list renders as
+ * an empty picker with nothing said. */
+export function decodeAnalysisList(body: unknown): AnalysisSummary[] {
+  return [...Schema.decodeUnknownSync(AssuranceAnalysisListSchema)(body).analyses]
 }
 
 /** Build `<option>` entries for the analysis dropdown (method-tagged labels). */

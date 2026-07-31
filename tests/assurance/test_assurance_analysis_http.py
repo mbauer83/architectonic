@@ -13,6 +13,7 @@ import pytest
 from starlette.testclient import TestClient
 
 from src.application.assurance_exposure import AssuranceExposurePolicy
+from src.infrastructure.assurance._analysis_records import as_analysis_record
 from src.infrastructure.gui.routers._assurance_analysis_routes import analysis_router
 from src.infrastructure.gui.routers._assurance_read import read_router
 from tests.support.api_app import build_api_app
@@ -32,10 +33,15 @@ class _FakeStore:
                         *, tlp: str = "TLP:WHITE", status: str = "draft") -> str:
         self._n += 1
         aid = f"{method}@{self._n}"
-        self._analyses[aid] = {
-            "analysis_id": aid, "name": name, "method": method,
+        # Through `as_analysis_record`, so the fake is held to the same record shape every real
+        # backend is. It used to omit `group_id`, `created_at` and `updated_at`, which let these
+        # tests pass against a record no store would ever return — and the id stays predictable,
+        # which is the only reason the fake exists rather than a real store.
+        self._analyses[aid] = as_analysis_record({
+            "analysis_id": aid, "group_id": None, "name": name, "method": method,
             "architecture_anchor_id": architecture_anchor_id, "status": status, "tlp": tlp,
-        }
+            "created_at": "2026-01-01T00:00:00Z", "updated_at": "2026-01-01T00:00:00Z",
+        })
         return aid
 
     def get_analysis(self, analysis_id: str) -> dict[str, Any] | None:

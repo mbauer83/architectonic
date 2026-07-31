@@ -175,15 +175,20 @@ def test_conditional_read_templates_are_all_get_reads() -> None:
 def test_the_client_analysis_method_vocabulary_matches_the_domain() -> None:
     """The GUI's method list is the domain's, not a copy that drifts.
 
-    The picker's list decides which methods a user can choose and filter for. It omitted ``FMEA``
-    while the domain accepted it, so an FMEA analysis could be created through the API and then not
-    be selectable in the surface whose whole job is to project one. Scanned from the source rather
-    than generated, because the list is three lines and a generator would be the larger risk.
+    The GUI's list decides which methods a user can choose and filter for. It omitted ``FMEA`` while
+    the domain accepted it, so an FMEA analysis could be created through the API and then not be
+    selectable in the surface whose whole job is to project one. Scanned from the source rather than
+    generated, because the list is three lines and a generator would be the larger risk.
+
+    It lived in the picker's helpers and now lives with the decoder that carries it into the analysis
+    contract, which is where ``openapi.contract.test-d.ts`` compares it to the published document. Two
+    checks on one list, from opposite sides: this one holds it to the domain even if the document were
+    generated wrongly, and that one holds the decoder to what is actually served.
     """
     from src.domain.assurance.assurance_analysis import ANALYSIS_METHODS
 
     source = (
-        _REPO_ROOT / "tools/gui/src/ui/components/AssuranceAnalysisPicker.helpers.ts"
+        _REPO_ROOT / "tools/gui/src/domain/schemas/assurance-analyses.ts"
     ).read_text(encoding="utf-8")
     match = re.search(r"export const ANALYSIS_METHODS = \[(.*?)\] as const", source, re.S)
     assert match is not None, "the picker no longer declares ANALYSIS_METHODS"

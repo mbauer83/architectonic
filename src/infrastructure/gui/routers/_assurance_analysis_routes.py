@@ -23,6 +23,11 @@ from src.application.verification.cast_complete import run_cast_complete
 from src.application.verification.grc_complete import run_grc_complete
 from src.application.verification.stpa_complete import run_stpa_complete
 from src.infrastructure.assurance.write_serialization import run_write
+from src.infrastructure.gui.contracts.assurance_analyses import (
+    AssuranceAnalysisDetailResponse,
+    AssuranceAnalysisListResponse,
+    AssuranceAnalysisRecord,
+)
 from src.infrastructure.gui.contracts.assurance_signals import GsnPublicationListResponse
 from src.infrastructure.gui.contracts.errors import (
     ApiError,
@@ -101,7 +106,7 @@ def _visible_gsn_graph(
 # ── Reads ───────────────────────────────────────────────────────────────────────
 
 
-@analysis_router.get("/api/assurance/analyses")
+@analysis_router.get("/api/assurance/analyses", response_model=AssuranceAnalysisListResponse)
 def list_analyses(method: str | None = None, status: str | None = None) -> JSONResponse:
     ctx, pol = build_policy()
     if pol.check_locked():
@@ -113,10 +118,11 @@ def list_analyses(method: str | None = None, status: str | None = None) -> JSONR
         "analyses": visible,
         "count": len(visible),
         "visibility_limited": scope.visibility_limited,
-    })
+    }, AssuranceAnalysisListResponse)
 
 
-@analysis_router.get("/api/assurance/analyses/{analysis_id}")
+@analysis_router.get("/api/assurance/analyses/{analysis_id}",
+    response_model=AssuranceAnalysisDetailResponse)
 def get_analysis(analysis_id: str) -> JSONResponse:
     ctx, pol = build_policy()
     if pol.check_locked():
@@ -125,14 +131,18 @@ def get_analysis(analysis_id: str) -> JSONResponse:
     if isinstance(outcome, Visible):
         # Visible node count scoped to this analysis (exposure-filtered).
         visible_nodes, _ = pol.filter_nodes(ctx.store.list_nodes(analysis_id=analysis_id))
-        return ok({"analysis": outcome.value, "node_count": len(visible_nodes)})
+        return ok(
+            {"analysis": outcome.value, "node_count": len(visible_nodes)},
+            AssuranceAnalysisDetailResponse,
+        )
     raise not_found_response()
 
 
 # ── Writes ──────────────────────────────────────────────────────────────────────
 
 
-@analysis_router.post("/api/assurance/analyses", status_code=200)
+@analysis_router.post("/api/assurance/analyses", status_code=200,
+    response_model=AssuranceAnalysisRecord)
 def create_analysis(body: CreateAnalysisBody) -> JSONResponse:
     ctx = build_policy()[0]
     if not ctx.is_available():
@@ -143,10 +153,11 @@ def create_analysis(body: CreateAnalysisBody) -> JSONResponse:
         architecture_anchor_id=body.architecture_anchor_id,
         tlp=body.tlp, status=body.status,
     ))
-    return _translate_write(result)
+    return _translate_write(result, AssuranceAnalysisRecord)
 
 
-@analysis_router.patch("/api/assurance/analyses/{analysis_id}", status_code=200)
+@analysis_router.patch("/api/assurance/analyses/{analysis_id}", status_code=200,
+    response_model=AssuranceAnalysisRecord)
 def update_analysis(analysis_id: str, body: UpdateAnalysisBody) -> JSONResponse:
     ctx = build_policy()[0]
     if not ctx.is_available():
@@ -156,7 +167,7 @@ def update_analysis(analysis_id: str, body: UpdateAnalysisBody) -> JSONResponse:
         analysis_id=analysis_id,
         name=body.name, status=body.status, tlp=body.tlp,
     ))
-    return _translate_write(result)
+    return _translate_write(result, AssuranceAnalysisRecord)
 
 
 @analysis_router.delete("/api/assurance/analyses/{analysis_id}", status_code=204, response_model=None)
@@ -170,7 +181,15 @@ def delete_analysis(analysis_id: str) -> Response:
     return deleted(_translate_write(result))
 
 
-def _translate_write(result: uc.AnalysisResult) -> JSONResponse:
+def _translate_write(
+    result: uc.AnalysisResult, model: type[BaseModel] | None = None
+) -> JSONResponse:
+    """The write's outcome as a response: the refusals raised, the success validated against ``model``.
+
+    ``model`` is optional because the deletion path shares this translator and then discards the body
+    for a 204 — there is nothing to hold to a contract. Every other caller passes one, so a payload key
+    the DTO does not declare fails here rather than reaching a client promised otherwise.
+    """
     if isinstance(result, uc.AnalysisLocked):
         raise locked_response()
     if isinstance(result, uc.AnalysisNotFound):
@@ -186,7 +205,7 @@ def _translate_write(result: uc.AnalysisResult) -> JSONResponse:
                 node_id=result.node_id, permitted_operation=result.permitted_operation
             ),
         )
-    return ok(result.payload)
+    return ok(result.payload, model)
 
 
 # ── Method support (wizards) ─────────────────────────────────────────────────────

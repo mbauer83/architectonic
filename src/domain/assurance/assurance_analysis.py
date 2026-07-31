@@ -8,13 +8,22 @@ infrastructure store adapters import them from here.
 
 from __future__ import annotations
 
+from typing import Literal, TypeAlias, get_args
+
 # Analysis methods. STPA covers STPA and STPA-Sec; CAST is incident analysis;
 # GRC is governance/risk/compliance; FMEA is per-component failure-mode analysis, which attaches
 # to the hazards an STPA analysis already produced rather than restating them.
-ANALYSIS_METHODS: tuple[str, ...] = ("STPA", "CAST", "GRC", "FMEA")
+AnalysisMethod: TypeAlias = Literal["STPA", "CAST", "GRC", "FMEA"]
 
 # Lifecycle states of an analysis.
-ANALYSIS_STATUSES: tuple[str, ...] = ("draft", "active", "completed", "archived")
+AnalysisStatus: TypeAlias = Literal["draft", "active", "completed", "archived"]
+
+#: The runtime tuples the use cases validate against, derived from the types rather than repeated
+#: beside them. Both spellings are needed — a use case checks membership at run time and a response
+#: contract needs the vocabulary at type level — and written twice they drift: the wire would keep
+#: publishing a method the domain had retired, or reject one it had added.
+ANALYSIS_METHODS: tuple[AnalysisMethod, ...] = get_args(AnalysisMethod)
+ANALYSIS_STATUSES: tuple[AnalysisStatus, ...] = get_args(AnalysisStatus)
 
 # Fields a caller may change after creation. Method and architecture anchor are
 # immutable — changing either would re-scope the whole aggregate.

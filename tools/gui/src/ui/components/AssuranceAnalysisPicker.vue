@@ -8,6 +8,7 @@ import {
   ANALYSIS_STATUSES,
   analysisErrorMessage,
   buildAnalysisOptions,
+  decodeAnalysisList,
   emptyNewAnalysisForm,
   findAnalysis,
   newAnalysisBody,
@@ -109,8 +110,7 @@ async function load() {
     const resp = await fetch('/api/assurance/analyses')
     if (resp.status === 423) { error.value = 'locked'; return }
     if (!resp.ok) { error.value = `HTTP ${resp.status}`; return }
-    const body = await resp.json() as { analyses: AnalysisSummary[] }
-    analyses.value = body.analyses
+    analyses.value = decodeAnalysisList(await resp.json())
   } catch (e) {
     error.value = String(e)
   } finally {

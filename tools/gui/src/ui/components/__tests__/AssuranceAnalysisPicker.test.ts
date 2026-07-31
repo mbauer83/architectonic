@@ -13,9 +13,21 @@ import {
   type AnalysisSummary,
 } from '../AssuranceAnalysisPicker.helpers'
 
+/** A whole analysis record, because that is what the route sends — the fixtures used to carry three
+ *  fields, which the summary type permitted while the server sent nine. */
+const analysis = (fields: Pick<AnalysisSummary, 'analysis_id' | 'name' | 'method'>): AnalysisSummary => ({
+  group_id: null,
+  architecture_anchor_id: '',
+  status: 'draft',
+  tlp: 'TLP:WHITE',
+  created_at: '2026-01-01T00:00:00Z',
+  updated_at: '2026-01-01T00:00:00Z',
+  ...fields,
+})
+
 const sample: AnalysisSummary[] = [
-  { analysis_id: 'STPA@1', name: 'Brakes', method: 'STPA' },
-  { analysis_id: 'GRC@2', name: 'Q3 Controls', method: 'GRC' },
+  analysis({ analysis_id: 'STPA@1', name: 'Brakes', method: 'STPA' }),
+  analysis({ analysis_id: 'GRC@2', name: 'Q3 Controls', method: 'GRC' }),
 ]
 
 describe('buildAnalysisOptions', () => {

@@ -16,6 +16,13 @@ import type {
 } from './sync-status'
 import type { StatsSchema } from './stats'
 import type {
+  AnalysisMethod,
+  AnalysisStatus,
+  AssuranceAnalysisDetailSchema,
+  AssuranceAnalysisListSchema,
+  AssuranceAnalysisRecordSchema,
+} from './assurance-analyses'
+import type {
   SyncDiagramToModelResultSchema,
   VerificationIssueSchema,
   WriteResultSchema,
@@ -222,6 +229,33 @@ describe('write results', () => {
     // decoder had nothing to declare. It is the operation's own no-deletion guarantee.
     expectTypeOf<SchemaType<typeof SyncDiagramToModelResultSchema>>().toEqualTypeOf<
       Immutable<components['schemas']['SyncDiagramToModelResponse']>
+    >()
+  })
+})
+
+describe('assurance analyses', () => {
+  it('decodes the collection, the detail read and the record they share', () => {
+    expectTypeOf<SchemaType<typeof AssuranceAnalysisListSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['AssuranceAnalysisListResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof AssuranceAnalysisDetailSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['AssuranceAnalysisDetailResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof AssuranceAnalysisRecordSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['AssuranceAnalysisRecord']>
+    >()
+  })
+
+  it('covers exactly the methods and statuses the backend declares', () => {
+    // The picker's own `ANALYSIS_METHODS` list existed with a comment saying a test holds it equal to
+    // a tuple in a Python file. The document declares the vocabulary now, so the check is a type
+    // error rather than a string comparison — and FMEA missing from that list is what once made every
+    // FMEA analysis unreachable from the matrix page.
+    expectTypeOf<AnalysisMethod>().toEqualTypeOf<
+      components['schemas']['AssuranceAnalysisRecord']['method']
+    >()
+    expectTypeOf<AnalysisStatus>().toEqualTypeOf<
+      components['schemas']['AssuranceAnalysisRecord']['status']
     >()
   })
 })

@@ -3039,6 +3039,70 @@ export interface components {
             analysis_id: string;
         };
         /**
+         * AssuranceAnalysisDetailResponse
+         * @description One analysis with the size of its authored contents, as far as this reader may see.
+         *
+         *     ``node_count`` counts the analysis's own nodes after exposure filtering, so it agrees with the
+         *     node list the reader then opens rather than with the store.
+         */
+        AssuranceAnalysisDetailResponse: {
+            analysis: components["schemas"]["AssuranceAnalysisRecord"];
+            /** Node Count */
+            node_count: number;
+        };
+        /**
+         * AssuranceAnalysisListResponse
+         * @description The analyses this reader may see, and whether that is all of them.
+         *
+         *     ``count`` is the length of ``analyses`` rather than the store's total — the same number, said
+         *     twice, and deliberately so: the handler has always sent it, and a client that renders a count
+         *     beside a list must not have to choose between two sources for it. What it is *not* is the
+         *     unfiltered population, which is why the withheld cardinality appears nowhere.
+         */
+        AssuranceAnalysisListResponse: {
+            /** Analyses */
+            analyses: components["schemas"]["AssuranceAnalysisRecord"][];
+            /** Count */
+            count: number;
+            /** Visibility Limited */
+            visibility_limited: boolean;
+        };
+        /**
+         * AssuranceAnalysisRecord
+         * @description One analysis, as every backend now hands it back.
+         *
+         *     ``group_id`` is filing and is null until someone files it — present-and-null rather than absent,
+         *     because "not filed" is an answer and a missing key is not. ``architecture_anchor_id`` is empty
+         *     when the analysis spans several systems rather than naming one: the binding then lives on its
+         *     individual nodes' architecture references.
+         */
+        AssuranceAnalysisRecord: {
+            /** Analysis Id */
+            analysis_id: string;
+            /** Architecture Anchor Id */
+            architecture_anchor_id: string;
+            /** Created At */
+            created_at: string;
+            /** Group Id */
+            group_id: string | null;
+            /**
+             * Method
+             * @enum {string}
+             */
+            method: "STPA" | "CAST" | "GRC" | "FMEA";
+            /** Name */
+            name: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "draft" | "active" | "completed" | "archived";
+            /** Tlp */
+            tlp: string;
+            /** Updated At */
+            updated_at: string;
+        };
+        /**
          * AssuranceCoverageGaps
          * @description The gap categories, each naming the nodes that fall into it.
          *
@@ -7274,7 +7338,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["AssuranceAnalysisListResponse"];
                 };
             };
             /** @description Request validation failed */
@@ -7316,7 +7380,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["AssuranceAnalysisRecord"];
                 };
             };
             /** @description Request validation failed */
@@ -7356,7 +7420,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["AssuranceAnalysisDetailResponse"];
                 };
             };
             /** @description Request validation failed */
@@ -7438,7 +7502,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["AssuranceAnalysisRecord"];
                 };
             };
             /** @description Request validation failed */
