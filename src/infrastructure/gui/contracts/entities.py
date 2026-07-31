@@ -63,7 +63,7 @@ class EntityListResponse(NullsOmitted):
     items: list[EntitySummary]
 
 
-class DocumentReference(_Closed):
+class DocumentReference(NullsOmitted):
     """A document that cites this entity, and the link it cites it through.
 
     Mirrors ``application.document_links.DocumentEntityReference`` field for field, because that is
@@ -87,7 +87,7 @@ class DocumentReference(_Closed):
     href: str
 
 
-class EntityRecordFields(_Closed):
+class EntityRecordFields(NullsOmitted):
     """The indexed record, as every entity read returns it.
 
     Shared by the detail read and the context read so the two cannot describe the same record
@@ -133,7 +133,7 @@ class EntityDetailResponse(EntityRecordFields):
     referenced_in_documents: list[DocumentReference] = []
 
 
-class EntityConnectionCounts(_Closed):
+class EntityConnectionCounts(NullsOmitted):
     """Degree by direction, as the context read reports it."""
 
     conn_in: int
@@ -141,7 +141,7 @@ class EntityConnectionCounts(_Closed):
     conn_sym: int
 
 
-class ContextConnection(_Closed):
+class ContextConnection(NullsOmitted):
     """One connection in an entity's context, with both endpoints already resolved.
 
     The endpoint names, types, domains and scopes ride along rather than being looked up per row:
@@ -176,7 +176,7 @@ class ContextConnection(_Closed):
     direction: str | None = None
 
 
-class EntityContextResponse(_Closed):
+class EntityContextResponse(NullsOmitted):
     """One entity together with its connections, and the model generation they were read at.
 
     ``connections`` is grouped by direction rather than being one list, because a symmetric relation

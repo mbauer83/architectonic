@@ -3189,9 +3189,9 @@ export interface components {
             /** Content Text */
             content_text: string;
             /** Direction */
-            direction?: string | null;
+            direction?: string;
             /** Other Entity Id */
-            other_entity_id?: string | null;
+            other_entity_id?: string;
             /** Path */
             path: string;
             /** Source */
@@ -3926,9 +3926,9 @@ export interface components {
             counts: components["schemas"]["EntityConnectionCounts"];
             entity: components["schemas"]["EntityDetailResponse"];
             /** Etag */
-            etag?: string | null;
+            etag?: string;
             /** Generation */
-            generation?: number | null;
+            generation?: number;
         };
         /**
          * EntityDetailResponse
@@ -3951,15 +3951,15 @@ export interface components {
                 [key: string]: unknown;
             };
             /** Conn In */
-            conn_in?: number | null;
+            conn_in?: number;
             /** Conn Out */
-            conn_out?: number | null;
+            conn_out?: number;
             /** Conn Sym */
-            conn_sym?: number | null;
+            conn_sym?: number;
             /** Content Snippet */
-            content_snippet?: string | null;
+            content_snippet?: string;
             /** Content Text */
-            content_text?: string | null;
+            content_text?: string;
             /**
              * Display Blocks
              * @default {}
@@ -3977,20 +3977,20 @@ export interface components {
                 [key: string]: unknown;
             };
             /** Group */
-            group?: string | null;
+            group?: string;
             /** Is Global */
-            is_global?: boolean | null;
+            is_global?: boolean;
             /**
              * Keywords
              * @default []
              */
             keywords: string[];
             /** Last Updated */
-            last_updated?: string | null;
+            last_updated?: string;
             /** Name */
             name: string;
             /** Notes */
-            notes?: string | null;
+            notes?: string;
             /** Path */
             path: string;
             /**
@@ -4008,7 +4008,7 @@ export interface components {
              */
             referenced_in_documents: components["schemas"]["DocumentReference"][];
             /** Specialization */
-            specialization?: string | null;
+            specialization?: string;
             /**
              * Specializations
              * @default []
@@ -4019,7 +4019,7 @@ export interface components {
             /** Subdomain */
             subdomain: string;
             /** Summary */
-            summary?: string | null;
+            summary?: string;
             /** Version */
             version: string;
         };

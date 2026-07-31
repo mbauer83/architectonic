@@ -139,7 +139,13 @@ def _meta_ontology_types(meta_ontology: str | None, request: Request) -> frozens
 
 
 @router.get("/api/entities/{artifact_id}", tags=[TAG_ENTITIES], summary="Read one entity by id",
-    response_model=EntityDetailResponse, responses=READ_RESPONSES)
+    # `exclude_none` for the same reason as the list read above: the client reads these optionals as
+    # absent-or-value, and a null failed the decode of the *whole* record. It cost the entity detail,
+    # the GSN and C4 sidebars and both relationship-authoring flows — `conn_in: null` against
+    # `Schema.optional(Schema.Number)`. The DTOs declare the matching policy, so the published
+    # document says so too.
+    response_model=EntityDetailResponse, response_model_exclude_none=True,
+    responses=READ_RESPONSES)
 def read_entity(artifact_id: str) -> dict[str, Any]:
     id = artifact_id
     repo = s.get_repo()
@@ -172,7 +178,7 @@ def read_entity(artifact_id: str) -> dict[str, Any]:
 
 @router.get("/api/entities/{artifact_id}/context", tags=[TAG_ENTITIES],
     summary="Read an entity with its connection context", response_model=EntityContextResponse,
-    responses=READ_RESPONSES)
+    response_model_exclude_none=True, responses=READ_RESPONSES)
 def read_entity_context(artifact_id: str) -> EntityContextReadModel:
     id = artifact_id
     repo = s.get_repo()

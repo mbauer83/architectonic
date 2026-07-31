@@ -31,9 +31,11 @@ type AlwaysNullable = { key: string | null }
 /** The server may omit it *or* send null — the permissive default. */
 type EitherWay = { key?: string | null }
 
-const OptionalSchema = Schema.Struct({ key: Schema.optional(Schema.String) })
-const NullOrSchema = Schema.Struct({ key: Schema.NullOr(Schema.String) })
-const OptionalNullOrSchema = Schema.Struct({ key: Schema.optional(Schema.NullOr(Schema.String)) })
+// Exported because they are the subjects of the discrimination, not incidental locals: each is a
+// real decoder whose runtime behaviour is the thing the assertions below claim the types capture.
+export const OptionalSchema = Schema.Struct({ key: Schema.optional(Schema.String) })
+export const NullOrSchema = Schema.Struct({ key: Schema.NullOr(Schema.String) })
+export const OptionalNullOrSchema = Schema.Struct({ key: Schema.optional(Schema.NullOr(Schema.String)) })
 
 describe('null versus absent, at the type level', () => {
   it('matches each decoder to the wire shape it actually accepts', () => {
