@@ -14,28 +14,12 @@ operation id, which is what lets the generated types stay still while the routes
 
 from __future__ import annotations
 
-from collections import Counter
 from typing import TYPE_CHECKING
 
-from src.infrastructure.gui.route_policy import BY_KEY, LEGACY_ROUTES
+from src.infrastructure.gui.route_policy import BY_KEY
 
 if TYPE_CHECKING:
     from fastapi.routing import APIRoute
-
-
-def _multi_address_operations() -> frozenset[str]:
-    """Operations still reachable at more than one address, so not yet uniquely nameable.
-
-    Four method-specific completeness endpoints collapse into one operation. Until they do, all
-    four are mounted, and an operation id is required to be unique in an OpenAPI document — so
-    none of them may claim the canonical id yet. There is no stable id for four routes becoming
-    one, which is exactly why this is temporary rather than a naming decision.
-    """
-    counts = Counter(LEGACY_ROUTES.values())
-    return frozenset(operation for operation, count in counts.items() if count > 1)
-
-
-_MULTI_ADDRESS = _multi_address_operations()
 
 
 def manifest_operation_id(route: "APIRoute") -> str:
@@ -44,14 +28,17 @@ def manifest_operation_id(route: "APIRoute") -> str:
     A route without a row is either excluded from the schema (the health probe) or a defect the
     inventory fitness function reports; falling back keeps document generation working while that
     test — not this function — is the thing that fails.
+
+    This used to consult the migration ledger when a key had no row, and to hand back FastAPI's
+    default for the four completeness endpoints that were collapsing into one operation — an id has
+    to be unique in an OpenAPI document, and four addresses could not all claim the canonical one.
+    Both are gone with the migration: every served address has a row, and no operation answers at
+    more than one address.
     """
     for method in sorted(route.methods or set()):
-        key = (method, route.path)
-        row = BY_KEY.get(key)
-        operation = row.operation_id if row is not None else LEGACY_ROUTES.get(key)
-        if operation is None:
-            continue
-        return _fastapi_default(route) if operation in _MULTI_ADDRESS else operation
+        row = BY_KEY.get((method, route.path))
+        if row is not None:
+            return row.operation_id
     return _fastapi_default(route)
 
 

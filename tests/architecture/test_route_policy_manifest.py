@@ -20,7 +20,6 @@ import pytest
 from src.infrastructure.gui.route_policy import (
     BY_OPERATION,
     CONDITIONAL_READ_TEMPLATES,
-    LEGACY_ROUTES,
     ROUTE_POLICY,
     UNSERVED_OPERATIONS,
     served_templates_for,
@@ -78,18 +77,6 @@ def test_served_surface_is_exactly_the_manifest_plus_the_legacy_allowlist(
     expected = frozenset(key for row in ROUTE_POLICY for key in effective_route_keys(row))
     assert served - expected == frozenset(), "served but unclassified"
     assert expected - served == frozenset(), "classified but not served"
-
-
-def test_legacy_allowlist_names_only_declared_operations() -> None:
-    unknown = {op for op in LEGACY_ROUTES.values() if op not in BY_OPERATION}
-    assert unknown == set(), f"legacy rows point at undeclared operations: {sorted(unknown)}"
-
-
-def test_legacy_allowlist_shrinks_only(served: frozenset[tuple[str, str]]) -> None:
-    """A legacy entry whose route is no longer served has been migrated; the entry has to go
-    in the same commit, or the allowlist stops measuring what is left."""
-    stale = set(LEGACY_ROUTES) - served
-    assert stale == set(), f"legacy allowlist entries no longer served: {sorted(stale)}"
 
 
 def test_unserved_operations_are_declared_and_genuinely_unserved(

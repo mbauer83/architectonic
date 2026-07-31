@@ -9,11 +9,8 @@ aware of its own migration state.
 
 from __future__ import annotations
 
-from collections import defaultdict
-
 from src.infrastructure.backend.arch_backend_app import _build_app
 from src.infrastructure.gui.route_policy import (
-    LEGACY_ROUTES,
     ROUTE_POLICY,
     UNSERVED_OPERATIONS,
     RouteRow,
@@ -34,25 +31,17 @@ def served_route_keys() -> frozenset[RouteKey]:
     )
 
 
-def legacy_keys_by_operation() -> dict[str, frozenset[RouteKey]]:
-    """Canonical operation id → the legacy addresses still serving it."""
-    grouped: defaultdict[str, set[RouteKey]] = defaultdict(set)
-    for key, operation_id in LEGACY_ROUTES.items():
-        grouped[operation_id].add(key)
-    return {operation_id: frozenset(keys) for operation_id, keys in grouped.items()}
-
-
 def effective_route_keys(row: RouteRow) -> frozenset[RouteKey]:
     """The addresses *row*'s operation is reachable at today.
 
-    Its legacy addresses while it is still mounted at them, its canonical address once it has
-    moved, and **nothing** while it is declared unserved — an operation the migration has not
-    introduced yet cannot appear in a registry keyed by served routes.
+    Its canonical address, and **nothing** while it is declared unserved — an operation the manifest
+    declares but does not mount cannot appear in a registry keyed by served routes. This used to add
+    the legacy addresses an operation was still mounted at; the migration is over, so there are
+    none.
     """
     if row.operation_id in UNSERVED_OPERATIONS:
         return frozenset()
-    legacy = legacy_keys_by_operation().get(row.operation_id)
-    return legacy if legacy else frozenset({row.key})
+    return frozenset({row.key})
 
 
 def effective_keys_for(

@@ -41,8 +41,6 @@ from src.infrastructure.gui.route_policy._entities import (
     TAXONOMY_ROWS,
 )
 from src.infrastructure.gui.route_policy._pending import (
-    LEGACY_ROUTES,
-    MIGRATED_ROUTES,
     RETIRED_ROUTES,
     UNSERVED_OPERATIONS,
 )
@@ -145,10 +143,11 @@ def _parameterless_shape(template: str) -> str:
     )
 
 
-#: Path shapes something still answers to: a canonical template, or a retired one not yet moved.
+#: Path shapes something still answers to. The canonical templates, and only those: no retired
+#: address is mounted any more, which the addressing fitness function asserts directly.
 _LIVE_SHAPES: frozenset[str] = frozenset(
     _parameterless_shape(row.template) for row in ROUTE_POLICY
-) | frozenset(_parameterless_shape(template) for _method, template in LEGACY_ROUTES)
+)
 
 #: Path literals no longer served anywhere, so no longer permitted in runtime source, current
 #: documentation, examples or positive tests.
@@ -198,17 +197,13 @@ CONDITIONAL_READ_TEMPLATES: frozenset[str] = frozenset(
 def served_templates_for(operation_id: str) -> frozenset[str]:
     """The templates an operation is reachable at today: its legacy ones, or its canonical one.
 
-    Read at runtime, and deliberately so. A policy keyed on an address has to follow that address,
-    which means it has to know whether the address has moved yet: a cache-eligible read whose
-    rename is still pending would otherwise lose its ETag the moment the manifest named its new
-    template, silently, with nothing failing.
+    One template per operation, now that every address has moved. This used to consult the
+    migration ledger first, because a policy keyed on an address has to follow that address: a
+    cache-eligible read whose rename was still pending would otherwise have lost its ETag the moment
+    the manifest named its new template, silently. Nothing is pending, so there is nothing to
+    consult — and an operation the manifest declares but does not serve yields no template rather
+    than a wrong one.
     """
-    legacy = frozenset(
-        template for (_method, template), operation in LEGACY_ROUTES.items()
-        if operation == operation_id
-    )
-    if legacy:
-        return legacy
     if operation_id in UNSERVED_OPERATIONS:
         return frozenset()
     return frozenset({BY_OPERATION[operation_id].template})
@@ -233,9 +228,7 @@ __all__ = [
     "BY_KEY",
     "BY_OPERATION",
     "CONDITIONAL_READ_TEMPLATES",
-    "LEGACY_ROUTES",
     "MEDIA",
-    "MIGRATED_ROUTES",
     "MUTATION_METHODS",
     "NON_MUTATING_WRITE_SHAPED",
     "RETIRED_PATH_LITERALS",

@@ -146,16 +146,9 @@ def test_every_gated_handler_names_the_operation_its_decorator_declares(
         row = BY_OPERATION.get(operation)
         if row is None:
             continue  # reported by the test above
-        if row.key != route and route not in _legacy_addresses_of(operation):
+        if row.key != route:
             mismatched.append((f"{module}:{handler}", route, operation, row.key))
     assert mismatched == [], f"handler authorizes under a different route than it serves: {mismatched}"
-
-
-def _legacy_addresses_of(operation_id: str) -> set[tuple[str, str]]:
-    """Addresses this operation is still mounted at while its rename is pending."""
-    from src.infrastructure.gui.route_policy import LEGACY_ROUTES
-
-    return {key for key, operation in LEGACY_ROUTES.items() if operation == operation_id}
 
 
 def test_no_gated_handler_passes_a_route_tuple(

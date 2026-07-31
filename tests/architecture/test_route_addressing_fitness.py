@@ -8,12 +8,13 @@ else. Stated once here, over the manifest, rather than re-argued per router.
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
+
+import pytest
 
 from src.infrastructure.gui.route_policy import (
     BODYLESS,
-    LEGACY_ROUTES,
     MEDIA,
-    MIGRATED_ROUTES,
     RETIRED_PATH_LITERALS,
     RETIRED_ROUTES,
     ROUTE_POLICY,
@@ -26,6 +27,14 @@ from tests.support.retired_route_scan import (
 )
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
+@pytest.fixture(scope="module")
+def document() -> dict[str, Any]:
+    """The served surface, from the application object — not `app.routes`, which sees 13 of 161."""
+    from src.infrastructure.backend.arch_backend_app import _build_app
+
+    return _build_app().openapi()
 
 #: Action segments the manifest is allowed to spell, and the methods each may appear under.
 #: Declared rather than inferred: a heuristic "is this word a verb" would either miss
@@ -130,10 +139,22 @@ def test_bodyless_responses_are_deletions_or_idempotent_relation_assertions() ->
         assert row.method in ("DELETE", "PUT"), row.operation_id
 
 
-def test_migration_ledger_is_consistent() -> None:
-    unknown = MIGRATED_ROUTES - frozenset(RETIRED_ROUTES)
-    assert unknown == frozenset(), f"migrated keys absent from the retired record: {sorted(unknown)}"
-    assert frozenset(LEGACY_ROUTES) == frozenset(RETIRED_ROUTES) - MIGRATED_ROUTES
+def test_no_retired_address_is_still_served(document: dict[str, Any]) -> None:
+    """The statement the migration ledger used to make in two halves, made directly.
+
+    Two collections tracked which retired addresses were still mounted and which canonical ones were
+    not mounted yet, and a fitness function compared them for consistency. Both reached their end
+    state, at which point the ledger asserted only that it agreed with itself. What actually matters
+    is this: nothing answers at an address 0.2.0 retired. Asked of the served document, so it cannot
+    be satisfied by bookkeeping.
+    """
+    served = {
+        (method.upper(), path)
+        for path, methods in document.get("paths", {}).items()
+        for method in methods
+    }
+    still_served = sorted(key for key in RETIRED_ROUTES if key in served)
+    assert still_served == [], f"retired addresses still mounted: {still_served}"
 
 
 def test_no_retired_route_literal_survives_in_the_working_tree() -> None:

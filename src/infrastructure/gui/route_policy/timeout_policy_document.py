@@ -17,7 +17,6 @@ import json
 import re
 from typing import Any
 
-from src.infrastructure.gui.route_policy._pending import LEGACY_ROUTES
 from src.infrastructure.gui.route_policy._types import RouteRow
 
 #: Client abort budget per class, in milliseconds. ``None`` means never abort.
@@ -51,22 +50,6 @@ def _templates_for(rows: tuple[RouteRow, ...], timeout_class: str) -> list[str]:
     return sorted(row.template for row in rows if row.timeout_class == timeout_class)
 
 
-def _legacy_templates_for(rows: tuple[RouteRow, ...], timeout_class: str) -> list[str]:
-    """Retired templates still mounted, and the class they keep until their rename lands.
-
-    Taken over every method still on that path, because a proxy matches a URL and cannot see the
-    method: a template whose write is long-running lends its budget to its read too.
-    """
-    by_operation = {row.operation_id: row for row in rows}
-    return sorted(
-        {
-            template
-            for (_method, template), operation_id in LEGACY_ROUTES.items()
-            if by_operation[operation_id].timeout_class == timeout_class
-        }
-    )
-
-
 def _ordered_contexts(templates: list[str]) -> list[str]:
     """Patterns most specific first: Vite uses the first key that matches, so a longer template
     has to be offered before a shorter one it extends."""
@@ -77,7 +60,6 @@ def _ordered_contexts(templates: list[str]) -> list[str]:
 def timeout_policy_document(rows: tuple[RouteRow, ...]) -> dict[str, Any]:
     """The whole document, ready to serialize."""
     templates = {cls: _templates_for(rows, cls) for cls in NON_DEFAULT_CLASSES}
-    legacy = {cls: _legacy_templates_for(rows, cls) for cls in NON_DEFAULT_CLASSES}
     return {
         "$comment": (
             "Generated from the REST route-policy manifest by "
@@ -89,9 +71,8 @@ def timeout_policy_document(rows: tuple[RouteRow, ...]) -> dict[str, Any]:
         "budgetMs": BUDGET_MS,
         "proxyHeadroomMs": PROXY_HEADROOM_MS,
         "templates": templates,
-        "legacyTemplates": legacy,
         "proxyContexts": {
-            cls: _ordered_contexts([*templates[cls], *legacy[cls]]) for cls in NON_DEFAULT_CLASSES
+            cls: _ordered_contexts(templates[cls]) for cls in NON_DEFAULT_CLASSES
         },
     }
 

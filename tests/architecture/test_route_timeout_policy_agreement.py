@@ -18,7 +18,7 @@ from typing import Any
 
 import pytest
 
-from src.infrastructure.gui.route_policy import BY_OPERATION, LEGACY_ROUTES, ROUTE_POLICY
+from src.infrastructure.gui.route_policy import ROUTE_POLICY
 from src.infrastructure.gui.route_policy.timeout_policy_document import (
     NON_DEFAULT_CLASSES,
     serialize,
@@ -50,29 +50,10 @@ def test_canonical_templates_are_the_manifests(
 
 
 @pytest.mark.parametrize("timeout_class", NON_DEFAULT_CLASSES)
-def test_legacy_templates_come_from_the_migration_ledger(
-    timeout_class: str, committed: dict[str, Any]
-) -> None:
-    """A retired template keeps its class until the rename lands, and not one moment longer.
-
-    The class is taken over every method still mounted on that path, because a dev proxy matches a
-    URL and cannot see the method: a template whose write is long-running lends its budget to its
-    read too."""
-    expected = sorted(
-        {
-            template
-            for (_method, template), operation_id in LEGACY_ROUTES.items()
-            if BY_OPERATION[operation_id].timeout_class == timeout_class
-        }
-    )
-    assert committed["legacyTemplates"][timeout_class] == expected
-
-
-@pytest.mark.parametrize("timeout_class", NON_DEFAULT_CLASSES)
 def test_every_template_has_a_proxy_context(
     timeout_class: str, committed: dict[str, Any]
 ) -> None:
-    templates = committed["templates"][timeout_class] + committed["legacyTemplates"][timeout_class]
+    templates = committed["templates"][timeout_class]
     assert sorted(committed["proxyContexts"][timeout_class]) == sorted(
         template_pattern(template) for template in templates
     )

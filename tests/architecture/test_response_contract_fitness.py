@@ -16,7 +16,6 @@ from src.infrastructure.backend.arch_backend_app import _build_app
 from src.infrastructure.gui.route_policy import (
     BY_KEY,
     BY_OPERATION,
-    LEGACY_ROUTES,
     UNTYPED_RESPONSE_OPERATIONS,
     RouteRow,
 )
@@ -29,12 +28,12 @@ def document() -> dict[str, Any]:
 
 
 def _row_for(method: str, path: str) -> RouteRow | None:
-    key = (method.upper(), path)
-    row = BY_KEY.get(key)
-    if row is not None:
-        return row
-    legacy = LEGACY_ROUTES.get(key)
-    return BY_OPERATION[legacy] if legacy is not None else None
+    """The manifest row for a served address, or None.
+
+    No legacy fallback: every served address has a row now, and one that does not is a defect the
+    inventory assertion below reports rather than something a ledger explains away.
+    """
+    return BY_KEY.get((method.upper(), path))
 
 
 def _operations(document: dict[str, Any]) -> list[tuple[RouteRow, dict[str, Any]]]:
@@ -66,13 +65,12 @@ def test_no_operation_documents_fastapis_default_validation_error(document: dict
 
 def test_operation_ids_come_from_the_manifest(document: dict[str, Any]) -> None:
     """Generation keys its output by operation id, so the id is part of the published contract —
-    it must not be FastAPI's function-name-plus-path default, which changes on every rename."""
-    from src.infrastructure.gui.contracts.operation_ids import _multi_address_operations
+    it must not be FastAPI's function-name-plus-path default, which changes on every rename.
 
-    collapsing = _multi_address_operations()
+    Every row now, with no exception. Four completeness endpoints used to be collapsing into one
+    operation and none could claim the canonical id while all four were mounted; the collapse is
+    done."""
     for row, operation in _operations(document):
-        if row.operation_id in collapsing:
-            continue  # four addresses becoming one operation; none may claim the id yet
         assert operation.get("operationId") == row.operation_id
 
 

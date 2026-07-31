@@ -48,25 +48,6 @@ export const TEMPLATES_BY_TIMEOUT_CLASS: Record<NonDefaultTimeoutClass, readonly
   policy.templates
 
 /**
- * Retired templates still mounted, and the class they keep until their rename lands.
- *
- * A rename has to move the proxy rule in the same commit as the decorator, so this list shrinks
- * entry by entry alongside the migration ledger and is empty when it is done. Without it, the
- * window between "canonical template declared" and "route actually renamed" would leave a
- * long-running read on the generic budget it demonstrably exceeds.
- */
-export const LEGACY_TEMPLATES_BY_TIMEOUT_CLASS: Record<
-  NonDefaultTimeoutClass,
-  readonly string[]
-> = policy.legacyTemplates
-
-/** Every template in a class, canonical and not-yet-migrated alike. */
-export const allTemplatesFor = (timeoutClass: NonDefaultTimeoutClass): readonly string[] => [
-  ...TEMPLATES_BY_TIMEOUT_CLASS[timeoutClass],
-  ...LEGACY_TEMPLATES_BY_TIMEOUT_CLASS[timeoutClass],
-]
-
-/**
  * Dev-proxy context keys per class, most specific first — the patterns, already derived.
  *
  * Vite reads a context beginning with `^` as a regular expression and uses the first key that

@@ -49,10 +49,6 @@
       "/api/viewpoints/summarize"
     ]
   },
-  "legacyTemplates": {
-    "streaming": [],
-    "derived-graph": []
-  },
   "proxyContexts": {
     "streaming": [
       "^/api/events(\\?|$)"

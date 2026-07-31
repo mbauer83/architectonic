@@ -7,16 +7,20 @@ can be an *equality* — not a subset check — at every point during the migrat
 much is left" is a fact in the source tree rather than a claim in a report.
 
 :data:`RETIRED_ROUTES` is complete and constant: it is the permanent record of what 0.2.0
-retires, which is what the retired-literal scan needs long after the route itself is gone.
-:data:`MIGRATED_ROUTES` grows monotonically until it covers every key, and
-:data:`UNSERVED_OPERATIONS` shrinks to empty; the fitness functions refuse a key that is
-migrated yet still served, one that is not migrated yet absent, and either collection naming
-an operation the manifest does not declare.
+retires, which is what the retired-literal scan needs long after the route itself is gone. The
+fitness function asserts directly that none of these addresses is served.
 
-Neither is a redirect table — nothing here routes a request. The ledger *is* read at runtime by
-one thing: a policy keyed on an address has to know whether that address has moved yet, or a
-cache-eligible read would lose its ETag the moment the manifest named its new template. The
-consumer-facing old→new mapping lives in ``CHANGELOG.md``.
+**The migration is over, and its scaffolding is gone.** Two collections tracked how far it had got —
+which retired addresses were still mounted, and which canonical ones were not mounted yet. Both
+reached the state the plan required, and a ledger that records "all of it, always" carries no
+information while costing 78 lines that must be kept in lockstep with the list beside it. Six
+consumers computed "the legacy addresses still served" and every one of them now reads as though the
+move were still under way. What replaced them: the addressing fitness function compares the served
+surface against the manifest directly, and a served address with no manifest row is a failure rather
+than something the ledger explains away.
+
+This is not a redirect table and never was — nothing here routes a request. The consumer-facing
+old→new mapping lives in ``CHANGELOG.md``.
 """
 
 from __future__ import annotations
@@ -113,96 +117,6 @@ RETIRED_ROUTES: dict[tuple[str, str], str] = {
     ("POST", "/api/assurance/security-ingest"): "assurance_ingest_security_signals",
     ("POST", "/api/assurance/security-snapshot-delete"): "assurance_delete_security_snapshot",
     ("GET", "/api/assurance/vulnerability-impact"): "assurance_read_vulnerability_impact",
-}
-
-#: Retired routes whose handler has already moved to its canonical address. Grows one router
-#: at a time until it covers every key of :data:`RETIRED_ROUTES`.
-MIGRATED_ROUTES: frozenset[tuple[str, str]] = frozenset({
-    ("GET", "/api/diagram"),
-    ("POST", "/api/diagram"),
-    ("POST", "/api/diagram/edit"),
-    ("POST", "/api/diagram/remove"),
-    ("POST", "/api/diagram/sync"),
-    ("POST", "/api/diagram/preview"),
-    ("POST", "/api/diagram/entity-metadata"),
-    ("PUT", "/api/diagram/edge-label"),
-    ("GET", "/api/diagram-connections"),
-    ("GET", "/api/diagram-entities"),
-    ("GET", "/api/diagram-context"),
-    ("GET", "/api/diagram-download"),
-    ("GET", "/api/diagram-svg"),
-    ("GET", "/api/diagram-image/{filename}"),
-    ("GET", "/api/diagram-types/datatype/type-usages"),
-    ("GET", "/api/diagram-types/{name}/connection-types"),
-    ("GET", "/api/diagram-types/{name}/entity-types"),
-    ("POST", "/api/matrix"),
-    ("POST", "/api/matrix/edit"),
-    ("POST", "/api/matrix/preview"),
-    ("GET", "/api/matrix-config"),
-    ("POST", "/admin/api/diagram"),
-    ("POST", "/admin/api/diagram/remove"),
-    ("POST", "/api/connection"),
-    ("POST", "/api/connection/edit"),
-    ("POST", "/api/connection/remove"),
-    ("POST", "/api/connection/associate"),
-    ("POST", "/api/cleanup-broken-refs"),
-    ("POST", "/admin/api/connection"),
-    ("POST", "/admin/api/connection/remove"),
-    ("GET", "/api/entity"),
-    ("POST", "/admin/api/entity"),
-    ("POST", "/admin/api/entity/edit"),
-    ("POST", "/admin/api/entity/remove"),
-    ("POST", "/api/entity"),
-    ("POST", "/api/entity/edit"),
-    ("POST", "/api/entity/remove"),
-    ("GET", "/api/entity-context"),
-    ("GET", "/api/entity-display-item"),
-    ("GET", "/api/entity-schemata"),
-    ("GET", "/api/neighbors"),
-    ("GET", "/api/document"),
-    ("POST", "/api/document"),
-    ("PUT", "/api/document/{artifact_id}"),
-    ("DELETE", "/api/document/{artifact_id}"),
-    ("POST", "/api/viewpoints/edit"),
-    ("POST", "/api/viewpoints/remove"),
-    ("POST", "/api/group"),
-    ("PUT", "/api/group"),
-    ("PATCH", "/api/group"),
-    ("DELETE", "/api/group"),
-    ("POST", "/api/group/archive"),
-    ("POST", "/api/group/unarchive"),
-    ("GET", "/api/assurance/arch-lens/{arch_artifact_id}"),
-    ("GET", "/api/assurance/security-components"),
-    ("GET", "/api/assurance/security-findings"),
-    ("GET", "/api/assurance/security-metrics"),
-    ("GET", "/api/assurance/vex"),
-    ("POST", "/api/assurance/vex"),
-    ("POST", "/api/assurance/security-ingest"),
-    ("POST", "/api/assurance/security-snapshot-delete"),
-    ("GET", "/api/assurance/vulnerability-impact"),
-    ("GET", "/api/assurance/guidance"),
-    ("GET", "/api/assurance/neighbors"),
-    ("POST", "/api/assurance/baselines/seal"),
-    ("GET", "/api/assurance/cast-complete"),
-    ("GET", "/api/assurance/grc-complete"),
-    ("GET", "/api/assurance/stpa-complete"),
-    ("GET", "/api/assurance/gsn/completeness"),
-    ("GET", "/api/assurance/gsn/draft"),
-    ("GET", "/api/assurance/gsn/rendered"),
-    ("POST", "/api/assurance/gsn/publications"),
-    ("GET", "/api/assurance/fmea"),
-    ("PUT", "/api/assurance/fmea/factor"),
-    ("GET", "/api/assurance/analyses/{analysis_id}/members"),
-    ("POST", "/api/assurance/analyses/{analysis_id}/members"),
-    ("DELETE", "/api/assurance/analyses/{analysis_id}/members/{node_id}"),
-    ("POST", "/api/assurance/nodes"),
-})
-
-#: Retired routes still mounted at their old address, and the operation each becomes.
-LEGACY_ROUTES: dict[tuple[str, str], str] = {
-    key: operation_id
-    for key, operation_id in RETIRED_ROUTES.items()
-    if key not in MIGRATED_ROUTES
 }
 
 #: Canonical operations the manifest declares that are not mounted yet. Either a new capability

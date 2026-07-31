@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_PROXY_TIMEOUT_MS,
-  LEGACY_TEMPLATES_BY_TIMEOUT_CLASS,
   PROXY_HEADROOM_MS,
   TEMPLATES_BY_TIMEOUT_CLASS,
   TIMEOUT_BUDGET_MS,
@@ -31,11 +30,11 @@ describe('timeoutClassForPath', () => {
     expect(timeoutClassForPath('/api/entities/APP@1.ab.thing/neighbors')).toBe('derived-graph')
   })
 
-  it('keeps every not-yet-renamed route in its class until the rename lands', () => {
-    // Driven from the legacy list rather than naming one route: the list shrinks slice by slice,
-    // and a hard-coded example would fail the moment its own rename landed — reporting a
-    // regression where there was a completed migration. Empty is the end state, not a gap.
-    for (const template of LEGACY_TEMPLATES_BY_TIMEOUT_CLASS['derived-graph']) {
+  it('classifies every declared template in a class, not just the one named above', () => {
+    // Driven from the list rather than naming routes: the manifest is what decides membership, and a
+    // hard-coded example would fail the moment its own template was renamed — reporting a regression
+    // where there was a completed rename.
+    for (const template of TEMPLATES_BY_TIMEOUT_CLASS['derived-graph']) {
       const concrete = template.replace(/\{[^}]+\}/g, 'PLACEHOLDER')
       expect(timeoutClassForPath(concrete)).toBe('derived-graph')
     }
@@ -81,10 +80,11 @@ describe('proxy budgets', () => {
     expect(svg).toBeLessThan(detail)
   })
 
-  it('emits one context per declared template, canonical and legacy alike', () => {
+  it('emits one context per declared template', () => {
+    // Was "canonical and legacy alike": the migration is over, so there is one list, and a context
+    // count that still added a second one would silently accept an empty list as agreement.
     expect(proxyContextsFor('derived-graph')).toHaveLength(
-      TEMPLATES_BY_TIMEOUT_CLASS['derived-graph'].length +
-        LEGACY_TEMPLATES_BY_TIMEOUT_CLASS['derived-graph'].length,
+      TEMPLATES_BY_TIMEOUT_CLASS['derived-graph'].length,
     )
   })
 })
