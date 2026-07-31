@@ -52,13 +52,13 @@ export function useGrcWizardData(analysisId: Ref<string | null>, stepKey: Ref<st
   const loadGuidance = async (): Promise<void> => {
     guidance.value = {}
     if (!currentStep.value.guidanceTopic) return
-    const resp = await fetch(`/api/assurance/guidance?topic=${currentStep.value.guidanceTopic}`)
+    const resp = await fetch(`/api/assurance/guidance/${encodeURIComponent(currentStep.value.guidanceTopic)}`)
     if (resp.ok) guidance.value = await resp.json() as { what?: string; why?: string; how?: string }
   }
 
   const loadCompleteness = async (): Promise<void> => {
     if (!analysisId.value) return
-    const resp = await fetch(`/api/assurance/grc-complete?analysis_id=${encodeURIComponent(analysisId.value)}`)
+    const resp = await fetch(`/api/assurance/analyses/${encodeURIComponent(analysisId.value)}/completeness`)
     if (resp.ok) completeness.value = await resp.json() as GrcCompleteResponse
   }
 
@@ -175,7 +175,7 @@ export function useGrcWizardData(analysisId: Ref<string | null>, stepKey: Ref<st
   const sealBaseline = async (): Promise<void> => {
     busy.value = true
     try {
-      await fetch('/api/assurance/baselines/seal', {
+      await fetch('/api/assurance/baselines', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ notes: `GRC analysis ${analysisId.value}`, analysis_id: analysisId.value }),

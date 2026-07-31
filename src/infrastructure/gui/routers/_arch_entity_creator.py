@@ -3,7 +3,7 @@
 Implements the application ``ArchitectureEntityCreator`` port so the ModelAndBind
 use case can create architecture entities (the Bound path) inside the unified GUI
 backend, where architecture-write scope is available. Uses the same serialized
-write path as ``POST /api/entity``.
+write path as ``POST /api/entities``.
 """
 
 from __future__ import annotations
@@ -33,10 +33,10 @@ class GuiArchitectureEntityCreator:
         from src.infrastructure.write.artifact_write.entity import create_entity as _create  # noqa: PLC0415
 
         repo_root, _registry, verifier = s.get_write_deps()
-        # Same authorization identity as POST /api/entity — this adapter creates an
+        # Same authorization identity as POST /api/entities — this adapter creates an
         # ordinary engagement entity on behalf of the assurance model-and-bind flow.
         result = s.authorized_write(
-            ("POST", "/api/entity"),
+            "entities_create_entity",
             _create,
             repo_root=repo_root,
             verifier=verifier,

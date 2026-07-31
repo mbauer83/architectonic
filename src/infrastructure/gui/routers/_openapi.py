@@ -19,6 +19,8 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict
 
+from src.infrastructure.gui.contracts.errors import ErrorEnvelope
+
 #: FastAPI tag names, one per modeling/query surface, so ``/docs`` groups by concept.
 TAG_ENTITIES = "entities"
 TAG_CONNECTIONS = "connections"
@@ -27,6 +29,7 @@ TAG_VIEWPOINTS = "viewpoints"
 TAG_DOCUMENTS = "documents"
 TAG_GROUPS = "groups"
 TAG_TAXONOMY = "taxonomy"
+TAG_ASSURANCE = "assurance"
 
 
 class DocumentedModel(BaseModel):
@@ -55,16 +58,19 @@ class WriteResultResponse(DocumentedModel):
 
 
 # ── Error-response fragments (the statuses the handlers actually return) ─────────
-
-_DETAIL_SCHEMA = {"type": "object", "properties": {"detail": {"type": "string"}}}
+#
+# The schema is the typed envelope, not a hand-written ``{"detail": "<string>"}`` fragment. It
+# used to be the latter, and that was a promise the surface no longer kept once the central
+# handlers started returning a structured ``detail``: a generated client would have decoded every
+# error as a string and failed on the object it actually receives.
 
 
 def _err(description: str) -> dict[str, Any]:
-    return {"description": description, "content": {"application/json": {"schema": _DETAIL_SCHEMA}}}
+    return {"description": description, "model": ErrorEnvelope}
 
 
-#: Attach to id-lookup reads: they 404 when the artifact is absent. (422 for bad query params
-#: is added automatically by FastAPI.)
+#: Attach to id-lookup reads: they 404 when the artifact is absent. (422 for a bad query
+#: parameter is declared application-wide, since every operation can produce one.)
 READ_RESPONSES: dict[int | str, dict[str, Any]] = {404: _err("Artifact not found")}
 
 #: Attach to write operations. Mirrors the mutation-gate + authorization statuses
@@ -74,4 +80,11 @@ WRITE_RESPONSES: dict[int | str, dict[str, Any]] = {
     403: _err("Write forbidden (e.g. admin mode not enabled, or mutation denied)"),
     409: _err("Write conflict"),
     423: _err("Write temporarily rejected by the workspace gate (retryable)"),
+}
+
+#: Declared on the application, so every operation's 422 documents the envelope its handler
+#: actually returns rather than FastAPI's default ``HTTPValidationError``.
+APP_RESPONSES: dict[int | str, dict[str, Any]] = {
+    422: _err("Request validation failed"),
+    500: _err("Unhandled server error (non-disclosing)"),
 }

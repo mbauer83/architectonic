@@ -18,6 +18,7 @@ Response semantics (per the AssuranceExposurePolicy contract):
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 from fastapi import APIRouter, Query, Response
 from fastapi.responses import JSONResponse
@@ -31,6 +32,7 @@ from src.application.assurance_provenance import analyses_by_id, author_of, prov
 from src.application.assurance_queries import coverage_gaps, risk_register
 from src.domain.artifact_id import canonical_entity_key
 from src.infrastructure.assurance.architecture_basis import current_architecture_basis
+from src.infrastructure.gui.contracts.assurance_signals import ArchLensResponse
 from src.infrastructure.gui.routers._assurance_http import locked_response as _locked_response
 from src.infrastructure.gui.routers._assurance_http import not_found_response as _not_found_response
 from src.infrastructure.gui.routers._assurance_http import ok as _ok
@@ -263,8 +265,10 @@ def list_baselines() -> JSONResponse:
 
 # ── Architecture lens: assurance findings about one architecture element ─────
 
-@read_router.get("/api/assurance/arch-lens/{arch_artifact_id}")
-def arch_lens(arch_artifact_id: str) -> JSONResponse:
+@read_router.get("/api/assurance/arch-artifacts/{arch_artifact_id}/lens",
+    summary="Assurance findings about one architecture artifact", response_model=ArchLensResponse,
+    response_model_exclude_unset=True)
+def arch_lens(arch_artifact_id: str) -> dict[str, Any]:
     """Return assurance nodes that concern a given architecture artifact.
 
     Used by EntityDetailView / DiagramDetailView to show the assurance lens.
@@ -278,19 +282,19 @@ def arch_lens(arch_artifact_id: str) -> JSONResponse:
     ctx, pol = _policy()
     element_key = canonical_entity_key(arch_artifact_id)
     if pol.check_locked():
-        return _ok({
+        return {
             "arch_artifact_id": arch_artifact_id,
             "locked": True,
             "nodes": [],
             "count": 0,
-        })
+        }
     refs = ctx.store.list_arch_refs(arch_artifact_id=element_key)
     node_ids = {str(r["assurance_node_id"]) for r in refs}
     all_nodes = ctx.store.list_nodes()
     matched = [n for n in all_nodes if str(n["node_id"]) in node_ids]
     visible, _ = pol.filter_nodes(matched)
     scope = pol.scope()
-    return _ok({
+    return {
         "arch_artifact_id": arch_artifact_id,
         "locked": False,
         "nodes": visible,
@@ -300,4 +304,4 @@ def arch_lens(arch_artifact_id: str) -> JSONResponse:
             arch_artifact_id, store=ctx.store, policy=pol, nodes=all_nodes,
             basis=current_architecture_basis(),
         ),
-    })
+    }

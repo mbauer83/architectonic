@@ -30,7 +30,7 @@ surface, so no route can bypass the capability gate or the audit record.
 | `arch-assurance seed --with-signals` | Bootstrapping a demo or a fresh store |
 | `uv run tools/assurance/ingest_security_signals.py --target python --anchor <id>` | Dogfooding this repository |
 | `assurance_ingest_security_signals` (MCP) | An agent holding a BOM and advisories |
-| `POST /api/assurance/security-ingest` | Programmatic ingest |
+| `POST /api/assurance/arch-artifacts/{id}/security-snapshots` | Programmatic ingest |
 
 ### What may be anchored
 
@@ -97,8 +97,10 @@ usually the next one:
 
 The same three views are available to agents as
 `assurance_security_metrics`, `assurance_list_vulnerabilities`, and
-`assurance_vulnerability_impact`, and over REST as `/api/assurance/security-metrics`,
-`/api/assurance/security-findings`, and `/api/assurance/vulnerability-impact`.
+`assurance_vulnerability_impact`, and over REST as
+`/api/assurance/arch-artifacts/{id}/security-metrics`,
+`/api/assurance/arch-artifacts/{id}/security-findings`, and
+`/api/assurance/vulnerabilities/{identifier}/impact`.
 `assurance_security_stats` lists every assessed entity with an active snapshot, so an
 agent discovers where signals exist without an out-of-band lookup.
 
@@ -160,9 +162,11 @@ listed as affected by it.
 
 ## Deleting snapshots
 
-`assurance_delete_security_snapshot` (MCP) and
-`POST /api/assurance/security-snapshot-delete` remove one snapshot by id, or every
-snapshot for an anchor. Deletion is irreversible and audited.
+`assurance_delete_security_snapshot` (MCP) removes one snapshot by id, or every snapshot for an
+anchor. Over REST the scope is the address rather than a body selector:
+`DELETE /api/assurance/security-snapshots/{snapshot_id}` for one, and
+`DELETE /api/assurance/arch-artifacts/{id}/security-snapshots` for every snapshot of an anchor.
+Deletion is irreversible and audited.
 
 Deleting the active snapshot is allowed and leaves the anchor reporting
 `no_active_snapshot`; no earlier snapshot is promoted back, because presenting a

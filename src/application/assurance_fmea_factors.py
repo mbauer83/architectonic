@@ -15,6 +15,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from src.application.assurance_legacy_invalid import PERMITTED_OPERATION, is_legacy_invalid
 from src.application.assurance_ports import AssuranceArchive, ConfidentialAssuranceStore
 from src.domain.assurance.fmea_factors import FactorValidationError, validate_factor_assessment
 
@@ -55,7 +56,17 @@ class FactorStoreLocked:
     pass
 
 
-FactorResult = FactorRecorded | FactorInvalid | FactorNodeNotFound | FactorStoreLocked
+@dataclass(frozen=True)
+class FactorLegacyInvalid:
+    """The failure mode awaits provenance repair, so no judgement may be filed against it."""
+
+    node_id: str
+    permitted_operation: str = PERMITTED_OPERATION
+
+
+FactorResult = (
+    FactorRecorded | FactorInvalid | FactorNodeNotFound | FactorStoreLocked | FactorLegacyInvalid
+)
 
 
 def record_factor_assessment(
@@ -85,6 +96,10 @@ def record_factor_assessment(
     node = store.get_node(request.node_id)
     if node is None or str(node.get("node_type")) != FAILURE_MODE_NODE_TYPE:
         return FactorNodeNotFound(request.node_id)
+    if is_legacy_invalid(node):
+        # A judgement is filed *by* an analysis against a failure mode that analysis owns. With no
+        # provenance there is no owner, so there is nobody the judgement could be attributed to.
+        return FactorLegacyInvalid(node_id=request.node_id)
 
     row = store.write_fmea_assessment(
         node_id=request.node_id,

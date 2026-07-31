@@ -6,7 +6,9 @@ import argparse
 import json
 import sys
 from pathlib import Path
+from typing import Any
 from urllib.error import HTTPError, URLError
+from urllib.parse import quote
 from urllib.request import Request, urlopen
 
 from src.infrastructure.backend.backend_probe import backend_url, probe_backend
@@ -40,6 +42,27 @@ def _build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _delete_request(port: int, args: argparse.Namespace) -> Request:
+    """The proxied request for one delete command.
+
+    Both surfaces carry identity in the path and the dry-run flag in the query, because a ``DELETE``
+    has no body for either to travel in.
+    """
+    identity = quote(args.artifact_id, safe="")
+    dry_run = "true" if args.dry_run else "false"
+    if args.command == "delete-entity":
+        return Request(
+            f"{backend_url(port)}/api/entities/{identity}?dry_run={dry_run}",
+            headers={"Accept": "application/json"},
+            method="DELETE",
+        )
+    return Request(
+        f"{backend_url(port)}/api/diagrams/{identity}?dry_run={dry_run}",
+        headers={"Accept": "application/json"},
+        method="DELETE",
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
@@ -57,18 +80,12 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
-    port = state["port"]
-    path = "/api/entity/remove" if args.command == "delete-entity" else "/api/diagram/remove"
-    body = {"artifact_id": args.artifact_id, "dry_run": bool(args.dry_run)}
-    req = Request(
-        f"{backend_url(port)}{path}",
-        data=json.dumps(body).encode("utf-8"),
-        headers={"Content-Type": "application/json", "Accept": "application/json"},
-        method="POST",
-    )
+    req = _delete_request(state["port"], args)
     try:
         with urlopen(req, timeout=10.0) as resp:  # noqa: S310
-            result = json.loads(resp.read().decode("utf-8"))
+            payload = resp.read().decode("utf-8")
+            # A committed deletion answers 204 with no body; only a dry run has a plan to report.
+            result: dict[str, Any] = json.loads(payload) if payload.strip() else {}
     except HTTPError as exc:
         detail = exc.read().decode("utf-8", errors="replace").strip()
         print(detail or str(exc), file=sys.stderr)

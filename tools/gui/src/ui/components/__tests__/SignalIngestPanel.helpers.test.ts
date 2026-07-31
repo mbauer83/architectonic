@@ -117,6 +117,22 @@ describe('describeOutcome', () => {
   it('does not dress an unrecognised response as success', () => {
     expect(describeOutcome(404, { detail: 'Not Found' })).toMatch(/Unexpected response/)
   })
+
+  it('reads a rejection out of the shared error envelope', () => {
+    // A rejected ingest no longer answers a body with a `status` word — it answers the same typed
+    // envelope every other failure does, and the field errors are what the user has to act on.
+    const message = describeOutcome(422, {
+      detail: {
+        code: 'validation_error',
+        message: 'the submitted BOM was rejected',
+        details: { field_errors: [{ field: 'anchor_entity_id', message: 'is required' }] },
+        request_id: 'r1',
+      },
+    })
+
+    expect(message).toContain('anchor_entity_id')
+    expect(message).toContain('is required')
+  })
 })
 
 describe('changedTheStore', () => {

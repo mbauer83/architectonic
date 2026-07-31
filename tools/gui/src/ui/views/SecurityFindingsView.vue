@@ -32,7 +32,7 @@ async function load() {
   error.value = null
   try {
     const resp = await fetch(
-      `/api/assurance/security-findings?anchor_entity_id=${encodeURIComponent(anchorId.value)}`)
+      `/api/assurance/arch-artifacts/${encodeURIComponent(anchorId.value)}/security-findings`)
     if (resp.status === 423) { error.value = 'The assurance store is locked.'; return }
     if (!resp.ok) { error.value = `HTTP ${resp.status}`; return }
     payload.value = await resp.json() as FindingsPayload

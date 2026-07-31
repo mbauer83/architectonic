@@ -50,7 +50,18 @@ class ConfidentialAssuranceStore(Protocol):
 
     def update_analysis(self, analysis_id: str, **attrs: object) -> None: ...
 
-    def delete_analysis(self, analysis_id: str) -> None: ...
+    def delete_analysis(self, analysis_id: str) -> None:
+        """Delete the analysis **and** the participation rows naming it, as one unit of work.
+
+        Both, and atomically, because participation has no foreign key to analyses in any backend:
+        an analysis that only borrowed nodes would otherwise leave one orphan row per borrowed node.
+        An application-layer loop between the two deletions could be interrupted and leave exactly
+        those orphans, so the obligation is the store's.
+
+        The nodes and their provenance are untouched. Participation records that another analysis
+        drew on their work; the analysis going away ends that relation, not the work.
+        """
+        ...
 
     # ── Filing and participation ──────────────────────────────────────────────
     # Three relations, not one. A *group* files analyses (flat, no method of its

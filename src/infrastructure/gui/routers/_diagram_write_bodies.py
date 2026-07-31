@@ -4,7 +4,14 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
+
+
+class _Body(BaseModel):
+    """`extra="forbid"`, and no identity field: identity is in the path, and a body that also
+    accepted it would give the caller two places to say which diagram they meant."""
+
+    model_config = ConfigDict(extra="forbid")
 
 
 class DiagramPreviewBody(BaseModel):
@@ -29,8 +36,7 @@ class CreateDiagramGuiBody(BaseModel):
     dry_run: bool = True
 
 
-class EditDiagramGuiBody(BaseModel):
-    artifact_id: str
+class EditDiagramGuiBody(_Body):
     diagram_type: str
     name: str
     entity_ids: list[str]
@@ -43,20 +49,16 @@ class EditDiagramGuiBody(BaseModel):
     dry_run: bool = True
 
 
-class PatchDiagramEntityMetadataBody(BaseModel):
-    """Targeted metadata edit for one datatype classifier (attribute_id omitted) or one of its
-    attributes (attribute_id set). ``patch`` carries only whitelisted meta fields; the write op
-    refuses structural keys."""
+class PatchDiagramEntityMetadataBody(_Body):
+    """Targeted metadata edit for one datatype classifier, or one of its attributes.
 
-    artifact_id: str
-    classifier_id: str
+    The diagram and the classifier are path identity. ``attribute_id`` still selects between the
+    classifier's own metadata and one attribute's — the attribute-scoped route that would put it in
+    the path too is declared in the manifest and not yet mounted. ``patch`` carries only whitelisted
+    meta fields; the write op refuses structural keys."""
+
     attribute_id: str | None = None
     patch: dict[str, Any]
-    dry_run: bool = True
-
-
-class DeleteDiagramBody(BaseModel):
-    artifact_id: str
     dry_run: bool = True
 
 
@@ -81,8 +83,7 @@ class CreateMatrixBody(BaseModel):
     to_entity_ids: list[str] | None = None
 
 
-class EditMatrixBody(BaseModel):
-    artifact_id: str
+class EditMatrixBody(_Body):
     name: str
     entity_ids: list[str]
     conn_type_configs: list[dict[str, object]]
@@ -94,6 +95,5 @@ class EditMatrixBody(BaseModel):
     to_entity_ids: list[str] | None = None
 
 
-class SyncDiagramToModelBody(BaseModel):
-    artifact_id: str
+class SyncDiagramToModelBody(_Body):
     dry_run: bool = True

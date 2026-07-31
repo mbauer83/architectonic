@@ -11,6 +11,20 @@ from __future__ import annotations
 from typing import Any
 
 from src.application import assurance_mutations as mutations
+from src.application.assurance_legacy_invalid import LegacyInvalidNode
+
+
+def _legacy_invalid(node_id: str, permitted_operation: str) -> dict[str, object]:
+    """The refusal for a node awaiting provenance repair, in the MCP envelope.
+
+    Names the permitted operation, because an agent told only "refused" will retry the same call.
+    """
+    return {
+        "error": "node_legacy_invalid",
+        "node_id": node_id,
+        "permitted_operation": permitted_operation,
+        "message": LegacyInvalidNode(node_id=node_id).message,
+    }
 
 
 def _ok(result: mutations.MutationOk) -> dict[str, object]:
@@ -30,6 +44,8 @@ def _envelope(result: Any, ctx: Any) -> dict[str, object]:
         return ctx.locked_response()
     if isinstance(result, mutations.MutationNotFound):
         return ctx.not_found_response(result.artifact_id)
+    if isinstance(result, mutations.MutationLegacyInvalid):
+        return _legacy_invalid(result.node_id, result.permitted_operation)
     if isinstance(result, mutations.MutationRejected):
         return {
             "error": "invalid_value",
@@ -76,6 +92,8 @@ def _analysis_result(result: Any, ctx: Any) -> dict[str, object]:
         return ctx.not_found_response(result.analysis_id)
     if isinstance(result, analysis_uc.AnalysisInvalid):
         return {"error": result.error, "message": result.message}
+    if isinstance(result, analysis_uc.AnalysisLegacyInvalid):
+        return _legacy_invalid(result.node_id, result.permitted_operation)
     return result.payload
 
 

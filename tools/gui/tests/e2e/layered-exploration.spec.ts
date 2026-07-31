@@ -52,7 +52,7 @@ test.describe('layered view: quality flow', () => {
         artifact_id: ROOT_ID, name: 'Root Process', artifact_type: 'process', domain: 'business',
         subdomain: '', status: 'active', display_alias: 'Root Process', element_type: 'process', element_label: 'Process',
       }], next_cursor: null } }))
-    await page.route('**/api/entity-display-item*', (route) =>
+    await page.route('**/api/entities/*/display-item*', (route) =>
       route.fulfill({ json: {
         artifact_id: ROOT_ID, name: 'Root Process', artifact_type: 'process', domain: 'business',
         subdomain: '', status: 'active', display_alias: 'Root Process', element_type: 'process', element_label: 'Process',
@@ -186,7 +186,7 @@ test.describe('motivation-support flow', () => {
         artifact_id: ROOT_ID, name: 'A Goal', artifact_type: 'goal', domain: 'motivation',
         subdomain: '', status: 'active', display_alias: 'A Goal', element_type: 'goal', element_label: 'Goal',
       }], next_cursor: null } }))
-    await page.route('**/api/entity-display-item*', (route) =>
+    await page.route('**/api/entities/*/display-item*', (route) =>
       route.fulfill({ json: {
         artifact_id: ROOT_ID, name: 'A Goal', artifact_type: 'goal', domain: 'motivation',
         subdomain: '', status: 'active', display_alias: 'A Goal', element_type: 'goal', element_label: 'Goal',

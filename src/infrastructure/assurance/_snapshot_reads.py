@@ -63,6 +63,21 @@ def list_snapshot_components(
     ).fetchall()
 
 
+def get_component(
+    connection: SnapshotConnection, component_id: str,
+) -> dict[str, Any] | None:
+    """One component by its own id — the segment-safe ``SCM@…`` this system minted for it.
+
+    Addressed by the internal id rather than by a PURL or a ``bom_ref``: those are the source's
+    identifiers, they carry structure a path segment cannot, and the same package appears under
+    different ones across feeds. They stay on the row as data, and as collection filters.
+    """
+    return connection.open().execute(
+        "SELECT * FROM snapshot_components WHERE component_id=?",
+        (component_id,),
+    ).fetchone()
+
+
 def list_snapshot_findings(
     connection: SnapshotConnection, snapshot_id: str,
 ) -> list[dict[str, Any]]:

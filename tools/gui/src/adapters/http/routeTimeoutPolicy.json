@@ -1,0 +1,99 @@
+{
+  "$comment": "Generated from the REST route-policy manifest by src/infrastructure/gui/route_policy/timeout_policy_document.py. Do not edit. Both frontend consumers \u2014 the HTTP client and the Vite dev config \u2014 read this document rather than deriving anything, because they live in different TypeScript programs and a shared module can only be owned by one of them.",
+  "budgetMs": {
+    "default": 10000,
+    "derived-graph": 60000,
+    "streaming": null
+  },
+  "proxyHeadroomMs": 5000,
+  "templates": {
+    "streaming": [
+      "/api/events"
+    ],
+    "derived-graph": [
+      "/admin/api/diagrams",
+      "/api/assurance/aibom/export",
+      "/api/assurance/aibom/scan",
+      "/api/assurance/analyses/{analysis_id}/diagrams/{diagram_type}/rendered",
+      "/api/assurance/analyses/{analysis_id}/gsn/rendered",
+      "/api/assurance/arch-artifacts/{arch_artifact_id}/security-snapshots",
+      "/api/assurance/baselines",
+      "/api/assurance/nodes/{node_id}/neighbors",
+      "/api/assurance/verify",
+      "/api/connections/cleanup-broken-refs",
+      "/api/diagram-entity-discovery",
+      "/api/diagram-images/{filename}",
+      "/api/diagrams",
+      "/api/diagrams/preview",
+      "/api/diagrams/{artifact_id}",
+      "/api/diagrams/{artifact_id}/download",
+      "/api/diagrams/{artifact_id}/svg",
+      "/api/diagrams/{artifact_id}/sync",
+      "/api/diagrams/{artifact_id}/viewpoint-projection",
+      "/api/entities/{artifact_id}/neighbors",
+      "/api/matrices",
+      "/api/matrices/preview",
+      "/api/matrices/{artifact_id}",
+      "/api/promote/execute",
+      "/api/promote/plan",
+      "/api/sync/changes",
+      "/api/sync/engagement/save",
+      "/api/sync/enterprise/save",
+      "/api/sync/enterprise/submit",
+      "/api/sync/enterprise/withdraw",
+      "/api/viewpoints/execute",
+      "/api/viewpoints/execute-diagram",
+      "/api/viewpoints/execute-projection",
+      "/api/viewpoints/export-csv",
+      "/api/viewpoints/export-render",
+      "/api/viewpoints/summarize"
+    ]
+  },
+  "legacyTemplates": {
+    "streaming": [],
+    "derived-graph": []
+  },
+  "proxyContexts": {
+    "streaming": [
+      "^/api/events(\\?|$)"
+    ],
+    "derived-graph": [
+      "^/api/assurance/analyses/[^/?#]+/diagrams/[^/?#]+/rendered(\\?|$)",
+      "^/api/assurance/analyses/[^/?#]+/gsn/rendered(\\?|$)",
+      "^/api/assurance/arch\\-artifacts/[^/?#]+/security\\-snapshots(\\?|$)",
+      "^/api/assurance/nodes/[^/?#]+/neighbors(\\?|$)",
+      "^/api/diagrams/[^/?#]+/viewpoint\\-projection(\\?|$)",
+      "^/api/entities/[^/?#]+/neighbors(\\?|$)",
+      "^/api/diagrams/[^/?#]+/download(\\?|$)",
+      "^/api/diagrams/[^/?#]+/sync(\\?|$)",
+      "^/api/diagrams/[^/?#]+/svg(\\?|$)",
+      "^/api/sync/enterprise/withdraw(\\?|$)",
+      "^/api/assurance/aibom/export(\\?|$)",
+      "^/api/sync/enterprise/submit(\\?|$)",
+      "^/api/assurance/aibom/scan(\\?|$)",
+      "^/api/sync/engagement/save(\\?|$)",
+      "^/api/sync/enterprise/save(\\?|$)",
+      "^/api/connections/cleanup\\-broken\\-refs(\\?|$)",
+      "^/api/viewpoints/execute\\-projection(\\?|$)",
+      "^/api/viewpoints/execute\\-diagram(\\?|$)",
+      "^/api/diagram\\-images/[^/?#]+(\\?|$)",
+      "^/api/viewpoints/export\\-render(\\?|$)",
+      "^/api/diagrams/[^/?#]+(\\?|$)",
+      "^/api/matrices/[^/?#]+(\\?|$)",
+      "^/api/viewpoints/export\\-csv(\\?|$)",
+      "^/api/viewpoints/summarize(\\?|$)",
+      "^/api/assurance/baselines(\\?|$)",
+      "^/api/viewpoints/execute(\\?|$)",
+      "^/api/assurance/verify(\\?|$)",
+      "^/api/diagrams/preview(\\?|$)",
+      "^/api/matrices/preview(\\?|$)",
+      "^/api/promote/execute(\\?|$)",
+      "^/admin/api/diagrams(\\?|$)",
+      "^/api/promote/plan(\\?|$)",
+      "^/api/sync/changes(\\?|$)",
+      "^/api/diagram\\-entity\\-discovery(\\?|$)",
+      "^/api/diagrams(\\?|$)",
+      "^/api/matrices(\\?|$)"
+    ]
+  }
+}

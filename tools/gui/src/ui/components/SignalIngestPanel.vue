@@ -49,11 +49,11 @@ async function submit() {
   error.value = null
   outcome.value = null
   try {
-    const resp = await fetch('/api/assurance/security-ingest', {
+    const resp = await fetch(
+      `/api/assurance/arch-artifacts/${encodeURIComponent(props.artifactId)}/security-snapshots`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        anchor_entity_id: props.artifactId,
         bom: parsed.bom,
         vulnerabilities: parsed.vulnerabilities ?? [],
         // Derived from the paste, so a retry replays rather than duplicating.
@@ -64,7 +64,11 @@ async function submit() {
     if (resp.status === 423) { error.value = 'The assurance store is locked.'; return }
     const body = await resp.json().catch(() => ({})) as Record<string, unknown>
     if (resp.status === 403) {
-      error.value = asText(body['message'], 'Signal mutations are denied by this deployment.')
+      const detail = body['detail']
+      const message = typeof detail === 'object' && detail !== null
+        ? (detail as { message?: unknown }).message
+        : undefined
+      error.value = asText(message, 'Signal mutations are denied by this deployment.')
       return
     }
     const message = describeOutcome(resp.status, body)

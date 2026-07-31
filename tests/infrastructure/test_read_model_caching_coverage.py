@@ -27,7 +27,7 @@ from fastapi import FastAPI
 
 from src.application.artifact_query import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
-from src.infrastructure.backend.read_model_caching import _MODEL_DERIVED_PATHS, _entity_tag
+from src.infrastructure.backend.read_model_caching import _entity_tag, _is_cacheable
 from src.infrastructure.gui.routers import state as gui_state
 from src.infrastructure.mcp import mcp_artifact_server as mcp
 
@@ -132,23 +132,38 @@ class TestTheGenerationNoticesEveryArtifactKind:
 
 
 class TestTheAllowlistStaysHonest:
-    def test_every_entry_is_an_exact_path(self) -> None:
-        """Prefixes would adopt future sub-routes without anyone deciding they qualify."""
-        assert all(not path.endswith("/") for path in _MODEL_DERIVED_PATHS)
+    def test_a_template_does_not_adopt_its_own_sub_routes(self) -> None:
+        """The eligibility set is templates now, matched whole. A prefix match would adopt every
+        route added beneath a listed one without anyone deciding it qualified — and identity in the
+        path means those sub-routes exist: `/api/entities/{id}/neighbors` is not model-derived."""
+        assert _is_cacheable("/api/entities")
+        assert not _is_cacheable("/api/entities/APP@1.ab.thing/neighbors")
+        assert not _is_cacheable("/api/entities/")
 
     @pytest.mark.parametrize("path", [
-        "/api/viewpoints", "/api/entity-schemata", "/api/entity-taxonomy",
+        "/api/viewpoints", "/api/entity-schemata/goal", "/api/entity-taxonomy",
         "/api/sync/status", "/api/assurance/stats",
     ])
     def test_sources_outside_the_index_are_not_cached(self, path: str) -> None:
         """Each of these moves without the model generation moving."""
-        assert path not in _MODEL_DERIVED_PATHS
+        assert not _is_cacheable(path)
 
     def test_the_allowlist_has_not_silently_grown(self) -> None:
-        """A change here must come with a demonstration above, so pin the set."""
-        assert _MODEL_DERIVED_PATHS == frozenset({
-            "/api/entities", "/api/entity", "/api/entity-context", "/api/connections",
-            "/api/diagrams", "/api/diagram-entities", "/api/documents", "/api/stats",
+        """A change here must come with a demonstration above, so pin the set.
+
+        Read from the manifest, which is where eligibility is decided; pinning a literal copy here
+        would be the second copy this migration removed."""
+        from src.infrastructure.gui.route_policy import CONDITIONAL_READ_TEMPLATES
+
+        assert CONDITIONAL_READ_TEMPLATES == frozenset({
+            "/api/entities",
+            "/api/entities/{artifact_id}",
+            "/api/entities/{artifact_id}/context",
+            "/api/connections",
+            "/api/diagrams",
+            "/api/diagrams/{artifact_id}/entities",
+            "/api/documents",
+            "/api/stats",
         })
 
 
@@ -182,7 +197,7 @@ class TestEndToEndThroughHttp:
         # Unchanged model: the client is told it already has the answer.
         assert client.get("/api/entities", headers={"If-None-Match": tag}).status_code == 304
 
-        client.post("/api/entity", json={
+        client.post("/api/entities", json={
             "artifact_type": "requirement", "name": "Http Cache Probe",
             "summary": "S.", "dry_run": False,
         })

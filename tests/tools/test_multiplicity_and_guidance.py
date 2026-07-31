@@ -474,9 +474,6 @@ class TestConnectionBodyMultiplicity:
         from src.infrastructure.gui.routers.connections import EditConnectionBody
 
         body = EditConnectionBody(
-            source_entity="A",
-            connection_type="archimate-realization",
-            target_entity="B",
             src_multiplicity="1..*",
             tgt_multiplicity="0..1",
         )
@@ -490,16 +487,10 @@ class TestConnectionBodyMultiplicity:
 
         with pytest.raises(ValidationError, match="Invalid multiplicity"):
             EditConnectionBody(
-                source_entity="A",
-                connection_type="archimate-realization",
-                target_entity="B",
                 src_multiplicity="1:n",
             )
         with pytest.raises(ValidationError, match="Invalid multiplicity"):
             EditConnectionBody(
-                source_entity="A",
-                connection_type="archimate-realization",
-                target_entity="B",
                 tgt_multiplicity="many",
             )
 
@@ -508,9 +499,6 @@ class TestConnectionBodyMultiplicity:
         from src.infrastructure.gui.routers.connections import EditConnectionBody
 
         body = EditConnectionBody(
-            source_entity="A",
-            connection_type="archimate-realization",
-            target_entity="B",
             src_multiplicity=None,
             tgt_multiplicity=None,
         )

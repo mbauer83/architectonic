@@ -79,7 +79,7 @@ def query_datatype_type_catalog(
     }
 
 
-@router.get("/api/diagram-types/datatype/type-usages", tags=[TAG_DIAGRAMS],
+@router.get("/api/diagram-types/datatype/types/{type_id}/usages", tags=[TAG_DIAGRAMS],
     summary="Usages of a datatype classifier type", response_model=OpenMapResponse)
 def query_datatype_type_usages(type_id: str) -> dict[str, Any]:
     from src.diagram_types.datatype._type_catalog import query_type_usages  # noqa: PLC0415

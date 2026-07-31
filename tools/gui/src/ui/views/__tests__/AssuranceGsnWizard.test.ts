@@ -30,8 +30,9 @@ describe('GSN wizard helpers', () => {
   })
 
   it('builds the publication audit body', () => {
-    expect(publicationBody('AN@1', 'GSN@1.case', entities)).toEqual({
-      analysis_id: 'AN@1',
+    // No `analysis_id`: the analysis is the address the publication is posted to, and a body that
+    // named one would give a caller two places to say which case they published.
+    expect(publicationBody('GSN@1.case', entities)).toEqual({
       diagram_id: 'GSN@1.case',
       source_bindings: sourceBindings(entities),
     })

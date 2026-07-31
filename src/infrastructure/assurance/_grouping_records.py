@@ -181,6 +181,20 @@ class FileGroupingStoreMixin:
         self._require_unlocked()
         self._member_path(analysis_id, node_id).unlink(missing_ok=True)
 
+    def remove_all_analysis_members_of_analysis(self, analysis_id: str) -> None:
+        """Drop every participation naming this analysis, for use when the analysis is deleted.
+
+        The counterpart of the node-side sweep below, and needed for the same reason: participation
+        has no foreign key to analyses, so an analysis that only *borrowed* nodes would leave one
+        orphan row per borrowed node behind. The nodes and their provenance are untouched.
+        """
+        self._require_unlocked()
+        for record in self._records_in(self._members_dir(), "node_id"):
+            if str(record.get("analysis_id", "")) == analysis_id:
+                self._member_path(analysis_id, str(record.get("node_id", ""))).unlink(
+                    missing_ok=True
+                )
+
     def remove_all_analysis_members_of_node(self, node_id: str) -> None:
         """Drop every membership naming this node, for use when the node itself is deleted.
 

@@ -53,7 +53,21 @@ class AnalysisInvalid:
     message: str
 
 
-AnalysisResult = AnalysisOk | AnalysisLocked | AnalysisNotFound | AnalysisInvalid
+@dataclass(frozen=True)
+class AnalysisLegacyInvalid:
+    """A node awaiting provenance repair; only provenance assignment may touch it.
+
+    Declared beside the other analysis outcomes rather than borrowed from the mutation module, so
+    the participation use cases keep one result union.
+    """
+
+    node_id: str
+    permitted_operation: str = "assign_provenance"
+
+
+AnalysisResult = (
+    AnalysisOk | AnalysisLocked | AnalysisNotFound | AnalysisInvalid | AnalysisLegacyInvalid
+)
 
 
 # ── Use cases ──────────────────────────────────────────────────────────────────
@@ -149,22 +163,28 @@ def delete_analysis(
     *,
     analysis_id: str,
 ) -> AnalysisResult:
-    """Delete an analysis. Blocks if it still owns member nodes (non-destructive default).
+    """Delete an analysis that authored nothing, and the participation rows naming it.
 
-    The analysis is the aggregate root; deleting it must not silently destroy the
-    member nodes. Callers detach or delete the member nodes first, then delete the
-    (now empty) analysis. An abandoned/empty analysis deletes cleanly.
+    Refused while the analysis has authored nodes. No reassignment is offered, and the old guidance
+    to "detach or delete" them is gone: provenance is immutable, so detaching is not a thing a
+    caller can do. The nodes either stay — visibly authored by an analysis that still exists — or
+    are explicitly deleted first.
+
+    Participation is the opposite case. A node another analysis merely *borrowed* is not this
+    analysis's to keep or destroy, so the analysis goes and the borrowing relation goes with it,
+    while the node and its provenance are untouched. That cleanup is the store's, in one unit of
+    work with the deletion, because participation has no foreign key to analyses in any backend.
     """
     if not store.is_unlocked():
         return AnalysisLocked()
     if store.get_analysis(analysis_id) is None:
         return AnalysisNotFound(analysis_id)
-    member_count = len(store.list_nodes(analysis_id=analysis_id))
-    if member_count > 0:
+    authored_count = len(store.list_nodes(analysis_id=analysis_id))
+    if authored_count > 0:
         return AnalysisInvalid(
             "analysis_not_empty",
-            f"This analysis still owns {member_count} node(s). Reassign or delete its "
-            "nodes before deleting the analysis.",
+            f"This analysis authored {authored_count} node(s), and provenance is immutable — they "
+            "cannot be reassigned. Delete them explicitly, or leave the analysis in place.",
         )
     store.delete_analysis(analysis_id)
     archive.append("DELETE_ANALYSIS", node_id=analysis_id, payload={"analysis_id": analysis_id})

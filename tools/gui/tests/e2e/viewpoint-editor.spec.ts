@@ -27,12 +27,12 @@ const uniqueSlug = (label: string) => {
 
 test.afterEach(async ({ request }) => {
   for (const slug of createdSlugs.splice(0)) {
-    await request.post('/api/viewpoints/remove', { data: { slug, dry_run: false } })
+    await request.delete(`/api/viewpoints/${encodeURIComponent(slug)}`)
   }
 })
 
 const removeViewpoint = async (request: APIRequestContext, slug: string) => {
-  await request.post('/api/viewpoints/remove', { data: { slug, dry_run: false } })
+  await request.delete(`/api/viewpoints/${encodeURIComponent(slug)}`)
 }
 
 const createViewpoint = async (request: APIRequestContext, definition: Record<string, unknown>) => {
@@ -153,7 +153,7 @@ test.describe('delete lifecycle', () => {
 
     const entitiesResp = await request.get('/api/entities?limit=1')
     const anyEntityId = (await entitiesResp.json()).items[0].artifact_id as string
-    const diagramResp = await request.post('/api/diagram', {
+    const diagramResp = await request.post('/api/diagrams', {
       data: {
         diagram_type: 'archimate-motivation', name: 'Viewpoint Editor E2E Referencer',
         entity_ids: [anyEntityId], connection_ids: [], viewpoint: { slug, version: 1 }, dry_run: false,
@@ -171,7 +171,7 @@ test.describe('delete lifecycle', () => {
       await expect(page.getByRole('button', { name: new RegExp(diagramId) })).toBeVisible()
       await expect(page.locator('tr', { hasText: slug })).toBeVisible()
     } finally {
-      await request.post('/api/diagram/remove', { data: { artifact_id: diagramId, dry_run: false } })
+      await request.delete(`/api/diagrams/${encodeURIComponent(diagramId)}?dry_run=false`)
       await removeViewpoint(request, slug)
     }
   })

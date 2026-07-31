@@ -1,9 +1,12 @@
-"""Registry ⇔ manifest equality for the REST mutation surface.
+"""Registry ⇔ manifest equality for the REST mutation surface, and the request builder per intent.
 
-Every POST/PUT/PATCH/DELETE route on the real backend app is either a manifested
-architecture-repository mutator, an explicitly classified non-mutating route, or
-an assurance-store route (own gating, excluded by prefix); both directions of
-the equality hold, and the request builder is exercised per intent.
+Every write-shaped operation the backend serves is either a manifested architecture-repository
+mutator, an explicitly classified non-mutating operation, or an assurance-store operation (own
+gating, excluded by design); both directions of the equality hold.
+
+The equality is over **operation ids**. It used to be over ``(METHOD, path)`` pairs, and that is
+precisely what made it possible for the copy of the path inside each handler to go stale while this
+test stayed green — the handler's tuple was the one thing no path equality could see.
 """
 
 from __future__ import annotations
@@ -18,62 +21,41 @@ from src.application.mutation_authorization import (
     PromotionWrite,
     RepositoryWrite,
 )
+from src.infrastructure.gui.route_policy import ROUTE_POLICY, UNSERVED_OPERATIONS
 from src.infrastructure.gui.routers.rest_mutation_manifest import (
     ASSURANCE_ROUTE_PREFIX,
-    NON_MUTATING_REST_ROUTES,
+    NON_MUTATING_REST_OPERATIONS,
     REST_MUTATION_MANIFEST,
     build_rest_request,
 )
-from tests.support.route_introspection import openapi_mutation_routes
 
 
-def _app_mutation_routes() -> set[tuple[str, str]]:
-    """Walk the SAME router set the backend app assembles (arch_backend_app)."""
-    from fastapi import FastAPI
-
-    from src.infrastructure.gui.routers.admin import router as admin_router
-    from src.infrastructure.gui.routers.assurance import router as assurance_router
-    from src.infrastructure.gui.routers.authoring_guidance import router as authoring_guidance_router
-    from src.infrastructure.gui.routers.connections import router as connections_router
-    from src.infrastructure.gui.routers.diagram_types import router as diagram_types_router
-    from src.infrastructure.gui.routers.diagrams import router as diagrams_router
-    from src.infrastructure.gui.routers.documents import router as documents_router
-    from src.infrastructure.gui.routers.entities import router as entities_router
-    from src.infrastructure.gui.routers.entity_search import router as entity_search_router
-    from src.infrastructure.gui.routers.events import router as events_router
-    from src.infrastructure.gui.routers.groups import router as groups_router
-    from src.infrastructure.gui.routers.identifiers import router as identifiers_router
-    from src.infrastructure.gui.routers.modules import router as modules_router
-    from src.infrastructure.gui.routers.promote import router as promote_router
-    from src.infrastructure.gui.routers.sync import router as sync_router
-    from src.infrastructure.gui.routers.viewpoint_authoring import router as viewpoint_authoring_router
-    from src.infrastructure.gui.routers.viewpoints import router as viewpoints_router
-
-    app = FastAPI()
-    for router in (
-        entities_router, entity_search_router, connections_router, diagram_types_router,
-        diagrams_router, documents_router, groups_router, identifiers_router, modules_router, promote_router,
-        sync_router, admin_router, events_router, assurance_router, authoring_guidance_router,
-        viewpoints_router, viewpoint_authoring_router,
-    ):
-        app.include_router(router)
-    return openapi_mutation_routes(app)
+def _served_write_shaped_operations() -> set[str]:
+    """Write-shaped operations outside the assurance surface that are actually mounted."""
+    return {
+        row.operation_id
+        for row in ROUTE_POLICY
+        if row.is_write_shaped
+        and not row.template.startswith(ASSURANCE_ROUTE_PREFIX)
+        and row.operation_id not in UNSERVED_OPERATIONS
+    }
 
 
 class TestRestRegistryManifestEquality:
-    def test_every_mutation_route_is_classified_and_every_row_registered(self) -> None:
-        app_routes = {
-            route for route in _app_mutation_routes() if not route[1].startswith(ASSURANCE_ROUTE_PREFIX)
-        }
-        classified = set(REST_MUTATION_MANIFEST) | NON_MUTATING_REST_ROUTES
-        assert app_routes == classified
+    def test_every_write_shaped_operation_is_classified(self) -> None:
+        classified = set(REST_MUTATION_MANIFEST) | NON_MUTATING_REST_OPERATIONS
+        assert _served_write_shaped_operations() - classified == set()
+
+    def test_every_classified_operation_exists_in_the_route_policy(self) -> None:
+        declared = {row.operation_id for row in ROUTE_POLICY}
+        assert (set(REST_MUTATION_MANIFEST) | NON_MUTATING_REST_OPERATIONS) - declared == set()
 
     def test_manifest_and_non_mutating_sets_are_disjoint(self) -> None:
-        assert not set(REST_MUTATION_MANIFEST) & NON_MUTATING_REST_ROUTES
+        assert not set(REST_MUTATION_MANIFEST) & NON_MUTATING_REST_OPERATIONS
 
 
 class TestBuildRestRequest:
-    @pytest.fixture()
+    @pytest.fixture
     def roots(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path, Path]:
         engagement = tmp_path / "engagements" / "ENG-RRM" / "architecture-repository"
         enterprise = tmp_path / "enterprise-repository"
@@ -87,24 +69,25 @@ class TestBuildRestRequest:
         return engagement, enterprise
 
     def test_every_manifest_row_builds_its_declared_intent(self, roots) -> None:
-        for route, intent in REST_MUTATION_MANIFEST.items():
-            request = build_rest_request(route)
-            assert isinstance(request, MutationRequest), route
-            assert request.intent == intent, route
+        for operation, intent in REST_MUTATION_MANIFEST.items():
+            request = build_rest_request(operation)
+            assert isinstance(request, MutationRequest), operation
+            assert request.intent == intent, operation
 
-    def test_engagement_routes_target_the_engagement_root(self, roots) -> None:
+    def test_engagement_operations_target_the_engagement_root(self, roots) -> None:
         engagement, _ = roots
-        request = build_rest_request(("POST", "/api/entity"))
-        assert request.target == RepositoryWrite(engagement)
+        assert build_rest_request("entities_create_entity").target == RepositoryWrite(engagement)
 
-    def test_promotion_route_targets_both_roots(self, roots) -> None:
+    def test_promotion_operation_targets_both_roots(self, roots) -> None:
         engagement, enterprise = roots
-        request = build_rest_request(("POST", "/api/promote/execute"))
+        request = build_rest_request("promotion_execute_promotion")
         assert request.target == PromotionWrite(engagement, enterprise)
 
-    def test_withdraw_route_distinguishes_pending_remote(self, roots, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_withdraw_operation_distinguishes_pending_remote(
+        self, roots, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         _, enterprise = roots
-        request = build_rest_request(("POST", "/api/sync/enterprise/withdraw"))
+        request = build_rest_request("sync_withdraw_enterprise")
         assert request.target == DiscardWrite(enterprise, pending_remote=False)
 
         class _Pending:
@@ -112,10 +95,16 @@ class TestBuildRestRequest:
                 return True
 
         monkeypatch.setattr("src.infrastructure.git.enterprise_sync_state.load", lambda root: _Pending())
-        assert build_rest_request(("POST", "/api/sync/enterprise/withdraw")).target == DiscardWrite(
+        assert build_rest_request("sync_withdraw_enterprise").target == DiscardWrite(
             enterprise, pending_remote=True
         )
 
-    def test_unmanifested_route_cannot_execute(self, roots) -> None:
-        with pytest.raises(LookupError, match="classify the route"):
-            build_rest_request(("POST", "/api/not-a-route"))
+    def test_an_unmanifested_operation_cannot_execute(self, roots) -> None:
+        with pytest.raises(LookupError, match="classify the operation"):
+            build_rest_request("entities_not_a_real_operation")
+
+    def test_a_renamed_operation_id_fails_the_write_rather_than_only_a_test(self, roots) -> None:
+        """Risk 12, from the other direction: the handler's authorization identity is checked at
+        request time, so a stale one cannot reach the write queue with a wrong intent."""
+        with pytest.raises(LookupError):
+            build_rest_request("entities_edit_entity")  # the pre-migration spelling

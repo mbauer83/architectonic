@@ -1,4 +1,6 @@
-import type { Effect, ParseResult } from 'effect'
+import type { Effect } from 'effect'
+import type { EnterpriseAdminRepository } from './EnterpriseAdminRepository'
+import type { RepoError } from './repositoryErrors'
 import type { SyncChangesResult } from '../domain/schemas-changes'
 import type {
   Stats,
@@ -55,7 +57,7 @@ import type {
   ViewpointExecutionResult,
   ViewpointDiagramResult,
 } from '../domain'
-import type { NetworkError, NotFoundError } from '../domain'
+import type { NotFoundError } from '../domain'
 import type { MarkdownError } from '../application/MarkdownService'
 
 export type Direction = 'any' | 'outbound' | 'inbound'
@@ -76,11 +78,10 @@ export interface ListParams {
   readonly order?: 'asc' | 'desc'
 }
 
-/** Errors that can come from any repository call. */
-export type RepoError = NetworkError | ParseResult.ParseError
+export type { RepoError }
 
 /** Outbound port: the application's view of the model backend. */
-export interface ModelRepository {
+export interface ModelRepository extends EnterpriseAdminRepository {
   readonly getServerInfo: () => Effect.Effect<ServerInfo, RepoError>
   readonly listModules: () => Effect.Effect<readonly ModuleSummary[], RepoError>
   readonly getStats: () => Effect.Effect<Stats, RepoError>
@@ -124,20 +125,18 @@ export interface ModelRepository {
     metadata?: Record<string, unknown>;
     dry_run?: boolean;
   }) => Effect.Effect<WriteResult, RepoError>
-  readonly editConnection: (body: {
-    source_entity: string; connection_type: string; target_entity: string;
+  /** Identity is the composite id; the body carries only what changes. */
+  readonly editConnection: (connectionId: string, body: {
     description?: string; src_multiplicity?: string; tgt_multiplicity?: string;
     specialization?: string;
     /** Replaces the schema-declared attributes wholesale; {} clears them. */
     metadata?: Record<string, unknown>;
     dry_run?: boolean;
   }) => Effect.Effect<WriteResult, RepoError>
-  readonly removeConnection: (body: {
-    source_entity: string; connection_type: string; target_entity: string;
-    dry_run?: boolean;
-  }) => Effect.Effect<WriteResult, RepoError>
-  readonly manageConnectionAssociations: (body: {
-    source_entity: string; connection_type: string; target_entity: string;
+  readonly previewRemoveConnection: (connectionId: string) => Effect.Effect<WriteResult, RepoError>
+  readonly removeConnection: (connectionId: string) => Effect.Effect<void, RepoError>
+  /** A delta over a set-valued relation: what to add and remove, not what the set becomes. */
+  readonly manageConnectionAssociations: (connectionId: string, body: {
     add_entities?: string[]; remove_entities?: string[];
     dry_run?: boolean;
   }) => Effect.Effect<WriteResult, RepoError>
@@ -154,16 +153,20 @@ export interface ModelRepository {
     version?: string; status?: string;
     dry_run?: boolean;
   }) => Effect.Effect<WriteResult, RepoError>
-  readonly editEntity: (body: {
-    artifact_id: string; name?: string; summary?: string;
+  readonly editEntity: (id: string, body: {
+    name?: string; summary?: string;
     properties?: Record<string, string>; attribute_types?: Record<string, string>;
     notes?: string; keywords?: string[]; specialization?: string; specializations?: string[];
     version?: string; status?: string;
     dry_run?: boolean;
   }) => Effect.Effect<WriteResult, RepoError>
-  readonly deleteEntity: (body: {
-    artifact_id: string; dry_run?: boolean;
-  }) => Effect.Effect<WriteResult, RepoError>
+  /**
+   * What deleting this entity would do. Two names rather than one with a flag: the two are
+   * different exchanges — a plan has a body, a committed deletion answers 204 and has none — and a
+   * boolean whose value changes the return type is a signature that cannot be read.
+   */
+  readonly previewDeleteEntity: (id: string) => Effect.Effect<WriteResult, RepoError>
+  readonly deleteEntity: (id: string) => Effect.Effect<void, RepoError>
   readonly getEntitySchemata: (artifactType: string, specialization?: string) => Effect.Effect<EntitySchemaInfo, RepoError>
   readonly getDiagramEntities: (diagramId: string) => Effect.Effect<EntitySummary[], RepoError>
   readonly getDiagramConnections: (diagramId: string) => Effect.Effect<DiagramConnection[], RepoError>
@@ -202,8 +205,9 @@ export interface ModelRepository {
     viewpoint?: { slug: string; version: number; enforcement_override?: 'off' | 'warn' | 'ghost' } | null;
     dry_run?: boolean;
   }) => Effect.Effect<WriteResult, RepoError>
-  readonly editDiagram: (body: {
-    artifact_id: string; diagram_type: string; name: string;
+  /** Whole-diagram replacement, so PUT: the body states what the diagram becomes, not a delta. */
+  readonly editDiagram: (id: string, body: {
+    diagram_type: string; name: string;
     entity_ids: string[]; connection_ids: string[];
     diagram_entities?: Record<string, unknown>;
     version?: string; status?: string;
@@ -213,8 +217,8 @@ export interface ModelRepository {
   /** Merge a whitelisted metadata delta into one datatype classifier (attribute_id omitted) or
    * one of its attributes (attribute_id set). Server reads the file + merges — the GUI sends only
    * the target ids and the delta, never the whole diagram-entities map. */
-  readonly patchDiagramEntityMetadata: (body: {
-    artifact_id: string; classifier_id: string; attribute_id?: string;
+  readonly patchDiagramEntityMetadata: (id: string, classifierId: string, body: {
+    attribute_id?: string;
     patch: Record<string, unknown>; dry_run?: boolean;
   }) => Effect.Effect<WriteResult, RepoError>
   readonly getViewpointProjection: (diagramId: string) => Effect.Effect<ViewpointProjection, RepoError>
@@ -238,52 +242,29 @@ export interface ModelRepository {
   readonly createViewpointDefinition: (body: {
     definition: Record<string, unknown>; dry_run?: boolean; fork_of?: string
   }) => Effect.Effect<ViewpointPersistResult, RepoError>
-  readonly editViewpointDefinition: (body: {
+  /** The slug comes from the path; the body carries the definition, whose own slug must agree. */
+  readonly replaceViewpointDefinition: (slug: string, body: {
     definition: Record<string, unknown>; dry_run?: boolean
   }) => Effect.Effect<ViewpointPersistResult, RepoError>
-  readonly deleteViewpointDefinition: (body: {
-    slug: string; dry_run?: boolean
-  }) => Effect.Effect<ViewpointPersistResult, RepoError>
+  /** What deleting would do, and what stands in its way. Deletes nothing. */
+  readonly previewDeleteViewpointDefinition: (
+    slug: string,
+  ) => Effect.Effect<ViewpointPersistResult, RepoError>
+  /** Deletes, and reports nothing — a refusal arrives as a typed error, not as `ok: false`. */
+  readonly deleteViewpointDefinition: (slug: string) => Effect.Effect<void, RepoError>
   readonly getViewpointReferencers: (slug: string) => Effect.Effect<readonly ViewpointReferencer[], RepoError>
   readonly getViewpointPins: () => Effect.Effect<ViewpointPins, RepoError>
   readonly setViewpointPins: (slugs: readonly string[]) => Effect.Effect<ViewpointPins, RepoError>
-  readonly deleteDiagram: (body: {
-    artifact_id: string; dry_run?: boolean;
-  }) => Effect.Effect<WriteResult, RepoError>
-  readonly syncDiagramToModel: (body: {
-    artifact_id: string; dry_run?: boolean;
+  readonly previewDeleteDiagram: (id: string) => Effect.Effect<WriteResult, RepoError>
+  readonly deleteDiagram: (id: string) => Effect.Effect<void, RepoError>
+  readonly syncDiagramToModel: (id: string, body: {
+    dry_run?: boolean;
   }) => Effect.Effect<SyncDiagramToModelResult, RepoError>
-  readonly setEdgeLabel: (body: {
-    artifact_id: string; edge_key: string; label: string | null; dry_run?: boolean;
+  readonly setEdgeLabel: (id: string, edgeKey: string, body: {
+    label: string | null; dry_run?: boolean;
   }) => Effect.Effect<WriteResult, RepoError>
-  // ── Admin write methods (active only in --admin-mode) ───────────────────
-  readonly adminCreateEntity: (body: {
-    artifact_type: string; name: string; summary?: string;
-    properties?: Record<string, string>; notes?: string;
-    keywords?: string[]; version?: string; status?: string; dry_run?: boolean;
-  }) => Effect.Effect<WriteResult, RepoError>
-  readonly adminEditEntity: (body: {
-    artifact_id: string; name?: string; summary?: string;
-    properties?: Record<string, string>; attribute_types?: Record<string, string>;
-    notes?: string; keywords?: string[]; specialization?: string; version?: string; status?: string;
-    dry_run?: boolean;
-  }) => Effect.Effect<WriteResult, RepoError>
-  readonly adminDeleteEntity: (body: {
-    artifact_id: string; dry_run?: boolean;
-  }) => Effect.Effect<WriteResult, RepoError>
-  readonly adminAddConnection: (body: {
-    source_entity: string; connection_type: string; target_entity: string;
-    description?: string; src_multiplicity?: string; tgt_multiplicity?: string;
-    specialization?: string;
-    dry_run?: boolean;
-  }) => Effect.Effect<WriteResult, RepoError>
-  readonly adminRemoveConnection: (body: {
-    source_entity: string; connection_type: string; target_entity: string;
-    dry_run?: boolean;
-  }) => Effect.Effect<WriteResult, RepoError>
-  readonly adminDeleteDiagram: (body: {
-    artifact_id: string; dry_run?: boolean;
-  }) => Effect.Effect<WriteResult, RepoError>
+  // Admin writes live in `EnterpriseAdminRepository`; this port extends it, so a caller still
+  // sees one surface while the enterprise tier keeps its own file.
   readonly planPromotion: (body: {
     entity_id?: string;
     entity_ids?: string[];
@@ -325,7 +306,7 @@ export interface ModelRepository {
     extra_frontmatter?: Record<string, unknown>;
     status?: string; version?: string; dry_run?: boolean;
   }) => Effect.Effect<WriteResult, RepoError>
-  readonly deleteDocument: (id: string, dry_run?: boolean) => Effect.Effect<WriteResult, RepoError>
+  readonly deleteDocument: (id: string) => Effect.Effect<void, RepoError>
   // ── Sync / save workflow ──────────────────────────────────────────────────
   readonly getSyncStatus: () => Effect.Effect<SyncStatus, RepoError>
   readonly saveEngagementChanges: (body: { message: string; push?: boolean }) => Effect.Effect<SyncSaveResult, RepoError>
@@ -347,13 +328,15 @@ export interface ModelRepository {
   readonly getMatrixConfig: (id: string) => Effect.Effect<MatrixConfig, RepoError>
   readonly previewMatrix: (body: object) => Effect.Effect<MatrixPreviewResult, RepoError>
   readonly createMatrixDiagram: (body: object) => Effect.Effect<WriteResult, RepoError>
-  readonly editMatrixDiagram: (body: object) => Effect.Effect<WriteResult, RepoError>
+  readonly editMatrixDiagram: (id: string, body: object) => Effect.Effect<WriteResult, RepoError>
   // ── Group lifecycle ───────────────────────────────────────────────────────────
   readonly listGroups: (kind?: string) => Effect.Effect<GroupList, RepoError>
   readonly createGroup: (body: { kind: string; slug: string; name: string; description?: string; order?: number; meta_ontology?: string; type_filter?: string[] }) => Effect.Effect<Record<string, unknown>, RepoError>
-  readonly renameGroup: (body: { kind: string; target: string; name?: string; new_slug?: string }) => Effect.Effect<Record<string, unknown>, RepoError>
-  readonly archiveGroup: (body: { kind: string; target: string; confirm?: string }) => Effect.Effect<Record<string, unknown>, RepoError>
-  readonly unarchiveGroup: (body: { kind: string; target: string }) => Effect.Effect<Record<string, unknown>, RepoError>
-  readonly deleteGroup: (params: { kind: string; target: string; confirm?: string }) => Effect.Effect<Record<string, unknown>, RepoError>
-  readonly updateGroup: (body: { kind: string; target: string; name?: string; description?: string; meta_ontology?: string; type_filter?: string[] | null }) => Effect.Effect<Record<string, unknown>, RepoError>
+  // A group is named by the pair (axis kind, slug), and both are path parameters — so both are
+  // arguments here rather than fields of a body that would say the same thing twice.
+  readonly renameGroup: (kind: string, slug: string, body: { name?: string; new_slug?: string }) => Effect.Effect<Record<string, unknown>, RepoError>
+  readonly archiveGroup: (kind: string, slug: string, body: { confirm?: string }) => Effect.Effect<Record<string, unknown>, RepoError>
+  readonly unarchiveGroup: (kind: string, slug: string) => Effect.Effect<Record<string, unknown>, RepoError>
+  readonly deleteGroup: (kind: string, slug: string, confirm?: string) => Effect.Effect<Record<string, unknown>, RepoError>
+  readonly updateGroup: (kind: string, slug: string, body: { name?: string; description?: string; meta_ontology?: string; type_filter?: string[] | null }) => Effect.Effect<Record<string, unknown>, RepoError>
 }

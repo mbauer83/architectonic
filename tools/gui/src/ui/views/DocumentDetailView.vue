@@ -155,7 +155,7 @@ const remove = async () => {
   deleting.value = true
   error.value = null
   try {
-    await Effect.runPromise(svc.deleteDocument(documentId.value, false))
+    await Effect.runPromise(svc.deleteDocument(documentId.value))
     void router.push('/documents')
   } catch (reason: unknown) {
     error.value = readErrorMessage(reason)

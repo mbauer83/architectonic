@@ -65,10 +65,8 @@ const save = () => {
     schemaInfo.value?.descriptors ?? {},
     props.connection.metadata ?? {},
   )
-  void mutation.run(svc.editConnection({
-    source_entity: props.connection.source,
-    connection_type: props.connection.conn_type,
-    target_entity: props.connection.target,
+  // Identity is the connection's own composite id, which the read surface already gave us.
+  void mutation.run(svc.editConnection(props.connection.artifact_id, {
     description: description.value.trim(),
     src_multiplicity: sourceMultiplicity.value.trim(),
     tgt_multiplicity: targetMultiplicity.value.trim(),

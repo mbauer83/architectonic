@@ -78,15 +78,15 @@ class TestGroupOpsGoThroughExecutor:
     def test_create_succeeds_in_normal_mode(self, workspace) -> None:
         client, engagement, _ = workspace
         response = client.post(
-            "/api/group", json={"kind": "model-project", "slug": "auth-probe", "name": "Auth Probe"}
+            "/api/groups", json={"kind": "model-project", "slug": "auth-probe", "name": "Auth Probe"}
         )
-        assert response.status_code == 200, response.text
+        assert response.status_code == 201, response.text
 
     def test_create_rejected_read_only_without_side_effects(self, workspace) -> None:
         client, engagement, enterprise = workspace
         _install(engagement, enterprise, read_only=True)
         response = client.post(
-            "/api/group", json={"kind": "model-project", "slug": "denied-probe", "name": "Denied"}
+            "/api/groups", json={"kind": "model-project", "slug": "denied-probe", "name": "Denied"}
         )
         assert response.status_code == 423
         assert not (engagement / "projects" / "denied-probe").exists()
@@ -94,7 +94,7 @@ class TestGroupOpsGoThroughExecutor:
     def test_delete_rejected_read_only(self, workspace) -> None:
         client, engagement, enterprise = workspace
         _install(engagement, enterprise, read_only=True)
-        response = client.delete("/api/group?kind=model-project&target=anything")
+        response = client.delete("/api/groups/model-project/anything")
         assert response.status_code == 423
 
 
@@ -119,12 +119,10 @@ class TestViewpointWritesGoThroughExecutor:
                 "dry_run": False,
             },
         )
-        assert create.status_code == 200, create.text
+        assert create.status_code == 201, create.text
         assert create.json()["ok"] is True
         _install(engagement, enterprise, read_only=True)
-        response = client.post(
-            "/api/viewpoints/remove", json={"slug": "auth-probe-viewpoint", "dry_run": False}
-        )
+        response = client.delete("/api/viewpoints/auth-probe-viewpoint")
         assert response.status_code == 423
 
     def test_create_rejected_read_only_when_it_would_write(self, workspace) -> None:
@@ -145,7 +143,7 @@ class TestOrdinaryEntityWrites:
         client, engagement, enterprise = workspace
         _install(engagement, enterprise, read_only=True)
         response = client.post(
-            "/api/entity", json={"artifact_type": "requirement", "name": "Denied Entity", "dry_run": False}
+            "/api/entities", json={"artifact_type": "requirement", "name": "Denied Entity", "dry_run": False}
         )
         assert response.status_code == 423
 

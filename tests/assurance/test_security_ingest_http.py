@@ -10,8 +10,9 @@ from typing import Any
 from unittest.mock import patch
 
 import pytest
-from fastapi import FastAPI
 from starlette.testclient import TestClient
+
+from tests.support.api_app import build_api_app
 
 pytest.importorskip("sqlcipher3", reason="sqlcipher3 not installed")
 
@@ -98,24 +99,27 @@ def ctx(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):  # type: ignore[no-unt
 def _client(ctx: Any) -> TestClient:
     from src.infrastructure.gui.routers._assurance_signals_routes import signals_router
 
-    app = FastAPI()
-    app.include_router(signals_router)
-    client = TestClient(app, raise_server_exceptions=False)
+    client = TestClient(build_api_app(signals_router), raise_server_exceptions=False)
     client._patch = patch(_CTX_PATH, return_value=ctx)  # type: ignore[attr-defined]
     client._patch.start()  # type: ignore[attr-defined]
     return client
 
 
-def _body(anchor: str, **overrides: Any) -> dict[str, Any]:
-    return {"anchor_entity_id": anchor, "bom": _BOM, **overrides}
+def _url(anchor: str) -> str:
+    return f"/api/assurance/arch-artifacts/{anchor}/security-snapshots"
+
+
+def _body(**overrides: Any) -> dict[str, Any]:
+    """The body without the anchor: the anchor is the path, and the body may not repeat it."""
+    return {"bom": _BOM, **overrides}
 
 
 class TestIngestOutcomes:
     def test_supplied_bom_and_advisories_activate_a_snapshot(self, ctx: Any) -> None:
         client = _client(ctx)
 
-        resp = client.post("/api/assurance/security-ingest",
-                           json=_body("APP@1", vulnerabilities=[_ADVISORY], request_id="r1"))
+        resp = client.post(_url("APP@1"),
+                           json=_body(vulnerabilities=[_ADVISORY], request_id="r1"))
 
         assert resp.status_code == 200
         assert resp.headers.get("Cache-Control") == "no-store"
@@ -130,10 +134,10 @@ class TestIngestOutcomes:
         self, ctx: Any,
     ) -> None:
         client = _client(ctx)
-        client.post("/api/assurance/security-ingest",
-                    json=_body("APP@1", vulnerabilities=[_ADVISORY], request_id="r1"))
+        client.post(_url("APP@1"),
+                           json=_body(vulnerabilities=[_ADVISORY], request_id="r1"))
 
-        findings = client.get("/api/assurance/security-findings?anchor_entity_id=APP@1").json()
+        findings = client.get("/api/assurance/arch-artifacts/APP@1/security-findings").json()
 
         assert findings["count"] == 1
         assert findings["findings"][0]["component_purl"] == "pkg:pypi/urllib3@1.26.0"
@@ -141,11 +145,11 @@ class TestIngestOutcomes:
 
     def test_replayed_request_id_is_200_and_writes_nothing_new(self, ctx: Any) -> None:
         client = _client(ctx)
-        first = client.post("/api/assurance/security-ingest",
-                            json=_body("APP@2", request_id="same")).json()
+        first = client.post(_url("APP@2"),
+                           json=_body(request_id="same")).json()
 
-        second = client.post("/api/assurance/security-ingest",
-                             json=_body("APP@2", request_id="same"))
+        second = client.post(_url("APP@2"),
+                           json=_body(request_id="same"))
 
         assert second.status_code == 200
         assert second.json()["status"] == "replayed"
@@ -153,30 +157,33 @@ class TestIngestOutcomes:
 
     def test_reused_request_id_with_a_different_payload_is_409(self, ctx: Any) -> None:
         client = _client(ctx)
-        client.post("/api/assurance/security-ingest",
-                    json=_body("APP@3", vulnerabilities=[_ADVISORY], request_id="dup"))
+        client.post(_url("APP@3"),
+                           json=_body(vulnerabilities=[_ADVISORY], request_id="dup"))
 
-        conflict = client.post("/api/assurance/security-ingest",
-                               json=_body("APP@3", request_id="dup"))
+        conflict = client.post(_url("APP@3"),
+                           json=_body(request_id="dup"))
 
         assert conflict.status_code == 409
-        assert conflict.json()["status"] == "conflict"
+        assert conflict.json()["detail"]["code"] == "conflict"
 
     def test_missing_anchor_is_422(self, ctx: Any) -> None:
+        """A blank anchor is still a rejection, now in the shared envelope with its field named."""
         client = _client(ctx)
 
-        resp = client.post("/api/assurance/security-ingest", json=_body("  "))
+        resp = client.post(_url("%20%20"), json=_body())
 
         assert resp.status_code == 422
-        assert resp.json()["errors"][0]["field"] == "anchor_entity_id"
+        detail = resp.json()["detail"]
+        assert detail["code"] == "validation_error"
+        assert detail["details"]["field_errors"][0]["field"] == "anchor_entity_id"
 
     def test_a_second_ingest_supersedes_the_previous_snapshot(self, ctx: Any) -> None:
         client = _client(ctx)
-        first = client.post("/api/assurance/security-ingest",
-                            json=_body("APP@4", request_id="a")).json()
+        first = client.post(_url("APP@4"),
+                           json=_body(request_id="a")).json()
 
-        second = client.post("/api/assurance/security-ingest",
-                             json=_body("APP@4", request_id="b")).json()
+        second = client.post(_url("APP@4"),
+                           json=_body(request_id="b")).json()
 
         assert second["superseded_snapshot_id"] == first["snapshot_id"]
 
@@ -186,7 +193,8 @@ class TestIngestGating:
         client = _client(ctx)
         ctx.store.lock()
         try:
-            resp = client.post("/api/assurance/security-ingest", json=_body("APP@1"))
+            resp = client.post(_url("APP@1"),
+                           json=_body())
             assert resp.status_code == 423
             assert resp.headers.get("Cache-Control") == "no-store"
         finally:
@@ -201,10 +209,13 @@ class TestIngestGating:
         monkeypatch.setattr(gate, "storage_assurance_archive_backend", lambda: "cloud-worm")
         client = _client(ctx)
 
-        resp = client.post("/api/assurance/security-ingest", json=_body("APP@1"))
+        resp = client.post(_url("APP@1"),
+                           json=_body())
 
         assert resp.status_code == 403
-        assert resp.json()["reason_code"] == "archive_has_no_atomic_boundary"
+        detail = resp.json()["detail"]
+        assert detail["code"] == "signal_mutation_denied"
+        assert detail["details"]["reason_code"] == "archive_has_no_atomic_boundary"
         assert ctx.snapshot_store.get_active_snapshot("APP@1") is None
 
 
@@ -219,8 +230,8 @@ class TestCrossSurfaceParity:
         from src.infrastructure.mcp.assurance_mcp import security_write_tools
 
         rest = _client(ctx).post(
-            "/api/assurance/security-ingest",
-            json=_body("APP@REST", vulnerabilities=[_ADVISORY], request_id="p1"),
+            _url("APP@REST"),
+            json=_body(vulnerabilities=[_ADVISORY], request_id="p1"),
         ).json()
 
         monkeypatch.setattr(security_write_tools, "get_assurance_context", lambda: ctx)

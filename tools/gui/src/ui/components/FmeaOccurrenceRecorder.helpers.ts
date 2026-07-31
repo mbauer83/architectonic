@@ -17,7 +17,6 @@ export interface RecorderDraft {
 }
 
 export interface FactorRequestBody {
-  node_id: string | null
   factor: 'occurrence'
   value: string
   justification: string
@@ -54,9 +53,9 @@ export function isSubmittable(draft: RecorderDraft): boolean {
   )
 }
 
+/** The judgement itself. No `node_id`: the failure mode is the address it is posted to. */
 export function factorRequestBody(cell: CellView, draft: RecorderDraft): FactorRequestBody {
   return {
-    node_id: cell.node_id,
     factor: 'occurrence',
     value: draft.value,
     justification: draft.justification,

@@ -98,7 +98,9 @@ const testRun = async () => {
       )
     }
     const body = { definition: definitionToMapping(props.draft, attributeTypes.value), dry_run: true }
-    const call = props.isCreating ? svc.createViewpointDefinition(body) : svc.editViewpointDefinition(body)
+    const call = props.isCreating
+      ? svc.createViewpointDefinition(body)
+      : svc.replaceViewpointDefinition(props.draft.slug, body)
     const result = await Effect.runPromise(call)
     // A read-only master legitimately fails the persist gate — that is not feedback
     // about the query being tested, so it never becomes a banner here (it would

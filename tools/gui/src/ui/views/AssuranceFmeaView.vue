@@ -11,16 +11,29 @@
  * for a practitioner to discover: there is no risk priority number, and the detection axis runs the
  * other way. An expert who thinks the tool is wrong about those stops trusting the derived values.
  */
-import { computed } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { computed, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import AssuranceAnalysisPicker from '../components/AssuranceAnalysisPicker.vue'
 import FmeaMatrixPanel from '../components/FmeaMatrixPanel.vue'
 
 const route = useRoute()
+const router = useRouter()
 
 const analysisId = computed(() =>
   typeof route.query['analysis'] === 'string' && route.query['analysis']
     ? route.query['analysis']
     : null)
+
+// The picker's own selection, mirrored into the URL so the chosen matrix is linkable and a reload
+// lands on the same grid. There is no unscoped matrix to fall back to.
+const chosen = ref<string | null>(analysisId.value)
+watch(analysisId, (value) => { chosen.value = value })
+watch(chosen, (value) => {
+  if (value && value !== analysisId.value) {
+    // `analysis` is the page's only query parameter, so it is written rather than merged.
+    void router.replace({ path: route.path, query: { analysis: value } })
+  }
+})
 </script>
 
 <template>
@@ -38,13 +51,19 @@ const analysisId = computed(() =>
       v-if="!analysisId"
       class="fmea-note fmea-note--scope"
     >
-      Showing every failure mode in the store. Open one FMEA on its own from
-      <RouterLink to="/assurance/diagrams">
-        Derived diagrams
-      </RouterLink>.
+      A matrix belongs to one FMEA analysis — choose which one. There is no matrix of every failure
+      mode in the store: a single ranking across two analyses is not a ranking of either.
     </p>
+    <AssuranceAnalysisPicker
+      v-if="!analysisId"
+      v-model="chosen"
+      default-method="FMEA"
+    />
 
-    <FmeaMatrixPanel :analysis-id="analysisId" />
+    <FmeaMatrixPanel
+      v-if="analysisId"
+      :analysis-id="analysisId"
+    />
   </section>
 </template>
 

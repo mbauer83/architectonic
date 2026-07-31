@@ -96,7 +96,7 @@ artifact_edit_diagram(
 - Overriding in one diagram does not affect the same connection's label in
   any other diagram — labels are per-diagram.
 - The verifier flags dangling overrides (edge alias pair no longer rendered).
-- The REST equivalent is `PUT /api/diagram/edge-label` with body
+- The REST equivalent is `PUT /api/diagrams/{artifact_id}/edges/{edge_key}/label` with body
   `{artifact_id, edge_key, label}`.
 
 ---

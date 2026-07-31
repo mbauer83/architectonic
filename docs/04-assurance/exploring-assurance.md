@@ -41,7 +41,7 @@ Two deliberate properties:
 ## Graph traversal
 
 `/assurance/graph` is the neighborhood explorer: it renders the traversal from
-`GET /api/assurance/neighbors` on the shared graph canvas (the same canvas the
+`GET /api/assurance/nodes/{node_id}/neighbors` on the shared graph canvas (the same canvas the
 architecture graph explorer uses). Start from any node — the detail pages link into it —
 and expand a node with a double-click, which issues a fresh one-hop request.
 

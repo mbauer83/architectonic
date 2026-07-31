@@ -104,6 +104,17 @@ class RestGroupingStoreMixin:
         for item in self._items(self._member_url(), analysis_id=analysis_id, node_id=node_id):
             client.delete(f"{self._member_url()}/{item['id']}").raise_for_status()
 
+    def remove_all_analysis_members_of_analysis(self, analysis_id: str) -> None:
+        """Drop every participation naming this analysis, for use when the analysis is deleted.
+
+        The counterpart of the node-side sweep below. Without it an analysis that only *borrowed*
+        nodes leaves one orphan row per borrowed node — and this backend has no cascade at all, so
+        the sweep is the whole mechanism. The nodes and their provenance are untouched.
+        """
+        client = self._require_unlocked()
+        for item in self._items(self._member_url(), analysis_id=analysis_id):
+            client.delete(f"{self._member_url()}/{item['id']}").raise_for_status()
+
     def remove_all_analysis_members_of_node(self, node_id: str) -> None:
         """Drop every membership naming this node, for use when the node itself is deleted.
 

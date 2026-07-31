@@ -67,8 +67,8 @@ test('an unavailable signal snapshot keeps the diagram usable and explains the f
 
 test('the supply-chain dashboard validates and records a contextual VEX assessment', async ({ page }) => {
   let submitted: Record<string, unknown> | null = null
-  await page.route('**/api/assurance/security-metrics?*', (route) => route.fulfill({ json: METRICS }))
-  await page.route('**/api/assurance/vex', async (route) => {
+  await page.route('**/api/assurance/arch-artifacts/*/security-metrics', (route) => route.fulfill({ json: METRICS }))
+  await page.route('**/api/assurance/arch-artifacts/*/vex-assessments', async (route) => {
     submitted = route.request().postDataJSON() as Record<string, unknown>
     await route.fulfill({ json: { revision: 2 } })
   })
@@ -98,15 +98,15 @@ test('the supply-chain dashboard validates and records a contextual VEX assessme
 })
 
 test('derived security attributes stay read-only and disappear when locked', async ({ page }) => {
-  await page.route('**/api/assurance/security-metrics?*', (route) => route.fulfill({ json: METRICS }))
+  await page.route('**/api/assurance/arch-artifacts/*/security-metrics', (route) => route.fulfill({ json: METRICS }))
   await page.goto(`/entity?id=${encodeURIComponent(BACKEND)}`)
   const panel = page.locator('.derived-security')
   await expect(panel).toContainText('Derived security attributes')
   await expect(panel).toContainText('8.1')
   await expect(panel.locator('input, select, textarea, button')).toHaveCount(0)
 
-  await page.unroute('**/api/assurance/security-metrics?*')
-  await page.route('**/api/assurance/security-metrics?*', (route) => route.fulfill({
+  await page.unroute('**/api/assurance/arch-artifacts/*/security-metrics')
+  await page.route('**/api/assurance/arch-artifacts/*/security-metrics', (route) => route.fulfill({
     status: 423, json: { error: 'store_locked', message: 'The assurance store is locked.' },
   }))
   await page.reload()

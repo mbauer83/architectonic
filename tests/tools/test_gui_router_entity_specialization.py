@@ -1,5 +1,5 @@
-"""REST-level round-trip for the `specialization` field on POST /api/entity and
-/api/entity/edit — proves the GUI (a REST-only client) can set and clear an entity's
+"""REST-level round-trip for the `specialization` field on POST /api/entities and
+PATCH /api/entities/{artifact_id} — proves the GUI (a REST-only client) can set and clear an entity's
 specialization, not just the MCP tools and the underlying application functions."""
 
 from __future__ import annotations
@@ -43,8 +43,10 @@ class TestCreateEntitySpecialization:
             "specialization": "constraint",
             "dry_run": False,
         }
-        r = client.post("/api/entity", json=payload)
-        assert r.status_code == 200
+        r = client.post("/api/entities", json=payload)
+        # A committed create answers 201 and names the resource in Location.
+        assert r.status_code == 201
+        assert r.headers["Location"] == f"/api/entities/{r.json()['artifact_id']}"
         data = r.json()
         assert data["wrote"] is True
 
@@ -60,21 +62,21 @@ class TestEditEntitySpecialization:
             "name": "Espec Edit Requirement",
             "dry_run": False,
         }
-        created = client.post("/api/entity", json=create_payload).json()
+        created = client.post("/api/entities", json=create_payload).json()
         artifact_id = created["artifact_id"]
 
-        r = client.post(
-            "/api/entity/edit",
-            json={"artifact_id": artifact_id, "specialization": "constraint", "dry_run": False},
+        r = client.patch(
+            f"/api/entities/{artifact_id}",
+            json={"specialization": "constraint", "dry_run": False},
         )
         assert r.status_code == 200
         assert r.json()["wrote"] is True
         written = next(root.rglob(f"{artifact_id}.md"))
         assert "specialization: constraint" in written.read_text(encoding="utf-8")
 
-        r = client.post(
-            "/api/entity/edit",
-            json={"artifact_id": artifact_id, "specialization": "", "dry_run": False},
+        r = client.patch(
+            f"/api/entities/{artifact_id}",
+            json={"specialization": "", "dry_run": False},
         )
         assert r.status_code == 200
         assert r.json()["wrote"] is True

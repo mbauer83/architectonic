@@ -39,6 +39,10 @@ _FORBIDDEN_SAMPLES = [
 ]
 
 
+#: The analysis every fixture node is attributed to.
+_FIXTURE_ANALYSIS = "STPA@fixture"
+
+
 class _FakeStore:
     def __init__(self) -> None:
         self._nodes: dict[str, dict[str, Any]] = {}
@@ -51,7 +55,12 @@ class _FakeStore:
     def create_node(self, node_type: str, name: str) -> str:
         self._seq += 1
         node_id = f"NOD@{self._seq}"
-        self._nodes[node_id] = {"node_id": node_id, "node_type": node_type, "name": name}
+        # Every node records the analysis that produced it. A node without provenance is
+        # repair-only, so a fixture minting one would be testing the guard rather than the matrix.
+        self._nodes[node_id] = {
+            "node_id": node_id, "node_type": node_type, "name": name,
+            "analysis_id": _FIXTURE_ANALYSIS,
+        }
         return node_id
 
     def get_node(self, node_id: str) -> dict[str, Any] | None:

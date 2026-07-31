@@ -16,6 +16,10 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Callable
 
+from src.application.assurance_legacy_invalid import (
+    PERMITTED_OPERATION,
+    refuse_if_legacy_invalid,
+)
 from src.domain.artifact_id import canonical_entity_key
 from src.domain.assurance.assurance_node_types import CREATABLE_NODE_TYPES
 from src.domain.assurance.constraint_dispositions import DispositionRejection, accept_written_value
@@ -85,7 +89,21 @@ class MutationDuplicateEdge:
     conn_type: str
 
 
-MutationResult = MutationOk | MutationLocked | MutationNotFound | MutationRejected
+@dataclass(frozen=True)
+class MutationLegacyInvalid:
+    """The node predates mandatory provenance, so only provenance assignment may touch it.
+
+    Its own outcome rather than a rejected field: nothing the caller sent is wrong, and the remedy
+    is a different operation rather than a corrected value.
+    """
+
+    node_id: str
+    permitted_operation: str = PERMITTED_OPERATION
+
+
+MutationResult = (
+    MutationOk | MutationLocked | MutationNotFound | MutationRejected | MutationLegacyInvalid
+)
 
 # Only edge creation can be rejected by the ontology matrix or as a duplicate.
 EdgeMutationResult = MutationResult | MutationIllegalPair | MutationDuplicateEdge
@@ -195,32 +213,24 @@ def edit_node(
     node_role: str | None = None,
     content_text: str | None = None,
     attributes: dict[str, object] | None = None,
-    analysis_id: str | None = None,
 ) -> MutationResult:
     """Edit a node in place.
 
-    ``analysis_id`` re-attributes authorship. It is editable, and has to be: every node is supposed
-    to belong to an analysis, and nodes authored before the analysis aggregate existed do not — so
-    without this the invariant is unfixable, which is how 26 nodes came to sit in the live store with
-    no author recorded. Reassignment is validated against the analyses that exist, because an
-    `analysis_id` naming nothing is the state being repaired, not an acceptable new one.
+    Provenance is not editable here. ``assign_provenance`` is the one audited path that may set it,
+    and only for a node that has none — an ordinary edit that could re-attribute authorship would
+    let an analysis's recorded output be moved silently. A node still awaiting that repair cannot be
+    edited at all: see :mod:`src.application.assurance_legacy_invalid`.
     """
     if not store.is_unlocked():
         return MutationLocked()
     if store.get_node(node_id) is None:
         return MutationNotFound(node_id)
+    blocked = refuse_if_legacy_invalid(store, node_id)
+    if blocked is not None:
+        return MutationLegacyInvalid(node_id=blocked.node_id)
     accepted = accept_written_value(disposition)
     if isinstance(accepted, DispositionRejection):
         return _rejected_disposition(accepted)
-    if analysis_id is not None and store.get_analysis(analysis_id) is None:
-        return MutationRejected(
-            field="analysis_id",
-            value=analysis_id,
-            message=(
-                f"No analysis {analysis_id!r} exists. Attributing a node to an analysis that does "
-                "not exist is the state this field repairs, not a new one to write."
-            ),
-        )
     updates: dict[str, object] = {}
     for field_name, value in [
         ("name", name), ("status", status), ("tlp", tlp),
@@ -228,7 +238,6 @@ def edit_node(
         ("uca_type", uca_type), ("failure_type", failure_type), ("mode", mode),
         ("binding_status", binding_status),
         ("node_role", node_role), ("content_text", content_text),
-        ("analysis_id", analysis_id),
     ]:
         if value is not None:
             updates[field_name] = value
@@ -277,6 +286,12 @@ def add_edge(
     target_node = store.get_node(target_id)
     if target_node is None:
         return MutationNotFound(target_id)
+    # Either endpoint awaiting provenance blocks the edge: a relation drawn to a record that cannot
+    # say who produced it is new work accumulating on top of the gap being repaired.
+    for endpoint in (source_id, target_id):
+        blocked = refuse_if_legacy_invalid(store, endpoint)
+        if blocked is not None:
+            return MutationLegacyInvalid(node_id=blocked.node_id)
     source_type = str(source_node.get("node_type", ""))
     target_type = str(target_node.get("node_type", ""))
     legal = legal_connection_types(source_type, target_type)

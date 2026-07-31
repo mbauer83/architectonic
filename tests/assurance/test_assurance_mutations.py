@@ -20,6 +20,10 @@ from src.application import assurance_mutations as mut
 
 # ── Fake infrastructure ───────────────────────────────────────────────────────
 
+#: The analysis every fixture node is attributed to.
+_FIXTURE_ANALYSIS = "STPA@fixture"
+
+
 class _FakeStore:
     def __init__(self, *, unlocked: bool = True) -> None:
         self._unlocked = unlocked
@@ -47,8 +51,10 @@ class _FakeStore:
 
     def create_node(self, node_type: str, name: str, *, content: str = "", **kwargs: object) -> str:
         nid = self._nid()
+        # Provenance defaults to the fixture analysis: a node without one is repair-only, so a
+        # fixture minting an unattributed node would be exercising that guard, not the use case.
         self._nodes[nid] = {"node_id": nid, "node_type": node_type, "name": name,
-                             "content": content, **kwargs}
+                             "content": content, "analysis_id": _FIXTURE_ANALYSIS, **kwargs}
         return nid
 
     def update_node(self, node_id: str, **attrs: object) -> None:

@@ -5,10 +5,11 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Response, status
 from pydantic import BaseModel
 
 from src.application.artifact_document_schema import get_document_subdirectory, load_document_schemata
+from src.infrastructure.gui.contracts.documents import DocumentDetailResponse, DocumentListResponse
 from src.infrastructure.gui.routers import state as s
 from src.infrastructure.gui.routers._openapi import READ_RESPONSES, TAG_DOCUMENTS, WRITE_RESPONSES, OpenMapResponse
 
@@ -36,6 +37,18 @@ class EditDocumentRequest(BaseModel):
     version: str | None = None
     last_updated: str | None = None
     dry_run: bool = False
+
+
+def _write_result(result: Any) -> dict[str, Any]:
+    """The shape every document mutation reports. One place, so the three cannot drift apart."""
+    return {
+        "wrote": result.wrote,
+        "artifact_id": result.artifact_id,
+        "path": str(result.path),
+        "content": result.content,
+        "warnings": result.warnings,
+        "verification": result.verification,
+    }
 
 
 def _get_engagement_root() -> Path:
@@ -93,7 +106,8 @@ def get_document_schemata() -> dict[str, Any]:
     return load_document_schemata(repo_root)
 
 
-@router.get("/api/documents", tags=[TAG_DOCUMENTS], summary="List documents", response_model=OpenMapResponse)
+@router.get("/api/documents", tags=[TAG_DOCUMENTS], summary="List documents",
+    response_model=DocumentListResponse)
 def list_documents(
     doc_type: str | None = None,
     status: str | None = None,
@@ -130,27 +144,37 @@ def list_documents(
     }
 
 
-@router.get("/api/document", tags=[TAG_DOCUMENTS], summary="Read a document by id", response_model=OpenMapResponse,
-    responses=READ_RESPONSES)
-def read_document(id: str) -> dict[str, Any]:
+@router.get("/api/documents/{artifact_id}", tags=[TAG_DOCUMENTS], summary="Read a document by id",
+    response_model=DocumentDetailResponse, responses=READ_RESPONSES)
+def read_document(artifact_id: str) -> dict[str, Any]:
     repo = s.get_repo()
-    result = repo.read_artifact(id, mode="full")
-    if result is None:
-        raise HTTPException(404, f"Not found: {id!r}")
-    doc = repo.get_document(id)
-    if doc is not None:
-        result["is_global"] = s.is_global(doc.path)
+    result = repo.read_artifact(artifact_id, mode="full")
+    doc = repo.get_document(artifact_id)
+    if result is None or doc is None:
+        raise HTTPException(404, f"Not found: {artifact_id!r}")
+    result["is_global"] = s.is_global(doc.path)
     return result
 
 
-@router.post("/api/document", tags=[TAG_DOCUMENTS], summary="Create a document", response_model=OpenMapResponse,
-    responses=WRITE_RESPONSES)
-def create_document(req: CreateDocumentRequest) -> dict[str, Any]:
+#: A create answers 201 and names the resource in ``Location``. A *dry run* created nothing, so it
+#: answers 200 with its plan — declared here, because a status the handler can return that the
+#: document does not mention is a contract the client cannot rely on.
+_CREATE_RESPONSES: dict[int | str, Any] = {
+    **WRITE_RESPONSES,
+    200: {"model": OpenMapResponse, "description": "Dry-run plan; nothing was created"},
+}
+
+
+@router.post("/api/documents", tags=[TAG_DOCUMENTS], summary="Create a document",
+    response_model=OpenMapResponse, responses=_CREATE_RESPONSES,
+    status_code=status.HTTP_201_CREATED)
+def create_document(req: CreateDocumentRequest, response: Response) -> dict[str, Any]:
     from src.infrastructure.write.artifact_write.document import create_document as _create
 
     repo_root, _, verifier = s.get_write_deps()
 
-    result = s.authorized_write(("POST", "/api/document"), 
+    result = s.authorized_write(
+            "documents_create_document", 
         _create,
         repo_root=repo_root,
         verifier=verifier,
@@ -166,24 +190,24 @@ def create_document(req: CreateDocumentRequest) -> dict[str, Any]:
         last_updated=req.last_updated,
         dry_run=req.dry_run,
     )
-    return {
-        "wrote": result.wrote,
-        "artifact_id": result.artifact_id,
-        "path": str(result.path),
-        "content": result.content,
-        "warnings": result.warnings,
-        "verification": result.verification,
-    }
+    # A dry run created nothing, so it is a 200 describing a plan — never a 201 naming a resource
+    # that does not exist. A real create names it, in Location as well as in the body.
+    if result.wrote:
+        response.headers["Location"] = f"/api/documents/{result.artifact_id}"
+    else:
+        response.status_code = status.HTTP_200_OK
+    return _write_result(result)
 
 
-@router.put("/api/document/{artifact_id}", tags=[TAG_DOCUMENTS], summary="Edit a document",
+@router.patch("/api/documents/{artifact_id}", tags=[TAG_DOCUMENTS], summary="Edit a document",
     response_model=OpenMapResponse, responses=WRITE_RESPONSES)
 def edit_document(artifact_id: str, req: EditDocumentRequest) -> dict[str, Any]:
     from src.infrastructure.write.artifact_write.document import edit_document as _edit
 
     repo_root, _, verifier = s.get_write_deps()
 
-    result = s.authorized_write(("PUT", "/api/document/{artifact_id}"), 
+    result = s.authorized_write(
+            "documents_update_document", 
         _edit,
         repo_root=repo_root,
         verifier=verifier,
@@ -198,35 +222,37 @@ def edit_document(artifact_id: str, req: EditDocumentRequest) -> dict[str, Any]:
         last_updated=req.last_updated,
         dry_run=req.dry_run,
     )
-    return {
-        "wrote": result.wrote,
-        "artifact_id": result.artifact_id,
-        "path": str(result.path),
-        "content": result.content,
-        "warnings": result.warnings,
-        "verification": result.verification,
-    }
+    return _write_result(result)
 
 
-@router.delete("/api/document/{artifact_id}", tags=[TAG_DOCUMENTS], summary="Delete a document",
-    response_model=OpenMapResponse, responses=WRITE_RESPONSES)
-def delete_document(artifact_id: str, dry_run: bool = False) -> dict[str, Any]:
+#: A committed deletion has nothing to report, so 204 is the declared status and there is no
+#: response model — FastAPI refuses one, correctly, because a 204 may not carry a body. A *dry
+#: run* has its plan to report, so it answers 200, declared as an alternative outcome rather than
+#: smuggled into the 204.
+_DELETE_RESPONSES: dict[int | str, Any] = {
+    **WRITE_RESPONSES,
+    200: {"model": OpenMapResponse, "description": "Dry-run plan; nothing was deleted"},
+}
+
+
+@router.delete("/api/documents/{artifact_id}", tags=[TAG_DOCUMENTS], summary="Delete a document",
+    response_model=None, responses=_DELETE_RESPONSES, status_code=status.HTTP_204_NO_CONTENT)
+def delete_document(artifact_id: str, response: Response, dry_run: bool = False) -> dict[str, Any] | None:
     from src.infrastructure.write.artifact_write.document import delete_document as _delete
 
     repo_root, _, _ = s.get_write_deps()
 
-    result = s.authorized_write(("DELETE", "/api/document/{artifact_id}"), 
+    result = s.authorized_write(
+            "documents_delete_document", 
         _delete,
         repo_root=repo_root,
         clear_repo_caches=s.clear_caches,
         artifact_id=artifact_id,
         dry_run=dry_run,
     )
-    return {
-        "wrote": result.wrote,
-        "artifact_id": result.artifact_id,
-        "path": str(result.path),
-        "content": result.content,
-        "warnings": result.warnings,
-        "verification": result.verification,
-    }
+    # A deletion has nothing to say, so it says nothing. A *dry-run* deletion has the plan to
+    # report, which is a body — and a body needs a status that permits one.
+    if dry_run:
+        response.status_code = status.HTTP_200_OK
+        return _write_result(result)
+    return None

@@ -18,15 +18,29 @@ Response semantics:
 
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Response
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from src.application import assurance_model_bind as model_bind
 from src.application import assurance_mutations as mutations
+from src.application.assurance_legacy_invalid import LegacyInvalidNode
+from src.application.assurance_provenance_assignment import (
+    ProvenanceAnalysisNotFound,
+    ProvenanceImmutable,
+    ProvenanceLocked,
+    ProvenanceNodeNotFound,
+    assign_provenance,
+)
 from src.infrastructure.assurance.edge_legality import legal_connection_types
 from src.infrastructure.assurance.write_serialization import run_write
+from src.infrastructure.gui.contracts.errors import (
+    ApiError,
+    LegacyInvalidDetails,
+    ProvenanceImmutableDetails,
+)
 from src.infrastructure.gui.routers._arch_entity_creator import GuiArchitectureEntityCreator
+from src.infrastructure.gui.routers._assurance_http import not_found, store_locked
 from src.infrastructure.mcp.assurance_mcp.context import get_assurance_context
 
 write_router = APIRouter()
@@ -65,6 +79,17 @@ def _translate(result: mutations.EdgeMutationResult) -> JSONResponse:
         return _locked()
     if isinstance(result, mutations.MutationNotFound):
         return _not_found(result.artifact_id)
+    if isinstance(result, mutations.MutationLegacyInvalid):
+        # 409, and the details name the one operation that is permitted — a caller told only
+        # "refused" has no way to learn that the remedy is to assign provenance first.
+        raise ApiError(
+            409,
+            "node_legacy_invalid",
+            LegacyInvalidNode(node_id=result.node_id).message,
+            LegacyInvalidDetails(
+                node_id=result.node_id, permitted_operation=result.permitted_operation
+            ),
+        )
     if isinstance(result, mutations.MutationRejected):
         return JSONResponse(
             status_code=422,
@@ -108,6 +133,14 @@ def _translate(result: mutations.EdgeMutationResult) -> JSONResponse:
 
 
 class CreateNodeBody(BaseModel):
+    """No ``analysis_id``: creation happens *inside* an analysis, and the path names which.
+
+    Provenance is mandatory aggregate context rather than an optional field, which is exactly why
+    it cannot be a body field — an optional one is how 26 nodes came to exist with no author.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
     node_type: str
     name: str
     status: str = "draft"
@@ -119,12 +152,17 @@ class CreateNodeBody(BaseModel):
     mode: str | None = None
     binding_status: str | None = None
     node_role: str | None = None
-    analysis_id: str | None = None
     content_text: str = ""
     attributes: dict[str, object] | None = None
 
 
 class EditNodeBody(BaseModel):
+    """No ``analysis_id``: provenance is not an ordinary field, and this is not the route that
+    sets it. ``PUT /api/assurance/nodes/{node_id}/provenance`` is, and only for a node that has
+    none — a general edit that could silently re-attribute authorship is the gap being closed."""
+
+    model_config = ConfigDict(extra="forbid")
+
     name: str | None = None
     status: str | None = None
     tlp: str | None = None
@@ -137,10 +175,6 @@ class EditNodeBody(BaseModel):
     node_role: str | None = None
     content_text: str | None = None
     attributes: dict[str, object] | None = None
-    #: Re-attributes authorship. Every node is supposed to belong to an analysis, and one authored
-    #: before the analysis aggregate existed does not — so this has to be settable, or the invariant
-    #: is unfixable. Validated against the analyses that exist.
-    analysis_id: str | None = None
 
 
 class AddEdgeBody(BaseModel):
@@ -174,18 +208,68 @@ class ModelThisBody(BaseModel):
 # ── Node endpoints ─────────────────────────────────────────────────────────────
 
 
-@write_router.post("/api/assurance/nodes", status_code=200)
-def create_node(body: CreateNodeBody) -> JSONResponse:
+@write_router.post("/api/assurance/analyses/{analysis_id}/nodes", status_code=201)
+def create_node(analysis_id: str, body: CreateNodeBody, response: Response) -> JSONResponse:
+    """Create a node inside the analysis that produced it.
+
+    The analysis is the address, so provenance is recorded by construction and there is no path
+    left that creates a node without it. An analysis that does not exist is a 404 rather than a
+    node written with an unresolvable author.
+    """
     ctx = get_assurance_context()
-    return _translate(run_write(lambda: mutations.create_node(
+    if not ctx.is_available():
+        return _locked()
+    if ctx.store.get_analysis(analysis_id) is None:
+        return _not_found(analysis_id)
+    answer = _translate(run_write(lambda: mutations.create_node(
         ctx.store, ctx.archive,
         node_type=body.node_type, name=body.name, status=body.status, tlp=body.tlp,
         concern_class=body.concern_class, disposition=body.disposition,
         uca_type=body.uca_type, failure_type=body.failure_type, mode=body.mode,
         binding_status=body.binding_status,
-        node_role=body.node_role, analysis_id=body.analysis_id,
+        node_role=body.node_role, analysis_id=analysis_id,
         content_text=body.content_text, attributes=body.attributes,
     )))
+    response.status_code = answer.status_code
+    return answer
+
+
+class AssignProvenanceBody(BaseModel):
+    """The analysis that produced this node. The node is the path; this is the assertion."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    analysis_id: str
+
+
+@write_router.put("/api/assurance/nodes/{node_id}/provenance", status_code=204,
+    response_model=None)
+def assign_node_provenance(node_id: str, body: AssignProvenanceBody) -> None:
+    """Record which analysis produced a node. The only route that may set provenance.
+
+    Idempotent: re-asserting the same analysis answers 204 and writes nothing. Asserting a
+    different one is refused — an analysis's output is a historical fact, and moving a node between
+    analyses would rewrite what each of them is on record as having found.
+    """
+    ctx = get_assurance_context()
+    result = run_write(lambda: assign_provenance(
+        ctx.store, ctx.archive, node_id=node_id, analysis_id=body.analysis_id,
+    ))
+    if isinstance(result, ProvenanceLocked):
+        raise store_locked()
+    if isinstance(result, ProvenanceNodeNotFound):
+        raise not_found(f"no node {result.node_id!r}")
+    if isinstance(result, ProvenanceAnalysisNotFound):
+        raise not_found(f"no analysis {result.analysis_id!r}")
+    if isinstance(result, ProvenanceImmutable):
+        raise ApiError(
+            409,
+            "provenance_immutable",
+            "this node already records which analysis produced it",
+            ProvenanceImmutableDetails(
+                node_id=result.node_id, current_analysis_id=result.current_analysis_id,
+            ),
+        )
 
 
 @write_router.patch("/api/assurance/nodes/{node_id}", status_code=200)
@@ -198,7 +282,7 @@ def edit_node(node_id: str, body: EditNodeBody) -> JSONResponse:
         uca_type=body.uca_type, failure_type=body.failure_type, mode=body.mode,
         binding_status=body.binding_status,
         node_role=body.node_role, content_text=body.content_text,
-        attributes=body.attributes, analysis_id=body.analysis_id,
+        attributes=body.attributes,
     )))
 
 
@@ -231,8 +315,10 @@ def delete_edge(edge_id: str) -> JSONResponse:
 # ── Baselines ─────────────────────────────────────────────────────────────────
 
 
-@write_router.post("/api/assurance/baselines/seal", status_code=200)
+@write_router.post("/api/assurance/baselines", status_code=200)
 def seal_baseline(body: SealBaselineBody) -> JSONResponse:
+    """Sealing *is* creating a baseline, so it posts to the collection rather than naming the act
+    in a trailing segment: there is no other way to make one, and no baseline to seal beforehand."""
     ctx = get_assurance_context()
     if not ctx.is_available():
         return _locked()

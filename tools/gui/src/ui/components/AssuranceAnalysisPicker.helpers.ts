@@ -1,6 +1,10 @@
 // Pure helpers for the assurance analysis picker — unit-testable without a DOM.
 
-export const ANALYSIS_METHODS = ['STPA', 'CAST', 'GRC'] as const
+// The methods an analysis may have. Must match the backend's own tuple
+// (`src/domain/assurance/assurance_analysis.py`) — a method missing here cannot be picked or
+// filtered for, which is how FMEA analyses became unreachable from the matrix page. A test holds
+// the two lists equal.
+export const ANALYSIS_METHODS = ['STPA', 'CAST', 'GRC', 'FMEA'] as const
 export type AnalysisMethod = (typeof ANALYSIS_METHODS)[number]
 
 export const ANALYSIS_STATUSES = ['draft', 'active', 'completed', 'archived'] as const

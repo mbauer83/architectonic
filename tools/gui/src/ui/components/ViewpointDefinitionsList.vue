@@ -15,7 +15,8 @@ import { tierDisplayLowercase } from './TierBadge.helpers'
 import { useTierFacet } from '../composables/useTierFacet'
 import { useWriteBlock } from '../composables/useWriteBlock'
 import { VIEWPOINT_TIERS } from '../lib/tierUrlState'
-import { readErrorMessage } from '../lib/errors'
+import { readApiErrorBody, readErrorMessage } from '../lib/errors'
+import { viewpointReferencedDetails } from '../../domain/schemas/errors'
 import type { ViewpointDefinitionEnvelope, ViewpointReferencer } from '../../domain'
 import { executionRouteFor } from '../views/ViewpointsManagementView.helpers'
 import {
@@ -83,11 +84,20 @@ const openReferencer = (referencer: ViewpointReferencer) => {
 const deleteDefinition = (envelope: ViewpointDefinitionEnvelope) => {
   if (!window.confirm(`Delete viewpoint '${envelope.slug}'?`)) return
   blockedDelete.value = null
-  Effect.runPromise(svc.deleteViewpointDefinition({ slug: envelope.slug, dry_run: false })).then((result) => {
-    if (result.ok) { emit('refresh'); return }
-    if (result.referencers.length > 0) { blockedDelete.value = { slug: envelope.slug, referencers: result.referencers }; return }
-    emit('error', result.issues[0]?.message ?? 'Delete failed')
-  }).catch((reason: unknown) => { emit('error', readErrorMessage(reason)) })
+  // A deletion reports nothing, so success is the absence of a failure. A refusal arrives as a
+  // typed error: `viewpoint_referenced` carries the views that still pin the slug, which is what
+  // makes them renderable as links instead of named in a sentence.
+  Effect.runPromise(svc.deleteViewpointDefinition(envelope.slug)).then(() => {
+    emit('refresh')
+  }).catch((reason: unknown) => {
+    const body = readApiErrorBody(reason)
+    const referenced = body === null ? null : viewpointReferencedDetails(body)
+    if (referenced !== null) {
+      blockedDelete.value = { slug: envelope.slug, referencers: referenced.referencers }
+      return
+    }
+    emit('error', body?.message ?? readErrorMessage(reason))
+  })
 }
 </script>
 

@@ -34,8 +34,11 @@ class TestWhatMayBeCached:
         assert not _is_cacheable("/api/viewpoints/export-csv")
 
     def test_mutations_under_a_cacheable_prefix_do_not(self) -> None:
-        assert not _is_cacheable("/api/entity/edit")
-        assert not _is_cacheable("/api/entity/remove")
+        """A mutation shares its address with the cacheable read now that identity is in the path,
+        so eligibility cannot be decided from the path alone — the middleware only ever considers a
+        GET, and these are the paths that prove why."""
+        assert not _is_cacheable("/api/entities/APP@1.ab.thing/context/edit")
+        assert not _is_cacheable("/api/entities/APP@1.ab.thing/neighbors")
 
     def test_sources_outside_the_model_do_not(self) -> None:
         """Git state and the confidential store change without the model generation moving."""

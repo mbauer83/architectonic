@@ -29,7 +29,7 @@ example to merge into an existing enterprise group deliberately. See
 
 ## Working with groups
 
-**Lifecycle** — through the `artifact_group` MCP tool or the REST `*/api/group*` endpoints:
+**Lifecycle** — through the `artifact_group` MCP tool or the REST `/api/groups` endpoints:
 
 - `create` — register a new group (target = slug)
 - `rename` — change display name or slug (safe subtree `git mv`)

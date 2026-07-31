@@ -49,8 +49,11 @@ async function save() {
   error.value = ''
   saving.value = true
   try {
-    const resp = await fetch('/api/assurance/fmea/factor', {
-      method: 'PUT',
+    // POST to the failure mode's own assessment series: this appends a revision rather than
+    // replacing a value, and the node is the address rather than a field of the body.
+    const resp = await fetch(
+      `/api/assurance/nodes/${encodeURIComponent(props.cell.node_id ?? '')}/factor-assessments`, {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(factorRequestBody(props.cell, draft.value)),
     })

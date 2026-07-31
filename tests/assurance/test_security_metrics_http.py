@@ -11,10 +11,10 @@ from typing import Any
 from unittest.mock import patch
 
 import pytest
-from fastapi import FastAPI
 from starlette.testclient import TestClient
 
 from src.application.security_signals.command import IngestBundle, ingest_security_signals
+from tests.support.api_app import build_api_app
 
 pytest.importorskip("sqlcipher3", reason="sqlcipher3 not installed")
 
@@ -78,9 +78,7 @@ def ctx(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 def _client(ctx: Any) -> TestClient:
     from src.infrastructure.gui.routers._assurance_signals_routes import signals_router
 
-    app = FastAPI()
-    app.include_router(signals_router)
-    client = TestClient(app, raise_server_exceptions=False)
+    client = TestClient(build_api_app(signals_router), raise_server_exceptions=False)
     client._patch = patch(_CTX_PATH, return_value=ctx)  # type: ignore[attr-defined]
     client._patch.start()  # type: ignore[attr-defined]
     return client
@@ -103,10 +101,14 @@ def _ingest(ctx: Any, anchor: str, *, vuln: str = "CVE-2024-1", purl: str = "pkg
     return result.snapshot_id  # type: ignore[union-attr]
 
 
-def _vex_body(anchor: str, purl: str = "pkg:pypi/a@1", vuln_canonical: str = "",
+def _vex_url(anchor: str) -> str:
+    return f"/api/assurance/arch-artifacts/{anchor}/vex-assessments"
+
+
+def _vex_body(purl: str = "pkg:pypi/a@1", vuln_canonical: str = "",
               vex_status: str = "not_affected") -> dict[str, str]:
+    """The body without the anchor: the anchor is the path, and the body may not repeat it."""
     return {
-        "anchor_entity_id": anchor,
         "canonical_component_id": purl,
         "canonical_vulnerability_id": vuln_canonical,
         "vex_status": vex_status,
@@ -120,7 +122,7 @@ class TestGating:
         client = _client(ctx)
         ctx.store.lock()
         try:
-            resp = client.get("/api/assurance/security-metrics?anchor_entity_id=APP@1")
+            resp = client.get("/api/assurance/arch-artifacts/APP@1/security-metrics")
             assert resp.status_code == 423
             assert resp.headers.get("Cache-Control") == "no-store"
         finally:
@@ -128,7 +130,7 @@ class TestGating:
 
     def test_missing_colocated_stores_yield_unavailable(self, ctx: Any) -> None:
         ctx.snapshot_store = None
-        resp = _client(ctx).get("/api/assurance/security-metrics?anchor_entity_id=APP@1")
+        resp = _client(ctx).get("/api/assurance/arch-artifacts/APP@1/security-metrics")
         assert resp.status_code == 200
         assert resp.json()["availability"] == "unavailable"
 
@@ -137,25 +139,25 @@ class TestEndToEnd:
     def test_ingest_then_metrics_then_vex_suppression_then_reopen(self, ctx: Any) -> None:
         snapshot_id = _ingest(ctx, "APP@1")
         client = _client(ctx)
-        before = client.get("/api/assurance/security-metrics?anchor_entity_id=APP@1").json()
+        before = client.get("/api/assurance/arch-artifacts/APP@1/security-metrics").json()
         assert before["basis_snapshot_id"] == snapshot_id
         assert before["distinct_open_vulnerabilities"] == 1
         assert before["max_cvss_score"] == 8.0
 
         canonical = ctx.snapshot_store.list_snapshot_findings(snapshot_id)[0][
             "canonical_vulnerability_id"]
-        recorded = client.post("/api/assurance/vex", json=_vex_body("APP@1", vuln_canonical=canonical))
+        recorded = client.post(_vex_url("APP@1"), json=_vex_body(vuln_canonical=canonical))
         assert recorded.status_code == 200
         assert recorded.json()["revision"] == 1
 
-        suppressed = client.get("/api/assurance/security-metrics?anchor_entity_id=APP@1").json()
+        suppressed = client.get("/api/assurance/arch-artifacts/APP@1/security-metrics").json()
         assert suppressed["distinct_open_vulnerabilities"] == 0
         assert suppressed["suppressed_finding_count"] == 1
 
-        reopened = client.post("/api/assurance/vex", json=_vex_body(
-            "APP@1", vuln_canonical=canonical, vex_status="affected"))
+        reopened = client.post(_vex_url("APP@1"), json=_vex_body(
+            vuln_canonical=canonical, vex_status="affected"))
         assert reopened.json()["revision"] == 2
-        after = client.get("/api/assurance/security-metrics?anchor_entity_id=APP@1").json()
+        after = client.get("/api/assurance/arch-artifacts/APP@1/security-metrics").json()
         assert after["distinct_open_vulnerabilities"] == 1
 
     def test_vex_never_crosses_anchors_or_component_versions(self, ctx: Any) -> None:
@@ -165,15 +167,14 @@ class TestEndToEnd:
         canonical = ctx.snapshot_store.list_snapshot_findings(snapshot_id)[0][
             "canonical_vulnerability_id"]
         # Assessment recorded for APP@2 (other anchor) and for a DIFFERENT version.
-        client.post("/api/assurance/vex", json=_vex_body("APP@2", vuln_canonical=canonical))
-        client.post("/api/assurance/vex", json=_vex_body(
-            "APP@1", purl="pkg:pypi/a@2", vuln_canonical=canonical))
-        metrics = client.get("/api/assurance/security-metrics?anchor_entity_id=APP@1").json()
+        client.post(_vex_url("APP@2"), json=_vex_body(vuln_canonical=canonical))
+        client.post(_vex_url("APP@1"), json=_vex_body(
+            purl="pkg:pypi/a@2", vuln_canonical=canonical))
+        metrics = client.get("/api/assurance/arch-artifacts/APP@1/security-metrics").json()
         assert metrics["distinct_open_vulnerabilities"] == 1  # nothing carried over
 
     def test_invalid_vex_is_a_422_with_field_errors(self, ctx: Any) -> None:
-        resp = _client(ctx).post("/api/assurance/vex", json={
-            "anchor_entity_id": "APP@1",
+        resp = _client(ctx).post(_vex_url("APP@1"), json={
             "canonical_component_id": "pkg:pypi/a@1",
             "canonical_vulnerability_id": "VID@x",
             "vex_status": "not_affected",
@@ -181,16 +182,18 @@ class TestEndToEnd:
             "author": "analyst",
         })
         assert resp.status_code == 422
-        assert any(e["field"] == "justification" for e in resp.json()["errors"])
+        detail = resp.json()["detail"]
+        assert detail["code"] == "invalid_vex_assessment"
+        assert any(e["field"] == "justification" for e in detail["details"]["field_errors"])
 
     def test_vex_revision_listing(self, ctx: Any) -> None:
         client = _client(ctx)
-        client.post("/api/assurance/vex", json=_vex_body("APP@1", vuln_canonical="VID@x"))
-        client.post("/api/assurance/vex", json=_vex_body(
-            "APP@1", vuln_canonical="VID@x", vex_status="affected"))
+        client.post(_vex_url("APP@1"), json=_vex_body(vuln_canonical="VID@x"))
+        client.post(_vex_url("APP@1"), json=_vex_body(
+            vuln_canonical="VID@x", vex_status="affected"))
         resp = client.get(
-            "/api/assurance/vex?anchor_entity_id=APP@1"
-            "&canonical_component_id=pkg:pypi/a@1&canonical_vulnerability_id=VID@x"
+            "/api/assurance/arch-artifacts/APP@1/vex-assessments"
+            "?canonical_component_id=pkg:pypi/a@1&canonical_vulnerability_id=VID@x"
         )
         body = resp.json()
         assert body["count"] == 2
@@ -210,7 +213,7 @@ class TestCrossSurfaceConsistency:
 
         _ingest(ctx, "APP@1")
         rest = _client(ctx).get(
-            "/api/assurance/security-metrics?anchor_entity_id=APP@1").json()
+            "/api/assurance/arch-artifacts/APP@1/security-metrics").json()
         direct = asdict(compute_security_metrics(
             "APP@1", snapshot_store=ctx.snapshot_store, vex_store=ctx.vex_store,
             policy=AssuranceExposurePolicy(ctx.max_classification, True),
@@ -226,22 +229,22 @@ class TestSignalListing:
         _ingest(ctx, "APP@1", vuln="CVE-2024-9", purl="pkg:pypi/a@1")
         client = _client(ctx)
 
-        comps = client.get("/api/assurance/security-components?anchor_entity_id=APP@1")
+        comps = client.get("/api/assurance/arch-artifacts/APP@1/security-components")
         assert comps.status_code == 200
         assert comps.headers.get("Cache-Control") == "no-store"
         assert comps.json()["count"] == 1
         assert comps.json()["components"][0]["purl"] == "pkg:pypi/a@1"
 
-        finds = client.get("/api/assurance/security-findings?anchor_entity_id=APP@1")
+        finds = client.get("/api/assurance/arch-artifacts/APP@1/security-findings")
         assert finds.json()["count"] == 1
         assert finds.json()["findings"][0]["component_purl"] == "pkg:pypi/a@1"
         assert finds.json()["findings"][0]["severity_band"] == "high"
 
         scoped = client.get(
-            "/api/assurance/security-findings?anchor_entity_id=APP@1&purl=pkg:pypi/a@1")
+            "/api/assurance/arch-artifacts/APP@1/security-findings?purl=pkg:pypi/a@1")
         assert scoped.json()["count"] == 1
         empty = client.get(
-            "/api/assurance/security-findings?anchor_entity_id=APP@1&purl=pkg:pypi/absent@9")
+            "/api/assurance/arch-artifacts/APP@1/security-findings?purl=pkg:pypi/absent@9")
         assert empty.json()["count"] == 0
 
         stats = client.get("/api/assurance/security-stats").json()
@@ -255,7 +258,7 @@ class TestSignalListing:
         client = _client(ctx)
         ctx.store.lock()
         try:
-            resp = client.get("/api/assurance/security-components?anchor_entity_id=APP@1")
+            resp = client.get("/api/assurance/arch-artifacts/APP@1/security-components")
             assert resp.status_code == 423
             assert resp.headers.get("Cache-Control") == "no-store"
         finally:

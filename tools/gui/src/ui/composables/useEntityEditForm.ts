@@ -179,8 +179,9 @@ export function useEntityEditForm(options: {
       }
     }
     const kws = editKeywords.value.split(',').map((k: string) => k.trim()).filter(Boolean)
+    // No `artifact_id`: identity is in the path, and a body that repeated it would give the caller
+    // two places to say which entity they meant.
     return {
-      artifact_id: entityId.value,
       name: editName.value || undefined,
       summary: editSummary.value || undefined,
       keywords: kws.length ? kws : undefined,
@@ -197,7 +198,9 @@ export function useEntityEditForm(options: {
     editBusy.value = true
     editError.value = null
     editPreview.value = null
-    void Effect.runPromise(editFn.value(buildEditBody(true) as Parameters<ModelService['editEntity']>[0])).then((r) => {
+    void Effect.runPromise(
+      editFn.value(entityId.value, buildEditBody(true) as Parameters<ModelService['editEntity']>[1]),
+    ).then((r) => {
       editBusy.value = false
       editPreview.value = { content: r.content, warnings: [...r.warnings] }
     }).catch((reason: unknown) => {
@@ -209,7 +212,9 @@ export function useEntityEditForm(options: {
   const saveEdit = (): void => {
     editBusy.value = true
     editError.value = null
-    void Effect.runPromise(editFn.value(buildEditBody(false) as Parameters<ModelService['editEntity']>[0])).then((r) => {
+    void Effect.runPromise(
+      editFn.value(entityId.value, buildEditBody(false) as Parameters<ModelService['editEntity']>[1]),
+    ).then((r) => {
       editBusy.value = false
       if (r.wrote) {
         editing.value = false

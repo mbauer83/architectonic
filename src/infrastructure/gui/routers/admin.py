@@ -11,12 +11,33 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from fastapi import APIRouter, HTTPException, Response, status
+from pydantic import BaseModel, ConfigDict
 
 from src.infrastructure.gui.routers import state as s
 
 router = APIRouter(prefix="/admin/api", tags=["admin"])
+
+
+def _created(result: Any, response: Response, location: str) -> dict[str, Any]:
+    """201 with ``Location`` when it wrote; 200 with the plan when it was a dry run.
+
+    A dry run created nothing, so naming a resource that does not exist would be a lie the client
+    has no way to detect.
+    """
+    if result.wrote:
+        response.headers["Location"] = location
+    else:
+        response.status_code = status.HTTP_200_OK
+    return s.write_result_to_dict(result)
+
+
+def _deleted(result: Any, response: Response, *, dry_run: bool) -> dict[str, Any] | None:
+    """204 with no body when it deleted; 200 with the plan when it was a dry run."""
+    if dry_run:
+        response.status_code = status.HTTP_200_OK
+        return s.write_result_to_dict(result)
+    return None
 
 
 def _require_admin() -> None:
@@ -54,7 +75,8 @@ class AdminCreateEntityBody(BaseModel):
 
 
 class AdminEditEntityBody(BaseModel):
-    artifact_id: str
+    model_config = ConfigDict(extra="forbid")
+
     name: str | None = None
     summary: str | None = None
     properties: dict[str, str] | None = None
@@ -65,19 +87,18 @@ class AdminEditEntityBody(BaseModel):
     dry_run: bool = True
 
 
-class AdminDeleteEntityBody(BaseModel):
-    artifact_id: str
-    dry_run: bool = True
 
 
-@router.post("/entity")
-def admin_create_entity(body: AdminCreateEntityBody) -> dict[str, Any]:
+
+@router.post("/entities", status_code=status.HTTP_201_CREATED)
+def admin_create_entity(body: AdminCreateEntityBody, response: Response) -> dict[str, Any]:
     _require_admin()
     ent_root, _, verifier = s.get_admin_write_deps()
     from src.infrastructure.write.artifact_write.admin_ops import admin_create_entity as _create
 
     try:
-        result = s.authorized_write(("POST", "/admin/api/entity"), 
+        result = s.authorized_write(
+            "admin_create_entity", 
             _create,
             repo_root=ent_root,
             verifier=verifier,
@@ -96,11 +117,11 @@ def admin_create_entity(body: AdminCreateEntityBody) -> dict[str, Any]:
         )
     except ValueError as e:
         raise HTTPException(400, str(e))
-    return s.write_result_to_dict(result)
+    return _created(result, response, f"/admin/api/entities/{result.artifact_id}")
 
 
-@router.post("/entity/edit")
-def admin_edit_entity(body: AdminEditEntityBody) -> dict[str, Any]:
+@router.patch("/entities/{artifact_id}")
+def admin_edit_entity(artifact_id: str, body: AdminEditEntityBody) -> dict[str, Any]:
     _require_admin()
     ent_root, registry, verifier = s.get_admin_write_deps()
     from src.infrastructure.write.artifact_write.admin_ops import _UNSET
@@ -108,13 +129,14 @@ def admin_edit_entity(body: AdminEditEntityBody) -> dict[str, Any]:
 
     provided = body.model_fields_set
     try:
-        result = s.authorized_write(("POST", "/admin/api/entity/edit"), 
+        result = s.authorized_write(
+            "admin_update_entity", 
             _edit,
             repo_root=ent_root,
             registry=registry,
             verifier=verifier,
             clear_repo_caches=s.clear_caches,
-            artifact_id=body.artifact_id,
+            artifact_id=artifact_id,
             name=body.name,
             summary=body.summary if "summary" in provided else _UNSET,
             properties=body.properties if "properties" in provided else _UNSET,
@@ -129,24 +151,27 @@ def admin_edit_entity(body: AdminEditEntityBody) -> dict[str, Any]:
     return s.write_result_to_dict(result)
 
 
-@router.post("/entity/remove")
-def admin_delete_entity(body: AdminDeleteEntityBody) -> dict[str, Any]:
+@router.delete("/entities/{artifact_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None)
+def admin_delete_entity(
+    artifact_id: str, response: Response, dry_run: bool = True
+) -> dict[str, Any] | None:
     _require_admin()
     ent_root, registry, _verifier = s.get_admin_write_deps()
     from src.infrastructure.write.artifact_write.admin_ops import admin_delete_entity as _delete
 
     try:
-        result = s.authorized_write(("POST", "/admin/api/entity/remove"), 
+        result = s.authorized_write(
+            "admin_delete_entity", 
             _delete,
             repo_root=ent_root,
             registry=registry,
             clear_repo_caches=s.clear_caches,
-            artifact_id=body.artifact_id,
-            dry_run=body.dry_run,
+            artifact_id=artifact_id,
+            dry_run=dry_run,
         )
     except ValueError as e:
         raise HTTPException(400, str(e))
-    return s.write_result_to_dict(result)
+    return _deleted(result, response, dry_run=dry_run)
 
 
 # ── Connection endpoints (enterprise) ────────────────────────────────────────
@@ -160,21 +185,15 @@ class AdminAddConnectionBody(BaseModel):
     dry_run: bool = True
 
 
-class AdminRemoveConnectionBody(BaseModel):
-    source_entity: str
-    connection_type: str
-    target_entity: str
-    dry_run: bool = True
-
-
-@router.post("/connection")
-def admin_add_connection(body: AdminAddConnectionBody) -> dict[str, Any]:
+@router.post("/connections", status_code=status.HTTP_201_CREATED)
+def admin_add_connection(body: AdminAddConnectionBody, response: Response) -> dict[str, Any]:
     _require_admin()
     ent_root, registry, verifier = s.get_admin_write_deps()
     from src.infrastructure.write.artifact_write.admin_ops import admin_add_connection as _add
 
     try:
-        result = s.authorized_write(("POST", "/admin/api/connection"), 
+        result = s.authorized_write(
+            "admin_create_connection", 
             _add,
             repo_root=ent_root,
             registry=registry,
@@ -191,30 +210,42 @@ def admin_add_connection(body: AdminAddConnectionBody) -> dict[str, Any]:
         )
     except ValueError as e:
         raise HTTPException(400, str(e))
-    return s.write_result_to_dict(result)
+    return _created(result, response, f"/admin/api/connections/{result.artifact_id}")
 
 
-@router.post("/connection/remove")
-def admin_remove_connection(body: AdminRemoveConnectionBody) -> dict[str, Any]:
+@router.delete("/connections/{connection_id}", status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None)
+def admin_remove_connection(
+    connection_id: str, response: Response, dry_run: bool = True
+) -> dict[str, Any] | None:
     _require_admin()
+    # A connection's identity is the single-segment composite ``{src}---{tgt}@@{type}`` — the same
+    # string the read surface emits — so the endpoints come out of the path, not a body.
+    from src.domain.artifact_id import MalformedArtifactIdError, parse_connection_id  # noqa: PLC0415
+
+    try:
+        key = parse_connection_id(connection_id)
+    except MalformedArtifactIdError:
+        raise HTTPException(404, f"Not found: {connection_id!r}") from None
     ent_root, registry, verifier = s.get_admin_write_deps()
     from src.infrastructure.write.artifact_write.admin_ops import admin_remove_connection as _remove
 
     try:
-        result = s.authorized_write(("POST", "/admin/api/connection/remove"), 
+        result = s.authorized_write(
+            "admin_delete_connection", 
             _remove,
             repo_root=ent_root,
             registry=registry,
             verifier=verifier,
             clear_repo_caches=s.clear_caches,
-            source_entity=body.source_entity,
-            connection_type=body.connection_type,
-            target_entity=body.target_entity,
-            dry_run=body.dry_run,
+            source_entity=key.src_short,
+            connection_type=key.type,
+            target_entity=key.tgt_short,
+            dry_run=dry_run,
         )
     except ValueError as e:
         raise HTTPException(400, str(e))
-    return s.write_result_to_dict(result)
+    return _deleted(result, response, dry_run=dry_run)
 
 
 # ── Diagram endpoints (enterprise) ───────────────────────────────────────────
@@ -231,13 +262,11 @@ class AdminCreateDiagramBody(BaseModel):
     dry_run: bool = True
 
 
-class AdminDeleteDiagramBody(BaseModel):
-    artifact_id: str
-    dry_run: bool = True
 
 
-@router.post("/diagram")
-def admin_create_diagram(body: AdminCreateDiagramBody) -> dict[str, Any]:
+
+@router.post("/diagrams", status_code=status.HTTP_201_CREATED)
+def admin_create_diagram(body: AdminCreateDiagramBody, response: Response) -> dict[str, Any]:
     """Create a diagram in the enterprise (global) repository.
 
     Uses the same diagram creation logic as the engagement router but the
@@ -261,7 +290,8 @@ def admin_create_diagram(body: AdminCreateDiagramBody) -> dict[str, Any]:
     entities, connections, _, _ = resolve_diagram_selection(repo, body.entity_ids, body.connection_ids)
     puml = generate_archimate_puml_body(body.name, entities, connections, diagram_type=body.diagram_type)
     try:
-        result = s.authorized_write(("POST", "/admin/api/diagram"), 
+        result = s.authorized_write(
+            "admin_create_diagram", 
             _write_diagram_to_enterprise,
             repo_root=ent_root,
             verifier=verifier,
@@ -279,23 +309,27 @@ def admin_create_diagram(body: AdminCreateDiagramBody) -> dict[str, Any]:
         )
     except ValueError as e:
         raise HTTPException(400, str(e))
-    return s.write_result_to_dict(result)
+    return _created(result, response, f"/admin/api/diagrams/{result.artifact_id}")
 
 
-@router.post("/diagram/remove")
-def admin_delete_diagram(body: AdminDeleteDiagramBody) -> dict[str, Any]:
+@router.delete("/diagrams/{artifact_id}", status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None)
+def admin_delete_diagram(
+    artifact_id: str, response: Response, dry_run: bool = True
+) -> dict[str, Any] | None:
     _require_admin()
     ent_root, _registry, _verifier = s.get_admin_write_deps()
     from src.infrastructure.write.artifact_write.admin_ops import admin_delete_diagram as _delete
 
     try:
-        result = s.authorized_write(("POST", "/admin/api/diagram/remove"), 
+        result = s.authorized_write(
+            "admin_delete_diagram", 
             _delete,
             repo_root=ent_root,
             clear_repo_caches=s.clear_caches,
-            artifact_id=body.artifact_id,
-            dry_run=body.dry_run,
+            artifact_id=artifact_id,
+            dry_run=dry_run,
         )
     except ValueError as e:
         raise HTTPException(400, str(e))
-    return s.write_result_to_dict(result)
+    return _deleted(result, response, dry_run=dry_run)

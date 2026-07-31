@@ -30,7 +30,7 @@ def test_rest_exposes_no_snapshot_lifecycle_route() -> None:
         f"snapshot-lifecycle REST routes are deliberately absent in v1: {offenders}"
     )
     # The read-side metrics endpoint IS expected — reads never drive lifecycle.
-    assert "/api/assurance/security-metrics" in paths
+    assert "/api/assurance/arch-artifacts/{arch_artifact_id}/security-metrics" in paths
 
 
 def test_mcp_write_surface_exposes_no_snapshot_lifecycle_tool() -> None:

@@ -29,7 +29,7 @@ const requestSync = () => {
   confirmSync.value = true
   syncPreview.value = null
   syncMutation.reset()
-  void syncMutation.run(svc.syncDiagramToModel({ artifact_id: props.diagramId, dry_run: true }))
+  void syncMutation.run(svc.syncDiagramToModel(props.diagramId, { dry_run: true }))
     .then((exit) => Exit.match(exit, {
       onSuccess: (r) => { syncPreview.value = r },
       onFailure: () => {},
@@ -44,7 +44,7 @@ const cancel = () => {
 }
 
 const executeSync = () => {
-  void syncMutation.run(svc.syncDiagramToModel({ artifact_id: props.diagramId, dry_run: false }))
+  void syncMutation.run(svc.syncDiagramToModel(props.diagramId, { dry_run: false }))
     .then((exit) => Exit.match(exit, {
       onSuccess: (r) => {
         if (r.wrote) {

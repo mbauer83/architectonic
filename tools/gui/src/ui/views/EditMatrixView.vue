@@ -124,8 +124,7 @@ const doSave = async () => {
   if (!name.value.trim()) { error.value = 'Name is required.'; return }
   if (!entityIds.value.length) { error.value = 'Add at least one entity.'; return }
   busy.value = true; error.value = ''
-  const exit = await Effect.runPromiseExit(svc.editMatrixDiagram({
-    artifact_id: diagramId.value,
+  const exit = await Effect.runPromiseExit(svc.editMatrixDiagram(diagramId.value, {
     name: name.value.trim(),
     entity_ids: entityIds.value, conn_type_configs: connTypeConfigs.value,
     combined: combined.value, dry_run: false,

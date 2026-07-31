@@ -38,6 +38,6 @@ def read_authoring_guidance(
         catalogs=catalogs,
         # Connection metadata schemata are per-repo files; without the root the payload
         # could only carry guidance, and the connection editor would have no schema to
-        # render (the entity side gets its own from /api/entity-schemata).
+        # render (the entity side gets its own from /api/entity-schemata/{artifact_type}).
         repo_root=s.maybe_engagement_root(),
     )

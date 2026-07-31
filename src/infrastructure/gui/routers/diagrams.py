@@ -5,32 +5,35 @@ from __future__ import annotations
 from functools import lru_cache as _lru_cache
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 
 from src.application.artifact_parsing import parse_diagram_source
 from src.application.assurance_diagrams import assurance_surface_diagram_types
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.infrastructure.app_bootstrap import complete_diagram_type_catalog, runtime_catalogs_dependency
+from src.infrastructure.gui.contracts.diagrams import (
+    DiagramConnectionListResponse,
+    DiagramEntityListResponse,
+    DiagramReferenceListResponse,
+)
 from src.infrastructure.gui.routers import state as s
 from src.infrastructure.gui.routers._diagram_context import (
-    candidate_connections_for_entities,
     diagram_context_payload,
     diagram_entities_and_puml,
-    diagram_kind_connection_type_items,
-    diagram_kind_entity_type_items,
-    entity_display_item,
-    hop_suggestions,
     puml_contains,
 )
 from src.infrastructure.gui.routers._diagram_edge_label import router as _edge_label_router
+from src.infrastructure.gui.routers._diagram_palette import router as _palette_router
 from src.infrastructure.gui.routers._diagram_serving import _rendered_path
 from src.infrastructure.gui.routers._diagram_serving import router as _serving_router
 from src.infrastructure.gui.routers._diagram_write import router as _write_router
-from src.infrastructure.gui.routers._entity_display_search import entity_display_search_impl
+from src.infrastructure.gui.routers._matrix_write import router as _matrix_write_router
 from src.infrastructure.gui.routers._openapi import READ_RESPONSES, TAG_DIAGRAMS, OpenMapResponse
 
 router = APIRouter()
 router.include_router(_write_router)
+router.include_router(_matrix_write_router)
+router.include_router(_palette_router)
 router.include_router(_edge_label_router)
 router.include_router(_serving_router)
 
@@ -93,27 +96,33 @@ def list_diagrams(
 
 
 @router.get(
-    "/api/diagram",
+    "/api/diagrams/{artifact_id}",
     tags=[TAG_DIAGRAMS],
     summary="Read a diagram by id",
     response_model=OpenMapResponse,
     responses=READ_RESPONSES,
 )
 def read_diagram(
-    id: str,
+    artifact_id: str,
     catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
 ) -> dict[str, Any]:
-    return _read_diagram_impl(id, catalogs)
+    return _read_diagram_impl(artifact_id, catalogs)
 
 
 @router.get(
-    "/api/matrix-config",
+    "/api/matrices/{artifact_id}/config",
     tags=[TAG_DIAGRAMS],
     summary="Matrix diagram configuration",
     response_model=OpenMapResponse,
+    responses=READ_RESPONSES,
 )
-def get_matrix_config(id: str) -> dict[str, Any]:
-    """Return entity-ids, conn-type-configs, combined flag, and body for a matrix diagram."""
+def get_matrix_config(artifact_id: str) -> dict[str, Any]:
+    """Return entity-ids, conn-type-configs, combined flag, and body for a matrix diagram.
+
+    Addressed under ``/api/matrices`` because a matrix is a diagram of the matrix kind and this is
+    the kind-specific projection of it — asking for the config of a non-matrix diagram is a 404, not
+    an empty answer."""
+    id = artifact_id
     repo = s.get_repo()
     diag_rec = repo.get_diagram(id)
     if diag_rec is None or diag_rec.diagram_type != "matrix":
@@ -161,181 +170,73 @@ def get_matrix_config(id: str) -> dict[str, Any]:
     "/api/diagram-refs",
     tags=[TAG_DIAGRAMS],
     summary="Diagram references for a source/target pair",
-    response_model=list[OpenMapResponse],
+    response_model=DiagramReferenceListResponse,
 )
-def get_diagram_refs(source_id: str, target_id: str) -> list[dict[str, str]]:
+def get_diagram_refs(source_id: str, target_id: str) -> dict[str, Any]:
     repo = s.get_repo()
     src = repo.get_entity(source_id)
     tgt = repo.get_entity(target_id)
     if not src or not tgt or not src.display_alias or not tgt.display_alias:
-        return []
-    return [
-        {"artifact_id": d.artifact_id, "name": d.name}
-        for d in repo.list_diagrams()
-        if puml_contains(d, src.display_alias, tgt.display_alias)
-    ]
+        return {"items": []}
+    return {
+        "items": [
+            {"artifact_id": d.artifact_id, "name": d.name}
+            for d in repo.list_diagrams()
+            if puml_contains(d, src.display_alias, tgt.display_alias)
+        ]
+    }
 
 
 @router.get(
-    "/api/diagram-entities",
+    "/api/diagrams/{artifact_id}/entities",
     tags=[TAG_DIAGRAMS],
     summary="Entities placed on a diagram",
-    response_model=list[OpenMapResponse],
+    response_model=DiagramEntityListResponse,
+    responses=READ_RESPONSES,
 )
 def get_diagram_entities(
-    id: str,
+    artifact_id: str,
     catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
-) -> list[dict[str, Any]]:
+) -> dict[str, Any]:
     repo = s.get_repo()
-    diag_rec = repo.get_diagram(id)
+    diag_rec = repo.get_diagram(artifact_id)
     if diag_rec is None:
-        raise HTTPException(404, f"Diagram not found: {id!r}")
+        raise HTTPException(404, f"Diagram not found: {artifact_id!r}")
     entities, _puml = diagram_entities_and_puml(repo, diag_rec, catalogs)
-    return entities
+    return {"items": entities}
 
 
 @router.get(
-    "/api/diagram-connections",
+    "/api/diagrams/{artifact_id}/connections",
     tags=[TAG_DIAGRAMS],
     summary="Connections drawn on a diagram",
-    response_model=list[OpenMapResponse],
+    response_model=DiagramConnectionListResponse,
+    responses=READ_RESPONSES,
 )
 def get_diagram_connections(
-    id: str,
+    artifact_id: str,
     catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
-) -> list[dict[str, Any]]:
+) -> dict[str, Any]:
     repo = s.get_repo()
-    diag_rec = repo.get_diagram(id)
+    diag_rec = repo.get_diagram(artifact_id)
     if diag_rec is None:
-        raise HTTPException(404, f"Diagram not found: {id!r}")
-    return diagram_context_payload(repo, diag_rec, catalogs)["connections"]
+        raise HTTPException(404, f"Diagram not found: {artifact_id!r}")
+    return {"items": diagram_context_payload(repo, diag_rec, catalogs)["connections"]}
 
 
 @router.get(
-    "/api/diagram-context",
+    "/api/diagrams/{artifact_id}/context",
     tags=[TAG_DIAGRAMS],
     summary="Diagram with its resolved context",
     response_model=OpenMapResponse,
     responses=READ_RESPONSES,
 )
 def get_diagram_context(
-    id: str,
+    artifact_id: str,
     catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
 ) -> dict[str, Any]:
     repo = s.get_repo()
-    diag_rec = repo.get_diagram(id)
+    diag_rec = repo.get_diagram(artifact_id)
     if diag_rec is None:
-        raise HTTPException(404, f"Diagram not found: {id!r}")
+        raise HTTPException(404, f"Diagram not found: {artifact_id!r}")
     return diagram_context_payload(repo, diag_rec, catalogs)
-
-
-@router.get(
-    "/api/diagram-types/{name}/entity-types",
-    tags=[TAG_DIAGRAMS],
-    summary="Entity types a diagram type accepts",
-    response_model=list[OpenMapResponse],
-    responses=READ_RESPONSES,
-)
-def get_diagram_kind_entity_types(
-    name: str,
-    viewpoint: str | None = None,
-    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
-) -> list[dict[str, Any]]:
-    try:
-        return diagram_kind_entity_type_items(name, catalogs, viewpoint=viewpoint)
-    except KeyError:
-        raise HTTPException(404, f"Diagram type not found: {name!r}")
-
-
-@router.get(
-    "/api/diagram-types/{name}/connection-types",
-    tags=[TAG_DIAGRAMS],
-    summary="Connection types a diagram type accepts",
-    response_model=list[OpenMapResponse],
-    responses=READ_RESPONSES,
-)
-def get_diagram_kind_connection_types(
-    name: str,
-    viewpoint: str | None = None,
-    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
-) -> list[dict[str, Any]]:
-    try:
-        return diagram_kind_connection_type_items(name, catalogs, viewpoint=viewpoint)
-    except KeyError:
-        raise HTTPException(404, f"Diagram type not found: {name!r}")
-
-
-@router.get(
-    "/api/entity-display-item",
-    tags=[TAG_DIAGRAMS],
-    summary="Display item for one entity",
-    response_model=OpenMapResponse,
-    responses=READ_RESPONSES,
-)
-def get_entity_display_item(
-    id: str,
-    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
-) -> dict[str, Any]:
-    repo = s.get_repo()
-    rec = repo.get_entity(id)
-    if rec is None:
-        raise HTTPException(404, f"Entity {id!r} not found")
-    return entity_display_item(rec, catalogs)
-
-
-@router.get(
-    "/api/entity-display-search",
-    tags=[TAG_DIAGRAMS],
-    summary="Search entities for diagram placement",
-    response_model=OpenMapResponse,
-)
-def entity_display_search(
-    q: str,
-    limit: int = Query(default=20, le=50),
-    diagram_type: str | None = None,
-    domains: str | None = None,
-    entity_types: str | None = None,
-    keywords: str | None = None,
-    cursor: str | None = None,
-    viewpoint: str | None = None,
-    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
-) -> dict[str, Any]:
-    result = entity_display_search_impl(
-        q, limit, diagram_type, catalogs,
-        domains=domains, entity_types=entity_types, keywords=keywords, cursor=cursor, viewpoint=viewpoint,
-    )
-    return {"items": result.items, "next_cursor": result.next_cursor}
-
-
-@router.get(
-    "/api/diagram-entity-discovery",
-    tags=[TAG_DIAGRAMS],
-    summary="Discover entities to add to a diagram",
-    response_model=OpenMapResponse,
-)
-def diagram_entity_discovery(
-    q: str | None = None,
-    included_entity_ids: str | None = None,
-    diagram_type: str | None = None,
-    max_hops: int = Query(default=2, ge=1, le=4),
-    limit: int = Query(default=20, ge=1, le=50),
-    viewpoint: str | None = None,
-    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
-) -> dict[str, Any]:
-    repo = s.get_repo()
-    included = [
-        entity_id.strip()
-        for entity_id in (included_entity_ids or "").split(",")
-        if entity_id.strip() and repo.get_entity(entity_id.strip()) is not None
-    ]
-    excluded = set(included)
-    search_results: list[dict[str, Any]] = (
-        entity_display_search_impl(q or "", limit, diagram_type, catalogs, viewpoint=viewpoint).items
-        if (q or "").strip() else []
-    )
-    search_results = [item for item in search_results if str(item["artifact_id"]) not in excluded][:limit]
-    return {
-        "search_results": search_results,
-        "candidate_connections": candidate_connections_for_entities(repo, included),
-        "suggested_entities": hop_suggestions(repo, included, catalogs, max_hops=max_hops, limit_per_hop=limit),
-    }

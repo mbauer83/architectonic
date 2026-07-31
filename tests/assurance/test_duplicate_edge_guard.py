@@ -55,10 +55,21 @@ def _add(store: Any, source: str, target: str, conn_type: str = "leads-to") -> A
     )
 
 
+def _analysis(store: Any, name: str = "Fixture analysis", method: str = "STPA") -> str:
+    """An analysis for the fixture's nodes to belong to.
+
+    Every node records the analysis that produced it, and one without provenance is repair-only —
+    so a fixture minting an unattributed node would exercise that guard rather than the behaviour
+    under test.
+    """
+    return str(store.create_analysis(name, method, tlp="TLP:WHITE"))
+
+
 @pytest.fixture()
 def pair(store: Any) -> tuple[str, str]:
-    hazard = str(store.create_node("hazard", "Readable outside the gate"))
-    loss = str(store.create_node("loss", "Disclosure"))
+    analysis = _analysis(store)
+    hazard = str(store.create_node("hazard", "Readable outside the gate", analysis_id=analysis))
+    loss = str(store.create_node("loss", "Disclosure", analysis_id=analysis))
     return hazard, loss
 
 

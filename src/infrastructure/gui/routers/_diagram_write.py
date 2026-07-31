@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 
 from src.application.derivation.preview import project_view_for_preview
 from src.application.runtime_catalogs import RuntimeCatalogs
@@ -14,20 +14,20 @@ from src.infrastructure.gui.routers import state as s
 from src.infrastructure.gui.routers._diagram_selection import resolve_diagram_selection
 from src.infrastructure.gui.routers._diagram_write_bodies import (
     CreateDiagramGuiBody,
-    CreateMatrixBody,
-    DeleteDiagramBody,
-    DiagramPreviewBody,
+        DiagramPreviewBody,
     EditDiagramGuiBody,
-    EditMatrixBody,
-    MatrixPreviewBody,
     PatchDiagramEntityMetadataBody,
     SyncDiagramToModelBody,
 )
-from src.infrastructure.gui.routers._matrix_markdown import build_matrix_markdown
+from src.infrastructure.gui.routers._diagram_write_responses import (
+    CREATE_RESPONSES,
+    DELETE_RESPONSES,
+    DETAIL_RESPONSES,
+    created,
+)
 from src.infrastructure.gui.routers._openapi import TAG_DIAGRAMS, WRITE_RESPONSES, OpenMapResponse
 
 router = APIRouter(responses=WRITE_RESPONSES)
-
 
 def _split_diagram_entities(
     diagram_entities: dict[str, Any] | None,
@@ -67,7 +67,7 @@ def _extract_conn_bindings(
     return clean or None, bindings
 
 
-@router.post("/api/diagram/preview", tags=[TAG_DIAGRAMS], summary="Preview a diagram write (dry-run)",
+@router.post("/api/diagrams/preview", tags=[TAG_DIAGRAMS], summary="Preview a diagram write (dry-run)",
     response_model=OpenMapResponse, responses=WRITE_RESPONSES)
 def preview_diagram(body: DiagramPreviewBody, catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency)) -> dict[str, Any]:  # noqa: E501
     repo_root = s.maybe_engagement_root()
@@ -97,8 +97,9 @@ def preview_diagram(body: DiagramPreviewBody, catalogs: RuntimeCatalogs = Depend
     return {"puml": puml, "image": image, "warnings": warnings, "derived_entities": derived_entities}
 
 
-@router.post("/api/diagram", tags=[TAG_DIAGRAMS], summary="Create a diagram", response_model=OpenMapResponse)
-def create_diagram_gui(body: CreateDiagramGuiBody) -> dict[str, Any]:
+@router.post("/api/diagrams", tags=[TAG_DIAGRAMS], summary="Create a diagram",
+    response_model=OpenMapResponse, responses=CREATE_RESPONSES, status_code=status.HTTP_201_CREATED)
+def create_diagram_gui(body: CreateDiagramGuiBody, response: Response) -> dict[str, Any]:
     from src.application.identifier_allocator import get_default_allocator
     from src.application.modeling.artifact_write import prefix_for_diagram_type
     from src.infrastructure.rendering.diagram_builder import generate_archimate_puml_body
@@ -123,7 +124,8 @@ def create_diagram_gui(body: CreateDiagramGuiBody) -> dict[str, Any]:
         diagram_connections=dc,
     )
     try:
-        result = s.authorized_write(("POST", "/api/diagram"), 
+        result = s.authorized_write(
+            "diagrams_create_diagram", 
             create_diagram,
             repo_root=repo_root,
             verifier=verifier,
@@ -150,11 +152,13 @@ def create_diagram_gui(body: CreateDiagramGuiBody) -> dict[str, Any]:
         )
     except ValueError as e:
         raise HTTPException(400, str(e))
+    created(result, response, f"/api/diagrams/{result.artifact_id}")
     return s.write_result_to_dict(result)
 
 
-@router.post("/api/diagram/edit", tags=[TAG_DIAGRAMS], summary="Edit a diagram", response_model=OpenMapResponse)
-def edit_diagram_gui(body: EditDiagramGuiBody) -> dict[str, Any]:
+@router.put("/api/diagrams/{artifact_id}", tags=[TAG_DIAGRAMS], summary="Replace a diagram",
+    response_model=OpenMapResponse, responses=DETAIL_RESPONSES)
+def edit_diagram_gui(artifact_id: str, body: EditDiagramGuiBody) -> dict[str, Any]:
     from src.infrastructure.rendering.diagram_builder import generate_archimate_puml_body
     from src.infrastructure.write.artifact_write.diagram_edit import edit_diagram
 
@@ -178,12 +182,13 @@ def edit_diagram_gui(body: EditDiagramGuiBody) -> dict[str, Any]:
     )
     from src.application.candidate_repository import committed_repository  # noqa: PLC0415
     try:
-        result = s.authorized_write(("POST", "/api/diagram/edit"), 
+        result = s.authorized_write(
+            "diagrams_replace_diagram", 
             edit_diagram,
             repo_root=repo_root,
             verifier=verifier,
             clear_repo_caches=s.clear_caches,
-            artifact_id=body.artifact_id,
+            artifact_id=artifact_id,
             puml=puml,
             name=body.name,
             keywords=...,
@@ -204,9 +209,11 @@ def edit_diagram_gui(body: EditDiagramGuiBody) -> dict[str, Any]:
     return s.write_result_to_dict(result)
 
 
-@router.post("/api/diagram/entity-metadata", tags=[TAG_DIAGRAMS],
+@router.patch("/api/diagrams/{artifact_id}/entities/{classifier_id}/metadata", tags=[TAG_DIAGRAMS],
     summary="Patch a diagram-entity's metadata", response_model=OpenMapResponse)
-def patch_diagram_entity_metadata_gui(body: PatchDiagramEntityMetadataBody) -> dict[str, Any]:
+def patch_diagram_entity_metadata_gui(
+    artifact_id: str, classifier_id: str, body: PatchDiagramEntityMetadataBody
+) -> dict[str, Any]:
     from src.application.candidate_repository import committed_repository  # noqa: PLC0415
     from src.infrastructure.write.artifact_write.diagram_entity_metadata_patch import (  # noqa: PLC0415
         patch_diagram_entity_metadata,
@@ -215,13 +222,14 @@ def patch_diagram_entity_metadata_gui(body: PatchDiagramEntityMetadataBody) -> d
     repo = s.get_repo()
     repo_root, _, verifier = s.get_write_deps()
     try:
-        result = s.authorized_write(("POST", "/api/diagram/entity-metadata"),
+        result = s.authorized_write(
+            "diagrams_update_diagram_classifier_metadata",
             patch_diagram_entity_metadata,
             repo_root=repo_root,
             verifier=verifier,
             clear_repo_caches=s.clear_caches,
-            artifact_id=body.artifact_id,
-            classifier_id=body.classifier_id,
+            artifact_id=artifact_id,
+            classifier_id=classifier_id,
             attribute_id=body.attribute_id,
             patch=body.patch,
             dry_run=body.dry_run,
@@ -232,125 +240,22 @@ def patch_diagram_entity_metadata_gui(body: PatchDiagramEntityMetadataBody) -> d
     return s.write_result_to_dict(result)
 
 
-@router.post("/api/matrix/preview", tags=[TAG_DIAGRAMS], summary="Preview a matrix write (dry-run)",
+@router.post("/api/diagrams/{artifact_id}/sync", tags=[TAG_DIAGRAMS], summary="Sync a diagram to the model",
     response_model=OpenMapResponse, responses=WRITE_RESPONSES)
-def preview_matrix(body: MatrixPreviewBody) -> dict[str, Any]:
-    repo = s.get_repo()
-    repo_root, registry, _ = s.get_write_deps()
-    from src.infrastructure.write.artifact_write._matrix_content import _linkify_matrix_ids
-
-    md = build_matrix_markdown(
-        body.entity_ids,
-        body.conn_type_configs,
-        body.combined,
-        repo,
-        from_entity_ids=body.from_entity_ids,
-        to_entity_ids=body.to_entity_ids,
-    )
-    all_ids = list(set(body.from_entity_ids or body.entity_ids) | set(body.to_entity_ids or body.entity_ids))
-    linked, _ = _linkify_matrix_ids(
-        repo_root=repo_root,
-        registry=registry,
-        matrix_markdown=md,
-        candidate_entity_ids=all_ids,
-    )
-    return {"markdown": linked}
-
-
-@router.post("/api/matrix", tags=[TAG_DIAGRAMS], summary="Create a matrix diagram", response_model=OpenMapResponse)
-def create_matrix_gui(body: CreateMatrixBody) -> dict[str, Any]:
-    from src.infrastructure.write.artifact_write.matrix import create_matrix
-
-    repo = s.get_repo()
-    repo_root, registry, verifier = s.get_write_deps()
-    md = build_matrix_markdown(
-        body.entity_ids,
-        body.conn_type_configs,
-        body.combined,
-        repo,
-        from_entity_ids=body.from_entity_ids,
-        to_entity_ids=body.to_entity_ids,
-    )
-    try:
-        result = s.authorized_write(("POST", "/api/matrix"), 
-            create_matrix,
-            repo_root=repo_root,
-            registry=registry,
-            verifier=verifier,
-            clear_repo_caches=s.clear_caches,
-            name=body.name,
-            matrix_markdown=md,
-            artifact_id=None,
-            keywords=body.keywords,
-            version=body.version,
-            status=body.status,
-            entity_ids=body.entity_ids,
-            from_entity_ids=body.from_entity_ids,
-            to_entity_ids=body.to_entity_ids,
-            conn_type_configs=body.conn_type_configs,
-            combined=body.combined,
-            dry_run=body.dry_run,
-        )
-    except ValueError as e:
-        raise HTTPException(400, str(e))
-    return s.write_result_to_dict(result)
-
-
-@router.post("/api/matrix/edit", tags=[TAG_DIAGRAMS], summary="Edit a matrix diagram", response_model=OpenMapResponse)
-def edit_matrix_gui(body: EditMatrixBody) -> dict[str, Any]:
-    from src.infrastructure.write.artifact_write.matrix import create_matrix
-
-    repo = s.get_repo()
-    repo_root, registry, verifier = s.get_write_deps()
-    md = build_matrix_markdown(
-        body.entity_ids,
-        body.conn_type_configs,
-        body.combined,
-        repo,
-        from_entity_ids=body.from_entity_ids,
-        to_entity_ids=body.to_entity_ids,
-    )
-    diag = repo.get_diagram(body.artifact_id)
-    try:
-        result = s.authorized_write(("POST", "/api/matrix/edit"), 
-            create_matrix,
-            repo_root=repo_root,
-            registry=registry,
-            verifier=verifier,
-            clear_repo_caches=s.clear_caches,
-            name=body.name,
-            matrix_markdown=md,
-            artifact_id=body.artifact_id,
-            keywords=None,
-            version=body.version or (diag.version if diag else "0.1.0"),
-            status=body.status or (diag.status if diag else "draft"),
-            entity_ids=body.entity_ids,
-            from_entity_ids=body.from_entity_ids,
-            to_entity_ids=body.to_entity_ids,
-            conn_type_configs=body.conn_type_configs,
-            combined=body.combined,
-            dry_run=body.dry_run,
-        )
-    except ValueError as e:
-        raise HTTPException(400, str(e))
-    return s.write_result_to_dict(result)
-
-
-@router.post("/api/diagram/sync", tags=[TAG_DIAGRAMS], summary="Sync a diagram to the model",
-    response_model=OpenMapResponse, responses=WRITE_RESPONSES)
-def sync_diagram_to_model_gui(body: SyncDiagramToModelBody) -> dict[str, Any]:
+def sync_diagram_to_model_gui(artifact_id: str, body: SyncDiagramToModelBody) -> dict[str, Any]:
     from src.infrastructure.write.artifact_write.diagram_sync import refresh_diagram
 
     repo = s.get_repo()
     repo_root, _, verifier = s.get_write_deps()
     try:
-        result = s.authorized_write(("POST", "/api/diagram/sync"), 
+        result = s.authorized_write(
+            "diagrams_sync_diagram_to_model", 
             refresh_diagram,
             repo_root=repo_root,
             store=repo,
             verifier=verifier,
             clear_repo_caches=s.clear_caches,
-            artifact_id=body.artifact_id,
+            artifact_id=artifact_id,
             dry_run=body.dry_run,
         )
     except ValueError as e:
@@ -360,23 +265,32 @@ def sync_diagram_to_model_gui(body: SyncDiagramToModelBody) -> dict[str, Any]:
     return d
 
 
-@router.post("/api/diagram/remove", tags=[TAG_DIAGRAMS], summary="Remove a diagram", response_model=OpenMapResponse)
-def delete_diagram_gui(body: DeleteDiagramBody) -> dict[str, Any]:
+@router.delete("/api/diagrams/{artifact_id}", tags=[TAG_DIAGRAMS], summary="Remove a diagram",
+    response_model=None, responses=DELETE_RESPONSES, status_code=status.HTTP_204_NO_CONTENT)
+def delete_diagram_gui(
+    artifact_id: str, response: Response, dry_run: bool = True
+) -> dict[str, Any] | None:
     from src.application.candidate_repository import committed_repository  # noqa: PLC0415
     from src.infrastructure.write.artifact_write.diagram_delete import delete_diagram
 
     repo = s.get_repo()
     repo_root, _registry, _verifier = s.get_write_deps()
     try:
-        result = s.authorized_write(("POST", "/api/diagram/remove"), 
+        result = s.authorized_write(
+            "diagrams_delete_diagram", 
             delete_diagram,
             repo_root=repo_root,
             clear_repo_caches=s.clear_caches,
-            artifact_id=body.artifact_id,
-            dry_run=body.dry_run,
+            artifact_id=artifact_id,
+            dry_run=dry_run,
             verifier=_verifier,
             committed_repo=committed_repository(repo),
         )
     except ValueError as e:
         raise HTTPException(400, str(e))
-    return s.write_result_to_dict(result)
+    # A committed removal has nothing to report; a dry run has its plan, which needs a status that
+    # permits a body.
+    if dry_run:
+        response.status_code = status.HTTP_200_OK
+        return s.write_result_to_dict(result)
+    return None

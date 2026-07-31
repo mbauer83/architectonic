@@ -27,12 +27,12 @@ const uniqueSlug = (label: string) => {
 
 test.afterEach(async ({ request }) => {
   for (const slug of createdSlugs.splice(0)) {
-    await request.post('/api/viewpoints/remove', { data: { slug, dry_run: false } })
+    await request.delete(`/api/viewpoints/${encodeURIComponent(slug)}`)
   }
 })
 
 const removeViewpoint = async (request: APIRequestContext, slug: string) => {
-  await request.post('/api/viewpoints/remove', { data: { slug, dry_run: false } })
+  await request.delete(`/api/viewpoints/${encodeURIComponent(slug)}`)
 }
 
 test.describe('bindings, parameters, and derived attributes authored entirely in the GUI', () => {

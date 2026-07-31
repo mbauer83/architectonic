@@ -19,25 +19,34 @@ Exposure, in the terms `AssuranceExposurePolicy` already sets:
 
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from src.application import assurance_grouping as uc
 from src.application.assurance_analysis import (
     AnalysisInvalid,
+    AnalysisLegacyInvalid,
     AnalysisLocked,
     AnalysisNotFound,
     AnalysisResult,
 )
 from src.application.assurance_exposure import AssuranceExposurePolicy, Visible
+from src.application.assurance_legacy_invalid import LegacyInvalidNode
 from src.infrastructure.assurance.write_serialization import run_write
+from src.infrastructure.gui.contracts.errors import (
+    ApiError,
+    InvalidParticipationDetails,
+    LegacyInvalidDetails,
+)
 from src.infrastructure.gui.routers._assurance_http import (
     NO_STORE,
     build_policy,
     locked_response,
+    not_found,
     not_found_response,
     ok,
+    store_locked,
 )
 from src.infrastructure.mcp.assurance_mcp.context import AssuranceContext
 
@@ -56,10 +65,6 @@ class FileAnalysisBody(BaseModel):
     group_id: str | None = None
 
 
-class AddMemberBody(BaseModel):
-    node_id: str
-
-
 def _translate(result: AnalysisResult) -> JSONResponse:
     if isinstance(result, AnalysisLocked):
         return locked_response()
@@ -70,6 +75,15 @@ def _translate(result: AnalysisResult) -> JSONResponse:
             status_code=400,
             content={"error": result.error, "message": result.message},
             headers={"Cache-Control": NO_STORE},
+        )
+    if isinstance(result, AnalysisLegacyInvalid):
+        raise ApiError(
+            status.HTTP_409_CONFLICT,
+            "node_legacy_invalid",
+            LegacyInvalidNode(node_id=result.node_id).message,
+            LegacyInvalidDetails(
+                node_id=result.node_id, permitted_operation=result.permitted_operation
+            ),
         )
     return ok(result.payload)
 
@@ -135,8 +149,14 @@ def file_analysis(analysis_id: str, body: FileAnalysisBody) -> JSONResponse:
 # ── Participation ──────────────────────────────────────────────────────────────
 
 
-@grouping_router.get("/api/assurance/analyses/{analysis_id}/members")
-def list_members(analysis_id: str) -> JSONResponse:
+@grouping_router.get("/api/assurance/analyses/{analysis_id}/participating-nodes")
+def list_participating_nodes(analysis_id: str) -> JSONResponse:
+    """The nodes this analysis draws on without having authored them.
+
+    ``participating-nodes``, not ``members``: participation is directional — a node participates in
+    an analysis, never the reverse — and "member" read as though the analysis owned them, which is
+    what provenance means and this relation does not.
+    """
     ctx, pol = build_policy()
     if pol.check_locked():
         return locked_response()
@@ -149,37 +169,83 @@ def list_members(analysis_id: str) -> JSONResponse:
     ]
     return ok({
         "analysis_id": analysis_id,
-        "member_node_ids": member_ids,
+        "participating_node_ids": member_ids,
         "count": len(member_ids),
         "visibility_limited": pol.scope().visibility_limited,
     })
 
 
-@grouping_router.post("/api/assurance/analyses/{analysis_id}/members", status_code=200)
-def add_member(analysis_id: str, body: AddMemberBody) -> JSONResponse:
+@grouping_router.put(
+    "/api/assurance/analyses/{analysis_id}/participating-nodes/{node_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
+)
+def add_participating_node(analysis_id: str, node_id: str) -> None:
+    """Assert that a node participates in this analysis. Idempotent, and 204 either way.
+
+    ``PUT`` on the relation itself rather than ``POST`` to a collection: the relation either holds
+    or it does not, so asserting it twice must be indistinguishable from asserting it once. There
+    is no body — the pair *is* the request.
+
+    A node may not participate in the analysis that authored it. That is not a duplicate to
+    deduplicate away: authorship already draws the node into the analysis, and a participation row
+    beside it would make the working set count it twice and let a later removal appear to detach
+    something authorship still owns. Refused as ``409 invalid_participation``, with nothing written.
+    """
     ctx, pol = build_policy()
     if pol.check_locked():
-        return locked_response()
+        raise store_locked()
     if not _visible_analysis(ctx, pol, analysis_id):
-        return not_found_response()
-    if not isinstance(pol.apply_node(ctx.store.get_node(body.node_id)), Visible):
-        return not_found_response()
-    return _translate(run_write(lambda: uc.add_participant(
-        ctx.store, ctx.archive, analysis_id=analysis_id, node_id=body.node_id,
+        raise not_found(f"no analysis {analysis_id!r}")
+    node = pol.apply_node(ctx.store.get_node(node_id))
+    if not isinstance(node, Visible):
+        raise not_found(f"no node {node_id!r}")
+    if str(node.value.get("analysis_id") or "") == analysis_id:
+        raise ApiError(
+            status.HTTP_409_CONFLICT,
+            "invalid_participation",
+            "a node cannot participate in the analysis that authored it",
+            InvalidParticipationDetails(node_id=node_id, analysis_id=analysis_id),
+        )
+    _raise_for_write(run_write(lambda: uc.add_participant(
+        ctx.store, ctx.archive, analysis_id=analysis_id, node_id=node_id,
     )))
 
 
 @grouping_router.delete(
-    "/api/assurance/analyses/{analysis_id}/members/{node_id}", status_code=200
+    "/api/assurance/analyses/{analysis_id}/participating-nodes/{node_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
 )
-def remove_member(analysis_id: str, node_id: str) -> JSONResponse:
+def remove_participating_node(analysis_id: str, node_id: str) -> None:
+    """Withdraw a participation. Idempotent, and it never touches the node or its provenance."""
     ctx, pol = build_policy()
     if pol.check_locked():
-        return locked_response()
+        raise store_locked()
     if not _visible_analysis(ctx, pol, analysis_id):
-        return not_found_response()
+        raise not_found(f"no analysis {analysis_id!r}")
     if not isinstance(pol.apply_node(ctx.store.get_node(node_id)), Visible):
-        return not_found_response()
-    return _translate(run_write(lambda: uc.remove_participant(
+        raise not_found(f"no node {node_id!r}")
+    _raise_for_write(run_write(lambda: uc.remove_participant(
         ctx.store, ctx.archive, analysis_id=analysis_id, node_id=node_id,
     )))
+
+
+def _raise_for_write(result: AnalysisResult) -> None:
+    """Turn a use-case refusal into the shared envelope. A success says nothing, which is the point
+    of a 204 — the relation now holds, and there is no further fact to report."""
+    if isinstance(result, AnalysisLocked):
+        raise store_locked()
+    if isinstance(result, AnalysisNotFound):
+        raise not_found(f"no such record: {result.analysis_id}")
+    if isinstance(result, AnalysisLegacyInvalid):
+        raise ApiError(
+            status.HTTP_409_CONFLICT,
+            "node_legacy_invalid",
+            LegacyInvalidNode(node_id=result.node_id).message,
+            LegacyInvalidDetails(
+                node_id=result.node_id, permitted_operation=result.permitted_operation
+            ),
+        )
+    if isinstance(result, AnalysisInvalid):
+        raise ApiError(status.HTTP_400_BAD_REQUEST, "bad_request", result.message)

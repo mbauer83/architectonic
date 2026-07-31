@@ -13,6 +13,7 @@ from fastapi import FastAPI
 
 from src.application.artifact_repository import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
+from src.infrastructure.gui.contracts.error_responses import install_error_contracts
 from src.infrastructure.gui.routers import state as gui_state
 from src.infrastructure.gui.routers.viewpoint_authoring import router as viewpoint_authoring_router
 
@@ -35,9 +36,12 @@ def client(engagement_root: Path):
 
     repo = ArtifactRepository(shared_artifact_index([engagement_root]))
     gui_state.init_state(repo, engagement_root, None)
-    app = FastAPI()
+    app = FastAPI(redirect_slashes=False)
+    # Configured as the real application is, so a refusal is asserted in the envelope a client
+    # actually receives rather than in FastAPI's default shape.
+    install_error_contracts(app)
     app.include_router(viewpoint_authoring_router)
-    return TestClient(app)
+    return TestClient(app, raise_server_exceptions=False)
 
 
 class TestCriteriaCatalog:
@@ -79,8 +83,6 @@ class TestReferencers:
         assert resp.json() == {"referencers": []}
 
     def test_lists_referencing_diagram(self, client, engagement_root: Path) -> None:
-        from src.infrastructure.gui.routers import state as gui_state
-
         client.post("/api/viewpoints", json={"definition": _MINIMAL_DEFINITION, "dry_run": False})
         diagram_path = engagement_root / "diagram-catalog" / "diagrams" / "ARC@1000000042.DiagSch.ref.puml"
         diagram_path.write_text(
@@ -168,24 +170,35 @@ class TestEdit:
 
         self._seed(client)
         edited = {**_MINIMAL_DEFINITION, "description": "now described"}
-        resp = client.post("/api/viewpoints/edit", json={"definition": edited, "dry_run": False})
+        resp = client.put("/api/viewpoints/test-viewpoint", json={"definition": edited, "dry_run": False})
         assert resp.json()["ok"] is True
         assert load_viewpoint_catalog_file(engagement_root).get("test-viewpoint").description == "now described"
 
     def test_semantic_edit_without_bump_rejected(self, client) -> None:
         self._seed(client)
         edited = {**_MINIMAL_DEFINITION, "scope": {"entity_types": ["application-component"]}}
-        resp = client.post("/api/viewpoints/edit", json={"definition": edited, "dry_run": False})
+        resp = client.put("/api/viewpoints/test-viewpoint", json={"definition": edited, "dry_run": False})
         body = resp.json()
         assert body["ok"] is False
         assert any(i["code"] == "version-not-bumped" for i in body["issues"])
 
     def test_unknown_slug_rejected(self, client) -> None:
-        resp = client.post(
-            "/api/viewpoints/edit",
+        resp = client.put(
+            "/api/viewpoints/never-created",
             json={"definition": {"slug": "never-created", "version": 1, "name": "X"}, "dry_run": False},
         )
         assert resp.json()["issues"][0]["code"] == "unknown-slug"
+
+    def test_a_definition_naming_another_viewpoint_is_refused(self, client) -> None:
+        """The URL and the payload would disagree about which definition is being replaced, and
+        there is no defensible winner — so neither wins."""
+        self._seed(client)
+        other = {**_MINIMAL_DEFINITION, "slug": "some-other-viewpoint"}
+        resp = client.put("/api/viewpoints/test-viewpoint", json={"definition": other, "dry_run": True})
+        assert resp.status_code == 422
+        detail = resp.json()["detail"]
+        assert detail["code"] == "validation_error"
+        assert detail["details"]["field_errors"][0]["field"] == "body.definition.slug"
 
 
 class TestReferenceReport:
@@ -266,15 +279,18 @@ class TestDelete:
         from src.infrastructure.viewpoint_declarations import load_viewpoint_catalog_file
 
         client.post("/api/viewpoints", json={"definition": _MINIMAL_DEFINITION, "dry_run": False})
-        resp = client.post("/api/viewpoints/remove", json={"slug": "test-viewpoint", "dry_run": False})
-        assert resp.json()["ok"] is True
+        resp = client.delete("/api/viewpoints/test-viewpoint")
+        # 204: a committed deletion has nothing to report, so it reports nothing.
+        assert resp.status_code == 204
+        assert resp.content == b""
         assert load_viewpoint_catalog_file(engagement_root).get("test-viewpoint") is None
 
     def test_dry_run_does_not_delete(self, client, engagement_root: Path) -> None:
         from src.infrastructure.viewpoint_declarations import load_viewpoint_catalog_file
 
         client.post("/api/viewpoints", json={"definition": _MINIMAL_DEFINITION, "dry_run": False})
-        resp = client.post("/api/viewpoints/remove", json={"slug": "test-viewpoint"})
+        resp = client.delete("/api/viewpoints/test-viewpoint?dry_run=true")
+        assert resp.status_code == 200
         assert resp.json()["ok"] is True
         assert resp.json()["dry_run"] is True
         assert load_viewpoint_catalog_file(engagement_root).get("test-viewpoint") is not None
@@ -303,11 +319,60 @@ title Referencing Diagram
             encoding="utf-8",
         )
         gui_state.maybe_get_repo().refresh()
-        resp = client.post("/api/viewpoints/remove", json={"slug": "test-viewpoint", "dry_run": False})
+        resp = client.delete("/api/viewpoints/test-viewpoint")
+        # A refusal is an error, not a 200 whose `ok` a caller has to remember to read.
+        assert resp.status_code == 409
+        detail = resp.json()["detail"]
+        assert detail["code"] == "viewpoint_referenced"
+        assert detail["details"]["referencers"][0]["artifact_id"] == "ARC@1000000042.DiagSch.ref"
+        assert detail["details"]["referencers"][0]["target_kind"] == "diagram"
+
+    def test_unknown_slug_is_not_found(self, client) -> None:
+        resp = client.delete("/api/viewpoints/never-created")
+        assert resp.status_code == 404
+        assert resp.json()["detail"]["code"] == "not_found"
+
+    def test_a_blocked_deletion_still_reports_its_plan_as_a_dry_run(self, client) -> None:
+        """A dry run answers what *would* happen — including the reasons it would not — because a
+        plan a caller cannot see is a plan they cannot act on."""
+        client.post("/api/viewpoints", json={"definition": _MINIMAL_DEFINITION, "dry_run": False})
+        resp = client.delete("/api/viewpoints/never-created?dry_run=true")
+        assert resp.status_code == 200
         body = resp.json()
         assert body["ok"] is False
-        assert body["issues"][0]["code"] == "delete-blocked-referenced"
-        assert body["referencers"][0]["artifact_id"] == "ARC@1000000042.DiagSch.ref"
+        assert body["issues"][0]["code"] == "unknown-slug"
+
+
+class TestLiteralSiblingSegments:
+    """``/api/viewpoints/{slug}`` has literal siblings, and they must win.
+
+    ``pins`` and ``criteria-catalog`` are collection-level singletons, not slugs. If the
+    parameterised route matched first, a pin update would arrive at the replace handler and be
+    rejected as a malformed definition — a 422 that says nothing about the real cause. The outcome
+    is asserted here, not the matching rule, so a future reordering fails on what it breaks.
+    """
+
+    def test_a_literal_sibling_segment_is_not_read_as_a_slug(self, client) -> None:
+        assert client.put("/api/viewpoints/pins", json={"slugs": []}).status_code == 200
+        assert client.get("/api/viewpoints/criteria-catalog").status_code == 200
+
+    def test_a_delete_of_a_literal_sibling_is_refused_not_reported_missing(self, client) -> None:
+        """``DELETE /api/viewpoints/pins`` does reach the delete handler — the parameterised route
+        matches where the pins route has no DELETE. It must not answer "no viewpoint named pins",
+        which reads as an invitation to create one."""
+        resp = client.delete("/api/viewpoints/pins")
+        assert resp.status_code == 400
+        assert resp.json()["detail"]["code"] == "bad_request"
+
+    def test_a_viewpoint_cannot_be_created_at_a_reserved_slug(self, client) -> None:
+        """The refusal that matters: a definition named ``pins`` could be written and then never
+        read back, because every request for it would resolve to the pin list."""
+        resp = client.post(
+            "/api/viewpoints",
+            json={"definition": {"slug": "pins", "version": 1, "name": "Pins"}, "dry_run": True},
+        )
+        assert resp.status_code == 400
+        assert "reserved" in resp.json()["detail"]["message"]
 
 
 class TestPins:
@@ -343,6 +408,6 @@ class TestPins:
     def test_slug_removed_from_catalog_after_pinning_is_pruned_with_a_warning(self, client) -> None:
         client.post("/api/viewpoints", json={"definition": _MINIMAL_DEFINITION, "dry_run": False})
         client.put("/api/viewpoints/pins", json={"slugs": ["test-viewpoint"]})
-        client.post("/api/viewpoints/remove", json={"slug": "test-viewpoint", "dry_run": False})
+        client.delete("/api/viewpoints/test-viewpoint")
         resp = client.get("/api/viewpoints/pins")
         assert resp.json() == {"slugs": [], "pruned": ["test-viewpoint"]}

@@ -4,7 +4,7 @@
 ``from __future__ import annotations``, so FastAPI's ``get_type_hints`` raised
 ``NameError`` and treated ``request`` as a required query parameter. Every endpoint
 depending on these resolvers then returned HTTP 422 — breaking the diagram detail
-view (/api/diagram-context), the entity connection editor (/api/ontology), and
+view (/api/diagrams/{artifact_id}/context), the entity connection editor (/api/ontology), and
 /api/diagram-types, /api/modules, and more.
 """
 

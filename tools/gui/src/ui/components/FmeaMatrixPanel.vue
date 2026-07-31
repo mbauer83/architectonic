@@ -26,10 +26,11 @@ import {
 import type { CellView, RowView } from '../views/AssuranceFmeaView.helpers'
 
 const props = defineProps<{
-  /** The FMEA this grid belongs to. There is one matrix per FMEA analysis, so a grid with no
-   *  analysis named would be a drawing of every FMEA at once. Null means the whole store, which is
-   *  what the standalone page shows when no analysis is chosen. */
-  analysisId?: string | null
+  /** The FMEA this grid belongs to. Required: there is one matrix per FMEA analysis, and a grid
+   *  with no analysis named was a drawing of every FMEA at once — with two analyses it showed both
+   *  their rows in one table and read like a single ranking. The page shows an analysis picker
+   *  until one is chosen rather than requesting an unscoped matrix. */
+  analysisId: string
 }>()
 
 const rows = ref<RowView[]>([])
@@ -46,9 +47,8 @@ const ordered = computed(() => worklistOrder(rows.value))
 const coverage = computed(() => coverageLine(rows.value))
 const guidewords = computed(() => rows.value[0]?.cells.map((cell: CellView) => cell.guideword) ?? [])
 
-const matrixUrl = computed(() => props.analysisId
-  ? `/api/assurance/fmea?analysis_id=${encodeURIComponent(props.analysisId)}`
-  : '/api/assurance/fmea')
+const matrixUrl = computed(
+  () => `/api/assurance/analyses/${encodeURIComponent(props.analysisId)}/matrix`)
 
 async function load() {
   loaded.value = false

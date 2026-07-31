@@ -17,15 +17,15 @@ from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.diagram_type_registry import diagram_type_domain
 from src.infrastructure.gui.routers import state as gui_state
 from src.infrastructure.gui.routers._diagram_context import fuzzy_entity_hits
+from src.infrastructure.gui.routers._diagram_palette import (
+    get_diagram_kind_connection_types,
+    get_diagram_kind_entity_types,
+)
 from src.infrastructure.gui.routers.diagram_types import (
     list_diagram_types,
     read_diagram_kind_ui_config,
 )
-from src.infrastructure.gui.routers.diagrams import (
-    get_diagram_kind_connection_types,
-    get_diagram_kind_entity_types,
-    read_diagram,
-)
+from src.infrastructure.gui.routers.diagrams import read_diagram
 from src.infrastructure.write.artifact_write.connection import add_connection
 from src.infrastructure.write.artifact_write.diagram import create_diagram
 from src.infrastructure.write.artifact_write.diagram_edit import edit_diagram
@@ -106,7 +106,7 @@ def test_diagram_type_domain_is_registry_derived() -> None:
 
 
 def test_diagram_kind_entity_types_endpoint_excludes_internal_types() -> None:
-    items = get_diagram_kind_entity_types("archimate-business", catalogs=_catalogs())
+    items = get_diagram_kind_entity_types("archimate-business", catalogs=_catalogs())["items"]
 
     assert items
     assert any(item["artifact_type"] == "business-actor" for item in items)
@@ -114,7 +114,7 @@ def test_diagram_kind_entity_types_endpoint_excludes_internal_types() -> None:
 
 
 def test_c4_entity_types_endpoint_exposes_mapped_model_types() -> None:
-    items = get_diagram_kind_entity_types("c4-system-context", catalogs=_catalogs())
+    items = get_diagram_kind_entity_types("c4-system-context", catalogs=_catalogs())["items"]
 
     assert any(item["artifact_type"] == "application-component" for item in items)
     assert any(item["artifact_type"] == "business-actor" for item in items)
@@ -122,7 +122,7 @@ def test_c4_entity_types_endpoint_exposes_mapped_model_types() -> None:
 
 
 def test_diagram_kind_connection_types_endpoint_exposes_effective_vocabulary() -> None:
-    items = get_diagram_kind_connection_types("matrix", catalogs=_catalogs())
+    items = get_diagram_kind_connection_types("matrix", catalogs=_catalogs())["items"]
 
     flow_item = next(item for item in items if item["connection_type"] == "archimate-flow")
 

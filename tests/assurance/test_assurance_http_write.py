@@ -19,12 +19,19 @@ from typing import Any
 from unittest.mock import patch
 
 import pytest
-from fastapi import FastAPI
 
 httpx = pytest.importorskip("httpx")
 from starlette.testclient import TestClient  # noqa: E402
 
+from tests.support.api_app import build_api_app  # noqa: E402
+
 # ── Fake infrastructure (extended from read tests) ────────────────────────────
+
+#: The analysis the fixtures attribute their nodes to. This fake mints nodes *unattributed*,
+#: because the provenance state-machine tests need that state; every other fixture passes this id
+#: explicitly, since an unattributed node is repair-only.
+_FIXTURE_ANALYSIS = "STPA@7"
+
 
 class _FakeStore:
     def __init__(self, *, unlocked: bool = True) -> None:
@@ -33,6 +40,15 @@ class _FakeStore:
         self._edges: list[dict[str, Any]] = []
         self._next = 0
         self._arch_refs: list[dict[str, Any]] = []
+        # Every node is created inside an analysis now, so the fake has to have one.
+        self._analyses: dict[str, dict[str, Any]] = {
+            _FIXTURE_ANALYSIS: {
+                "analysis_id": _FIXTURE_ANALYSIS, "name": "Brakes", "method": "STPA",
+            },
+        }
+
+    def get_analysis(self, analysis_id: str) -> dict[str, Any] | None:
+        return self._analyses.get(analysis_id)
 
     def _nid(self) -> str:
         self._next += 1
@@ -140,9 +156,7 @@ _CTX_PATH_READ = "src.infrastructure.gui.routers._assurance_read.get_assurance_c
 def _make_client(ctx: _FakeContext) -> TestClient:
     from src.infrastructure.gui.routers.assurance import router
 
-    app = FastAPI()
-    app.include_router(router)
-    client = TestClient(app, raise_server_exceptions=False)
+    client = TestClient(build_api_app(router), raise_server_exceptions=False)
     for path in (_CTX_PATH, _CTX_PATH_READ):
         p = patch(path, return_value=ctx)
         p.start()
@@ -152,12 +166,13 @@ def _make_client(ctx: _FakeContext) -> TestClient:
 # ── 423 locked on every write ──────────────────────────────────────────────────
 
 @pytest.mark.parametrize("method,url,body", [
-    ("POST", "/api/assurance/nodes", {"node_type": "loss", "name": "L"}),
+    ("POST", f"/api/assurance/analyses/{_FIXTURE_ANALYSIS}/nodes", {"node_type": "loss", "name": "L"}),
+    ("PUT", "/api/assurance/nodes/x/provenance", {"analysis_id": "STPA@7"}),
     ("PATCH", "/api/assurance/nodes/x", {"name": "y"}),
     ("DELETE", "/api/assurance/nodes/x", None),
     ("POST", "/api/assurance/edges", {"source_id": "A", "target_id": "B", "conn_type": "leads-to"}),
     ("DELETE", "/api/assurance/edges/x", None),
-    ("POST", "/api/assurance/baselines/seal", {}),
+    ("POST", "/api/assurance/baselines", {}),
     ("POST", "/api/assurance/arch-refs",
      {"assurance_node_id": "A", "arch_artifact_id": "B", "ref_type": "binds-to"}),
 ])
@@ -177,7 +192,8 @@ def test_locked_returns_423(method: str, url: str, body: dict[str, Any] | None) 
 def test_create_node_success() -> None:
     ctx = _FakeContext(_FakeStore())
     client = _make_client(ctx)
-    resp = client.post("/api/assurance/nodes", json={"node_type": "loss", "name": "L1"})
+    resp = client.post(
+        f"/api/assurance/analyses/{_FIXTURE_ANALYSIS}/nodes", json={"node_type": "loss", "name": "L1"})
     assert resp.status_code == 200
     body = resp.json()
     assert "node_id" in body
@@ -188,28 +204,121 @@ def test_create_node_success() -> None:
 def test_create_node_invalid_type_error_payload() -> None:
     ctx = _FakeContext(_FakeStore())
     client = _make_client(ctx)
-    resp = client.post("/api/assurance/nodes", json={"node_type": "bogus", "name": "X"})
+    resp = client.post(
+        f"/api/assurance/analyses/{_FIXTURE_ANALYSIS}/nodes", json={"node_type": "bogus", "name": "X"})
     assert resp.status_code == 200  # use case returns MutationOk with error payload
     assert resp.json()["error"] == "invalid_node_type"
 
 
-def test_create_node_carries_analysis_id() -> None:
+def test_a_node_records_the_analysis_it_was_created_in() -> None:
+    """Provenance comes from the path, so there is no way to create a node without it.
+
+    It used to be an optional body field, which is how 26 nodes came to sit in the store with no
+    author recorded — the field was simply omitted and nothing objected.
+    """
     store = _FakeStore()
     ctx = _FakeContext(store)
     client = _make_client(ctx)
-    resp = client.post("/api/assurance/nodes", json={
-        "node_type": "hazard", "name": "H1", "analysis_id": "STPA@7",
-    })
+    resp = client.post(
+        f"/api/assurance/analyses/{_FIXTURE_ANALYSIS}/nodes", json={"node_type": "hazard", "name": "H1"})
     assert resp.status_code == 200
     nid = resp.json()["node_id"]
     assert store.get_node(nid)["analysis_id"] == "STPA@7"
+
+
+def test_a_create_body_naming_its_own_analysis_is_rejected() -> None:
+    """The path already says which analysis. A body that said so too would give a caller two
+    places to disagree about what produced the node."""
+    client = _make_client(_FakeContext(_FakeStore()))
+    resp = client.post(f"/api/assurance/analyses/{_FIXTURE_ANALYSIS}/nodes", json={
+        "node_type": "hazard", "name": "H1", "analysis_id": "STPA@7",
+    })
+    assert resp.status_code == 422
+
+
+def test_a_node_cannot_be_created_in_an_analysis_that_does_not_exist() -> None:
+    client = _make_client(_FakeContext(_FakeStore()))
+    resp = client.post(
+        "/api/assurance/analyses/AN@nope/nodes", json={"node_type": "hazard", "name": "H1"})
+    assert resp.status_code == 404
+
+
+class TestProvenanceStateMachine:
+    """The one audited path that may set provenance, and the transitions it permits.
+
+    Immutability is the whole point: an analysis's output is a historical fact, and a node that
+    could move between analyses would rewrite what each of them is on record as having found. The
+    single legitimate transition is repairing a node that has none.
+    """
+
+    def _client_and_store(self) -> tuple[Any, Any]:
+        store = _FakeStore()
+        store._analyses["STPA@8"] = {  # noqa: SLF001
+            "analysis_id": "STPA@8", "name": "Other", "method": "STPA",
+        }
+        return _make_client(_FakeContext(store)), store
+
+    def test_an_unattributed_node_can_be_repaired(self) -> None:
+        client, store = self._client_and_store()
+        nid = store.create_node("hazard", "H1")
+
+        resp = client.put(f"/api/assurance/nodes/{nid}/provenance", json={"analysis_id": "STPA@7"})
+
+        assert resp.status_code == 204
+        assert resp.content == b""
+        assert store.get_node(nid)["analysis_id"] == "STPA@7"
+
+    def test_re_asserting_the_same_analysis_is_idempotent(self) -> None:
+        client, store = self._client_and_store()
+        nid = store.create_node("hazard", "H1")
+        url = f"/api/assurance/nodes/{nid}/provenance"
+
+        assert client.put(url, json={"analysis_id": "STPA@7"}).status_code == 204
+        assert client.put(url, json={"analysis_id": "STPA@7"}).status_code == 204
+        assert store.get_node(nid)["analysis_id"] == "STPA@7"
+
+    def test_reattribution_to_another_analysis_is_refused(self) -> None:
+        client, store = self._client_and_store()
+        nid = store.create_node("hazard", "H1")
+        client.put(f"/api/assurance/nodes/{nid}/provenance", json={"analysis_id": "STPA@7"})
+
+        resp = client.put(
+            f"/api/assurance/nodes/{nid}/provenance", json={"analysis_id": "STPA@8"})
+
+        assert resp.status_code == 409
+        detail = resp.json()["detail"]
+        assert detail["code"] == "provenance_immutable"
+        assert detail["details"]["current_analysis_id"] == "STPA@7"
+        assert store.get_node(nid)["analysis_id"] == "STPA@7"
+
+    def test_provenance_cannot_be_withdrawn_through_the_edit_contract(self) -> None:
+        """``analysis_id`` left the edit DTO, so a caller still sending it is told rather than
+        silently re-attributing the node."""
+        client, store = self._client_and_store()
+        nid = store.create_node("hazard", "H1")
+        client.put(f"/api/assurance/nodes/{nid}/provenance", json={"analysis_id": "STPA@7"})
+
+        resp = client.patch(f"/api/assurance/nodes/{nid}", json={"analysis_id": "STPA@8"})
+
+        assert resp.status_code == 422
+        assert store.get_node(nid)["analysis_id"] == "STPA@7"
+
+    def test_an_analysis_that_does_not_exist_is_not_a_repair(self) -> None:
+        client, store = self._client_and_store()
+        nid = store.create_node("hazard", "H1")
+
+        resp = client.put(
+            f"/api/assurance/nodes/{nid}/provenance", json={"analysis_id": "AN@nope"})
+
+        assert resp.status_code == 404
+        assert not store.get_node(nid).get("analysis_id")
 
 
 # ── edit_node ──────────────────────────────────────────────────────────────────
 
 def test_edit_node_success() -> None:
     store = _FakeStore()
-    nid = store.create_node("hazard", "H1")
+    nid = store.create_node("hazard", "H1", analysis_id=_FIXTURE_ANALYSIS)
     ctx = _FakeContext(store)
     client = _make_client(ctx)
     resp = client.patch(f"/api/assurance/nodes/{nid}", json={"name": "H1 updated"})
@@ -228,7 +337,7 @@ def test_edit_node_not_found() -> None:
 
 def test_delete_node_success() -> None:
     store = _FakeStore()
-    nid = store.create_node("loss", "L1")
+    nid = store.create_node("loss", "L1", analysis_id=_FIXTURE_ANALYSIS)
     ctx = _FakeContext(store)
     client = _make_client(ctx)
     resp = client.delete(f"/api/assurance/nodes/{nid}")
@@ -247,8 +356,8 @@ def test_delete_node_not_found() -> None:
 
 def test_add_edge_success() -> None:
     store = _FakeStore()
-    sid = store.create_node("hazard", "H1")
-    tid = store.create_node("loss", "L1")
+    sid = store.create_node("hazard", "H1", analysis_id=_FIXTURE_ANALYSIS)
+    tid = store.create_node("loss", "L1", analysis_id=_FIXTURE_ANALYSIS)
     ctx = _FakeContext(store)
     client = _make_client(ctx)
     resp = client.post("/api/assurance/edges", json={
@@ -260,8 +369,8 @@ def test_add_edge_success() -> None:
 
 def test_add_edge_illegal_pair_is_a_422_typed_envelope() -> None:
     store = _FakeStore()
-    sid = store.create_node("loss", "L1")
-    tid = store.create_node("hazard", "H1")
+    sid = store.create_node("loss", "L1", analysis_id=_FIXTURE_ANALYSIS)
+    tid = store.create_node("hazard", "H1", analysis_id=_FIXTURE_ANALYSIS)
     ctx = _FakeContext(store)
     client = _make_client(ctx)
     resp = client.post("/api/assurance/edges", json={
@@ -279,7 +388,7 @@ def test_add_edge_illegal_pair_is_a_422_typed_envelope() -> None:
 
 def test_add_edge_source_not_found() -> None:
     store = _FakeStore()
-    tid = store.create_node("loss", "L1")
+    tid = store.create_node("loss", "L1", analysis_id=_FIXTURE_ANALYSIS)
     ctx = _FakeContext(store)
     client = _make_client(ctx)
     resp = client.post("/api/assurance/edges", json={
@@ -292,8 +401,8 @@ def test_add_edge_source_not_found() -> None:
 
 def test_delete_edge_success() -> None:
     store = _FakeStore()
-    sid = store.create_node("hazard", "H1")
-    tid = store.create_node("loss", "L1")
+    sid = store.create_node("hazard", "H1", analysis_id=_FIXTURE_ANALYSIS)
+    tid = store.create_node("loss", "L1", analysis_id=_FIXTURE_ANALYSIS)
     eid = store.add_edge(sid, tid, "leads-to")
     ctx = _FakeContext(store)
     client = _make_client(ctx)
@@ -314,7 +423,7 @@ def test_delete_edge_not_found() -> None:
 def test_seal_baseline_success() -> None:
     ctx = _FakeContext(_FakeStore())
     client = _make_client(ctx)
-    resp = client.post("/api/assurance/baselines/seal", json={"notes": "test"})
+    resp = client.post("/api/assurance/baselines", json={"notes": "test"})
     assert resp.status_code == 200
     assert resp.json()["sealed"] is True
 
@@ -323,7 +432,7 @@ def test_seal_baseline_success() -> None:
 
 def test_register_arch_ref_success() -> None:
     store = _FakeStore()
-    nid = store.create_node("control-structure-node", "App")
+    nid = store.create_node("control-structure-node", "App", analysis_id=_FIXTURE_ANALYSIS)
     ctx = _FakeContext(store)
     client = _make_client(ctx)
     resp = client.post("/api/assurance/arch-refs", json={
@@ -340,7 +449,8 @@ def test_register_arch_ref_success() -> None:
 def test_model_this_separation_of_duties_returns_task_spec() -> None:
     store = _FakeStore()
     nid = store.create_node("control-structure-node", "X",
-                             binding_status="unbound-pending")
+                             binding_status="unbound-pending",
+                             analysis_id=_FIXTURE_ANALYSIS)
     ctx = _FakeContext(store)
     client = _make_client(ctx)
     resp = client.post("/api/assurance/model-this", json={
@@ -361,7 +471,8 @@ def test_model_this_default_creates_and_binds() -> None:
     # so the test does not touch the real backend write path.
     store = _FakeStore()
     nid = store.create_node("control-structure-node", "X",
-                             binding_status="unbound-pending")
+                             binding_status="unbound-pending",
+                             analysis_id=_FIXTURE_ANALYSIS)
     ctx = _FakeContext(store)
     client = _make_client(ctx)
 
@@ -390,7 +501,7 @@ def test_model_this_default_creates_and_binds() -> None:
 
 def test_model_this_wrong_binding_status_returns_409() -> None:
     store = _FakeStore()
-    nid = store.create_node("control-structure-node", "Y", binding_status="bound")
+    nid = store.create_node("control-structure-node", "Y", binding_status="bound", analysis_id=_FIXTURE_ANALYSIS)
     ctx = _FakeContext(store)
     client = _make_client(ctx)
     resp = client.post("/api/assurance/model-this", json={

@@ -218,10 +218,12 @@ export async function captureRenderedDiagram(
   provenance: CaptureProvenance,
 ): Promise<void> {
   await diagramById(request, artifactId)
-  const svg = await request.get(`/api/diagram-svg?id=${encodeURIComponent(artifactId)}`)
+  const svg = await request.get(`/api/diagrams/${encodeURIComponent(artifactId)}/svg`)
   expect(svg.ok()).toBeTruthy()
   expect(await svg.text(), `${fileName} should contain a stable label`).toContain(expectedLabel)
-  const png = await request.get(`/api/diagram-download?id=${encodeURIComponent(artifactId)}&format=png`)
+  const png = await request.get(
+    `/api/diagrams/${encodeURIComponent(artifactId)}/download?format=png`,
+  )
   expect(png.ok()).toBeTruthy()
   const dataUrl = `data:image/png;base64,${(await png.body()).toString('base64')}`
   await page.setContent(`<main id="render"><img alt="" src="${dataUrl}"></main><style>

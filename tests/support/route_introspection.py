@@ -27,7 +27,7 @@ def _app_for(surface: FastAPI | APIRouter) -> FastAPI:
 
 
 def openapi_paths(surface: FastAPI | APIRouter) -> set[str]:
-    """The set of path templates (e.g. ``/api/entity/remove``) the surface serves."""
+    """The set of path templates (e.g. ``/api/entities/{artifact_id}``) the surface serves."""
     return set(_app_for(surface).openapi().get("paths", {}).keys())
 
 

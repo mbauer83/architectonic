@@ -2,7 +2,7 @@
 the EFFECTIVE merged metadata schema each (connection-type, specialization) pair authors
 against.
 
-Entities get their effective schema from ``GET /api/entity-schemata``; connections have no
+Entities get their effective schema from ``GET /api/entity-schemata/{artifact_type}``; connections have no
 such endpoint, so the authoring-guidance payload carries theirs. Both transports (REST and
 MCP) call the same builder, so neither can offer a shape the other lacks.
 """

@@ -1,4 +1,4 @@
-"""REST integration matrix for GET /api/assurance/neighbors over a REAL seeded
+"""REST integration matrix for GET /api/assurance/nodes/{node_id}/neighbors over a REAL seeded
 SQLCipher store: locked store, unknown vs above-ceiling roots, hidden nodes as
 non-crossable (F2.2), hop clamping, size-budget truncation with frontier ids,
 time-budget abort as a typed retryable 503, and no-store semantics."""
@@ -71,7 +71,7 @@ class TestGating:
         client = _client(store, "TLP:AMBER")
         store.lock()
         try:
-            resp = client.get(f"/api/assurance/neighbors?node_id={ids['uca']}")
+            resp = client.get(f"/api/assurance/nodes/{ids['uca']}/neighbors")
             assert resp.status_code == 423
             assert resp.headers.get("Cache-Control") == "no-store"
         finally:
@@ -80,15 +80,15 @@ class TestGating:
     def test_unknown_and_above_ceiling_roots_are_indistinguishable(self, seeded) -> None:  # type: ignore[no-untyped-def]
         store, ids, _ = seeded
         client = _client(store, "TLP:AMBER")
-        above = client.get(f"/api/assurance/neighbors?node_id={ids['red_hazard']}")
-        unknown = client.get("/api/assurance/neighbors?node_id=HAZ@does-not-exist")
+        above = client.get(f"/api/assurance/nodes/{ids['red_hazard']}/neighbors")
+        unknown = client.get("/api/assurance/nodes/HAZ@does-not-exist/neighbors")
         assert above.status_code == unknown.status_code == 404
         assert above.json() == unknown.json()
 
     def test_no_store_semantics(self, seeded) -> None:  # type: ignore[no-untyped-def]
         store, ids, _ = seeded
         client = _client(store, "TLP:AMBER")
-        resp = client.get(f"/api/assurance/neighbors?node_id={ids['uca']}")
+        resp = client.get(f"/api/assurance/nodes/{ids['uca']}/neighbors")
         assert resp.headers.get("Cache-Control") == "no-store"
 
 
@@ -96,7 +96,7 @@ class TestTraversal:
     def test_one_hop_default_with_annotations(self, seeded) -> None:  # type: ignore[no-untyped-def]
         store, ids, _ = seeded
         client = _client(store, "TLP:RED")
-        body = client.get(f"/api/assurance/neighbors?node_id={ids['uca']}").json()
+        body = client.get(f"/api/assurance/nodes/{ids['uca']}/neighbors").json()
         assert body["root_id"] == ids["uca"]
         assert body["max_hops"] == 1
         hops = {n["node_id"]: n["hop"] for n in body["nodes"]}
@@ -109,7 +109,7 @@ class TestTraversal:
     def test_hidden_node_is_not_crossed_and_leaks_nothing(self, seeded) -> None:  # type: ignore[no-untyped-def]
         store, ids, edges = seeded
         client = _client(store, "TLP:AMBER")
-        resp = client.get(f"/api/assurance/neighbors?node_id={ids['uca']}&max_hops=4")
+        resp = client.get(f"/api/assurance/nodes/{ids['uca']}/neighbors?max_hops=4")
         body = resp.json()
         # The white chain is fully reachable; the red chain is absent entirely.
         assert {n["node_id"] for n in body["nodes"]} == {ids["uca"], ids["hazard"], ids["loss"]}
@@ -127,8 +127,8 @@ class TestTraversal:
     def test_max_hops_is_clamped(self, seeded) -> None:  # type: ignore[no-untyped-def]
         store, ids, _ = seeded
         client = _client(store, "TLP:RED")
-        zero = client.get(f"/api/assurance/neighbors?node_id={ids['uca']}&max_hops=0").json()
-        huge = client.get(f"/api/assurance/neighbors?node_id={ids['uca']}&max_hops=99").json()
+        zero = client.get(f"/api/assurance/nodes/{ids['uca']}/neighbors?max_hops=0").json()
+        huge = client.get(f"/api/assurance/nodes/{ids['uca']}/neighbors?max_hops=99").json()
         assert zero["max_hops"] == 1
         assert huge["max_hops"] == 4
 
@@ -140,7 +140,7 @@ class TestBudgets:
         store, ids, _ = seeded
         monkeypatch.setattr(routes, "assurance_neighbors_max_nodes", lambda: 2)
         client = _client(store, "TLP:RED")
-        body = client.get(f"/api/assurance/neighbors?node_id={ids['uca']}").json()
+        body = client.get(f"/api/assurance/nodes/{ids['uca']}/neighbors").json()
         assert body["truncated"] is True
         assert body["frontier_node_ids"] == [ids["uca"]]
         assert len(body["nodes"]) == 2
@@ -156,7 +156,7 @@ class TestBudgets:
             lambda *a, **k: (_ for _ in ()).throw(traversal_module.NeighborTimeBudgetExceeded()),
         )
         client = _client(store, "TLP:RED")
-        resp = client.get(f"/api/assurance/neighbors?node_id={ids['uca']}")
+        resp = client.get(f"/api/assurance/nodes/{ids['uca']}/neighbors")
         assert resp.status_code == 503
         body = resp.json()
         assert body["error"] == "traversal_time_budget_exceeded"

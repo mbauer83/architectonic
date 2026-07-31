@@ -76,23 +76,19 @@ export const useGroupManagement = (opts: { axis: string; onMutated: () => void }
   }
   const submitRename = () => {
     if (!dialogTarget.value) return
-    void run(svc.renameGroup({ kind: opts.axis, target: dialogTarget.value.slug, name: fieldName.value }))
+    void run(svc.renameGroup(opts.axis, dialogTarget.value.slug, { name: fieldName.value }))
   }
   const submitArchive = () => {
     if (!dialogTarget.value) return
     const g = dialogTarget.value
     const confirmArg = !g.archived && (g.count ?? 0) > 0 ? fieldConfirm.value : undefined
     void run(g.archived
-      ? svc.unarchiveGroup({ kind: opts.axis, target: g.slug })
-      : svc.archiveGroup({ kind: opts.axis, target: g.slug, confirm: confirmArg }))
+      ? svc.unarchiveGroup(opts.axis, g.slug)
+      : svc.archiveGroup(opts.axis, g.slug, { confirm: confirmArg }))
   }
   const submitDelete = () => {
     if (!dialogTarget.value) return
-    void run(svc.deleteGroup({
-      kind: opts.axis,
-      target: dialogTarget.value.slug,
-      confirm: fieldConfirm.value || undefined,
-    }))
+    void run(svc.deleteGroup(opts.axis, dialogTarget.value.slug, fieldConfirm.value || undefined))
   }
 
   return {

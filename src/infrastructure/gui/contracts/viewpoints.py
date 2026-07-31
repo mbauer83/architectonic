@@ -1,0 +1,65 @@
+"""Response contracts for the viewpoint authoring surface.
+
+A viewpoint's slug is a *natural* key the author chooses, and it is part of the definition record
+itself — unlike an artifact id, which the server mints. So a ``PUT`` body legitimately carries the
+slug inside its definition: that is the resource's own field, not a second place to say which
+resource the request addresses. The handler still refuses a definition whose slug disagrees with
+the path, because two disagreeing spellings have no defensible winner.
+
+A committed deletion answers 204 and says nothing. Its *dry run* answers 200 with the same
+:class:`ViewpointPersistResponse` a create or replace returns — a deletion plan is a persist result
+whose ``action`` is ``delete``, and giving it a second identical DTO would only mean two places to
+change. A deletion *refused* because diagrams still pin the definition is not a success with
+``ok: false``; it is a ``viewpoint_referenced`` error carrying the referencers, so the client can
+offer links rather than parse prose.
+"""
+
+from __future__ import annotations
+
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict
+
+
+class _Closed(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
+class ViewpointValidationIssueDto(_Closed):
+    """One validation finding against a definition, addressed at the field that caused it.
+
+    ``expected``/``found`` are always serialized, as null where the finding has no comparison to
+    report: a client that had to distinguish "absent" from "null" would be reading a fourth state
+    that never occurs.
+    """
+
+    severity: Literal["error", "warning"]
+    code: str
+    path: str
+    message: str
+    expected: str | None = None
+    found: str | None = None
+
+
+class ViewpointReferencerDto(_Closed):
+    """A diagram or matrix whose frontmatter pins this viewpoint."""
+
+    artifact_id: str
+    target_kind: Literal["diagram", "matrix"]
+
+
+class ViewpointPersistResponse(_Closed):
+    """The outcome of creating or replacing a definition — or of the dry run that previews it.
+
+    ``ok`` with ``issues`` rather than an error status: the editor's preview is a *successful*
+    validation report, and the same body has to describe both the plan and the committed write for
+    the two to be comparable.
+    """
+
+    ok: bool
+    action: Literal["create", "edit", "delete"]
+    slug: str
+    version: int | None = None
+    dry_run: bool
+    issues: list[ViewpointValidationIssueDto] = []
+    referencers: list[ViewpointReferencerDto] = []

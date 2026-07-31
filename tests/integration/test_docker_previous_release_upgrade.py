@@ -108,6 +108,12 @@ def _historical_engagement(destination: Path) -> None:
     destination.mkdir(parents=True)
     with tarfile.open(fileobj=io.BytesIO(archived.stdout), mode="r:") as archive:
         archive.extractall(destination, filter="data")
+    # The published lineage starts fully current (clean publish), so the historical trait
+    # this test witnesses — a repo from before attribute-schema generation, whose missing
+    # schema startup must regenerate — is reconstructed here, in the same spirit as the
+    # deployment builder's synthesized legacy surfaces (old-format guidance cache,
+    # old-schema signals db).
+    (destination / ".arch-repo" / "schemata" / "attributes.resource.schema.json").unlink()
     _git(destination, "init", "-q")
     _git(destination, "config", "user.email", "acceptance@local.invalid")
     _git(destination, "config", "user.name", "Upgrade Acceptance")

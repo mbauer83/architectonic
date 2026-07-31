@@ -7,8 +7,8 @@ import {
   EntityTaxonomySchema,
   EntityDetailSchema,
   EntityContextSchema,
-  ConnectionListSchema,
-  NeighborsSchema,
+  ConnectionListResponseSchema,
+  DirectNeighborhoodSchema,
   SearchHitSchema,
   DocumentTypesSchema,
   DocumentListSchema,
@@ -46,28 +46,28 @@ import {
   WriteHelpSchema,
   GroupListSchema,
   AuthoringGuidanceSchema,
-  ViewpointProjectionSchema,
-  ViewpointDiagramResultSchema,
-  ViewpointDefinitionListSchema,
-  CriteriaCatalogSchema,
-  ViewpointSummarizeResultSchema,
-  ViewpointPersistResultSchema,
-  ViewpointPinsSchema,
-  ViewpointReferencerListSchema,
-  ViewpointExecutionResultSchema,
 } from '../../domain/schemas'
 import { SyncChangesResultSchema } from '../../domain/schemas-changes'
 import {
-  buildUrl, deleteReq, fetchJson, fetchJsonNotFound, fetchText, fetchWithTimeout,
+  buildUrl, deleteNoContent, deleteReq, fetchJson, fetchJsonNotFound, fetchText, fetchWithTimeout,
   patchJson, postJson, putJson,
 } from './httpTransport'
+import { encodeIdentitySegment } from '../../ui/router/artifactRoutes'
 import { parseMarkdown } from '../../application/MarkdownService'
+import { enterpriseAdminMethods } from './HttpEnterpriseAdminRepository'
+import { viewpointMethods } from './HttpViewpointRepository'
 
-// Viewpoint execution runs bounded graph derivation over the scoped population — legitimately
-// slower than the CRUD/read endpoints above, especially against a cold index. The 10s transport
-// default exists to fail fast on a genuinely hung request; that's the wrong bound for these routes.
-const VIEWPOINT_EXECUTION_TIMEOUT_MS = 60000
+// Timeout budgets are no longer set here. Viewpoint execution and the other derived-graph
+// routes are classified in `routeTimeoutPolicy`, which the transport and the dev proxy both
+// read — a budget passed at the call site could only ever agree with the proxy by coincidence.
 let serverInfoPromise: Promise<unknown> | null = null
+
+// A group is addressed by the pair (axis kind, slug); both segments are encoded, because a slug is
+// author-chosen text and an axis is a vocabulary term neither of which the URL grammar guarantees.
+const groupPath = (kind: string, slug: string, action = ''): string =>
+  `/groups/${encodeIdentitySegment(kind)}/${encodeIdentitySegment(slug)}${action}`
+const groupUrl = (kind: string, slug: string, action = ''): string =>
+  buildUrl(groupPath(kind, slug, action))
 
 // ── Factory ───────────────────────────────────────────────────────────────────
 
@@ -107,7 +107,7 @@ export const makeHttpModelRepository = (): ModelRepository => ({
     }), EntityTaxonomySchema),
 
   getEntity: (id: string) =>
-    fetchJsonNotFound(buildUrl('/entity', { id }), EntityDetailSchema, id).pipe(
+    fetchJsonNotFound(buildUrl(`/entities/${encodeIdentitySegment(id)}`), EntityDetailSchema, id).pipe(
       Effect.flatMap((entity) => {
         if (entity.content_text) {
           return parseMarkdown(entity.content_text, 'model').pipe(
@@ -119,7 +119,9 @@ export const makeHttpModelRepository = (): ModelRepository => ({
     ),
 
   getEntityContext: (id: string) =>
-    fetchJsonNotFound(buildUrl('/entity-context', { id }), EntityContextSchema, id).pipe(
+    fetchJsonNotFound(
+      buildUrl(`/entities/${encodeIdentitySegment(id)}/context`), EntityContextSchema, id,
+    ).pipe(
       Effect.flatMap((context) => {
         if (context.entity.content_text) {
           return parseMarkdown(context.entity.content_text, 'model').pipe(
@@ -131,9 +133,15 @@ export const makeHttpModelRepository = (): ModelRepository => ({
     ),
 
   getConnections: (entityId: string, direction: Direction = 'any', connType?: string) =>
-    fetchJson(buildUrl('/connections', { entity_id: entityId, direction, conn_type: connType }), ConnectionListSchema),
+    fetchJson(
+      buildUrl('/connections', { entity_id: entityId, direction, conn_type: connType }),
+      ConnectionListResponseSchema,
+    ).pipe(Effect.map((response) => response.items)),
   getNeighbors: (entityId: string, maxHops = 1) =>
-    fetchJson(buildUrl('/neighbors', { entity_id: entityId, max_hops: maxHops }), NeighborsSchema),
+    fetchJson(
+      buildUrl(`/entities/${encodeIdentitySegment(entityId)}/neighbors`, { max_hops: maxHops }),
+      DirectNeighborhoodSchema,
+    ).pipe(Effect.map((response) => response.hops)),
   search: (query: string, limit = 20) => {
     const RawSearchResultSchema = Schema.Struct({ query: Schema.String, hits: Schema.Array(Schema.Unknown) })
     const decodeHit = Schema.decodeUnknownEither(SearchHitSchema)
@@ -168,16 +176,16 @@ export const makeHttpModelRepository = (): ModelRepository => ({
     }), DocumentListSchema),
 
   getDocument: (id) =>
-    fetchJsonNotFound(buildUrl('/document', { id }), DocumentDetailSchema, id),
+    fetchJsonNotFound(buildUrl(`/documents/${encodeIdentitySegment(id)}`), DocumentDetailSchema, id),
 
   createDocument: (body) =>
-    postJson(buildUrl('/document'), body, WriteResultSchema),
+    postJson(buildUrl('/documents'), body, WriteResultSchema),
 
   editDocument: (id, body) =>
-    putJson(buildUrl(`/document/${encodeURIComponent(id)}`), body, WriteResultSchema),
+    patchJson(buildUrl(`/documents/${encodeIdentitySegment(id)}`), body, WriteResultSchema),
 
-  deleteDocument: (id, dry_run) =>
-    deleteReq(buildUrl(`/document/${encodeURIComponent(id)}`, { dry_run }), WriteResultSchema),
+  deleteDocument: (id) =>
+    deleteNoContent(buildUrl(`/documents/${encodeIdentitySegment(id)}`)),
 
   artifactSearch: (q, params = {}) =>
     fetchJson(buildUrl('/artifact-search', { q, ...params }), ArtifactSearchResultSchema),
@@ -211,30 +219,49 @@ export const makeHttpModelRepository = (): ModelRepository => ({
     }), DatatypeTypeCatalogSchema),
 
   getDatatypeTypeUsages: (typeId: string) =>
-    fetchJson(buildUrl('/diagram-types/datatype/type-usages', { type_id: typeId }), DatatypeTypeUsagesSchema),
+    fetchJson(
+      buildUrl(`/diagram-types/datatype/types/${encodeIdentitySegment(typeId)}/usages`),
+      DatatypeTypeUsagesSchema,
+    ),
 
   allocateDiagramEntityId: (body) =>
     postJson(buildUrl('/identifiers/allocate'), body, AllocatedIdentifierSchema),
 
   getDiagram: (id: string) =>
-    fetchJsonNotFound(buildUrl('/diagram', { id }), DiagramDetailSchema, id),
+    fetchJsonNotFound(buildUrl(`/diagrams/${encodeIdentitySegment(id)}`), DiagramDetailSchema, id),
 
   getDiagramContext: (id: string) =>
-    fetchJsonNotFound(buildUrl('/diagram-context', { id }), DiagramContextSchema, id),
+    fetchJsonNotFound(buildUrl(`/diagrams/${encodeIdentitySegment(id)}/context`), DiagramContextSchema, id),
 
-  diagramImageUrl: (filename: string) => `/api/diagram-image/${encodeURIComponent(filename)}`,
+  diagramImageUrl: (filename: string) => `/api/diagram-images/${encodeURIComponent(filename)}`,
 
   getDiagramRefs: (sourceId: string, targetId: string) =>
-    fetchJson(buildUrl('/diagram-refs', { source_id: sourceId, target_id: targetId }), DiagramRefsSchema),
+    fetchJson(
+      buildUrl('/diagram-refs', { source_id: sourceId, target_id: targetId }),
+      Schema.Struct({ items: DiagramRefsSchema }),
+    ).pipe(Effect.map((r) => r.items)),
 
-  addConnection: (body) => postJson(buildUrl('/connection'), body, WriteResultSchema),
+  addConnection: (body) => postJson(buildUrl('/connections'), body, WriteResultSchema),
 
-  editConnection: (body) => postJson(buildUrl('/connection/edit'), body, WriteResultSchema),
+  editConnection: (connectionId, body) =>
+    patchJson(buildUrl(`/connections/${encodeIdentitySegment(connectionId)}`), body, WriteResultSchema),
 
-  removeConnection: (body) => postJson(buildUrl('/connection/remove'), body, WriteResultSchema),
+  previewRemoveConnection: (connectionId) =>
+    deleteReq(
+      buildUrl(`/connections/${encodeIdentitySegment(connectionId)}`, { dry_run: true }),
+      WriteResultSchema,
+    ),
+  removeConnection: (connectionId) =>
+    deleteNoContent(
+      buildUrl(`/connections/${encodeIdentitySegment(connectionId)}`, { dry_run: false }),
+    ),
 
-  manageConnectionAssociations: (body) =>
-    postJson(buildUrl('/connection/associate'), body, WriteResultSchema),
+  manageConnectionAssociations: (connectionId, body) =>
+    patchJson(
+      buildUrl(`/connections/${encodeIdentitySegment(connectionId)}/associated-entities`),
+      body,
+      WriteResultSchema,
+    ),
 
   getWriteHelp: () => fetchJson(buildUrl('/write-help'), WriteHelpSchema),
 
@@ -250,35 +277,43 @@ export const makeHttpModelRepository = (): ModelRepository => ({
       target: params.target,
     }), AuthoringGuidanceSchema),
 
-  createEntity: (body) => postJson(buildUrl('/entity'), body, WriteResultSchema),
+  createEntity: (body) => postJson(buildUrl('/entities'), body, WriteResultSchema),
 
-  editEntity: (body) => postJson(buildUrl('/entity/edit'), body, WriteResultSchema),
-  deleteEntity: (body) => postJson(buildUrl('/entity/remove'), body, WriteResultSchema),
+  editEntity: (id, body) =>
+    patchJson(buildUrl(`/entities/${encodeIdentitySegment(id)}`), body, WriteResultSchema),
+  previewDeleteEntity: (id) =>
+    deleteReq(buildUrl(`/entities/${encodeIdentitySegment(id)}`, { dry_run: true }), WriteResultSchema),
+  deleteEntity: (id) =>
+    deleteNoContent(buildUrl(`/entities/${encodeIdentitySegment(id)}`, { dry_run: false })),
 
   getEntitySchemata: (artifactType: string, specialization?: string) =>
     fetchJson(
-      buildUrl('/entity-schemata', {
-        artifact_type: artifactType,
+      buildUrl(`/entity-schemata/${encodeIdentitySegment(artifactType)}`, {
         specialization: specialization || undefined,
       }),
       EntitySchemaInfoSchema,
     ),
 
   getDiagramEntities: (diagramId: string) =>
-    fetchJson(buildUrl('/diagram-entities', { id: diagramId }), Schema.Array(EntitySummarySchema)).pipe(
-      Effect.map((arr) => arr as import('../../domain').EntitySummary[]),
-    ),
+    fetchJson(
+      buildUrl(`/diagrams/${encodeIdentitySegment(diagramId)}/entities`),
+      Schema.Struct({ items: Schema.Array(EntitySummarySchema) }),
+    ).pipe(Effect.map((r) => r.items as import('../../domain').EntitySummary[])),
 
   getDiagramConnections: (diagramId: string) =>
-    fetchJson(buildUrl('/diagram-connections', { id: diagramId }), Schema.Array(DiagramConnectionSchema)).pipe(
-      Effect.map((arr) => arr as import('../../domain').DiagramConnection[]),
-    ),
+    fetchJson(
+      buildUrl(`/diagrams/${encodeIdentitySegment(diagramId)}/connections`),
+      Schema.Struct({ items: Schema.Array(DiagramConnectionSchema) }),
+    ).pipe(Effect.map((r) => r.items as import('../../domain').DiagramConnection[])),
 
   getDiagramSvg: (diagramId: string) =>
-    fetchText(buildUrl('/diagram-svg', { id: diagramId })),
+    fetchText(buildUrl(`/diagrams/${encodeIdentitySegment(diagramId)}/svg`)),
 
   getEntityDisplayItem: (artifactId: string) =>
-    fetchJson(buildUrl('/entity-display-item', { id: artifactId }), EntityDisplayInfoSchema),
+    fetchJson(
+      buildUrl(`/entities/${encodeIdentitySegment(artifactId)}/display-item`),
+      EntityDisplayInfoSchema,
+    ),
 
   searchEntityDisplay: ({ query, limit = 20, diagramType, domains, entityTypes, keywords, cursor, viewpoint }) =>
     fetchJson(buildUrl('/entity-display-search', {
@@ -293,88 +328,49 @@ export const makeHttpModelRepository = (): ModelRepository => ({
     }), DiagramEntityDiscoverySchema),
 
   previewDiagram: (body) =>
-    postJson(buildUrl('/diagram/preview'), body, DiagramPreviewResultSchema),
+    postJson(buildUrl('/diagrams/preview'), body, DiagramPreviewResultSchema),
 
-  createDiagram: (body) => postJson(buildUrl('/diagram'), body, WriteResultSchema),
-  editDiagram: (body) => postJson(buildUrl('/diagram/edit'), body, WriteResultSchema),
-  patchDiagramEntityMetadata: (body) => postJson(buildUrl('/diagram/entity-metadata'), body, WriteResultSchema),
-  deleteDiagram: (body) =>
-    postJson(buildUrl('/diagram/remove'), body, WriteResultSchema),
-  getViewpointProjection: (diagramId: string) =>
-    fetchJson(
-      buildUrl(`/diagrams/${encodeURIComponent(diagramId)}/viewpoint-projection`),
-      ViewpointProjectionSchema,
-      VIEWPOINT_EXECUTION_TIMEOUT_MS,
+  createDiagram: (body) => postJson(buildUrl('/diagrams'), body, WriteResultSchema),
+  editDiagram: (id, body) =>
+    putJson(buildUrl(`/diagrams/${encodeIdentitySegment(id)}`), body, WriteResultSchema),
+  patchDiagramEntityMetadata: (id, classifierId, body) =>
+    patchJson(
+      buildUrl(
+        `/diagrams/${encodeIdentitySegment(id)}/entities/${encodeIdentitySegment(classifierId)}/metadata`,
+      ),
+      body,
+      WriteResultSchema,
     ),
-  listViewpointDefinitions: () =>
-    fetchJson(buildUrl('/viewpoints'), ViewpointDefinitionListSchema).pipe(Effect.map((r) => r.viewpoints)),
-  getCriteriaCatalog: () => fetchJson(buildUrl('/viewpoints/criteria-catalog'), CriteriaCatalogSchema),
-  executeViewpoint: (request) =>
-    postJson(buildUrl('/viewpoints/execute'), request, ViewpointExecutionResultSchema, VIEWPOINT_EXECUTION_TIMEOUT_MS),
-  executeViewpointProjection: (request) =>
-    postJson(buildUrl('/viewpoints/execute-projection'), request, ViewpointProjectionSchema, VIEWPOINT_EXECUTION_TIMEOUT_MS),
-  executeViewpointDiagram: (request) =>
-    postJson(buildUrl('/viewpoints/execute-diagram'), request, ViewpointDiagramResultSchema, VIEWPOINT_EXECUTION_TIMEOUT_MS),
-  summarizeViewpointQuery: (query: unknown) =>
-    postJson(buildUrl('/viewpoints/summarize'), { query }, ViewpointSummarizeResultSchema).pipe(
-      Effect.map((r) => r.summary),
+  previewDeleteDiagram: (id) =>
+    deleteReq(buildUrl(`/diagrams/${encodeIdentitySegment(id)}`, { dry_run: true }), WriteResultSchema),
+  deleteDiagram: (id) =>
+    deleteNoContent(buildUrl(`/diagrams/${encodeIdentitySegment(id)}`, { dry_run: false })),
+  ...viewpointMethods(),
+  syncDiagramToModel: (id, body) =>
+    postJson(
+      buildUrl(`/diagrams/${encodeIdentitySegment(id)}/sync`), body, SyncDiagramToModelResultSchema,
     ),
-  exportViewpointCsv: (body) =>
-    Effect.tryPromise({
-      try: async () => {
-        const resp = await fetchWithTimeout(buildUrl('/viewpoints/export-csv'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        })
-        if (!resp.ok) {
-          const text = await resp.text().catch(() => resp.statusText)
-          throw new NetworkError({ status: resp.status, message: text })
-        }
-        return resp.text()
-      },
-      catch: (e) => (e instanceof NetworkError ? e : new NetworkError({ status: 0, message: String(e) })),
-    }),
-  createViewpointDefinition: (body) => postJson(buildUrl('/viewpoints'), body, ViewpointPersistResultSchema),
-  editViewpointDefinition: (body) => postJson(buildUrl('/viewpoints/edit'), body, ViewpointPersistResultSchema),
-  deleteViewpointDefinition: (body) => postJson(buildUrl('/viewpoints/remove'), body, ViewpointPersistResultSchema),
-  getViewpointReferencers: (slug: string) =>
-    fetchJson(buildUrl(`/viewpoints/${encodeURIComponent(slug)}/referencers`), ViewpointReferencerListSchema).pipe(
-      Effect.map((r) => r.referencers),
-    ),
-  getViewpointPins: () => fetchJson(buildUrl('/viewpoints/pins'), ViewpointPinsSchema),
-  setViewpointPins: (slugs: readonly string[]) =>
-    putJson(buildUrl('/viewpoints/pins'), { slugs: [...slugs] }, ViewpointPinsSchema),
-  syncDiagramToModel: (body) =>
-    postJson(buildUrl('/diagram/sync'), body, SyncDiagramToModelResultSchema),
 
-  setEdgeLabel: (body) =>
-    putJson(buildUrl('/diagram/edge-label'), body, WriteResultSchema),
+  setEdgeLabel: (id, edgeKey, body) =>
+    putJson(
+      buildUrl(`/diagrams/${encodeIdentitySegment(id)}/edges/${encodeIdentitySegment(edgeKey)}/label`),
+      body,
+      WriteResultSchema,
+    ),
 
   getMatrixConfig: (id: string) =>
-    fetchJson(buildUrl('/matrix-config', { id }), MatrixConfigSchema),
+    fetchJson(buildUrl(`/matrices/${encodeIdentitySegment(id)}/config`), MatrixConfigSchema),
 
   previewMatrix: (body: object) =>
-    postJson(buildUrl('/matrix/preview'), body, MatrixPreviewResultSchema),
+    postJson(buildUrl('/matrices/preview'), body, MatrixPreviewResultSchema),
 
   createMatrixDiagram: (body: object) =>
-    postJson(buildUrl('/matrix'), body, WriteResultSchema),
+    postJson(buildUrl('/matrices'), body, WriteResultSchema),
 
-  editMatrixDiagram: (body: object) =>
-    postJson(buildUrl('/matrix/edit'), body, WriteResultSchema),
+  editMatrixDiagram: (id: string, body: object) =>
+    putJson(buildUrl(`/matrices/${encodeIdentitySegment(id)}`), body, WriteResultSchema),
 
-  adminCreateEntity: (body) =>
-    postJson(buildUrl('/entity', undefined, true), body, WriteResultSchema),
-  adminEditEntity: (body) =>
-    postJson(buildUrl('/entity/edit', undefined, true), body, WriteResultSchema),
-  adminDeleteEntity: (body) =>
-    postJson(buildUrl('/entity/remove', undefined, true), body, WriteResultSchema),
-  adminAddConnection: (body) =>
-    postJson(buildUrl('/connection', undefined, true), body, WriteResultSchema),
-  adminRemoveConnection: (body) =>
-    postJson(buildUrl('/connection/remove', undefined, true), body, WriteResultSchema),
-  adminDeleteDiagram: (body) =>
-    postJson(buildUrl('/diagram/remove', undefined, true), body, WriteResultSchema),
+  ...enterpriseAdminMethods(),
 
   planPromotion: (body) =>
     postJson(buildUrl('/promote/plan'), body, PromotionPlanSchema),
@@ -391,16 +387,14 @@ export const makeHttpModelRepository = (): ModelRepository => ({
 
   listGroups: (kind?: string) =>
     fetchJson(buildUrl('/groups', kind ? { kind } : undefined), GroupListSchema),
-  createGroup: (body) =>
-    postJson(buildUrl('/group'), body, Schema.Record({ key: Schema.String, value: Schema.Unknown })),
-  renameGroup: (body) =>
-    putJson(buildUrl('/group'), body, Schema.Record({ key: Schema.String, value: Schema.Unknown })),
-  archiveGroup: (body) =>
-    postJson(buildUrl('/group/archive'), body, Schema.Record({ key: Schema.String, value: Schema.Unknown })),
-  unarchiveGroup: (body) =>
-    postJson(buildUrl('/group/unarchive'), body, Schema.Record({ key: Schema.String, value: Schema.Unknown })),
-  deleteGroup: ({ kind, target, confirm }) =>
-    deleteReq(buildUrl('/group', { kind, target, confirm }), Schema.Record({ key: Schema.String, value: Schema.Unknown })),
-  updateGroup: (body) =>
-    patchJson(buildUrl('/group'), body, Schema.Record({ key: Schema.String, value: Schema.Unknown })),
+  createGroup: (body) => postJson(buildUrl('/groups'), body, Schema.Record({ key: Schema.String, value: Schema.Unknown })),
+  renameGroup: (kind, slug, body) =>
+    postJson(groupUrl(kind, slug, '/rename'), body, Schema.Record({ key: Schema.String, value: Schema.Unknown })),
+  archiveGroup: (kind, slug, body) =>
+    postJson(groupUrl(kind, slug, '/archive'), body, Schema.Record({ key: Schema.String, value: Schema.Unknown })),
+  unarchiveGroup: (kind, slug) =>
+    postJson(groupUrl(kind, slug, '/unarchive'), {}, Schema.Record({ key: Schema.String, value: Schema.Unknown })),
+  deleteGroup: (kind, slug, confirm) =>
+    deleteReq(buildUrl(groupPath(kind, slug), { confirm }), Schema.Record({ key: Schema.String, value: Schema.Unknown })),
+  updateGroup: (kind, slug, body) => patchJson(groupUrl(kind, slug), body, Schema.Record({ key: Schema.String, value: Schema.Unknown })),
 })

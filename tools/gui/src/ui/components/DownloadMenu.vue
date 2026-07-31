@@ -6,7 +6,8 @@ const open = ref(false)
 
 const download = (format: 'png' | 'svg') => {
   open.value = false
-  window.location.href = `/api/diagram-download?id=${encodeURIComponent(props.diagramId)}&format=${format}`
+  window.location.href =
+    `/api/diagrams/${encodeURIComponent(props.diagramId)}/download?format=${format}`
 }
 </script>
 

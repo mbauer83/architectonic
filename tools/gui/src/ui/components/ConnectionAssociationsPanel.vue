@@ -36,8 +36,7 @@ const addAssociation = () => {
   error.value = null
   const c = props.connection
   Effect.runPromise(
-    svc.manageConnectionAssociations({
-      source_entity: c.source, connection_type: c.conn_type, target_entity: c.target,
+    svc.manageConnectionAssociations(c.artifact_id, {
       add_entities: [picked.id], dry_run: false,
     }),
   ).then((r) => {
@@ -58,8 +57,7 @@ const removeAssociation = (entityId: string) => {
   busy.value = true
   const c = props.connection
   Effect.runPromise(
-    svc.manageConnectionAssociations({
-      source_entity: c.source, connection_type: c.conn_type, target_entity: c.target,
+    svc.manageConnectionAssociations(c.artifact_id, {
       remove_entities: [entityId], dry_run: false,
     }),
   ).then((r) => {

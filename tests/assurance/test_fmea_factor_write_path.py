@@ -53,9 +53,22 @@ def archive() -> _RecordingArchive:
     return _RecordingArchive()
 
 
+def _analysis(store: Any, name: str = "Fixture analysis", method: str = "STPA") -> str:
+    """An analysis for the fixture's nodes to belong to.
+
+    Every node records the analysis that produced it, and one without provenance is repair-only —
+    so a fixture minting an unattributed node would exercise that guard rather than the behaviour
+    under test.
+    """
+    return str(store.create_analysis(name, method, tlp="TLP:WHITE"))
+
+
 @pytest.fixture()
 def failure_mode(store: Any) -> str:
-    return str(store.create_node("failure-mode", "Store returns rows from a superseded snapshot"))
+    return str(store.create_node(
+        "failure-mode", "Store returns rows from a superseded snapshot",
+        analysis_id=_analysis(store, "Pump failure modes", "FMEA"),
+    ))
 
 
 def _request(node_id: str, **overrides: object) -> RecordFactorRequest:
@@ -102,7 +115,9 @@ class TestARecordedJudgement:
 class TestWhatIsRefused:
     def test_a_node_that_is_not_a_failure_mode(self, store: Any, archive: Any) -> None:
         """A hazard has no failure factors; rating one would record a judgement about nothing."""
-        hazard = str(store.create_node("hazard", "Renderer reachable with untrusted input"))
+        hazard = str(store.create_node(
+            "hazard", "Renderer reachable with untrusted input", analysis_id=_analysis(store),
+        ))
 
         result = record_factor_assessment(_request(hazard), store=store, archive=archive)
 

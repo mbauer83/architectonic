@@ -45,6 +45,30 @@ jobs:
       - name: Verify generated MCP documentation is in sync with registered tools
         run: uv run tools/docs/generate_mcp_docs.py --check
 
+      - name: Verify the frontend timeout policy is in sync with the route-policy manifest
+        # Same drift class as types.generated.ts above: the document is committed so the frontend
+        # builds without Python, and a stale copy would let the dev proxy sever a request the
+        # client was still waiting on — invisible until it happens in a browser.
+        run: uv run tools/openapi/generate_timeout_policy.py --check
+
+      - name: Set up Node 20 (for the OpenAPI contract check)
+        # The contract check belongs in this job rather than the frontend one: it obtains the
+        # OpenAPI document in-process from the backend application, so it needs uv and the
+        # system dependencies installed above, and adding Node here is the smaller half.
+        uses: actions/setup-node@v5
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: tools/gui/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: tools/gui
+        run: npm ci
+
+      - name: Verify the committed OpenAPI types match the backend, and the decoders match them
+        working-directory: tools/gui
+        run: npm run contracts:check
+
       - name: Verify generated diagram include files match the ontology
         # Sprites and stereotypes are committed but generated, and only arch-init rewrites
         # them — so an ontology change leaves every repository that merely upgraded

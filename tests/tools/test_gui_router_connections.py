@@ -1,8 +1,8 @@
 """Tests for the GUI connections router.
 
-Covers: GET /api/connections, /api/neighbors, /api/search, /api/ontology,
-/api/write-help; POST /api/connection (dry_run), /api/connection/edit,
-/api/connection/remove, /api/connection/associate.
+Covers: GET /api/connections, /api/entities/{artifact_id}/neighbors, /api/search, /api/ontology,
+/api/write-help; POST /api/connections (dry_run), and the connection detail routes —
+PATCH/DELETE by composite id, plus its associated-entities sub-resource.
 """
 
 from __future__ import annotations
@@ -176,11 +176,13 @@ class TestCheckMultiplicity:
 
 class TestGetConnections:
     def test_returns_list(self, sync_client) -> None:
+        """An object with ``items``, not a bare array: a top-level array leaves nowhere to add a
+        total or a cursor without a second breaking change."""
         r = sync_client.get(f"/api/connections?entity_id={SRC_ID}")
         assert r.status_code == 200
-        data = r.json()
-        assert isinstance(data, list)
-        assert len(data) >= 1
+        items = r.json()["items"]
+        assert isinstance(items, list)
+        assert len(items) >= 1
 
     def test_outbound_direction(self, sync_client) -> None:
         r = sync_client.get(f"/api/connections?entity_id={SRC_ID}&direction=outbound")
@@ -196,24 +198,26 @@ class TestGetConnections:
 
     def test_returns_typed_relationship_metadata(self, sync_client) -> None:
         response = sync_client.get(f"/api/connections?entity_id={SRC_ID}&direction=outbound")
-        connection = response.json()[0]
+        connection = response.json()["items"][0]
         assert connection["metadata"] == {"polarity": "positive", "weight": 2}
 
     def test_empty_entity(self, sync_client) -> None:
         r = sync_client.get("/api/connections?entity_id=REQ@9.ZZZ.no-such-entity")
         assert r.status_code == 200
-        assert r.json() == []
+        assert r.json()["items"] == []
 
 
 class TestGetNeighbors:
     def test_basic(self, sync_client) -> None:
-        r = sync_client.get(f"/api/neighbors?entity_id={SRC_ID}")
+        r = sync_client.get(f"/api/entities/{SRC_ID}/neighbors")
         assert r.status_code == 200
         data = r.json()
-        assert isinstance(data, dict)
+        # Tagged by traversal, so a client can tell a hop map from a witnessed relationship list.
+        assert data["traversal"] == "direct"
+        assert isinstance(data["hops"], dict)
 
     def test_max_hops_two(self, sync_client) -> None:
-        r = sync_client.get(f"/api/neighbors?entity_id={SRC_ID}&max_hops=2")
+        r = sync_client.get(f"/api/entities/{SRC_ID}/neighbors?max_hops=2")
         assert r.status_code == 200
 
 
@@ -264,6 +268,11 @@ class TestGetWriteHelp:
 # ── POST endpoints (dry_run) ──────────────────────────────────────────────────
 
 
+def _connection_id(source: str, target: str, conn_type: str = "archimate-association") -> str:
+    """The single-segment composite the read surface emits as a connection's ``artifact_id``."""
+    return f"{source}---{target}@@{conn_type}"
+
+
 class TestAddConnection:
     def test_dry_run_new_connection(self, sync_client) -> None:
         # Use reverse direction — no outgoing file for TGT_ID, so this is new.
@@ -273,7 +282,8 @@ class TestAddConnection:
             "target_entity": SRC_ID,
             "dry_run": True,
         }
-        r = sync_client.post("/api/connection", json=payload)
+        r = sync_client.post("/api/connections", json=payload)
+        # A dry run created nothing, so it reports a plan with 200 rather than a 201.
         assert r.status_code == 200
         data = r.json()
         assert "wrote" in data
@@ -286,7 +296,7 @@ class TestAddConnection:
             "src_multiplicity": "bad-value",
             "dry_run": True,
         }
-        r = sync_client.post("/api/connection", json=payload)
+        r = sync_client.post("/api/connections", json=payload)
         assert r.status_code == 422
 
     def test_specialization_field_accepted_and_passed_through(self, sync_client) -> None:
@@ -303,45 +313,33 @@ class TestAddConnection:
             "specialization": "",
             "dry_run": True,
         }
-        r = sync_client.post("/api/connection", json=payload)
+        r = sync_client.post("/api/connections", json=payload)
         assert r.status_code == 200
         assert "wrote" in r.json()
 
 
 class TestEditConnection:
     def test_dry_run(self, sync_client) -> None:
-        payload = {
-            "source_entity": SRC_ID,
-            "connection_type": "archimate-association",
-            "target_entity": TGT_ID,
-            "description": "Updated description",
-            "dry_run": True,
-        }
-        r = sync_client.post("/api/connection/edit", json=payload)
+        r = sync_client.patch(
+            f"/api/connections/{_connection_id(SRC_ID, TGT_ID)}",
+            json={"description": "Updated description", "dry_run": True},
+        )
         assert r.status_code == 200
         assert "wrote" in r.json()
 
     def test_specialization_field_accepted_and_passed_through(self, sync_client) -> None:
-        payload = {
-            "source_entity": SRC_ID,
-            "connection_type": "archimate-association",
-            "target_entity": TGT_ID,
-            "specialization": "",
-            "dry_run": True,
-        }
-        r = sync_client.post("/api/connection/edit", json=payload)
+        r = sync_client.patch(
+            f"/api/connections/{_connection_id(SRC_ID, TGT_ID)}",
+            json={"specialization": "", "dry_run": True},
+        )
         assert r.status_code == 200
         assert "wrote" in r.json()
 
     def test_typed_metadata_is_accepted_without_clearing_description(self, sync_client) -> None:
-        payload = {
-            "source_entity": SRC_ID,
-            "connection_type": "archimate-association",
-            "target_entity": TGT_ID,
-            "metadata": {"weight": 3, "enabled": True},
-            "dry_run": True,
-        }
-        response = sync_client.post("/api/connection/edit", json=payload)
+        response = sync_client.patch(
+            f"/api/connections/{_connection_id(SRC_ID, TGT_ID)}",
+            json={"metadata": {"weight": 3, "enabled": True}, "dry_run": True},
+        )
         assert response.status_code == 200
         preview = response.json()["content"]
         assert "weight: 3" in preview
@@ -351,26 +349,19 @@ class TestEditConnection:
 
 class TestRemoveConnection:
     def test_dry_run(self, sync_client) -> None:
-        payload = {
-            "source_entity": SRC_ID,
-            "connection_type": "archimate-association",
-            "target_entity": TGT_ID,
-            "dry_run": True,
-        }
-        r = sync_client.post("/api/connection/remove", json=payload)
+        r = sync_client.delete(
+            f"/api/connections/{_connection_id(SRC_ID, TGT_ID)}?dry_run=true"
+        )
+        # A dry run has a plan to report, so it answers 200; a committed removal answers 204.
         assert r.status_code == 200
         assert "wrote" in r.json()
 
 
 class TestAssociateConnection:
     def test_dry_run_add(self, sync_client) -> None:
-        payload = {
-            "source_entity": SRC_ID,
-            "connection_type": "archimate-association",
-            "target_entity": TGT_ID,
-            "add_entities": [TGT_ID],
-            "dry_run": True,
-        }
-        r = sync_client.post("/api/connection/associate", json=payload)
+        r = sync_client.patch(
+            f"/api/connections/{_connection_id(SRC_ID, TGT_ID)}/associated-entities",
+            json={"add_entities": [TGT_ID], "dry_run": True},
+        )
         assert r.status_code == 200
         assert "wrote" in r.json()

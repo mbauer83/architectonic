@@ -37,7 +37,19 @@ class AssembledInputs:
     diagnostics: dict[str, object] = field(default_factory=dict)
 
 
-def component_identity(component: Mapping[str, object]) -> str:
+def source_component_ref(component: Mapping[str, object]) -> str:
+    """The key this BOM uses for a component, for correlating within this one bundle.
+
+    Not an identity in this system's sense, and deliberately not called one. It is whichever of the
+    source document's own keys is present, so it inherits their grammar: a `bom_ref` is arbitrary
+    text and a PURL contains `/`, `?` and `#` by design. Its job is to join a dependency edge and an
+    acquisition result back to the component they describe, inside a single assembly.
+
+    The addressable identity is minted downstream: `_snapshot_lifecycle` derives a segment-safe
+    `SCM@…` per (snapshot, component) and stores this value beside it as `source_component_id`,
+    along with `bom_ref` and `purl`. Naming this one an "identity" was what let the two be confused
+    — see ADR *Resource Addressing: Identity in the Path, Filters in the Query*.
+    """
     return str(component.get("bom_ref") or component.get("purl") or component.get("name") or "")
 
 
@@ -68,9 +80,11 @@ def prepare_components(
     root_ref = str(meta.get("root_bom_ref") or "")
     unmatched: list[dict[str, str]] = []
     for component in parsed_components:
-        component_id = component_identity(component)
+        # The source document's own key, used to correlate within this bundle. The addressable
+        # `SCM@…` id is minted when the snapshot is persisted, from this plus the snapshot id.
+        component_id = source_component_ref(component)
         if not component_id:
-            unmatched.append({"component_id": "", "reason": "component has no identity"})
+            unmatched.append({"component_id": "", "reason": "component has no source reference"})
             continue
         bom_ref = str(component.get("bom_ref") or "")
         directness = (

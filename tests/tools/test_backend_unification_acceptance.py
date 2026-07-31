@@ -63,17 +63,17 @@ def test_assurance_list_nodes_tool_returns_locked_when_store_unavailable(monkeyp
 
 
 def test_backend_exposes_entity_remove_rest_endpoint() -> None:
-    """REST router mounts /api/entity/remove — the same path the CLI targets."""
-    assert "/api/entity/remove" in openapi_paths(_build_app())
+    """REST router mounts the canonical entity detail route — the same one the CLI targets."""
+    assert "/api/entities/{artifact_id}" in openapi_paths(_build_app())
 
 
 def test_backend_exposes_diagram_remove_rest_endpoint() -> None:
-    """REST router mounts /api/diagram/remove — the same path the CLI targets."""
-    assert "/api/diagram/remove" in openapi_paths(_build_app())
+    """REST router mounts the canonical diagram detail route — the one the CLI targets."""
+    assert "/api/diagrams/{artifact_id}" in openapi_paths(_build_app())
 
 
 def test_cli_targets_entity_remove_path(monkeypatch) -> None:
-    """artifact_write_cli constructs /api/entity/remove for delete-entity."""
+    """artifact_write_cli constructs the canonical entity detail route for delete-entity."""
     import json as json_mod  # noqa: PLC0415
 
     from src.infrastructure.write import artifact_write_cli  # noqa: PLC0415
@@ -97,11 +97,11 @@ def test_cli_targets_entity_remove_path(monkeypatch) -> None:
     with tempfile.TemporaryDirectory() as td:
         artifact_write_cli.main(["--repo-root", td, "delete-entity", "ENT@1.abc"])
 
-    assert any(u.endswith("/api/entity/remove") for u in captured)
+    assert any("/api/entities/" in u for u in captured)
 
 
 def test_cli_targets_diagram_remove_path(monkeypatch) -> None:
-    """artifact_write_cli constructs /api/diagram/remove for delete-diagram."""
+    """artifact_write_cli constructs the canonical diagram detail route for delete-diagram."""
     import json as json_mod  # noqa: PLC0415
 
     from src.infrastructure.write import artifact_write_cli  # noqa: PLC0415
@@ -125,7 +125,7 @@ def test_cli_targets_diagram_remove_path(monkeypatch) -> None:
     with tempfile.TemporaryDirectory() as td:
         artifact_write_cli.main(["--repo-root", td, "delete-diagram", "DIA@1.abc"])
 
-    assert any(u.endswith("/api/diagram/remove") for u in captured)
+    assert any("/api/diagrams/" in u for u in captured)
 
 
 # --- Single-writer: write queue imported by all mutation surfaces ---

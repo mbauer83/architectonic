@@ -209,20 +209,23 @@ exposure-filtered before aggregation.
 
 | Endpoint | Method | Purpose |
 |---|---|---|
-| `/api/assurance/security-ingest` | POST | Ingest a supplied BOM (+ optional advisories) as a new active snapshot |
-| `/api/assurance/security-snapshot-delete` | POST | Delete one snapshot, or every snapshot for an anchor |
-| `/api/assurance/security-metrics` | GET | Posture metrics for one anchor, from its active snapshot plus VEX |
-| `/api/assurance/security-components` | GET | Components of the anchor's active snapshot |
-| `/api/assurance/security-findings` | GET | Vulnerability findings, optionally scoped to one component |
+| `/api/assurance/arch-artifacts/{id}/security-snapshots` | POST | Ingest a supplied BOM (+ optional advisories) as a new active snapshot |
+| `/api/assurance/arch-artifacts/{id}/security-snapshots` | DELETE | Delete every snapshot for that anchor |
+| `/api/assurance/security-snapshots/{snapshot_id}` | DELETE | Delete one snapshot |
+| `/api/assurance/arch-artifacts/{id}/security-metrics` | GET | Posture metrics for one anchor, from its active snapshot plus VEX |
+| `/api/assurance/arch-artifacts/{id}/security-components` | GET | Components of the anchor's active snapshot |
+| `/api/assurance/arch-artifacts/{id}/security-findings` | GET | Vulnerability findings, optionally scoped to one component |
+| `/api/assurance/arch-artifacts/{id}/lens` | GET | Assurance findings that concern one architecture artifact |
 | `/api/assurance/security-stats` | GET | Snapshot aggregate counts across the store |
-| `/api/assurance/vulnerability-impact` | GET | Every entity currently affected by one vulnerability |
-| `/api/assurance/vex` | POST | Record a VEX assessment |
+| `/api/assurance/vulnerabilities/{identifier}/impact` | GET | Every entity currently affected by one vulnerability |
+| `/api/assurance/arch-artifacts/{id}/vex-assessments` | GET/POST | List or record VEX assessments for that anchor |
 
 Status codes worth knowing: `423` the store is locked; `403` signal mutations are
 denied by the deployment's capability predicate; `409` a reused `request_id` with a
-different payload (nothing was written); `404` on `vulnerability-impact` means the
+different payload (nothing was written); `404` on a vulnerability's impact means the
 identifier is unknown to the store — distinct from a known vulnerability that
-currently affects nothing, which is `200` with an empty list.
+currently affects nothing, which is `200` with an empty list. Every failure carries the
+shared error envelope: `{"detail": {"code", "message", "details", "request_id"}}`.
 
 The legacy connector endpoints (`bom/import`, `bom/components`,
 `vulnerabilities/import`, `vulnerabilities`) were removed when

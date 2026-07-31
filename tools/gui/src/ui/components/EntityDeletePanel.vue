@@ -9,7 +9,6 @@ import { computed, inject, ref } from 'vue'
 import { Effect } from 'effect'
 import { modelServiceKey } from '../keys'
 import { readErrorMessage } from '../lib/errors'
-import type { WriteResult } from '../../domain'
 
 const props = defineProps<{
   entityId: string
@@ -19,7 +18,9 @@ const props = defineProps<{
 const emit = defineEmits<{ deleted: [] }>()
 
 const svc = inject(modelServiceKey)!
-const deleteFn = computed(() => (props.isGlobalEntity && props.adminMode) ? svc.adminDeleteEntity : svc.deleteEntity)
+const admin = computed(() => props.isGlobalEntity && props.adminMode)
+const previewFn = computed(() => admin.value ? svc.previewAdminDeleteEntity : svc.previewDeleteEntity)
+const deleteFn = computed(() => admin.value ? svc.adminDeleteEntity : svc.deleteEntity)
 
 const confirmDelete = ref(false)
 const deleteBusy = ref(false)
@@ -31,7 +32,7 @@ const requestDelete = () => {
   deleteBusy.value = true
   deleteError.value = null
   deletePreview.value = null
-  void Effect.runPromise(deleteFn.value({ artifact_id: props.entityId, dry_run: true })).then((r: WriteResult) => {
+  void Effect.runPromise(previewFn.value(props.entityId)).then((r) => {
     deleteBusy.value = false
     deletePreview.value = { content: r.content, warnings: [...r.warnings] }
   }).catch((reason: unknown) => {
@@ -50,13 +51,11 @@ const cancel = () => {
 const executeDelete = () => {
   deleteBusy.value = true
   deleteError.value = null
-  void Effect.runPromise(deleteFn.value({ artifact_id: props.entityId, dry_run: false })).then((r: WriteResult) => {
+  // A committed deletion answers 204: there is no body to inspect, so success *is* the absence of
+  // an error. The previous shape asked whether the write happened, which a 204 no longer says.
+  void Effect.runPromise(deleteFn.value(props.entityId)).then(() => {
     deleteBusy.value = false
-    if (r.wrote) {
-      emit('deleted')
-    } else {
-      deleteError.value = r.content ?? 'Delete failed'
-    }
+    emit('deleted')
   }).catch((reason: unknown) => {
     deleteBusy.value = false
     deleteError.value = readErrorMessage(reason)

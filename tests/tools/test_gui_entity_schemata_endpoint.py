@@ -1,4 +1,4 @@
-"""REST tests for ``GET /api/entity-schemata``: the authoring form's attribute schema
+"""REST tests for ``GET /api/entity-schemata/{artifact_type}``: the authoring form's attribute schema
 must be the *effective* schema — base type merged with the selected specialization's
 contributed attributes — matching what the verifier validates against."""
 
@@ -51,7 +51,7 @@ class TestEntitySchemataEndpoint:
             "attributes.collaboration.schema.json",
             {"properties": {"scope": {"type": "string"}}, "required": ["scope"]},
         )
-        resp = client.get("/api/entity-schemata", params={"artifact_type": "collaboration"})
+        resp = client.get("/api/entity-schemata/collaboration")
         assert resp.status_code == 200
         body = resp.json()
         assert body["properties"] == ["scope"]
@@ -73,8 +73,8 @@ class TestEntitySchemataEndpoint:
             {"properties": {"cadence": {"type": "string", "enum": ["weekly", "monthly"]}}, "required": ["cadence"]},
         )
         resp = client.get(
-            "/api/entity-schemata",
-            params={"artifact_type": "collaboration", "specialization": "business-collaboration"},
+            "/api/entity-schemata/collaboration",
+            params={"specialization": "business-collaboration"},
         )
         assert resp.status_code == 200
         body = resp.json()
@@ -96,12 +96,12 @@ class TestEntitySchemataEndpoint:
             "attributes.collaboration.business-collaboration.schema.json",
             {"properties": {"cadence": {"type": "string"}}},
         )
-        resp = client.get("/api/entity-schemata", params={"artifact_type": "collaboration"})
+        resp = client.get("/api/entity-schemata/collaboration")
         body = resp.json()
         assert body["properties"] == ["scope"]
 
     def test_no_schema_at_all_is_free_schema(self, client) -> None:
-        resp = client.get("/api/entity-schemata", params={"artifact_type": "requirement"})
+        resp = client.get("/api/entity-schemata/requirement")
         assert resp.status_code == 200
         body = resp.json()
         assert body["schema"] is None
@@ -116,7 +116,7 @@ class TestEntitySchemataEndpoint:
             "attributes.collaboration.schema.json",
             {"properties": {"tags": {"type": "array", "items": {"type": "string", "enum": ["x", "y"]}}}},
         )
-        body = client.get("/api/entity-schemata", params={"artifact_type": "collaboration"}).json()
+        body = client.get("/api/entity-schemata/collaboration").json()
         tags = body["descriptors"]["tags"]
         assert tags["type"] == "array"
         assert tags["items"] == {"type": "string", "enum": ["x", "y"]}
@@ -125,7 +125,7 @@ class TestEntitySchemataEndpoint:
         _write_schema(
             engagement_root, "attributes.collaboration.schema.json", {"properties": {"scope": {"type": "string"}}}
         )
-        body = client.get("/api/entity-schemata", params={"artifact_type": "collaboration"}).json()
+        body = client.get("/api/entity-schemata/collaboration").json()
         assert body["conflicts"] == []
         assert body["quarantined"] is False
 
@@ -141,8 +141,8 @@ class TestEntitySchemataEndpoint:
             {"properties": {"scope": {"type": "integer"}}},
         )
         body = client.get(
-            "/api/entity-schemata",
-            params={"artifact_type": "collaboration", "specialization": "business-collaboration"},
+            "/api/entity-schemata/collaboration",
+            params={"specialization": "business-collaboration"},
         ).json()
         assert body["quarantined"] is True
         assert any("scope" in message for message in body["conflicts"])
@@ -167,7 +167,7 @@ class TestQuarantineHoldsWithoutTheFlag:
     def test_create_onto_a_quarantined_pair_is_refused_over_rest(self, client, engagement_root: Path) -> None:
         self._conflicting_pair(engagement_root)
         resp = client.post(
-            "/api/entity",
+            "/api/entities",
             json={
                 "artifact_type": "collaboration",
                 "name": "Unaware Client Collaboration",
@@ -186,8 +186,8 @@ class TestQuarantineHoldsWithoutTheFlag:
         )
         clear_schema_cache()
         resp = client.post(
-            "/api/entity",
+            "/api/entities",
             json={"artifact_type": "collaboration", "name": "Clean Collaboration", "dry_run": False},
         )
-        assert resp.status_code == 200
+        assert resp.status_code == 201
         assert resp.json()["wrote"] is True

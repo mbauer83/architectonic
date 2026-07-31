@@ -63,7 +63,7 @@ def test_a_semantic_edit_is_visible_to_the_very_next_execution(client) -> None:
         **definition, "version": 2,
         "scope": {"entity_types": ["application-component"]},
     }
-    edit_resp = client.post("/api/viewpoints/edit", json={"definition": edited, "dry_run": False})
+    edit_resp = client.put("/api/viewpoints/edited", json={"definition": edited, "dry_run": False})
     assert edit_resp.json()["ok"] is True, edit_resp.json()
 
     execute_resp = client.post("/api/viewpoints/execute", json={"slug": "edited"})

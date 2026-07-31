@@ -15,7 +15,7 @@ dry_run=True (default) reports every removal without touching any files.
 Entry points:
   - CLI:  uv run python -m src.infrastructure.write.artifact_write.cleanup_broken_refs
           [--repo-root ...] [--enterprise-root ...] [--execute]
-  - REST: POST /api/cleanup-broken-refs  (GUI router, engagement only — not MCP)
+  - REST: POST /api/connections/cleanup-broken-refs  (GUI router, engagement only — not MCP)
 """
 
 from __future__ import annotations

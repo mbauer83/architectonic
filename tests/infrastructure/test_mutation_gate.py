@@ -280,7 +280,7 @@ class TestHttpSurface:
 
             with unittest.mock.patch.object(gui_state, "maybe_engagement_root", lambda: engagement):
                 with pytest.raises(HTTPException) as exc_info:
-                    authorized_write(("POST", "/api/entity"), lambda: None)
+                    authorized_write("entities_create_entity", lambda: None)
             return exc_info.value
         finally:
             gate.clear_block()

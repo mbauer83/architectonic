@@ -8,7 +8,7 @@
 import { computed, inject, ref } from 'vue'
 import { Exit } from 'effect'
 import { modelServiceKey } from '../keys'
-import type { ConnectionRecord, DiagramRefs, WriteResult } from '../../domain'
+import type { ConnectionRecord, DiagramRefs } from '../../domain'
 import type { RepoError } from '../../ports/ModelRepository'
 import { useQuery } from '../composables/useQuery'
 import { useMutation } from '../composables/useMutation'
@@ -20,13 +20,11 @@ const svc = inject(modelServiceKey)!
 
 const removingConn = ref<ConnectionRecord | null>(null)
 const diagramRefsQuery = useQuery<DiagramRefs, RepoError>()
-const removeMutation = useMutation<WriteResult, RepoError>()
+// `void`, because a committed removal answers 204 and has nothing to report. There is no `wrote`
+// flag to read any more, so a failure is an error and success is silence.
+const removeMutation = useMutation<void, RepoError>()
 
-const removeError = computed(() =>
-  removeMutation.result.value?.wrote === false
-    ? (removeMutation.result.value.content ?? 'Verification failed')
-    : removeMutation.errorMessage.value,
-)
+const removeError = computed(() => removeMutation.errorMessage.value)
 
 const requestRemove = (c: ConnectionRecord) => {
   removingConn.value = c
@@ -44,13 +42,10 @@ const confirmRemove = () => {
   if (!removingConn.value) return
   const c = removingConn.value
   const removeFn = props.adminMode ? svc.adminRemoveConnection : svc.removeConnection
-  void removeMutation.run(removeFn({
-    source_entity: c.source,
-    connection_type: c.conn_type,
-    target_entity: c.target,
-    dry_run: false,
-  })).then((exit) => Exit.match(exit, {
-    onSuccess: (r) => { if (r.wrote) { removingConn.value = null; emit('removed') } },
+  // A committed removal answers 204: success is the absence of an error, not a `wrote` flag the
+  // response no longer carries.
+  void removeMutation.run(removeFn(c.artifact_id)).then((exit) => Exit.match(exit, {
+    onSuccess: () => { removingConn.value = null; emit('removed') },
     onFailure: () => {},
   }))
 }

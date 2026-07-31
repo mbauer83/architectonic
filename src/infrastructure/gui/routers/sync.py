@@ -102,7 +102,8 @@ async def save_engagement(body: SaveBody) -> dict:
         return commit
 
     try:
-        commit = await s.authorized_write_async(("POST", "/api/sync/engagement/save"), _save_and_push)
+        commit = await s.authorized_write_async(
+            "sync_save_engagement", _save_and_push)
         sync_status_cache.invalidate_sync_status_cache(repo=eng_root)
         await event_bus.publish(
             {
@@ -146,7 +147,8 @@ async def save_enterprise(body: SaveBody) -> dict:
         )
 
     try:
-        commit = await s.authorized_write_async(("POST", "/api/sync/enterprise/save"), _branch_and_commit)
+        commit = await s.authorized_write_async(
+            "sync_save_enterprise", _branch_and_commit)
         sync_state = enterprise_sync_state.load(ent_root)
         sync_status_cache.invalidate_sync_status_cache(repo=ent_root)
         await event_bus.publish(
@@ -189,7 +191,7 @@ async def submit_enterprise() -> dict:
 
     try:
         branch = await s.authorized_write_async(
-            ("POST", "/api/sync/enterprise/submit"), enterprise_git_ops.push_enterprise_branch, ent_root
+            "sync_submit_enterprise", enterprise_git_ops.push_enterprise_branch, ent_root
         )
         sync_status_cache.invalidate_sync_status_cache(repo=ent_root)
         await event_bus.publish(
@@ -228,7 +230,7 @@ async def withdraw_enterprise(body: WithdrawBody) -> dict:
 
     try:
         branch = await s.authorized_write_async(
-            ("POST", "/api/sync/enterprise/withdraw"), enterprise_git_ops.abandon_enterprise_branch, ent_root
+            "sync_withdraw_enterprise", enterprise_git_ops.abandon_enterprise_branch, ent_root
         )
         sync_status_cache.invalidate_sync_status_cache(repo=ent_root)
         await event_bus.publish(

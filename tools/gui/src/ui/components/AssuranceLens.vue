@@ -17,7 +17,7 @@ const result = ref<LensResult | null>(null)
 
 async function load(id: string) {
   try {
-    const resp = await fetch(`/api/assurance/arch-lens/${encodeURIComponent(id)}`)
+    const resp = await fetch(`/api/assurance/arch-artifacts/${encodeURIComponent(id)}/lens`)
     if (resp.ok) {
       result.value = parseLensResponse(await resp.json() as RawLensResponse)
     }

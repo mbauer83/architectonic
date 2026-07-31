@@ -8,7 +8,7 @@ Covers:
 - Verifier flags dangling edge-labels overrides (E410)
 - Per-diagram independence: overriding a label in one diagram does not affect another
 - MCP artifact_edit_diagram passes edge_labels through to service
-- REST PUT /api/diagram/edge-label calls set_diagram_edge_label
+- REST PUT /api/diagrams/{artifact_id}/edges/{edge_key}/label calls set_diagram_edge_label
 """
 
 from __future__ import annotations
@@ -541,7 +541,8 @@ def test_mcp_edge_labels_merges_with_existing(repo: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# REST adapter: PUT /api/diagram/edge-label delegates to set_diagram_edge_label
+# REST adapter: PUT /api/diagrams/{artifact_id}/edges/{edge_key}/label delegates to
+# set_diagram_edge_label
 # ---------------------------------------------------------------------------
 
 
@@ -558,8 +559,9 @@ def test_rest_edge_label_endpoint_calls_service(repo: Path) -> None:
     repo_obj = ArtifactRepository(shared_artifact_index(repo))
     gui_state.init_state(repo_obj, repo, None)
 
-    body = SetEdgeLabelBody(artifact_id=diag_id, edge_key="APP_A:APP_B", label="via REST", dry_run=True)
-    result = set_edge_label_gui(body)
+    # Diagram and edge are path identity; the body carries only the label.
+    body = SetEdgeLabelBody(label="via REST", dry_run=True)
+    result = set_edge_label_gui(diag_id, "APP_A:APP_B", body)
     assert "wrote" in result
 
 

@@ -71,8 +71,8 @@ class _MemStore:
         """The entity under any id form the caller has — short, stale-slug, or full.
 
         Canonicalisation belongs beside `canonical_id`, not repeated at each reader. Spelling the
-        two steps out per call site is what let three readers omit the first one, so `/api/entity`
-        answered for a short id while `/api/entity-context` reported it absent.
+        two steps out per call site is what let three readers omit the first one, so the entity read
+        answered for a short id while its context read reported it absent.
         """
         return self.entities.get(self.canonical_id(artifact_id))
 

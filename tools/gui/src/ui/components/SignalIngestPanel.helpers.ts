@@ -6,6 +6,8 @@
  * would let the GUI offer an ingest the API refuses (or hide one it would accept).
  */
 
+import { describeEnvelope } from '../lib/errors'
+
 export interface IngestSubmission {
   bomText: string
   vulnText: string
@@ -75,6 +77,11 @@ export const parseSubmission = (submission: IngestSubmission): ParsedIngest => {
  * reused request id — rather than as a generic failure.
  */
 export const describeOutcome = (status: number, body: Record<string, unknown>): string => {
+  // A failed ingest now answers the shared error envelope rather than a body with a `status` word,
+  // so the envelope is read first — its message already names the conflict or the rejected field.
+  if (typeof body['detail'] === 'object' && body['detail'] !== null) {
+    return describeEnvelope(body, status)
+  }
   const outcome = asText(body['status'])
   const num = (key: string): number => {
     const value = body[key]

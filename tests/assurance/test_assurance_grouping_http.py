@@ -22,8 +22,9 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from fastapi import FastAPI
 from starlette.testclient import TestClient
+
+from tests.support.api_app import build_api_app
 
 pytest.importorskip("sqlcipher3", reason="sqlcipher3 not installed")
 
@@ -95,8 +96,7 @@ def _client(store: Any, ceiling: str, monkeypatch: pytest.MonkeyPatch) -> TestCl
     from src.infrastructure.gui.routers.assurance import router
 
     ctx = _RealContext(store, ceiling)
-    app = FastAPI()
-    app.include_router(router)
+    app = build_api_app(router)
     monkeypatch.setattr(_HTTP_CTX, lambda: ctx)
     monkeypatch.setattr(_READ_CTX, lambda: ctx)
     client = TestClient(app, raise_server_exceptions=False)
@@ -229,14 +229,31 @@ class TestParticipationRoutes:
         store, ids = seeded
         client = _client(store, "TLP:RED", monkeypatch)
 
-        added = client.post(
-            f"/api/assurance/analyses/{ids['fmea']}/members", json={"node_id": ids["component"]}
+        added = client.put(
+            f"/api/assurance/analyses/{ids['fmea']}/participating-nodes/{ids['component']}"
         )
-        assert added.status_code == 200
+        assert added.status_code == 204
+        assert added.content == b""
 
-        listed = client.get(f"/api/assurance/analyses/{ids['fmea']}/members")
+        listed = client.get(f"/api/assurance/analyses/{ids['fmea']}/participating-nodes")
         assert listed.status_code == 200
-        assert listed.json()["member_node_ids"] == [ids["component"]]
+        assert listed.json()["participating_node_ids"] == [ids["component"]]
+
+    def test_asserting_the_same_participation_twice_is_indistinguishable(
+        self, seeded, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:  # type: ignore[no-untyped-def]
+        """PUT on the relation: it either holds or it does not, so the second assertion is the
+        first one's outcome and must not produce a second row."""
+        store, ids = seeded
+        client = _client(store, "TLP:RED", monkeypatch)
+        url = f"/api/assurance/analyses/{ids['fmea']}/participating-nodes/{ids['component']}"
+
+        assert client.put(url).status_code == 204
+        assert client.put(url).status_code == 204
+
+        listed = client.get(f"/api/assurance/analyses/{ids['fmea']}/participating-nodes").json()
+        assert listed["participating_node_ids"] == [ids["component"]]
+        assert listed["count"] == 1
 
     def test_participation_leaves_authorship_alone(
         self, seeded, monkeypatch: pytest.MonkeyPatch,
@@ -244,8 +261,8 @@ class TestParticipationRoutes:
         """The FMEA reasons over the STPA's component; it does not acquire or copy it."""
         store, ids = seeded
         client = _client(store, "TLP:RED", monkeypatch)
-        client.post(
-            f"/api/assurance/analyses/{ids['fmea']}/members", json={"node_id": ids["component"]}
+        client.put(
+            f"/api/assurance/analyses/{ids['fmea']}/participating-nodes/{ids['component']}"
         )
 
         detail = client.get(f"/api/assurance/nodes/{ids['component']}").json()
@@ -253,35 +270,43 @@ class TestParticipationRoutes:
         assert [a["analysis_id"] for a in detail["participates_in"]] == [ids["fmea"]]
         assert detail["node"]["analysis_id"] == ids["stpa"]
 
-    def test_a_node_authored_here_does_not_report_itself_as_borrowed(
+    def test_a_node_cannot_participate_in_the_analysis_that_authored_it(
         self, seeded, monkeypatch: pytest.MonkeyPatch,
     ) -> None:  # type: ignore[no-untyped-def]
+        """Refused, not deduplicated. Authorship already draws the node in; a participation row
+        beside it would double-count it in the working set and let a later removal look like a
+        detachment that authorship does not permit."""
         store, ids = seeded
         client = _client(store, "TLP:RED", monkeypatch)
-        # Membership in the authoring analysis is redundant, and some wizard will write it.
-        client.post(
-            f"/api/assurance/analyses/{ids['stpa']}/members", json={"node_id": ids["component"]}
+
+        resp = client.put(
+            f"/api/assurance/analyses/{ids['stpa']}/participating-nodes/{ids['component']}"
         )
 
-        detail = client.get(f"/api/assurance/nodes/{ids['component']}").json()
-        assert detail["participates_in"] == []
+        assert resp.status_code == 409
+        detail = resp.json()["detail"]
+        assert detail["code"] == "invalid_participation"
+        assert detail["details"] == {
+            "node_id": ids["component"], "analysis_id": ids["stpa"],
+        }
+        assert client.get(f"/api/assurance/nodes/{ids['component']}").json()["participates_in"] == []
 
     def test_removing_a_member_is_idempotent_over_http(
         self, seeded, monkeypatch: pytest.MonkeyPatch,
     ) -> None:  # type: ignore[no-untyped-def]
         store, ids = seeded
         client = _client(store, "TLP:RED", monkeypatch)
-        url = f"/api/assurance/analyses/{ids['fmea']}/members/{ids['component']}"
+        url = f"/api/assurance/analyses/{ids['fmea']}/participating-nodes/{ids['component']}"
 
-        assert client.delete(url).status_code == 200
-        assert client.delete(url).status_code == 200
+        assert client.delete(url).status_code == 204
+        assert client.delete(url).status_code == 204
 
     def test_an_above_ceiling_node_cannot_be_drawn_in(
         self, seeded, monkeypatch: pytest.MonkeyPatch,
     ) -> None:  # type: ignore[no-untyped-def]
         store, ids = seeded
-        resp = _client(store, "TLP:GREEN", monkeypatch).post(
-            f"/api/assurance/analyses/{ids['fmea']}/members", json={"node_id": ids["secret_node"]}
+        resp = _client(store, "TLP:GREEN", monkeypatch).put(
+            f"/api/assurance/analyses/{ids['fmea']}/participating-nodes/{ids['secret_node']}"
         )
         assert resp.status_code == 404
 
@@ -294,9 +319,9 @@ class TestParticipationRoutes:
         store.add_analysis_member(ids["fmea"], ids["secret_node"])
 
         body = _client(store, "TLP:GREEN", monkeypatch).get(
-            f"/api/assurance/analyses/{ids['fmea']}/members"
+            f"/api/assurance/analyses/{ids['fmea']}/participating-nodes"
         ).json()
-        assert body["member_node_ids"] == [ids["component"]]
+        assert body["participating_node_ids"] == [ids["component"]]
 
     def test_participation_in_an_above_ceiling_analysis_is_not_reported(
         self, seeded, monkeypatch: pytest.MonkeyPatch,
@@ -316,7 +341,7 @@ class TestParticipationRoutes:
     ) -> None:  # type: ignore[no-untyped-def]
         store, ids = seeded
         resp = _client(store, "TLP:GREEN", monkeypatch).get(
-            f"/api/assurance/analyses/{ids['secret_analysis']}/members"
+            f"/api/assurance/analyses/{ids['secret_analysis']}/participating-nodes"
         )
         assert resp.status_code == 404
 

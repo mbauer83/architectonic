@@ -59,10 +59,10 @@ Legend:
 | Register architecture reference | — | — | register | — | — | Y | N | Y | N |
 | Model and bind architecture gap | — | — | task spec only | — | — | Y | N | N | N |
 | Promotion preflight | promotion preflight | — | preflight | — | — | Y | P | N | P |
-| Ingest security signals | ingest command | — | ingest | security-ingest | entity page + wizard | S | Y | Y | N |
-| Delete signal snapshot | — | — | delete | security-snapshot-delete | — | S | Y | Y | N |
+| Ingest security signals | ingest command | — | ingest | security-snapshots | entity page + wizard | S | Y | Y | N |
+| Delete signal snapshot | — | — | delete | security-snapshots | — | S | Y | Y | N |
 | Component vulnerabilities | signals read | list | — | security-findings | findings view | S | Y | N | N |
-| Vulnerability impact | impact use case | impact | — | vulnerability-impact | impact view | S | Y | N | N |
+| Vulnerability impact | impact use case | impact | — | impact | impact view | S | Y | N | N |
 | Reconcile AI-BOM | — | — | reconcile | — | — | N | N/A | N | N |
 
 `P` for node reads means list/read filter node records, but a direct forbidden

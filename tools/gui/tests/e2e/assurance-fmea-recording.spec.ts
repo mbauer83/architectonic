@@ -90,7 +90,9 @@ test('an occurrence recorded from the matrix reaches the store and comes back', 
   const { analysisId, failureModeId } = await stage(request)
 
   try {
-    await page.goto('/assurance/fmea')
+    // The matrix is a projection of one analysis, so the page is opened scoped — unscoped it
+    // shows an analysis picker rather than a grid.
+    await page.goto(`/assurance/fmea?analysis=${encodeURIComponent(analysisId)}`)
     await expect(page.getByRole('heading', { name: 'FMEA Matrix' })).toBeVisible()
 
     const opener = page.getByRole('button', { name: 'Record occurrence' }).first()
@@ -115,7 +117,8 @@ test('an occurrence recorded from the matrix reaches the store and comes back', 
     // Read back from the API, not from the page: the point is that the judgement was stored, and a
     // form that cleared itself optimistically would look identical here.
     await expect.poll(async () => {
-      const resp = await request.get('/api/assurance/fmea')
+      const resp = await request.get(
+        `/api/assurance/analyses/${encodeURIComponent(analysisId)}/matrix`)
       const body = await resp.json() as {
         rows: { cells: { node_id: string | null; factors: Record<string, { value: string | null }> }[] }[]
       }

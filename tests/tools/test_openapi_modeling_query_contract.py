@@ -33,7 +33,11 @@ _IN_SCOPE_ROUTER_MODULES = [
 
 # Endpoints that legitimately return a media body (image/SVG/file), not JSON — a JSON
 # response_model does not apply; they still carry a tag + summary.
-_MEDIA_PATHS = {"/api/diagram-image/{filename}", "/api/diagram-svg", "/api/diagram-download"}
+_MEDIA_PATHS = {
+    "/api/diagram-images/{filename}",
+    "/api/diagrams/{artifact_id}/svg",
+    "/api/diagrams/{artifact_id}/download",
+}
 
 # Write operations declare the mutation-gate / authorization error contract.
 _WRITE_STATUSES = {"400", "403", "409", "423"}
@@ -76,13 +80,23 @@ def test_every_operation_has_a_tag_and_summary(spec: dict) -> None:
     assert missing == [], f"operations missing a tag or summary: {missing}"
 
 
-def test_every_operation_documents_its_200_body(spec: dict) -> None:
+def test_every_operation_documents_its_success_body(spec: dict) -> None:
+    """Every operation says what it answers with — including saying that it answers with nothing.
+
+    A ``204`` satisfies this: it is a declared success status that may not carry a body, which is a
+    contract rather than an omission. A ``201`` must document its body like a ``200``, because a
+    create answers with the resource it made.
+    """
     missing = [
         f"{method.upper()} {path}"
         for path, method, op in _operations(spec)
-        if path not in _MEDIA_PATHS and "content" not in op.get("responses", {}).get("200", {})
+        if path not in _MEDIA_PATHS
+        and "204" not in op.get("responses", {})
+        and not any(
+            "content" in op.get("responses", {}).get(status, {}) for status in ("200", "201")
+        )
     ]
-    assert missing == [], f"operations without a documented 200 body: {missing}"
+    assert missing == [], f"operations without a documented success body: {missing}"
 
 
 def test_write_operations_declare_the_error_contract(spec: dict) -> None:

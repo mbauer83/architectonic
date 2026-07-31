@@ -64,7 +64,7 @@ function goToStep(key: string) {
 async function loadComponents() {
   if (!hasAnchor.value) return
   const resp = await fetch(
-    `/api/assurance/security-components?anchor_entity_id=${encodeURIComponent(anchorId.value)}`)
+    `/api/assurance/arch-artifacts/${encodeURIComponent(anchorId.value)}/security-components`)
   if (resp.status === 423) { error.value = 'Assurance signals are not available (store locked).'; return }
   if (!resp.ok) { components.value = []; return }
   const body = await resp.json() as { components: BomComponent[]; withheld?: number }
@@ -75,7 +75,7 @@ async function loadComponents() {
 async function loadVulns() {
   if (!hasAnchor.value) return
   const resp = await fetch(
-    `/api/assurance/security-findings?anchor_entity_id=${encodeURIComponent(anchorId.value)}`)
+    `/api/assurance/arch-artifacts/${encodeURIComponent(anchorId.value)}/security-findings`)
   if (resp.status === 423) { error.value = 'Assurance signals are not available (store locked).'; return }
   if (!resp.ok) { vulns.value = []; return }
   // The findings surface names its fields for the snapshot model; map them onto the

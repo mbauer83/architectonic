@@ -21,11 +21,7 @@ from pydantic import BaseModel
 from src.application.entity_type_predicates import is_internal_entity_type
 from src.application.verification.artifact_verifier_types import VALID_STATUSES
 from src.application.viewpoints.persist_definition import (
-    PersistAction,
-    ViewpointPersistResult,
-    delete_viewpoint_definition,
     find_viewpoint_referencers,
-    persist_viewpoint_definition,
 )
 from src.application.viewpoints.pins import load_pinned_slugs, save_pinned_slugs
 from src.application.viewpoints.reference_report_cache import cached_reference_report
@@ -38,7 +34,6 @@ from src.config.viewpoints_settings import (
 from src.domain.viewpoints.viewpoint_condition_validation import RegistrySnapshot
 from src.domain.viewpoints.viewpoint_criteria import RESERVED_CONNECTION_PATHS, RESERVED_ENTITY_PATHS
 from src.domain.viewpoints.viewpoint_lineage import definition_digest, fork_status
-from src.domain.viewpoints.viewpoint_parsing import viewpoint_definition_from_mapping
 from src.domain.viewpoints.viewpoint_query_parsing import query_from_mapping
 from src.domain.viewpoints.viewpoint_scope_query import definition_with_scope_query
 from src.domain.viewpoints.viewpoint_serialization import viewpoint_definition_to_mapping
@@ -47,10 +42,10 @@ from src.domain.viewpoints.viewpoints import ViewpointCatalog, ViewpointDefiniti
 from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry
 from src.infrastructure.gui.routers import state as s
 from src.infrastructure.gui.routers._openapi import READ_RESPONSES, TAG_VIEWPOINTS, WRITE_RESPONSES, OpenMapResponse
+from src.infrastructure.gui.routers._viewpoint_write import router as _write_router
 from src.infrastructure.viewpoint_declarations import (
     load_effective_viewpoint_catalog,
     load_viewpoint_catalog_file,
-    write_viewpoint_catalog_file,
 )
 from src.infrastructure.write.artifact_write.viewpoint_type_guidance import summarize_scope
 
@@ -281,7 +276,8 @@ def put_viewpoint_pins(body: ViewpointPinsBody) -> dict[str, Any]:
     unknown = [slug for slug in body.slugs if slug not in known]
     if unknown:
         raise HTTPException(400, f"unknown viewpoint slug(s): {', '.join(unknown)}")
-    s.authorized_write(("PUT", "/api/viewpoints/pins"), save_pinned_slugs, engagement_root, tuple(body.slugs))
+    s.authorized_write(
+            "viewpoints_replace_viewpoint_pins", save_pinned_slugs, engagement_root, tuple(body.slugs))
     return {"slugs": body.slugs}
 
 
@@ -315,90 +311,9 @@ def summarize_query(body: SummarizeQueryBody) -> dict[str, str]:
     return {"summary": render_query_summary(query, default_derivation_max_hops=viewpoints_derivation_max_hops())}
 
 
-def _result_to_dict(result: ViewpointPersistResult, *, dry_run: bool) -> dict[str, Any]:
-    return {
-        "ok": result.ok,
-        "action": result.action,
-        "slug": result.slug,
-        "version": result.version,
-        "dry_run": dry_run,
-        "issues": [asdict(i) for i in result.issues],
-        "referencers": [asdict(r) for r in result.referencers],
-    }
-
-
-class ViewpointWriteBody(BaseModel):
-    definition: dict[str, Any]
-    dry_run: bool = True
-    fork_of: str | None = None
-    """Origin slug when this create is a fork (Save as…) — the persist path stamps the
-    lineage server-side; a client can never assert its own provenance."""
-
-
-def _persist(action: PersistAction, body: ViewpointWriteBody, *, route: tuple[str, str]) -> dict[str, Any]:
-    engagement_root = _engagement_root()
-    both_roots = _both_roots()
-    catalogs = build_runtime_catalogs(get_module_registry())
-    merged_catalog = load_effective_viewpoint_catalog(both_roots)
-    local_catalog = load_viewpoint_catalog_file(engagement_root)
-    registries = build_registry_snapshot(
-        catalogs,
-        both_roots,
-        derivation_max_hops=viewpoints_derivation_max_hops(),
-        derivation_max_relationships=viewpoints_derivation_max_relationships(),
-        derivation_time_budget_seconds=viewpoints_derivation_time_budget_seconds(),
-    )
-    try:
-        parsed = viewpoint_definition_from_mapping(body.definition)
-    except ValueError as exc:
-        raise HTTPException(400, str(exc)) from exc
-    # The model generation is only recorded into fork lineage — plain creates/edits
-    # never need it.
-    index_generation = s.get_repo().read_model_version().generation if body.fork_of is not None else None
-    result = persist_viewpoint_definition(
-        action,
-        parsed,
-        local_catalog=local_catalog,
-        merged_catalog=merged_catalog,
-        registries=registries,
-        fork_of=body.fork_of,
-        index_generation=index_generation,
-    )
-    if result.ok and not body.dry_run and result.catalog_to_write is not None:
-        s.authorized_write(route, write_viewpoint_catalog_file, engagement_root, result.catalog_to_write)
-    return _result_to_dict(result, dry_run=body.dry_run)
-
-
-@router.post("/api/viewpoints", tags=[TAG_VIEWPOINTS], summary="Create a viewpoint", response_model=OpenMapResponse,
-    responses=WRITE_RESPONSES)
-def create_viewpoint_definition(body: ViewpointWriteBody) -> dict[str, Any]:
-    return _persist("create", body, route=("POST", "/api/viewpoints"))
-
-
-@router.post("/api/viewpoints/edit", tags=[TAG_VIEWPOINTS], summary="Edit a viewpoint",
-    response_model=OpenMapResponse, responses=WRITE_RESPONSES)
-def edit_viewpoint_definition(body: ViewpointWriteBody) -> dict[str, Any]:
-    return _persist("edit", body, route=("POST", "/api/viewpoints/edit"))
-
-
-class DeleteViewpointBody(BaseModel):
-    slug: str
-    dry_run: bool = True
-
-
-@router.post("/api/viewpoints/remove", tags=[TAG_VIEWPOINTS], summary="Remove a viewpoint",
-    response_model=OpenMapResponse, responses=WRITE_RESPONSES)
-def delete_viewpoint_definition_route(body: DeleteViewpointBody) -> dict[str, Any]:
-    engagement_root = _engagement_root()
-    both_roots = _both_roots()
-    merged_catalog = load_effective_viewpoint_catalog(both_roots)
-    local_catalog = load_viewpoint_catalog_file(engagement_root)
-    repo = s.get_repo()
-    result = delete_viewpoint_definition(
-        body.slug, local_catalog=local_catalog, merged_catalog=merged_catalog, read_access=repo
-    )
-    if result.ok and not body.dry_run and result.catalog_to_write is not None:
-        s.authorized_write(
-            ("POST", "/api/viewpoints/remove"), write_viewpoint_catalog_file, engagement_root, result.catalog_to_write
-        )
-    return _result_to_dict(result, dry_run=body.dry_run)
+# Included last, deliberately. The write surface owns ``/api/viewpoints/{slug}``, which would also
+# match the literal siblings ``pins`` and ``criteria-catalog`` — Starlette matches in registration
+# order, so the literals have to be mounted first or a pin update would arrive as a definition
+# replace. ``test_a_literal_sibling_segment_is_not_read_as_a_slug`` asserts the outcome rather than
+# the rule.
+router.include_router(_write_router)

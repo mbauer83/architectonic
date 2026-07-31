@@ -196,7 +196,7 @@ const save = () => {
   // Lineage is stamped server-side from fork_of — the client never asserts provenance.
   const call = isCreating.value
     ? svc.createViewpointDefinition(forkedFromSlug.value !== null ? { ...body, fork_of: forkedFromSlug.value } : body)
-    : svc.editViewpointDefinition(body)
+    : svc.replaceViewpointDefinition(draft.value.slug, body)
   Effect.runPromise(call).then((result: ViewpointPersistResult) => {
     saving.value = false
     if (result.ok) { backToList({ persisted: true }); return }

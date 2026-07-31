@@ -118,6 +118,7 @@ judgement whose basis has since moved is marked stale rather than left silently 
 | Security signals | `assurance_register_arch_ref` | Write | Record an assurance→architecture cross-reference. |
 | Security signals | `assurance_model_this` | Write | Propose an architecture entity to bind an unbound-pending control-structure-node. |
 | Other | `assurance_add_analysis_member` | Write | Draw an existing node into an analysis that did not author it, so one method can reason over another's work without copying it — an FMEA enumerating failure modes against the control-structure nodes an STPA identified. |
+| Other | `assurance_assign_provenance` | Write | Record which analysis produced a node — the ONLY way to set provenance, and only for a node that has none. |
 | Other | `assurance_create_group` | Write | Create a group that files assurance analyses. |
 | Other | `assurance_delete_group` | Destructive | Delete a group. |
 | Other | `assurance_delete_security_snapshot` | Destructive | Delete security-signal snapshots. |

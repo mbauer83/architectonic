@@ -149,9 +149,7 @@ export function useDiagramSvgSelection(options: {
   }): Promise<void> => {
     if (!diagramId.value) return
     const exit = await metadataMutation.run(
-      svc.patchDiagramEntityMetadata({
-        artifact_id: diagramId.value,
-        classifier_id: payload.classifierId,
+      svc.patchDiagramEntityMetadata(diagramId.value, payload.classifierId, {
         attribute_id: payload.attributeId,
         patch: payload.patch,
         dry_run: false,
@@ -170,7 +168,7 @@ export function useDiagramSvgSelection(options: {
     savingEdgeLabel = true
     try {
       const exit = await edgeLabelMutation.run(
-        svc.setEdgeLabel({ artifact_id: diagramId.value, edge_key: conn.edge_key, label, dry_run: false }),
+        svc.setEdgeLabel(diagramId.value, conn.edge_key, { label, dry_run: false }),
       )
       if (Exit.isSuccess(exit)) reload()
     } finally {

@@ -115,7 +115,7 @@ class TestFieldPresence:
     def test_entity_detail_carries_the_stamp(self, repo_root: Path) -> None:
         from src.infrastructure.gui.routers.entities import read_entity
 
-        detail = read_entity(id="REQ@1000000003.NewAAA.newest-requirement")
+        detail = read_entity(artifact_id="REQ@1000000003.NewAAA.newest-requirement")
         assert detail["last_updated"] == "2026-07-24T09:15:00Z"
 
     def test_diagram_list_and_detail_carry_the_stamp(self, repo_root: Path) -> None:

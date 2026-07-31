@@ -1,0 +1,235 @@
+"""Response contracts for the security-signal surface.
+
+Every read here is anchored to one architecture artifact, so the anchor is a path segment and these
+DTOs never repeat it. Each carries the *reason* it is empty rather than an empty body a caller has
+to interpret: "no co-located signals store" and "this snapshot changed mid-evaluation" are different
+answers, and only one of them is worth retrying.
+
+``visibility_limited`` and ``withheld`` are declared, not optional. Exposure filtering runs before
+the count, so a caller reading a list without knowing whether anything was withheld would report a
+clean posture that is merely a redacted one.
+
+The **rows** stay open where they carry a signal feed's own schema — a CycloneDX component, an OSV
+finding, a VEX revision. Those vocabularies belong to the feeds, and re-declaring them here would
+make this module the place every feed change has to be mirrored, dropping unmirrored fields in
+transit. The response envelopes that contain them are closed, which is where the contract is.
+"""
+
+from __future__ import annotations
+
+from typing import Any, Literal
+
+from pydantic import BaseModel, ConfigDict
+
+
+class _Closed(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
+class _FeedShaped(BaseModel):
+    """A row whose fields come from a security feed's schema rather than from this surface."""
+
+    model_config = ConfigDict(extra="allow")
+
+
+class SecurityComponentRecord(_FeedShaped):
+    """One component of the anchor's active snapshot."""
+
+
+class SecurityFindingRecord(_FeedShaped):
+    """One vulnerability finding against a component of the anchor's active snapshot."""
+
+
+class VexRevisionRecord(_FeedShaped):
+    """One revision of a VEX assessment. Revisions are appended, never replaced."""
+
+
+class SnapshotRecord(_FeedShaped):
+    """One snapshot row, as the store holds it."""
+
+
+class FieldRejection(_Closed):
+    field: str
+    message: str
+
+
+class SecurityComponentListResponse(_Closed):
+    components: list[SecurityComponentRecord] = []
+    count: int = 0
+    withheld: int = 0
+    reason: str | None = None
+
+
+class SecurityComponentResponse(_Closed):
+    """One component, addressed by the internal id this system minted for it.
+
+    The row carries its external identifiers — ``purl``, ``bom_ref``, ``cpe``, and the source's own
+    ``source_component_id`` — as data. They identify the *package*, in vocabularies other systems
+    own; ``component_id`` identifies the resource here, and is the only one of them that is a path
+    segment. A caller holding only a PURL resolves it through the collection filter first.
+    """
+
+    component: SecurityComponentRecord
+
+
+class SecurityFindingListResponse(_Closed):
+    findings: list[SecurityFindingRecord] = []
+    count: int = 0
+    withheld: int = 0
+    reason: str | None = None
+
+
+class SecurityMetricsResponse(_Closed):
+    """Aggregate posture for one anchor, or the reason there is none.
+
+    ``availability`` is the field a client branches on: ``unavailable`` means the metrics could not
+    be computed — no co-located store, or a snapshot that changed mid-evaluation — and every
+    numeric field is then absent rather than zero. Zero and "not computed" are different postures
+    and must not share a representation.
+    """
+
+    availability: Literal["available", "unavailable"]
+    reason: str | None = None
+    content_state: str | None = None
+    visibility_limited: bool | None = None
+    basis_snapshot_id: str | None = None
+    basis_activated_at: str | None = None
+    computed_classification: str | None = None
+    component_count: int | None = None
+    finding_total: int | None = None
+    open_component_findings: dict[str, int] | None = None
+    distinct_open_vulnerabilities: int | None = None
+    severity_band_counts: dict[str, int] | None = None
+    max_cvss_score: float | None = None
+    max_severity_band: str | None = None
+    applicability_unknown_count: int | None = None
+    unknown_severity_finding_count: int | None = None
+    suppressed_finding_count: int | None = None
+
+
+class AssessedEntity(_Closed):
+    """One architecture entity carrying an active snapshot, with that snapshot's sizes."""
+
+    entity_id: str
+    snapshot_id: str
+    bom_component_count: int
+    finding_count: int
+
+
+class SecuritySignalStatsResponse(_Closed):
+    """Snapshot-store aggregates, or the reason there are none."""
+
+    reason: str | None = None
+    total_snapshots: int | None = None
+    active_snapshots: int | None = None
+    assessed_entity_count: int | None = None
+    assessed_entities: list[AssessedEntity] | None = None
+    active_snapshot_bom_components: int | None = None
+    active_snapshot_findings: int | None = None
+
+
+class VexAssessmentListResponse(_Closed):
+    revisions: list[VexRevisionRecord] = []
+    count: int = 0
+    visibility_limited: bool = False
+
+
+class VexAssessmentResponse(_Closed):
+    """The revision a recorded assessment produced. Appended, so ``revision`` always advances."""
+
+    assessment_id: str
+    revision: int
+    created_at: str
+
+
+class SignalIngestResponse(_Closed):
+    """The outcome of an ingest, projected the same way the MCP tool projects it.
+
+    ``status`` discriminates: ``activated`` carries the persisted counts alongside the submitted
+    ones, so a caller seeing fewer findings than it sent can tell alias collapse from data loss;
+    ``replayed`` names the snapshot the identical request already produced; ``invalid`` carries the
+    field rejections.
+    """
+
+    status: str
+    snapshot_id: str | None = None
+    superseded_snapshot_id: str | None = None
+    component_count: int | None = None
+    finding_count: int | None = None
+    submitted_component_count: int | None = None
+    submitted_finding_count: int | None = None
+    collapsed_finding_count: int | None = None
+    stored_outcome: str | None = None
+    reason: str | None = None
+    message: str | None = None
+    errors: list[FieldRejection] | None = None
+
+
+class SecuritySnapshotDeletionResponse(_Closed):
+    """What the deletion removed, or why it removed nothing.
+
+    Carries whichever of ``snapshot_id`` / ``anchor_entity_id`` addressed the deletion, so a log of
+    the response says what was destroyed without needing the request beside it.
+    """
+
+    status: str
+    snapshot_id: str | None = None
+    anchor_entity_id: str | None = None
+    message: str | None = None
+    deleted: list[SnapshotRecord] = []
+    deleted_count: int = 0
+
+
+class AffectedEntity(_FeedShaped):
+    """One entity a vulnerability reaches, with the finding rows that reach it."""
+
+
+class VulnerabilityImpactResponse(_Closed):
+    """Every visible entity affected by one vulnerability, by any of its aliases.
+
+    ``found`` is false for an identifier no active snapshot mentions — which is not the same as one
+    that affects nothing, and the two must not answer alike.
+    """
+
+    status: str | None = None
+    found: bool | None = None
+    affected: list[AffectedEntity] = []
+    reason: str | None = None
+    notes: list[str] | None = None
+    canonical_id: str | None = None
+    aliases: list[str] | None = None
+    affected_entity_count: int | None = None
+    open_entity_count: int | None = None
+    max_severity_band: str | None = None
+    max_cvss_score: float | None = None
+    withheld_count: int | None = None
+
+
+class SignalAnchorTypeListResponse(_Closed):
+    """The admissible anchor types, so a client never redeclares the vocabulary."""
+
+    anchor_types: list[str]
+
+
+class AssuranceNodeRecord(_FeedShaped):
+    """One assurance node row, as the store holds it.
+
+    Open while the node contracts are still being authored: the analysis-aggregate slice owns that
+    vocabulary, and declaring half of it here would put the definition in two places.
+    """
+
+
+class ArchLensResponse(_Closed):
+    """The assurance findings that concern one architecture artifact.
+
+    ``locked`` rather than a 423: this read is embedded in an entity view that must render whether
+    or not the confidential store is open, and a locked store is a legitimate empty answer here —
+    the caller needs to tell "locked" from "nothing found", which a refusal cannot express.
+    """
+
+    arch_artifact_id: str
+    locked: bool
+    nodes: list[AssuranceNodeRecord] = []
+    count: int = 0
+    visibility_limited: bool | None = None
+    failure_mode_summary: dict[str, Any] | None = None

@@ -93,9 +93,7 @@ const saveEdit = async () => {
   if (!editSlug.value) return
   editBusy.value = true; editError.value = ''
   try {
-    await Effect.runPromise(svc.updateGroup({
-      kind: props.axis,
-      target: editSlug.value,
+    await Effect.runPromise(svc.updateGroup(props.axis, editSlug.value, {
       name: editName.value,
       description: editDescription.value,
       meta_ontology: showMetaOntology.value ? editMetaOntology.value : undefined,
@@ -150,9 +148,9 @@ const confirmLifecycle = async () => {
   lifecycleBusy.value = true; lifecycleError.value = ''
   try {
     if (action === 'archive') {
-      await Effect.runPromise(svc.archiveGroup({ kind: props.axis, target: slug, confirm: slug }))
+      await Effect.runPromise(svc.archiveGroup(props.axis, slug, { confirm: slug }))
     } else {
-      await Effect.runPromise(svc.deleteGroup({ kind: props.axis, target: slug, confirm: slug }))
+      await Effect.runPromise(svc.deleteGroup(props.axis, slug, slug))
     }
     cancelLifecycle()
     loadGroups()
@@ -163,7 +161,7 @@ const confirmLifecycle = async () => {
 const unarchive = async (slug: string) => {
   lifecycleBusy.value = true
   try {
-    await Effect.runPromise(svc.unarchiveGroup({ kind: props.axis, target: slug }))
+    await Effect.runPromise(svc.unarchiveGroup(props.axis, slug))
     loadGroups()
   } catch (e) { lifecycleError.value = String(e); lifecycleSlug.value = slug; lifecycleAction.value = null }
   finally { lifecycleBusy.value = false }

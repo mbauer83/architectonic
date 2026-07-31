@@ -16,6 +16,7 @@ from mcp.server.fastmcp.server import StreamableHTTPASGIApp
 
 from src.config.settings import request_thread_dump_seconds, slow_request_warning_seconds
 from src.infrastructure.artifact_index.coordination import get_write_queue_state_snapshot
+from src.infrastructure.backend.cache_directive import apply_cache_directive
 from src.infrastructure.backend.read_model_caching import conditional_read_middleware
 from src.infrastructure.gui.routers import state as gui_state
 from src.infrastructure.mcp.artifact_mcp import auto_start_default_watcher
@@ -187,11 +188,33 @@ async def _health_check():  # type: ignore[no-untyped-def]
     })
 
 
+def _document_version() -> str:
+    """The OpenAPI document's version, read from package metadata.
+
+    Read rather than declared: the two were maintained separately and had already diverged — the
+    document claimed 0.3.0 against a 0.1.0 package — so a client that pinned the document version
+    was pinning a number nothing produced.
+    """
+    from importlib.metadata import PackageNotFoundError  # noqa: PLC0415
+    from importlib.metadata import version as package_version  # noqa: PLC0415
+
+    try:
+        return package_version("architectonic")
+    except PackageNotFoundError:
+        return "0.0.0+unknown"
+
+
 def _build_app(credentials: "GitCredentials | None" = None):  # type: ignore[no-untyped-def]
-    from fastapi import FastAPI
+    from fastapi import Depends, FastAPI
     from fastapi.middleware.cors import CORSMiddleware
 
     from src.infrastructure.app_bootstrap import install_module_registry
+    from src.infrastructure.gui.contracts.error_responses import install_error_contracts
+    from src.infrastructure.gui.contracts.identity_resolution import (
+        reject_repeated_scalar_query_parameters,
+    )
+    from src.infrastructure.gui.contracts.operation_ids import manifest_operation_id
+    from src.infrastructure.gui.routers._openapi import APP_RESPONSES
     from src.infrastructure.gui.routers.admin import router as admin_router
     from src.infrastructure.gui.routers.assurance import router as assurance_router
     from src.infrastructure.gui.routers.authoring_guidance import router as authoring_guidance_router
@@ -263,12 +286,29 @@ def _build_app(credentials: "GitCredentials | None" = None):  # type: ignore[no-
                 await sync_mgr.stop()
             logger.info("Backend lifespan shutdown complete")
 
-    app = FastAPI(title="Architecture Repository Backend", version="0.3.0", lifespan=lifespan)
+    app = FastAPI(
+        title="Architecture Repository Backend",
+        version=_document_version(),
+        lifespan=lifespan,
+        generate_unique_id_function=manifest_operation_id,
+        responses=APP_RESPONSES,
+        # An incomplete detail path is not a collection: `/api/entities/` names an entity whose
+        # identifier is missing, and redirecting it to the collection answers a different question
+        # than the one asked, hiding the caller's bug until something depends on the wrong answer.
+        redirect_slashes=False,
+        dependencies=[Depends(reject_repeated_scalar_query_parameters)],
+    )
     install_module_registry(app)
 
     # Registered after _log_requests so a 304 is still logged and timed.
     app.middleware("http")(conditional_read_middleware)
+    # Outside the conditional-read middleware, so a 304 keeps the `no-cache` it chose and every
+    # other response gets its operation's declared directive rather than none.
+    app.middleware("http")(apply_cache_directive)
     app.middleware("http")(_log_requests)
+    # The typed error envelope and the request id every error carries. Registered last so its
+    # middleware is outermost and a failure anywhere inside still produces an envelope.
+    install_error_contracts(app)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["http://localhost:5173", "http://localhost:4173"],

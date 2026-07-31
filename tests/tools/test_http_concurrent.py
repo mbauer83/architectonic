@@ -161,13 +161,13 @@ def test_entity_context_reads_are_not_serialized(tmp_path: Path) -> None:
     async def _run() -> tuple[float, float]:
         transport = httpx.ASGITransport(app=app)
         async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
-            await client.get(f"/api/entity-context?id={entity_ids[0]}")
+            await client.get(f"/api/entities/{entity_ids[0]}/context")
 
             t0 = time.perf_counter()
-            await client.get(f"/api/entity-context?id={entity_ids[0]}")
+            await client.get(f"/api/entities/{entity_ids[0]}/context")
             single = time.perf_counter() - t0
 
-            urls = [f"/api/entity-context?id={entity_ids[i % len(entity_ids)]}" for i in range(12)]
+            urls = [f"/api/entities/{entity_ids[i % len(entity_ids)]}/context" for i in range(12)]
             t1 = time.perf_counter()
             await asyncio.gather(*[client.get(u) for u in urls])
             wall = time.perf_counter() - t1

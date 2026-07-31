@@ -169,7 +169,7 @@ const onEntityFound = (entity: EntityDisplayInfo) => {
 const undoActiveEntity = () => {
   if (!activeEntity.value?.wasCreated) return
   busy.value = true
-  void Effect.runPromise(svc.deleteEntity({ artifact_id: activeEntity.value.id, dry_run: false }))
+  void Effect.runPromise(svc.deleteEntity(activeEntity.value.id))
     .then(() => {
       if (activeEntity.value) props.session.undoCreated(activeEntity.value.id)
       activeEntity.value = null

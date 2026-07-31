@@ -10,11 +10,12 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
-from src.application.assurance_exposure import AssuranceExposurePolicy
+from src.application.assurance_exposure import AssuranceExposurePolicy, Visible
 from src.application.assurance_fmea_factors import (
     FactorInvalid,
+    FactorLegacyInvalid,
     FactorNodeNotFound,
     FactorRecorded,
     FactorStoreLocked,
@@ -22,10 +23,17 @@ from src.application.assurance_fmea_factors import (
     record_factor_assessment,
 )
 from src.application.assurance_fmea_rows import matrix_rows
+from src.application.assurance_legacy_invalid import LegacyInvalidNode
 from src.domain.assurance.fmea_factors import OCCURRENCE_SCALE, FactorAssessment
 from src.infrastructure.assurance.architecture_basis import current_architecture_basis
 from src.infrastructure.assurance.write_serialization import run_write
+from src.infrastructure.gui.contracts.errors import (
+    ApiError,
+    LegacyInvalidDetails,
+    MethodMismatchDetails,
+)
 from src.infrastructure.gui.routers._assurance_http import locked_response as _locked_response
+from src.infrastructure.gui.routers._assurance_http import not_found_response as _not_found_response
 from src.infrastructure.gui.routers._assurance_http import ok as _ok
 from src.infrastructure.mcp.assurance_mcp.context import get_assurance_context
 
@@ -40,9 +48,14 @@ def _policy() -> tuple[object, AssuranceExposurePolicy]:
     return ctx, AssuranceExposurePolicy(ctx.max_classification, ctx.is_available())
 
 
-@fmea_router.get("/api/assurance/fmea")
-def fmea_matrix(analysis_id: str | None = None) -> JSONResponse:
-    """The failure-mode matrix: candidate elements crossed with the guidewords.
+@fmea_router.get("/api/assurance/analyses/{analysis_id}/matrix")
+def fmea_matrix(analysis_id: str) -> JSONResponse:
+    """The failure-mode matrix of one analysis: candidate elements crossed with the guidewords.
+
+    The analysis is required, and it is the path. Unscoped, this returned every failure mode in the
+    store under a heading that said "all" — a matrix is a projection *of an analysis*, and there is
+    no analysis-free reading of a priority ranking. An analysis of another method has no matrix, so
+    that is a typed 409 rather than an empty grid that reads like a clean sheet.
 
     Exposure-filtered before anything is assembled, so a withheld node cannot influence a count or
     a priority a caller can see. Rows are scoped to the candidate set; the causal chain behind them
@@ -52,12 +65,25 @@ def fmea_matrix(analysis_id: str | None = None) -> JSONResponse:
     ctx, pol = _policy()
     if pol.check_locked():
         return _locked_response()
+    outcome = pol.apply_analysis(ctx.store.get_analysis(analysis_id))  # type: ignore[attr-defined]
+    if not isinstance(outcome, Visible):
+        return _not_found_response()
+    method = str(outcome.value.get("method") or "")
+    if method != "FMEA":
+        raise ApiError(
+            409,
+            "analysis_method_mismatch",
+            "a failure-mode matrix is a projection of an FMEA analysis",
+            MethodMismatchDetails(
+                analysis_id=analysis_id, expected_method="FMEA", actual_method=method,
+            ),
+        )
     visible_nodes, _ = pol.filter_nodes(ctx.store.list_nodes())  # type: ignore[attr-defined]
     visible_ids = frozenset(str(n["node_id"]) for n in visible_nodes)
     edges = pol.filter_edges(ctx.store.list_edges(), visible_ids)  # type: ignore[attr-defined]
     scoped = [
         n for n in visible_nodes
-        if analysis_id is None or str(n.get("analysis_id") or "") == analysis_id
+        if str(n.get("analysis_id") or "") == analysis_id
         or str(n.get("node_type", "")) != "failure-mode"
     ]
     failure_mode_ids = [
@@ -99,7 +125,8 @@ def _as_assessment(row: dict[str, object]) -> FactorAssessment:
 
 
 class SetFactorBody(BaseModel):
-    node_id: str
+    model_config = ConfigDict(extra="forbid")
+
     factor: str
     value: str
     justification: str
@@ -107,17 +134,19 @@ class SetFactorBody(BaseModel):
     basis_digest: str
 
 
-@fmea_router.put("/api/assurance/fmea/factor", status_code=200)
-def set_fmea_factor(body: SetFactorBody) -> JSONResponse:
-    """Append one factor judgement as a new revision.
+@fmea_router.post("/api/assurance/nodes/{node_id}/factor-assessments", status_code=200)
+def set_fmea_factor(node_id: str, body: SetFactorBody) -> JSONResponse:
+    """Append one factor judgement to a failure mode's assessment series.
 
-    A PUT that appends rather than replaces: what is being set is *the current judgement*, and the
-    revision series behind it is how a reader sees that it changed.
+    POST, not PUT: this *appends a revision* rather than replacing a value, so PUT would have
+    promised an idempotence the surface does not have — sending the same judgement twice produces
+    two revisions, and that is the point of keeping the series. The node is the path; its own
+    provenance decides which analysis owns the judgement, so no body names one.
     """
     ctx = get_assurance_context()
     result = run_write(lambda: record_factor_assessment(
         RecordFactorRequest(
-            node_id=body.node_id,
+            node_id=node_id,
             factor=body.factor,
             value=body.value,
             justification=body.justification,
@@ -129,6 +158,15 @@ def set_fmea_factor(body: SetFactorBody) -> JSONResponse:
     ))
     if isinstance(result, FactorStoreLocked):
         return _locked_response()
+    if isinstance(result, FactorLegacyInvalid):
+        raise ApiError(
+            409,
+            "node_legacy_invalid",
+            LegacyInvalidNode(node_id=result.node_id).message,
+            LegacyInvalidDetails(
+                node_id=result.node_id, permitted_operation=result.permitted_operation
+            ),
+        )
     if isinstance(result, FactorNodeNotFound):
         return JSONResponse(
             status_code=404,

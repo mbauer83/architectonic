@@ -1,7 +1,7 @@
 """Tests for GUI documents and groups routers.
 
 Covers: GET /api/document-types, /api/document-schemata, /api/documents,
-/api/document (found + not-found); POST /api/document (dry_run);
+/api/documents/{artifact_id} (found + not-found); POST /api/documents (dry_run);
 GET /api/groups (all axes + filtered).
 """
 
@@ -17,6 +17,7 @@ from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.gui.routers import state as gui_state
 from src.infrastructure.gui.routers.documents import router as documents_router
 from src.infrastructure.gui.routers.groups import router as groups_router
+from tests.support.identity_resolution_conformance import DetailRoute, assert_conforms
 
 httpx = pytest.importorskip("httpx")
 
@@ -107,7 +108,9 @@ def doc_client(populated_root: Path):
 
     repo = ArtifactRepository(shared_artifact_index([populated_root]))
     gui_state.init_state(repo, populated_root, None)
-    app = FastAPI()
+    # Configured as the real application is: an incomplete detail path must not redirect to the
+    # collection, or the conformance assertions below would pass against a different question.
+    app = FastAPI(redirect_slashes=False)
     app.include_router(documents_router)
     return TestClient(app)
 
@@ -197,15 +200,40 @@ class TestListDocuments:
 # ── read document ─────────────────────────────────────────────────────────────
 
 
+class TestDocumentIdentityResolution:
+    """The addressing rules every path-addressed resource owes, applied to this one.
+
+    Shared assertions rather than local ones: the outcomes are decided once, and writing them per
+    router would mean re-deciding them per router — which is how a surface ends up resolving an
+    encoded slash one way for documents and another for entities.
+    """
+
+    def test_conforms_to_the_shared_identity_resolution_rules(self, doc_client) -> None:
+        assert_conforms(
+            doc_client,
+            DetailRoute(
+                resolving_url=f"/api/documents/{DOC_ID}",
+                unknown_url="/api/documents/ADR@9000000000.ZZZZZZ.absent",
+                malformed_url="/api/documents/not-an-identifier",
+                collection_url="/api/documents",
+            ),
+        )
+
+    def test_an_encoded_slash_in_the_identifier_is_rejected(self, doc_client) -> None:
+        """Slash is outside the identifier grammar, so an id containing one is malformed rather
+        than a deeper path."""
+        assert doc_client.get("/api/documents/pkg%3Anpm%2Fleft-pad").status_code == 404
+
+
 class TestReadDocument:
     def test_found(self, doc_client) -> None:
-        r = doc_client.get(f"/api/document?id={DOC_ID}")
+        r = doc_client.get(f"/api/documents/{DOC_ID}")
         assert r.status_code == 200
         data = r.json()
         assert data["artifact_id"] == DOC_ID
 
     def test_not_found_returns_404(self, doc_client) -> None:
-        r = doc_client.get("/api/document?id=ADR@9.ZZZ.no-such")
+        r = doc_client.get("/api/documents/ADR@9.ZZZ.no-such")
         assert r.status_code == 404
 
 
@@ -220,11 +248,14 @@ class TestCreateDocument:
             "body": "## Context\n\nTest content.",
             "dry_run": True,
         }
-        r = doc_client.post("/api/document", json=payload)
+        r = doc_client.post("/api/documents", json=payload)
+        # A dry run created nothing, so it reports a plan with 200 — never a 201 naming a
+        # resource that does not exist.
         assert r.status_code == 200
         data = r.json()
         assert "wrote" in data
         assert data["wrote"] is False
+        assert "Location" not in r.headers
 
     def test_with_keywords(self, doc_client) -> None:
         payload = {
@@ -233,7 +264,7 @@ class TestCreateDocument:
             "keywords": ["arch", "security"],
             "dry_run": True,
         }
-        r = doc_client.post("/api/document", json=payload)
+        r = doc_client.post("/api/documents", json=payload)
         assert r.status_code == 200
 
 
@@ -267,6 +298,57 @@ class TestListGroups:
         assert r.status_code == 200
         data = r.json()
         assert "document-collections" in data
+
+
+class TestGroupIdentityComesFromThePath:
+    """A group is named by the pair ``(kind, slug)``, and after 0.2.0 both live in the URL.
+
+    The two halves of the contract are tested together: a body still carrying the old identity
+    fields is refused rather than silently ignored, and the same request without them lands on the
+    group the path names.
+    """
+
+    def test_a_create_answers_201_and_names_the_group_in_location(self, group_client) -> None:
+        r = group_client.post(
+            "/api/groups",
+            json={"kind": "diagram-collection", "slug": "path-identity", "name": "Path Identity"},
+        )
+        assert r.status_code == 201, r.text
+        assert r.headers["Location"] == "/api/groups/diagram-collection/path-identity"
+
+    def test_an_update_body_repeating_the_identity_is_rejected(self, group_client) -> None:
+        group_client.post(
+            "/api/groups",
+            json={"kind": "diagram-collection", "slug": "repeat-identity", "name": "Repeat"},
+        )
+        r = group_client.patch(
+            "/api/groups/diagram-collection/repeat-identity",
+            json={"kind": "diagram-collection", "target": "repeat-identity", "name": "Renamed"},
+        )
+        assert r.status_code == 422
+
+    def test_an_update_without_the_identity_fields_addresses_the_path(self, group_client) -> None:
+        group_client.post(
+            "/api/groups",
+            json={"kind": "diagram-collection", "slug": "addressed", "name": "Addressed"},
+        )
+        r = group_client.patch(
+            "/api/groups/diagram-collection/addressed", json={"name": "Renamed By Path"}
+        )
+        assert r.status_code == 200, r.text
+        listed = group_client.get("/api/groups?kind=diagram-collection").json()
+        entry = next(e for e in listed["diagram-collections"] if e["slug"] == "addressed")
+        assert entry["name"] == "Renamed By Path"
+
+    def test_an_unarchive_needs_no_body_at_all(self, group_client) -> None:
+        """The path names the group and the segment names the action, so an empty request is a
+        complete one — a caller should not have to send ``{}`` to say nothing."""
+        group_client.post(
+            "/api/groups", json={"kind": "diagram-collection", "slug": "revived", "name": "Revived"}
+        )
+        group_client.post("/api/groups/diagram-collection/revived/archive", json={"confirm": "revived"})
+        r = group_client.post("/api/groups/diagram-collection/revived/unarchive")
+        assert r.status_code == 200, r.text
 
 
 # ── group member counts ───────────────────────────────────────────────────────

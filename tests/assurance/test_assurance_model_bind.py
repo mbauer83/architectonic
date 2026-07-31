@@ -69,10 +69,12 @@ class _FakeCreator:
 
 
 def _node(binding: str = "unbound-pending") -> dict[str, Any]:
+    # `analysis_id` is present because every node records the analysis that produced it. Without
+    # one the node would be repair-only, and the bind's own `edit_node` would refuse it.
     return {
         "node_id": "CSN@1.x.y", "node_type": "control-structure-node",
         "name": "Brake Controller", "status": "draft", "tlp": "TLP:WHITE",
-        "binding_status": binding,
+        "binding_status": binding, "analysis_id": "STPA@fixture",
     }
 
 

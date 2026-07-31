@@ -43,7 +43,7 @@ async function requestJson(url: string, init?: RequestInit) {
 
 async function loadGuidance() {
   const topic = stepKey.value === 'completeness' ? 'assurance-case-completeness' : 'assurance-case-gsn'
-  guidance.value = await requestJson(`/api/assurance/guidance?topic=${topic}`) as Record<string, string>
+  guidance.value = await requestJson(`/api/assurance/guidance/${encodeURIComponent(topic)}`) as Record<string, string>
 }
 
 async function buildDraft() {
@@ -52,7 +52,7 @@ async function buildDraft() {
   error.value = null
   try {
     draft.value = await requestJson(
-      `/api/assurance/gsn/draft?analysis_id=${encodeURIComponent(analysisId.value)}`,
+      `/api/assurance/analyses/${encodeURIComponent(analysisId.value)}/gsn/draft`,
     ) as unknown as GsnDraftResponse
     stepKey.value = 'destination'
   } catch (reason) {
@@ -68,7 +68,7 @@ async function loadPreview() {
   error.value = null
   try {
     const body = await requestJson(
-      `/api/assurance/gsn/rendered?analysis_id=${encodeURIComponent(analysisId.value)}`,
+      `/api/assurance/analyses/${encodeURIComponent(analysisId.value)}/gsn/rendered`,
     )
     svg.value = typeof body['svg'] === 'string' ? body['svg'] : null
     draft.value = body as unknown as GsnDraftResponse
@@ -85,7 +85,7 @@ async function publish() {
   busy.value = true
   error.value = null
   try {
-    const created = await requestJson('/api/diagram', {
+    const created = await requestJson('/api/diagrams', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -102,11 +102,12 @@ async function publish() {
     })
     const diagramId = typeof created['artifact_id'] === 'string' ? created['artifact_id'] : ''
     if (!diagramId) throw new Error('Diagram publication returned no artifact id')
-    await requestJson('/api/assurance/gsn/publications', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(publicationBody(analysisId.value, diagramId, draft.value.diagram_entities)),
-    })
+    await requestJson(
+      `/api/assurance/analyses/${encodeURIComponent(analysisId.value)}/gsn/publications`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(publicationBody(diagramId, draft.value.diagram_entities)),
+      })
     publishedDiagramId.value = diagramId
     stepKey.value = 'bindings'
   } catch (reason) {
@@ -121,7 +122,7 @@ async function checkCompleteness() {
   busy.value = true
   try {
     completeness.value = await requestJson(
-      `/api/assurance/gsn/completeness?analysis_id=${encodeURIComponent(analysisId.value)}`,
+      `/api/assurance/analyses/${encodeURIComponent(analysisId.value)}/completeness`,
     ) as unknown as CompletenessResponse
     stepKey.value = 'completeness'
   } catch (reason) {

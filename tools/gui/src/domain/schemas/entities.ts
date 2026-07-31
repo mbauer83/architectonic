@@ -6,6 +6,19 @@ import { EntityContextConnectionSchema } from './connections'
 export const NeighborsSchema = Schema.Record({ key: Schema.String, value: Schema.Array(Schema.String) })
 export type Neighbors = typeof NeighborsSchema.Type
 
+/**
+ * The direct arm of the neighbourhood response.
+ *
+ * The two arms — stated connections against derived relationships — are genuinely different
+ * answers, and the direct one used to arrive untagged, so a client could not tell which it had
+ * received. `traversal` is now the discriminator.
+ */
+export const DirectNeighborhoodSchema = Schema.Struct({
+  traversal: Schema.Literal('direct'),
+  hops: NeighborsSchema,
+})
+export type DirectNeighborhood = typeof DirectNeighborhoodSchema.Type
+
 export const EntitySummarySchema = Schema.Struct({
   artifact_id: Schema.String,
   artifact_type: Schema.String,

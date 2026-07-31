@@ -61,7 +61,7 @@ export function useFreeExploration(deps: FreeExplorationDeps) {
    * Look up one entity's renderable facts.
    *
    * An aggregate stands for a group of entities rather than being one, so there is nothing
-   * to look up: its id is synthetic and /api/entity answers 404. The rejection is swallowed,
+   * to look up: its id is synthetic and the entity read answers 404. The rejection is swallowed,
    * which would make the wasted request per cluster visible only as console noise.
    */
   const fetchEntityFacts = async (id: string): Promise<EntityFacts | null> => {

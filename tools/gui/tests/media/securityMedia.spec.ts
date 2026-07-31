@@ -43,9 +43,9 @@ const impact = {
 
 async function installSyntheticSecurity(page: Page): Promise<void> {
   await addSyntheticBanner(page)
-  await page.route('**/api/assurance/security-metrics?*', (route) => route.fulfill({ json: metrics }))
-  await page.route('**/api/assurance/security-findings?*', (route) => route.fulfill({ json: findings }))
-  await page.route('**/api/assurance/vulnerability-impact?*', (route) => route.fulfill({ json: impact }))
+  await page.route('**/api/assurance/arch-artifacts/*/security-metrics', (route) => route.fulfill({ json: metrics }))
+  await page.route('**/api/assurance/arch-artifacts/*/security-findings', (route) => route.fulfill({ json: findings }))
+  await page.route('**/api/assurance/vulnerabilities/*/impact', (route) => route.fulfill({ json: impact }))
 }
 
 async function focusSecurityPanel(page: Page): Promise<void> {
@@ -67,8 +67,13 @@ test('security entity metrics panel', async ({ page }) => {
 
 test('locked security metrics state', async ({ page }) => {
   await page.route('**/api/assurance/status', (route) => route.fulfill({ json: { status: 'locked' } }))
-  await page.route('**/api/assurance/security-metrics?*', (route) => route.fulfill({ status: 423, json: {
-    error: 'store_locked', message: 'The assurance store is locked.',
+  await page.route('**/api/assurance/arch-artifacts/*/security-metrics', (route) => route.fulfill({ status: 423, json: {
+    detail: {
+      code: 'assurance_store_locked',
+      message: 'The assurance store is locked.',
+      details: null,
+      request_id: 'media',
+    },
   } }))
   const problems = watch(page)
   await page.goto(`/entity?id=${encodeURIComponent(BACKEND)}`, { waitUntil: 'load' })

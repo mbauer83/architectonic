@@ -428,8 +428,8 @@ class TestEveryReadCanonicalisesTheId:
 
     `read_artifact` and `get_entity` canonicalised; `read_entity_context`, `summarize_artifact`
     and the scoped entity read did not. The short form is what a binding stores, so an assurance
-    FMEA row linking to its architecture element loaded the entity header from `/api/entity` and
-    then took a 404 from `/api/entity-context` for the very same id — one page, two answers about
+    FMEA row linking to its architecture element loaded the entity header from the entity read and
+    then took a 404 from its context read for the very same id — one page, two answers about
     whether the entity exists.
     """
 

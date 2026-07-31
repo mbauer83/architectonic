@@ -1,5 +1,5 @@
 """Tests for the `viewpoint` parameter on the GUI diagram write endpoints (WU-E5a):
-POST /api/diagram and POST /api/diagram/edit now accept a `viewpoint` mapping, threading
+POST /api/diagrams and PUT /api/diagrams/{artifact_id} now accept a `viewpoint` mapping, threading
 straight through to `create_diagram`/`edit_diagram` — the REST surface the diagram
 create/edit views use to persist the viewpoint selector's choice, including clearing it
 back to "none" (see tests/tools/test_diagram_edit_viewpoint_clear.py for the underlying
@@ -94,14 +94,14 @@ def _create_body(*, viewpoint: dict[str, object] | None = None, dry_run: bool = 
 
 class TestCreateDiagramWithViewpoint:
     def test_create_persists_viewpoint(self, sync_client) -> None:
-        r = sync_client.post("/api/diagram", json=_create_body(viewpoint={"slug": "motivation", "version": 1}))
+        r = sync_client.post("/api/diagrams", json=_create_body(viewpoint={"slug": "motivation", "version": 1}))
         assert r.status_code == 200
         body = r.json()
         assert body["verification"]["valid"], body["verification"]
         assert _fm(body["content"])["viewpoint"] == {"slug": "motivation", "version": 1}
 
     def test_create_without_viewpoint_omits_it(self, sync_client) -> None:
-        r = sync_client.post("/api/diagram", json=_create_body())
+        r = sync_client.post("/api/diagrams", json=_create_body())
         assert r.status_code == 200
         body = r.json()
         assert body["verification"]["valid"], body["verification"]
@@ -111,15 +111,16 @@ class TestCreateDiagramWithViewpoint:
 class TestEditDiagramViewpoint:
     def _create(self, sync_client) -> str:
         r = sync_client.post(
-            "/api/diagram", json=_create_body(viewpoint={"slug": "motivation", "version": 1}, dry_run=False)
+            "/api/diagrams", json=_create_body(viewpoint={"slug": "motivation", "version": 1}, dry_run=False)
         )
         body = r.json()
         assert body["wrote"], body
         return str(body["artifact_id"])
 
-    def _edit_body(self, artifact_id: str, *, viewpoint: dict[str, object] | None) -> dict[str, object]:
+    def _edit_body(self, *, viewpoint: dict[str, object] | None) -> dict[str, object]:
+        # No `artifact_id`: identity is the path now, and the body would give a caller two places
+        # to say which diagram they meant.
         return {
-            "artifact_id": artifact_id,
             "diagram_type": "archimate-motivation",
             "name": "Landscape",
             "entity_ids": [STK_ID],
@@ -130,7 +131,9 @@ class TestEditDiagramViewpoint:
 
     def test_edit_clears_viewpoint_with_explicit_null(self, sync_client) -> None:
         artifact_id = self._create(sync_client)
-        edit = sync_client.post("/api/diagram/edit", json=self._edit_body(artifact_id, viewpoint=None))
+        edit = sync_client.put(
+            f"/api/diagrams/{artifact_id}", json=self._edit_body(viewpoint=None)
+        )
         assert edit.status_code == 200
         body = edit.json()
         assert body["verification"]["valid"], body["verification"]
@@ -138,8 +141,9 @@ class TestEditDiagramViewpoint:
 
     def test_edit_replaces_viewpoint(self, sync_client) -> None:
         artifact_id = self._create(sync_client)
-        edit = sync_client.post(
-            "/api/diagram/edit", json=self._edit_body(artifact_id, viewpoint={"slug": "layered", "version": 1})
+        edit = sync_client.put(
+            f"/api/diagrams/{artifact_id}",
+            json=self._edit_body(viewpoint={"slug": "layered", "version": 1}),
         )
         assert edit.status_code == 200
         body = edit.json()

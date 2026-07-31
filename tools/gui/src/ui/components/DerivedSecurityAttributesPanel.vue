@@ -20,7 +20,7 @@ async function load() {
   if (!props.artifactId) return
   try {
     const resp = await fetch(
-      `/api/assurance/security-metrics?anchor_entity_id=${encodeURIComponent(props.artifactId)}`)
+      `/api/assurance/arch-artifacts/${encodeURIComponent(props.artifactId)}/security-metrics`)
     if (!resp.ok) return // locked / unavailable ⇒ the panel simply is not there
     metrics.value = await resp.json() as SecurityMetricsPayload
   } catch {

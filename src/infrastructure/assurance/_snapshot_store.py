@@ -74,6 +74,9 @@ class SQLCipherSnapshotStore:
     def list_snapshot_components(self, snapshot_id: str) -> list[dict[str, Any]]:
         return reads.list_snapshot_components(self._connection, snapshot_id)
 
+    def get_component(self, component_id: str) -> dict[str, Any] | None:
+        return reads.get_component(self._connection, component_id)
+
     def list_snapshot_findings(self, snapshot_id: str) -> list[dict[str, Any]]:
         return reads.list_snapshot_findings(self._connection, snapshot_id)
 

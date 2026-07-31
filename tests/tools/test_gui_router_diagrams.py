@@ -1,8 +1,8 @@
 """Tests for the GUI diagrams router.
 
-Covers: GET /api/diagrams, /api/diagram (404 + found), /api/entity-display-search,
-/api/diagram-entity-types, /api/diagram-connection-types,
-/api/diagram-context, /api/candidate-connections; helper _rendered_name.
+Covers: GET /api/diagrams, /api/diagrams/{artifact_id} (404 + found), /api/entity-display-search,
+the diagram-type member reads, /api/diagrams/{artifact_id}/context, /api/candidate-connections;
+helper _rendered_name.
 """
 
 from __future__ import annotations
@@ -204,40 +204,40 @@ class TestListDiagrams:
         assert r.json()["total"] >= 1
 
 
-# ── GET /api/diagram ──────────────────────────────────────────────────────────
+# ── GET /api/diagrams/{artifact_id} ──────────────────────────────────────────
 
 
 class TestReadDiagram:
     def test_found(self, sync_client) -> None:
-        r = sync_client.get(f"/api/diagram?id={DIAG_ID}")
+        r = sync_client.get(f"/api/diagrams/{DIAG_ID}")
         assert r.status_code == 200
         data = r.json()
         assert data["artifact_id"] == DIAG_ID
 
     def test_not_found_returns_404(self, sync_client) -> None:
-        r = sync_client.get("/api/diagram?id=DIAG@9.ZZZ.no-such")
+        r = sync_client.get("/api/diagrams/DIAG@9.ZZZ.no-such")
         assert r.status_code == 404
 
     def test_result_includes_diagram_fields(self, sync_client) -> None:
-        r = sync_client.get(f"/api/diagram?id={DIAG_ID}")
+        r = sync_client.get(f"/api/diagrams/{DIAG_ID}")
         assert r.status_code == 200
         data = r.json()
         assert "name" in data
         assert "diagram_type" in data
 
     def test_viewpoint_is_none_when_not_applied(self, sync_client) -> None:
-        r = sync_client.get(f"/api/diagram?id={DIAG_ID}")
+        r = sync_client.get(f"/api/diagrams/{DIAG_ID}")
         assert r.status_code == 200
         assert r.json()["viewpoint"] is None
 
     def test_viewpoint_surfaces_when_applied(self, sync_client) -> None:
-        r = sync_client.get(f"/api/diagram?id={VIEWPOINT_DIAG_ID}")
+        r = sync_client.get(f"/api/diagrams/{VIEWPOINT_DIAG_ID}")
         assert r.status_code == 200
         assert r.json()["viewpoint"] == {"slug": "motivation", "version": 1}
 
 
 def test_gsn_context_includes_selectable_diagram_owned_nodes_and_edges(sync_client) -> None:
-    response = sync_client.get(f"/api/diagram-context?id={GSN_DIAG_ID}")
+    response = sync_client.get(f"/api/diagrams/{GSN_DIAG_ID}/context")
     assert response.status_code == 200
     body = response.json()
     assert {entity["display_alias"] for entity in body["entities"]} == {"g1", "s1"}
@@ -268,28 +268,28 @@ class TestEntityDisplaySearch:
         assert r.status_code == 200
 
 
-# ── GET /api/diagram-types/{name}/entity-types ───────────────────────────────
+# ── GET /api/diagram-types/{diagram_type}/entity-types ───────────────────────
 
 
 class TestDiagramEntityTypes:
     def test_returns_items(self, sync_client) -> None:
         r = sync_client.get("/api/diagram-types/archimate-application/entity-types")
         assert r.status_code == 200
-        assert isinstance(r.json(), list)
+        assert isinstance(r.json()["items"], list)
 
     def test_unknown_type_returns_404(self, sync_client) -> None:
         r = sync_client.get("/api/diagram-types/no-such-type/entity-types")
         assert r.status_code == 404
 
 
-# ── GET /api/diagram-types/{name}/connection-types ───────────────────────────
+# ── GET /api/diagram-types/{diagram_type}/connection-types ───────────────────
 
 
 class TestDiagramConnectionTypes:
     def test_returns_items(self, sync_client) -> None:
         r = sync_client.get("/api/diagram-types/archimate-application/connection-types")
         assert r.status_code == 200
-        assert isinstance(r.json(), list)
+        assert isinstance(r.json()["items"], list)
 
 
 # ── viewpoint-narrowed palette/picker (WU-E5a) ───────────────────────────────
@@ -334,14 +334,14 @@ class TestViewpointNarrowedPalette:
             "/api/diagram-types/archimate-application/entity-types?viewpoint=narrow-app"
         )
         assert r.status_code == 200
-        assert {item["artifact_type"] for item in r.json()} == {"application-component"}
+        assert {item["artifact_type"] for item in r.json()["items"]} == {"application-component"}
 
     def test_connection_types_narrowed_to_empty(self, sync_client_with_viewpoint) -> None:
         r = sync_client_with_viewpoint.get(
             "/api/diagram-types/archimate-application/connection-types?viewpoint=narrow-app"
         )
         assert r.status_code == 200
-        assert r.json() == []
+        assert r.json()["items"] == []
 
     def test_unknown_viewpoint_is_404(self, sync_client_with_viewpoint) -> None:
         r = sync_client_with_viewpoint.get(
@@ -362,16 +362,16 @@ class TestViewpointNarrowedPalette:
         assert r.status_code == 200
 
 
-# ── GET /api/diagram-context ─────────────────────────────────────────────────
+# ── GET /api/diagrams/{artifact_id}/context ──────────────────────────────────
 
 
 class TestDiagramContext:
     def test_not_found_returns_404(self, sync_client) -> None:
-        r = sync_client.get("/api/diagram-context?id=DIAG@9.ZZZ.no-such")
+        r = sync_client.get("/api/diagrams/DIAG@9.ZZZ.no-such/context")
         assert r.status_code == 404
 
     def test_found(self, sync_client) -> None:
-        r = sync_client.get(f"/api/diagram-context?id={DIAG_ID}")
+        r = sync_client.get(f"/api/diagrams/{DIAG_ID}/context")
         assert r.status_code == 200
 
 
@@ -405,9 +405,9 @@ class TestDiagramRefs:
     def test_no_shared_alias_returns_empty(self, sync_client) -> None:
         r = sync_client.get(f"/api/diagram-refs?source_id={ENT_ID}&target_id={ENT_ID}")
         assert r.status_code == 200
-        assert isinstance(r.json(), list)
+        assert isinstance(r.json()["items"], list)
 
     def test_unknown_entities_returns_empty(self, sync_client) -> None:
         r = sync_client.get("/api/diagram-refs?source_id=REQ@9.ZZZ.x&target_id=REQ@9.ZZZ.y")
         assert r.status_code == 200
-        assert r.json() == []
+        assert r.json()["items"] == []

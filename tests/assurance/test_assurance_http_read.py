@@ -259,7 +259,7 @@ def test_direct_read_secret_body_has_no_classified_content(leak_client: TestClie
 # ── arch-lens: locked → empty (not 404) ──────────────────────────────────────
 
 def test_arch_lens_locked_returns_200_empty(locked_client: TestClient) -> None:
-    r = locked_client.get("/api/assurance/arch-lens/ENT@some-entity")
+    r = locked_client.get("/api/assurance/arch-artifacts/ENT@some-entity/lens")
     assert r.status_code == 200
     body = r.json()
     assert body["locked"] is True
@@ -267,7 +267,7 @@ def test_arch_lens_locked_returns_200_empty(locked_client: TestClient) -> None:
 
 
 def test_arch_lens_unlocked_no_refs_returns_empty(unlocked_client: TestClient) -> None:
-    r = unlocked_client.get("/api/assurance/arch-lens/ENT@some-entity")
+    r = unlocked_client.get("/api/assurance/arch-artifacts/ENT@some-entity/lens")
     assert r.status_code == 200
     body = r.json()
     assert body["locked"] is False

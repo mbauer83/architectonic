@@ -234,7 +234,8 @@ def promotion_execute(
             transaction=GitWorktreeTransaction(ent_root),
         )
 
-    result = s.authorized_write(("POST", "/api/promote/execute"), _branch_and_promote)
+    result = s.authorized_write(
+            "promotion_execute_promotion", _branch_and_promote)
     if result.executed:
         repo.refresh()
     return {

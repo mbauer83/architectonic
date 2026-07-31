@@ -68,7 +68,7 @@ test.describe('derived connections', () => {
   })
 
   test.afterEach(async ({ request }) => {
-    await request.post('/api/viewpoints/remove', { data: { slug: 'diagram-view-derived-e2e', dry_run: false } })
+    await request.delete('/api/viewpoints/diagram-view-derived-e2e')
   })
 
   test('a derived connection arrow is selectable and shows its witness chain in the sidebar', async ({ page }) => {

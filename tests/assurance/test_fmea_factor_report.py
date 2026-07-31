@@ -34,22 +34,31 @@ def store(tmp_path: Path) -> Any:
     init_store(db_path)
     built = SQLCipherAssuranceStore(db_path)
     built.unlock()
-    controller = str(built.create_node("control-structure-node", "Controller"))
+    # Every node records the analysis that produced it; one without provenance is repair-only, so a
+    # fixture minting an unattributed node would exercise that guard rather than the report.
+    analysis = str(built.create_analysis("Fixture analysis", "FMEA", tlp="TLP:WHITE"))
+    built._fixture_analysis = analysis  # noqa: SLF001 — the fixture's own handle on its analysis
+    controller = str(built.create_node(
+        "control-structure-node", "Controller", analysis_id=analysis,
+    ))
     built.register_arch_ref(controller, ELEMENT, "binds-to")
     yield built
     built.lock()
 
 
 def _failure_mode(store: Any, *, with_hazard: bool = True) -> str:
+    analysis = store._fixture_analysis  # noqa: SLF001
     node_id = str(store.create_node(
         "failure-mode", "Serves a result before the clearance check runs",
-        failure_type="partial-function",
+        failure_type="partial-function", analysis_id=analysis,
     ))
     store.register_arch_ref(node_id, ELEMENT, "binds-to")
     if with_hazard:
-        loss = str(store.create_node("loss", "Disclosure"))
+        loss = str(store.create_node("loss", "Disclosure", analysis_id=analysis))
         store.update_node(loss, attributes={"severity": "major"})
-        hazard = str(store.create_node("hazard", "Readable outside the gate"))
+        hazard = str(store.create_node(
+            "hazard", "Readable outside the gate", analysis_id=analysis,
+        ))
         store.add_edge(node_id, hazard, "leads-to")
         store.add_edge(hazard, loss, "leads-to")
     return node_id
@@ -142,7 +151,10 @@ class TestRecordingAgainstThePublishedDigestApplies:
 class TestAnUnboundFailureModeHasNoRow:
     def test_no_report_without_an_element(self, store: Any) -> None:
         """A failure mode names the thing that fails; unbound, there is no row to report on."""
-        node_id = str(store.create_node("failure-mode", "Unbound", failure_type="no-function"))
+        node_id = str(store.create_node(
+            "failure-mode", "Unbound", failure_type="no-function",
+            analysis_id=store._fixture_analysis,  # noqa: SLF001
+        ))
         policy = AssuranceExposurePolicy("TLP:RED", True)
         visible, _ = policy.filter_nodes(store.list_nodes())
 

@@ -42,7 +42,7 @@ async function handleSeal() {
   sealError.value = null
   sealSuccess.value = false
   try {
-    const resp = await fetch('/api/assurance/baselines/seal', {
+    const resp = await fetch('/api/assurance/baselines', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ notes: sealNotes.value }),

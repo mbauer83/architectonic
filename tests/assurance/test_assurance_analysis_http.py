@@ -10,12 +10,12 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
-from fastapi import FastAPI
 from starlette.testclient import TestClient
 
 from src.application.assurance_exposure import AssuranceExposurePolicy
 from src.infrastructure.gui.routers._assurance_analysis_routes import analysis_router
 from src.infrastructure.gui.routers._assurance_read import read_router
+from tests.support.api_app import build_api_app
 
 
 class _FakeStore:
@@ -118,9 +118,7 @@ def _client(ctx: _FakeContext, monkeypatch: pytest.MonkeyPatch) -> TestClient:
     Uses monkeypatch (auto-reverted after each test) so patches never leak into
     other tests sharing the same worker process.
     """
-    app = FastAPI()
-    app.include_router(analysis_router)
-    app.include_router(read_router)
+    app = build_api_app(analysis_router, read_router)
     monkeypatch.setattr(_HTTP_CTX, lambda: ctx)
     monkeypatch.setattr(
         _READ_POLICY,
@@ -243,28 +241,37 @@ def test_node_listing_is_analysis_scoped(scoped: str, expected: int, monkeypatch
 def test_guidance_returns_topic(monkeypatch: pytest.MonkeyPatch) -> None:
     # Guidance is static and always callable (works even when locked).
     ctx = _FakeContext(_FakeStore(), available=False)
-    resp = _client(ctx, monkeypatch).get("/api/assurance/guidance?topic=stpa-losses")
+    resp = _client(ctx, monkeypatch).get("/api/assurance/guidance/stpa-losses")
     assert resp.status_code == 200
     assert resp.json()["topic"] == "stpa-losses"
 
 
 def test_guidance_unknown_topic_lists_available(monkeypatch: pytest.MonkeyPatch) -> None:
     ctx = _FakeContext(_FakeStore())
-    body = _client(ctx, monkeypatch).get("/api/assurance/guidance?topic=zzz").json()
+    body = _client(ctx, monkeypatch).get("/api/assurance/guidance/zzz").json()
     assert "available_topics" in body
 
 
-def test_stpa_complete_scoped(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_completeness_answers_for_the_analysis_own_method(monkeypatch: pytest.MonkeyPatch) -> None:
+    """One route, and the *analysis* decides which report it gets.
+
+    Four routes used to answer this, each taking the analysis as an optional query parameter, so
+    asking for a CAST report about an STPA analysis returned an empty one that read like a pass.
+    """
     store = _FakeStore()
     ctx = _FakeContext(store)
     client = _client(ctx, monkeypatch)
     aid = store.create_analysis("Brakes", "STPA")
     store.add_node(aid)
-    resp = client.get(f"/api/assurance/stpa-complete?analysis_id={aid}")
+    resp = client.get(f"/api/assurance/analyses/{aid}/completeness")
     assert resp.status_code == 200
     body = resp.json()
+    assert body["method"] == "STPA"
     assert "passed" in body
     assert "checks" in body
+    # The argument case travels with it: it is a second view of the same analysis, not a second
+    # resource, which is what let `gsn/completeness` collapse in here too.
+    assert "case" in body
 
 
 def test_gsn_draft_is_analysis_scoped_and_classified(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -276,7 +283,7 @@ def test_gsn_draft_is_analysis_scoped_and_classified(monkeypatch: pytest.MonkeyP
         "node_id": "L@1", "node_type": "loss", "name": "Loss of control",
         "analysis_id": aid, "tlp": "TLP:AMBER",
     }
-    body = client.get(f"/api/assurance/gsn/draft?analysis_id={aid}").json()
+    body = client.get(f"/api/assurance/analyses/{aid}/gsn/draft").json()
     assert body["effective_tlp"] == "TLP:AMBER"
     assert body["publishable"] is False
     assert body["draft"]["top_goal"]["source_losses"] == ["L@1"]
@@ -292,20 +299,41 @@ def test_gsn_draft_omits_above_ceiling_nodes(monkeypatch: pytest.MonkeyPatch) ->
         "node_id": "L@secret", "node_type": "loss", "name": "Secret loss",
         "analysis_id": aid, "tlp": "TLP:RED",
     }
-    body = client.get(f"/api/assurance/gsn/draft?analysis_id={aid}").json()
+    body = client.get(f"/api/assurance/analyses/{aid}/gsn/draft").json()
     assert body["visibility_limited"] is True
     assert body["publishable"] is False
     assert "Secret loss" not in str(body)
 
 
-def test_gsn_completeness_is_analysis_scoped(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_the_argument_case_completeness_travels_with_the_method_report(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     store = _FakeStore()
     ctx = _FakeContext(store)
     client = _client(ctx, monkeypatch)
     aid = store.create_analysis("Brakes", "STPA")
-    response = client.get(f"/api/assurance/gsn/completeness?analysis_id={aid}")
+    response = client.get(f"/api/assurance/analyses/{aid}/completeness")
     assert response.status_code == 200
-    assert response.json()["passed"] is True
+    assert response.json()["case"]["passed"] is True
+
+
+def test_completeness_of_a_method_without_one_is_a_typed_mismatch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An FMEA's projection is its matrix, so a completeness report of one does not exist.
+
+    409, not 404 and not an empty report: the analysis is there and readable, and an empty report
+    would read as a clean bill of health for a check that was never run.
+    """
+    store = _FakeStore()
+    ctx = _FakeContext(store)
+    client = _client(ctx, monkeypatch)
+    aid = store.create_analysis("Pump failure modes", "FMEA")
+    response = client.get(f"/api/assurance/analyses/{aid}/completeness")
+    assert response.status_code == 409
+    detail = response.json()["detail"]
+    assert detail["code"] == "analysis_method_mismatch"
+    assert detail["details"]["actual_method"] == "FMEA"
 
 
 def test_gsn_publication_rejects_confidential_analysis(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -321,8 +349,7 @@ def test_gsn_publication_rejects_confidential_analysis(monkeypatch: pytest.Monke
         "src.infrastructure.gui.routers.state.get_repo",
         lambda: _Repo(),
     )
-    response = client.post("/api/assurance/gsn/publications", json={
-        "analysis_id": aid,
+    response = client.post(f"/api/assurance/analyses/{aid}/gsn/publications", json={
         "diagram_id": "GSN@1.case",
         "source_bindings": [],
     })
@@ -344,8 +371,7 @@ def test_gsn_publication_records_bindings_and_audit(monkeypatch: pytest.MonkeyPa
         "analysis_id": aid, "tlp": "TLP:GREEN",
     }
     monkeypatch.setattr("src.infrastructure.gui.routers.state.get_repo", lambda: _Repo())
-    response = client.post("/api/assurance/gsn/publications", json={
-        "analysis_id": aid,
+    response = client.post(f"/api/assurance/analyses/{aid}/gsn/publications", json={
         "diagram_id": "GSN@1.case",
         "source_bindings": [{"assurance_node_id": "H@1", "gsn_node_id": "G-H@1"}],
     })
@@ -354,17 +380,18 @@ def test_gsn_publication_records_bindings_and_audit(monkeypatch: pytest.MonkeyPa
     assert ctx.archive.ops == ["PUBLISH_GSN"]
 
 
-def test_stpa_complete_locked_423(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_completeness_of_a_locked_store_is_423(monkeypatch: pytest.MonkeyPatch) -> None:
     ctx = _FakeContext(_FakeStore(), available=False)
-    assert _client(ctx, monkeypatch).get("/api/assurance/stpa-complete").status_code == 423
+    resp = _client(ctx, monkeypatch).get("/api/assurance/analyses/AN@any/completeness")
+    assert resp.status_code == 423
 
 
-def test_grc_complete_scoped(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_grc_completeness_is_the_grc_report(monkeypatch: pytest.MonkeyPatch) -> None:
     store = _FakeStore()
     ctx = _FakeContext(store)
     client = _client(ctx, monkeypatch)
     aid = store.create_analysis("Q3 controls", "GRC")
-    resp = client.get(f"/api/assurance/grc-complete?analysis_id={aid}")
+    resp = client.get(f"/api/assurance/analyses/{aid}/completeness")
     assert resp.status_code == 200
     body = resp.json()
     assert "passed" in body
@@ -373,24 +400,14 @@ def test_grc_complete_scoped(monkeypatch: pytest.MonkeyPatch) -> None:
     }
 
 
-def test_grc_complete_locked_423(monkeypatch: pytest.MonkeyPatch) -> None:
-    ctx = _FakeContext(_FakeStore(), available=False)
-    assert _client(ctx, monkeypatch).get("/api/assurance/grc-complete").status_code == 423
-
-
-def test_cast_complete_scoped(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_cast_completeness_is_the_cast_report(monkeypatch: pytest.MonkeyPatch) -> None:
     store = _FakeStore()
     ctx = _FakeContext(store)
     client = _client(ctx, monkeypatch)
     aid = store.create_analysis("Incident review", "CAST")
-    resp = client.get(f"/api/assurance/cast-complete?analysis_id={aid}")
+    resp = client.get(f"/api/assurance/analyses/{aid}/completeness")
     assert resp.status_code == 200
     body = resp.json()
     assert set(body["checks"]) == {
         "baseline_exists", "incident_has_investigates", "corrective_action_derives_constraint",
     }
-
-
-def test_cast_complete_locked_423(monkeypatch: pytest.MonkeyPatch) -> None:
-    ctx = _FakeContext(_FakeStore(), available=False)
-    assert _client(ctx, monkeypatch).get("/api/assurance/cast-complete").status_code == 423

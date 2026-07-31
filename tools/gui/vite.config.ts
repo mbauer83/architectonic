@@ -1,8 +1,64 @@
+import { readFileSync } from 'node:fs'
 import { defineConfig } from 'vitest/config'
+import type { ProxyOptions } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import istanbul from 'vite-plugin-istanbul'
 
 const backendTarget = 'http://127.0.0.1:8000'
+
+// The REST surface's timeout classification, generated from the route-policy manifest. Read as
+// data rather than imported as a module: this config and the app are two TypeScript programs, and a
+// module can only be owned by one of them. Nothing is derived here — the proxy context patterns and
+// their ordering arrive already computed, so this reading and the client's cannot diverge.
+type TimeoutPolicy = {
+  budgetMs: Record<string, number | null>
+  proxyHeadroomMs: number
+  proxyContexts: Record<string, string[]>
+}
+
+const policy = JSON.parse(
+  readFileSync(new URL('./src/adapters/http/routeTimeoutPolicy.json', import.meta.url), 'utf8'),
+) as TimeoutPolicy
+
+const proxyTimeoutMs = (timeoutClass: string): number | undefined => {
+  const budget = policy.budgetMs[timeoutClass]
+  return budget === null ? undefined : budget + policy.proxyHeadroomMs
+}
+
+const DEFAULT_PROXY_TIMEOUT_MS = (policy.budgetMs.default ?? 0) + policy.proxyHeadroomMs
+
+const logProxy: ProxyOptions['configure'] = (proxy) => {
+  proxy.on('proxyReq', (proxyReq, req) => {
+    console.log(`[vite-proxy] ${req.method} ${req.url} -> ${backendTarget}${proxyReq.path ?? '/'}`)
+  })
+  proxy.on('error', (err, req) => {
+    console.error(`[vite-proxy] ${req.method} ${req.url} failed:`, err.message)
+  })
+}
+
+/**
+ * Proxy contexts for one timeout class, keyed by the regular expressions the shared policy
+ * derives from the route templates. A `streaming` class has no budget at all — omitting
+ * `timeout` is what keeps the dev proxy from severing the event stream and triggering a
+ * reconnect storm.
+ */
+const contextsFor = (timeoutClass: 'streaming' | 'derived-graph'): Record<string, ProxyOptions> => {
+  const budget = proxyTimeoutMs(timeoutClass)
+  return Object.fromEntries(
+    policy.proxyContexts[timeoutClass].map((context) => [
+      context,
+      {
+        target: backendTarget,
+        changeOrigin: true,
+        configure: logProxy,
+        ...(budget === undefined ? {} : { timeout: budget, proxyTimeout: budget }),
+      },
+    ]),
+  )
+}
+
+const streamingContexts = contextsFor('streaming')
+const derivedGraphContexts = contextsFor('derived-graph')
 
 // Opt-in Istanbul instrumentation for E2E coverage (VITE_COVERAGE=true npm run build).
 // Off by default, so the shipped production build is never instrumented. The resulting
@@ -49,62 +105,26 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      // SSE: long-lived event stream — must NOT inherit the 10s timeout below,
-      // or the dev proxy severs it (ERR_EMPTY_RESPONSE + reconnect storm).
-      // Listed before '/api' so the more specific context matches first.
-      '/api/events': {
-        target: backendTarget,
-        changeOrigin: true,
-      },
-      // Viewpoint execution/derived-neighbor lookups can legitimately take several
-      // seconds (bounded relationship derivation over the scoped population), and every
-      // execution surface fires two of these concurrently (content + projection) — the
-      // generic 10s timeout below was silently killing both mid-flight under that
-      // concurrent load (ERR_EMPTY_RESPONSE in the browser even though the backend
-      // itself completes in ~5-6s; reproduced directly against this proxy with two
-      // simultaneous curl requests). Matches the frontend's own longer client-side fetch
-      // timeout for these same routes (`VIEWPOINT_EXECUTION_TIMEOUT_MS` in
-      // `HttpModelRepository.ts`). Listed before '/api' so the more specific context
-      // matches first.
-      '/api/viewpoints/execute': {
-        target: backendTarget,
-        changeOrigin: true,
-        timeout: 65000,
-        proxyTimeout: 65000,
-      },
-      '/api/neighbors': {
-        target: backendTarget,
-        changeOrigin: true,
-        timeout: 65000,
-        proxyTimeout: 65000,
-      },
+      // Streaming and derived-graph contexts come from the shared timeout classification,
+      // most specific first, so the dev proxy cannot disagree with the client's own budget —
+      // and so a renamed route carries its budget with it instead of silently falling to the
+      // generic rule below. Templates, not prefixes: identity now sits inside the path, and
+      // `/api/entities/{id}/neighbors` has no prefix that separates it from an entity read.
+      ...streamingContexts,
+      ...derivedGraphContexts,
       '/api': {
         target: backendTarget,
         changeOrigin: true,
-        timeout: 10000,
-        proxyTimeout: 10000,
-        configure: (proxy) => {
-          proxy.on('proxyReq', (proxyReq, req) => {
-            console.log(`[vite-proxy] ${req.method} ${req.url} -> ${backendTarget}${proxyReq.path ?? '/'}`)
-          })
-          proxy.on('error', (err, req) => {
-            console.error(`[vite-proxy] ${req.method} ${req.url} failed:`, err.message)
-          })
-        },
+        timeout: DEFAULT_PROXY_TIMEOUT_MS,
+        proxyTimeout: DEFAULT_PROXY_TIMEOUT_MS,
+        configure: logProxy,
       },
       '/admin/api': {
         target: backendTarget,
         changeOrigin: true,
-        timeout: 10000,
-        proxyTimeout: 10000,
-        configure: (proxy) => {
-          proxy.on('proxyReq', (proxyReq, req) => {
-            console.log(`[vite-proxy] ${req.method} ${req.url} -> ${backendTarget}${proxyReq.path ?? '/'}`)
-          })
-          proxy.on('error', (err, req) => {
-            console.error(`[vite-proxy] ${req.method} ${req.url} failed:`, err.message)
-          })
-        },
+        timeout: DEFAULT_PROXY_TIMEOUT_MS,
+        proxyTimeout: DEFAULT_PROXY_TIMEOUT_MS,
+        configure: logProxy,
       },
     },
   },

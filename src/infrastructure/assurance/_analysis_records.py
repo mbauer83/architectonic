@@ -15,6 +15,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from src.domain.assurance.assurance_analysis import ANALYSIS_METHODS, ANALYSIS_STATUSES, ANALYSIS_UPDATABLE
 from src.domain.clock import utc_now_iso as _now_iso
@@ -157,6 +158,10 @@ class FileAnalysisStoreMixin:
 
     The host store provides ``_repo``, ``_require_unlocked``, ``_read``, ``_write``
     and sets ``_ANALYSIS_EXT`` (the per-store file extension, e.g. ``json``/``enc``).
+
+    It must also mix in ``FileGroupingStoreMixin``: deleting an analysis has to sweep the
+    participation rows naming it, and that mixin owns the member-file naming. Both file-backed
+    stores already mix in both.
     """
 
     _repo: Path
@@ -165,6 +170,12 @@ class FileAnalysisStoreMixin:
     def _require_unlocked(self) -> None: ...
     def _read(self, path: Path) -> dict[str, object] | None: ...
     def _write(self, path: Path, data: dict[str, object]) -> None: ...
+
+    if TYPE_CHECKING:
+        # Implemented by FileGroupingStoreMixin, which sits *after* this one in every host's MRO —
+        # so the declaration is type-checking-only. A runtime stub here would shadow the real
+        # implementation and silently sweep nothing, which is the bug this method exists to fix.
+        def remove_all_analysis_members_of_analysis(self, analysis_id: str) -> None: ...
 
     def _analyses_dir(self) -> Path:
         return self._repo / ANALYSES_DIR
@@ -206,5 +217,14 @@ class FileAnalysisStoreMixin:
         )
 
     def delete_analysis(self, analysis_id: str) -> None:
+        """Delete the analysis record and the participation rows naming it.
+
+        Both together, and the participation rows first: interrupted after the analysis file is
+        gone, a retry could not find the analysis to know which rows to sweep. Provided by the
+        grouping mixin, which owns the member-file naming — every store that mixes this one in
+        mixes that one too, so a store cannot delete by a convention that has drifted from the one
+        it wrote with.
+        """
         self._require_unlocked()
+        self.remove_all_analysis_members_of_analysis(analysis_id)
         delete_analysis_file(self._analyses_dir(), self._ANALYSIS_EXT, analysis_id)

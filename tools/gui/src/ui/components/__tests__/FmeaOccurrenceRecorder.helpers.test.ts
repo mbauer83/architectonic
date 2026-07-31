@@ -63,8 +63,8 @@ describe('factorRequestBody', () => {
       value: 'occasional', justification: 'stated', author: ' analyst ',
     })
 
+    // No `node_id`: the failure mode is the address the judgement is posted to.
     expect(body).toEqual({
-      node_id: 'FMD@1',
       factor: 'occurrence',
       value: 'occasional',
       justification: 'stated',

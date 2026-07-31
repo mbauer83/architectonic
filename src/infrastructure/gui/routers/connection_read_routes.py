@@ -10,13 +10,21 @@ from fastapi import APIRouter, Depends, HTTPException
 from src.application.entity_type_predicates import is_internal_entity_type
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
+from src.infrastructure.gui.contracts.connections import ConnectionListResponse
+from src.infrastructure.gui.contracts.entities import DerivedNeighborhood, DirectNeighborhood
 from src.infrastructure.gui.routers import state as s
 from src.infrastructure.gui.routers._global_search import (
     filter_global_hits,
     hidden_diagram_entity_types,
     prioritize_global_hits,
 )
-from src.infrastructure.gui.routers._openapi import TAG_CONNECTIONS, TAG_ENTITIES, TAG_TAXONOMY, OpenMapResponse
+from src.infrastructure.gui.routers._openapi import (
+    READ_RESPONSES,
+    TAG_CONNECTIONS,
+    TAG_ENTITIES,
+    TAG_TAXONOMY,
+    OpenMapResponse,
+)
 from src.infrastructure.gui.routers.connection_neighbors import DerivationLimitError, derive_neighbor_response
 
 
@@ -31,27 +39,43 @@ def register_connection_read_routes(router: APIRouter) -> None:
     """Attach read endpoints while keeping the write router within the file-size limit."""
 
     @router.get("/api/connections", tags=[TAG_CONNECTIONS], summary="List connections (AND-filtered)",
-        response_model=list[OpenMapResponse])
+        response_model=ConnectionListResponse)
     def get_connections(
         entity_id: str,
         direction: Literal["any", "outbound", "inbound"] = "any",
         conn_type: str | None = None,
-    ) -> list[dict[str, Any]]:
+    ) -> dict[str, Any]:
         conns = s.get_repo().find_connections_for(entity_id, direction=direction, conn_type=conn_type)
-        return [s.connection_to_dict(c) for c in conns]
+        # An object rather than a bare array: a top-level array has nowhere to put a total or a
+        # cursor without becoming a breaking change later.
+        return {"items": [s.connection_to_dict(c) for c in conns]}
 
-    @router.get("/api/neighbors", tags=[TAG_CONNECTIONS], summary="Neighbouring entities of an entity",
-        response_model=OpenMapResponse)
+    @router.get("/api/entities/{artifact_id}/neighbors", tags=[TAG_CONNECTIONS],
+        summary="Neighbouring entities of an entity",
+        response_model=DirectNeighborhood | DerivedNeighborhood, responses=READ_RESPONSES)
     def get_neighbors(
-        entity_id: str,
+        artifact_id: str,
         max_hops: int = 1,
         traversal: Literal["direct", "derived"] = "direct",
         include_potential: bool = False,
         catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
     ) -> dict[str, object]:
+        """The neighbourhood of one entity, tagged by how it was reached.
+
+        ``traversal`` is an alternate execution specification, so it stays in the query — but the
+        two answers are genuinely different shapes, and the direct arm used to carry no tag at all,
+        so a client could not tell which it had received.
+        """
+        entity_id = artifact_id
         repo = s.get_repo()
+        if repo.get_entity(entity_id) is None:
+            # Identity is in the path now, so an unknown id is an unaddressable resource rather
+            # than a filter that matched nothing — and an empty neighbourhood is indistinguishable
+            # from a real one with no neighbours, which is the wrong answer to give.
+            raise HTTPException(404, f"Not found: {entity_id!r}")
         if traversal == "direct":
-            return {hop: sorted(ids) for hop, ids in repo.find_neighbors(entity_id, max_hops=max_hops).items()}
+            hops = repo.find_neighbors(entity_id, max_hops=max_hops)
+            return {"traversal": "direct", "hops": {hop: sorted(ids) for hop, ids in hops.items()}}
         try:
             return derive_neighbor_response(
                 entity_id,

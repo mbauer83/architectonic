@@ -20,24 +20,31 @@ const props = defineProps<{
 const emit = defineEmits<{ deleted: [] }>()
 
 const svc = inject(modelServiceKey)!
-const deleteMutation = useMutation<WriteResult, RepoError>()
+// Two mutations, because they are two exchanges: the plan has a body to read, the commit answers
+// 204 and has none.
+const previewMutation = useMutation<WriteResult, RepoError>()
+const deleteMutation = useMutation<void, RepoError>()
 const confirmDelete = ref(false)
 const deletePreview = ref<{ content: string | null; warnings: string[] } | null>(null)
 
+const previewFn = computed(() =>
+  (props.isGlobalDiagram && props.adminMode)
+    ? svc.previewAdminDeleteDiagram
+    : svc.previewDeleteDiagram,
+)
 const deleteFn = computed(() =>
   (props.isGlobalDiagram && props.adminMode) ? svc.adminDeleteDiagram : svc.deleteDiagram,
 )
-const deleteError = computed(() => {
-  const r = deleteMutation.result.value
-  if (r && !r.wrote) return r.content ?? 'Delete failed'
-  return deleteMutation.errorMessage.value
-})
+// A committed deletion answers 204, so there is no `wrote` flag to inspect: a failure is an error,
+// and success is silence. The *plan* still has a body, which the preview mutation reads.
+const deleteError = computed(() => previewMutation.errorMessage.value || deleteMutation.errorMessage.value)
 
 const requestDelete = () => {
   confirmDelete.value = true
   deletePreview.value = null
+  previewMutation.reset()
   deleteMutation.reset()
-  void deleteMutation.run(deleteFn.value({ artifact_id: props.diagramId, dry_run: true }))
+  void previewMutation.run(previewFn.value(props.diagramId))
     .then((exit) => Exit.match(exit, {
       onSuccess: (r) => { deletePreview.value = { content: r.content, warnings: [...r.warnings] } },
       onFailure: () => {},
@@ -52,9 +59,9 @@ const cancel = () => {
 }
 
 const executeDelete = () => {
-  void deleteMutation.run(deleteFn.value({ artifact_id: props.diagramId, dry_run: false }))
+  void deleteMutation.run(deleteFn.value(props.diagramId))
     .then((exit) => Exit.match(exit, {
-      onSuccess: (r) => { if (r.wrote) emit('deleted') },
+      onSuccess: () => emit('deleted'),
       onFailure: () => {},
     }))
 }

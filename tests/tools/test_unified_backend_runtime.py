@@ -1272,7 +1272,7 @@ def test_write_cli_errors_when_backend_unhealthy(monkeypatch, tmp_path: Path, ca
 
 
 def test_write_cli_routes_delete_entity_through_backend(monkeypatch, tmp_path: Path) -> None:
-    """delete-entity posts to /api/entity/remove when backend is available."""
+    """delete-entity targets the canonical entity detail route when a backend is available."""
     import json as json_mod  # noqa: PLC0415
 
     monkeypatch.setattr(artifact_write_cli, "read_backend_state", lambda path: {"port": 8123})
@@ -1286,7 +1286,7 @@ def test_write_cli_routes_delete_entity_through_backend(monkeypatch, tmp_path: P
         def __exit__(self, *a): pass
 
     def fake_urlopen(req, timeout=10.0):
-        requests_captured.append({"url": req.full_url, "body": json_mod.loads(req.data)})
+        requests_captured.append({"url": req.full_url, "method": req.get_method(), "body": req.data})
         return _FakeResp()
 
     monkeypatch.setattr(artifact_write_cli, "urlopen", fake_urlopen)
@@ -1294,5 +1294,7 @@ def test_write_cli_routes_delete_entity_through_backend(monkeypatch, tmp_path: P
     result = artifact_write_cli.main(["--repo-root", str(tmp_path), "delete-entity", "ENT@123.abc"])
 
     assert result == 0
-    assert requests_captured[0]["url"].endswith("/api/entity/remove")
-    assert requests_captured[0]["body"]["artifact_id"] == "ENT@123.abc"
+    # Identity is in the path and the dry-run flag in the query: a DELETE has no body for either.
+    assert requests_captured[0]["method"] == "DELETE"
+    assert "/api/entities/ENT%40123.abc" in requests_captured[0]["url"]
+    assert requests_captured[0]["body"] is None

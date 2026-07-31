@@ -190,8 +190,7 @@ const doPreview = () => {
 
 const doSave = async () => {
   if (!diagramDetail.value) return
-  const exit = await saveMutation.run(svc.editDiagram({
-    artifact_id: diagramId.value,
+  const exit = await saveMutation.run(svc.editDiagram(diagramId.value, {
     diagram_type: diagramDetail.value.diagram_type,
     name: diagramDetail.value.name,
     entity_ids: finalEntityIds.value,

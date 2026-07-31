@@ -107,4 +107,4 @@ def test_endpoint_wires_the_write_op() -> None:
     """The GUI router delegates to the write op (guard against a silent unwiring)."""
     src = (Path(__file__).parents[3] / "src/infrastructure/gui/routers/_diagram_write.py").read_text()
     assert "patch_diagram_entity_metadata" in src
-    assert "/api/diagram/entity-metadata" in src
+    assert "/api/diagrams/{artifact_id}/entities/{classifier_id}/metadata" in src

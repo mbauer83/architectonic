@@ -71,13 +71,13 @@ async function loadNodes() {
 async function loadGuidance() {
   guidance.value = {}
   if (!currentStep.value.guidanceTopic) return
-  const resp = await fetch(`/api/assurance/guidance?topic=${currentStep.value.guidanceTopic}`)
+  const resp = await fetch(`/api/assurance/guidance/${encodeURIComponent(currentStep.value.guidanceTopic)}`)
   if (resp.ok) guidance.value = await resp.json() as { what?: string; why?: string; standard?: string }
 }
 
 async function loadCompleteness() {
   if (!analysisId.value) return
-  const resp = await fetch(`/api/assurance/stpa-complete?analysis_id=${encodeURIComponent(analysisId.value)}`)
+  const resp = await fetch(`/api/assurance/analyses/${encodeURIComponent(analysisId.value)}/completeness`)
   if (resp.ok) completeness.value = await resp.json() as StpaCompleteResponse
 }
 
@@ -153,7 +153,7 @@ function modelThis(node: AssuranceNode) {
 async function sealBaseline() {
   busy.value = true
   try {
-    await fetch('/api/assurance/baselines/seal', {
+    await fetch('/api/assurance/baselines', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ notes: `STPA analysis ${analysisId.value}`, analysis_id: analysisId.value }),

@@ -22,11 +22,13 @@ from typing import TYPE_CHECKING
 
 from src.application.assurance_analysis import (
     AnalysisInvalid,
+    AnalysisLegacyInvalid,
     AnalysisLocked,
     AnalysisNotFound,
     AnalysisOk,
     AnalysisResult,
 )
+from src.application.assurance_legacy_invalid import refuse_if_legacy_invalid
 
 if TYPE_CHECKING:
     from src.application.assurance_ports import AssuranceArchive, ConfidentialAssuranceStore
@@ -123,6 +125,11 @@ def add_participant(
         return AnalysisNotFound(analysis_id)
     if store.get_node(node_id) is None:
         return AnalysisNotFound(node_id)
+    blocked = refuse_if_legacy_invalid(store, node_id)
+    if blocked is not None:
+        # A node awaiting provenance repair cannot be drawn into a second analysis: participation
+        # says another method builds on its work, and there is no recorded author to build on yet.
+        return AnalysisLegacyInvalid(node_id=blocked.node_id)
     store.add_analysis_member(analysis_id, node_id)
     archive.append(
         "ADD_ANALYSIS_MEMBER", node_id=node_id, payload={"analysis_id": analysis_id}

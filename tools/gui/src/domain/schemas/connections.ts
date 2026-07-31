@@ -23,6 +23,16 @@ export type ConnectionRecord = typeof ConnectionRecordSchema.Type
 export const ConnectionListSchema = Schema.Array(ConnectionRecordSchema)
 export type ConnectionList = typeof ConnectionListSchema.Type
 
+/**
+ * The connections read, as the surface answers it: an object with `items`.
+ *
+ * Not a bare array — a top-level array has nowhere to put a total or a cursor without becoming a
+ * second breaking change. The adapter unwraps it, so callers still see the list.
+ */
+export const ConnectionListResponseSchema = Schema.Struct({
+  items: ConnectionListSchema,
+})
+
 export const EntityContextConnectionSchema = Schema.extend(
   ConnectionRecordSchema,
   Schema.Struct({

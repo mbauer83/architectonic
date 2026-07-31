@@ -5,9 +5,10 @@ from __future__ import annotations
 import asyncio
 from collections import Counter
 from typing import Any
+from urllib.parse import quote
 
-from fastapi import APIRouter, HTTPException, Query
-from pydantic import BaseModel
+from fastapi import APIRouter, HTTPException, Query, Response, status
+from pydantic import BaseModel, ConfigDict
 
 from src.application.assurance_diagrams import assurance_surface_diagram_types
 from src.domain.repository.groups import GroupAxis, GroupEntry, GroupRegistry
@@ -18,7 +19,21 @@ from src.infrastructure.gui.routers._openapi import TAG_GROUPS, WRITE_RESPONSES,
 router = APIRouter()
 
 
-class CreateGroupBody(BaseModel):
+class _ClosedBody(BaseModel):
+    """Request bodies are closed, so a caller still sending the retired identity fields is told.
+
+    A group is named by the pair ``(kind, slug)``, and after the migration both live in the path.
+    Silently ignoring a ``kind`` in the body would let a client believe it had addressed one axis
+    while the URL addressed another.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class CreateGroupBody(_ClosedBody):
+    """A create carries the slug: it is the caller's chosen natural key, not a minted id, and the
+    collection route has nowhere else to put it."""
+
     kind: str
     slug: str
     name: str
@@ -28,27 +43,16 @@ class CreateGroupBody(BaseModel):
     type_filter: list[str] = []
 
 
-class RenameGroupBody(BaseModel):
-    kind: str
-    target: str
+class RenameGroupBody(_ClosedBody):
     name: str | None = None
     new_slug: str | None = None
 
 
-class ArchiveGroupBody(BaseModel):
-    kind: str
-    target: str
+class ArchiveGroupBody(_ClosedBody):
     confirm: str | None = None
 
 
-class UnarchiveGroupBody(BaseModel):
-    kind: str
-    target: str
-
-
-class UpdateGroupBody(BaseModel):
-    kind: str
-    target: str
+class UpdateGroupBody(_ClosedBody):
     name: str | None = None
     description: str | None = None
     meta_ontology: str | None = None
@@ -123,14 +127,14 @@ def list_groups(kind: str | None = None) -> dict[str, Any]:
     return result
 
 
-async def _exec_op(route: tuple[str, str], **kwargs: Any) -> dict[str, Any]:
+async def _exec_op(operation_id: str, **kwargs: Any) -> dict[str, Any]:
     repo_root = s.maybe_engagement_root()
     if repo_root is None:
         raise HTTPException(500, "Repository not initialized")
     from src.infrastructure.write.artifact_write.group_ops import GroupOpError, group_op  # noqa: PLC0415
 
     try:
-        result = await s.authorized_write_async(route, group_op, repo_root, **kwargs)
+        result = await s.authorized_write_async(operation_id, group_op, repo_root, **kwargs)
     except GroupOpError as exc:
         raise HTTPException(400, str(exc))
     await asyncio.to_thread(s.refresh_now)
@@ -140,11 +144,15 @@ async def _exec_op(route: tuple[str, str], **kwargs: Any) -> dict[str, Any]:
     return dict(result)
 
 
-@router.post("/api/group", tags=[TAG_GROUPS], summary="Create a group", response_model=OpenMapResponse,
-    responses=WRITE_RESPONSES)
-async def create_group(body: CreateGroupBody) -> dict[str, Any]:
-    return await _exec_op(
-        ("POST", "/api/group"),
+#: A create answers 201 and names the group in ``Location``.
+_CREATE_RESPONSES: dict[int | str, Any] = dict(WRITE_RESPONSES)
+
+
+@router.post("/api/groups", tags=[TAG_GROUPS], summary="Create a group", response_model=OpenMapResponse,
+    responses=_CREATE_RESPONSES, status_code=status.HTTP_201_CREATED)
+async def create_group(body: CreateGroupBody, response: Response) -> dict[str, Any]:
+    result = await _exec_op(
+        "groups_create_group",
         axis=body.kind,
         action="create",
         target=body.slug,
@@ -154,43 +162,54 @@ async def create_group(body: CreateGroupBody) -> dict[str, Any]:
         meta_ontology=body.meta_ontology,
         type_filter=body.type_filter or None,
     )
+    response.headers["Location"] = _group_location(body.kind, body.slug)
+    return result
 
 
-@router.put("/api/group", tags=[TAG_GROUPS], summary="Rename a group", response_model=OpenMapResponse,
-    responses=WRITE_RESPONSES)
-async def rename_group(body: RenameGroupBody) -> dict[str, Any]:
+def _group_location(kind: str, slug: str) -> str:
+    return f"/api/groups/{quote(kind, safe='')}/{quote(slug, safe='')}"
+
+
+@router.post("/api/groups/{kind}/{slug}/rename", tags=[TAG_GROUPS], summary="Rename a group",
+    response_model=OpenMapResponse, responses=WRITE_RESPONSES)
+async def rename_group(kind: str, slug: str, body: RenameGroupBody) -> dict[str, Any]:
+    """An explicit action segment, not a ``PATCH`` field: renaming re-files every member, so it is
+    a move rather than an attribute update, and it changes the resource's own address."""
     return await _exec_op(
-        ("PUT", "/api/group"),
-        axis=body.kind,
+        "groups_rename_group",
+        axis=kind,
         action="rename",
-        target=body.target,
+        target=slug,
         name=body.name,
         new_slug=body.new_slug,
     )
 
 
-@router.post("/api/group/archive", tags=[TAG_GROUPS], summary="Archive a group", response_model=OpenMapResponse,
-    responses=WRITE_RESPONSES)
-async def archive_group(body: ArchiveGroupBody) -> dict[str, Any]:
+@router.post("/api/groups/{kind}/{slug}/archive", tags=[TAG_GROUPS], summary="Archive a group",
+    response_model=OpenMapResponse, responses=WRITE_RESPONSES)
+async def archive_group(kind: str, slug: str, body: ArchiveGroupBody | None = None) -> dict[str, Any]:
     return await _exec_op(
-        ("POST", "/api/group/archive"), axis=body.kind, action="archive", target=body.target, confirm=body.confirm
+        "groups_archive_group", axis=kind, action="archive", target=slug,
+        confirm=body.confirm if body is not None else None,
     )
 
 
-@router.post("/api/group/unarchive", tags=[TAG_GROUPS], summary="Unarchive a group", response_model=OpenMapResponse,
-    responses=WRITE_RESPONSES)
-async def unarchive_group(body: UnarchiveGroupBody) -> dict[str, Any]:
-    return await _exec_op(("POST", "/api/group/unarchive"), axis=body.kind, action="unarchive", target=body.target)
+@router.post("/api/groups/{kind}/{slug}/unarchive", tags=[TAG_GROUPS], summary="Unarchive a group",
+    response_model=OpenMapResponse, responses=WRITE_RESPONSES)
+async def unarchive_group(kind: str, slug: str) -> dict[str, Any]:
+    """No body: the path names the group and the segment names the action, so there is nothing left
+    for a caller to say."""
+    return await _exec_op("groups_unarchive_group", axis=kind, action="unarchive", target=slug)
 
 
-@router.patch("/api/group", tags=[TAG_GROUPS], summary="Update a group (partial)", response_model=OpenMapResponse,
-    responses=WRITE_RESPONSES)
-async def update_group(body: UpdateGroupBody) -> dict[str, Any]:
+@router.patch("/api/groups/{kind}/{slug}", tags=[TAG_GROUPS], summary="Update a group (partial)",
+    response_model=OpenMapResponse, responses=WRITE_RESPONSES)
+async def update_group(kind: str, slug: str, body: UpdateGroupBody) -> dict[str, Any]:
     return await _exec_op(
-        ("PATCH", "/api/group"),
-        axis=body.kind,
+        "groups_update_group",
+        axis=kind,
         action="update",
-        target=body.target,
+        target=slug,
         name=body.name,
         description=body.description,
         meta_ontology=body.meta_ontology or "",
@@ -198,11 +217,11 @@ async def update_group(body: UpdateGroupBody) -> dict[str, Any]:
     )
 
 
-@router.delete("/api/group", tags=[TAG_GROUPS], summary="Delete a group", response_model=OpenMapResponse,
-    responses=WRITE_RESPONSES)
+@router.delete("/api/groups/{kind}/{slug}", tags=[TAG_GROUPS], summary="Delete a group",
+    response_model=OpenMapResponse, responses=WRITE_RESPONSES)
 async def delete_group(
-    kind: str = Query(...),
-    target: str = Query(...),
+    kind: str,
+    slug: str,
     confirm: str | None = Query(default=None),
 ) -> dict[str, Any]:
-    return await _exec_op(("DELETE", "/api/group"), axis=kind, action="delete", target=target, confirm=confirm)
+    return await _exec_op("groups_delete_group", axis=kind, action="delete", target=slug, confirm=confirm)

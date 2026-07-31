@@ -64,8 +64,8 @@ so a withheld node cannot influence a count or a priority a caller can see.
 
 | Endpoint | Purpose |
 |---|---|
-| `GET /api/assurance/fmea` | The matrix: candidate elements crossed with the failure guidewords. Optional `analysis_id` scopes which failure modes are placed into the grid; the candidate set and the causal chain behind it are unscoped. |
-| `PUT /api/assurance/fmea/factor` | Record one human judgement of one factor. |
+| `GET /api/assurance/analyses/{analysis_id}/matrix` | The matrix of one FMEA analysis: candidate elements crossed with the failure guidewords. The analysis is required — a grid spanning two analyses is not a ranking of either. Asked of another method it answers `409 analysis_method_mismatch`. |
+| `POST /api/assurance/nodes/{node_id}/factor-assessments` | Append one human judgement of one factor to a failure mode. POST, not PUT: it appends a revision rather than replacing a value. |
 
 `GET` returns one object per candidate element carrying its cells, how many guidewords have been
 answered, how many have not, and the element's worst Action Priority. Each cell reports its state

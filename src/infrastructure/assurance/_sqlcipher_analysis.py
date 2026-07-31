@@ -57,6 +57,19 @@ def list_analyses(
 
 
 def delete(conn: Any, analysis_id: str) -> None:
+    """Delete an analysis and the participation rows naming it, as one unit of work.
+
+    Participation has no foreign key to analyses, so deleting only the analysis leaves rows that
+    name something absent — and an analysis that merely *borrowed* nodes leaves one per borrowed
+    node. Two statements, one commit: an application-layer loop between them could be interrupted
+    and leave exactly the orphans this prevents.
+
+    The nodes themselves and their provenance are untouched. Participation says another analysis
+    drew on their work; the analysis going away ends that relation, not the work.
+    """
+    conn.execute(
+        "DELETE FROM assurance_analysis_members WHERE analysis_id = ?", (analysis_id,)
+    )
     conn.execute("DELETE FROM assurance_analyses WHERE analysis_id = ?", (analysis_id,))
     conn.commit()
 

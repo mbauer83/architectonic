@@ -5,7 +5,7 @@ Includes:
   - Unlock-gated read endpoints (nodes, edges, stats, coverage, verify,
     risk-register, BOM/vuln, baselines, architecture lens) — via _assurance_read.
   - Unlock-gated write endpoints (create/edit/delete nodes, edges, arch-refs,
-    baselines/seal, model-this, BOM/vuln/anchor imports) — via _assurance_write.
+    baselines, model-this, BOM/vuln/anchor imports) — via _assurance_write.
   - AI-BOM coverage / candidate scan / ML-BOM export — via _assurance_aibom.
   - Failure-mode factor judgements — via _assurance_fmea_routes.
   - Groups, filing and participation — via _assurance_grouping_routes.
@@ -29,6 +29,9 @@ from src.infrastructure.gui.routers._assurance_fmea_routes import fmea_router
 from src.infrastructure.gui.routers._assurance_grouping_routes import grouping_router
 from src.infrastructure.gui.routers._assurance_neighbors_routes import neighbors_router
 from src.infrastructure.gui.routers._assurance_read import read_router
+from src.infrastructure.gui.routers._assurance_signal_deletion_routes import (
+    signal_deletion_router,
+)
 from src.infrastructure.gui.routers._assurance_signals_routes import signals_router
 from src.infrastructure.gui.routers._assurance_write import write_router
 
@@ -36,6 +39,7 @@ router = APIRouter()
 router.include_router(read_router)
 router.include_router(neighbors_router)
 router.include_router(signals_router)
+router.include_router(signal_deletion_router)
 router.include_router(write_router)
 router.include_router(analysis_router)
 router.include_router(grouping_router)

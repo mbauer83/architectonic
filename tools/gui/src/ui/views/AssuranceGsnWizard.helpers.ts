@@ -51,13 +51,9 @@ export function completenessFailures(result: CompletenessResponse | null) {
     .map(([key, check]) => ({ key, gapCount: check.gap_count }))
 }
 
-export function publicationBody(
-  analysisId: string,
-  diagramId: string,
-  entities: GsnDiagramEntities,
-) {
+/** The publication body. No `analysis_id`: the analysis is the address it is posted to. */
+export function publicationBody(diagramId: string, entities: GsnDiagramEntities) {
   return {
-    analysis_id: analysisId,
     diagram_id: diagramId,
     source_bindings: sourceBindings(entities),
   }

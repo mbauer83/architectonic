@@ -125,7 +125,7 @@ posture metrics, since findings then live outside the confidentiality boundary;
 **`encrypted`** is a legacy alias for `sqlcipher-colocated` — the runtime tolerates it;
 update the settings document to the explicit value yourself (see the
 [upgrade guide](upgrade-guide.md#quarantine-and-blocking-findings)).
-The `assurance:` traversal budgets bound `GET /api/assurance/neighbors` (the assurance
+The `assurance:` traversal budgets bound `GET /api/assurance/nodes/{node_id}/neighbors` (the assurance
 graph explorer): the size budgets produce deterministic partial results with frontier
 node ids, while the time budget aborts the whole request with a retryable error; every
 value is hard-clamped in code so misconfiguration can never unbound the traversal.

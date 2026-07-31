@@ -19,7 +19,11 @@ SOURCE_FILE_HARD_LIMIT = 350
 _FRONTEND_ROOT = "tools/gui/src"
 _FRONTEND_EXTENSIONS = (".ts", ".vue")
 _FRONTEND_EXCLUDED_SUFFIXES = (".test.ts", ".d.ts")
-_FRONTEND_GENERATED_NAMES = frozenset({"types.generated.ts"})
+
+#: Generated output is not authored source, so no authoring policy applies to it. Keyed on the
+#: project's naming convention rather than a list of filenames: the point of the convention is that
+#: a reader — and this check — can tell generated from authored without consulting a registry.
+_FRONTEND_GENERATED_SUFFIX = ".generated.ts"
 
 # TEMPORARY grandfathered baseline: these pre-existing files exceed the hard limit and
 # MUST be refactored into smaller modules; the recorded value is each file's current
@@ -75,7 +79,7 @@ def _iter_frontend_source_files(repo_root: Path) -> list[Path]:
         for extension in _FRONTEND_EXTENSIONS
         for path in frontend_root.rglob(f"*{extension}")
         if "__tests__" not in path.parts
-        and path.name not in _FRONTEND_GENERATED_NAMES
+        and not path.name.endswith(_FRONTEND_GENERATED_SUFFIX)
         and not path.name.endswith(_FRONTEND_EXCLUDED_SUFFIXES)
     )
 

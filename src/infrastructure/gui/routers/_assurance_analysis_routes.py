@@ -11,17 +11,23 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from src.application import assurance_analysis as uc
 from src.application.assurance_exposure import NotFound, Visible
 from src.application.assurance_gsn import build_gsn_draft, record_publication
 from src.application.assurance_guidance import lookup as guidance_lookup
+from src.application.assurance_legacy_invalid import LegacyInvalidNode
 from src.application.verification.case_draft import case_completeness_from_records
 from src.application.verification.cast_complete import run_cast_complete
 from src.application.verification.grc_complete import run_grc_complete
 from src.application.verification.stpa_complete import run_stpa_complete
 from src.infrastructure.assurance.write_serialization import run_write
+from src.infrastructure.gui.contracts.errors import (
+    ApiError,
+    LegacyInvalidDetails,
+    MethodMismatchDetails,
+)
 from src.infrastructure.gui.routers._assurance_http import (
     NO_STORE,
     build_policy,
@@ -54,7 +60,10 @@ class GsnPublicationBinding(BaseModel):
 
 
 class RecordGsnPublicationBody(BaseModel):
-    analysis_id: str
+    """The analysis is the path; the body names only what is being published."""
+
+    model_config = ConfigDict(extra="forbid")
+
     diagram_id: str
     source_bindings: list[GsnPublicationBinding] = Field(default_factory=list)
 
@@ -163,43 +172,94 @@ def _translate_write(result: uc.AnalysisResult) -> JSONResponse:
         return not_found_response()
     if isinstance(result, uc.AnalysisInvalid):
         return _invalid(result)
+    if isinstance(result, uc.AnalysisLegacyInvalid):
+        raise ApiError(
+            409,
+            "node_legacy_invalid",
+            LegacyInvalidNode(node_id=result.node_id).message,
+            LegacyInvalidDetails(
+                node_id=result.node_id, permitted_operation=result.permitted_operation
+            ),
+        )
     return ok(result.payload)
 
 
 # ── Method support (wizards) ─────────────────────────────────────────────────────
 
 
-@analysis_router.get("/api/assurance/guidance")
+@analysis_router.get("/api/assurance/guidance/{topic}")
 def get_guidance(topic: str) -> JSONResponse:
     # Method coaching is static content — always callable, no store required.
     return ok(guidance_lookup(topic))
 
 
-@analysis_router.get("/api/assurance/stpa-complete")
-def stpa_complete(analysis_id: str | None = None) -> JSONResponse:
+@analysis_router.get("/api/assurance/analyses/{analysis_id}/completeness")
+def analysis_completeness(analysis_id: str) -> JSONResponse:
+    """The completeness report for one analysis, discriminated by the analysis's own method.
+
+    Four endpoints used to answer this — ``stpa-complete``, ``grc-complete``, ``cast-complete`` and
+    ``gsn/completeness`` — each taking the analysis as an *optional* query parameter, so a caller
+    could ask for a CAST report about an STPA analysis and receive an empty one that read like a
+    clean bill. The method is a property of the analysis, so the server reads it rather than
+    letting the URL assert it, and the response names the method it answered for.
+
+    The argument case travels with it under ``case``: the GSN draft is built over an analysis of
+    any method, so its completeness is a second view of the same analysis rather than a second
+    resource. An analysis whose method defines no completeness report — FMEA, whose projection is
+    its ``/matrix`` — is a typed 409 rather than an empty report.
+    """
     ctx, pol = build_policy()
     if pol.check_locked():
         return locked_response()
-    return ok(run_stpa_complete(ctx.store, analysis_id=analysis_id))
+    outcome = pol.apply_analysis(ctx.store.get_analysis(analysis_id))
+    if not isinstance(outcome, Visible):
+        return not_found_response()
+    method = str(outcome.value.get("method") or "")
+    report = _completeness_for_method(ctx, method, analysis_id)
+    if report is None:
+        raise _method_mismatch(analysis_id, method)
+    _ctx, _outcome, nodes, edges, visibility_limited = _visible_gsn_graph(analysis_id)
+    return ok({
+        "analysis_id": analysis_id,
+        "method": method,
+        **report,
+        "case": case_completeness_from_records(nodes, edges),
+        "visibility_limited": visibility_limited,
+    })
 
 
-@analysis_router.get("/api/assurance/grc-complete")
-def grc_complete(analysis_id: str | None = None) -> JSONResponse:
-    ctx, pol = build_policy()
-    if pol.check_locked():
-        return locked_response()
-    return ok(run_grc_complete(ctx.store, analysis_id=analysis_id))
+def _completeness_for_method(
+    ctx: AssuranceContext, method: str, analysis_id: str,
+) -> dict[str, object] | None:
+    """The method's own report, or None where the method defines no completeness projection."""
+    if method == "STPA":
+        return dict(run_stpa_complete(ctx.store, analysis_id=analysis_id))
+    if method == "GRC":
+        return dict(run_grc_complete(ctx.store, analysis_id=analysis_id))
+    if method == "CAST":
+        return dict(run_cast_complete(ctx.store, ctx.archive, analysis_id=analysis_id))
+    return None
 
 
-@analysis_router.get("/api/assurance/cast-complete")
-def cast_complete(analysis_id: str | None = None) -> JSONResponse:
-    ctx, pol = build_policy()
-    if pol.check_locked():
-        return locked_response()
-    return ok(run_cast_complete(ctx.store, ctx.archive, analysis_id=analysis_id))
+def _method_mismatch(analysis_id: str, actual_method: str) -> ApiError:
+    """A projection asked of an analysis whose method does not define it.
+
+    409 rather than 404: the analysis exists and the caller may read it — what does not exist is
+    this projection *of it*, and answering "not found" would send them looking for the wrong thing.
+    """
+    return ApiError(
+        409,
+        "analysis_method_mismatch",
+        f"{actual_method or 'this'} analyses have no completeness projection",
+        MethodMismatchDetails(
+            analysis_id=analysis_id,
+            expected_method="STPA, CAST or GRC",
+            actual_method=actual_method,
+        ),
+    )
 
 
-@analysis_router.get("/api/assurance/gsn/draft")
+@analysis_router.get("/api/assurance/analyses/{analysis_id}/gsn/draft")
 def gsn_draft(analysis_id: str) -> JSONResponse:
     ctx, outcome, nodes, edges, visibility_limited = _visible_gsn_graph(analysis_id)
     if not ctx.is_available():
@@ -218,7 +278,7 @@ def gsn_draft(analysis_id: str) -> JSONResponse:
     })
 
 
-@analysis_router.get("/api/assurance/gsn/rendered")
+@analysis_router.get("/api/assurance/analyses/{analysis_id}/gsn/rendered")
 def gsn_rendered(analysis_id: str) -> JSONResponse:
     from src.infrastructure.gui.routers import state  # noqa: PLC0415
     from src.infrastructure.rendering.diagram_builder import (  # noqa: PLC0415
@@ -257,21 +317,8 @@ def gsn_rendered(analysis_id: str) -> JSONResponse:
     })
 
 
-@analysis_router.get("/api/assurance/gsn/completeness")
-def gsn_completeness(analysis_id: str) -> JSONResponse:
-    ctx, outcome, nodes, edges, visibility_limited = _visible_gsn_graph(analysis_id)
-    if not ctx.is_available():
-        return locked_response()
-    if not isinstance(outcome, Visible):
-        return not_found_response()
-    return ok({
-        **case_completeness_from_records(nodes, edges),
-        "visibility_limited": visibility_limited,
-    })
-
-
-@analysis_router.post("/api/assurance/gsn/publications")
-def record_gsn_publication(body: RecordGsnPublicationBody) -> JSONResponse:
+@analysis_router.post("/api/assurance/analyses/{analysis_id}/gsn/publications")
+def record_gsn_publication(analysis_id: str, body: RecordGsnPublicationBody) -> JSONResponse:
     from src.infrastructure.gui.routers import state  # noqa: PLC0415
 
     ctx, pol = build_policy()
@@ -282,7 +329,7 @@ def record_gsn_publication(body: RecordGsnPublicationBody) -> JSONResponse:
     result = run_write(lambda: record_publication(
         ctx.store,
         ctx.archive,
-        analysis_id=body.analysis_id,
+        analysis_id=analysis_id,
         diagram_id=body.diagram_id,
         source_bindings=[binding.model_dump() for binding in body.source_bindings],
     ))

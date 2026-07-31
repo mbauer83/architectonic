@@ -57,6 +57,8 @@ def test_derived_neighbors_match_mcp(repo: Path) -> None:
     app = FastAPI()
     app.dependency_overrides[runtime_catalogs_dependency] = lambda: build_runtime_catalogs(get_module_registry())
     app.include_router(router)
-    rest_result = TestClient(app).get(f"/api/neighbors?entity_id={component}&traversal=derived&max_hops=2").json()
+    rest_result = TestClient(app).get(
+        f"/api/entities/{component}/neighbors?traversal=derived&max_hops=2"
+    ).json()
 
     assert rest_result["neighbors"] == mcp_result["neighbors"]["derived"]

@@ -1,3 +1,6 @@
+import { Either, Schema } from 'effect'
+import { type ErrorBody, ErrorBodySchema } from '../../domain/schemas/errors'
+
 export const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null
 
@@ -36,6 +39,27 @@ export const extractTypedApiError = (error: unknown): TypedApiError | null => {
   try {
     const parsed = JSON.parse(raw) as unknown
     return isRecord(parsed) && isTypedApiError(parsed.detail) ? parsed.detail : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * The typed error envelope a failed request carried, decoded — or null when it carried none.
+ *
+ * The transport throws the raw response body as an `Error`'s `.message`, so the envelope is already
+ * in hand; this decodes it with the same schema the contract assertions hold against the generated
+ * OpenAPI types. Callers use it to branch on `code` and read `details`, which is the whole reason
+ * the server sends a code instead of a sentence.
+ */
+export const readApiErrorBody = (error: unknown): ErrorBody | null => {
+  const raw = rawResponseText(error)
+  if (raw === null) return null
+  try {
+    const parsed = JSON.parse(raw) as unknown
+    if (!isRecord(parsed)) return null
+    const decoded = Schema.decodeUnknownEither(ErrorBodySchema)(parsed.detail)
+    return Either.isRight(decoded) ? decoded.right : null
   } catch {
     return null
   }
@@ -105,4 +129,28 @@ export const formatEffectError = (e: unknown): string => {
     return `Not found: ${e.id}`
   }
   return readErrorMessage(e)
+}
+
+/**
+ * A failed response's message, read from the shared error envelope.
+ *
+ * Every REST failure answers `{"detail": {code, message, details, request_id}}`, and a rejected
+ * write carries its field errors in `details.field_errors`. Joining them beats showing "HTTP 422":
+ * the point of the typed envelope is that a form can point at the field that failed.
+ *
+ * Takes an already-parsed body rather than a thrown error, for the components that call `fetch`
+ * directly — `readApiErrorBody` is the Effect-adapter path to the same envelope.
+ */
+export const describeEnvelope = (body: Record<string, unknown>, status: number): string => {
+  const detail = body.detail
+  if (typeof detail !== 'object' || detail === null) return `HTTP ${status}`
+  const { message, details } = detail as { message?: unknown; details?: unknown }
+  const fieldErrors =
+    typeof details === 'object' && details !== null && 'field_errors' in details
+      ? (details as { field_errors: { field: string; message: string }[] }).field_errors
+      : null
+  if (fieldErrors && fieldErrors.length > 0) {
+    return fieldErrors.map((e) => `${e.field}: ${e.message}`).join('; ')
+  }
+  return typeof message === 'string' && message ? message : `HTTP ${status}`
 }

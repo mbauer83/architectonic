@@ -11,6 +11,7 @@ import {
   VEX_STATUSES, stateMessage, showsMetrics, vexFormErrors,
   type SecurityMetricsPayload, type VexFormValues,
 } from './SecurityPostureDashboard.helpers'
+import { describeEnvelope } from '../lib/errors'
 
 const props = defineProps<{ anchorEntityId: string }>()
 
@@ -32,7 +33,7 @@ async function loadMetrics() {
   error.value = null
   try {
     const resp = await fetch(
-      `/api/assurance/security-metrics?anchor_entity_id=${encodeURIComponent(props.anchorEntityId)}`)
+      `/api/assurance/arch-artifacts/${encodeURIComponent(props.anchorEntityId)}/security-metrics`)
     if (resp.status === 423) { error.value = 'Store is locked.'; return }
     if (!resp.ok) { error.value = `HTTP ${resp.status}`; return }
     metrics.value = await resp.json() as SecurityMetricsPayload
@@ -51,20 +52,16 @@ async function submitVex() {
   if (formErrors.value.length > 0) return
   submitting.value = true
   try {
-    const resp = await fetch('/api/assurance/vex', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ anchor_entity_id: props.anchorEntityId, ...form.value }),
-    })
+    // The anchor is the address; the body carries only the assessment.
+    const resp = await fetch(
+      `/api/assurance/arch-artifacts/${encodeURIComponent(props.anchorEntityId)}/vex-assessments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form.value),
+      })
     const body = await resp.json().catch(() => ({})) as Record<string, unknown>
     if (!resp.ok) {
-      const fallback = typeof body.message === 'string'
-        ? body.message
-        : typeof body.error === 'string' ? body.error : `HTTP ${resp.status}`
-      const detail = Array.isArray(body.errors)
-        ? (body.errors as { message: string }[]).map((e) => e.message).join('; ')
-        : fallback
-      formErrors.value = [detail]
+      formErrors.value = [describeEnvelope(body, resp.status)]
       return
     }
     formResult.value = `recorded revision ${String(body.revision)}`

@@ -1,11 +1,18 @@
 import { Effect, Schema, ParseResult } from 'effect'
 import { NetworkError, NotFoundError } from '../../domain/errors'
+import { TIMEOUT_BUDGET_MS, timeoutBudgetForPath } from './routeTimeoutPolicy'
 
 // Shared HTTP transport for the REST adapters: URL building, timeout-bounded fetch,
 // and schema-decoded JSON verbs. Adapter files compose these; error mapping to the
 // typed domain errors happens here, once.
+//
+// The abort budget is derived from the request path, not passed in by the caller. Three call
+// sites used to pass a longer budget by hand for viewpoint execution while every other
+// long-running route silently kept the generic one — and the dev proxy had made its own,
+// different set of exceptions. Deriving it means the classification in `routeTimeoutPolicy`
+// is the only place the decision exists, and a renamed route carries its budget with it.
 
-export const REQUEST_TIMEOUT_MS = 10000
+export const REQUEST_TIMEOUT_MS = TIMEOUT_BUDGET_MS.default ?? 10000
 
 export const buildUrl = (
   path: string,
@@ -21,13 +28,25 @@ export const buildUrl = (
   return url.toString()
 }
 
-export const fetchWithTimeout = async (
-  url: string,
-  init?: RequestInit,
-  timeoutMs: number = REQUEST_TIMEOUT_MS,
-): Promise<Response> => {
+/** The abort budget for a URL, from its path's timeout class. `null` means never abort. */
+const budgetFor = (url: string): number | null => {
+  try {
+    return timeoutBudgetForPath(new URL(url, window.location.origin).pathname)
+  } catch {
+    return REQUEST_TIMEOUT_MS
+  }
+}
+
+export const fetchWithTimeout = async (url: string, init?: RequestInit): Promise<Response> => {
+  const timeoutMs = budgetFor(url)
   const controller = new AbortController()
-  const timeout = window.setTimeout(() => controller.abort(new DOMException(`Timed out after ${timeoutMs}ms`, 'TimeoutError')), timeoutMs)
+  const timeout =
+    timeoutMs === null
+      ? undefined
+      : window.setTimeout(
+          () => controller.abort(new DOMException(`Timed out after ${timeoutMs}ms`, 'TimeoutError')),
+          timeoutMs,
+        )
   try {
     return await fetch(url, { ...init, signal: controller.signal })
   } catch (error) {
@@ -39,18 +58,17 @@ export const fetchWithTimeout = async (
     })
     throw error
   } finally {
-    window.clearTimeout(timeout)
+    if (timeout !== undefined) window.clearTimeout(timeout)
   }
 }
 
 export const fetchJson = <A, I>(
   url: string,
   schema: Schema.Schema<A, I>,
-  timeoutMs?: number,
 ): Effect.Effect<A, NetworkError | ParseResult.ParseError> =>
   Effect.tryPromise({
     try: async () => {
-      const resp = await fetchWithTimeout(url, undefined, timeoutMs)
+      const resp = await fetchWithTimeout(url)
       if (resp.status === 404) throw new NotFoundError({ id: url })
       if (!resp.ok) throw new NetworkError({ status: resp.status, message: resp.statusText })
       return resp.json() as Promise<unknown>
@@ -91,7 +109,6 @@ export const postJson = <A, I>(
   url: string,
   body: unknown,
   schema: Schema.Schema<A, I>,
-  timeoutMs?: number,
 ): Effect.Effect<A, NetworkError | ParseResult.ParseError> =>
   Effect.tryPromise({
     try: async () => {
@@ -99,7 +116,7 @@ export const postJson = <A, I>(
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
-      }, timeoutMs)
+      })
       if (!resp.ok) {
         const text = await resp.text().catch(() => resp.statusText)
         throw new NetworkError({ status: resp.status, message: text })
@@ -153,6 +170,26 @@ export const patchJson = <A, I>(
     catch: (e) =>
       e instanceof NetworkError ? e : new NetworkError({ status: 0, message: String(e) }),
   }).pipe(Effect.flatMap(Schema.decodeUnknown(schema)))
+
+/**
+ * A deletion that reports nothing.
+ *
+ * Separate from `deleteReq` rather than a flag on it: a 204 has no body, so decoding one is not a
+ * schema the caller can choose — it is a different exchange. The dry-run form, which *does* answer
+ * with its plan, keeps `deleteReq`.
+ */
+export const deleteNoContent = (url: string): Effect.Effect<void, NetworkError> =>
+  Effect.tryPromise({
+    try: async () => {
+      const resp = await fetchWithTimeout(url, { method: 'DELETE' })
+      if (!resp.ok) {
+        const text = await resp.text().catch(() => resp.statusText)
+        throw new NetworkError({ status: resp.status, message: text })
+      }
+    },
+    catch: (e) =>
+      e instanceof NetworkError ? e : new NetworkError({ status: 0, message: String(e) }),
+  })
 
 export const deleteReq = <A, I>(
   url: string,

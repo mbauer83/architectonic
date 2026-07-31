@@ -22,6 +22,8 @@ import argparse
 import hashlib
 import json
 import sys
+import urllib.error
+import urllib.parse
 import urllib.request
 from typing import Any
 
@@ -92,14 +94,16 @@ def _get(base_url: str, path: str) -> dict[str, Any]:
         return json.loads(response.read().decode("utf-8"))
 
 
-def _post(base_url: str, path: str, body: dict[str, Any]) -> dict[str, Any]:
-    request = urllib.request.Request(
-        f"{base_url}{path}",
-        data=json.dumps(body).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
+def _delete(base_url: str, path: str) -> dict[str, Any]:
+    """DELETE, decoding a body only where there is one.
+
+    A committed deletion answers 204 with nothing to read; the dry run answers 200 with its plan.
+    A refusal raises ``HTTPError``, which the caller reports rather than mistaking for a deletion.
+    """
+    request = urllib.request.Request(f"{base_url}{path}", method="DELETE")
     with urllib.request.urlopen(request, timeout=30) as response:
+        if response.status == 204:
+            return {"ok": True}
         return json.loads(response.read().decode("utf-8"))
 
 
@@ -132,7 +136,13 @@ def main() -> None:
     if not targets:
         print("manifest lists no deletable slugs")
     for slug in targets:
-        result = _post(args.base_url, "/api/viewpoints/remove", {"slug": slug, "dry_run": not args.apply})
+        path = f"/api/viewpoints/{urllib.parse.quote(slug, safe='')}"
+        try:
+            result = _delete(args.base_url, path if args.apply else f"{path}?dry_run=true")
+        except urllib.error.HTTPError as error:
+            body = error.read().decode("utf-8", errors="replace")
+            print(f"{slug}: refused ({error.code}) {body}", file=sys.stderr)
+            raise SystemExit(1) from error
         outcome = "deleted" if (args.apply and result.get("ok")) else f"dry-run ok={result.get('ok')}"
         print(f"{slug}: {outcome}")
         if args.apply and not result.get("ok"):

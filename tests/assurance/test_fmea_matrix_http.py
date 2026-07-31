@@ -13,10 +13,10 @@ from typing import Any
 from unittest.mock import patch
 
 import pytest
-from fastapi import FastAPI
 from starlette.testclient import TestClient
 
 from src.domain.assurance.fmea_factors import OCCURRENCE_SCALE
+from tests.support.api_app import build_api_app
 
 pytest.importorskip("sqlcipher3", reason="sqlcipher3 not installed")
 
@@ -39,9 +39,7 @@ class _Context:
 def _client(store: Any) -> TestClient:
     from src.infrastructure.gui.routers._assurance_fmea_routes import fmea_router
 
-    app = FastAPI()
-    app.include_router(fmea_router)
-    return TestClient(app)
+    return TestClient(build_api_app(fmea_router), raise_server_exceptions=False)
 
 
 @pytest.fixture()
@@ -54,23 +52,51 @@ def locked_store(tmp_path: Path) -> Any:
     return SQLCipherAssuranceStore(db_path)
 
 
+def _matrix_route(analysis_id: str) -> str:
+    return f"/api/assurance/analyses/{analysis_id}/matrix"
+
+
+def _analysis(store: Any, method: str, name: str) -> str:
+    """An analysis to project. The matrix is a projection of one, so there is always one.
+
+    Written straight to the store rather than through the use case: this fixture's context has no
+    archive, and what is under test is the projection, not the audited create.
+    """
+    return str(store.create_analysis(name, method, tlp="TLP:WHITE"))
+
+
 class TestTheMatrixEnvelope:
     def test_it_carries_the_occurrence_vocabulary(self, unlocked_store: Any) -> None:
         with patch(_CTX_PATH, return_value=_Context(unlocked_store)):
-            body = _client(unlocked_store).get("/api/assurance/fmea").json()
+            analysis_id = _analysis(unlocked_store, "FMEA", "Pump failure modes")
+            body = _client(unlocked_store).get(_matrix_route(analysis_id)).json()
 
         assert body["occurrence_scale"] == list(OCCURRENCE_SCALE)
 
     def test_the_vocabulary_keeps_the_order_the_priority_table_reads(self, unlocked_store: Any) -> None:
         """Rank, not word: a reordered list would file judgements into the wrong band."""
         with patch(_CTX_PATH, return_value=_Context(unlocked_store)):
-            served = _client(unlocked_store).get("/api/assurance/fmea").json()["occurrence_scale"]
+            analysis_id = _analysis(unlocked_store, "FMEA", "Pump failure modes")
+            served = _client(unlocked_store).get(
+                _matrix_route(analysis_id)).json()["occurrence_scale"]
 
         assert served == sorted(served, key=lambda member: OCCURRENCE_SCALE.index(member))
 
     def test_a_locked_store_answers_423_and_serves_no_vocabulary(self, locked_store: Any) -> None:
         with patch(_CTX_PATH, return_value=_Context(locked_store)):
-            resp = _client(locked_store).get("/api/assurance/fmea")
+            resp = _client(locked_store).get(_matrix_route("AN@any"))
 
         assert resp.status_code == 423
         assert "occurrence_scale" not in resp.json()
+
+    def test_a_matrix_of_another_method_is_a_typed_mismatch(self, unlocked_store: Any) -> None:
+        """There is no failure-mode matrix of an STPA analysis, and an empty grid would read as
+        one with nothing in it rather than one that does not exist."""
+        with patch(_CTX_PATH, return_value=_Context(unlocked_store)):
+            analysis_id = _analysis(unlocked_store, "STPA", "Brakes")
+            resp = _client(unlocked_store).get(_matrix_route(analysis_id))
+
+        assert resp.status_code == 409
+        detail = resp.json()["detail"]
+        assert detail["code"] == "analysis_method_mismatch"
+        assert detail["details"]["expected_method"] == "FMEA"

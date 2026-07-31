@@ -39,7 +39,7 @@ const relationTargets = computed(() => {
 
 async function loadGuidance(topic: string) {
   if (!topic) return
-  const resp = await fetch(`/api/assurance/guidance?topic=${encodeURIComponent(topic)}`)
+  const resp = await fetch(`/api/assurance/guidance/${encodeURIComponent(topic)}`)
   if (resp.ok) guidance.value = await resp.json() as Record<string, string>
 }
 

@@ -13,13 +13,19 @@ from typing import Any
 from unittest.mock import patch
 
 import pytest
-from fastapi import FastAPI
 from starlette.testclient import TestClient
+
+from tests.support.api_app import build_api_app
 
 pytest.importorskip("sqlcipher3", reason="sqlcipher3 not installed")
 
 _CTX_PATH = "src.infrastructure.gui.routers._assurance_signals_routes.get_assurance_context"
-_ROUTE = "/api/assurance/security-snapshot-delete"
+def _snapshot_route(snapshot_id: str) -> str:
+    return f"/api/assurance/security-snapshots/{snapshot_id}"
+
+
+def _anchor_route(anchor_entity_id: str) -> str:
+    return f"/api/assurance/arch-artifacts/{anchor_entity_id}/security-snapshots"
 
 
 class _RealContext:
@@ -56,11 +62,11 @@ def ctx(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):  # type: ignore[no-unt
 
 
 def _client(ctx: Any) -> TestClient:
-    from src.infrastructure.gui.routers._assurance_signals_routes import signals_router
+    from src.infrastructure.gui.routers._assurance_signal_deletion_routes import (
+        signal_deletion_router,
+    )
 
-    app = FastAPI()
-    app.include_router(signals_router)
-    client = TestClient(app, raise_server_exceptions=False)
+    client = TestClient(build_api_app(signal_deletion_router), raise_server_exceptions=False)
     client._patch = patch(_CTX_PATH, return_value=ctx)  # type: ignore[attr-defined]
     client._patch.start()  # type: ignore[attr-defined]
     return client
@@ -81,25 +87,30 @@ def _activated(ctx: Any, snapshot_id: str, *, anchor: str, request_id: str) -> N
     store.activate_snapshot(snapshot_id)
 
 
-class TestSelector:
-    @pytest.mark.parametrize("body", [
-        {},
-        {"snapshot_id": "SNAP@1", "anchor_entity_id": "APP@1.aaa"},
-    ])
-    def test_exactly_one_selector_is_required(self, ctx: Any, body: dict[str, str]) -> None:
-        """Neither selector deletes nothing; both is ambiguous about scope — and
-        guessing the scope of a destructive call is not acceptable."""
-        resp = _client(ctx).post(_ROUTE, json=body)
+class TestScopeIsTheAddress:
+    """The scope of a destructive call is the URL, so there is no selector left to get wrong.
 
-        assert resp.status_code == 422
-        assert resp.json()["error"] == "invalid_request"
+    A body that chose between "this snapshot" and "every snapshot of this anchor" made the address
+    say nothing about what would be destroyed, and left a third case — neither, or both — that had
+    to be refused at runtime. Two routes cannot express it.
+    """
+
+    def test_a_body_cannot_widen_the_scope_of_a_snapshot_deletion(self, ctx: Any) -> None:
+        _activated(ctx, "SNAP@1", anchor="APP@1.aaa", request_id="r1")
+        _activated(ctx, "SNAP@2", anchor="APP@1.aaa", request_id="r2")
+
+        _client(ctx).request(
+            "DELETE", _snapshot_route("SNAP@1"), json={"anchor_entity_id": "APP@1.aaa"},
+        )
+
+        assert ctx.snapshot_store.get_snapshot("SNAP@2") is not None
 
 
 class TestOutcomes:
     def test_deleting_one_snapshot_reports_what_it_removed(self, ctx: Any) -> None:
         _activated(ctx, "SNAP@1", anchor="APP@1.aaa", request_id="r1")
 
-        resp = _client(ctx).post(_ROUTE, json={"snapshot_id": "SNAP@1"})
+        resp = _client(ctx).delete(_snapshot_route("SNAP@1"))
 
         assert resp.status_code == 200
         assert resp.headers.get("Cache-Control") == "no-store"
@@ -113,23 +124,23 @@ class TestOutcomes:
         _activated(ctx, "SNAP@1", anchor="APP@1.aaa", request_id="r1")
         _activated(ctx, "SNAP@2", anchor="APP@1.aaa", request_id="r2")
 
-        resp = _client(ctx).post(_ROUTE, json={"anchor_entity_id": "APP@1.aaa"})
+        resp = _client(ctx).delete(_anchor_route("APP@1.aaa"))
 
         assert resp.status_code == 200
         assert resp.json()["deleted_count"] == 2
         assert ctx.snapshot_store.list_snapshots(anchor_entity_id="APP@1.aaa") == []
 
     def test_unknown_snapshot_is_404_not_a_silent_success(self, ctx: Any) -> None:
-        resp = _client(ctx).post(_ROUTE, json={"snapshot_id": "SNAP@nope"})
+        resp = _client(ctx).delete(_snapshot_route("SNAP@nope"))
 
         assert resp.status_code == 404
-        assert resp.json()["status"] == "not_found"
+        assert resp.json()["detail"]["code"] == "not_found"
 
     def test_anchor_with_no_snapshots_is_404(self, ctx: Any) -> None:
-        resp = _client(ctx).post(_ROUTE, json={"anchor_entity_id": "APP@absent.zzz"})
+        resp = _client(ctx).delete(_anchor_route("APP@absent.zzz"))
 
         assert resp.status_code == 404
-        assert resp.json()["status"] == "nothing_to_delete"
+        assert resp.json()["detail"]["code"] == "not_found"
 
 
 class TestCapabilityGate:
@@ -138,7 +149,7 @@ class TestCapabilityGate:
         client = _client(ctx)
         ctx.store.lock()
 
-        resp = client.post(_ROUTE, json={"snapshot_id": "SNAP@1"})
+        resp = client.delete(_snapshot_route("SNAP@1"))
 
         assert resp.status_code == 423
         ctx.store.unlock()
@@ -152,10 +163,10 @@ class TestCapabilityGate:
         _activated(ctx, "SNAP@1", anchor="APP@1.aaa", request_id="r1")
         monkeypatch.setattr(gate, "storage_assurance_archive_backend", lambda: "s3-worm")
 
-        resp = _client(ctx).post(_ROUTE, json={"snapshot_id": "SNAP@1"})
+        resp = _client(ctx).delete(_snapshot_route("SNAP@1"))
 
         assert resp.status_code == 403
-        assert resp.json()["error"] == "signal_mutation_denied"
+        assert resp.json()["detail"]["code"] == "signal_mutation_denied"
         assert ctx.snapshot_store.get_snapshot("SNAP@1") is not None
 
 
@@ -170,7 +181,7 @@ class TestCrossSurfaceParity:
         from src.infrastructure.mcp.assurance_mcp import security_write_tools
 
         _activated(ctx, "SNAP@1", anchor="APP@1.aaa", request_id="r1")
-        rest = _client(ctx).post(_ROUTE, json={"snapshot_id": "SNAP@1"}).json()
+        rest = _client(ctx).delete(_snapshot_route("SNAP@1")).json()
 
         _activated(ctx, "SNAP@1", anchor="APP@1.aaa", request_id="r1")
         monkeypatch.setattr(security_write_tools, "get_assurance_context", lambda: ctx)

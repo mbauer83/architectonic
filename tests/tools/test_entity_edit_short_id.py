@@ -122,10 +122,9 @@ class TestRestSurfaceAcceptsShortIds:
         client, repo = rest_client
         full_id = _create(repo, "Rest Short Id")
 
-        response = client.post(
-            "/api/entity/edit",
+        response = client.patch(
+            f"/api/entities/{_short(full_id)}",
             json={
-                "artifact_id": _short(full_id),
                 "properties": {"Source Repository": "https://example.invalid/repo"},
                 "dry_run": False,
             },

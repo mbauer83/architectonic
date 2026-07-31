@@ -10,7 +10,7 @@ export const PermittedConnectionsByPeerSchema = Schema.Struct({
 /**
  * The effective merged metadata schema a (connection-type, specialization) pair authors
  * against. Connections have no schema endpoint of their own — unlike entities, which fetch
- * theirs from /api/entity-schemata — so it rides along in the guidance payload. Absent when
+ * theirs from /api/entity-schemata/{artifact_type} — so it rides along in the guidance payload. Absent when
  * the backend resolved no repository root.
  */
 export const ConnectionMetadataSchemaSchema = Schema.Struct({

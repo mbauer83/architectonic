@@ -28,14 +28,35 @@ Run one at a time, never concurrently, before committing:
    with `error: unrecognized arguments: -n` before running anything.
 2. `ruff check src/ tests/` — must be 0 errors (including E501)
 3. `uv run zuban check` — must pass
+4. `uv run tools/openapi/generate_timeout_policy.py --check` — the frontend's committed timeout
+   policy still matches the manifest
 
 For any change touching the GUI, its API payloads, or model content the GUI renders, add from `tools/gui/`:
 
-4. `npm run typecheck`, `npm test`, `npm run build`
-5. `npm run test:e2e` — needs the backend running on `:8000`; pass `E2E_BASE_URL` if it is elsewhere
-6. `npm run lint` — read the output in full; never pipe it through `tail` or `grep`, which masks the exit code
+5. `npm run typecheck`, `npm test`, `npm run build`
+6. `npm run contracts:check` — the committed `openapi.generated.ts` matches the backend, and the
+   hand-written effect schemas match it. Self-contained: it builds the application in-process, so it
+   needs no running backend and writes nothing. When it reports staleness, run
+   `npm run contracts:generate` and commit the result.
+7. `npm run test:e2e` — needs the backend running on `:8000`; pass `E2E_BASE_URL` if it is elsewhere
+8. `npm run lint` — read the output in full; never pipe it through `tail` or `grep`, which masks the
+   exit code. It takes ~10 minutes; run `npm run lint:fast` while iterating and the full one once at
+   the end.
 
 The browser suite is the only one that exercises the real application, so leaving it to CI means UI and content regressions are discovered after the fact rather than before the commit.
+
+## REST routes and response contracts
+
+Every REST operation has exactly one row in the route-policy manifest
+(`src/infrastructure/gui/route_policy/`), and that row — not the decorator — is what the fitness
+functions in `tests/architecture/` compare the served surface against. Adding or renaming an
+operation means editing the row, and a handler that names an operation id the manifest does not
+declare fails its request rather than only a test.
+
+A rename moves its decorator, its manifest row, its `authorized_write` key, its cache-eligibility
+template and its client/proxy timeout rule **in the same commit**. The migration ledger in
+`route_policy/_pending.py` records what is still served at its old address and what is not served
+yet; both shrink to empty, and nothing may be added to either.
 
 ## Test assertions against live model content
 

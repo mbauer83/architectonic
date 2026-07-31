@@ -50,7 +50,7 @@ def _effective_max_hops(requested: int | None) -> int:
     return max(1, min(requested, assurance_neighbors_max_hops()))
 
 
-@neighbors_router.get("/api/assurance/neighbors")
+@neighbors_router.get("/api/assurance/nodes/{node_id}/neighbors")
 def assurance_neighbors(node_id: str, max_hops: int | None = None) -> JSONResponse:
     ctx, pol = _policy()
     if pol.check_locked():

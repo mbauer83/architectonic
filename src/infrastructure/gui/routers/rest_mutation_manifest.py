@@ -1,12 +1,23 @@
-"""REST mutation manifest: every architecture-repository REST mutator's
-authorization identity, and the explicit classification of write-shaped routes
-that mutate nothing.
+"""REST mutation manifest: every architecture-repository mutator's authorization identity, and
+the explicit classification of write-shaped operations that mutate nothing.
 
 Handlers execute their writes exclusively through ``state.authorized_write`` /
-``state.authorized_write_async``, passing their route key; the helper refuses
-route keys without a manifest row, so an unclassified mutator cannot execute.
-Routes under ``/api/assurance`` mutate the confidential assurance store, which
-owns its own unlock gating — they are outside this manifest by prefix.
+``state.authorized_write_async``, passing their **operation id**; the helper refuses an operation
+without a manifest row, so an unclassified mutator cannot execute.
+
+Keyed by operation id, not by ``(METHOD, path)``. Four registries used to hold their own copy of a
+route's path, and the copy inside each handler was the one no equality test could see: a decorator
+renamed without its ``authorized_write`` tuple failed the live write closed while the suite stayed
+green. An operation id is stable across a rename, so the authorization identity no longer moves when
+the address does — and the route-policy manifest, which owns the address, is where a rename lands.
+
+This remains a *second* declaration, deliberately: the route policy says an operation mutates the
+repository, and this says with what intent and against which root. Two independently maintained sets
+compared for equality is what makes the fitness function an oracle rather than a tautology.
+
+Operations under ``/api/assurance`` mutate the confidential assurance store, which owns its own
+unlock and capability gating — they are outside this manifest by design, and a fitness function
+asserts that no repository mutator hides under that prefix.
 """
 
 from __future__ import annotations
@@ -19,96 +30,93 @@ from src.application.mutation_authorization import (
     RepositoryWrite,
 )
 
-RouteKey = tuple[str, str]
-
 ASSURANCE_ROUTE_PREFIX = "/api/assurance"
 
-_ENGAGEMENT_ROUTES: tuple[RouteKey, ...] = (
-    ("POST", "/api/entity"),
-    ("POST", "/api/entity/edit"),
-    ("POST", "/api/entity/remove"),
-    ("POST", "/api/connection"),
-    ("POST", "/api/connection/edit"),
-    ("POST", "/api/connection/associate"),
-    ("POST", "/api/connection/remove"),
-    ("POST", "/api/cleanup-broken-refs"),
-    ("POST", "/api/document"),
-    ("PUT", "/api/document/{artifact_id}"),
-    ("DELETE", "/api/document/{artifact_id}"),
-    ("POST", "/api/diagram"),
-    ("POST", "/api/diagram/edit"),
-    ("POST", "/api/diagram/entity-metadata"),
-    ("POST", "/api/diagram/sync"),
-    ("POST", "/api/diagram/remove"),
-    ("PUT", "/api/diagram/edge-label"),
-    ("POST", "/api/matrix"),
-    ("POST", "/api/matrix/edit"),
-    ("POST", "/api/group"),
-    ("PUT", "/api/group"),
-    ("PATCH", "/api/group"),
-    ("DELETE", "/api/group"),
-    ("POST", "/api/group/archive"),
-    ("POST", "/api/group/unarchive"),
-    ("PUT", "/api/viewpoints/pins"),
-    ("POST", "/api/viewpoints"),
-    ("POST", "/api/viewpoints/edit"),
-    ("POST", "/api/viewpoints/remove"),
-    ("POST", "/api/sync/engagement/save"),
+_ENGAGEMENT_OPERATIONS: tuple[str, ...] = (
+    "connections_cleanup_broken_references",
+    "connections_create_connection",
+    "connections_delete_connection",
+    "connections_update_connection",
+    "connections_update_connection_associations",
+    "diagrams_create_diagram",
+    "diagrams_delete_diagram",
+    "diagrams_replace_diagram",
+    "diagrams_set_diagram_edge_label",
+    "diagrams_sync_diagram_to_model",
+    "diagrams_update_diagram_attribute_metadata",
+    "diagrams_update_diagram_classifier_metadata",
+    "documents_create_document",
+    "documents_delete_document",
+    "documents_update_document",
+    "entities_create_entity",
+    "entities_delete_entity",
+    "entities_update_entity",
+    "groups_archive_group",
+    "groups_create_group",
+    "groups_delete_group",
+    "groups_rename_group",
+    "groups_unarchive_group",
+    "groups_update_group",
+    "matrices_create_matrix",
+    "matrices_replace_matrix",
+    "sync_save_engagement",
+    "viewpoints_create_viewpoint",
+    "viewpoints_delete_viewpoint",
+    "viewpoints_replace_viewpoint",
+    "viewpoints_replace_viewpoint_pins",
 )
 
-_ADMIN_ROUTES: tuple[RouteKey, ...] = (
-    ("POST", "/admin/api/entity"),
-    ("POST", "/admin/api/entity/edit"),
-    ("POST", "/admin/api/entity/remove"),
-    ("POST", "/admin/api/connection"),
-    ("POST", "/admin/api/connection/remove"),
-    ("POST", "/admin/api/diagram"),
-    ("POST", "/admin/api/diagram/remove"),
+_ADMIN_OPERATIONS: tuple[str, ...] = (
+    "admin_create_connection",
+    "admin_create_diagram",
+    "admin_create_entity",
+    "admin_delete_connection",
+    "admin_delete_diagram",
+    "admin_delete_entity",
+    "admin_update_entity",
 )
 
 _ENGAGEMENT_INTENT: MutationIntent = "engagement_authoring"
 _ADMIN_INTENT: MutationIntent = "enterprise_admin_authoring"
 
-REST_MUTATION_MANIFEST: dict[RouteKey, MutationIntent] = {
-    **{route: _ENGAGEMENT_INTENT for route in _ENGAGEMENT_ROUTES},
-    **{route: _ADMIN_INTENT for route in _ADMIN_ROUTES},
-    ("POST", "/api/promote/execute"): "promotion",
-    ("POST", "/api/sync/enterprise/save"): "enterprise_save",
-    ("POST", "/api/sync/enterprise/submit"): "enterprise_submit",
-    ("POST", "/api/sync/enterprise/withdraw"): "enterprise_discard",
+REST_MUTATION_MANIFEST: dict[str, MutationIntent] = {
+    **{operation: _ENGAGEMENT_INTENT for operation in _ENGAGEMENT_OPERATIONS},
+    **{operation: _ADMIN_INTENT for operation in _ADMIN_OPERATIONS},
+    "promotion_execute_promotion": "promotion",
+    "sync_save_enterprise": "enterprise_save",
+    "sync_submit_enterprise": "enterprise_submit",
+    "sync_withdraw_enterprise": "enterprise_discard",
 }
 
-# Write-shaped routes that mutate no repository state: previews, plans, query
-# execution/exports, and non-persistent identifier minting.
-NON_MUTATING_REST_ROUTES: frozenset[RouteKey] = frozenset(
-    {
-        ("POST", "/api/diagram/preview"),
-        ("POST", "/api/matrix/preview"),
-        ("POST", "/api/promote/plan"),
-        ("POST", "/api/viewpoints/summarize"),
-        ("POST", "/api/viewpoints/execute"),
-        ("POST", "/api/viewpoints/export-csv"),
-        ("POST", "/api/viewpoints/export-render"),
-        ("POST", "/api/viewpoints/execute-projection"),
-        ("POST", "/api/viewpoints/execute-diagram"),
-        ("POST", "/api/identifiers/allocate"),
-    }
-)
+#: Write-shaped operations that mutate no repository state: previews, plans, query
+#: execution/exports, and non-persistent identifier minting.
+NON_MUTATING_REST_OPERATIONS: frozenset[str] = frozenset({
+    "diagrams_preview_diagram",
+    "entities_allocate_identifiers",
+    "matrices_preview_matrix",
+    "promotion_plan_promotion",
+    "viewpoints_execute_viewpoint",
+    "viewpoints_execute_viewpoint_diagram",
+    "viewpoints_execute_viewpoint_projection",
+    "viewpoints_export_viewpoint_csv",
+    "viewpoints_export_viewpoint_render",
+    "viewpoints_summarize_viewpoint",
+})
 
 
-def build_rest_request(route: RouteKey) -> MutationRequest:
-    """Build the MutationRequest for a manifested route from the configured roots.
+def build_rest_request(operation_id: str) -> MutationRequest:
+    """Build the MutationRequest for a manifested operation from the configured roots.
 
-    Raises LookupError for unmanifested routes — an unclassified mutator cannot
-    execute a write.
+    Raises LookupError for an unmanifested operation — an unclassified mutator cannot execute a
+    repository mutation, and failing here fails it closed at the request rather than in review.
     """
     from src.infrastructure.gui.routers import state as gui_state  # noqa: PLC0415
 
-    intent = REST_MUTATION_MANIFEST.get(route)
+    intent = REST_MUTATION_MANIFEST.get(operation_id)
     if intent is None:
         raise LookupError(
-            f"No REST mutation manifest row for route {route!r} — classify the route "
-            "before it may execute a repository mutation."
+            f"No REST mutation manifest row for operation {operation_id!r} — classify the "
+            "operation before it may execute a repository mutation."
         )
     match intent:
         case "engagement_authoring" | "maintenance":

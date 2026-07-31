@@ -7,10 +7,10 @@ Covers:
 - idempotent: re-projecting a diagram yields byte-stable output, the modification stamp aside
 - sync_diagram_to_model raises ValueError when called on a scope-bound diagram
 - ArchiMate-reconcile behavior unchanged through refresh_diagram
-- MCP auto-sync and REST /api/diagram/sync route through refresh_diagram
+- MCP auto-sync and REST /api/diagrams/{artifact_id}/sync route through refresh_diagram
 - standalone (non-scope-bound diagram-entities) diagram is never deleted on refresh
 - ArchiMate reconcile with all-unresolved entities preserves the diagram
-- REST /api/diagram/sync adapter delegates to refresh_diagram
+- REST /api/diagrams/{artifact_id}/sync adapter delegates to refresh_diagram
 """
 
 from __future__ import annotations
@@ -532,7 +532,7 @@ class TestArchiMateEmptyPreservesDiagram:
 
 
 # ---------------------------------------------------------------------------
-# REST adapter: POST /api/diagram/sync delegates to refresh_diagram
+# REST adapter: POST /api/diagrams/{artifact_id}/sync delegates to refresh_diagram
 # ---------------------------------------------------------------------------
 
 
@@ -549,12 +549,11 @@ class TestRestSyncAdapter:
 
         gui_state.init_state(ArtifactRepository(shared_artifact_index(repo)), repo, None)
 
-        body = SyncDiagramToModelBody(artifact_id=diag_id, dry_run=True)
-        result = sync_diagram_to_model_gui(body)
+        result = sync_diagram_to_model_gui(diag_id, SyncDiagramToModelBody(dry_run=True))
 
         assert "wrote" in result
         assert result.get("deleted_diagram") is not True, (
-            "REST /api/diagram/sync must not return deleted_diagram=True for scope-bound diagrams"
+            "REST /api/diagrams/{artifact_id}/sync must not return deleted_diagram=True for scope-bound diagrams"
         )
 
     def test_rest_sync_scope_bound_not_deleted(self, repo: Path) -> None:
@@ -570,5 +569,5 @@ class TestRestSyncAdapter:
 
         gui_state.init_state(ArtifactRepository(shared_artifact_index(repo)), repo, None)
 
-        sync_diagram_to_model_gui(SyncDiagramToModelBody(artifact_id=diag_id, dry_run=False))
+        sync_diagram_to_model_gui(diag_id, SyncDiagramToModelBody(dry_run=False))
         assert path.exists()

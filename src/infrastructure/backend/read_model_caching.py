@@ -14,52 +14,56 @@ request costs ~15 ms; a 304 skips essentially all of the difference.
 Applied as middleware rather than per handler so it reaches every model-derived read at once
 and cannot be forgotten by the next one added.
 
-**Only model-derived paths may opt in.** A response that also depends on git state, the
+**Only model-derived operations may opt in.** A response that also depends on git state, the
 confidential store, or the clock is not a function of the model generation, so an ETag
 derived from it would be a promise the server cannot keep — a stale 304 is invisible to the
-client and indistinguishable from correct data. The prefix list is therefore an allowlist,
-never a denylist: a new endpoint is uncached until someone establishes that it qualifies.
+client and indistinguishable from correct data.
+
+Which operations qualify is decided in the route-policy manifest (``conditional_read="etag"``),
+not here. This module used to hold its own exact-string list, and an exact string cannot express
+`/api/entities/{artifact_id}` at all — nor survive a rename, which dropped the ETag silently.
 """
 
 from __future__ import annotations
 
 import hashlib
+import re
 from collections.abc import Awaitable, Callable
 from typing import Any
 
 from starlette.requests import Request
 from starlette.responses import Response
 
-#: Read paths whose body is a pure function of the indexed model and the URL.
+from src.infrastructure.gui.route_policy import SERVED_CONDITIONAL_READ_TEMPLATES
+
+#: Route templates whose body is a pure function of the indexed model and the URL, compiled once.
 #:
-#: EXACT paths, never prefixes. A prefix silently adopts every route added beneath it later,
-#: which is the one way a resource that reads outside the index could start being cached
-#: without anyone deciding that it should. Adding an entry here is a claim that
-#: `tests/infrastructure/test_read_model_caching_coverage.py` then has to demonstrate: write
-#: something of that kind, and the validator must change.
+#: **Templates, not exact paths.** It was exact-string membership, and identity has moved into the
+#: path: `/api/entities/{artifact_id}` cannot be listed as a literal, and renaming a listed path
+#: silently dropped its ETag with nothing failing. The set comes from the route-policy manifest,
+#: which is where cache eligibility is decided, so the registry is no longer a second copy of that
+#: decision that someone has to remember to edit.
 #:
-#: Deliberately absent, because the read-model generation does not track them:
-#:   * `/api/viewpoints` — definitions live in `.arch-repo/` and are reloaded per request by
-#:     `fresh_viewpoints_runtime_catalogs_dependency`, precisely because the index does not
-#:     see them; an index-derived validator would pin a catalog the user just edited.
-#:   * `/api/entity-schemata`, `/api/entity-taxonomy` — schemata are repo data outside the
-#:     indexed artifact set.
-#:   * anything under `/api/sync/`, `/api/assurance/` — git state and the confidential store
-#:     move independently of the model generation.
-_MODEL_DERIVED_PATHS: frozenset[str] = frozenset({
-    "/api/entities",
-    "/api/entity",
-    "/api/entity-context",
-    "/api/connections",
-    "/api/diagrams",
-    "/api/diagram-entities",
-    "/api/documents",
-    "/api/stats",
-})
+#: Eligibility remains an **allowlist**, never a denylist: a new endpoint is uncached until someone
+#: establishes that its body is a function of the model generation. The manifest's docstrings record
+#: the deliberate exclusions — viewpoint definitions live outside the index and are reloaded per
+#: request; schemata are repo data outside the indexed artifact set; anything under `/api/sync/` or
+#: `/api/assurance/` moves with git state or the confidential store, independently of the model.
+_CACHEABLE_TEMPLATES: tuple[re.Pattern[str], ...] = tuple(
+    re.compile(
+        "^"
+        + "/".join(
+            r"[^/]+" if segment.startswith("{") and segment.endswith("}") else re.escape(segment)
+            for segment in template.split("/")
+        )
+        + "$"
+    )
+    for template in sorted(SERVED_CONDITIONAL_READ_TEMPLATES)
+)
 
 
 def _is_cacheable(path: str) -> bool:
-    return path in _MODEL_DERIVED_PATHS
+    return any(pattern.match(path) for pattern in _CACHEABLE_TEMPLATES)
 
 
 def _entity_tag(model_etag: str, request: Request) -> str:

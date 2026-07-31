@@ -125,34 +125,37 @@ def admin_client(tmp_path: Path, enterprise_root: Path):
     return TestClient(app)
 
 
+def _connection_url(source: str, target: str, conn_type: str = "archimate-association") -> str:
+    """The admin connection detail URL for one endpoint pair.
+
+    A connection's identity is the single-segment composite ``{src}---{tgt}@@{type}``, so it is
+    addressable by path like any other resource — the endpoints do not need a body.
+    """
+    return f"/admin/api/connections/{source}---{target}@@{conn_type}"
+
+
 # ── 403 for non-admin clients ─────────────────────────────────────────────────
 
 
 class TestNonAdminReturns403:
     def test_create_entity_403(self, non_admin_client) -> None:
         r = non_admin_client.post(
-            "/admin/api/entity",
+            "/admin/api/entities",
             json={"artifact_type": "requirement", "name": "Test"},
         )
         assert r.status_code == 403
 
     def test_edit_entity_403(self, non_admin_client) -> None:
-        r = non_admin_client.post(
-            "/admin/api/entity/edit",
-            json={"artifact_id": ENT_ID},
-        )
+        r = non_admin_client.patch(f"/admin/api/entities/{ENT_ID}", json={})
         assert r.status_code == 403
 
     def test_remove_entity_403(self, non_admin_client) -> None:
-        r = non_admin_client.post(
-            "/admin/api/entity/remove",
-            json={"artifact_id": ENT_ID},
-        )
+        r = non_admin_client.delete(f"/admin/api/entities/{ENT_ID}")
         assert r.status_code == 403
 
     def test_add_connection_403(self, non_admin_client) -> None:
         r = non_admin_client.post(
-            "/admin/api/connection",
+            "/admin/api/connections",
             json={
                 "source_entity": ENT_ID,
                 "connection_type": "archimate-association",
@@ -162,19 +165,12 @@ class TestNonAdminReturns403:
         assert r.status_code == 403
 
     def test_remove_connection_403(self, non_admin_client) -> None:
-        r = non_admin_client.post(
-            "/admin/api/connection/remove",
-            json={
-                "source_entity": ENT_ID,
-                "connection_type": "archimate-association",
-                "target_entity": TGT_ID,
-            },
-        )
+        r = non_admin_client.delete(_connection_url(ENT_ID, TGT_ID))
         assert r.status_code == 403
 
     def test_create_diagram_403(self, non_admin_client) -> None:
         r = non_admin_client.post(
-            "/admin/api/diagram",
+            "/admin/api/diagrams",
             json={
                 "diagram_type": "archimate-application",
                 "name": "Test",
@@ -185,10 +181,7 @@ class TestNonAdminReturns403:
         assert r.status_code == 403
 
     def test_remove_diagram_403(self, non_admin_client) -> None:
-        r = non_admin_client.post(
-            "/admin/api/diagram/remove",
-            json={"artifact_id": "DIAG@1.AA.test"},
-        )
+        r = non_admin_client.delete("/admin/api/diagrams/DIAG@1.AA.test")
         assert r.status_code == 403
 
 
@@ -198,7 +191,7 @@ class TestNonAdminReturns403:
 class TestAdminCreateEntity:
     def test_dry_run_returns_not_wrote(self, admin_client) -> None:
         r = admin_client.post(
-            "/admin/api/entity",
+            "/admin/api/entities",
             json={"artifact_type": "requirement", "name": "New Admin Entity", "dry_run": True},
         )
         assert r.status_code == 200
@@ -206,7 +199,7 @@ class TestAdminCreateEntity:
 
     def test_dry_run_includes_artifact_id(self, admin_client) -> None:
         r = admin_client.post(
-            "/admin/api/entity",
+            "/admin/api/entities",
             json={"artifact_type": "requirement", "name": "Named Entity", "dry_run": True},
         )
         assert r.status_code == 200
@@ -214,7 +207,7 @@ class TestAdminCreateEntity:
 
     def test_invalid_artifact_type_returns_400(self, admin_client) -> None:
         r = admin_client.post(
-            "/admin/api/entity",
+            "/admin/api/entities",
             json={"artifact_type": "no-such-type", "name": "Bad Type", "dry_run": True},
         )
         assert r.status_code == 400
@@ -225,17 +218,15 @@ class TestAdminCreateEntity:
 
 class TestAdminEditEntity:
     def test_dry_run_returns_not_wrote(self, admin_client) -> None:
-        r = admin_client.post(
-            "/admin/api/entity/edit",
-            json={"artifact_id": ENT_ID, "name": "Updated Name", "dry_run": True},
+        r = admin_client.patch(
+            f"/admin/api/entities/{ENT_ID}", json={"name": "Updated Name", "dry_run": True},
         )
         assert r.status_code == 200
         assert r.json()["wrote"] is False
 
     def test_not_found_returns_400(self, admin_client) -> None:
-        r = admin_client.post(
-            "/admin/api/entity/edit",
-            json={"artifact_id": "REQ@9.ZZZ.no-such", "dry_run": True},
+        r = admin_client.patch(
+            "/admin/api/entities/REQ@9.ZZZ.no-such", json={"dry_run": True},
         )
         assert r.status_code == 400
 
@@ -245,18 +236,12 @@ class TestAdminEditEntity:
 
 class TestAdminRemoveEntity:
     def test_dry_run_returns_not_wrote(self, admin_client) -> None:
-        r = admin_client.post(
-            "/admin/api/entity/remove",
-            json={"artifact_id": ENT_ID, "dry_run": True},
-        )
+        r = admin_client.delete(f"/admin/api/entities/{ENT_ID}?dry_run=true")
         assert r.status_code == 200
         assert r.json()["wrote"] is False
 
     def test_not_found_returns_400(self, admin_client) -> None:
-        r = admin_client.post(
-            "/admin/api/entity/remove",
-            json={"artifact_id": "REQ@9.ZZZ.no-such", "dry_run": True},
-        )
+        r = admin_client.delete("/admin/api/entities/REQ@9.ZZZ.no-such?dry_run=true")
         assert r.status_code == 400
 
 
@@ -267,7 +252,7 @@ class TestAdminAddConnection:
     def test_dry_run_returns_not_wrote(self, admin_client) -> None:
         # Use TGT→ENT direction — no outgoing file for TGT_ID
         r = admin_client.post(
-            "/admin/api/connection",
+            "/admin/api/connections",
             json={
                 "source_entity": TGT_ID,
                 "connection_type": "archimate-association",
@@ -280,7 +265,7 @@ class TestAdminAddConnection:
 
     def test_unknown_source_returns_400(self, admin_client) -> None:
         r = admin_client.post(
-            "/admin/api/connection",
+            "/admin/api/connections",
             json={
                 "source_entity": "REQ@9.ZZZ.no-such",
                 "connection_type": "archimate-association",
@@ -296,27 +281,13 @@ class TestAdminAddConnection:
 
 class TestAdminRemoveConnection:
     def test_dry_run_returns_not_wrote(self, admin_client) -> None:
-        r = admin_client.post(
-            "/admin/api/connection/remove",
-            json={
-                "source_entity": ENT_ID,
-                "connection_type": "archimate-association",
-                "target_entity": TGT_ID,
-                "dry_run": True,
-            },
-        )
+        r = admin_client.delete(f"{_connection_url(ENT_ID, TGT_ID)}?dry_run=true")
         assert r.status_code == 200
         assert r.json()["wrote"] is False
 
     def test_connection_not_found_returns_400(self, admin_client) -> None:
-        r = admin_client.post(
-            "/admin/api/connection/remove",
-            json={
-                "source_entity": ENT_ID,
-                "connection_type": "archimate-association",
-                "target_entity": "REQ@9.ZZZ.nonexistent",
-                "dry_run": True,
-            },
+        r = admin_client.delete(
+            f"{_connection_url(ENT_ID, 'REQ@9.ZZZ.nonexistent')}?dry_run=true"
         )
         assert r.status_code == 400
 
@@ -327,7 +298,7 @@ class TestAdminRemoveConnection:
 class TestAdminCreateDiagram:
     def test_dry_run_returns_not_wrote(self, admin_client) -> None:
         r = admin_client.post(
-            "/admin/api/diagram",
+            "/admin/api/diagrams",
             json={
                 "diagram_type": "archimate-application",
                 "name": "Admin Test Diagram",
@@ -341,7 +312,7 @@ class TestAdminCreateDiagram:
 
     def test_dry_run_includes_artifact_id(self, admin_client) -> None:
         r = admin_client.post(
-            "/admin/api/diagram",
+            "/admin/api/diagrams",
             json={
                 "diagram_type": "archimate-application",
                 "name": "Named Diagram",
@@ -359,8 +330,5 @@ class TestAdminCreateDiagram:
 
 class TestAdminRemoveDiagram:
     def test_diagram_not_found_returns_400(self, admin_client) -> None:
-        r = admin_client.post(
-            "/admin/api/diagram/remove",
-            json={"artifact_id": "DIAG@9.ZZZ.no-such-diag", "dry_run": True},
-        )
+        r = admin_client.delete("/admin/api/diagrams/DIAG@9.ZZZ.no-such-diag?dry_run=true")
         assert r.status_code == 400

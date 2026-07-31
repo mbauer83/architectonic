@@ -28,6 +28,9 @@ from src.infrastructure.mcp.assurance_mcp._write_envelopes import _analysis_resu
 from src.infrastructure.mcp.assurance_mcp.context import get_assurance_context
 from src.infrastructure.mcp.assurance_mcp.fmea_write_tools import register_fmea_write_tools
 from src.infrastructure.mcp.assurance_mcp.grouping_write_tools import register_grouping_write_tools
+from src.infrastructure.mcp.assurance_mcp.provenance_write_tools import (
+    register_provenance_write_tools,
+)
 from src.infrastructure.mcp.assurance_mcp.security_write_tools import register_security_write_tools
 
 
@@ -35,6 +38,7 @@ def register_write_tools(server: FastMCP) -> None:
     register_security_write_tools(server)
     register_fmea_write_tools(server)
     register_grouping_write_tools(server)
+    register_provenance_write_tools(server)
     ctx = get_assurance_context()
 
     @server.tool(
@@ -46,11 +50,15 @@ def register_write_tools(server: FastMCP) -> None:
             "For a failure-mode, set failure_type to the guideword it was enumerated against "
             "(no-function, partial-function, excessive-function, intermittent-function, "
             "unintended-function) and mode to hypothesized or observed. "
+            "analysis_id is REQUIRED: it records which analysis produced the node, and it cannot "
+            "be set afterwards by an ordinary edit — use assurance_assign_provenance only to "
+            "repair a node that has none. "
             "Returns the new node_id. All writes are audited; post-write verification findings "
             "are included in the response (writes are never blocked by the verifier)."
         ),
     )
     def assurance_create_node(
+        analysis_id: str,
         node_type: str,
         name: str,
         status: str = "draft",
@@ -62,10 +70,18 @@ def register_write_tools(server: FastMCP) -> None:
         mode: str | None = None,
         binding_status: str | None = None,
         node_role: str | None = None,
-        analysis_id: str | None = None,
         content_text: str = "",
         attributes: dict[str, object] | None = None,
     ) -> dict[str, object]:
+        if ctx.store.get_analysis(analysis_id) is None:
+            return {
+                "error": "not_found",
+                "analysis_id": analysis_id,
+                "message": (
+                    f"No analysis {analysis_id!r} exists. A node is produced by an analysis, so "
+                    "one that names none cannot be created."
+                ),
+            }
         result = run_write(lambda: mutations.create_node(
             ctx.store, ctx.archive,
             node_type=node_type, name=name, status=status, tlp=tlp,
@@ -113,7 +129,10 @@ def register_write_tools(server: FastMCP) -> None:
             "Provide only the attributes to change. "
             "Updatable: name, status, tlp, concern_class, disposition, uca_type, failure_type, mode, "
             "binding_status, "
-            "node_role, content_text, attributes (dict of extra fields)."
+            "node_role, content_text, attributes (dict of extra fields). "
+            "analysis_id is NOT updatable: provenance is the analysis that produced the node, and "
+            "it is immutable once recorded. Use assurance_assign_provenance to repair a node that "
+            "has none."
         ),
     )
     def assurance_edit_node(
@@ -130,7 +149,6 @@ def register_write_tools(server: FastMCP) -> None:
         node_role: str | None = None,
         content_text: str | None = None,
         attributes: dict[str, object] | None = None,
-        analysis_id: str | None = None,
     ) -> dict[str, object]:
         result = run_write(lambda: mutations.edit_node(
             ctx.store, ctx.archive,
@@ -139,7 +157,6 @@ def register_write_tools(server: FastMCP) -> None:
             uca_type=uca_type, failure_type=failure_type, mode=mode,
             binding_status=binding_status,
             node_role=node_role, content_text=content_text, attributes=attributes,
-            analysis_id=analysis_id,
         ))
         return _envelope(result, ctx)
 

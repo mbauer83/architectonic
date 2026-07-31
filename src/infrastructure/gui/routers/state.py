@@ -342,19 +342,20 @@ def _rejection_to_http(exc: Any) -> HTTPException:
     return HTTPException(status, f"Write rejected: {exc.denial.message}")
 
 
-def authorized_write(route: tuple[str, str], fn: Any, /, *args: Any, **kwargs: Any) -> Any:
+def authorized_write(operation_id: str, fn: Any, /, *args: Any, **kwargs: Any) -> Any:
     """Execute a repository mutation through the authorized mutation executor.
 
-    ``route`` is the handler's (METHOD, path) key in the REST mutation manifest —
-    the only way a REST handler reaches the write queue and gate. Denials surface
-    with the ordinary REST write status/payload (423 retryable, 403 forbidden).
+    ``operation_id`` is the handler's identity in the route-policy manifest — the only way a REST
+    handler reaches the write queue and gate. An **operation id, not a path**: the path is what a
+    rename changes, and a handler holding a stale path failed its write closed with nothing red in
+    the suite. Denials surface with the ordinary REST write status (423 retryable, 403 forbidden).
     """
     from src.application.mutation_authorization import MutationRejected
     from src.infrastructure.gui.routers.rest_mutation_manifest import build_rest_request
     from src.infrastructure.workspace.mutation_gate import GateRejected
     from src.infrastructure.write.mutation_executor_registry import mutation_executor
 
-    request = build_rest_request(route)
+    request = build_rest_request(operation_id)
     try:
         return mutation_executor().run(request, lambda: fn(*args, **kwargs), operation_name=fn.__name__)
     except MutationRejected as exc:
@@ -363,7 +364,7 @@ def authorized_write(route: tuple[str, str], fn: Any, /, *args: Any, **kwargs: A
         raise HTTPException(423, f"Write rejected: {exc.reason}") from exc
 
 
-async def authorized_write_async(route: tuple[str, str], fn: Any, /, *args: Any, **kwargs: Any) -> Any:
+async def authorized_write_async(operation_id: str, fn: Any, /, *args: Any, **kwargs: Any) -> Any:
     """Async variant of ``authorized_write`` for coroutine handlers: awaits the queued
     write without blocking the event loop."""
     import asyncio
@@ -373,7 +374,7 @@ async def authorized_write_async(route: tuple[str, str], fn: Any, /, *args: Any,
     from src.infrastructure.workspace.mutation_gate import GateRejected
     from src.infrastructure.write.mutation_executor_registry import mutation_executor
 
-    request = build_rest_request(route)
+    request = build_rest_request(operation_id)
     try:
         future = mutation_executor().submit(request, lambda: fn(*args, **kwargs), operation_name=fn.__name__)
         return await asyncio.wrap_future(future)

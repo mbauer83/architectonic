@@ -58,7 +58,7 @@ def _rendered_path(d: DiagramRecord, suffix: str) -> Path | None:
     return None
 
 
-@router.get("/api/diagram-image/{filename}", tags=[TAG_DIAGRAMS], summary="Serve a rendered diagram image",
+@router.get("/api/diagram-images/{filename}", tags=[TAG_DIAGRAMS], summary="Serve a rendered diagram image",
     responses=READ_RESPONSES)
 def get_diagram_image(filename: str) -> FileResponse:
     repo_root = s.maybe_engagement_root()
@@ -78,8 +78,10 @@ def get_diagram_image(filename: str) -> FileResponse:
     return FileResponse(path, media_type="image/png")
 
 
-@router.get("/api/diagram-svg", tags=[TAG_DIAGRAMS], summary="Serve a diagram as SVG", responses=READ_RESPONSES)
-def get_diagram_svg(id: str) -> Response:
+@router.get("/api/diagrams/{artifact_id}/svg", tags=[TAG_DIAGRAMS], summary="Serve a diagram as SVG",
+    responses=READ_RESPONSES)
+def get_diagram_svg(artifact_id: str) -> Response:
+    id = artifact_id
     repo_root = s.maybe_engagement_root()
     if repo_root is None:
         raise HTTPException(500, "Repository not initialized")
@@ -120,9 +122,10 @@ def get_diagram_svg(id: str) -> Response:
     return Response(content=svg, media_type="image/svg+xml")
 
 
-@router.get("/api/diagram-download", tags=[TAG_DIAGRAMS], summary="Download a diagram source file",
-    responses=READ_RESPONSES)
-def download_diagram(id: str, format: Literal["png", "svg"] = "png") -> FileResponse:
+@router.get("/api/diagrams/{artifact_id}/download", tags=[TAG_DIAGRAMS],
+    summary="Download a diagram source file", responses=READ_RESPONSES)
+def download_diagram(artifact_id: str, format: Literal["png", "svg"] = "png") -> FileResponse:
+    id = artifact_id
     repo_root = s.maybe_engagement_root()
     if repo_root is None:
         raise HTTPException(500, "Repository not initialized")

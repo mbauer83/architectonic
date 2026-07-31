@@ -87,6 +87,8 @@ export default tseslint.config(
     },
   },
   {
+    // Runs in Node. Resolved through `tsconfig.node.json`, which the app tsconfig references —
+    // that reference is what lets the project service find this file at all.
     files: ['vite.config.ts'],
     languageOptions: {
       globals: {

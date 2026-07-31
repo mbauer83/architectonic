@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * Assurance neighborhood explorer: renders the policy-filtered traversal from
- * GET /api/assurance/neighbors on the generic graph canvas. Double-click
+ * GET /api/assurance/nodes/{node_id}/neighbors on the generic graph canvas. Double-click
  * expands a node with a fresh one-hop request (that is also how partial
  * results continue past a size budget — no continuation tokens). A locked
  * store collapses the whole panel and nothing further is fetched.
@@ -158,7 +158,7 @@ const fetchNeighbors = async (nodeId: string, merge: boolean) => {
   if (!nodeId || panel.value.lockedMessage) return
   loading.value = true
   try {
-    const resp = await fetch(`/api/assurance/neighbors?node_id=${encodeURIComponent(nodeId)}`)
+    const resp = await fetch(`/api/assurance/nodes/${encodeURIComponent(nodeId)}/neighbors`)
     const body: unknown = await resp.json().catch(() => null)
     const outcome = outcomeForResponse(resp.status, body)
     panel.value = panelStateForOutcome(outcome, panel.value)
