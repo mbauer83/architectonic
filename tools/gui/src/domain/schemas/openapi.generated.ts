@@ -2885,6 +2885,9 @@ export interface components {
         /**
          * AffectedEntity
          * @description One entity a vulnerability reaches, with the finding rows that reach it.
+         *
+         *     Open only because the shape has not been derived from the impact-analysis producer yet. The fields
+         *     are this system's own, so unlike a feed row this one is closeable.
          */
         AffectedEntity: {
             [key: string]: unknown;
@@ -4933,13 +4936,14 @@ export interface components {
         };
         /**
          * OpenMapResponse
-         * @description A genuinely open/dynamic map (e.g. aggregate stats, composed authoring guidance) —
-         *     documented as an object, no false precision, still no hand-written schema.
+         * @description The migration placeholder: an operation whose response has not been derived from its producer yet.
          *
-         *     ``extra="allow"`` → ``additionalProperties: true``: annotating a handler with this documents that
-         *     it returns an object without changing or constraining the payload. It is the *last* model in this
-         *     package that does so, which is why it no longer sits on a shared open base — a base class with one
-         *     subclass is a level of indirection describing a policy that has one member.
+         *     Not a decision, and not "a genuinely dynamic map" as this docstring once claimed — that reading is
+         *     what let it spread to a third of the surface. Every operation still using it is listed in
+         *     ``route_policy._response_contracts.UNTYPED_RESPONSE_OPERATIONS``, a shrink-only ledger, and a
+         *     fitness function refuses this model on any operation absent from it. **Do not annotate a new handler
+         *     with this.** Derive a closed DTO from what the handler returns; that is cheap when the code is in
+         *     front of you and expensive once a client depends on the ambiguity.
          */
         OpenMapResponse: {
             [key: string]: unknown;

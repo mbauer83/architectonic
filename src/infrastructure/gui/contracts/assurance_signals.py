@@ -32,6 +32,18 @@ class _FeedShaped(BaseModel):
     model_config = ConfigDict(extra="allow")
 
 
+class _PendingContract(BaseModel):
+    """Open pending a decision recorded in ``contracts/open_models.py`` — *not* a settled exception.
+
+    Distinct from ``_FeedShaped`` because the reason is different and the two must not be confused. Two
+    models here were open by inheriting ``_FeedShaped`` while being nothing of the kind, so the reason
+    on record was false of both and no review could see it. A base that says "we have not decided yet"
+    cannot be mistaken for one that says "the schema is not ours to declare".
+    """
+
+    model_config = ConfigDict(extra="allow")
+
+
 class SecurityComponentRecord(_FeedShaped):
     """One component of the anchor's active snapshot."""
 
@@ -180,8 +192,12 @@ class SecuritySnapshotDeletionResponse(_Closed):
     deleted_count: int = 0
 
 
-class AffectedEntity(_FeedShaped):
-    """One entity a vulnerability reaches, with the finding rows that reach it."""
+class AffectedEntity(_PendingContract):
+    """One entity a vulnerability reaches, with the finding rows that reach it.
+
+    Open only because the shape has not been derived from the impact-analysis producer yet. The fields
+    are this system's own, so unlike a feed row this one is closeable.
+    """
 
 
 class VulnerabilityImpactResponse(_Closed):
@@ -211,7 +227,7 @@ class SignalAnchorTypeListResponse(_Closed):
     anchor_types: list[str]
 
 
-class AssuranceNodeRecord(_FeedShaped):
+class AssuranceNodeRecord(_PendingContract):
     """One assurance node row, as the store holds it.
 
     Open while the node contracts are still being authored: the analysis-aggregate slice owns that
