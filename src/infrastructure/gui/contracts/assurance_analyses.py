@@ -63,6 +63,45 @@ class AssuranceAnalysisListResponse(_Closed):
     visibility_limited: bool
 
 
+class AssuranceGroupRecord(_Closed):
+    """One filing group: a name, a description, and when it was made.
+
+    No classification of its own, which is what distinguishes a group from the analyses it holds —
+    the store's ceiling governs those, so there is nothing on this record to filter and the group
+    list is returned as stored.
+    """
+
+    group_id: str
+    name: str
+    description: str
+    created_at: str
+    updated_at: str
+
+
+class AssuranceGroupListResponse(_Closed):
+    """Every group, in the order a reader expects to file into them (by name)."""
+
+    groups: list[AssuranceGroupRecord]
+
+
+class AssuranceParticipatingNodesResponse(_Closed):
+    """The nodes an analysis draws on without having authored them.
+
+    Ids rather than records: a caller who wants the nodes themselves wants the working-set page
+    (``GET /analyses/{id}/nodes``), which states each item's relationship. This answers the narrower
+    question — which participations does this analysis hold — and answering it with whole nodes would
+    duplicate that collection at a second address.
+
+    ``count`` is the length of the filtered list, so it agrees with what the reader can see rather
+    than with what is stored.
+    """
+
+    analysis_id: str
+    participating_node_ids: list[str]
+    count: int
+    visibility_limited: bool
+
+
 class AssuranceAnalysisDetailResponse(_Closed):
     """One analysis with the size of its authored contents, as far as this reader may see.
 

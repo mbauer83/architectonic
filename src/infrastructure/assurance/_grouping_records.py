@@ -24,6 +24,7 @@ SQL in `_sqlcipher_analysis`, where the join table it indexes is declared.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
@@ -42,6 +43,31 @@ MEMBERS_DIR = "analysis-members"
 #: Collection names used by the REST backend.
 GROUPS_COLLECTION = "assurance_groups"
 MEMBERS_COLLECTION = "assurance_analysis_members"
+
+
+#: The group record, field for field, as every backend must hand it back — the same guarantee
+#: ``ANALYSIS_RECORD_FIELDS`` makes for an analysis, and needed for the same reason: PocketBase
+#: returned its collection metadata alongside these five, so no closed response contract could be
+#: published over a record whose key set depended on the configured store.
+GROUP_RECORD_FIELDS: tuple[str, ...] = (
+    "group_id",
+    "name",
+    "description",
+    "created_at",
+    "updated_at",
+)
+
+
+def as_group_record(row: Mapping[str, object]) -> dict[str, object]:
+    """``row`` as the canonical group record: exactly :data:`GROUP_RECORD_FIELDS`, nothing else.
+
+    Every field is written at creation and non-null in the schema, so a missing one is a corrupt
+    record and says so, rather than being defaulted into a group whose name this code invented.
+    """
+    missing = [field for field in GROUP_RECORD_FIELDS if field not in row]
+    if missing:
+        raise ValueError(f"stored group record is missing {', '.join(missing)}")
+    return {field: row[field] for field in GROUP_RECORD_FIELDS}
 
 
 def new_group_record(name: str, description: str = "") -> dict[str, object]:
@@ -142,11 +168,15 @@ class FileGroupingStoreMixin:
 
     def get_group(self, group_id: str) -> dict[str, object] | None:
         self._require_unlocked()
-        return self._read(self._groups_dir() / f"{group_id}.{self._ANALYSIS_EXT}")
+        record = self._read(self._groups_dir() / f"{group_id}.{self._ANALYSIS_EXT}")
+        return None if record is None else as_group_record(record)
 
     def list_groups(self) -> list[dict[str, object]]:
         self._require_unlocked()
-        return sorted_by_name(self._records_in(self._groups_dir(), "group_id"))
+        return [
+            as_group_record(record)
+            for record in sorted_by_name(self._records_in(self._groups_dir(), "group_id"))
+        ]
 
     def delete_group(self, group_id: str) -> None:
         """Remove the group and unfile its analyses. Their content is untouched."""

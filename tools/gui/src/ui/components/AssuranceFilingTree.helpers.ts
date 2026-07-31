@@ -20,6 +20,10 @@
  * of it — the shape of a tree is the caller's knowledge, and a shared component that knew about
  * analyses would be one the architecture side could not use.
  */
+import type {
+  AssuranceAnalysisRecord,
+  AssuranceGroupRecord,
+} from '../../domain/schemas/assurance-analyses'
 import type { NavTreeNode } from './NavTree.helpers'
 // The scope vocabulary belongs to the surface that reads it; re-exported so the nav has one
 // definition of the reserved word rather than a second spelling of it.
@@ -27,19 +31,13 @@ import { NO_ANALYSIS_SCOPE } from '../views/AssuranceBrowseView.helpers'
 
 export { NO_ANALYSIS_SCOPE }
 
-export interface AssuranceGroup {
-  group_id: string
-  name: string
-  description?: string
-}
-
-export interface AssuranceAnalysis {
-  analysis_id: string
-  name: string
-  method: string
-  status?: string
-  group_id?: string | null
-}
+/** The records the two filing collections serve, decoded rather than restated.
+ *
+ * Both were interfaces of their own here, declaring `description`, `status` and `group_id` optional
+ * for routes that send all three. A tree built from a looser description of the data cannot tell a
+ * field the server omitted from one it never declared. */
+export type AssuranceGroup = AssuranceGroupRecord
+export type AssuranceAnalysis = AssuranceAnalysisRecord
 
 export interface AssuranceTreeNode {
   node_id: string

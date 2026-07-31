@@ -1,4 +1,4 @@
-"""An analysis record has one shape, whichever backend stored it.
+"""An analysis or group record has one shape, whichever backend stored it.
 
 It had three. SQLCipher's ``SELECT *`` returned nine columns. A file-backed record written before it
 had ever been filed had eight — ``group_id`` was simply absent, because ``new_analysis_record`` did
@@ -28,6 +28,7 @@ from src.infrastructure.assurance._analysis_records import (
     as_analysis_record,
     new_analysis_record,
 )
+from src.infrastructure.assurance._grouping_records import GROUP_RECORD_FIELDS
 from tests.support.assurance_backends import ASSURANCE_BACKENDS, BACKEND_NAMES
 
 
@@ -92,6 +93,46 @@ class TestEveryBackendReturnsTheCanonicalRecord:
         record = store.get_analysis(analysis_id)
         assert record is not None
         assert record["group_id"] == group_id
+
+
+class TestEveryBackendReturnsTheCanonicalGroupRecord:
+    """A group had the same defect, minus the missing field: five columns from SQLCipher and the file
+    stores, those five plus PocketBase's collection metadata from PocketBase."""
+
+    def test_a_freshly_created_group_reads_back_with_exactly_the_canonical_fields(
+        self, store: Any
+    ) -> None:
+        group_id = str(store.create_group("Mechanical", "Brakes, pumps, valves"))
+
+        record = store.get_group(group_id)
+
+        assert record is not None
+        assert set(record) == set(GROUP_RECORD_FIELDS)
+        assert record["group_id"] == group_id
+        assert record["description"] == "Brakes, pumps, valves"
+
+    def test_the_group_list_agrees_with_the_detail_read(self, store: Any) -> None:
+        group_id = str(store.create_group("Electrical"))
+
+        listed = [row for row in store.list_groups() if row["group_id"] == group_id]
+
+        assert len(listed) == 1
+        assert listed[0] == store.get_group(group_id)
+
+    def test_deleting_a_group_still_unfiles_its_analyses(self, store: Any) -> None:
+        """The regression for the projection itself. PocketBase addresses each group and each analysis
+        by its own row id when unfiling, so a projection applied one layer too early would leave the
+        analyses filed under a group that no longer exists."""
+        group_id = str(store.create_group("Hydraulics"))
+        analysis_id = str(store.create_analysis("Pumps", "FMEA", tlp="TLP:WHITE"))
+        store.update_analysis(analysis_id, group_id=group_id)
+
+        store.delete_group(group_id)
+
+        assert store.get_group(group_id) is None
+        surviving = store.get_analysis(analysis_id)
+        assert surviving is not None, "deleting a folder must not delete what is filed in it"
+        assert surviving["group_id"] is None
 
 
 class TestTheProjectionItself:

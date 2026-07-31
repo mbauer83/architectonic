@@ -20,21 +20,33 @@ import {
   type AssuranceTreeNode,
 } from '../AssuranceFilingTree.helpers'
 
-const PLATFORM: AssuranceGroup = { group_id: 'GRP@1.aaaa.01', name: 'Platform safety' }
-const SUPPLY: AssuranceGroup = { group_id: 'GRP@1.bbbb.02', name: 'Supply chain' }
+/* Whole records, because that is what the two collections send. The fixtures carried two or four
+   fields while the routes sent five and nine, which the old looser interfaces permitted. */
+const STAMPS = { created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z' }
 
-const STPA: AssuranceAnalysis = {
+const group = (fields: Pick<AssuranceGroup, 'group_id' | 'name'>): AssuranceGroup =>
+  ({ description: '', ...STAMPS, ...fields })
+
+const analysis = (
+  fields: Pick<AssuranceAnalysis, 'analysis_id' | 'name' | 'method' | 'group_id'>,
+): AssuranceAnalysis =>
+  ({ architecture_anchor_id: '', status: 'draft', tlp: 'TLP:WHITE', ...STAMPS, ...fields })
+
+const PLATFORM = group({ group_id: 'GRP@1.aaaa.01', name: 'Platform safety' })
+const SUPPLY = group({ group_id: 'GRP@1.bbbb.02', name: 'Supply chain' })
+
+const STPA = analysis({
   analysis_id: 'STPA@1.cccc.03',
   name: 'Key availability',
   method: 'STPA',
   group_id: PLATFORM.group_id,
-}
-const FMEA: AssuranceAnalysis = {
+})
+const FMEA = analysis({
   analysis_id: 'FMEA@1.dddd.04',
   name: 'Credential backend',
   method: 'FMEA',
   group_id: null,
-}
+})
 
 const HAZARD: AssuranceTreeNode = {
   node_id: 'HAZ@1.eeee.05',
@@ -130,10 +142,10 @@ describe('buildFilingTree', () => {
   })
 
   it('orders groups, analyses and nodes by name', () => {
-    const other: AssuranceAnalysis = {
+    const other = analysis({
       analysis_id: 'STPA@1.hhhh.08', name: 'Access control', method: 'STPA',
       group_id: PLATFORM.group_id,
-    }
+    })
 
     const tree = buildFilingTree([SUPPLY, PLATFORM], [STPA, other], [])
 
@@ -153,7 +165,7 @@ describe('buildFilingTree', () => {
 
   it('falls back to the id when a record has no name', () => {
     const tree = buildFilingTree(
-      [{ group_id: PLATFORM.group_id, name: '' }],
+      [group({ group_id: PLATFORM.group_id, name: '' })],
       [{ ...STPA, name: '' }],
       [],
     )

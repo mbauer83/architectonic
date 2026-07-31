@@ -9,6 +9,7 @@ from __future__ import annotations
 from typing import Any
 
 from src.infrastructure.assurance import _analysis_records as analyses
+from src.infrastructure.assurance._grouping_records import as_group_record
 from src.infrastructure.assurance._id_utils import make_group_id
 from src.infrastructure.assurance._sqlcipher_util import now_iso, where
 
@@ -109,11 +110,12 @@ def get_group(conn: Any, group_id: str) -> dict[str, Any] | None:
     row = conn.execute(
         "SELECT * FROM assurance_groups WHERE group_id = ?", (group_id,)
     ).fetchone()
-    return row if row else None
+    return as_group_record(row) if row else None
 
 
 def list_groups(conn: Any) -> list[dict[str, Any]]:
-    return list(conn.execute("SELECT * FROM assurance_groups ORDER BY name").fetchall())
+    rows = conn.execute("SELECT * FROM assurance_groups ORDER BY name").fetchall()
+    return [as_group_record(row) for row in rows]
 
 
 def delete_group(conn: Any, group_id: str) -> None:

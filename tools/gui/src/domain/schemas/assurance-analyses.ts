@@ -56,3 +56,42 @@ export const AssuranceAnalysisDetailSchema = Schema.Struct({
   node_count: Schema.Number,
 })
 export type AssuranceAnalysisDetail = typeof AssuranceAnalysisDetailSchema.Type
+
+/** A filing group. No classification of its own — the store's ceiling governs what is filed in it. */
+export const AssuranceGroupRecordSchema = Schema.Struct({
+  group_id: Schema.String,
+  name: Schema.String,
+  description: Schema.String,
+  created_at: Schema.String,
+  updated_at: Schema.String,
+})
+export type AssuranceGroupRecord = typeof AssuranceGroupRecordSchema.Type
+
+export const AssuranceGroupListSchema = Schema.Struct({
+  groups: Schema.Array(AssuranceGroupRecordSchema),
+})
+export type AssuranceGroupList = typeof AssuranceGroupListSchema.Type
+
+/** Which participations an analysis holds — ids, because the working-set page serves the nodes. */
+export const AssuranceParticipatingNodesSchema = Schema.Struct({
+  analysis_id: Schema.String,
+  participating_node_ids: Schema.Array(Schema.String),
+  count: Schema.Number,
+  visibility_limited: Schema.Boolean,
+})
+export type AssuranceParticipatingNodes = typeof AssuranceParticipatingNodesSchema.Type
+
+/**
+ * Decoders over the two collection bodies, so a caller reads a list rather than casting one.
+ *
+ * Here rather than beside each component: three surfaces read the analyses (the picker, the filing
+ * tree, the browse view) and each had its own cast to its own looser interface. The array copy is
+ * because effect decodes to a `ReadonlyArray` and the components hold their lists in a `ref`.
+ */
+export const decodeAnalysisList = (body: unknown): AssuranceAnalysisRecord[] => [
+  ...Schema.decodeUnknownSync(AssuranceAnalysisListSchema)(body).analyses,
+]
+
+export const decodeGroupList = (body: unknown): AssuranceGroupRecord[] => [
+  ...Schema.decodeUnknownSync(AssuranceGroupListSchema)(body).groups,
+]

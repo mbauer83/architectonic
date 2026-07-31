@@ -13,6 +13,7 @@ from typing import Any
 from src.infrastructure.assurance._grouping_records import (
     GROUPS_COLLECTION,
     MEMBERS_COLLECTION,
+    as_group_record,
     new_group_record,
     new_member_record,
     sorted_by_added,
@@ -69,10 +70,12 @@ class RestGroupingStoreMixin:
 
     def get_group(self, group_id: str) -> dict[str, object] | None:
         items = self._items(self._group_url(), group_id=group_id)
-        return items[0] if items else None
+        return as_group_record(items[0]) if items else None
 
     def list_groups(self) -> list[dict[str, object]]:
-        return sorted_by_name(self._items(self._group_url()))
+        # Projected on the way out, not in `_items`: `delete_group` below addresses each group at
+        # PocketBase's own row id, which the canonical record deliberately does not carry.
+        return [as_group_record(record) for record in sorted_by_name(self._items(self._group_url()))]
 
     def delete_group(self, group_id: str) -> None:
         """Remove the group and unfile its analyses. Their content is untouched."""

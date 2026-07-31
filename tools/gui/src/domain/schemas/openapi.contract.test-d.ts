@@ -21,6 +21,9 @@ import type {
   AssuranceAnalysisDetailSchema,
   AssuranceAnalysisListSchema,
   AssuranceAnalysisRecordSchema,
+  AssuranceGroupListSchema,
+  AssuranceGroupRecordSchema,
+  AssuranceParticipatingNodesSchema,
 } from './assurance-analyses'
 import type {
   SyncDiagramToModelResultSchema,
@@ -243,6 +246,18 @@ describe('assurance analyses', () => {
     >()
     expectTypeOf<SchemaType<typeof AssuranceAnalysisRecordSchema>>().toEqualTypeOf<
       Immutable<components['schemas']['AssuranceAnalysisRecord']>
+    >()
+  })
+
+  it('decodes the filing groups and the participations an analysis holds', () => {
+    expectTypeOf<SchemaType<typeof AssuranceGroupListSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['AssuranceGroupListResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof AssuranceGroupRecordSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['AssuranceGroupRecord']>
+    >()
+    expectTypeOf<SchemaType<typeof AssuranceParticipatingNodesSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['AssuranceParticipatingNodesResponse']>
     >()
   })
 

@@ -4,17 +4,25 @@
 // backend's published vocabulary rather than restated here. This module held its own copy with a
 // comment asking a test to keep the two equal — and a method missing from that copy cannot be picked
 // or filtered for, which is how FMEA analyses became unreachable from the matrix page.
-import { Schema } from 'effect'
 import {
   ANALYSIS_METHODS,
   ANALYSIS_STATUSES,
-  AssuranceAnalysisListSchema,
+  decodeAnalysisList,
   type AnalysisMethod,
   type AnalysisStatus,
   type AssuranceAnalysisRecord,
 } from '../../domain/schemas/assurance-analyses'
 
-export { ANALYSIS_METHODS, ANALYSIS_STATUSES, type AnalysisMethod, type AnalysisStatus }
+export {
+  ANALYSIS_METHODS,
+  ANALYSIS_STATUSES,
+  // Re-exported so the component reaches its decoder through the module it already imports from,
+  // rather than gaining an import for it — the file is one of the oversized ones under the length
+  // policy, and it may not grow.
+  decodeAnalysisList,
+  type AnalysisMethod,
+  type AnalysisStatus,
+}
 
 /**
  * Admissible ArchiMate anchor types for an analysis's system-under-analysis.
@@ -41,17 +49,6 @@ export type AnalysisSummary = AssuranceAnalysisRecord
 export interface AnalysisOption {
   value: string
   label: string
-}
-
-/** The analyses out of a `GET /api/assurance/analyses` body, decoded rather than cast.
- *
- * The picker asserted `as { analyses: AnalysisSummary[] }` over `resp.json()`, which checks nothing
- * and named a looser shape than the route sends. Here rather than in the component so it is unit-
- * testable without a DOM, like everything else in this module. Throws on a body that does not match
- * the contract — the caller already reports a failed load, and a silently mis-decoded list renders as
- * an empty picker with nothing said. */
-export function decodeAnalysisList(body: unknown): AnalysisSummary[] {
-  return [...Schema.decodeUnknownSync(AssuranceAnalysisListSchema)(body).analyses]
 }
 
 /** Build `<option>` entries for the analysis dropdown (method-tagged labels). */

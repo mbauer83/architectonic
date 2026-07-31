@@ -37,6 +37,12 @@ from src.application.assurance_exposure import AssuranceExposurePolicy, Visible
 from src.application.assurance_legacy_invalid import LegacyInvalidNode
 from src.application.assurance_working_set_page import analysis_working_set_page
 from src.infrastructure.assurance.write_serialization import run_write
+from src.infrastructure.gui.contracts.assurance_analyses import (
+    AssuranceAnalysisRecord,
+    AssuranceGroupListResponse,
+    AssuranceGroupRecord,
+    AssuranceParticipatingNodesResponse,
+)
 from src.infrastructure.gui.contracts.assurance_signals import AnalysisNodePageResponse
 from src.infrastructure.gui.contracts.errors import (
     ApiError,
@@ -70,7 +76,12 @@ class FileAnalysisBody(BaseModel):
     group_id: str | None = None
 
 
-def _translate(result: AnalysisResult) -> JSONResponse:
+def _translate(result: AnalysisResult, model: type[BaseModel] | None = None) -> JSONResponse:
+    """The outcome as a response: refusals raised, the success validated against ``model``.
+
+    ``model`` is optional because group deletion shares this translator and then discards the body for
+    a 204. Every other caller passes one.
+    """
     if isinstance(result, AnalysisLocked):
         raise locked_response()
     if isinstance(result, AnalysisNotFound):
@@ -86,7 +97,7 @@ def _translate(result: AnalysisResult) -> JSONResponse:
                 node_id=result.node_id, permitted_operation=result.permitted_operation
             ),
         )
-    return ok(result.payload)
+    return ok(result.payload, model)
 
 
 def _visible_analysis(
@@ -103,23 +114,24 @@ def _visible_node_ids(ctx: AssuranceContext, pol: AssuranceExposurePolicy) -> fr
 # ── Groups ─────────────────────────────────────────────────────────────────────
 
 
-@grouping_router.get("/api/assurance/groups")
+@grouping_router.get("/api/assurance/groups", response_model=AssuranceGroupListResponse)
 def list_groups() -> JSONResponse:
     ctx, pol = build_policy()
     if pol.check_locked():
         raise locked_response()
     result = uc.list_groups(ctx.store)
-    return _translate(result)
+    return _translate(result, AssuranceGroupListResponse)
 
 
-@grouping_router.post("/api/assurance/groups", status_code=200)
+@grouping_router.post("/api/assurance/groups", status_code=200,
+    response_model=AssuranceGroupRecord)
 def create_group(body: CreateGroupBody) -> JSONResponse:
     ctx = build_policy()[0]
     if not ctx.is_available():
         raise locked_response()
     return _translate(run_write(lambda: uc.create_group(
         ctx.store, ctx.archive, name=body.name, description=body.description,
-    )))
+    )), AssuranceGroupRecord)
 
 
 @grouping_router.delete("/api/assurance/groups/{group_id}", status_code=204, response_model=None)
@@ -135,16 +147,19 @@ def delete_group(group_id: str) -> Response:
 # ── Filing ─────────────────────────────────────────────────────────────────────
 
 
-@grouping_router.put("/api/assurance/analyses/{analysis_id}/group", status_code=200)
+@grouping_router.put("/api/assurance/analyses/{analysis_id}/group", status_code=200,
+    response_model=AssuranceAnalysisRecord)
 def file_analysis(analysis_id: str, body: FileAnalysisBody) -> JSONResponse:
     ctx, pol = build_policy()
     if pol.check_locked():
         raise locked_response()
     if not _visible_analysis(ctx, pol, analysis_id):
         raise not_found_response()
+    # The analysis itself, re-read: filing changes the analysis record and the caller's next act is
+    # to render it, so the body is the record rather than an acknowledgement of the relation.
     return _translate(run_write(lambda: uc.file_analysis(
         ctx.store, ctx.archive, analysis_id=analysis_id, group_id=body.group_id,
-    )))
+    )), AssuranceAnalysisRecord)
 
 
 # ── Participation ──────────────────────────────────────────────────────────────
@@ -187,7 +202,8 @@ def list_analysis_nodes(
     })
 
 
-@grouping_router.get("/api/assurance/analyses/{analysis_id}/participating-nodes")
+@grouping_router.get("/api/assurance/analyses/{analysis_id}/participating-nodes",
+    response_model=AssuranceParticipatingNodesResponse)
 def list_participating_nodes(analysis_id: str) -> JSONResponse:
     """The nodes this analysis draws on without having authored them.
 
@@ -210,7 +226,7 @@ def list_participating_nodes(analysis_id: str) -> JSONResponse:
         "participating_node_ids": member_ids,
         "count": len(member_ids),
         "visibility_limited": pol.scope().visibility_limited,
-    })
+    }, AssuranceParticipatingNodesResponse)
 
 
 @grouping_router.put(

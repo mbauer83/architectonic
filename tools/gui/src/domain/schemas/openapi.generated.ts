@@ -3145,6 +3145,34 @@ export interface components {
             total_gaps: number;
         };
         /**
+         * AssuranceGroupListResponse
+         * @description Every group, in the order a reader expects to file into them (by name).
+         */
+        AssuranceGroupListResponse: {
+            /** Groups */
+            groups: components["schemas"]["AssuranceGroupRecord"][];
+        };
+        /**
+         * AssuranceGroupRecord
+         * @description One filing group: a name, a description, and when it was made.
+         *
+         *     No classification of its own, which is what distinguishes a group from the analyses it holds —
+         *     the store's ceiling governs those, so there is nothing on this record to filter and the group
+         *     list is returned as stored.
+         */
+        AssuranceGroupRecord: {
+            /** Created At */
+            created_at: string;
+            /** Description */
+            description: string;
+            /** Group Id */
+            group_id: string;
+            /** Name */
+            name: string;
+            /** Updated At */
+            updated_at: string;
+        };
+        /**
          * AssuranceNodeCreatedResponse
          * @description The node a create produced, identified and named.
          *
@@ -3207,6 +3235,28 @@ export interface components {
             verification_findings?: {
                 [key: string]: unknown;
             }[] | null;
+        };
+        /**
+         * AssuranceParticipatingNodesResponse
+         * @description The nodes an analysis draws on without having authored them.
+         *
+         *     Ids rather than records: a caller who wants the nodes themselves wants the working-set page
+         *     (``GET /analyses/{id}/nodes``), which states each item's relationship. This answers the narrower
+         *     question — which participations does this analysis hold — and answering it with whole nodes would
+         *     duplicate that collection at a second address.
+         *
+         *     ``count`` is the length of the filtered list, so it agrees with what the reader can see rather
+         *     than with what is stored.
+         */
+        AssuranceParticipatingNodesResponse: {
+            /** Analysis Id */
+            analysis_id: string;
+            /** Count */
+            count: number;
+            /** Participating Node Ids */
+            participating_node_ids: string[];
+            /** Visibility Limited */
+            visibility_limited: boolean;
         };
         /**
          * AssuranceReloadBody
@@ -7627,7 +7677,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["AssuranceAnalysisRecord"];
                 };
             };
             /** @description Request validation failed */
@@ -7959,7 +8009,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["AssuranceParticipatingNodesResponse"];
                 };
             };
             /** @description Request validation failed */
@@ -8767,7 +8817,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["AssuranceGroupListResponse"];
                 };
             };
             /** @description Request validation failed */
@@ -8809,7 +8859,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["AssuranceGroupRecord"];
                 };
             };
             /** @description Request validation failed */

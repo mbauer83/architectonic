@@ -16,6 +16,7 @@
  */
 import { computed, onMounted, ref } from 'vue'
 import NavTree from './NavTree.vue'
+import { decodeAnalysisList, decodeGroupList } from '../../domain/schemas/assurance-analyses'
 import {
   buildFilingTree,
   type AssuranceAnalysis,
@@ -36,24 +37,36 @@ const locked = ref(false)
 
 const tree = computed(() => buildFilingTree(groups.value, analyses.value, nodes.value))
 
-async function readList<T>(url: string, key: string): Promise<T[]> {
+/** The body, or null when the store is locked or the read failed — both of which leave the tree empty
+ *  rather than saying anything: the content beside it already reports a locked store. */
+async function readBody(url: string): Promise<unknown | null> {
   const response = await fetch(url)
   if (response.status === 423) {
     locked.value = true
-    return []
+    return null
   }
-  if (!response.ok) return []
-  const body = await response.json() as Record<string, unknown>
-  const list = body[key]
+  return response.ok ? await response.json() : null
+}
+
+/** The nodes list has no contract yet, so this one still asserts its shape. Named so, rather than
+ *  looking like the decoded reads beside it. */
+async function readUncheckedList<T>(url: string, key: string): Promise<T[]> {
+  const body = await readBody(url) as Record<string, unknown> | null
+  const list = body?.[key]
   return Array.isArray(list) ? list as T[] : []
+}
+
+async function readDecoded<T>(url: string, decode: (body: unknown) => T[]): Promise<T[]> {
+  const body = await readBody(url)
+  return body === null ? [] : decode(body)
 }
 
 onMounted(async () => {
   try {
     const [loadedGroups, loadedAnalyses, loadedNodes] = await Promise.all([
-      readList<AssuranceGroup>('/api/assurance/groups', 'groups'),
-      readList<AssuranceAnalysis>('/api/assurance/analyses', 'analyses'),
-      readList<AssuranceTreeNode>('/api/assurance/nodes', 'nodes'),
+      readDecoded<AssuranceGroup>('/api/assurance/groups', decodeGroupList),
+      readDecoded<AssuranceAnalysis>('/api/assurance/analyses', decodeAnalysisList),
+      readUncheckedList<AssuranceTreeNode>('/api/assurance/nodes', 'nodes'),
     ])
     groups.value = loadedGroups
     analyses.value = loadedAnalyses
