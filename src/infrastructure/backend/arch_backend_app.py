@@ -18,6 +18,7 @@ from src.config.settings import request_thread_dump_seconds, slow_request_warnin
 from src.infrastructure.artifact_index.coordination import get_write_queue_state_snapshot
 from src.infrastructure.backend.cache_directive import apply_cache_directive
 from src.infrastructure.backend.read_model_caching import conditional_read_middleware
+from src.infrastructure.backend.shutdown import run_teardown, shutdown_signal
 from src.infrastructure.gui.routers import state as gui_state
 from src.infrastructure.mcp.artifact_mcp import auto_start_default_watcher
 from src.infrastructure.mcp.mcp_artifact_server import mcp_read, mcp_write
@@ -204,6 +205,24 @@ def _document_version() -> str:
         return "0.0.0+unknown"
 
 
+def _release_assurance_store() -> None:
+    """Close the confidential store, which flushes its write-ahead log on the way out.
+
+    ``lock()`` rather than a bare checkpoint, because both things this owes are the same call: the
+    log is folded back into the file, and a process that is going away stops holding an authorised
+    store open. It is the durability step — a process killed rather than asked leaves committed
+    pages in ``store.db-wal`` that the next open may discard — and `run_teardown` isolates it so
+    another step's failure cannot skip it.
+    """
+    from src.infrastructure.mcp.assurance_mcp.context import (  # noqa: PLC0415
+        get_assurance_context,
+    )
+
+    store = getattr(get_assurance_context(), "store", None)
+    if store is not None and getattr(store, "is_unlocked", lambda: False)():
+        store.lock()
+
+
 def _build_app(credentials: "GitCredentials | None" = None):  # type: ignore[no-untyped-def]
     from fastapi import Depends, FastAPI
     from fastapi.middleware.cors import CORSMiddleware
@@ -281,9 +300,18 @@ def _build_app(credentials: "GitCredentials | None" = None):  # type: ignore[no-
 
             yield
 
-            if sync_mgr is not None:
-                logger.info("Stopping git-sync manager")
-                await sync_mgr.stop()
+            async def stop_git_sync() -> None:
+                if sync_mgr is not None:
+                    await sync_mgr.stop()
+
+            # Ordered and isolated — see `backend.shutdown` for why both matter. The signal comes
+            # first because until the open event streams end, uvicorn does not run this teardown at
+            # all; every step after it used to be unreachable on a signal.
+            await run_teardown([
+                ("announce shutdown to open streams", shutdown_signal.begin),
+                ("release the assurance store", _release_assurance_store),
+                ("stop git-sync", stop_git_sync),
+            ])
             logger.info("Backend lifespan shutdown complete")
 
     app = FastAPI(

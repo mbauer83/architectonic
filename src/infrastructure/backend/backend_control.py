@@ -30,8 +30,10 @@ from src.infrastructure.backend.backend_state import (
     read_backend_state,
     remove_backend_state,
 )
+from src.infrastructure.backend.shutdown import STOP_DEADLINE_SECONDS
 
 logger = logging.getLogger(__name__)
+
 
 
 def _wait_for_exit(pid: int, *, timeout_s: float, interval: float) -> bool:
@@ -184,7 +186,8 @@ def backend_status(*, cwd: Path | None = None, port: int | None = None) -> dict[
 
 
 def _stop_pid(
-    pid: int, *, cwd: Path | None = None, timeout_s: float = 5.0, port: int | None = None
+    pid: int, *, cwd: Path | None = None, timeout_s: float = STOP_DEADLINE_SECONDS,
+    port: int | None = None,
 ) -> dict[str, object]:
     tracked_state = read_backend_state(cwd)
     tracked_pid = tracked_state["pid"] if tracked_state is not None else None
@@ -251,7 +254,9 @@ def _stop_all(pids: list[int], *, cwd: Path | None, timeout_s: float, port: int)
     return {"stopped": False, "reason": "multiple_matching", "port": port, "pids": pids}
 
 
-def stop_backend(*, cwd: Path | None = None, timeout_s: float = 5.0, port: int | None = None) -> dict[str, object]:
+def stop_backend(
+    *, cwd: Path | None = None, timeout_s: float = STOP_DEADLINE_SECONDS, port: int | None = None,
+) -> dict[str, object]:
     resolved_port = resolve_backend_port(start=cwd, explicit_port=port)
     logger.info("Stop request for backend on port %s (cwd=%s)", resolved_port, cwd or Path.cwd())
     state = read_backend_state(cwd)

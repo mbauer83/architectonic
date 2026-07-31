@@ -7,8 +7,16 @@ import yaml
 from src.config import settings
 from src.domain.modules.module_registry import ModuleRegistry
 from src.infrastructure.app_bootstrap import module_registry_dependency, module_registry_from_app
-from src.infrastructure.backend import arch_backend, backend_control, backend_probe, backend_process, backend_state
+from src.infrastructure.backend import (
+    _lifecycle_cli,
+    arch_backend,
+    backend_control,
+    backend_probe,
+    backend_process,
+    backend_state,
+)
 from src.infrastructure.backend.arch_backend_app import _build_app
+from src.infrastructure.backend.shutdown import DRAIN_SECONDS
 from src.infrastructure.mcp import arch_mcp_stdio, arch_mcp_stdio_assurance
 
 
@@ -476,11 +484,11 @@ def test_restart_daemon_cleans_up_leftover_unhealthy_process(monkeypatch, tmp_pa
         stop_calls.append(port)
         return {"stopped": True, "pid": 1001, "port": port}
 
-    monkeypatch.setattr(arch_backend, "stop_backend", fake_stop_backend)
+    monkeypatch.setattr(backend_control, "stop_backend", fake_stop_backend)
     monkeypatch.setattr(arch_backend, "resolve_backend_port", lambda start=None, explicit_port=None: 8000)
     monkeypatch.setattr(arch_backend, "read_backend_state", lambda: None)
     monkeypatch.setattr(
-        arch_backend,
+        backend_control,
         "backend_status",
         lambda port=None, cwd=None: {
             "running": False,
@@ -540,7 +548,7 @@ def test_daemon_argv_strips_restart_and_stop_flags() -> None:
 
 def test_stop_outputs_all_pids_when_multiple_stopped(monkeypatch, capsys) -> None:
     monkeypatch.setattr(
-        arch_backend,
+        backend_control,
         "stop_backend",
         lambda port=None, cwd=None, timeout_s=5.0: {
             "stopped": True,
@@ -934,7 +942,7 @@ def test_stop_pid_escalates_to_sigkill_after_timeout(monkeypatch) -> None:
 
 def test_arch_backend_stop_prints_not_running(monkeypatch, capsys) -> None:
     monkeypatch.setattr(
-        arch_backend,
+        backend_control,
         "stop_backend",
         lambda **kwargs: {"stopped": False, "reason": "not_running"},
     )
@@ -947,7 +955,7 @@ def test_arch_backend_stop_prints_not_running(monkeypatch, capsys) -> None:
 
 def test_arch_backend_status_prints_running(monkeypatch, capsys) -> None:
     monkeypatch.setattr(
-        arch_backend,
+        backend_control,
         "backend_status",
         lambda port=8000: {"running": True, "reason": "ok", "pid": 321, "port": port},
     )
@@ -960,7 +968,7 @@ def test_arch_backend_status_prints_running(monkeypatch, capsys) -> None:
 
 def test_arch_backend_status_prints_stopped_backend(monkeypatch, capsys) -> None:
     monkeypatch.setattr(
-        arch_backend,
+        backend_control,
         "backend_status",
         lambda port=8000: {
             "running": False,
@@ -987,7 +995,7 @@ def test_arch_backend_status_prints_stopped_backend(monkeypatch, capsys) -> None
 def test_arch_backend_start_returns_when_untracked_backend_already_running(monkeypatch, capsys) -> None:
     monkeypatch.setattr(arch_backend, "read_backend_state", lambda: None)
     monkeypatch.setattr(
-        arch_backend,
+        backend_control,
         "backend_status",
         lambda port=8000: {"running": True, "reason": "ok_untracked", "pid": 777, "port": port},
     )
@@ -1001,7 +1009,7 @@ def test_arch_backend_start_returns_when_untracked_backend_already_running(monke
 def test_arch_backend_start_refuses_unhealthy_backend(monkeypatch) -> None:
     monkeypatch.setattr(arch_backend, "read_backend_state", lambda: None)
     monkeypatch.setattr(
-        arch_backend,
+        backend_control,
         "backend_status",
         lambda port=8000: {"running": False, "reason": "stopped_backend", "pid": 777, "port": port},
     )
@@ -1079,7 +1087,7 @@ def test_start_daemon_detaches_stdin_and_session(monkeypatch, tmp_path: Path) ->
 def test_arch_backend_daemon_waits_for_probe(monkeypatch, tmp_path: Path, capsys) -> None:
     monkeypatch.setattr(arch_backend, "read_backend_state", lambda: None)
     monkeypatch.setattr(
-        arch_backend,
+        backend_control,
         "backend_status",
         lambda port=8000: {"running": False, "reason": "not_running", "port": port},
     )
@@ -1102,7 +1110,10 @@ def test_arch_backend_redirects_stdio_when_background_tty_job(monkeypatch, tmp_p
         "_redirect_stdio_to_backend_log",
         lambda start=None: redirected.append(start) or tmp_path / ".arch" / "backend.log",
     )
-    monkeypatch.setattr(arch_backend, "backend_status", lambda port=8000: {"running": False, "reason": "not_running"})
+    monkeypatch.setattr(
+        backend_control, "backend_status",
+        lambda port=8000: {"running": False, "reason": "not_running"},
+    )
     monkeypatch.setattr(arch_backend, "read_backend_state", lambda: None)
     monkeypatch.setattr(
         arch_backend.gui_server,
@@ -1110,7 +1121,7 @@ def test_arch_backend_redirects_stdio_when_background_tty_job(monkeypatch, tmp_p
         lambda repo_root, enterprise_root: (tmp_path, None),
     )
     monkeypatch.setattr(arch_backend, "_build_app", lambda credentials=None: object())
-    monkeypatch.setattr(arch_backend.uvicorn, "run", lambda app, host, port, log_level: None)
+    monkeypatch.setattr(arch_backend.uvicorn, "run", lambda app, **kwargs: None)
 
     arch_backend.main(["--repo-root", str(tmp_path)])
 
@@ -1119,7 +1130,7 @@ def test_arch_backend_redirects_stdio_when_background_tty_job(monkeypatch, tmp_p
 
 def test_arch_backend_status_prints_unmanaged_backend(monkeypatch, capsys) -> None:
     monkeypatch.setattr(
-        arch_backend,
+        backend_control,
         "backend_status",
         lambda port=8000: {"running": False, "reason": "unmanaged_backend", "port": port},
     )
@@ -1139,8 +1150,8 @@ def test_arch_backend_stop_prompts_for_single_other_port_and_stops(monkeypatch, 
             return {"stopped": False, "reason": "single_other_port", "pid": 321, "port": 8124, "expected_port": 8123}
         return {"stopped": True, "pid": 321, "port": 8124}
 
-    monkeypatch.setattr(arch_backend, "stop_backend", fake_stop_backend)
-    monkeypatch.setattr(arch_backend, "_confirm_stop_other_instance", lambda **kwargs: True)
+    monkeypatch.setattr(backend_control, "stop_backend", fake_stop_backend)
+    monkeypatch.setattr(_lifecycle_cli, "_confirm_stop_other_instance", lambda **kwargs: True)
 
     arch_backend.main(["--stop", "--port", "8123"])
 
@@ -1151,7 +1162,7 @@ def test_arch_backend_stop_prompts_for_single_other_port_and_stops(monkeypatch, 
 
 def test_arch_backend_status_prints_removed_stale_backend(monkeypatch, capsys) -> None:
     monkeypatch.setattr(
-        arch_backend,
+        backend_control,
         "backend_status",
         lambda port=8000: {"running": False, "reason": "stale_pid", "pid": 321, "port": port},
     )
@@ -1165,7 +1176,7 @@ def test_arch_backend_status_prints_removed_stale_backend(monkeypatch, capsys) -
 def test_arch_backend_restart_stops_then_returns_to_startup(monkeypatch, capsys, tmp_path: Path) -> None:
     monkeypatch.setattr(arch_backend, "backend_min_log_level", lambda: "WARNING")
     monkeypatch.setattr(
-        arch_backend,
+        backend_control,
         "stop_backend",
         lambda **kwargs: {"stopped": True, "pid": 123, "port": 8000},
     )
@@ -1176,17 +1187,15 @@ def test_arch_backend_restart_stops_then_returns_to_startup(monkeypatch, capsys,
         lambda repo_root, enterprise_root: (tmp_path, None),
     )
     monkeypatch.setattr(
-        arch_backend,
+        backend_control,
         "backend_status",
         lambda port=8000: {"running": False, "reason": "not_running"},
     )
     monkeypatch.setattr(arch_backend, "_build_app", lambda credentials=None: object())
     ran: dict[str, object] = {}
 
-    def fake_run(app, host: str, port: int, log_level: str) -> None:
-        ran["host"] = host
-        ran["port"] = port
-        ran["log_level"] = log_level
+    def fake_run(app, **kwargs: object) -> None:
+        ran.update(kwargs)
 
     monkeypatch.setattr(arch_backend.uvicorn, "run", fake_run)
 
@@ -1194,13 +1203,19 @@ def test_arch_backend_restart_stops_then_returns_to_startup(monkeypatch, capsys,
 
     out = capsys.readouterr().out
     assert "stopped backend pid 123" in out
-    assert ran == {"host": "127.0.0.1", "port": 8000, "log_level": "warning"}
+    # `timeout_graceful_shutdown` among them, and not incidentally: uvicorn's default is to wait for
+    # open connections for ever, which is what made SIGTERM a no-op while an event stream was open.
+    # Asserted here because this is the only place the real launch path is driven.
+    assert ran == {
+        "host": "127.0.0.1", "port": 8000, "log_level": "warning",
+        "timeout_graceful_shutdown": DRAIN_SECONDS,
+    }
 
 
 def test_arch_backend_build_failure_does_not_write_backend_state(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.setattr(arch_backend, "read_backend_state", lambda: None)
     monkeypatch.setattr(
-        arch_backend,
+        backend_control,
         "backend_status",
         lambda port=8000: {"running": False, "reason": "not_running"},
     )
@@ -1230,7 +1245,7 @@ def test_arch_backend_build_failure_does_not_write_backend_state(monkeypatch, tm
 def test_arch_backend_refuses_to_start_when_port_used_by_other_process(monkeypatch) -> None:
     monkeypatch.setattr(arch_backend, "read_backend_state", lambda: None)
     monkeypatch.setattr(
-        arch_backend,
+        backend_control,
         "backend_status",
         lambda port=8000: {"running": False, "reason": "port_in_use", "port": port},
     )
