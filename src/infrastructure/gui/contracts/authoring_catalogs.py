@@ -1,0 +1,104 @@
+"""Response contracts for the authoring catalogs: how relations are drawn, what a document type expects.
+
+These describe the *vocabulary* a client authors against rather than anything authored. Their maps are
+keyed by ontology and repository vocabulary — connection type names, document type names — so the keys
+stay open and the values are closed: enumerating the keys here would put a module's vocabulary in a
+second place, and a term added to a module and not mirrored would fail its own response.
+"""
+
+from __future__ import annotations
+
+from pydantic import BaseModel, ConfigDict
+
+from src.infrastructure.gui.contracts.wire_nulls import NullsOmitted
+
+
+class _Closed(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
+class RelationNotation(_Closed):
+    """How one relationship type is drawn: the line, and the marker at each end.
+
+    Structural rather than named after the relationship — "hollow triangle at the target", not
+    "realization" — so a renderer can honour it without knowing this ontology's vocabulary. That is the
+    reason these are three plain strings and not an enum: the values come from the ontology
+    representation layer, and a delivery-layer enum would have to be extended in lockstep with it.
+    """
+
+    line: str
+    source: str
+    target: str
+
+
+class RelationNotationsResponse(_Closed):
+    """Every known relationship's notation, keyed by connection type.
+
+    Served whole on purpose: a graph surface styles hundreds of edges spanning whatever relationship
+    types it meets, and a request per type would be a request per edge in the worst case.
+    """
+
+    notations: dict[str, RelationNotation]
+
+
+class DocumentFrontmatterField(NullsOmitted):
+    """One type-specific frontmatter field a document of this type may carry.
+
+    ``array_items_type`` is *absent* for a non-collection field rather than null: the element type of a
+    scalar does not exist, and this response omits unset optionals throughout — a single null policy per
+    response, because one shared schema cannot honestly claim two.
+    """
+
+    name: str
+    field_type: str
+    array_items_type: str | None = None
+    required: bool
+
+
+class DocumentSectionSpec(NullsOmitted):
+    """One section a document of this type carries, and what it should link to.
+
+    Mirrors ``application.artifact_document_schema.SectionSpec.to_dict``, which omits a field it has no
+    value for rather than sending an empty one — so the three optionals are *absent*, not null. A
+    section with no suggested connections and one whose suggestions are an empty list would otherwise
+    look the same, and only the first is a thing the schema can express.
+    """
+
+    name: str
+    #: Boilerplate the create form pre-fills this section with.
+    template: str | None = None
+    required_entity_type_connections: list[str] | None = None
+    suggested_entity_type_connections: list[str] | None = None
+
+
+class DocumentTypeResponse(NullsOmitted):
+    """What one document type expects: its identity, where it lives, and the sections it requires.
+
+    The connection lists name *entity types* a document of this type should or must link to — the
+    schema's own vocabulary, carried through rather than interpreted here.
+    """
+
+    doc_type: str
+    #: The prefix its artifact ids carry; defaults to the upper-cased type when the schema omits it.
+    abbreviation: str
+    name: str
+    #: Where documents of this type are filed, relative to the repository's document root.
+    subdirectory: str
+    #: Section *names* that must be present — the flat list, for a caller that only checks presence.
+    required_sections: list[str]
+    #: The same sections with their authoring detail. `SectionSpec` is a closed four-field shape, which
+    #: is why this can be a DTO rather than pass-through YAML.
+    sections: list[DocumentSectionSpec]
+    extra_frontmatter_fields: list[DocumentFrontmatterField]
+    required_entity_type_connections: list[str]
+    suggested_entity_type_connections: list[str]
+
+
+class DocumentTypeListResponse(NullsOmitted):
+    """Every document type this repository declares, in type order.
+
+    An envelope rather than a bare array, like every other collection on this surface — and ordered, so
+    two reads of an unchanged repository agree rather than presenting whatever order the mapping held.
+    """
+
+    document_types: list[DocumentTypeResponse]

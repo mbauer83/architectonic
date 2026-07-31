@@ -163,9 +163,11 @@ export const makeHttpModelRepository = (): ModelRepository => ({
     )
   },
 
+  // The port speaks in document types, not envelopes: the create form wants the list and has no use
+  // for the wrapper, so unwrapping here keeps the envelope an HTTP detail.
   listDocumentTypes: () =>
     fetchJson(buildUrl('/document-types'), DocumentTypesSchema).pipe(
-      Effect.map((items) => [...items] as import('../../domain').DocumentType[]),
+      Effect.map((envelope) => [...envelope.document_types] as import('../../domain').DocumentType[]),
     ),
 
   listDocuments: (

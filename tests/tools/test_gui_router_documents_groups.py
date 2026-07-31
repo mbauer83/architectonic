@@ -130,15 +130,18 @@ def group_client(populated_root: Path):
 
 
 class TestDocumentTypes:
-    def test_returns_list(self, doc_client) -> None:
+    def test_returns_the_types_under_the_envelope_key(self, doc_client) -> None:
+        """An envelope, like every other collection on this surface — a bare array is what this used to
+        answer with, and it can never grow a count or a cursor."""
         r = doc_client.get("/api/document-types")
         assert r.status_code == 200
-        assert isinstance(r.json(), list)
+        assert set(r.json()) == {"document_types"}
+        assert isinstance(r.json()["document_types"], list)
 
     def test_canonical_sections_exposed_with_per_section_entity_rules(self, doc_client) -> None:
         r = doc_client.get("/api/document-types")
         assert r.status_code == 200
-        by_type = {item["doc_type"]: item for item in r.json()}
+        by_type = {item["doc_type"]: item for item in r.json()["document_types"]}
         standard = by_type["standard"]
         assert standard["sections"] == [
             {"name": "Overview"},
@@ -152,7 +155,7 @@ class TestDocumentTypes:
     def test_legacy_schema_normalizes_to_sections_without_entity_rules(self, doc_client) -> None:
         r = doc_client.get("/api/document-types")
         assert r.status_code == 200
-        by_type = {item["doc_type"]: item for item in r.json()}
+        by_type = {item["doc_type"]: item for item in r.json()["document_types"]}
         adr = by_type["adr"]
         assert adr["sections"] == [
             {"name": "Context"},

@@ -9,6 +9,7 @@ from fastapi import APIRouter, HTTPException, Query, Response, status
 from pydantic import BaseModel
 
 from src.application.artifact_document_schema import get_document_subdirectory, load_document_schemata
+from src.infrastructure.gui.contracts.authoring_catalogs import DocumentTypeListResponse
 from src.infrastructure.gui.contracts.documents import DocumentDetailResponse, DocumentListResponse
 from src.infrastructure.gui.routers import state as s
 from src.infrastructure.gui.routers._openapi import (
@@ -73,11 +74,19 @@ def _extra_frontmatter_fields(schema: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 @router.get("/api/document-types", tags=[TAG_DOCUMENTS], summary="List document types",
-    response_model=list[OpenMapResponse])
-def list_document_types() -> list[dict[str, object]]:
+    # `exclude_none` because `SectionSpec.to_dict` omits what it has no value for, and the DTOs declare
+    # the matching policy so the published document says so too. One policy for the whole response:
+    # a schema shared by two paths cannot claim absent on one and null on the other.
+    response_model=DocumentTypeListResponse, response_model_exclude_none=True)
+def list_document_types() -> dict[str, object]:
+    """Every document type this repository declares, type-ordered.
+
+    An envelope rather than the bare array this used to answer with: every other collection on the
+    surface answers with one, and a top-level array cannot later carry a count or a cursor.
+    """
     repo_root = _get_engagement_root()
     schemata = load_document_schemata(repo_root)
-    return [
+    return {"document_types": [
         {
             "doc_type": doc_type,
             "abbreviation": schema.get("abbreviation", doc_type.upper()),
@@ -90,7 +99,7 @@ def list_document_types() -> list[dict[str, object]]:
             "suggested_entity_type_connections": schema.get("suggested_entity_type_connections", []),
         }
         for doc_type, schema in sorted(schemata.items())
-    ]
+    ]}
 
 
 @router.get("/api/document-schemata", tags=[TAG_DOCUMENTS], summary="Document frontmatter schemata",

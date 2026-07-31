@@ -1763,7 +1763,13 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List document types */
+        /**
+         * List document types
+         * @description Every document type this repository declares, type-ordered.
+         *
+         *     An envelope rather than the bare array this used to answer with: every other collection on the
+         *     surface answers with one, and a top-level array cannot later carry a count or a cursor.
+         */
         get: operations["documents_list_document_types"];
         put?: never;
         post?: never;
@@ -4107,6 +4113,24 @@ export interface components {
             title: string;
         };
         /**
+         * DocumentFrontmatterField
+         * @description One type-specific frontmatter field a document of this type may carry.
+         *
+         *     ``array_items_type`` is *absent* for a non-collection field rather than null: the element type of a
+         *     scalar does not exist, and this response omits unset optionals throughout — a single null policy per
+         *     response, because one shared schema cannot honestly claim two.
+         */
+        DocumentFrontmatterField: {
+            /** Array Items Type */
+            array_items_type?: string;
+            /** Field Type */
+            field_type: string;
+            /** Name */
+            name: string;
+            /** Required */
+            required: boolean;
+        };
+        /**
          * DocumentListResponse
          * @description A page of documents, with the count of the *filtered* population.
          *
@@ -4152,6 +4176,25 @@ export interface components {
             title: string;
         };
         /**
+         * DocumentSectionSpec
+         * @description One section a document of this type carries, and what it should link to.
+         *
+         *     Mirrors ``application.artifact_document_schema.SectionSpec.to_dict``, which omits a field it has no
+         *     value for rather than sending an empty one — so the three optionals are *absent*, not null. A
+         *     section with no suggested connections and one whose suggestions are an empty list would otherwise
+         *     look the same, and only the first is a thing the schema can express.
+         */
+        DocumentSectionSpec: {
+            /** Name */
+            name: string;
+            /** Required Entity Type Connections */
+            required_entity_type_connections?: string[];
+            /** Suggested Entity Type Connections */
+            suggested_entity_type_connections?: string[];
+            /** Template */
+            template?: string;
+        };
+        /**
          * DocumentSummary
          * @description One row of the document list: enough to render and link, not the content.
          */
@@ -4176,6 +4219,44 @@ export interface components {
             status: string;
             /** Title */
             title: string;
+        };
+        /**
+         * DocumentTypeListResponse
+         * @description Every document type this repository declares, in type order.
+         *
+         *     An envelope rather than a bare array, like every other collection on this surface — and ordered, so
+         *     two reads of an unchanged repository agree rather than presenting whatever order the mapping held.
+         */
+        DocumentTypeListResponse: {
+            /** Document Types */
+            document_types: components["schemas"]["DocumentTypeResponse"][];
+        };
+        /**
+         * DocumentTypeResponse
+         * @description What one document type expects: its identity, where it lives, and the sections it requires.
+         *
+         *     The connection lists name *entity types* a document of this type should or must link to — the
+         *     schema's own vocabulary, carried through rather than interpreted here.
+         */
+        DocumentTypeResponse: {
+            /** Abbreviation */
+            abbreviation: string;
+            /** Doc Type */
+            doc_type: string;
+            /** Extra Frontmatter Fields */
+            extra_frontmatter_fields: components["schemas"]["DocumentFrontmatterField"][];
+            /** Name */
+            name: string;
+            /** Required Entity Type Connections */
+            required_entity_type_connections: string[];
+            /** Required Sections */
+            required_sections: string[];
+            /** Sections */
+            sections: components["schemas"]["DocumentSectionSpec"][];
+            /** Subdirectory */
+            subdirectory: string;
+            /** Suggested Entity Type Connections */
+            suggested_entity_type_connections: string[];
         };
         /**
          * DuplicateEdgeDetails
@@ -5242,6 +5323,36 @@ export interface components {
             assurance_node_id: string;
             /** Ref Type */
             ref_type: string;
+        };
+        /**
+         * RelationNotation
+         * @description How one relationship type is drawn: the line, and the marker at each end.
+         *
+         *     Structural rather than named after the relationship — "hollow triangle at the target", not
+         *     "realization" — so a renderer can honour it without knowing this ontology's vocabulary. That is the
+         *     reason these are three plain strings and not an enum: the values come from the ontology
+         *     representation layer, and a delivery-layer enum would have to be extended in lockstep with it.
+         */
+        RelationNotation: {
+            /** Line */
+            line: string;
+            /** Source */
+            source: string;
+            /** Target */
+            target: string;
+        };
+        /**
+         * RelationNotationsResponse
+         * @description Every known relationship's notation, keyed by connection type.
+         *
+         *     Served whole on purpose: a graph surface styles hundreds of edges spanning whatever relationship
+         *     types it meets, and a request per type would be a request per edge in the worst case.
+         */
+        RelationNotationsResponse: {
+            /** Notations */
+            notations: {
+                [key: string]: components["schemas"]["RelationNotation"];
+            };
         };
         /** RenameGroupBody */
         RenameGroupBody: {
@@ -11374,7 +11485,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"][];
+                    "application/json": components["schemas"]["DocumentTypeListResponse"];
                 };
             };
             /** @description Request validation failed */
@@ -13504,7 +13615,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["RelationNotationsResponse"];
                 };
             };
             /** @description Request validation failed */

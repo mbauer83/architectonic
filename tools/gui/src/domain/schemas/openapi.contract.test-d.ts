@@ -15,6 +15,7 @@ import type {
   SyncStatusSchema,
 } from './sync-status'
 import type { StatsSchema } from './stats'
+import type { DocumentTypeSchema, DocumentTypesSchema, SectionSpecSchema } from './documents'
 import type {
   AnalysisNotEmptyDetailsSchema,
   DenialDetailsSchema,
@@ -132,6 +133,22 @@ describe('platform surface', () => {
     >()
     expectTypeOf<SchemaType<typeof DeniedIntentSchema>>().toEqualTypeOf<
       Immutable<components['schemas']['DeniedIntentResponse']>
+    >()
+  })
+})
+
+describe('authoring catalogs', () => {
+  it('decodes the document-type envelope, its rows and its section specs', () => {
+    // Four of the row's fields were declared optional here while the route fills every one from the
+    // schema with a default — so readers carried fallbacks for a response the server never sends.
+    expectTypeOf<SchemaType<typeof DocumentTypesSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['DocumentTypeListResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof DocumentTypeSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['DocumentTypeResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof SectionSpecSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['DocumentSectionSpec']>
     >()
   })
 })

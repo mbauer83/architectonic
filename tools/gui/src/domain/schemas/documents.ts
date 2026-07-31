@@ -5,7 +5,9 @@ import { Schema } from 'effect'
 export const FrontmatterFieldSchema = Schema.Struct({
   name: Schema.String,
   field_type: Schema.String,
-  array_items_type: Schema.optional(Schema.NullOr(Schema.String)),
+  // Absent, never null: the route omits unset optionals, so a scalar field simply has no element
+  // type rather than having one that is null.
+  array_items_type: Schema.optional(Schema.String),
   required: Schema.Boolean,
 })
 export type FrontmatterField = typeof FrontmatterFieldSchema.Type
@@ -26,14 +28,20 @@ export const DocumentTypeSchema = Schema.Struct({
   name: Schema.String,
   subdirectory: Schema.String,
   required_sections: Schema.Array(Schema.String),
-  sections: Schema.optional(Schema.Array(SectionSpecSchema)),
-  extra_frontmatter_fields: Schema.optional(Schema.Array(FrontmatterFieldSchema)),
-  required_entity_type_connections: Schema.optional(Schema.Array(Schema.String)),
-  suggested_entity_type_connections: Schema.optional(Schema.Array(Schema.String)),
+  // Not optional: the route fills each of these from the schema with a default, so every row carries
+  // all nine keys. Declaring them optional described a response the server never sends and left every
+  // reader writing a fallback for it.
+  sections: Schema.Array(SectionSpecSchema),
+  extra_frontmatter_fields: Schema.Array(FrontmatterFieldSchema),
+  required_entity_type_connections: Schema.Array(Schema.String),
+  suggested_entity_type_connections: Schema.Array(Schema.String),
 })
 export type DocumentType = typeof DocumentTypeSchema.Type
 
-export const DocumentTypesSchema = Schema.Array(DocumentTypeSchema)
+/** The envelope `GET /api/document-types` answers with; the adapter hands callers the list inside it. */
+export const DocumentTypesSchema = Schema.Struct({
+  document_types: Schema.Array(DocumentTypeSchema),
+})
 
 export const DocumentSummarySchema = Schema.Struct({
   artifact_id: Schema.String,

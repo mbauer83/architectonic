@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from src.application.entity_type_predicates import is_internal_entity_type
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
+from src.infrastructure.gui.contracts.authoring_catalogs import RelationNotationsResponse
 from src.infrastructure.gui.contracts.connections import ConnectionListResponse
 from src.infrastructure.gui.contracts.entities import DerivedNeighborhood, DirectNeighborhood
 from src.infrastructure.gui.routers import state as s
@@ -105,7 +106,7 @@ def register_connection_read_routes(router: APIRouter) -> None:
         return {"query": result.query, "hits": [s.search_hit_to_dict(hit) for hit in hits]}
 
     @router.get("/api/relation-notations", tags=[TAG_CONNECTIONS],
-        summary="How each relationship type is drawn", response_model=OpenMapResponse)
+        summary="How each relationship type is drawn", response_model=RelationNotationsResponse)
     def get_relation_notations(
         catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
     ) -> dict[str, Any]:
