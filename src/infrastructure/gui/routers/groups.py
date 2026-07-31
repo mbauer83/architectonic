@@ -13,6 +13,7 @@ from pydantic import BaseModel, ConfigDict
 from src.application.assurance_diagrams import assurance_surface_diagram_types
 from src.domain.repository.groups import GroupAxis, GroupEntry, GroupRegistry
 from src.infrastructure.app_bootstrap import complete_diagram_type_catalog
+from src.infrastructure.gui.contracts.groups import GroupOperationResponse
 from src.infrastructure.gui.routers import state as s
 from src.infrastructure.gui.routers._openapi import TAG_GROUPS, WRITE_RESPONSES, OpenMapResponse
 
@@ -148,7 +149,8 @@ async def _exec_op(operation_id: str, **kwargs: Any) -> dict[str, Any]:
 _CREATE_RESPONSES: dict[int | str, Any] = dict(WRITE_RESPONSES)
 
 
-@router.post("/api/groups", tags=[TAG_GROUPS], summary="Create a group", response_model=OpenMapResponse,
+@router.post("/api/groups", tags=[TAG_GROUPS], summary="Create a group", response_model=GroupOperationResponse,
+    response_model_exclude_none=True,
     responses=_CREATE_RESPONSES, status_code=status.HTTP_201_CREATED)
 async def create_group(body: CreateGroupBody, response: Response) -> dict[str, Any]:
     result = await _exec_op(
@@ -171,7 +173,7 @@ def _group_location(kind: str, slug: str) -> str:
 
 
 @router.post("/api/groups/{kind}/{slug}/rename", tags=[TAG_GROUPS], summary="Rename a group",
-    response_model=OpenMapResponse, responses=WRITE_RESPONSES)
+    response_model=GroupOperationResponse, response_model_exclude_none=True, responses=WRITE_RESPONSES)
 async def rename_group(kind: str, slug: str, body: RenameGroupBody) -> dict[str, Any]:
     """An explicit action segment, not a ``PATCH`` field: renaming re-files every member, so it is
     a move rather than an attribute update, and it changes the resource's own address."""
@@ -186,7 +188,7 @@ async def rename_group(kind: str, slug: str, body: RenameGroupBody) -> dict[str,
 
 
 @router.post("/api/groups/{kind}/{slug}/archive", tags=[TAG_GROUPS], summary="Archive a group",
-    response_model=OpenMapResponse, responses=WRITE_RESPONSES)
+    response_model=GroupOperationResponse, response_model_exclude_none=True, responses=WRITE_RESPONSES)
 async def archive_group(kind: str, slug: str, body: ArchiveGroupBody | None = None) -> dict[str, Any]:
     return await _exec_op(
         "groups_archive_group", axis=kind, action="archive", target=slug,
@@ -195,7 +197,7 @@ async def archive_group(kind: str, slug: str, body: ArchiveGroupBody | None = No
 
 
 @router.post("/api/groups/{kind}/{slug}/unarchive", tags=[TAG_GROUPS], summary="Unarchive a group",
-    response_model=OpenMapResponse, responses=WRITE_RESPONSES)
+    response_model=GroupOperationResponse, response_model_exclude_none=True, responses=WRITE_RESPONSES)
 async def unarchive_group(kind: str, slug: str) -> dict[str, Any]:
     """No body: the path names the group and the segment names the action, so there is nothing left
     for a caller to say."""
@@ -203,7 +205,7 @@ async def unarchive_group(kind: str, slug: str) -> dict[str, Any]:
 
 
 @router.patch("/api/groups/{kind}/{slug}", tags=[TAG_GROUPS], summary="Update a group (partial)",
-    response_model=OpenMapResponse, responses=WRITE_RESPONSES)
+    response_model=GroupOperationResponse, response_model_exclude_none=True, responses=WRITE_RESPONSES)
 async def update_group(kind: str, slug: str, body: UpdateGroupBody) -> dict[str, Any]:
     return await _exec_op(
         "groups_update_group",
@@ -218,7 +220,7 @@ async def update_group(kind: str, slug: str, body: UpdateGroupBody) -> dict[str,
 
 
 @router.delete("/api/groups/{kind}/{slug}", tags=[TAG_GROUPS], summary="Delete a group",
-    response_model=OpenMapResponse, responses=WRITE_RESPONSES)
+    response_model=GroupOperationResponse, response_model_exclude_none=True, responses=WRITE_RESPONSES)
 async def delete_group(
     kind: str,
     slug: str,

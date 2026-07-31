@@ -4258,6 +4258,49 @@ export interface components {
             /** Group Id */
             group_id?: string | null;
         };
+        /**
+         * GroupOperationResponse
+         * @description What a group operation did.
+         *
+         *     ``action`` reports it in the past tense, because the response describes a completed change rather
+         *     than the request that asked for it — a caller replaying a log needs to know what happened, and
+         *     "archive" does not say whether it did.
+         *
+         *     **One closed model rather than six, discriminated on ``action``.** A union per action would be
+         *     more precise about which extra field accompanies which verb, and it would cost six models and a
+         *     discriminated wrapper to express three optional fields. The imprecision it buys back is small and
+         *     named: ``id`` accompanies a create, ``old_slug`` a rename, ``files_removed`` a delete. A seventh
+         *     action, or an extra that is not obviously tied to one verb, is the point at which the union earns
+         *     its keep.
+         *
+         *     **The field names are the producer's, not better ones.** ``id`` would read better as ``group_id``,
+         *     but this contract is a projection of ``group_ops``' output rather than an independent description
+         *     of it: a DTO that renames what it receives is a closed model that rejects every real response, and
+         *     that mistake has already cost a 500 on the entity read once this release.
+         *     ``test_group_operation_contract.py`` holds the two field sets equal.
+         *
+         *     Unset extras are **absent**, not null — the null-omitting policy — so a client reading
+         *     ``files_removed`` learns "this was not a delete" from the key's absence rather than having to
+         *     distinguish null from zero. Zero files removed is a real outcome and must not look like "not
+         *     applicable".
+         */
+        GroupOperationResponse: {
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "created" | "renamed" | "archived" | "unarchived" | "updated" | "deleted";
+            /** Axis */
+            axis: string;
+            /** Files Removed */
+            files_removed?: number;
+            /** Id */
+            id?: string;
+            /** Old Slug */
+            old_slug?: string;
+            /** Slug */
+            slug: string;
+        };
         /** GsnPublicationBinding */
         GsnPublicationBinding: {
             /** Assurance Node Id */
@@ -11564,7 +11607,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["GroupOperationResponse"];
                 };
             };
             /** @description Validation error (bad or ambiguous write) */
@@ -11643,7 +11686,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["GroupOperationResponse"];
                 };
             };
             /** @description Validation error (bad or ambiguous write) */
@@ -11724,7 +11767,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["GroupOperationResponse"];
                 };
             };
             /** @description Validation error (bad or ambiguous write) */
@@ -11805,7 +11848,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["GroupOperationResponse"];
                 };
             };
             /** @description Validation error (bad or ambiguous write) */
@@ -11886,7 +11929,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["GroupOperationResponse"];
                 };
             };
             /** @description Validation error (bad or ambiguous write) */
@@ -11963,7 +12006,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["GroupOperationResponse"];
                 };
             };
             /** @description Validation error (bad or ambiguous write) */
