@@ -249,8 +249,8 @@ const createBusy = ref(false)
 const createError = ref<string | null>(null)
 
 const writeFailureMessage = (result: WriteResult): string => {
-  const verification = result.verification as { issues?: Array<{ message?: string }> } | null
-  const issues = verification?.issues?.map((issue) => issue.message).filter((m): m is string => Boolean(m)) ?? []
+  // No cast: `verification` is typed now, so the issue messages are reachable directly.
+  const issues = result.verification?.issues.map((issue) => issue.message).filter(Boolean) ?? []
   if (issues.length) return issues.join(' | ')
   return result.content ?? 'Verification failed — check warnings'
 }

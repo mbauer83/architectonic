@@ -15,6 +15,11 @@ import type {
   SyncStatusSchema,
 } from './sync-status'
 import type { StatsSchema } from './stats'
+import type {
+  VerificationIssueSchema,
+  WriteResultSchema,
+  WriteVerificationSchema,
+} from './write-results'
 import type { DocumentTypeSchema, DocumentTypesSchema, SectionSpecSchema } from './documents'
 import type { GroupEntrySchema, GroupListSchema } from './groups'
 import type { MatrixConfigSchema, MatrixConnTypeConfigSchema } from './diagrams'
@@ -187,6 +192,27 @@ describe('ontology', () => {
     >()
     expectTypeOf<SchemaType<typeof OntologyPairSchema>>().toEqualTypeOf<
       Immutable<components['schemas']['OntologyPairResponse']>
+    >()
+  })
+})
+
+describe('write results', () => {
+  it('decodes the verification report every mutation returns', () => {
+    // `verification` was `Schema.Unknown` against a server-side `dict[str, Any]`: neither side
+    // described it, so every consumer re-derived the shape at the point of use. Asserting the issue as
+    // well as the report — a drift in the issue is what would empty an authoring form's warning list
+    // while the report around it still decoded.
+    expectTypeOf<SchemaType<typeof WriteVerificationSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['WriteVerificationResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof VerificationIssueSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['VerificationIssueResponse']>
+    >()
+  })
+
+  it('decodes the mutation envelope that carries it', () => {
+    expectTypeOf<SchemaType<typeof WriteResultSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['WriteResultResponse']>
     >()
   })
 })

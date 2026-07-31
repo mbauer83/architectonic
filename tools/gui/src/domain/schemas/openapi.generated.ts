@@ -6037,6 +6037,39 @@ export interface components {
             /** Field Errors */
             field_errors: components["schemas"]["FieldError"][];
         };
+        /**
+         * VerificationIssueResponse
+         * @description One finding: what is wrong, how badly, and where.
+         *
+         *     ``details`` and ``actions`` stay open maps, and they are the only two levels here that may be
+         *     (see ``contracts/open_models.py``): both are written by the *rule* that raised the issue, and
+         *     rules live in the core verifier and in diagram-type modules alike — the datatype module's
+         *     unresolved-type-reference finding carries ``classifier``/``attr_name``/``candidates``
+         *     (``diagram_types/datatype/_contributions.py:140``), and the workspace-identity rule carries
+         *     ``candidate_host``/``committed_host``. Enumerating either here would make a module's findings
+         *     depend on this package to reach a client.
+         */
+        VerificationIssueResponse: {
+            /** Actions */
+            actions?: {
+                [key: string]: unknown;
+            }[] | null;
+            /** Code */
+            code: string;
+            /** Details */
+            details?: {
+                [key: string]: unknown;
+            } | null;
+            /** Location */
+            location?: string | null;
+            /** Message */
+            message: string;
+            /**
+             * Severity
+             * @enum {string}
+             */
+            severity: "error" | "warning";
+        };
         /** VexAssessmentListResponse */
         VexAssessmentListResponse: {
             /**
@@ -6293,25 +6326,52 @@ export interface components {
          *     anything else", so a client could not rely on the shape and a fitness function could not tell the
          *     difference between a typed mutation response and an untyped one. Every mutation returns exactly
          *     ``state.write_result_to_dict``, so there is nothing extra to keep.
+         *
+         *     "Closed" was still half true while ``verification`` was a ``dict[str, Any]``: the *envelope*
+         *     forbade extras and the field inside it published ``additionalProperties: true``, on every
+         *     mutation the surface serves. The field type carries the contract now
+         *     (:class:`WriteVerificationResponse`), and ``test_open_response_models.py`` reads the published
+         *     schema rather than ``model_config`` so the next one of these cannot hide the same way.
+         *
+         *     Nothing here carries a default, because ``write_result_to_dict`` (``state.py:387``) emits all six
+         *     keys on every mutation. A default would have published ``content?: string | null`` for a key the
+         *     surface always sends, and the frontend decoder — which required it — would then have been *stricter*
+         *     than the document it is checked against.
          */
         WriteResultResponse: {
             /** Artifact Id */
             artifact_id: string;
             /** Content */
-            content?: string | null;
+            content: string | null;
             /** Path */
             path: string;
-            /** Verification */
-            verification?: {
-                [key: string]: unknown;
-            } | null;
-            /**
-             * Warnings
-             * @default []
-             */
+            verification: components["schemas"]["WriteVerificationResponse"] | null;
+            /** Warnings */
             warnings: string[];
             /** Wrote */
             wrote: boolean;
+        };
+        /**
+         * WriteVerificationResponse
+         * @description Whether what the mutation wrote verifies, and what it found if not.
+         *
+         *     Not an error channel: a write that failed raises and answers non-2xx. ``valid`` false with the
+         *     issues that made it so is a *successful* write of content the verifier objects to, which is why
+         *     the authoring surfaces render these as warnings beside the saved artifact rather than as a
+         *     failure.
+         */
+        WriteVerificationResponse: {
+            /** File Type */
+            file_type?: ("entity" | "connection" | "diagram" | "document") | null;
+            /**
+             * Issues
+             * @default []
+             */
+            issues: components["schemas"]["VerificationIssueResponse"][];
+            /** Path */
+            path?: string | null;
+            /** Valid */
+            valid: boolean;
         };
     };
     responses: never;

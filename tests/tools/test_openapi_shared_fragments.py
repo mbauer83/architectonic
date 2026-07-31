@@ -47,6 +47,14 @@ def test_write_result_model_is_closed_so_the_contract_it_names_means_something()
     assert schema.get("additionalProperties") is False
 
 
+def test_every_field_of_a_write_result_is_required_because_every_field_is_sent() -> None:
+    """``write_result_to_dict`` emits all six keys unconditionally. A default on any of them would
+    publish it as omittable — and the frontend decoder, which requires them, would then be *stricter*
+    than the document it is checked against, which is the drift the contract check exists to catch."""
+    schema = WriteResultResponse.model_json_schema()
+    assert set(schema["required"]) == set(schema["properties"]) == set(WriteResultResponse.model_fields)
+
+
 def test_open_map_response_is_an_object_that_allows_any_field() -> None:
     schema = OpenMapResponse.model_json_schema()
     assert schema["type"] == "object"

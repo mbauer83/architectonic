@@ -25,6 +25,7 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict
 
 from src.infrastructure.gui.contracts.errors import ErrorEnvelope
+from src.infrastructure.gui.contracts.verification import WriteVerificationResponse
 
 #: FastAPI tag names, one per modeling/query surface, so ``/docs`` groups by concept.
 TAG_ENTITIES = "entities"
@@ -60,6 +61,17 @@ class WriteResultResponse(BaseModel):
     anything else", so a client could not rely on the shape and a fitness function could not tell the
     difference between a typed mutation response and an untyped one. Every mutation returns exactly
     ``state.write_result_to_dict``, so there is nothing extra to keep.
+
+    "Closed" was still half true while ``verification`` was a ``dict[str, Any]``: the *envelope*
+    forbade extras and the field inside it published ``additionalProperties: true``, on every
+    mutation the surface serves. The field type carries the contract now
+    (:class:`WriteVerificationResponse`), and ``test_open_response_models.py`` reads the published
+    schema rather than ``model_config`` so the next one of these cannot hide the same way.
+
+    Nothing here carries a default, because ``write_result_to_dict`` (``state.py:387``) emits all six
+    keys on every mutation. A default would have published ``content?: string | null`` for a key the
+    surface always sends, and the frontend decoder — which required it — would then have been *stricter*
+    than the document it is checked against.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -67,9 +79,9 @@ class WriteResultResponse(BaseModel):
     wrote: bool
     path: str
     artifact_id: str
-    content: str | None = None
-    warnings: list[str] = []
-    verification: dict[str, Any] | None = None
+    content: str | None
+    warnings: list[str]
+    verification: WriteVerificationResponse | None
 
 
 

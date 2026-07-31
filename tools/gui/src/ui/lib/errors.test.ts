@@ -1,6 +1,25 @@
 import { describe, expect, it } from 'vitest'
 import { Data } from 'effect'
-import { extractTypedApiError, readErrorMessage } from './errors'
+import {
+  collectVerificationIssues,
+  extractTypedApiError,
+  hasVerificationErrors,
+  readErrorMessage,
+} from './errors'
+import type { WriteVerification } from '../../domain/schemas/write-results'
+
+const report = (fields: Partial<WriteVerification>): WriteVerification => ({
+  valid: true,
+  issues: [],
+  ...fields,
+})
+
+const issue = (fields: Partial<WriteVerification['issues'][number]>) => ({
+  severity: 'error' as const,
+  code: '',
+  message: '',
+  ...fields,
+})
 
 class NetworkError extends Data.TaggedError('NetworkError')<{ readonly status: number; readonly message: string }> {}
 
@@ -55,5 +74,49 @@ describe('extractTypedApiError', () => {
 
   it('is null for a non-string, non-Error value', () => {
     expect(extractTypedApiError({ detail: { code: 'x', path: 'y', message: 'z' } })).toBeNull()
+  })
+})
+
+describe('collectVerificationIssues', () => {
+  it('prefixes a message with its code', () => {
+    const verification = report({
+      valid: false,
+      issues: [issue({ code: 'E335-fmt', message: 'unbalanced braces' })],
+    })
+    expect(collectVerificationIssues(verification)).toEqual(['E335-fmt: unbalanced braces'])
+  })
+
+  it('shows the message alone when the rule reported no code', () => {
+    expect(collectVerificationIssues(report({ issues: [issue({ message: 'no code here' })] }))).toEqual([
+      'no code here',
+    ])
+  })
+
+  it('drops an issue carrying neither a code nor a message', () => {
+    expect(collectVerificationIssues(report({ issues: [issue({})] }))).toEqual([])
+  })
+
+  it('is empty for a mutation that carries no report at all', () => {
+    expect(collectVerificationIssues(null)).toEqual([])
+  })
+})
+
+describe('hasVerificationErrors', () => {
+  it('is true when the verifier said the content is invalid', () => {
+    expect(hasVerificationErrors(report({ valid: false }))).toBe(true)
+  })
+
+  it('is true for a valid report that still carries warnings', () => {
+    expect(
+      hasVerificationErrors(report({ issues: [issue({ severity: 'warning', message: 'orphan' })] })),
+    ).toBe(true)
+  })
+
+  it('is false for a clean report', () => {
+    expect(hasVerificationErrors(report({}))).toBe(false)
+  })
+
+  it('is false when there is no report', () => {
+    expect(hasVerificationErrors(null)).toBe(false)
   })
 })
