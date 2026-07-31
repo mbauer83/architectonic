@@ -71,13 +71,13 @@ export function useGrcWizardData(analysisId: Ref<string | null>, stepKey: Ref<st
     busy.value = true
     error.value = null
     try {
-      const resp = await fetch('/api/assurance/nodes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          node_type: nodeType, name: name.trim(), analysis_id: analysisId.value, attributes,
-        }),
-      })
+      // The analysis is the address; the body no longer repeats it.
+      const resp = await fetch(
+        `/api/assurance/analyses/${encodeURIComponent(analysisId.value)}/nodes`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ node_type: nodeType, name: name.trim(), attributes }),
+        })
       const body = await resp.json().catch(() => ({})) as Record<string, unknown>
       if (!resp.ok || typeof body['node_id'] !== 'string') {
         error.value = typeof body['error'] === 'string' ? body['error'] : `HTTP ${resp.status}`

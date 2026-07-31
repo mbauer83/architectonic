@@ -89,8 +89,10 @@ test('the supply-chain dashboard validates and records a contextual VEX assessme
   await form.getByPlaceholder(/justification/).fill('The vulnerable code path is not included.')
   await form.getByRole('button', { name: 'Record assessment' }).click()
   await expect(form).toContainText('recorded revision 2')
+  // No `anchor_entity_id`: the anchor is the address the assessment is posted to, so a body that
+  // named one would give the caller two places to say which artifact it assessed.
+  expect(submitted).not.toHaveProperty('anchor_entity_id')
   expect(submitted).toMatchObject({
-    anchor_entity_id: BACKEND,
     canonical_component_id: 'pkg:pypi/architectonic@1.0.0',
     canonical_vulnerability_id: 'VID@synthetic-001',
     vex_status: 'not_affected', author: 'documentation acceptance',

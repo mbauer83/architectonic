@@ -20,7 +20,10 @@ from src.infrastructure.gui.route_policy import (
     STREAM,
     path_parameters,
 )
-from tests.support.retired_route_scan import find_retired_literals
+from tests.support.retired_route_scan import (
+    find_retired_literals,
+    find_retired_method_calls,
+)
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 
@@ -142,4 +145,26 @@ def test_no_retired_route_literal_survives_in_the_working_tree() -> None:
     )
     assert findings == {}, "retired route literals still referenced:\n" + "\n".join(
         f"  {literal}: {', '.join(places)}" for literal, places in sorted(findings.items())
+    )
+
+
+def test_no_client_still_calls_a_retired_method_on_a_live_path() -> None:
+    """The gap the test above cannot see, and it cost a 405 in the browser.
+
+    A path stays permitted while any method on it is still mounted — right for paths, blind to
+    verbs. ``POST /api/assurance/nodes`` was retired while ``GET /api/assurance/nodes`` stayed, so
+    four GUI callers went on posting to it and the only thing that noticed was an e2e run. The
+    served surface answers 405, which no unit test exercises and no path scan reports.
+    """
+    live_paths = frozenset(
+        template for _method, template in RETIRED_ROUTES
+        if template not in RETIRED_PATH_LITERALS
+    )
+    findings = find_retired_method_calls(
+        _REPO_ROOT, RETIRED_ROUTES, live_paths=live_paths,
+        exempt=_RETIRED_LITERAL_EXEMPT_FILES,
+    )
+    assert findings == {}, (
+        "clients still using a retired method on a path that is live for other methods:\n"
+        + "\n".join(f"  {pair}: {', '.join(places)}" for pair, places in sorted(findings.items()))
     )

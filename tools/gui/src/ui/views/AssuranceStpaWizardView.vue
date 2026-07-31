@@ -86,10 +86,10 @@ async function createNode(nodeType: string, name: string, extra: Record<string, 
   busy.value = true
   error.value = null
   try {
-    const resp = await fetch('/api/assurance/nodes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ node_type: nodeType, name: name.trim(), analysis_id: analysisId.value, ...extra }),
+    const url = `/api/assurance/analyses/${encodeURIComponent(analysisId.value)}/nodes`
+    const resp = await fetch(url, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ node_type: nodeType, name: name.trim(), ...extra }),
     })
     const body = await resp.json().catch(() => ({})) as Record<string, unknown>
     if (!resp.ok || typeof body['node_id'] !== 'string') {

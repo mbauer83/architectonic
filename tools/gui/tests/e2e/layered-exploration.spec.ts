@@ -59,38 +59,30 @@ test.describe('layered view: quality flow', () => {
       } }))
     await page.route('**/api/viewpoints/execute', (route) => route.fulfill({ json: executionResult() }))
     await page.route('**/api/viewpoints/execute-projection', (route) => route.fulfill({ json: projectionResult() }))
+    // `{ items: [...] }`, not a bare array: the collection read answers with the house envelope, and
+    // `ConnectionListResponseSchema` decodes that. A bare array fails the decode, the witness chain
+    // comes back empty, and the only symptom is a dialog with no links in it.
+    const connectionList = (...items: unknown[]) => ({ json: { items } })
+    const TECH_TO_HOP_ONE = {
+      artifact_id: CONN_A, source: TECH_ID, target: 'ENT@test.hop1', conn_type: 'archimate-serving',
+      version: '1', status: 'active', path: '', content_text: '', source_name: 'Tech Node', target_name: 'Hop One',
+    }
+    const HOP_ONE_TO_HOP_TWO = {
+      artifact_id: CONN_B, source: 'ENT@test.hop1', target: 'ENT@test.hop2', conn_type: 'archimate-composition',
+      version: '1', status: 'active', path: '', content_text: '', source_name: 'Hop One', target_name: 'Hop Two',
+    }
+    const HOP_TWO_TO_ROOT = {
+      artifact_id: CONN_C, source: 'ENT@test.hop2', target: ROOT_ID, conn_type: 'archimate-association',
+      version: '1', status: 'active', path: '', content_text: '', source_name: 'Hop Two', target_name: 'Root Process',
+    }
     await page.route(`**/api/connections?entity_id=${encodeURIComponent(TECH_ID)}*`, (route) =>
-      route.fulfill({ json: [{
-        artifact_id: CONN_A, source: TECH_ID, target: 'ENT@test.hop1', conn_type: 'archimate-serving',
-        version: '1', status: 'active', path: '', content_text: '', source_name: 'Tech Node', target_name: 'Hop One',
-      }] }))
+      route.fulfill(connectionList(TECH_TO_HOP_ONE)))
     await page.route(`**/api/connections?entity_id=${encodeURIComponent('ENT@test.hop1')}*`, (route) =>
-      route.fulfill({ json: [
-        {
-          artifact_id: CONN_A, source: TECH_ID, target: 'ENT@test.hop1', conn_type: 'archimate-serving',
-          version: '1', status: 'active', path: '', content_text: '', source_name: 'Tech Node', target_name: 'Hop One',
-        },
-        {
-          artifact_id: CONN_B, source: 'ENT@test.hop1', target: 'ENT@test.hop2', conn_type: 'archimate-composition',
-          version: '1', status: 'active', path: '', content_text: '', source_name: 'Hop One', target_name: 'Hop Two',
-        },
-      ] }))
+      route.fulfill(connectionList(TECH_TO_HOP_ONE, HOP_ONE_TO_HOP_TWO)))
     await page.route(`**/api/connections?entity_id=${encodeURIComponent('ENT@test.hop2')}*`, (route) =>
-      route.fulfill({ json: [
-        {
-          artifact_id: CONN_B, source: 'ENT@test.hop1', target: 'ENT@test.hop2', conn_type: 'archimate-composition',
-          version: '1', status: 'active', path: '', content_text: '', source_name: 'Hop One', target_name: 'Hop Two',
-        },
-        {
-          artifact_id: CONN_C, source: 'ENT@test.hop2', target: ROOT_ID, conn_type: 'archimate-association',
-          version: '1', status: 'active', path: '', content_text: '', source_name: 'Hop Two', target_name: 'Root Process',
-        },
-      ] }))
+      route.fulfill(connectionList(HOP_ONE_TO_HOP_TWO, HOP_TWO_TO_ROOT)))
     await page.route(`**/api/connections?entity_id=${encodeURIComponent(ROOT_ID)}*`, (route) =>
-      route.fulfill({ json: [{
-        artifact_id: CONN_C, source: 'ENT@test.hop2', target: ROOT_ID, conn_type: 'archimate-association',
-        version: '1', status: 'active', path: '', content_text: '', source_name: 'Hop Two', target_name: 'Root Process',
-      }] }))
+      route.fulfill(connectionList(HOP_TWO_TO_ROOT)))
 
     await page.goto('/graph/layered')
     await expect(page.getByRole('heading', { name: 'Build a layered view' })).toBeVisible()

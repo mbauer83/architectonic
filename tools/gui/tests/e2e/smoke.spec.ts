@@ -246,12 +246,12 @@ test('every stored diagram instance renders (exercises each diagram type)', asyn
   for (const diagram of diagrams) {
     await test.step(`${diagram.diagram_type}: ${diagram.name}`, async () => {
       // Assert the SVG actually renders. Navigating the page and checking health races the
-      // lazy, ~1s /api/diagrams/*/svg call (which can outlast the health check), so a broken
+      // lazy, ~1s /api/diagrams/{id}/svg call (which can outlast the health check), so a broken
       // diagram passed unnoticed; fetch the render endpoint directly and require success.
       // Matrix diagrams have no SVG representation — they render as Markdown in-page (mirrors
       // the frontend's diagramNeedsSvg), so the page health check below is their coverage.
       if (diagram.diagram_type !== 'matrix') {
-        const svg = await request.get(`/api/diagrams/*/svg?id=${encodeURIComponent(diagram.artifact_id)}`)
+        const svg = await request.get(`/api/diagrams/${encodeURIComponent(diagram.artifact_id)}/svg`)
         expect(svg.ok(), `${diagram.diagram_type} '${diagram.name}' failed to render: HTTP ${svg.status()}`).toBeTruthy()
       }
 
@@ -278,7 +278,7 @@ test('C4 rendered labels contain names, retain person labels, and omit descripti
 
   let personLabels = 0
   for (const diagram of diagrams) {
-    const contextResponse = await request.get(`/api/diagrams/*/context?id=${encodeURIComponent(diagram.artifact_id)}`)
+    const contextResponse = await request.get(`/api/diagrams/${encodeURIComponent(diagram.artifact_id)}/context`)
     expect(contextResponse.ok()).toBeTruthy()
     const context = await contextResponse.json() as DiagramContext
     const raw = context.diagram.diagram_entities
@@ -445,7 +445,7 @@ test('GSN diagram renders and nodes are selectable in the generic viewer', async
   const gsn = items[0]
 
   // Verify the context endpoint surfaces diagram-owned nodes and edges
-  const ctxResp = await request.get(`/api/diagrams/*/context?id=${encodeURIComponent(gsn.artifact_id)}`)
+  const ctxResp = await request.get(`/api/diagrams/${encodeURIComponent(gsn.artifact_id)}/context`)
   expect(ctxResp.ok()).toBeTruthy()
   const ctx = await ctxResp.json() as DiagramContext
   expect(ctx.entities.length, 'GSN diagram must surface diagram-owned nodes as entities').toBeGreaterThan(0)
@@ -485,7 +485,7 @@ test('C4 edit-view shows model-backed panel with derived entities', async ({ pag
   const diagram = items[0]
 
   // Verify the context endpoint returns _scope_entity_id in diagram_entities
-  const ctxResp = await request.get(`/api/diagrams/*/context?id=${encodeURIComponent(diagram.artifact_id)}`)
+  const ctxResp = await request.get(`/api/diagrams/${encodeURIComponent(diagram.artifact_id)}/context`)
   expect(ctxResp.ok()).toBeTruthy()
   const ctx = await ctxResp.json() as DiagramContext
   const de = ctx.diagram.diagram_entities as Record<string, unknown> | null | undefined
@@ -622,7 +622,7 @@ test('C4 person labels render in system-context and container diagrams (T20)', a
   const ctxSvgText = (await ctxSvg.textContent()) ?? ''
 
   // Fetch context to know which person labels to expect
-  const ctxContextResp = await request.get(`/api/diagrams/*/context?id=${encodeURIComponent(ctxDiagram.artifact_id)}`)
+  const ctxContextResp = await request.get(`/api/diagrams/${encodeURIComponent(ctxDiagram.artifact_id)}/context`)
   expect(ctxContextResp.ok()).toBeTruthy()
   const ctxContext = await ctxContextResp.json() as DiagramContext
   const ctxPersons = ctxContext.entities.filter((e) =>
@@ -651,7 +651,7 @@ test('C4 person labels render in system-context and container diagrams (T20)', a
   await expect(ctnSvg).toBeVisible({ timeout: 15_000 })
   const ctnSvgText = (await ctnSvg.textContent()) ?? ''
 
-  const ctnContextResp = await request.get(`/api/diagrams/*/context?id=${encodeURIComponent(ctnDiagram.artifact_id)}`)
+  const ctnContextResp = await request.get(`/api/diagrams/${encodeURIComponent(ctnDiagram.artifact_id)}/context`)
   expect(ctnContextResp.ok()).toBeTruthy()
   const ctnContext = await ctnContextResp.json() as DiagramContext
   const ctnPersons = ctnContext.entities.filter((e) =>
@@ -686,7 +686,7 @@ test('C4 person→container edges anchor at nodes without gap (T21)', async ({ p
 
   // Verify the SVG contains connection lines: presence of 'uses' edge label and person + container labels
   const svgText = (await svg.textContent()) ?? ''
-  const contextResp = await request.get(`/api/diagrams/*/context?id=${encodeURIComponent(diagram.artifact_id)}`)
+  const contextResp = await request.get(`/api/diagrams/${encodeURIComponent(diagram.artifact_id)}/context`)
   expect(contextResp.ok()).toBeTruthy()
   const context = await contextResp.json() as DiagramContext
   const persons = context.entities.filter((e) =>

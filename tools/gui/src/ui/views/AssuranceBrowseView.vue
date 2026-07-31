@@ -160,14 +160,14 @@ function backToDetail() {
 }
 
 async function handleCreate(data: AssuranceNodeFormData) {
+  // A node records which analysis produced it, so an unscoped browse has nowhere to put one.
+  if (!analysisId.value) { formError.value = 'Choose an analysis first.'; return }
   formLoading.value = true
   formError.value = null
   try {
-    const resp = await fetch('/api/assurance/nodes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    })
+    const url = `/api/assurance/analyses/${encodeURIComponent(analysisId.value)}/nodes`
+    const init = { method: 'POST', headers: { 'Content-Type': 'application/json' } }
+    const resp = await fetch(url, { ...init, body: JSON.stringify(data) })
     if (resp.status === 423) { formError.value = 'Store is locked.'; return }
     if (!resp.ok) {
       const body = await resp.json().catch(() => ({})) as Record<string, unknown>

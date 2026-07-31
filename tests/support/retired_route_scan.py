@@ -110,3 +110,69 @@ def find_retired_literals(
                         f"{path.relative_to(root)}:{number}"
                     )
     return findings
+
+
+#: How far below a URL literal a request's method may be declared before the two are unrelated.
+#: A `fetch(url, { method: 'POST', headers: …, body: … })` spans a handful of lines; beyond that the
+#: next `method:` in the file belongs to a different call.
+_METHOD_WINDOW = 6
+
+#: One retired *method* on a path that is still live for other methods. `POST /api/assurance/nodes`
+#: is gone while `GET /api/assurance/nodes` remains, so the path-level scan above deliberately
+#: permits the literal — and a client still POSTing to it gets a 405 that nothing else catches until
+#: a browser test hits it.
+_CLIENT_CALL_FORMS = (
+    # `fetch('/api/x', { method: 'POST' })` and `fetch(`/api/x`, { … })`
+    r"fetch\(\s*[`'\"]{path}[`'\"]",
+    # `client.post("/api/x"` / `request.post('/api/x'` — the Python and Playwright request APIs
+    r"\.{lower}\(\s*[`'\"]{path}[`'\"]",
+)
+
+
+def find_retired_method_calls(
+    root: Path,
+    retired: dict[tuple[str, str], str],
+    *,
+    live_paths: frozenset[str],
+    exempt: frozenset[Path] = frozenset(),
+) -> dict[str, list[str]]:
+    """``METHOD path`` → occurrences of a client still using a retired method on a live path.
+
+    The path-level scan cannot see these: it permits any literal whose path still answers to some
+    method, which is correct — the path is not retired, one verb on it is. This finds the verb.
+
+    Only the retired pairs whose path is still live are considered; everything else is already
+    covered, and reporting it twice would make one defect look like two.
+    """
+    findings: dict[str, list[str]] = {}
+    exempt_resolved = {path.resolve() for path in exempt}
+    candidates = [
+        (method, template) for (method, template) in retired
+        if template in live_paths and "{" not in template
+    ]
+    if not candidates:
+        return findings
+    for path in scan_files(root):
+        if path.resolve() in exempt_resolved:
+            continue
+        try:
+            lines = path.read_text(encoding="utf-8").splitlines()
+        except UnicodeDecodeError:
+            continue
+        for method, template in candidates:
+            quoted = re.escape(template)
+            for form in _CLIENT_CALL_FORMS:
+                pattern = re.compile(form.format(path=quoted, lower=method.lower()))
+                for number, line in enumerate(lines, start=1):
+                    if not pattern.search(line):
+                        continue
+                    window = "\n".join(lines[number - 1 : number - 1 + _METHOD_WINDOW])
+                    names_method = re.search(
+                        rf"method:\s*['\"]{method}['\"]", window, re.IGNORECASE
+                    )
+                    # `.post(` names its own method; `fetch(` declares it in the options object.
+                    if names_method or f".{method.lower()}(" in line:
+                        findings.setdefault(f"{method} {template}", []).append(
+                            f"{path.relative_to(root)}:{number}"
+                        )
+    return findings

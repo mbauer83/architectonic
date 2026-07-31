@@ -28,9 +28,12 @@ async function createNode(
   name: string,
   extra: Record<string, string> = {},
 ): Promise<string> {
-  const resp = await request.post('/api/assurance/nodes', {
-    data: { node_type: nodeType, name, analysis_id: analysisId, ...extra },
-  })
+  // Created inside its provenance analysis: the analysis is the address, and the body no longer
+  // repeats it — a node cannot be created without recording which analysis produced it.
+  const resp = await request.post(
+    `/api/assurance/analyses/${encodeURIComponent(analysisId)}/nodes`, {
+      data: { node_type: nodeType, name, ...extra },
+    })
   expect(resp.status(), `creating a ${nodeType}`).toBe(200)
   const body = await resp.json() as { node_id: string }
   return body.node_id
