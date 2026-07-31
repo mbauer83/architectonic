@@ -13,6 +13,7 @@ from fastapi import APIRouter, Depends
 
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
+from src.infrastructure.gui.contracts.errors import ApiError, FieldError, ValidationErrorDetails
 from src.infrastructure.gui.routers import state as s
 from src.infrastructure.gui.routers._entity_filter import parse_csv_filter
 from src.infrastructure.gui.routers._openapi import TAG_TAXONOMY, OpenMapResponse
@@ -31,7 +32,7 @@ def read_authoring_guidance(
     catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
 ) -> dict[str, Any]:
     terms = parse_csv_filter(entity_type) | parse_csv_filter(domain)
-    return artifact_write_ops.get_type_guidance(
+    guidance = artifact_write_ops.get_type_guidance(
         filter=sorted(terms) if terms else None,
         diagram_type=diagram_type,
         target=target,
@@ -41,3 +42,15 @@ def read_authoring_guidance(
         # render (the entity side gets its own from /api/entity-schemata/{artifact_type}).
         repo_root=s.maybe_engagement_root(),
     )
+    # A rejected request is a 422, not a 200 carrying an `error` string. The use case is shared with
+    # MCP, where a dict payload *is* the contract, so the translation happens here rather than there —
+    # and it reads the field the use case named rather than matching on the message.
+    if "error" in guidance:
+        message = str(guidance["error"])
+        raise ApiError(
+            422, "validation_error", message,
+            ValidationErrorDetails(field_errors=[
+                FieldError(field=str(guidance.get("field", "filter")), message=message)
+            ]),
+        )
+    return guidance

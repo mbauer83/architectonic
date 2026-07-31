@@ -42,6 +42,11 @@ def pair_connection_guidance(source_type: str, target_type: str) -> dict[str, ob
     if unknown:
         return {
             "error": f"Unknown entity type(s): {unknown!r}. Provide concrete type names.",
+            # Which input was wrong, named here because this is the code that knows. The REST adapter
+            # turns these rejections into a typed 422; MCP returns the mapping as-is, and an extra key
+            # costs it nothing. Matching on the message would be the alternative, and prose is not a
+            # contract.
+            "field": "entity_type",
             "known_types": sorted(all_types.keys()),
         }
     c = _classify_connections(source_type)
@@ -134,7 +139,10 @@ def get_type_guidance(
 
     if target is not None:
         if filter is None:
-            return {"error": "target requires filter to contain exactly one concrete entity type name."}
+            return {
+                "error": "target requires filter to contain exactly one concrete entity type name.",
+                "field": "filter",
+            }
         all_types = _registry().all_entity_types()
         concrete = [t for t in filter if t in all_types]
         if len(concrete) != 1 or len(filter) != 1:
@@ -143,6 +151,7 @@ def get_type_guidance(
                     "target requires filter with exactly one concrete entity type (e.g. ['requirement']). "
                     "Domain filters and multiple types are not allowed."
                 ),
+                "field": "filter",
                 "filter_received": filter,
             }
         result["pair_guidance"] = pair_connection_guidance(concrete[0], target)
@@ -153,6 +162,7 @@ def get_type_guidance(
             known = sorted(_registry().all_diagram_types().keys())
             return {
                 "error": f"Unknown diagram_type {diagram_type!r}.",
+                "field": "diagram_type",
                 "known_diagram_types": known,
             }
         result["diagram_type_guidance"] = _serialize_diagram_type_guidance(

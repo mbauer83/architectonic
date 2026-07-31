@@ -10,7 +10,6 @@ import dataclasses
 from pathlib import Path
 
 import pytest
-from fastapi import FastAPI
 from starlette.testclient import TestClient
 
 from src.application.artifact_repository import ArtifactRepository
@@ -21,6 +20,7 @@ from src.infrastructure.gui.routers import state as gui_state
 from src.infrastructure.gui.routers.authoring_guidance import router as authoring_guidance_router
 from src.infrastructure.viewpoint_declarations import load_effective_viewpoint_catalog
 from src.infrastructure.write.artifact_write.type_guidance import get_type_guidance
+from tests.support.api_app import build_api_app
 
 httpx = pytest.importorskip("httpx")
 
@@ -37,9 +37,10 @@ def engagement_root(tmp_path: Path) -> Path:
 def client(engagement_root: Path) -> TestClient:
     repo = ArtifactRepository(shared_artifact_index([engagement_root]))
     gui_state.init_state(repo, engagement_root, None)
-    app = FastAPI()
+    # `build_api_app`, not a bare `FastAPI()`: without the error contracts a raised `ApiError` is a 500
+    # and the test asserts a shape no client receives.
+    app = build_api_app(authoring_guidance_router)
     install_module_registry(app)
-    app.include_router(authoring_guidance_router)
     return TestClient(app)
 
 
@@ -133,10 +134,14 @@ class TestDiagramTypeGuidance:
         assert "diagram_type_guidance" in body
         assert body["diagram_type_guidance"]["name"] == "activity"
 
-    def test_unknown_diagram_type_returns_error(self, client: TestClient) -> None:
+    def test_unknown_diagram_type_is_a_422(self, client: TestClient) -> None:
+        """422, not a 200 carrying an `error` string: the whole request failed, and a success status is
+        only defensible for a mixed result that says which parts succeeded."""
         resp = client.get("/api/authoring-guidance", params={"diagram_type": "not-a-type"})
-        assert resp.status_code == 200
-        assert "error" in resp.json()
+        assert resp.status_code == 422
+        detail = resp.json()["detail"]
+        assert detail["code"] == "validation_error"
+        assert detail["details"]["field_errors"][0]["field"] == "diagram_type"
 
 
 class TestPairLegality:
@@ -149,10 +154,13 @@ class TestPairLegality:
         assert body["pair_guidance"]["source"] == "requirement"
         assert body["pair_guidance"]["target"] == "goal"
 
-    def test_target_without_filter_returns_error(self, client: TestClient) -> None:
+    def test_target_without_filter_is_a_422(self, client: TestClient) -> None:
         resp = client.get("/api/authoring-guidance", params={"target": "goal"})
-        assert resp.status_code == 200
-        assert "error" in resp.json()
+        assert resp.status_code == 422
+        detail = resp.json()["detail"]
+        assert detail["code"] == "validation_error"
+        # The field the use case named, not one the adapter guessed by matching the message.
+        assert detail["details"]["field_errors"][0]["field"] == "filter"
 
 
 class TestInternalTypesExcluded:
