@@ -130,8 +130,10 @@ class TestGroupRoutes:
         resp = _client(store, "TLP:RED", monkeypatch).post(
             "/api/assurance/groups", json={"name": "   "}
         )
-        assert resp.status_code == 400
-        assert resp.json()["error"] == "missing_name"
+        assert resp.status_code == 422
+        detail = resp.json()["detail"]
+        assert detail["code"] == "validation_error"
+        assert detail["details"]["field_errors"][0]["field"] == "name"
 
     def test_deleting_an_absent_group_is_404(
         self, seeded, monkeypatch: pytest.MonkeyPatch,
@@ -200,8 +202,9 @@ class TestFilingRoutes:
             f"/api/assurance/analyses/{ids['stpa']}/group",
             json={"group_id": "GRP@nothing.here.000000"},
         )
-        assert resp.status_code == 400
-        assert resp.json()["error"] == "group_not_found"
+        # 404, not 400: the group is absent, which is not something wrong with the request body.
+        assert resp.status_code == 404
+        assert resp.json()["detail"]["code"] == "not_found"
 
     def test_filing_an_absent_analysis_is_404(
         self, seeded, monkeypatch: pytest.MonkeyPatch,

@@ -92,7 +92,7 @@ def search_assurance_nodes(
 ) -> JSONResponse:
     ctx, pol = _policy()
     if pol.check_locked():
-        return _locked_response()
+        raise _locked_response()
     if not q.strip():
         return _ok({"query": q, "hits": [], "count": 0})
     raw = ctx.store.search_nodes(q.strip(), limit=limit * 2)
@@ -120,7 +120,7 @@ def list_assurance_nodes(
 ) -> JSONResponse:
     ctx, pol = _policy()
     if pol.check_locked():
-        return _locked_response()
+        raise _locked_response()
     # Ordered by the store, ahead of the exposure filter below: filtering preserves the
     # relative order of what survives, so sorting can neither change which nodes a reader
     # sees nor reveal the withheld count.
@@ -155,11 +155,11 @@ def list_assurance_nodes(
 def read_assurance_node(node_id: str) -> JSONResponse:
     ctx, pol = _policy()
     if pol.check_locked():
-        return _locked_response()
+        raise _locked_response()
     node = ctx.store.get_node(node_id)
     outcome = pol.apply_node(node)
     if not isinstance(outcome, Visible):
-        return _not_found_response()
+        raise _not_found_response()
     visible_nodes, _ = pol.filter_nodes(ctx.store.list_nodes())
     nodes_by_id = visible_nodes_by_id(visible_nodes)
     nodes_by_id[node_id] = outcome.value
@@ -194,7 +194,7 @@ def list_assurance_edges(
 ) -> JSONResponse:
     ctx, pol = _policy()
     if pol.check_locked():
-        return _locked_response()
+        raise _locked_response()
     edges = ctx.store.list_edges(source_id=source_id, target_id=target_id, conn_type=conn_type)
     visible_nodes, _ = pol.filter_nodes(ctx.store.list_nodes())
     nodes_by_id = visible_nodes_by_id(visible_nodes)
@@ -208,7 +208,7 @@ def list_assurance_edges(
 def assurance_stats() -> JSONResponse:
     ctx, pol = _policy()
     if pol.check_locked():
-        return _locked_response()
+        raise _locked_response()
     visible, _ = pol.filter_nodes(ctx.store.list_nodes())
     all_edges = ctx.store.list_edges()
     return _ok(pol.redact_stats(visible, all_edges), AssuranceStatsResponse)
@@ -218,7 +218,7 @@ def assurance_stats() -> JSONResponse:
 def assurance_coverage() -> JSONResponse:
     ctx, pol = _policy()
     if pol.check_locked():
-        return _locked_response()
+        raise _locked_response()
     visible, _ = pol.filter_nodes(ctx.store.list_nodes())
     visible_ids = frozenset(str(n["node_id"]) for n in visible)
     all_edges = ctx.store.list_edges()
@@ -230,7 +230,7 @@ def assurance_coverage() -> JSONResponse:
 def assurance_verify() -> JSONResponse:
     ctx, pol = _policy()
     if pol.check_locked():
-        return _locked_response()
+        raise _locked_response()
     from src.application.verification.assurance_verifier import format_result, verify_store  # noqa: PLC0415
     visible, _ = pol.filter_nodes(ctx.store.list_nodes())
     visible_ids = frozenset(str(n["node_id"]) for n in visible)
@@ -247,7 +247,7 @@ def assurance_verify() -> JSONResponse:
 def assurance_risk_register() -> JSONResponse:
     ctx, pol = _policy()
     if pol.check_locked():
-        return _locked_response()
+        raise _locked_response()
     visible, _ = pol.filter_nodes(ctx.store.list_nodes())
     visible_ids = frozenset(str(n["node_id"]) for n in visible)
     visible_edges = pol.filter_edges(ctx.store.list_edges(), visible_ids)
@@ -260,7 +260,7 @@ def assurance_risk_register() -> JSONResponse:
 def list_baselines() -> JSONResponse:
     ctx, pol = _policy()
     if pol.check_locked():
-        return _locked_response()
+        raise _locked_response()
     baselines = ctx.archive.list_baselines()
     return _ok({"baselines": baselines, "count": len(baselines)})
 

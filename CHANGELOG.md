@@ -23,13 +23,21 @@ Provenance and Participation Are Three Relations*.
 - **Every error body is the same typed envelope.** `detail` is an object, not a sentence:
   `{"detail": {"code", "message", "details", "request_id"}}`. `code` is a closed vocabulary and
   `details` is a per-code payload. Anything parsing `detail` as a string must change.
-  The assurance **write** surface used to answer `{"error": "...", ...}` with a vocabulary of its own,
-  so a client branching on `detail.code` fell through on every mutation refusal. Six of its codes moved
-  into the shared vocabulary — `duplicate_edge`,
-  `illegal_connection_type`, `not_a_failure_mode`, `traversal_time_budget_exceeded`,
-  `unknown_diagram_type`, `not_configured` — and the rest became `validation_error` with their field
-  paths under `details.field_errors`. `not_configured` says the *deployment* lacks a capability, so it
-  is neither a conflict nor a rejected request: nothing the caller sends will fix it.
+  The assurance surface included, reads and writes alike: it used to answer `{"error": "...", ...}` with
+  a vocabulary of its own, so a client branching on `detail.code` fell through on every refusal it
+  makes — including a merely locked store, which the GUI meets on every page load. Six codes moved into
+  the shared vocabulary — `duplicate_edge`, `illegal_connection_type`, `not_a_failure_mode`,
+  `traversal_time_budget_exceeded`, `unknown_diagram_type`, `not_configured` — and the rest became
+  `validation_error` with their field paths under `details.field_errors`. `not_configured` says the
+  *deployment* lacks a capability, so it is neither a conflict nor a rejected request: nothing the
+  caller sends will fix it.
+- **Three assurance statuses change, because the old ones misdescribed the failure.** Deleting an
+  analysis that authored nodes is `409 analysis_not_empty` (a state conflict, not a malformed request);
+  filing under a group that does not exist is `404`; a rejected field value is `422`. All three used to
+  be `400`, which tells a caller to correct a request that was correct.
+- **An assurance not-found no longer echoes the identifier.** An absent record and one above the
+  reader's clearance must be indistinguishable, and a body naming what was asked for invites the habit
+  of trusting that it existed.
 - **Every response carries `X-Request-ID`**, echoed from the request when supplied.
 - **Every error response carries `Cache-Control: no-store`.**
 - **`POST /api/assurance/nodes` is gone.** A node is created inside its provenance analysis, at

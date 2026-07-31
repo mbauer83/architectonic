@@ -56,6 +56,7 @@ from src.infrastructure.gui.routers._assurance_http import (
     not_found,
     store_locked,
 )
+from src.infrastructure.gui.routers._assurance_invalid import bind_invalid_as_api_error
 from src.infrastructure.mcp.assurance_mcp.context import get_assurance_context
 
 write_router = APIRouter()
@@ -396,12 +397,7 @@ def _translate_bind(result: model_bind.ModelBindResult) -> JSONResponse:
     if isinstance(result, model_bind.BindNotFound):
         raise _not_found(result.assurance_node_id)
     if isinstance(result, model_bind.BindInvalid):
-        status = 409 if result.error == "invalid_binding_status" else 400
-        return JSONResponse(
-            status_code=status,
-            content={"error": result.error, "message": result.message},
-            headers={"Cache-Control": _NO_STORE},
-        )
+        raise bind_invalid_as_api_error(result)
     if isinstance(result, model_bind.TaskRequired):
         return JSONResponse(
             content={"outcome": "task_required", **result.spec},

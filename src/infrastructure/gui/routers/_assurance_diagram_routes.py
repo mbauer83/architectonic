@@ -117,7 +117,7 @@ def _render_svg(puml: str, label: str) -> str | None:
 def list_assurance_diagrams() -> JSONResponse:
     ctx, pol = build_policy()
     if pol.check_locked():
-        return locked_response()
+        raise locked_response()
     # Filtered before the catalog is built, not after: an entry names its analysis, so an
     # above-ceiling analysis appearing here would disclose both its existence and its method.
     visible_analyses, _withheld = pol.filter_analyses(ctx.store.list_analyses())
@@ -133,11 +133,11 @@ def list_assurance_diagrams() -> JSONResponse:
 def render_assurance_diagram(analysis_id: str, diagram_type: str) -> JSONResponse:
     ctx, pol = build_policy()
     if pol.check_locked():
-        return locked_response()
+        raise locked_response()
 
     analysis = pol.apply_analysis(ctx.store.get_analysis(analysis_id))
     if not isinstance(analysis, Visible):
-        return not_found_response()
+        raise not_found_response()
     method = str(analysis.value.get("method", ""))
     applicable = diagram_types_for_method(complete_diagram_type_catalog(), method)
 

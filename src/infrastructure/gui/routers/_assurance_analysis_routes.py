@@ -38,6 +38,7 @@ from src.infrastructure.gui.routers._assurance_http import (
     not_found_response,
     ok,
 )
+from src.infrastructure.gui.routers._assurance_invalid import invalid_as_api_error
 from src.infrastructure.mcp.assurance_mcp.context import AssuranceContext
 
 analysis_router = APIRouter()
@@ -71,12 +72,13 @@ class RecordGsnPublicationBody(BaseModel):
     source_bindings: list[GsnPublicationBinding] = Field(default_factory=list)
 
 
-def _invalid(result: uc.AnalysisInvalid) -> JSONResponse:
-    return JSONResponse(
-        status_code=400,
-        content={"error": result.error, "message": result.message},
-        headers={"Cache-Control": NO_STORE},
-    )
+def _invalid(result: uc.AnalysisInvalid) -> ApiError:
+    """The refusal, in the shared envelope — **raised**, not returned.
+
+    The mapping lives in ``_assurance_invalid`` so both routers translate the same way and a code with
+    no mapping fails loudly rather than reaching a client as an undeclared string.
+    """
+    return invalid_as_api_error(result)
 
 
 def _visible_gsn_graph(
@@ -103,7 +105,7 @@ def _visible_gsn_graph(
 def list_analyses(method: str | None = None, status: str | None = None) -> JSONResponse:
     ctx, pol = build_policy()
     if pol.check_locked():
-        return locked_response()
+        raise locked_response()
     analyses = ctx.store.list_analyses(method=method, status=status)
     visible, _withheld = pol.filter_analyses(analyses)
     scope = pol.scope()
@@ -118,13 +120,13 @@ def list_analyses(method: str | None = None, status: str | None = None) -> JSONR
 def get_analysis(analysis_id: str) -> JSONResponse:
     ctx, pol = build_policy()
     if pol.check_locked():
-        return locked_response()
+        raise locked_response()
     outcome = pol.apply_analysis(ctx.store.get_analysis(analysis_id))
     if isinstance(outcome, Visible):
         # Visible node count scoped to this analysis (exposure-filtered).
         visible_nodes, _ = pol.filter_nodes(ctx.store.list_nodes(analysis_id=analysis_id))
         return ok({"analysis": outcome.value, "node_count": len(visible_nodes)})
-    return not_found_response()
+    raise not_found_response()
 
 
 # ── Writes ──────────────────────────────────────────────────────────────────────
@@ -134,7 +136,7 @@ def get_analysis(analysis_id: str) -> JSONResponse:
 def create_analysis(body: CreateAnalysisBody) -> JSONResponse:
     ctx = build_policy()[0]
     if not ctx.is_available():
-        return locked_response()
+        raise locked_response()
     result = run_write(lambda: uc.create_analysis(
         ctx.store, ctx.archive,
         name=body.name, method=body.method,
@@ -148,7 +150,7 @@ def create_analysis(body: CreateAnalysisBody) -> JSONResponse:
 def update_analysis(analysis_id: str, body: UpdateAnalysisBody) -> JSONResponse:
     ctx = build_policy()[0]
     if not ctx.is_available():
-        return locked_response()
+        raise locked_response()
     result = run_write(lambda: uc.update_analysis(
         ctx.store, ctx.archive,
         analysis_id=analysis_id,
@@ -161,7 +163,7 @@ def update_analysis(analysis_id: str, body: UpdateAnalysisBody) -> JSONResponse:
 def delete_analysis(analysis_id: str) -> Response:
     ctx = build_policy()[0]
     if not ctx.is_available():
-        return locked_response()
+        raise locked_response()
     result = run_write(lambda: uc.delete_analysis(
         ctx.store, ctx.archive, analysis_id=analysis_id,
     ))
@@ -170,11 +172,11 @@ def delete_analysis(analysis_id: str) -> Response:
 
 def _translate_write(result: uc.AnalysisResult) -> JSONResponse:
     if isinstance(result, uc.AnalysisLocked):
-        return locked_response()
+        raise locked_response()
     if isinstance(result, uc.AnalysisNotFound):
-        return not_found_response()
+        raise not_found_response()
     if isinstance(result, uc.AnalysisInvalid):
-        return _invalid(result)
+        raise _invalid(result)
     if isinstance(result, uc.AnalysisLegacyInvalid):
         raise ApiError(
             409,
@@ -213,10 +215,10 @@ def analysis_completeness(analysis_id: str) -> JSONResponse:
     """
     ctx, pol = build_policy()
     if pol.check_locked():
-        return locked_response()
+        raise locked_response()
     outcome = pol.apply_analysis(ctx.store.get_analysis(analysis_id))
     if not isinstance(outcome, Visible):
-        return not_found_response()
+        raise not_found_response()
     method = str(outcome.value.get("method") or "")
     report = _completeness_for_method(ctx, method, analysis_id)
     if report is None:
@@ -266,14 +268,14 @@ def _method_mismatch(analysis_id: str, actual_method: str) -> ApiError:
 def gsn_draft(analysis_id: str) -> JSONResponse:
     ctx, outcome, nodes, edges, visibility_limited = _visible_gsn_graph(analysis_id)
     if not ctx.is_available():
-        return locked_response()
+        raise locked_response()
     if not isinstance(outcome, Visible):
-        return not_found_response()
+        raise not_found_response()
     result = build_gsn_draft(
         ctx.store, analysis_id=analysis_id, visible_nodes=nodes, visible_edges=edges
     )
     if result is None:
-        return not_found_response()
+        raise not_found_response()
     return ok({
         **result,
         "publishable": bool(result["publishable"]) and not visibility_limited,
@@ -291,14 +293,14 @@ def gsn_rendered(analysis_id: str) -> JSONResponse:
 
     ctx, outcome, nodes, edges, visibility_limited = _visible_gsn_graph(analysis_id)
     if not ctx.is_available():
-        return locked_response()
+        raise locked_response()
     if not isinstance(outcome, Visible):
-        return not_found_response()
+        raise not_found_response()
     result = build_gsn_draft(
         ctx.store, analysis_id=analysis_id, visible_nodes=nodes, visible_edges=edges
     )
     if result is None:
-        return not_found_response()
+        raise not_found_response()
     repo_root = state.maybe_engagement_root()
     if repo_root is None:
         raise ApiError(
@@ -340,9 +342,9 @@ def list_gsn_publications(analysis_id: str) -> JSONResponse:
     """
     ctx, pol = build_policy()
     if pol.check_locked():
-        return locked_response()
+        raise locked_response()
     if not isinstance(pol.apply_analysis(ctx.store.get_analysis(analysis_id)), Visible):
-        return not_found_response()
+        raise not_found_response()
     visible, _withheld = pol.filter_nodes(ctx.store.list_nodes())
     publications = list_publications(
         ctx.store,
@@ -361,9 +363,9 @@ def record_gsn_publication(analysis_id: str, body: RecordGsnPublicationBody) -> 
 
     ctx, pol = build_policy()
     if pol.check_locked():
-        return locked_response()
+        raise locked_response()
     if state.get_repo().get_diagram(body.diagram_id) is None:
-        return not_found_response()
+        raise not_found_response()
     result = run_write(lambda: record_publication(
         ctx.store,
         ctx.archive,
@@ -373,5 +375,5 @@ def record_gsn_publication(analysis_id: str, body: RecordGsnPublicationBody) -> 
     ))
     status = 409 if result.get("error") == "classification_not_publishable" else 200
     if result.get("error") == "analysis_not_found":
-        return not_found_response()
+        raise not_found_response()
     return JSONResponse(status_code=status, content=result, headers={"Cache-Control": NO_STORE})

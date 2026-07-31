@@ -47,10 +47,18 @@ class AnalysisNotFound:
 
 @dataclass(frozen=True)
 class AnalysisInvalid:
-    """Request violated an aggregate invariant; translate to HTTP 400."""
+    """Request violated an aggregate invariant. ``error`` names which; the adapter maps it to a status.
+
+    ``subject`` and ``count`` carry the *structured* context behind the message, for the codes whose
+    published details declare it. The message alone is not enough: a client showing "this analysis
+    authored 3 nodes" from prose has to parse a sentence, and the delivery layer building the declared
+    ``details`` payload has nothing to build it from. Empty and zero for the codes that carry neither.
+    """
 
     error: str
     message: str
+    subject: str = ""
+    count: int = 0
 
 
 @dataclass(frozen=True)
@@ -185,6 +193,8 @@ def delete_analysis(
             "analysis_not_empty",
             f"This analysis authored {authored_count} node(s), and provenance is immutable — they "
             "cannot be reassigned. Delete them explicitly, or leave the analysis in place.",
+            subject=analysis_id,
+            count=authored_count,
         )
     store.delete_analysis(analysis_id)
     archive.append("DELETE_ANALYSIS", node_id=analysis_id, payload={"analysis_id": analysis_id})

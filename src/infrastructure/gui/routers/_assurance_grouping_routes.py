@@ -44,7 +44,6 @@ from src.infrastructure.gui.contracts.errors import (
     LegacyInvalidDetails,
 )
 from src.infrastructure.gui.routers._assurance_http import (
-    NO_STORE,
     build_policy,
     deleted,
     locked_response,
@@ -53,6 +52,7 @@ from src.infrastructure.gui.routers._assurance_http import (
     ok,
     store_locked,
 )
+from src.infrastructure.gui.routers._assurance_invalid import invalid_as_api_error
 from src.infrastructure.mcp.assurance_mcp.context import AssuranceContext
 
 grouping_router = APIRouter()
@@ -72,15 +72,11 @@ class FileAnalysisBody(BaseModel):
 
 def _translate(result: AnalysisResult) -> JSONResponse:
     if isinstance(result, AnalysisLocked):
-        return locked_response()
+        raise locked_response()
     if isinstance(result, AnalysisNotFound):
-        return not_found_response()
+        raise not_found_response()
     if isinstance(result, AnalysisInvalid):
-        return JSONResponse(
-            status_code=400,
-            content={"error": result.error, "message": result.message},
-            headers={"Cache-Control": NO_STORE},
-        )
+        raise invalid_as_api_error(result)
     if isinstance(result, AnalysisLegacyInvalid):
         raise ApiError(
             status.HTTP_409_CONFLICT,
@@ -111,7 +107,7 @@ def _visible_node_ids(ctx: AssuranceContext, pol: AssuranceExposurePolicy) -> fr
 def list_groups() -> JSONResponse:
     ctx, pol = build_policy()
     if pol.check_locked():
-        return locked_response()
+        raise locked_response()
     result = uc.list_groups(ctx.store)
     return _translate(result)
 
@@ -120,7 +116,7 @@ def list_groups() -> JSONResponse:
 def create_group(body: CreateGroupBody) -> JSONResponse:
     ctx = build_policy()[0]
     if not ctx.is_available():
-        return locked_response()
+        raise locked_response()
     return _translate(run_write(lambda: uc.create_group(
         ctx.store, ctx.archive, name=body.name, description=body.description,
     )))
@@ -130,7 +126,7 @@ def create_group(body: CreateGroupBody) -> JSONResponse:
 def delete_group(group_id: str) -> Response:
     ctx = build_policy()[0]
     if not ctx.is_available():
-        return locked_response()
+        raise locked_response()
     return deleted(_translate(run_write(lambda: uc.delete_group(
         ctx.store, ctx.archive, group_id=group_id,
     ))))
@@ -143,9 +139,9 @@ def delete_group(group_id: str) -> Response:
 def file_analysis(analysis_id: str, body: FileAnalysisBody) -> JSONResponse:
     ctx, pol = build_policy()
     if pol.check_locked():
-        return locked_response()
+        raise locked_response()
     if not _visible_analysis(ctx, pol, analysis_id):
-        return not_found_response()
+        raise not_found_response()
     return _translate(run_write(lambda: uc.file_analysis(
         ctx.store, ctx.archive, analysis_id=analysis_id, group_id=body.group_id,
     )))
@@ -174,9 +170,9 @@ def list_analysis_nodes(
     """
     ctx, pol = build_policy()
     if pol.check_locked():
-        return locked_response()
+        raise locked_response()
     if not _visible_analysis(ctx, pol, analysis_id):
-        return not_found_response()
+        raise not_found_response()
     page = analysis_working_set_page(
         ctx.store, pol, analysis_id, relationship=relationship, limit=limit, cursor=cursor,
     )
@@ -201,9 +197,9 @@ def list_participating_nodes(analysis_id: str) -> JSONResponse:
     """
     ctx, pol = build_policy()
     if pol.check_locked():
-        return locked_response()
+        raise locked_response()
     if not _visible_analysis(ctx, pol, analysis_id):
-        return not_found_response()
+        raise not_found_response()
     visible_ids = _visible_node_ids(ctx, pol)
     member_ids = [
         node_id for node_id in ctx.store.list_analysis_members(analysis_id)

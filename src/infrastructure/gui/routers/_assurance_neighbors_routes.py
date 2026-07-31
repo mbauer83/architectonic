@@ -54,7 +54,7 @@ def _effective_max_hops(requested: int | None) -> int:
 def assurance_neighbors(node_id: str, max_hops: int | None = None) -> JSONResponse:
     ctx, pol = _policy()
     if pol.check_locked():
-        return _locked_response()
+        raise _locked_response()
     hops = _effective_max_hops(max_hops)
     budgets = NeighborBudgets(
         max_hops=hops,
@@ -73,7 +73,7 @@ def assurance_neighbors(node_id: str, max_hops: int | None = None) -> JSONRespon
             headers={"Retry-After": "1"},
         )
     if graph is None:
-        return _not_found_response()
+        raise _not_found_response()
     return _ok({
         "root_id": graph.root_id,
         "nodes": graph.nodes,

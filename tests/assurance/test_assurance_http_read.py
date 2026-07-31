@@ -16,10 +16,11 @@ from typing import Any
 from unittest.mock import patch
 
 import pytest
-from fastapi import FastAPI
 
 httpx = pytest.importorskip("httpx")
 from starlette.testclient import TestClient  # noqa: E402
+
+from tests.support.api_app import build_api_app  # noqa: E402
 
 # ── Fake infrastructure ───────────────────────────────────────────────────────
 
@@ -122,9 +123,9 @@ _RED_NODE: dict[str, Any] = {
 def _make_client(ctx: _FakeContext) -> TestClient:
     from src.infrastructure.gui.routers.assurance import router
 
-    app = FastAPI()
-    app.include_router(router)
-    client = TestClient(app, raise_server_exceptions=False)
+    # `build_api_app`, not a bare `FastAPI()`: without the error contracts installed a raised
+    # `ApiError` becomes a 500, and the test asserts a shape no client receives.
+    client = TestClient(build_api_app(router), raise_server_exceptions=False)
     client._ctx_patch = patch(_ASSURANCE_CTX_PATH, return_value=ctx)  # type: ignore[attr-defined]
     client._ctx_patch.start()  # type: ignore[attr-defined]
     return client
@@ -142,6 +143,9 @@ def _check_423(client: TestClient, url: str) -> None:
     r = client.get(url)
     assert r.status_code == 423, f"{url} → {r.status_code}"
     assert r.headers.get("cache-control") == "no-store"
+    # The shared envelope, on the refusal a client meets most often. It used to be this surface's own
+    # `{"error": ...}`, so a client branching on `detail.code` fell through on a locked store.
+    assert r.json()["detail"]["code"] == "assurance_store_locked", url
 
 
 def test_locked_nodes_returns_423(locked_client: TestClient) -> None:

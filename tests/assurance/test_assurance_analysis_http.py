@@ -149,11 +149,15 @@ def test_create_analysis_anchor_optional(monkeypatch: pytest.MonkeyPatch) -> Non
     assert resp.json()["architecture_anchor_id"] == ""
 
 
-def test_create_analysis_invalid_method_400(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_create_analysis_invalid_method_is_a_422(monkeypatch: pytest.MonkeyPatch) -> None:
+    """422, not 400: a rejected parameter value is what `validation_error` is for, and the field path
+    travels in `details` so a client can highlight the input rather than parse the sentence."""
     ctx = _FakeContext(_FakeStore())
     resp = _client(ctx, monkeypatch).post("/api/assurance/analyses", json={"name": "x", "method": "HAZOP"})
-    assert resp.status_code == 400
-    assert resp.json()["error"] == "invalid_method"
+    assert resp.status_code == 422
+    detail = resp.json()["detail"]
+    assert detail["code"] == "validation_error"
+    assert detail["details"]["field_errors"][0]["field"] == "method"
 
 
 def test_create_analysis_locked_423(monkeypatch: pytest.MonkeyPatch) -> None:

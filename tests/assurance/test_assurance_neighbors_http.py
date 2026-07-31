@@ -85,7 +85,11 @@ class TestGating:
         above = client.get(f"/api/assurance/nodes/{ids['red_hazard']}/neighbors")
         unknown = client.get("/api/assurance/nodes/HAZ@does-not-exist/neighbors")
         assert above.status_code == unknown.status_code == 404
-        assert above.json() == unknown.json()
+        # Without `request_id`: the envelope varies it per request by design, and what must not vary is
+        # anything that would tell the reader which of the two cases they hit.
+        above_detail = {k: v for k, v in above.json()["detail"].items() if k != "request_id"}
+        unknown_detail = {k: v for k, v in unknown.json()["detail"].items() if k != "request_id"}
+        assert above_detail == unknown_detail
 
     def test_no_store_semantics(self, seeded) -> None:  # type: ignore[no-untyped-def]
         store, ids, _ = seeded

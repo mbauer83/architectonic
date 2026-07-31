@@ -11,8 +11,9 @@ from typing import Any
 from unittest.mock import patch
 
 import pytest
-from fastapi import FastAPI
 from starlette.testclient import TestClient
+
+from tests.support.api_app import build_api_app
 
 pytest.importorskip("sqlcipher3", reason="sqlcipher3 not installed")
 
@@ -59,9 +60,9 @@ def seeded(tmp_path: Path):
 def _client(store: Any, ceiling: str) -> TestClient:
     from src.infrastructure.gui.routers.assurance import router
 
-    app = FastAPI()
-    app.include_router(router)
-    client = TestClient(app, raise_server_exceptions=False)
+    # `build_api_app`, not a bare `FastAPI()`: without the error contracts a raised `ApiError` never
+    # becomes an envelope, so the test compares two empty bodies and calls them indistinguishable.
+    client = TestClient(build_api_app(router), raise_server_exceptions=False)
     client._ctx_patch = patch(_ASSURANCE_CTX_PATH, return_value=_RealContext(store, ceiling))  # type: ignore[attr-defined]
     client._ctx_patch.start()  # type: ignore[attr-defined]
     return client
@@ -106,11 +107,12 @@ class TestNodeReadEnrichment:
         above = client.get(f"/api/assurance/nodes/{ids['red_loss']}")
         unknown = client.get("/api/assurance/nodes/LSS@does-not-exist")
         assert above.status_code == unknown.status_code
-        above_body = above.json()
-        unknown_body = unknown.json()
-        above_body.pop("node_id", None)
-        unknown_body.pop("node_id", None)
-        assert above_body == unknown_body
+        # Compared without `request_id`, which the envelope makes unique per request on purpose. The
+        # property is that nothing *about the resource* distinguishes the two: an above-ceiling node
+        # and an absent one must read identically, or the 404 discloses that the node exists.
+        above_detail = {k: v for k, v in above.json()["detail"].items() if k != "request_id"}
+        unknown_detail = {k: v for k, v in unknown.json()["detail"].items() if k != "request_id"}
+        assert above_detail == unknown_detail
 
     def test_no_store_semantics_retained(self, seeded) -> None:  # type: ignore[no-untyped-def]
         store, ids, _edges = seeded

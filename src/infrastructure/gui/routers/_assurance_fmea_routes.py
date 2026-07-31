@@ -67,10 +67,10 @@ def fmea_matrix(analysis_id: str) -> JSONResponse:
     """
     ctx, pol = _policy()
     if pol.check_locked():
-        return _locked_response()
+        raise _locked_response()
     outcome = pol.apply_analysis(ctx.store.get_analysis(analysis_id))  # type: ignore[attr-defined]
     if not isinstance(outcome, Visible):
-        return _not_found_response()
+        raise _not_found_response()
     method = str(outcome.value.get("method") or "")
     if method != "FMEA":
         raise ApiError(
@@ -160,7 +160,7 @@ def set_fmea_factor(node_id: str, body: SetFactorBody) -> JSONResponse:
         archive=ctx.archive,
     ))
     if isinstance(result, FactorStoreLocked):
-        return _locked_response()
+        raise _locked_response()
     if isinstance(result, FactorLegacyInvalid):
         raise ApiError(
             409,

@@ -43,23 +43,24 @@ def not_found(message: str) -> ApiError:
     return ApiError(status.HTTP_404_NOT_FOUND, "not_found", message)
 
 
-def locked_response() -> JSONResponse:
-    return JSONResponse(
-        status_code=423,
-        content={"error": "assurance_store_locked", "message": (
-            "The confidential assurance store is not unlocked. "
-            "Run `arch-assurance unlock` to enable assurance tools."
-        )},
-        headers={"Cache-Control": NO_STORE},
-    )
+def locked_response() -> ApiError:
+    """The locked refusal — **raised**, not returned, and in the shared envelope.
+
+    It used to build its own ``{"error": ...}`` body, which is the shape this release tells consumers
+    it removed. A client branching on ``detail.code`` fell through on the commonest refusal this
+    surface makes, and a locked store is a state the GUI has to render on every page load.
+    """
+    return store_locked()
 
 
-def not_found_response() -> JSONResponse:
-    return JSONResponse(
-        status_code=404,
-        content={"error": "not_found"},
-        headers={"Cache-Control": NO_STORE},
-    )
+def not_found_response() -> ApiError:
+    """Not-found, in the envelope, with the identifier withheld.
+
+    The caller supplied the id, so echoing it tells them nothing — and §0e asks this surface to redact
+    it, because an absent record and one above the reader's ceiling must be indistinguishable. A body
+    that names what was asked for invites the habit of trusting that it existed.
+    """
+    return not_found("No such assurance record.")
 
 
 def ok(payload: dict[str, object], model: type[BaseModel] | None = None) -> JSONResponse:
