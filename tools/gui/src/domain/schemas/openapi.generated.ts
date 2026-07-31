@@ -3669,17 +3669,32 @@ export interface components {
         };
         /**
          * DocumentReference
-         * @description A document that cites this entity.
+         * @description A document that cites this entity, and the link it cites it through.
+         *
+         *     Mirrors ``application.document_links.DocumentEntityReference`` field for field, because that is
+         *     what the handler serialises — this contract is a projection of that output, not an independent
+         *     description of it. An earlier version of this DTO named ``artifact_id`` where the producer emits
+         *     ``document_id`` and omitted ``label``/``href`` altogether; being closed, it then rejected every
+         *     real reference and the detail read answered 500 for any entity a document cites.
+         *     ``test_document_reference_contract.py`` holds the two together.
+         *
+         *     ``label`` and ``href`` are the citation itself — the link text and the target as written. They
+         *     ride along because a reference list that cannot show *how* the document refers to the entity
+         *     makes the reader open the document to find out.
          */
         DocumentReference: {
-            /** Artifact Id */
-            artifact_id: string;
             /** Doc Type */
             doc_type: string;
+            /** Document Id */
+            document_id: string;
+            /** Href */
+            href: string;
+            /** Label */
+            label: string;
             /** Path */
             path: string;
             /** Section */
-            section?: string | null;
+            section: string;
             /** Title */
             title: string;
         };
