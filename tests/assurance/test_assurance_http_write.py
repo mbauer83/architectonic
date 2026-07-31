@@ -201,13 +201,28 @@ def test_create_node_success() -> None:
     assert resp.headers.get("cache-control") == "no-store"
 
 
-def test_create_node_invalid_type_error_payload() -> None:
+def test_create_node_with_an_uncreatable_type_is_rejected_not_created() -> None:
+    """422, not 201 with an error in the body.
+
+    It used to answer 201 — the created-resource status — with `{"error": "invalid_node_type"}`,
+    because the use case returned a success result carrying an error payload. Nothing created anything,
+    so a caller checking only the status believed it had. The closed create receipt is what surfaced it:
+    a receipt cannot carry an error, and validating the payload against it failed.
+
+    The message names the creatable types rather than a `valid_types` list: the machine-readable
+    catalogue is its own read, and a rejection's job is to say what was wrong with *this* request.
+    """
     ctx = _FakeContext(_FakeStore())
     client = _make_client(ctx)
     resp = client.post(
         f"/api/assurance/analyses/{_FIXTURE_ANALYSIS}/nodes", json={"node_type": "bogus", "name": "X"})
-    assert resp.status_code == 200  # use case returns MutationOk with error payload
-    assert resp.json()["error"] == "invalid_node_type"
+    assert resp.status_code == 422
+    body = resp.json()
+    assert body["error"] == "invalid_value"
+    assert body["field"] == "node_type"
+    assert body["value"] == "bogus"
+    assert "not a creatable node type" in body["message"]
+    assert resp.headers["Cache-Control"] == "no-store"
 
 
 def test_a_node_records_the_analysis_it_was_created_in() -> None:

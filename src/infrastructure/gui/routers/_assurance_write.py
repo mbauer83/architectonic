@@ -34,6 +34,10 @@ from src.application.assurance_provenance_assignment import (
 )
 from src.infrastructure.assurance.edge_legality import legal_connection_types
 from src.infrastructure.assurance.write_serialization import run_write
+from src.infrastructure.gui.contracts.assurance_signals import (
+    AssuranceNodeCreatedResponse,
+    AssuranceNodeUpdatedResponse,
+)
 from src.infrastructure.gui.contracts.errors import (
     ApiError,
     LegacyInvalidDetails,
@@ -73,14 +77,27 @@ def _not_found(artifact_id: str) -> JSONResponse:
     )
 
 
-def _ok(result: mutations.MutationOk) -> JSONResponse:
+def _ok(result: mutations.MutationOk, model: type[BaseModel] | None = None) -> JSONResponse:
+    """A successful mutation's body, with the ``no-store`` every response on this surface carries.
+
+    ``model`` validates the payload before it becomes a response. A raw ``JSONResponse`` is
+    unavoidable here — the header is the confidentiality contract and FastAPI does not apply
+    ``response_model`` to a Response the handler built — so the validation the framework would have
+    done is done here instead, which is what keeps a declared contract from being documentation of
+    something nobody checked. Without it, a payload key the DTO does not declare would reach a client
+    that had been promised otherwise.
+    """
     out: dict[str, object] = dict(result.payload)
     if result.findings:
         out["verification_findings"] = result.findings
+    if model is not None:
+        model.model_validate(out)
     return JSONResponse(content=out, headers={"Cache-Control": _NO_STORE})
 
 
-def _translate(result: mutations.EdgeMutationResult) -> JSONResponse:
+def _translate(
+    result: mutations.EdgeMutationResult, model: type[BaseModel] | None = None
+) -> JSONResponse:
     if isinstance(result, mutations.MutationLocked):
         return _locked()
     if isinstance(result, mutations.MutationNotFound):
@@ -131,7 +148,7 @@ def _translate(result: mutations.EdgeMutationResult) -> JSONResponse:
             },
             headers={"Cache-Control": _NO_STORE},
         )
-    return _ok(result)
+    return _ok(result, model)
 
 
 # ── Request bodies ─────────────────────────────────────────────────────────────
@@ -213,7 +230,8 @@ class ModelThisBody(BaseModel):
 # ── Node endpoints ─────────────────────────────────────────────────────────────
 
 
-@write_router.post("/api/assurance/analyses/{analysis_id}/nodes", status_code=201)
+@write_router.post("/api/assurance/analyses/{analysis_id}/nodes", status_code=201,
+    response_model=AssuranceNodeCreatedResponse)
 def create_node(analysis_id: str, body: CreateNodeBody, response: Response) -> JSONResponse:
     """Create a node inside the analysis that produced it.
 
@@ -234,7 +252,7 @@ def create_node(analysis_id: str, body: CreateNodeBody, response: Response) -> J
         binding_status=body.binding_status,
         node_role=body.node_role, analysis_id=analysis_id,
         content_text=body.content_text, attributes=body.attributes,
-    )))
+    )), AssuranceNodeCreatedResponse)
     response.status_code = answer.status_code
     return answer
 
@@ -277,7 +295,8 @@ def assign_node_provenance(node_id: str, body: AssignProvenanceBody) -> None:
         )
 
 
-@write_router.patch("/api/assurance/nodes/{node_id}", status_code=200)
+@write_router.patch("/api/assurance/nodes/{node_id}", status_code=200,
+    response_model=AssuranceNodeUpdatedResponse)
 def edit_node(node_id: str, body: EditNodeBody) -> JSONResponse:
     ctx = get_assurance_context()
     return _translate(run_write(lambda: mutations.edit_node(
@@ -288,7 +307,7 @@ def edit_node(node_id: str, body: EditNodeBody) -> JSONResponse:
         binding_status=body.binding_status,
         node_role=body.node_role, content_text=body.content_text,
         attributes=body.attributes,
-    )))
+    )), AssuranceNodeUpdatedResponse)
 
 
 @write_router.delete("/api/assurance/nodes/{node_id}", status_code=204, response_model=None)

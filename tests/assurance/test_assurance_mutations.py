@@ -4,7 +4,7 @@ Verifies:
   - Locked store → MutationLocked on all write operations.
   - Missing node/edge → MutationNotFound on edit/delete/add-edge.
   - Successful writes: correct payload, audit appended, verifier findings returned.
-  - Invalid node_type → MutationOk with error payload (not MutationNotFound).
+  - Invalid node_type → MutationRejected (a refusal, not a success carrying an error).
   - Post-write verifier findings are scoped to the affected node.
   - Safety-disposition safeguard (E503) fires for accepted/safety assurance-constraints.
   - delete_node cascades edges (via store.delete_node call).
@@ -208,9 +208,18 @@ def test_create_node_success() -> None:
 
 
 def test_create_node_invalid_type() -> None:
+    """A type outside the creatable vocabulary is a rejection, not a success carrying an error.
+
+    It used to return ``MutationOk`` with ``{"error": "invalid_node_type"}``, which the HTTP surface
+    then answered 201 — the created-resource status — for a request that created nothing. Modelling
+    it as ``MutationRejected`` is what makes the route answer 422, and it also means the MCP surface
+    reports it as an invalid value rather than as a write that succeeded.
+    """
     result = mut.create_node(_FakeStore(), _FakeArchive(), node_type="bogus", name="X")
-    assert isinstance(result, mut.MutationOk)
-    assert result.payload.get("error") == "invalid_node_type"
+    assert isinstance(result, mut.MutationRejected)
+    assert result.field == "node_type"
+    assert result.value == "bogus"
+    assert "not a creatable node type" in result.message
 
 
 def test_edit_node_success() -> None:

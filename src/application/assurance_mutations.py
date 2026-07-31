@@ -167,13 +167,18 @@ def create_node(
     if not store.is_unlocked():
         return MutationLocked()
     if node_type not in CREATABLE_NODE_TYPES:
-        return MutationOk(
-            payload={
-                "error": "invalid_node_type",
-                "node_type": node_type,
-                "valid_types": sorted(CREATABLE_NODE_TYPES),
-            },
-            findings=[],
+        # A rejection, not a success. This used to be a MutationOk carrying an error payload, so the
+        # route answered 201 with `{"error": "invalid_node_type"}` — a refusal wearing a created
+        # resource's status, and an ad-hoc error shape of exactly the kind the typed envelope
+        # replaced. The closed response contract is what surfaced it: a create receipt cannot carry
+        # an error, so validating the payload against it failed.
+        return MutationRejected(
+            field="node_type",
+            value=node_type,
+            message=(
+                f"{node_type!r} is not a creatable node type. Valid types: "
+                f"{', '.join(sorted(CREATABLE_NODE_TYPES))}"
+            ),
         )
     accepted = accept_written_value(disposition)
     if isinstance(accepted, DispositionRejection):

@@ -2985,6 +2985,29 @@ export interface components {
             analysis_id: string;
         };
         /**
+         * AssuranceNodeCreatedResponse
+         * @description The node a create produced, identified and named.
+         *
+         *     Not the node record: a create answers with what it made, and a caller that wants the whole record
+         *     reads it at the node's own address. Echoing the full record here would make every create pay for a
+         *     read nobody asked for, and would put the node vocabulary in two places.
+         *
+         *     ``verification_findings`` is present only when the write produced findings — an empty list and an
+         *     absent key are the same news, and the absent one does not invite a caller to render "0 findings".
+         */
+        AssuranceNodeCreatedResponse: {
+            /** Name */
+            name: string;
+            /** Node Id */
+            node_id: string;
+            /** Node Type */
+            node_type: string;
+            /** Verification Findings */
+            verification_findings?: {
+                [key: string]: unknown;
+            }[] | null;
+        };
+        /**
          * AssuranceNodeRecord
          * @description One assurance node row, as the store holds it.
          *
@@ -2993,6 +3016,24 @@ export interface components {
          */
         AssuranceNodeRecord: {
             [key: string]: unknown;
+        };
+        /**
+         * AssuranceNodeUpdatedResponse
+         * @description Which fields an edit actually changed.
+         *
+         *     ``updated`` is the fields the store wrote, not the fields the request offered: an edit that sends
+         *     a value identical to the stored one changes nothing, and a caller invalidating caches or writing
+         *     an audit line needs to know which it was.
+         */
+        AssuranceNodeUpdatedResponse: {
+            /** Node Id */
+            node_id: string;
+            /** Updated */
+            updated: string[];
+            /** Verification Findings */
+            verification_findings?: {
+                [key: string]: unknown;
+            }[] | null;
         };
         /**
          * AssuranceReloadBody
@@ -6881,7 +6922,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["AssuranceNodeCreatedResponse"];
                 };
             };
             /** @description Request validation failed */
@@ -8060,7 +8101,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["AssuranceNodeUpdatedResponse"];
                 };
             };
             /** @description Request validation failed */

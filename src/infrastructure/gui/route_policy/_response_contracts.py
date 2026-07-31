@@ -19,7 +19,6 @@ from __future__ import annotations
 UNTYPED_RESPONSE_OPERATIONS: frozenset[str] = frozenset({
     "admin_read_server_info",
     "assurance_create_analysis",
-    "assurance_create_analysis_node",
     "assurance_create_edge",
     "assurance_create_group",
     "assurance_export_aibom",
@@ -56,7 +55,6 @@ UNTYPED_RESPONSE_OPERATIONS: frozenset[str] = frozenset({
     "assurance_seal_baseline",
     "assurance_search_nodes",
     "assurance_update_analysis",
-    "assurance_update_node",
     "assurance_verify_store",
     "connections_read_entity_neighbors",
     "connections_read_ontology",
