@@ -94,19 +94,47 @@ def publish_background_refresh_completed(
     )
 
 
-def wait_for_write_queue_drain(timeout_s: float | None = None) -> bool:
-    """Block until the serialized write queue becomes idle."""
+def wait_for_write_queue_drain(
+    timeout_s: float | None = None, *, no_progress_s: float | None = None
+) -> bool:
+    """Block until the serialized write queue becomes idle. False if it gave up first.
+
+    ``timeout_s`` is a hard ceiling on the whole wait. ``no_progress_s`` makes the wait *adaptive*
+    instead: the caller gives up only after that long with the queue **unchanged**, so any wait it
+    bounds is measured in stalling rather than in elapsed work.
+
+    The distinction matters wherever the wait protects something. An absolute deadline encodes an
+    assumption about disk speed, machine load and how much work a caller happens to be committing —
+    an assumption that does not survive a slower disk, a busier box or a bulk write ten times the
+    size of the one the number was chosen against. Progress is the property actually wanted: a queue
+    still completing jobs deserves more patience however long it takes, and a queue that has not
+    moved deserves none however recently it started.
+
+    Pass both, and both apply: adaptive patience under a ceiling, which is what a shutdown needs —
+    it must not outlive the deadline something else will kill it at.
+    """
+
+    def _state() -> tuple[int, int, str | None]:
+        return _active_write_jobs, _pending_write_jobs, _active_write_operation_id
 
     deadline = None if timeout_s is None else time.monotonic() + timeout_s
     with _write_state_cond:
+        last_state = _state()
+        stalled_since = time.monotonic()
         while _active_write_jobs > 0 or _pending_write_jobs > 0:
-            if deadline is None:
-                _write_state_cond.wait()
-                continue
-            remaining = deadline - time.monotonic()
-            if remaining <= 0:
+            slices = []
+            if deadline is not None:
+                slices.append(deadline - time.monotonic())
+            if no_progress_s is not None:
+                slices.append(stalled_since + no_progress_s - time.monotonic())
+            if slices and min(slices) <= 0:
                 return False
-            _write_state_cond.wait(timeout=remaining)
+            _write_state_cond.wait(timeout=min(slices) if slices else None)
+            current = _state()
+            if current != last_state:
+                # Something completed or started: the queue is alive, so the stall clock restarts.
+                last_state = current
+                stalled_since = time.monotonic()
     return True
 
 

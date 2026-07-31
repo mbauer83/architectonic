@@ -14,7 +14,9 @@ the one ending a WAL-mode encrypted store must not get.
 from __future__ import annotations
 
 import asyncio
+import importlib
 import inspect
+from contextlib import contextmanager
 
 import pytest
 
@@ -28,6 +30,19 @@ from src.infrastructure.backend.shutdown import (
     shutdown_signal,
 )
 from src.infrastructure.gui.routers.events import _HEARTBEAT_SECONDS, _event_stream, event_bus
+
+
+@contextmanager
+def _patched(target: str, replacement: object):
+    """Swap a module attribute for the duration of a block, by dotted path."""
+    module_path, _, attribute = target.rpartition(".")
+    module = importlib.import_module(module_path)
+    original = getattr(module, attribute)
+    setattr(module, attribute, replacement)
+    try:
+        yield
+    finally:
+        setattr(module, attribute, original)
 
 
 @pytest.fixture(autouse=True)
@@ -250,6 +265,50 @@ class TestTeardownRunsEveryStepInOrder:
             ("durability", lambda: ran.append("durability")),
         ]))
         assert ran == ["durability"]
+
+    def test_the_declared_order_drains_writes_before_any_store_closes(self) -> None:
+        """The order is the design, so it is asserted rather than left to reading.
+
+        A write in flight is still using the stores, so it has to finish before they close; the
+        announcement has to come first for the shutdowns no signal starts; git-sync goes last because
+        nothing above it needs it stopped.
+        """
+        from src.infrastructure.backend._teardown import teardown_steps
+
+        labels = [label for label, _step in teardown_steps(sync_mgr=None)]
+        assert labels[0].startswith("announce")
+        assert labels.index("drain in-flight writes") < labels.index("release the assurance store")
+        assert labels[-1] == "stop git-sync"
+
+    def test_a_write_that_does_not_drain_in_time_is_reported(self, caplog) -> None:
+        """"The write you issued may not have landed" is not something to leave silent. The wait is
+        bounded because the stopper's deadline is; what it must not be is quiet."""
+        import logging
+
+        from src.infrastructure.backend import _teardown
+
+        with caplog.at_level(logging.WARNING):
+            with _patched(
+                "src.infrastructure.artifact_index.coordination.wait_for_write_queue_drain",
+                lambda timeout_s=None, no_progress_s=None: False,
+            ):
+                _teardown._drain_in_flight_writes()
+        assert any("still busy" in record.getMessage() for record in caplog.records)
+
+    def test_the_write_drain_budget_leaves_room_for_the_steps_after_it(self) -> None:
+        """The drain is the only teardown step that can take real time. If it could consume the whole
+        teardown budget, the durability steps behind it would run past the stopper's deadline — which
+        is the SIGKILL this whole contract exists to avoid."""
+        from src.infrastructure.backend.shutdown import (
+            WRITE_DRAIN_CEILING_SECONDS,
+            WRITE_NO_PROGRESS_SECONDS,
+        )
+
+        assert 0 < WRITE_DRAIN_CEILING_SECONDS < TEARDOWN_SECONDS
+        assert DRAIN_SECONDS + WRITE_DRAIN_CEILING_SECONDS < STOP_DEADLINE_SECONDS
+        # The stall patience has to fit inside the ceiling, or it can never be what ends the wait and
+        # the drain is absolute again in everything but name.
+        assert 0 < WRITE_NO_PROGRESS_SECONDS < WRITE_DRAIN_CEILING_SECONDS
 
     def test_an_async_step_is_awaited(self) -> None:
         """`sync_mgr.stop()` is a coroutine; a step runner that only called it would leave the
