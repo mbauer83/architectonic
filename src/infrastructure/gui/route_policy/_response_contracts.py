@@ -40,7 +40,6 @@ UNTYPED_RESPONSE_OPERATIONS: frozenset[str] = frozenset({
     "assurance_render_analysis_diagram",
     "assurance_scan_aibom_candidates",
     "assurance_seal_baseline",
-    "assurance_search_nodes",
     "connections_read_entity_neighbors",
     "diagrams_discover_diagram_entities",
     "diagrams_list_diagram_types",

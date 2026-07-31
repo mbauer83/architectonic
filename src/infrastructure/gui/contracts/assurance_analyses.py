@@ -63,6 +63,21 @@ class AssuranceAnalysisListResponse(_Closed):
     visibility_limited: bool
 
 
+class AssuranceAnalysisSummary(_Closed):
+    """An analysis named just enough to show beside something it owns or uses.
+
+    Mirrors ``assurance_provenance.analysis_summary`` field for field — the five it selects, and no
+    more. The rest of the record is deliberately absent: this appears next to a *node*, where a reader
+    needs to know whose work they are looking at, not when the analysis was last touched.
+    """
+
+    analysis_id: str
+    name: str
+    method: AnalysisMethod
+    status: AnalysisStatus
+    group_id: str | None
+
+
 class AssuranceGroupRecord(_Closed):
     """One filing group: a name, a description, and when it was made.
 

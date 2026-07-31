@@ -88,12 +88,14 @@ describe('edgeSubmission', () => {
 // copying the STPA's nodes as the only way through. These helpers therefore *label* provenance
 // rather than filter on it: crossing methods stays possible, and becomes deliberate.
 
-const STPA: HitAnalysis = {
-  analysis_id: 'STPA@1.aaaa.01', name: 'Key availability', method: 'STPA',
-}
-const FMEA: HitAnalysis = {
-  analysis_id: 'FMEA@1.bbbb.02', name: 'Credential backend', method: 'FMEA',
-}
+/* The whole summary the route sends. The fixtures carried three of its five fields, which the
+   picker's own restatement of the shape permitted. */
+const summary = (
+  fields: Pick<HitAnalysis, 'analysis_id' | 'name' | 'method'>,
+): HitAnalysis => ({ status: 'draft', group_id: null, ...fields })
+
+const STPA = summary({ analysis_id: 'STPA@1.aaaa.01', name: 'Key availability', method: 'STPA' })
+const FMEA = summary({ analysis_id: 'FMEA@1.bbbb.02', name: 'Credential backend', method: 'FMEA' })
 
 describe('candidateProvenance', () => {
   it('names the method and the analysis a candidate comes from', () => {

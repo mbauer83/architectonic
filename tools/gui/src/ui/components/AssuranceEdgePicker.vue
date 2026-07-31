@@ -9,16 +9,11 @@ import { ref, computed, onMounted } from 'vue'
 import {
   candidateProvenance, edgeSubmission, emptyLegalSetMessage, isCrossAnalysis,
   legalTypesForSelection,
-  type EdgeCatalog, type EdgeDirection, type HitAnalysis,
+  type EdgeCatalog, type EdgeDirection,
 } from './AssuranceEdgePicker.helpers'
+// The hit shape is the route's, decoded — it was a four-field restatement of an eight-field body.
+import { decodeSearchHits, type AssuranceSearchHit as SearchHit } from '../../domain/schemas/assurance-analyses'
 
-interface SearchHit {
-  artifact_id: string
-  artifact_type: string
-  name: string
-  /** The analysis that authored the candidate, when this reader may see it. */
-  analysis?: HitAnalysis | null
-}
 
 const props = defineProps<{
   sourceId: string
@@ -91,8 +86,7 @@ async function searchNodes() {
       searchError.value = resp.status === 423 ? 'Store is locked.' : `Search failed (HTTP ${resp.status})`
       return
     }
-    const body = await resp.json() as { hits: SearchHit[] }
-    searchResults.value = body.hits ?? []
+    searchResults.value = decodeSearchHits(await resp.json())
   } catch (e) {
     searchError.value = String(e)
   } finally {

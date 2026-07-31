@@ -35,6 +35,7 @@ from src.infrastructure.assurance.architecture_basis import current_architecture
 from src.infrastructure.gui.contracts.assurance_queries import (
     AssuranceCoverageResponse,
     AssuranceRiskRegisterResponse,
+    AssuranceSearchResponse,
     AssuranceStatsResponse,
     AssuranceVerifyResponse,
 )
@@ -85,7 +86,7 @@ def _assurance_hit(
     }
 
 
-@read_router.get("/api/assurance/search")
+@read_router.get("/api/assurance/search", response_model=AssuranceSearchResponse)
 def search_assurance_nodes(
     q: str,
     limit: int = Query(default=20, le=100),
@@ -94,14 +95,14 @@ def search_assurance_nodes(
     if pol.check_locked():
         raise _locked_response()
     if not q.strip():
-        return _ok({"query": q, "hits": [], "count": 0})
+        return _ok({"query": q, "hits": [], "count": 0}, AssuranceSearchResponse)
     raw = ctx.store.search_nodes(q.strip(), limit=limit * 2)
     visible, _ = pol.filter_nodes(raw)
     visible_analyses, _ = pol.filter_analyses(ctx.store.list_analyses())
     by_id = analyses_by_id(visible_analyses)
     hits = [_assurance_hit(n, by_id) for n in visible[:limit]]
     logger.info("assurance_search: ceiling=%s hits=%d (redacted telemetry)", pol.scope().ceiling, len(hits))
-    return _ok({"query": q, "hits": hits, "count": len(hits)})
+    return _ok({"query": q, "hits": hits, "count": len(hits)}, AssuranceSearchResponse)
 
 
 # ── Nodes ─────────────────────────────────────────────────────────────────────

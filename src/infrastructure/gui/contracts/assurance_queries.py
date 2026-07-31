@@ -17,6 +17,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
+from src.infrastructure.gui.contracts.assurance_analyses import AssuranceAnalysisSummary
+
 
 class _Closed(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -146,3 +148,43 @@ class AssuranceVerifyResponse(_Closed):
     issues: list[AssuranceVerificationIssue]
     #: True when the reader's ceiling is below the store's maximum, so something may be withheld.
     visibility_limited: bool
+
+
+class AssuranceSearchHit(_Closed):
+    """One node matched by a store-wide search, in the same envelope the architecture search uses.
+
+    Mirrors ``_assurance_read._assurance_hit``, which builds every key explicitly rather than passing
+    a stored row through — which is why this closes without the record projection the analysis and
+    group collections needed.
+
+    No content snippet, and ``path`` is always empty. Both are deliberate: a snippet may carry
+    classified text, and an assurance node has no file to point at, but the field stays so one search
+    surface can render architecture and assurance hits with one component. ``score`` is a constant
+    1.0 — the store's search has no relevance model, and reporting a varying score it did not compute
+    would be a fiction the caller might sort by.
+
+    ``analysis`` is the authoring analysis, resolved against what this reader may see: a node whose
+    analysis is above the ceiling reports none rather than naming it.
+    """
+
+    score: float
+    record_type: Literal["assurance-node"]
+    artifact_id: str
+    name: str
+    artifact_type: str
+    status: str
+    path: str
+    analysis: AssuranceAnalysisSummary | None
+
+
+class AssuranceSearchResponse(_Closed):
+    """The hits, and the query they answer.
+
+    ``count`` is the length of ``hits`` after exposure filtering, and the filter runs before the limit
+    is applied — so a reader never learns that a match existed above their ceiling by finding a short
+    page where they asked for twenty.
+    """
+
+    query: str
+    hits: list[AssuranceSearchHit]
+    count: int

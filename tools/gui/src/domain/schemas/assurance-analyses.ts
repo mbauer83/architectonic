@@ -57,6 +57,48 @@ export const AssuranceAnalysisDetailSchema = Schema.Struct({
 })
 export type AssuranceAnalysisDetail = typeof AssuranceAnalysisDetailSchema.Type
 
+/** An analysis named just enough to show beside a node it authored — five fields, not the record. */
+export const AssuranceAnalysisSummarySchema = Schema.Struct({
+  analysis_id: Schema.String,
+  name: Schema.String,
+  method: Schema.Literal(...ANALYSIS_METHODS),
+  status: Schema.Literal(...ANALYSIS_STATUSES),
+  group_id: Schema.NullOr(Schema.String),
+})
+export type AssuranceAnalysisSummary = typeof AssuranceAnalysisSummarySchema.Type
+
+/**
+ * One node matched by a store-wide search.
+ *
+ * `path` is always empty and there is no snippet: a snippet may carry classified text, and an
+ * assurance node has no file to point at — the field stays so one component renders architecture and
+ * assurance hits alike. `analysis` is always sent and is null when the authoring analysis is above the
+ * reader's ceiling, which is why it is `NullOr` and not `optional`: the edge picker's own interface had
+ * it optional, and an absent key there would have read as "no analysis" rather than "not shown".
+ */
+export const AssuranceSearchHitSchema = Schema.Struct({
+  score: Schema.Number,
+  record_type: Schema.Literal('assurance-node'),
+  artifact_id: Schema.String,
+  name: Schema.String,
+  artifact_type: Schema.String,
+  status: Schema.String,
+  path: Schema.String,
+  analysis: Schema.NullOr(AssuranceAnalysisSummarySchema),
+})
+export type AssuranceSearchHit = typeof AssuranceSearchHitSchema.Type
+
+export const AssuranceSearchSchema = Schema.Struct({
+  query: Schema.String,
+  hits: Schema.Array(AssuranceSearchHitSchema),
+  count: Schema.Number,
+})
+export type AssuranceSearch = typeof AssuranceSearchSchema.Type
+
+export const decodeSearchHits = (body: unknown): AssuranceSearchHit[] => [
+  ...Schema.decodeUnknownSync(AssuranceSearchSchema)(body).hits,
+]
+
 /** A filing group. No classification of its own — the store's ceiling governs what is filed in it. */
 export const AssuranceGroupRecordSchema = Schema.Struct({
   group_id: Schema.String,

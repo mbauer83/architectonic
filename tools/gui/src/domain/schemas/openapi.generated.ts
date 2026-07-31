@@ -3103,6 +3103,32 @@ export interface components {
             updated_at: string;
         };
         /**
+         * AssuranceAnalysisSummary
+         * @description An analysis named just enough to show beside something it owns or uses.
+         *
+         *     Mirrors ``assurance_provenance.analysis_summary`` field for field — the five it selects, and no
+         *     more. The rest of the record is deliberately absent: this appears next to a *node*, where a reader
+         *     needs to know whose work they are looking at, not when the analysis was last touched.
+         */
+        AssuranceAnalysisSummary: {
+            /** Analysis Id */
+            analysis_id: string;
+            /** Group Id */
+            group_id: string | null;
+            /**
+             * Method
+             * @enum {string}
+             */
+            method: "STPA" | "CAST" | "GRC" | "FMEA";
+            /** Name */
+            name: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "draft" | "active" | "completed" | "archived";
+        };
+        /**
          * AssuranceCoverageGaps
          * @description The gap categories, each naming the nodes that fall into it.
          *
@@ -3308,6 +3334,59 @@ export interface components {
             treated_by: components["schemas"]["AssuranceNodeRef"][];
             /** Treatment */
             treatment: string;
+        };
+        /**
+         * AssuranceSearchHit
+         * @description One node matched by a store-wide search, in the same envelope the architecture search uses.
+         *
+         *     Mirrors ``_assurance_read._assurance_hit``, which builds every key explicitly rather than passing
+         *     a stored row through — which is why this closes without the record projection the analysis and
+         *     group collections needed.
+         *
+         *     No content snippet, and ``path`` is always empty. Both are deliberate: a snippet may carry
+         *     classified text, and an assurance node has no file to point at, but the field stays so one search
+         *     surface can render architecture and assurance hits with one component. ``score`` is a constant
+         *     1.0 — the store's search has no relevance model, and reporting a varying score it did not compute
+         *     would be a fiction the caller might sort by.
+         *
+         *     ``analysis`` is the authoring analysis, resolved against what this reader may see: a node whose
+         *     analysis is above the ceiling reports none rather than naming it.
+         */
+        AssuranceSearchHit: {
+            analysis: components["schemas"]["AssuranceAnalysisSummary"] | null;
+            /** Artifact Id */
+            artifact_id: string;
+            /** Artifact Type */
+            artifact_type: string;
+            /** Name */
+            name: string;
+            /** Path */
+            path: string;
+            /**
+             * Record Type
+             * @constant
+             */
+            record_type: "assurance-node";
+            /** Score */
+            score: number;
+            /** Status */
+            status: string;
+        };
+        /**
+         * AssuranceSearchResponse
+         * @description The hits, and the query they answer.
+         *
+         *     ``count`` is the length of ``hits`` after exposure filtering, and the filter runs before the limit
+         *     is applied — so a reader never learns that a match existed above their ceiling by finding a short
+         *     page where they asked for twenty.
+         */
+        AssuranceSearchResponse: {
+            /** Count */
+            count: number;
+            /** Hits */
+            hits: components["schemas"]["AssuranceSearchHit"][];
+            /** Query */
+            query: string;
         };
         /**
          * AssuranceStatsResponse
@@ -9397,7 +9476,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["AssuranceSearchResponse"];
                 };
             };
             /** @description Request validation failed */

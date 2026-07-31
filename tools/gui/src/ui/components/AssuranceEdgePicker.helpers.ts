@@ -13,6 +13,8 @@
  * filtering candidates by it: crossing methods stays possible, and becomes deliberate.
  */
 
+import type { AssuranceAnalysisSummary } from '../../domain/schemas/assurance-analyses'
+
 export interface EdgeCatalogRow {
   source_type: string
   target_type: string
@@ -27,12 +29,9 @@ export interface EdgeCatalog {
 
 export type EdgeDirection = 'outgoing' | 'incoming'
 
-/** The authoring analysis a search hit carries, when the reader may see it. */
-export interface HitAnalysis {
-  analysis_id: string
-  name: string
-  method: string
-}
+/** The authoring analysis a search hit carries, when the reader may see it — the summary the route
+ *  sends, not a three-field restatement of it. */
+export type HitAnalysis = AssuranceAnalysisSummary
 
 /**
  * How a candidate is labelled in the result list.

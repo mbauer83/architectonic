@@ -23,7 +23,10 @@ import type {
   AssuranceAnalysisRecordSchema,
   AssuranceGroupListSchema,
   AssuranceGroupRecordSchema,
+  AssuranceAnalysisSummarySchema,
   AssuranceParticipatingNodesSchema,
+  AssuranceSearchHitSchema,
+  AssuranceSearchSchema,
 } from './assurance-analyses'
 import type {
   SyncDiagramToModelResultSchema,
@@ -258,6 +261,18 @@ describe('assurance analyses', () => {
     >()
     expectTypeOf<SchemaType<typeof AssuranceParticipatingNodesSchema>>().toEqualTypeOf<
       Immutable<components['schemas']['AssuranceParticipatingNodesResponse']>
+    >()
+  })
+
+  it('decodes a store-wide search and the analysis summary its hits carry', () => {
+    expectTypeOf<SchemaType<typeof AssuranceSearchSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['AssuranceSearchResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof AssuranceSearchHitSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['AssuranceSearchHit']>
+    >()
+    expectTypeOf<SchemaType<typeof AssuranceAnalysisSummarySchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['AssuranceAnalysisSummary']>
     >()
   })
 
