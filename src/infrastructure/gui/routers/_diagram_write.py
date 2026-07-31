@@ -23,6 +23,7 @@ from src.infrastructure.gui.routers._diagram_write_responses import (
     CREATE_RESPONSES,
     DELETE_RESPONSES,
     DETAIL_RESPONSES,
+    SyncDiagramToModelResponse,
     created,
 )
 from src.infrastructure.gui.routers._openapi import (
@@ -284,7 +285,7 @@ def patch_diagram_attribute_metadata_gui(
 
 
 @router.post("/api/diagrams/{artifact_id}/sync", tags=[TAG_DIAGRAMS], summary="Sync a diagram to the model",
-    response_model=OpenMapResponse, responses=WRITE_RESPONSES)
+    response_model=SyncDiagramToModelResponse, responses=WRITE_RESPONSES)
 def sync_diagram_to_model_gui(artifact_id: str, body: SyncDiagramToModelBody) -> dict[str, Any]:
     from src.infrastructure.write.artifact_write.diagram_sync import refresh_diagram
 
@@ -304,7 +305,13 @@ def sync_diagram_to_model_gui(artifact_id: str, body: SyncDiagramToModelBody) ->
     except ValueError as e:
         raise HTTPException(400, str(e))
     d = s.write_result_to_dict(result)
-    d.update(removed_entity_ids=result.removed_entity_ids, removed_connection_ids=result.removed_connection_ids)
+    # All three of the sync result's own fields, `deleted_diagram` included: it was left out, so the one
+    # guarantee this operation makes about the file it touched was absent from the body that reports on it.
+    d.update(
+        removed_entity_ids=result.removed_entity_ids,
+        removed_connection_ids=result.removed_connection_ids,
+        deleted_diagram=result.deleted_diagram,
+    )
     return d
 
 

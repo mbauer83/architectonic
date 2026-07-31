@@ -5940,6 +5940,40 @@ export interface components {
             dry_run: boolean;
         };
         /**
+         * SyncDiagramToModelResponse
+         * @description What a sync wrote, plus what reconciling against the model pruned from the diagram.
+         *
+         *     A plain closed subtype of the write result, not a mixed success/failure body: ``warnings`` are
+         *     advisory, ``verification`` is a validity report, and a real failure raises — ``ValueError`` becomes
+         *     a 400 and the authorization refusal its own status. So there is no partial outcome here to declare.
+         *
+         *     ``deleted_diagram`` is the refresh-never-deletes contract reporting on itself. Every construction
+         *     site in ``artifact_write/diagram_sync.py`` sets it ``False``, including the one where every
+         *     referenced entity has gone stale (``:256``) — that case preserves the diagram deliberately, because
+         *     silent deletion is the failure the flag exists to rule out. The handler built this body without it,
+         *     so the guarantee was one the response could not state; ``tests/tools/test_scope_bound_refresh.py``
+         *     had to settle for asserting the key was *not* ``True``.
+         */
+        SyncDiagramToModelResponse: {
+            /** Artifact Id */
+            artifact_id: string;
+            /** Content */
+            content: string | null;
+            /** Deleted Diagram */
+            deleted_diagram: boolean;
+            /** Path */
+            path: string;
+            /** Removed Connection Ids */
+            removed_connection_ids: string[];
+            /** Removed Entity Ids */
+            removed_entity_ids: string[];
+            verification: components["schemas"]["WriteVerificationResponse"] | null;
+            /** Warnings */
+            warnings: string[];
+            /** Wrote */
+            wrote: boolean;
+        };
+        /**
          * SyncHealthResponse
          * @description Why the enterprise sync is unhealthy, when it is.
          *
@@ -11477,7 +11511,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["SyncDiagramToModelResponse"];
                 };
             };
             /** @description Validation error (bad or ambiguous write) */

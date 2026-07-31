@@ -57,7 +57,6 @@ UNTYPED_RESPONSE_OPERATIONS: frozenset[str] = frozenset({
     "diagrams_read_diagram_context",
     "diagrams_read_diagram_type_ui_config",
     "diagrams_search_entity_display_items",
-    "diagrams_sync_diagram_to_model",
     "documents_read_document_schemata",
     "documents_search_reference_artifacts",
     "entities_search_artifacts",

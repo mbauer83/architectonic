@@ -45,9 +45,15 @@ export const WriteResultSchema = Schema.Struct({
 })
 export type WriteResult = typeof WriteResultSchema.Type
 
+/**
+ * `deleted_diagram` is the sync's promise that it left the file alone — always `false`, because a
+ * refresh never deletes, and reported so the guarantee is checkable rather than assumed. The handler
+ * built its body without it, so the decoder had no reason to declare it either.
+ */
 export const SyncDiagramToModelResultSchema = Schema.Struct({
   ...WriteResultSchema.fields,
   removed_entity_ids: Schema.Array(Schema.String),
   removed_connection_ids: Schema.Array(Schema.String),
+  deleted_diagram: Schema.Boolean,
 })
 export type SyncDiagramToModelResult = typeof SyncDiagramToModelResultSchema.Type

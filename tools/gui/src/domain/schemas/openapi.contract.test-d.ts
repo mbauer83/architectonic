@@ -16,6 +16,7 @@ import type {
 } from './sync-status'
 import type { StatsSchema } from './stats'
 import type {
+  SyncDiagramToModelResultSchema,
   VerificationIssueSchema,
   WriteResultSchema,
   WriteVerificationSchema,
@@ -213,6 +214,14 @@ describe('write results', () => {
   it('decodes the mutation envelope that carries it', () => {
     expectTypeOf<SchemaType<typeof WriteResultSchema>>().toEqualTypeOf<
       Immutable<components['schemas']['WriteResultResponse']>
+    >()
+  })
+
+  it('decodes a diagram sync, whose body adds what reconciling pruned', () => {
+    // `deleted_diagram` was on neither side: the handler did not copy it out of the result, so the
+    // decoder had nothing to declare. It is the operation's own no-deletion guarantee.
+    expectTypeOf<SchemaType<typeof SyncDiagramToModelResultSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['SyncDiagramToModelResponse']>
     >()
   })
 })

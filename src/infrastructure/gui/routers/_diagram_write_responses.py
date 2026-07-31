@@ -38,6 +38,26 @@ DELETE_RESPONSES: dict[int | str, Any] = {
 }
 
 
+class SyncDiagramToModelResponse(WriteResultResponse):
+    """What a sync wrote, plus what reconciling against the model pruned from the diagram.
+
+    A plain closed subtype of the write result, not a mixed success/failure body: ``warnings`` are
+    advisory, ``verification`` is a validity report, and a real failure raises — ``ValueError`` becomes
+    a 400 and the authorization refusal its own status. So there is no partial outcome here to declare.
+
+    ``deleted_diagram`` is the refresh-never-deletes contract reporting on itself. Every construction
+    site in ``artifact_write/diagram_sync.py`` sets it ``False``, including the one where every
+    referenced entity has gone stale (``:256``) — that case preserves the diagram deliberately, because
+    silent deletion is the failure the flag exists to rule out. The handler built this body without it,
+    so the guarantee was one the response could not state; ``tests/tools/test_scope_bound_refresh.py``
+    had to settle for asserting the key was *not* ``True``.
+    """
+
+    removed_entity_ids: list[str]
+    removed_connection_ids: list[str]
+    deleted_diagram: bool
+
+
 def created(result: Any, response: Response, location: str) -> None:
     """201 with ``Location`` when it wrote; 200 when it was a dry run.
 

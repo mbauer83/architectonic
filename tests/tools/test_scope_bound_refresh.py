@@ -552,9 +552,33 @@ class TestRestSyncAdapter:
         result = sync_diagram_to_model_gui(diag_id, SyncDiagramToModelBody(dry_run=True))
 
         assert "wrote" in result
-        assert result.get("deleted_diagram") is not True, (
-            "REST /api/diagrams/{artifact_id}/sync must not return deleted_diagram=True for scope-bound diagrams"
+        assert result["deleted_diagram"] is False, (
+            "REST /api/diagrams/{artifact_id}/sync must report that it did not delete the diagram"
         )
+
+    def test_rest_sync_reports_the_no_deletion_guarantee_over_http(self, repo: Path) -> None:
+        """The assertion above could only say ``is not True`` while the handler omitted the key, and an
+        absent key reads as a satisfied guarantee — which is the one thing it must not do. Through the
+        application the body is validated against ``SyncDiagramToModelResponse`` as well, so a field the
+        contract does not declare fails the request rather than reaching a client undocumented."""
+        from starlette.testclient import TestClient
+
+        from src.infrastructure.gui.routers import state as gui_state
+        from src.infrastructure.gui.routers._diagram_write import router as diagram_write_router
+        from tests.support.api_app import build_api_app
+
+        scope_id = _make_app_entity(repo, "REST Sync Http App")
+        diag_id = _make_scope_bound_diagram(repo, "REST Sync Http Diagram", scope_id)
+        gui_state.init_state(ArtifactRepository(shared_artifact_index(repo)), repo, None)
+
+        client = TestClient(build_api_app(diagram_write_router))
+        response = client.post(f"/api/diagrams/{diag_id}/sync", json={"dry_run": True})
+
+        assert response.status_code == 200, response.text
+        body = response.json()
+        assert body["deleted_diagram"] is False
+        assert body["removed_entity_ids"] == [] and body["removed_connection_ids"] == []
+        assert _diagram_path(repo, diag_id).exists()
 
     def test_rest_sync_scope_bound_not_deleted(self, repo: Path) -> None:
         """REST sync on a scope-bound diagram must leave the file on disk."""
