@@ -88,11 +88,8 @@ UNTYPED_RESPONSE_OPERATIONS: frozenset[str] = frozenset({
     "viewpoints_execute_viewpoint",
     "viewpoints_execute_viewpoint_diagram",
     "viewpoints_execute_viewpoint_projection",
-    "viewpoints_list_viewpoint_referencers",
     "viewpoints_list_viewpoints",
     "viewpoints_read_criteria_catalog",
     "viewpoints_read_diagram_viewpoint_projection",
-    "viewpoints_read_viewpoint_pins",
-    "viewpoints_replace_viewpoint_pins",
     "viewpoints_summarize_viewpoint",
 })

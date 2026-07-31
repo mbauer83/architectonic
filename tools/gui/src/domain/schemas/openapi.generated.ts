@@ -5303,6 +5303,25 @@ export interface components {
             slugs: string[];
         };
         /**
+         * ViewpointPinsResponse
+         * @description The pinned definition slugs, and any that were dropped for no longer existing.
+         *
+         *     ``pruned`` is reported by the read and **absent** from the write. A pin whose definition has since
+         *     left the effective catalog is silently dropped, and a list that just quietly shrank would leave the
+         *     user wondering what they had pinned; the read says so. The write prunes nothing, so it has nothing
+         *     to report — and absent rather than empty, because an empty list would read as "nothing was dropped
+         *     this time" from an operation that never drops anything.
+         *
+         *     Null-omitting for that reason: the client reads ``pruned`` as absent-or-value
+         *     (``Schema.optional``), so sending null would fail its decode and lose the whole response.
+         */
+        ViewpointPinsResponse: {
+            /** Pruned */
+            pruned?: string[];
+            /** Slugs */
+            slugs: string[];
+        };
+        /**
          * ViewpointReferencedDetails
          * @description ``viewpoint_referenced``: the views that still pin the definition a caller asked to delete.
          *
@@ -5329,6 +5348,18 @@ export interface components {
              * @enum {string}
              */
             target_kind: "diagram" | "matrix";
+        };
+        /**
+         * ViewpointReferencerListResponse
+         * @description Every diagram or matrix pinning one viewpoint definition.
+         *
+         *     The management view reads this before offering a semantic edit: a version bump leaves every
+         *     referencer pinned to a version that no longer describes the definition, and the warning has to
+         *     name them.
+         */
+        ViewpointReferencerListResponse: {
+            /** Referencers */
+            referencers: components["schemas"]["ViewpointReferencerDto"][];
         };
         /**
          * ViewpointReferencerRef
@@ -13606,7 +13637,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["ViewpointReferencerListResponse"];
                 };
             };
             /** @description Artifact not found */
@@ -13901,7 +13932,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["ViewpointPinsResponse"];
                 };
             };
             /** @description Request validation failed */
@@ -13943,7 +13974,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["ViewpointPinsResponse"];
                 };
             };
             /** @description Validation error (bad or ambiguous write) */

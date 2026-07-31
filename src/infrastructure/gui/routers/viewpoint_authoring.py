@@ -40,6 +40,10 @@ from src.domain.viewpoints.viewpoint_serialization import viewpoint_definition_t
 from src.domain.viewpoints.viewpoint_summary import render_query_summary
 from src.domain.viewpoints.viewpoints import ViewpointCatalog, ViewpointDefinition
 from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry
+from src.infrastructure.gui.contracts.viewpoints import (
+    ViewpointPinsResponse,
+    ViewpointReferencerListResponse,
+)
 from src.infrastructure.gui.routers import state as s
 from src.infrastructure.gui.routers._openapi import READ_RESPONSES, TAG_VIEWPOINTS, WRITE_RESPONSES, OpenMapResponse
 from src.infrastructure.gui.routers._viewpoint_write import router as _write_router
@@ -251,7 +255,8 @@ def get_criteria_catalog() -> dict[str, Any]:
     }
 
 
-@router.get("/api/viewpoints/pins", tags=[TAG_VIEWPOINTS], summary="Pinned viewpoints", response_model=OpenMapResponse)
+@router.get("/api/viewpoints/pins", tags=[TAG_VIEWPOINTS], summary="Pinned viewpoints",
+    response_model=ViewpointPinsResponse, response_model_exclude_none=True)
 def get_viewpoint_pins() -> dict[str, Any]:
     """Pinned definition slugs (Home/management quick access) — an engagement-repo-local
     sidecar list, never definition content and never promoted. Slugs no longer in the
@@ -268,7 +273,8 @@ class ViewpointPinsBody(BaseModel):
 
 
 @router.put("/api/viewpoints/pins", tags=[TAG_VIEWPOINTS], summary="Update pinned viewpoints",
-    response_model=OpenMapResponse, responses=WRITE_RESPONSES)
+    response_model=ViewpointPinsResponse, response_model_exclude_none=True,
+    responses=WRITE_RESPONSES)
 def put_viewpoint_pins(body: ViewpointPinsBody) -> dict[str, Any]:
     engagement_root = _engagement_root()
     merged = load_effective_viewpoint_catalog(_both_roots())
@@ -281,8 +287,9 @@ def put_viewpoint_pins(body: ViewpointPinsBody) -> dict[str, Any]:
     return {"slugs": body.slugs}
 
 
-@router.get("/api/viewpoints/{slug}/referencers", tags=[TAG_VIEWPOINTS], summary="Diagrams referencing a viewpoint",
-    response_model=OpenMapResponse, responses=READ_RESPONSES)
+@router.get("/api/viewpoints/{slug}/referencers", tags=[TAG_VIEWPOINTS],
+    summary="Diagrams referencing a viewpoint",
+    response_model=ViewpointReferencerListResponse, responses=READ_RESPONSES)
 def get_viewpoint_referencers(slug: str) -> dict[str, Any]:
     """Diagrams/matrices whose viewpoint application pins this slug — the management view
     uses this to warn, before a semantic edit, which views a version bump would leave
