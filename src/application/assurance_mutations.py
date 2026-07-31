@@ -101,8 +101,41 @@ class MutationLegacyInvalid:
     permitted_operation: str = PERMITTED_OPERATION
 
 
+@dataclass(frozen=True)
+class MutationEntityInUse:
+    """Analyses other than the author draw on this node, so deleting it would remove their reference.
+
+    A refusal rather than a cascade. The three relations are deliberately independent — filing,
+    authorship, participation — and a node one analysis authored may be the evidence another's argument
+    rests on. Deleting it silently would remove a borrower's reference without the borrower's knowledge
+    and without anything recording that it happened, which is the failure mode participation exists to
+    make impossible.
+
+    The referencing analyses travel with the refusal because "in use" is not actionable on its own: the
+    caller has to go and remove those references, and asking them to search for which is asking them to
+    re-derive what this call already knew.
+    """
+
+    node_id: str
+    referencing_analysis_ids: tuple[str, ...]
+
+    @property
+    def message(self) -> str:
+        count = len(self.referencing_analysis_ids)
+        analyses = "analysis" if count == 1 else "analyses"
+        return (
+            f"Node {self.node_id!r} is referenced by {count} other {analyses}. Remove those "
+            "references first — deleting it now would silently remove them."
+        )
+
+
 MutationResult = (
-    MutationOk | MutationLocked | MutationNotFound | MutationRejected | MutationLegacyInvalid
+    MutationOk
+    | MutationLocked
+    | MutationNotFound
+    | MutationRejected
+    | MutationLegacyInvalid
+    | MutationEntityInUse
 )
 
 # Only edge creation can be rejected by the ontology matrix or as a duplicate.
@@ -268,6 +301,12 @@ def delete_node(
     node = store.get_node(node_id)
     if node is None:
         return MutationNotFound(node_id)
+    # Checked here rather than at the adapter, so the check and the delete are one serialised
+    # operation: `run_write` wraps this whole call on the single-writer worker, and a check made
+    # outside it could be overtaken by a participation added between the two.
+    referencing = tuple(sorted(store.list_participating_analyses(node_id)))
+    if referencing:
+        return MutationEntityInUse(node_id=node_id, referencing_analysis_ids=referencing)
     store.delete_node(node_id)
     archive.append("DELETE", node_id=node_id, payload={"node_type": node.get("node_type")})
     return MutationOk(payload={"deleted": node_id}, findings=[])

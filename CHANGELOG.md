@@ -36,6 +36,11 @@ Provenance and Participation Are Three Relations*.
   answer `204`; the node is the path, not a body field. A node may not participate in the analysis
   that authored it — that returns `409 invalid_participation` and writes nothing, rather than being
   deduplicated away.
+- **Deleting a node another analysis references is refused.** `DELETE /api/assurance/nodes/{node_id}`
+  answers `409 entity_in_use` while any analysis other than the author participates in the node, and
+  the details name them so the caller knows which references to remove. It used to delete, taking
+  every borrower's reference with it and recording nothing — a node one analysis authored may be the
+  evidence another's argument rests on. Remove the participation relations first, then delete.
 - **The MCP write surface changes with it.** `assurance_create_node` requires `analysis_id`;
   `assurance_edit_node` no longer accepts it; `assurance_assign_provenance` is the new repair tool.
   Leaving them alone would have left an unguarded route around the invariant.

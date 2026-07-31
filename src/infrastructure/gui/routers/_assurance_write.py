@@ -40,6 +40,7 @@ from src.infrastructure.gui.contracts.assurance_signals import (
 )
 from src.infrastructure.gui.contracts.errors import (
     ApiError,
+    EntityInUseDetails,
     LegacyInvalidDetails,
     ProvenanceImmutableDetails,
 )
@@ -111,6 +112,18 @@ def _translate(
             LegacyInvalidNode(node_id=result.node_id).message,
             LegacyInvalidDetails(
                 node_id=result.node_id, permitted_operation=result.permitted_operation
+            ),
+        )
+    if isinstance(result, mutations.MutationEntityInUse):
+        # 409, and the details name the analyses holding the references, because the remedy is to
+        # remove them and a caller told only "in use" would have to search for which.
+        raise ApiError(
+            409,
+            "entity_in_use",
+            result.message,
+            EntityInUseDetails(
+                node_id=result.node_id,
+                referencing_analysis_ids=list(result.referencing_analysis_ids),
             ),
         )
     if isinstance(result, mutations.MutationRejected):

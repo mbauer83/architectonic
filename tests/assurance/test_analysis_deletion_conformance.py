@@ -27,6 +27,7 @@ from typing import Any
 import pytest
 
 from src.application import assurance_analysis as uc
+from src.application import assurance_mutations as mutations
 from tests.assurance._pocketbase_stub import StubPocketBaseClient
 
 
@@ -202,3 +203,94 @@ class TestTheUseCaseRefusesToDeleteAuthoredWork:
         assert store.get_node(node) is not None
         assert store.list_analysis_members(borrower) == []
         assert "DELETE_ANALYSIS" in archive.ops
+
+
+class TestDeletingANodeAnotherAnalysisReferences:
+    """`entity_in_use`, over each store, and the silent cascade it replaces.
+
+    The rule was specified, the error code was published — `entity_in_use` sits in the closed error
+    vocabulary with a details DTO naming the referencing analyses — and nothing implemented it:
+    `delete_node` checked unlock and existence, then deleted. So a node one analysis authored and
+    another's argument rested on could be removed, taking the borrower's reference with it, with no
+    refusal and nothing recorded. A published error code that no code path can produce is also a
+    contract lie, in the opposite direction from an undocumented body.
+
+    Over all four backends because the question "who else draws on this?" is answered by each of them
+    separately — `_sqlcipher_store.py:186`, `_grouping_records.py:217` for both git stores, and
+    `_pocketbase_grouping.py:131` — and a rule enforced against three of four is not enforced.
+    """
+
+    def _borrowed(self, store: Any) -> tuple[str, str, str]:
+        author = str(store.create_analysis("Brakes", "STPA", tlp="TLP:WHITE"))
+        borrower = str(store.create_analysis("Pumps", "FMEA", tlp="TLP:WHITE"))
+        node = str(store.create_node("hazard", "Load path is unguarded", analysis_id=author))
+        store.add_analysis_member(borrower, node)
+        return author, borrower, node
+
+    def test_a_referenced_node_is_refused(self, store: Any) -> None:
+        archive = _Archive()
+        _author, borrower, node = self._borrowed(store)
+
+        result = mutations.delete_node(store, archive, node_id=node)
+
+        assert isinstance(result, mutations.MutationEntityInUse)
+        assert result.node_id == node
+        assert result.referencing_analysis_ids == (borrower,)
+
+    def test_the_refused_deletion_changes_nothing(self, store: Any) -> None:
+        """A refusal that had already deleted something would be worse than the cascade: the caller
+        is told to go and remove references to a node that is no longer there."""
+        _author, borrower, node = self._borrowed(store)
+        archive = _Archive()
+
+        mutations.delete_node(store, archive, node_id=node)
+
+        assert store.get_node(node) is not None
+        assert store.list_analysis_members(borrower) == [node]
+        assert archive.ops == [], "a refusal must not appear in the audit trail as a deletion"
+
+    def test_the_refusal_names_every_referencing_analysis(self, store: Any) -> None:
+        """The details exist so the caller can act. One id when two analyses hold references sends
+        them to remove one and try again, twice."""
+        _author, borrower, node = self._borrowed(store)
+        third = str(store.create_analysis("Third", "GRC", tlp="TLP:WHITE"))
+        store.add_analysis_member(third, node)
+
+        result = mutations.delete_node(store, _Archive(), node_id=node)
+
+        assert isinstance(result, mutations.MutationEntityInUse)
+        assert sorted(result.referencing_analysis_ids) == sorted([borrower, third])
+
+    def test_a_node_nobody_borrows_is_deletable(self, store: Any) -> None:
+        """The rule is about references, not about deletion. Refusing an unreferenced node would make
+        authored work undeletable and leave the store append-only by accident."""
+        author = str(store.create_analysis("Brakes", "STPA", tlp="TLP:WHITE"))
+        node = str(store.create_node("hazard", "Nobody cites this", analysis_id=author))
+        archive = _Archive()
+
+        result = mutations.delete_node(store, archive, node_id=node)
+
+        assert isinstance(result, mutations.MutationOk)
+        assert store.get_node(node) is None
+        assert "DELETE" in archive.ops
+
+    def test_removing_the_reference_makes_it_deletable(self, store: Any) -> None:
+        """"Until references are explicitly removed" — so the refusal has to be a state the caller can
+        leave, not a permanent one."""
+        _author, borrower, node = self._borrowed(store)
+        store.remove_analysis_member(borrower, node)
+
+        result = mutations.delete_node(store, _Archive(), node_id=node)
+
+        assert isinstance(result, mutations.MutationOk)
+        assert store.get_node(node) is None
+
+    def test_the_authors_own_provenance_is_not_a_reference(self, store: Any) -> None:
+        """Authorship and participation are different relations. Counting the author's provenance as a
+        reference would make every node undeletable, which reads as the rule working."""
+        author = str(store.create_analysis("Brakes", "STPA", tlp="TLP:WHITE"))
+        node = str(store.create_node("hazard", "Authored only", analysis_id=author))
+
+        result = mutations.delete_node(store, _Archive(), node_id=node)
+
+        assert isinstance(result, mutations.MutationOk)

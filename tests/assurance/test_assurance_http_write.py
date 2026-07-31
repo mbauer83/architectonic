@@ -40,6 +40,7 @@ class _FakeStore:
         self._edges: list[dict[str, Any]] = []
         self._next = 0
         self._arch_refs: list[dict[str, Any]] = []
+        self._members: dict[str, list[str]] = {}
         # Every node is created inside an analysis now, so the fake has to have one.
         self._analyses: dict[str, dict[str, Any]] = {
             _FIXTURE_ANALYSIS: {
@@ -72,6 +73,23 @@ class _FakeStore:
     def update_node(self, node_id: str, **attrs: object) -> None:
         if node_id in self._nodes:
             self._nodes[node_id].update(attrs)
+
+    def list_participating_analyses(self, node_id: str) -> list[str]:
+        """Analyses drawing on this node — none, unless a test arranges one.
+
+        Part of the port, so the double implements it: node deletion asks who else references the node
+        before removing it, and a double missing the method turns that check into an ``AttributeError``
+        surfacing as an unhandled 500 rather than a failure that says what is wrong.
+        """
+        return list(self._members.get(node_id, []))
+
+    def add_analysis_member(self, analysis_id: str, node_id: str) -> None:
+        self._members.setdefault(node_id, []).append(analysis_id)
+
+    def remove_analysis_member(self, analysis_id: str, node_id: str) -> None:
+        self._members[node_id] = [
+            a for a in self._members.get(node_id, []) if a != analysis_id
+        ]
 
     def delete_node(self, node_id: str) -> None:
         self._nodes.pop(node_id, None)
