@@ -40,9 +40,13 @@ from src.infrastructure.gui.contracts.assurance_signals import (
 )
 from src.infrastructure.gui.contracts.errors import (
     ApiError,
+    DuplicateEdgeDetails,
     EntityInUseDetails,
+    FieldError,
+    IllegalConnectionTypeDetails,
     LegacyInvalidDetails,
     ProvenanceImmutableDetails,
+    ValidationErrorDetails,
 )
 from src.infrastructure.gui.routers._arch_entity_creator import GuiArchitectureEntityCreator
 from src.infrastructure.gui.routers._assurance_http import (
@@ -59,23 +63,24 @@ write_router = APIRouter()
 _NO_STORE = "no-store"
 
 
-def _locked() -> JSONResponse:
-    return JSONResponse(
-        status_code=423,
-        content={"error": "assurance_store_locked", "message": (
-            "The confidential assurance store is not unlocked. "
-            "Run `arch-assurance unlock` to enable assurance tools."
-        )},
-        headers={"Cache-Control": _NO_STORE},
-    )
+def _locked() -> ApiError:
+    """The locked refusal, in the shared envelope — returned for the caller to ``raise``.
+
+    It used to build its own ``{"error": ...}`` body, which is the shape `CHANGELOG.md` tells
+    consumers this release removed. A client branching on `detail.code` fell through on the single
+    most common assurance refusal.
+    """
+    return store_locked()
 
 
-def _not_found(artifact_id: str) -> JSONResponse:
-    return JSONResponse(
-        status_code=404,
-        content={"error": "not_found", "artifact_id": artifact_id},
-        headers={"Cache-Control": _NO_STORE},
-    )
+def _not_found(artifact_id: str) -> ApiError:
+    """Not-found in the shared envelope.
+
+    The identifier does not travel in the body: the caller supplied it, so echoing it adds nothing,
+    and §0e asks this surface to redact it — a not-found here is deliberately indistinguishable from
+    an above-ceiling read, and a body that names the id invites the habit of trusting it.
+    """
+    return not_found("No such assurance record.")
 
 
 def _ok(result: mutations.MutationOk, model: type[BaseModel] | None = None) -> JSONResponse:
@@ -100,9 +105,9 @@ def _translate(
     result: mutations.EdgeMutationResult, model: type[BaseModel] | None = None
 ) -> JSONResponse:
     if isinstance(result, mutations.MutationLocked):
-        return _locked()
+        raise _locked()
     if isinstance(result, mutations.MutationNotFound):
-        return _not_found(result.artifact_id)
+        raise _not_found(result.artifact_id)
     if isinstance(result, mutations.MutationLegacyInvalid):
         # 409, and the details name the one operation that is permitted — a caller told only
         # "refused" has no way to learn that the remedy is to assign provenance first.
@@ -127,39 +132,40 @@ def _translate(
             ),
         )
     if isinstance(result, mutations.MutationRejected):
-        return JSONResponse(
-            status_code=422,
-            content={
-                "error": "invalid_value",
-                "field": result.field,
-                "value": result.value,
-                "message": result.message,
-            },
-            headers={"Cache-Control": _NO_STORE},
+        # `validation_error`, not a code of its own: a rejected field value is the generic case, and
+        # `FieldError` already carries the path a client highlights.
+        raise ApiError(
+            422,
+            "validation_error",
+            result.message,
+            ValidationErrorDetails(
+                field_errors=[FieldError(field=result.field, message=result.message)]
+            ),
         )
     if isinstance(result, mutations.MutationDuplicateEdge):
-        return JSONResponse(
-            status_code=409,
-            content={
-                "error": "duplicate_edge",
-                "edge_id": result.edge_id,
-                "source_id": result.source_id,
-                "target_id": result.target_id,
-                "conn_type": result.conn_type,
-            },
-            headers={"Cache-Control": _NO_STORE},
+        raise ApiError(
+            409,
+            "duplicate_edge",
+            f"An edge of type {result.conn_type!r} already connects these nodes.",
+            DuplicateEdgeDetails(
+                edge_id=result.edge_id,
+                source_id=result.source_id,
+                target_id=result.target_id,
+                conn_type=result.conn_type,
+            ),
         )
     if isinstance(result, mutations.MutationIllegalPair):
-        return JSONResponse(
-            status_code=422,
-            content={
-                "error": "illegal_connection_type",
-                "source_type": result.source_type,
-                "target_type": result.target_type,
-                "conn_type": result.conn_type,
-                "legal_types": list(result.legal_types),
-            },
-            headers={"Cache-Control": _NO_STORE},
+        raise ApiError(
+            422,
+            "illegal_connection_type",
+            f"The ontology does not permit {result.conn_type!r} from "
+            f"{result.source_type!r} to {result.target_type!r}.",
+            IllegalConnectionTypeDetails(
+                source_type=result.source_type,
+                target_type=result.target_type,
+                conn_type=result.conn_type,
+                legal_types=list(result.legal_types),
+            ),
         )
     return _ok(result, model)
 
@@ -254,9 +260,9 @@ def create_node(analysis_id: str, body: CreateNodeBody, response: Response) -> J
     """
     ctx = get_assurance_context()
     if not ctx.is_available():
-        return _locked()
+        raise _locked()
     if ctx.store.get_analysis(analysis_id) is None:
-        return _not_found(analysis_id)
+        raise _not_found(analysis_id)
     answer = _translate(run_write(lambda: mutations.create_node(
         ctx.store, ctx.archive,
         node_type=body.node_type, name=body.name, status=body.status, tlp=body.tlp,
@@ -362,7 +368,7 @@ def seal_baseline(body: SealBaselineBody) -> JSONResponse:
     in a trailing segment: there is no other way to make one, and no baseline to seal beforehand."""
     ctx = get_assurance_context()
     if not ctx.is_available():
-        return _locked()
+        raise _locked()
     result = run_write(lambda: ctx.archive.seal_baseline(notes=body.notes, analysis_id=body.analysis_id))
     return JSONResponse(content=result, headers={"Cache-Control": _NO_STORE})  # type: ignore[arg-type]
 
@@ -386,9 +392,9 @@ def register_arch_ref(body: RegisterArchRefBody) -> JSONResponse:
 
 def _translate_bind(result: model_bind.ModelBindResult) -> JSONResponse:
     if isinstance(result, model_bind.BindLocked):
-        return _locked()
+        raise _locked()
     if isinstance(result, model_bind.BindNotFound):
-        return _not_found(result.assurance_node_id)
+        raise _not_found(result.assurance_node_id)
     if isinstance(result, model_bind.BindInvalid):
         status = 409 if result.error == "invalid_binding_status" else 400
         return JSONResponse(
@@ -415,7 +421,7 @@ def _translate_bind(result: model_bind.ModelBindResult) -> JSONResponse:
 def model_this(body: ModelThisBody) -> JSONResponse:
     ctx = get_assurance_context()
     if not ctx.is_available():
-        return _locked()
+        raise _locked()
     creator = None if body.separation_of_duties else GuiArchitectureEntityCreator()
     result = run_write(lambda: model_bind.model_and_bind(
         ctx.store, ctx.archive,

@@ -6,19 +6,20 @@ registered), 404s when it is not, and never requires the store to be unlocked
 from __future__ import annotations
 
 import pytest
-from fastapi import FastAPI
 from starlette.testclient import TestClient
 
 from src.application.assurance_edge_catalog import build_edge_catalog
 from src.domain.modules.module_registry import ModuleRegistry
 from src.infrastructure.app_bootstrap import assurance_ontology_module
+from tests.support.api_app import build_api_app
 
 
 def _client() -> TestClient:
     from src.infrastructure.gui.routers.assurance import router
 
-    app = FastAPI()
-    app.include_router(router)
+    # `build_api_app`, not a bare `FastAPI()`: without the error contracts installed a raised
+    # `ApiError` becomes a 500 and the test asserts a shape no client receives.
+    app = build_api_app(router)
     return TestClient(app, raise_server_exceptions=False)
 
 
@@ -43,7 +44,11 @@ def test_unconfigured_capability_is_a_404(monkeypatch: pytest.MonkeyPatch) -> No
     monkeypatch.setattr(routes, "get_module_registry", lambda: ModuleRegistry())
     resp = _client().get("/api/assurance/edge-catalog")
     assert resp.status_code == 404
-    assert resp.json() == {"error": "assurance_module_not_configured"}
+    detail = resp.json()["detail"]
+    # `not_configured`, not `conflict`: nothing the caller sends can fix an unconfigured module, so
+    # reporting it as a request problem would send them to correct a correct request.
+    assert detail["code"] == "not_configured"
+    assert detail["details"]["capability"] == "assurance"
 
 
 def test_catalog_needs_no_unlock(monkeypatch: pytest.MonkeyPatch) -> None:

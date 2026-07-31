@@ -25,10 +25,11 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from fastapi import FastAPI
 
 httpx = pytest.importorskip("httpx")
 from starlette.testclient import TestClient  # noqa: E402
+
+from tests.support.api_app import build_api_app  # noqa: E402
 
 # ── Minimal fakes ─────────────────────────────────────────────────────────────
 
@@ -116,8 +117,9 @@ def _make_client(ctx: _FakeContext, monkeypatch: pytest.MonkeyPatch) -> TestClie
     """Both context lookups point at ``ctx``; monkeypatch so nothing leaks into the next test."""
     from src.infrastructure.gui.routers.assurance import router
 
-    app = FastAPI()
-    app.include_router(router)
+    # `build_api_app`, not a bare `FastAPI()`: without the error contracts installed a raised
+    # `ApiError` becomes a 500 and the test asserts a shape no client receives.
+    app = build_api_app(router)
     monkeypatch.setattr(_READ_CTX, lambda: ctx)
     monkeypatch.setattr(_HTTP_CTX, lambda: ctx)
     return TestClient(app, raise_server_exceptions=False)
@@ -327,17 +329,19 @@ def test_rendered_type_the_method_does_not_draw_returns_404(monkeypatch: pytest.
     r = _rendered(_make_client(_FakeContext(_stpa_store()), monkeypatch), _STPA_ID, "fmea-matrix")
 
     assert r.status_code == 404
-    body = r.json()
-    assert body["error"] == "unknown_diagram_type"
-    assert "control-structure" in body["available"]
-    assert "fmea-matrix" not in body["available"]
+    detail = r.json()["detail"]
+    assert detail["code"] == "unknown_diagram_type"
+    # `available` stays structured rather than becoming prose in a field error: a client offering the
+    # alternatives needs them as data, which is why this code did not fold into `validation_error`.
+    assert "control-structure" in detail["details"]["available"]
+    assert "fmea-matrix" not in detail["details"]["available"]
 
 
 def test_rendered_unknown_type_returns_404(monkeypatch: pytest.MonkeyPatch) -> None:
     r = _rendered(_make_client(_FakeContext(_stpa_store()), monkeypatch), _STPA_ID, "no-such-diagram")
 
     assert r.status_code == 404
-    assert r.json()["error"] == "unknown_diagram_type"
+    assert r.json()["detail"]["code"] == "unknown_diagram_type"
 
 
 def test_rendered_absent_analysis_returns_404(monkeypatch: pytest.MonkeyPatch) -> None:

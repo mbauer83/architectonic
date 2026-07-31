@@ -29,8 +29,11 @@ from src.infrastructure.assurance.architecture_basis import current_architecture
 from src.infrastructure.assurance.write_serialization import run_write
 from src.infrastructure.gui.contracts.errors import (
     ApiError,
+    FieldError,
     LegacyInvalidDetails,
     MethodMismatchDetails,
+    NotAFailureModeDetails,
+    ValidationErrorDetails,
 )
 from src.infrastructure.gui.routers._assurance_http import locked_response as _locked_response
 from src.infrastructure.gui.routers._assurance_http import not_found_response as _not_found_response
@@ -168,23 +171,23 @@ def set_fmea_factor(node_id: str, body: SetFactorBody) -> JSONResponse:
             ),
         )
     if isinstance(result, FactorNodeNotFound):
-        return JSONResponse(
-            status_code=404,
-            content={
-                "error": "not_a_failure_mode",
-                "node_id": result.node_id,
-                "message": "no failure mode with this id — a factor rates a failure mode",
-            },
-            headers={"Cache-Control": _NO_STORE},
+        raise ApiError(
+            404,
+            "not_a_failure_mode",
+            "No failure mode with this id — a factor rates a failure mode.",
+            NotAFailureModeDetails(node_id=result.node_id),
         )
     if isinstance(result, FactorInvalid):
-        return JSONResponse(
-            status_code=422,
-            content={
-                "error": "invalid_factor_assessment",
-                "errors": [{"field": e.field, "message": e.message} for e in result.errors],
-            },
-            headers={"Cache-Control": _NO_STORE},
+        # `validation_error`: these are field rejections, and `FieldError` is where every surface on
+        # this API carries them. A code of its own would have made a client branch on the *route* to
+        # find out how to read a field error.
+        raise ApiError(
+            422,
+            "validation_error",
+            "The factor assessment was rejected.",
+            ValidationErrorDetails(
+                field_errors=[FieldError(field=e.field, message=e.message) for e in result.errors]
+            ),
         )
     assert isinstance(result, FactorRecorded)
     return _ok({

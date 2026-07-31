@@ -78,12 +78,17 @@ async def request_id_middleware(
 
 
 def _envelope(
-    status_code: int, body: ErrorBody, *, request_id: str
+    status_code: int, body: ErrorBody, *, request_id: str, extra: dict[str, str] | None = None
 ) -> JSONResponse:
+    """The envelope, with the headers every error carries — and the refusal's own beneath them.
+
+    ``extra`` goes first so ``no-store`` and the request id cannot be overridden by a caller: the
+    confidentiality contract is not a refusal's to relax.
+    """
     return JSONResponse(
         status_code=status_code,
         content=ErrorEnvelope(detail=body).model_dump(mode="json"),
-        headers={**_NO_STORE_HEADERS, REQUEST_ID_HEADER: request_id},
+        headers={**(extra or {}), **_NO_STORE_HEADERS, REQUEST_ID_HEADER: request_id},
     )
 
 
@@ -97,6 +102,7 @@ async def api_error_handler(request: Request, exc: Exception) -> JSONResponse:
             code=exc.code, message=exc.message, details=exc.details, request_id=request_id
         ),
         request_id=request_id,
+        extra=exc.headers,
     )
 
 

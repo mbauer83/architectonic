@@ -4155,6 +4155,23 @@ export interface components {
             /** Title */
             title: string;
         };
+        /**
+         * DuplicateEdgeDetails
+         * @description ``duplicate_edge``: the edge that already connects these two nodes this way.
+         *
+         *     The existing edge's id, because the caller's next move is usually to use it rather than to create
+         *     another — and "already exists" without saying which leaves them searching for it.
+         */
+        DuplicateEdgeDetails: {
+            /** Conn Type */
+            conn_type: string;
+            /** Edge Id */
+            edge_id: string;
+            /** Source Id */
+            source_id: string;
+            /** Target Id */
+            target_id: string;
+        };
         /** EditConnectionBody */
         EditConnectionBody: {
             /** Description */
@@ -4669,9 +4686,9 @@ export interface components {
              * Code
              * @enum {string}
              */
-            code: "bad_request" | "forbidden" | "not_found" | "conflict" | "validation_error" | "write_rejected" | "internal_error" | "assurance_store_locked" | "signal_mutation_denied" | "invalid_vex_assessment" | "analysis_method_mismatch" | "analysis_not_empty" | "entity_in_use" | "provenance_immutable" | "provenance_required" | "invalid_participation" | "node_legacy_invalid" | "viewpoint_referenced";
+            code: "bad_request" | "forbidden" | "not_found" | "conflict" | "validation_error" | "write_rejected" | "internal_error" | "assurance_store_locked" | "signal_mutation_denied" | "invalid_vex_assessment" | "analysis_method_mismatch" | "analysis_not_empty" | "entity_in_use" | "provenance_immutable" | "provenance_required" | "invalid_participation" | "node_legacy_invalid" | "duplicate_edge" | "illegal_connection_type" | "not_a_failure_mode" | "traversal_time_budget_exceeded" | "unknown_diagram_type" | "not_configured" | "viewpoint_referenced";
             /** Details */
-            details?: components["schemas"]["ValidationErrorDetails"] | components["schemas"]["DenialDetails"] | components["schemas"]["MethodMismatchDetails"] | components["schemas"]["AnalysisNotEmptyDetails"] | components["schemas"]["EntityInUseDetails"] | components["schemas"]["ProvenanceImmutableDetails"] | components["schemas"]["InvalidParticipationDetails"] | components["schemas"]["LegacyInvalidDetails"] | components["schemas"]["ViewpointReferencedDetails"] | null;
+            details?: components["schemas"]["ValidationErrorDetails"] | components["schemas"]["DenialDetails"] | components["schemas"]["MethodMismatchDetails"] | components["schemas"]["AnalysisNotEmptyDetails"] | components["schemas"]["EntityInUseDetails"] | components["schemas"]["DuplicateEdgeDetails"] | components["schemas"]["IllegalConnectionTypeDetails"] | components["schemas"]["NotAFailureModeDetails"] | components["schemas"]["UnknownDiagramTypeDetails"] | components["schemas"]["NotConfiguredDetails"] | components["schemas"]["ProvenanceImmutableDetails"] | components["schemas"]["InvalidParticipationDetails"] | components["schemas"]["LegacyInvalidDetails"] | components["schemas"]["ViewpointReferencedDetails"] | null;
             /** Message */
             message: string;
             /** Request Id */
@@ -4804,6 +4821,23 @@ export interface components {
             /** Gsn Node Id */
             gsn_node_id: string;
         };
+        /**
+         * IllegalConnectionTypeDetails
+         * @description ``illegal_connection_type``: the pair the caller tried, and what the ontology permits for it.
+         *
+         *     The legal set travels with the refusal. A client that has to ask a second endpoint what would have
+         *     been allowed cannot offer a correction, and a human reading "illegal" learns nothing actionable.
+         */
+        IllegalConnectionTypeDetails: {
+            /** Conn Type */
+            conn_type: string;
+            /** Legal Types */
+            legal_types: string[];
+            /** Source Type */
+            source_type: string;
+            /** Target Type */
+            target_type: string;
+        };
         /** IngestSignalsBody */
         IngestSignalsBody: {
             /** Bom */
@@ -4933,6 +4967,34 @@ export interface components {
             suggested_arch_type: string;
             /** Suggested Name */
             suggested_name: string;
+        };
+        /**
+         * NotAFailureModeDetails
+         * @description ``not_a_failure_mode``: the node a factor assessment was aimed at.
+         *
+         *     The id only. An earlier draft of this DTO also declared the type the node *does* have, which the
+         *     producer does not know — the use case distinguishes "no failure mode with this id" from "some
+         *     other kind of node" not at all, and a field the producer cannot fill would have been published as
+         *     a promise and served as null.
+         */
+        NotAFailureModeDetails: {
+            /** Node Id */
+            node_id: string;
+        };
+        /**
+         * NotConfiguredDetails
+         * @description ``not_configured``: the capability this deployment lacks.
+         *
+         *     A statement about the server, not the request, which is why it is neither a ``conflict`` nor a
+         *     ``validation_error``: nothing the caller sends can fix it, and reporting it as either would send
+         *     them to correct a request that was correct. The remedy is an operator action, so the payload names
+         *     what is missing rather than what was asked for.
+         */
+        NotConfiguredDetails: {
+            /** Capability */
+            capability: string;
+            /** Remedy */
+            remedy: string;
         };
         /**
          * OpenMapResponse
@@ -5521,6 +5583,20 @@ export interface components {
             count: number;
             /** Name */
             name: string;
+        };
+        /**
+         * UnknownDiagramTypeDetails
+         * @description ``unknown_diagram_type``: the projection asked for, and the ones this method does draw.
+         */
+        UnknownDiagramTypeDetails: {
+            /** Analysis Id */
+            analysis_id: string;
+            /** Available */
+            available: string[];
+            /** Diagram Type */
+            diagram_type: string;
+            /** Method */
+            method: string;
         };
         /** UpdateAnalysisBody */
         UpdateAnalysisBody: {

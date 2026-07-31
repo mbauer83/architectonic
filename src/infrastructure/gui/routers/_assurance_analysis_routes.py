@@ -28,6 +28,7 @@ from src.infrastructure.gui.contracts.errors import (
     ApiError,
     LegacyInvalidDetails,
     MethodMismatchDetails,
+    NotConfiguredDetails,
 )
 from src.infrastructure.gui.routers._assurance_http import (
     NO_STORE,
@@ -300,7 +301,15 @@ def gsn_rendered(analysis_id: str) -> JSONResponse:
         return not_found_response()
     repo_root = state.maybe_engagement_root()
     if repo_root is None:
-        return JSONResponse(status_code=500, content={"error": "repository_not_initialized"})
+        raise ApiError(
+            500,
+            "not_configured",
+            "No engagement repository is configured, so there is nothing to render against.",
+            NotConfiguredDetails(
+                capability="engagement-repository",
+                remedy="Start the backend with an engagement repository root.",
+            ),
+        )
     puml = generate_archimate_puml_body(
         f"GSN {analysis_id}",
         [],

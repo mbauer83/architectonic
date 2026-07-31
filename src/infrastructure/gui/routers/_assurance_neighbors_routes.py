@@ -27,7 +27,7 @@ from src.config.assurance_settings import (
     assurance_neighbors_max_nodes,
     assurance_neighbors_time_budget_seconds,
 )
-from src.infrastructure.gui.routers._assurance_http import NO_STORE
+from src.infrastructure.gui.contracts.errors import ApiError
 from src.infrastructure.gui.routers._assurance_http import locked_response as _locked_response
 from src.infrastructure.gui.routers._assurance_http import not_found_response as _not_found_response
 from src.infrastructure.gui.routers._assurance_http import ok as _ok
@@ -66,15 +66,11 @@ def assurance_neighbors(node_id: str, max_hops: int | None = None) -> JSONRespon
         graph = traverse_neighbors(node_id, store=ctx.store, policy=pol, budgets=budgets)
     except NeighborTimeBudgetExceeded:
         logger.info("assurance_neighbors: time budget exceeded (root redacted from telemetry)")
-        return JSONResponse(
-            status_code=503,
-            content={
-                "error": "traversal_time_budget_exceeded",
-                "retryable": True,
-                "message": "The traversal ran past its time budget; retry, "
-                           "possibly with a smaller max_hops.",
-            },
-            headers={"Cache-Control": NO_STORE, "Retry-After": "1"},
+        raise ApiError(
+            503,
+            "traversal_time_budget_exceeded",
+            "The traversal ran past its time budget; retry, possibly with a smaller max_hops.",
+            headers={"Retry-After": "1"},
         )
     if graph is None:
         return _not_found_response()

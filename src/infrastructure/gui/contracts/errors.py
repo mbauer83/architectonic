@@ -45,6 +45,19 @@ ErrorCode: TypeAlias = Literal[
     "provenance_required",
     "invalid_participation",
     "node_legacy_invalid",
+    # assurance graph shape — each carries data a caller acts on differently, which is why they are
+    # members rather than instances of `conflict`
+    "duplicate_edge",
+    "illegal_connection_type",
+    "not_a_failure_mode",
+    "traversal_time_budget_exceeded",
+    # Kept a member rather than folded into `validation_error`: it carries the list of types the
+    # analysis *does* project to, and a field error can only render that as prose. A client offering
+    # the alternatives needs them as data.
+    "unknown_diagram_type",
+    # the deployment lacks a prerequisite — a statement about the server, not about the request, so
+    # neither `conflict` nor `validation_error` describes it
+    "not_configured",
     # viewpoint authoring
     "viewpoint_referenced",
 ]
@@ -138,6 +151,67 @@ class ViewpointReferencerRef(_Details):
     target_kind: Literal["diagram", "matrix"]
 
 
+class DuplicateEdgeDetails(_Details):
+    """``duplicate_edge``: the edge that already connects these two nodes this way.
+
+    The existing edge's id, because the caller's next move is usually to use it rather than to create
+    another — and "already exists" without saying which leaves them searching for it.
+    """
+
+    edge_id: str
+    source_id: str
+    target_id: str
+    conn_type: str
+
+
+class IllegalConnectionTypeDetails(_Details):
+    """``illegal_connection_type``: the pair the caller tried, and what the ontology permits for it.
+
+    The legal set travels with the refusal. A client that has to ask a second endpoint what would have
+    been allowed cannot offer a correction, and a human reading "illegal" learns nothing actionable.
+    """
+
+    source_type: str
+    target_type: str
+    conn_type: str
+    legal_types: list[str]
+
+
+class NotAFailureModeDetails(_Details):
+    """``not_a_failure_mode``: the node a factor assessment was aimed at.
+
+    The id only. An earlier draft of this DTO also declared the type the node *does* have, which the
+    producer does not know — the use case distinguishes "no failure mode with this id" from "some
+    other kind of node" not at all, and a field the producer cannot fill would have been published as
+    a promise and served as null.
+    """
+
+    node_id: str
+
+
+class UnknownDiagramTypeDetails(_Details):
+    """``unknown_diagram_type``: the projection asked for, and the ones this method does draw."""
+
+    diagram_type: str
+    analysis_id: str
+    method: str
+    available: list[str]
+
+
+class NotConfiguredDetails(_Details):
+    """``not_configured``: the capability this deployment lacks.
+
+    A statement about the server, not the request, which is why it is neither a ``conflict`` nor a
+    ``validation_error``: nothing the caller sends can fix it, and reporting it as either would send
+    them to correct a request that was correct. The remedy is an operator action, so the payload names
+    what is missing rather than what was asked for.
+    """
+
+    #: The module or capability that is absent — e.g. ``assurance``, ``confidential_store``.
+    capability: str
+    remedy: str
+
+
 class ViewpointReferencedDetails(_Details):
     """``viewpoint_referenced``: the views that still pin the definition a caller asked to delete.
 
@@ -172,6 +246,15 @@ ERROR_DETAIL_TYPES: dict[str, type[_Details] | None] = {
     "provenance_required": None,
     "invalid_participation": InvalidParticipationDetails,
     "node_legacy_invalid": LegacyInvalidDetails,
+    "duplicate_edge": DuplicateEdgeDetails,
+    "illegal_connection_type": IllegalConnectionTypeDetails,
+    "not_a_failure_mode": NotAFailureModeDetails,
+    # No details: the anchor node is deliberately redacted here — the handler keeps it out of
+    # telemetry too — and how far the walk got is not something the caller can act on. `Retry-After`
+    # carries the machine-readable part, which is the only actionable thing there is.
+    "traversal_time_budget_exceeded": None,
+    "unknown_diagram_type": UnknownDiagramTypeDetails,
+    "not_configured": NotConfiguredDetails,
     "viewpoint_referenced": ViewpointReferencedDetails,
 }
 
@@ -183,6 +266,11 @@ ErrorDetails: TypeAlias = (
     | MethodMismatchDetails
     | AnalysisNotEmptyDetails
     | EntityInUseDetails
+    | DuplicateEdgeDetails
+    | IllegalConnectionTypeDetails
+    | NotAFailureModeDetails
+    | UnknownDiagramTypeDetails
+    | NotConfiguredDetails
     | ProvenanceImmutableDetails
     | InvalidParticipationDetails
     | LegacyInvalidDetails
@@ -243,6 +331,7 @@ class ApiError(Exception):
         code: ErrorCode,
         message: str,
         details: ErrorDetails | None = None,
+        headers: dict[str, str] | None = None,
     ) -> None:
         super().__init__(message)
         if code not in ERROR_DETAIL_TYPES:
@@ -262,3 +351,7 @@ class ApiError(Exception):
         self.code = code
         self.message = message
         self.details = details
+        #: Extra response headers this refusal needs — ``Retry-After`` on a 503, for instance. The
+        #: envelope's own headers (``no-store``, the request id) are added by the handler and win, so
+        #: a refusal cannot weaken the confidentiality contract by supplying its own.
+        self.headers = dict(headers or {})

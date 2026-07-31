@@ -10,8 +10,9 @@ from typing import Any
 from unittest.mock import patch
 
 import pytest
-from fastapi import FastAPI
 from starlette.testclient import TestClient
+
+from tests.support.api_app import build_api_app
 
 pytest.importorskip("sqlcipher3", reason="sqlcipher3 not installed")
 
@@ -57,8 +58,9 @@ def seeded(tmp_path: Path):
 def _client(store: Any, ceiling: str) -> TestClient:
     from src.infrastructure.gui.routers.assurance import router
 
-    app = FastAPI()
-    app.include_router(router)
+    # `build_api_app`, not a bare `FastAPI()`: without the error contracts installed a raised
+    # `ApiError` becomes a 500 and the test asserts a shape no client receives.
+    app = build_api_app(router)
     client = TestClient(app, raise_server_exceptions=False)
     client._ctx_patch = patch(_CTX_PATH, return_value=_RealContext(store, ceiling))  # type: ignore[attr-defined]
     client._ctx_patch.start()  # type: ignore[attr-defined]
@@ -158,9 +160,11 @@ class TestBudgets:
         client = _client(store, "TLP:RED")
         resp = client.get(f"/api/assurance/nodes/{ids['uca']}/neighbors")
         assert resp.status_code == 503
-        body = resp.json()
-        assert body["error"] == "traversal_time_budget_exceeded"
-        assert body["retryable"] is True
-        assert "nodes" not in body  # no partial graph
+        detail = resp.json()["detail"]
+        assert detail["code"] == "traversal_time_budget_exceeded"
+        # No details: the anchor is deliberately redacted (it stays out of telemetry too), and
+        # `Retry-After` is the machine-readable part a client acts on.
+        assert detail["details"] is None
+        assert "nodes" not in resp.json()  # no partial graph
         assert resp.headers.get("Cache-Control") == "no-store"
         assert resp.headers.get("Retry-After") == "1"

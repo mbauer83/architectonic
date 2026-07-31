@@ -23,6 +23,7 @@ from pydantic import BaseModel
 from src.application.assurance_edge_catalog import build_edge_catalog
 from src.infrastructure.app_bootstrap import assurance_ontology_module, get_module_registry
 from src.infrastructure.gui.contracts.assurance_store import AssuranceStoreStatusResponse
+from src.infrastructure.gui.contracts.errors import ApiError, NotConfiguredDetails
 from src.infrastructure.gui.routers._assurance_aibom import aibom_router
 from src.infrastructure.gui.routers._assurance_analysis_routes import analysis_router
 from src.infrastructure.gui.routers._assurance_diagram_routes import diagram_router
@@ -93,9 +94,14 @@ def assurance_edge_catalog() -> JSONResponse:
     never store content. Registry enablement (capability present) is the gate.
     """
     if get_module_registry().find_ontology("assurance") is None:
-        return JSONResponse(
-            status_code=404,
-            content={"error": "assurance_module_not_configured"},
+        raise ApiError(
+            404,
+            "not_configured",
+            "The assurance module is not configured for this deployment.",
+            NotConfiguredDetails(
+                capability="assurance",
+                remedy="Enable the assurance module in config/settings.yaml.",
+            ),
         )
     return JSONResponse(content=build_edge_catalog(assurance_ontology_module()))
 

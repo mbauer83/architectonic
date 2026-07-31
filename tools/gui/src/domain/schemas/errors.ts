@@ -33,6 +33,14 @@ export const ERROR_CODES = [
   'provenance_required',
   'invalid_participation',
   'node_legacy_invalid',
+  // Assurance graph shape — each carries data the caller acts on differently.
+  'duplicate_edge',
+  'illegal_connection_type',
+  'not_a_failure_mode',
+  'traversal_time_budget_exceeded',
+  'unknown_diagram_type',
+  // The deployment lacks a capability: nothing the caller sends will fix it.
+  'not_configured',
   'viewpoint_referenced',
 ] as const
 
@@ -87,6 +95,36 @@ export const LegacyInvalidDetailsSchema = Schema.Struct({
   permitted_operation: Schema.String,
 })
 
+export const DuplicateEdgeDetailsSchema = Schema.Struct({
+  edge_id: Schema.String,
+  source_id: Schema.String,
+  target_id: Schema.String,
+  conn_type: Schema.String,
+})
+
+export const IllegalConnectionTypeDetailsSchema = Schema.Struct({
+  source_type: Schema.String,
+  target_type: Schema.String,
+  conn_type: Schema.String,
+  legal_types: Schema.Array(Schema.String),
+})
+
+export const NotAFailureModeDetailsSchema = Schema.Struct({
+  node_id: Schema.String,
+})
+
+export const UnknownDiagramTypeDetailsSchema = Schema.Struct({
+  diagram_type: Schema.String,
+  analysis_id: Schema.String,
+  method: Schema.String,
+  available: Schema.Array(Schema.String),
+})
+
+export const NotConfiguredDetailsSchema = Schema.Struct({
+  capability: Schema.String,
+  remedy: Schema.String,
+})
+
 export const ViewpointReferencerRefSchema = Schema.Struct({
   artifact_id: Schema.String,
   target_kind: Schema.Literal('diagram', 'matrix'),
@@ -106,6 +144,11 @@ export const ErrorDetailsSchema = Schema.Union(
   ProvenanceImmutableDetailsSchema,
   InvalidParticipationDetailsSchema,
   LegacyInvalidDetailsSchema,
+  DuplicateEdgeDetailsSchema,
+  IllegalConnectionTypeDetailsSchema,
+  NotAFailureModeDetailsSchema,
+  UnknownDiagramTypeDetailsSchema,
+  NotConfiguredDetailsSchema,
   ViewpointReferencedDetailsSchema,
 )
 

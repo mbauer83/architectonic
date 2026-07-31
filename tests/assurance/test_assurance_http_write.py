@@ -235,11 +235,12 @@ def test_create_node_with_an_uncreatable_type_is_rejected_not_created() -> None:
     resp = client.post(
         f"/api/assurance/analyses/{_FIXTURE_ANALYSIS}/nodes", json={"node_type": "bogus", "name": "X"})
     assert resp.status_code == 422
-    body = resp.json()
-    assert body["error"] == "invalid_value"
-    assert body["field"] == "node_type"
-    assert body["value"] == "bogus"
-    assert "not a creatable node type" in body["message"]
+    detail = resp.json()["detail"]
+    assert detail["code"] == "validation_error"
+    assert "not a creatable node type" in detail["message"]
+    # `validation_error` rather than a code of its own: a rejected field value is the generic case,
+    # and the field path travels in `details` where every validation failure carries it.
+    assert detail["details"]["field_errors"][0]["field"] == "node_type"
     assert resp.headers["Cache-Control"] == "no-store"
 
 
@@ -415,12 +416,15 @@ def test_add_edge_illegal_pair_is_a_422_typed_envelope() -> None:
         "source_id": sid, "target_id": tid, "conn_type": "leads-to",
     })
     assert resp.status_code == 422
-    body = resp.json()
-    assert body["error"] == "illegal_connection_type"
-    assert body["source_type"] == "loss"
-    assert body["target_type"] == "hazard"
-    assert body["conn_type"] == "leads-to"
-    assert isinstance(body["legal_types"], list)
+    detail = resp.json()["detail"]
+    assert detail["code"] == "illegal_connection_type"
+    details = detail["details"]
+    assert details["source_type"] == "loss"
+    assert details["target_type"] == "hazard"
+    assert details["conn_type"] == "leads-to"
+    # The legal set travels with the refusal, so a client can offer a correction rather than
+    # asking a second endpoint what would have been allowed.
+    assert isinstance(details["legal_types"], list)
     assert store.list_edges() == []  # nothing written
 
 

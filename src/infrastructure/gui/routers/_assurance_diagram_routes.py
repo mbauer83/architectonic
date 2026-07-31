@@ -36,8 +36,8 @@ from src.domain.ontology_representation.ontology_protocol import (
     StoreGraphProjectingDiagramType,
 )
 from src.infrastructure.app_bootstrap import complete_diagram_type_catalog
+from src.infrastructure.gui.contracts.errors import ApiError, UnknownDiagramTypeDetails
 from src.infrastructure.gui.routers._assurance_http import (
-    NO_STORE,
     build_policy,
     locked_response,
     not_found_response,
@@ -143,16 +143,16 @@ def render_assurance_diagram(analysis_id: str, diagram_type: str) -> JSONRespons
 
     registered = _assurance_diagram_type(diagram_type)
     if registered is None or diagram_type not in applicable:
-        return JSONResponse(
-            status_code=404,
-            content={
-                "error": "unknown_diagram_type",
-                "diagram_type": diagram_type,
-                "analysis_id": analysis_id,
-                "method": method,
-                "available": applicable,
-            },
-            headers={"Cache-Control": NO_STORE},
+        raise ApiError(
+            404,
+            "unknown_diagram_type",
+            f"{diagram_type!r} is not a diagram type a {method} analysis projects to.",
+            UnknownDiagramTypeDetails(
+                diagram_type=diagram_type,
+                analysis_id=analysis_id,
+                method=method,
+                available=list(applicable),
+            ),
         )
 
     working_set = analysis_working_set(ctx.store, pol, analysis_id)
