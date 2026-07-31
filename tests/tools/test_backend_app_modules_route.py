@@ -10,6 +10,6 @@ from src.infrastructure.backend.arch_backend_app import _build_app
 def test_backend_app_serves_modules_route() -> None:
     response = TestClient(_build_app()).get("/api/modules")
     assert response.status_code == 200
-    names = {entry["name"] for entry in response.json()}
+    names = {entry["name"] for entry in response.json()["modules"]}
     assert "archimate-4-0" in names
     assert "sysml_v2_min" not in names

@@ -2192,6 +2192,9 @@ export interface paths {
         /**
          * Loaded ontology / diagram-type modules
          * @description Return metadata for every registered (enabled + satisfied) ontology module.
+         *
+         *     Name-ordered, so two reads of an unchanged registry agree — the catalog is a dict and would
+         *     otherwise present whatever order it happened to hold.
          */
         get: operations["taxonomy_list_modules"];
         put?: never;
@@ -2985,6 +2988,48 @@ export interface components {
             analysis_id: string;
         };
         /**
+         * AssuranceCoverageGaps
+         * @description The gap categories, each naming the nodes that fall into it.
+         *
+         *     Eight named fields rather than a map keyed by category: the producer builds exactly these, and a
+         *     caller rendering a coverage report needs to know which categories exist without waiting to see
+         *     whether one appears in a response. A ninth category is then a contract change, which is correct —
+         *     it is a new thing to report.
+         */
+        AssuranceCoverageGaps: {
+            /** Constraints Without Evidence */
+            constraints_without_evidence: components["schemas"]["AssuranceNodeRef"][];
+            /** Failure Modes Without A Detection Control */
+            failure_modes_without_a_detection_control: components["schemas"]["AssuranceNodeRef"][];
+            /** Failure Modes Without An Effect */
+            failure_modes_without_an_effect: components["schemas"]["AssuranceNodeRef"][];
+            /** Hazards Without Constraints */
+            hazards_without_constraints: components["schemas"]["AssuranceNodeRef"][];
+            /** Obligations Without Constraints */
+            obligations_without_constraints: components["schemas"]["AssuranceNodeRef"][];
+            /** Orphan Corrective Actions */
+            orphan_corrective_actions: components["schemas"]["AssuranceNodeRef"][];
+            /** Risks Without Treatment */
+            risks_without_treatment: components["schemas"]["AssuranceNodeRef"][];
+            /** Unbound Pending Csns */
+            unbound_pending_csns: components["schemas"]["AssuranceNodeRef"][];
+        };
+        /**
+         * AssuranceCoverageResponse
+         * @description Where the analysis is incomplete.
+         *
+         *     ``summary`` is prose the server composes so every surface phrases it identically — a GUI banner, a
+         *     CLI line and an MCP tool result that each wrote their own would drift, and this sentence is the one
+         *     a reader quotes.
+         */
+        AssuranceCoverageResponse: {
+            gaps: components["schemas"]["AssuranceCoverageGaps"];
+            /** Summary */
+            summary: string;
+            /** Total Gaps */
+            total_gaps: number;
+        };
+        /**
          * AssuranceNodeCreatedResponse
          * @description The node a create produced, identified and named.
          *
@@ -3018,6 +3063,19 @@ export interface components {
             [key: string]: unknown;
         };
         /**
+         * AssuranceNodeRef
+         * @description A node named just enough to render a row and link to it.
+         *
+         *     Name as well as id, because every consumer of these lists renders the name, and resolving one
+         *     request per row against a store that already had the name in hand is the shape this avoids.
+         */
+        AssuranceNodeRef: {
+            /** Name */
+            name: string;
+            /** Node Id */
+            node_id: string;
+        };
+        /**
          * AssuranceNodeUpdatedResponse
          * @description Which fields an edit actually changed.
          *
@@ -3045,6 +3103,64 @@ export interface components {
         AssuranceReloadBody: {
             /** Authorize */
             authorize?: boolean | null;
+        };
+        /**
+         * AssuranceRiskRegisterResponse
+         * @description Every risk this reader may see, in a form a register renders directly.
+         */
+        AssuranceRiskRegisterResponse: {
+            /** Count */
+            count: number;
+            /** Risks */
+            risks: components["schemas"]["AssuranceRiskRow"][];
+        };
+        /**
+         * AssuranceRiskRow
+         * @description One risk, with its assessment, its treatment and who owns it.
+         *
+         *     The scoring fields are strings rather than numbers because they are *authored* values read out of
+         *     the node's attributes, and an unset one is the empty string. Parsing them here would turn "not yet
+         *     assessed" into zero, which reads as "assessed, and harmless".
+         */
+        AssuranceRiskRow: {
+            /** Assesses */
+            assesses: components["schemas"]["AssuranceNodeRef"][];
+            /** Impact */
+            impact: string;
+            /** Likelihood */
+            likelihood: string;
+            /** Name */
+            name: string;
+            /** Node Id */
+            node_id: string;
+            /** Owners */
+            owners: components["schemas"]["AssuranceNodeRef"][];
+            /** Risk Score */
+            risk_score: string;
+            /** Status */
+            status: string;
+            /** Treated By */
+            treated_by: components["schemas"]["AssuranceNodeRef"][];
+            /** Treatment */
+            treatment: string;
+        };
+        /**
+         * AssuranceStatsResponse
+         * @description How much of the graph this reader can see, by node type.
+         *
+         *     ``by_type`` is an open map by necessity: its keys are the node types the *ontology module* declares,
+         *     so enumerating them here would put that vocabulary in a second place and drop any type added to the
+         *     module but not mirrored. The envelope is closed, which is where the contract is.
+         */
+        AssuranceStatsResponse: {
+            /** By Type */
+            by_type: {
+                [key: string]: number;
+            };
+            /** Edge Count */
+            edge_count: number;
+            /** Node Count */
+            node_count: number;
         };
         /**
          * AssuranceStoreStatusResponse
@@ -3076,6 +3192,68 @@ export interface components {
             status: "unlocked" | "locked" | "not_initialised";
             /** Unlocked */
             unlocked: boolean;
+        };
+        /**
+         * AssuranceVerificationIssue
+         * @description One finding from the structural checks, in the form ``AssuranceIssue`` serialises to.
+         *
+         *     ``witness`` and ``subject_name`` are always present, empty where the finding's source cannot supply
+         *     them — the producer says why: a reader must not have to tell "nothing to show" from "this response
+         *     predates the field".
+         */
+        AssuranceVerificationIssue: {
+            /** Code */
+            code: string;
+            /** Message */
+            message: string;
+            /** Node Id */
+            node_id: string;
+            /**
+             * Severity
+             * @enum {string}
+             */
+            severity: "error" | "warning" | "info";
+            /** Subject Name */
+            subject_name: string;
+            /** Witness */
+            witness: string[];
+        };
+        /**
+         * AssuranceVerifyResponse
+         * @description The structural verification, as far as this reader may see.
+         *
+         *     Every field describes the *visible* subgraph. The issues are filtered by exposure first and the
+         *     counts and ``valid`` are then derived from what survived, so the response cannot disclose through a
+         *     number what it withheld from the list, nor claim ``valid: false`` with no visible error to point at.
+         *     ``visibility_limited`` is how a reader knows the answer is partial.
+         */
+        AssuranceVerifyResponse: {
+            /** Error Count */
+            error_count: number;
+            /** Info Count */
+            info_count: number;
+            /** Issues */
+            issues: components["schemas"]["AssuranceVerificationIssue"][];
+            /** Valid */
+            valid: boolean;
+            /** Visibility Limited */
+            visibility_limited: boolean;
+            /** Warning Count */
+            warning_count: number;
+        };
+        /**
+         * BackendIdentityResponse
+         * @description Which repository this backend serves, and which build is serving it.
+         *
+         *     Exists because ``arch-repair upgrade --commit`` refuses to run against a repository a live backend
+         *     holds open, and needs the roots to decide that — ``/api/stats`` carries counts but no paths. The
+         *     roots are realpath-normalised, so the comparison is not defeated by a symlinked working copy.
+         */
+        BackendIdentityResponse: {
+            /** Repo Roots */
+            repo_roots: string[];
+            /** Software Version */
+            software_version: string;
         };
         /** Body_entities_allocate_identifiers */
         Body_entities_allocate_identifiers: {
@@ -4468,6 +4646,18 @@ export interface components {
             version: string;
         };
         /**
+         * EntityTaxonomyResponse
+         * @description The entity types the repository actually contains, grouped by domain.
+         *
+         *     Only domains with content appear, in the module registry's declared order with any unregistered
+         *     domain after them — a tree of every *possible* type would bury the handful the model uses. So this
+         *     describes the repository, not the ontology; ``/api/authoring-guidance`` is the read for the latter.
+         */
+        EntityTaxonomyResponse: {
+            /** Domains */
+            domains: components["schemas"]["TaxonomyDomainResponse"][];
+        };
+        /**
          * ErrorBody
          * @description The value of ``detail``: what went wrong, in a form both a client and a person can use.
          */
@@ -4660,6 +4850,37 @@ export interface components {
              * @default assign_provenance
              */
             permitted_operation: string;
+        };
+        /**
+         * LoadedModuleListResponse
+         * @description The loaded modules, in name order.
+         *
+         *     An envelope rather than a bare array, which is what this route used to serve. Every other collection
+         *     read on this surface answers with one, and a top-level array is the one shape that cannot later carry
+         *     a count, a cursor or a "some were skipped" note without breaking every client — so the outlier is
+         *     the array, not the envelope.
+         */
+        LoadedModuleListResponse: {
+            /** Modules */
+            modules: components["schemas"]["LoadedModuleResponse"][];
+        };
+        /**
+         * LoadedModuleResponse
+         * @description One registered module — enabled, its requirements satisfied — and how much it contributes.
+         */
+        LoadedModuleResponse: {
+            /** Connection Type Count */
+            connection_type_count: number;
+            /** Enabled */
+            enabled: boolean;
+            /** Entity Type Count */
+            entity_type_count: number;
+            /** Module Class */
+            module_class: string;
+            /** Name */
+            name: string;
+            /** Requires */
+            requires: string[];
         };
         /** MatrixPreviewBody */
         MatrixPreviewBody: {
@@ -4903,6 +5124,48 @@ export interface components {
             name?: string | null;
             /** New Slug */
             new_slug?: string | null;
+        };
+        /**
+         * RepositoryStatsResponse
+         * @description How much of each kind the served repository holds, and how it distributes.
+         *
+         *     The four totals are the artifact kinds the index stores. The breakdowns are one map per axis rather
+         *     than a nested tree, because each is a different question — "which domains is the model in" is not
+         *     the same shape of answer as "how is it laid out across groups" — and a client renders one at a time.
+         */
+        RepositoryStatsResponse: {
+            /** Connections */
+            connections: number;
+            /** Connections By Type */
+            connections_by_type: {
+                [key: string]: number;
+            };
+            /** Diagrams */
+            diagrams: number;
+            /** Diagrams By Group */
+            diagrams_by_group: {
+                [key: string]: number;
+            };
+            /** Documents */
+            documents: number;
+            /** Documents By Group */
+            documents_by_group: {
+                [key: string]: number;
+            };
+            /** Documents By Type */
+            documents_by_type: {
+                [key: string]: number;
+            };
+            /** Entities */
+            entities: number;
+            /** Entities By Domain */
+            entities_by_domain: {
+                [key: string]: number;
+            };
+            /** Entities By Group */
+            entities_by_group: {
+                [key: string]: number;
+            };
         };
         /** SaveBody */
         SaveBody: {
@@ -5229,6 +5492,31 @@ export interface components {
              * @default true
              */
             dry_run: boolean;
+        };
+        /**
+         * TaxonomyDomainResponse
+         * @description One domain and the types found in it.
+         *
+         *     ``count`` is the domain total, which is the sum over ``types`` — sent rather than left to the client
+         *     so a collapsed domain can show its size without the caller re-adding the rows.
+         */
+        TaxonomyDomainResponse: {
+            /** Count */
+            count: number;
+            /** Name */
+            name: string;
+            /** Types */
+            types: components["schemas"]["TaxonomyTypeResponse"][];
+        };
+        /**
+         * TaxonomyTypeResponse
+         * @description One entity type within a domain, with how many entities the repository has of it.
+         */
+        TaxonomyTypeResponse: {
+            /** Count */
+            count: number;
+            /** Name */
+            name: string;
         };
         /** UpdateAnalysisBody */
         UpdateAnalysisBody: {
@@ -7596,7 +7884,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["AssuranceCoverageResponse"];
                 };
             };
             /** @description Request validation failed */
@@ -8371,7 +8659,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["AssuranceRiskRegisterResponse"];
                 };
             };
             /** @description Request validation failed */
@@ -8606,7 +8894,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["AssuranceStatsResponse"];
                 };
             };
             /** @description Request validation failed */
@@ -8682,7 +8970,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["AssuranceVerifyResponse"];
                 };
             };
             /** @description Request validation failed */
@@ -8803,7 +9091,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["BackendIdentityResponse"];
                 };
             };
             /** @description Request validation failed */
@@ -11857,7 +12145,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["EntityTaxonomyResponse"];
                 };
             };
             /** @description Request validation failed */
@@ -12795,7 +13083,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"][];
+                    "application/json": components["schemas"]["LoadedModuleListResponse"];
                 };
             };
             /** @description Request validation failed */
@@ -13088,7 +13376,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["RepositoryStatsResponse"];
                 };
             };
             /** @description Request validation failed */

@@ -14,6 +14,10 @@ from src.application.artifact_schema import load_attribute_schema
 from src.application.document_links import reference_dicts_for_entity
 from src.application.entity_type_predicates import is_internal_entity_type
 from src.application.read_models import EntityContextReadModel
+from src.infrastructure.gui.contracts.catalog import (
+    BackendIdentityResponse,
+    RepositoryStatsResponse,
+)
 from src.infrastructure.gui.contracts.entities import (
     EntityContextResponse,
     EntityDetailResponse,
@@ -26,7 +30,6 @@ from src.infrastructure.gui.routers._openapi import (
     TAG_ENTITIES,
     TAG_TAXONOMY,
     WRITE_RESPONSES,
-    OpenMapResponse,
     WriteResultResponse,
 )
 from src.infrastructure.gui.routers.entity_listing import (
@@ -67,13 +70,13 @@ _DELETE_RESPONSES: dict[int | str, Any] = {
 
 
 @router.get("/api/stats", tags=[TAG_TAXONOMY], summary="Repository-wide artifact counts",
-    response_model=OpenMapResponse)
+    response_model=RepositoryStatsResponse)
 def get_stats() -> dict[str, Any]:
     return s.get_repo().stats()
 
 
 @router.get("/api/backend-identity", tags=[TAG_TAXONOMY], summary="Backend identity and workspace roots",
-    response_model=OpenMapResponse)
+    response_model=BackendIdentityResponse)
 def get_backend_identity() -> dict[str, Any]:
     """Realpath-normalized served repo roots + software version.
 

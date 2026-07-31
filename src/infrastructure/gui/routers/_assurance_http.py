@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from fastapi import Response, status
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 
 from src.application.assurance_exposure import AssuranceExposurePolicy
 from src.infrastructure.gui.contracts.errors import ApiError
@@ -61,7 +62,17 @@ def not_found_response() -> JSONResponse:
     )
 
 
-def ok(payload: dict[str, object]) -> JSONResponse:
+def ok(payload: dict[str, object], model: type[BaseModel] | None = None) -> JSONResponse:
+    """A read's body, with the ``no-store`` every response on this surface carries.
+
+    ``model`` validates the payload against the DTO the route documents. The raw ``JSONResponse`` is
+    what the header requires, and FastAPI does not apply ``response_model`` to a response the handler
+    built — so the validation the framework would have done happens here, and a declared contract stays
+    a checked one rather than documentation of what someone believed. Same seam as the write side's
+    ``_ok``; both exist because both must set the header themselves.
+    """
+    if model is not None:
+        model.model_validate(payload)
     return JSONResponse(content=payload, headers={"Cache-Control": NO_STORE})
 
 

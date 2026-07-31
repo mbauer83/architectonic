@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends, Query, Request
 from src.application.entity_type_predicates import is_assurance_entity_type, is_internal_entity_type
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
+from src.infrastructure.gui.contracts.catalog import EntityTaxonomyResponse
 from src.infrastructure.gui.routers import state as s
 from src.infrastructure.gui.routers._entity_filter import EntityFilter
 from src.infrastructure.gui.routers._global_search import (
@@ -18,7 +19,12 @@ from src.infrastructure.gui.routers._global_search import (
     hidden_diagram_entity_types,
     prioritize_global_hits,
 )
-from src.infrastructure.gui.routers._openapi import TAG_DOCUMENTS, TAG_ENTITIES, TAG_TAXONOMY, OpenMapResponse
+from src.infrastructure.gui.routers._openapi import (
+    TAG_DOCUMENTS,
+    TAG_ENTITIES,
+    TAG_TAXONOMY,
+    OpenMapResponse,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -180,7 +186,8 @@ def search_reference_artifacts(
     return {"query": q, "hits": hits[:limit]}
 
 
-@router.get("/api/entity-taxonomy", tags=[TAG_TAXONOMY], summary="Entity taxonomy tree", response_model=OpenMapResponse)
+@router.get("/api/entity-taxonomy", tags=[TAG_TAXONOMY], summary="Entity taxonomy tree",
+    response_model=EntityTaxonomyResponse)
 def get_entity_taxonomy(
     request: Request,
     scope: str | None = None,

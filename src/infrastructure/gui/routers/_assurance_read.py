@@ -32,6 +32,12 @@ from src.application.assurance_provenance import analyses_by_id, author_of, prov
 from src.application.assurance_queries import coverage_gaps, risk_register
 from src.domain.artifact_id import canonical_entity_key
 from src.infrastructure.assurance.architecture_basis import current_architecture_basis
+from src.infrastructure.gui.contracts.assurance_queries import (
+    AssuranceCoverageResponse,
+    AssuranceRiskRegisterResponse,
+    AssuranceStatsResponse,
+    AssuranceVerifyResponse,
+)
 from src.infrastructure.gui.contracts.assurance_signals import ArchLensResponse
 from src.infrastructure.gui.routers._assurance_http import locked_response as _locked_response
 from src.infrastructure.gui.routers._assurance_http import not_found_response as _not_found_response
@@ -198,17 +204,17 @@ def list_assurance_edges(
 
 # ── Aggregates ────────────────────────────────────────────────────────────────
 
-@read_router.get("/api/assurance/stats")
+@read_router.get("/api/assurance/stats", response_model=AssuranceStatsResponse)
 def assurance_stats() -> JSONResponse:
     ctx, pol = _policy()
     if pol.check_locked():
         return _locked_response()
     visible, _ = pol.filter_nodes(ctx.store.list_nodes())
     all_edges = ctx.store.list_edges()
-    return _ok(pol.redact_stats(visible, all_edges))
+    return _ok(pol.redact_stats(visible, all_edges), AssuranceStatsResponse)
 
 
-@read_router.get("/api/assurance/coverage")
+@read_router.get("/api/assurance/coverage", response_model=AssuranceCoverageResponse)
 def assurance_coverage() -> JSONResponse:
     ctx, pol = _policy()
     if pol.check_locked():
@@ -217,31 +223,27 @@ def assurance_coverage() -> JSONResponse:
     visible_ids = frozenset(str(n["node_id"]) for n in visible)
     all_edges = ctx.store.list_edges()
     visible_edges = pol.filter_edges(all_edges, visible_ids)
-    return _ok(coverage_gaps(visible, visible_edges))
+    return _ok(coverage_gaps(visible, visible_edges), AssuranceCoverageResponse)
 
 
-@read_router.get("/api/assurance/verify")
+@read_router.get("/api/assurance/verify", response_model=AssuranceVerifyResponse)
 def assurance_verify() -> JSONResponse:
     ctx, pol = _policy()
     if pol.check_locked():
         return _locked_response()
     from src.application.verification.assurance_verifier import format_result, verify_store  # noqa: PLC0415
-    result = format_result(verify_store(ctx.store, basis=current_architecture_basis()))
     visible, _ = pol.filter_nodes(ctx.store.list_nodes())
     visible_ids = frozenset(str(n["node_id"]) for n in visible)
-    findings_val = result.get("findings") if isinstance(result, dict) else None
-    raw_findings: list[object] = findings_val if isinstance(findings_val, list) else []
-    redacted = pol.redact_findings(
-        [f if isinstance(f, dict) else {"message": str(f)} for f in raw_findings],
-        visible_ids,
+    result = pol.redact_verification(
+        verify_store(ctx.store, basis=current_architecture_basis()), visible_ids
     )
-    result_out = dict(result) if isinstance(result, dict) else {"raw": result}
-    result_out["findings"] = redacted
-    result_out["visibility_limited"] = pol.scope().visibility_limited
-    return _ok(result_out)
+    return _ok(
+        {**format_result(result), "visibility_limited": pol.scope().visibility_limited},
+        AssuranceVerifyResponse,
+    )
 
 
-@read_router.get("/api/assurance/risk-register")
+@read_router.get("/api/assurance/risk-register", response_model=AssuranceRiskRegisterResponse)
 def assurance_risk_register() -> JSONResponse:
     ctx, pol = _policy()
     if pol.check_locked():
@@ -249,7 +251,7 @@ def assurance_risk_register() -> JSONResponse:
     visible, _ = pol.filter_nodes(ctx.store.list_nodes())
     visible_ids = frozenset(str(n["node_id"]) for n in visible)
     visible_edges = pol.filter_edges(ctx.store.list_edges(), visible_ids)
-    return _ok(risk_register(visible, visible_edges))
+    return _ok(risk_register(visible, visible_edges), AssuranceRiskRegisterResponse)
 
 
 # ── Baselines ─────────────────────────────────────────────────────────────────

@@ -9,6 +9,10 @@ from src.application.assurance_exposure import (
     Visible,
     is_above_ceiling,
 )
+from src.application.verification.assurance_issues import (
+    AssuranceIssue,
+    AssuranceVerificationResult,
+)
 
 # ── is_above_ceiling ──────────────────────────────────────────────────────────
 
@@ -167,20 +171,54 @@ def test_redact_stats_edge_count_excludes_hidden_endpoints() -> None:
     assert stats["edge_count"] == 1  # only E1 (N1→N2)
 
 
-# ── redact_findings ───────────────────────────────────────────────────────────
+# ── redact_verification ───────────────────────────────────────────────────────
 
-def test_redact_findings_omits_hidden_node_reference() -> None:
+def _result(*issues: AssuranceIssue) -> AssuranceVerificationResult:
+    return AssuranceVerificationResult(issues=list(issues))
+
+
+def _issue(severity: str, code: str, message: str, node_id: str = "") -> AssuranceIssue:
+    return AssuranceIssue(severity=severity, code=code, message=message, node_id=node_id)  # type: ignore[arg-type]
+
+
+def test_redact_verification_omits_an_issue_about_a_hidden_node() -> None:
     pol = AssuranceExposurePolicy("TLP:GREEN", True)
-    visible_ids = frozenset({"N1"})
-    findings = [
-        {"code": "W501", "node_id": "N1", "message": "ok"},
-        {"code": "E100", "node_id": "N2", "message": "secret reference"},
-        {"code": "E200", "message": "no node_id, always visible"},
-    ]
-    result = pol.redact_findings(findings, visible_ids)
-    assert len(result) == 2
-    messages = [f["message"] for f in result]
-    assert "secret reference" not in messages
+    result = pol.redact_verification(
+        _result(
+            _issue("warning", "W501", "ok", "N1"),
+            _issue("error", "E100", "secret reference", "N2"),
+        ),
+        frozenset({"N1"}),
+    )
+    assert [i.code for i in result.issues] == ["W501"]
+
+
+def test_an_issue_about_the_store_itself_survives() -> None:
+    """It names no node, so there is no subject to withhold — and it is usually the finding that
+    tells a reader the store is unusable, which no ceiling should suppress."""
+    pol = AssuranceExposurePolicy("TLP:WHITE", True)
+    result = pol.redact_verification(_result(_issue("error", "E200", "chain broken")), frozenset())
+    assert [i.code for i in result.issues] == ["E200"]
+
+
+def test_counts_and_validity_follow_the_redaction() -> None:
+    """The regression. The filtering used to be applied to a key the producer never emitted, so the
+    issues went out whole; and a recount beside the filter is the other way this breaks — a response
+    saying ``valid: false`` with no visible error, or disclosing through a count what it withheld from
+    the list. Deriving both from the filtered result is what makes the two agree by construction."""
+    pol = AssuranceExposurePolicy("TLP:GREEN", True)
+
+    result = pol.redact_verification(
+        _result(
+            _issue("error", "E100", "about a hidden node", "N2"),
+            _issue("warning", "W501", "about a visible one", "N1"),
+        ),
+        frozenset({"N1"}),
+    )
+
+    assert result.valid
+    assert result.errors == []
+    assert len(result.warnings) == 1
 
 
 # ── filter_security_records ───────────────────────────────────────────────────

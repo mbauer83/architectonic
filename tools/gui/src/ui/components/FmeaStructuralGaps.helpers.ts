@@ -10,6 +10,8 @@
  * becomes a row like any other.
  */
 
+import type { components } from '../../domain/schemas/openapi.generated'
+
 /** The verification finding codes this panel is about.
  *
  * Named rather than inferred from the message: a code is the stable identity of a rule, and matching
@@ -17,15 +19,13 @@
  */
 export const LOAD_BEARING_UNANALYSED = 'W511'
 
-export interface VerificationIssue {
-  severity: string
-  code: string
-  message: string
-  node_id: string
-  witness: string[]
-  /** The element's reader-facing name, when the architecture model can supply one. */
-  subject_name?: string
-}
+/** One finding as `GET /api/assurance/verify` serves it.
+ *
+ * The served schema rather than a hand-written copy of it: the copy had `subject_name` optional where
+ * the route always sends it, so this panel carried a fallback for a case the server does not produce —
+ * the drift a restated contract accumulates, and what typing the response is for.
+ */
+export type VerificationIssue = components['schemas']['AssuranceVerificationIssue']
 
 export interface StructuralGap {
   elementId: string
@@ -77,9 +77,9 @@ export function structuralGaps(issues: readonly VerificationIssue[]): Structural
     .filter((issue) => issue.code === LOAD_BEARING_UNANALYSED)
     .map((issue) => ({
       elementId: issue.node_id,
-      ...gapHeading(issue.node_id, issue.subject_name ?? ''),
+      ...gapHeading(issue.node_id, issue.subject_name),
       message: issue.message,
-      witness: issue.witness ?? [],
+      witness: issue.witness,
     }))
     .sort((a, b) => b.witness.length - a.witness.length || a.elementId.localeCompare(b.elementId))
 }

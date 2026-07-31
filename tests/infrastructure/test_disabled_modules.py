@@ -85,7 +85,9 @@ def test_sysml_v2_min_disabled_at_runtime_surfaces(
         assert registry.find_ontology("sysml_v2_min") is None
         assert "part-definition" not in {str(t) for t in registry.all_entity_types()}
 
-        module_names = {str(entry["name"]) for entry in list_modules(catalogs=catalogs)}
+        listed = list_modules(catalogs=catalogs)["modules"]
+        assert isinstance(listed, list)
+        module_names = {str(entry["name"]) for entry in listed}
         assert "sysml_v2_min" not in module_names
 
         guidance = artifact_authoring_guidance(filter=["part-definition"])

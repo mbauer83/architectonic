@@ -18,7 +18,10 @@ export const ModuleSummarySchema = Schema.Struct({
 })
 export type ModuleSummary = typeof ModuleSummarySchema.Type
 
-export const ModuleSummaryListSchema = Schema.Array(ModuleSummarySchema)
+/** The envelope `GET /api/modules` answers with; the adapter hands callers the list inside it. */
+export const ModuleSummaryListSchema = Schema.Struct({
+  modules: Schema.Array(ModuleSummarySchema),
+})
 
 export const WriteHelpEntityTypeCatalogEntrySchema = Schema.Struct({
   prefix: Schema.String,

@@ -2,6 +2,13 @@ import { describe, expectTypeOf, it } from 'vitest'
 import type { Immutable, SchemaType } from './contractOracle'
 import type { components } from './openapi.generated'
 import type {
+  EntityTaxonomyDomainSchema,
+  EntityTaxonomySchema,
+  EntityTaxonomyTypeSchema,
+} from './entities'
+import type { ModuleSummaryListSchema, ModuleSummarySchema } from './server'
+import type { StatsSchema } from './stats'
+import type {
   AnalysisNotEmptyDetailsSchema,
   DenialDetailsSchema,
   EntityInUseDetailsSchema,
@@ -68,6 +75,43 @@ describe('error envelope', () => {
     >()
     expectTypeOf<SchemaType<typeof LegacyInvalidDetailsSchema>>().toEqualTypeOf<
       Immutable<components['schemas']['LegacyInvalidDetails']>
+    >()
+  })
+})
+
+describe('repository catalog', () => {
+  it('decodes the counts the backend declares, with nothing optional it always sends', () => {
+    // This decoder had two of the four totals optional and three of the six breakdowns missing
+    // outright, so a client reading them found `undefined` where the route had sent a number. The
+    // assertion is what stops that shape of gap from reopening.
+    expectTypeOf<SchemaType<typeof StatsSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['RepositoryStatsResponse']>
+    >()
+  })
+
+  it('decodes the module envelope and its rows exactly', () => {
+    expectTypeOf<SchemaType<typeof ModuleSummaryListSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['LoadedModuleListResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof ModuleSummarySchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['LoadedModuleResponse']>
+    >()
+  })
+})
+
+describe('entity taxonomy', () => {
+  it('decodes exactly the tree the backend declares', () => {
+    // The decoder for this predates the route having a schema at all, so until now the two agreed by
+    // coincidence. Asserting all three levels rather than only the envelope: a drift in the leaf is
+    // what silently empties the tree, and the envelope would keep decoding.
+    expectTypeOf<SchemaType<typeof EntityTaxonomySchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['EntityTaxonomyResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof EntityTaxonomyDomainSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['TaxonomyDomainResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof EntityTaxonomyTypeSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['TaxonomyTypeResponse']>
     >()
   })
 })

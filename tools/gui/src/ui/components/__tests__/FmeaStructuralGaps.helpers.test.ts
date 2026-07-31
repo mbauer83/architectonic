@@ -15,6 +15,9 @@ function issue(overrides: Partial<VerificationIssue> = {}): VerificationIssue {
     message: 'APP@one is load-bearing but appears in no control structure.',
     node_id: 'APP@one',
     witness: ['APP@a --archimate-serving--> APP@one'],
+    // Empty rather than absent, as the route sends it: the finding is about an element the
+    // architecture model could not name, which is the case the heading falls back for.
+    subject_name: '',
     ...overrides,
   }
 }
@@ -48,9 +51,18 @@ describe('structuralGaps', () => {
     expect(structuralGaps([issue()])[0].witness).toHaveLength(1)
   })
 
-  it('survives a finding that carried no witness', () => {
-    expect(structuralGaps([issue({ witness: undefined as unknown as string[] })])[0].witness)
-      .toEqual([])
+  it('keeps an empty witness empty, and sorts it last', () => {
+    // The route sends `witness` always, empty where the finding rests on nothing — so a gap with no
+    // witness is a real, renderable row, not a malformed one. This used to assert the field could be
+    // missing entirely, which meant casting through `unknown` to build an issue the server cannot
+    // serve; the response contract now says so and the panel no longer carries a fallback for it.
+    const gaps = structuralGaps([
+      issue({ node_id: 'APP@bare', witness: [] }),
+      issue({ node_id: 'APP@cited', witness: ['w1'] }),
+    ])
+
+    expect(gaps.map((gap) => gap.elementId)).toEqual(['APP@cited', 'APP@bare'])
+    expect(gaps[1].witness).toEqual([])
   })
 })
 

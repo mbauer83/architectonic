@@ -90,7 +90,10 @@ export const makeHttpModelRepository = (): ModelRepository => ({
     catch: (e) =>
       e instanceof NetworkError ? e : new NetworkError({ status: 0, message: String(e) }),
   }).pipe(Effect.flatMap(Schema.decodeUnknown(ServerInfoSchema))),
-  listModules: () => fetchJson(buildUrl('/modules'), ModuleSummaryListSchema),
+  // The port speaks in modules, not envelopes: three views want the list and none of them wants to
+  // know it arrived wrapped. Unwrapping here is what keeps the envelope an HTTP detail.
+  listModules: () => fetchJson(buildUrl('/modules'), ModuleSummaryListSchema)
+    .pipe(Effect.map((envelope) => envelope.modules)),
   getStats: () => fetchJson(buildUrl('/stats'), StatsSchema),
 
   listEntities: (params: ListParams = {}) =>

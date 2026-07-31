@@ -16,6 +16,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from src.application.verification.assurance_issues import AssuranceVerificationResult
+
 _TLP_ORDER: dict[str, int] = {
     "TLP:WHITE": 0,
     "TLP:GREEN": 1,
@@ -195,13 +197,22 @@ class AssuranceExposurePolicy:
             "by_type": by_type,
         }
 
-    def redact_findings(
+    def redact_verification(
         self,
-        findings: list[dict[str, Any]],
+        result: AssuranceVerificationResult,
         visible_node_ids: frozenset[str],
-    ) -> list[dict[str, Any]]:
-        """Omit findings that reference a hidden node_id."""
-        return [
-            f for f in findings
-            if "node_id" not in f or str(f["node_id"]) in visible_node_ids
-        ]
+    ) -> AssuranceVerificationResult:
+        """Verification narrowed to what this reader may see.
+
+        The *result* is filtered rather than its serialised form, so every number a caller then reads
+        off it — the counts, and ``valid`` — is derived from the issues that survived by the one piece
+        of code that already owns that derivation. Recounting beside the filter is how a response comes
+        to say ``valid: false`` with no visible error, or to disclose through a count what the ceiling
+        withheld from the list.
+
+        An issue naming no node is about the store itself and stays: there is no subject to withhold.
+        """
+        return AssuranceVerificationResult(issues=[
+            issue for issue in result.issues
+            if not issue.node_id or issue.node_id in visible_node_ids
+        ])
