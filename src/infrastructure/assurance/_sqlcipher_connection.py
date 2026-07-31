@@ -71,8 +71,35 @@ class ThreadLocalConnectionManager:
         self._local.gen = self._generation
         logger.info("Assurance store connections opened at %s", self._db_path)
 
+    def checkpoint(self) -> bool:
+        """Fold the write-ahead log back into the database file. False when there is nothing open.
+
+        WAL mode leaves committed pages in ``store.db-wal`` until something checkpoints. A clean
+        close of the last connection does it; a SIGKILL does not — and this backend *has* been
+        SIGKILLed, because ``--stop`` escalates when graceful shutdown hangs on an open event
+        stream. Every unflushed page in the WAL at that moment is a committed write that the next
+        open may discard.
+
+        Best-effort by design: it is called on paths that must not fail because of it, including
+        lifespan teardown, and a store that is locked simply has nothing to flush.
+        """
+        conn = self.get_or_none()
+        if conn is None:
+            return False
+        try:
+            # TRUNCATE rather than PASSIVE: it resets the log file, so a crash immediately after
+            # finds no WAL to recover rather than one whose frames were already applied.
+            conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+        except Exception:  # noqa: BLE001
+            logger.warning("Assurance store WAL checkpoint failed", exc_info=True)
+            return False
+        return True
+
     def close(self) -> None:
         """Deactivate and dispose every open connection."""
+        # Before the connections go: closing the last one would normally checkpoint, but only on a
+        # clean close of every connection, and this manager hands one to each thread.
+        self.checkpoint()
         with self._mgmt_lock:
             self._open = False
             self._key = None

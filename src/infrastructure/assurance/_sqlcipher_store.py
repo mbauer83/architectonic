@@ -74,6 +74,9 @@ class SQLCipherAssuranceStore(SqlFmeaAssessmentMixin):
         logger.info("Assurance store unlocked at %s", self._db_path)
 
     def lock(self) -> None:
+        # Closing checkpoints the write-ahead log first, so locking is also the durability step:
+        # a process that locks before it exits leaves no committed pages for the next open to
+        # discard. See `_sqlcipher_connection.checkpoint`.
         self._conns.close()
         logger.info("Assurance store locked")
 

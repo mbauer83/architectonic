@@ -18,6 +18,7 @@ from __future__ import annotations
 import logging
 import os
 import platform
+import stat
 from pathlib import Path
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
@@ -149,19 +150,48 @@ class _DPAPIBackend:
             return None
 
     def set(self, account: str, value: str) -> None:
+        """Write one credential, replacing any existing file — including a read-only one.
+
+        The re-protect step below is why this needs care. Credential files are chmod-protected
+        after every write, and `Export-Clixml` cannot overwrite a read-only file: PowerShell exits
+        1, and with `capture_output` that surfaced as a bare `CalledProcessError` naming the whole
+        command and no reason. So the store made itself unwritable and reported it as an unhelpful
+        subprocess failure — which is what stopped `arch-assurance unlock`, since unlock rewrites
+        the setup gate on every run.
+
+        The protection is deliberate (it exists because keys have been lost), so it is restored
+        rather than dropped: the file's own mode is read first, relaxed for the write, and put back.
+        """
         import subprocess  # noqa: PLC0415
         self._creds.mkdir(parents=True, exist_ok=True)
         os.chmod(self._creds, 0o700)
         p = self._path(account)
+        # Whatever protection this file already carries is the protection it gets back. A file
+        # hardened to 0400 out of band must not be quietly loosened to 0600 by a rewrite.
+        restore_mode = stat.S_IMODE(p.stat().st_mode) if p.exists() else 0o600
+        if p.exists():
+            os.chmod(p, 0o600)
         esc = value.replace("'", "''")
-        subprocess.run(
-            ["powershell.exe", "-NoProfile", "-Command",
-             f"[PSCredential]::new('arch-assurance',"
-             f"(ConvertTo-SecureString '{esc}' -AsPlainText -Force))"
-             f" | Export-Clixml '{self._win(p)}'"],
-            check=True, timeout=15, capture_output=True,
-        )
-        os.chmod(p, 0o600)
+        try:
+            completed = subprocess.run(
+                ["powershell.exe", "-NoProfile", "-Command",
+                 f"[PSCredential]::new('arch-assurance',"
+                 f"(ConvertTo-SecureString '{esc}' -AsPlainText -Force))"
+                 f" | Export-Clixml '{self._win(p)}'"],
+                check=False, timeout=15, capture_output=True, text=True,
+            )
+        finally:
+            # In `finally`, because a write that did not happen must not leave the file relaxed. The
+            # relaxation is a means to one write, never a state the file is left in.
+            if p.exists():
+                os.chmod(p, restore_mode)
+        if completed.returncode != 0:
+            # The command line carries the credential value, so it is not echoed. PowerShell's own
+            # stderr is — a failure with no reason is what made this take a debugging session.
+            raise RuntimeError(
+                f"Could not write the credential for {account!r} to {p}: PowerShell exited "
+                f"{completed.returncode}. {(completed.stderr or '').strip() or 'No error output.'}"
+            )
 
     def delete(self, account: str) -> None:
         p = self._path(account)
