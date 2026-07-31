@@ -20,6 +20,12 @@ import asyncio
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
+from src.infrastructure.gui.contracts.sync import (
+    EngagementSaveResponse,
+    EnterpriseSaveResponse,
+    EnterpriseSubmitResponse,
+    EnterpriseWithdrawResponse,
+)
 from src.infrastructure.gui.routers import sync_status_cache
 
 router = APIRouter()
@@ -79,7 +85,8 @@ def _status_label(status: str) -> str:
 # ---------------------------------------------------------------------------
 
 
-@router.post("/api/sync/engagement/save")
+@router.post("/api/sync/engagement/save", response_model=EngagementSaveResponse,
+    response_model_exclude_none=True)
 async def save_engagement(body: SaveBody) -> dict:
     """Commit (and optionally push) all engagement repository changes."""
     from src.infrastructure.git import enterprise_git_ops
@@ -125,7 +132,8 @@ async def save_engagement(body: SaveBody) -> dict:
 # ---------------------------------------------------------------------------
 
 
-@router.post("/api/sync/enterprise/save")
+@router.post("/api/sync/enterprise/save", response_model=EnterpriseSaveResponse,
+    response_model_exclude_none=True)
 async def save_enterprise(body: SaveBody) -> dict:
     """Commit enterprise working-branch changes."""
     from src.infrastructure.git import enterprise_git_ops, enterprise_sync_state
@@ -166,7 +174,8 @@ async def save_enterprise(body: SaveBody) -> dict:
         raise HTTPException(500, str(exc))
 
 
-@router.post("/api/sync/enterprise/submit")
+@router.post("/api/sync/enterprise/submit", response_model=EnterpriseSubmitResponse,
+    response_model_exclude_none=True)
 async def submit_enterprise() -> dict:
     """Push the enterprise working branch for team review."""
     from src.infrastructure.git import enterprise_git_ops
@@ -211,7 +220,8 @@ async def submit_enterprise() -> dict:
         raise HTTPException(500, str(exc))
 
 
-@router.post("/api/sync/enterprise/withdraw")
+@router.post("/api/sync/enterprise/withdraw", response_model=EnterpriseWithdrawResponse,
+    response_model_exclude_none=True)
 async def withdraw_enterprise(body: WithdrawBody) -> dict:
     """Discard all pending enterprise changes and return the repo to main."""
     from src.infrastructure.git import enterprise_git_ops

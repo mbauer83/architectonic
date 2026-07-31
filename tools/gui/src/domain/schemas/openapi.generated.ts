@@ -3951,6 +3951,70 @@ export interface components {
             uca_type?: string | null;
         };
         /**
+         * EngagementSaveResponse
+         * @description A commit on the engagement repository, optionally pushed.
+         *
+         *     ``pushed`` echoes the request because the two outcomes are operationally different — a local
+         *     commit is recoverable by the author alone, a pushed one is visible to everyone — and a caller that
+         *     asked to push needs confirmation that it happened rather than an assumption that it did.
+         */
+        EngagementSaveResponse: {
+            /** Commit */
+            commit: string;
+            /** Message */
+            message: string;
+            /** Ok */
+            ok: boolean;
+            /** Pushed */
+            pushed: boolean;
+        };
+        /**
+         * EnterpriseSaveResponse
+         * @description A commit on the enterprise working branch. No ``pushed``: enterprise work is published by
+         *     ``submit``, which is a separate operation with its own review semantics.
+         */
+        EnterpriseSaveResponse: {
+            /** Commit */
+            commit: string;
+            /** Message */
+            message: string;
+            /** Ok */
+            ok: boolean;
+        };
+        /**
+         * EnterpriseSubmitResponse
+         * @description The review branch the enterprise work is now on.
+         *
+         *     ``already_submitted`` distinguishes "I pushed it just now" from "it was already pending", which is
+         *     why submitting twice is safe: the second call reports the existing branch and the time it was
+         *     pushed rather than failing or creating a second one. Both are absent on a first submission, under
+         *     the null-omitting policy, so their presence *is* the signal.
+         */
+        EnterpriseSubmitResponse: {
+            /** Already Submitted */
+            already_submitted?: boolean;
+            /** Branch */
+            branch: string;
+            /** Ok */
+            ok: boolean;
+            /** Pushed At */
+            pushed_at?: string;
+        };
+        /**
+         * EnterpriseWithdrawResponse
+         * @description The branch whose pending changes were discarded.
+         *
+         *     Named ``discarded_branch`` rather than ``branch`` because the two carry opposite news — one says
+         *     where the work now lives, the other says what no longer exists — and a caller logging either
+         *     should not have to know which operation it came from to read it correctly.
+         */
+        EnterpriseWithdrawResponse: {
+            /** Discarded Branch */
+            discarded_branch: string;
+            /** Ok */
+            ok: boolean;
+        };
+        /**
          * EntityConnectionCounts
          * @description Degree by direction, as the context read reports it.
          */
@@ -12802,9 +12866,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["EngagementSaveResponse"];
                 };
             };
             /** @description Request validation failed */
@@ -12846,9 +12908,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["EnterpriseSaveResponse"];
                 };
             };
             /** @description Request validation failed */
@@ -12886,9 +12946,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["EnterpriseSubmitResponse"];
                 };
             };
             /** @description Request validation failed */
@@ -12930,9 +12988,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["EnterpriseWithdrawResponse"];
                 };
             };
             /** @description Request validation failed */

@@ -19,20 +19,22 @@ SYNC_ROWS: tuple[RouteRow, ...] = (
         timeout_class="derived-graph",
     ),
     RouteRow(
-        "POST", "/api/sync/engagement/save", "operation", "sync_save_engagement", "SyncOperationResponse",
+        "POST", "/api/sync/engagement/save", "operation", "sync_save_engagement",
+        "EngagementSaveResponse",
         mutation_domain="repository", timeout_class="derived-graph",
     ),
     RouteRow(
-        "POST", "/api/sync/enterprise/save", "operation", "sync_save_enterprise", "SyncOperationResponse",
+        "POST", "/api/sync/enterprise/save", "operation", "sync_save_enterprise",
+        "EnterpriseSaveResponse",
         mutation_domain="repository", timeout_class="derived-graph",
     ),
     RouteRow(
         "POST", "/api/sync/enterprise/submit", "operation", "sync_submit_enterprise",
-        "SyncOperationResponse", mutation_domain="repository", timeout_class="derived-graph",
+        "EnterpriseSubmitResponse", mutation_domain="repository", timeout_class="derived-graph",
     ),
     RouteRow(
         "POST", "/api/sync/enterprise/withdraw", "operation", "sync_withdraw_enterprise",
-        "SyncOperationResponse", mutation_domain="repository", timeout_class="derived-graph",
+        "EnterpriseWithdrawResponse", mutation_domain="repository", timeout_class="derived-graph",
     ),
 )
 
