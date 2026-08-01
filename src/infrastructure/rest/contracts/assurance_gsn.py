@@ -15,24 +15,18 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict
-
 from src.infrastructure.rest.contracts.assurance_analyses import AssuranceAnalysisRecord
 from src.infrastructure.rest.contracts.assurance_queries import (
     AssuranceNodeRef,
 )
-
-
-class _Closed(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
+from src.infrastructure.rest.contracts.wire_shape import Closed
 
 #: A node named in a gap. The same two fields every list on this surface uses to render a row, so it is
 #: the shared one rather than a fourth spelling of it.
 GsnNodeRef = AssuranceNodeRef
 
 
-class GsnTopGoal(_Closed):
+class GsnTopGoal(Closed):
     """The overall claim, derived from the losses the analysis identified.
 
     ``source_losses`` is empty when the analysis has none — the goal still exists, stated generically,
@@ -45,7 +39,7 @@ class GsnTopGoal(_Closed):
     source_losses: list[str]
 
 
-class GsnSubGoal(_Closed):
+class GsnSubGoal(Closed):
     """One claim per hazard: that the hazard is controlled."""
 
     node_id: str
@@ -55,7 +49,7 @@ class GsnSubGoal(_Closed):
     leads_to_losses: list[str]
 
 
-class GsnStrategy(_Closed):
+class GsnStrategy(Closed):
     """How a sub-goal is argued: by constraint derivation from the STPA unsafe control actions.
 
     ``uca_ids`` and ``constraint_ids`` are the derivation itself, published so a reader can check that
@@ -70,7 +64,7 @@ class GsnStrategy(_Closed):
     constraint_ids: list[str]
 
 
-class GsnSolution(_Closed):
+class GsnSolution(Closed):
     """One piece of evidence discharging a constraint."""
 
     node_id: str
@@ -80,7 +74,7 @@ class GsnSolution(_Closed):
     evidence_id: str
 
 
-class GsnGaps(_Closed):
+class GsnGaps(Closed):
     """What the argument does not yet cover: the two ways it can be incomplete.
 
     Kept apart rather than summed. A constraint with no evidence is an argument that asserts something
@@ -92,7 +86,7 @@ class GsnGaps(_Closed):
     hazards_without_constraints: list[GsnNodeRef]
 
 
-class GsnDraft(_Closed):
+class GsnDraft(Closed):
     """The scaffold: a top claim, a sub-goal per hazard, a strategy each, and the evidence found."""
 
     top_goal: GsnTopGoal
@@ -102,7 +96,7 @@ class GsnDraft(_Closed):
     gaps: GsnGaps
 
 
-class GsnDiagramNode(_Closed):
+class GsnDiagramNode(Closed):
     """One node of the drawable graph, carrying the store ids it was derived from."""
 
     node_id: str
@@ -111,7 +105,7 @@ class GsnDiagramNode(_Closed):
     source_assurance_ids: list[str]
 
 
-class GsnDiagramEdge(_Closed):
+class GsnDiagramEdge(Closed):
     """One edge of the drawable graph, in the GSN relation vocabulary."""
 
     source_id: str
@@ -119,14 +113,14 @@ class GsnDiagramEdge(_Closed):
     conn_type: Literal["supported-by", "in-context-of"]
 
 
-class GsnDiagramEntities(_Closed):
+class GsnDiagramEntities(Closed):
     """The draft as a graph, ready for the renderer. A projection of the draft, not a second source."""
 
     nodes: list[GsnDiagramNode]
     edges: list[GsnDiagramEdge]
 
 
-class GsnDraftResponse(_Closed):
+class GsnDraftResponse(Closed):
     """The drafted argument for one analysis, with whether it may leave the store.
 
     ``effective_tlp`` is the classification of the argument as a whole — the most sensitive thing it
@@ -159,7 +153,7 @@ class GsnRenderedResponse(GsnDraftResponse):
     warnings: list[str]
 
 
-class GsnPublicationRecordedResponse(_Closed):
+class GsnPublicationRecordedResponse(Closed):
     """What a publication recorded: the diagram, and how many source bindings were written.
 
     ``binding_count`` is what was *written*, not what was sent. A binding naming a node that does not

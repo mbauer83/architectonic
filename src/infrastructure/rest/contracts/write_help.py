@@ -16,14 +16,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict
+from src.infrastructure.rest.contracts.wire_shape import Closed
 
 
-class _Closed(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-
-class EntityTypeCatalogEntry(_Closed):
+class EntityTypeCatalogEntry(Closed):
     """What one entity type is: its id prefix, where it sits, and what it counts as.
 
     ``hierarchy`` is the path from domain to type, so a picker can group without a second lookup;
@@ -35,7 +31,7 @@ class EntityTypeCatalogEntry(_Closed):
     classes: list[str]
 
 
-class ConnectionTypeCatalogEntry(_Closed):
+class ConnectionTypeCatalogEntry(Closed):
     """What one connection type is, in the modelling language that defines it.
 
     ``symmetric`` is load-bearing rather than descriptive: a symmetric relation belongs to neither
@@ -54,7 +50,7 @@ class ConnectionTypeCatalogEntry(_Closed):
     puml_arrow: str
 
 
-class DiagramTypeHelpEntry(_Closed):
+class DiagramTypeHelpEntry(Closed):
     """One diagram type an author may create, and the domains it accepts.
 
     ``accepted_domains`` empty means it accepts any — an unfiltered picker, not a broken one.
@@ -65,7 +61,7 @@ class DiagramTypeHelpEntry(_Closed):
     accepted_domains: list[str]
 
 
-class WriteHelpConventions(_Closed):
+class WriteHelpConventions(Closed):
     """The house rules an author has to follow, stated rather than left to be inferred.
 
     Five determinate keys with heterogeneous values, so it is a model and not a map: ``statuses`` is
@@ -84,7 +80,7 @@ class WriteHelpConventions(_Closed):
     connection_inference: dict[str, str]
 
 
-class WriteHelpResponse(_Closed):
+class WriteHelpResponse(Closed):
     """Everything an authoring surface needs to offer a valid write.
 
     ``entity_types_by_domain`` and ``connection_types_by_language`` are the two catalogues indexed the

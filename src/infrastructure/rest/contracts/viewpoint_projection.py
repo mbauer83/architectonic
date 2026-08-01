@@ -16,14 +16,12 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, RootModel
+from pydantic import RootModel
+
+from src.infrastructure.rest.contracts.wire_shape import Closed
 
 
-class _Closed(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-
-class ScaleStyleValueResponse(_Closed):
+class ScaleStyleValueResponse(Closed):
     """A continuous style: interpolate between ``tokens`` at ``position`` (0..1).
 
     Never a discrete token — a ``scale`` rule declares a spectrum, and collapsing it to a band
@@ -40,7 +38,7 @@ class ScaleStyleValueResponse(_Closed):
 StyleValueResponse = str | ScaleStyleValueResponse
 
 
-class ProjectedOccurrenceResponse(_Closed):
+class ProjectedOccurrenceResponse(Closed):
     """One entity or connection, and what the viewpoint does with it.
 
     ``style`` is empty whenever ``reasons`` is non-empty, in every enforcement mode: style tokens
@@ -74,7 +72,7 @@ class ProjectedOccurrenceResponse(_Closed):
     column_values: dict[str, Any] | None
 
 
-class StyleRuleOutcomeResponse(_Closed):
+class StyleRuleOutcomeResponse(Closed):
     """What one authored style rule actually did — the "no silent no-op" contract.
 
     ``expected-empty`` is a legitimate state (a gap rule over a healthy model) and warns nowhere;
@@ -91,7 +89,7 @@ class StyleRuleOutcomeResponse(_Closed):
     detail: str | None
 
 
-class ScaleLegendResponse(_Closed):
+class ScaleLegendResponse(Closed):
     """A scale's resolved bounds and endpoint tokens, so a legend can be drawn without re-deriving
     the data range the styling used."""
 
@@ -102,7 +100,7 @@ class ScaleLegendResponse(_Closed):
     tokens: tuple[str, str]
 
 
-class ViewpointProjectionResponse(_Closed):
+class ViewpointProjectionResponse(Closed):
     """The repository projection for an executed viewpoint.
 
     ``applied`` is always true here: this operation *computes* a projection, so there is no
@@ -126,7 +124,7 @@ class ViewpointProjectionResponse(_Closed):
     rule_outcomes: list[StyleRuleOutcomeResponse]
 
 
-class NoDiagramViewpointResponse(_Closed):
+class NoDiagramViewpointResponse(Closed):
     """The artifact pins no viewpoint, so there is no projection and nothing else to say.
 
     The ordinary case rather than an error — most diagrams are hand-drawn — which is why it is a 200
@@ -136,7 +134,7 @@ class NoDiagramViewpointResponse(_Closed):
     applied: Literal[False]
 
 
-class AppliedDiagramViewpointResponse(_Closed):
+class AppliedDiagramViewpointResponse(Closed):
     """The projection a diagram or matrix saved in its own frontmatter.
 
     ``stale_pin`` is what this route carries that the repository projection cannot: the artifact

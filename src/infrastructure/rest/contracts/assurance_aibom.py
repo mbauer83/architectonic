@@ -15,14 +15,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict
+from src.infrastructure.rest.contracts.wire_shape import Closed
 
 
-class _Closed(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-
-class AiBomCandidate(_Closed):
+class AiBomCandidate(Closed):
     """One architecture entity the scan thinks might be an AI component, and why.
 
     ``score`` is a heuristic rank capped at 100, and ``reasons`` is what produced it — published
@@ -38,7 +34,7 @@ class AiBomCandidate(_Closed):
     reasons: list[str]
 
 
-class AiBomScanResponse(_Closed):
+class AiBomScanResponse(Closed):
     """The ranked candidates, with the caveat attached to the response rather than to the docs.
 
     ``note`` travels in the body because this is assistive output: the surface that renders it has to
@@ -50,7 +46,7 @@ class AiBomScanResponse(_Closed):
     note: str
 
 
-class AiBomRolesResponse(_Closed):
+class AiBomRolesResponse(Closed):
     """The canonical derivation-role vocabulary, from the exporter that maps each role to a CycloneDX
     type. One source: a client restating it would be a second, and the export would then accept roles
     the picker never offers or offer roles it rejects."""
@@ -58,7 +54,7 @@ class AiBomRolesResponse(_Closed):
     roles: list[str]
 
 
-class AiBomComponentCoverage(_Closed):
+class AiBomComponentCoverage(Closed):
     """The gaps for one AI component, in two tiers.
 
     The split is the point. A missing REQUIRED attribute, dataset link or governance edge is
@@ -78,14 +74,14 @@ class AiBomComponentCoverage(_Closed):
     missing_governance: bool
 
 
-class AiBomCoverageResponse(_Closed):
+class AiBomCoverageResponse(Closed):
     """Per-component gaps, plus the derivation roles nothing in the repository binds to."""
 
     components: list[AiBomComponentCoverage]
     unbound_roles: list[str]
 
 
-class AiBomExportResponse(_Closed):
+class AiBomExportResponse(Closed):
     """The ML-BOM, its size, and what is missing from it — in one response, deliberately.
 
     A caller emitting a BOM needs to know in the same breath what it does not document; fetching the

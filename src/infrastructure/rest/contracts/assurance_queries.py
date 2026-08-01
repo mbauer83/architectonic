@@ -15,17 +15,12 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict
-
 from src.infrastructure.rest.contracts.assurance_analyses import AssuranceAnalysisSummary
 from src.infrastructure.rest.contracts.verification import AssuranceVerificationFinding
+from src.infrastructure.rest.contracts.wire_shape import Closed
 
 
-class _Closed(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-
-class AssuranceNodeRef(_Closed):
+class AssuranceNodeRef(Closed):
     """A node named just enough to render a row and link to it.
 
     Name as well as id, because every consumer of these lists renders the name, and resolving one
@@ -36,7 +31,7 @@ class AssuranceNodeRef(_Closed):
     name: str
 
 
-class AssuranceStatsResponse(_Closed):
+class AssuranceStatsResponse(Closed):
     """How much of the graph this reader can see, by node type.
 
     ``by_type`` is an open map by necessity: its keys are the node types the *ontology module* declares,
@@ -49,7 +44,7 @@ class AssuranceStatsResponse(_Closed):
     by_type: dict[str, int]
 
 
-class AssuranceCoverageGaps(_Closed):
+class AssuranceCoverageGaps(Closed):
     """The gap categories, each naming the nodes that fall into it.
 
     Eight named fields rather than a map keyed by category: the producer builds exactly these, and a
@@ -68,7 +63,7 @@ class AssuranceCoverageGaps(_Closed):
     failure_modes_without_a_detection_control: list[AssuranceNodeRef]
 
 
-class AssuranceCoverageResponse(_Closed):
+class AssuranceCoverageResponse(Closed):
     """Where the analysis is incomplete.
 
     ``summary`` is prose the server composes so every surface phrases it identically — a GUI banner, a
@@ -81,7 +76,7 @@ class AssuranceCoverageResponse(_Closed):
     summary: str
 
 
-class AssuranceRiskRow(_Closed):
+class AssuranceRiskRow(Closed):
     """One risk, with its assessment, its treatment and who owns it.
 
     The scoring fields are strings rather than numbers because they are *authored* values read out of
@@ -105,14 +100,14 @@ class AssuranceRiskRow(_Closed):
     owners: list[AssuranceNodeRef]
 
 
-class AssuranceRiskRegisterResponse(_Closed):
+class AssuranceRiskRegisterResponse(Closed):
     """Every risk this reader may see, in a form a register renders directly."""
 
     risks: list[AssuranceRiskRow]
     count: int
 
 
-class AssuranceVerificationIssue(_Closed):
+class AssuranceVerificationIssue(Closed):
     """One finding from the structural checks, in the form ``AssuranceIssue`` serialises to.
 
     ``witness`` and ``subject_name`` are always present, empty where the finding's source cannot supply
@@ -131,7 +126,7 @@ class AssuranceVerificationIssue(_Closed):
     subject_name: str
 
 
-class AssuranceVerifyResponse(_Closed):
+class AssuranceVerifyResponse(Closed):
     """The structural verification, as far as this reader may see.
 
     Every field describes the *visible* subgraph. The issues are filtered by exposure first and the
@@ -151,7 +146,7 @@ class AssuranceVerifyResponse(_Closed):
     visibility_limited: bool
 
 
-class AssuranceSearchHit(_Closed):
+class AssuranceSearchHit(Closed):
     """One node matched by a store-wide search, in the same envelope the architecture search uses.
 
     Mirrors ``_assurance_read._assurance_hit``, which builds every key explicitly rather than passing
@@ -178,7 +173,7 @@ class AssuranceSearchHit(_Closed):
     analysis: AssuranceAnalysisSummary | None
 
 
-class AssuranceSearchResponse(_Closed):
+class AssuranceSearchResponse(Closed):
     """The hits, and the query they answer.
 
     ``count`` is the length of ``hits`` after exposure filtering, and the filter runs before the limit
@@ -191,7 +186,7 @@ class AssuranceSearchResponse(_Closed):
     count: int
 
 
-class AssuranceBaselineRecord(_Closed):
+class AssuranceBaselineRecord(Closed):
     """One sealed baseline: the audit-log entry it was taken at, and the hash that fixes it.
 
     ``head_seq`` and ``head_hash`` are the seal. A baseline is a claim that the log up to that
@@ -210,14 +205,14 @@ class AssuranceBaselineRecord(_Closed):
     analysis_id: str | None
 
 
-class AssuranceBaselineListResponse(_Closed):
+class AssuranceBaselineListResponse(Closed):
     """Every baseline, newest first."""
 
     baselines: list[AssuranceBaselineRecord]
     count: int
 
 
-class AssuranceBaselineSealedResponse(_Closed):
+class AssuranceBaselineSealedResponse(Closed):
     """What sealing produced. No ``notes`` and no ``analysis_id``: they were the caller's own input,
     and echoing a request back as though it were a result is how a client comes to trust that the
     server agreed with something it never checked."""
@@ -228,7 +223,7 @@ class AssuranceBaselineSealedResponse(_Closed):
     head_hash: str
 
 
-class AssuranceArchRefRegisteredResponse(_Closed):
+class AssuranceArchRefRegisteredResponse(Closed):
     """The reference as it was stored, which is not always as it was sent.
 
     ``arch_artifact_id`` comes back canonicalised: callers legitimately hold either the full or the
@@ -245,7 +240,7 @@ class AssuranceArchRefRegisteredResponse(_Closed):
     verification_findings: list[AssuranceVerificationFinding] | None = None
 
 
-class AssuranceCompletenessCheck(_Closed):
+class AssuranceCompletenessCheck(Closed):
     """One completeness check: whether it passed, and what it found if not.
 
     ``gap_count`` accompanies ``gaps`` because a caller rendering a summary needs the number without
@@ -261,7 +256,7 @@ class AssuranceCompletenessCheck(_Closed):
     gaps: list[AssuranceNodeRef]
 
 
-class AssuranceCompletenessReport(_Closed):
+class AssuranceCompletenessReport(Closed):
     """A set of completeness checks with a sentence a person can read.
 
     ``checks`` is an open map with a closed value: the check *set* belongs to the method's rules, so
@@ -274,7 +269,7 @@ class AssuranceCompletenessReport(_Closed):
     summary: str
 
 
-class AssuranceAnalysisCompletenessResponse(_Closed):
+class AssuranceAnalysisCompletenessResponse(Closed):
     """The completeness report for one analysis, for the method the analysis itself declares.
 
     Four endpoints used to answer this, each taking the analysis as an *optional* query parameter — so

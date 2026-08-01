@@ -8,16 +8,13 @@ second place, and a term added to a module and not mirrored would fail its own r
 
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import ConfigDict, Field
 
 from src.infrastructure.rest.contracts.wire_nulls import NullsOmitted
+from src.infrastructure.rest.contracts.wire_shape import Closed
 
 
-class _Closed(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-
-class RelationNotation(_Closed):
+class RelationNotation(Closed):
     """How one relationship type is drawn: the line, and the marker at each end.
 
     Structural rather than named after the relationship — "hollow triangle at the target", not
@@ -31,7 +28,7 @@ class RelationNotation(_Closed):
     target: str
 
 
-class RelationNotationsResponse(_Closed):
+class RelationNotationsResponse(Closed):
     """Every known relationship's notation, keyed by connection type.
 
     Served whole on purpose: a graph surface styles hundreds of edges spanning whatever relationship
@@ -139,7 +136,7 @@ class GroupListResponse(NullsOmitted):
     what the axis is called; the field names cannot be, hence the aliases.
     """
 
-    model_config = ConfigDict(extra="forbid", protected_namespaces=(), populate_by_name=True)
+    model_config = ConfigDict(protected_namespaces=(), populate_by_name=True)
 
     model_projects: list[GroupEntryResponse] | None = Field(default=None, alias="model-projects")
     diagram_collections: list[GroupEntryResponse] | None = Field(
@@ -153,7 +150,7 @@ class GroupListResponse(NullsOmitted):
     )
 
 
-class OntologyClassificationResponse(_Closed):
+class OntologyClassificationResponse(Closed):
     """What one entity type may connect to, grouped by direction.
 
     Each map is keyed by the *other* entity type and lists the relationship types available in that
@@ -168,7 +165,7 @@ class OntologyClassificationResponse(_Closed):
     symmetric: dict[str, list[str]]
 
 
-class OntologyPairResponse(_Closed):
+class OntologyPairResponse(Closed):
     """The relationship types permitted between one ordered pair of entity types.
 
     Its own route rather than a variant of the classification: the two answer different questions and

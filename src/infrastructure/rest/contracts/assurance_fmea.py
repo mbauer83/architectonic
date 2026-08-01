@@ -13,17 +13,12 @@ confusion this grid must never permit is an unrated cell reading as a low-priori
 
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict
-
 from src.domain.assurance.failure_modes import AssessmentState
 from src.domain.assurance.fmea_action_priority import ActionPriority
+from src.infrastructure.rest.contracts.wire_shape import Closed
 
 
-class _Closed(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-
-class FmeaSupersededAssessment(_Closed):
+class FmeaSupersededAssessment(Closed):
     """A judgement that no longer applies because the basis it was made against moved.
 
     Retained and shown rather than dropped: a reader has to be able to see that someone did judge
@@ -35,7 +30,7 @@ class FmeaSupersededAssessment(_Closed):
     justification: str
 
 
-class FmeaFactorView(_Closed):
+class FmeaFactorView(Closed):
     """One factor's effective value, and where it came from.
 
     ``value`` is null when the factor has no value a reader should act on — occurrence is
@@ -50,7 +45,7 @@ class FmeaFactorView(_Closed):
     superseded: FmeaSupersededAssessment | None
 
 
-class FmeaCellDismissal(_Closed):
+class FmeaCellDismissal(Closed):
     """Who judged this cell not credible, and why.
 
     Both fields empty on a cell that was not dismissed. Dismissing is a judgement someone is
@@ -62,7 +57,7 @@ class FmeaCellDismissal(_Closed):
     reason: str = ""
 
 
-class FmeaCellView(_Closed):
+class FmeaCellView(Closed):
     """One (element, guideword) cell.
 
     ``node_id`` is null for a cell no failure mode has been written against — the absence *is* the
@@ -89,7 +84,7 @@ class FmeaCellView(_Closed):
     factors: dict[str, FmeaFactorView]
 
 
-class FmeaMatrixRow(_Closed):
+class FmeaMatrixRow(Closed):
     """One candidate element, crossed with every guideword.
 
     ``element_name`` and ``element_type`` are empty when the architecture model cannot describe the
@@ -111,7 +106,7 @@ class FmeaMatrixRow(_Closed):
     worst_action_priority: ActionPriority | None
 
 
-class FmeaMatrixResponse(_Closed):
+class FmeaMatrixResponse(Closed):
     """The failure-mode matrix of one analysis.
 
     Scoped to an analysis by construction: unscoped, this returned every failure mode in the store
@@ -129,7 +124,7 @@ class FmeaMatrixResponse(_Closed):
     occurrence_scale: list[str]
 
 
-class FmeaFactorRecordedResponse(_Closed):
+class FmeaFactorRecordedResponse(Closed):
     """The revision a recorded judgement produced.
 
     ``revision`` always advances: this appends to a series rather than replacing a value, which is why

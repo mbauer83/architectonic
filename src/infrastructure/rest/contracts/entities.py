@@ -16,13 +16,10 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, RootModel
+from pydantic import ConfigDict, Field, RootModel
 
 from src.infrastructure.rest.contracts.wire_nulls import NullsOmitted
-
-
-class _Closed(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+from src.infrastructure.rest.contracts.wire_shape import Closed
 
 
 class EntitySummary(NullsOmitted):
@@ -153,7 +150,7 @@ class EntityConnectionCounts(NullsOmitted):
     conn_sym: int
 
 
-class ContextConnection(_Closed):
+class ContextConnection(Closed):
     """One connection in an entity's context, with both endpoints already resolved.
 
     The endpoint names, types, domains and scopes ride along rather than being looked up per row:
@@ -211,7 +208,7 @@ class EntityContextResponse(NullsOmitted):
     generation: int | None = None
 
 
-class EntityDisplayItemResponse(_Closed):
+class EntityDisplayItemResponse(Closed):
     """How one entity is drawn, resolved from the ontology.
 
     Served rather than derived client-side so a diagram and a picker cannot disagree about what the
@@ -234,7 +231,7 @@ class EntityDisplayItemResponse(_Closed):
     diagram_internal: bool
 
 
-class DerivedNeighbor(_Closed):
+class DerivedNeighbor(Closed):
     """One neighbour a derivation inferred, with the witness a client needs to trust it.
 
     ``via_connection_ids`` and ``path`` are the witness: a derived edge that cannot be traced back
@@ -249,14 +246,14 @@ class DerivedNeighbor(_Closed):
     path: str
 
 
-class DirectNeighborhood(_Closed):
+class DirectNeighborhood(Closed):
     """Neighbours reached over stated connections, keyed by hop distance."""
 
     traversal: Literal["direct"] = "direct"
     hops: dict[str, list[str]]
 
 
-class DerivedNeighborhood(_Closed):
+class DerivedNeighborhood(Closed):
     """Neighbours reached over derived relationships, each with its witness."""
 
     traversal: Literal["derived"] = "derived"

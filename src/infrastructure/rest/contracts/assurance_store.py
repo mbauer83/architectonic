@@ -10,10 +10,10 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict
+from src.infrastructure.rest.contracts.wire_shape import Closed
 
 
-class AssuranceStoreStatusResponse(BaseModel):
+class AssuranceStoreStatusResponse(Closed):
     """Whether the confidential store is configured, and whether it is open.
 
     Always answerable, unlocked or not — this is the one assurance read that must work while the store
@@ -26,8 +26,6 @@ class AssuranceStoreStatusResponse(BaseModel):
     activation policy is ``manual`` and a restarted backend starts locked with the key still present.
     A client that conflated them would tell the user to initialise a store that already exists.
     """
-
-    model_config = ConfigDict(extra="forbid")
 
     #: A database file exists *and* its key is retrievable. Either alone is a broken installation.
     configured: bool

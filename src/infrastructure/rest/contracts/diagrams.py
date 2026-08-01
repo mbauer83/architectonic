@@ -25,10 +25,7 @@ from src.infrastructure.rest.contracts.entities import (
 )
 from src.infrastructure.rest.contracts.viewpoints import ViewpointApplicationResponse
 from src.infrastructure.rest.contracts.wire_nulls import NullsOmitted
-
-
-class _Closed(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+from src.infrastructure.rest.contracts.wire_shape import Closed
 
 
 class _ModuleShaped(BaseModel):
@@ -50,7 +47,7 @@ class DiagramEntityItem(_ModuleShaped):
     artifact_type: str | None = None
 
 
-class DiagramEntityListResponse(_Closed):
+class DiagramEntityListResponse(Closed):
     """Entities placed on one diagram."""
 
     items: list[DiagramEntityItem]
@@ -65,20 +62,20 @@ class DiagramConnectionItem(_ModuleShaped):
     conn_type: str | None = None
 
 
-class DiagramConnectionListResponse(_Closed):
+class DiagramConnectionListResponse(Closed):
     """Connections drawn on one diagram."""
 
     items: list[DiagramConnectionItem]
 
 
-class DiagramReference(_Closed):
+class DiagramReference(Closed):
     """A diagram that draws a given source/target pair."""
 
     artifact_id: str
     name: str
 
 
-class DiagramReferenceListResponse(_Closed):
+class DiagramReferenceListResponse(Closed):
     """Which diagrams draw a given pair — what a rename or removal has to warn about."""
 
     items: list[DiagramReference]
@@ -91,15 +88,15 @@ class DiagramTypeMemberItem(_ModuleShaped):
     label: str | None = None
 
 
-class DiagramTypeEntityTypeListResponse(_Closed):
+class DiagramTypeEntityTypeListResponse(Closed):
     items: list[DiagramTypeMemberItem]
 
 
-class DiagramTypeConnectionTypeListResponse(_Closed):
+class DiagramTypeConnectionTypeListResponse(Closed):
     items: list[DiagramTypeMemberItem]
 
 
-class DiagramSummary(_Closed):
+class DiagramSummary(Closed):
     """One row of the diagram list.
 
     Four fields left with this release — ``keywords``, ``host_diagram_id``, ``tlp`` and
@@ -120,14 +117,14 @@ class DiagramSummary(_Closed):
     last_updated: str | None = None
 
 
-class DiagramListResponse(_Closed):
+class DiagramListResponse(Closed):
     """A page of diagrams, with the count of the *filtered* population."""
 
     total: int
     items: list[DiagramSummary]
 
 
-class DatatypeClassifierInfo(_Closed):
+class DatatypeClassifierInfo(Closed):
     """One classifier a datatype diagram declares, as the picker needs it.
 
     ``host_diagram_id`` is the diagram that owns it — a classifier is a diagram-local construct, so
@@ -142,7 +139,7 @@ class DatatypeClassifierInfo(_Closed):
     host_diagram_id: str
 
 
-class DatatypeTypeListResponse(_Closed):
+class DatatypeTypeListResponse(Closed):
     """A page of datatype classifier types, with the primitives they may be built from.
 
     ``generation`` is the index generation the page was read at: a picker holding a page and then
@@ -159,7 +156,7 @@ class DatatypeTypeListResponse(_Closed):
     next_cursor: str | None
 
 
-class DatatypeTypeUsage(_Closed):
+class DatatypeTypeUsage(Closed):
     """One place a classifier type is referenced as an attribute's type."""
 
     diagram_id: str
@@ -167,7 +164,7 @@ class DatatypeTypeUsage(_Closed):
     attr_name: str
 
 
-class DatatypeTypeUsageResponse(_Closed):
+class DatatypeTypeUsageResponse(Closed):
     """Everywhere one classifier type is used.
 
     ``type_id`` is echoed although the caller supplied it in the path: a client that fans out over
@@ -179,14 +176,14 @@ class DatatypeTypeUsageResponse(_Closed):
     usages: list[DatatypeTypeUsage]
 
 
-class MatrixConnTypeConfig(_Closed):
+class MatrixConnTypeConfig(Closed):
     """One relationship type the matrix draws, and whether it is currently shown."""
 
     conn_type: str
     active: bool
 
 
-class MatrixConfigResponse(_Closed):
+class MatrixConfigResponse(Closed):
     """A matrix diagram's authored configuration, parsed out of its PUML frontmatter.
 
     ``from_entity_ids`` and ``to_entity_ids`` are **present and null** for a square matrix rather than
@@ -213,7 +210,7 @@ class MatrixConfigResponse(_Closed):
     matrix_body: str
 
 
-class EntityDisplaySearchResponse(_Closed):
+class EntityDisplaySearchResponse(Closed):
     """A page of entities a user could place on a diagram.
 
     ``next_cursor`` is an offset the caller passes back verbatim; null means this page is the last.
@@ -224,7 +221,7 @@ class EntityDisplaySearchResponse(_Closed):
     next_cursor: str | None
 
 
-class HopSuggestionGroup(_Closed):
+class HopSuggestionGroup(Closed):
     """Entities one hop further out than the last group, so a picker can offer "and their
     neighbours" without asking the user to think in graph distance.
 
@@ -236,7 +233,7 @@ class HopSuggestionGroup(_Closed):
     items: list[EntityDisplayItemResponse]
 
 
-class DiagramEntityDiscoveryResponse(_Closed):
+class DiagramEntityDiscoveryResponse(Closed):
     """Three ways to find the next thing to put on a diagram, answered together.
 
     A search over the whole model, the connections that would appear if the entities already
@@ -252,7 +249,7 @@ class DiagramEntityDiscoveryResponse(_Closed):
     suggested_entities: list[HopSuggestionGroup]
 
 
-class DerivedViewEntityResponse(_Closed):
+class DerivedViewEntityResponse(Closed):
     """One entity a model-backed diagram derived rather than the author placing it.
 
     ``item_type`` and ``role`` are the diagram-type module's own vocabulary — generic code forwards
@@ -268,7 +265,7 @@ class DerivedViewEntityResponse(_Closed):
     excluded: bool
 
 
-class DiagramPreviewResponse(_Closed):
+class DiagramPreviewResponse(Closed):
     """What a diagram write would produce, without writing it.
 
     ``image`` is null when rendering failed and ``warnings`` says why — a preview that cannot render

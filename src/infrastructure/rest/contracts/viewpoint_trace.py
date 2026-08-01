@@ -16,16 +16,13 @@ from __future__ import annotations
 
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import Field
 
 from src.domain.viewpoints.viewpoint_trace_result import StatusCode, Verdict
+from src.infrastructure.rest.contracts.wire_shape import Closed
 
 
-class _Closed(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-
-class TerminalObligationResponse(_Closed):
+class TerminalObligationResponse(Closed):
     """A terminal ``requirement`` obligation.
 
     ``via_outcome_id`` is the outcome a goal-rooted row reached the requirement through, and null on
@@ -38,7 +35,7 @@ class TerminalObligationResponse(_Closed):
     via_outcome_id: str | None
 
 
-class ShortcutObligationResponse(_Closed):
+class ShortcutObligationResponse(Closed):
     """A direct ``requirement —influence→ root`` branch: a gap, because it skips the outcome."""
 
     kind: Literal["shortcut"]
@@ -46,7 +43,7 @@ class ShortcutObligationResponse(_Closed):
     requirement_id: str
 
 
-class MissingRequirementObligationResponse(_Closed):
+class MissingRequirementObligationResponse(Closed):
     """An outcome branch with no active realizing requirement — the expected node is absent."""
 
     kind: Literal["missing-requirement"]
@@ -54,7 +51,7 @@ class MissingRequirementObligationResponse(_Closed):
     outcome_id: str
 
 
-class MissingOutcomeObligationResponse(_Closed):
+class MissingOutcomeObligationResponse(Closed):
     """A goal with no outcome and no shortcut: zero expected branches, and a gap rather than a
     vacuous pass."""
 
@@ -71,14 +68,14 @@ TraceObligationResponse = Annotated[
 ]
 
 
-class TraceCoverageResponse(_Closed):
+class TraceCoverageResponse(Closed):
     """The terminal-obligation ratio for one row: how many of the applicable branches are covered."""
 
     covered: int
     applicable: int
 
 
-class AuthoritativePatternResultResponse(_Closed):
+class AuthoritativePatternResultResponse(Closed):
     """A pattern that decides the row's verdict.
 
     ``failing_obligations`` and ``last_satisfied_ids`` are capped server-side; ``failing_overflow``
@@ -99,7 +96,7 @@ class AuthoritativePatternResultResponse(_Closed):
     diagnostic_code: Literal["cycle", "budget_aborted", "ambiguous_link"] | None
 
 
-class DiagnosticPatternResultResponse(_Closed):
+class DiagnosticPatternResultResponse(Closed):
     """A pattern that only observes. Its absence (``none_observed``) is verdict-neutral, and
     rendering it as a pass or a gap would report a finding the evaluation did not make."""
 
@@ -114,7 +111,7 @@ PatternResultResponse = Annotated[
 ]
 
 
-class TraceRowResponse(_Closed):
+class TraceRowResponse(Closed):
     """One traced entity: its identity, its composed verdict, and each pattern's result.
 
     ``pattern_results`` pairs a pattern's declared name with its result, in declaration order.
@@ -128,7 +125,7 @@ class TraceRowResponse(_Closed):
     pattern_results: list[tuple[str, PatternResultResponse]]
 
 
-class TraceTableResponse(_Closed):
+class TraceTableResponse(Closed):
     """The branch-complete coverage table, already gaps-filtered, sorted and paged.
 
     ``total_rows`` counts the applicable population *before* the page limit, so a gap beyond the

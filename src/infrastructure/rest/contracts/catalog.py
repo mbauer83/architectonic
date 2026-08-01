@@ -11,14 +11,10 @@ second place, and a term added to a module and not mirrored here would then fail
 
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict
+from src.infrastructure.rest.contracts.wire_shape import Closed
 
 
-class _Closed(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-
-class RepositoryStatsResponse(_Closed):
+class RepositoryStatsResponse(Closed):
     """How much of each kind the served repository holds, and how it distributes.
 
     The four totals are the artifact kinds the index stores. The breakdowns are one map per axis rather
@@ -39,7 +35,7 @@ class RepositoryStatsResponse(_Closed):
     documents_by_group: dict[str, int]
 
 
-class BackendIdentityResponse(_Closed):
+class BackendIdentityResponse(Closed):
     """Which repository this backend serves, and which build is serving it.
 
     Exists because ``arch-repair upgrade --commit`` refuses to run against a repository a live backend
@@ -53,7 +49,7 @@ class BackendIdentityResponse(_Closed):
     software_version: str
 
 
-class LoadedModuleResponse(_Closed):
+class LoadedModuleResponse(Closed):
     """One registered module — enabled, its requirements satisfied — and how much it contributes."""
 
     name: str
@@ -66,7 +62,7 @@ class LoadedModuleResponse(_Closed):
     connection_type_count: int
 
 
-class LoadedModuleListResponse(_Closed):
+class LoadedModuleListResponse(Closed):
     """The loaded modules, in name order.
 
     An envelope rather than a bare array, which is what this route used to serve. Every other collection
@@ -78,14 +74,14 @@ class LoadedModuleListResponse(_Closed):
     modules: list[LoadedModuleResponse]
 
 
-class TaxonomyTypeResponse(_Closed):
+class TaxonomyTypeResponse(Closed):
     """One entity type within a domain, with how many entities the repository has of it."""
 
     name: str
     count: int
 
 
-class TaxonomyDomainResponse(_Closed):
+class TaxonomyDomainResponse(Closed):
     """One domain and the types found in it.
 
     ``count`` is the domain total, which is the sum over ``types`` — sent rather than left to the client
@@ -97,7 +93,7 @@ class TaxonomyDomainResponse(_Closed):
     types: list[TaxonomyTypeResponse]
 
 
-class EntityTaxonomyResponse(_Closed):
+class EntityTaxonomyResponse(Closed):
     """The entity types the repository actually contains, grouped by domain.
 
     Only domains with content appear, in the module registry's declared order with any unregistered

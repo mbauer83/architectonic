@@ -9,14 +9,10 @@ picker cannot offer a value the save would then refuse.
 
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict
+from src.infrastructure.rest.contracts.wire_shape import Closed
 
 
-class _Closed(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-
-class BindingCatalogResponse(_Closed):
+class BindingCatalogResponse(Closed):
     """What a binding may select, aggregate and declare as its result type.
 
     ``result_types`` are type *expressions* rather than an enumeration — ``entity[type-slug]`` and
@@ -29,14 +25,14 @@ class BindingCatalogResponse(_Closed):
     result_types: list[str]
 
 
-class ParameterCatalogResponse(_Closed):
+class ParameterCatalogResponse(Closed):
     """The element kinds a declared parameter may take. Cardinality is orthogonal and is not a
     type name, so it is not in this list."""
 
     types: list[str]
 
 
-class DerivedCatalogResponse(_Closed):
+class DerivedCatalogResponse(Closed):
     """The three axes a derived attribute is configured on: how far to walk, what evidence counts,
     and how to collapse the result."""
 
@@ -45,7 +41,7 @@ class DerivedCatalogResponse(_Closed):
     reduce: list[str]
 
 
-class ConnectionDerivationEntryResponse(_Closed):
+class ConnectionDerivationEntryResponse(Closed):
     """A connection type's part in relationship derivation.
 
     ``strength`` is null for a role that does not rank — a specialization or a dynamic relation is
@@ -56,7 +52,7 @@ class ConnectionDerivationEntryResponse(_Closed):
     strength: int | None
 
 
-class CriteriaCatalogResponse(_Closed):
+class CriteriaCatalogResponse(Closed):
     """Everything the criteria-tree builder's pickers are fed from, in one request.
 
     One snapshot rather than a request per picker: the panels are filled together, and two of them
@@ -90,7 +86,7 @@ class CriteriaCatalogResponse(_Closed):
     connection_derivation: dict[str, ConnectionDerivationEntryResponse]
 
 
-class ViewpointQuerySummaryResponse(_Closed):
+class ViewpointQuerySummaryResponse(Closed):
     """A plain-language rendering of an in-progress query.
 
     The same renderer the MCP list and execute tools use, so the builder's live preview cannot

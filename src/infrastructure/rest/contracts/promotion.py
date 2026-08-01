@@ -13,14 +13,10 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict
+from src.infrastructure.rest.contracts.wire_shape import Closed
 
 
-class _Closed(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-
-class PromotionEntityConflict(_Closed):
+class PromotionEntityConflict(Closed):
     """An entity that exists in both repositories, with both readings side by side.
 
     ``engagement_fields`` and ``enterprise_fields`` are the two versions' frontmatter, published so the
@@ -37,7 +33,7 @@ class PromotionEntityConflict(_Closed):
     enterprise_fields: dict[str, Any]
 
 
-class PromotionDocumentConflict(_Closed):
+class PromotionDocumentConflict(Closed):
     """A document that exists in both repositories."""
 
     engagement_id: str
@@ -47,7 +43,7 @@ class PromotionDocumentConflict(_Closed):
     enterprise_title: str
 
 
-class PromotionDiagramConflict(_Closed):
+class PromotionDiagramConflict(Closed):
     """A diagram that exists in both repositories."""
 
     engagement_id: str
@@ -57,7 +53,7 @@ class PromotionDiagramConflict(_Closed):
     enterprise_name: str
 
 
-class PromotionGroupMappingEntry(_Closed):
+class PromotionGroupMappingEntry(Closed):
     """Where one engagement group lands in the enterprise repository.
 
     ``match_status`` is the decision: matched by id, a conflicting slug, or new. ``enterprise_group_id``
@@ -71,7 +67,7 @@ class PromotionGroupMappingEntry(_Closed):
     enterprise_group_id: str | None
 
 
-class EnterpriseGroupOption(_Closed):
+class EnterpriseGroupOption(Closed):
     """One enterprise group a mapping may be redirected to."""
 
     slug: str
@@ -79,7 +75,7 @@ class EnterpriseGroupOption(_Closed):
     name: str
 
 
-class StructuralClosureEntity(_Closed):
+class StructuralClosureEntity(Closed):
     """One entity missing from the selection."""
 
     artifact_id: str
@@ -87,7 +83,7 @@ class StructuralClosureEntity(_Closed):
     artifact_type: str
 
 
-class StructuralClosureRequirement(_Closed):
+class StructuralClosureRequirement(Closed):
     """A selected junction or grouping whose meaning-carrying entities are not in the selection.
 
     A junction promoted without what it joins is a structure that means nothing at the far end, so the
@@ -101,7 +97,7 @@ class StructuralClosureRequirement(_Closed):
     missing: list[StructuralClosureEntity]
 
 
-class PromotionViewpointDependency(_Closed):
+class PromotionViewpointDependency(Closed):
     """A viewpoint a promoted diagram or matrix is pinned to, and where it stands enterprise-side.
 
     ``enterprise_version`` is null when the viewpoint is not there at all — which is the case that
@@ -116,7 +112,7 @@ class PromotionViewpointDependency(_Closed):
     enterprise_version: str | None
 
 
-class PromotionMissingDependency(_Closed):
+class PromotionMissingDependency(Closed):
     """An artifact the selection references but does not include, and what needs it."""
 
     artifact_id: str
@@ -126,7 +122,7 @@ class PromotionMissingDependency(_Closed):
     kind: str
 
 
-class PromotionPlanResponse(_Closed):
+class PromotionPlanResponse(Closed):
     """What a promotion would do, and every question it raises before it may proceed.
 
     Nothing here is optional. Four of these lists were optional in the client's decoder and two were
@@ -153,7 +149,7 @@ class PromotionPlanResponse(_Closed):
     missing_dependencies: list[PromotionMissingDependency]
 
 
-class PromotionResultResponse(_Closed):
+class PromotionResultResponse(Closed):
     """What carrying out the plan actually did.
 
     ``dry_run`` and ``executed`` are both stated because they answer different questions: a dry run

@@ -17,12 +17,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict
-
-
-class _Closed(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
+from src.infrastructure.rest.contracts.wire_shape import Closed
 
 #: The record kinds the keyword search can return. Connections are excluded upstream and serialised
 #: defensively, so the arm exists; assurance nodes are *not* here — they come from the display search
@@ -30,7 +25,7 @@ class _Closed(BaseModel):
 KeywordRecordType = Literal["entity", "connection", "diagram", "document"]
 
 
-class KeywordSearchHit(_Closed):
+class KeywordSearchHit(Closed):
     """One artifact matched by keyword, with the display fields its kind actually has.
 
     Mirrors ``state.search_hit_to_dict`` arm for arm. ``name`` and ``artifact_type`` are the *display*
@@ -62,7 +57,7 @@ class KeywordSearchHit(_Closed):
     target: str | None = None
 
 
-class KeywordSearchResponse(_Closed):
+class KeywordSearchResponse(Closed):
     """The hits, and the query as the repository parsed it — which is not always what was sent."""
 
     query: str
@@ -74,7 +69,7 @@ class KeywordSearchResponse(_Closed):
 DisplayRecordType = Literal["entity", "connection", "diagram", "document", "assurance-node"]
 
 
-class DisplaySearchHit(_Closed):
+class DisplaySearchHit(Closed):
     """One candidate for a picker: enough to label and identify, and nothing else.
 
     Six fields, deliberately — this feeds a dropdown, and the record's domain or endpoints would be
@@ -92,7 +87,7 @@ class DisplaySearchHit(_Closed):
     artifact_type: str | None = None
 
 
-class DisplaySearchResponse(_Closed):
+class DisplaySearchResponse(Closed):
     """The candidates, architecture first: ``prioritize_global_hits`` puts enterprise artifacts above
     engagement ones, so a picker offers the shared vocabulary before a local restatement of it."""
 
@@ -100,7 +95,7 @@ class DisplaySearchResponse(_Closed):
     hits: list[DisplaySearchHit]
 
 
-class ReferenceSearchHit(_Closed):
+class ReferenceSearchHit(Closed):
     """One artifact a document may cite.
 
     No ``score``: this filters rather than ranks, so every hit is equally a match and publishing a
@@ -124,7 +119,7 @@ class ReferenceSearchHit(_Closed):
     is_global: bool | None = None
 
 
-class ReferenceSearchResponse(_Closed):
+class ReferenceSearchResponse(Closed):
     """The citable artifacts, and the query as sent — unparsed here, because this search does not
     reinterpret it."""
 

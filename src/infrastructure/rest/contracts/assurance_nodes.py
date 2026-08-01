@@ -17,17 +17,14 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, RootModel
+from pydantic import Field, RootModel
 
 from src.infrastructure.rest.contracts.assurance_analyses import AssuranceAnalysisSummary
 from src.infrastructure.rest.contracts.verification import AssuranceVerificationFinding
+from src.infrastructure.rest.contracts.wire_shape import Closed
 
 
-class _Closed(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-
-class AssuranceNodeRecord(_Closed):
+class AssuranceNodeRecord(Closed):
     """One assurance node, as every backend now hands it back.
 
     Was open, on the reading that its ``attributes_json`` needed a decision first. It did not: the
@@ -76,7 +73,7 @@ class AssuranceNodeWithDegrees(AssuranceNodeRecord):
     conn_out: int
 
 
-class AssuranceNodeListResponse(_Closed):
+class AssuranceNodeListResponse(Closed):
     """The nodes this reader may see, with their degrees over the edges this reader may see."""
 
     nodes: list[AssuranceNodeWithDegrees]
@@ -84,7 +81,7 @@ class AssuranceNodeListResponse(_Closed):
     visibility_limited: bool
 
 
-class AssuranceEdgeRecord(_Closed):
+class AssuranceEdgeRecord(Closed):
     """One edge, as every backend hands it back. ``attributes_json`` is a JSON string, as on a node."""
 
     edge_id: str
@@ -109,7 +106,7 @@ class AssuranceEnrichedEdge(AssuranceEdgeRecord):
     target_type: str
 
 
-class AssuranceEdgeListResponse(_Closed):
+class AssuranceEdgeListResponse(Closed):
     """The visible edges, enriched. ``count`` is the length of the list after filtering."""
 
     edges: list[AssuranceEnrichedEdge]
@@ -117,7 +114,7 @@ class AssuranceEdgeListResponse(_Closed):
     visibility_limited: bool
 
 
-class AssuranceArchRefRecord(_Closed):
+class AssuranceArchRefRecord(Closed):
     """One reference from an assurance node out to an architecture artifact.
 
     ``resolved_at`` is null until the reference has been checked against the repository — the state the
@@ -131,7 +128,7 @@ class AssuranceArchRefRecord(_Closed):
     resolved_at: str | None
 
 
-class AssuranceNodeDetailResponse(_Closed):
+class AssuranceNodeDetailResponse(Closed):
     """One node with its neighbourhood and its two analysis relations.
 
     ``authored_by`` and ``participates_in`` are separate because they answer different questions —
@@ -175,7 +172,7 @@ class AssuranceNeighborhoodEdge(AssuranceEnrichedEdge):
     direction: Literal["outgoing", "incoming", "self"]
 
 
-class AssuranceNeighborhoodResponse(_Closed):
+class AssuranceNeighborhoodResponse(Closed):
     """One node's neighbourhood, as far as the budgets and the reader's ceiling allow.
 
     ``truncated`` and ``frontier_node_ids`` are the two halves of one fact: the traversal stopped early,
@@ -199,14 +196,14 @@ class AssuranceNeighborhoodResponse(_Closed):
     visibility_limited: bool
 
 
-class AssuranceEdgeTypeOption(_Closed):
+class AssuranceEdgeTypeOption(Closed):
     """One connection type an edge may have, with the phrase a picker shows for it."""
 
     name: str
     label: str
 
 
-class AssuranceEdgeTypePair(_Closed):
+class AssuranceEdgeTypePair(Closed):
     """The connection types legal between one (source, target) node-type pair.
 
     Grouped per pair rather than served as a flat legality table, because a picker's question is
@@ -219,14 +216,14 @@ class AssuranceEdgeTypePair(_Closed):
     connection_types: list[str]
 
 
-class AssuranceReferenceTypeOption(_Closed):
+class AssuranceReferenceTypeOption(Closed):
     """One architecture-reference type, with what it means."""
 
     name: str
     description: str
 
 
-class AssuranceEdgeCatalogResponse(_Closed):
+class AssuranceEdgeCatalogResponse(Closed):
     """The edge and reference vocabularies of the loaded assurance module.
 
     Edge types and reference types are kept apart, and that separation is a module invariant rather
@@ -242,7 +239,7 @@ class AssuranceEdgeCatalogResponse(_Closed):
     reference_types: list[AssuranceReferenceTypeOption]
 
 
-class AssuranceEdgeCreatedResponse(_Closed):
+class AssuranceEdgeCreatedResponse(Closed):
     """The edge that was created, named by the id the store minted for it.
 
     ``verification_findings`` rides along when the post-write verify found something. Advisory: the
@@ -256,7 +253,7 @@ class AssuranceEdgeCreatedResponse(_Closed):
     verification_findings: list[AssuranceVerificationFinding] | None = None
 
 
-class ModelThisTaskStep(_Closed):
+class ModelThisTaskStep(Closed):
     """One step of the separation-of-duties task: which tool to call, where, and with what.
 
     ``params`` belongs to the tool being called, not to this surface — three different tools appear
@@ -273,7 +270,7 @@ class ModelThisTaskStep(_Closed):
     note: str | None = None
 
 
-class ModelThisTaskRequiredResponse(_Closed):
+class ModelThisTaskRequiredResponse(Closed):
     """The work to do, for a caller that may not create architecture entities itself.
 
     Separation of duties is the reason this exists: an assurance session with no architecture-write
@@ -292,7 +289,7 @@ class ModelThisTaskRequiredResponse(_Closed):
     note: str | None = None
 
 
-class ModelThisBoundResponse(_Closed):
+class ModelThisBoundResponse(Closed):
     """The architecture entity that was created and bound to the assurance node."""
 
     outcome: Literal["bound"]

@@ -22,13 +22,8 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict
-
 from src.infrastructure.rest.contracts.wire_nulls import NullsOmitted
-
-
-class _Closed(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+from src.infrastructure.rest.contracts.wire_shape import Closed
 
 
 class _SyncOutcome(NullsOmitted):
@@ -95,7 +90,7 @@ class EnterpriseWithdrawResponse(_SyncOutcome):
     discarded_branch: str
 
 
-class SyncChangedArtifact(_Closed):
+class SyncChangedArtifact(Closed):
     """One artifact with uncommitted changes, with every file change that touches it merged in.
 
     Merged deliberately: an entity and its outgoing-connections file are two files and one artifact, so
@@ -115,7 +110,7 @@ class SyncChangedArtifact(_Closed):
     changes: list[str]
 
 
-class SyncChangesResponse(_Closed):
+class SyncChangesResponse(Closed):
     """The uncommitted changes in one repository, as the save dialog needs them.
 
     ``repo`` echoes which repository was read. It is a closed vocabulary because the handler branches

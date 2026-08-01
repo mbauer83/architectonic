@@ -18,16 +18,11 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict
-
 from src.infrastructure.rest.contracts.wire_nulls import NullsOmitted
+from src.infrastructure.rest.contracts.wire_shape import Closed
 
 
-class _Closed(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-
-class ViewpointValidationIssueDto(_Closed):
+class ViewpointValidationIssueDto(Closed):
     """One validation finding against a definition, addressed at the field that caused it.
 
     ``expected``/``found`` are always serialized, as null where the finding has no comparison to
@@ -43,14 +38,14 @@ class ViewpointValidationIssueDto(_Closed):
     found: str | None = None
 
 
-class ViewpointReferencerDto(_Closed):
+class ViewpointReferencerDto(Closed):
     """A diagram or matrix whose frontmatter pins this viewpoint."""
 
     artifact_id: str
     target_kind: Literal["diagram", "matrix"]
 
 
-class ViewpointPersistResponse(_Closed):
+class ViewpointPersistResponse(Closed):
     """The outcome of creating or replacing a definition — or of the dry run that previews it.
 
     ``ok`` with ``issues`` rather than an error status: the editor's preview is a *successful*
@@ -67,7 +62,7 @@ class ViewpointPersistResponse(_Closed):
     referencers: list[ViewpointReferencerDto] = []
 
 
-class ViewpointReferencerListResponse(_Closed):
+class ViewpointReferencerListResponse(Closed):
     """Every diagram or matrix pinning one viewpoint definition.
 
     The management view reads this before offering a semantic edit: a version bump leaves every

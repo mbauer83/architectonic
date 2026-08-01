@@ -13,14 +13,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict
+from src.infrastructure.rest.contracts.wire_shape import Closed
 
 
-class _Closed(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-
-class ConnectionSummary(_Closed):
+class ConnectionSummary(Closed):
     """One connection, with both endpoints resolved.
 
     ``gar_artifact_id`` appears only when the target was reached through a global-artifact
@@ -47,7 +43,7 @@ class ConnectionSummary(_Closed):
     gar_artifact_id: str | None = None
 
 
-class ConnectionListResponse(_Closed):
+class ConnectionListResponse(Closed):
     """Connections matching the filters, as a page-shaped object rather than a bare array.
 
     An object leaves room for the pagination the house convention uses, and a top-level array has
@@ -57,7 +53,7 @@ class ConnectionListResponse(_Closed):
     items: list[ConnectionSummary]
 
 
-class BrokenReferenceAction(_Closed):
+class BrokenReferenceAction(Closed):
     """One remedial action the cleanup would take, or took."""
 
     action: str
@@ -66,7 +62,7 @@ class BrokenReferenceAction(_Closed):
     detail: str | None = None
 
 
-class BrokenReferenceCleanupResponse(_Closed):
+class BrokenReferenceCleanupResponse(Closed):
     """What the cleanup found, and what it did about it.
 
     A global-artifact reference is broken when the enterprise entity it points to no longer exists.

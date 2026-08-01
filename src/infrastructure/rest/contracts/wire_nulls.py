@@ -37,6 +37,8 @@ from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, ConfigDict
 
+from src.infrastructure.rest.contracts.wire_shape import Closed
+
 if TYPE_CHECKING:
     from fastapi import FastAPI
 
@@ -58,7 +60,7 @@ def mark_nulls_omitted(schema: dict[str, Any]) -> None:
     schema[WIRE_NULLS_KEYWORD] = NULLS_OMITTED
 
 
-class NullsOmitted(BaseModel):
+class NullsOmitted(Closed):
     """A closed response DTO whose unset optionals never reach the wire.
 
     Every route that can serialise it must declare ``response_model_exclude_none=True``, and a DTO
@@ -66,9 +68,13 @@ class NullsOmitted(BaseModel):
     biconditional, so the two cannot drift apart. Do not use it for a DTO that some other route
     serialises permissively: the schema is shared between them, and a claim true on one path and
     false on another is worse than the permissive default.
+
+    Closedness comes from :class:`Closed` rather than being restated: the two rules compose, and a
+    DTO that promised absence while quietly admitting undeclared fields would be the worse half of
+    each.
     """
 
-    model_config = ConfigDict(extra="forbid", json_schema_extra=mark_nulls_omitted)
+    model_config = ConfigDict(json_schema_extra=mark_nulls_omitted)
 
 
 def omits_nulls(model: type[BaseModel]) -> bool:

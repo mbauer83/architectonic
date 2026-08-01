@@ -13,16 +13,13 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, RootModel
+from pydantic import ConfigDict, RootModel
 
 from src.infrastructure.rest.contracts.wire_nulls import NullsOmitted, mark_nulls_omitted
+from src.infrastructure.rest.contracts.wire_shape import Closed
 
 
-class _Closed(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-
-class DocumentSummary(_Closed):
+class DocumentSummary(Closed):
     """One row of the document list: enough to render and link, not the content."""
 
     artifact_id: str
@@ -37,7 +34,7 @@ class DocumentSummary(_Closed):
     last_updated: str | None = None
 
 
-class DocumentListResponse(_Closed):
+class DocumentListResponse(Closed):
     """A page of documents, with the count of the *filtered* population.
 
     ``total`` is the size of the population the filters select, not of the page and not of the
@@ -49,7 +46,7 @@ class DocumentListResponse(_Closed):
     items: list[DocumentSummary]
 
 
-class DocumentDetailResponse(_Closed):
+class DocumentDetailResponse(Closed):
     """One document, with its content.
 
     ``content_snippet`` is carried alongside ``content_text`` rather than derived by the client:

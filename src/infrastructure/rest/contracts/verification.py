@@ -22,19 +22,14 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict
-
 from src.application.verification.artifact_verifier_types import (
     SeverityLiteral,
     VerificationFileType,
 )
+from src.infrastructure.rest.contracts.wire_shape import Closed
 
 
-class _Closed(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-
-class AssuranceVerificationFinding(_Closed):
+class AssuranceVerificationFinding(Closed):
     """One finding from the verify that runs after a write.
 
     Advisory, always: a write is never blocked by the verifier, so a finding here reports on a
@@ -48,7 +43,7 @@ class AssuranceVerificationFinding(_Closed):
     node_id: str | None
 
 
-class VerificationIssueResponse(_Closed):
+class VerificationIssueResponse(Closed):
     """One finding: what is wrong, how badly, and where.
 
     ``details`` and ``actions`` stay open maps, and they are the only two levels here that may be
@@ -68,7 +63,7 @@ class VerificationIssueResponse(_Closed):
     actions: list[dict[str, Any]] | None = None
 
 
-class WriteVerificationResponse(_Closed):
+class WriteVerificationResponse(Closed):
     """Whether what the mutation wrote verifies, and what it found if not.
 
     Not an error channel: a write that failed raises and answers non-2xx. ``valid`` false with the

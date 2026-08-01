@@ -23,10 +23,7 @@ from pydantic import BaseModel, ConfigDict
 
 from src.infrastructure.rest.contracts.assurance_nodes import AssuranceNodeRecord
 from src.infrastructure.rest.contracts.verification import AssuranceVerificationFinding
-
-
-class _Closed(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+from src.infrastructure.rest.contracts.wire_shape import Closed
 
 
 class _FeedShaped(BaseModel):
@@ -51,19 +48,19 @@ class SnapshotRecord(_FeedShaped):
     """One snapshot row, as the store holds it."""
 
 
-class FieldRejection(_Closed):
+class FieldRejection(Closed):
     field: str
     message: str
 
 
-class SecurityComponentListResponse(_Closed):
+class SecurityComponentListResponse(Closed):
     components: list[SecurityComponentRecord] = []
     count: int = 0
     withheld: int = 0
     reason: str | None = None
 
 
-class SecurityComponentResponse(_Closed):
+class SecurityComponentResponse(Closed):
     """One component, addressed by the internal id this system minted for it.
 
     The row carries its external identifiers — ``purl``, ``bom_ref``, ``cpe``, and the source's own
@@ -75,14 +72,14 @@ class SecurityComponentResponse(_Closed):
     component: SecurityComponentRecord
 
 
-class SecurityFindingListResponse(_Closed):
+class SecurityFindingListResponse(Closed):
     findings: list[SecurityFindingRecord] = []
     count: int = 0
     withheld: int = 0
     reason: str | None = None
 
 
-class SecurityMetricsResponse(_Closed):
+class SecurityMetricsResponse(Closed):
     """Aggregate posture for one anchor, or the reason there is none.
 
     ``availability`` is the field a client branches on: ``unavailable`` means the metrics could not
@@ -110,7 +107,7 @@ class SecurityMetricsResponse(_Closed):
     suppressed_finding_count: int | None = None
 
 
-class AssessedEntity(_Closed):
+class AssessedEntity(Closed):
     """One architecture entity carrying an active snapshot, with that snapshot's sizes."""
 
     entity_id: str
@@ -119,7 +116,7 @@ class AssessedEntity(_Closed):
     finding_count: int
 
 
-class SecuritySignalStatsResponse(_Closed):
+class SecuritySignalStatsResponse(Closed):
     """Snapshot-store aggregates, or the reason there are none."""
 
     reason: str | None = None
@@ -131,13 +128,13 @@ class SecuritySignalStatsResponse(_Closed):
     active_snapshot_findings: int | None = None
 
 
-class VexAssessmentListResponse(_Closed):
+class VexAssessmentListResponse(Closed):
     revisions: list[VexRevisionRecord] = []
     count: int = 0
     visibility_limited: bool = False
 
 
-class VexAssessmentResponse(_Closed):
+class VexAssessmentResponse(Closed):
     """The revision a recorded assessment produced. Appended, so ``revision`` always advances."""
 
     assessment_id: str
@@ -145,7 +142,7 @@ class VexAssessmentResponse(_Closed):
     created_at: str
 
 
-class SignalIngestResponse(_Closed):
+class SignalIngestResponse(Closed):
     """The outcome of an ingest, projected the same way the MCP tool projects it.
 
     ``status`` discriminates: ``activated`` carries the persisted counts alongside the submitted
@@ -168,7 +165,7 @@ class SignalIngestResponse(_Closed):
     errors: list[FieldRejection] | None = None
 
 
-class SecuritySnapshotDeletionResponse(_Closed):
+class SecuritySnapshotDeletionResponse(Closed):
     """What the deletion removed, or why it removed nothing.
 
     Carries whichever of ``snapshot_id`` / ``anchor_entity_id`` addressed the deletion, so a log of
@@ -183,7 +180,7 @@ class SecuritySnapshotDeletionResponse(_Closed):
     deleted_count: int = 0
 
 
-class AffectedComponent(_Closed):
+class AffectedComponent(Closed):
     """One component through which a vulnerability reaches an entity.
 
     ``suppressed`` is the VEX verdict applied, not a copy of ``vex_status``: a status of
@@ -203,7 +200,7 @@ class AffectedComponent(_Closed):
     suppressed: bool
 
 
-class AffectedEntity(_Closed):
+class AffectedEntity(Closed):
     """One architecture entity a vulnerability reaches, with the components it reaches through.
 
     ``snapshot_activated_at`` is which snapshot said so: the answer is only as current as the scan
@@ -218,7 +215,7 @@ class AffectedEntity(_Closed):
     components: list[AffectedComponent]
 
 
-class VulnerabilityImpactResponse(_Closed):
+class VulnerabilityImpactResponse(Closed):
     """Every visible entity affected by one vulnerability, by any of its aliases.
 
     ``found`` is false for an identifier no active snapshot mentions — which is not the same as one
@@ -243,7 +240,7 @@ class VulnerabilityImpactResponse(_Closed):
     withheld_count: int | None = None
 
 
-class SignalAnchorTypeListResponse(_Closed):
+class SignalAnchorTypeListResponse(Closed):
     """The admissible anchor types, so a client never redeclares the vocabulary."""
 
     anchor_types: list[str]
@@ -251,7 +248,7 @@ class SignalAnchorTypeListResponse(_Closed):
 
 # The node record itself lives in ``assurance_nodes`` — with the two reads that serve it, and out of
 # this module, which is over the file-length limit and may not grow.
-class WorkingSetNodeItem(_Closed):
+class WorkingSetNodeItem(Closed):
     """One node of an analysis's working set, and how the analysis relates to it.
 
     ``relationship`` is stated per item rather than left to the caller to derive by intersecting two
@@ -263,7 +260,7 @@ class WorkingSetNodeItem(_Closed):
     relationship: Literal["authored", "referenced"]
 
 
-class AnalysisNodePageResponse(_Closed):
+class AnalysisNodePageResponse(Closed):
     """One page of the working set, with the role totals of the visible population.
 
     The totals describe the analysis, not the page — a caller showing "12 authored, 3 borrowed"
@@ -283,7 +280,7 @@ class AnalysisNodePageResponse(_Closed):
     visibility_limited: bool = False
 
 
-class FailureModeRollUpResponse(_Closed):
+class FailureModeRollUpResponse(Closed):
     """One architecture element's FMEA row, rolled up to what a badge needs.
 
     ``unanswered_cells`` is as load-bearing as the priority: a worst-of over a partly-assessed row
@@ -298,7 +295,7 @@ class FailureModeRollUpResponse(_Closed):
     nominated_by: list[str]
 
 
-class ArchLensResponse(_Closed):
+class ArchLensResponse(Closed):
     """The assurance findings that concern one architecture artifact.
 
     ``locked`` rather than a 423: this read is embedded in an entity view that must render whether
@@ -314,14 +311,14 @@ class ArchLensResponse(_Closed):
     failure_mode_summary: FailureModeRollUpResponse | None = None
 
 
-class GsnSourceBinding(_Closed):
+class GsnSourceBinding(Closed):
     """One assurance node bound to one node of a published GSN diagram."""
 
     assurance_node_id: str
     gsn_node_id: str
 
 
-class GsnPublication(_Closed):
+class GsnPublication(Closed):
     """One GSN diagram this analysis has been published to.
 
     ``binding_count`` is the number of bindings *in this list*, not the number recorded: the read
@@ -335,7 +332,7 @@ class GsnPublication(_Closed):
     source_bindings: list[GsnSourceBinding]
 
 
-class GsnPublicationListResponse(_Closed):
+class GsnPublicationListResponse(Closed):
     """Every GSN publication of one analysis.
 
     Derived from the ``gsn-source`` arch-refs that recording leaves behind rather than from a
@@ -347,7 +344,7 @@ class GsnPublicationListResponse(_Closed):
     visibility_limited: bool = False
 
 
-class AssuranceNodeCreatedResponse(_Closed):
+class AssuranceNodeCreatedResponse(Closed):
     """The node a create produced, identified and named.
 
     Not the node record: a create answers with what it made, and a caller that wants the whole record
@@ -364,7 +361,7 @@ class AssuranceNodeCreatedResponse(_Closed):
     verification_findings: list[AssuranceVerificationFinding] | None = None
 
 
-class AssuranceNodeUpdatedResponse(_Closed):
+class AssuranceNodeUpdatedResponse(Closed):
     """Which fields an edit actually changed.
 
     ``updated`` is the fields the store wrote, not the fields the request offered: an edit that sends

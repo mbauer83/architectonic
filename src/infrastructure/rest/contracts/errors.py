@@ -20,7 +20,7 @@ from __future__ import annotations
 
 from typing import Literal, TypeAlias
 
-from pydantic import BaseModel, ConfigDict
+from src.infrastructure.rest.contracts.wire_shape import Closed
 
 #: Every code this surface may return. Closed: a new failure mode is a new member here plus a
 #: details DTO in ``ERROR_DETAIL_TYPES``, which is what keeps the union honest.
@@ -70,10 +70,9 @@ ErrorCode: TypeAlias = Literal[
 ]
 
 
-class _Details(BaseModel):
-    """Base for a code's details payload: closed, so an undeclared key is a validation error."""
-
-    model_config = ConfigDict(extra="forbid")
+class _Details(Closed):
+    """Base for a code's details payload. Closedness comes from :class:`Closed`; what this base adds
+    is the *role* — a payload narrowed to one error code — which is what `ERROR_DETAIL_TYPES` keys."""
 
 
 class FieldError(_Details):
@@ -311,10 +310,8 @@ ErrorDetails: TypeAlias = (
 )
 
 
-class ErrorBody(BaseModel):
+class ErrorBody(Closed):
     """The value of ``detail``: what went wrong, in a form both a client and a person can use."""
-
-    model_config = ConfigDict(extra="forbid")
 
     code: ErrorCode
     message: str
@@ -322,10 +319,8 @@ class ErrorBody(BaseModel):
     request_id: str
 
 
-class ErrorEnvelope(BaseModel):
+class ErrorEnvelope(Closed):
     """The whole error response. ``detail`` is FastAPI's key, kept so nothing else has to move."""
-
-    model_config = ConfigDict(extra="forbid")
 
     detail: ErrorBody
 

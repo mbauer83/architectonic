@@ -15,14 +15,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict
+from src.infrastructure.rest.contracts.wire_shape import Closed
 
 
-class _Closed(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-
-class AssuranceDiagramCatalogEntry(_Closed):
+class AssuranceDiagramCatalogEntry(Closed):
     """One (analysis, diagram type) pair the surface can draw, as a picker needs it.
 
     Every field is a string because every field is a label or an identity — the entry exists to be
@@ -42,7 +38,7 @@ class AssuranceDiagramCatalogEntry(_Closed):
     description: str
 
 
-class AssuranceDiagramListResponse(_Closed):
+class AssuranceDiagramListResponse(Closed):
     """Every drawable diagram for the analyses this reader may see."""
 
     diagrams: list[AssuranceDiagramCatalogEntry]
@@ -50,7 +46,7 @@ class AssuranceDiagramListResponse(_Closed):
     visibility_limited: bool
 
 
-class AssuranceNodeRepresentingEdge(_Closed):
+class AssuranceNodeRepresentingEdge(Closed):
     """A drawn edge that stands for a node, and the node it stands for.
 
     A control action is rendered as its arrow rather than as a shape, so a click on that arrow has to
@@ -62,7 +58,7 @@ class AssuranceNodeRepresentingEdge(_Closed):
     target_id: str
 
 
-class AssuranceRenderedDiagramResponse(_Closed):
+class AssuranceRenderedDiagramResponse(Closed):
     """One analysis projected through one diagram type, drawn as far as the type can draw it.
 
     ``puml`` and ``svg`` are both null for a type whose grid is built client-side from the nodes and

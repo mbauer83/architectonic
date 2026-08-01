@@ -17,14 +17,8 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict
-
 from src.infrastructure.rest.contracts.viewpoint_trace import TraceTableResponse
-
-
-class _Closed(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
+from src.infrastructure.rest.contracts.wire_shape import Closed
 
 #: What one bound parameter is worth. Not open: a parameter declares a scalar element kind
 #: (``string``/``slug``/``date``/``entity-id`` bind as strings, ``integer``/``number`` as numbers,
@@ -33,7 +27,7 @@ class _Closed(BaseModel):
 BoundParameterValue = bool | int | float | str | list[str]
 
 
-class WitnessStepResponse(_Closed):
+class WitnessStepResponse(Closed):
     """One hop of a derived connection's witness chain, ordered source→target.
 
     ``direction`` says whether the underlying modelled edge was walked forwards or against its
@@ -48,7 +42,7 @@ class WitnessStepResponse(_Closed):
     hop_index: int
 
 
-class EntityItemSummaryResponse(_Closed):
+class EntityItemSummaryResponse(Closed):
     """One selected entity, summarised the same way for every surface.
 
     ``domain`` is carried here rather than looked up per entity because grouping and layered
@@ -77,7 +71,7 @@ class EntityItemSummaryResponse(_Closed):
     matched_via_derived_hops: int | None
 
 
-class ConnectionItemSummaryResponse(_Closed):
+class ConnectionItemSummaryResponse(Closed):
     """One selected connection, modelled or derived.
 
     ``via_connection_ids`` is unordered membership and is not renderable as a path;
@@ -95,7 +89,7 @@ class ConnectionItemSummaryResponse(_Closed):
     witness_steps: list[WitnessStepResponse]
 
 
-class MatrixAxisIdsResponse(_Closed):
+class MatrixAxisIdsResponse(Closed):
     """The row and column populations of a criteria-axes matrix.
 
     Sorted subsets of the result's own entity ids. Entities on neither axis are the complement and
@@ -106,7 +100,7 @@ class MatrixAxisIdsResponse(_Closed):
     column_entity_ids: list[str]
 
 
-class TargetPopulationSummaryResponse(_Closed):
+class TargetPopulationSummaryResponse(Closed):
     """The full (pre-truncation) result classified against the definition's declared targets.
 
     ``incidental_type_counts`` are the types that arrived because something else pulled them in;
@@ -121,7 +115,7 @@ class TargetPopulationSummaryResponse(_Closed):
     structural_count: int
 
 
-class AggregateNodeResponse(_Closed):
+class AggregateNodeResponse(Closed):
     """A super-node standing for every member entity sharing one dimension value."""
 
     id: str
@@ -132,7 +126,7 @@ class AggregateNodeResponse(_Closed):
     member_ids: list[str]
 
 
-class AggregateEdgeResponse(_Closed):
+class AggregateEdgeResponse(Closed):
     """Every connection between two aggregates, bundled into one edge.
 
     ``provenance`` keeps a bundle of derived edges from reading as modelled fact.
@@ -147,7 +141,7 @@ class AggregateEdgeResponse(_Closed):
     member_connection_ids: list[str]
 
 
-class AggregationSummaryResponse(_Closed):
+class AggregationSummaryResponse(Closed):
     """The collapsed view a graph surface opens with when the population exceeds its budget.
 
     Always computed over the COMPLETE population, independent of the entity limit, so the overview
@@ -160,7 +154,7 @@ class AggregationSummaryResponse(_Closed):
     edges: list[AggregateEdgeResponse]
 
 
-class ViewpointExecutionResponse(_Closed):
+class ViewpointExecutionResponse(Closed):
     """One execution: what ran, what it selected, and how much of it was returned.
 
     ``slug``/``version`` are null for an ad-hoc query, which has no identity to report.
@@ -201,7 +195,7 @@ class ViewpointExecutionResponse(_Closed):
     trace_table: TraceTableResponse | None
 
 
-class SignalBasisSnapshotResponse(_Closed):
+class SignalBasisSnapshotResponse(Closed):
     """One security snapshot a classification rests on, and the anchor it was read through."""
 
     anchor_entity_id: str
@@ -209,7 +203,7 @@ class SignalBasisSnapshotResponse(_Closed):
     activated_at: str
 
 
-class SignalBannerResponse(_Closed):
+class SignalBannerResponse(Closed):
     """The classification a signal-declaring render carries, and what it was computed from.
 
     ``available`` false means the metrics could not be read at all — ``classification`` is then null
@@ -223,7 +217,7 @@ class SignalBannerResponse(_Closed):
     generated_at: str
 
 
-class ViewpointDiagramRenderResponse(_Closed):
+class ViewpointDiagramRenderResponse(Closed):
     """An unpersisted ArchiMate render of the evaluated population, produced entirely in memory.
 
     ``svg`` is null when rendering failed; ``warnings`` then says what went wrong, so a failed

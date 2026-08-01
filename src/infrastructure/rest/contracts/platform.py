@@ -11,18 +11,13 @@ installation" and "configured and clean" are different answers to the same quest
 
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict
-
 from src.application.mutation_authorization import SyncHealthReason
 from src.infrastructure.git.enterprise_sync_state import EnterpriseSyncStatus
+from src.infrastructure.rest.contracts.wire_shape import Closed
 from src.infrastructure.rest.routers._sync_authority import BlockKind
 
 
-class _Closed(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-
-class ServerInfoResponse(_Closed):
+class ServerInfoResponse(Closed):
     """Which roots this backend serves, and whether it will accept writes.
 
     The two roots are ``null`` when the installation has no such repository — distinct from an empty
@@ -35,7 +30,7 @@ class ServerInfoResponse(_Closed):
     enterprise_root: str | None
 
 
-class AllocatedIdentifierResponse(_Closed):
+class AllocatedIdentifierResponse(Closed):
     """A freshly minted workspace-scoped id for a diagram-owned entity.
 
     One field, and deliberately an object rather than a bare string: an allocation may later need to
@@ -46,7 +41,7 @@ class AllocatedIdentifierResponse(_Closed):
     id: str
 
 
-class SyncHealthResponse(_Closed):
+class SyncHealthResponse(Closed):
     """Why the enterprise sync is unhealthy, when it is.
 
     The reason is the domain's own closed vocabulary rather than a string, so a client can branch on it
@@ -59,13 +54,13 @@ class SyncHealthResponse(_Closed):
     observed_at: str
 
 
-class EngagementSyncStateResponse(_Closed):
+class EngagementSyncStateResponse(Closed):
     """The engagement repository's state — local-only, so uncommitted work is all there is to report."""
 
     has_uncommitted_changes: bool
 
 
-class EnterpriseSyncStateResponse(_Closed):
+class EnterpriseSyncStateResponse(Closed):
     """The enterprise repository's state against its remote.
 
     ``commits_ahead`` is absent rather than zero when the repository is not accumulating: the count is
@@ -85,14 +80,14 @@ class EnterpriseSyncStateResponse(_Closed):
     commits_ahead: int | None = None
 
 
-class DeniedIntentResponse(_Closed):
+class DeniedIntentResponse(Closed):
     """Whether one sync intent is currently refused, and under which code."""
 
     denied: bool
     code: str | None
 
 
-class SyncAuthorityResponse(_Closed):
+class SyncAuthorityResponse(Closed):
     """What the current authority state permits, per intent.
 
     ``denied_intents`` is keyed by intent name — an open map because the intents are declared by the
@@ -107,7 +102,7 @@ class SyncAuthorityResponse(_Closed):
     denied_intents: dict[str, DeniedIntentResponse]
 
 
-class SyncStatusResponse(_Closed):
+class SyncStatusResponse(Closed):
     """Both repositories' sync state, and what the authority currently permits.
 
     Each repository is ``null`` when it is not configured, which is why neither is merged into the

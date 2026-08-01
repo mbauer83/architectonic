@@ -16,14 +16,12 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, RootModel
+from pydantic import ConfigDict, Field, RootModel
+
+from src.infrastructure.rest.contracts.wire_shape import Closed
 
 
-class _Closed(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-
-class DiagramTypeSummary(_Closed):
+class DiagramTypeSummary(Closed):
     """One diagram type a user may create, as a picker needs it.
 
     Store-projected types are absent: an assurance diagram is derived from an analysis rather than
@@ -35,7 +33,7 @@ class DiagramTypeSummary(_Closed):
     description: str
 
 
-class MappingSourceSpecResponse(_Closed):
+class MappingSourceSpecResponse(Closed):
     """One ontology source a diagram-own type may be mapped onto.
 
     ``transparent`` marks a source that maps through without appearing as a choice of its own.
@@ -47,7 +45,7 @@ class MappingSourceSpecResponse(_Closed):
     transparent: bool
 
 
-class PermittedMappingSpecResponse(_Closed):
+class PermittedMappingSpecResponse(Closed):
     """What a diagram-own construct may be mapped to in the model.
 
     Types and classes are separate because a class is a set of types: a construct permitted for a class
@@ -59,7 +57,7 @@ class PermittedMappingSpecResponse(_Closed):
     sources: list[MappingSourceSpecResponse]
 
 
-class PermittedRelationshipResponse(_Closed):
+class PermittedRelationshipResponse(Closed):
     """One (source, target, connection) triple a diagram type permits."""
 
     source_type: str
@@ -67,7 +65,7 @@ class PermittedRelationshipResponse(_Closed):
     connection_type: str
 
 
-class RequiredConnectionResponse(_Closed):
+class RequiredConnectionResponse(Closed):
     """A connection a construct must have, with how many. ``cardinality_max`` null means unbounded."""
 
     connection_type: str
@@ -76,14 +74,14 @@ class RequiredConnectionResponse(_Closed):
     cardinality_max: int | None
 
 
-class DiagramOwnPropertySpecResponse(_Closed):
+class DiagramOwnPropertySpecResponse(Closed):
     """One property a diagram-own construct carries.
 
     ``schema`` is a JSON Schema fragment: its keywords are that specification's, not this surface's —
     the same reason the entity schema route does not mirror them either.
     """
 
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True)
 
     name: str
     # Aliased because ``BaseModel.schema`` is taken; FastAPI serialises by alias, so the wire name is
@@ -92,14 +90,14 @@ class DiagramOwnPropertySpecResponse(_Closed):
     required: bool
 
 
-class EditableMetadataFieldResponse(_Closed):
+class EditableMetadataFieldResponse(Closed):
     """One editable field, and the control an editor should render for it."""
 
     field: str
     control: str
 
 
-class EditableMetadataSpecResponse(_Closed):
+class EditableMetadataSpecResponse(Closed):
     """Which metadata an editor may change, on the construct and on its subparts.
 
     ``subparts`` is keyed by subpart name — an open map with a closed value, because which subparts a
@@ -110,7 +108,7 @@ class EditableMetadataSpecResponse(_Closed):
     subparts: dict[str, list[EditableMetadataFieldResponse]]
 
 
-class DiagramOwnEntityTypeResponse(_Closed):
+class DiagramOwnEntityTypeResponse(Closed):
     """One construct a diagram type owns rather than borrowing from the model.
 
     ``identity_scope`` decides whether the construct's id is unique to its diagram or to the whole
@@ -142,7 +140,7 @@ class DiagramOwnEntityTypeResponse(_Closed):
     include_in_global_search: bool
 
 
-class DiagramTypeUiConfigResponse(_Closed):
+class DiagramTypeUiConfigResponse(Closed):
     """How one diagram type wants its authoring surface built.
 
     ``type_ui_slots`` maps a construct type to the editor component that should render it, and

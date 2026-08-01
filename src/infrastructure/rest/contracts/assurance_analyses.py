@@ -20,16 +20,11 @@ much.
 
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict
-
 from src.domain.assurance.assurance_analysis import AnalysisMethod, AnalysisStatus
+from src.infrastructure.rest.contracts.wire_shape import Closed
 
 
-class _Closed(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-
-class AssuranceAnalysisRecord(_Closed):
+class AssuranceAnalysisRecord(Closed):
     """One analysis, as every backend now hands it back.
 
     ``group_id`` is filing and is null until someone files it — present-and-null rather than absent,
@@ -49,7 +44,7 @@ class AssuranceAnalysisRecord(_Closed):
     updated_at: str
 
 
-class AssuranceAnalysisListResponse(_Closed):
+class AssuranceAnalysisListResponse(Closed):
     """The analyses this reader may see, and whether that is all of them.
 
     ``count`` is the length of ``analyses`` rather than the store's total — the same number, said
@@ -63,7 +58,7 @@ class AssuranceAnalysisListResponse(_Closed):
     visibility_limited: bool
 
 
-class AssuranceAnalysisSummary(_Closed):
+class AssuranceAnalysisSummary(Closed):
     """An analysis named just enough to show beside something it owns or uses.
 
     Mirrors ``assurance_provenance.analysis_summary`` field for field — the five it selects, and no
@@ -78,7 +73,7 @@ class AssuranceAnalysisSummary(_Closed):
     group_id: str | None
 
 
-class AssuranceGroupRecord(_Closed):
+class AssuranceGroupRecord(Closed):
     """One filing group: a name, a description, and when it was made.
 
     No classification of its own, which is what distinguishes a group from the analyses it holds —
@@ -93,13 +88,13 @@ class AssuranceGroupRecord(_Closed):
     updated_at: str
 
 
-class AssuranceGroupListResponse(_Closed):
+class AssuranceGroupListResponse(Closed):
     """Every group, in the order a reader expects to file into them (by name)."""
 
     groups: list[AssuranceGroupRecord]
 
 
-class AssuranceParticipatingNodesResponse(_Closed):
+class AssuranceParticipatingNodesResponse(Closed):
     """The nodes an analysis draws on without having authored them.
 
     Ids rather than records: a caller who wants the nodes themselves wants the working-set page
@@ -117,7 +112,7 @@ class AssuranceParticipatingNodesResponse(_Closed):
     visibility_limited: bool
 
 
-class AssuranceAnalysisDetailResponse(_Closed):
+class AssuranceAnalysisDetailResponse(Closed):
     """One analysis with the size of its authored contents, as far as this reader may see.
 
     ``node_count`` counts the analysis's own nodes after exposure filtering, so it agrees with the
@@ -128,7 +123,7 @@ class AssuranceAnalysisDetailResponse(_Closed):
     node_count: int
 
 
-class AssuranceGuidanceResponse(_Closed):
+class AssuranceGuidanceResponse(Closed):
     """Method coaching for one topic: what it is, why it matters, how to do it, and what says so.
 
     Static content, so this route is callable with the store locked — there is nothing confidential in
