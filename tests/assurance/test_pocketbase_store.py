@@ -105,21 +105,35 @@ def test_get_node_returns_none_when_missing() -> None:
     assert result is None
 
 
+def _pb_node(pb_id: str, node_id: str, *, node_type: str = "loss", name: str = "Loss A") -> dict:
+    """A PocketBase node record as PocketBase actually returns one: the stored fields plus its own
+    row id. The fixtures here used to carry two or three keys, which no server would send and which
+    the record projection now refuses — the point of the projection being that ``id`` must not reach
+    a caller and the stored fields must all be there."""
+    return {
+        "id": pb_id,
+        "node_id": node_id, "node_type": node_type, "name": name,
+        "status": "draft", "tlp": "TLP:WHITE",
+        "attributes_json": "{}", "content_text": "",
+        "created_at": "2026-01-01T00:00:00Z", "updated_at": "2026-01-01T00:00:00Z",
+    }
+
+
 def test_get_node_returns_first_item() -> None:
-    fake_node = {"id": "pb1", "node_id": "LSS@1.test.abc123", "name": "Loss A"}
     store = _make_store()
-    store._client = _mock_client(items=[fake_node])
+    store._client = _mock_client(items=[_pb_node("pb1", "LSS@1.test.abc123")])
 
     result = store.get_node("LSS@1.test.abc123")
 
     assert result is not None
     assert result["name"] == "Loss A"
+    assert "id" not in result, "PocketBase's row id is not this system's identity"
 
 
 def test_list_nodes_returns_items() -> None:
     items = [
-        {"id": "pb1", "node_id": "LSS@1.x.y", "node_type": "loss"},
-        {"id": "pb2", "node_id": "HAZ@1.x.y", "node_type": "hazard"},
+        _pb_node("pb1", "LSS@1.x.y", node_type="loss"),
+        _pb_node("pb2", "HAZ@1.x.y", node_type="hazard", name="Hazard A"),
     ]
     store = _make_store()
     store._client = _mock_client(items=items)
@@ -127,6 +141,7 @@ def test_list_nodes_returns_items() -> None:
     nodes = store.list_nodes()
 
     assert len(nodes) == 2
+    assert all("id" not in node for node in nodes)
 
 
 def test_add_edge_returns_prefixed_id() -> None:

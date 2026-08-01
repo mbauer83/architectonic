@@ -25,6 +25,7 @@ from src.domain.assurance.assurance_node_types import NODE_UPDATABLE
 from src.domain.clock import utc_now_iso
 from src.infrastructure.assurance._fmea_assessment_records import RestFmeaAssessmentMixin
 from src.infrastructure.assurance._id_utils import make_edge_id, make_node_id
+from src.infrastructure.assurance._node_records import as_node_record, as_node_records
 from src.infrastructure.assurance._pocketbase_analysis import (
     ANALYSES_COLLECTION,
     RestAnalysisStoreMixin,
@@ -112,12 +113,26 @@ class PocketBaseAssuranceStore(
 
     # ── Node CRUD ─────────────────────────────────────────────────────────────
 
-    def get_node(self, node_id: str) -> dict[str, object] | None:
+    def _raw_node_items(self, **bindings: str) -> list[dict[str, object]]:
+        """PocketBase's own records, collection metadata included — for this adapter's use only.
+
+        ``id`` is the collection's row identity and the ``PATCH``/``DELETE`` URLs are addressed by it,
+        so update and delete need the unprojected record. It is a key inside one store, not an identity
+        in this system, which is why the canonical record does not carry it.
+        """
         client = self._require_unlocked()
-        resp = client.get(self._node_url(), params=self._filter(node_id=node_id))
+        resp = client.get(self._node_url(), params=self._filter(**bindings))
         resp.raise_for_status()
-        items = resp.json().get("items", [])
+        items: list[dict[str, object]] = resp.json().get("items", [])
+        return items
+
+    def _raw_node(self, node_id: str) -> dict[str, object] | None:
+        items = self._raw_node_items(node_id=node_id)
         return items[0] if items else None
+
+    def get_node(self, node_id: str) -> dict[str, object] | None:
+        record = self._raw_node(node_id)
+        return None if record is None else as_node_record(record)
 
     def list_nodes(
         self,
@@ -150,7 +165,8 @@ class PocketBaseAssuranceStore(
         params.update(self._filter(**bindings))
         resp = client.get(self._node_url(), params=params)
         resp.raise_for_status()
-        return resp.json().get("items", [])
+        items: list[dict[str, object]] = resp.json().get("items", [])
+        return as_node_records(items)
 
     def create_node(
         self,
@@ -193,7 +209,7 @@ class PocketBaseAssuranceStore(
         import json  # noqa: PLC0415
 
         client = self._require_unlocked()
-        existing = self.get_node(node_id)
+        existing = self._raw_node(node_id)
         if existing is None:
             raise RuntimeError(f"Node not found: {node_id}")
         pb_id = str(existing["id"])
@@ -211,7 +227,7 @@ class PocketBaseAssuranceStore(
         participation in analyses that did not author it. Leaving either behind is what left the
         shipped seed naming nodes that no longer existed."""
         client = self._require_unlocked()
-        existing = self.get_node(node_id)
+        existing = self._raw_node(node_id)
         if existing is None:
             return
         self._delete_arch_refs_of_node(node_id)

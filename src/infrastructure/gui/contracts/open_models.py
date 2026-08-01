@@ -91,13 +91,6 @@ OPEN_RESPONSE_MODELS: dict[str, OpenReason] = {
 
     # ── Open pending a decision, not because anyone decided they should be ────
     #
-    # `AssuranceNodeRecord` is the store's node row. Its open part is `attributes_json`, which the
-    # store keeps as a `TEXT` column (`assurance/_schema.py:85`) and passes through unparsed, so the
-    # wire carries a JSON *string* and the client parses it a second time
-    # (`AssuranceGrcWizard.helpers.ts:61`). Closing the model means deciding whether the server parses
-    # it — a wire break — or mirrors the string faithfully. Until that is decided, an invented closed
-    # shape would be worse than a declared open one.
-    "AssuranceNodeRecord": PENDING_DECISION,
     # `AffectedEntity` reports which architecture elements a vulnerability reaches. Its fields come
     # from this system's own impact analysis, not from a feed, so `feed-owned` was never true of it —
     # it is closeable, and the shape simply has not been derived from the producer yet.

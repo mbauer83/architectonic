@@ -1,4 +1,4 @@
-"""An analysis or group record has one shape, whichever backend stored it.
+"""An analysis, group or node record has one shape, whichever backend stored it.
 
 It had three. SQLCipher's ``SELECT *`` returned nine columns. A file-backed record written before it
 had ever been filed had eight — ``group_id`` was simply absent, because ``new_analysis_record`` did
@@ -29,6 +29,7 @@ from src.infrastructure.assurance._analysis_records import (
     new_analysis_record,
 )
 from src.infrastructure.assurance._grouping_records import GROUP_RECORD_FIELDS
+from src.infrastructure.assurance._node_records import NODE_RECORD_FIELDS
 from tests.support.assurance_backends import ASSURANCE_BACKENDS, BACKEND_NAMES
 
 
@@ -133,6 +134,68 @@ class TestEveryBackendReturnsTheCanonicalGroupRecord:
         surviving = store.get_analysis(analysis_id)
         assert surviving is not None, "deleting a folder must not delete what is filed in it"
         assert surviving["group_id"] is None
+
+
+class TestEveryBackendReturnsTheCanonicalNodeRecord:
+    """The record that matters most: nearly every read on this surface embeds a node.
+
+    Nineteen columns from SQLCipher, seventeen from the file stores, seventeen plus collection
+    metadata from PocketBase — and the frontend's decoder was wrong in both directions at once,
+    requiring the one field only SQLCipher sends and omitting two every store writes.
+    """
+
+    def test_a_freshly_created_node_reads_back_with_exactly_the_canonical_fields(
+        self, store: Any
+    ) -> None:
+        analysis_id = str(store.create_analysis("Brakes", "STPA", tlp="TLP:WHITE"))
+        node_id = str(store.create_node("hazard", "Uncommanded braking", analysis_id=analysis_id))
+
+        record = store.get_node(node_id)
+
+        assert record is not None
+        assert set(record) == set(NODE_RECORD_FIELDS)
+        assert record["node_id"] == node_id
+        assert record["analysis_id"] == analysis_id
+
+    def test_the_node_list_and_the_search_agree_with_the_detail_read(self, store: Any) -> None:
+        """Three read paths per backend. A projection applied to one of them is the shape of defect
+        that reaches a client only when they scroll, or only when they search."""
+        analysis_id = str(store.create_analysis("Pumps", "FMEA", tlp="TLP:WHITE"))
+        node_id = str(store.create_node("failure-mode", "Seal weeps", analysis_id=analysis_id))
+        detail = store.get_node(node_id)
+
+        listed = [row for row in store.list_nodes() if row["node_id"] == node_id]
+        found = [row for row in store.search_nodes("Seal weeps") if row["node_id"] == node_id]
+
+        assert listed == [detail]
+        assert found == [detail]
+
+    def test_an_attribution_this_system_does_not_record_is_not_published(self, store: Any) -> None:
+        """``created_by`` is a SQLCipher column with an empty default that nothing writes. Sending it
+        would document an author the store never captured — and only one backend would send it."""
+        analysis_id = str(store.create_analysis("Valves", "GRC", tlp="TLP:WHITE"))
+        node_id = str(store.create_node("risk", "Quarterly review", analysis_id=analysis_id))
+
+        record = store.get_node(node_id)
+
+        assert record is not None
+        assert "created_by" not in record
+        assert "id" not in record
+
+    def test_the_discriminated_fields_are_present_and_null_rather_than_absent(
+        self, store: Any
+    ) -> None:
+        """A hazard has no ``uca_type``; the field is still there. Absent and null are different
+        answers, and a closed contract can only represent one of them."""
+        analysis_id = str(store.create_analysis("Seals", "STPA", tlp="TLP:WHITE"))
+        node_id = str(store.create_node("hazard", "Loss of seal", analysis_id=analysis_id))
+
+        record = store.get_node(node_id)
+
+        assert record is not None
+        for field in ("uca_type", "failure_type", "mode", "concern_class", "node_role"):
+            assert field in record, field
+            assert record[field] is None, field
 
 
 class TestTheProjectionItself:

@@ -3223,13 +3223,55 @@ export interface components {
         };
         /**
          * AssuranceNodeRecord
-         * @description One assurance node row, as the store holds it.
+         * @description One assurance node, as every backend now hands it back.
          *
-         *     Open while the node contracts are still being authored: the analysis-aggregate slice owns that
-         *     vocabulary, and declaring half of it here would put the definition in two places.
+         *     Was open, on the reading that its ``attributes_json`` needed a decision first. It did not: the
+         *     store keeps that column as ``TEXT`` and passes it through unparsed, so the wire carries a JSON
+         *     *string* and the client parses it a second time (``AssuranceGrcWizard.helpers.ts``). A string is a
+         *     ``str``. What actually blocked closing this was that the record had no single shape — nineteen
+         *     columns from SQLCipher, seventeen from the file stores, seventeen plus collection metadata from
+         *     PocketBase — and it is projected at the store boundary now
+         *     (``assurance/_node_records.NODE_RECORD_FIELDS``).
+         *
+         *     The nullable fields are the discriminated ones: a hazard has no ``uca_type``, a failure mode no
+         *     ``concern_class``, and a legacy-invalid node no ``analysis_id`` at all — which is the state the
+         *     provenance repair surface exists to fix, so it has to be representable rather than defaulted.
          */
         AssuranceNodeRecord: {
-            [key: string]: unknown;
+            /** Analysis Id */
+            analysis_id: string | null;
+            /** Attributes Json */
+            attributes_json: string;
+            /** Binding Status */
+            binding_status: string | null;
+            /** Concern Class */
+            concern_class: string | null;
+            /** Content Text */
+            content_text: string;
+            /** Created At */
+            created_at: string;
+            /** Disposition */
+            disposition: string | null;
+            /** Failure Type */
+            failure_type: string | null;
+            /** Mode */
+            mode: string | null;
+            /** Name */
+            name: string;
+            /** Node Id */
+            node_id: string;
+            /** Node Role */
+            node_role: string | null;
+            /** Node Type */
+            node_type: string;
+            /** Status */
+            status: string;
+            /** Tlp */
+            tlp: string;
+            /** Uca Type */
+            uca_type: string | null;
+            /** Updated At */
+            updated_at: string;
         };
         /**
          * AssuranceNodeRef

@@ -15,6 +15,7 @@ import type {
   SyncStatusSchema,
 } from './sync-status'
 import type { StatsSchema } from './stats'
+import type { AssuranceNodeSchema } from './assurance'
 import type {
   AnalysisMethod,
   AnalysisStatus,
@@ -273,6 +274,15 @@ describe('assurance analyses', () => {
     >()
     expectTypeOf<SchemaType<typeof AssuranceAnalysisSummarySchema>>().toEqualTypeOf<
       Immutable<components['schemas']['AssuranceAnalysisSummary']>
+    >()
+  })
+
+  it('decodes the node record every backend now returns', () => {
+    // Wrong in both directions before: it required `created_by`, which only SQLCipher sends, and
+    // omitted `failure_type` and `mode`, which every store writes. Only this assertion catches the
+    // second kind — a decoder missing a field the server sends still decodes.
+    expectTypeOf<SchemaType<typeof AssuranceNodeSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['AssuranceNodeRecord']>
     >()
   })
 

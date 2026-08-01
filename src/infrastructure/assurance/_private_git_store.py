@@ -33,6 +33,7 @@ from src.infrastructure.assurance._grouping_records import (
     FileGroupingStoreMixin,
 )
 from src.infrastructure.assurance._id_utils import make_edge_id, make_node_id
+from src.infrastructure.assurance._node_records import as_node_record, as_node_records
 
 logger = logging.getLogger(__name__)
 
@@ -110,7 +111,8 @@ class PrivateGitAssuranceStore(
 
     def get_node(self, node_id: str) -> dict[str, object] | None:
         self._require_unlocked()
-        return self._read(self._repo / "nodes" / f"{node_id}.json")
+        record = self._read(self._repo / "nodes" / f"{node_id}.json")
+        return None if record is None else as_node_record(record)
 
     def list_nodes(
         self,
@@ -138,7 +140,7 @@ class PrivateGitAssuranceStore(
             if analysis_id and node.get("analysis_id") != analysis_id:
                 continue
             nodes.append(node)
-        return sorted_node_dicts(nodes, sort, order)
+        return as_node_records(sorted_node_dicts(nodes, sort, order))
 
     def create_node(
         self,

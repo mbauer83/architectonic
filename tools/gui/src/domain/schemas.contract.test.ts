@@ -8,6 +8,10 @@ import {
 
 // Reduced, representative responses captured from the running backend on 2026-06-21.
 // Fields are preserved verbatim; large arrays and source bodies are reduced to one item.
+//
+// The assurance node was recaptured when the record gained one shape across the four backends: it no
+// longer carries `created_by` — a SQLCipher column with an empty default that nothing writes and
+// nothing reads — and it now carries `failure_type` and `mode`, which every store had always written.
 const SEARCH_RESPONSE = {
   query: 'document',
   hits: [{
@@ -30,13 +34,17 @@ const ASSURANCE_NODES_RESPONSE = {
     concern_class: 'security',
     disposition: null,
     uca_type: null,
+    // Written by every store and absent from this capture until the record was projected at the
+    // store boundary — the decoder did not declare them either, so a failure mode's own
+    // discriminators were invisible to a client that had decoded it successfully.
+    failure_type: null,
+    mode: null,
     binding_status: null,
     node_role: null,
     attributes_json: '{}',
     content_text: 'Assurance evidence is disclosed to an unauthorized party.',
     created_at: '2026-06-11T12:39:59Z',
     updated_at: '2026-06-11T12:39:59Z',
-    created_by: '',
     analysis_id: null,
   }],
   count: 1,

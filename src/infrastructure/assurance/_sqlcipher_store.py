@@ -28,6 +28,7 @@ from src.infrastructure.assurance import _credential_accounts as accounts
 from src.infrastructure.assurance import _sqlcipher_analysis as _analysis
 from src.infrastructure.assurance._fmea_assessment_records import SqlFmeaAssessmentMixin
 from src.infrastructure.assurance._id_utils import make_edge_id, make_node_id
+from src.infrastructure.assurance._node_records import as_node_record, as_node_records
 from src.infrastructure.assurance._schema import ASSURANCE_SCHEMA_MIGRATIONS, ASSURANCE_SCHEMA_SQL, SCHEMA_VERSION
 from src.infrastructure.assurance._sqlcipher_connection import ThreadLocalConnectionManager
 from src.infrastructure.assurance._sqlcipher_util import now_iso as _now_iso
@@ -199,7 +200,7 @@ class SQLCipherAssuranceStore(SqlFmeaAssessmentMixin):
         row = conn.execute(
             "SELECT * FROM assurance_nodes WHERE node_id = ?", (node_id,)
         ).fetchone()
-        return row if row else None
+        return as_node_record(row) if row else None
 
     def list_nodes(
         self,
@@ -225,7 +226,7 @@ class SQLCipherAssuranceStore(SqlFmeaAssessmentMixin):
             f"ORDER BY {column} {'DESC' if direction == 'desc' else 'ASC'}, node_id ASC",
             params,
         ).fetchall()
-        return list(rows)
+        return as_node_records(list(rows))
 
     def create_node(
         self,
@@ -398,7 +399,7 @@ class SQLCipherAssuranceStore(SqlFmeaAssessmentMixin):
                LIMIT ?""",
             (pattern, pattern, pattern, limit),
         ).fetchall()
-        return list(rows)
+        return as_node_records(list(rows))
 
     # ── Stats ─────────────────────────────────────────────────────────────────
 
