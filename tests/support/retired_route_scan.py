@@ -31,8 +31,9 @@ _SKIP_FILES = frozenset({
 
 #: Directories whose content is a *record* of what was, not a reference to it. An ADR's Context
 #: names the defect it decided against; rewriting that to avoid a retired literal would erase the
-#: reason the decision exists.
-_RECORD_DIRECTORIES = frozenset({"adr"})
+#: reason the decision exists. ``changelog-assets`` holds the published old→new route map, whose left
+#: column is retired addresses by definition — it is what consumers migrate against.
+_RECORD_DIRECTORIES = frozenset({"adr", "changelog-assets"})
 
 #: Generated output, each with its own drift gate. A retired literal here is a stale artifact those
 #: gates report, not a live reference — and the escaped regexes in the timeout policy would trip a

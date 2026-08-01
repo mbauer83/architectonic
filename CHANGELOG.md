@@ -7,202 +7,88 @@ All notable changes to this project are documented here. The format follows
 
 ## [0.2.0] — 2026-08-01
 
-### Breaking — REST resource addressing
+### Breaking — REST resource addressing and response contracts
 
 Identity of the resource an HTTP operation addresses now belongs in the path; filters stay in the
-query. There are **no aliases and no redirects**: this is a local-first product first released on
-2026-07-29, so the only migration obligation is persisted local data, and that is migrated
-non-destructively. Every consumer moves in this release.
+query. **There are no aliases and no redirects** — every consumer moves in this release. Persisted
+local data is migrated non-destructively; nothing else is.
 
-The rule, and why it is enforced by an executable manifest rather than a convention, is recorded in
-ADR *Resource Addressing: Identity in the Path, Filters in the Query*. Response and error contracts
-change with it — see ADR *Response Contracts Are Owned by the Server and Generated Outward* — and
-the assurance analysis aggregate is reshaped in ADR *The Assurance Analysis Aggregate: Filing,
-Provenance and Participation Are Three Relations*.
+**[Complete route map → `changelog-assets/0.2.0-route-map.md`](changelog-assets/0.2.0-route-map.md)**
+(79 retirements with their replacements). `operationId` is unchanged across the renames, so a
+generated client keyed by operation id needs only the new paths.
 
-#### What else changes for a consumer
+Why the surface is shaped this way is in the ADRs, not here: *Resource Addressing: Identity in the
+Path, Filters in the Query*, *Response Contracts Are Owned by the Server and Generated Outward*, and
+*The Assurance Analysis Aggregate: Filing, Provenance and Participation Are Three Relations*.
 
-- **Every error body is the same typed envelope.** `detail` is an object, not a sentence:
-  `{"detail": {"code", "message", "details", "request_id"}}`. `code` is a closed vocabulary and
-  `details` is a per-code payload. Anything parsing `detail` as a string must change.
-  The assurance surface included, reads and writes alike: it used to answer `{"error": "...", ...}` with
-  a vocabulary of its own, so a client branching on `detail.code` fell through on every refusal it
-  makes — including a merely locked store, which the GUI meets on every page load. Six codes moved into
-  the shared vocabulary — `duplicate_edge`, `illegal_connection_type`, `not_a_failure_mode`,
-  `traversal_time_budget_exceeded`, `unknown_diagram_type`, `not_configured` — and the rest became
-  `validation_error` with their field paths under `details.field_errors`. `not_configured` says the
-  *deployment* lacks a capability, so it is neither a conflict nor a rejected request: nothing the
-  caller sends will fix it.
-- **Three assurance statuses change, because the old ones misdescribed the failure.** Deleting an
-  analysis that authored nodes is `409 analysis_not_empty` (a state conflict, not a malformed request);
-  filing under a group that does not exist is `404`; a rejected field value is `422`. All three used to
-  be `400`, which tells a caller to correct a request that was correct.
-- **An assurance not-found no longer echoes the identifier.** An absent record and one above the
-  reader's clearance must be indistinguishable, and a body naming what was asked for invites the habit
-  of trusting that it existed.
-- **`GET /api/ontology` becomes two routes.** It answered two different questions — what a type may
-  connect to, and what is permitted between an ordered pair — choosing the shape by whether
-  `target_type` was supplied, so no single schema could describe it. Ask
-  `GET /api/ontology/classification?source_type=` for the first and
-  `GET /api/ontology/pairs?source_type=&target_type=` for the second. Naming a document or diagram
-  reference as an endpoint now answers `422`; it used to answer `200` with an `error` string, which is a
-  whole-operation failure wearing a success code.
-- **Every response carries `X-Request-ID`**, echoed from the request when supplied.
-- **Every error response carries `Cache-Control: no-store`.**
-- **`POST /api/assurance/nodes` is gone.** A node is created inside its provenance analysis, at
-  `POST /api/assurance/analyses/{analysis_id}/nodes`, and provenance is mandatory — it was an
-  optional body field, which is how 26 nodes came to sit in the store with no author recorded.
-  `analysis_id` leaves the node edit contract; `PUT /api/assurance/nodes/{node_id}/provenance` is
-  the only route that may set it, and only for an unattributed node. Re-asserting the same analysis
-  is idempotent (`204`); asserting a different one returns `409 provenance_immutable`.
-- **Participation moves to `participating-nodes` and becomes a relation, not a collection post.**
-  `PUT`/`DELETE /api/assurance/analyses/{id}/participating-nodes/{node_id}` are idempotent and
-  answer `204`; the node is the path, not a body field. A node may not participate in the analysis
-  that authored it — that returns `409 invalid_participation` and writes nothing, rather than being
-  deduplicated away.
-- **Deleting a node another analysis references is refused.** `DELETE /api/assurance/nodes/{node_id}`
-  answers `409 entity_in_use` while any analysis other than the author participates in the node, and
-  the details name them so the caller knows which references to remove. It used to delete, taking
-  every borrower's reference with it and recording nothing — a node one analysis authored may be the
-  evidence another's argument rests on. Remove the participation relations first, then delete.
-- **The MCP write surface changes with it.** `assurance_create_node` requires `analysis_id`;
-  `assurance_edit_node` no longer accepts it; `assurance_assign_provenance` is the new repair tool.
-  Leaving them alone would have left an unguarded route around the invariant.
-- **The unscoped FMEA matrix is gone.** `GET /api/assurance/fmea` with no analysis returned every
-  failure mode in the store; the matrix is now a projection of one analysis. A method-filtered
-  analysis picker replaces it in the GUI.
-- **The four `*-complete` endpoints collapse into one.** `GET /api/assurance/analyses/{id}/completeness`
-  returns a method-discriminated response — `method` names which report it answered, and the
-  argument case's completeness (formerly `gsn/completeness`) travels with it under `case`. The
-  analysis decides, not the URL: the old routes took the analysis as an *optional* query parameter,
-  so a CAST report could be asked of an STPA analysis and come back empty, reading like a pass.
-  A method with no completeness projection — FMEA, whose projection is its matrix — returns
-  `409 analysis_method_mismatch`.
-- **Recording an FMEA factor is a `POST`, not a `PUT`.** `POST /api/assurance/nodes/{node_id}/factor-assessments`
-  appends a revision; `PUT` promised an idempotence the surface never had. `node_id` leaves the
-  body — the node's own provenance decides which analysis owns the judgement.
-- **The FMEA matrix requires its analysis, and the GUI no longer offers an unscoped one.** With two
-  FMEAs the global matrix drew both analyses' rows in one grid, which is not a ranking of either.
-  The page shows a method-filtered analysis picker until one is chosen.
-- **The OpenAPI document's version is the package version.** It previously read `0.3.0` against a
-  `0.1.0` package.
-- **`operationId` is `{tag}_{verb}_{resource}`** and is stable across these renames, so generated
-  clients keyed by operation id are unaffected by the path changes themselves.
+#### Errors — every body changes shape
+
+- **One typed envelope everywhere.** `detail` is an object, not a sentence:
+  `{"detail": {"code", "message", "details", "request_id"}}`. `code` is a closed vocabulary,
+  `details` is a per-code payload. **Anything parsing `detail` as a string must change.** The
+  assurance surface included: it answered `{"error": "...", ...}` with a vocabulary of its own, so a
+  client branching on `detail.code` fell through on every refusal it made.
+- **A refused deletion is an error, not a `200` carrying `ok: false`.**
+- **Three assurance statuses change.** Deleting an analysis that authored nodes is
+  `409 analysis_not_empty`; filing under a group that does not exist is `404`; a rejected field value
+  is `422`. All three were `400`.
+- **A failed signal ingest, an unknown vulnerability and an absent snapshot answer the envelope**
+  rather than a body carrying a `status` word. The status codes are unchanged.
+- **An identifier that collides with a literal collection segment is refused** with `400` — a
+  viewpoint named `pins` or `criteria-catalog` could be written and never read back.
+
+#### Methods and statuses
+
 - **Partial updates are `PATCH`; whole-resource replacements are `PUT`.** `POST …/edit` is gone.
-- **Deletions return `204` with no body**, except a dry run, which returns `200` with its envelope.
-- **`POST /api/assurance/security-snapshot-delete` is gone**, and with it the body that chose
-  between deleting one snapshot and deleting every snapshot of an anchor. The scope is the address:
+- **Deletions return `204` with no body** — except a dry run, which returns `200` with its envelope.
+- **Recording an FMEA factor is `POST`**, at
+  `/api/assurance/nodes/{node_id}/factor-assessments`: it appends a revision, and `PUT` promised an
+  idempotence the surface never had. `node_id` leaves the body.
+
+#### Routes that split or collapse (not in the route map, which lists renames)
+
+- **`GET /api/ontology` becomes two.** It chose its shape by whether `target_type` was supplied, so
+  no single schema could describe it. Use `GET /api/ontology/classification?source_type=` for what a
+  type may connect to, and `GET /api/ontology/pairs?source_type=&target_type=` for what is permitted
+  between an ordered pair. Naming a document or diagram reference as an endpoint now answers `422`.
+- **The four `*-complete` endpoints collapse into one.**
+  `GET /api/assurance/analyses/{id}/completeness` returns a method-discriminated response; `method`
+  names which report it answered and the argument case travels under `case`. A method with no
+  completeness projection returns `409 analysis_method_mismatch`.
+- **`POST /api/assurance/security-snapshot-delete` is gone**, and with it the body that chose between
+  deleting one snapshot and all of an anchor's. The scope is the address:
   `DELETE /api/assurance/security-snapshots/{snapshot_id}` or
   `DELETE /api/assurance/arch-artifacts/{arch_artifact_id}/security-snapshots`.
-- **A failed signal ingest, an unknown vulnerability and an absent snapshot now answer the error
-  envelope**, not a `200`/`404` body carrying a `status` word. The status codes are unchanged
-  (`409` on a reused request id, `422` on a rejected BOM, `404` on an unknown identifier); the body
-  is `{"detail": {...}}` in every case.
-- **A refused deletion is an error, not a success saying `ok: false`.** Deleting a viewpoint still
-  pinned by a diagram or matrix answers `409 viewpoint_referenced`, whose `details` carry the
-  referencing artifact ids and kinds; an unknown slug answers `404`, and an enterprise or module
-  definition this repository may not touch answers `403`.
-- **A security component is addressable by its own id.** `GET /api/assurance/security-components/{component_id}`
-  answers for one component, keyed on the internal `SCM@…` id. Its PURL, CPE and BOM reference stay
-  on the row as data and remain usable as collection filters
-  (`…/security-components?purl=`) — they identify a *package* in vocabularies other standards own,
-  their syntax carries `/`, `?` and `#` by design, and one package arrives under different ones from
-  different feeds. A caller holding only a PURL resolves it through the collection first.
-- **Deleting an analysis ends the participation it held, and nothing else.** The participation rows
-  naming that analysis go with it, in one store-level unit of work, in all four backends — they had
-  no foreign key to analyses, so an analysis that only *borrowed* nodes left one orphan row per
-  borrowed node. The nodes and their provenance are untouched. An analysis that *authored* nodes
-  still answers `409 analysis_not_empty`, and the refusal no longer suggests detaching them:
-  provenance is immutable, so the only remedies are to delete them explicitly or leave the analysis
-  in place.
-- **An identifier that collides with a literal collection segment is refused.** A viewpoint named
-  `pins` or `criteria-catalog` could be written and never read back, because those URLs address the
-  collection's own subresources — creating or deleting at such a slug now returns `400`.
+- **The unscoped FMEA matrix is gone.** `GET /api/assurance/fmea` with no analysis returned every
+  failure mode in the store; the matrix is a projection of one analysis.
 
-#### Complete route mapping
+#### The assurance analysis aggregate
 
-| Retired | Canonical |
-|---|---|
-| `DELETE /api/assurance/analyses/{analysis_id}/members/{node_id}` | `DELETE /api/assurance/analyses/{analysis_id}/participating-nodes/{node_id}` |
-| `DELETE /api/document/{artifact_id}` | `DELETE /api/documents/{artifact_id}` |
-| `DELETE /api/group` | `DELETE /api/groups/{kind}/{slug}` |
-| `GET /api/assurance/analyses/{analysis_id}/members` | `GET /api/assurance/analyses/{analysis_id}/participating-nodes` |
-| `GET /api/assurance/arch-lens/{arch_artifact_id}` | `GET /api/assurance/arch-artifacts/{arch_artifact_id}/lens` |
-| `GET /api/assurance/cast-complete` | `GET /api/assurance/analyses/{analysis_id}/completeness` |
-| `GET /api/assurance/fmea` | `GET /api/assurance/analyses/{analysis_id}/matrix` |
-| `GET /api/assurance/grc-complete` | `GET /api/assurance/analyses/{analysis_id}/completeness` |
-| `GET /api/assurance/gsn/completeness` | `GET /api/assurance/analyses/{analysis_id}/completeness` |
-| `GET /api/assurance/gsn/draft` | `GET /api/assurance/analyses/{analysis_id}/gsn/draft` |
-| `GET /api/assurance/gsn/rendered` | `GET /api/assurance/analyses/{analysis_id}/gsn/rendered` |
-| `GET /api/assurance/guidance` | `GET /api/assurance/guidance/{topic}` |
-| `GET /api/assurance/neighbors` | `GET /api/assurance/nodes/{node_id}/neighbors` |
-| `GET /api/assurance/security-components` | `GET /api/assurance/arch-artifacts/{arch_artifact_id}/security-components` |
-| `GET /api/assurance/security-findings` | `GET /api/assurance/arch-artifacts/{arch_artifact_id}/security-findings` |
-| `GET /api/assurance/security-metrics` | `GET /api/assurance/arch-artifacts/{arch_artifact_id}/security-metrics` |
-| `GET /api/assurance/stpa-complete` | `GET /api/assurance/analyses/{analysis_id}/completeness` |
-| `GET /api/assurance/vex` | `GET /api/assurance/arch-artifacts/{arch_artifact_id}/vex-assessments` |
-| `GET /api/assurance/vulnerability-impact` | `GET /api/assurance/vulnerabilities/{identifier}/impact` |
-| `GET /api/diagram` | `GET /api/diagrams/{artifact_id}` |
-| `GET /api/diagram-connections` | `GET /api/diagrams/{artifact_id}/connections` |
-| `GET /api/diagram-context` | `GET /api/diagrams/{artifact_id}/context` |
-| `GET /api/diagram-download` | `GET /api/diagrams/{artifact_id}/download` |
-| `GET /api/diagram-entities` | `GET /api/diagrams/{artifact_id}/entities` |
-| `GET /api/diagram-image/{filename}` | `GET /api/diagram-images/{filename}` |
-| `GET /api/diagram-svg` | `GET /api/diagrams/{artifact_id}/svg` |
-| `GET /api/diagram-types/datatype/type-usages` | `GET /api/diagram-types/datatype/types/{type_id}/usages` |
-| `GET /api/diagram-types/{name}/connection-types` | `GET /api/diagram-types/{diagram_type}/connection-types` |
-| `GET /api/diagram-types/{name}/entity-types` | `GET /api/diagram-types/{diagram_type}/entity-types` |
-| `GET /api/document` | `GET /api/documents/{artifact_id}` |
-| `GET /api/entity` | `GET /api/entities/{artifact_id}` |
-| `GET /api/entity-context` | `GET /api/entities/{artifact_id}/context` |
-| `GET /api/entity-display-item` | `GET /api/entities/{artifact_id}/display-item` |
-| `GET /api/entity-schemata` | `GET /api/entity-schemata/{artifact_type}` |
-| `GET /api/matrix-config` | `GET /api/matrices/{artifact_id}/config` |
-| `GET /api/neighbors` | `GET /api/entities/{artifact_id}/neighbors` |
-| `GET /api/ontology` | `GET /api/ontology/classification` |
-| `PATCH /api/group` | `PATCH /api/groups/{kind}/{slug}` |
-| `POST /admin/api/connection` | `POST /admin/api/connections` |
-| `POST /admin/api/connection/remove` | `DELETE /admin/api/connections/{connection_id}` |
-| `POST /admin/api/diagram` | `POST /admin/api/diagrams` |
-| `POST /admin/api/diagram/remove` | `DELETE /admin/api/diagrams/{artifact_id}` |
-| `POST /admin/api/entity` | `POST /admin/api/entities` |
-| `POST /admin/api/entity/edit` | `PATCH /admin/api/entities/{artifact_id}` |
-| `POST /admin/api/entity/remove` | `DELETE /admin/api/entities/{artifact_id}` |
-| `POST /api/assurance/analyses/{analysis_id}/members` | `PUT /api/assurance/analyses/{analysis_id}/participating-nodes/{node_id}` |
-| `POST /api/assurance/baselines/seal` | `POST /api/assurance/baselines` |
-| `POST /api/assurance/gsn/publications` | `POST /api/assurance/analyses/{analysis_id}/gsn/publications` |
-| `POST /api/assurance/nodes` | `POST /api/assurance/analyses/{analysis_id}/nodes` |
-| `POST /api/assurance/security-ingest` | `POST /api/assurance/arch-artifacts/{arch_artifact_id}/security-snapshots` |
-| `POST /api/assurance/security-snapshot-delete` | `DELETE /api/assurance/security-snapshots/{snapshot_id}` |
-| `POST /api/assurance/vex` | `POST /api/assurance/arch-artifacts/{arch_artifact_id}/vex-assessments` |
-| `POST /api/cleanup-broken-refs` | `POST /api/connections/cleanup-broken-refs` |
-| `POST /api/connection` | `POST /api/connections` |
-| `POST /api/connection/associate` | `PATCH /api/connections/{connection_id}/associated-entities` |
-| `POST /api/connection/edit` | `PATCH /api/connections/{connection_id}` |
-| `POST /api/connection/remove` | `DELETE /api/connections/{connection_id}` |
-| `POST /api/diagram` | `POST /api/diagrams` |
-| `POST /api/diagram/edit` | `PUT /api/diagrams/{artifact_id}` |
-| `POST /api/diagram/entity-metadata` | `PATCH /api/diagrams/{artifact_id}/entities/{classifier_id}/metadata` |
-| `POST /api/diagram/preview` | `POST /api/diagrams/preview` |
-| `POST /api/diagram/remove` | `DELETE /api/diagrams/{artifact_id}` |
-| `POST /api/diagram/sync` | `POST /api/diagrams/{artifact_id}/sync` |
-| `POST /api/document` | `POST /api/documents` |
-| `POST /api/entity` | `POST /api/entities` |
-| `POST /api/entity/edit` | `PATCH /api/entities/{artifact_id}` |
-| `POST /api/entity/remove` | `DELETE /api/entities/{artifact_id}` |
-| `POST /api/group` | `POST /api/groups` |
-| `POST /api/group/archive` | `POST /api/groups/{kind}/{slug}/archive` |
-| `POST /api/group/unarchive` | `POST /api/groups/{kind}/{slug}/unarchive` |
-| `POST /api/matrix` | `POST /api/matrices` |
-| `POST /api/matrix/edit` | `PUT /api/matrices/{artifact_id}` |
-| `POST /api/matrix/preview` | `POST /api/matrices/preview` |
-| `POST /api/viewpoints/edit` | `PUT /api/viewpoints/{slug}` |
-| `POST /api/viewpoints/remove` | `DELETE /api/viewpoints/{slug}` |
-| `PUT /api/assurance/fmea/factor` | `POST /api/assurance/nodes/{node_id}/factor-assessments` |
-| `PUT /api/diagram/edge-label` | `PUT /api/diagrams/{artifact_id}/edges/{edge_key}/label` |
-| `PUT /api/document/{artifact_id}` | `PATCH /api/documents/{artifact_id}` |
-| `PUT /api/group` | `POST /api/groups/{kind}/{slug}/rename` |
+- **`POST /api/assurance/nodes` is gone.** A node is created inside its provenance analysis, at
+  `POST /api/assurance/analyses/{analysis_id}/nodes`, and provenance is mandatory. `analysis_id`
+  leaves the node edit contract; `PUT /api/assurance/nodes/{node_id}/provenance` is the only route
+  that may set it, and only for an unattributed node — re-asserting the same analysis is `204`,
+  asserting a different one is `409 provenance_immutable`.
+- **Participation is a relation, not a collection post.**
+  `PUT`/`DELETE /api/assurance/analyses/{id}/participating-nodes/{node_id}` are idempotent and answer
+  `204`; the node is in the path. A node may not participate in the analysis that authored it —
+  `409 invalid_participation`.
+- **Deleting a node another analysis references is refused** with `409 entity_in_use`, and the details
+  name the referencing analyses. Remove the participation relations first.
+- **Deleting an analysis ends the participation it held, and nothing else** — the nodes it authored
+  survive with their provenance intact.
 
+#### MCP
+
+- **`assurance_create_node` requires `analysis_id`**, `assurance_edit_node` no longer accepts it, and
+  `assurance_assign_provenance` is the repair tool for an unattributed node.
+
+#### Additive
+
+- **Every response carries `X-Request-ID`**, echoed from the request when supplied; every error
+  response carries `Cache-Control: no-store`.
+- **The OpenAPI document's version is the package version.** It previously read `0.3.0` against a
+  `0.1.0` package, so a client pinning the document version was pinning a number nothing produced.
 
 ## [0.1.0] — 2026-07-29 — first public release
 - Typed, git-versioned architecture repository (ArchiMate 4) with GUI, REST, and MCP surfaces
