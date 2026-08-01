@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { entityDetailRoute } from '../router/artifactRoutes'
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import type { GraphEdge } from '../composables/useForceGraph'
@@ -34,7 +35,7 @@ const steps = computed(() => props.summary?.witness_steps ?? [])
   <div class="detail-field">
     <label>Source</label>
     <RouterLink
-      :to="{ path: '/entity', query: { id: edge.source } }"
+      :to="entityDetailRoute(edge.source)"
       class="detail-value detail-link"
     >
       {{ friendlyEntityName(edge.source) }}
@@ -43,7 +44,7 @@ const steps = computed(() => props.summary?.witness_steps ?? [])
   <div class="detail-field">
     <label>Target</label>
     <RouterLink
-      :to="{ path: '/entity', query: { id: edge.target } }"
+      :to="entityDetailRoute(edge.target)"
       class="detail-value detail-link"
     >
       {{ friendlyEntityName(edge.target) }}
@@ -75,14 +76,14 @@ const steps = computed(() => props.summary?.witness_steps ?? [])
       >
         <span class="mono">{{ step.connection_type }}</span>:
         <RouterLink
-          :to="{ path: '/entity', query: { id: step.direction === 'forward' ? step.source : step.target } }"
+          :to="entityDetailRoute(step.direction === 'forward' ? step.source : step.target)"
           class="detail-link"
         >
           {{ friendlyEntityName(step.direction === 'forward' ? step.source : step.target) }}
         </RouterLink>
         →
         <RouterLink
-          :to="{ path: '/entity', query: { id: step.direction === 'forward' ? step.target : step.source } }"
+          :to="entityDetailRoute(step.direction === 'forward' ? step.target : step.source)"
           class="detail-link"
         >
           {{ friendlyEntityName(step.direction === 'forward' ? step.target : step.source) }}

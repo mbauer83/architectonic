@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { diagramDetailRoute } from '../router/artifactRoutes'
 /**
  * List mode of the viewpoints management view: browse the effective merged catalog as a
  * decision surface (description, representation, needs-input marker, search/sort/tier
@@ -78,7 +79,7 @@ const togglePin = (slug: string) => {
 const blockedDelete = ref<{ slug: string; referencers: readonly ViewpointReferencer[] } | null>(null)
 
 const openReferencer = (referencer: ViewpointReferencer) => {
-  void router.push({ path: '/diagram', query: { id: referencer.artifact_id } })
+  void router.push(diagramDetailRoute(referencer.artifact_id))
 }
 
 const deleteDefinition = (envelope: ViewpointDefinitionEnvelope) => {

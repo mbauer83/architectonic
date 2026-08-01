@@ -1,3 +1,4 @@
+import { diagramDetailRoute } from '../router/artifactRoutes'
 import { computed, nextTick, ref, watch, type Ref } from 'vue'
 import type { Router } from 'vue-router'
 import { Exit } from 'effect'
@@ -279,7 +280,7 @@ export function useDiagramSvgSelection(options: {
         svgEl.appendChild(badgeG)
         badgeG.addEventListener('click', (ev) => {
           ev.stopPropagation()
-          void router.push({ path: '/diagram', query: { id: targetId } })
+          void router.push(diagramDetailRoute(targetId))
         }, { signal })
       } catch { /* getBBox unavailable in non-rendered contexts */ }
     }

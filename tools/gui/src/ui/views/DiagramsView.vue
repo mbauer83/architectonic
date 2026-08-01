@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { diagramCreateRoute, diagramDetailRoute, matrixCreateRoute } from '../router/artifactRoutes'
 import { computed, inject, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import type { DiagramTypeSummary } from '../../domain'
@@ -35,8 +36,8 @@ const diagramFilters = computed(() => {
   return filters
 })
 const createDiagramRoute = (kind: DiagramTypeSummary) => {
-  if (kind.key === 'matrix') return { path: '/diagram/create/matrix' }
-  return { path: '/diagram/create', query: { type: kind.key } }
+  if (kind.key === 'matrix') return matrixCreateRoute()
+  return { path: diagramCreateRoute(), query: { type: kind.key } }
 }
 const showCreateMenu = ref(false)
 let _closeMenuTimer: ReturnType<typeof setTimeout> | null = null
@@ -166,7 +167,7 @@ const diagramTypeLabel = (diagramType: string): string => {
             class="diagram-card card"
           >
             <RouterLink
-              :to="{ path: '/diagram', query: { id: d.artifact_id } }"
+              :to="diagramDetailRoute(d.artifact_id)"
               class="card-link"
             >
               <div class="diagram-name">

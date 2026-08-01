@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { entityDetailRoute } from '../router/artifactRoutes'
 import { ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import ModelThisPanel from './ModelThisPanel.vue'
@@ -72,7 +73,7 @@ async function load(nodeId: string | null) {
 watch(() => props.nodeId, load, { immediate: true })
 
 function archEntityPath(ref: ArchRef): string {
-  return `/entity?id=${encodeURIComponent(ref.arch_artifact_id)}`
+  return entityDetailRoute(ref.arch_artifact_id)
 }
 
 const deletingEdgeId = ref<string | null>(null)

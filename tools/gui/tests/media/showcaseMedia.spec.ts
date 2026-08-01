@@ -51,7 +51,7 @@ test('assurance graph explore', async ({ page }) => {
 test('security posture viewpoint', async ({ page }) => {
   await installSecurityPostureFixture(page)
   const problems = watch(page)
-  await page.goto('/viewpoints/diagram?viewpoint=security-posture', { waitUntil: 'load' })
+  await page.goto('/viewpoints/security-posture/diagram', { waitUntil: 'load' })
   await assertSecurityPostureFixture(page)
   await capture(page, 'security-posture-viewpoint.png',
     provenance('security posture viewpoint', SECURITY_POSTURE_ENTITY_IDS, 'security-posture', {}, true))
@@ -71,7 +71,7 @@ test('stamped security export', async ({ page }) => {
         `TLP:WHITE — basis ${BACKEND}: SYNTHETIC-DOCS-001 — generated 2026-07-22T00:00:00Z`)
     await route.fulfill({ response, body: normalized })
   })
-  await page.goto('/viewpoints/diagram?viewpoint=security-posture', { waitUntil: 'load' })
+  await page.goto('/viewpoints/security-posture/diagram', { waitUntil: 'load' })
   await assertSecurityPostureFixture(page)
   const downloadEvent = page.waitForEvent('download')
   await page.getByRole('button', { name: 'Export stamped SVG' }).click()

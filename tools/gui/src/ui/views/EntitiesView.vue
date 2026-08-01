@@ -29,7 +29,7 @@ import {
   getDomainLabel,
 } from '../lib/domains'
 import { formatLastModified, lastModifiedTitle } from '../lib/lastModified'
-import { filtersToEntityCriteriaMapping, isServerSortKey, sortEntityRows } from './EntitiesView.helpers'
+import { entityCreateRoute, entityDetailRoute, filtersToEntityCriteriaMapping, isServerSortKey, sortEntityRows } from './EntitiesView.helpers'
 
 type ViewMode = 'table' | 'treemap'
 
@@ -332,7 +332,7 @@ const displayCount = computed(() => {
           </div>
           <RouterLink
             v-if="!isGlobal"
-            to="/entity/create"
+            :to="entityCreateRoute()"
             class="create-btn"
           >
             + Create Entity
@@ -418,7 +418,7 @@ const displayCount = computed(() => {
               @sort="applySort"
             >
               <template #name="{ row: entity }">
-                <RouterLink :to="{ path: '/entity', query: { id: entity.artifact_id, ...browseReturnQuery } }">
+                <RouterLink :to="{ path: entityDetailRoute(entity.artifact_id), query: browseReturnQuery }">
                   {{ entity.name || friendlyEntityId(entity.artifact_id) }}
                 </RouterLink>
                 <TierBadge

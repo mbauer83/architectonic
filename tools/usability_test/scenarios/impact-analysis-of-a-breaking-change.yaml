@@ -60,7 +60,7 @@ preconditions:
 
 surfaces:
 - {kind: gui-route, ref: /search}
-- {kind: gui-route, ref: /entity}
+- {kind: gui-route, ref: /entities/:artifactId}
 - {kind: gui-route, ref: /entities}
 - {kind: gui-route, ref: /graph}
 - {kind: gui-route, ref: /viewpoints}
@@ -129,7 +129,7 @@ participants:
       candidates:
       - {kind: gui-route, ref: /graph}
       - {kind: viewpoint, ref: element-dependents}
-      - {kind: gui-route, ref: /entity}
+      - {kind: gui-route, ref: /entities/:artifactId}
     oracle:
       expected_answer_class: >
         The incoming-dependency closure of the indexing component, as a set of element

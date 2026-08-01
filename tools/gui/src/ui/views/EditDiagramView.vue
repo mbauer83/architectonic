@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { diagramDetailRoute, matrixEditRoute } from '../router/artifactRoutes'
 import { inject, ref, computed, onMounted, useTemplateRef, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Effect, Exit } from 'effect'
@@ -27,7 +28,7 @@ const addToast = inject(toastKey)!
 const route = useRoute()
 const router = useRouter()
 
-const diagramId = computed(() => (route.query.id as string | undefined) ?? '')
+const diagramId = computed(() => route.params.artifactId as string)
 
 const contextQuery = useQuery<DiagramContext, RepoError | NotFoundError>()
 const svgQuery = useQuery<string, RepoError>()
@@ -97,7 +98,7 @@ const setTypeEntityData = (next: Record<string, unknown>) => {
 
 watch(diagramDetail, (d) => {
   if (d?.diagram_type === 'matrix') {
-    void router.replace({ path: '/diagram/edit/matrix', query: { id: diagramId.value } })
+    void router.replace(matrixEditRoute(diagramId.value))
   }
 })
 const svgHtml = computed(() => svgQuery.data.value ? sanitizeDiagramSvg(svgQuery.data.value) : null)
@@ -206,7 +207,7 @@ const doSave = async () => {
   }))
   if (!Exit.isSuccess(exit) || !exit.value.wrote) return
   addToast('Diagram saved')
-  void router.push({ path: '/diagram', query: { id: diagramId.value } })
+  void router.push(diagramDetailRoute(diagramId.value))
 }
 
 const saveDisabled = computed(() => saveMutation.running.value || !previewMutation.result.value || !diagramDetail.value)
@@ -224,7 +225,7 @@ const saveTitle = computed(() => !previewMutation.result.value ? 'Run Preview fi
       :save-running="saveMutation.running.value"
       :save-disabled="saveDisabled"
       :save-title="saveTitle"
-      @back="router.push({ path: '/diagram', query: { id: diagramId } })"
+      @back="router.push(diagramDetailRoute(diagramId))"
       @preview="doPreview"
       @save="doSave"
     />

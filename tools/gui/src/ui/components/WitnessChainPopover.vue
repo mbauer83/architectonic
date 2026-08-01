@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { entityDetailRoute } from '../router/artifactRoutes'
 /** Resolves and renders one derived relationship's witness chain: the ordered real
  * connections that compose it, as prose with every entity name a clickable sidebar link
  * (via `RouterLink`) — never a synthesized diagram, since the chain itself is never
@@ -40,7 +41,7 @@ watch(
         >
           <RouterLink
             v-if="segment.entityId"
-            :to="{ path: '/entity', query: { id: segment.entityId } }"
+            :to="entityDetailRoute(segment.entityId)"
             class="chain-entity"
           >
             {{ segment.text }}

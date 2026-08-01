@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { entityDetailRoute } from '../router/artifactRoutes'
 import { inject, onMounted, provide, ref, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Effect } from 'effect'
@@ -26,7 +27,7 @@ const router = useRouter()
 const adminMode = ref(false)
 const route = useRoute()
 
-const entityId = computed(() => (route.query.id as string | undefined) ?? '')
+const entityId = computed(() => route.params.artifactId as string)
 /** Bumped after an ingest so the derived-attributes panel re-reads: it shows the
  *  ACTIVE snapshot, which a successful ingest has just replaced. */
 const signalsVersion = ref(0)
@@ -76,7 +77,7 @@ const edit = useEntityEditForm({
   onSaved: (newArtifactId) => {
     addToast('Entity saved')
     if (newArtifactId && newArtifactId !== entityId.value) {
-      void router.replace({ path: '/entity', query: { id: newArtifactId, ...browseQuery.value } })
+      void router.replace({ path: entityDetailRoute(newArtifactId), query: browseQuery.value })
     } else {
       load()
     }

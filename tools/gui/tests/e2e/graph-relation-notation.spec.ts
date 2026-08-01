@@ -24,7 +24,7 @@ const edgeStyles = async (page: Page): Promise<string[]> =>
 
 /** Walk far enough that the neighbourhood spans more than one relationship type. */
 const openAndWalk = async (page: Page): Promise<void> => {
-  await page.goto(`/graph?id=${encodeURIComponent(ANCHOR)}`, { waitUntil: 'load' })
+  await page.goto(`/entities/${encodeURIComponent(ANCHOR)}/graph`, { waitUntil: 'load' })
   await expect(page.locator('.graph-svg')).toBeVisible({ timeout: 20_000 })
   await page.waitForLoadState('networkidle')
   const nodes = page.locator('.graph-node')

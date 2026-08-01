@@ -18,7 +18,7 @@ const haloed = (page: Page) =>
   page.locator('.graph-node polygon[fill="none"][stroke="#1e293b"]')
 
 const openGraph = async (page: Page): Promise<void> => {
-  await page.goto(`/graph?id=${encodeURIComponent(ANCHOR)}`, { waitUntil: 'load' })
+  await page.goto(`/entities/${encodeURIComponent(ANCHOR)}/graph`, { waitUntil: 'load' })
   await expect(page.locator('.graph-node').first()).toBeAttached({ timeout: 20_000 })
   await expect(page.locator('.graph-svg')).toBeVisible({ timeout: 20_000 })
   await page.waitForLoadState('networkidle')
@@ -57,7 +57,7 @@ test('the sidebar headline names the selected entity and links to its page', asy
   const name = (await headline.textContent())?.trim() ?? ''
   expect(name).not.toBe('')
   expect(name).not.toBe('Details')
-  expect(await headline.getAttribute('href')).toBe(`/entity?id=${ANCHOR}`)
+  expect(await headline.getAttribute('href')).toBe(`/entities/${ANCHOR}`)
 
   // Selecting a different node re-points the headline at that entity, not the one before it.
   // Pick a node whose label differs from the current headline — clicking a same-named

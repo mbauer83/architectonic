@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { entityDetailRoute } from '../router/artifactRoutes'
 import { inject, nextTick, onMounted, watch, computed, ref } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { Effect } from 'effect'
@@ -48,7 +49,8 @@ const props = defineProps<{ adHoc?: AdHocExecution }>()
 const svc = inject(modelServiceKey)!
 const route = useRoute()
 const router = useRouter()
-const rootId = computed(() => (route.query.id as string | undefined) ?? '')
+// Absent on the unanchored exploration route, which shows a viewpoint's whole population.
+const rootId = computed(() => (route.params.artifactId as string | undefined) ?? '')
 
 const canvasRef = ref<InstanceType<typeof GraphCanvas> | null>(null)
 const svgWidth = ref(800)
@@ -369,7 +371,7 @@ const showExpandBadge = (n: GraphNode) =>
       <div class="canvas-header">
         <RouterLink
           v-if="rootId"
-          :to="{ path: '/entity', query: { id: rootId } }"
+          :to="entityDetailRoute(rootId)"
           class="back-link"
         >
           ← Back to entity

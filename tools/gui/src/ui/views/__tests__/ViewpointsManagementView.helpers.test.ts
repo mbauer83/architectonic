@@ -8,6 +8,7 @@ import { mkPresentation } from '../../../domain/viewpointPresentation'
 import { presentationToMapping } from '../../../domain/viewpointPresentationSerialization'
 import type { PresentationSpecWire, ViewpointDefinitionEnvelope, ViewpointValidationIssue } from '../../../domain'
 import { viewpointEnvelope } from '../../__tests__/viewpointFixtures'
+import { entityListRoute, graphExploreRoute, viewpointDiagramRoute, viewpointMatrixRoute } from '../../router/artifactRoutes'
 
 const mkEnvelope = (
   representation: Parameters<typeof mkPresentation>[0] | null,
@@ -22,20 +23,29 @@ const mkEnvelope = (
   })
 
 describe('executionRouteFor', () => {
-  it('routes exploration-representation definitions to /graph', () => {
+  it('routes exploration-representation definitions to the unanchored exploration', () => {
     expect(executionRouteFor(mkEnvelope('exploration'))).toEqual({
-      path: '/graph', query: { viewpoint: 'goal-realization' },
+      path: graphExploreRoute(), query: { viewpoint: 'goal-realization' },
     })
   })
 
-  it('routes table/matrix/diagram representations to their dedicated surfaces', () => {
-    expect(executionRouteFor(mkEnvelope('table')).path).toBe('/entities')
-    expect(executionRouteFor(mkEnvelope('matrix')).path).toBe('/viewpoints/matrix')
-    expect(executionRouteFor(mkEnvelope('diagram')).path).toBe('/viewpoints/diagram')
+  it('routes table to the collection, matrix and diagram to the projection itself', () => {
+    // The split the addressing rule makes: a table executes a viewpoint *over* the entity
+    // collection, so the slug is an operand; a matrix or a diagram *is* the projection, so the slug
+    // is its identity and goes in the path.
+    expect(executionRouteFor(mkEnvelope('table'))).toEqual({
+      path: entityListRoute(), query: { viewpoint: 'goal-realization' },
+    })
+    expect(executionRouteFor(mkEnvelope('matrix'))).toEqual({
+      path: viewpointMatrixRoute('goal-realization'),
+    })
+    expect(executionRouteFor(mkEnvelope('diagram'))).toEqual({
+      path: viewpointDiagramRoute('goal-realization'),
+    })
   })
 
   it('falls back to exploration when the definition carries no presentation', () => {
-    expect(executionRouteFor(mkEnvelope(null)).path).toBe('/graph')
+    expect(executionRouteFor(mkEnvelope(null)).path).toBe(graphExploreRoute())
   })
 })
 

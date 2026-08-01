@@ -75,8 +75,8 @@ describe('GUI route.query inventory', () => {
     // A guard on the scanner itself: a regex that silently stopped matching would make the
     // equality above pass with two empty sets.
     const found = allUses()
-    expect(found.has('ui/views/EntityDetailView.vue#id')).toBe(true)
     expect(found.has('ui/views/AssuranceStpaWizardView.vue#analysis_id')).toBe(true)
+    expect(found.has('ui/views/EntitiesView.vue#domain')).toBe(true)
     expect(found.has('ui/composables/useTierFacet.ts#*')).toBe(true)
   })
 

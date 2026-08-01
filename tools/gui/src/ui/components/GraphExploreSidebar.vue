@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { entityDetailRoute } from '../router/artifactRoutes'
 /**
  * The graph explorer's right-hand detail panel: the selected entity or edge, whichever is
  * current, under a headline naming what is selected.
@@ -31,7 +32,7 @@ defineProps<{
     <h2 class="sidebar-title">
       <RouterLink
         v-if="detail && selectedId"
-        :to="{ path: '/entity', query: { id: selectedId } }"
+        :to="entityDetailRoute(selectedId)"
         class="sidebar-title-link"
       >
         {{ detail.name }}

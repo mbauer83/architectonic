@@ -12,18 +12,30 @@ import type { ScopeSummary, ViewpointExecutionResult, ViewpointValidationIssue }
 import type { Representation } from '../../domain/viewpointPresentation'
 import { presentationFromMapping } from '../../domain/viewpointPresentationSerialization'
 import type { ViewpointDefinitionEnvelope } from '../../domain'
+import { entityListRoute, graphExploreRoute, viewpointDiagramRoute, viewpointMatrixRoute } from '../router/artifactRoutes'
 
 /** Route to the representation-appropriate execution surface, pre-loaded with a
  * viewpoint's repository-context population — no separate anchor entity required.
  * Shared by the management list and the Home pinned-definitions section so a slug always
  * lands on the same surface regardless of which page linked to it. */
-const EXECUTION_ROUTE_BY_REPRESENTATION: Record<Representation, string> = {
-  exploration: '/graph', table: '/entities', matrix: '/viewpoints/matrix', diagram: '/viewpoints/diagram',
+const EXECUTION_ROUTE_BY_REPRESENTATION: Record<Representation, (slug: string) => ExecutionRoute> = {
+  // Exploration and table execute a viewpoint *over* a collection: the slug selects which
+  // population the surface shows, which is an operand, so it stays in the query. Matrix and
+  // diagram address the projection itself, and its identity is the slug — so that goes in the path.
+  exploration: (slug) => ({ path: graphExploreRoute(), query: { viewpoint: slug } }),
+  table: (slug) => ({ path: entityListRoute(), query: { viewpoint: slug } }),
+  matrix: (slug) => ({ path: viewpointMatrixRoute(slug) }),
+  diagram: (slug) => ({ path: viewpointDiagramRoute(slug) }),
 }
 
-export const executionRouteFor = (envelope: ViewpointDefinitionEnvelope): { path: string; query: { viewpoint: string } } => {
+export interface ExecutionRoute {
+  readonly path: string
+  readonly query?: { readonly viewpoint: string }
+}
+
+export const executionRouteFor = (envelope: ViewpointDefinitionEnvelope): ExecutionRoute => {
   const representation = presentationFromMapping(envelope.presentation)?.representation ?? 'exploration'
-  return { path: EXECUTION_ROUTE_BY_REPRESENTATION[representation], query: { viewpoint: envelope.slug } }
+  return EXECUTION_ROUTE_BY_REPRESENTATION[representation](envelope.slug)
 }
 
 /** Execution surfaces title by human name, slug secondary: "Name (slug)" — never the

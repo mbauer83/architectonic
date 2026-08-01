@@ -15,7 +15,7 @@ test.beforeEach(async ({ context }) => {
 })
 
 test('a large viewpoint diagram renders inside a bounded, resizable viewport with a working entity sidebar', async ({ page }) => {
-  await page.goto('/viewpoints/diagram?viewpoint=technology-usage')
+  await page.goto('/viewpoints/technology-usage/diagram')
   await expect(page.getByText(/entities:\s*\d+/i)).toBeVisible({ timeout: 15000 })
 
   const container = page.locator('.img-container')
@@ -35,7 +35,7 @@ test('a large viewpoint diagram renders inside a bounded, resizable viewport wit
 })
 
 test('a diagram-representation viewpoint with only a small population still shows a usable, bounded viewport', async ({ page }) => {
-  await page.goto('/viewpoints/diagram?viewpoint=application-structure')
+  await page.goto('/viewpoints/application-structure/diagram')
   await expect(page.getByText(/entities:\s*\d+/i)).toBeVisible({ timeout: 15000 })
   await expect(page.locator('.img-container')).toBeVisible()
   await expect(page.locator('.sb-title', { hasText: 'Entities' })).toBeVisible()
@@ -72,7 +72,7 @@ test.describe('derived connections', () => {
   })
 
   test('a derived connection arrow is selectable and shows its witness chain in the sidebar', async ({ page }) => {
-    await page.goto('/viewpoints/diagram?viewpoint=diagram-view-derived-e2e')
+    await page.goto('/viewpoints/diagram-view-derived-e2e/diagram')
     await expect(page.getByPlaceholder(/select an entity for anchor/i)).toBeVisible()
     await page.getByPlaceholder(/select an entity for anchor/i).fill('Synthesize & Deliver Implementation Guidance')
     await page.locator('[data-result]').first().click()

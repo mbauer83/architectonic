@@ -57,7 +57,7 @@ place ripples through the rest increasingly requires structured architecture wor
 ![Motivation diagram showing the forces shaping the system](media/motivation-forces.svg)
 
 *Rendered from the self-model. Open the diagram in a running app:
-[`the-forces-shaping-this-system`](http://localhost:8000/diagram?id=ARC%401777455142.cFB8Hs.the-forces-shaping-this-system).*
+[`the-forces-shaping-this-system`](http://localhost:8000/diagrams/ARC%401777455142.cFB8Hs.the-forces-shaping-this-system).*
 
 The immediate implications are structural: implicit interdependencies stop being maintainable
 without explicit models, AI-generated change volume outpaces planning and review capacity, and
@@ -110,7 +110,7 @@ boundaries where it matters, is what keeps the enterprise viable.
 ![Motivation diagram showing the core trade-off between differentiation and integration](media/motivation-core-trade-off.svg)
 
 *Rendered from the self-model. Open the diagram in a running app:
-[`the-core-trade-off`](http://localhost:8000/diagram?id=ARC%401784849983.W6j62G.the-core-trade-off-local-autonomy-and-enterprise-adaptability).*
+[`the-core-trade-off`](http://localhost:8000/diagrams/ARC%401784849983.W6j62G.the-core-trade-off-local-autonomy-and-enterprise-adaptability).*
 
 Architecture work — across enterprise, solution, and software levels — is one of the major
 mechanisms through which that integration is made explicit and sustainable.
@@ -162,7 +162,7 @@ wider coordination. The apex intent is to **sustain unity of effort at agentic v
 
 *Rendered from the self-model ("From the Double Bind to the Response"). Open the diagram in a
 running app:
-[`the-story-in-one-view`](http://localhost:8000/diagram?id=ARC%401780220700.Un4jQZ.the-story-in-one-view).*
+[`the-story-in-one-view`](http://localhost:8000/diagrams/ARC%401780220700.Un4jQZ.the-story-in-one-view).*
 
 That apex splits into **two jointly pursued strategic goals** — *preserve local autonomy* and
 *enable coherent, traceable enterprise action* — supported by four groups of goals:
@@ -304,7 +304,7 @@ as evidence.
 ![Motivation diagram showing goals and outcomes](media/motivation-goals-outcomes.svg)
 
 *Rendered from the self-model. Open the diagram in a running app:
-[`what-we-are-trying-to-achieve`](http://localhost:8000/diagram?id=ARC%401777452513.d8jG_4.what-we-are-trying-to-achieve).*
+[`what-we-are-trying-to-achieve`](http://localhost:8000/diagrams/ARC%401777452513.d8jG_4.what-we-are-trying-to-achieve).*
 
 **Autonomy stays available while coherence keeps pace.** Any proposed change, regardless of
 size, can receive automated, *informed but non-authoritative* validation against the relevant

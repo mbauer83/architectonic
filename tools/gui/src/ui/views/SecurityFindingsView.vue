@@ -14,6 +14,7 @@ import {
   emptyMessage, groupByComponent, vulnerabilityKey, vulnerabilityLabel, withheldNote,
   type FindingsPayload,
 } from './SecurityFindingsView.helpers'
+import { entityDetailRoute } from '../router/artifactRoutes'
 
 const route = useRoute()
 const anchorId = computed(() => (route.query.anchor as string | undefined) ?? '')
@@ -52,7 +53,7 @@ watch(anchorId, load, { immediate: true })
       <h1>Component vulnerabilities</h1>
       <p class="anchor">
         Active signal snapshot for
-        <RouterLink :to="`/entity?id=${encodeURIComponent(anchorId)}`">
+        <RouterLink :to="entityDetailRoute(anchorId)">
           <code>{{ anchorId }}</code>
         </RouterLink>
       </p>

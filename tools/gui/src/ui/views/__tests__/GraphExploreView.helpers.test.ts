@@ -7,6 +7,7 @@ import { tokenColor, tokenShape, tokenIconLetter, tokenEdgeEmphasis, resolveStyl
 import type { PresentationSpecWire, ViewpointDefinitionEnvelope } from '../../../domain'
 import { viewpointEnvelope } from '../../__tests__/viewpointFixtures'
 import { occurrence, repositoryProjection } from './projectionFixtures'
+import { entityListRoute, viewpointDiagramRoute, viewpointMatrixRoute } from '../../router/artifactRoutes'
 
 const mkEnvelope = (
   representation: PresentationSpecWire['representation'] | null,
@@ -161,13 +162,14 @@ describe('explorationRedirectFor', () => {
 
   it('redirects to the diagram surface for a diagram-representation definition', () => {
     expect(explorationRedirectFor(mkEnvelope('diagram'))).toEqual({
-      path: '/viewpoints/diagram', query: { viewpoint: 'application-structure' },
+      path: viewpointDiagramRoute('application-structure'),
     })
   })
 
   it('redirects to the matrix/table surfaces for matrix/table representations', () => {
-    expect(explorationRedirectFor(mkEnvelope('matrix'))?.path).toBe('/viewpoints/matrix')
-    expect(explorationRedirectFor(mkEnvelope('table'))?.path).toBe('/entities')
+    expect(explorationRedirectFor(mkEnvelope('matrix'))?.path)
+      .toBe(viewpointMatrixRoute('application-structure'))
+    expect(explorationRedirectFor(mkEnvelope('table'))?.path).toBe(entityListRoute())
   })
 
   it('stays put when no envelope was found for the selected slug', () => {

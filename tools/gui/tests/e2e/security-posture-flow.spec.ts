@@ -23,7 +23,7 @@ async function selectBackendAnchor(page: Page): Promise<void> {
 
 test('the colored security diagram exports a stamped classified SVG', async ({ page }) => {
   await installSecurityPostureFixture(page)
-  await page.goto('/viewpoints/diagram?viewpoint=security-posture')
+  await page.goto('/viewpoints/security-posture/diagram')
   await assertSecurityPostureFixture(page)
 
   const downloadEvent = page.waitForEvent('download')
@@ -60,7 +60,7 @@ test('an unavailable signal snapshot keeps the diagram usable and explains the f
     }
     await route.fulfill({ response, json: body })
   })
-  await page.goto('/viewpoints/diagram?viewpoint=security-posture')
+  await page.goto('/viewpoints/security-posture/diagram')
   await expect(page.locator('.signal-banner')).toContainText('signals unavailable', { timeout: 30_000 })
   await expect(page.locator('.svg-wrap svg')).toBeVisible()
 })
@@ -101,7 +101,7 @@ test('the supply-chain dashboard validates and records a contextual VEX assessme
 
 test('derived security attributes stay read-only and disappear when locked', async ({ page }) => {
   await page.route('**/api/assurance/arch-artifacts/*/security-metrics', (route) => route.fulfill({ json: METRICS }))
-  await page.goto(`/entity?id=${encodeURIComponent(BACKEND)}`)
+  await page.goto(`/entities/${encodeURIComponent(BACKEND)}`)
   const panel = page.locator('.derived-security')
   await expect(panel).toContainText('Derived security attributes')
   await expect(panel).toContainText('8.1')

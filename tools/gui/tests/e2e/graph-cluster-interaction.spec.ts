@@ -44,7 +44,7 @@ const settled = async (page: Page): Promise<void> => {
 }
 
 const openCluster = async (page: Page): Promise<void> => {
-  await page.goto(`/graph?id=${encodeURIComponent(ANCHOR)}`, { waitUntil: 'load' })
+  await page.goto(`/entities/${encodeURIComponent(ANCHOR)}/graph`, { waitUntil: 'load' })
   await expect(page.locator('.graph-node').first()).toBeAttached({ timeout: 20_000 })
   await page.getByRole('button', { name: 'Cluster', exact: true }).click()
   await settled(page)

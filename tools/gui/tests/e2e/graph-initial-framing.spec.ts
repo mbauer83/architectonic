@@ -55,7 +55,7 @@ const anchorId = async (page: Page): Promise<string> => {
 test('the graph is framed once, and never while it is still loading', async ({ page }) => {
   const id = await anchorId(page)
 
-  const frames = await recordLoad(page, `/graph?id=${encodeURIComponent(id)}`)
+  const frames = await recordLoad(page, `/entities/${encodeURIComponent(id)}/graph`)
 
   const painted = frames.filter((f) => f.visible && f.nodes > 0)
   expect(painted.length, 'the graph never became visible').toBeGreaterThan(0)
@@ -82,7 +82,7 @@ test('the graph is framed once, and never while it is still loading', async ({ p
 
 test('the sidebar stays inside the viewport while the header fills in', async ({ page }) => {
   const id = await anchorId(page)
-  await page.goto(`/graph?id=${encodeURIComponent(id)}`, { waitUntil: 'load' })
+  await page.goto(`/entities/${encodeURIComponent(id)}/graph`, { waitUntil: 'load' })
   await expect(page.locator('.graph-node').first()).toBeAttached({ timeout: 20_000 })
   await page.waitForTimeout(1500)
 

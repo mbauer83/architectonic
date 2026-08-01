@@ -64,7 +64,9 @@ def test_artifact_deep_links_fall_back_to_index(tmp_path: Path) -> None:
     routes = (
         "/documents/ADR@1780761591._mseZr.adopt-archimate-next-ontology",
         "/documents/STD@1784345879.nNCIH_.motivation-layer-modeling-conventions",
-        "/entity?id=REQ@1712870400.HR7AGz.support-models-diagrams-documents",
+        "/entities/REQ@1712870400.HR7AGz.support-models-diagrams-documents",
+        "/entities/REQ@1712870400.HR7AGz.support-models-diagrams-documents/graph",
+        "/diagrams/CC@1780829796.SOoZQh.assurance-module-components/edit",
         "/assurance/node/CSN@1785236941.pr5f.b33677",
     )
     for route in routes:

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { diagramDetailRoute } from '../router/artifactRoutes'
 import { ref, computed, inject, onMounted } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { Effect, Exit } from 'effect'
@@ -14,7 +15,7 @@ const svc = inject(modelServiceKey)!
 const route = useRoute()
 const router = useRouter()
 
-const diagramId = computed(() => (route.query.id as string | undefined) ?? '')
+const diagramId = computed(() => route.params.artifactId as string)
 
 const name = ref('')
 const combined = ref(false)
@@ -133,7 +134,7 @@ const doSave = async () => {
   }))
   busy.value = false
   Exit.match(exit, {
-    onSuccess: (r) => { if (r.wrote) void router.push({ path: '/diagram', query: { id: diagramId.value } }) },
+    onSuccess: (r) => { if (r.wrote) void router.push(diagramDetailRoute(diagramId.value)) },
     onFailure: (e) => { error.value = String(e) },
   })
 }
@@ -143,7 +144,7 @@ const doSave = async () => {
   <div class="page">
     <div class="page-hdr">
       <RouterLink
-        :to="{ path: '/diagram', query: { id: diagramId } }"
+        :to="diagramDetailRoute(diagramId)"
         class="back"
       >
         ← Diagram

@@ -1,3 +1,4 @@
+import { entityDetailRoute } from '../router/artifactRoutes'
 /**
  * Pure logic for the failure-mode matrix: how a cell reads, and in what order rows appear.
  *
@@ -176,5 +177,5 @@ const ARTIFACT_ID = /^[A-Za-z]+@\d+\.[A-Za-z0-9_-]+(\..+)?$/
 export function elementRoute(row: RowView): string | null {
   const id = (row.element_id ?? '').trim()
   if (!ARTIFACT_ID.test(id)) return null
-  return `/entity?id=${encodeURIComponent(id)}`
+  return entityDetailRoute(id)
 }

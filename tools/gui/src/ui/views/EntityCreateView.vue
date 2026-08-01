@@ -10,7 +10,7 @@ import { specializationOptionsForEntityType, specializationOptionLabel } from '.
 import { reconcileRowsWithSchema, rowsFromSchema } from '../lib/schemaPropertyRows'
 import SchemaQuarantineBanner from '../components/SchemaQuarantineBanner.vue'
 import { NO_QUARANTINE, quarantineFromSchemaInfo } from '../lib/schemaQuarantine'
-import { createBlockedReason, previewBlockedReason } from './EntityCreateView.helpers'
+import { createBlockedReason, entityDetailRoute, previewBlockedReason } from './EntityCreateView.helpers'
 
 const svc = inject(modelServiceKey)!
 const router = useRouter()
@@ -209,7 +209,7 @@ const doCreate = () => {
     .then((result) => {
       busy.value = false
       if (result.wrote) {
-        void router.push({ path: '/entity', query: { id: result.artifact_id } })
+        void router.push(entityDetailRoute(result.artifact_id))
       } else {
         formError.value = result.content ?? 'Verification failed'
       }

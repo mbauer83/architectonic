@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { entityGraphRoute } from '../router/artifactRoutes'
 /** The exploration sidebar's node-detail card: identity fields, domain/status badges,
  * markdown content, and the explore-from-here link. Pure display over one loaded
  * `EntityDetail`. */
@@ -66,7 +67,7 @@ const contentHtml = computed(() =>
   </div>
   <div class="detail-explore">
     <RouterLink
-      :to="{ path: '/graph', query: { id: selectedId } }"
+      :to="entityGraphRoute(selectedId)"
       class="explore-link"
     >
       Explore graph →

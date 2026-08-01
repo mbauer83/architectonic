@@ -57,7 +57,7 @@ const settled = async (page: Page): Promise<void> => {
 
 /** Open the graph in force mode — the default — and let the initial layout come to rest. */
 const openForce = async (page: Page): Promise<void> => {
-  await page.goto(`/graph?id=${encodeURIComponent(ANCHOR)}`, { waitUntil: 'load' })
+  await page.goto(`/entities/${encodeURIComponent(ANCHOR)}/graph`, { waitUntil: 'load' })
   await expect(page.locator('.graph-node').first()).toBeAttached({ timeout: 20_000 })
   await expect(page.getByRole('button', { name: 'Force', exact: true }))
     .toHaveClass(/spacing-btn--active/)

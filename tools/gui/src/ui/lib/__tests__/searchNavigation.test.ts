@@ -1,3 +1,4 @@
+import { ROUTE_TEMPLATES, diagramDetailRoute, documentDetailRoute, entityDetailRoute } from '../../router/artifactRoutes'
 /**
  * Regression: a search hit must navigate to a route that actually exists.
  *
@@ -15,13 +16,13 @@ import { searchHitRoute } from '../searchNavigation'
 
 const stub = { template: '<div/>' }
 
-// Mirrors the relevant routes declared in router/index.ts.
+// Mirrors the relevant routes declared in router/index.ts, through the same templates.
 const router = createRouter({
   history: createMemoryHistory(),
   routes: [
-    { path: '/entity', component: stub },
-    { path: '/diagram', component: stub },
-    { path: '/documents/:id', component: stub },
+    { path: ROUTE_TEMPLATES.entityDetail, component: stub },
+    { path: ROUTE_TEMPLATES.diagramDetail, component: stub },
+    { path: ROUTE_TEMPLATES.documentDetail, component: stub },
     { path: '/assurance/browse', component: stub },
     { path: '/assurance/node/:id', component: stub },
     { path: '/:pathMatch(.*)*', name: 'not-found', component: stub },
@@ -29,13 +30,14 @@ const router = createRouter({
 })
 
 describe('searchHitRoute', () => {
-  it('routes documents to the REST-style path param (not a query)', () => {
-    expect(searchHitRoute({ record_type: 'document', artifact_id: 'STD@1.aa.x' })).toBe('/documents/STD@1.aa.x')
+  it('routes documents to their detail path', () => {
+    expect(searchHitRoute({ record_type: 'document', artifact_id: 'STD@1.aa.x' }))
+      .toBe(documentDetailRoute('STD@1.aa.x'))
   })
 
-  it('routes entities and diagrams with an id query', () => {
-    expect(searchHitRoute({ record_type: 'entity', artifact_id: 'E1' })).toEqual({ path: '/entity', query: { id: 'E1' } })
-    expect(searchHitRoute({ record_type: 'diagram', artifact_id: 'D1' })).toEqual({ path: '/diagram', query: { id: 'D1' } })
+  it('routes entities and diagrams to their detail path', () => {
+    expect(searchHitRoute({ record_type: 'entity', artifact_id: 'E1' })).toEqual(entityDetailRoute('E1'))
+    expect(searchHitRoute({ record_type: 'diagram', artifact_id: 'D1' })).toEqual(diagramDetailRoute('D1'))
   })
 
   it('routes assurance nodes to the standalone node page', () => {

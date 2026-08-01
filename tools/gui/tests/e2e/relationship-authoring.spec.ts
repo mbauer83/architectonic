@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test'
 const BACKEND = 'APP@1777293133.OYEmP1.architecture-backend'
 
 test('an existing relationship opens in the integrated editor', async ({ page }) => {
-  await page.goto(`/entity?id=${encodeURIComponent(BACKEND)}`)
+  await page.goto(`/entities/${encodeURIComponent(BACKEND)}`)
 
   const relationship = page.locator('.conn-item-wrap').filter({
     has: page.getByRole('link', { name: 'REST Interface', exact: true }),
@@ -25,7 +25,7 @@ test('an existing relationship opens in the integrated editor', async ({ page })
 })
 
 test('relationship target search offers candidates as soon as it receives focus', async ({ page }) => {
-  await page.goto(`/entity?id=${encodeURIComponent(BACKEND)}`)
+  await page.goto(`/entities/${encodeURIComponent(BACKEND)}`)
 
   const outgoing = page.locator('.conn-panel').filter({
     has: page.getByRole('heading', { name: 'Outgoing connections', exact: true }),

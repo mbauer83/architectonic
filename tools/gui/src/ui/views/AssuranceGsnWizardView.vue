@@ -11,6 +11,7 @@ import {
   type CompletenessResponse,
   type GsnDraftResponse,
 } from './AssuranceGsnWizard.helpers'
+import { diagramDetailRoute } from '../router/artifactRoutes'
 
 const route = useRoute()
 const router = useRouter()
@@ -269,7 +270,7 @@ watch(stepKey, () => { void loadGuidance() }, { immediate: true })
         <p>{{ bindings.length }} assurance-source bindings recorded.</p>
         <RouterLink
           v-if="publishedDiagramId"
-          :to="{ path: '/diagram', query: { id: publishedDiagramId } }"
+          :to="diagramDetailRoute(publishedDiagramId)"
         >
           Open published GSN diagram →
         </RouterLink>

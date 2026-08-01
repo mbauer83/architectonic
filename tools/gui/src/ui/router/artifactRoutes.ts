@@ -62,7 +62,11 @@ export const ROUTE_TEMPLATES = {
   entityCreate: '/entities/new',
   entityGroups: '/entities/groups',
   entityDetail: '/entities/:artifactId',
+  /** One entity's neighbourhood: the exploration anchored on it. */
   entityGraph: '/entities/:artifactId/graph',
+  /** The exploration surface with no anchor — a whole population, selected by a viewpoint.
+   * Addresses no stored thing, so the viewpoint slug is an operand and stays in the query. */
+  graphExplore: '/graph',
   documentList: '/documents',
   documentCreate: '/documents/new',
   documentGroups: '/documents/groups',
@@ -105,14 +109,18 @@ export const entityListRoute = (): string => ROUTE_TEMPLATES.entityList
 export const entityCreateRoute = (): string => ROUTE_TEMPLATES.entityCreate
 export const entityDetailRoute = (artifactId: string): string => `/entities/${seg(artifactId)}`
 export const entityGraphRoute = (artifactId: string): string => `/entities/${seg(artifactId)}/graph`
+export const graphExploreRoute = (): string => ROUTE_TEMPLATES.graphExplore
 
 export const documentListRoute = (): string => ROUTE_TEMPLATES.documentList
+export const documentCreateRoute = (): string => ROUTE_TEMPLATES.documentCreate
 export const documentDetailRoute = (artifactId: string): string => `/documents/${seg(artifactId)}`
 
 export const diagramListRoute = (): string => ROUTE_TEMPLATES.diagramList
+export const diagramCreateRoute = (): string => ROUTE_TEMPLATES.diagramCreate
 export const diagramDetailRoute = (artifactId: string): string => `/diagrams/${seg(artifactId)}`
 export const diagramEditRoute = (artifactId: string): string => `/diagrams/${seg(artifactId)}/edit`
 
+export const matrixCreateRoute = (): string => ROUTE_TEMPLATES.matrixCreate
 export const matrixEditRoute = (artifactId: string): string => `/matrices/${seg(artifactId)}/edit`
 
 export const viewpointEditRoute = (slug: string): string => `/viewpoints/${seg(slug)}/edit`

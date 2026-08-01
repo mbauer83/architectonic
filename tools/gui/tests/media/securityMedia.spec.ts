@@ -57,7 +57,7 @@ async function focusSecurityPanel(page: Page): Promise<void> {
 test('security entity metrics panel', async ({ page }) => {
   await installSyntheticSecurity(page)
   const problems = watch(page)
-  await page.goto(`/entity?id=${encodeURIComponent(BACKEND)}`, { waitUntil: 'load' })
+  await page.goto(`/entities/${encodeURIComponent(BACKEND)}`, { waitUntil: 'load' })
   await expect(page.locator('.derived-security')).toContainText('Derived security attributes')
   await expect(page.getByTestId('synthetic-documentation-banner')).toBeVisible()
   await focusSecurityPanel(page)
@@ -76,7 +76,7 @@ test('locked security metrics state', async ({ page }) => {
     },
   } }))
   const problems = watch(page)
-  await page.goto(`/entity?id=${encodeURIComponent(BACKEND)}`, { waitUntil: 'load' })
+  await page.goto(`/entities/${encodeURIComponent(BACKEND)}`, { waitUntil: 'load' })
   await expect(page.locator('.derived-security')).toHaveCount(0)
   const lockedIndicator = page.getByRole('link', { name: '🔒 Assurance' })
   await expect(lockedIndicator).toHaveAttribute('title', 'Assurance store locked')

@@ -20,13 +20,14 @@ import DiagramEntitySidebar from '../components/DiagramEntitySidebar.vue'
 import DiagramSyncPanel from '../components/DiagramSyncPanel.vue'
 import DiagramDeletePanel from '../components/DiagramDeletePanel.vue'
 import DiagramMatrixView from '../components/DiagramMatrixView.vue'
+import { diagramEditRoute, matrixEditRoute } from '../router/artifactRoutes'
 
 const svc = inject(modelServiceKey)!
 const route = useRoute()
 const router = useRouter()
 const adminMode = ref(false)
 
-const diagramId = computed(() => (route.query.id as string | undefined) ?? '')
+const diagramId = computed(() => route.params.artifactId as string)
 
 const contextQuery = useQuery<DiagramContext, RepoError | NotFoundError>()
 const svgQuery = useQuery<string, RepoError>()
@@ -47,7 +48,9 @@ const matrixHtml = computed(() => {
   if (body === null || detail.value?.diagram_type !== 'matrix') return null
   return renderMatrixMarkdown(body)
 })
-const editPath = computed(() => detail.value?.diagram_type === 'matrix' ? '/diagram/edit/matrix' : '/diagram/edit')
+const editPath = computed(() => detail.value?.diagram_type === 'matrix'
+  ? matrixEditRoute(diagramId.value)
+  : diagramEditRoute(diagramId.value))
 const isGlobalDiagram = computed(() => detail.value?.is_global ?? false)
 
 const showSource = ref(false)

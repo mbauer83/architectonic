@@ -29,7 +29,7 @@ work traceable without building a dedicated assurance department.
 ![Motivation chain explaining why assurance is part of the architecture tool](../media/assurance-why-motivation-chain.svg)
 
 *Rendered from the self-model. Open the diagram in a running app:
-[`why-assurance-motivation-chain`](http://localhost:8000/diagram?id=ARC%401780656714.9qoEQO.why-assurance-motivation-chain).*
+[`why-assurance-motivation-chain`](http://localhost:8000/diagrams/ARC%401780656714.9qoEQO.why-assurance-motivation-chain).*
 
 &nbsp;
 

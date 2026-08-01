@@ -17,57 +17,57 @@ public self-model content).
 ## Part 1 — From a force in the world to running code
 
 **1. A driver and the double bind it creates.** The model starts from the force reshaping
-software work: [*AI-Assisted and Agentic Development as a Dominant Production Mode*](http://localhost:8000/entity?id=DRV%401776628131.GR9prv)
+software work: [*AI-Assisted and Agentic Development as a Dominant Production Mode*](http://localhost:8000/entities/DRV%401776628131.GR9prv)
 (driver). At **agentic velocity** it produces a double bind — the assessment
-[*Autonomy at Agentic Velocity Threatens Unity of Effort*](http://localhost:8000/entity?id=ASS%401780220699.CK90bp)
-on one side, [*Centralized Governance Cannot Scale at Agentic Velocity*](http://localhost:8000/entity?id=ASS%401776628138.a6vxyj)
+[*Autonomy at Agentic Velocity Threatens Unity of Effort*](http://localhost:8000/entities/ASS%401780220699.CK90bp)
+on one side, [*Centralized Governance Cannot Scale at Agentic Velocity*](http://localhost:8000/entities/ASS%401776628138.a6vxyj)
 on the other.
 
 **2. The core trade-off it forces.** Those failure modes sit on a trade-off between
 stakeholder values — the *differentiation* pull of
-[*Local Autonomy*](http://localhost:8000/entity?id=VAL%401784845185.fduAv-),
-[*Team Solution Fitness*](http://localhost:8000/entity?id=VAL%401784845185.-RyIvn), and
-[*Local Efficiency*](http://localhost:8000/entity?id=VAL%401784845186.56mLXu) against the
-*integration* pull of [*Unity of Effort*](http://localhost:8000/entity?id=VAL%401784845184.pIkrDX),
-[*Enterprise Adaptability*](http://localhost:8000/entity?id=VAL%401784845185.tL9l4U), and
-[*Enterprise Efficiency & Solution Fitness*](http://localhost:8000/entity?id=VAL%401784845185.2xkN4J) —
-all feeding [*Enterprise Viability*](http://localhost:8000/entity?id=VAL%401784845186.hFq7vl).
+[*Local Autonomy*](http://localhost:8000/entities/VAL%401784845185.fduAv-),
+[*Team Solution Fitness*](http://localhost:8000/entities/VAL%401784845185.-RyIvn), and
+[*Local Efficiency*](http://localhost:8000/entities/VAL%401784845186.56mLXu) against the
+*integration* pull of [*Unity of Effort*](http://localhost:8000/entities/VAL%401784845184.pIkrDX),
+[*Enterprise Adaptability*](http://localhost:8000/entities/VAL%401784845185.tL9l4U), and
+[*Enterprise Efficiency & Solution Fitness*](http://localhost:8000/entities/VAL%401784845185.2xkN4J) —
+all feeding [*Enterprise Viability*](http://localhost:8000/entities/VAL%401784845186.hFq7vl).
 The whole tension is one view,
-[*The Core Trade-off*](http://localhost:8000/diagram?id=ARC%401784849983.W6j62G.the-core-trade-off-local-autonomy-and-enterprise-adaptability).
+[*The Core Trade-off*](http://localhost:8000/diagrams/ARC%401784849983.W6j62G.the-core-trade-off-local-autonomy-and-enterprise-adaptability).
 
 ![The core trade-off between local autonomy and enterprise adaptability](media/motivation-core-trade-off.svg)
 
 **3. The apex goal that answers it.** The apex goal
-[*Sustain Unity of Effort at Agentic Velocity*](http://localhost:8000/entity?id=GOL%401780220699.FCfDuc)
+[*Sustain Unity of Effort at Agentic Velocity*](http://localhost:8000/entities/GOL%401780220699.FCfDuc)
 answers the trade-off by splitting into
-[*Preserve Local Autonomy*](http://localhost:8000/entity?id=GOL%401784845186.L4Ceuf) and
-[*Enable Coherent, Traceable Enterprise Action*](http://localhost:8000/entity?id=GOL%401784845186.7RZp1S).
+[*Preserve Local Autonomy*](http://localhost:8000/entities/GOL%401784845186.L4Ceuf) and
+[*Enable Coherent, Traceable Enterprise Action*](http://localhost:8000/entities/GOL%401784845186.7RZp1S).
 That second goal is the *end* that model fidelity serves: the subordinate goal
-[*Maintain a Coherent, Traceable Architecture Model*](http://localhost:8000/entity?id=GOL%401712870400.Po1Qw3)
+[*Maintain a Coherent, Traceable Architecture Model*](http://localhost:8000/entities/GOL%401712870400.Po1Qw3)
 positively influences it and is realized through the outcome
-[*Increased Architectural Coherence and Integrity*](http://localhost:8000/entity?id=OUT%401712870400.LrpdG0).
+[*Increased Architectural Coherence and Integrity*](http://localhost:8000/entities/OUT%401712870400.LrpdG0).
 Two guiding principles bound the response —
-[*Keep Shared Architecture Explicit and Machine-Checkable*](http://localhost:8000/entity?id=PRI%401784845187.cM0Xea)
-and [*Governance Is Proportional to Impact and Risk*](http://localhost:8000/entity?id=PRI%401784845187.E3_ttJ).
+[*Keep Shared Architecture Explicit and Machine-Checkable*](http://localhost:8000/entities/PRI%401784845187.cM0Xea)
+and [*Governance Is Proportional to Impact and Risk*](http://localhost:8000/entities/PRI%401784845187.E3_ttJ).
 
 **4. The strategy that answers it.** The course of action
-[*Dogfood via the Recursive Self-Model*](http://localhost:8000/entity?id=COA%401784483697.FI0Xbj)
+[*Dogfood via the Recursive Self-Model*](http://localhost:8000/entities/COA%401784483697.FI0Xbj)
 influences that outcome, and is realized by the capability
-[*Architecture Knowledge Management*](http://localhost:8000/entity?id=CAP%401784482403.pLMHKe) —
+[*Architecture Knowledge Management*](http://localhost:8000/entities/CAP%401784482403.pLMHKe) —
 one of five capabilities on the
-[capability map](http://localhost:8000/diagram?id=ARC%401784484044.GU6kjx.capability-map).
+[capability map](http://localhost:8000/diagrams/ARC%401784484044.GU6kjx.capability-map).
 The full strategy layer is one view:
-[Strategy Overview](http://localhost:8000/diagram?id=ARC%401784483951.yBNaaU.strategy-overview).
+[Strategy Overview](http://localhost:8000/diagrams/ARC%401784483951.yBNaaU.strategy-overview).
 
 <!-- media: docs/media/strategy-overview.png — captured by the deterministic media suite -->
 ![Strategy overview connecting the platform motivation, courses of action, capabilities, resources, and value streams](media/strategy-overview.png)
 
 **5. The value it delivers.** That capability serves the value stream
-[*Model & Validate the Architectural Design*](http://localhost:8000/entity?id=VS%401784483014.xrSjjJ) —
+[*Model & Validate the Architectural Design*](http://localhost:8000/entities/VS%401784483014.xrSjjJ) —
 stage by stage, from scoping a change to feeding implementation learnings back — shown
 end to end in
-[*Deliver an Architecture-Aligned Change*](http://localhost:8000/diagram?id=ARC%401784483996.YRywG6.value-stream-deliver-an-architecture-aligned-change).
-The [Resource Investment Map](http://localhost:8000/diagram?id=ARC%401784488894.WwyJAa.resource-investment-map)
+[*Deliver an Architecture-Aligned Change*](http://localhost:8000/diagrams/ARC%401784483996.YRywG6.value-stream-deliver-an-architecture-aligned-change).
+The [Resource Investment Map](http://localhost:8000/diagrams/ARC%401784488894.WwyJAa.resource-investment-map)
 renders the same strategy layer as a heat map over each resource's modeled
 `investment_level`.
 
@@ -79,15 +79,15 @@ renders the same strategy layer as a heat map over each resource's modeled
 
 **6. Down to the running system.** The C4 progression describes the platform's own
 runtime, model-backed at every level:
-[System Context](http://localhost:8000/diagram?id=CSC%401780829783.z8RRON.amp-system-context) →
-[Containers](http://localhost:8000/diagram?id=CC%401780829785.Z_fI-N.amp-containers) →
-[Architecture Backend — Components](http://localhost:8000/diagram?id=CC%401780829793.K3l46j.architecture-backend-components).
+[System Context](http://localhost:8000/diagrams/CSC%401780829783.z8RRON.amp-system-context) →
+[Containers](http://localhost:8000/diagrams/CC%401780829785.Z_fI-N.amp-containers) →
+[Architecture Backend — Components](http://localhost:8000/diagrams/CC%401780829793.K3l46j.architecture-backend-components).
 
 <!-- media: docs/media/c4-context.png -->
 ![C4 system context for the Architecture Management Platform and its users and external systems](media/c4-context.png)
 
 **7. And into its decisions.** From the
-[Architecture Backend](http://localhost:8000/entity?id=APP%401777293133.OYEmP1) entity,
+[Architecture Backend](http://localhost:8000/entities/APP%401777293133.OYEmP1) entity,
 document backlinks lead to the ADRs that shaped it — for instance
 [*One Unified Backend Authority; Every Write Through the Same Verified Pipeline*](http://localhost:8000/documents/ADR%401783406851.pGCuZn.one-unified-backend-authority-every-write-through-the-same-verified-pipeline) —
 decisions authored as structured documents, linked to the entities they govern.

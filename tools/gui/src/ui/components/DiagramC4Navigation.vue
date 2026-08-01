@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { diagramDetailRoute } from '../router/artifactRoutes'
 /** C4 breadcrumb (parent diagrams, sticky) and drill-down links (child diagrams) for a
  * model-backed C4 diagram. Pure display over `c4Navigation` — navigation itself is plain
  * RouterLinks, no state of its own. */
@@ -23,7 +24,7 @@ defineProps<{ c4Navigation: C4Navigation }>()
       <RouterLink
         v-for="p in c4Navigation.parent_diagrams"
         :key="p.diagram_id"
-        :to="{ path: '/diagram', query: { id: p.diagram_id } }"
+        :to="diagramDetailRoute(p.diagram_id)"
         class="c4-up-link"
       >
         ↑ {{ p.diagram_name }}
@@ -39,7 +40,7 @@ defineProps<{ c4Navigation: C4Navigation }>()
       <RouterLink
         v-for="child in c4Navigation.child_diagrams"
         :key="child.diagram_id"
-        :to="{ path: '/diagram', query: { id: child.diagram_id } }"
+        :to="diagramDetailRoute(child.diagram_id)"
         class="c4-nav-link"
       >
         ⤵ {{ child.diagram_name }}

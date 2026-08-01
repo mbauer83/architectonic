@@ -27,11 +27,6 @@ export type QueryParameterRole =
 
 export const QUERY_PARAMETER_ROLES: Readonly<Record<string, QueryParameterRole>> = {
   // ── identity: to be converted to path parameters in Phase 2 ────────────────
-  'ui/views/EntityDetailView.vue#id': 'identity',
-  'ui/views/DiagramDetailView.vue#id': 'identity',
-  'ui/views/EditDiagramView.vue#id': 'identity',
-  'ui/views/EditMatrixView.vue#id': 'identity',
-  'ui/views/GraphExploreView.vue#id': 'identity',
   'ui/views/VulnerabilityImpactView.vue#id': 'identity',
   'ui/views/AssuranceGraphExploreView.vue#node_id': 'identity',
   'ui/views/SecurityFindingsView.vue#anchor': 'identity',
@@ -40,8 +35,6 @@ export const QUERY_PARAMETER_ROLES: Readonly<Record<string, QueryParameterRole>>
   'ui/views/AssuranceGsnWizardView.vue#analysis_id': 'identity',
   'ui/views/AssuranceGrcWizardView.vue#analysis_id': 'identity',
   'ui/views/AssuranceCastWizardView.vue#analysis_id': 'identity',
-  'ui/views/ViewpointMatrixView.vue#viewpoint': 'identity',
-  'ui/views/ViewpointDiagramView.vue#viewpoint': 'identity',
   // A projection is identified by its analysis *and* its type; both are read under a computed
   // key by one helper, so the use is recorded once.
   'ui/views/AssuranceDiagramDetailView.vue#*': 'identity',

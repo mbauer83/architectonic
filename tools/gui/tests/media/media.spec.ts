@@ -113,7 +113,7 @@ test('re-shoot treemap', async ({ page }) => {
 })
 
 test('re-shoot entity detail', async ({ page }) => {
-  await gotoAndCapture(page, `/entity?id=${encodeURIComponent(BACKEND)}`, 'entity-detail.png',
+  await gotoAndCapture(page, `/entities/${encodeURIComponent(BACKEND)}`, 'entity-detail.png',
     provenance('re-shoot entity detail', [BACKEND]))
 })
 
@@ -212,7 +212,7 @@ test('re-shoot graph exploration walk', async ({ page }) => {
       {
         name: 'open',
         act: async () => {
-          await page.goto(`/graph?id=${encodeURIComponent(WALK_ANCHOR)}`, { waitUntil: 'load' })
+          await page.goto(`/entities/${encodeURIComponent(WALK_ANCHOR)}/graph`, { waitUntil: 'load' })
           // Attached is not drawn: the first frame used to be blank canvas with "Loading…" still in
           // the sidebar, so the figure opened on the one state that shows nothing. Wait for a node
           // to be visible and for the sidebar to have finished before the first beat is shot.
@@ -250,7 +250,7 @@ test('datatype diagram with an attribute selected', async ({ page, request }) =>
   // include the sidebar. A picture of the boxes alone shows a class diagram, which undersells it.
   const problems = watch(page)
   const diagram = await diagramById(request, DATATYPE)
-  await page.goto(`/diagram?id=${encodeURIComponent(diagram.artifact_id)}`, { waitUntil: 'load' })
+  await page.goto(`/diagrams/${encodeURIComponent(diagram.artifact_id)}`, { waitUntil: 'load' })
   await expect(page.locator('.svg-wrap svg')).toBeVisible({ timeout: 15_000 })
 
   // `[data-subpart]` is the marker the datatype extension stamps on each attribute row; picking a

@@ -25,3 +25,7 @@ export const createBlockedReason = (
   if (!previewClean) return PREVIEW_FIRST_TITLE
   return requiredMissing ? REQUIRED_TITLE : undefined
 }
+
+/** The route a saved entity lands on, re-exported so the view reads its navigation targets from
+ * the module that already holds its other route decisions. */
+export { entityDetailRoute } from '../router/artifactRoutes'

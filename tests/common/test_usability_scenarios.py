@@ -21,11 +21,16 @@ import yaml  # type: ignore[import-untyped]
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _USABILITY_DIR = _REPO_ROOT / "tools" / "usability_test"
 _SCENARIOS_DIR = _USABILITY_DIR / "scenarios"
-_ROUTER = _REPO_ROOT / "tools" / "gui" / "src" / "ui" / "router" / "index.ts"
+_ROUTER_DIR = _REPO_ROOT / "tools" / "gui" / "src" / "ui" / "router"
+#: The route table and the template catalogue it is declared from. Both, because the table names
+#: most of its paths through `ROUTE_TEMPLATES` — reading only the table would shrink this oracle
+#: to the handful of literals left in it, and a scenario reference would then resolve against
+#: almost nothing while still passing.
+_ROUTER_FILES = ("index.ts", "assuranceRoutes.ts", "artifactRoutes.ts")
 _VIEWPOINT_LIBRARY = _REPO_ROOT / "src" / "ontologies" / "archimate_4" / "viewpoints.yaml"
 
 _KEBAB = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
-_ROUTER_PATH = re.compile(r"path:\s*'([^']+)'")
+_ROUTER_PATH = re.compile(r"(?:path:\s*|:\s*)'(/[^']*)'")
 
 _REQUIRED_SCENARIO_FIELDS = frozenset({
     "schema", "kind", "id", "title", "work_type", "channels", "situation", "stakes",
@@ -83,7 +88,24 @@ def _iter_route_refs(scenario: dict[str, Any]) -> list[tuple[str, dict[str, Any]
 
 
 def _known_gui_routes() -> frozenset[str]:
-    return frozenset(_ROUTER_PATH.findall(_ROUTER.read_text(encoding="utf-8")))
+    return frozenset(
+        route
+        for name in _ROUTER_FILES
+        for route in _ROUTER_PATH.findall((_ROUTER_DIR / name).read_text(encoding="utf-8"))
+    )
+
+
+def test_the_frontend_route_oracle_is_not_empty() -> None:
+    """Guards the guard below.
+
+    The route table names most of its paths through ``ROUTE_TEMPLATES`` rather than spelling them,
+    so a scan of that file alone finds a handful of literals — and every scenario reference would
+    then be checked against almost nothing. A floor is what makes the shrinkage visible.
+    """
+    known = _known_gui_routes()
+    assert len(known) >= 30, f"the frontend route oracle found only {sorted(known)}"
+    for expected in ("/entities", "/entities/:artifactId", "/assurance"):
+        assert expected in known, f"{expected} missing from the route oracle"
 
 
 def _known_mcp_tools() -> frozenset[str]:

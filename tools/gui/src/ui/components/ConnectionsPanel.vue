@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { entityDetailRoute } from '../router/artifactRoutes'
 import { computed, inject, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { modelServiceKey } from '../keys'
@@ -232,7 +233,7 @@ const removeModal = ref<InstanceType<typeof ConnectionRemoveModal> | null>(null)
                   class="conn-mult-badge"
                 >{{ c.src_multiplicity ? `[${c.src_multiplicity}]` : '' }}→{{ c.tgt_multiplicity ? `[${c.tgt_multiplicity}]` : '' }}</span>
                 <RouterLink
-                  :to="{ path: '/entity', query: { id: otherEnd(c) } }"
+                  :to="entityDetailRoute(otherEnd(c))"
                   class="conn-target"
                 >
                   {{ otherEndName(c) }}

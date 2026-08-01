@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { entityDetailRoute } from '../router/artifactRoutes'
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import type { EntityItemSummary } from '../../domain'
@@ -27,7 +28,7 @@ const isEntityLink = computed(() => props.source === 'name' && value.value !== n
   >—</span>
   <RouterLink
     v-else-if="isEntityLink"
-    :to="{ path: '/entity', query: { id: entity.id } }"
+    :to="entityDetailRoute(entity.id)"
     class="cell-link"
   >
     {{ value }}

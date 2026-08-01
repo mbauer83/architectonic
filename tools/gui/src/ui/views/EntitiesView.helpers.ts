@@ -164,3 +164,7 @@ export const hasBadgeStyling = (presentation: PresentationNode | null): boolean 
   presentation !== null
   && (presentation.stylingRules.some((rule) => rule.capability === 'badges')
     || 'badges' in presentation.defaultStyle)
+
+/** The list's own navigation targets — a row's detail page and the create surface — re-exported so
+ * the view reads them from the module that already holds its other route decisions. */
+export { entityCreateRoute, entityDetailRoute } from '../router/artifactRoutes'

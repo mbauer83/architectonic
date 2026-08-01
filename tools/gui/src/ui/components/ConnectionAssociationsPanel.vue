@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { entityDetailRoute } from '../router/artifactRoutes'
 /**
  * Second-order-association editor for one connection: shows the currently associated
  * entities as removable chips, plus a search-and-add row. Fully self-contained — injects
@@ -78,7 +79,7 @@ const removeAssociation = (entityId: string) => {
         class="assoc-chip"
       >
         <RouterLink
-          :to="{ path: '/entity', query: { id: eid } }"
+          :to="entityDetailRoute(eid)"
           class="assoc-chip-link"
         >{{ friendlyName(eid) }}</RouterLink>
         <button

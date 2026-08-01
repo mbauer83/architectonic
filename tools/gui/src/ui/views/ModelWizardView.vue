@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { entityDetailRoute } from '../router/artifactRoutes'
 import { inject, watch, computed, onMounted, ref } from 'vue'
 import { Effect } from 'effect'
 import { modelServiceKey } from '../keys'
@@ -94,7 +95,7 @@ watch(activeDomain, (domain) => {
         v-for="draft in priorDrafts.slice(0, 5)"
         :key="draft.artifact_id"
         class="draft-link"
-        :to="{ path: '/entity', query: { id: draft.artifact_id } }"
+        :to="entityDetailRoute(draft.artifact_id)"
       >
         {{ draft.name }}
       </RouterLink>
@@ -165,7 +166,7 @@ watch(activeDomain, (domain) => {
           v-for="entity in session.state.createdEntities"
           :key="entity.artifactId"
         >
-          <RouterLink :to="{ path: '/entity', query: { id: entity.artifactId } }">
+          <RouterLink :to="entityDetailRoute(entity.artifactId)">
             {{ entity.name }}
           </RouterLink>
           <span class="recap-meta">{{ entity.artifactType }} · {{ entity.domain }}

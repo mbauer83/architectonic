@@ -41,7 +41,7 @@ const props = defineProps<{ adHoc?: AdHocExecution }>()
 const svc = inject(modelServiceKey)!
 const route = useRoute()
 const router = useRouter()
-const slug = computed(() => (route.query.viewpoint as string | undefined) ?? '')
+const slug = computed(() => route.params.slug as string)
 
 const definitions = ref<readonly ViewpointDefinitionEnvelope[]>([])
 const execution = useViewpointExecution(svc)

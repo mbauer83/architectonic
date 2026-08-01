@@ -23,7 +23,7 @@ test('the guided questionnaire presents composed domain context once above type 
 })
 
 test('the service specialization renders its seven effective attributes with typed controls', async ({ page }) => {
-  await page.goto('/entity/create')
+  await page.goto('/entities/new')
   const type = page.locator('select.form-select').filter({ has: page.locator('option[value="application-component"]') })
   await type.selectOption('application-component')
 

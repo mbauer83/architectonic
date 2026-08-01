@@ -24,6 +24,7 @@ import {
   elementRoute,
 } from '../AssuranceFmeaView.helpers'
 import type { CellView, RowView } from '../AssuranceFmeaView.helpers'
+import { entityDetailRoute } from '../../router/artifactRoutes'
 
 function cell(overrides: Partial<CellView> = {}): CellView {
   return {
@@ -332,12 +333,12 @@ describe('elementHeading', () => {
 describe('elementRoute', () => {
   it('routes a row to its architecture element', () => {
     expect(elementRoute(row({ element_id: 'APP@1712870400.abc123.credential-backend' })))
-      .toBe('/entity?id=' + encodeURIComponent('APP@1712870400.abc123.credential-backend'))
+      .toBe(entityDetailRoute('APP@1712870400.abc123.credential-backend'))
   })
 
   it('routes a short-form id, which is the form a binding stores', () => {
     expect(elementRoute(row({ element_id: 'APP@1777293133.OYEmP1' })))
-      .toBe('/entity?id=' + encodeURIComponent('APP@1777293133.OYEmP1'))
+      .toBe(entityDetailRoute('APP@1777293133.OYEmP1'))
   })
 
   it('is null when the row names no artifact, rather than linking nowhere', () => {

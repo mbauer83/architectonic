@@ -13,7 +13,7 @@ import { resolveStyleColor, styleTokenString, tokenShape, tokenIconLetter, token
 import { archimateGlyphMarkup } from '../lib/glyphKey'
 import type { EdgeEndMarker, EdgeVisual, NodeVisual } from '../components/GraphCanvas.helpers'
 import { presentationFromMapping } from '../../domain/viewpointPresentationSerialization'
-import { executionRouteFor } from './ViewpointsManagementView.helpers'
+import { type ExecutionRoute, executionRouteFor } from './ViewpointsManagementView.helpers'
 import { DOMAIN_NAMES } from '../../domain/types.generated'
 import type { BandPlacement } from '../composables/useForceGraphLayout'
 
@@ -23,7 +23,7 @@ import type { BandPlacement } from '../composables/useForceGraphLayout'
  * intended presentation. `null` means "stay here and execute as exploration". */
 export const explorationRedirectFor = (
   envelope: ViewpointDefinitionEnvelope | undefined,
-): { path: string; query: { viewpoint: string } } | null => {
+): ExecutionRoute | null => {
   if (!envelope) return null
   const representation = presentationFromMapping(envelope.presentation)?.representation ?? 'exploration'
   return representation === 'exploration' ? null : executionRouteFor(envelope)

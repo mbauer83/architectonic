@@ -203,7 +203,7 @@ export async function captureStoredDiagram(
 ): Promise<void> {
   const diagram = await diagramById(request, artifactId)
   const problems = watch(page)
-  await page.goto(`/diagram?id=${encodeURIComponent(diagram.artifact_id)}`, { waitUntil: 'load' })
+  await page.goto(`/diagrams/${encodeURIComponent(diagram.artifact_id)}`, { waitUntil: 'load' })
   if (diagram.diagram_type !== 'matrix') await expect(page.locator('.svg-wrap svg')).toBeVisible({ timeout: 15_000 })
   await capture(page, fileName, provenance)
   expect(problems, `runtime problems while capturing ${fileName}`).toEqual([])

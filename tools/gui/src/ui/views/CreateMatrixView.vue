@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { diagramDetailRoute } from '../router/artifactRoutes'
 import { ref, computed, inject } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import { Effect, Exit } from 'effect'
@@ -94,7 +95,7 @@ const doCreate = async () => {
   }))
   busy.value = false
   Exit.match(exit, {
-    onSuccess: (r) => { if (r.wrote) void router.push({ path: '/diagram', query: { id: r.artifact_id } }) },
+    onSuccess: (r) => { if (r.wrote) void router.push(diagramDetailRoute(r.artifact_id)) },
     onFailure: (e) => { error.value = String(e) },
   })
 }

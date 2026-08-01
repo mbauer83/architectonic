@@ -10,6 +10,7 @@ import type { EntityDisplayInfo, DiagramConnection, DiagramOwnEntityTypeUiConfig
 import ArchimateTypeGlyph from '../../components/ArchimateTypeGlyph.vue'
 import { groupEntitiesByRole, parseExcludedIds } from './C4DiagramEditor.helpers'
 import { toGlyphKey } from '../../lib/glyphKey'
+import { entityDetailRoute } from '../../router/artifactRoutes'
 
 const props = defineProps<{
   entities: EntityDisplayInfo[]
@@ -51,7 +52,7 @@ const roleGroups = computed(() =>
 )
 
 const navToEntity = (id: string) =>
-  router.push({ path: '/entity', query: { id } })
+  router.push(entityDetailRoute(id))
 </script>
 
 <template>

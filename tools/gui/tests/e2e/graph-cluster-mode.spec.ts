@@ -16,7 +16,7 @@ import { expect, test, type Page } from '@playwright/test'
 const openGraph = async (page: Page): Promise<void> => {
   const res = await page.request.get('/api/entities?limit=1&domain=application')
   const body = (await res.json()) as { items: Array<{ artifact_id: string }> }
-  await page.goto(`/graph?id=${encodeURIComponent(body.items[0]!.artifact_id)}`, { waitUntil: 'load' })
+  await page.goto(`/entities/${encodeURIComponent(body.items[0]!.artifact_id)}/graph`, { waitUntil: 'load' })
   await expect(page.locator('.graph-node').first()).toBeAttached({ timeout: 20_000 })
 }
 

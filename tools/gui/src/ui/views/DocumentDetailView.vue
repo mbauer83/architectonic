@@ -16,7 +16,7 @@ const addToast = inject(toastKey)!
 const route = useRoute()
 const router = useRouter()
 
-const documentId = computed(() => route.params.id as string)
+const documentId = computed(() => route.params.artifactId as string)
 const detail = ref<DocumentDetail | null>(null)
 const loading = ref(false)
 const saving = ref(false)

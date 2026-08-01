@@ -20,7 +20,7 @@ import { expect, test } from '@playwright/test'
 const DIAGRAM = 'ARC@1777452513.DM6OMl.motivation-chain-from-drivers-to-requirements'
 
 test('a connection marked for removal is shown as marked, like an entity', async ({ page }) => {
-  await page.goto(`/diagram/edit?id=${encodeURIComponent(DIAGRAM)}`, { waitUntil: 'load' })
+  await page.goto(`/diagrams/${encodeURIComponent(DIAGRAM)}/edit`, { waitUntil: 'load' })
   await expect(page.locator('.svg-wrap svg')).toBeVisible({ timeout: 20_000 })
 
   const connection = page.locator('.svg-wrap [data-conn-id]').first()
@@ -34,7 +34,7 @@ test('a connection marked for removal is shown as marked, like an entity', async
 
 test('an entity marked for removal is shown as marked', async ({ page }) => {
   // The behaviour the connection case is expected to match; pinned so the two cannot drift.
-  await page.goto(`/diagram/edit?id=${encodeURIComponent(DIAGRAM)}`, { waitUntil: 'load' })
+  await page.goto(`/diagrams/${encodeURIComponent(DIAGRAM)}/edit`, { waitUntil: 'load' })
   await expect(page.locator('.svg-wrap svg')).toBeVisible({ timeout: 20_000 })
 
   const entity = page.locator('.svg-wrap [data-entity-id]').first()
@@ -46,7 +46,7 @@ test('an entity marked for removal is shown as marked', async ({ page }) => {
 })
 
 test('clicking a marked connection again clears the marking', async ({ page }) => {
-  await page.goto(`/diagram/edit?id=${encodeURIComponent(DIAGRAM)}`, { waitUntil: 'load' })
+  await page.goto(`/diagrams/${encodeURIComponent(DIAGRAM)}/edit`, { waitUntil: 'load' })
   await expect(page.locator('.svg-wrap svg')).toBeVisible({ timeout: 20_000 })
 
   const connection = page.locator('.svg-wrap [data-conn-id]').first()

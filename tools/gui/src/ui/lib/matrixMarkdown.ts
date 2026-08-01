@@ -1,8 +1,16 @@
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
+import { diagramDetailRoute, documentDetailRoute, entityDetailRoute } from '../router/artifactRoutes'
 
 const HREF_ATTR_RE = /href="([^"]+)"/g
 const ROOT_MARKERS = ['documents', 'model', 'diagram-catalog']
+/** Repository area, as the matrix body's own hrefs spell it, → that area's detail route. */
+const DETAIL_ROUTE_BY_MARKER: Record<string, (id: string) => string> = {
+  model: entityDetailRoute,
+  documents: documentDetailRoute,
+  'diagram-catalog': diagramDetailRoute,
+}
+
 const ARTIFACT_FILE_RE = /^([A-Z][A-Z0-9]*@\d+\.[^.]+\.[^./?#]+)\.(md|puml)$/i
 
 const toRepoRelativePath = (value: string): string => {
@@ -34,11 +42,13 @@ export const toGuiArtifactHref = (href: string): string => {
   if (!match) return value
 
   const artifactId = match[1]
-  const querySuffix = query ? `&${query}` : ''
-  if (marker === 'model') return `/entity?id=${artifactId}${querySuffix}${hash}`
-  if (marker === 'documents') return `/document?id=${artifactId}${querySuffix}${hash}`
-  if (marker === 'diagram-catalog') return `/diagram?id=${artifactId}${querySuffix}${hash}`
-  return value
+  // Built from the route builders, not spelled here. The `documents` arm used to emit
+  // `/document?id=` — a route that has never existed — which is what a second, hand-written copy of
+  // the addressing rules produces.
+  const detail = DETAIL_ROUTE_BY_MARKER[marker]
+  if (detail === undefined) return value
+  const querySuffix = query ? `?${query}` : ''
+  return `${detail(artifactId)}${querySuffix}${hash}`
 }
 
 export const renderMatrixMarkdown = (markdown: string): string => {

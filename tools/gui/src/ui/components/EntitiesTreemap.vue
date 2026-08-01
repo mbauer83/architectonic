@@ -16,6 +16,7 @@ import ArchimateTypeGlyph from './ArchimateTypeGlyph.vue'
 import Treemap from './Treemap.vue'
 import { groupLeaves, type TreemapLeaf } from './Treemap.helpers'
 import { friendlyEntityId, getDomainColor, getDomainLabel, getEntityConnectionTotal } from '../lib/domains'
+import { entityDetailRoute } from '../router/artifactRoutes'
 
 const props = defineProps<{ items: EntitySummary[]; activeDomain: string }>()
 
@@ -48,7 +49,7 @@ const note = computed(() =>
   'Sized by total connections. Drag to pan, wheel to zoom. '
   + (groupMode.value === 'domain' ? 'Grouped by domain.' : 'Grouped by subdomain.'))
 
-const openEntity = (id: string) => void router.push({ path: '/entity', query: { id } })
+const openEntity = (id: string) => void router.push(entityDetailRoute(id))
 const entityFor = (key: string): EntitySummary | undefined => byId.value.get(key)
 </script>
 

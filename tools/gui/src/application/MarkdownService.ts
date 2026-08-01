@@ -1,7 +1,8 @@
 import { Effect } from 'effect'
 import DOMPurify from 'dompurify'
 import { marked } from 'marked'
-import { artifactRouteForHref, type ArtifactArea } from '../domain/artifactLinks'
+import { type ArtifactArea } from '../domain/artifactLinks'
+import { artifactRouteForHref } from '../ui/router/artifactLinkRoutes'
 
 export class MarkdownError extends Error {
   constructor(message: string) {

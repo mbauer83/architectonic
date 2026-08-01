@@ -191,7 +191,7 @@ test('assurance node deep link: unknown id renders the indistinguishable not-fou
 test('entity detail renders (exercises the ontology connection editor)', async ({ page }) => {
   const { problems } = watch(page)
   await page.goto('/entities', { waitUntil: 'load' })
-  const firstEntity = page.locator('main a[href*="/entity?id="]').first()
+  const firstEntity = page.locator('main a[href*="/entities/"]').first()
   await firstEntity.waitFor({ timeout: 10000 })
   await firstEntity.click()
   await page.waitForTimeout(2000)
@@ -203,14 +203,14 @@ test('empty uncategorized group does not show stale ungrouped entities', async (
   await page.goto('/entities?group=uncategorized', { waitUntil: 'load' })
   await expect(page.getByRole('heading', { name: /Entities\s+\(0\)/ })).toBeVisible()
   await expect(page.getByText('No entities in "Uncategorized" yet.')).toBeVisible()
-  await expect(page.locator('main a[href*="/entity?id="]')).toHaveCount(0)
+  await expect(page.locator('main a[href*="/entities/"]')).toHaveCount(0)
   await expectHealthyMain(page, problems)
 })
 
 test('entity detail shows documents that reference the entity', async ({ page }) => {
   const { problems } = watch(page)
   await page.goto(
-    '/entity?id=REQ%401712870400.Kk6Ll6.verified-unique-identifiers-for-entities-connections-diagrams-and-documents',
+    '/entities/REQ%401712870400.Kk6Ll6.verified-unique-identifiers-for-entities-connections-diagrams-and-documents',
     { waitUntil: 'load' },
   )
   await expect(page.getByText('Referenced in documents')).toBeVisible()
@@ -258,7 +258,7 @@ test('every stored diagram instance renders (exercises each diagram type)', asyn
       const page = await context.newPage()
       const { problems } = watch(page)
       try {
-        await page.goto(`/diagram?id=${encodeURIComponent(diagram.artifact_id)}`, { waitUntil: 'load' })
+        await page.goto(`/diagrams/${encodeURIComponent(diagram.artifact_id)}`, { waitUntil: 'load' })
         await page.locator('#app > main').waitFor()
         await page.waitForTimeout(300)
         await expectHealthyMain(page, problems)
@@ -302,7 +302,7 @@ test('C4 rendered labels contain names, retain person labels, and omit descripti
       }
     }
 
-    await page.goto(`/diagram?id=${encodeURIComponent(diagram.artifact_id)}`, { waitUntil: 'load' })
+    await page.goto(`/diagrams/${encodeURIComponent(diagram.artifact_id)}`, { waitUntil: 'load' })
     const svg = page.locator('.svg-wrap svg')
     await expect(svg).toBeVisible()
     const svgText = (await svg.textContent()) ?? ''
@@ -417,12 +417,12 @@ test('assurance-only diagrams are selectable on the unified surface', async ({ p
 
 test('assurance traceability matrix links model entities and wraps at word boundaries', async ({ page }) => {
   const matrixId = 'MAT@1780656830.v5cdp4.assurance-requirements-traceability'
-  await page.goto(`/diagram?id=${encodeURIComponent(matrixId)}`, { waitUntil: 'load' })
+  await page.goto(`/diagrams/${encodeURIComponent(matrixId)}`, { waitUntil: 'load' })
 
   const serviceLink = page.getByRole('link', { name: 'Assurance Service', exact: true })
   await expect(serviceLink).toHaveAttribute(
     'href',
-    `/entity?id=${encodeURIComponent('SRV@1780656241.ooK3YN.assurance-service')}`,
+    `/entities/${encodeURIComponent('SRV@1780656241.ooK3YN.assurance-service')}`,
   )
   const header = serviceLink.locator('xpath=ancestor::th')
   expect(await header.evaluate((element) => getComputedStyle(element).wordBreak)).toBe('normal')
@@ -451,7 +451,7 @@ test('GSN diagram renders and nodes are selectable in the generic viewer', async
   expect(ctx.entities.length, 'GSN diagram must surface diagram-owned nodes as entities').toBeGreaterThan(0)
 
   // Navigate to the generic viewer
-  await page.goto(`/diagram?id=${encodeURIComponent(gsn.artifact_id)}`, { waitUntil: 'load' })
+  await page.goto(`/diagrams/${encodeURIComponent(gsn.artifact_id)}`, { waitUntil: 'load' })
   await page.waitForTimeout(1000)
   await expectHealthyMain(page, problems)
 
@@ -493,7 +493,7 @@ test('C4 edit-view shows model-backed panel with derived entities', async ({ pag
   expect(ctx.entities.length, 'Model-backed C4 must surface derived entities').toBeGreaterThan(0)
 
   // Navigate to the edit view
-  await page.goto(`/diagram/edit?id=${encodeURIComponent(diagram.artifact_id)}`, { waitUntil: 'load' })
+  await page.goto(`/diagrams/${encodeURIComponent(diagram.artifact_id)}/edit`, { waitUntil: 'load' })
   await page.waitForTimeout(2000)
   await expectHealthyMain(page, problems)
 
@@ -524,7 +524,7 @@ test('C4 container create-view exposes shape selector for containers', async ({ 
   const diagram = items[0]
 
   // Navigate to the edit view; switch to standalone mode (clear scope) to expose entity sections
-  await page.goto(`/diagram/edit?id=${encodeURIComponent(diagram.artifact_id)}`, { waitUntil: 'load' })
+  await page.goto(`/diagrams/${encodeURIComponent(diagram.artifact_id)}/edit`, { waitUntil: 'load' })
   await page.waitForTimeout(1500)
 
   // Assert the diagram-type ui-config exposes the shape enum property for containers
@@ -546,7 +546,7 @@ test('C4 container create-view exposes shape selector for containers', async ({ 
   await expectHealthyMain(page, problems)
 
   // Navigate to a C4 container diagram; verify SVG renders (shape inference works)
-  await page.goto(`/diagram?id=${encodeURIComponent(diagram.artifact_id)}`, { waitUntil: 'load' })
+  await page.goto(`/diagrams/${encodeURIComponent(diagram.artifact_id)}`, { waitUntil: 'load' })
   await page.waitForTimeout(1500)
   const svg = page.locator('.svg-wrap svg')
   await expect(svg).toBeVisible()
@@ -568,7 +568,7 @@ test('SVG node and edge click populates the detail sidebar (C4 + GSN)', async ({
   expect(c4Items.length, 'T18 requires at least one C4 container diagram').toBeGreaterThan(0)
   const c4Diagram = c4Items[0]
 
-  await page.goto(`/diagram?id=${encodeURIComponent(c4Diagram.artifact_id)}`, { waitUntil: 'load' })
+  await page.goto(`/diagrams/${encodeURIComponent(c4Diagram.artifact_id)}`, { waitUntil: 'load' })
   // Wait for SVG interactivity to attach (data-entity-id set on <g> elements), then
   // click a node and confirm the detail sidebar names a real entity.
   const c4NameText = await clickEntityNodeForDetail(page, 'C4')
@@ -591,7 +591,7 @@ test('SVG node and edge click populates the detail sidebar (C4 + GSN)', async ({
   expect(gsnItems.length, 'T18 requires at least one GSN diagram').toBeGreaterThan(0)
   const gsnDiagram = gsnItems[0]
 
-  await page.goto(`/diagram?id=${encodeURIComponent(gsnDiagram.artifact_id)}`, { waitUntil: 'load' })
+  await page.goto(`/diagrams/${encodeURIComponent(gsnDiagram.artifact_id)}`, { waitUntil: 'load' })
   const gsnNameText = await clickEntityNodeForDetail(page, 'GSN')
   expect(gsnNameText.length, 'GSN node click must populate name in detail panel').toBeGreaterThan(0)
   // A GSN node is diagram-only: it lives inside this diagram and has no standalone page, so the name
@@ -616,7 +616,7 @@ test('C4 person labels render in system-context and container diagrams (T20)', a
   expect(ctxItems.length, 'T20 requires at least one stored C4 system-context diagram').toBeGreaterThan(0)
   const ctxDiagram = ctxItems[0]
 
-  await page.goto(`/diagram?id=${encodeURIComponent(ctxDiagram.artifact_id)}`, { waitUntil: 'load' })
+  await page.goto(`/diagrams/${encodeURIComponent(ctxDiagram.artifact_id)}`, { waitUntil: 'load' })
   const ctxSvg = page.locator('.svg-wrap svg')
   await expect(ctxSvg).toBeVisible({ timeout: 15_000 })
   const ctxSvgText = (await ctxSvg.textContent()) ?? ''
@@ -646,7 +646,7 @@ test('C4 person labels render in system-context and container diagrams (T20)', a
   expect(ctnItems.length, 'T20 requires at least one stored C4 container diagram').toBeGreaterThan(0)
   const ctnDiagram = ctnItems[0]
 
-  await page.goto(`/diagram?id=${encodeURIComponent(ctnDiagram.artifact_id)}`, { waitUntil: 'load' })
+  await page.goto(`/diagrams/${encodeURIComponent(ctnDiagram.artifact_id)}`, { waitUntil: 'load' })
   const ctnSvg = page.locator('.svg-wrap svg')
   await expect(ctnSvg).toBeVisible({ timeout: 15_000 })
   const ctnSvgText = (await ctnSvg.textContent()) ?? ''
@@ -680,7 +680,7 @@ test('C4 person→container edges anchor at nodes without gap (T21)', async ({ p
   expect(items.length, 'T21 requires at least one stored C4 container diagram').toBeGreaterThan(0)
   const diagram = items[0]
 
-  await page.goto(`/diagram?id=${encodeURIComponent(diagram.artifact_id)}`, { waitUntil: 'load' })
+  await page.goto(`/diagrams/${encodeURIComponent(diagram.artifact_id)}`, { waitUntil: 'load' })
   const svg = page.locator('.svg-wrap svg')
   await expect(svg).toBeVisible({ timeout: 15_000 })
 

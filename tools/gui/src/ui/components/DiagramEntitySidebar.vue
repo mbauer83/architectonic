@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { entityDetailRoute, entityGraphRoute } from '../router/artifactRoutes'
 /**
  * Diagram detail's right-hand sidebar: entity list plus whichever detail panel is active
  * (a viewer-extension sub-part, a selected connection with its inline edge-label editor, or
@@ -151,7 +152,7 @@ const selectedIsDiagramOnly = computed(() => {
             >
               <RouterLink
                 v-if="segment.entityId"
-                :to="{ path: '/entity', query: { id: segment.entityId } }"
+                :to="entityDetailRoute(segment.entityId)"
                 class="chain-entity"
               >
                 {{ segment.text }}
@@ -210,7 +211,7 @@ const selectedIsDiagramOnly = computed(() => {
       <div class="det-hdr">
         <RouterLink
           v-if="!selectedIsDiagramOnly"
-          :to="{ path: '/entity', query: { id: entityQuery.data.value.artifact_id } }"
+          :to="entityDetailRoute(entityQuery.data.value.artifact_id)"
           class="det-name"
         >
           {{ entityQuery.data.value.name }}
@@ -267,7 +268,7 @@ const selectedIsDiagramOnly = computed(() => {
         v-html="selectedEntityDetailHtml"
       />
       <RouterLink
-        :to="{ path: '/graph', query: { id: entityQuery.data.value.artifact_id } }"
+        :to="entityGraphRoute(entityQuery.data.value.artifact_id)"
         class="explore-lnk"
       >
         Explore in graph →

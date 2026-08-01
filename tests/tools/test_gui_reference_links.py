@@ -1,3 +1,11 @@
+"""The reference-link helpers, exercised through node because they are shipped JavaScript.
+
+``toGuiArtifactHref`` used to be tested here too, in two cases — one of which asserted
+``/document?id=``, a GUI route that has never existed. It was a dead second copy of the
+addressing rules; the live one is ``matrixMarkdown.ts``, tested in TypeScript where the type
+checker can see it and where it builds its hrefs from the route builders.
+"""
+
 from __future__ import annotations
 
 import json
@@ -75,23 +83,3 @@ def test_repo_relative_normalization_strips_absolute_prefix() -> None:
         "diagram-catalog/diagrams/d.puml",
         "model/technology/nodes/n.md",
     ]
-
-
-def test_to_gui_artifact_href_rewrites_matrix_entity_link() -> None:
-    output = _run_node(
-        """
-        import { toGuiArtifactHref } from './tools/gui/src/ui/lib/referenceLinks.js'
-        console.log(toGuiArtifactHref('../../model/motivation/outcomes/OUT@1712870400.LrpdG0.increased-architectural-coherence.md'))
-        """,
-    )
-    assert output == "/entity?id=OUT@1712870400.LrpdG0.increased-architectural-coherence"
-
-
-def test_to_gui_artifact_href_preserves_document_anchor() -> None:
-    output = _run_node(
-        """
-        import { toGuiArtifactHref } from './tools/gui/src/ui/lib/referenceLinks.js'
-        console.log(toGuiArtifactHref('../../documents/adr/ADR@1712870400.AbCdE1.record.md#decision'))
-        """,
-    )
-    assert output == "/document?id=ADR@1712870400.AbCdE1.record#decision"

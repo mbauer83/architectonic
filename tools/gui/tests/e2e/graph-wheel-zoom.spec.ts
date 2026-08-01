@@ -22,7 +22,7 @@ const viewBox = async (page: Page): Promise<string> =>
   (await page.locator('.graph-svg').getAttribute('viewBox')) ?? ''
 
 const open = async (page: Page): Promise<void> => {
-  await page.goto(`/graph?id=${encodeURIComponent(ANCHOR)}`, { waitUntil: 'load' })
+  await page.goto(`/entities/${encodeURIComponent(ANCHOR)}/graph`, { waitUntil: 'load' })
   await expect(page.locator('.graph-svg')).toBeVisible({ timeout: 20_000 })
   await page.waitForLoadState('networkidle')
 }

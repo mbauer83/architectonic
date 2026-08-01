@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { Schema } from 'effect'
-import { c4NavigationOf } from '../ui/views/DiagramDetailView.helpers'
 import {
   AssuranceNodeListSchema,
   DiagramContextSchema,
   SearchResultSchema,
 } from './schemas'
+import { C4NavigationSchema } from './schemas/diagrams'
 
 // Reduced, representative responses captured from the running backend on 2026-06-21.
 // Fields are preserved verbatim; large arrays and source bodies are reduced to one item.
@@ -122,8 +122,12 @@ describe('captured backend response contracts', () => {
   })
 
   it('decodes a model-backed C4 diagram context', () => {
+    // `type_extras` is the diagram kind's own region, so the envelope decodes it as unknown and a
+    // consumer that knows the kind decodes the part it came for. Done here with the schema rather
+    // than the view's reader: a domain test must not reach into `ui/`.
     const decoded = Schema.decodeUnknownSync(DiagramContextSchema)(C4_CONTEXT_RESPONSE)
-    expect(c4NavigationOf(decoded.type_extras)?.current_level).toBe(2)
+    const nav = Schema.decodeUnknownSync(C4NavigationSchema)(decoded.type_extras?.c4_navigation)
+    expect(nav.current_level).toBe(2)
   })
 
   it('rejects wire drift in a required field', () => {

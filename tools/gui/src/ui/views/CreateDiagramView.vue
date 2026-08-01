@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { diagramDetailRoute } from '../router/artifactRoutes'
 import { inject, ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Effect } from 'effect'
@@ -272,7 +273,7 @@ const doCreate = () => {
   )
     .then((r) => {
       createBusy.value = false
-      if (r.wrote) void router.push({ path: '/diagram', query: { id: r.artifact_id } })
+      if (r.wrote) void router.push(diagramDetailRoute(r.artifact_id))
       else createError.value = writeFailureMessage(r)
     })
     .catch((e) => { createBusy.value = false; createError.value = String(e) })

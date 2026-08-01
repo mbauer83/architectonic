@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { entityGraphRoute } from '../router/artifactRoutes'
 /**
  * Entity detail's top bar (back link, tier badge, graph/promote links, edit/delete/
  * cancel/preview/save actions) and header block (name/status — editable in place — plus
@@ -41,7 +42,7 @@ const edit = inject(entityEditFormKey)!
           title="From the enterprise repository"
         >Enterprise</span>
         <RouterLink
-          :to="{ path: '/graph', query: { id: entityId } }"
+          :to="entityGraphRoute(entityId)"
           class="graph-btn"
         >
           Explore graph
