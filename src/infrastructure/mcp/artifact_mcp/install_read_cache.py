@@ -17,23 +17,18 @@ import logging
 from collections.abc import Callable
 from typing import Any
 
+from src.application.read_model_purity import cacheable_mcp_tools
 from src.infrastructure.mcp.artifact_mcp.read_result_cache import ReadResultCache
 
 logger = logging.getLogger(__name__)
 
 #: Read tools that are pure functions of the indexed model plus their arguments.
 #:
-#: Deliberately absent: `artifact_query_viewpoint` (the catalog is reloaded per request and
-#: is not covered by the model generation) and `artifact_verify` (re-running it is the point).
-CACHEABLE_READ_TOOLS: frozenset[str] = frozenset({
-    "artifact_query_stats",
-    "artifact_query_list_artifacts",
-    "artifact_query_read_artifact",
-    "artifact_query_search_artifacts",
-    "artifact_query_find_connections_for",
-    "artifact_query_find_neighbors",
-    "artifact_query_datatype_types",
-})
+#: Derived, not declared: which reads qualify is one judgement and it is stated in
+#: `application.read_model_purity` — together with the standing exclusions and the REST addresses of
+#: the same reads. This list and the route-policy manifest were two copies of that judgement with
+#: their own rationales, and they had drifted.
+CACHEABLE_READ_TOOLS: frozenset[str] = cacheable_mcp_tools()
 
 
 def generation_for(arguments: dict[str, Any]) -> int | None:
