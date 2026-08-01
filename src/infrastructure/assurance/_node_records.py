@@ -19,6 +19,8 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 
+from src.infrastructure.assurance._record_projection import missing_required, null_if_empty
+
 #: The node record, field for field. The order is the declaration order in ``_schema.py``, so the two
 #: read as the same list.
 NODE_RECORD_FIELDS: tuple[str, ...] = (
@@ -66,31 +68,13 @@ def as_node_record(row: Mapping[str, object]) -> dict[str, object]:
     The backend's own row identity is dropped. It addresses the row inside that backend; the node
     already has an identity, and passing both on invites a caller to use the wrong one.
     """
-    missing = [
-        field
-        for field in NODE_RECORD_FIELDS
-        if field not in _NULLABLE_FIELDS and field not in row
-    ]
+    missing = missing_required(row, NODE_RECORD_FIELDS, _NULLABLE_FIELDS)
     if missing:
         raise ValueError(f"stored assurance node record is missing {', '.join(missing)}")
     return {
-        field: _null_if_empty(row.get(field)) if field in _NULLABLE_FIELDS else row.get(field)
+        field: null_if_empty(row.get(field)) if field in _NULLABLE_FIELDS else row.get(field)
         for field in NODE_RECORD_FIELDS
     }
-
-
-def _null_if_empty(value: object) -> object:
-    """``""`` becomes ``None`` on a nullable field, because in one backend it *is* ``None``.
-
-    PocketBase text fields cannot hold null; an unset one comes back as an empty string. So the same
-    hazard read from PocketBase reported ``uca_type == ""`` and from every other store ``None`` — a
-    divergence in the record's *meaning* rather than its key set, and the one a closed
-    ``str | None`` would have accepted without complaint while two clients branched differently on it.
-    Only the discriminated fields are normalised: none of them has a use for an empty string that is
-    distinct from having no value, and ``analysis_id == ""`` is exactly the unattributed state the
-    provenance repair surface already treats as absent.
-    """
-    return None if value == "" else value
 
 
 def as_node_records(rows: list[dict[str, object]]) -> list[dict[str, object]]:

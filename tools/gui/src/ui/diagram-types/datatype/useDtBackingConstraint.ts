@@ -54,7 +54,10 @@ export function useDtBackingConstraint(
       )
     }
     if (Exit.isSuccess(pairExit)) {
-      rkMap.value = (pairExit.value.relationship_kind_map as Record<string, string | null>) ?? {}
+      // No cast and no fallback: the pair route builds this map for every permitted type, and the
+      // decoder declares it required — both of which became true when the single ontology address was
+      // split into the classification and pair reads.
+      rkMap.value = { ...pairExit.value.relationship_kind_map }
     }
     loaded.value = true
   }

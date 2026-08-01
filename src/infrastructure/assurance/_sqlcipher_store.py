@@ -26,6 +26,7 @@ from src.application.assurance_node_sorting import resolve_node_sort
 from src.domain.assurance.assurance_node_types import NODE_UPDATABLE
 from src.infrastructure.assurance import _credential_accounts as accounts
 from src.infrastructure.assurance import _sqlcipher_analysis as _analysis
+from src.infrastructure.assurance._edge_records import as_arch_ref_records, as_edge_records
 from src.infrastructure.assurance._fmea_assessment_records import SqlFmeaAssessmentMixin
 from src.infrastructure.assurance._id_utils import make_edge_id, make_node_id
 from src.infrastructure.assurance._node_records import as_node_record, as_node_records
@@ -312,7 +313,7 @@ class SQLCipherAssuranceStore(SqlFmeaAssessmentMixin):
         rows = conn.execute(
             f"SELECT * FROM assurance_edges {where} ORDER BY created_at", params
         ).fetchall()
-        return list(rows)
+        return as_edge_records(list(rows))
 
     def add_edge(
         self,
@@ -380,7 +381,7 @@ class SQLCipherAssuranceStore(SqlFmeaAssessmentMixin):
             {"assurance_node_id": assurance_node_id, "arch_artifact_id": arch_artifact_id}
         )
         rows = conn.execute(f"SELECT * FROM arch_refs {where}", params).fetchall()
-        return list(rows)
+        return as_arch_ref_records(list(rows))
 
     def search_nodes(
         self,

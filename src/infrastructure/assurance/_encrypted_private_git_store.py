@@ -25,6 +25,7 @@ from src.application.assurance_node_sorting import sorted_node_dicts
 from src.domain.assurance.assurance_node_types import NODE_UPDATABLE
 from src.domain.clock import utc_now_iso as _now_iso
 from src.infrastructure.assurance._analysis_records import ANALYSES_DIR, FileAnalysisStoreMixin
+from src.infrastructure.assurance._edge_records import as_arch_ref_records, as_edge_records
 from src.infrastructure.assurance._fmea_assessment_records import (
     FMEA_ASSESSMENTS_DIR,
     FileFmeaAssessmentMixin,
@@ -271,7 +272,7 @@ class EncryptedPrivateGitAssuranceStore(
             if conn_type and edge.get("conn_type") != conn_type:
                 continue
             results.append(edge)
-        return results
+        return as_edge_records(results)
 
     def add_edge(
         self,
@@ -338,7 +339,7 @@ class EncryptedPrivateGitAssuranceStore(
             if arch_artifact_id and ref.get("arch_artifact_id") != arch_artifact_id:
                 continue
             results.append(ref)
-        return results
+        return as_arch_ref_records(results)
 
     def search_nodes(
         self,

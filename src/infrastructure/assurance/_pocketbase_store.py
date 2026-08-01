@@ -23,6 +23,7 @@ from typing import Any
 from src.application.assurance_node_sorting import resolve_node_sort
 from src.domain.assurance.assurance_node_types import NODE_UPDATABLE
 from src.domain.clock import utc_now_iso
+from src.infrastructure.assurance._edge_records import as_arch_ref_records, as_edge_records
 from src.infrastructure.assurance._fmea_assessment_records import RestFmeaAssessmentMixin
 from src.infrastructure.assurance._id_utils import make_edge_id, make_node_id
 from src.infrastructure.assurance._node_records import as_node_record, as_node_records
@@ -238,7 +239,8 @@ class PocketBaseAssuranceStore(
 
     def _delete_arch_refs_of_node(self, node_id: str) -> None:
         client = self._require_unlocked()
-        for ref in self.list_arch_refs(assurance_node_id=node_id):
+        # Unprojected, because each reference is deleted at its PocketBase row id.
+        for ref in self._raw_arch_refs(assurance_node_id=node_id):
             client.delete(f"{self._ref_url()}/{ref['id']}").raise_for_status()
 
     # ── Edge CRUD ─────────────────────────────────────────────────────────────
@@ -262,7 +264,8 @@ class PocketBaseAssuranceStore(
         params.update(self._filter(**bindings))
         resp = client.get(self._edge_url(), params=params)
         resp.raise_for_status()
-        return resp.json().get("items", [])
+        items: list[dict[str, object]] = resp.json().get("items", [])
+        return as_edge_records(items)
 
     def add_edge(
         self,
@@ -298,7 +301,9 @@ class PocketBaseAssuranceStore(
 
     def register_arch_ref(self, assurance_node_id: str, arch_artifact_id: str, ref_type: str) -> None:
         client = self._require_unlocked()
-        existing = self.list_arch_refs(assurance_node_id=assurance_node_id, arch_artifact_id=arch_artifact_id)
+        existing = self._raw_arch_refs(
+            assurance_node_id=assurance_node_id, arch_artifact_id=arch_artifact_id
+        )
         if any(r.get("ref_type") == ref_type for r in existing):
             return
         payload = {
@@ -311,7 +316,9 @@ class PocketBaseAssuranceStore(
 
     def mark_arch_ref_resolved(self, assurance_node_id: str, arch_artifact_id: str, ref_type: str) -> None:
         client = self._require_unlocked()
-        refs = self.list_arch_refs(assurance_node_id=assurance_node_id, arch_artifact_id=arch_artifact_id)
+        refs = self._raw_arch_refs(
+            assurance_node_id=assurance_node_id, arch_artifact_id=arch_artifact_id
+        )
         for ref in refs:
             if ref.get("ref_type") == ref_type:
                 pb_id = str(ref["id"])
@@ -321,12 +328,18 @@ class PocketBaseAssuranceStore(
                 ).raise_for_status()
                 return
 
-    def list_arch_refs(
+    def _raw_arch_refs(
         self,
         *,
         assurance_node_id: str | None = None,
         arch_artifact_id: str | None = None,
     ) -> list[dict[str, object]]:
+        """PocketBase's own reference records, row id included — for this adapter's use only.
+
+        ``mark_arch_ref_resolved`` PATCHes a reference at its collection row id, and
+        ``register_arch_ref`` checks for an existing one before writing. Neither is a caller of the
+        port, and the canonical record deliberately carries no backend key.
+        """
         client = self._require_unlocked()
         bindings: dict[str, str] = {}
         if assurance_node_id:
@@ -337,7 +350,20 @@ class PocketBaseAssuranceStore(
         params.update(self._filter(**bindings))
         resp = client.get(self._ref_url(), params=params)
         resp.raise_for_status()
-        return resp.json().get("items", [])
+        items: list[dict[str, object]] = resp.json().get("items", [])
+        return items
+
+    def list_arch_refs(
+        self,
+        *,
+        assurance_node_id: str | None = None,
+        arch_artifact_id: str | None = None,
+    ) -> list[dict[str, object]]:
+        return as_arch_ref_records(
+            self._raw_arch_refs(
+                assurance_node_id=assurance_node_id, arch_artifact_id=arch_artifact_id
+            )
+        )
 
     def search_nodes(
         self,

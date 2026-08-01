@@ -1,4 +1,4 @@
-"""An analysis, group or node record has one shape, whichever backend stored it.
+"""Every assurance record has one shape and one meaning, whichever backend stored it.
 
 It had three. SQLCipher's ``SELECT *`` returned nine columns. A file-backed record written before it
 had ever been filed had eight — ``group_id`` was simply absent, because ``new_analysis_record`` did
@@ -27,6 +27,10 @@ from src.infrastructure.assurance._analysis_records import (
     ANALYSIS_RECORD_FIELDS,
     as_analysis_record,
     new_analysis_record,
+)
+from src.infrastructure.assurance._edge_records import (
+    ARCH_REF_RECORD_FIELDS,
+    EDGE_RECORD_FIELDS,
 )
 from src.infrastructure.assurance._grouping_records import GROUP_RECORD_FIELDS
 from src.infrastructure.assurance._node_records import NODE_RECORD_FIELDS
@@ -196,6 +200,67 @@ class TestEveryBackendReturnsTheCanonicalNodeRecord:
         for field in ("uca_type", "failure_type", "mode", "concern_class", "node_role"):
             assert field in record, field
             assert record[field] is None, field
+
+
+class TestEveryBackendReturnsTheCanonicalRelationRecords:
+    """A node's two relations: the edges between nodes, and the references out to architecture.
+
+    Both are read by the routes that read a node, so a closed contract for a node detail depends on
+    all three records agreeing across the backends.
+    """
+
+    def _two_nodes(self, store: Any) -> tuple[str, str]:
+        analysis_id = str(store.create_analysis("Brakes", "STPA", tlp="TLP:WHITE"))
+        hazard = str(store.create_node("hazard", "Uncommanded braking", analysis_id=analysis_id))
+        loss = str(store.create_node("loss", "Occupant injury", analysis_id=analysis_id))
+        return hazard, loss
+
+    def test_an_edge_reads_back_with_exactly_the_canonical_fields(self, store: Any) -> None:
+        hazard, loss = self._two_nodes(store)
+        edge_id = str(store.add_edge(hazard, loss, "leads-to"))
+
+        listed = [edge for edge in store.list_edges() if edge["edge_id"] == edge_id]
+
+        assert len(listed) == 1
+        assert set(listed[0]) == set(EDGE_RECORD_FIELDS)
+        assert listed[0]["source_id"] == hazard
+        assert listed[0]["target_id"] == loss
+
+    def test_the_filtered_edge_reads_agree_with_the_unfiltered_one(self, store: Any) -> None:
+        """Three filters over one query per backend, and a projection on the general path only is the
+        defect that appears when a reader opens a node rather than the edge list."""
+        hazard, loss = self._two_nodes(store)
+        edge_id = str(store.add_edge(hazard, loss, "leads-to"))
+        whole = [edge for edge in store.list_edges() if edge["edge_id"] == edge_id]
+
+        assert store.list_edges(source_id=hazard) == whole
+        assert store.list_edges(target_id=loss) == whole
+        assert store.list_edges(conn_type="leads-to") == whole
+
+    def test_an_unresolved_architecture_reference_reads_as_null_not_empty(self, store: Any) -> None:
+        """PocketBase cannot store null in a text field, so it wrote ``""`` for "not yet resolved"
+        while every other store wrote ``None`` — two answers to the same question about the same
+        reference."""
+        hazard, _loss = self._two_nodes(store)
+        store.register_arch_ref(hazard, "APP@1.aaaa.brake-controller", "mitigates")
+
+        refs = store.list_arch_refs(assurance_node_id=hazard)
+
+        assert len(refs) == 1
+        assert set(refs[0]) == set(ARCH_REF_RECORD_FIELDS)
+        assert refs[0]["resolved_at"] is None
+
+    def test_resolving_a_reference_records_when(self, store: Any) -> None:
+        """The field is not merely present-and-null: it carries the resolution, in every backend —
+        and on PocketBase the write is addressed by a row id the canonical record does not carry."""
+        hazard, _loss = self._two_nodes(store)
+        store.register_arch_ref(hazard, "APP@1.aaaa.brake-controller", "mitigates")
+
+        store.mark_arch_ref_resolved(hazard, "APP@1.aaaa.brake-controller", "mitigates")
+
+        refs = store.list_arch_refs(assurance_node_id=hazard)
+        assert len(refs) == 1
+        assert refs[0]["resolved_at"] is not None
 
 
 class TestTheProjectionItself:

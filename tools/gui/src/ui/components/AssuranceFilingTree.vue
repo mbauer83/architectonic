@@ -38,8 +38,9 @@ const locked = ref(false)
 const tree = computed(() => buildFilingTree(groups.value, analyses.value, nodes.value))
 
 /** The body, or null when the store is locked or the read failed — both of which leave the tree empty
- *  rather than saying anything: the content beside it already reports a locked store. */
-async function readBody(url: string): Promise<unknown | null> {
+ *  rather than saying anything: the content beside it already reports a locked store. Typed `unknown`
+ *  because null is one of its inhabitants, and this surface never receives a bare null body. */
+async function readBody(url: string): Promise<unknown> {
   const response = await fetch(url)
   if (response.status === 423) {
     locked.value = true
