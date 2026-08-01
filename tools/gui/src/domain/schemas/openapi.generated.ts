@@ -6317,8 +6317,11 @@ export interface components {
         DocumentDetailResponse: {
             /** Artifact Id */
             artifact_id: string;
-            /** Artifact Type */
-            artifact_type: string;
+            /**
+             * Artifact Type
+             * @constant
+             */
+            artifact_type: "document";
             /** Content Snippet */
             content_snippet: string;
             /** Content Text */
@@ -6342,8 +6345,11 @@ export interface components {
             last_updated?: string | null;
             /** Path */
             path: string;
-            /** Record Type */
-            record_type: string;
+            /**
+             * Record Type
+             * @constant
+             */
+            record_type: "document";
             /** Sections */
             sections: string[];
             /** Status */
@@ -6977,7 +6983,7 @@ export interface components {
              * @default {}
              */
             display_blocks: {
-                [key: string]: unknown;
+                [key: string]: string;
             };
             /** Domain */
             domain: string;
@@ -7014,8 +7020,11 @@ export interface components {
             properties: {
                 [key: string]: unknown;
             };
-            /** Record Type */
-            record_type: string;
+            /**
+             * Record Type
+             * @constant
+             */
+            record_type: "entity";
             /**
              * Referenced In Documents
              * @default []

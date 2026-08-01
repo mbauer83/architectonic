@@ -131,7 +131,10 @@ OPEN_RESPONSE_FIELDS: dict[str, OpenReason] = {
     "ProjectedOccurrenceResponse.column_values": AUTHORED,
 
     # ── A diagram-type module owns the shape ──────────────────────────────────
-    "EntityDetailResponse.display_blocks": MODULE_OWNED,
+    # `EntityDetailResponse.display_blocks` was here. The module owns the *keys* — which display
+    # languages an entity carries a block for — but not the value type: a block is rendering text,
+    # and `EntityRecord.display_blocks` is a `Mapping[str, str]`. It is `dict[str, str]` now, so the
+    # keys stay the module's and the values are declared.
     # Placement data keyed by entity id, and the diagram kind decides what is in it: a datatype
     # classifier's attributes are not shaped like a C4 container's boundary.
     "DiagramDetailResponse.diagram_entities": MODULE_OWNED,

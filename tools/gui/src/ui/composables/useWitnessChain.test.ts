@@ -5,7 +5,11 @@ import type { ConnectionRecord, ConnectionList } from '../../domain/schemas/conn
 
 const record = (overrides: Partial<ConnectionRecord>): ConnectionRecord => ({
   artifact_id: 'c', source: 'a', target: 'b', conn_type: 'archimate-serving',
-  version: '1', status: 'active', path: '', content_text: '', ...overrides,
+  version: '1', status: 'active', path: '', content_text: '',
+  // Always sent by the list read, so always present here: a fixture that omitted them described a
+  // row no route produces, which is how the decoder came to declare them optional.
+  source_name: 'a', target_name: 'b', specializations: [], metadata: {}, associated_entities: [],
+  ...overrides,
 })
 
 /** A minimal `getConnections` stub: every entity's full adjacency, keyed by entity id —

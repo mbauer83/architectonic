@@ -1,6 +1,6 @@
 import { Option, Schema } from 'effect'
 import { C4NavigationSchema } from '../../domain/schemas/diagrams'
-import type { C4Navigation, DiagramConnection, EntitySummary } from '../../domain'
+import type { C4Navigation, DiagramConnection, DiagramContextEntity } from '../../domain'
 
 /** A diagram kind's own region of a read: whatever `read_diagram_extras` or
  * `build_context_extras` returned, which this package cannot know the shape of. A consumer that
@@ -30,7 +30,7 @@ export const c4NavigationOf = (extras: TypeExtras): C4Navigation | null =>
  * class-diagram SVG nodes (whose `data-qualified-name` carries the '_'-prefixed alias)
  * would never resolve and so would not be selectable.
  */
-export function buildAliasToId(entities: ReadonlyArray<EntitySummary>): Map<string, string> {
+export function buildAliasToId(entities: ReadonlyArray<DiagramContextEntity>): Map<string, string> {
   const map = new Map<string, string>()
   for (const e of entities) {
     if (!e.display_alias) continue

@@ -4,7 +4,7 @@
  * actually call (`querySelectorAll('g'|'a'|'g[data-entity-1]'|'g.message')`, `getElementById`,
  * `closest('g')`, `querySelector(':scope > title')`).
  */
-import type { EntitySummary } from '../../../domain'
+import type { DiagramContextEntity } from '../../../domain'
 
 export class FakeElement {
   id = ''
@@ -86,7 +86,7 @@ export const makeEntity = (
   id: string,
   alias: string,
   artifactType = 'application-component',
-): EntitySummary => ({
+): DiagramContextEntity => ({
   artifact_id: id,
   artifact_type: artifactType,
   name: id,

@@ -1,4 +1,4 @@
-import type { EntityDisplayInfo, EntitySummary } from '../../domain'
+import type { EntityDisplayInfo, DiagramContextEntity } from '../../domain'
 
 export interface ArchimateOccurrence {
   id: string
@@ -6,7 +6,7 @@ export interface ArchimateOccurrence {
   visual_role?: string
 }
 
-type OccurrenceEntity = Pick<EntityDisplayInfo | EntitySummary, 'artifact_id' | 'display_alias' | 'name'>
+type OccurrenceEntity = Pick<EntityDisplayInfo | DiagramContextEntity, 'artifact_id' | 'display_alias' | 'name'>
 
 export const isArchimateDiagramType = (diagramType: string | null | undefined): boolean =>
   !!diagramType && (diagramType === 'archimate' || diagramType.startsWith('archimate-'))

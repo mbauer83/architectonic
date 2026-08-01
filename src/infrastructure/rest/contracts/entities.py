@@ -96,7 +96,11 @@ class EntityRecordFields(NullsOmitted):
 
     artifact_id: str
     artifact_type: str
-    record_type: str
+    #: Which kind of record this is. A constant, and declared as one: the two reads that serve this
+    #: model both read entities, and ``str`` published a field whose only value the client had to
+    #: rediscover — it declares the literal, and the comparison between the two could not hold.
+    #: ``DiagramDetailResponse.record_type`` has always been spelled this way.
+    record_type: Literal["entity"]
     name: str
     version: str
     status: str
@@ -108,7 +112,10 @@ class EntityRecordFields(NullsOmitted):
     specializations: list[str] = []
     content_snippet: str | None = None
     content_text: str | None = None
-    display_blocks: dict[str, Any] = {}
+    #: Rendering text per display language, keyed by language — ``dict[str, str]`` because that is
+    #: what ``EntityRecord.display_blocks`` is. ``Any`` values described a map the producer cannot
+    #: build and left every reader parsing an unknown.
+    display_blocks: dict[str, str] = {}
     attributes: dict[str, Any] = {}
     extra: dict[str, Any] = {}
     group: str | None = None

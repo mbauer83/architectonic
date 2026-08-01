@@ -1,13 +1,13 @@
 /**
  * Pure helpers for the ad-hoc `diagram` execution representation: synthesizes the minimal
- * `EntitySummary`/`DiagramConnection` shapes the generic graphviz/PlantUML element mapper
+ * `DiagramContextEntity`/`DiagramConnection` shapes the generic graphviz/PlantUML element mapper
  * (`graphvizElementMapping.ts`) needs to resolve SVG elements back to artifact ids, plus
  * the `node_color`/`edge_color`/`edge_emphasis` highlight-overlay application — the same
  * client-side technique a real diagram's ghost/hide overlay uses, never baked into the
  * rendered PUML.
  */
 
-import type { ConnectionItemSummary, DiagramConnection, EntityItemSummary, EntitySummary, ProjectedOccurrence } from '../../domain'
+import type { ConnectionItemSummary, DiagramConnection, EntityItemSummary, DiagramContextEntity, ProjectedOccurrence } from '../../domain'
 import type { StyleValue } from '../../domain/schemas/viewpoints'
 import { resolveStyleColor, styleTokenString, tokenEdgeEmphasis } from '../lib/viewpointStyleTokens'
 import { resolveElementMap } from '../lib/diagramViewerExtensions'
@@ -18,10 +18,10 @@ import { resolveElementMap } from '../lib/diagramViewerExtensions'
  * alias), or click-to-select never resolves any SVG element back to its entity. Falls back
  * to the raw id only when the map has no entry (e.g. an entity dropped from the final
  * render), matching the same stub convention `EditMatrixView.vue` uses for its picker. */
-export const toEntitySummaryStub = (
+export const toDiagramContextEntityStub = (
   entity: EntityItemSummary,
   aliasById: ReadonlyMap<string, string> = new Map(),
-): EntitySummary => ({
+): DiagramContextEntity => ({
   artifact_id: entity.id, artifact_type: entity.type, name: entity.name,
   display_alias: aliasById.get(entity.id) ?? entity.id, version: '', status: '', domain: '', subdomain: '', path: '',
   // Execution items carry no tier; the stub exists only for alias resolution, so the
@@ -30,7 +30,7 @@ export const toEntitySummaryStub = (
 })
 
 /** `nameById` fills in the sidebar's connection-flow display (`source_name`/`target_name`);
- * `aliasById` resolves `source_alias`/`target_alias` the same way `toEntitySummaryStub`
+ * `aliasById` resolves `source_alias`/`target_alias` the same way `toDiagramContextEntityStub`
  * does — both fall back to the raw id when the lookup has no entry. `certainty`/`hops`/
  * `via_connection_ids` carry straight through from the execution result unchanged (`null`/
  * empty for a real, modeled connection) — the sidebar uses `certainty` to decide whether
@@ -234,7 +234,7 @@ export const markDerivedConnections = (
 export const applyDiagramOverlay = (
   svgEl: SVGSVGElement,
   projectionItems: readonly ProjectedOccurrence[],
-  diagramEntities: readonly EntitySummary[],
+  diagramEntities: readonly DiagramContextEntity[],
   diagramConnections: readonly DiagramConnection[],
   anchorIds: readonly string[],
 ): readonly Element[] => {

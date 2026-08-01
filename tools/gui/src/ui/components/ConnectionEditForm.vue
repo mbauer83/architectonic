@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, inject, ref, toRef, watch } from 'vue'
 import { Exit } from 'effect'
-import type { AuthoringGuidance, ConnectionRecord, WriteResult } from '../../domain'
+import type { AuthoringGuidance, ConnectionRowView, WriteResult } from '../../domain'
 import type { RepoError } from '../../ports/ModelRepository'
 import { modelServiceKey } from '../keys'
 import { useMutation } from '../composables/useMutation'
@@ -9,7 +9,7 @@ import { useConnectionMetadata } from '../composables/useConnectionMetadata'
 import { metadataInputValue, metadataWireValues } from '../lib/connectionMetadataValues'
 import ConnectionMetadataFields from './ConnectionMetadataFields.vue'
 
-const props = defineProps<{ connection: ConnectionRecord; guidance: AuthoringGuidance | null }>()
+const props = defineProps<{ connection: ConnectionRowView; guidance: AuthoringGuidance | null }>()
 const emit = defineEmits<{ saved: []; cancel: [] }>()
 const svc = inject(modelServiceKey)!
 

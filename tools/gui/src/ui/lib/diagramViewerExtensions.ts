@@ -1,5 +1,5 @@
 import type { Component } from 'vue'
-import type { DiagramConnection, EntitySummary } from '../../domain'
+import type { DiagramConnection, DiagramContextEntity } from '../../domain'
 import { graphvizMapElements } from './graphvizElementMapping'
 
 /**
@@ -31,7 +31,7 @@ export interface ViewerSubPartContext {
 
 /** Inputs a `mapElements` implementation needs to resolve SVG elements to model artifacts. */
 export interface DiagramMapContext {
-  entities: ReadonlyArray<EntitySummary>
+  entities: ReadonlyArray<DiagramContextEntity>
   connections: ReadonlyArray<DiagramConnection>
   /**
    * Raw `diagram-entities` frontmatter, for types whose renderer gives no per-element SVG

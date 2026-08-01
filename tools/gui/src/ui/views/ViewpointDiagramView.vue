@@ -32,7 +32,7 @@ import { sanitizeDiagramSvg } from '../lib/svgSanitize'
 import { downloadStampedRender } from '../lib/stampedRenderExport'
 import {
   anchorBadges, applyDiagramOverlay, centerAnchorsAfterFit,
-  toDiagramConnectionStub, toEntitySummaryStub,
+  toDiagramConnectionStub, toDiagramContextEntityStub,
 } from './ViewpointDiagramView.helpers'
 import type { ViewpointDefinitionEnvelope } from '../../domain'
 
@@ -78,7 +78,7 @@ const svgHtml = computed(() => (svgMarkup.value ? sanitizeDiagramSvg(svgMarkup.v
 const detail = computed<DiagramSvgSelectionDetail>(() => ({ diagram_type: 'archimate-layered' }))
 const aliasById = computed(() => new Map(Object.entries(entityAliases.value)))
 const diagramEntities = computed(() =>
-  execution.result.value?.entities.map((e) => toEntitySummaryStub(e, aliasById.value)) ?? [])
+  execution.result.value?.entities.map((e) => toDiagramContextEntityStub(e, aliasById.value)) ?? [])
 const diagramConnections = computed(() => {
   const result = execution.result.value
   if (!result) return []

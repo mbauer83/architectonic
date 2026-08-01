@@ -5,8 +5,8 @@ import type { SyncChangesResult } from '../domain/schemas-changes'
 import type {
   Stats,
   EntityList,
-  EntityDetail,
-  EntityContext,
+  RenderedEntityDetail,
+  RenderedEntityContext,
   ConnectionList,
   Neighbors,
   SearchResult,
@@ -30,7 +30,7 @@ import type {
   OntologyClassification,
   OntologyPair,
   EntitySchemaInfo,
-  EntitySummary,
+  DiagramContextEntity,
   EntityDisplayInfo,
   EntityDisplaySearchResult,
   DiagramPreviewResult,
@@ -88,8 +88,10 @@ export interface ModelRepository extends EnterpriseAdminRepository {
   readonly getStats: () => Effect.Effect<Stats, RepoError>
   readonly listEntities: (params?: ListParams) => Effect.Effect<EntityList, RepoError>
   readonly listEntityTaxonomy: (params?: ListParams) => Effect.Effect<EntityTaxonomy, RepoError>
-  readonly getEntity: (id: string) => Effect.Effect<EntityDetail, RepoError | NotFoundError | MarkdownError>
-  readonly getEntityContext: (id: string) => Effect.Effect<EntityContext, RepoError | NotFoundError | MarkdownError>
+  readonly getEntity: (id: string) => Effect.Effect<RenderedEntityDetail, RepoError | NotFoundError | MarkdownError>
+  readonly getEntityContext: (
+    id: string,
+  ) => Effect.Effect<RenderedEntityContext, RepoError | NotFoundError | MarkdownError>
   readonly getConnections: (
     entityId: string, direction?: Direction, connType?: string,
   ) => Effect.Effect<ConnectionList, RepoError>
@@ -169,7 +171,7 @@ export interface ModelRepository extends EnterpriseAdminRepository {
   readonly previewDeleteEntity: (id: string) => Effect.Effect<WriteResult, RepoError>
   readonly deleteEntity: (id: string) => Effect.Effect<void, RepoError>
   readonly getEntitySchemata: (artifactType: string, specialization?: string) => Effect.Effect<EntitySchemaInfo, RepoError>
-  readonly getDiagramEntities: (diagramId: string) => Effect.Effect<EntitySummary[], RepoError>
+  readonly getDiagramEntities: (diagramId: string) => Effect.Effect<DiagramContextEntity[], RepoError>
   readonly getDiagramConnections: (diagramId: string) => Effect.Effect<DiagramConnection[], RepoError>
   readonly getDiagramSvg: (diagramId: string) => Effect.Effect<string, RepoError>
   readonly getEntityDisplayItem: (artifactId: string) => Effect.Effect<EntityDisplayInfo, RepoError>

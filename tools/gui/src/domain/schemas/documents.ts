@@ -63,6 +63,13 @@ export const DocumentListSchema = Schema.Struct({
 })
 export type DocumentList = typeof DocumentListSchema.Type
 
+/**
+ * One document with its content, as the detail read serves it.
+ *
+ * The route reads in `full` mode unconditionally, so `content_text` and `extra` always arrive; the
+ * handler always resolves `is_global` and the record always carries a `group`. All four were
+ * optional here, which described a summary-mode answer this route cannot give.
+ */
 export const DocumentDetailSchema = Schema.Struct({
   artifact_id: Schema.String,
   artifact_type: Schema.Literal('document'),
@@ -73,9 +80,11 @@ export const DocumentDetailSchema = Schema.Struct({
   path: Schema.String,
   keywords: Schema.Array(Schema.String),
   sections: Schema.Array(Schema.String),
+  group: Schema.String,
   content_snippet: Schema.String,
-  content_text: Schema.optional(Schema.String),
-  is_global: Schema.optional(Schema.Boolean),
-  extra: Schema.optional(Schema.Record({ key: Schema.String, value: Schema.Unknown })),
+  content_text: Schema.String,
+  is_global: Schema.Boolean,
+  last_updated: Schema.optional(Schema.NullOr(Schema.String)),
+  extra: Schema.Record({ key: Schema.String, value: Schema.Unknown }),
 })
 export type DocumentDetail = typeof DocumentDetailSchema.Type

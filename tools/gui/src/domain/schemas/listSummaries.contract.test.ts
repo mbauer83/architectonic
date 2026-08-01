@@ -85,18 +85,23 @@ describe('diagram list summary contract', () => {
 })
 
 /**
- * The modification stamp is optional and nullable on every list row: an artifact with no
- * `last-updated` frontmatter (or a repository predating the field) still has to decode, and
- * the row renders a placeholder rather than failing the whole list.
+ * The modification stamp is optional on every list row: an artifact with no `last-updated`
+ * frontmatter (or a repository predating the field) still has to decode, and the row renders a
+ * placeholder rather than failing the whole list.
+ *
+ * Whether "no stamp" arrives as `null` or as an absent key is *per route*, not a blanket rule, and
+ * the three rows differ. The entity list serves a null-omitting DTO, so a stampless entity has no
+ * key at all and a null would be a response the server cannot produce. The document and diagram
+ * lists serve their rows permissively, so both spellings reach the decoder there.
  */
 describe('last-modified stamp on list summaries', () => {
   const STAMP = '2026-07-24T09:15:00Z'
 
-  it('accepts a stamped and an unstamped entity row', () => {
+  it('accepts a stamped and an unstamped entity row, and refuses a null stamp', () => {
     const row = { ...ENTITY_ROW, is_global: false }
     expect(Schema.decodeUnknownSync(EntitySummarySchema)({ ...row, last_updated: STAMP }).last_updated).toBe(STAMP)
-    expect(Schema.decodeUnknownSync(EntitySummarySchema)({ ...row, last_updated: null }).last_updated).toBeNull()
     expect(Schema.decodeUnknownSync(EntitySummarySchema)(row).last_updated).toBeUndefined()
+    expect(() => Schema.decodeUnknownSync(EntitySummarySchema)({ ...row, last_updated: null })).toThrow()
   })
 
   it('accepts a stamped and an unstamped document row', () => {

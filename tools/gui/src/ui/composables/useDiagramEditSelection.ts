@@ -2,7 +2,7 @@ import { computed, ref, type Ref } from 'vue'
 import { Effect, Exit } from 'effect'
 import type { ModelService } from '../../application/ModelService'
 import type {
-  DiagramConnection, DiagramContext, EntityContextConnection, EntityDisplayInfo, EntitySummary,
+  DiagramConnection, DiagramContext, EntityContextConnection, EntityDisplayInfo, DiagramContextEntity,
 } from '../../domain'
 import { stableConnectionId } from '../../domain/artifactId'
 
@@ -24,7 +24,7 @@ export function useDiagramEditSelection(options: {
 
   // The looser list-row types, deliberately: the context read fills both with its own stricter
   // rows, and a diagram-type editor then replaces the connections with ones it built itself.
-  const diagramEntities = ref<EntitySummary[]>([])
+  const diagramEntities = ref<DiagramContextEntity[]>([])
   const diagramConnections = ref<DiagramConnection[]>([])
   const includedEntities = ref<EntityDisplayInfo[]>([])
   const allModelConns = ref<Map<string, EntityContextConnection>>(new Map())

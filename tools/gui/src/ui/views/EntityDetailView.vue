@@ -15,7 +15,7 @@ import EntityDetailHeader from '../components/EntityDetailHeader.vue'
 import EntityEditFormCard from '../components/EntityEditFormCard.vue'
 import EntityDeletePanel from '../components/EntityDeletePanel.vue'
 import EntityDocumentReferences from '../components/EntityDocumentReferences.vue'
-import type { EntityContext } from '../../domain'
+import type { RenderedEntityContext } from '../../domain'
 import type { NotFoundError } from '../../domain'
 import type { MarkdownError } from '../../application/MarkdownService'
 import type { RepoError } from '../../ports/ModelRepository'
@@ -45,7 +45,7 @@ const backTo = computed(() => ({
   query: { ...browseQuery.value, ...(detail.value?.is_global ? { tier: 'enterprise' } : {}) },
 }))
 
-const context = useQuery<EntityContext, RepoError | NotFoundError | MarkdownError>()
+const context = useQuery<RenderedEntityContext, RepoError | NotFoundError | MarkdownError>()
 const detail = computed(() => context.data.value?.entity ?? null)
 const outgoing = computed(() => context.data.value?.connections.outbound ?? [])
 const incoming = computed(() => context.data.value?.connections.inbound ?? [])

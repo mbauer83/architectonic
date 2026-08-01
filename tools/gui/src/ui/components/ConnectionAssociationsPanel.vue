@@ -9,10 +9,10 @@ import { entityDetailRoute } from '../router/artifactRoutes'
 import { inject, ref } from 'vue'
 import { Effect } from 'effect'
 import { modelServiceKey } from '../keys'
-import type { ConnectionRecord } from '../../domain'
+import type { ConnectionRowView } from '../../domain'
 import EntitySearchInput from './EntitySearchInput.vue'
 
-const props = defineProps<{ connection: ConnectionRecord }>()
+const props = defineProps<{ connection: ConnectionRowView }>()
 const emit = defineEmits<{ refresh: [] }>()
 
 const svc = inject(modelServiceKey)!

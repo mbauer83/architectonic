@@ -7,7 +7,7 @@ import { entityDetailRoute, entityGraphRoute } from '../router/artifactRoutes'
  * parent view — this component only renders it and emits the click/edit intents back up.
  */
 import { computed } from 'vue'
-import type { DiagramConnection, EntityDetail, EntitySummary } from '../../domain'
+import type { DiagramConnection, RenderedEntityDetail, DiagramContextEntity } from '../../domain'
 import type { DiagramViewerExtension } from '../lib/diagramViewerExtensions'
 import type { QueryHandle } from '../composables/useQuery'
 import type { RepoError } from '../../ports/ModelRepository'
@@ -22,13 +22,13 @@ import ArchimateTypeGlyph from './ArchimateTypeGlyph.vue'
 import SidebarEntityEditor from './SidebarEntityEditor.vue'
 
 const props = defineProps<{
-  entities: readonly EntitySummary[]
+  entities: readonly DiagramContextEntity[]
   viewerExtension: DiagramViewerExtension | undefined
   selectedId: string | null
   selectedConnection: DiagramConnection | null
   selectedSubPart: unknown
   /** Raw diagram-entities record for the selected entity — the authoritative source a diagram
-   * type's `entityDetailSection` reads its own fields from (complete, unlike `EntityDetail.extra`). */
+   * type's `entityDetailSection` reads its own fields from (complete, unlike `RenderedEntityDetail.extra`). */
   selectedEntityRecord?: Record<string, unknown> | null
   /** Editable-metadata config per diagram-only entity type (the single source of truth); forwarded
    * opaquely to the diagram type's detail components, which resolve their own type. */
@@ -36,7 +36,7 @@ const props = defineProps<{
   /** Bumped on every selection change — keys the detail editors so a new selection re-mounts them
    * in read-only view, never stuck in the prior element's edit form. */
   selectionToken?: number
-  entityQuery: QueryHandle<EntityDetail, RepoError | NotFoundError | MarkdownError>
+  entityQuery: QueryHandle<RenderedEntityDetail, RepoError | NotFoundError | MarkdownError>
   edgeLabelInput: string
   edgeLabelError: string | null
   /** A failed sidebar metadata edit (classifier or attribute) — surfaced so the operator sees

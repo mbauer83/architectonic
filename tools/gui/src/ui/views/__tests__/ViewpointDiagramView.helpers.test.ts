@@ -7,7 +7,7 @@ import {
   ANCHOR_MARKER_COLOR, anchorBadges, applyAnchorMarker, applyEdgeHighlightOverlay,
   applyNodeColorOverlay, centerAnchorsAfterFit, centerDelta, markAnchorEntities,
   markDerivedConnections, projectionByItemId, resolveAnchorElements,
-  toDiagramConnectionStub, toEntitySummaryStub, unionRect,
+  toDiagramConnectionStub, toDiagramContextEntityStub, unionRect,
 } from '../ViewpointDiagramView.helpers'
 import type { ConnectionItemSummary, DiagramConnection, EntityItemSummary, ProjectedOccurrence } from '../../../domain'
 import { occurrence } from './projectionFixtures'
@@ -22,14 +22,14 @@ const groupWith = (childTag: string): { group: SVGElement; child: SVGElement } =
   return { group, child }
 }
 
-describe('toEntitySummaryStub', () => {
+describe('toDiagramContextEntityStub', () => {
   const entity: EntityItemSummary = {
     id: 'APC@1.EntSch.a', name: 'Alpha', type: 'application-component',
     specialization_slugs: [], group: 'uncategorized', domain: 'application', membership: 'primary', status: 'draft', version: '1', column_values: null, anchor_modeled_distance: null, matched_via_derived_hops: null,
   }
 
   it('falls back to the raw artifact id when no alias lookup is given', () => {
-    const stub = toEntitySummaryStub(entity)
+    const stub = toDiagramContextEntityStub(entity)
     expect(stub.artifact_id).toBe('APC@1.EntSch.a')
     expect(stub.display_alias).toBe('APC@1.EntSch.a')
     expect(stub.name).toBe('Alpha')
@@ -38,7 +38,7 @@ describe('toEntitySummaryStub', () => {
 
   it('resolves display_alias from the given entity_aliases lookup — the rendered SVG PlantUML alias, not the artifact id', () => {
     const aliasById = new Map([['APC@1.EntSch.a', 'JNA_zGOowi']])
-    expect(toEntitySummaryStub(entity, aliasById).display_alias).toBe('JNA_zGOowi')
+    expect(toDiagramContextEntityStub(entity, aliasById).display_alias).toBe('JNA_zGOowi')
   })
 })
 

@@ -1,5 +1,5 @@
 import { watch, type Ref } from 'vue'
-import type { DiagramConnection, DiagramViewpointProjection, EntitySummary } from '../../domain'
+import type { DiagramConnection, DiagramViewpointProjection, DiagramContextEntity } from '../../domain'
 import { resolveElementMap, neutralizeSentinelLink } from '../lib/diagramViewerExtensions'
 import { reasonHint, effectiveOcclusionState, projectionByItemId } from '../views/EditDiagramView.helpers'
 
@@ -13,7 +13,7 @@ import { reasonHint, effectiveOcclusionState, projectionByItemId } from '../view
 export function useDiagramEditSvgOverlay(options: {
   svgHtml: Ref<string | null>
   diagramType: Ref<string | undefined>
-  diagramEntities: Ref<EntitySummary[]>
+  diagramEntities: Ref<DiagramContextEntity[]>
   diagramConnections: Ref<DiagramConnection[]>
   typeEntityData: Ref<Record<string, unknown>>
   toRemoveEntityIds: Ref<Set<string>>

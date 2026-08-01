@@ -19,6 +19,17 @@ export const DirectNeighborhoodSchema = Schema.Struct({
 })
 export type DirectNeighborhood = typeof DirectNeighborhoodSchema.Type
 
+/**
+ * One row of the entity list: enough to render, filter, link and badge.
+ *
+ * Exactly the fields the list read serves. It used to carry seven more — `display_alias` and six
+ * hierarchy keys — none of which any route sends and only one of which anything read. The alias is
+ * resolved by a *diagram* read, so it belongs to `DiagramContextEntitySchema`; the six hierarchy
+ * keys had no producer and no consumer at all.
+ *
+ * `last_updated` is absent-or-value rather than nullable: this read omits its unset optionals, so a
+ * stampless artifact has no key rather than a null one.
+ */
 export const EntitySummarySchema = Schema.Struct({
   artifact_id: Schema.String,
   artifact_type: Schema.String,
@@ -30,24 +41,12 @@ export const EntitySummarySchema = Schema.Struct({
   path: Schema.String,
   is_global: Schema.Boolean,
   host_diagram_id: Schema.optional(Schema.String),
-  display_alias: Schema.optional(Schema.String),
-  parent_entity_id: Schema.optional(Schema.NullOr(Schema.String)),
-  hierarchy_relation_type: Schema.optional(Schema.String),
-  hierarchy_depth: Schema.optional(Schema.Number),
-  parent_specialization_id: Schema.optional(Schema.NullOr(Schema.String)),
-  specialization_depth: Schema.optional(Schema.Number),
-  all_parents: Schema.optional(Schema.Array(Schema.Struct({
-    parent_id: Schema.String,
-    relation_type: Schema.String,
-  }))),
   conn_in: Schema.optional(Schema.Number),
   conn_sym: Schema.optional(Schema.Number),
   conn_out: Schema.optional(Schema.Number),
   group: Schema.optional(Schema.String),
   specialization: Schema.optional(Schema.String),
-  // When the artifact was last written (UTC ISO-8601). Null for artifacts with no stamp:
-  // diagram-only entities and repositories predating the field.
-  last_updated: Schema.optional(Schema.NullOr(Schema.String)),
+  last_updated: Schema.optional(Schema.String),
 })
 export type EntitySummary = typeof EntitySummarySchema.Type
 
@@ -59,6 +58,26 @@ export type EntityList = typeof EntityListSchema.Type
 
 // ── Entity detail (read view) ─────────────────────────────────────────────────
 
+/** A document that cites this entity, and the link it cites it through. */
+export const DocumentReferenceSchema = Schema.Struct({
+  document_id: Schema.String,
+  title: Schema.String,
+  doc_type: Schema.String,
+  path: Schema.String,
+  section: Schema.String,
+  label: Schema.String,
+  href: Schema.String,
+})
+export type DocumentReference = typeof DocumentReferenceSchema.Type
+
+/**
+ * One entity, with its parsed content sections and its degree.
+ *
+ * The seven collection-valued fields are *not* optional: the DTO gives each a default, so every read
+ * carries all of them and declaring them optional made every reader write a fallback for a case the
+ * server cannot produce. `attributes` — the record's own typed attribute map — was missing here
+ * entirely, and `properties` (the parsed content table) was being read in its place.
+ */
 export const EntityDetailSchema = Schema.Struct({
   artifact_id: Schema.String,
   artifact_type: Schema.String,
@@ -69,33 +88,36 @@ export const EntityDetailSchema = Schema.Struct({
   subdomain: Schema.String,
   record_type: Schema.Literal('entity'),
   path: Schema.String,
-  content_snippet: Schema.String,
-  keywords: Schema.optional(Schema.Array(Schema.String)),
+  content_snippet: Schema.optional(Schema.String),
+  keywords: Schema.Array(Schema.String),
   summary: Schema.optional(Schema.String),
-  properties: Schema.optional(Schema.Record({ key: Schema.String, value: Schema.Unknown })),
+  properties: Schema.Record({ key: Schema.String, value: Schema.Unknown }),
+  attributes: Schema.Record({ key: Schema.String, value: Schema.Unknown }),
   notes: Schema.optional(Schema.String),
+  group: Schema.optional(Schema.String),
+  last_updated: Schema.optional(Schema.String),
   specialization: Schema.optional(Schema.String),
-  specializations: Schema.optional(Schema.Array(Schema.String)),
+  specializations: Schema.Array(Schema.String),
   is_global: Schema.optional(Schema.Boolean),
   host_diagram_id: Schema.optional(Schema.String),
   conn_in: Schema.optional(Schema.Number),
   conn_sym: Schema.optional(Schema.Number),
   conn_out: Schema.optional(Schema.Number),
   content_text: Schema.optional(Schema.String),
-  content_html: Schema.optional(Schema.String),
-  display_blocks: Schema.optional(Schema.Record({ key: Schema.String, value: Schema.String })),
-  extra: Schema.optional(Schema.Record({ key: Schema.String, value: Schema.Unknown })),
-  referenced_in_documents: Schema.optional(Schema.Array(Schema.Struct({
-    document_id: Schema.String,
-    title: Schema.String,
-    doc_type: Schema.String,
-    path: Schema.String,
-    section: Schema.String,
-    label: Schema.String,
-    href: Schema.String,
-  }))),
+  display_blocks: Schema.Record({ key: Schema.String, value: Schema.String }),
+  extra: Schema.Record({ key: Schema.String, value: Schema.Unknown }),
+  referenced_in_documents: Schema.Array(DocumentReferenceSchema),
 })
 export type EntityDetail = typeof EntityDetailSchema.Type
+
+/**
+ * An entity detail whose Markdown has been rendered.
+ *
+ * `content_html` is the client's own field: the server sends `content_text` and the adapter renders
+ * it. Declaring it on `EntityDetailSchema` put a field no response carries into the response
+ * contract, and no assertion against the published document could then hold.
+ */
+export type RenderedEntityDetail = EntityDetail & { readonly content_html?: string }
 
 export const EntityContextSchema = Schema.Struct({
   entity: EntityDetailSchema,
@@ -113,6 +135,11 @@ export const EntityContextSchema = Schema.Struct({
   etag: Schema.String,
 })
 export type EntityContext = typeof EntityContextSchema.Type
+
+/** A context read whose entity's Markdown has been rendered — see {@link RenderedEntityDetail}. */
+export type RenderedEntityContext = Omit<EntityContext, 'entity'> & {
+  readonly entity: RenderedEntityDetail
+}
 
 // ── Entity display info (diagram create form) ────────────────────────────────
 

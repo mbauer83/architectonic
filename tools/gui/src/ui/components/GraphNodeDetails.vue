@@ -2,15 +2,15 @@
 import { entityGraphRoute } from '../router/artifactRoutes'
 /** The exploration sidebar's node-detail card: identity fields, domain/status badges,
  * markdown content, and the explore-from-here link. Pure display over one loaded
- * `EntityDetail`. */
+ * `RenderedEntityDetail`. */
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
-import type { EntityDetail } from '../../domain'
+import type { RenderedEntityDetail } from '../../domain'
 import ArchimateTypeGlyph from './ArchimateTypeGlyph.vue'
 import { contentHtmlWithoutTitleHeading } from './entityContentHtml'
 
 const props = defineProps<{
-  detail: EntityDetail
+  detail: RenderedEntityDetail
   selectedId: string
 }>()
 

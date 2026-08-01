@@ -12,7 +12,7 @@
 import { describe, it, expect } from 'vitest'
 import { ref } from 'vue'
 import { buildConnectionAliasMap, resolveConnection, buildAliasToId } from '../DiagramDetailView.helpers'
-import type { DiagramConnection, EntitySummary } from '../../../domain'
+import type { DiagramConnection, DiagramContextEntity } from '../../../domain'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -38,7 +38,7 @@ const makeConn = (
   edge_key: null,
 })
 
-const makeEntity = (id: string, alias: string, hostDiagramId?: string): EntitySummary => ({
+const makeEntity = (id: string, alias: string, hostDiagramId?: string): DiagramContextEntity => ({
   artifact_id: id,
   artifact_type: 'application-component',
   name: id,
@@ -238,7 +238,7 @@ describe('selection state — mutual exclusion', () => {
 
 describe('buildAliasToId — derived C4 entities (no host_diagram_id)', () => {
   it('maps model-backed C4 entity aliases (no host_diagram_id)', () => {
-    const entities: EntitySummary[] = [
+    const entities: DiagramContextEntity[] = [
       makeEntity('APP@001.sys', 'MySystem'),
       makeEntity('APP@002.api', 'ApiGateway'),
     ]
@@ -249,7 +249,7 @@ describe('buildAliasToId — derived C4 entities (no host_diagram_id)', () => {
 
   it('includes both model entities and diagram-only GSN nodes in a mixed list', () => {
     const GSN_ID = 'GSN@1234.abc.my-case'
-    const entities: EntitySummary[] = [
+    const entities: DiagramContextEntity[] = [
       makeEntity('APP@001.sys', 'sys_A'),
       makeEntity(`${GSN_ID}#nodes/g1`, 'g1', GSN_ID),
     ]
@@ -259,7 +259,7 @@ describe('buildAliasToId — derived C4 entities (no host_diagram_id)', () => {
   })
 
   it('produces PlantUML-safe aliases for both entity kinds', () => {
-    const entities: EntitySummary[] = [makeEntity('APP@001.sys', 'My-System')]
+    const entities: DiagramContextEntity[] = [makeEntity('APP@001.sys', 'My-System')]
     const map = buildAliasToId(entities)
     expect(map.get('My-System')).toBe('APP@001.sys')
     expect(map.get('My_System')).toBe('APP@001.sys')
@@ -268,14 +268,14 @@ describe('buildAliasToId — derived C4 entities (no host_diagram_id)', () => {
   it('mirrors the class-diagram renderer leading-underscore alias (_safe_alias)', () => {
     // Datatype classifiers carry their canonical id as display_alias; the renderer's SVG
     // node uses '_' + sanitised id, so that form must resolve to the canonical id.
-    const entities: EntitySummary[] = [makeEntity('CLF@1.ShZ_Qq.artifact', 'CLF@1.ShZ_Qq.artifact')]
+    const entities: DiagramContextEntity[] = [makeEntity('CLF@1.ShZ_Qq.artifact', 'CLF@1.ShZ_Qq.artifact')]
     const map = buildAliasToId(entities)
     expect(map.get('_CLF_1_ShZ_Qq_artifact')).toBe('CLF@1.ShZ_Qq.artifact')
   })
 
   it('prefers a canonical id over a diagram-scoped #fragment for the same alias', () => {
     const alias = 'CLF@1.ShZ_Qq.artifact'
-    const entities: EntitySummary[] = [
+    const entities: DiagramContextEntity[] = [
       makeEntity(`DATATY@9.d#classifier/${alias}`, alias, 'DATATY@9.d'),
       makeEntity(alias, alias),
     ]

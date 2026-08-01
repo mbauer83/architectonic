@@ -10,7 +10,7 @@ import {
   resolveElementMap,
   type DiagramElementMap,
 } from '../diagramViewerExtensions'
-import type { EntitySummary } from '../../../domain'
+import type { DiagramContextEntity } from '../../../domain'
 
 class FakeElement {
   private attrs = new Map<string, string>()
@@ -31,7 +31,7 @@ class FakeSvgRoot {
   getElementById(): FakeElement | null { return null }
 }
 
-const makeEntity = (id: string, alias: string): EntitySummary => ({
+const makeEntity = (id: string, alias: string): DiagramContextEntity => ({
   artifact_id: id,
   artifact_type: 'application-component',
   name: id,

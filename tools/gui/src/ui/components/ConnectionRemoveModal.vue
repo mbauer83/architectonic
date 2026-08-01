@@ -8,7 +8,7 @@
 import { computed, inject, ref } from 'vue'
 import { Exit } from 'effect'
 import { modelServiceKey } from '../keys'
-import type { ConnectionRecord, DiagramRefs } from '../../domain'
+import type { ConnectionRowView, DiagramRefs } from '../../domain'
 import type { RepoError } from '../../ports/ModelRepository'
 import { useQuery } from '../composables/useQuery'
 import { useMutation } from '../composables/useMutation'
@@ -18,7 +18,7 @@ const emit = defineEmits<{ removed: [] }>()
 
 const svc = inject(modelServiceKey)!
 
-const removingConn = ref<ConnectionRecord | null>(null)
+const removingConn = ref<ConnectionRowView | null>(null)
 const diagramRefsQuery = useQuery<DiagramRefs, RepoError>()
 // `void`, because a committed removal answers 204 and has nothing to report. There is no `wrote`
 // flag to read any more, so a failure is an error and success is silence.
@@ -26,7 +26,7 @@ const removeMutation = useMutation<void, RepoError>()
 
 const removeError = computed(() => removeMutation.errorMessage.value)
 
-const requestRemove = (c: ConnectionRecord) => {
+const requestRemove = (c: ConnectionRowView) => {
   removingConn.value = c
   removeMutation.reset()
   diagramRefsQuery.run(svc.getDiagramRefs(c.source, c.target))

@@ -11,7 +11,7 @@ normalization, so its top level is the author's and only the keys the loader kno
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, RootModel
 
@@ -58,8 +58,11 @@ class DocumentDetailResponse(_Closed):
     """
 
     artifact_id: str
-    artifact_type: str
-    record_type: str
+    #: Both are constants the producer writes verbatim, so both are declared as constants. As ``str``
+    #: they published fields whose only value a client had to discover by reading a response, and the
+    #: decoder that *did* declare the literals could not be compared against this model.
+    artifact_type: Literal["document"]
+    record_type: Literal["document"]
     doc_type: str
     title: str
     status: str

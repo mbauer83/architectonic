@@ -4,8 +4,7 @@ import { computed, inject, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { modelServiceKey } from '../keys'
 import type {
-  ConnectionRecord,
-  ConnectionList,
+  ConnectionRowView,
   OntologyClassification,
   WriteHelp,
   AuthoringGuidance,
@@ -20,7 +19,7 @@ import ConnectionRemoveModal from './ConnectionRemoveModal.vue'
 const props = defineProps<{
   entityId: string
   entityType: string
-  connections: ConnectionList
+  connections: readonly ConnectionRowView[]
   direction: 'outgoing' | 'incoming' | 'symmetric'
   loading: boolean
   error: string | null
@@ -93,14 +92,14 @@ const artifactTypeFromId = (artifactId: string) => {
   return prefixToType.value[prefix] ?? prefix.toLowerCase()
 }
 
-const otherArtifactId = (c: ConnectionRecord) => {
+const otherArtifactId = (c: ConnectionRowView) => {
   if (props.direction === 'incoming') return c.source
   if (props.direction === 'symmetric') return c.source === props.entityId ? c.target : c.source
   return c.target
 }
 
 const grouped = computed(() => {
-  const groups: Record<string, ConnectionRecord[]> = {}
+  const groups: Record<string, ConnectionRowView[]> = {}
   const symTypes = symmetricConnTypes.value
   for (const c of props.connections) {
     const isSym = symTypes.has(c.conn_type)
@@ -119,9 +118,9 @@ const sectionKeys = computed((): string[] => {
   return Array.from(all).sort()
 })
 
-const otherEnd = (c: ConnectionRecord) => otherArtifactId(c)
+const otherEnd = (c: ConnectionRowView) => otherArtifactId(c)
 
-const otherEndName = (c: ConnectionRecord) => {
+const otherEndName = (c: ConnectionRowView) => {
   if (props.direction === 'incoming') return c.source_name || friendlyName(c.source)
   if (props.direction === 'symmetric') {
     const otherId = otherEnd(c)

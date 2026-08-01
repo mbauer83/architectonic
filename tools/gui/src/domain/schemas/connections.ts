@@ -1,22 +1,36 @@
 import { Schema } from 'effect'
 
+/**
+ * One connection as the list read serves it, both endpoints resolved.
+ *
+ * The endpoint names, the association list, the specialization list and the metadata map are
+ * *always* sent — the DTO fills each from the index or from a default — so none of them is optional
+ * here. They were, and every reader carried a fallback for a case the server cannot produce.
+ *
+ * The three genuinely nullable fields are `optional(NullOr(…))` rather than `optional(…)`: this
+ * shape is served permissively, so an unset multiplicity arrives as `null` and a decoder that
+ * accepted only absence dropped the row.
+ */
 export const ConnectionRecordSchema = Schema.Struct({
   artifact_id: Schema.String,
   source: Schema.String,
   target: Schema.String,
-  source_name: Schema.optional(Schema.String),
-  target_name: Schema.optional(Schema.String),
+  source_name: Schema.String,
+  target_name: Schema.String,
   conn_type: Schema.String,
   version: Schema.String,
   status: Schema.String,
   path: Schema.String,
   content_text: Schema.String,
-  src_multiplicity: Schema.optional(Schema.String),
-  tgt_multiplicity: Schema.optional(Schema.String),
-  specialization: Schema.optional(Schema.String),
-  specializations: Schema.optional(Schema.Array(Schema.String)),
-  metadata: Schema.optional(Schema.Record({ key: Schema.String, value: Schema.Unknown })),
-  associated_entities: Schema.optional(Schema.Array(Schema.String)),
+  src_multiplicity: Schema.optional(Schema.NullOr(Schema.String)),
+  tgt_multiplicity: Schema.optional(Schema.NullOr(Schema.String)),
+  specialization: Schema.optional(Schema.NullOr(Schema.String)),
+  specializations: Schema.Array(Schema.String),
+  metadata: Schema.Record({ key: Schema.String, value: Schema.Unknown }),
+  associated_entities: Schema.Array(Schema.String),
+  /** Present only when the target was reached through a global-artifact reference: `target` is then
+   *  the enterprise entity the reference stands for, and this is the reference itself. */
+  gar_artifact_id: Schema.optional(Schema.NullOr(Schema.String)),
 })
 export type ConnectionRecord = typeof ConnectionRecordSchema.Type
 
@@ -71,6 +85,38 @@ export const EntityContextConnectionSchema = Schema.Struct({
   direction: Schema.Literal('outbound', 'inbound', 'symmetric'),
 })
 export type EntityContextConnection = typeof EntityContextConnectionSchema.Type
+
+/**
+ * What a connection surface needs of a connection, whichever read produced it.
+ *
+ * The list read and the entity-context read are genuinely different answers — the context row
+ * resolves both endpoints and says which direction the connection ran, the list row carries a
+ * metadata map and no direction — and the panels are handed whichever one the view holds. Naming the
+ * shared subset lets both reads keep their own honest shape; the alternative was one of them
+ * widening every field to optional so the other would fit, which is how the list row came to declare
+ * six fields the server always sends as though it might not.
+ *
+ * `metadata` is optional here because a context row does not carry one. That is not a rounding of
+ * the types: the connection edit form already reads it as `?? {}`, so an edit reached from the
+ * context panel starts from an empty map.
+ */
+export type ConnectionRowView = {
+  readonly artifact_id: string
+  readonly source: string
+  readonly target: string
+  readonly conn_type: string
+  readonly version: string
+  readonly status: string
+  readonly path: string
+  readonly content_text: string
+  readonly source_name: string
+  readonly target_name: string
+  readonly associated_entities: readonly string[]
+  readonly specialization?: string | null
+  readonly src_multiplicity?: string | null
+  readonly tgt_multiplicity?: string | null
+  readonly metadata?: Readonly<Record<string, unknown>>
+}
 
 // ── Diagram preview result ────────────────────────────────────────────────────
 

@@ -3,7 +3,7 @@ import { computed, nextTick, ref, watch, type Ref } from 'vue'
 import type { Router } from 'vue-router'
 import { Exit } from 'effect'
 import type { ModelService } from '../../application/ModelService'
-import type { DiagramConnection, EntityDetail, EntitySummary } from '../../domain'
+import type { DiagramConnection, EntityDetail, DiagramContextEntity } from '../../domain'
 import { useQuery } from './useQuery'
 import { useMutation } from './useMutation'
 import type { WriteResult } from '../../domain'
@@ -35,7 +35,7 @@ export function useDiagramSvgSelection(options: {
   router: Router
   svgHtml: Ref<string | null>
   detail: Ref<DiagramSvgSelectionDetail | null>
-  diagramEntities: Ref<readonly EntitySummary[]>
+  diagramEntities: Ref<readonly DiagramContextEntity[]>
   diagramConnections: Ref<readonly DiagramConnection[]>
   drilldownByEntityId: Ref<Record<string, string>>
   diagramId: Ref<string>

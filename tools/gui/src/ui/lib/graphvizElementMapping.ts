@@ -1,4 +1,4 @@
-import type { DiagramConnection, EntitySummary } from '../../domain'
+import type { DiagramConnection, DiagramContextEntity } from '../../domain'
 import {
   buildAliasToId,
   buildConnectionAliasMap,
@@ -32,7 +32,7 @@ const resolveNodeAlias = (g: SVGGElement, aliasToId: ReadonlyMap<string, string>
 
 const mapNodes = (
   svgRoot: SVGSVGElement,
-  entities: ReadonlyArray<EntitySummary>,
+  entities: ReadonlyArray<DiagramContextEntity>,
   diagramEntities?: Record<string, unknown>,
 ): { nodes: Map<string, Element[]>; svgNodeIdToAlias: Map<string, string> } => {
   const nodes = new Map<string, Element[]>()
@@ -53,7 +53,7 @@ const mapNodes = (
 
 const addOccurrenceAliases = (
   aliasToId: Map<string, string>,
-  entities: ReadonlyArray<EntitySummary>,
+  entities: ReadonlyArray<DiagramContextEntity>,
   diagramEntities?: Record<string, unknown>,
 ): void => {
   if (!diagramEntities) return

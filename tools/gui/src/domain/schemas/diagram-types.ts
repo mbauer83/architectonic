@@ -7,7 +7,9 @@ export const DiagramSummarySchema = Schema.Struct({
   version: Schema.String,
   status: Schema.String,
   path: Schema.String,
-  group: Schema.optional(Schema.String),
+  // Nullable rather than merely absent: the diagram list is served permissively, so an ungrouped
+  // diagram arrives as `group: null` and a decoder accepting only absence dropped the row.
+  group: Schema.optional(Schema.NullOr(Schema.String)),
   is_global: Schema.Boolean,
   last_updated: Schema.optional(Schema.NullOr(Schema.String)),
 })

@@ -30,7 +30,7 @@ import {
   OntologyClassificationSchema,
   OntologyPairSchema,
   EntitySchemaInfoSchema,
-  EntitySummarySchema,
+  DiagramContextEntitySchema,
   EntityDisplayInfoSchema,
   EntityDisplaySearchResultSchema,
   DiagramPreviewResultSchema,
@@ -302,11 +302,14 @@ export const makeHttpModelRepository = (): ModelRepository => ({
       EntitySchemaInfoSchema,
     ),
 
+  // `DiagramContextEntitySchema`, not the list row: this read resolves the alias each entity is
+  // drawn under, which is the field the SVG click targets are matched on and which no list read
+  // sends.
   getDiagramEntities: (diagramId: string) =>
     fetchJson(
       buildUrl(`/diagrams/${encodeIdentitySegment(diagramId)}/entities`),
-      Schema.Struct({ items: Schema.Array(EntitySummarySchema) }),
-    ).pipe(Effect.map((r) => r.items as import('../../domain').EntitySummary[])),
+      Schema.Struct({ items: Schema.Array(DiagramContextEntitySchema) }),
+    ).pipe(Effect.map((r) => r.items as import('../../domain').DiagramContextEntity[])),
 
   getDiagramConnections: (diagramId: string) =>
     fetchJson(

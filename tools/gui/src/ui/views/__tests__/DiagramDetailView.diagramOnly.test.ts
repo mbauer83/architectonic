@@ -11,9 +11,9 @@
  */
 import { describe, it, expect } from 'vitest'
 import { Schema } from 'effect'
-import { EntitySummarySchema, EntityDetailSchema } from '../../../domain/schemas'
+import { DiagramContextEntitySchema, EntityDetailSchema } from '../../../domain/schemas'
 import { buildAliasToId, isDiagramOnly } from '../DiagramDetailView.helpers'
-import type { EntitySummary } from '../../../domain'
+import type { DiagramContextEntity } from '../../../domain'
 
 // ── 1. Schema decoding ───────────────────────────────────────────────────────
 
@@ -31,6 +31,9 @@ const gsnNodeSummaryRaw = {
   is_global: false,
   group: 'uncategorized',
   host_diagram_id: GSN_ID,
+  // The diagram read resolves the alias each entity is drawn under, and every row carries it —
+  // it is what the SVG click targets are matched on.
+  display_alias: 'g1',
 }
 
 const gsnNodeDetailRaw = {
@@ -38,23 +41,31 @@ const gsnNodeDetailRaw = {
   record_type: 'entity' as const,
   content_snippet: 'The system is acceptably secure',
   content_text: 'The system is acceptably secure goal',
+  // The collection-valued fields the detail DTO always fills from a default. A fixture that omitted
+  // them described a summary-mode answer this route does not give.
+  keywords: [],
+  specializations: [],
+  properties: {},
+  attributes: {},
+  display_blocks: {},
+  referenced_in_documents: [],
   extra: { gsn_type: 'goal' },
 }
 
-describe('EntitySummarySchema — diagram-only entity', () => {
+describe('DiagramContextEntitySchema — diagram-only entity', () => {
   it('decodes artifact_type "nodes" (non-standard type key)', () => {
-    const decoded = Schema.decodeUnknownSync(EntitySummarySchema)(gsnNodeSummaryRaw)
+    const decoded = Schema.decodeUnknownSync(DiagramContextEntitySchema)(gsnNodeSummaryRaw)
     expect(decoded.artifact_type).toBe('nodes')
   })
 
   it('preserves host_diagram_id on decode', () => {
-    const decoded = Schema.decodeUnknownSync(EntitySummarySchema)(gsnNodeSummaryRaw)
+    const decoded = Schema.decodeUnknownSync(DiagramContextEntitySchema)(gsnNodeSummaryRaw)
     expect(decoded.host_diagram_id).toBe(GSN_ID)
   })
 
   it('host_diagram_id is absent (undefined) for model entities', () => {
     const modelRaw = { ...gsnNodeSummaryRaw, artifact_type: 'goal', host_diagram_id: undefined }
-    const decoded = Schema.decodeUnknownSync(EntitySummarySchema)(modelRaw)
+    const decoded = Schema.decodeUnknownSync(DiagramContextEntitySchema)(modelRaw)
     expect(decoded.host_diagram_id).toBeUndefined()
   })
 })
@@ -73,7 +84,7 @@ describe('EntityDetailSchema — diagram-only entity', () => {
 
 // ── 2. buildAliasToId — alias map includes diagram-only node aliases ──────────
 
-const makeEntity = (artifactId: string, display_alias: string, host_diagram_id?: string): EntitySummary => ({
+const makeEntity = (artifactId: string, display_alias: string, host_diagram_id?: string): DiagramContextEntity => ({
   artifact_id: artifactId,
   artifact_type: 'nodes',
   name: 'Test',
@@ -109,7 +120,7 @@ describe('buildAliasToId — GSN diagram-only entities', () => {
   })
 
   it('returns empty map when no entities have display_alias', () => {
-    const entities = [{ ...makeEntity('id1', ''), display_alias: undefined } as unknown as EntitySummary]
+    const entities = [{ ...makeEntity('id1', ''), display_alias: undefined } as unknown as DiagramContextEntity]
     expect(buildAliasToId(entities).size).toBe(0)
   })
 
