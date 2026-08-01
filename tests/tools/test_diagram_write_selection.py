@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
-from src.infrastructure.rest.routers._diagram_selection import resolve_diagram_selection
+from src.infrastructure.rest.routers.diagrams._selection import resolve_diagram_selection
 
 
 def _entity(

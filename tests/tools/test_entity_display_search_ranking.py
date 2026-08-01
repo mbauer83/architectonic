@@ -14,7 +14,7 @@ import pytest
 from src.application.artifacts.query import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.rest.routers import state as gui_state
-from src.infrastructure.rest.routers.diagrams import router as diagrams_router
+from src.infrastructure.rest.routers.diagrams.router import router as diagrams_router
 from tests.support.api_app import build_api_app
 
 httpx = pytest.importorskip("httpx")

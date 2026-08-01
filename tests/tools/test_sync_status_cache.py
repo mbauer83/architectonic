@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import asyncio
 
-from src.infrastructure.rest.routers import sync_status_cache
 from src.infrastructure.rest.routers.events import EventBus
+from src.infrastructure.rest.routers.sync import status_cache as sync_status_cache
 
 
 def test_sync_status_cache_coalesces_concurrent_refreshes(monkeypatch) -> None:

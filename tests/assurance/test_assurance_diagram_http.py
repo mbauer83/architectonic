@@ -106,8 +106,8 @@ class _FakeContext:
         return self._store.is_unlocked()
 
 
-_READ_CTX = "src.infrastructure.rest.routers._assurance_read.get_assurance_context"
-_HTTP_CTX = "src.infrastructure.rest.routers._assurance_http.get_assurance_context"
+_READ_CTX = "src.infrastructure.rest.routers.assurance._read.get_assurance_context"
+_HTTP_CTX = "src.infrastructure.rest.routers.assurance._http.get_assurance_context"
 
 _STPA_ID = "STPA@1.aaaa.000001"
 _FMEA_ID = "FMEA@1.bbbb.000002"
@@ -115,7 +115,7 @@ _FMEA_ID = "FMEA@1.bbbb.000002"
 
 def _make_client(ctx: _FakeContext, monkeypatch: pytest.MonkeyPatch) -> TestClient:
     """Both context lookups point at ``ctx``; monkeypatch so nothing leaks into the next test."""
-    from src.infrastructure.rest.routers.assurance import router
+    from src.infrastructure.rest.routers.assurance.router import router
 
     # `build_api_app`, not a bare `FastAPI()`: without the error contracts installed a raised
     # `ApiError` becomes a 500 and the test asserts a shape no client receives.

@@ -99,7 +99,7 @@ def repo_root(tmp_path: Path) -> Path:
 
 
 def _list_entities(**kwargs: object) -> dict:
-    from src.infrastructure.rest.routers.entities import list_entities
+    from src.infrastructure.rest.routers.entities.router import list_entities
 
     return list_entities(request=cast("Request", None), limit=2000, offset=0, **kwargs)  # type: ignore[arg-type]
 
@@ -114,13 +114,13 @@ class TestFieldPresence:
         assert stamps == _STAMPS
 
     def test_entity_detail_carries_the_stamp(self, repo_root: Path) -> None:
-        from src.infrastructure.rest.routers.entities import read_entity
+        from src.infrastructure.rest.routers.entities.router import read_entity
 
         detail = read_entity(artifact_id="REQ@1000000003.NewAAA.newest-requirement")
         assert detail["last_updated"] == "2026-07-24T09:15:00Z"
 
     def test_diagram_list_and_detail_carry_the_stamp(self, repo_root: Path) -> None:
-        from src.infrastructure.rest.routers.diagrams import list_diagrams
+        from src.infrastructure.rest.routers.diagrams.router import list_diagrams
 
         (row,) = list_diagrams()["items"]
         assert row["last_updated"] == "2026-05-05T05:05:05Z"
@@ -165,7 +165,7 @@ class TestOrdering:
         assert descending == list(reversed(list(_STAMPS)))
 
     def test_ordering_spans_the_population_not_the_page(self, repo_root: Path) -> None:
-        from src.infrastructure.rest.routers.entities import list_entities
+        from src.infrastructure.rest.routers.entities.router import list_entities
 
         page = list_entities(request=cast("Request", None), sort="last_updated", order="desc", limit=1, offset=0)
         assert page["total"] == len(_STAMPS)
@@ -202,7 +202,7 @@ class TestOverHttp:
         from starlette.testclient import TestClient
 
         from src.infrastructure.app_bootstrap import install_module_registry
-        from src.infrastructure.rest.routers.entities import router as entities_router
+        from src.infrastructure.rest.routers.entities.router import router as entities_router
 
         app = build_api_app(entities_router)
         install_module_registry(app)

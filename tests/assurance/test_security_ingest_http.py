@@ -39,7 +39,7 @@ def _admissible_anchor(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(anchor_module, "anchor_reader_for", lambda *a, **k: _Admissible())
 
 
-_CTX_PATH = "src.infrastructure.rest.routers._assurance_signals_routes.get_assurance_context"
+_CTX_PATH = "src.infrastructure.rest.routers.assurance._signals_routes.get_assurance_context"
 
 _BOM: dict[str, Any] = {
     "bomFormat": "CycloneDX",
@@ -97,7 +97,7 @@ def ctx(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):  # type: ignore[no-unt
 
 
 def _client(ctx: Any) -> TestClient:
-    from src.infrastructure.rest.routers._assurance_signals_routes import signals_router
+    from src.infrastructure.rest.routers.assurance._signals_routes import signals_router
 
     client = TestClient(build_api_app(signals_router), raise_server_exceptions=False)
     client._patch = patch(_CTX_PATH, return_value=ctx)  # type: ignore[attr-defined]

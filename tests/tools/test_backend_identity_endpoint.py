@@ -10,7 +10,7 @@ import pytest
 from src.application.artifacts.query import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.rest.routers import state as gui_state
-from src.infrastructure.rest.routers.entities import router as entities_router
+from src.infrastructure.rest.routers.entities.router import router as entities_router
 from tests.support.api_app import build_api_app
 
 httpx = pytest.importorskip("httpx")

@@ -11,7 +11,7 @@ from pathlib import Path
 
 from src.domain.ontology_representation.artifact_types import EntityRecord
 from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry
-from src.infrastructure.rest.routers._entity_filter import EntityFilter, parse_csv_filter
+from src.infrastructure.rest.routers.entities._filter import EntityFilter, parse_csv_filter
 
 _ONTOLOGY = build_runtime_catalogs(get_module_registry()).ontology
 

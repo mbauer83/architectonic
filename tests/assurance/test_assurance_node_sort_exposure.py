@@ -23,7 +23,7 @@ from tests.support.assurance_records import node_record
 pytest.importorskip("httpx")
 from starlette.testclient import TestClient  # noqa: E402
 
-_ASSURANCE_CTX_PATH = "src.infrastructure.rest.routers._assurance_read.get_assurance_context"
+_ASSURANCE_CTX_PATH = "src.infrastructure.rest.routers.assurance._read.get_assurance_context"
 
 _SECRET_NAME = "SECRET HAZARD NAME"
 
@@ -71,7 +71,7 @@ class _Context:
 
 
 def _client(ceiling: str) -> TestClient:
-    from src.infrastructure.rest.routers.assurance import router
+    from src.infrastructure.rest.routers.assurance.router import router
 
     # `build_api_app`, not a bare `FastAPI()`: without the error contracts installed a raised
     # `ApiError` becomes a 500 with an empty body, and these tests then compare two empty bodies

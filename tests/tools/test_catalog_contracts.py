@@ -82,7 +82,7 @@ def test_the_combining_lookup_adds_no_key_of_its_own() -> None:
 
 
 def test_the_identity_contract_matches_what_the_route_returns() -> None:
-    assert _returned_keys(_ROUTERS / "entities.py", "get_backend_identity") == _fields(
+    assert _returned_keys(_ROUTERS / "entities" / "router.py", "get_backend_identity") == _fields(
         BackendIdentityResponse
     )
 
@@ -96,8 +96,8 @@ def test_the_module_envelope_and_its_rows_match_what_the_route_builds() -> None:
 
 
 def test_the_taxonomy_shapes_match_what_the_route_builds() -> None:
-    literals = _dict_literals(_ROUTERS / "entity_search.py", "get_entity_taxonomy")
-    assert _returned_keys(_ROUTERS / "entity_search.py", "get_entity_taxonomy") == _fields(
+    literals = _dict_literals(_ROUTERS / "entities" / "search.py", "get_entity_taxonomy")
+    assert _returned_keys(_ROUTERS / "entities" / "search.py", "get_entity_taxonomy") == _fields(
         EntityTaxonomyResponse
     )
     assert frozenset(_fields(TaxonomyTypeResponse)) in literals

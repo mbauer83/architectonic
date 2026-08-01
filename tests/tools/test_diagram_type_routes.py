@@ -16,16 +16,16 @@ from src.infrastructure.app_bootstrap import build_module_registry, build_runtim
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.diagram_type_registry import diagram_type_domain
 from src.infrastructure.rest.routers import state as gui_state
-from src.infrastructure.rest.routers._diagram_context import fuzzy_entity_hits
-from src.infrastructure.rest.routers._diagram_palette import (
+from src.infrastructure.rest.routers.diagrams._context import fuzzy_entity_hits
+from src.infrastructure.rest.routers.diagrams._palette import (
     get_diagram_kind_connection_types,
     get_diagram_kind_entity_types,
 )
-from src.infrastructure.rest.routers.diagram_types import (
+from src.infrastructure.rest.routers.diagrams.router import read_diagram
+from src.infrastructure.rest.routers.diagrams.types import (
     list_diagram_types,
     read_diagram_kind_ui_config,
 )
-from src.infrastructure.rest.routers.diagrams import read_diagram
 from src.infrastructure.write.artifact_write.connection import add_connection
 from src.infrastructure.write.artifact_write.diagram import create_diagram
 from src.infrastructure.write.artifact_write.diagram_edit import edit_diagram

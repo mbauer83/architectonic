@@ -19,7 +19,7 @@ _OLD_CALLERS = [
     ARTIFACT_WRITE / "_artifact_deduplication.py",
     ARTIFACT_WRITE / "global_artifact_reference.py",
     ARTIFACT_WRITE / "matrix.py",
-    REST_ROUTERS / "_diagram_write.py",
+    REST_ROUTERS / "diagrams" / "_write.py",
     REST_ROUTERS / "admin.py",
 ]
 

@@ -21,9 +21,9 @@ from fastapi import FastAPI
 
 from src.application.artifacts.query import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
-from src.infrastructure.rest.routers import entities as entity_router
 from src.infrastructure.rest.routers import state as gui_state
-from src.infrastructure.rest.routers.connections import router as connections_router
+from src.infrastructure.rest.routers.connections.router import router as connections_router
+from src.infrastructure.rest.routers.entities.router import router as entity_router
 from tests.support.api_app import build_api_app
 
 httpx = pytest.importorskip("httpx")
@@ -111,7 +111,7 @@ def _build_test_app(repo_root: Path) -> tuple[FastAPI, list[str]]:
     repo = ArtifactRepository(shared_artifact_index([repo_root]))
     gui_state.init_state(repo, repo_root, None)
 
-    app = build_api_app(entity_router.router, connections_router)
+    app = build_api_app(entity_router, connections_router)
     return app, entity_ids
 
 

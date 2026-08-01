@@ -69,7 +69,7 @@ def diagram_client(tmp_path: Path):
     from starlette.testclient import TestClient
 
     from src.infrastructure.app_bootstrap import install_module_registry
-    from src.infrastructure.rest.routers.diagrams import router as diagrams_router
+    from src.infrastructure.rest.routers.diagrams.router import router as diagrams_router
 
     root = tmp_path / "engagements" / "ENG-SUBENT" / "architecture-repository"
     diagram_dir = root / "diagram-catalog" / "diagrams"

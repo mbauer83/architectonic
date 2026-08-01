@@ -48,10 +48,10 @@ def _install(engagement: Path, enterprise: Path | None, *, read_only: bool = Fal
 def workspace(tmp_path: Path):
     from starlette.testclient import TestClient
 
-    from src.infrastructure.rest.routers.entities import router as entities_router
+    from src.infrastructure.rest.routers.entities.router import router as entities_router
     from src.infrastructure.rest.routers.groups import router as groups_router
     from src.infrastructure.rest.routers.promote import router as promote_router
-    from src.infrastructure.rest.routers.viewpoint_authoring import router as viewpoint_authoring_router
+    from src.infrastructure.rest.routers.viewpoints.authoring import router as viewpoint_authoring_router
 
     engagement = tmp_path / "engagements" / "ENG-ATH" / "architecture-repository"
     enterprise = tmp_path / "enterprise-repository"

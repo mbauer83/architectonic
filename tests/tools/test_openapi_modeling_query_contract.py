@@ -17,19 +17,22 @@ import pytest
 
 from tests.support.api_app import build_api_app
 
+#: The modelling surface, by module path under `rest.routers`. Each surface with more than one
+#: module is a package now, so the public router lives at `<surface>.router` and the module path is
+#: what names it — a bare surface name would import the package and find no routes.
 _IN_SCOPE_ROUTER_MODULES = [
-    "entities",
-    "entity_search",
-    "connections",
-    "diagrams",
+    "entities.router",
+    "entities.search",
+    "connections.router",
+    "diagrams.router",
     "documents",
     "groups",
     "identifiers",
     "modules",
-    "diagram_types",
+    "diagrams.types",
     "authoring_guidance",
-    "viewpoints",
-    "viewpoint_authoring",
+    "viewpoints.router",
+    "viewpoints.authoring",
 ]
 
 # Endpoints that legitimately return a media body (image/SVG/file), not JSON — a JSON

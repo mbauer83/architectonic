@@ -16,8 +16,8 @@ from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
 from src.infrastructure.rest.contracts.authoring_guidance import AuthoringGuidanceResponse
 from src.infrastructure.rest.contracts.errors import ApiError, FieldError, ValidationErrorDetails
 from src.infrastructure.rest.routers import state as s
-from src.infrastructure.rest.routers._entity_filter import parse_csv_filter
 from src.infrastructure.rest.routers._openapi import TAG_TAXONOMY
+from src.infrastructure.rest.routers.entities._filter import parse_csv_filter
 from src.infrastructure.write import artifact_write_ops
 
 router = APIRouter()

@@ -14,9 +14,9 @@ from starlette.testclient import TestClient
 
 from src.application.assurance.exposure import AssuranceExposurePolicy
 from src.infrastructure.assurance._analysis_records import as_analysis_record
-from src.infrastructure.rest.routers._assurance_analysis_routes import analysis_router
-from src.infrastructure.rest.routers._assurance_gsn_routes import gsn_router
-from src.infrastructure.rest.routers._assurance_read import read_router
+from src.infrastructure.rest.routers.assurance._analysis_routes import analysis_router
+from src.infrastructure.rest.routers.assurance._gsn_routes import gsn_router
+from src.infrastructure.rest.routers.assurance._read import read_router
 from tests.support.api_app import build_api_app
 from tests.support.assurance_records import node_record
 
@@ -118,8 +118,8 @@ class _FakeContext:
         return self._available
 
 
-_HTTP_CTX = "src.infrastructure.rest.routers._assurance_http.get_assurance_context"
-_READ_POLICY = "src.infrastructure.rest.routers._assurance_read._policy"
+_HTTP_CTX = "src.infrastructure.rest.routers.assurance._http.get_assurance_context"
+_READ_POLICY = "src.infrastructure.rest.routers.assurance._read._policy"
 
 
 def _client(ctx: _FakeContext, monkeypatch: pytest.MonkeyPatch) -> TestClient:

@@ -15,8 +15,8 @@ import pytest
 from src.application.artifacts.query import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.rest.routers import state as gui_state
-from src.infrastructure.rest.routers.connections import _check_multiplicity
-from src.infrastructure.rest.routers.connections import router as connections_router
+from src.infrastructure.rest.routers.connections.router import _check_multiplicity
+from src.infrastructure.rest.routers.connections.router import router as connections_router
 from tests.support.api_app import build_api_app
 
 httpx = pytest.importorskip("httpx")

@@ -12,7 +12,7 @@ from pathlib import Path
 import pytest
 from fastapi import HTTPException
 
-from src.infrastructure.rest.routers import _diagram_serving as serving
+from src.infrastructure.rest.routers.diagrams import _serving as serving
 
 
 def _write_confidential_bowtie(tmp_path: Path) -> Path:

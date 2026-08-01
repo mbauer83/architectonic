@@ -419,7 +419,7 @@ class TestConnectionBodyMultiplicity:
     """Pydantic-level validation of multiplicity fields on Add/Edit request bodies."""
 
     def test_add_body_accepts_valid_formats(self) -> None:
-        from src.infrastructure.rest.routers.connections import AddConnectionBody
+        from src.infrastructure.rest.routers.connections.router import AddConnectionBody
 
         for card in ["1", "0", "0..1", "1..5", "100..200", "*", "1..*", "0..*"]:
             body = AddConnectionBody(
@@ -441,7 +441,7 @@ class TestConnectionBodyMultiplicity:
     def test_add_body_rejects_invalid_formats(self) -> None:
         from pydantic import ValidationError
 
-        from src.infrastructure.rest.routers.connections import AddConnectionBody
+        from src.infrastructure.rest.routers.connections.router import AddConnectionBody
 
         for bad in ["1:n", "many", "1-5", "n", "one", "1..n", "*..1", "1..2..3"]:
             with pytest.raises(ValidationError, match="Invalid multiplicity"):
@@ -460,7 +460,7 @@ class TestConnectionBodyMultiplicity:
                 )
 
     def test_add_body_accepts_none(self) -> None:
-        from src.infrastructure.rest.routers.connections import AddConnectionBody
+        from src.infrastructure.rest.routers.connections.router import AddConnectionBody
 
         body = AddConnectionBody(
             source_entity="A",
@@ -471,7 +471,7 @@ class TestConnectionBodyMultiplicity:
         assert body.tgt_multiplicity is None
 
     def test_edit_body_accepts_valid_formats(self) -> None:
-        from src.infrastructure.rest.routers.connections import EditConnectionBody
+        from src.infrastructure.rest.routers.connections.router import EditConnectionBody
 
         body = EditConnectionBody(
             src_multiplicity="1..*",
@@ -483,7 +483,7 @@ class TestConnectionBodyMultiplicity:
     def test_edit_body_rejects_invalid_formats(self) -> None:
         from pydantic import ValidationError
 
-        from src.infrastructure.rest.routers.connections import EditConnectionBody
+        from src.infrastructure.rest.routers.connections.router import EditConnectionBody
 
         with pytest.raises(ValidationError, match="Invalid multiplicity"):
             EditConnectionBody(
@@ -496,7 +496,7 @@ class TestConnectionBodyMultiplicity:
 
     def test_edit_body_accepts_none_to_clear(self) -> None:
         """None is valid for edit — it signals 'remove this multiplicity'."""
-        from src.infrastructure.rest.routers.connections import EditConnectionBody
+        from src.infrastructure.rest.routers.connections.router import EditConnectionBody
 
         body = EditConnectionBody(
             src_multiplicity=None,

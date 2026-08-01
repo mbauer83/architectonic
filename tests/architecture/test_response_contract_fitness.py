@@ -109,3 +109,21 @@ def test_the_pending_response_contract_list_shrinks_only(document: dict[str, Any
 def test_the_pending_list_names_only_declared_operations() -> None:
     unknown = UNTYPED_RESPONSE_OPERATIONS - set(BY_OPERATION)
     assert unknown == set(), f"pending list names undeclared operations: {sorted(unknown)}"
+
+
+def test_no_component_name_carries_a_source_module_path(document: dict[str, Any]) -> None:
+    """A published component is named for what it is, never for where its class happens to live.
+
+    FastAPI disambiguates two same-named models by qualifying the component with the Python module
+    path, so `CreateGroupBody` in two routers published
+    `src__infrastructure__rest__routers__groups__CreateGroupBody` — a name no client can refer to and
+    one that changes whenever the package layout does. It changed during this release's regrouping,
+    which is the only reason anyone looked. The fix is a distinct class name; the check is that the
+    document never leaks the layout again.
+    """
+    schemas = (document.get("components") or {}).get("schemas") or {}
+    leaked = sorted(name for name in schemas if name.startswith("src__") or "__" in name)
+    assert leaked == [], (
+        "These published components are named after their Python module path. Give the colliding "
+        f"models distinct names instead: {leaked}"
+    )

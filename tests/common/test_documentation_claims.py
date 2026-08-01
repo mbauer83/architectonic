@@ -51,8 +51,11 @@ def _registered_paths() -> set[str]:
     import src.infrastructure.rest.routers as routers_pkg
 
     paths: set[str] = set()
-    for module_info in pkgutil.iter_modules(routers_pkg.__path__):
-        module = importlib.import_module(f"{routers_pkg.__name__}.{module_info.name}")
+    # `walk_packages`, not `iter_modules`: the routers are grouped into a package per served
+    # surface, and a flat scan sees the packages without ever importing the modules inside them —
+    # which reads as "no such endpoint" for every route in them.
+    for module_info in pkgutil.walk_packages(routers_pkg.__path__, f"{routers_pkg.__name__}."):
+        module = importlib.import_module(module_info.name)
         for value in vars(module).values():
             if isinstance(value, APIRouter):
                 paths |= {

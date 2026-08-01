@@ -85,7 +85,7 @@ def _axis_member_counts(kind: GroupAxis, store_projected: frozenset[str]) -> Cou
     with the list the user then sees."""
     repo = s.get_repo()
     if kind == "model-project":
-        from src.infrastructure.rest.routers.entity_listing import engagement_model_catalog  # noqa: PLC0415
+        from src.infrastructure.rest.routers.entities.listing import engagement_model_catalog  # noqa: PLC0415
 
         return Counter(e.group for e in engagement_model_catalog(repo.list_entities()))
     if kind == "diagram-collection":

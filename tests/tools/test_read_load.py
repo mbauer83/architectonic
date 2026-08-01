@@ -7,8 +7,8 @@ from unittest.mock import MagicMock
 
 from src.application.artifacts.query import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
-from src.infrastructure.rest.routers import entities as entity_router
 from src.infrastructure.rest.routers import state as gui_state
+from src.infrastructure.rest.routers.entities import router as entity_router
 
 _MOCK_REQUEST = MagicMock()  # request object never accessed when meta_ontology is absent
 

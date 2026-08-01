@@ -551,7 +551,7 @@ def test_rest_edge_label_endpoint_calls_service(repo: Path) -> None:
     from src.application.artifacts.repository import ArtifactRepository
     from src.infrastructure.artifact_index import shared_artifact_index
     from src.infrastructure.rest.routers import state as gui_state
-    from src.infrastructure.rest.routers._diagram_edge_label import SetEdgeLabelBody, set_edge_label_gui
+    from src.infrastructure.rest.routers.diagrams._edge_label import SetEdgeLabelBody, set_edge_label_gui
 
     scope_id = _make_app(repo, "RestApp")
     diag_id = _make_c4_diagram(repo, scope_id)

@@ -10,7 +10,7 @@ from src.application.artifacts.repository import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.mcp import mcp_artifact_server as mcp
 from src.infrastructure.rest.routers import state as gui_state
-from src.infrastructure.rest.routers.connections import router
+from src.infrastructure.rest.routers.connections.router import router
 from tests.support.api_app import build_api_app
 
 

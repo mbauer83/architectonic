@@ -542,7 +542,7 @@ class TestRestSyncAdapter:
         from src.application.artifacts.repository import ArtifactRepository
         from src.infrastructure.artifact_index import shared_artifact_index
         from src.infrastructure.rest.routers import state as gui_state
-        from src.infrastructure.rest.routers._diagram_write import SyncDiagramToModelBody, sync_diagram_to_model_gui
+        from src.infrastructure.rest.routers.diagrams._write import SyncDiagramToModelBody, sync_diagram_to_model_gui
 
         scope_id = _make_app_entity(repo, "REST Sync App")
         diag_id = _make_scope_bound_diagram(repo, "REST Sync Diagram", scope_id)
@@ -564,7 +564,7 @@ class TestRestSyncAdapter:
         from starlette.testclient import TestClient
 
         from src.infrastructure.rest.routers import state as gui_state
-        from src.infrastructure.rest.routers._diagram_write import router as diagram_write_router
+        from src.infrastructure.rest.routers.diagrams._write import router as diagram_write_router
         from tests.support.api_app import build_api_app
 
         scope_id = _make_app_entity(repo, "REST Sync Http App")
@@ -585,7 +585,7 @@ class TestRestSyncAdapter:
         from src.application.artifacts.repository import ArtifactRepository
         from src.infrastructure.artifact_index import shared_artifact_index
         from src.infrastructure.rest.routers import state as gui_state
-        from src.infrastructure.rest.routers._diagram_write import SyncDiagramToModelBody, sync_diagram_to_model_gui
+        from src.infrastructure.rest.routers.diagrams._write import SyncDiagramToModelBody, sync_diagram_to_model_gui
 
         scope_id = _make_app_entity(repo, "REST Scope App2")
         diag_id = _make_scope_bound_diagram(repo, "REST Scope Diag2", scope_id)

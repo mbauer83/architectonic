@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from src.infrastructure.rest.routers._diagram_context import (
+from src.infrastructure.rest.routers.diagrams._context import (
     parse_explicit_connection_pairs as _parse_explicit_connection_pairs,
 )
 

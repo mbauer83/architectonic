@@ -15,8 +15,8 @@ from src.application.artifacts.query import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.git import enterprise_git_ops, enterprise_sync_state
 from src.infrastructure.rest.routers import state as gui_state
-from src.infrastructure.rest.routers import sync_status_cache
-from src.infrastructure.rest.routers.sync import router as sync_router
+from src.infrastructure.rest.routers.sync import status_cache as sync_status_cache
+from src.infrastructure.rest.routers.sync.router import router as sync_router
 from src.infrastructure.workspace.mutation_gate import get_workspace_gate
 from src.infrastructure.write.authorized_mutation_executor import build_workspace_mutation_executor
 from src.infrastructure.write.mutation_executor_registry import install_mutation_executor

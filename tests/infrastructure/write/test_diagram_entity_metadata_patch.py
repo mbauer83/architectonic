@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from src.infrastructure.rest.routers.diagrams import _write as diagram_write
 from src.infrastructure.write.artifact_write.diagram_entity_metadata_patch import (
     _apply_meta_patch,
     _find_attribute,
@@ -105,6 +106,6 @@ class TestAddressing:
 
 def test_endpoint_wires_the_write_op() -> None:
     """The GUI router delegates to the write op (guard against a silent unwiring)."""
-    src = (Path(__file__).parents[3] / "src/infrastructure/rest/routers/_diagram_write.py").read_text()
+    src = Path(diagram_write.__file__).read_text()
     assert "patch_diagram_entity_metadata" in src
     assert "/api/diagrams/{artifact_id}/entities/{classifier_id}/metadata" in src

@@ -24,10 +24,10 @@ from tests.support.api_app import build_api_app
 
 pytest.importorskip("sqlcipher3", reason="sqlcipher3 not installed")
 
-_WRITE_CTX = "src.infrastructure.rest.routers._assurance_write.get_assurance_context"
-_GROUPING_CTX = "src.infrastructure.rest.routers._assurance_http.get_assurance_context"
-_FMEA_CTX = "src.infrastructure.rest.routers._assurance_fmea_routes.get_assurance_context"
-_READ_CTX = "src.infrastructure.rest.routers._assurance_read.get_assurance_context"
+_WRITE_CTX = "src.infrastructure.rest.routers.assurance._write.get_assurance_context"
+_GROUPING_CTX = "src.infrastructure.rest.routers.assurance._http.get_assurance_context"
+_FMEA_CTX = "src.infrastructure.rest.routers.assurance._fmea_routes.get_assurance_context"
+_READ_CTX = "src.infrastructure.rest.routers.assurance._read.get_assurance_context"
 
 _LEGACY = "node_legacy_invalid"
 
@@ -67,7 +67,7 @@ def store(tmp_path: Any) -> Any:
 
 @pytest.fixture()
 def client(store: Any, monkeypatch: pytest.MonkeyPatch) -> TestClient:
-    from src.infrastructure.rest.routers.assurance import router
+    from src.infrastructure.rest.routers.assurance.router import router
 
     ctx = _Context(store, _Archive())
     for path in (_WRITE_CTX, _GROUPING_CTX, _FMEA_CTX, _READ_CTX):

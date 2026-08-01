@@ -21,7 +21,7 @@ from src.domain.viewpoints.viewpoints import (
 )
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.rest.routers import state as gui_state
-from src.infrastructure.rest.routers.viewpoints import router as viewpoints_router
+from src.infrastructure.rest.routers.viewpoints.router import router as viewpoints_router
 from tests.support.api_app import build_api_app
 
 httpx = pytest.importorskip("httpx")
@@ -83,7 +83,7 @@ def client(populated_root: Path):
     from starlette.testclient import TestClient
 
     from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry
-    from src.infrastructure.rest.routers.viewpoints import fresh_viewpoints_runtime_catalogs_dependency
+    from src.infrastructure.rest.routers.viewpoints.router import fresh_viewpoints_runtime_catalogs_dependency
 
     repo = ArtifactRepository(shared_artifact_index([populated_root]))
     gui_state.init_state(repo, populated_root, None)
@@ -263,7 +263,7 @@ class TestTypedExecutionErrors:
     def test_returns_issue_payload_without_result(
         self, client, monkeypatch, error: Exception, status: int, envelope_code: str
     ) -> None:
-        import src.infrastructure.rest.routers.viewpoints as viewpoints_module
+        import src.infrastructure.rest.routers.viewpoints.router as viewpoints_module
 
         def _raise(*_args: object, **_kwargs: object) -> object:
             raise error
@@ -370,7 +370,7 @@ class TestExecuteDiagram:
         assert "<svg" in resp.json()["svg"]
 
     def test_oversized_result_gets_a_friendly_refusal_not_a_renderer_error(self, client, monkeypatch) -> None:
-        import src.infrastructure.rest.routers.viewpoints as viewpoints_router
+        import src.infrastructure.rest.routers.viewpoints.router as viewpoints_router
 
         monkeypatch.setattr(viewpoints_router, "viewpoints_diagram_render_max_entities", lambda: 0)
         resp = client.post("/api/viewpoints/execute-diagram", json={"query": {}})
@@ -408,7 +408,7 @@ class TestExecuteDiagram:
         """Regression: a derived connection's synthetic id must never be silently dropped
         by diagram-selection resolution — it should reach the renderer as a synthetic,
         renderer-only ConnectionRecord."""
-        import src.infrastructure.rest.routers.viewpoints as viewpoints_mod
+        import src.infrastructure.rest.routers.viewpoints.router as viewpoints_mod
         from src.application.viewpoints.execution_result import (
             ConnectionItemSummary,
             EntityItemSummary,
@@ -484,7 +484,7 @@ class TestExecuteDiagram:
         )
         catalogs = dataclasses.replace(catalogs, viewpoints=ViewpointCatalog(entries=(definition,)))
         app = build_api_app(viewpoints_router)
-        from src.infrastructure.rest.routers.viewpoints import fresh_viewpoints_runtime_catalogs_dependency
+        from src.infrastructure.rest.routers.viewpoints.router import fresh_viewpoints_runtime_catalogs_dependency
 
         app.dependency_overrides[fresh_viewpoints_runtime_catalogs_dependency] = lambda: catalogs
         labelled_client = TestClient(app)

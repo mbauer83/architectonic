@@ -22,7 +22,7 @@ from src.infrastructure.rest.contracts.sync import (
 )
 from tests.support.source_paths import REST_ROUTERS
 
-_SYNC = REST_ROUTERS / "sync.py"
+_SYNC = REST_ROUTERS / "sync" / "router.py"
 
 #: Handler name → the contract it declares.
 _CONTRACTS = {

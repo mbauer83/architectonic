@@ -57,7 +57,7 @@ def _diagram_md(artifact_id: str, name: str) -> str:
 def client(tmp_path: Path):
     from starlette.testclient import TestClient
 
-    from src.infrastructure.rest.routers.diagrams import router as diagrams_router
+    from src.infrastructure.rest.routers.diagrams.router import router as diagrams_router
     from src.infrastructure.rest.routers.documents import router as documents_router
 
     engagement = tmp_path / "engagements" / "ENG-LSC" / "architecture-repository"

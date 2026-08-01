@@ -35,8 +35,8 @@ def client(tmp_path: Path):
     from starlette.testclient import TestClient
 
     from src.infrastructure.app_bootstrap import install_module_registry
-    from src.infrastructure.rest.routers.entities import router as entities_router
-    from src.infrastructure.rest.routers.entity_search import router as entity_search_router
+    from src.infrastructure.rest.routers.entities.router import router as entities_router
+    from src.infrastructure.rest.routers.entities.search import router as entity_search_router
 
     engagement = build_engagement_repo(tmp_path)
     enterprise = build_enterprise_repo(tmp_path)

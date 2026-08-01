@@ -102,7 +102,9 @@ def _authorized_write_operations(node: ast.AST) -> list[str]:
 def _handler_authorizations() -> list[tuple[str, str, tuple[str, str], str]]:
     """``(module, handler, decorator route, operation id)`` for every gated handler."""
     found = []
-    for module in sorted(_ROUTERS.glob("*.py")):
+    # Recursive: the routers are a package per served surface, and a flat glob would scan none of
+    # the handlers inside them — a gate that silently checks nothing.
+    for module in sorted(_ROUTERS.rglob("*.py")):
         tree = ast.parse(module.read_text(encoding="utf-8"))
         prefixes = _router_prefixes(tree)
         for node in ast.walk(tree):

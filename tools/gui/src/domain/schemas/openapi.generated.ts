@@ -5196,6 +5196,25 @@ export interface components {
              */
             tlp: string;
         };
+        /**
+         * CreateAssuranceGroupBody
+         * @description Named for its surface, not just its shape.
+         *
+         *     `groups.CreateGroupBody` is the repository's group create and this is the assurance store's. Two
+         *     classes with one name make FastAPI disambiguate the published component by *module path*, so the
+         *     wire contract read `src__infrastructure__rest__routers__groups__CreateGroupBody` — a component
+         *     name a client cannot use and that moves whenever the Python package layout does. It moved during
+         *     this release's regrouping, which is how it was noticed.
+         */
+        CreateAssuranceGroupBody: {
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Name */
+            name: string;
+        };
         /** CreateDiagramGuiBody */
         CreateDiagramGuiBody: {
             /** Connection Ids */
@@ -5305,6 +5324,39 @@ export interface components {
              * @default 0.1.0
              */
             version: string;
+        };
+        /**
+         * CreateGroupBody
+         * @description A create carries the slug: it is the caller's chosen natural key, not a minted id, and the
+         *     collection route has nowhere else to put it.
+         */
+        CreateGroupBody: {
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Kind */
+            kind: string;
+            /**
+             * Meta Ontology
+             * @default
+             */
+            meta_ontology: string;
+            /** Name */
+            name: string;
+            /**
+             * Order
+             * @default 0
+             */
+            order: number;
+            /** Slug */
+            slug: string;
+            /**
+             * Type Filter
+             * @default []
+             */
+            type_filter: string[];
         };
         /** CreateMatrixBody */
         CreateMatrixBody: {
@@ -9755,49 +9807,6 @@ export interface components {
             /** Icon */
             icon?: string;
         };
-        /** CreateGroupBody */
-        src__infrastructure__rest__routers___assurance_grouping_routes__CreateGroupBody: {
-            /**
-             * Description
-             * @default
-             */
-            description: string;
-            /** Name */
-            name: string;
-        };
-        /**
-         * CreateGroupBody
-         * @description A create carries the slug: it is the caller's chosen natural key, not a minted id, and the
-         *     collection route has nowhere else to put it.
-         */
-        src__infrastructure__rest__routers__groups__CreateGroupBody: {
-            /**
-             * Description
-             * @default
-             */
-            description: string;
-            /** Kind */
-            kind: string;
-            /**
-             * Meta Ontology
-             * @default
-             */
-            meta_ontology: string;
-            /** Name */
-            name: string;
-            /**
-             * Order
-             * @default 0
-             */
-            order: number;
-            /** Slug */
-            slug: string;
-            /**
-             * Type Filter
-             * @default []
-             */
-            type_filter: string[];
-        };
         /**
          * StructuralClosureEntity
          * @description One entity missing from the selection.
@@ -13346,7 +13355,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["src__infrastructure__rest__routers___assurance_grouping_routes__CreateGroupBody"];
+                "application/json": components["schemas"]["CreateAssuranceGroupBody"];
             };
         };
         responses: {
@@ -17449,7 +17458,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["src__infrastructure__rest__routers__groups__CreateGroupBody"];
+                "application/json": components["schemas"]["CreateGroupBody"];
             };
         };
         responses: {

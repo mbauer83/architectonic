@@ -178,7 +178,7 @@ class TestEndToEndThroughHttp:
     def _client(self, root: Path):  # type: ignore[no-untyped-def]
         from starlette.testclient import TestClient
 
-        from src.infrastructure.rest.routers.entities import router
+        from src.infrastructure.rest.routers.entities.router import router
 
         return TestClient(build_api_app(router))
 

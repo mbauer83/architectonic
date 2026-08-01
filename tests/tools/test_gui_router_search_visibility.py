@@ -36,9 +36,9 @@ def client(tmp_path: Path):
         get_module_registry,
         runtime_catalogs_dependency,
     )
-    from src.infrastructure.rest.routers.connections import router as connections_router
-    from src.infrastructure.rest.routers.diagrams import router as diagrams_router
-    from src.infrastructure.rest.routers.entity_search import router as entity_search_router
+    from src.infrastructure.rest.routers.connections.router import router as connections_router
+    from src.infrastructure.rest.routers.diagrams.router import router as diagrams_router
+    from src.infrastructure.rest.routers.entities.search import router as entity_search_router
 
     root = build_engagement_repo(tmp_path)
     repo = ArtifactRepository(shared_artifact_index([root]), excluded_entity_types=EXCLUDED_TYPES)

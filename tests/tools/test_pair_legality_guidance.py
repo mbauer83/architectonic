@@ -185,7 +185,7 @@ def _ontology_rest_client():
     from starlette.testclient import TestClient
 
     from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
-    from src.infrastructure.rest.routers.connections import router as connections_router
+    from src.infrastructure.rest.routers.connections.router import router as connections_router
 
     app = build_api_app(connections_router)
     app.dependency_overrides[runtime_catalogs_dependency] = _catalogs

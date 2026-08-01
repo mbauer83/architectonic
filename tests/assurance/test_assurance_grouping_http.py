@@ -28,8 +28,8 @@ from tests.support.api_app import build_api_app
 
 pytest.importorskip("sqlcipher3", reason="sqlcipher3 not installed")
 
-_HTTP_CTX = "src.infrastructure.rest.routers._assurance_http.get_assurance_context"
-_READ_CTX = "src.infrastructure.rest.routers._assurance_read.get_assurance_context"
+_HTTP_CTX = "src.infrastructure.rest.routers.assurance._http.get_assurance_context"
+_READ_CTX = "src.infrastructure.rest.routers.assurance._read.get_assurance_context"
 
 
 class _RecordingArchive:
@@ -93,7 +93,7 @@ def seeded(tmp_path: Path):  # type: ignore[no-untyped-def]
 
 
 def _client(store: Any, ceiling: str, monkeypatch: pytest.MonkeyPatch) -> TestClient:
-    from src.infrastructure.rest.routers.assurance import router
+    from src.infrastructure.rest.routers.assurance.router import router
 
     ctx = _RealContext(store, ceiling)
     app = build_api_app(router)

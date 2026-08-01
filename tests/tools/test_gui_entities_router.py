@@ -13,7 +13,7 @@ from src.domain.artifact_id import stable_id
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.rest.routers import state as gui_state
 from src.infrastructure.rest.routers.documents import read_document
-from src.infrastructure.rest.routers.entity_listing import build_entity_list_rows
+from src.infrastructure.rest.routers.entities.listing import build_entity_list_rows
 
 
 def _write(path: Path, content: str) -> None:
@@ -145,8 +145,8 @@ def test_entity_catalog_excludes_diagram_owned_entities(
     from typing import cast
 
     from src.infrastructure.app_bootstrap import install_module_registry
-    from src.infrastructure.rest.routers.entities import list_entities
-    from src.infrastructure.rest.routers.entity_search import get_entity_taxonomy
+    from src.infrastructure.rest.routers.entities.router import list_entities
+    from src.infrastructure.rest.routers.entities.search import get_entity_taxonomy
 
     model_req = "REQ@1000000000.EngAAA.eng-req"
     diagram_id = "ACT@1234567890.aBcDeF.my-process"

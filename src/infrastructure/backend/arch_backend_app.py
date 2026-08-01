@@ -163,7 +163,7 @@ async def _on_repo_changed(repo_path: Path) -> None:
     if repo is not None:
         await asyncio.to_thread(repo.refresh)
     from src.infrastructure.rest.routers.events import event_bus  # noqa: PLC0415
-    from src.infrastructure.rest.routers.sync_status_cache import invalidate_sync_status_cache  # noqa: PLC0415
+    from src.infrastructure.rest.routers.sync.status_cache import invalidate_sync_status_cache  # noqa: PLC0415
 
     invalidate_sync_status_cache(repo=repo_path)
     await event_bus.publish({
@@ -219,22 +219,22 @@ def _build_app(credentials: "GitCredentials | None" = None):  # type: ignore[no-
     from src.infrastructure.rest.contracts.wire_nulls import install_wire_null_policy
     from src.infrastructure.rest.routers._openapi import APP_RESPONSES
     from src.infrastructure.rest.routers.admin import router as admin_router
-    from src.infrastructure.rest.routers.assurance import router as assurance_router
+    from src.infrastructure.rest.routers.assurance.router import router as assurance_router
     from src.infrastructure.rest.routers.authoring_guidance import router as authoring_guidance_router
-    from src.infrastructure.rest.routers.connections import router as connections_router
-    from src.infrastructure.rest.routers.diagram_types import router as diagram_types_router
-    from src.infrastructure.rest.routers.diagrams import router as diagrams_router
+    from src.infrastructure.rest.routers.connections.router import router as connections_router
+    from src.infrastructure.rest.routers.diagrams.router import router as diagrams_router
+    from src.infrastructure.rest.routers.diagrams.types import router as diagram_types_router
     from src.infrastructure.rest.routers.documents import router as documents_router
-    from src.infrastructure.rest.routers.entities import router as entities_router
-    from src.infrastructure.rest.routers.entity_search import router as entity_search_router
+    from src.infrastructure.rest.routers.entities.router import router as entities_router
+    from src.infrastructure.rest.routers.entities.search import router as entity_search_router
     from src.infrastructure.rest.routers.events import router as events_router
     from src.infrastructure.rest.routers.groups import router as groups_router
     from src.infrastructure.rest.routers.identifiers import router as identifiers_router
     from src.infrastructure.rest.routers.modules import router as modules_router
     from src.infrastructure.rest.routers.promote import router as promote_router
-    from src.infrastructure.rest.routers.sync import router as sync_router
-    from src.infrastructure.rest.routers.viewpoint_authoring import router as viewpoint_authoring_router
-    from src.infrastructure.rest.routers.viewpoints import router as viewpoints_router
+    from src.infrastructure.rest.routers.sync.router import router as sync_router
+    from src.infrastructure.rest.routers.viewpoints.authoring import router as viewpoint_authoring_router
+    from src.infrastructure.rest.routers.viewpoints.router import router as viewpoints_router
 
     mcp_read.streamable_http_app()
     mcp_write.streamable_http_app()
@@ -270,7 +270,7 @@ def _build_app(credentials: "GitCredentials | None" = None):  # type: ignore[no-
                     "Starting git-sync for repos: %s",
                     ", ".join(f"{r.path}({r.role})" for r in git_repos),
                 )
-                from src.infrastructure.rest.routers.sync_status_cache import invalidate_sync_status_cache
+                from src.infrastructure.rest.routers.sync.status_cache import invalidate_sync_status_cache
 
                 sync_mgr = GitSyncManager(
                     git_repos,

@@ -20,7 +20,7 @@ from tests.support.api_app import build_api_app
 
 pytest.importorskip("sqlcipher3", reason="sqlcipher3 not installed")
 
-_CTX_PATH = "src.infrastructure.rest.routers._assurance_fmea_routes.get_assurance_context"
+_CTX_PATH = "src.infrastructure.rest.routers.assurance._fmea_routes.get_assurance_context"
 
 
 class _Context:
@@ -37,7 +37,7 @@ class _Context:
 
 
 def _client(store: Any) -> TestClient:
-    from src.infrastructure.rest.routers._assurance_fmea_routes import fmea_router
+    from src.infrastructure.rest.routers.assurance._fmea_routes import fmea_router
 
     return TestClient(build_api_app(fmea_router), raise_server_exceptions=False)
 

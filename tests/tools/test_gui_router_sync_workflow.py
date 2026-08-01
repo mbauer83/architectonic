@@ -15,7 +15,7 @@ from src.application.artifacts.query import ArtifactRepository
 from src.application.mutation_authorization import SyncHealth
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.rest.routers import state as gui_state
-from src.infrastructure.rest.routers.sync import router as sync_router
+from src.infrastructure.rest.routers.sync.router import router as sync_router
 from src.infrastructure.workspace.mutation_gate import get_workspace_gate
 from src.infrastructure.write.authorized_mutation_executor import build_workspace_mutation_executor
 from src.infrastructure.write.mutation_executor_registry import (

@@ -14,7 +14,7 @@ from __future__ import annotations
 from src.application.mutation_authorization import SyncHealthReason
 from src.infrastructure.git.enterprise_sync_state import EnterpriseSyncStatus
 from src.infrastructure.rest.contracts.wire_shape import Closed
-from src.infrastructure.rest.routers._sync_authority import BlockKind
+from src.infrastructure.rest.routers.sync._authority import BlockKind
 
 
 class ServerInfoResponse(Closed):
