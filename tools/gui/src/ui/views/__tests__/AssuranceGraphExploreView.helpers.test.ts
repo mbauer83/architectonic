@@ -10,12 +10,15 @@ import {
   type AssuranceNeighborsResponse,
 } from '../AssuranceGraphExploreView.helpers'
 
+/* `max_hops` is part of the response and was missing here, as it was from the view's own type — the
+   applied budget, which a request for more hops than the deployment permits is answered with. */
 const response = (overrides: Partial<AssuranceNeighborsResponse> = {}): AssuranceNeighborsResponse => ({
   root_id: 'HAZ@1',
   nodes: [],
   edges: [],
   truncated: false,
   frontier_node_ids: [],
+  max_hops: 2,
   visibility_limited: false,
   ...overrides,
 })
@@ -25,9 +28,30 @@ describe('outcomeForResponse', () => {
     expect(outcomeForResponse(200, response()).kind).toBe('graph')
     expect(outcomeForResponse(423, null).kind).toBe('locked')
     expect(outcomeForResponse(404, null).kind).toBe('not_found')
-    expect(outcomeForResponse(503, { retryable: true, message: 'over budget' }))
-      .toEqual({ kind: 'retryable', message: 'over budget' })
+    // The real envelope: every typed error carries its message under `detail`. Read from the top
+    // level, as this did, the traversal's own advice never reached the user.
+    expect(outcomeForResponse(503, {
+      detail: {
+        code: 'traversal_time_budget_exceeded',
+        message: 'over budget',
+        details: null,
+        request_id: 'req-1',
+      },
+    })).toEqual({ kind: 'retryable', message: 'over budget' })
     expect(outcomeForResponse(500, null).kind).toBe('error')
+  })
+
+  it('falls back to its own wording when a 503 body is not the envelope', () => {
+    expect(outcomeForResponse(503, null)).toEqual({
+      kind: 'retryable',
+      message: 'The traversal ran past its time budget — retry.',
+    })
+  })
+
+  it('is an error, not an empty graph, when a 200 body does not match the contract', () => {
+    /* A cast would have produced a graph outcome carrying undefined fields, and the canvas would have
+       rendered nothing with no message — the failure mode a decoder exists to turn into a report. */
+    expect(outcomeForResponse(200, { root_id: 'HAZ@1' }).kind).toBe('error')
   })
 })
 

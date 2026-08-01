@@ -3259,6 +3259,123 @@ export interface components {
             updated_at: string;
         };
         /**
+         * AssuranceNeighborhoodEdge
+         * @description An edge crossed by a traversal, from the perspective of the node it was crossed from.
+         *
+         *     ``direction`` is relative to that node, which is why ``self`` is one of its values: a self-edge is
+         *     neither incoming nor outgoing, and folding it into either would make a rendered graph disagree with
+         *     the degree counts on the same node.
+         */
+        AssuranceNeighborhoodEdge: {
+            /** Attributes Json */
+            attributes_json: string;
+            /** Conn Type */
+            conn_type: string;
+            /** Created At */
+            created_at: string;
+            /**
+             * Direction
+             * @enum {string}
+             */
+            direction: "outgoing" | "incoming" | "self";
+            /** Edge Id */
+            edge_id: string;
+            /** Hop */
+            hop: number;
+            /** Source Id */
+            source_id: string;
+            /** Source Name */
+            source_name: string;
+            /** Source Type */
+            source_type: string;
+            /** Target Id */
+            target_id: string;
+            /** Target Name */
+            target_name: string;
+            /** Target Type */
+            target_type: string;
+        };
+        /**
+         * AssuranceNeighborhoodNode
+         * @description A node reached by a traversal, with how far out it was reached.
+         *
+         *     ``hop`` is the distance from the root, so a client can render rings or fade by depth without
+         *     recomputing the traversal it was just given. ``is_root`` is stated rather than derived by comparing
+         *     against ``root_id``: the root is in the node list like any other node, and a reader that has to
+         *     know which one it is should not have to join two fields to find out.
+         */
+        AssuranceNeighborhoodNode: {
+            /** Analysis Id */
+            analysis_id: string | null;
+            /** Attributes Json */
+            attributes_json: string;
+            /** Binding Status */
+            binding_status: string | null;
+            /** Concern Class */
+            concern_class: string | null;
+            /** Content Text */
+            content_text: string;
+            /** Created At */
+            created_at: string;
+            /** Disposition */
+            disposition: string | null;
+            /** Failure Type */
+            failure_type: string | null;
+            /** Hop */
+            hop: number;
+            /** Is Root */
+            is_root: boolean;
+            /** Mode */
+            mode: string | null;
+            /** Name */
+            name: string;
+            /** Node Id */
+            node_id: string;
+            /** Node Role */
+            node_role: string | null;
+            /** Node Type */
+            node_type: string;
+            /** Status */
+            status: string;
+            /** Tlp */
+            tlp: string;
+            /** Uca Type */
+            uca_type: string | null;
+            /** Updated At */
+            updated_at: string;
+        };
+        /**
+         * AssuranceNeighborhoodResponse
+         * @description One node's neighbourhood, as far as the budgets and the reader's ceiling allow.
+         *
+         *     ``truncated`` and ``frontier_node_ids`` are the two halves of one fact: the traversal stopped early,
+         *     and these are the nodes it stopped at. A client can offer to expand from exactly those rather than
+         *     re-running the whole traversal with a larger hop count.
+         *
+         *     ``max_hops`` is the budget that was *applied* after clamping, not what the caller asked for — a
+         *     request for fifty hops against a ceiling of five is answered, and the answer says five.
+         *
+         *     Exceeding the wall-clock budget is not represented here at all: it aborts with a retryable 503
+         *     rather than returning a partial graph, because a partial traversal is not deterministic and a client
+         *     cannot tell one from a complete small neighbourhood.
+         */
+        AssuranceNeighborhoodResponse: {
+            /** Edges */
+            edges: components["schemas"]["AssuranceNeighborhoodEdge"][];
+            /** Frontier Node Ids */
+            frontier_node_ids: string[];
+            /** Max Hops */
+            max_hops: number;
+            /** Nodes */
+            nodes: components["schemas"]["AssuranceNeighborhoodNode"][];
+            /** Root Id */
+            root_id: string;
+            /** Truncated */
+            truncated: boolean;
+            /** Visibility Limited */
+            visibility_limited: boolean;
+        };
+        /**
          * AssuranceNodeCreatedResponse
          * @description The node a create produced, identified and named.
          *
@@ -9499,7 +9616,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["AssuranceNeighborhoodResponse"];
                 };
             };
             /** @description Request validation failed */

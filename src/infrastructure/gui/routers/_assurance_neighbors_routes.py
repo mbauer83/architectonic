@@ -27,6 +27,7 @@ from src.config.assurance_settings import (
     assurance_neighbors_max_nodes,
     assurance_neighbors_time_budget_seconds,
 )
+from src.infrastructure.gui.contracts.assurance_nodes import AssuranceNeighborhoodResponse
 from src.infrastructure.gui.contracts.errors import ApiError
 from src.infrastructure.gui.routers._assurance_http import locked_response as _locked_response
 from src.infrastructure.gui.routers._assurance_http import not_found_response as _not_found_response
@@ -50,7 +51,8 @@ def _effective_max_hops(requested: int | None) -> int:
     return max(1, min(requested, assurance_neighbors_max_hops()))
 
 
-@neighbors_router.get("/api/assurance/nodes/{node_id}/neighbors")
+@neighbors_router.get("/api/assurance/nodes/{node_id}/neighbors",
+    response_model=AssuranceNeighborhoodResponse)
 def assurance_neighbors(node_id: str, max_hops: int | None = None) -> JSONResponse:
     ctx, pol = _policy()
     if pol.check_locked():
@@ -82,4 +84,4 @@ def assurance_neighbors(node_id: str, max_hops: int | None = None) -> JSONRespon
         "frontier_node_ids": graph.frontier_node_ids,
         "max_hops": hops,
         "visibility_limited": pol.scope().visibility_limited,
-    })
+    }, AssuranceNeighborhoodResponse)

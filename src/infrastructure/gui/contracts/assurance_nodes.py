@@ -15,6 +15,8 @@ number nobody thinks of as content, which is why ``assurance_node_degrees`` runs
 
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict
 
 from src.infrastructure.gui.contracts.assurance_analyses import AssuranceAnalysisSummary
@@ -144,4 +146,53 @@ class AssuranceNodeDetailResponse(_Closed):
     arch_refs: list[AssuranceArchRefRecord]
     authored_by: AssuranceAnalysisSummary | None
     participates_in: list[AssuranceAnalysisSummary]
+    visibility_limited: bool
+
+
+class AssuranceNeighborhoodNode(AssuranceNodeRecord):
+    """A node reached by a traversal, with how far out it was reached.
+
+    ``hop`` is the distance from the root, so a client can render rings or fade by depth without
+    recomputing the traversal it was just given. ``is_root`` is stated rather than derived by comparing
+    against ``root_id``: the root is in the node list like any other node, and a reader that has to
+    know which one it is should not have to join two fields to find out.
+    """
+
+    hop: int
+    is_root: bool
+
+
+class AssuranceNeighborhoodEdge(AssuranceEnrichedEdge):
+    """An edge crossed by a traversal, from the perspective of the node it was crossed from.
+
+    ``direction`` is relative to that node, which is why ``self`` is one of its values: a self-edge is
+    neither incoming nor outgoing, and folding it into either would make a rendered graph disagree with
+    the degree counts on the same node.
+    """
+
+    hop: int
+    direction: Literal["outgoing", "incoming", "self"]
+
+
+class AssuranceNeighborhoodResponse(_Closed):
+    """One node's neighbourhood, as far as the budgets and the reader's ceiling allow.
+
+    ``truncated`` and ``frontier_node_ids`` are the two halves of one fact: the traversal stopped early,
+    and these are the nodes it stopped at. A client can offer to expand from exactly those rather than
+    re-running the whole traversal with a larger hop count.
+
+    ``max_hops`` is the budget that was *applied* after clamping, not what the caller asked for — a
+    request for fifty hops against a ceiling of five is answered, and the answer says five.
+
+    Exceeding the wall-clock budget is not represented here at all: it aborts with a retryable 503
+    rather than returning a partial graph, because a partial traversal is not deterministic and a client
+    cannot tell one from a complete small neighbourhood.
+    """
+
+    root_id: str
+    nodes: list[AssuranceNeighborhoodNode]
+    edges: list[AssuranceNeighborhoodEdge]
+    truncated: bool
+    frontier_node_ids: list[str]
+    max_hops: int
     visibility_limited: bool

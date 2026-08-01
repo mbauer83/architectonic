@@ -15,7 +15,13 @@ import type {
   SyncStatusSchema,
 } from './sync-status'
 import type { StatsSchema } from './stats'
-import type { AssuranceNodeListSchema, AssuranceNodeSchema } from './assurance'
+import type {
+  AssuranceNeighborhoodEdgeSchema,
+  AssuranceNeighborhoodNodeSchema,
+  AssuranceNeighborhoodSchema,
+  AssuranceNodeListSchema,
+  AssuranceNodeSchema,
+} from './assurance'
 import type {
   AnalysisMethod,
   AnalysisStatus,
@@ -286,6 +292,21 @@ describe('assurance analyses', () => {
     >()
     expectTypeOf<SchemaType<typeof AssuranceNodeListSchema>>().toEqualTypeOf<
       Immutable<components['schemas']['AssuranceNodeListResponse']>
+    >()
+  })
+
+  it('decodes a neighbourhood traversal, its budget included', () => {
+    // The view's own types carried five of the node's nineteen fields, declared `edge_id` optional for
+    // a route that always sends it, and had no `max_hops` at all — so a hop count clamped by the
+    // deployment looked as though the request had been honoured.
+    expectTypeOf<SchemaType<typeof AssuranceNeighborhoodSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['AssuranceNeighborhoodResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof AssuranceNeighborhoodNodeSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['AssuranceNeighborhoodNode']>
+    >()
+    expectTypeOf<SchemaType<typeof AssuranceNeighborhoodEdgeSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['AssuranceNeighborhoodEdge']>
     >()
   })
 

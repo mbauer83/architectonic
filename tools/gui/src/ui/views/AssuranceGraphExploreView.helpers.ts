@@ -6,33 +6,22 @@
  * notice for partial (size-budget) results, and the assurance-owned band placement the
  * generic cluster layout is driven by.
  */
+import { Either, Schema } from 'effect'
+import {
+  AssuranceNeighborhoodSchema,
+  type AssuranceNeighborhood,
+  type AssuranceNeighborhoodEdge,
+  type AssuranceNeighborhoodNode,
+} from '../../domain/schemas/assurance'
+import { ErrorEnvelopeSchema } from '../../domain/schemas/errors'
 import type { BandPlacement } from '../composables/useForceGraphLayout'
 
-export interface AssuranceNeighborNode {
-  node_id: string
-  name: string
-  node_type: string
-  hop: number
-  is_root: boolean
-}
-
-export interface AssuranceNeighborEdge {
-  edge_id?: string
-  source_id: string
-  target_id: string
-  conn_type: string
-  hop: number
-  direction: string
-}
-
-export interface AssuranceNeighborsResponse {
-  root_id: string
-  nodes: AssuranceNeighborNode[]
-  edges: AssuranceNeighborEdge[]
-  truncated: boolean
-  frontier_node_ids: string[]
-  visibility_limited: boolean
-}
+/* The route's own shapes, decoded. These were three interfaces declared here: five of a node's
+   nineteen fields, an `edge_id` marked optional for a route that always sends it, and no `max_hops`
+   at all — so a hop count the deployment had clamped looked as though the request had been honoured. */
+export type AssuranceNeighborNode = AssuranceNeighborhoodNode
+export type AssuranceNeighborEdge = AssuranceNeighborhoodEdge
+export type AssuranceNeighborsResponse = AssuranceNeighborhood
 
 export type NeighborsOutcome =
   | { kind: 'graph'; response: AssuranceNeighborsResponse }
@@ -41,14 +30,31 @@ export type NeighborsOutcome =
   | { kind: 'retryable'; message: string }
   | { kind: 'error'; message: string }
 
+/** The server's own message for a refusal, or null when the body is not the error envelope.
+ *
+ * It used to read `body.message`, which the envelope does not have — every typed error carries its
+ * message under `detail`. So the specific advice the traversal returns ("retry, possibly with a
+ * smaller max_hops") never reached the user and the generic fallback was shown every time. */
+const envelopeMessage = (body: unknown): string | null =>
+  Either.match(Schema.decodeUnknownEither(ErrorEnvelopeSchema)(body), {
+    onLeft: () => null,
+    onRight: (envelope) => envelope.detail.message,
+  })
+
 export const outcomeForResponse = (status: number, body: unknown): NeighborsOutcome => {
-  if (status === 200) return { kind: 'graph', response: body as AssuranceNeighborsResponse }
+  if (status === 200) {
+    return Either.match(Schema.decodeUnknownEither(AssuranceNeighborhoodSchema)(body), {
+      onLeft: () => ({ kind: 'error', message: 'The neighbourhood response could not be read.' }),
+      onRight: (response) => ({ kind: 'graph', response }),
+    })
+  }
   if (status === 423) return { kind: 'locked' }
   if (status === 404) return { kind: 'not_found' }
   if (status === 503) {
-    const message = (body as { message?: string } | null)?.message
-      ?? 'The traversal ran past its time budget — retry.'
-    return { kind: 'retryable', message }
+    return {
+      kind: 'retryable',
+      message: envelopeMessage(body) ?? 'The traversal ran past its time budget — retry.',
+    }
   }
   return { kind: 'error', message: `Neighbor request failed (${status})` }
 }
