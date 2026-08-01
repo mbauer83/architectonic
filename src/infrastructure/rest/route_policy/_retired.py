@@ -1,26 +1,17 @@
-"""The migration's ledger: every address 0.2.0 retires, and how far the move has got.
+"""Every address 0.2.0 retires, and the canonical operation that replaced it.
 
-The manifest states the **canonical** surface. Until the last router has been visited the
-served surface differs from it in exactly two ways: a retired address is still mounted, or a
-canonical address is not mounted yet. Both are recorded here so the inventory fitness function
-can be an *equality* — not a subset check — at every point during the migration, and so "how
-much is left" is a fact in the source tree rather than a claim in a report.
+A permanent record, complete and constant. What needs it is the retired-literal scan, which fails a
+reference to any of these addresses anywhere in the tree — long after the route itself is gone — and
+the CHANGELOG cross-check, which holds the consumer-facing old→new mapping against this one.
 
-:data:`RETIRED_ROUTES` is complete and constant: it is the permanent record of what 0.2.0
-retires, which is what the retired-literal scan needs long after the route itself is gone. The
-fitness function asserts directly that none of these addresses is served.
+The module was called ``_pending`` and carried two collections tracking how far the migration had
+got: which retired addresses were still mounted, and which canonical ones were not mounted yet. Both
+reached empty, and an allowlist that must stay empty is not a fact — it is a conditional in every
+consumer, each reading as though the move were still under way. What replaced them is stronger: the
+addressing fitness function compares the served surface against the manifest as a plain equality, so
+a served address with no manifest row fails rather than being explained away.
 
-**The migration is over, and its scaffolding is gone.** Two collections tracked how far it had got —
-which retired addresses were still mounted, and which canonical ones were not mounted yet. Both
-reached the state the plan required, and a ledger that records "all of it, always" carries no
-information while costing 78 lines that must be kept in lockstep with the list beside it. Six
-consumers computed "the legacy addresses still served" and every one of them now reads as though the
-move were still under way. What replaced them: the addressing fitness function compares the served
-surface against the manifest directly, and a served address with no manifest row is a failure rather
-than something the ledger explains away.
-
-This is not a redirect table and never was — nothing here routes a request. The consumer-facing
-old→new mapping lives in ``CHANGELOG.md``.
+This is not a redirect table and never was — nothing here routes a request.
 """
 
 from __future__ import annotations
@@ -122,9 +113,3 @@ RETIRED_ROUTES: dict[tuple[str, str], str] = {
     ("POST", "/api/assurance/security-snapshot-delete"): "assurance_delete_security_snapshot",
     ("GET", "/api/assurance/vulnerability-impact"): "assurance_read_vulnerability_impact",
 }
-
-#: Canonical operations the manifest declares that are not mounted yet. Either a new capability
-#: the migration introduces, or the second half of a route that legacy code served as one
-#: body-discriminated union.
-UNSERVED_OPERATIONS: frozenset[str] = frozenset({
-})

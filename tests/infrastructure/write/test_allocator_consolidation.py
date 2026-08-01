@@ -10,17 +10,17 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
-SRC = Path(__file__).parents[3] / "src"
+from tests.support.source_paths import ARTIFACT_WRITE, REST_ROUTERS
 
 _OLD_CALLERS = [
-    SRC / "infrastructure/write/artifact_write/entity.py",
-    SRC / "infrastructure/write/artifact_write/document.py",
-    SRC / "infrastructure/write/artifact_write/admin_entity_ops.py",
-    SRC / "infrastructure/write/artifact_write/_artifact_deduplication.py",
-    SRC / "infrastructure/write/artifact_write/global_artifact_reference.py",
-    SRC / "infrastructure/write/artifact_write/matrix.py",
-    SRC / "infrastructure/rest/routers/_diagram_write.py",
-    SRC / "infrastructure/rest/routers/admin.py",
+    ARTIFACT_WRITE / "entity.py",
+    ARTIFACT_WRITE / "document.py",
+    ARTIFACT_WRITE / "admin_entity_ops.py",
+    ARTIFACT_WRITE / "_artifact_deduplication.py",
+    ARTIFACT_WRITE / "global_artifact_reference.py",
+    ARTIFACT_WRITE / "matrix.py",
+    REST_ROUTERS / "_diagram_write.py",
+    REST_ROUTERS / "admin.py",
 ]
 
 _FORBIDDEN_DIRECT = {"generate_entity_id", "generate_diagram_id"}

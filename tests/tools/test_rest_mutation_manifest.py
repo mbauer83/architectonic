@@ -21,7 +21,7 @@ from src.application.mutation_authorization import (
     PromotionWrite,
     RepositoryWrite,
 )
-from src.infrastructure.rest.route_policy import ROUTE_POLICY, UNSERVED_OPERATIONS
+from src.infrastructure.rest.route_policy import ROUTE_POLICY
 from src.infrastructure.rest.routers.rest_mutation_manifest import (
     ASSURANCE_ROUTE_PREFIX,
     NON_MUTATING_REST_OPERATIONS,
@@ -37,7 +37,6 @@ def _served_write_shaped_operations() -> set[str]:
         for row in ROUTE_POLICY
         if row.is_write_shaped
         and not row.template.startswith(ASSURANCE_ROUTE_PREFIX)
-        and row.operation_id not in UNSERVED_OPERATIONS
     }
 
 

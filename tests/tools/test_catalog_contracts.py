@@ -26,10 +26,10 @@ from src.infrastructure.rest.contracts.catalog import (
     TaxonomyDomainResponse,
     TaxonomyTypeResponse,
 )
+from tests.support.source_paths import REST_ROUTERS, SRC
 
-_ROOT = pathlib.Path(__file__).resolve().parents[2]
-_INDEX = _ROOT / "src" / "infrastructure" / "artifact_index" / "service.py"
-_ROUTERS = _ROOT / "src" / "infrastructure" / "rest" / "routers"
+_INDEX = SRC / "infrastructure" / "artifact_index" / "service.py"
+_ROUTERS = REST_ROUTERS
 
 
 def _function(path: pathlib.Path, name: str) -> ast.AST:
@@ -69,7 +69,7 @@ def test_the_combining_lookup_adds_no_key_of_its_own() -> None:
     """A repository served as engagement-plus-enterprise merges two stat maps key by key. If the merge
     ever synthesised a key, the served shape would differ from the single-repository one and only one of
     the two could match the contract."""
-    source = (_ROOT / "src" / "infrastructure" / "artifact_index" / "_combined_lookup.py").read_text(
+    source = (SRC / "infrastructure" / "artifact_index" / "_combined_lookup.py").read_text(
         encoding="utf-8"
     )
     tree = ast.parse(source)

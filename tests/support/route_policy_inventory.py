@@ -1,20 +1,15 @@
 """Bridging helpers between the canonical route-policy manifest and the served surface.
 
-The manifest states where an operation *belongs*; during the migration some operations are
-still mounted where they *were*. Only the fitness functions need to know the difference, and
-only until the allowlists in ``route_policy._pending`` are empty — so the knowledge lives
-here, in test support, rather than in the runtime package where it would make production code
-aware of its own migration state.
+Reading the served surface is the part that needs the application built, and it belongs here rather
+than in the runtime package: production code has no business knowing which of its own addresses a
+fitness function is checking. The manifest is now the whole answer — an operation's canonical address
+*is* the one it is served at — so what is left is the reading, not a reconciliation.
 """
 
 from __future__ import annotations
 
 from src.infrastructure.backend.arch_backend_app import _build_app
-from src.infrastructure.rest.route_policy import (
-    ROUTE_POLICY,
-    UNSERVED_OPERATIONS,
-    RouteRow,
-)
+from src.infrastructure.rest.route_policy import ROUTE_POLICY
 
 RouteKey = tuple[str, str]
 
@@ -29,19 +24,6 @@ def served_route_keys() -> frozenset[RouteKey]:
     return frozenset(
         (method.upper(), path) for path, operations in paths.items() for method in operations
     )
-
-
-def effective_route_keys(row: RouteRow) -> frozenset[RouteKey]:
-    """The addresses *row*'s operation is reachable at today.
-
-    Its canonical address, and **nothing** while it is declared unserved — an operation the manifest
-    declares but does not mount cannot appear in a registry keyed by served routes. This used to add
-    the legacy addresses an operation was still mounted at; the migration is over, so there are
-    none.
-    """
-    if row.operation_id in UNSERVED_OPERATIONS:
-        return frozenset()
-    return frozenset({row.key})
 
 
 def effective_keys_for(
@@ -59,7 +41,7 @@ def effective_keys_for(
         if row.mutation_domain == mutation_domain
         and (template_prefix is None or row.template.startswith(template_prefix))
         and (exclude_prefix is None or not row.template.startswith(exclude_prefix))
-        for key in effective_route_keys(row)
+        for key in (row.key,)
     )
 
 
@@ -71,5 +53,5 @@ def effective_non_mutating_write_shaped(*, exclude_prefix: str | None = None) ->
         if row.is_write_shaped
         and row.mutation_domain == "none"
         and (exclude_prefix is None or not row.template.startswith(exclude_prefix))
-        for key in effective_route_keys(row)
+        for key in (row.key,)
     )

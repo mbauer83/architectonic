@@ -12,7 +12,7 @@ have one place where an operation's address is written down and to derive the re
 * the fitness functions compare the manifest against the generated OpenAPI document, which is
   an oracle the manifest does not produce.
 
-The manifest is *canonical*, not *current*: during the migration ``_pending`` enumerates what
+The manifest is *canonical*, not *current*: during the migration ``_retired`` enumerated what
 is still served under its old address and what is not served yet.
 """
 
@@ -40,12 +40,9 @@ from src.infrastructure.rest.route_policy._entities import (
     SEARCH_ROWS,
     TAXONOMY_ROWS,
 )
-from src.infrastructure.rest.route_policy._pending import (
-    RETIRED_ROUTES,
-    UNSERVED_OPERATIONS,
-)
 from src.infrastructure.rest.route_policy._platform import ADMIN_ROWS, PROMOTION_ROWS, SYNC_ROWS
 from src.infrastructure.rest.route_policy._response_contracts import UNTYPED_RESPONSE_OPERATIONS
+from src.infrastructure.rest.route_policy._retired import RETIRED_ROUTES
 from src.infrastructure.rest.route_policy._types import (
     BODYLESS,
     MEDIA,
@@ -196,17 +193,15 @@ CONDITIONAL_READ_TEMPLATES: frozenset[str] = frozenset(
 
 
 def served_templates_for(operation_id: str) -> frozenset[str]:
-    """The templates an operation is reachable at today: its legacy ones, or its canonical one.
+    """The template an operation is reachable at.
 
-    One template per operation, now that every address has moved. This used to consult the
-    migration ledger first, because a policy keyed on an address has to follow that address: a
-    cache-eligible read whose rename was still pending would otherwise have lost its ETag the moment
-    the manifest named its new template, silently. Nothing is pending, so there is nothing to
-    consult — and an operation the manifest declares but does not serve yields no template rather
-    than a wrong one.
+    One per operation, now that every address has moved. It used to consult the migration ledger
+    first, because a policy keyed on an address has to follow that address: a cache-eligible read
+    whose rename was still pending would otherwise have lost its ETag the moment the manifest named
+    its new template, silently. There is nothing left to consult, so this is the manifest's own
+    answer — kept as a named function because the *reason* a policy resolves an address through the
+    manifest rather than restating it is worth one place to read.
     """
-    if operation_id in UNSERVED_OPERATIONS:
-        return frozenset()
     return frozenset({BY_OPERATION[operation_id].template})
 
 
@@ -238,7 +233,6 @@ __all__ = [
     "ROUTE_POLICY",
     "SERVED_CONDITIONAL_READ_TEMPLATES",
     "STREAM",
-    "UNSERVED_OPERATIONS",
     "UNTYPED_RESPONSE_OPERATIONS",
     "CacheDirective",
     "ConditionalRead",

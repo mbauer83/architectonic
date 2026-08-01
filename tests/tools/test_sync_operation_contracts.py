@@ -13,7 +13,6 @@ which shapes the handler *can* return — a property of the code, not of any one
 from __future__ import annotations
 
 import ast
-import pathlib
 
 from src.infrastructure.rest.contracts.sync import (
     EngagementSaveResponse,
@@ -21,11 +20,9 @@ from src.infrastructure.rest.contracts.sync import (
     EnterpriseSubmitResponse,
     EnterpriseWithdrawResponse,
 )
+from tests.support.source_paths import REST_ROUTERS
 
-_SYNC = (
-    pathlib.Path(__file__).resolve().parents[2]
-    / "src" / "infrastructure" / "rest" / "routers" / "sync.py"
-)
+_SYNC = REST_ROUTERS / "sync.py"
 
 #: Handler name → the contract it declares.
 _CONTRACTS = {

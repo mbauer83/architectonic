@@ -20,14 +20,14 @@ representative subset.
 from __future__ import annotations
 
 import ast
-from pathlib import Path
 
 import pytest
 
 from src.infrastructure.rest.route_policy import BY_OPERATION
 from src.infrastructure.rest.routers.rest_mutation_manifest import REST_MUTATION_MANIFEST
+from tests.support.source_paths import REST_ROUTERS
 
-_ROUTERS = Path(__file__).resolve().parents[2] / "src" / "infrastructure" / "rest" / "routers"
+_ROUTERS = REST_ROUTERS
 
 _AUTHORIZED_WRITE_NAMES = frozenset({"authorized_write", "authorized_write_async"})
 

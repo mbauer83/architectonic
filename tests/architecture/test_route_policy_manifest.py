@@ -18,10 +18,8 @@ from pathlib import Path
 import pytest
 
 from src.infrastructure.rest.route_policy import (
-    BY_OPERATION,
     CONDITIONAL_READ_TEMPLATES,
     ROUTE_POLICY,
-    UNSERVED_OPERATIONS,
     served_templates_for,
 )
 from src.infrastructure.rest.routers.rest_mutation_manifest import (
@@ -29,7 +27,7 @@ from src.infrastructure.rest.routers.rest_mutation_manifest import (
     NON_MUTATING_REST_OPERATIONS,
     REST_MUTATION_MANIFEST,
 )
-from tests.support.route_policy_inventory import effective_route_keys, served_route_keys
+from tests.support.route_policy_inventory import served_route_keys
 
 #: The repository root, for the few checks that read a client-side source file.
 _REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -69,23 +67,16 @@ def test_every_operation_id_is_tag_verb_resource() -> None:
         assert match.group("tag") in _TAGS, f"{row.operation_id!r} has an unknown tag"
 
 
-def test_served_surface_is_exactly_the_manifest_plus_the_legacy_allowlist(
-    served: frozenset[tuple[str, str]],
-) -> None:
-    """The inventory equality: nothing is served that the manifest has not classified, and
-    nothing the manifest declares is missing — legacy addresses accounted for explicitly."""
-    expected = frozenset(key for row in ROUTE_POLICY for key in effective_route_keys(row))
+def test_the_served_surface_is_exactly_the_manifest(served: frozenset[tuple[str, str]]) -> None:
+    """A plain equality, in both directions: nothing is served that the manifest has not classified,
+    and nothing the manifest declares is unmounted.
+
+    It was an equality *plus two allowlists* — one naming retired addresses still served, one naming
+    canonical addresses not served yet. Both are empty, and dropping them makes this the whole
+    statement rather than the statement minus whatever the ledger excused."""
+    expected = frozenset(row.key for row in ROUTE_POLICY)
     assert served - expected == frozenset(), "served but unclassified"
     assert expected - served == frozenset(), "classified but not served"
-
-
-def test_unserved_operations_are_declared_and_genuinely_unserved(
-    served: frozenset[tuple[str, str]],
-) -> None:
-    undeclared = {op for op in UNSERVED_OPERATIONS if op not in BY_OPERATION}
-    assert undeclared == set(), f"unserved allowlist names undeclared operations: {sorted(undeclared)}"
-    already = {op for op in UNSERVED_OPERATIONS if BY_OPERATION[op].key in served}
-    assert already == set(), f"listed as unserved but mounted: {sorted(already)}"
 
 
 def test_repository_mutating_rows_match_the_mutation_authorization_manifest() -> None:

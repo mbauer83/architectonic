@@ -25,7 +25,7 @@ _SKIP_DIRECTORIES = frozenset({
 #: Files where a retired literal is a *record* rather than a reference.
 _SKIP_FILES = frozenset({
     "CHANGELOG.md",  # release history: the old→new mapping consumers migrate against
-    "_pending.py",  # the migration ledger itself
+    "_retired.py",  # the record of the retired addresses itself
     "retired_route_scan.py",  # this module
 })
 
