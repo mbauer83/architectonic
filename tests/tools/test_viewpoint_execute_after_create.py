@@ -12,7 +12,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from fastapi import FastAPI
 
 from src.application.artifact_repository import ArtifactRepository
 from src.infrastructure.app_bootstrap import install_module_registry
@@ -20,6 +19,7 @@ from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.rest.routers import state as gui_state
 from src.infrastructure.rest.routers.viewpoint_authoring import router as viewpoint_authoring_router
 from src.infrastructure.rest.routers.viewpoints import router as viewpoints_router
+from tests.support.api_app import build_api_app
 
 httpx = pytest.importorskip("httpx")
 
@@ -38,10 +38,8 @@ def client(engagement_root: Path):
 
     repo = ArtifactRepository(shared_artifact_index([engagement_root]))
     gui_state.init_state(repo, engagement_root, None)
-    app = FastAPI()
+    app = build_api_app(viewpoint_authoring_router, viewpoints_router)
     install_module_registry(app)
-    app.include_router(viewpoint_authoring_router)
-    app.include_router(viewpoints_router)
     return TestClient(app)
 
 

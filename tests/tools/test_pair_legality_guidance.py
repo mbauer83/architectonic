@@ -22,6 +22,7 @@ from src.infrastructure.write.artifact_write.type_guidance import (
     get_type_guidance,
     pair_connection_guidance,
 )
+from tests.support.api_app import build_api_app
 
 
 @lru_cache(maxsize=1)
@@ -181,15 +182,13 @@ class TestMcpAuthoringGuidancePairLegality:
 
 
 def _ontology_rest_client():
-    from fastapi import FastAPI
     from starlette.testclient import TestClient
 
     from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
     from src.infrastructure.rest.routers.connections import router as connections_router
 
-    app = FastAPI()
+    app = build_api_app(connections_router)
     app.dependency_overrides[runtime_catalogs_dependency] = _catalogs
-    app.include_router(connections_router)
     return TestClient(app)
 
 

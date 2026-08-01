@@ -9,7 +9,6 @@ import dataclasses
 from pathlib import Path
 
 import pytest
-from fastapi import FastAPI
 
 from src.application.artifact_repository import ArtifactRepository
 from src.domain.concept_scope import ConceptScope
@@ -17,6 +16,7 @@ from src.domain.viewpoints.viewpoints import ViewpointCatalog, ViewpointDefiniti
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.rest.routers import state as gui_state
 from src.infrastructure.rest.routers.viewpoints import router as viewpoints_router
+from tests.support.api_app import build_api_app
 
 httpx = pytest.importorskip("httpx")
 
@@ -98,9 +98,8 @@ def client(populated_root: Path):
     )
     catalogs = dataclasses.replace(catalogs, viewpoints=ViewpointCatalog(entries=(definition,)))
 
-    app = FastAPI()
+    app = build_api_app(viewpoints_router)
     app.dependency_overrides[fresh_viewpoints_runtime_catalogs_dependency] = lambda: catalogs
-    app.include_router(viewpoints_router)
     return TestClient(app)
 
 

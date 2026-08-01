@@ -17,6 +17,7 @@ from fastapi import Request
 from src.application.artifact_query import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.rest.routers import state as gui_state
+from tests.support.api_app import build_api_app
 
 _STAMPS = {
     "REQ@1000000001.OldAAA.oldest-requirement": "2026-01-01T00:00:00Z",
@@ -198,15 +199,13 @@ class TestOverHttp:
 
     @pytest.fixture()
     def client(self, repo_root: Path):
-        from fastapi import FastAPI
         from starlette.testclient import TestClient
 
         from src.infrastructure.app_bootstrap import install_module_registry
         from src.infrastructure.rest.routers.entities import router as entities_router
 
-        app = FastAPI()
+        app = build_api_app(entities_router)
         install_module_registry(app)
-        app.include_router(entities_router)
         return TestClient(app)
 
     def test_sort_and_order_round_trip_over_http(self, client) -> None:

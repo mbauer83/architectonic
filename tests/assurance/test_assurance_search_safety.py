@@ -14,6 +14,8 @@ from typing import Any
 
 import pytest
 
+from tests.support.api_app import build_api_app
+
 pytest.importorskip("sqlcipher3", reason="sqlcipher3 not installed")
 
 
@@ -78,7 +80,6 @@ def test_concurrent_search_via_http_completes() -> None:
     """
     from unittest.mock import patch
 
-    from fastapi import FastAPI
     from starlette.testclient import TestClient
 
     from src.infrastructure.rest.routers.assurance import router
@@ -127,8 +128,7 @@ def test_concurrent_search_via_http_completes() -> None:
             return True
 
     ctx = _FakeCtx()
-    app = FastAPI()
-    app.include_router(router)
+    app = build_api_app(router)
     client = TestClient(app, raise_server_exceptions=False)
 
     errors: list[str] = []

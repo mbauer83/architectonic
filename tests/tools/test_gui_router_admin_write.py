@@ -10,12 +10,12 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from fastapi import FastAPI
 
 from src.application.artifact_query import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.rest.routers import state as gui_state
 from src.infrastructure.rest.routers.admin import router as admin_router
+from tests.support.api_app import build_api_app
 
 httpx = pytest.importorskip("httpx")
 
@@ -106,8 +106,7 @@ def non_admin_client(tmp_path: Path):
     root.mkdir(parents=True)
     repo = ArtifactRepository(shared_artifact_index([root]))
     gui_state.init_state(repo, root, None)
-    app = FastAPI()
-    app.include_router(admin_router)
+    app = build_api_app(admin_router)
     return TestClient(app)
 
 
@@ -120,8 +119,7 @@ def admin_client(tmp_path: Path, enterprise_root: Path):
     eng.mkdir(parents=True)
     repo = ArtifactRepository(shared_artifact_index([enterprise_root]))
     gui_state.init_state(repo, eng, enterprise_root, admin_mode=True)
-    app = FastAPI()
-    app.include_router(admin_router)
+    app = build_api_app(admin_router)
     return TestClient(app)
 
 

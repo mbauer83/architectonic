@@ -22,11 +22,11 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from fastapi import FastAPI
 
 from src.application.artifact_query import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.rest.routers import state as gui_state
+from tests.support.api_app import build_api_app
 
 pytest.importorskip("httpx")
 
@@ -78,9 +78,8 @@ def diagram_client(tmp_path: Path):
 
     repo = ArtifactRepository(shared_artifact_index([root]))
     gui_state.init_state(repo, root, None)
-    app = FastAPI()
+    app = build_api_app(diagrams_router)
     install_module_registry(app)
-    app.include_router(diagrams_router)
     return TestClient(app), repo
 
 

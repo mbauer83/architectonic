@@ -5,10 +5,10 @@ from __future__ import annotations
 import re
 
 import pytest
-from fastapi import FastAPI
 
 from src.infrastructure.app_bootstrap import install_module_registry
 from src.infrastructure.rest.routers.identifiers import router as identifiers_router
+from tests.support.api_app import build_api_app
 
 _WORKSPACE_ID_RE = re.compile(r"^[A-Z]+@[0-9]+\.[A-Za-z0-9_-]+\..+$")
 
@@ -16,9 +16,8 @@ _WORKSPACE_ID_RE = re.compile(r"^[A-Z]+@[0-9]+\.[A-Za-z0-9_-]+\..+$")
 @pytest.fixture()
 def client():
     starlette_tc = pytest.importorskip("starlette.testclient")
-    app = FastAPI()
+    app = build_api_app(identifiers_router)
     install_module_registry(app)
-    app.include_router(identifiers_router)
     return starlette_tc.TestClient(app)
 
 

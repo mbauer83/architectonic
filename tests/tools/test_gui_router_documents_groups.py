@@ -10,13 +10,13 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from fastapi import FastAPI
 
 from src.application.artifact_query import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.rest.routers import state as gui_state
 from src.infrastructure.rest.routers.documents import router as documents_router
 from src.infrastructure.rest.routers.groups import router as groups_router
+from tests.support.api_app import build_api_app
 from tests.support.identity_resolution_conformance import DetailRoute, assert_conforms
 
 httpx = pytest.importorskip("httpx")
@@ -110,8 +110,7 @@ def doc_client(populated_root: Path):
     gui_state.init_state(repo, populated_root, None)
     # Configured as the real application is: an incomplete detail path must not redirect to the
     # collection, or the conformance assertions below would pass against a different question.
-    app = FastAPI(redirect_slashes=False)
-    app.include_router(documents_router)
+    app = build_api_app(documents_router)
     return TestClient(app)
 
 
@@ -121,8 +120,7 @@ def group_client(populated_root: Path):
 
     repo = ArtifactRepository(shared_artifact_index([populated_root]))
     gui_state.init_state(repo, populated_root, None)
-    app = FastAPI()
-    app.include_router(groups_router)
+    app = build_api_app(groups_router)
     return TestClient(app)
 
 
@@ -396,8 +394,7 @@ def counted_client(tmp_path: Path):
 
     repo = ArtifactRepository(shared_artifact_index([root]))
     gui_state.init_state(repo, root, None)
-    app = FastAPI()
-    app.include_router(groups_router)
+    app = build_api_app(groups_router)
     return TestClient(app)
 
 

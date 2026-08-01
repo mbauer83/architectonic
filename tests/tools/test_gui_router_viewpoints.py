@@ -6,7 +6,6 @@ import dataclasses
 from pathlib import Path
 
 import pytest
-from fastapi import FastAPI
 
 from src.application.artifact_repository import ArtifactRepository
 from src.application.viewpoints.evaluate_viewpoint import ViewpointExecutionTimeoutError
@@ -23,6 +22,7 @@ from src.domain.viewpoints.viewpoints import (
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.rest.routers import state as gui_state
 from src.infrastructure.rest.routers.viewpoints import router as viewpoints_router
+from tests.support.api_app import build_api_app
 
 httpx = pytest.importorskip("httpx")
 
@@ -97,9 +97,8 @@ def client(populated_root: Path):
     )
     catalogs = dataclasses.replace(catalogs, viewpoints=ViewpointCatalog(entries=(definition,)))
 
-    app = FastAPI()
+    app = build_api_app(viewpoints_router)
     app.dependency_overrides[fresh_viewpoints_runtime_catalogs_dependency] = lambda: catalogs
-    app.include_router(viewpoints_router)
     return TestClient(app)
 
 
@@ -127,7 +126,11 @@ class TestPresentationOverride:
             json={"query": {}, "presentation": {"representation": "not-a-real-representation"}},
         )
         assert resp.status_code == 400
-        assert resp.json()["detail"]["code"] == "invalid-presentation"
+        # `bad_request`, not `invalid-presentation`: the envelope's code comes from the status, and
+        # the route's own taxonomy does not survive the translation. See
+        # `TestTheExecutionTaxonomyDoesNotReachTheClient` at the end of this module.
+        assert resp.json()["detail"]["code"] == "bad_request"
+        assert "not-a-real-representation" in resp.json()["detail"]["message"]
 
     def test_export_csv_uses_override_columns_not_saved(self, client) -> None:
         # The saved exec-test presentation is exploration (no columns); an override table
@@ -236,22 +239,29 @@ class TestParameters:
         for endpoint in ("execute", "execute-projection", "execute-diagram"):
             response = client.post(f"/api/viewpoints/{endpoint}", json={"slug": "exec-test", "parameters": {"x": 1}})
             assert response.status_code == 400
-            assert response.json()["detail"] == {
-                "code": "unknown-parameter", "path": "parameters/x", "message": "unknown-parameter: x"
+            # One payload shape on every route — the envelope's, which is what a client receives.
+            # The route's `path` ("parameters/x") is dropped in translation; the message it built is
+            # what is left to identify the input.
+            assert response.json()["detail"] | {"request_id": None} == {
+                "code": "bad_request",
+                "message": "unknown-parameter: x",
+                "details": None,
+                "request_id": None,
             }
 
 
 class TestTypedExecutionErrors:
     @pytest.mark.parametrize(
-        ("error", "status", "code"),
+        ("error", "status", "envelope_code"),
         [
-            (BindingCardinalityError("binding 'one' requires one result, got 2"), 400, "binding-cardinality-violation"),
-            (DerivationLimitError(1), 400, "derivation-limit"),
-            (ViewpointExecutionTimeoutError(2, 1), 504, "execution-timeout"),
+            (BindingCardinalityError("binding 'one' requires one result, got 2"), 400, "bad_request"),
+            (DerivationLimitError(1), 400, "bad_request"),
+            # 504 is unmapped, so the envelope calls a gateway timeout an internal error.
+            (ViewpointExecutionTimeoutError(2, 1), 504, "internal_error"),
         ],
     )
     def test_returns_issue_payload_without_result(
-        self, client, monkeypatch, error: Exception, status: int, code: str
+        self, client, monkeypatch, error: Exception, status: int, envelope_code: str
     ) -> None:
         import src.infrastructure.rest.routers.viewpoints as viewpoints_module
 
@@ -261,8 +271,10 @@ class TestTypedExecutionErrors:
         monkeypatch.setattr(viewpoints_module, "evaluate_viewpoint", _raise)
         response = client.post("/api/viewpoints/execute", json={"slug": "exec-test"})
         assert response.status_code == status
-        assert response.json()["detail"]["code"] == code
-        assert response.json()["detail"]["path"] == "query"
+        # The status is preserved; the route's code and `path` are not, so the message is what
+        # distinguishes one execution failure from another.
+        assert response.json()["detail"]["code"] == envelope_code
+        assert str(error) in response.json()["detail"]["message"]
         assert "entity_ids" not in response.json()
 
 
@@ -364,7 +376,7 @@ class TestExecuteDiagram:
         resp = client.post("/api/viewpoints/execute-diagram", json={"query": {}})
         assert resp.status_code == 400
         detail = resp.json()["detail"]
-        assert detail["code"] == "diagram-render-limit"
+        assert detail["code"] == "bad_request"
         assert "too large for diagram rendering" in detail["message"]
         assert "exploration or table" in detail["message"]
 
@@ -471,11 +483,10 @@ class TestExecuteDiagram:
             presentation=PresentationSpec(representation="diagram", display_options={"label_attribute": "owner"}),
         )
         catalogs = dataclasses.replace(catalogs, viewpoints=ViewpointCatalog(entries=(definition,)))
-        app = FastAPI()
+        app = build_api_app(viewpoints_router)
         from src.infrastructure.rest.routers.viewpoints import fresh_viewpoints_runtime_catalogs_dependency
 
         app.dependency_overrides[fresh_viewpoints_runtime_catalogs_dependency] = lambda: catalogs
-        app.include_router(viewpoints_router)
         labelled_client = TestClient(app)
 
         captured: dict[str, object] = {}
@@ -535,11 +546,52 @@ class TestMalformedAdHocQuery:
 
         assert resp.status_code == 400, f"{route} returned {resp.status_code}"
         detail = resp.json()["detail"]
-        assert detail["code"] == "invalid-query"
-        assert detail["path"] == "query"
+        assert detail["code"] == "bad_request"
         assert "max_hops" in detail["message"]
 
     def test_a_well_formed_query_is_unaffected(self, client) -> None:
         resp = client.post("/api/viewpoints/execute", json={"query": {}})
 
         assert resp.status_code == 200
+
+
+class TestTheExecutionTaxonomyDoesNotReachTheClient:
+    """The viewpoint routes build an error taxonomy no client can see.
+
+    Seven raise sites across `viewpoints.py` and `_viewpoint_request_parsing.py` pass a structured
+    detail — `{"code": "invalid-query", "path": "query", "message": …}` and its siblings
+    `invalid-presentation`, `unknown-parameter`, `derivation-limit`, `diagram-render-limit`,
+    `binding-cardinality-violation`, `execution-timeout`. None of it survives:
+    `http_exception_handler` derives the envelope's code from the HTTP *status* by design, keeps the
+    message and discards everything else. So a client branching on `code` sees `bad_request` for six
+    genuinely different failures, and `path` — which says *which input* to highlight — is gone.
+
+    This module asserted the taxonomy for as long as it mounted its router on a bare `FastAPI()`,
+    where FastAPI echoes `detail` verbatim. Building the app the way the product builds it is what
+    made the loss visible.
+
+    Asserted rather than described, so the loss is a statement the suite holds rather than a comment
+    someone has to find. Making these codes first-class means widening the closed `ErrorCode`
+    vocabulary and giving `path` a declared details DTO — a published-contract decision, so it is
+    named here and not taken.
+    """
+
+    def test_six_distinct_failures_all_answer_the_same_code(self, client) -> None:
+        codes = {
+            resp.json()["detail"]["code"]
+            for resp in (
+                client.post("/api/viewpoints/execute", json={"query": {"query_schema": 99}}),
+                client.post(
+                    "/api/viewpoints/execute",
+                    json={"query": {}, "presentation": {"representation": "not-a-real-representation"}},
+                ),
+                client.post("/api/viewpoints/execute", json={"slug": "exec-test", "parameters": {"x": 1}}),
+            )
+        }
+        assert codes == {"bad_request"}
+
+    def test_the_input_path_the_route_named_is_absent(self, client) -> None:
+        resp = client.post("/api/viewpoints/execute", json={"slug": "exec-test", "parameters": {"x": 1}})
+        assert resp.status_code == 400
+        assert "path" not in resp.json()["detail"]
+        assert resp.json()["detail"]["details"] is None

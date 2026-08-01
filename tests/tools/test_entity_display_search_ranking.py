@@ -10,12 +10,12 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from fastapi import FastAPI
 
 from src.application.artifact_query import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.rest.routers import state as gui_state
 from src.infrastructure.rest.routers.diagrams import router as diagrams_router
+from tests.support.api_app import build_api_app
 
 httpx = pytest.importorskip("httpx")
 
@@ -109,10 +109,9 @@ def ranking_client(tmp_path: Path):
     _write(root / "diagram-catalog" / "diagrams" / f"{_DIAGRAM_ID}.puml", _C4_DIAGRAM_CONTENT)
     repo = ArtifactRepository(shared_artifact_index([root]))
     gui_state.init_state(repo, root, None)
-    app = FastAPI()
+    app = build_api_app(diagrams_router)
     catalogs = build_runtime_catalogs(get_module_registry())
     app.dependency_overrides[runtime_catalogs_dependency] = lambda: catalogs
-    app.include_router(diagrams_router)
     return TestClient(app)
 
 

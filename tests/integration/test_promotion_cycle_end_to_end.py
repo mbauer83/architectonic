@@ -17,7 +17,6 @@ import time
 from pathlib import Path
 
 import pytest
-from fastapi import FastAPI
 
 from src.application.artifact_query import ArtifactRepository
 from src.infrastructure.artifact_index import combined_artifact_index, shared_artifact_index
@@ -33,6 +32,7 @@ from src.infrastructure.write.workspace_authorization import (
     WorkspaceAuthorizationSnapshots,
     persisted_sync_health,
 )
+from tests.support.api_app import build_api_app
 from tests.support.git_workflow_fixtures import build_workflow_pair, git, valid_entity_md
 
 pytest.importorskip("httpx")
@@ -79,10 +79,10 @@ def cycle(tmp_path: Path):
             )
         )
     )
-    app = FastAPI()
+    app = build_api_app(
+        promote_router, sync_router, entities_router, entity_search_router, connections_router
+    )
     install_module_registry(app)
-    for router in (promote_router, sync_router, entities_router, entity_search_router, connections_router):
-        app.include_router(router)
     client = TestClient(app)
     origin = tmp_path / "enterprise-origin.git"
     yield client, engagement, enterprise, origin, repo

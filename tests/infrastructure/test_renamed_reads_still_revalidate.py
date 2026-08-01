@@ -14,13 +14,12 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from fastapi import FastAPI
 
 from src.application.artifact_query import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
-from src.infrastructure.backend.read_model_caching import conditional_read_middleware
 from src.infrastructure.rest.routers import state as gui_state
 from src.infrastructure.rest.routers.entities import router as entities_router
+from tests.support.api_app import build_api_app
 
 ENTITY_ID = "REQ@1000000900.EtagRn.revalidation-probe"
 
@@ -55,10 +54,9 @@ A requirement whose read must keep serving a validator after the route was renam
     )
     repo = ArtifactRepository(shared_artifact_index([root]))
     gui_state.init_state(repo, root, None)
-    app = FastAPI(redirect_slashes=False)
-    app.middleware("http")(conditional_read_middleware)
-    app.include_router(entities_router)
-    return TestClient(app)
+    # The conditional-read middleware is what this module is about, and `build_api_app` installs it
+    # in the product's order — inside the cache directive, so a 304 keeps the `no-cache` it chose.
+    return TestClient(build_api_app(entities_router))
 
 
 @pytest.mark.parametrize(

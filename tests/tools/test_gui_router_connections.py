@@ -11,13 +11,13 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from fastapi import FastAPI
 
 from src.application.artifact_query import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.rest.routers import state as gui_state
 from src.infrastructure.rest.routers.connections import _check_multiplicity
 from src.infrastructure.rest.routers.connections import router as connections_router
+from tests.support.api_app import build_api_app
 
 httpx = pytest.importorskip("httpx")
 
@@ -108,8 +108,7 @@ def populated_root(tmp_path: Path) -> Path:
 def client(populated_root: Path):
     repo = ArtifactRepository(shared_artifact_index([populated_root]))
     gui_state.init_state(repo, populated_root, None)
-    app = FastAPI()
-    app.include_router(connections_router)
+    app = build_api_app(connections_router)
 
     async def _run():
         transport = httpx.ASGITransport(app=app)
@@ -138,10 +137,9 @@ def sync_client(populated_root: Path):
 
     repo = ArtifactRepository(shared_artifact_index([populated_root]))
     gui_state.init_state(repo, populated_root, None)
-    app = FastAPI()
+    app = build_api_app(connections_router)
     catalogs = build_runtime_catalogs(get_module_registry())
     app.dependency_overrides[runtime_catalogs_dependency] = lambda: catalogs
-    app.include_router(connections_router)
     return TestClient(app)
 
 

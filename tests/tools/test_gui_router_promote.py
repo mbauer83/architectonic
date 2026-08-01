@@ -9,13 +9,13 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from fastapi import FastAPI
 
 from src.application.artifact_query import ArtifactRepository
 from src.infrastructure.app_bootstrap import install_module_registry
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.rest.routers import state as gui_state
 from src.infrastructure.rest.routers.promote import router as promote_router
+from tests.support.api_app import build_api_app
 
 httpx = pytest.importorskip("httpx")
 
@@ -92,8 +92,7 @@ def no_enterprise_client(eng_root: Path):
 
     repo = ArtifactRepository(shared_artifact_index([eng_root]))
     gui_state.init_state(repo, eng_root, None)
-    app = FastAPI()
-    app.include_router(promote_router)
+    app = build_api_app(promote_router)
     install_module_registry(app)
     return TestClient(app)
 
@@ -104,8 +103,7 @@ def both_roots_client(eng_root: Path, ent_root: Path):
 
     repo = ArtifactRepository(shared_artifact_index([eng_root]))
     gui_state.init_state(repo, eng_root, ent_root)
-    app = FastAPI()
-    app.include_router(promote_router)
+    app = build_api_app(promote_router)
     install_module_registry(app)
     return TestClient(app)
 
@@ -121,8 +119,8 @@ class TestPromotePlanErrors:
     def test_no_artifacts_selected_returns_400(self, both_roots_client) -> None:
         r = both_roots_client.post("/api/promote/plan", json={})
         assert r.status_code == 400
-        detail = r.json().get("detail", "")
-        assert "artifact" in detail.lower() or "selected" in detail.lower()
+        message = r.json()["detail"]["message"]
+        assert "artifact" in message.lower() or "selected" in message.lower()
 
     def test_unknown_entity_returns_400(self, both_roots_client) -> None:
         r = both_roots_client.post(

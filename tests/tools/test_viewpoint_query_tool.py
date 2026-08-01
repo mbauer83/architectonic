@@ -15,6 +15,7 @@ import src.infrastructure.mcp.artifact_mcp.query_viewpoint_tools as qvt
 from src.application.viewpoints.pins import save_pinned_slugs
 from src.domain.viewpoints.viewpoints import ExecutableViewpointQuery, ViewpointCatalog, ViewpointDefinition
 from src.infrastructure.mcp import mcp_artifact_server as mcp
+from tests.support.api_app import build_api_app
 
 
 @pytest.fixture()
@@ -152,7 +153,6 @@ class TestLimit:
 
 class TestMcpRestParity:
     def test_parameterized_derived_query_has_same_content(self, monkeypatch, catalogs, repo: Path) -> None:
-        from fastapi import FastAPI
         from starlette.testclient import TestClient
 
         from src.application.artifact_repository import ArtifactRepository
@@ -188,9 +188,8 @@ class TestMcpRestParity:
 
         gui_repo = ArtifactRepository(shared_artifact_index([repo]))
         gui_state.init_state(gui_repo, repo, None)
-        app = FastAPI()
+        app = build_api_app(viewpoints_router)
         app.dependency_overrides[fresh_viewpoints_runtime_catalogs_dependency] = lambda: catalogs
-        app.include_router(viewpoints_router)
         rest_result = TestClient(app).post(
             "/api/viewpoints/execute", json={"query": query, "parameters": parameters, "limit": 500}
         ).json()
@@ -201,7 +200,6 @@ class TestMcpRestParity:
             assert mcp_json[key] == rest_result[key], key
 
     def test_same_query_same_content_both_transports(self, monkeypatch, catalogs, repo: Path) -> None:
-        from fastapi import FastAPI
         from starlette.testclient import TestClient
 
         from src.application.artifact_repository import ArtifactRepository
@@ -226,9 +224,8 @@ class TestMcpRestParity:
 
         gui_repo = ArtifactRepository(shared_artifact_index([repo]))
         gui_state.init_state(gui_repo, repo, None)
-        app = FastAPI()
+        app = build_api_app(viewpoints_router)
         app.dependency_overrides[fresh_viewpoints_runtime_catalogs_dependency] = lambda: patched_catalogs
-        app.include_router(viewpoints_router)
         client = TestClient(app)
         rest_result = client.post("/api/viewpoints/execute", json={"slug": "parity-test", "limit": 500}).json()
 

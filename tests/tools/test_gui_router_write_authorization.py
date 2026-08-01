@@ -11,7 +11,6 @@ import threading
 from pathlib import Path
 
 import pytest
-from fastapi import FastAPI
 
 from src.application.artifact_query import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
@@ -23,6 +22,7 @@ from src.infrastructure.write.mutation_executor_registry import (
     install_mutation_executor,
 )
 from src.infrastructure.write.workspace_authorization import WorkspaceAuthorizationSnapshots
+from tests.support.api_app import build_api_app
 from tests.support.search_visibility_fixtures import entity_md, write_file
 
 pytest.importorskip("httpx")
@@ -63,12 +63,10 @@ def workspace(tmp_path: Path):
     repo = ArtifactRepository(shared_artifact_index([engagement]))
     gui_state.init_state(repo, engagement, enterprise)
     _install(engagement, enterprise)
-    app = FastAPI()
+    app = build_api_app(entities_router, groups_router, promote_router, viewpoint_authoring_router)
     from src.infrastructure.app_bootstrap import install_module_registry
 
     install_module_registry(app)
-    for router in (entities_router, groups_router, promote_router, viewpoint_authoring_router):
-        app.include_router(router)
     client = TestClient(app)
     yield client, engagement, enterprise
     _reset_executor_for_test()
@@ -167,9 +165,8 @@ def git_workspace(tmp_path: Path):
     repo = ArtifactRepository(shared_artifact_index([engagement]))
     gui_state.init_state(repo, engagement, enterprise)
     _install(engagement, enterprise)
-    app = FastAPI()
+    app = build_api_app(promote_router)
     install_module_registry(app)
-    app.include_router(promote_router)
     client = TestClient(app)
     yield client, engagement, enterprise
     _reset_executor_for_test()

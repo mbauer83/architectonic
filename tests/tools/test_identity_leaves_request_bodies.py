@@ -15,13 +15,12 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from fastapi import FastAPI
 
 from src.application.artifact_query import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
-from src.infrastructure.rest.contracts.error_responses import install_error_contracts
 from src.infrastructure.rest.routers import state as gui_state
 from src.infrastructure.rest.routers.entities import router as entities_router
+from tests.support.api_app import build_api_app
 
 TARGET_ID = "REQ@1000000901.IdBody.identity-in-the-path"
 OTHER_ID = "REQ@1000000902.IdBody.the-other-one"
@@ -56,11 +55,9 @@ def client(tmp_path: Path):  # type: ignore[no-untyped-def]
     (directory / f"{OTHER_ID}.md").write_text(_requirement(OTHER_ID, "Other"), encoding="utf-8")
     repo = ArtifactRepository(shared_artifact_index([root]))
     gui_state.init_state(repo, root, None)
-    app = FastAPI(redirect_slashes=False)
-    # Configured as the real application is, so the refusal is asserted in the shape a client
-    # actually receives rather than in FastAPI's default.
-    install_error_contracts(app)
-    app.include_router(entities_router)
+    # `build_api_app`, so the refusal is asserted in the shape a client actually receives rather
+    # than in FastAPI's default.
+    app = build_api_app(entities_router)
     return TestClient(app, raise_server_exceptions=False)
 
 

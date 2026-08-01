@@ -5,13 +5,13 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from fastapi import FastAPI
 
 from src.application.artifact_repository import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.mcp import mcp_artifact_server as mcp
 from src.infrastructure.rest.routers import state as gui_state
 from src.infrastructure.rest.routers.connections import router
+from tests.support.api_app import build_api_app
 
 
 @pytest.fixture()
@@ -54,9 +54,8 @@ def test_derived_neighbors_match_mcp(repo: Path) -> None:
     )
 
     gui_state.init_state(ArtifactRepository(shared_artifact_index([repo])), repo, None)
-    app = FastAPI()
+    app = build_api_app(router)
     app.dependency_overrides[runtime_catalogs_dependency] = lambda: build_runtime_catalogs(get_module_registry())
-    app.include_router(router)
     rest_result = TestClient(app).get(
         f"/api/entities/{component}/neighbors?traversal=derived&max_hops=2"
     ).json()

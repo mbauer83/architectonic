@@ -14,7 +14,8 @@ from __future__ import annotations
 import importlib
 
 import pytest
-from fastapi import FastAPI
+
+from tests.support.api_app import build_api_app
 
 _IN_SCOPE_ROUTER_MODULES = [
     "entities",
@@ -58,9 +59,12 @@ _READ_VIA_POST = {
 def spec() -> dict:
     from src.infrastructure.app_bootstrap import install_module_registry
 
-    app = FastAPI()
-    for name in _IN_SCOPE_ROUTER_MODULES:
-        app.include_router(importlib.import_module(f"src.infrastructure.rest.routers.{name}").router)
+    app = build_api_app(
+        *(
+            importlib.import_module(f"src.infrastructure.rest.routers.{name}").router
+            for name in _IN_SCOPE_ROUTER_MODULES
+        )
+    )
     install_module_registry(app)
     return app.openapi()
 

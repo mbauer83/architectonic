@@ -25,6 +25,7 @@ from src.domain.viewpoints.viewpoints import ExecutableViewpointQuery
 from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry
 from src.infrastructure.mcp import mcp_artifact_server as mcp
 from tests.application.viewpoints._fixtures import Store, connection, entity
+from tests.support.api_app import build_api_app
 
 httpx = pytest.importorskip("httpx")
 
@@ -57,7 +58,6 @@ def repo(tmp_path: Path) -> Path:
 
 class TestRestMcpParity:
     def test_element_dependents_matches_across_transports(self, repo: Path) -> None:
-        from fastapi import FastAPI
         from starlette.testclient import TestClient
 
         from src.application.artifact_repository import ArtifactRepository
@@ -77,9 +77,8 @@ class TestRestMcpParity:
 
         gui_repo = ArtifactRepository(shared_artifact_index([repo]))
         gui_state.init_state(gui_repo, repo, None)
-        app = FastAPI()
+        app = build_api_app(viewpoints_router)
         app.dependency_overrides[fresh_viewpoints_runtime_catalogs_dependency] = lambda: _CATALOGS
-        app.include_router(viewpoints_router)
         client = TestClient(app)
         rest_result = client.post(
             "/api/viewpoints/execute", json={"slug": "element-dependents", "parameters": {"anchor": anchor_id}}

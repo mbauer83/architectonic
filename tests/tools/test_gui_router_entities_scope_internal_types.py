@@ -9,11 +9,11 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from fastapi import FastAPI
 
 from src.application.artifact_query import ArtifactRepository
 from src.infrastructure.artifact_index import combined_artifact_index
 from src.infrastructure.rest.routers import state as gui_state
+from tests.support.api_app import build_api_app
 from tests.support.search_visibility_fixtures import (
     ENTERPRISE_REQ_ID,
     GAR_TYPE,
@@ -48,10 +48,8 @@ def client(tmp_path: Path):
     index.refresh()
     repo = ArtifactRepository(index)
     gui_state.init_state(repo, engagement, enterprise)
-    app = FastAPI()
+    app = build_api_app(entities_router, entity_search_router)
     install_module_registry(app)
-    app.include_router(entities_router)
-    app.include_router(entity_search_router)
     return TestClient(app)
 
 

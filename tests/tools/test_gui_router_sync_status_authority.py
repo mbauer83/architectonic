@@ -10,7 +10,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from fastapi import FastAPI
 
 from src.application.artifact_query import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
@@ -25,6 +24,7 @@ from src.infrastructure.write.workspace_authorization import (
     WorkspaceAuthorizationSnapshots,
     persisted_sync_health,
 )
+from tests.support.api_app import build_api_app
 from tests.support.git_workflow_fixtures import build_workflow_pair, write_entity
 
 pytest.importorskip("httpx")
@@ -54,8 +54,7 @@ def workspace(tmp_path: Path):
     repo = ArtifactRepository(shared_artifact_index([engagement]))
     gui_state.init_state(repo, engagement, enterprise)
     _install(engagement, enterprise)
-    app = FastAPI()
-    app.include_router(sync_router)
+    app = build_api_app(sync_router)
     client = TestClient(app)
     yield client, engagement, enterprise
     sync_status_cache.reset_sync_status_cache()

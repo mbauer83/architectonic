@@ -17,7 +17,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from fastapi import FastAPI
 
 from src.application.artifact_query import ArtifactRepository
 from src.application.document_links import DocumentEntityReference, references_to_entity
@@ -25,6 +24,7 @@ from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.rest.contracts.entities import DocumentReference
 from src.infrastructure.rest.routers import state as gui_state
 from src.infrastructure.rest.routers.entities import router as entities_router
+from tests.support.api_app import build_api_app
 
 pytest.importorskip("httpx")
 
@@ -100,8 +100,7 @@ def cited_entity_client(tmp_path: Path):
 
     repo = ArtifactRepository(shared_artifact_index([root]))
     gui_state.init_state(repo, root, None)
-    app = FastAPI()
-    app.include_router(entities_router)
+    app = build_api_app(entities_router)
     return TestClient(app), repo
 
 

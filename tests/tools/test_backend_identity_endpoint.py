@@ -6,12 +6,12 @@ import os
 from pathlib import Path
 
 import pytest
-from fastapi import FastAPI
 
 from src.application.artifact_query import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.rest.routers import state as gui_state
 from src.infrastructure.rest.routers.entities import router as entities_router
+from tests.support.api_app import build_api_app
 
 httpx = pytest.importorskip("httpx")
 
@@ -21,8 +21,7 @@ def _client(eng_root: Path, ent_root: Path | None):
 
     repo = ArtifactRepository(shared_artifact_index([eng_root]))
     gui_state.init_state(repo, eng_root, ent_root)
-    app = FastAPI()
-    app.include_router(entities_router)
+    app = build_api_app(entities_router)
     return TestClient(app)
 
 

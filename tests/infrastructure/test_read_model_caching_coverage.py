@@ -23,13 +23,13 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from fastapi import FastAPI
 
 from src.application.artifact_query import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.backend.read_model_caching import _entity_tag, _is_cacheable
 from src.infrastructure.mcp import mcp_artifact_server as mcp
 from src.infrastructure.rest.routers import state as gui_state
+from tests.support.api_app import build_api_app
 
 httpx = pytest.importorskip("httpx")
 
@@ -53,8 +53,7 @@ def repo(tmp_path: Path):  # type: ignore[no-untyped-def]
     index = shared_artifact_index([root])
     index.refresh()
     gui_state.init_state(ArtifactRepository(index), root, None)
-    app = FastAPI()
-    yield root, index, app
+    yield root, index
 
 
 def _tag(index) -> str:  # type: ignore[no-untyped-def]
@@ -66,7 +65,7 @@ class TestTheGenerationNoticesEveryArtifactKind:
     """One case per artifact kind an allowlisted body can contain."""
 
     def test_creating_an_entity_changes_the_validator(self, repo) -> None:  # type: ignore[no-untyped-def]
-        root, index, _ = repo
+        root, index = repo
         before = _tag(index)
 
         mcp.artifact_create_entity(
@@ -78,7 +77,7 @@ class TestTheGenerationNoticesEveryArtifactKind:
         assert _tag(index) != before
 
     def test_editing_an_entity_changes_the_validator(self, repo) -> None:  # type: ignore[no-untyped-def]
-        root, index, _ = repo
+        root, index = repo
         created = mcp.artifact_create_entity(
             artifact_type="requirement", name="Cache Edit", summary="S.",
             dry_run=False, repo_root=str(root),
@@ -95,7 +94,7 @@ class TestTheGenerationNoticesEveryArtifactKind:
         assert _tag(index) != before
 
     def test_adding_a_connection_changes_the_validator(self, repo) -> None:  # type: ignore[no-untyped-def]
-        root, index, _ = repo
+        root, index = repo
         source = mcp.artifact_create_entity(
             artifact_type="requirement", name="Cache Source", summary="S.",
             dry_run=False, repo_root=str(root))["artifact_id"]
@@ -115,7 +114,7 @@ class TestTheGenerationNoticesEveryArtifactKind:
         assert _tag(index) != before
 
     def test_deleting_an_entity_changes_the_validator(self, repo) -> None:  # type: ignore[no-untyped-def]
-        root, index, _ = repo
+        root, index = repo
         created = mcp.artifact_create_entity(
             artifact_type="requirement", name="Cache Delete", summary="S.",
             dry_run=False, repo_root=str(root),
@@ -179,16 +178,12 @@ class TestEndToEndThroughHttp:
     def _client(self, root: Path):  # type: ignore[no-untyped-def]
         from starlette.testclient import TestClient
 
-        from src.infrastructure.backend.read_model_caching import conditional_read_middleware
         from src.infrastructure.rest.routers.entities import router
 
-        app = FastAPI()
-        app.middleware("http")(conditional_read_middleware)
-        app.include_router(router)
-        return TestClient(app)
+        return TestClient(build_api_app(router))
 
     def test_a_write_makes_the_previous_validator_stale(self, repo) -> None:  # type: ignore[no-untyped-def]
-        root, index, _ = repo
+        root, index = repo
         client = self._client(root)
 
         first = client.get("/api/entities")
@@ -208,7 +203,7 @@ class TestEndToEndThroughHttp:
         assert "Http Cache Probe" in after.text
 
     def test_a_different_query_never_reuses_another_answer(self, repo) -> None:  # type: ignore[no-untyped-def]
-        root, index, _ = repo
+        root, index = repo
         client = self._client(root)
 
         tag = client.get("/api/entities?domain=application").headers["ETag"]
@@ -243,7 +238,7 @@ class TestTheIncrementalDoorNoticesEveryKind:
         return path
 
     def test_an_entity_file_bumps_the_generation(self, repo) -> None:  # type: ignore[no-untyped-def]
-        root, index, _ = repo
+        root, index = repo
         before = index.read_model_version().generation
 
         path = self._entity(root, "REQ@1000000000.CovAA.probe", "Incremental Probe")
@@ -251,7 +246,7 @@ class TestTheIncrementalDoorNoticesEveryKind:
         assert index.apply_file_changes([path]).generation > before
 
     def test_an_outgoing_file_bumps_the_generation(self, repo) -> None:  # type: ignore[no-untyped-def]
-        root, index, _ = repo
+        root, index = repo
         source = "REQ@1000000000.CovBB.src"
         target = "REQ@1000000001.CovCC.tgt"
         index.apply_file_changes([
@@ -270,7 +265,7 @@ class TestTheIncrementalDoorNoticesEveryKind:
         assert index.apply_file_changes([path]).generation > before
 
     def test_a_diagram_bumps_the_generation(self, repo) -> None:  # type: ignore[no-untyped-def]
-        root, index, _ = repo
+        root, index = repo
         before = index.read_model_version().generation
 
         path = root / "diagram-catalog" / "diagrams" / "MAT@1000000003.CovEE.probe-matrix.md"
@@ -285,7 +280,7 @@ class TestTheIncrementalDoorNoticesEveryKind:
         assert index.apply_file_changes([path]).generation > before
 
     def test_a_document_bumps_the_generation(self, repo) -> None:  # type: ignore[no-untyped-def]
-        root, index, _ = repo
+        root, index = repo
         before = index.read_model_version().generation
 
         path = root / "docs" / "adr" / "0001-a-decision.md"
@@ -296,7 +291,7 @@ class TestTheIncrementalDoorNoticesEveryKind:
 
     def test_an_unclassifiable_path_falls_back_to_a_full_refresh(self, repo) -> None:  # type: ignore[no-untyped-def]
         """The defence that makes the list of kinds above non-exhaustive by design."""
-        root, index, _ = repo
+        root, index = repo
         before = index.read_model_version().generation
 
         path = root / "some-future-artifact-kind" / "thing.yaml"
@@ -306,14 +301,14 @@ class TestTheIncrementalDoorNoticesEveryKind:
         assert index.apply_file_changes([path]).generation > before
 
     def test_a_directory_falls_back_to_a_full_refresh(self, repo) -> None:  # type: ignore[no-untyped-def]
-        root, index, _ = repo
+        root, index = repo
         before = index.read_model_version().generation
 
         assert index.apply_file_changes([root / "model"]).generation > before
 
     def test_a_deletion_bumps_the_generation(self, repo) -> None:  # type: ignore[no-untyped-def]
         """Removal is the case where "nothing new to parse" could be mistaken for "nothing changed"."""
-        root, index, _ = repo
+        root, index = repo
         path = self._entity(root, "REQ@1000000002.CovDD.gone", "Doomed")
         index.apply_file_changes([path])
         before = index.read_model_version().generation

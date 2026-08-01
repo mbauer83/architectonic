@@ -9,13 +9,12 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from fastapi import FastAPI
 
 from src.application.artifact_repository import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
-from src.infrastructure.rest.contracts.error_responses import install_error_contracts
 from src.infrastructure.rest.routers import state as gui_state
 from src.infrastructure.rest.routers.viewpoint_authoring import router as viewpoint_authoring_router
+from tests.support.api_app import build_api_app
 
 httpx = pytest.importorskip("httpx")
 
@@ -36,11 +35,9 @@ def client(engagement_root: Path):
 
     repo = ArtifactRepository(shared_artifact_index([engagement_root]))
     gui_state.init_state(repo, engagement_root, None)
-    app = FastAPI(redirect_slashes=False)
-    # Configured as the real application is, so a refusal is asserted in the envelope a client
-    # actually receives rather than in FastAPI's default shape.
-    install_error_contracts(app)
-    app.include_router(viewpoint_authoring_router)
+    # `build_api_app`, so a refusal is asserted in the envelope a client actually receives rather
+    # than in FastAPI's default shape.
+    app = build_api_app(viewpoint_authoring_router)
     return TestClient(app, raise_server_exceptions=False)
 
 

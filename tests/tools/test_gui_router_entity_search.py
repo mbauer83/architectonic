@@ -9,7 +9,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from fastapi import FastAPI
 
 from src.application.artifact_query import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
@@ -17,6 +16,7 @@ from src.infrastructure.rest.routers import state as gui_state
 from src.infrastructure.rest.routers.admin import router as admin_router
 from src.infrastructure.rest.routers.entity_search import _score_reference_hit
 from src.infrastructure.rest.routers.entity_search import router as entity_search_router
+from tests.support.api_app import build_api_app
 
 httpx = pytest.importorskip("httpx")
 
@@ -128,10 +128,9 @@ def sync_client(populated_root: Path):
 
     repo = ArtifactRepository(shared_artifact_index([populated_root]))
     gui_state.init_state(repo, populated_root, None)
-    app = FastAPI()
+    app = build_api_app(entity_search_router)
     catalogs = build_runtime_catalogs(get_module_registry())
     app.dependency_overrides[runtime_catalogs_dependency] = lambda: catalogs
-    app.include_router(entity_search_router)
     return TestClient(app)
 
 
@@ -141,8 +140,7 @@ def admin_client(populated_root: Path):
 
     repo = ArtifactRepository(shared_artifact_index([populated_root]))
     gui_state.init_state(repo, populated_root, None)
-    app = FastAPI()
-    app.include_router(admin_router)
+    app = build_api_app(admin_router)
     return TestClient(app)
 
 

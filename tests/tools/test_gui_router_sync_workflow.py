@@ -10,7 +10,6 @@ from collections.abc import Callable
 from pathlib import Path
 
 import pytest
-from fastapi import FastAPI
 
 from src.application.artifact_query import ArtifactRepository
 from src.application.mutation_authorization import SyncHealth
@@ -24,6 +23,7 @@ from src.infrastructure.write.mutation_executor_registry import (
     install_mutation_executor,
 )
 from src.infrastructure.write.workspace_authorization import WorkspaceAuthorizationSnapshots
+from tests.support.api_app import build_api_app
 from tests.support.git_workflow_fixtures import (
     build_workflow_pair,
     git,
@@ -63,8 +63,7 @@ def workflow(tmp_path: Path):
     repo = ArtifactRepository(shared_artifact_index([engagement]))
     gui_state.init_state(repo, engagement, enterprise)
     _install(engagement, enterprise)
-    app = FastAPI()
-    app.include_router(sync_router)
+    app = build_api_app(sync_router)
     client = TestClient(app)
     yield client, engagement, enterprise
     _reset_executor_for_test()
@@ -91,7 +90,7 @@ class TestEngagementSave:
         head_before = git(engagement, "rev-parse", "HEAD")
         response = client.post("/api/sync/engagement/save", json={"message": "bad save", "push": False})
         assert response.status_code == 400
-        assert "verification" in response.json()["detail"]
+        assert "verification" in response.json()["detail"]["message"]
         assert git(engagement, "rev-parse", "HEAD") == head_before
         assert git(engagement, "status", "--porcelain") != ""
 
@@ -148,7 +147,7 @@ class TestEnterpriseSubmit:
         state_before = (enterprise / ".arch" / "enterprise-sync.json").read_text(encoding="utf-8")
         response = client.post("/api/sync/enterprise/submit")
         assert response.status_code == 423
-        assert "fetch_failed" in response.json()["detail"]
+        assert "fetch_failed" in response.json()["detail"]["message"]
         assert git(enterprise, "ls-remote", "--heads", "origin", branch) == ""
         assert (enterprise / ".arch" / "enterprise-sync.json").read_text(encoding="utf-8") == state_before
 
