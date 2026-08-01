@@ -238,24 +238,29 @@ class _C4DiagramType(DiagramTypeBase):
         }
         return {**base, "properties": props}
 
-    def read_diagram_extras(self, parsed_source: dict[str, Any]) -> dict[str, Any]:
+    def resolve_diagram_entities(
+        self, parsed_source: dict[str, Any], diagram_entities: dict[str, Any]
+    ) -> dict[str, Any] | None:
         """Inject _scope_entity_id from a 'scoped-by' binding when diagram-entities is empty.
 
         Model-backed C4 diagrams store the scope in a binding, not diagram-entities.
         The frontend's C4DiagramEditor needs _scope_entity_id in diagram_entities to
         activate model-backed mode. This merges it in from the binding so the edit view
         receives a complete diagram_entities payload.
+
+        A declared-field override rather than a module extra, which is why it is this hook: the read
+        envelope declares ``diagram_entities``, and filling it in is not the same act as adding a key
+        of one's own.
         """
         from src.diagram_types.c4._navigation import _scope_from_bindings  # noqa: PLC0415
 
+        if diagram_entities.get("_scope_entity_id"):
+            return None
         frontmatter: dict[str, Any] = parsed_source.get("frontmatter") or {}
-        raw_de = frontmatter.get("diagram-entities")
-        de: dict[str, Any] = raw_de if isinstance(raw_de, dict) else {}
-        if not de.get("_scope_entity_id"):
-            scope_id = _scope_from_bindings(frontmatter.get("bindings"))
-            if scope_id:
-                de = {**de, "_scope_entity_id": scope_id}
-        return {"diagram_entities": de} if de else {}
+        scope_id = _scope_from_bindings(frontmatter.get("bindings"))
+        # Merged into what the caller assembled rather than rebuilt from the frontmatter: the
+        # caller's value carries the diagram's local `_connections`, and rebuilding dropped them.
+        return {**diagram_entities, "_scope_entity_id": scope_id} if scope_id else None
 
     def build_context_extras(
         self,

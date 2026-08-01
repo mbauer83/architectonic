@@ -95,7 +95,7 @@ class ViewpointPinsResponse(NullsOmitted):
     pruned: list[str] | None = None
 
 
-class ViewpointApplicationResponse(_Closed):
+class ViewpointApplicationResponse(NullsOmitted):
     """The viewpoint a diagram or matrix pins, as its frontmatter states it.
 
     ``version`` is the *pinned* version, not the definition's current one: the point of pinning is
@@ -103,7 +103,8 @@ class ViewpointApplicationResponse(_Closed):
     against. The projection read is where staleness is reported.
 
     ``enforcement_override`` is absent where the artifact accepts the repository default; a value
-    here is a deliberate per-artifact departure from it.
+    here is a deliberate per-artifact departure from it — which is why it is absent-or-value and not
+    nullable: null would be a third state the frontmatter cannot express.
     """
 
     slug: str

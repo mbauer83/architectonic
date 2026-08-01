@@ -2938,14 +2938,49 @@ export interface components {
             version?: string | null;
         };
         /**
-         * AffectedEntity
-         * @description One entity a vulnerability reaches, with the finding rows that reach it.
+         * AffectedComponent
+         * @description One component through which a vulnerability reaches an entity.
          *
-         *     Open only because the shape has not been derived from the impact-analysis producer yet. The fields
-         *     are this system's own, so unlike a feed row this one is closeable.
+         *     ``suppressed`` is the VEX verdict applied, not a copy of ``vex_status``: a status of
+         *     ``not_affected`` suppresses the finding, ``under_investigation`` does not, and a client counting
+         *     open findings must not have to re-implement that mapping.
+         */
+        AffectedComponent: {
+            /** Applicability */
+            applicability: string;
+            /** Component Name */
+            component_name: string;
+            /** Component Purl */
+            component_purl: string;
+            /** Component Version */
+            component_version: string;
+            /** Cvss Score */
+            cvss_score: number | null;
+            /** Directness */
+            directness: string;
+            /** Severity Band */
+            severity_band: string | null;
+            /** Suppressed */
+            suppressed: boolean;
+            /** Vex Status */
+            vex_status: string | null;
+        };
+        /**
+         * AffectedEntity
+         * @description One architecture entity a vulnerability reaches, with the components it reaches through.
+         *
+         *     ``snapshot_activated_at`` is which snapshot said so: the answer is only as current as the scan
+         *     behind it, and a reader deciding whether to act needs to know when that was.
          */
         AffectedEntity: {
-            [key: string]: unknown;
+            /** Anchor Entity Id */
+            anchor_entity_id: string;
+            /** Components */
+            components: components["schemas"]["AffectedComponent"][];
+            /** Open Component Count */
+            open_component_count: number;
+            /** Snapshot Activated At */
+            snapshot_activated_at: string;
         };
         /**
          * AggregateEdgeResponse
@@ -3252,10 +3287,7 @@ export interface components {
              * @default 0
              */
             count: number;
-            /** Failure Mode Summary */
-            failure_mode_summary?: {
-                [key: string]: unknown;
-            } | null;
+            failure_mode_summary?: components["schemas"]["FailureModeRollUpResponse"] | null;
             /** Locked */
             locked: boolean;
             /**
@@ -3464,9 +3496,7 @@ export interface components {
              */
             status: "registered";
             /** Verification Findings */
-            verification_findings?: {
-                [key: string]: unknown;
-            }[] | null;
+            verification_findings?: components["schemas"]["AssuranceVerificationFinding"][] | null;
         };
         /**
          * AssuranceBaselineListResponse
@@ -3674,9 +3704,7 @@ export interface components {
             /** Target Id */
             target_id: string;
             /** Verification Findings */
-            verification_findings?: {
-                [key: string]: unknown;
-            }[] | null;
+            verification_findings?: components["schemas"]["AssuranceVerificationFinding"][] | null;
         };
         /**
          * AssuranceEdgeListResponse
@@ -3944,9 +3972,7 @@ export interface components {
             /** Node Type */
             node_type: string;
             /** Verification Findings */
-            verification_findings?: {
-                [key: string]: unknown;
-            }[] | null;
+            verification_findings?: components["schemas"]["AssuranceVerificationFinding"][] | null;
         };
         /**
          * AssuranceNodeDetailResponse
@@ -4078,9 +4104,7 @@ export interface components {
             /** Updated */
             updated: string[];
             /** Verification Findings */
-            verification_findings?: {
-                [key: string]: unknown;
-            }[] | null;
+            verification_findings?: components["schemas"]["AssuranceVerificationFinding"][] | null;
         };
         /**
          * AssuranceNodeWithDegrees
@@ -4361,6 +4385,24 @@ export interface components {
             status: "unlocked" | "locked" | "not_initialised";
             /** Unlocked */
             unlocked: boolean;
+        };
+        /**
+         * AssuranceVerificationFinding
+         * @description One finding from the verify that runs after a write.
+         *
+         *     Advisory, always: a write is never blocked by the verifier, so a finding here reports on a
+         *     change that has already happened. ``node_id`` is null for a finding about the store as a whole
+         *     rather than one node — the scoping filter reads it, and a client grouping by node has to too.
+         */
+        AssuranceVerificationFinding: {
+            /** Code */
+            code: string;
+            /** Message */
+            message: string;
+            /** Node Id */
+            node_id: string | null;
+            /** Severity */
+            severity: string;
         };
         /**
          * AssuranceVerificationIssue
@@ -5762,8 +5804,6 @@ export interface components {
          *
          *     ``explicit_connection_pairs`` are the source/target alias pairs the PUML actually draws, which
          *     is how a stated connection is told from one that merely exists between two placed entities.
-         *
-         *     Open at this level for ``build_context_extras``: a C4 diagram contributes its navigation here.
          */
         DiagramContextResponse: {
             /** Candidate Connections */
@@ -5784,8 +5824,10 @@ export interface components {
             generation: number;
             /** Suggested Entities */
             suggested_entities: components["schemas"]["HopSuggestionGroup"][];
-        } & {
-            [key: string]: unknown;
+            /** Type Extras */
+            type_extras?: {
+                [key: string]: unknown;
+            };
         };
         /**
          * DiagramDetailResponse
@@ -5795,9 +5837,10 @@ export interface components {
          *     declares them — an older diagram simply does not, and an empty list would claim it draws
          *     nothing.
          *
-         *     Open at this level, and only this level: ``read_diagram_extras`` is a diagram-type module hook
-         *     returning top-level keys, so what a matrix or a C4 diagram adds arrives beside these fields
-         *     rather than nested under them.
+         *     ``type_extras`` is where a diagram-type module's own additions arrive. They used to be merged
+         *     into this envelope, which made the whole response an open object promising nothing — a client
+         *     reading the schema was told a diagram read returns "these fields, and possibly anything". One
+         *     declared field carries the module's territory instead, and the envelope closes.
          */
         DiagramDetailResponse: {
             /** Artifact Id */
@@ -5841,11 +5884,13 @@ export interface components {
             rendered_filename?: string;
             /** Status */
             status: string;
+            /** Type Extras */
+            type_extras?: {
+                [key: string]: unknown;
+            };
             /** Version */
             version: string;
             viewpoint?: components["schemas"]["ViewpointApplicationResponse"];
-        } & {
-            [key: string]: unknown;
         };
         /**
          * DiagramEntityDiscoveryResponse
@@ -6018,6 +6063,12 @@ export interface components {
         /**
          * DiagramSummary
          * @description One row of the diagram list.
+         *
+         *     Four fields left with this release — ``keywords``, ``host_diagram_id``, ``tlp`` and
+         *     ``viewpoint``. ``diagram_to_summary`` never filled any of them, so every row carried an empty
+         *     list and three nulls, and the client stripped all four on decode. A field the producer does not
+         *     fill is not a smaller promise than a wrong one; the pinned viewpoint is reported by the diagram
+         *     read, which does resolve it.
          */
         DiagramSummary: {
             /** Artifact Id */
@@ -6026,15 +6077,8 @@ export interface components {
             diagram_type: string;
             /** Group */
             group?: string | null;
-            /** Host Diagram Id */
-            host_diagram_id?: string | null;
             /** Is Global */
             is_global: boolean;
-            /**
-             * Keywords
-             * @default []
-             */
-            keywords: string[];
             /** Last Updated */
             last_updated?: string | null;
             /** Name */
@@ -6043,11 +6087,8 @@ export interface components {
             path: string;
             /** Status */
             status: string;
-            /** Tlp */
-            tlp?: string | null;
             /** Version */
             version: string;
-            viewpoint?: components["schemas"]["ViewpointApplicationResponse"] | null;
         };
         /** DiagramTypeConnectionTypeListResponse */
         DiagramTypeConnectionTypeListResponse: {
@@ -7123,6 +7164,10 @@ export interface components {
          *     drift. ``quarantined`` is a derived read of the *same* conflict channel, not a parallel one: a
          *     non-empty conflict set means the write boundary will refuse a create or edit for this pair, and
          *     the flag only explains a refusal the backend already guarantees.
+         *
+         *     Null-omitting: its descriptors are the shape the authoring-guidance route also serves, and one
+         *     schema cannot have two null policies. ``schema`` is therefore absent, not null, where no schema
+         *     file declares one — which is what "this type has no attribute schema" means.
          */
         EntitySchemaResponse: {
             /** Artifact Type */
@@ -7131,7 +7176,7 @@ export interface components {
             conflicts: string[];
             /** Descriptors */
             descriptors: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["AttributeDescriptor"];
             };
             /** Properties */
             properties: string[];
@@ -7142,7 +7187,7 @@ export interface components {
             /** Schema */
             schema?: {
                 [key: string]: unknown;
-            } | null;
+            };
             /** Specialization */
             specialization: string;
         };
@@ -7265,6 +7310,24 @@ export interface components {
          */
         ErrorEnvelope: {
             detail: components["schemas"]["ErrorBody"];
+        };
+        /**
+         * FailureModeRollUpResponse
+         * @description One architecture element's FMEA row, rolled up to what a badge needs.
+         *
+         *     ``unanswered_cells`` is as load-bearing as the priority: a worst-of over a partly-assessed row
+         *     understates the risk, and a surface showing only the priority would present an incomplete
+         *     assessment as a low one.
+         */
+        FailureModeRollUpResponse: {
+            /** High Count */
+            high_count: number;
+            /** Nominated By */
+            nominated_by: string[];
+            /** Unanswered Cells */
+            unanswered_cells: number;
+            /** Worst Action Priority */
+            worst_action_priority: string | null;
         };
         /**
          * FieldError
@@ -8250,9 +8313,7 @@ export interface components {
              */
             outcome: "bound";
             /** Verification Findings */
-            verification_findings?: {
-                [key: string]: unknown;
-            }[] | null;
+            verification_findings?: components["schemas"]["AssuranceVerificationFinding"][] | null;
         };
         /**
          * ModelThisResponse
@@ -10346,15 +10407,19 @@ export interface components {
          *     against. The projection read is where staleness is reported.
          *
          *     ``enforcement_override`` is absent where the artifact accepts the repository default; a value
-         *     here is a deliberate per-artifact departure from it.
+         *     here is a deliberate per-artifact departure from it — which is why it is absent-or-value and not
+         *     nullable: null would be a third state the frontmatter cannot express.
          */
         ViewpointApplicationResponse: {
             /** Derivation Params */
             derivation_params?: {
                 [key: string]: boolean | number | string | string[];
-            } | null;
-            /** Enforcement Override */
-            enforcement_override?: ("off" | "warn" | "ghost") | null;
+            };
+            /**
+             * Enforcement Override
+             * @enum {string}
+             */
+            enforcement_override?: "off" | "warn" | "ghost";
             /** Slug */
             slug: string;
             /** Version */

@@ -12,16 +12,21 @@ export const DiagramDetailSchema = Schema.Struct({
   status: Schema.String,
   record_type: Schema.Literal('diagram'),
   path: Schema.String,
-  is_global: Schema.optional(Schema.Boolean),
+  is_global: Schema.Boolean,
+  group: Schema.optional(Schema.String),
+  last_updated: Schema.optional(Schema.String),
   content_snippet: Schema.String,
-  puml_source: Schema.optional(Schema.String),
-  rendered_filename: Schema.optional(Schema.NullOr(Schema.String)),
+  puml_source: Schema.String,
+  /** Absent when nothing has been rendered yet. */
+  rendered_filename: Schema.optional(Schema.String),
   entity_ids_used: Schema.optional(Schema.Array(Schema.String)),
   connection_ids_used: Schema.optional(Schema.Array(Schema.String)),
-  diagram_entities: Schema.optional(Schema.Unknown),
-  matrix_body: Schema.optional(Schema.String),
-  extra: Schema.optional(Schema.Unknown),
-  viewpoint: Schema.optional(Schema.NullOr(ViewpointApplicationSchema)),
+  diagram_entities: Schema.optional(Schema.Record({ key: Schema.String, value: Schema.Unknown })),
+  extra: Schema.optional(Schema.Record({ key: Schema.String, value: Schema.Unknown })),
+  /** This diagram kind's own additions — a matrix's rendered body, and whatever a future kind
+   * contributes. Absent for a kind that adds nothing. */
+  type_extras: Schema.optional(Schema.Record({ key: Schema.String, value: Schema.Unknown })),
+  viewpoint: Schema.optional(ViewpointApplicationSchema),
 })
 export type DiagramDetail = typeof DiagramDetailSchema.Type
 
@@ -146,7 +151,9 @@ export const DiagramContextSchema = Schema.Struct({
   explicit_connection_pairs: Schema.Array(Schema.Tuple(Schema.String, Schema.String)),
   generation: Schema.Number,
   etag: Schema.String,
-  c4_navigation: Schema.optional(Schema.NullOr(C4NavigationSchema)),
+  /** This diagram kind's own additions — a C4 diagram's navigation, and whatever a future kind
+   * contributes. Absent for a kind that adds nothing. */
+  type_extras: Schema.optional(Schema.Record({ key: Schema.String, value: Schema.Unknown })),
 })
 export type DiagramContext = typeof DiagramContextSchema.Type
 

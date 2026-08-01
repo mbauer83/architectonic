@@ -14,6 +14,9 @@ client the only thing a schema is for: knowing which fields arrive. Models now u
 and are derived from the producer, so a payload the contract does not describe fails here rather than
 reaching a consumer that was promised otherwise.
 
+The ``OpenMapResponse`` placeholder those 69 operations shared is gone, with the last of them: the
+response-contract ledger is empty, so there is nothing left for it to stand in for.
+
 The exceptions are rostered by name in ``contracts/open_models.py``, each with its reason, and
 ``tests/architecture/test_open_response_models.py`` holds that no others exist.
 """
@@ -36,20 +39,6 @@ TAG_DOCUMENTS = "documents"
 TAG_GROUPS = "groups"
 TAG_TAXONOMY = "taxonomy"
 TAG_ASSURANCE = "assurance"
-
-
-class OpenMapResponse(BaseModel):
-    """The migration placeholder: an operation whose response has not been derived from its producer yet.
-
-    Not a decision, and not "a genuinely dynamic map" as this docstring once claimed — that reading is
-    what let it spread to a third of the surface. Every operation still using it is listed in
-    ``route_policy._response_contracts.UNTYPED_RESPONSE_OPERATIONS``, a shrink-only ledger, and a
-    fitness function refuses this model on any operation absent from it. **Do not annotate a new handler
-    with this.** Derive a closed DTO from what the handler returns; that is cheap when the code is in
-    front of you and expensive once a client depends on the ambiguity.
-    """
-
-    model_config = ConfigDict(extra="allow")
 
 
 class WriteResultResponse(BaseModel):

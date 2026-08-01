@@ -212,7 +212,9 @@ def diagram_context_payload(repo: Any, diag_rec: DiagramRecord, catalogs: Runtim
         "explicit_connection_pairs": [list(pair) for pair in sorted(explicit_pairs)],
         "generation": version.generation,
         "etag": version.etag,
-        **type_extras,
+        # Namespaced, not merged: the envelope declares its own fields, and a hook free to add a key
+        # beside them would make the whole response a contract promising nothing.
+        "type_extras": type_extras or None,
     }
 
 

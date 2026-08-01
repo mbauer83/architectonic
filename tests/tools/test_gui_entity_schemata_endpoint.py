@@ -104,7 +104,9 @@ class TestEntitySchemataEndpoint:
         resp = client.get("/api/entity-schemata/requirement")
         assert resp.status_code == 200
         body = resp.json()
-        assert body["schema"] is None
+        # Absent, not null: this read omits what is not set, and "no schema file declares one for
+        # this type" is the whole of what the missing key says.
+        assert "schema" not in body
         assert body["properties"] == []
         assert body["descriptors"] == {}
 

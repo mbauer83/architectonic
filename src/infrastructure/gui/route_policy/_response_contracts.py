@@ -16,7 +16,4 @@ later.
 from __future__ import annotations
 
 #: Operation ids whose declared success body is not yet the DTO the manifest names.
-UNTYPED_RESPONSE_OPERATIONS: frozenset[str] = frozenset({
-    "diagrams_read_diagram",
-    "diagrams_read_diagram_context",
-})
+UNTYPED_RESPONSE_OPERATIONS: frozenset[str] = frozenset()

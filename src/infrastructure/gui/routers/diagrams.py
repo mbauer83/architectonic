@@ -77,7 +77,13 @@ def _read_diagram_impl(id: str, catalogs: RuntimeCatalogs) -> dict[str, Any]:
         result["viewpoint"] = frontmatter.get("viewpoint")
         dt = catalogs.diagram_types.find_diagram_type(diag_rec.diagram_type)
         if dt:
-            result.update(dt.read_diagram_extras(parsed))
+            # Two hooks, because the module is doing two things. A replacement for a field the
+            # envelope declares goes into that field; the module's own keys go under `type_extras`,
+            # which is the one level of this response whose properties are the module's to decide.
+            resolved = dt.resolve_diagram_entities(parsed, diagram_entities)
+            if resolved is not None:
+                result["diagram_entities"] = resolved
+            result["type_extras"] = dt.read_diagram_extras(parsed) or None
     return result
 
 

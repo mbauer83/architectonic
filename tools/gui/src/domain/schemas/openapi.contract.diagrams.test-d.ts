@@ -2,15 +2,23 @@ import { describe, expectTypeOf, it } from 'vitest'
 import type { Immutable, SchemaType } from './contractOracle'
 import type { components } from './openapi.generated'
 import type { EntityContextConnectionSchema } from './connections'
+import type { DiagramDetailSchema } from './diagrams'
 import type {
   DerivedEntitySchema,
   DiagramContextConnectionSchema,
   DiagramContextEntitySchema,
+  DiagramContextSchema,
   DiagramEntityDiscoverySchema,
   DiagramPreviewResultSchema,
   HopSuggestionGroupSchema,
 } from './diagrams'
-import type { EntityDisplayInfoSchema, EntityDisplaySearchResultSchema } from './entities'
+import type {
+  EntityAttributeDescriptorSchema,
+  EntityAttributeItemDescriptorSchema,
+  EntityDisplayInfoSchema,
+  EntityDisplaySearchResultSchema,
+  EntitySchemaInfoSchema,
+} from './entities'
 import type {
   AllowedBindingsSchema,
   AuthoringGuidanceSchema,
@@ -58,11 +66,16 @@ describe('diagram palette', () => {
     >()
   })
 
-  it('decodes the rows a diagram context resolves', () => {
-    // The envelope itself cannot be asserted: `read_diagram_extras` and `build_context_extras` are
-    // diagram-type module hooks that contribute top-level keys, so it is open by design and the
-    // schema promises nothing to compare against. Its rows are closed, and they are the part a
-    // renderer reads field by field.
+  it('decodes a diagram read and its context, envelopes included', () => {
+    // Both envelopes were open until the module hooks were namespaced under `type_extras`: a hook
+    // free to add a key beside the declared fields made the whole response an object promising
+    // nothing, and neither could be asserted at all.
+    expectTypeOf<SchemaType<typeof DiagramDetailSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['DiagramDetailResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof DiagramContextSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['DiagramContextResponse']>
+    >()
     expectTypeOf<SchemaType<typeof DiagramContextEntitySchema>>().toEqualTypeOf<
       Immutable<components['schemas']['DiagramContextEntity']>
     >()
@@ -108,6 +121,21 @@ describe('authoring guidance', () => {
     // `known_types`. Only the top-level error was translated, so this one reached clients.
     expectTypeOf<SchemaType<typeof PairGuidanceSchema>>().toEqualTypeOf<
       Immutable<components['schemas']['PairGuidance']>
+    >()
+  })
+
+  it('decodes the attribute schema both surfaces serve from one producer', () => {
+    // `attribute_descriptors` feeds the entity schema route and the guidance payload, so the
+    // descriptor is one shape; it was `dict[str, Any]` on the entity side, which is how the two
+    // came to be described differently at the client.
+    expectTypeOf<SchemaType<typeof EntitySchemaInfoSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['EntitySchemaResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof EntityAttributeDescriptorSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['AttributeDescriptor']>
+    >()
+    expectTypeOf<SchemaType<typeof EntityAttributeItemDescriptorSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['AttributeItemDescriptor']>
     >()
   })
 

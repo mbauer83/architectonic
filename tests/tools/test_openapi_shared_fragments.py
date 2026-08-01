@@ -8,7 +8,6 @@ from src.infrastructure.gui.routers._openapi import (
     APP_RESPONSES,
     READ_RESPONSES,
     WRITE_RESPONSES,
-    OpenMapResponse,
     WriteResultResponse,
 )
 
@@ -54,8 +53,3 @@ def test_every_field_of_a_write_result_is_required_because_every_field_is_sent()
     schema = WriteResultResponse.model_json_schema()
     assert set(schema["required"]) == set(schema["properties"]) == set(WriteResultResponse.model_fields)
 
-
-def test_open_map_response_is_an_object_that_allows_any_field() -> None:
-    schema = OpenMapResponse.model_json_schema()
-    assert schema["type"] == "object"
-    assert schema.get("additionalProperties") is not False

@@ -5,10 +5,13 @@ import type { EntitySchemaInfo } from '../../domain'
 const info = (over: Partial<EntitySchemaInfo>): EntitySchemaInfo => ({
   artifact_type: 'collaboration',
   specialization: '',
-  schema: null,
+  // `schema` is absent, not null, when no schema file declares one — the route omits what is
+  // not set. Every other field is always sent.
   properties: [],
   required: [],
   descriptors: {},
+  conflicts: [],
+  quarantined: false,
   ...over,
 })
 
@@ -21,12 +24,6 @@ describe('quarantineFromSchemaInfo', () => {
 
   it('is clean when the endpoint reports a clean pair', () => {
     expect(quarantineFromSchemaInfo(info({ quarantined: false, conflicts: [] })).quarantined).toBe(false)
-  })
-
-  it('falls back to the conflict list when the flag is absent', () => {
-    // A backend predating the derived flag still returns the conflicts it derives from,
-    // so an ambiguous pair must not be reported as clean.
-    expect(quarantineFromSchemaInfo(info({ conflicts: ['scope: string vs integer'] })).quarantined).toBe(true)
   })
 
   it('is clean when neither the flag nor any conflict is present', () => {

@@ -214,7 +214,7 @@ def read_entity_context(artifact_id: str) -> EntityContextReadModel:
 
 @router.get("/api/entity-schemata/{artifact_type}", tags=[TAG_ENTITIES],
     summary="Effective attribute schema for a (type, specialization) pair",
-    response_model=EntitySchemaResponse)
+    response_model=EntitySchemaResponse, response_model_exclude_none=True)
 def get_entity_schemata(artifact_type: str, specialization: str = "") -> dict[str, Any]:
     """Effective attribute schema for an entity type, merged with the selected
     specialization(s)' contributed attributes — the same schema the verifier validates

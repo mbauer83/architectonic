@@ -7,11 +7,18 @@ export { CriteriaCatalogSchema, type CriteriaCatalog } from './viewpointCatalogs
 
 // ── Viewpoints (GUI selector/overlay) ─────────────────────────────────────────
 
+/** The viewpoint a diagram or matrix pins. `version` is the *pinned* one, not the definition's
+ * current — that is the point of pinning, and the projection read reports staleness. */
 export const ViewpointApplicationSchema = Schema.Struct({
   slug: Schema.String,
   version: Schema.Number,
   enforcement_override: Schema.optional(Schema.Literal('off', 'warn', 'ghost')),
-  derivation_params: Schema.optional(Schema.Record({ key: Schema.String, value: Schema.Unknown })),
+  /** Values for the definition's declared parameters. The keys are the definition's; the values
+   * are the same closed scalar space binding produces. */
+  derivation_params: Schema.optional(Schema.Record({
+    key: Schema.String,
+    value: Schema.Union(Schema.Boolean, Schema.Number, Schema.String, Schema.Array(Schema.String)),
+  })),
 })
 export type ViewpointApplication = typeof ViewpointApplicationSchema.Type
 

@@ -144,10 +144,32 @@ class DiagramTypeBase:
         diagram_id: str,
         diagram_entities: dict[str, Any],
     ) -> dict[str, Any]:
+        """This kind's own additions to a diagram-context read.
+
+        Served under the response's ``type_extras``, never merged into the envelope: the envelope is
+        a published contract with declared fields, and a hook that could add a key beside them made
+        it a contract promising nothing.
+        """
         return {}
 
     def read_diagram_extras(self, parsed_source: dict[str, Any]) -> dict[str, Any]:
+        """This kind's own additions to a diagram read, served under ``type_extras``.
+
+        For a key the envelope already declares, override the declared field instead — see
+        :meth:`resolve_diagram_entities`. This hook used to serve both purposes, which is how a
+        module came to be overwriting a declared field through the same channel it adds its own.
+        """
         return {}
+
+    def resolve_diagram_entities(
+        self, parsed_source: dict[str, Any], diagram_entities: dict[str, Any]
+    ) -> dict[str, Any] | None:
+        """This kind's replacement for the read's declared ``diagram_entities``, or None to keep it.
+
+        Separate from :meth:`read_diagram_extras` because it is a different job: this one fills in a
+        field the surface declares, from somewhere only the module knows to look.
+        """
+        return None
 
     def diagram_verification_contributions(self) -> tuple:
         return ()

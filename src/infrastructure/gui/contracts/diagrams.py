@@ -100,7 +100,14 @@ class DiagramTypeConnectionTypeListResponse(_Closed):
 
 
 class DiagramSummary(_Closed):
-    """One row of the diagram list."""
+    """One row of the diagram list.
+
+    Four fields left with this release — ``keywords``, ``host_diagram_id``, ``tlp`` and
+    ``viewpoint``. ``diagram_to_summary`` never filled any of them, so every row carried an empty
+    list and three nulls, and the client stripped all four on decode. A field the producer does not
+    fill is not a smaller promise than a wrong one; the pinned viewpoint is reported by the diagram
+    read, which does resolve it.
+    """
 
     artifact_id: str
     diagram_type: str
@@ -110,11 +117,7 @@ class DiagramSummary(_Closed):
     path: str
     is_global: bool
     group: str | None = None
-    keywords: list[str] = []
-    host_diagram_id: str | None = None
     last_updated: str | None = None
-    tlp: str | None = None
-    viewpoint: ViewpointApplicationResponse | None = None
 
 
 class DiagramListResponse(_Closed):
@@ -280,30 +283,17 @@ class DiagramPreviewResponse(_Closed):
     derived_entities: list[DerivedViewEntityResponse] | None
 
 
-class _ModuleShapedRecord(NullsOmitted):
-    """A module-extensible payload whose unset optionals are absent rather than null.
-
-    Two claims that have to travel together on the diagram reads. ``extra="allow"`` because a
-    diagram-type module contributes top-level keys through ``read_diagram_extras`` and
-    ``build_context_extras`` — a matrix's body, a C4 diagram's navigation — and enumerating them here
-    would make the ontology's extensibility depend on this file. The null policy because the same
-    responses embed :class:`EntitySummary`, which is null-omitting on the entity list and cannot
-    have two policies for one schema.
-    """
-
-    model_config = ConfigDict(extra="allow")
-
-
-class DiagramDetailResponse(_ModuleShapedRecord):
+class DiagramDetailResponse(NullsOmitted):
     """One diagram, read whole: the record, its source, and what the source declares.
 
     ``entity_ids_used``/``connection_ids_used`` are present only when the file's frontmatter
     declares them — an older diagram simply does not, and an empty list would claim it draws
     nothing.
 
-    Open at this level, and only this level: ``read_diagram_extras`` is a diagram-type module hook
-    returning top-level keys, so what a matrix or a C4 diagram adds arrives beside these fields
-    rather than nested under them.
+    ``type_extras`` is where a diagram-type module's own additions arrive. They used to be merged
+    into this envelope, which made the whole response an open object promising nothing — a client
+    reading the schema was told a diagram read returns "these fields, and possibly anything". One
+    declared field carries the module's territory instead, and the envelope closes.
     """
 
     artifact_id: str
@@ -329,6 +319,9 @@ class DiagramDetailResponse(_ModuleShapedRecord):
     #: Frontmatter this surface does not model, returned as written.
     extra: dict[str, Any] | None = None
     viewpoint: ViewpointApplicationResponse | None = None
+    #: This diagram kind's own additions — a matrix's rendered body, and whatever a future kind
+    #: contributes. Absent for a kind that adds nothing.
+    type_extras: dict[str, Any] | None = None
 
 
 class DiagramContextEntity(EntitySummary):
@@ -357,7 +350,7 @@ class DiagramContextConnection(ConnectionSummary, NullsOmitted):
     edge_label_override: str | None = None
 
 
-class DiagramContextResponse(_ModuleShapedRecord):
+class DiagramContextResponse(NullsOmitted):
     """A diagram and everything an editor needs to work on it, in one read.
 
     Assembled server-side because an editor that fetched these separately could render a diagram
@@ -366,8 +359,6 @@ class DiagramContextResponse(_ModuleShapedRecord):
 
     ``explicit_connection_pairs`` are the source/target alias pairs the PUML actually draws, which
     is how a stated connection is told from one that merely exists between two placed entities.
-
-    Open at this level for ``build_context_extras``: a C4 diagram contributes its navigation here.
     """
 
     diagram: DiagramDetailResponse
@@ -378,3 +369,6 @@ class DiagramContextResponse(_ModuleShapedRecord):
     explicit_connection_pairs: list[tuple[str, str]]
     generation: int
     etag: str
+    #: This diagram kind's own additions — a C4 diagram's navigation, and whatever a future kind
+    #: contributes. Absent for a kind that adds nothing.
+    type_extras: dict[str, Any] | None = None

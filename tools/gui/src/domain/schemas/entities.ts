@@ -192,14 +192,16 @@ export type EntityAttributeDescriptor = typeof EntityAttributeDescriptorSchema.T
 
 export const EntitySchemaInfoSchema = Schema.Struct({
   artifact_type: Schema.String,
-  specialization: Schema.optional(Schema.String),
-  schema: Schema.NullOr(Schema.Unknown),
+  specialization: Schema.String,
+  /** Absent when no schema file declares one for this type — which is the whole of what the
+   * missing key says, so it is absent rather than null. */
+  schema: Schema.optional(Schema.Record({ key: Schema.String, value: Schema.Unknown })),
   properties: Schema.Array(Schema.String),
   required: Schema.Array(Schema.String),
   descriptors: Schema.Record({ key: Schema.String, value: EntityAttributeDescriptorSchema }),
-  conflicts: Schema.optional(Schema.Array(Schema.String)),
+  conflicts: Schema.Array(Schema.String),
   // Derived read of the SAME conflicts channel, not a parallel one: true means the write
   // boundary will refuse a create/edit for this (type, specialization) pair.
-  quarantined: Schema.optional(Schema.Boolean),
+  quarantined: Schema.Boolean,
 })
 export type EntitySchemaInfo = typeof EntitySchemaInfoSchema.Type

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { Schema } from 'effect'
+import { c4NavigationOf } from '../ui/views/DiagramDetailView.helpers'
 import {
   AssuranceNodeListSchema,
   DiagramContextSchema,
@@ -69,7 +70,9 @@ const C4_CONTEXT_RESPONSE = {
     status: 'draft',
     record_type: 'diagram',
     path: '/diagram-catalog/diagrams/amp-containers.puml',
+    is_global: false,
     content_snippet: '',
+    puml_source: '@startuml\n@enduml\n',
   },
   entities: [{
     artifact_id: 'ROL@1776633082.udXPfB.ai-agent',
@@ -90,16 +93,20 @@ const C4_CONTEXT_RESPONSE = {
   explicit_connection_pairs: [['ROL_udXPfB', 'APP_Ne0utf']],
   generation: 12,
   etag: 'W/"model-12-91e6f958e17e7b4b4901"',
-  c4_navigation: {
-    current_level: 2,
-    scope_entity_id: 'APP@1780783671.hkrdtm.architecture-management-platform',
-    scope_entity_name: 'Architecture Management Platform',
-    parent_diagrams: [{
-      diagram_id: 'CSC@1780829783.z8RRON.amp-system-context',
-      diagram_name: 'AMP — System Context',
-      diagram_type: 'c4-system-context',
-    }],
-    child_diagrams: [],
+  // The C4 kind's own region of the read. Merged into the envelope until 0.2.0, which made the
+  // whole response an open object; namespaced now, so the envelope closes.
+  type_extras: {
+    c4_navigation: {
+      current_level: 2,
+      scope_entity_id: 'APP@1780783671.hkrdtm.architecture-management-platform',
+      scope_entity_name: 'Architecture Management Platform',
+      parent_diagrams: [{
+        diagram_id: 'CSC@1780829783.z8RRON.amp-system-context',
+        diagram_name: 'AMP — System Context',
+        diagram_type: 'c4-system-context',
+      }],
+      child_diagrams: [],
+    },
   },
 }
 
@@ -115,8 +122,8 @@ describe('captured backend response contracts', () => {
   })
 
   it('decodes a model-backed C4 diagram context', () => {
-    expect(Schema.decodeUnknownSync(DiagramContextSchema)(C4_CONTEXT_RESPONSE).c4_navigation?.current_level)
-      .toBe(2)
+    const decoded = Schema.decodeUnknownSync(DiagramContextSchema)(C4_CONTEXT_RESPONSE)
+    expect(c4NavigationOf(decoded.type_extras)?.current_level).toBe(2)
   })
 
   it('rejects wire drift in a required field', () => {

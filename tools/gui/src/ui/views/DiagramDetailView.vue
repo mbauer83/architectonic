@@ -9,7 +9,7 @@ import type { NotFoundError } from '../../domain'
 import { useQuery } from '../composables/useQuery'
 import { renderMatrixMarkdown } from '../lib/matrixMarkdown'
 import type { C4Navigation } from '../../domain'
-import { buildDrilldownByEntityId, diagramNeedsSvg } from './DiagramDetailView.helpers'
+import { buildDrilldownByEntityId, c4NavigationOf, diagramNeedsSvg, matrixBodyOf } from './DiagramDetailView.helpers'
 import { sanitizeDiagramSvg } from '../lib/svgSanitize'
 import { useFittedPanZoom } from '../composables/useFittedPanZoom'
 import { useDiagramSvgSelection } from '../composables/useDiagramSvgSelection'
@@ -32,7 +32,7 @@ const contextQuery = useQuery<DiagramContext, RepoError | NotFoundError>()
 const svgQuery = useQuery<string, RepoError>()
 
 const detail = computed(() => contextQuery.data.value?.diagram ?? null)
-const c4Nav = computed<C4Navigation | null>(() => contextQuery.data.value?.c4_navigation ?? null)
+const c4Nav = computed<C4Navigation | null>(() => c4NavigationOf(contextQuery.data.value?.type_extras))
 const drilldownByEntityId = computed(() => buildDrilldownByEntityId(c4Nav.value))
 const diagramEntities = computed(() =>
   (contextQuery.data.value?.entities ?? [])
@@ -43,9 +43,9 @@ const diagramConnections = computed(() => contextQuery.data.value?.connections ?
 
 const svgHtml = computed(() => svgQuery.data.value ? sanitizeDiagramSvg(svgQuery.data.value) : null)
 const matrixHtml = computed(() => {
-  const body = (detail.value as Record<string, unknown> | null)?.matrix_body
-  if (!body || detail.value?.diagram_type !== 'matrix') return null
-  return renderMatrixMarkdown(body as string)
+  const body = matrixBodyOf(detail.value?.type_extras)
+  if (body === null || detail.value?.diagram_type !== 'matrix') return null
+  return renderMatrixMarkdown(body)
 })
 const editPath = computed(() => detail.value?.diagram_type === 'matrix' ? '/diagram/edit/matrix' : '/diagram/edit')
 const isGlobalDiagram = computed(() => detail.value?.is_global ?? false)

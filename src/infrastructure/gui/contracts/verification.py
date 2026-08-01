@@ -34,6 +34,20 @@ class _Closed(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
+class AssuranceVerificationFinding(_Closed):
+    """One finding from the verify that runs after a write.
+
+    Advisory, always: a write is never blocked by the verifier, so a finding here reports on a
+    change that has already happened. ``node_id`` is null for a finding about the store as a whole
+    rather than one node — the scoping filter reads it, and a client grouping by node has to too.
+    """
+
+    severity: str
+    code: str
+    message: str
+    node_id: str | None
+
+
 class VerificationIssueResponse(_Closed):
     """One finding: what is wrong, how badly, and where.
 

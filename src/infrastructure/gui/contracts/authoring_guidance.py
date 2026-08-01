@@ -3,6 +3,9 @@
 The same payload MCP's ``artifact_authoring_guidance`` returns, for REST-only consumers — so this is
 a transcription of ``get_type_guidance``, not a second view of it.
 
+The attribute descriptors are the entity surface's — ``attribute_descriptors`` serves the entity
+schema route and this one from one function, so one typed input component renders either.
+
 The response is a union of four independent answers, each requested by a different query parameter
 and each absent when it was not asked for. Absent, not null: the caller knows what it asked for, and
 a null section would say "asked and unavailable", which never happens — an unanswerable request is a
@@ -15,48 +18,8 @@ from typing import Any, Literal
 
 from pydantic import ConfigDict, Field
 
+from src.infrastructure.gui.contracts.entities import AttributeDescriptor
 from src.infrastructure.gui.contracts.wire_nulls import NullsOmitted
-
-
-class AttributeConstraints(NullsOmitted):
-    """The JSON Schema constraint keywords an authoring input can enforce.
-
-    A fixed set — the seven ``_CONSTRAINT_KEYS`` the descriptor builder copies — not the whole
-    vocabulary: these are the ones a form field can act on, and copying the rest would publish
-    keywords no input reads.
-    """
-
-    minimum: float | None = None
-    maximum: float | None = None
-    exclusiveMinimum: float | None = None  # noqa: N815 - the JSON Schema keyword, verbatim
-    exclusiveMaximum: float | None = None  # noqa: N815 - the JSON Schema keyword, verbatim
-    minLength: int | None = None  # noqa: N815 - the JSON Schema keyword, verbatim
-    maxLength: int | None = None  # noqa: N815 - the JSON Schema keyword, verbatim
-    pattern: str | None = None
-
-
-class AttributeItemDescriptor(NullsOmitted):
-    """An array attribute's per-item shape, so a list editor can type each element rather than
-    falling back to a free-text JSON box. One level deep, deliberately: a list of objects is
-    authored as text, and pretending otherwise would mean recursing into arbitrary JSON Schema."""
-
-    type: str
-    enum: list[str] | None = None
-    constraints: AttributeConstraints | None = None
-
-
-class AttributeDescriptor(NullsOmitted):
-    """One attribute, as an authoring input needs it.
-
-    ``default`` is stringified whatever the declared type — an input renders text, and a client
-    that had to know the JSON type to read the default would be doing the schema's job twice.
-    """
-
-    type: str
-    enum: list[str] | None = None
-    default: str | None = None
-    constraints: AttributeConstraints | None = None
-    items: AttributeItemDescriptor | None = None
 
 
 class MetadataSchemaBlock(NullsOmitted):

@@ -20,6 +20,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, RootModel
 
 from src.infrastructure.gui.contracts.assurance_analyses import AssuranceAnalysisSummary
+from src.infrastructure.gui.contracts.verification import AssuranceVerificationFinding
 
 
 class _Closed(BaseModel):
@@ -252,7 +253,7 @@ class AssuranceEdgeCreatedResponse(_Closed):
     source_id: str
     target_id: str
     conn_type: str
-    verification_findings: list[dict[str, Any]] | None = None
+    verification_findings: list[AssuranceVerificationFinding] | None = None
 
 
 class ModelThisTaskStep(_Closed):
@@ -297,7 +298,7 @@ class ModelThisBoundResponse(_Closed):
     outcome: Literal["bound"]
     assurance_node_id: str
     arch_artifact_id: str
-    verification_findings: list[dict[str, Any]] | None = None
+    verification_findings: list[AssuranceVerificationFinding] | None = None
 
 
 class ModelThisResponse(RootModel[ModelThisBoundResponse | ModelThisTaskRequiredResponse]):

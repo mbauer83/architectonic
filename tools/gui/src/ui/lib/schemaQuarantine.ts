@@ -18,13 +18,12 @@ export interface SchemaQuarantine {
 export const NO_QUARANTINE: SchemaQuarantine = { quarantined: false, conflicts: [] }
 
 /**
- * Older backends predate the derived flag but have always returned the conflicts it is
- * derived from, so fall back to the conflict list rather than reporting a clean pair.
+ * The endpoint sends both, always. The conflict-list fallback that stood here was for a backend
+ * predating the derived flag; 0.2.0 declares `quarantined` and `conflicts` as required, so the
+ * fallback described a response that can no longer arrive.
  */
-export const quarantineFromSchemaInfo = (info: EntitySchemaInfo): SchemaQuarantine => {
-  const conflicts = info.conflicts ?? []
-  return { quarantined: info.quarantined ?? conflicts.length > 0, conflicts }
-}
+export const quarantineFromSchemaInfo = (info: EntitySchemaInfo): SchemaQuarantine =>
+  ({ quarantined: info.quarantined, conflicts: info.conflicts })
 
 export const quarantineHeadline = (artifactType: string, specialization: string): string =>
   specialization

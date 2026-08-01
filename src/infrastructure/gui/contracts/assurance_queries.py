@@ -13,11 +13,12 @@ number nobody thinks of as content. ``visibility_limited`` says when the filteri
 
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
 from src.infrastructure.gui.contracts.assurance_analyses import AssuranceAnalysisSummary
+from src.infrastructure.gui.contracts.verification import AssuranceVerificationFinding
 
 
 class _Closed(BaseModel):
@@ -241,7 +242,7 @@ class AssuranceArchRefRegisteredResponse(_Closed):
     arch_artifact_id: str
     ref_type: str
     status: Literal["registered"]
-    verification_findings: list[dict[str, Any]] | None = None
+    verification_findings: list[AssuranceVerificationFinding] | None = None
 
 
 class AssuranceCompletenessCheck(_Closed):

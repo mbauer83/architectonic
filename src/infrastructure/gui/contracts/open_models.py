@@ -66,11 +66,13 @@ FOREIGN_VOCABULARY: OpenReason = "foreign-vocabulary"
 
 #: Awaiting a **maintainer decision** recorded beside the entry. Open until then rather than closed to a
 #: shape nobody has agreed, because guessing the closed form would put an invented contract in the
-#: published document.
+#: published document. Nothing carries it: the vocabulary stays so the check that forbids a temporary
+#: reason outliving its work has something to forbid, and so the next one is spelled the same way.
 PENDING_DECISION: OpenReason = "pending-decision"
 
 #: The **migration placeholder**: an operation whose response has not been derived from its producer
-#: yet. Tracked operation-by-operation in `route_policy._response_contracts`.
+#: yet, tracked operation-by-operation in `route_policy._response_contracts`. That ledger is empty and
+#: nothing carries this reason any more; it stays for the same purpose `pending-decision` does.
 AWAITING_CONTRACT: OpenReason = "awaiting-contract"
 
 #: The complete roster. A served model with `extra="allow"` that is absent here is a contract nobody
@@ -85,11 +87,6 @@ OPEN_RESPONSE_MODELS: dict[str, OpenReason] = {
     # is the author's. Refusing a key this package does not know would 500 a read of a repository
     # whose schema file simply says more than the loader normalizes.
     "DocumentSchemaEntry": AUTHORED,
-    # ``read_diagram_extras`` and ``build_context_extras`` are diagram-type module hooks returning
-    # *top-level* keys — a matrix's body, a C4 diagram's navigation. Open at the envelope, which is the
-    # one place decision 6 permits it, because that is the level the module actually contributes to.
-    "DiagramDetailResponse": MODULE_OWNED,
-    "DiagramContextResponse": MODULE_OWNED,
 
     # ── The security feeds own these ──────────────────────────────────────────
     "SecurityComponentRecord": FEED_OWNED,
@@ -97,13 +94,6 @@ OPEN_RESPONSE_MODELS: dict[str, OpenReason] = {
     "VexRevisionRecord": FEED_OWNED,
     # A snapshot is the feed's own ingest artifact: its fields are whatever the scanner recorded.
     "SnapshotRecord": FEED_OWNED,
-
-    # ── Open pending a decision, not because anyone decided they should be ────
-    #
-    # `AffectedEntity` reports which architecture elements a vulnerability reaches. Its fields come
-    # from this system's own impact analysis, not from a feed, so `feed-owned` was never true of it —
-    # it is closeable, and the shape simply has not been derived from the producer yet.
-    "AffectedEntity": PENDING_DECISION,
 }
 
 #: Every *field* of a closed model whose type publishes `additionalProperties: true` — the other way an
@@ -153,6 +143,11 @@ OPEN_RESPONSE_FIELDS: dict[str, OpenReason] = {
     # The properties a diagram kind declares on its *own* entity types, each a JSON Schema fragment
     # with `required` beside it. A sequence lifeline's properties are not a swimlane's.
     "OwnEntityTypeGuidance.domain_properties": MODULE_OWNED,
+    # What `read_diagram_extras` and `build_context_extras` return. The hooks exist so a diagram kind
+    # can say something this package has never heard of; these two fields are where that arrives, and
+    # they are the only level of either read that is open.
+    "DiagramDetailResponse.type_extras": MODULE_OWNED,
+    "DiagramContextResponse.type_extras": MODULE_OWNED,
 
     # A documentation block about the viewpoint query language, keyed by topic and heterogeneous by
     # nature — a schema version, a comparator glossary, reserved paths, a worked example. A field per
@@ -185,19 +180,4 @@ OPEN_RESPONSE_FIELDS: dict[str, OpenReason] = {
     "DiagramTypeGuidance.diagram_entities_schema": FOREIGN_VOCABULARY,
     "DocumentSchemaEntry.frontmatter_schema": FOREIGN_VOCABULARY,
 
-    # ── The drain, field by field ─────────────────────────────────────────────
-    # `attribute_descriptors` (`application/artifact_schema.py:310`) builds each descriptor here, from a
-    # fixed set of keys: `type`, and optionally `enum`, `default`, `constraints`, `items`. Ours to close,
-    # with the entity surface.
-    "EntitySchemaResponse.descriptors": AWAITING_CONTRACT,
-    # `assurance_fmea_lens.failure_mode_summary` returns exactly `worst_action_priority`, `high_count`,
-    # `unanswered_cells`, `nominated_by`. Closes with the assurance surface.
-    "ArchLensResponse.failure_mode_summary": AWAITING_CONTRACT,
-    # The post-write assurance verify's findings, as `assurance_mutations.MutationOk.findings` carries
-    # them. Closes with the assurance surface.
-    "AssuranceNodeCreatedResponse.verification_findings": AWAITING_CONTRACT,
-    "AssuranceNodeUpdatedResponse.verification_findings": AWAITING_CONTRACT,
-    "AssuranceArchRefRegisteredResponse.verification_findings": AWAITING_CONTRACT,
-    "AssuranceEdgeCreatedResponse.verification_findings": AWAITING_CONTRACT,
-    "ModelThisBoundResponse.verification_findings": AWAITING_CONTRACT,
 }

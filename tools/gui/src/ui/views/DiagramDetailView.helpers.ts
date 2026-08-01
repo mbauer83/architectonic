@@ -1,4 +1,25 @@
+import { Option, Schema } from 'effect'
+import { C4NavigationSchema } from '../../domain/schemas/diagrams'
 import type { C4Navigation, DiagramConnection, EntitySummary } from '../../domain'
+
+/** A diagram kind's own region of a read: whatever `read_diagram_extras` or
+ * `build_context_extras` returned, which this package cannot know the shape of. A consumer that
+ * knows the kind decodes the part it came for — the two readers below are that, for the two kinds
+ * the GUI renders specially. */
+type TypeExtras = Readonly<Record<string, unknown>> | undefined
+
+/** The matrix kind's rendered body, or null when this is not a matrix read. */
+export const matrixBodyOf = (extras: TypeExtras): string | null => {
+  const body = extras?.matrix_body
+  return typeof body === 'string' && body ? body : null
+}
+
+/** The C4 kind's navigation block, decoded rather than asserted: it arrives from a region the
+ * envelope declares as the module's, so a shape claim about it has to be checked. */
+export const c4NavigationOf = (extras: TypeExtras): C4Navigation | null =>
+  extras?.c4_navigation === undefined
+    ? null
+    : Option.getOrNull(Schema.decodeUnknownOption(C4NavigationSchema)(extras.c4_navigation))
 
 /**
  * Build alias→artifactId map for SVG interactivity.

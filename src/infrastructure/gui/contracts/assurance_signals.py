@@ -17,11 +17,12 @@ transit. The response envelopes that contain them are closed, which is where the
 
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
 from src.infrastructure.gui.contracts.assurance_nodes import AssuranceNodeRecord
+from src.infrastructure.gui.contracts.verification import AssuranceVerificationFinding
 
 
 class _Closed(BaseModel):
@@ -30,18 +31,6 @@ class _Closed(BaseModel):
 
 class _FeedShaped(BaseModel):
     """A row whose fields come from a security feed's schema rather than from this surface."""
-
-    model_config = ConfigDict(extra="allow")
-
-
-class _PendingContract(BaseModel):
-    """Open pending a decision recorded in ``contracts/open_models.py`` — *not* a settled exception.
-
-    Distinct from ``_FeedShaped`` because the reason is different and the two must not be confused. Two
-    models here were open by inheriting ``_FeedShaped`` while being nothing of the kind, so the reason
-    on record was false of both and no review could see it. A base that says "we have not decided yet"
-    cannot be mistaken for one that says "the schema is not ours to declare".
-    """
 
     model_config = ConfigDict(extra="allow")
 
@@ -194,12 +183,39 @@ class SecuritySnapshotDeletionResponse(_Closed):
     deleted_count: int = 0
 
 
-class AffectedEntity(_PendingContract):
-    """One entity a vulnerability reaches, with the finding rows that reach it.
+class AffectedComponent(_Closed):
+    """One component through which a vulnerability reaches an entity.
 
-    Open only because the shape has not been derived from the impact-analysis producer yet. The fields
-    are this system's own, so unlike a feed row this one is closeable.
+    ``suppressed`` is the VEX verdict applied, not a copy of ``vex_status``: a status of
+    ``not_affected`` suppresses the finding, ``under_investigation`` does not, and a client counting
+    open findings must not have to re-implement that mapping.
     """
+
+    component_name: str
+    component_purl: str
+    component_version: str
+    #: Whether the component is a direct dependency of the anchor or reached through another.
+    directness: str
+    severity_band: str | None
+    cvss_score: float | None
+    applicability: str
+    vex_status: str | None
+    suppressed: bool
+
+
+class AffectedEntity(_Closed):
+    """One architecture entity a vulnerability reaches, with the components it reaches through.
+
+    ``snapshot_activated_at`` is which snapshot said so: the answer is only as current as the scan
+    behind it, and a reader deciding whether to act needs to know when that was.
+    """
+
+    anchor_entity_id: str
+    snapshot_activated_at: str
+    #: Components whose finding is not suppressed by a current VEX assessment. Derived from
+    #: ``components``, and carried because every caller needs it and the derivation is the VEX rule.
+    open_component_count: int
+    components: list[AffectedComponent]
 
 
 class VulnerabilityImpactResponse(_Closed):
@@ -220,6 +236,10 @@ class VulnerabilityImpactResponse(_Closed):
     open_entity_count: int | None = None
     max_severity_band: str | None = None
     max_cvss_score: float | None = None
+    #: Entities the exposure policy withheld from this answer. Reported, because a count the
+    #: caller cannot see is the difference between "affects nothing else" and "affects things you
+    #: may not read".
+    withheld_count: int | None = None
     withheld_count: int | None = None
 
 
@@ -263,6 +283,21 @@ class AnalysisNodePageResponse(_Closed):
     visibility_limited: bool = False
 
 
+class FailureModeRollUpResponse(_Closed):
+    """One architecture element's FMEA row, rolled up to what a badge needs.
+
+    ``unanswered_cells`` is as load-bearing as the priority: a worst-of over a partly-assessed row
+    understates the risk, and a surface showing only the priority would present an incomplete
+    assessment as a low one.
+    """
+
+    worst_action_priority: str | None
+    high_count: int
+    unanswered_cells: int
+    #: The analyses that nominated this element as a candidate.
+    nominated_by: list[str]
+
+
 class ArchLensResponse(_Closed):
     """The assurance findings that concern one architecture artifact.
 
@@ -276,7 +311,7 @@ class ArchLensResponse(_Closed):
     nodes: list[AssuranceNodeRecord] = []
     count: int = 0
     visibility_limited: bool | None = None
-    failure_mode_summary: dict[str, Any] | None = None
+    failure_mode_summary: FailureModeRollUpResponse | None = None
 
 
 class GsnSourceBinding(_Closed):
@@ -326,7 +361,7 @@ class AssuranceNodeCreatedResponse(_Closed):
     node_id: str
     node_type: str
     name: str
-    verification_findings: list[dict[str, Any]] | None = None
+    verification_findings: list[AssuranceVerificationFinding] | None = None
 
 
 class AssuranceNodeUpdatedResponse(_Closed):
@@ -339,4 +374,4 @@ class AssuranceNodeUpdatedResponse(_Closed):
 
     node_id: str
     updated: list[str]
-    verification_findings: list[dict[str, Any]] | None = None
+    verification_findings: list[AssuranceVerificationFinding] | None = None

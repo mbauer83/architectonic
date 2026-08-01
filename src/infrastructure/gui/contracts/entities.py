@@ -272,16 +272,61 @@ class EntityNeighborhoodResponse(RootModel[DirectNeighborhood | DerivedNeighborh
     root: DirectNeighborhood | DerivedNeighborhood = Field(discriminator="traversal")
 
 
-class EntitySchemaResponse(_Closed):
+class AttributeConstraints(NullsOmitted):
+    """The JSON Schema constraint keywords an authoring input can enforce.
+
+    A fixed set — the seven ``_CONSTRAINT_KEYS`` the descriptor builder copies — not the whole
+    vocabulary: these are the ones a form field can act on, and copying the rest would publish
+    keywords no input reads.
+    """
+
+    minimum: float | None = None
+    maximum: float | None = None
+    exclusiveMinimum: float | None = None  # noqa: N815 - the JSON Schema keyword, verbatim
+    exclusiveMaximum: float | None = None  # noqa: N815 - the JSON Schema keyword, verbatim
+    minLength: int | None = None  # noqa: N815 - the JSON Schema keyword, verbatim
+    maxLength: int | None = None  # noqa: N815 - the JSON Schema keyword, verbatim
+    pattern: str | None = None
+
+
+class AttributeItemDescriptor(NullsOmitted):
+    """An array attribute's per-item shape, so a list editor can type each element rather than
+    falling back to a free-text JSON box. One level deep, deliberately: a list of objects is
+    authored as text, and pretending otherwise would mean recursing into arbitrary JSON Schema."""
+
+    type: str
+    enum: list[str] | None = None
+    constraints: AttributeConstraints | None = None
+
+
+class AttributeDescriptor(NullsOmitted):
+    """One attribute, as an authoring input needs it.
+
+    ``default`` is stringified whatever the declared type — an input renders text, and a client
+    that had to know the JSON type to read the default would be doing the schema's job twice.
+    """
+
+    type: str
+    enum: list[str] | None = None
+    default: str | None = None
+    constraints: AttributeConstraints | None = None
+    items: AttributeItemDescriptor | None = None
+
+
+class EntitySchemaResponse(NullsOmitted):
     """The effective attribute schema for a type, merged with its applied specializations.
 
     The same schema the verifier validates against, so an authoring form and verification cannot
     drift. ``quarantined`` is a derived read of the *same* conflict channel, not a parallel one: a
     non-empty conflict set means the write boundary will refuse a create or edit for this pair, and
     the flag only explains a refusal the backend already guarantees.
+
+    Null-omitting: its descriptors are the shape the authoring-guidance route also serves, and one
+    schema cannot have two null policies. ``schema`` is therefore absent, not null, where no schema
+    file declares one — which is what "this type has no attribute schema" means.
     """
 
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True)
 
     artifact_type: str
     specialization: str
@@ -290,6 +335,6 @@ class EntitySchemaResponse(_Closed):
     attribute_schema: dict[str, Any] | None = Field(default=None, alias="schema")
     properties: list[str]
     required: list[str]
-    descriptors: dict[str, Any]
+    descriptors: dict[str, AttributeDescriptor]
     conflicts: list[str]
     quarantined: bool
