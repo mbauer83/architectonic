@@ -38,6 +38,8 @@ export const ERROR_CODES = [
   'illegal_connection_type',
   'not_a_failure_mode',
   'traversal_time_budget_exceeded',
+  'diagram_render_limit',
+  'binding_cardinality_violation',
   'unknown_diagram_type',
   // Same reasoning, one surface over: the guidance catalogue is fixed, so an unknown topic names no
   // resource, and the reply is worth more as the topics that do exist than as prose.
@@ -150,8 +152,25 @@ export const ViewpointReferencedDetailsSchema = Schema.Struct({
   referencers: Schema.Array(ViewpointReferencerRefSchema),
 })
 
+/** `diagram_render_limit`: how large the result was, and what the renderer will take. Both, because
+ *  "too large" without them leaves the reader guessing how much to narrow by. */
+export const DiagramRenderLimitDetailsSchema = Schema.Struct({
+  entity_count: Schema.Number,
+  max_entities: Schema.Number,
+})
+
+/** `binding_cardinality_violation`: which binding, what it declared, what it resolved to. The name
+ *  is the actionable part — a query may declare several, and only one needs its criteria changed. */
+export const BindingCardinalityDetailsSchema = Schema.Struct({
+  binding: Schema.String,
+  expected: Schema.String,
+  found: Schema.Number,
+})
+
 export const ErrorDetailsSchema = Schema.Union(
   ValidationErrorDetailsSchema,
+  DiagramRenderLimitDetailsSchema,
+  BindingCardinalityDetailsSchema,
   DenialDetailsSchema,
   MethodMismatchDetailsSchema,
   AnalysisNotEmptyDetailsSchema,

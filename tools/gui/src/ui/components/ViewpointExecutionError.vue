@@ -1,15 +1,14 @@
 <script setup lang="ts">
 /**
  * A distinct, actionable error state for a failed viewpoint execution — never a phantom
- * empty result. Renders the typed `{code, path, message}` body when the failure carried
- * one (parameter/timeout/derivation-limit/cardinality errors), falling back to the flat
- * message for anything else (a network error, an unrecognized code).
+ * empty result. Renders the published error envelope when the failure carried one, falling
+ * back to the flat message for anything else (a network error, an unrecognized code).
  */
 import { computed } from 'vue'
-import type { TypedApiError } from '../lib/errors'
+import type { ErrorBody } from '../../domain/schemas/errors'
 import { executionErrorDisplay } from '../lib/viewpointExecutionErrorText'
 
-const props = defineProps<{ typedError: TypedApiError | null; fallbackMessage: string }>()
+const props = defineProps<{ typedError: ErrorBody | null; fallbackMessage: string }>()
 const emit = defineEmits<{ retry: [] }>()
 
 const display = computed(() => (props.typedError ? executionErrorDisplay(props.typedError) : null))

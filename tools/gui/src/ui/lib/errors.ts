@@ -5,21 +5,6 @@ import type { WriteVerification } from '../../domain/schemas/write-results'
 export const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null
 
-/** The structured `{code, path, message}` body FastAPI sends for a typed HTTPException
- * detail (`ViewpointParameterError`/`BindingCardinalityError`/`DerivationLimitError`/
- * `ViewpointExecutionTimeoutError`, and others) — distinct from a plain-string `detail`,
- * which every other HTTPException still sends. */
-export interface TypedApiError {
-  readonly code: string
-  readonly path: string
-  readonly message: string
-  readonly expected?: string | null
-  readonly found?: string | null
-}
-
-const isTypedApiError = (value: unknown): value is TypedApiError =>
-  isRecord(value) && typeof value.code === 'string' && typeof value.path === 'string' && typeof value.message === 'string'
-
 /** The raw JSON text a failed `fetch` call's body carries, whichever adapter shape wraps
  * it — an `Error`-like value's `.message` (the network adapter's convention: the response
  * body text, not a human sentence) or a bare string. `null` for anything else (a real
@@ -28,21 +13,6 @@ const rawResponseText = (error: unknown): string | null => {
   if (typeof error === 'string') return error
   if (error instanceof Error && error.message) return error.message
   return null
-}
-
-/** The typed `{code, path, message}` error a viewpoint-execution (or similarly typed)
- * endpoint sent, decoded from the raw response body — `null` when the response wasn't
- * JSON, wasn't a FastAPI `{"detail": ...}` envelope, or carried a plain-string `detail`
- * (most HTTPExceptions). Callers that only need prose should use `readErrorMessage`. */
-export const extractTypedApiError = (error: unknown): TypedApiError | null => {
-  const raw = rawResponseText(error)
-  if (raw === null) return null
-  try {
-    const parsed = JSON.parse(raw) as unknown
-    return isRecord(parsed) && isTypedApiError(parsed.detail) ? parsed.detail : null
-  } catch {
-    return null
-  }
 }
 
 /**
@@ -67,8 +37,11 @@ export const readApiErrorBody = (error: unknown): ErrorBody | null => {
 }
 
 export const readErrorMessage = (error: unknown): string => {
-  const typed = extractTypedApiError(error)
-  if (typed) return typed.message
+  // The envelope first: `detail` is an *object* on every typed error this surface sends, so the
+  // string-`detail` unwrap below never matched and the raw JSON body was returned verbatim — which
+  // is what a user saw under "Execution failed" for a malformed viewpoint query.
+  const body = readApiErrorBody(error)
+  if (body !== null) return body.message
   const raw = rawResponseText(error)
   if (raw !== null) {
     // The network adapters throw the raw HTTP response body text as an Error's `.message`
@@ -76,7 +49,14 @@ export const readErrorMessage = (error: unknown): string => {
     // back to the raw text verbatim, so a real error still reads like an error.
     try {
       const parsed = JSON.parse(raw) as unknown
-      if (isRecord(parsed) && typeof parsed.detail === 'string' && parsed.detail) return parsed.detail
+      if (isRecord(parsed)) {
+        const detail = parsed.detail
+        if (typeof detail === 'string' && detail) return detail
+        // An object `detail` that is not the envelope — a surface not yet on it, or an envelope from a
+        // newer server this client cannot decode. Its `message` is still prose a person can read, and
+        // the alternative is putting a JSON blob on the screen.
+        if (isRecord(detail) && typeof detail.message === 'string' && detail.message) return detail.message
+      }
     } catch {
       /* not JSON (a real thrown Error's own prose message) — use it as-is below */
     }

@@ -32,6 +32,7 @@ from src.infrastructure.rest.routers._openapi import (
     TAG_TAXONOMY,
 )
 from src.infrastructure.rest.routers.connections.neighbors import DerivationLimitError, derive_neighbor_response
+from src.infrastructure.rest.routers.viewpoints._request_parsing import derivation_limit
 
 
 def register_connection_read_routes(router: APIRouter) -> None:
@@ -84,7 +85,7 @@ def register_connection_read_routes(router: APIRouter) -> None:
                 catalogs=catalogs,
             )
         except DerivationLimitError as exc:
-            raise HTTPException(400, {"code": "derivation-limit", "path": "query", "message": str(exc)}) from exc
+            raise derivation_limit(str(exc)) from exc
 
     @router.get("/api/search", tags=[TAG_ENTITIES], summary="Keyword search over artifacts",
         response_model=KeywordSearchResponse)

@@ -29,7 +29,18 @@ from src.domain.viewpoints.viewpoint_value_types import (
 
 
 class BindingCardinalityError(ValueError):
-    code = "binding-cardinality-violation"
+    """A binding declared to yield one value yielded another number of them.
+
+    The binding, what it declared and what it found are carried as fields, not only interpolated
+    into the message: a caller has to know *which* binding's criteria to change, and recovering that
+    by parsing the sentence is the shape this release spent its time removing.
+    """
+
+    def __init__(self, binding: str, expectation: str, found: int) -> None:
+        super().__init__(f"binding {binding!r} requires {expectation} result, got {found}")
+        self.binding = binding
+        self.expectation = expectation
+        self.found = found
 
 
 @dataclass(frozen=True)
@@ -165,7 +176,7 @@ def _single(name: str, values: tuple[EntityRecord | ConnectionRecord, ...], *, r
     if not required and not values:
         return None
     expectation = "exactly one" if required else "zero or one"
-    raise BindingCardinalityError(f"binding {name!r} requires {expectation} result, got {len(values)}")
+    raise BindingCardinalityError(name, expectation, len(values))
 
 
 def _evaluate_derived(

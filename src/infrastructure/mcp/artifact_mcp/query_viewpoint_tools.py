@@ -166,7 +166,11 @@ def register_query_viewpoint_tools(mcp: FastMCP) -> None:
         except ViewpointParameterError as exc:
             return {"error": {"code": exc.code, "path": f"parameters/{exc.parameter}", "message": str(exc)}}
         except BindingCardinalityError as exc:
-            return {"error": {"code": exc.code, "path": "query", "message": str(exc)}}
+            # MCP answers in-band with its own `{"error": {code, path, message}}` shape; it is not the
+            # REST envelope and is not changed here. The code is named rather than read off the
+            # exception, which no longer advertises one — REST carries the binding, expectation and
+            # count as typed `details` instead of relying on a class attribute.
+            return {"error": {"code": "binding-cardinality-violation", "path": "query", "message": str(exc)}}
         except DerivationLimitError as exc:
             return {"error": {"code": "derivation-limit", "path": "query", "message": str(exc)}}
         except ViewpointExecutionTimeoutError as exc:

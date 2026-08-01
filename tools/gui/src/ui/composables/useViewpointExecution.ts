@@ -2,7 +2,8 @@ import { ref } from 'vue'
 import { Effect } from 'effect'
 import type { ModelService } from '../../application/ModelService'
 import type { ViewpointExecutionRequest, ViewpointExecutionResult, ViewpointProjection } from '../../domain'
-import { extractTypedApiError, readErrorMessage, type TypedApiError } from '../lib/errors'
+import { readApiErrorBody, readErrorMessage } from '../lib/errors'
+import type { ErrorBody } from '../../domain/schemas/errors'
 
 /**
  * Fetches a viewpoint's fixed content and its styled repository projection together — the
@@ -14,7 +15,7 @@ export function useViewpointExecution(svc: ModelService) {
   const projection = ref<ViewpointProjection | null>(null)
   const loading = ref(false)
   const errorMessage = ref<string | null>(null)
-  const typedError = ref<TypedApiError | null>(null)
+  const typedError = ref<ErrorBody | null>(null)
   let lastParams: ViewpointExecutionRequest | null = null
 
   const execute = async (params: ViewpointExecutionRequest): Promise<void> => {
@@ -31,7 +32,7 @@ export function useViewpointExecution(svc: ModelService) {
       projection.value = projectionResult
     } catch (reason) {
       errorMessage.value = readErrorMessage(reason)
-      typedError.value = extractTypedApiError(reason)
+      typedError.value = readApiErrorBody(reason)
       result.value = null
       projection.value = null
     } finally {

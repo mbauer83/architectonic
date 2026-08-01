@@ -4632,6 +4632,21 @@ export interface components {
             software_version: string;
         };
         /**
+         * BindingCardinalityDetails
+         * @description ``binding_cardinality_violation``: which binding, what it declared, what it resolved to.
+         *
+         *     The binding name is the actionable part — a query may declare several, and the caller has to know
+         *     which one's criteria to change.
+         */
+        BindingCardinalityDetails: {
+            /** Binding */
+            binding: string;
+            /** Expected */
+            expected: string;
+            /** Found */
+            found: number;
+        };
+        /**
          * BindingCatalogResponse
          * @description What a binding may select, aggregate and declare as its result type.
          *
@@ -6113,6 +6128,18 @@ export interface components {
             items: components["schemas"]["DiagramReference"][];
         };
         /**
+         * DiagramRenderLimitDetails
+         * @description ``diagram_render_limit``: how large the result was and what the renderer will take.
+         *
+         *     Both numbers, because "too large" without them leaves the caller guessing how much to narrow by.
+         */
+        DiagramRenderLimitDetails: {
+            /** Entity Count */
+            entity_count: number;
+            /** Max Entities */
+            max_entities: number;
+        };
+        /**
          * DiagramSummary
          * @description One row of the diagram list.
          *
@@ -7357,9 +7384,9 @@ export interface components {
              * Code
              * @enum {string}
              */
-            code: "bad_request" | "forbidden" | "not_found" | "conflict" | "validation_error" | "write_rejected" | "internal_error" | "assurance_store_locked" | "signal_mutation_denied" | "invalid_vex_assessment" | "analysis_method_mismatch" | "analysis_not_empty" | "entity_in_use" | "provenance_immutable" | "provenance_required" | "invalid_participation" | "node_legacy_invalid" | "duplicate_edge" | "illegal_connection_type" | "not_a_failure_mode" | "traversal_time_budget_exceeded" | "unknown_diagram_type" | "unknown_guidance_topic" | "classification_not_publishable" | "not_configured" | "viewpoint_referenced";
+            code: "bad_request" | "forbidden" | "not_found" | "conflict" | "validation_error" | "write_rejected" | "internal_error" | "assurance_store_locked" | "signal_mutation_denied" | "invalid_vex_assessment" | "analysis_method_mismatch" | "analysis_not_empty" | "entity_in_use" | "provenance_immutable" | "provenance_required" | "invalid_participation" | "node_legacy_invalid" | "duplicate_edge" | "illegal_connection_type" | "not_a_failure_mode" | "traversal_time_budget_exceeded" | "diagram_render_limit" | "binding_cardinality_violation" | "unknown_diagram_type" | "unknown_guidance_topic" | "classification_not_publishable" | "not_configured" | "viewpoint_referenced";
             /** Details */
-            details?: components["schemas"]["ValidationErrorDetails"] | components["schemas"]["DenialDetails"] | components["schemas"]["MethodMismatchDetails"] | components["schemas"]["AnalysisNotEmptyDetails"] | components["schemas"]["EntityInUseDetails"] | components["schemas"]["DuplicateEdgeDetails"] | components["schemas"]["IllegalConnectionTypeDetails"] | components["schemas"]["NotAFailureModeDetails"] | components["schemas"]["UnknownDiagramTypeDetails"] | components["schemas"]["UnknownGuidanceTopicDetails"] | components["schemas"]["ClassificationNotPublishableDetails"] | components["schemas"]["NotConfiguredDetails"] | components["schemas"]["ProvenanceImmutableDetails"] | components["schemas"]["InvalidParticipationDetails"] | components["schemas"]["LegacyInvalidDetails"] | components["schemas"]["ViewpointReferencedDetails"] | null;
+            details?: components["schemas"]["ValidationErrorDetails"] | components["schemas"]["DiagramRenderLimitDetails"] | components["schemas"]["BindingCardinalityDetails"] | components["schemas"]["DenialDetails"] | components["schemas"]["MethodMismatchDetails"] | components["schemas"]["AnalysisNotEmptyDetails"] | components["schemas"]["EntityInUseDetails"] | components["schemas"]["DuplicateEdgeDetails"] | components["schemas"]["IllegalConnectionTypeDetails"] | components["schemas"]["NotAFailureModeDetails"] | components["schemas"]["UnknownDiagramTypeDetails"] | components["schemas"]["UnknownGuidanceTopicDetails"] | components["schemas"]["ClassificationNotPublishableDetails"] | components["schemas"]["NotConfiguredDetails"] | components["schemas"]["ProvenanceImmutableDetails"] | components["schemas"]["InvalidParticipationDetails"] | components["schemas"]["LegacyInvalidDetails"] | components["schemas"]["ViewpointReferencedDetails"] | null;
             /** Message */
             message: string;
             /** Request Id */

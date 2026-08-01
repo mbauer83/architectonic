@@ -1,59 +1,90 @@
 import { describe, expect, it } from 'vitest'
-import { executionErrorDisplay, parameterNameFromPath } from './viewpointExecutionErrorText'
-import type { TypedApiError } from './errors'
+import { executionErrorDisplay, parameterNameFromField } from './viewpointExecutionErrorText'
+import type { ErrorBody } from '../../domain/schemas/errors'
 
-describe('parameterNameFromPath', () => {
-  it('extracts the parameter name from a parameters/<name> path', () => {
-    expect(parameterNameFromPath('parameters/anchor')).toBe('anchor')
+/**
+ * These assertions used to be built from a `{code, path, message}` literal the surface never sent, so
+ * every branch under test was unreachable in production while this file stayed green. They are built
+ * from the published envelope now — the shape `readApiErrorBody` decodes.
+ */
+
+const envelope = (overrides: Partial<ErrorBody>): ErrorBody =>
+  ({ code: 'bad_request', message: 'boom', details: null, request_id: 'r-1', ...overrides }) as ErrorBody
+
+const rejected = (field: string, message: string): ErrorBody =>
+  envelope({ code: 'validation_error', message, details: { field_errors: [{ field, message }] } })
+
+describe('parameterNameFromField', () => {
+  it('extracts the parameter name from a parameters.<name> field path', () => {
+    expect(parameterNameFromField('parameters.anchor')).toBe('anchor')
   })
 
-  it('is null for a non-parameter path', () => {
-    expect(parameterNameFromPath('query')).toBeNull()
+  it('is null for a field that is not a parameter', () => {
+    expect(parameterNameFromField('query')).toBeNull()
   })
 })
 
 describe('executionErrorDisplay', () => {
-  const error = (overrides: Partial<TypedApiError>): TypedApiError => ({ code: 'x', path: 'query', message: 'boom', ...overrides })
-
-  it('names the missing parameter', () => {
-    const display = executionErrorDisplay(error({ code: 'missing-parameter', path: 'parameters/anchor', message: 'missing-parameter: anchor' }))
-    expect(display.title).toBe('Missing a required parameter')
-    expect(display.detail).toContain('anchor')
-  })
-
-  it('names the unknown parameter', () => {
-    const display = executionErrorDisplay(error({ code: 'unknown-parameter', path: 'parameters/bogus', message: 'unknown-parameter: bogus' }))
-    expect(display.title).toBe('Unknown parameter supplied')
+  it('names the rejected parameter', () => {
+    const display = executionErrorDisplay(rejected('parameters.bogus', 'unknown-parameter: bogus'))
+    expect(display.title).toBe('A parameter was not accepted')
     expect(display.detail).toContain('bogus')
   })
 
-  it('names the type-mismatched parameter', () => {
-    const display = executionErrorDisplay(error({ code: 'parameter-type-mismatch', path: 'parameters/limit', message: 'parameter-type-mismatch: limit' }))
-    expect(display.title).toBe("Parameter value doesn't match its type")
-    expect(display.detail).toContain('limit')
+  it('distinguishes a rejected query from a rejected presentation', () => {
+    expect(executionErrorDisplay(rejected('query', 'max_hops must be at least 2')).title)
+      .toBe('That query was not accepted')
+    expect(executionErrorDisplay(rejected('presentation', 'unknown representation')).title)
+      .toBe('That presentation was not accepted')
   })
 
-  it('gives an actionable timeout message', () => {
-    const display = executionErrorDisplay(error({ code: 'execution-timeout', message: 'viewpoint execution exceeded 5.0s' }))
-    expect(display.title).toBe('This took too long to execute')
-    expect(display.detail).toContain('narrowing the query')
-  })
-
-  it('gives an actionable derivation-limit message', () => {
-    const display = executionErrorDisplay(error({ code: 'derivation-limit', message: 'exceeded max hops' }))
-    expect(display.title).toBe('Derived-relationship traversal limit exceeded')
+  it('gives an actionable message for an exceeded traversal budget', () => {
+    // One code for both the wall-clock timeout and the derivation bound: they are the same budget,
+    // and `traversal_time_budget_exceeded` already meant this before the viewpoint routes existed.
+    const display = executionErrorDisplay(
+      envelope({ code: 'traversal_time_budget_exceeded', message: 'viewpoint execution exceeded 5.0s' }),
+    )
+    expect(display.title).toBe('The traversal exceeded its budget')
     expect(display.detail).toContain('hop bound')
   })
 
-  it('gives an actionable binding-cardinality message', () => {
-    const display = executionErrorDisplay(error({ code: 'binding-cardinality-violation', message: 'binding "x" resolved to 3 entities' }))
-    expect(display.title).toBe('A binding matched the wrong number of items')
-    expect(display.detail).toContain('declared as exactly-one')
+  it('reports both render bounds, so the reader knows how much to narrow by', () => {
+    const display = executionErrorDisplay(
+      envelope({
+        code: 'diagram_render_limit',
+        message: 'too large for diagram rendering.',
+        details: { entity_count: 900, max_entities: 400 },
+      }),
+    )
+    expect(display.title).toBe('Result too large for diagram rendering')
+    expect(display.detail).toContain('900')
+    expect(display.detail).toContain('400')
   })
 
-  it('falls back to a generic-but-still-distinct state for an unrecognized code', () => {
-    const display = executionErrorDisplay(error({ code: 'something-new', message: 'unrecognized failure' }))
-    expect(display.title).toBe('Execution failed')
-    expect(display.detail).toBe('unrecognized failure')
+  it('names which binding matched the wrong number of items', () => {
+    const display = executionErrorDisplay(
+      envelope({
+        code: 'binding_cardinality_violation',
+        message: "binding 'one' requires exactly one result, got 2",
+        details: { binding: 'one', expected: 'exactly one', found: 2 },
+      }),
+    )
+    expect(display.title).toBe('A binding matched the wrong number of items')
+    expect(display.detail).toContain('one')
+    expect(display.detail).toContain('2')
+  })
+
+  it('falls back to the flat message for an unrecognised code', () => {
+    expect(executionErrorDisplay(envelope({ code: 'internal_error', message: 'nope' })))
+      .toEqual({ title: 'Execution failed', detail: 'nope' })
+  })
+
+  it('survives a code whose details are absent', () => {
+    // `traversal_time_budget_exceeded` declares none, and the two that do can still arrive without
+    // them if a producer omits them — no branch may assume they are there.
+    expect(executionErrorDisplay(envelope({ code: 'diagram_render_limit', message: 'too large.' })).detail)
+      .toBe('too large.')
+    expect(executionErrorDisplay(envelope({ code: 'binding_cardinality_violation', message: 'bad count.' })).detail)
+      .toContain('criteria')
   })
 })

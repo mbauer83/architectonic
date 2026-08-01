@@ -51,6 +51,12 @@ ErrorCode: TypeAlias = Literal[
     "illegal_connection_type",
     "not_a_failure_mode",
     "traversal_time_budget_exceeded",
+    # A viewpoint execution that produced an answer the caller cannot use. Members rather than
+    # `bad_request`, for the reason the group above gives: each carries a bound the caller can act
+    # on, and the GUI renders a distinct, actionable state per code. They arrived as `bad_request`
+    # until 0.2.0, so that surface was unreachable and the raw envelope reached the screen.
+    "diagram_render_limit",
+    "binding_cardinality_violation",
     # Kept a member rather than folded into `validation_error`: it carries the list of types the
     # analysis *does* project to, and a field error can only render that as prose. A client offering
     # the alternatives needs them as data.
@@ -86,6 +92,28 @@ class ValidationErrorDetails(_Details):
     """``validation_error`` and ``invalid_vex_assessment``: which fields were rejected and why."""
 
     field_errors: list[FieldError]
+
+
+class DiagramRenderLimitDetails(_Details):
+    """``diagram_render_limit``: how large the result was and what the renderer will take.
+
+    Both numbers, because "too large" without them leaves the caller guessing how much to narrow by.
+    """
+
+    entity_count: int
+    max_entities: int
+
+
+class BindingCardinalityDetails(_Details):
+    """``binding_cardinality_violation``: which binding, what it declared, what it resolved to.
+
+    The binding name is the actionable part — a query may declare several, and the caller has to know
+    which one's criteria to change.
+    """
+
+    binding: str
+    expected: str
+    found: int
 
 
 class DenialDetails(_Details):
@@ -281,6 +309,8 @@ ERROR_DETAIL_TYPES: dict[str, type[_Details] | None] = {
     # telemetry too — and how far the walk got is not something the caller can act on. `Retry-After`
     # carries the machine-readable part, which is the only actionable thing there is.
     "traversal_time_budget_exceeded": None,
+    "diagram_render_limit": DiagramRenderLimitDetails,
+    "binding_cardinality_violation": BindingCardinalityDetails,
     "unknown_diagram_type": UnknownDiagramTypeDetails,
     "unknown_guidance_topic": UnknownGuidanceTopicDetails,
     "classification_not_publishable": ClassificationNotPublishableDetails,
@@ -292,6 +322,8 @@ ERROR_DETAIL_TYPES: dict[str, type[_Details] | None] = {
 #: handlers pass values of exactly this type and the base class would be too wide.
 ErrorDetails: TypeAlias = (
     ValidationErrorDetails
+    | DiagramRenderLimitDetails
+    | BindingCardinalityDetails
     | DenialDetails
     | MethodMismatchDetails
     | AnalysisNotEmptyDetails

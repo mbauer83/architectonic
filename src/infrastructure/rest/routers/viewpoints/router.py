@@ -48,13 +48,12 @@ from src.infrastructure.rest.contracts.viewpoint_projection import (
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers._openapi import READ_RESPONSES, TAG_VIEWPOINTS, media_response
 from src.infrastructure.rest.routers.diagrams._selection import resolve_diagram_selection
+
+# Named as a module at the call sites: every one of these turns an execution failure into the
+# published envelope, and `failures.derivation_limit(...)` says that where four bare names did not.
+from src.infrastructure.rest.routers.viewpoints import _request_parsing as failures
 from src.infrastructure.rest.routers.viewpoints._freshness import fresh_viewpoints_runtime_catalogs_dependency
-from src.infrastructure.rest.routers.viewpoints._request_parsing import (
-    execution_error,
-    parameter_error,
-    parse_presentation,
-    parse_query,
-)
+from src.infrastructure.rest.routers.viewpoints._request_parsing import parse_presentation, parse_query
 from src.infrastructure.rest.routers.viewpoints.signal_render import (
     signal_banner_for,
     signal_render_router,
@@ -142,13 +141,13 @@ def execute_viewpoint(
     except UnknownViewpointSlugError as exc:
         raise HTTPException(400, str(exc)) from exc
     except ViewpointExecutionTimeoutError as exc:
-        raise HTTPException(504, {"code": "execution-timeout", "path": "query", "message": str(exc)}) from exc
+        raise failures.execution_timeout(str(exc)) from exc
     except ViewpointParameterError as exc:
-        raise parameter_error(exc) from exc
+        raise failures.parameter_error(exc) from exc
     except BindingCardinalityError as exc:
-        raise execution_error(exc.code, str(exc)) from exc
+        raise failures.binding_cardinality(exc) from exc
     except DerivationLimitError as exc:
-        raise execution_error("derivation-limit", str(exc)) from exc
+        raise failures.derivation_limit(str(exc)) from exc
     return asdict(result)
 
 
@@ -193,13 +192,13 @@ def export_viewpoint_csv(
     except UnknownViewpointSlugError as exc:
         raise HTTPException(400, str(exc)) from exc
     except ViewpointExecutionTimeoutError as exc:
-        raise HTTPException(504, {"code": "execution-timeout", "path": "query", "message": str(exc)}) from exc
+        raise failures.execution_timeout(str(exc)) from exc
     except ViewpointParameterError as exc:
-        raise parameter_error(exc) from exc
+        raise failures.parameter_error(exc) from exc
     except BindingCardinalityError as exc:
-        raise execution_error(exc.code, str(exc)) from exc
+        raise failures.binding_cardinality(exc) from exc
     except DerivationLimitError as exc:
-        raise execution_error("derivation-limit", str(exc)) from exc
+        raise failures.derivation_limit(str(exc)) from exc
     effective_presentation = _effective_presentation(slug, parsed_presentation, catalogs)
     columns = effective_presentation.columns if effective_presentation is not None else None
     text = build_execution_csv(result, columns, parameters)
@@ -243,11 +242,11 @@ def execute_viewpoint_projection(
     except UnknownViewpointSlugError as exc:
         raise HTTPException(400, str(exc)) from exc
     except ViewpointParameterError as exc:
-        raise parameter_error(exc) from exc
+        raise failures.parameter_error(exc) from exc
     except BindingCardinalityError as exc:
-        raise execution_error(exc.code, str(exc)) from exc
+        raise failures.binding_cardinality(exc) from exc
     except DerivationLimitError as exc:
-        raise execution_error("derivation-limit", str(exc)) from exc
+        raise failures.derivation_limit(str(exc)) from exc
     # Same provenance contract as /execute: consumers correlating an execution result
     # with its styled projection can verify both came from the same model snapshot.
     return {"applied": True, "index_generation": index_generation, **asdict(projection)}
@@ -299,21 +298,22 @@ def execute_viewpoint_diagram(
     except UnknownViewpointSlugError as exc:
         raise HTTPException(400, str(exc)) from exc
     except ViewpointExecutionTimeoutError as exc:
-        raise HTTPException(504, {"code": "execution-timeout", "path": "query", "message": str(exc)}) from exc
+        raise failures.execution_timeout(str(exc)) from exc
     except ViewpointParameterError as exc:
-        raise parameter_error(exc) from exc
+        raise failures.parameter_error(exc) from exc
     except BindingCardinalityError as exc:
-        raise execution_error(exc.code, str(exc)) from exc
+        raise failures.binding_cardinality(exc) from exc
     except DerivationLimitError as exc:
-        raise execution_error("derivation-limit", str(exc)) from exc
+        raise failures.derivation_limit(str(exc)) from exc
 
     render_limit = viewpoints_diagram_render_max_entities()
     if result.total_entity_count > render_limit:
-        raise execution_error(
-            "diagram-render-limit",
+        raise failures.diagram_render_limit(
             f"this result has {result.total_entity_count} entities — too large for diagram rendering "
             f"(limit {render_limit}). Try the exploration or table representation, or narrow the "
             "scope (filter by group/type, or anchor the view).",
+            entity_count=result.total_entity_count,
+            max_entities=render_limit,
         )
 
     from src.application.artifacts.parsing import normalize_puml_alias

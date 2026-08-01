@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { Data } from 'effect'
 import {
   collectVerificationIssues,
-  extractTypedApiError,
+  readApiErrorBody,
   hasVerificationErrors,
   readErrorMessage,
 } from './errors'
@@ -29,10 +29,12 @@ describe('readErrorMessage', () => {
     expect(readErrorMessage(error)).toBe("unknown viewpoint slug 'x'")
   })
 
-  it('unwraps the message field of a typed {code, path, message} detail envelope', () => {
+  it('reads `message` from an object detail it cannot decode as the envelope', () => {
+    // A surface not yet on the envelope, or an envelope from a newer server. Either way the message is
+    // prose a person can read, and the alternative is a JSON blob on the screen.
     const error = new NetworkError({
       status: 400,
-      message: JSON.stringify({ detail: { code: 'parameter-missing', path: 'parameters/anchor', message: 'required parameter anchor is missing' } }),
+      message: JSON.stringify({ detail: { code: 'something-newer', message: 'required parameter anchor is missing' } }),
     })
     expect(readErrorMessage(error)).toBe('required parameter anchor is missing')
   })
@@ -54,26 +56,50 @@ describe('readErrorMessage', () => {
   })
 })
 
-describe('extractTypedApiError', () => {
-  it('extracts the structured error for a typed detail envelope', () => {
+describe('readApiErrorBody', () => {
+  it('decodes the published envelope a failed request carried', () => {
     const error = new NetworkError({
       status: 400,
-      message: JSON.stringify({ detail: { code: 'derivation-limit', path: 'query', message: 'too many hops', expected: '5', found: '9' } }),
+      message: JSON.stringify({
+        detail: {
+          code: 'validation_error',
+          message: 'max_hops must be at least 2',
+          details: { field_errors: [{ field: 'query', message: 'max_hops must be at least 2' }] },
+          request_id: 'r-9',
+        },
+      }),
     })
-    expect(extractTypedApiError(error)).toEqual({ code: 'derivation-limit', path: 'query', message: 'too many hops', expected: '5', found: '9' })
+    const body = readApiErrorBody(error)
+    expect(body?.code).toBe('validation_error')
+    expect(body?.details).toEqual({ field_errors: [{ field: 'query', message: 'max_hops must be at least 2' }] })
   })
 
   it('is null for a plain-string detail envelope', () => {
     const error = new NetworkError({ status: 400, message: JSON.stringify({ detail: 'not typed' }) })
-    expect(extractTypedApiError(error)).toBeNull()
+    expect(readApiErrorBody(error)).toBeNull()
   })
 
   it('is null for a real Error whose message is not JSON', () => {
-    expect(extractTypedApiError(new Error('network unreachable'))).toBeNull()
+    expect(readApiErrorBody(new Error('network unreachable'))).toBeNull()
   })
 
-  it('is null for a non-string, non-Error value', () => {
-    expect(extractTypedApiError({ detail: { code: 'x', path: 'y', message: 'z' } })).toBeNull()
+  it('is null for a body that is not the envelope', () => {
+    const error = new NetworkError({ status: 400, message: JSON.stringify({ detail: { code: 'x' } }) })
+    expect(readApiErrorBody(error)).toBeNull()
+  })
+})
+
+describe('readErrorMessage never surfaces the raw envelope', () => {
+  it('reads the envelope message rather than returning the JSON body', () => {
+    // The defect this closes: `detail` is an object on every typed error, so the string-`detail`
+    // unwrap never matched and the raw JSON was returned — and shown to the user.
+    const error = new NetworkError({
+      status: 400,
+      message: JSON.stringify({
+        detail: { code: 'bad_request', message: 'max_hops must be at least 2', details: null, request_id: 'r-1' },
+      }),
+    })
+    expect(readErrorMessage(error)).toBe('max_hops must be at least 2')
   })
 })
 
