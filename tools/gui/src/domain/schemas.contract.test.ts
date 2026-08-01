@@ -46,6 +46,10 @@ const ASSURANCE_NODES_RESPONSE = {
     created_at: '2026-06-11T12:39:59Z',
     updated_at: '2026-06-11T12:39:59Z',
     analysis_id: null,
+    // Degrees over the exposure-filtered edge set, which is why they belong to the response rather
+    // than to the stored record.
+    conn_in: 0,
+    conn_out: 1,
   }],
   count: 1,
   visibility_limited: true,

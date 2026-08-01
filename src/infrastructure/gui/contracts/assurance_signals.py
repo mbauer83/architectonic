@@ -21,6 +21,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict
 
+from src.infrastructure.gui.contracts.assurance_nodes import AssuranceNodeRecord
+
 
 class _Closed(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -227,43 +229,8 @@ class SignalAnchorTypeListResponse(_Closed):
     anchor_types: list[str]
 
 
-class AssuranceNodeRecord(_Closed):
-    """One assurance node, as every backend now hands it back.
-
-    Was open, on the reading that its ``attributes_json`` needed a decision first. It did not: the
-    store keeps that column as ``TEXT`` and passes it through unparsed, so the wire carries a JSON
-    *string* and the client parses it a second time (``AssuranceGrcWizard.helpers.ts``). A string is a
-    ``str``. What actually blocked closing this was that the record had no single shape — nineteen
-    columns from SQLCipher, seventeen from the file stores, seventeen plus collection metadata from
-    PocketBase — and it is projected at the store boundary now
-    (``assurance/_node_records.NODE_RECORD_FIELDS``).
-
-    The nullable fields are the discriminated ones: a hazard has no ``uca_type``, a failure mode no
-    ``concern_class``, and a legacy-invalid node no ``analysis_id`` at all — which is the state the
-    provenance repair surface exists to fix, so it has to be representable rather than defaulted.
-    """
-
-    node_id: str
-    node_type: str
-    name: str
-    status: str
-    tlp: str
-    concern_class: str | None
-    disposition: str | None
-    uca_type: str | None
-    failure_type: str | None
-    mode: str | None
-    binding_status: str | None
-    node_role: str | None
-    analysis_id: str | None
-    # The store's own column, passed through unparsed. Not `dict[str, Any]`: parsing it here would be
-    # a wire break, and declaring it as an object while sending a string would be a false schema.
-    attributes_json: str
-    content_text: str
-    created_at: str
-    updated_at: str
-
-
+# The node record itself lives in ``assurance_nodes`` — with the two reads that serve it, and out of
+# this module, which is over the file-length limit and may not grow.
 class WorkingSetNodeItem(_Closed):
     """One node of an analysis's working set, and how the analysis relates to it.
 

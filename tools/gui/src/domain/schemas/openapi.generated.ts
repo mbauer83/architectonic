@@ -3129,6 +3129,24 @@ export interface components {
             status: "draft" | "active" | "completed" | "archived";
         };
         /**
+         * AssuranceArchRefRecord
+         * @description One reference from an assurance node out to an architecture artifact.
+         *
+         *     ``resolved_at`` is null until the reference has been checked against the repository — the state the
+         *     binding surface exists to change, and one PocketBase reported as an empty string until the record
+         *     was projected.
+         */
+        AssuranceArchRefRecord: {
+            /** Arch Artifact Id */
+            arch_artifact_id: string;
+            /** Assurance Node Id */
+            assurance_node_id: string;
+            /** Ref Type */
+            ref_type: string;
+            /** Resolved At */
+            resolved_at: string | null;
+        };
+        /**
          * AssuranceCoverageGaps
          * @description The gap categories, each naming the nodes that fall into it.
          *
@@ -3169,6 +3187,48 @@ export interface components {
             summary: string;
             /** Total Gaps */
             total_gaps: number;
+        };
+        /**
+         * AssuranceEdgeListResponse
+         * @description The visible edges, enriched. ``count`` is the length of the list after filtering.
+         */
+        AssuranceEdgeListResponse: {
+            /** Count */
+            count: number;
+            /** Edges */
+            edges: components["schemas"]["AssuranceEnrichedEdge"][];
+            /** Visibility Limited */
+            visibility_limited: boolean;
+        };
+        /**
+         * AssuranceEnrichedEdge
+         * @description An edge with its endpoints named, so a row renders without a request per endpoint.
+         *
+         *     An edge appears only when *both* endpoints are visible to the reader — an edge to a withheld node
+         *     would disclose that node's existence through the shape of the graph
+         *     (``assurance_edge_enrichment.enrich_edges``).
+         */
+        AssuranceEnrichedEdge: {
+            /** Attributes Json */
+            attributes_json: string;
+            /** Conn Type */
+            conn_type: string;
+            /** Created At */
+            created_at: string;
+            /** Edge Id */
+            edge_id: string;
+            /** Source Id */
+            source_id: string;
+            /** Source Name */
+            source_name: string;
+            /** Source Type */
+            source_type: string;
+            /** Target Id */
+            target_id: string;
+            /** Target Name */
+            target_name: string;
+            /** Target Type */
+            target_type: string;
         };
         /**
          * AssuranceGroupListResponse
@@ -3220,6 +3280,42 @@ export interface components {
             verification_findings?: {
                 [key: string]: unknown;
             }[] | null;
+        };
+        /**
+         * AssuranceNodeDetailResponse
+         * @description One node with its neighbourhood and its two analysis relations.
+         *
+         *     ``authored_by`` and ``participates_in`` are separate because they answer different questions —
+         *     *who made this* and *who draws on it* — and a borrowed node has to look borrowed. ``authored_by``
+         *     is null both when the node names no analysis and when it names one above the reader's ceiling: the
+         *     two are deliberately indistinguishable, exactly as they are on a direct read of that analysis.
+         *     ``participates_in`` never lists the author, which would report the node as borrowed from itself.
+         */
+        AssuranceNodeDetailResponse: {
+            /** Arch Refs */
+            arch_refs: components["schemas"]["AssuranceArchRefRecord"][];
+            authored_by: components["schemas"]["AssuranceAnalysisSummary"] | null;
+            /** Incoming Edges */
+            incoming_edges: components["schemas"]["AssuranceEnrichedEdge"][];
+            node: components["schemas"]["AssuranceNodeRecord"];
+            /** Outgoing Edges */
+            outgoing_edges: components["schemas"]["AssuranceEnrichedEdge"][];
+            /** Participates In */
+            participates_in: components["schemas"]["AssuranceAnalysisSummary"][];
+            /** Visibility Limited */
+            visibility_limited: boolean;
+        };
+        /**
+         * AssuranceNodeListResponse
+         * @description The nodes this reader may see, with their degrees over the edges this reader may see.
+         */
+        AssuranceNodeListResponse: {
+            /** Count */
+            count: number;
+            /** Nodes */
+            nodes: components["schemas"]["AssuranceNodeWithDegrees"][];
+            /** Visibility Limited */
+            visibility_limited: boolean;
         };
         /**
          * AssuranceNodeRecord
@@ -3303,6 +3399,54 @@ export interface components {
             verification_findings?: {
                 [key: string]: unknown;
             }[] | null;
+        };
+        /**
+         * AssuranceNodeWithDegrees
+         * @description A node with how many visible edges reach it, in each direction.
+         *
+         *     Both counts are always present, including on an isolated node: zero and "not counted" are
+         *     different facts, and omitting the key would make a reader guess which one they had
+         *     (``assurance_node_degrees.with_degrees``).
+         */
+        AssuranceNodeWithDegrees: {
+            /** Analysis Id */
+            analysis_id: string | null;
+            /** Attributes Json */
+            attributes_json: string;
+            /** Binding Status */
+            binding_status: string | null;
+            /** Concern Class */
+            concern_class: string | null;
+            /** Conn In */
+            conn_in: number;
+            /** Conn Out */
+            conn_out: number;
+            /** Content Text */
+            content_text: string;
+            /** Created At */
+            created_at: string;
+            /** Disposition */
+            disposition: string | null;
+            /** Failure Type */
+            failure_type: string | null;
+            /** Mode */
+            mode: string | null;
+            /** Name */
+            name: string;
+            /** Node Id */
+            node_id: string;
+            /** Node Role */
+            node_role: string | null;
+            /** Node Type */
+            node_type: string;
+            /** Status */
+            status: string;
+            /** Tlp */
+            tlp: string;
+            /** Uca Type */
+            uca_type: string | null;
+            /** Updated At */
+            updated_at: string;
         };
         /**
          * AssuranceParticipatingNodesResponse
@@ -8820,7 +8964,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["AssuranceEdgeListResponse"];
                 };
             };
             /** @description Request validation failed */
@@ -9147,7 +9291,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["AssuranceNodeListResponse"];
                 };
             };
             /** @description Request validation failed */
@@ -9187,7 +9331,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["AssuranceNodeDetailResponse"];
                 };
             };
             /** @description Request validation failed */

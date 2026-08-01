@@ -17,6 +17,7 @@ from src.infrastructure.assurance._analysis_records import as_analysis_record
 from src.infrastructure.gui.routers._assurance_analysis_routes import analysis_router
 from src.infrastructure.gui.routers._assurance_read import read_router
 from tests.support.api_app import build_api_app
+from tests.support.assurance_records import node_record
 
 
 class _FakeStore:
@@ -63,8 +64,10 @@ class _FakeStore:
     def add_node(self, analysis_id: str, tlp: str = "TLP:WHITE") -> None:
         self._n += 1
         nid = f"N@{self._n}"
-        self._nodes[nid] = {"node_id": nid, "node_type": "hazard", "tlp": tlp,
-                            "analysis_id": analysis_id}
+        self._nodes[nid] = node_record(
+            node_id=nid, node_type="hazard", name=f"Hazard {self._n}", tlp=tlp,
+            analysis_id=analysis_id,
+        )
 
     def list_nodes(self, *, analysis_id: str | None = None, **_kw: Any) -> list[dict[str, Any]]:
         return [n for n in self._nodes.values()

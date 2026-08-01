@@ -15,9 +15,10 @@ from typing import Any
 from unittest.mock import patch
 
 import pytest
-from fastapi import FastAPI
 
 from src.application.assurance_node_sorting import NODE_SORT_COLUMNS, sorted_node_dicts
+from tests.support.api_app import build_api_app
+from tests.support.assurance_records import node_record
 
 pytest.importorskip("httpx")
 from starlette.testclient import TestClient  # noqa: E402
@@ -27,12 +28,12 @@ _ASSURANCE_CTX_PATH = "src.infrastructure.gui.routers._assurance_read.get_assura
 _SECRET_NAME = "SECRET HAZARD NAME"
 
 _NODES: list[dict[str, Any]] = [
-    {"node_id": "LSS@1", "node_type": "loss", "name": "Alpha Loss", "tlp": "TLP:WHITE",
-     "status": "draft", "created_at": "2026-01-01T00:00:00Z", "updated_at": "2026-07-20T00:00:00Z"},
-    {"node_id": "HAZ@2", "node_type": "hazard", "name": _SECRET_NAME, "tlp": "TLP:RED",
-     "status": "draft", "created_at": "2026-01-02T00:00:00Z", "updated_at": "2026-07-22T00:00:00Z"},
-    {"node_id": "CON@3", "node_type": "constraint", "name": "Zulu Constraint", "tlp": "TLP:AMBER",
-     "status": "draft", "created_at": "2026-01-03T00:00:00Z", "updated_at": "2026-07-01T00:00:00Z"},
+    node_record(node_id="LSS@1", node_type="loss", name="Alpha Loss", tlp="TLP:WHITE",
+                created_at="2026-01-01T00:00:00Z", updated_at="2026-07-20T00:00:00Z"),
+    node_record(node_id="HAZ@2", node_type="hazard", name=_SECRET_NAME, tlp="TLP:RED",
+                created_at="2026-01-02T00:00:00Z", updated_at="2026-07-22T00:00:00Z"),
+    node_record(node_id="CON@3", node_type="constraint", name="Zulu Constraint", tlp="TLP:AMBER",
+                created_at="2026-01-03T00:00:00Z", updated_at="2026-07-01T00:00:00Z"),
 ]
 
 
@@ -72,9 +73,10 @@ class _Context:
 def _client(ceiling: str) -> TestClient:
     from src.infrastructure.gui.routers.assurance import router
 
-    app = FastAPI()
-    app.include_router(router)
-    client = TestClient(app, raise_server_exceptions=False)
+    # `build_api_app`, not a bare `FastAPI()`: without the error contracts installed a raised
+    # `ApiError` becomes a 500 with an empty body, and these tests then compare two empty bodies
+    # while claiming an above-ceiling read is indistinguishable from an absent one.
+    client = TestClient(build_api_app(router), raise_server_exceptions=False)
     patcher = patch(_ASSURANCE_CTX_PATH, return_value=_Context(_SortingStore(_NODES), ceiling))
     patcher.start()
     client._patcher = patcher  # type: ignore[attr-defined]

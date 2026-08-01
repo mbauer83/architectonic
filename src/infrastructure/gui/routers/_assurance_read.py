@@ -32,6 +32,11 @@ from src.application.assurance_provenance import analyses_by_id, author_of, prov
 from src.application.assurance_queries import coverage_gaps, risk_register
 from src.domain.artifact_id import canonical_entity_key
 from src.infrastructure.assurance.architecture_basis import current_architecture_basis
+from src.infrastructure.gui.contracts.assurance_nodes import (
+    AssuranceEdgeListResponse,
+    AssuranceNodeDetailResponse,
+    AssuranceNodeListResponse,
+)
 from src.infrastructure.gui.contracts.assurance_queries import (
     AssuranceCoverageResponse,
     AssuranceRiskRegisterResponse,
@@ -107,7 +112,7 @@ def search_assurance_nodes(
 
 # ── Nodes ─────────────────────────────────────────────────────────────────────
 
-@read_router.get("/api/assurance/nodes")
+@read_router.get("/api/assurance/nodes", response_model=AssuranceNodeListResponse)
 def list_assurance_nodes(
     node_type: str | None = None,
     status: str | None = None,
@@ -149,10 +154,10 @@ def list_assurance_nodes(
         "nodes": with_degrees(visible, visible_edges),
         "count": len(visible),
         "visibility_limited": scope.visibility_limited,
-    })
+    }, AssuranceNodeListResponse)
 
 
-@read_router.get("/api/assurance/nodes/{node_id}")
+@read_router.get("/api/assurance/nodes/{node_id}", response_model=AssuranceNodeDetailResponse)
 def read_assurance_node(node_id: str) -> JSONResponse:
     ctx, pol = _policy()
     if pol.check_locked():
@@ -182,12 +187,12 @@ def read_assurance_node(node_id: str) -> JSONResponse:
             visible_analyses=visible_analyses,
         ),
         "visibility_limited": pol.scope().visibility_limited,
-    })
+    }, AssuranceNodeDetailResponse)
 
 
 # ── Edges ─────────────────────────────────────────────────────────────────────
 
-@read_router.get("/api/assurance/edges")
+@read_router.get("/api/assurance/edges", response_model=AssuranceEdgeListResponse)
 def list_assurance_edges(
     source_id: str | None = None,
     target_id: str | None = None,
@@ -200,7 +205,10 @@ def list_assurance_edges(
     visible_nodes, _ = pol.filter_nodes(ctx.store.list_nodes())
     nodes_by_id = visible_nodes_by_id(visible_nodes)
     filtered = enrich_edges(pol.filter_edges(edges, frozenset(nodes_by_id)), nodes_by_id)
-    return _ok({"edges": filtered, "count": len(filtered), "visibility_limited": pol.scope().visibility_limited})
+    return _ok(
+        {"edges": filtered, "count": len(filtered), "visibility_limited": pol.scope().visibility_limited},
+        AssuranceEdgeListResponse,
+    )
 
 
 # ── Aggregates ────────────────────────────────────────────────────────────────

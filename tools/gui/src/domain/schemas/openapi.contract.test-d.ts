@@ -15,7 +15,7 @@ import type {
   SyncStatusSchema,
 } from './sync-status'
 import type { StatsSchema } from './stats'
-import type { AssuranceNodeSchema } from './assurance'
+import type { AssuranceNodeListSchema, AssuranceNodeSchema } from './assurance'
 import type {
   AnalysisMethod,
   AnalysisStatus,
@@ -283,6 +283,9 @@ describe('assurance analyses', () => {
     // second kind — a decoder missing a field the server sends still decodes.
     expectTypeOf<SchemaType<typeof AssuranceNodeSchema>>().toEqualTypeOf<
       Immutable<components['schemas']['AssuranceNodeRecord']>
+    >()
+    expectTypeOf<SchemaType<typeof AssuranceNodeListSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['AssuranceNodeListResponse']>
     >()
   })
 

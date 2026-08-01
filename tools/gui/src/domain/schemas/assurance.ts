@@ -33,8 +33,17 @@ export const AssuranceNodeSchema = Schema.Struct({
 })
 export type AssuranceNode = typeof AssuranceNodeSchema.Type
 
+/** A node with how many visible edges reach it, either way. Both counts are always sent, including on
+ *  an isolated node: zero and "not counted" are different facts. */
+export const AssuranceNodeWithDegreesSchema = Schema.Struct({
+  ...AssuranceNodeSchema.fields,
+  conn_in: Schema.Number,
+  conn_out: Schema.Number,
+})
+export type AssuranceNodeWithDegrees = typeof AssuranceNodeWithDegreesSchema.Type
+
 export const AssuranceNodeListSchema = Schema.Struct({
-  nodes: Schema.Array(AssuranceNodeSchema),
+  nodes: Schema.Array(AssuranceNodeWithDegreesSchema),
   count: Schema.Number,
   visibility_limited: Schema.Boolean,
 })

@@ -21,6 +21,7 @@ httpx = pytest.importorskip("httpx")
 from starlette.testclient import TestClient  # noqa: E402
 
 from tests.support.api_app import build_api_app  # noqa: E402
+from tests.support.assurance_records import node_record  # noqa: E402
 
 # ── Fake infrastructure ───────────────────────────────────────────────────────
 
@@ -104,20 +105,14 @@ class _FakeContext:
 
 _ASSURANCE_CTX_PATH = "src.infrastructure.gui.routers._assurance_read.get_assurance_context"
 
-_WHITE_NODE: dict[str, Any] = {
-    "node_id": "LSS@visible-node",
-    "node_type": "loss",
-    "name": "Visible Loss",
-    "tlp": "TLP:WHITE",
-    "status": "draft",
-}
-_RED_NODE: dict[str, Any] = {
-    "node_id": "HAZ@secret-node",
-    "node_type": "hazard",
-    "name": "SECRET HAZARD NAME",
-    "tlp": "TLP:RED",
-    "status": "draft",
-}
+# Whole records, because that is what a store returns and what the closed response contract
+# validates against — a five-key fake described a node no deployment sends.
+_WHITE_NODE: dict[str, Any] = node_record(
+    node_id="LSS@visible-node", node_type="loss", name="Visible Loss", tlp="TLP:WHITE",
+)
+_RED_NODE: dict[str, Any] = node_record(
+    node_id="HAZ@secret-node", node_type="hazard", name="SECRET HAZARD NAME", tlp="TLP:RED",
+)
 
 
 def _make_client(ctx: _FakeContext) -> TestClient:

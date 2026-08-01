@@ -1,0 +1,147 @@
+"""Response contracts for the assurance node surface: the collection, the detail read, its relations.
+
+Every one of these is a projection of a record the store now hands back in one shape whatever backend
+holds it (``assurance/_node_records``, ``assurance/_edge_records``). That was the precondition, not a
+detail: a node read embeds a node, its edges and its architecture references, and a contract closed
+against one backend's idea of any of the three answered 500 on another.
+
+Its own module rather than more of ``assurance_signals``, which is a different surface — security feeds
+anchored to architecture artifacts — and is over the file-length limit besides.
+
+Every count here is taken after exposure filtering, and every degree over the filtered edge set. A
+degree counted before the filter would publish the existence of an above-ceiling neighbour through a
+number nobody thinks of as content, which is why ``assurance_node_degrees`` runs inside the boundary.
+"""
+
+from __future__ import annotations
+
+from pydantic import BaseModel, ConfigDict
+
+from src.infrastructure.gui.contracts.assurance_analyses import AssuranceAnalysisSummary
+
+
+class _Closed(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
+class AssuranceNodeRecord(_Closed):
+    """One assurance node, as every backend now hands it back.
+
+    Was open, on the reading that its ``attributes_json`` needed a decision first. It did not: the
+    store keeps that column as ``TEXT`` and passes it through unparsed, so the wire carries a JSON
+    *string* and the client parses it a second time (``AssuranceGrcWizard.helpers.ts``). A string is a
+    ``str``. What actually blocked closing this was that the record had no single shape — nineteen
+    columns from SQLCipher, seventeen from the file stores, seventeen plus collection metadata from
+    PocketBase — and it is projected at the store boundary now
+    (``assurance/_node_records.NODE_RECORD_FIELDS``).
+
+    The nullable fields are the discriminated ones: a hazard has no ``uca_type``, a failure mode no
+    ``concern_class``, and a legacy-invalid node no ``analysis_id`` at all — which is the state the
+    provenance repair surface exists to fix, so it has to be representable rather than defaulted.
+    """
+
+    node_id: str
+    node_type: str
+    name: str
+    status: str
+    tlp: str
+    concern_class: str | None
+    disposition: str | None
+    uca_type: str | None
+    failure_type: str | None
+    mode: str | None
+    binding_status: str | None
+    node_role: str | None
+    analysis_id: str | None
+    # The store's own column, passed through unparsed. Not `dict[str, Any]`: parsing it here would be
+    # a wire break, and declaring it as an object while sending a string would be a false schema.
+    attributes_json: str
+    content_text: str
+    created_at: str
+    updated_at: str
+
+
+class AssuranceNodeWithDegrees(AssuranceNodeRecord):
+    """A node with how many visible edges reach it, in each direction.
+
+    Both counts are always present, including on an isolated node: zero and "not counted" are
+    different facts, and omitting the key would make a reader guess which one they had
+    (``assurance_node_degrees.with_degrees``).
+    """
+
+    conn_in: int
+    conn_out: int
+
+
+class AssuranceNodeListResponse(_Closed):
+    """The nodes this reader may see, with their degrees over the edges this reader may see."""
+
+    nodes: list[AssuranceNodeWithDegrees]
+    count: int
+    visibility_limited: bool
+
+
+class AssuranceEdgeRecord(_Closed):
+    """One edge, as every backend hands it back. ``attributes_json`` is a JSON string, as on a node."""
+
+    edge_id: str
+    source_id: str
+    target_id: str
+    conn_type: str
+    attributes_json: str
+    created_at: str
+
+
+class AssuranceEnrichedEdge(AssuranceEdgeRecord):
+    """An edge with its endpoints named, so a row renders without a request per endpoint.
+
+    An edge appears only when *both* endpoints are visible to the reader — an edge to a withheld node
+    would disclose that node's existence through the shape of the graph
+    (``assurance_edge_enrichment.enrich_edges``).
+    """
+
+    source_name: str
+    source_type: str
+    target_name: str
+    target_type: str
+
+
+class AssuranceEdgeListResponse(_Closed):
+    """The visible edges, enriched. ``count`` is the length of the list after filtering."""
+
+    edges: list[AssuranceEnrichedEdge]
+    count: int
+    visibility_limited: bool
+
+
+class AssuranceArchRefRecord(_Closed):
+    """One reference from an assurance node out to an architecture artifact.
+
+    ``resolved_at`` is null until the reference has been checked against the repository — the state the
+    binding surface exists to change, and one PocketBase reported as an empty string until the record
+    was projected.
+    """
+
+    assurance_node_id: str
+    arch_artifact_id: str
+    ref_type: str
+    resolved_at: str | None
+
+
+class AssuranceNodeDetailResponse(_Closed):
+    """One node with its neighbourhood and its two analysis relations.
+
+    ``authored_by`` and ``participates_in`` are separate because they answer different questions —
+    *who made this* and *who draws on it* — and a borrowed node has to look borrowed. ``authored_by``
+    is null both when the node names no analysis and when it names one above the reader's ceiling: the
+    two are deliberately indistinguishable, exactly as they are on a direct read of that analysis.
+    ``participates_in`` never lists the author, which would report the node as borrowed from itself.
+    """
+
+    node: AssuranceNodeRecord
+    outgoing_edges: list[AssuranceEnrichedEdge]
+    incoming_edges: list[AssuranceEnrichedEdge]
+    arch_refs: list[AssuranceArchRefRecord]
+    authored_by: AssuranceAnalysisSummary | None
+    participates_in: list[AssuranceAnalysisSummary]
+    visibility_limited: bool
