@@ -21,6 +21,10 @@ const SEARCH_RESPONSE = {
     name: 'Markdown File-Based Architecture Repository',
     status: 'accepted',
     path: '/architecture-repository/docs/adr/markdown-file-based-architecture-repository.md',
+    // Sent on every hit. The decoder declared it nowhere, so this capture had dropped it too — the
+    // one direction of drift a decoder cannot report on its own.
+    last_updated: '2026-07-07',
+    artifact_type: 'adr',
   }],
 }
 

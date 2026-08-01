@@ -16,6 +16,14 @@ import type {
 } from './sync-status'
 import type { StatsSchema } from './stats'
 import type {
+  ArtifactSearchHitSchema,
+  ArtifactSearchResultSchema,
+  ReferenceSearchHitSchema,
+  ReferenceSearchResultSchema,
+  SearchHitSchema,
+  SearchResultSchema,
+} from './search'
+import type {
   SyncDiagramToModelResultSchema,
   VerificationIssueSchema,
   WriteResultSchema,
@@ -194,6 +202,34 @@ describe('groups and matrices', () => {
     >()
     expectTypeOf<SchemaType<typeof MatrixConnTypeConfigSchema>>().toEqualTypeOf<
       Immutable<components['schemas']['MatrixConnTypeConfig']>
+    >()
+  })
+})
+
+describe('search', () => {
+  it('decodes three searches as three searches', () => {
+    // `ArtifactSearchHitSchema = SearchHitSchema` was the bug: the display search projects six fields
+    // for a picker rather than serialising a record, and it can return `assurance-node`, which the
+    // keyword search never does. The keyword hit also declared `last_updated` nowhere while the route
+    // sent it on every hit — drift a decoder cannot report, because a field it does not know about
+    // simply never appears.
+    expectTypeOf<SchemaType<typeof SearchResultSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['KeywordSearchResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof SearchHitSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['KeywordSearchHit']>
+    >()
+    expectTypeOf<SchemaType<typeof ArtifactSearchResultSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['DisplaySearchResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof ArtifactSearchHitSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['DisplaySearchHit']>
+    >()
+    expectTypeOf<SchemaType<typeof ReferenceSearchResultSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['ReferenceSearchResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof ReferenceSearchHitSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['ReferenceSearchHit']>
     >()
   })
 })

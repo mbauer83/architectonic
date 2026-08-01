@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { Schema, Either } from 'effect'
-import { SearchHitSchema, SearchResultSchema } from './schemas'
+import { ArtifactSearchHitSchema, SearchHitSchema, SearchResultSchema } from './schemas'
 
 const ENTITY_HIT = {
   score: 1.5,
@@ -10,6 +10,8 @@ const ENTITY_HIT = {
   artifact_type: 'archimate-application-component',
   status: 'draft',
   path: 'path/to/foo.md',
+  // Sent on every hit; the schema declared it nowhere, so it was invisible to every fixture too.
+  last_updated: '2026-07-01',
   domain: 'application',
 }
 
@@ -21,6 +23,7 @@ const DOCUMENT_HIT = {
   artifact_type: 'document',
   status: 'approved',
   path: 'path/to/doc.md',
+  last_updated: '2026-07-01',
 }
 
 const DIAGRAM_HIT = {
@@ -31,6 +34,7 @@ const DIAGRAM_HIT = {
   artifact_type: 'c4',
   status: 'draft',
   path: 'path/to/diagram.md',
+  last_updated: '2026-07-01',
 }
 
 const CONNECTION_HIT = {
@@ -41,6 +45,7 @@ const CONNECTION_HIT = {
   artifact_type: 'archimate-serving',
   status: 'draft',
   path: 'path/to/conn.md',
+  last_updated: null,
   source: 'ENT@123.foo',
   target: 'ENT@999.bar',
 }
@@ -71,10 +76,23 @@ describe('SearchHitSchema', () => {
     expect(result.source).toBe('ENT@123.foo')
   })
 
-  it('decodes an assurance-node placeholder hit', () => {
-    const hit = { ...ENTITY_HIT, record_type: 'assurance-node' }
-    const result = decode(hit)
+  it('refuses an assurance-node hit, which this route cannot return', () => {
+    /* It used to accept one, on a `record_type` literal added as a placeholder for a consumption that
+       happened at a different address. The *display* search reaches the assurance store; the keyword
+       search does not, and a union that accepts what a route cannot send describes nothing. */
+    expect(() => decode({ ...ENTITY_HIT, record_type: 'assurance-node' })).toThrow()
+  })
+
+  it('decodes an assurance-node hit on the display search, which does return them', () => {
+    const hit = {
+      score: 1.0, record_type: 'assurance-node', artifact_id: 'HAZ@1.a.b',
+      name: 'Uncommanded braking', status: 'draft',
+      // Empty: an assurance node has no file.
+      path: '', artifact_type: 'hazard',
+    }
+    const result = Schema.decodeUnknownSync(ArtifactSearchHitSchema)(hit)
     expect(result.record_type).toBe('assurance-node')
+    expect(result.artifact_type).toBe('hazard')
   })
 
   it('throws on an unknown record_type', () => {

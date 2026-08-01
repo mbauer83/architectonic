@@ -5227,6 +5227,45 @@ export interface components {
             traversal: "direct";
         };
         /**
+         * DisplaySearchHit
+         * @description One candidate for a picker: enough to label and identify, and nothing else.
+         *
+         *     Six fields, deliberately — this feeds a dropdown, and the record's domain or endpoints would be
+         *     noise in one. ``artifact_type`` is filled only for an assurance node, whose kind is the one thing a
+         *     reader needs to tell a hazard from a loss in a mixed list; ``path`` is empty for one, because an
+         *     assurance node has no file.
+         */
+        DisplaySearchHit: {
+            /** Artifact Id */
+            artifact_id: string;
+            /** Artifact Type */
+            artifact_type?: string | null;
+            /** Name */
+            name: string;
+            /** Path */
+            path: string;
+            /**
+             * Record Type
+             * @enum {string}
+             */
+            record_type: "entity" | "connection" | "diagram" | "document" | "assurance-node";
+            /** Score */
+            score: number;
+            /** Status */
+            status: string;
+        };
+        /**
+         * DisplaySearchResponse
+         * @description The candidates, architecture first: ``prioritize_global_hits`` puts enterprise artifacts above
+         *     engagement ones, so a picker offers the shared vocabulary before a local restatement of it.
+         */
+        DisplaySearchResponse: {
+            /** Hits */
+            hits: components["schemas"]["DisplaySearchHit"][];
+            /** Query */
+            query: string;
+        };
+        /**
          * DocumentDetailResponse
          * @description One document, with its content.
          *
@@ -6635,6 +6674,67 @@ export interface components {
             node_id: string;
         };
         /**
+         * KeywordSearchHit
+         * @description One artifact matched by keyword, with the display fields its kind actually has.
+         *
+         *     Mirrors ``state.search_hit_to_dict`` arm for arm. ``name`` and ``artifact_type`` are the *display*
+         *     reading, not the stored one: a document's title arrives as ``name`` and its doc type as
+         *     ``artifact_type``, because a mixed result list has one column for each and a reader does not care
+         *     which record kind supplied it.
+         *
+         *     The nullable fields are the kind-specific ones, and each is filled by exactly one kind — ``domain``
+         *     and ``subdomain`` by an entity, ``diagram_type`` by a diagram, ``source``/``target`` by a
+         *     connection. ``host_diagram_id`` and ``diagram_internal`` appear together, only for a construct a
+         *     diagram owns, and they are how a display surface tells one from a model entity.
+         */
+        KeywordSearchHit: {
+            /** Artifact Id */
+            artifact_id: string;
+            /** Artifact Type */
+            artifact_type: string;
+            /** Diagram Internal */
+            diagram_internal?: boolean | null;
+            /** Diagram Type */
+            diagram_type?: string | null;
+            /** Domain */
+            domain?: string | null;
+            /** Host Diagram Id */
+            host_diagram_id?: string | null;
+            /** Is Global */
+            is_global?: boolean | null;
+            /** Last Updated */
+            last_updated: string | null;
+            /** Name */
+            name: string;
+            /** Path */
+            path: string;
+            /**
+             * Record Type
+             * @enum {string}
+             */
+            record_type: "entity" | "connection" | "diagram" | "document";
+            /** Score */
+            score: number;
+            /** Source */
+            source?: string | null;
+            /** Status */
+            status: string;
+            /** Subdomain */
+            subdomain?: string | null;
+            /** Target */
+            target?: string | null;
+        };
+        /**
+         * KeywordSearchResponse
+         * @description The hits, and the query as the repository parsed it — which is not always what was sent.
+         */
+        KeywordSearchResponse: {
+            /** Hits */
+            hits: components["schemas"]["KeywordSearchHit"][];
+            /** Query */
+            query: string;
+        };
+        /**
          * LegacyInvalidDetails
          * @description ``node_legacy_invalid``: the node predates mandatory provenance and is repair-only.
          */
@@ -7150,6 +7250,55 @@ export interface components {
             source: string;
             /** Vex Status */
             vex_status: string;
+        };
+        /**
+         * ReferenceSearchHit
+         * @description One artifact a document may cite.
+         *
+         *     No ``score``: this filters rather than ranks, so every hit is equally a match and publishing a
+         *     constant would invite sorting by it.
+         *
+         *     ``domain`` is an entity's own or a diagram's inferred one, and null for a document — a document is
+         *     filed by type rather than by domain. ``sections`` is a document's alone: a citation may target a
+         *     section, and offering the list is what makes that possible without a second request.
+         */
+        ReferenceSearchHit: {
+            /** Artifact Id */
+            artifact_id: string;
+            /** Artifact Type */
+            artifact_type?: string | null;
+            /** Diagram Type */
+            diagram_type?: string | null;
+            /** Doc Type */
+            doc_type?: string | null;
+            /** Domain */
+            domain?: string | null;
+            /** Is Global */
+            is_global?: boolean | null;
+            /** Name */
+            name: string;
+            /** Path */
+            path: string;
+            /**
+             * Record Type
+             * @enum {string}
+             */
+            record_type: "entity" | "diagram" | "document";
+            /** Sections */
+            sections?: string[] | null;
+            /** Status */
+            status: string;
+        };
+        /**
+         * ReferenceSearchResponse
+         * @description The citable artifacts, and the query as sent — unparsed here, because this search does not
+         *     reinterpret it.
+         */
+        ReferenceSearchResponse: {
+            /** Hits */
+            hits: components["schemas"]["ReferenceSearchHit"][];
+            /** Query */
+            query: string;
         };
         /** RegisterArchRefBody */
         RegisterArchRefBody: {
@@ -8765,7 +8914,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["DisplaySearchResponse"];
                 };
             };
             /** @description Request validation failed */
@@ -15574,7 +15723,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["ReferenceSearchResponse"];
                 };
             };
             /** @description Request validation failed */
@@ -15653,7 +15802,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["KeywordSearchResponse"];
                 };
             };
             /** @description Request validation failed */

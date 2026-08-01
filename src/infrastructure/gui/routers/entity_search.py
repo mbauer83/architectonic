@@ -12,6 +12,10 @@ from src.application.entity_type_predicates import is_assurance_entity_type, is_
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
 from src.infrastructure.gui.contracts.catalog import EntityTaxonomyResponse
+from src.infrastructure.gui.contracts.search import (
+    DisplaySearchResponse,
+    ReferenceSearchResponse,
+)
 from src.infrastructure.gui.routers import state as s
 from src.infrastructure.gui.routers._entity_filter import EntityFilter
 from src.infrastructure.gui.routers._global_search import (
@@ -23,7 +27,6 @@ from src.infrastructure.gui.routers._openapi import (
     TAG_DOCUMENTS,
     TAG_ENTITIES,
     TAG_TAXONOMY,
-    OpenMapResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -79,7 +82,7 @@ def _try_assurance_hits(q: str, limit: int) -> list[dict[str, Any]]:
 
 
 @router.get("/api/artifact-search", tags=[TAG_ENTITIES], summary="Display-oriented artifact search",
-    response_model=OpenMapResponse)
+    response_model=DisplaySearchResponse)
 def search_artifacts(
     q: str,
     limit: int = Query(default=20, le=100),
@@ -116,7 +119,7 @@ def search_artifacts(
 
 
 @router.get("/api/reference-search", tags=[TAG_DOCUMENTS], summary="Search entities for document references",
-    response_model=OpenMapResponse)
+    response_model=ReferenceSearchResponse)
 def search_reference_artifacts(
     q: str = "",
     kind: str | None = None,

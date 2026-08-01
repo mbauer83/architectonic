@@ -18,6 +18,7 @@ from src.infrastructure.gui.contracts.authoring_catalogs import (
 from src.infrastructure.gui.contracts.connections import ConnectionListResponse
 from src.infrastructure.gui.contracts.entities import DerivedNeighborhood, DirectNeighborhood
 from src.infrastructure.gui.contracts.errors import ApiError, FieldError, ValidationErrorDetails
+from src.infrastructure.gui.contracts.search import KeywordSearchResponse
 from src.infrastructure.gui.routers import state as s
 from src.infrastructure.gui.routers._global_search import (
     filter_global_hits,
@@ -94,7 +95,7 @@ def register_connection_read_routes(router: APIRouter) -> None:
             raise HTTPException(400, {"code": "derivation-limit", "path": "query", "message": str(exc)}) from exc
 
     @router.get("/api/search", tags=[TAG_ENTITIES], summary="Keyword search over artifacts",
-        response_model=OpenMapResponse)
+        response_model=KeywordSearchResponse)
     def search(
         q: str,
         limit: int = 20,
