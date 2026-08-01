@@ -15,6 +15,7 @@
  * separately, and re-deriving them by splitting a composite id would be a second implementation
  * of a key we were given.
  */
+import { assuranceAnalysisDiagramRoute } from '../router/artifactRoutes'
 
 export interface AssuranceDiagramMeta {
   /** Opaque identity of the pair, as issued by the backend. Used for keys, never parsed. */
@@ -52,8 +53,7 @@ export async function fetchAssuranceDiagrams(): Promise<AssuranceDiagramCatalog>
 
 /** The route a diagram card opens: the analysis and the type, which is what the render call needs. */
 export const diagramDetailRoute = (analysisId: string, diagramType: string) => ({
-  path: '/assurance/diagram',
-  query: { analysis: analysisId, type: diagramType },
+  path: assuranceAnalysisDiagramRoute(analysisId, diagramType),
 })
 
 /** The endpoint that renders one analysis' projection of one type. */

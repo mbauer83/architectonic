@@ -73,10 +73,12 @@ describe('GUI route.query inventory', () => {
 
   it('finds the uses this migration exists to convert', () => {
     // A guard on the scanner itself: a regex that silently stopped matching would make the
-    // equality above pass with two empty sets.
+    // equality above pass with two empty sets. Named uses that are staying — one filter, one piece
+    // of presentation state, one operation input — since no identity use is left to name.
     const found = allUses()
-    expect(found.has('ui/views/AssuranceStpaWizardView.vue#analysis_id')).toBe(true)
     expect(found.has('ui/views/EntitiesView.vue#domain')).toBe(true)
+    expect(found.has('ui/views/EntitiesView.vue#view')).toBe(true)
+    expect(found.has('ui/views/GraphExploreView.vue#viewpoint')).toBe(true)
     expect(found.has('ui/composables/useTierFacet.ts#*')).toBe(true)
   })
 

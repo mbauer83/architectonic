@@ -12,11 +12,12 @@ import {
   type GsnDraftResponse,
 } from './AssuranceGsnWizard.helpers'
 import { diagramDetailRoute } from '../router/artifactRoutes'
+import { assuranceAnalysisCreateRoute, assuranceAnalysisMethodRoute } from '../router/artifactRoutes'
 
 const route = useRoute()
 const router = useRouter()
 const analysisId = ref<string | null>(
-  typeof route.query['analysis_id'] === 'string' ? route.query['analysis_id'] : null,
+  typeof route.params.analysisId === 'string' ? route.params.analysisId : null,
 )
 const stepKey = ref('draft')
 const draft = ref<GsnDraftResponse | null>(null)
@@ -139,7 +140,9 @@ watch(analysisId, (value) => {
   completeness.value = null
   publishedDiagramId.value = null
   stepKey.value = 'draft'
-  void router.replace({ path: '/assurance/gsn', query: value ? { analysis_id: value } : {} })
+  void router.replace(value
+    ? assuranceAnalysisMethodRoute(value, 'gsn')
+    : assuranceAnalysisCreateRoute('gsn'))
 })
 watch(stepKey, () => { void loadGuidance() }, { immediate: true })
 </script>

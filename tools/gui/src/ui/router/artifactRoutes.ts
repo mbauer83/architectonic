@@ -91,6 +91,7 @@ export const ROUTE_TEMPLATES = {
   assuranceAnalysisMethod: '/assurance/analyses/:analysisId/:method',
   assuranceAnalysisCreate: '/assurance/analyses/new/:method',
   assuranceAnalysisDiagram: '/assurance/analyses/:analysisId/diagrams/:diagramType',
+  assuranceSecurityFindingsList: '/assurance/security-findings',
   assuranceSecurityFindings: '/assurance/arch-artifacts/:archArtifactId/security-findings',
   assuranceVulnerability: '/assurance/vulnerabilities/:identifier',
   assuranceBaselines: '/assurance/baselines',
@@ -148,6 +149,9 @@ export const assuranceAnalysisCreateRoute = (method: AssuranceMethodSurface): st
 
 export const assuranceAnalysisDiagramRoute = (analysisId: string, diagramType: string): string =>
   `/assurance/analyses/${seg(analysisId)}/diagrams/${seg(diagramType)}`
+
+export const assuranceSecurityFindingsListRoute = (): string =>
+  ROUTE_TEMPLATES.assuranceSecurityFindingsList
 
 export const assuranceSecurityFindingsRoute = (archArtifactId: string): string =>
   `/assurance/arch-artifacts/${seg(archArtifactId)}/security-findings`

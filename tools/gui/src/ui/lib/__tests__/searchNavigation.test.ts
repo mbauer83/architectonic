@@ -1,4 +1,4 @@
-import { ROUTE_TEMPLATES, diagramDetailRoute, documentDetailRoute, entityDetailRoute } from '../../router/artifactRoutes'
+import { ROUTE_TEMPLATES, assuranceNodeDetailRoute, diagramDetailRoute, documentDetailRoute, entityDetailRoute } from '../../router/artifactRoutes'
 /**
  * Regression: a search hit must navigate to a route that actually exists.
  *
@@ -24,7 +24,7 @@ const router = createRouter({
     { path: ROUTE_TEMPLATES.diagramDetail, component: stub },
     { path: ROUTE_TEMPLATES.documentDetail, component: stub },
     { path: '/assurance/browse', component: stub },
-    { path: '/assurance/node/:id', component: stub },
+    { path: ROUTE_TEMPLATES.assuranceNodeDetail, component: stub },
     { path: '/:pathMatch(.*)*', name: 'not-found', component: stub },
   ],
 })
@@ -42,7 +42,7 @@ describe('searchHitRoute', () => {
 
   it('routes assurance nodes to the standalone node page', () => {
     expect(searchHitRoute({ record_type: 'assurance-node', artifact_id: 'N1' }))
-      .toEqual('/assurance/node/N1')
+      .toEqual(assuranceNodeDetailRoute('N1'))
   })
 
   it.each(['connection', 'assurance-edge', 'mystery'])('returns null for non-navigable %s', (rt) => {

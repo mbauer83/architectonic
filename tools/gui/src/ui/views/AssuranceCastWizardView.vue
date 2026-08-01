@@ -15,13 +15,13 @@ import {
   type Baseline,
   type CastStep,
   type CastCompleteResponse,
-} from './AssuranceCastWizard.helpers'
+  selectionRoute } from './AssuranceCastWizard.helpers'
 
 const route = useRoute()
 const router = useRouter()
 
 const analysisId = ref<string | null>(
-  typeof route.query['analysis_id'] === 'string' ? route.query['analysis_id'] : null,
+  typeof route.params.analysisId === 'string' ? route.params.analysisId : null,
 )
 const stepKey = ref<string>('baseline')
 const currentStep = computed<CastStep>(
@@ -203,7 +203,7 @@ function goToStep(key: string) {
 }
 
 watch(analysisId, (val) => {
-  void router.replace({ path: '/assurance/cast', query: val ? { analysis_id: val } : {} })
+  void router.replace(selectionRoute(val))
   void loadNodes()
   void loadBaselines()
   void loadCompleteness()

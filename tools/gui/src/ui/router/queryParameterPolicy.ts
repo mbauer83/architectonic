@@ -11,8 +11,10 @@
  * destructure, or an access under a computed key — is recorded as `#*` and classified by what the
  * surrounding code does with it.
  *
- * **Every `identity` entry is work Phase 2 has left to do.** When the table holds none, the GUI
- * addresses every resource by path.
+ * **The table holds no `identity` entry**, which is Phase 2's exit criterion: every resource the
+ * GUI addresses, it addresses by path. The role stays in the vocabulary — a new query key that
+ * carries identity has to be classifiable as the mistake it is, and the completeness test then
+ * fails rather than the key quietly joining the filters.
  */
 
 export type QueryParameterRole =
@@ -26,19 +28,6 @@ export type QueryParameterRole =
   | 'operation-input'
 
 export const QUERY_PARAMETER_ROLES: Readonly<Record<string, QueryParameterRole>> = {
-  // ── identity: to be converted to path parameters in Phase 2 ────────────────
-  'ui/views/VulnerabilityImpactView.vue#id': 'identity',
-  'ui/views/AssuranceGraphExploreView.vue#node_id': 'identity',
-  'ui/views/SecurityFindingsView.vue#anchor': 'identity',
-  'ui/views/AssuranceFmeaView.vue#analysis': 'identity',
-  'ui/views/AssuranceStpaWizardView.vue#analysis_id': 'identity',
-  'ui/views/AssuranceGsnWizardView.vue#analysis_id': 'identity',
-  'ui/views/AssuranceGrcWizardView.vue#analysis_id': 'identity',
-  'ui/views/AssuranceCastWizardView.vue#analysis_id': 'identity',
-  // A projection is identified by its analysis *and* its type; both are read under a computed
-  // key by one helper, so the use is recorded once.
-  'ui/views/AssuranceDiagramDetailView.vue#*': 'identity',
-
   // ── filter: narrowing a collection ────────────────────────────────────────
   'ui/views/EntitiesView.vue#domain': 'filter',
   'ui/views/EntitiesView.vue#group': 'filter',
@@ -76,7 +65,7 @@ export const QUERY_PARAMETER_ROLES: Readonly<Record<string, QueryParameterRole>>
   'ui/components/ViewpointTablePage.vue#*': 'operation-input',
 }
 
-/** Uses that still read identity out of the query. Empty when Phase 2 is complete. */
+/** Uses that still read identity out of the query. Empty, and a regression if it is not. */
 export const identityQueryUses = (): string[] =>
   Object.entries(QUERY_PARAMETER_ROLES)
     .filter(([, role]) => role === 'identity')

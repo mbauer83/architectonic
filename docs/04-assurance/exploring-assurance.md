@@ -25,7 +25,7 @@ For agents, the same reads are `assurance_list_analyses`, `assurance_list_nodes`
 
 ## Node detail — a deep-linkable page per node
 
-Every assurance node has a standalone page at `/assurance/node/<id>`, so a hazard or a
+Every assurance node has a standalone page at `/assurance/nodes/<id>`, so a hazard or a
 constraint can be linked directly from a review comment, a ticket, or another tool. The
 page shows the node's fields, its incoming and outgoing edges, and its analysis context.
 
@@ -69,7 +69,7 @@ does not permit cannot be authored — the same rule the write surfaces
 ## Failure modes in the explorer and on node detail
 
 A failure mode is an ordinary node in all of the above: it lists and filters at
-`/assurance/browse` like any other type, has its own page at `/assurance/node/<id>`, and expands
+`/assurance/browse` like any other type, has its own page at `/assurance/nodes/<id>`, and expands
 in the graph explorer. What is worth knowing is which of its edges carry the analysis.
 
 - **Outward to a hazard** (`leads-to`) — the failure's effect. Expanding it continues into the

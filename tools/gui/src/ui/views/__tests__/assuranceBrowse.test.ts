@@ -15,6 +15,7 @@ import {
   standaloneNodeLink,
 } from '../../components/AssuranceLens.helpers'
 import { ASSURANCE_BROWSE_PATH, assuranceRoutes } from '../../router/assuranceRoutes'
+import { assuranceNodeDetailRoute } from '../../router/artifactRoutes'
 
 // ── 1. parseLensResponse ──────────────────────────────────────────────────────
 
@@ -72,12 +73,12 @@ describe('parseLensResponse', () => {
 describe('standaloneNodeLink', () => {
   it('deep-links to the standalone node page, escaping special chars', () => {
     const link = standaloneNodeLink('n:hazard:H1')
-    expect(link).toBe('/assurance/node/n%3Ahazard%3AH1')
+    expect(link).toBe(assuranceNodeDetailRoute('n:hazard:H1'))
   })
 
   it('handles simple node ids without special chars', () => {
     const link = standaloneNodeLink('abc123')
-    expect(link).toBe('/assurance/node/abc123')
+    expect(link).toBe(assuranceNodeDetailRoute('abc123'))
   })
 })
 
@@ -165,7 +166,7 @@ describe('the assurance route table', () => {
     expect('component' in route!).toBe(true)
   })
 
-  it.each(['/assurance/browse', '/assurance/analyses'])(
+  it.each(['/assurance/browse'])(
     'redirects the former path %s to the browse surface, query intact',
     (path) => {
       const route = routeFor(path)

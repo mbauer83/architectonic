@@ -185,8 +185,9 @@ Every method runs through the same workflow surfaces:
    Create one from the method's wizard in the GUI, or with `assurance_create_analysis`
    (MCP). Each analysis names its method, so the completion checks know what "done"
    means for it.
-2. **Work the guided wizard.** Each method has a guided flow — `/assurance/stpa`,
-   `/assurance/cast`, `/assurance/grc`, `/assurance/gsn`, `/assurance/fmea/new`, and
+2. **Work the guided wizard.** Each method has a guided flow — `/assurance/analyses/new/stpa`,
+   `/assurance/analyses/new/cast`, `/assurance/analyses/new/grc`,
+   `/assurance/analyses/new/gsn`, `/assurance/analyses/new/fmea`, and
    `/assurance/supply-chain` — that walks the method's steps in order, creating the
    typed nodes and edges as you go, with the per-type guidance inline. The wizards
    author ordinary store content: anything they create is equally editable from the

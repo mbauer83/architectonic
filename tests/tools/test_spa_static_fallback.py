@@ -67,7 +67,7 @@ def test_artifact_deep_links_fall_back_to_index(tmp_path: Path) -> None:
         "/entities/REQ@1712870400.HR7AGz.support-models-diagrams-documents",
         "/entities/REQ@1712870400.HR7AGz.support-models-diagrams-documents/graph",
         "/diagrams/CC@1780829796.SOoZQh.assurance-module-components/edit",
-        "/assurance/node/CSN@1785236941.pr5f.b33677",
+        "/assurance/nodes/CSN@1785236941.pr5f.b33677",
     )
     for route in routes:
         resp = client.get(route)

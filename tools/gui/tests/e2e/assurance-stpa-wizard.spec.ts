@@ -75,7 +75,7 @@ test('the wizard links an unsafe control action to its hazard against a live bac
   const { analysisId, ucaId, hazardId } = await stage(request)
 
   try {
-    await page.goto(`/assurance/stpa?analysis_id=${encodeURIComponent(analysisId)}`)
+    await page.goto(`/assurance/analyses/${encodeURIComponent(analysisId)}/stpa`)
     await page.getByRole('button', { name: /UCAs/ }).click()
 
     const effects = page.locator('.effects')

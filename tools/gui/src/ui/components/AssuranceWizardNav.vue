@@ -17,6 +17,7 @@
  */
 import { RouterLink } from 'vue-router'
 import AssuranceFilingTree from './AssuranceFilingTree.vue'
+import { assuranceAnalysisCreateRoute, assuranceSecurityFindingsListRoute } from '../router/artifactRoutes'
 
 const props = defineProps<{
   /** The analysis the surface beside this nav is scoped to, so the tree agrees with it. */
@@ -39,12 +40,12 @@ const SECTIONS: readonly NavSection[] = [
   {
     title: 'Record an analysis',
     entries: [
-      { to: '/assurance/stpa', label: 'STPA — hazard analysis' },
-      { to: '/assurance/cast', label: 'CAST — incident analysis' },
-      { to: '/assurance/fmea/new', label: 'FMEA — failure modes' },
-      { to: '/assurance/gsn', label: 'Assurance case / GSN' },
+      { to: assuranceAnalysisCreateRoute('stpa'), label: 'STPA — hazard analysis' },
+      { to: assuranceAnalysisCreateRoute('cast'), label: 'CAST — incident analysis' },
+      { to: assuranceAnalysisCreateRoute('fmea'), label: 'FMEA — failure modes' },
+      { to: assuranceAnalysisCreateRoute('gsn'), label: 'Assurance case / GSN' },
       { to: '/assurance/supply-chain', label: 'Supply chain' },
-      { to: '/assurance/grc', label: 'Governance, risk & compliance' },
+      { to: assuranceAnalysisCreateRoute('grc'), label: 'Governance, risk & compliance' },
     ],
   },
   //: No standalone "FMEA matrix" entry: there is one matrix per FMEA analysis, and a single link
@@ -55,7 +56,7 @@ const SECTIONS: readonly NavSection[] = [
     entries: [
       { to: '/assurance', label: 'All nodes' },
       { to: '/assurance/diagrams', label: 'Derived diagrams' },
-      { to: '/assurance/security/findings', label: 'Security findings' },
+      { to: assuranceSecurityFindingsListRoute(), label: 'Security findings' },
       { to: '/assurance/baselines', label: 'Baselines' },
     ],
   },

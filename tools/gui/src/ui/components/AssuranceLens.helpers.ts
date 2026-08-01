@@ -2,6 +2,7 @@
  * Pure helper for AssuranceLens: process the raw arch-lens API response.
  * Extracted here so the stateless logic is testable without mounting the component.
  */
+import { assuranceNodeDetailRoute } from '../router/artifactRoutes'
 
 export interface LensNode {
   node_id: string
@@ -76,5 +77,5 @@ export function failureModeNeedsAttention(summary: FailureModeSummary): boolean 
 
 /** Build the assurance browse link for a given node. */
 export function standaloneNodeLink(nodeId: string): string {
-  return `/assurance/node/${encodeURIComponent(nodeId)}`
+  return assuranceNodeDetailRoute(nodeId)
 }

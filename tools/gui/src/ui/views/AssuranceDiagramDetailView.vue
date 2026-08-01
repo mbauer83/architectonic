@@ -18,6 +18,7 @@ import {
   findDiagram,
   type AssuranceDiagramMeta,
 } from '../lib/assuranceDiagrams'
+import { assuranceNodeDetailRoute } from '../router/artifactRoutes'
 
 const route = useRoute()
 
@@ -30,13 +31,13 @@ const selectedEdge = ref<AssuranceDiagramEdge | null>(null)
 
 /** A projection is identified by its analysis *and* its type — there is one control structure per
  * STPA and one matrix per FMEA, so the type alone names no particular drawing. */
-const queryValue = (key: string): string | null => {
-  const raw = route.query[key]
+const pathValue = (key: string): string | null => {
+  const raw = route.params[key]
   return typeof raw === 'string' && raw.length > 0 ? raw : null
 }
 
-const analysisId = computed(() => queryValue('analysis'))
-const diagramType = computed(() => queryValue('type'))
+const analysisId = computed(() => pathValue('analysisId'))
+const diagramType = computed(() => pathValue('diagramType'))
 
 /**
  * The failure-mode grid is built client-side from its own endpoint, not from a rendered projection.
@@ -156,7 +157,7 @@ watch([analysisId, diagramType], clearSelection)
             />
             <RouterLink
               class="edit-node-link"
-              :to="`/assurance/node/${encodeURIComponent(selectedNodeId)}`"
+              :to="assuranceNodeDetailRoute(selectedNodeId)"
             >
               Edit in Assurance Browse →
             </RouterLink>
@@ -179,10 +180,10 @@ watch([analysisId, diagramType], clearSelection)
               {{ selectedEdge.label || selectedEdge.name }}
             </p>
             <div class="edge-actions">
-              <RouterLink :to="`/assurance/node/${encodeURIComponent(selectedEdge.source_id)}`">
+              <RouterLink :to="assuranceNodeDetailRoute(selectedEdge.source_id)">
                 Edit source
               </RouterLink>
-              <RouterLink :to="`/assurance/node/${encodeURIComponent(selectedEdge.target_id)}`">
+              <RouterLink :to="assuranceNodeDetailRoute(selectedEdge.target_id)">
                 Edit target
               </RouterLink>
             </div>

@@ -15,13 +15,15 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AssuranceAnalysisPicker from '../components/AssuranceAnalysisPicker.vue'
 import FmeaMatrixPanel from '../components/FmeaMatrixPanel.vue'
+import { assuranceAnalysisMethodRoute } from '../router/artifactRoutes'
 
 const route = useRoute()
 const router = useRouter()
 
+// Absent on the create surface, which has no analysis yet.
 const analysisId = computed(() =>
-  typeof route.query['analysis'] === 'string' && route.query['analysis']
-    ? route.query['analysis']
+  typeof route.params.analysisId === 'string' && route.params.analysisId
+    ? route.params.analysisId
     : null)
 
 // The picker's own selection, mirrored into the URL so the chosen matrix is linkable and a reload
@@ -31,7 +33,7 @@ watch(analysisId, (value) => { chosen.value = value })
 watch(chosen, (value) => {
   if (value && value !== analysisId.value) {
     // `analysis` is the page's only query parameter, so it is written rather than merged.
-    void router.replace({ path: route.path, query: { analysis: value } })
+    void router.replace(assuranceAnalysisMethodRoute(value, 'fmea'))
   }
 })
 </script>

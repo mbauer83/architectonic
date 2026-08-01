@@ -142,3 +142,11 @@ export function unboundControlNodes(nodes: AssuranceNode[]): AssuranceNode[] {
     (n) => n.node_type === 'control-structure-node' && n.binding_status === 'unbound-pending',
   )
 }
+
+import { assuranceAnalysisCreateRoute, assuranceAnalysisMethodRoute } from '../router/artifactRoutes'
+
+/** Where the wizard goes when its analysis selection changes: that analysis' surface, or the
+ * create surface when the selection is cleared. Here rather than in the view because it is a
+ * route decision, and this module already holds the wizard's others. */
+export const selectionRoute = (analysisId: string | null): string =>
+  analysisId ? assuranceAnalysisMethodRoute(analysisId, 'stpa') : assuranceAnalysisCreateRoute('stpa')

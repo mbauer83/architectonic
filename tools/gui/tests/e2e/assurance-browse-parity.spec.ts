@@ -89,7 +89,7 @@ test('a legacy ?node_id= deep link lands on the node page', async ({ page }) => 
   // among them — so the parameter is honoured rather than silently dropped.
   await openBrowse(page)
   const href = (await page.locator('tbody tr').first().locator('a').first().getAttribute('href'))!
-  const nodeId = decodeURIComponent(href.replace('/assurance/node/', ''))
+  const nodeId = decodeURIComponent(href.replace('/assurance/nodes/', ''))
 
   await page.goto(`/assurance?node_id=${encodeURIComponent(nodeId)}`, { waitUntil: 'load' })
 

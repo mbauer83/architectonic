@@ -17,13 +17,13 @@ import {
   type StpaStep,
   type StpaGuideword,
   type StpaCompleteResponse,
-} from './AssuranceStpaWizard.helpers'
+  selectionRoute } from './AssuranceStpaWizard.helpers'
 
 const route = useRoute()
 const router = useRouter()
 
 const analysisId = ref<string | null>(
-  typeof route.query['analysis_id'] === 'string' ? route.query['analysis_id'] : null,
+  typeof route.params.analysisId === 'string' ? route.params.analysisId : null,
 )
 const stepKey = ref<string>('losses')
 const currentStep = computed<StpaStep>(
@@ -169,7 +169,7 @@ function goToStep(key: string) {
 }
 
 watch(analysisId, (val) => {
-  void router.replace({ path: '/assurance/stpa', query: val ? { analysis_id: val } : {} })
+  void router.replace(selectionRoute(val))
   void loadNodes()
 })
 watch(stepKey, () => {

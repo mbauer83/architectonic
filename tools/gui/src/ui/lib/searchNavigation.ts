@@ -1,4 +1,6 @@
-import { diagramDetailRoute, documentDetailRoute, entityDetailRoute } from '../router/artifactRoutes'
+import {
+  assuranceNodeDetailRoute, diagramDetailRoute, documentDetailRoute, entityDetailRoute,
+} from '../router/artifactRoutes'
 import type { RouteLocationRaw } from 'vue-router'
 
 /** Minimal shape of a search hit needed to decide where it navigates. */
@@ -27,7 +29,7 @@ export function searchHitRoute(hit: NavigableHit): RouteLocationRaw | null {
       // Standalone page: a search hit is a direct answer, not a browsing session. Still the legacy
       // spelling: the assurance route table is converted in its own slice, and pointing here at
       // `assuranceNodeDetailRoute` before that would emit a path nothing serves.
-      return `/assurance/node/${encodeURIComponent(hit.artifact_id)}`
+      return assuranceNodeDetailRoute(hit.artifact_id)
     default:
       return null
   }

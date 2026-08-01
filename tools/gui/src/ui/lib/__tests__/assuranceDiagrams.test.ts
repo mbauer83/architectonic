@@ -13,6 +13,7 @@ import {
   renderedDiagramUrl,
   type AssuranceDiagramMeta,
 } from '../assuranceDiagrams'
+import { assuranceAnalysisDiagramRoute } from '../../router/artifactRoutes'
 
 const entry = (
   analysisId: string,
@@ -45,8 +46,7 @@ const CATALOG: AssuranceDiagramMeta[] = [
 describe('diagramDetailRoute', () => {
   it('carries the analysis and the type, which is what the render call needs', () => {
     expect(diagramDetailRoute(STPA, 'bowtie')).toEqual({
-      path: '/assurance/diagram',
-      query: { analysis: STPA, type: 'bowtie' },
+      path: assuranceAnalysisDiagramRoute(STPA, 'bowtie'),
     })
   })
 })

@@ -9,12 +9,13 @@ import GrcObligationsStep from '../components/GrcObligationsStep.vue'
 import GrcCoverageStep from '../components/GrcCoverageStep.vue'
 import { grcWizardDataKey, useGrcWizardData } from '../composables/useGrcWizardData'
 import { GRC_STEPS } from './AssuranceGrcWizard.helpers'
+import { assuranceAnalysisCreateRoute, assuranceAnalysisMethodRoute } from '../router/artifactRoutes'
 
 const route = useRoute()
 const router = useRouter()
 
 const analysisId = ref<string | null>(
-  typeof route.query['analysis_id'] === 'string' ? route.query['analysis_id'] : null,
+  typeof route.params.analysisId === 'string' ? route.params.analysisId : null,
 )
 const stepKey = ref<string>('risks')
 
@@ -26,7 +27,9 @@ function goToStep(key: string) {
 }
 
 watch(analysisId, (val) => {
-  void router.replace({ path: '/assurance/grc', query: val ? { analysis_id: val } : {} })
+  void router.replace(val
+    ? assuranceAnalysisMethodRoute(val, 'grc')
+    : assuranceAnalysisCreateRoute('grc'))
 })
 
 onMounted(() => {

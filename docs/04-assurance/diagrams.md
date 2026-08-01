@@ -38,14 +38,14 @@ diagram viewer**, not in the generic architecture diagram viewer. This surface:
 what it shows. No diagram renders there, so opening the overview costs one catalog read rather
 than a store projection you did not ask for.
 
-Choosing a card opens that projection on its own page, `/assurance/diagram?type=<id>` — a
+Choosing a card opens that projection on its own page, `/assurance/analyses/<analysis-id>/diagrams/<type>` — a
 deep-linkable URL you can bookmark or share. The detail page is laid out exactly like the
 architecture area's diagram detail: the diagram takes the **full width** until you select a node
 or edge, at which point the detail panel appears beside it behind a **draggable divider** you can
 size to taste. Clicking the same node again dismisses the panel and gives the width back.
 
 From the detail panel, every node continues into its deep-linkable page
-(`/assurance/node/<id>`) and the assurance graph explorer — see
+(`/assurance/nodes/<id>`) and the assurance graph explorer — see
 [Exploring assurance content](exploring-assurance.md).
 
 The three assurance-only types are **not listed in the generic diagram browser** — they cannot

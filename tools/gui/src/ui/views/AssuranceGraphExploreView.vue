@@ -23,7 +23,8 @@ import {
 } from './AssuranceGraphExploreView.helpers'
 
 const route = useRoute()
-const rootId = computed(() => (route.query.node_id as string | undefined) ?? '')
+// Absent on the unanchored exploration route, which opens on the whole visible graph.
+const rootId = computed(() => (route.params.nodeId as string | undefined) ?? '')
 
 const canvasRef = ref<InstanceType<typeof GraphCanvas> | null>(null)
 const svgWidth = ref(800)

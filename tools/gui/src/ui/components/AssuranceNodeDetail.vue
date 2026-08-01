@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { entityDetailRoute } from '../router/artifactRoutes'
+import { assuranceNodeDetailRoute, entityDetailRoute } from '../router/artifactRoutes'
 import { ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import ModelThisPanel from './ModelThisPanel.vue'
@@ -132,7 +132,7 @@ async function deleteEdge(edge: Edge) {
         <div class="detail-row">
           <span class="detail-label">Name</span>
           <RouterLink
-            :to="`/assurance/node/${encodeURIComponent(data.node.node_id)}`"
+            :to="assuranceNodeDetailRoute(data.node.node_id)"
             class="detail-value"
           >
             {{ data.node.name }}

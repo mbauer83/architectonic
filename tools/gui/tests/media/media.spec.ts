@@ -174,17 +174,17 @@ test('re-shoot assurance overview', async ({ page }) => {
 test('re-shoot assurance control structure', async ({ page }) => {
   // A derived diagram is scoped to an analysis, so the URL names both halves. The old
   // `/assurance/diagrams?type=…` shot the catalog page with an ignored query.
-  await captureAssurance(page, `/assurance/diagram?analysis=${encodeURIComponent(ANALYSIS)}&type=control-structure`,
+  await captureAssurance(page, `/assurance/analyses/${encodeURIComponent(ANALYSIS)}/diagrams/control-structure`,
     'assurance-control-structure.png', 're-shoot assurance control structure', [ANALYSIS])
 })
 
 test('re-shoot assurance bowtie', async ({ page }) => {
-  await captureAssurance(page, `/assurance/diagram?analysis=${encodeURIComponent(ANALYSIS)}&type=bowtie`,
+  await captureAssurance(page, `/assurance/analyses/${encodeURIComponent(ANALYSIS)}/diagrams/bowtie`,
     'assurance-bowtie.png', 're-shoot assurance bowtie', [ANALYSIS])
 })
 
 test('re-shoot assurance GSN', async ({ page }) => {
-  await captureAssurance(page, `/assurance/gsn?analysis_id=${encodeURIComponent(ANALYSIS)}`,
+  await captureAssurance(page, `/assurance/analyses/${encodeURIComponent(ANALYSIS)}/gsn`,
     'assurance-gsn.png', 're-shoot assurance GSN', [ANALYSIS])
 })
 

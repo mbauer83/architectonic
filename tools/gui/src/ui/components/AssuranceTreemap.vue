@@ -17,6 +17,7 @@ import {
   nodeTypeColor,
   type AssuranceTreemapNode,
 } from './AssuranceTreemap.helpers'
+import { assuranceNodeDetailRoute } from '../router/artifactRoutes'
 
 const props = defineProps<{ items: readonly AssuranceTreemapNode[] }>()
 
@@ -27,7 +28,7 @@ const byId = computed(() => new Map(props.items.map((node) => [node.node_id, nod
 const nodeFor = (key: string) => byId.value.get(key)
 
 const openNode = (nodeId: string) =>
-  void router.push({ path: `/assurance/node/${encodeURIComponent(nodeId)}` })
+  void router.push({ path: assuranceNodeDetailRoute(nodeId) })
 </script>
 
 <template>

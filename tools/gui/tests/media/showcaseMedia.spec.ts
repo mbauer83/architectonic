@@ -108,7 +108,7 @@ test('guidance wizard context', async ({ page }) => {
 
 test('assurance method workflow', async ({ page }) => {
   const problems = watch(page)
-  await page.goto(`/assurance/stpa?analysis_id=${encodeURIComponent(ANALYSIS)}`, { waitUntil: 'load' })
+  await page.goto(`/assurance/analyses/${encodeURIComponent(ANALYSIS)}/stpa`, { waitUntil: 'load' })
   await page.getByRole('button', { name: /Review/ }).click()
   await expect(page.locator('.review-status')).toBeVisible({ timeout: 15_000 })
   await expect(page.locator('.wiz')).toContainText('PlantUML Preprocessor Untrusted-Input Disclosure')

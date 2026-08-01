@@ -17,7 +17,8 @@ import {
 import { entityDetailRoute } from '../router/artifactRoutes'
 
 const route = useRoute()
-const anchorId = computed(() => (route.query.anchor as string | undefined) ?? '')
+// Absent on the list route, which shows every anchor's findings rather than one anchor's.
+const anchorId = computed(() => (route.params.archArtifactId as string | undefined) ?? '')
 
 const payload = ref<FindingsPayload | null>(null)
 const loading = ref(false)
