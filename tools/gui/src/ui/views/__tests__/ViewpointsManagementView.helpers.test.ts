@@ -6,13 +6,20 @@ import {
 import { mkDefinitionDraft, mkScope } from '../../../domain/viewpointDefinitionDraft'
 import { mkPresentation } from '../../../domain/viewpointPresentation'
 import { presentationToMapping } from '../../../domain/viewpointPresentationSerialization'
-import type { ViewpointDefinitionEnvelope, ViewpointValidationIssue } from '../../../domain'
+import type { PresentationSpecWire, ViewpointDefinitionEnvelope, ViewpointValidationIssue } from '../../../domain'
+import { viewpointEnvelope } from '../../__tests__/viewpointFixtures'
 
-const mkEnvelope = (representation: Parameters<typeof mkPresentation>[0] | null): ViewpointDefinitionEnvelope => ({
-  slug: 'goal-realization', version: 1, name: 'Goal Realization', tier: 'module',
-  scope_summary: { unrestricted: true }, query_summary: null, fork_status: null,
-  presentation: representation === null ? undefined : presentationToMapping(mkPresentation(representation)),
-})
+const mkEnvelope = (
+  representation: Parameters<typeof mkPresentation>[0] | null,
+): ViewpointDefinitionEnvelope =>
+  viewpointEnvelope({
+    slug: 'goal-realization', name: 'Goal Realization',
+    // `presentationToMapping` is the builder→wire encoder and is still typed as a plain
+    // record, so the shape it produces has to be asserted here rather than checked.
+    presentation: representation === null
+      ? undefined
+      : (presentationToMapping(mkPresentation(representation)) as unknown as PresentationSpecWire),
+  })
 
 describe('executionRouteFor', () => {
   it('routes exploration-representation definitions to /graph', () => {

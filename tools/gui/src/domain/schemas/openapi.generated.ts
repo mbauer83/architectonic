@@ -4394,6 +4394,50 @@ export interface components {
             warning_count: number;
         };
         /**
+         * AttributeConditionNode
+         * @description One attribute predicate.
+         *
+         *     ``negate`` is a strict logical complement, a missing attribute included — so a negated ``eq``
+         *     matches a record with no such attribute at all, which is deliberately not what ``neq`` does.
+         *
+         *     ``value`` is absent where the comparator takes none (``exists``, ``absent``), which is the same
+         *     spelling the canonical form uses for a condition whose value is left at its default.
+         */
+        AttributeConditionNode: {
+            /** Attribute */
+            attribute: string;
+            /**
+             * Comparator
+             * @enum {string}
+             */
+            comparator: "eq" | "neq" | "in" | "not_in" | "exists" | "absent" | "lt" | "lte" | "gt" | "gte" | "like" | "ilike";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "condition";
+            /** Negate */
+            negate?: boolean;
+            /** Value */
+            value?: components["schemas"]["ParameterValueRef"] | components["schemas"]["BindingValueRef"] | components["schemas"]["AttributeValueRef"] | string | number | boolean | (string | number | boolean)[];
+        };
+        /**
+         * AttributeValueRef
+         * @description Compare against another attribute rather than a literal.
+         *
+         *     ``self`` reads the record being evaluated (``end_date >= start_date``); ``source`` and
+         *     ``target`` read an endpoint of the connection being evaluated, and mean nothing outside one.
+         */
+        AttributeValueRef: {
+            /** Attribute */
+            attribute: string;
+            /**
+             * From
+             * @enum {string}
+             */
+            from: "self" | "source" | "target";
+        };
+        /**
          * AuthoritativePatternResultResponse
          * @description A pattern that decides the row's verdict.
          *
@@ -4445,6 +4489,51 @@ export interface components {
             repo_roots: string[];
             /** Software Version */
             software_version: string;
+        };
+        /**
+         * BindingCatalogResponse
+         * @description What a binding may select, aggregate and declare as its result type.
+         *
+         *     ``result_types`` are type *expressions* rather than an enumeration — ``entity[type-slug]`` and
+         *     ``tuple[result-type, ...]`` are grammar with holes in them, which is why they are strings and
+         *     not a closed vocabulary the way the other two lists are.
+         */
+        BindingCatalogResponse: {
+            /** Aggregate */
+            aggregate: string[];
+            /** Result Types */
+            result_types: string[];
+            /** Select */
+            select: string[];
+        };
+        /**
+         * BindingValueRef
+         * @description Compare against a named binding's result.
+         *
+         *     ``quantifier`` decides what a set-valued binding means in a scalar comparison — ``any`` member
+         *     or ``all`` of them — and leaving it unset is not a third answer, it is the binding being
+         *     single-valued.
+         */
+        BindingValueRef: {
+            /**
+             * Aggregate
+             * @enum {string}
+             */
+            aggregate?: "count" | "sum" | "avg" | "min" | "max";
+            /**
+             * From
+             * @constant
+             */
+            from: "binding";
+            /** Name */
+            name: string;
+            /** Project */
+            project?: string;
+            /**
+             * Quantifier
+             * @enum {string}
+             */
+            quantifier?: "any" | "all";
         };
         /** Body_entities_allocate_identifiers */
         Body_entities_allocate_identifiers: {
@@ -4580,6 +4669,29 @@ export interface components {
             executed: boolean;
         };
         /**
+         * BrokenReferenceResponse
+         * @description One reference in a definition that no longer resolves.
+         *
+         *     Computed on demand and never persisted: it is a function of the definition and the current
+         *     model, so storing it would mean storing a claim that goes stale the moment either changes.
+         */
+        BrokenReferenceResponse: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "entity-type" | "connection-type" | "specialization" | "attribute-path" | "entity-id";
+            /** Locus */
+            locus: string;
+            /** Reference */
+            reference: string;
+            /**
+             * Severity
+             * @enum {string}
+             */
+            severity: "ontology" | "entity-id";
+        };
+        /**
          * ClassificationNotPublishableDetails
          * @description ``classification_not_publishable``: the effective classification that forbids publication.
          *
@@ -4597,6 +4709,35 @@ export interface components {
              * @default true
              */
             dry_run: boolean;
+        };
+        /**
+         * ColumnSpecResponse
+         * @description One table column: its heading, and the attribute path that fills it.
+         */
+        ColumnSpecResponse: {
+            /** Label */
+            label: string;
+            /** Source */
+            source: string;
+        };
+        /**
+         * ConceptScopeSpec
+         * @description The declarative selection layer: which types are in and which are out.
+         *
+         *     An absent ``entity_types``/``connection_types`` means unrestricted, which is why they are
+         *     omitted rather than sent as an empty list — an empty list would select nothing.
+         */
+        ConceptScopeSpec: {
+            /** Connection Types */
+            connection_types?: string[];
+            /** Entity Types */
+            entity_types?: string[];
+            /** Excluded Connection Types */
+            excluded_connection_types?: string[];
+            /** Excluded Domains */
+            excluded_domains?: string[];
+            /** Excluded Entity Types */
+            excluded_entity_types?: string[];
         };
         /** ConflictResolutionBody */
         ConflictResolutionBody: {
@@ -4623,6 +4764,43 @@ export interface components {
             dry_run: boolean;
             /** Remove Entities */
             remove_entities?: string[] | null;
+        };
+        /**
+         * ConnectionCriteriaGroupNode
+         * @description The connection-side group.
+         *
+         *     Its children are conditions and groups only. An incident predicate asks what edges a thing has,
+         *     and a connection has none of its own — which is why the two sides are separate types rather than
+         *     one type with a context flag.
+         */
+        ConnectionCriteriaGroupNode: {
+            /** Children */
+            children: (components["schemas"]["AttributeConditionNode"] | components["schemas"]["ConnectionCriteriaGroupNode"])[];
+            /**
+             * Conjunction
+             * @enum {string}
+             */
+            conjunction: "and" | "or";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "group";
+            /** Negate */
+            negate?: boolean;
+        };
+        /**
+         * ConnectionDerivationEntryResponse
+         * @description A connection type's part in relationship derivation.
+         *
+         *     ``strength`` is null for a role that does not rank — a specialization or a dynamic relation is
+         *     not weaker or stronger evidence than another of its kind, it is a different kind of evidence.
+         */
+        ConnectionDerivationEntryResponse: {
+            /** Role */
+            role: string;
+            /** Strength */
+            strength: number | null;
         };
         /**
          * ConnectionItemSummaryResponse
@@ -4660,6 +4838,27 @@ export interface components {
         ConnectionListResponse: {
             /** Items */
             items: components["schemas"]["ConnectionSummary"][];
+        };
+        /**
+         * ConnectionSelectionSpec
+         * @description Which of the selected entities' connections the result displays.
+         *
+         *     It narrows within the structural invariant and can never widen past it: a connection appears
+         *     only when both its endpoints are already in the entity set, whatever ``criteria`` says.
+         */
+        ConnectionSelectionSpec: {
+            criteria?: components["schemas"]["ConnectionCriteriaGroupNode"];
+            /** Enabled */
+            enabled?: boolean;
+            /** Include Potential */
+            include_potential?: boolean;
+            /** Max Hops */
+            max_hops?: number;
+            /**
+             * Traversal
+             * @enum {string}
+             */
+            traversal?: "direct" | "derived" | "both";
         };
         /**
          * ConnectionSummary
@@ -5003,6 +5202,60 @@ export interface components {
             uca_type?: string | null;
         };
         /**
+         * CriteriaCatalogResponse
+         * @description Everything the criteria-tree builder's pickers are fed from, in one request.
+         *
+         *     One snapshot rather than a request per picker: the panels are filled together, and two of them
+         *     resolved against different snapshots could offer a pair that never validates.
+         *
+         *     The two ``*_attribute_enums`` maps are the value picker's switch from free text to a dropdown.
+         *     A path absent from them is open, not empty — validation ignores them entirely, so a value
+         *     outside a declared set is never retroactively rejected.
+         */
+        CriteriaCatalogResponse: {
+            bindings: components["schemas"]["BindingCatalogResponse"];
+            /** Connection Attribute Enums */
+            connection_attribute_enums: {
+                [key: string]: string[];
+            };
+            /** Connection Attribute Types */
+            connection_attribute_types: {
+                [key: string]: string;
+            };
+            /** Connection Derivation */
+            connection_derivation: {
+                [key: string]: components["schemas"]["ConnectionDerivationEntryResponse"];
+            };
+            /** Connection Types */
+            connection_types: string[];
+            /** Depth Cap */
+            depth_cap: number;
+            derived: components["schemas"]["DerivedCatalogResponse"];
+            /** Entity Attribute Enums */
+            entity_attribute_enums: {
+                [key: string]: string[];
+            };
+            /** Entity Attribute Types */
+            entity_attribute_types: {
+                [key: string]: string;
+            };
+            /** Entity Type Domains */
+            entity_type_domains: {
+                [key: string]: string;
+            };
+            /** Entity Types */
+            entity_types: string[];
+            parameters: components["schemas"]["ParameterCatalogResponse"];
+            /** Reserved Connection Paths */
+            reserved_connection_paths: string[];
+            /** Reserved Entity Paths */
+            reserved_entity_paths: string[];
+            /** Specialization Slugs */
+            specialization_slugs: string[];
+            /** Symmetric Connection Types */
+            symmetric_connection_types: string[];
+        };
+        /**
          * DatatypeClassifierInfo
          * @description One classifier a datatype diagram declares, as the picker needs it.
          *
@@ -5094,6 +5347,61 @@ export interface components {
             code: string | null;
             /** Denied */
             denied: boolean;
+        };
+        /**
+         * DerivedAttributeSpec
+         * @description A computed attribute a condition or a column may address as ``derived.<name>``.
+         *
+         *     Two sources, and the graph fields are meaningless for the other one: a ``security-signal``
+         *     attribute is batch-fetched from the signal capability and carries only ``metric``, which is why
+         *     that arm is validated to have none of the traversal fields set.
+         */
+        DerivedAttributeSpec: {
+            connection_criteria?: components["schemas"]["ConnectionCriteriaGroupNode"];
+            /**
+             * Direction
+             * @enum {string}
+             */
+            direction?: "outgoing" | "incoming" | "either";
+            endpoint_criteria?: components["schemas"]["EntityCriteriaGroupNode"];
+            /** Include Potential */
+            include_potential?: boolean;
+            /** Max Hops */
+            max_hops?: number;
+            /** Metric */
+            metric?: string;
+            /** Name */
+            name: string;
+            /** Of */
+            of?: string;
+            /**
+             * Reduce
+             * @enum {string}
+             */
+            reduce?: "count" | "min" | "max" | "sum" | "average" | "first" | "last";
+            /**
+             * Source
+             * @constant
+             */
+            source?: "security-signal";
+            /**
+             * Traversal
+             * @enum {string}
+             */
+            traversal?: "direct" | "derived";
+        };
+        /**
+         * DerivedCatalogResponse
+         * @description The three axes a derived attribute is configured on: how far to walk, what evidence counts,
+         *     and how to collapse the result.
+         */
+        DerivedCatalogResponse: {
+            /** Certainty */
+            certainty: string[];
+            /** Reduce */
+            reduce: string[];
+            /** Traversal */
+            traversal: string[];
         };
         /**
          * DerivedNeighbor
@@ -5463,6 +5771,27 @@ export interface components {
              * @enum {string}
              */
             traversal: "direct";
+        };
+        /**
+         * DisplayOptionsSpec
+         * @description The representation-gated rendering choices, each validated at save time.
+         *
+         *     A closed set rather than a map: all three are enumerated vocabularies the validator checks, and
+         *     an option it does not know is a save-time error rather than a hint a renderer might honour.
+         */
+        DisplayOptionsSpec: {
+            /**
+             * Color By
+             * @enum {string}
+             */
+            color_by?: "domain" | "hop-distance";
+            /** Label Attribute */
+            label_attribute?: string;
+            /**
+             * Layout
+             * @enum {string}
+             */
+            layout?: "clusters" | "radial" | "force";
         };
         /**
          * DisplaySearchHit
@@ -6056,6 +6385,26 @@ export interface components {
             generation?: number;
         };
         /**
+         * EntityCriteriaGroupNode
+         * @description A conjunction or disjunction of entity predicates, itself negatable.
+         */
+        EntityCriteriaGroupNode: {
+            /** Children */
+            children: (components["schemas"]["AttributeConditionNode"] | components["schemas"]["IncidentConnectionNode"] | components["schemas"]["EntityCriteriaGroupNode"])[];
+            /**
+             * Conjunction
+             * @enum {string}
+             */
+            conjunction: "and" | "or";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "group";
+            /** Negate */
+            negate?: boolean;
+        };
+        /**
          * EntityDetailResponse
          * @description One entity, with its parsed content sections and its degree.
          *
@@ -6576,6 +6925,20 @@ export interface components {
             value: string;
         };
         /**
+         * ForkLineageSpec
+         * @description Where a forked definition came from, stamped server-side at fork time.
+         */
+        ForkLineageSpec: {
+            /** Definition Digest */
+            definition_digest: string;
+            /** Index Generation */
+            index_generation?: number;
+            /** Slug */
+            slug: string;
+            /** Version */
+            version: number;
+        };
+        /**
          * GroupEntryResponse
          * @description One group within one axis, with its whole-catalog member count.
          *
@@ -6953,6 +7316,42 @@ export interface components {
             /** Target Type */
             target_type: string;
         };
+        /**
+         * IncidentConnectionNode
+         * @description "This entity has an incident connection matching ``connection_criteria`` whose other
+         *     endpoint matches ``endpoint_criteria``" — recursive on both legs, bounded by the save-time
+         *     depth cap.
+         *
+         *     ``traversal`` is written even at its default, unlike every other field here: it is load-bearing
+         *     semantics, and stating it keeps a saved recipe stable if the default ever moves. ``both`` is the
+         *     union of the direct and derived sets taken *before* negation, so a negated ``both`` excludes an
+         *     entity that has either kind of connection.
+         */
+        IncidentConnectionNode: {
+            connection_criteria?: components["schemas"]["ConnectionCriteriaGroupNode"];
+            /**
+             * Direction
+             * @enum {string}
+             */
+            direction?: "outgoing" | "incoming" | "either";
+            endpoint_criteria?: components["schemas"]["EntityCriteriaGroupNode"];
+            /** Include Potential */
+            include_potential?: boolean;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "incident";
+            /** Max Hops */
+            max_hops?: number;
+            /** Negate */
+            negate?: boolean;
+            /**
+             * Traversal
+             * @enum {string}
+             */
+            traversal: "direct" | "derived" | "both";
+        };
         /** IngestSignalsBody */
         IngestSignalsBody: {
             /** Bom */
@@ -7328,6 +7727,31 @@ export interface components {
             };
         };
         /**
+         * NeighborInclusionSpec
+         * @description An additive population term: pull in entities connected to the primary result set.
+         *
+         *     Anchors are always the primary set — an inclusion never chains off another inclusion's results,
+         *     so a second term widens the population by one step and never by two.
+         */
+        NeighborInclusionSpec: {
+            connection_criteria?: components["schemas"]["ConnectionCriteriaGroupNode"];
+            /**
+             * Direction
+             * @enum {string}
+             */
+            direction?: "outgoing" | "incoming" | "either";
+            /** Include Potential */
+            include_potential?: boolean;
+            /** Max Hops */
+            max_hops?: number;
+            neighbor_criteria?: components["schemas"]["EntityCriteriaGroupNode"];
+            /**
+             * Traversal
+             * @enum {string}
+             */
+            traversal?: "direct" | "derived";
+        };
+        /**
          * NoDiagramViewpointResponse
          * @description The artifact pins no viewpoint, so there is no projection and nothing else to say.
          *
@@ -7433,6 +7857,28 @@ export interface components {
             [key: string]: unknown;
         };
         /**
+         * ParameterCatalogResponse
+         * @description The element kinds a declared parameter may take. Cardinality is orthogonal and is not a
+         *     type name, so it is not in this list.
+         */
+        ParameterCatalogResponse: {
+            /** Types */
+            types: string[];
+        };
+        /**
+         * ParameterValueRef
+         * @description Compare against a named execution parameter's bound value.
+         */
+        ParameterValueRef: {
+            /**
+             * From
+             * @constant
+             */
+            from: "parameter";
+            /** Name */
+            name: string;
+        };
+        /**
          * PatchDiagramEntityMetadataBody
          * @description Targeted metadata edit for one datatype classifier, or for one of its attributes.
          *
@@ -7481,6 +7927,43 @@ export interface components {
             source_type: string;
             /** Target Type */
             target_type: string;
+        };
+        /**
+         * PresentationSpecResponse
+         * @description How one representation renders the population.
+         *
+         *     Additive on the query and never part of it: two presentations of one query select the same
+         *     entities, so a summary or a count never depends on this level.
+         */
+        PresentationSpecResponse: {
+            /** Aggregate By */
+            aggregate_by?: string;
+            /** Column By */
+            column_by?: string;
+            column_criteria?: components["schemas"]["EntityCriteriaGroupNode"];
+            /** Columns */
+            columns?: components["schemas"]["ColumnSpecResponse"][];
+            /** Default Style */
+            default_style?: {
+                [key: string]: string;
+            };
+            display_options?: components["schemas"]["DisplayOptionsSpec"];
+            /** Group By */
+            group_by?: string;
+            /** Legibility Budget */
+            legibility_budget?: number;
+            /**
+             * Representation
+             * @enum {string}
+             */
+            representation: "exploration" | "table" | "matrix" | "diagram";
+            /** Row By */
+            row_by?: string;
+            row_criteria?: components["schemas"]["EntityCriteriaGroupNode"];
+            /** Styling Rules */
+            styling_rules?: components["schemas"]["StyleRuleSpec"][];
+            /** Target Types */
+            target_types?: string[];
         };
         /**
          * ProjectedOccurrenceResponse
@@ -7844,6 +8327,92 @@ export interface components {
             node_id: string;
         };
         /**
+         * QueryBindingSpec
+         * @description A named sub-query whose result other conditions compare against.
+         *
+         *     ``include_in_result`` promotes the bound entities into the result population; without it a
+         *     binding is only a value to compare with, which is the difference between "the systems this
+         *     depends on" as an answer and as a filter.
+         */
+        QueryBindingSpec: {
+            /**
+             * Aggregate
+             * @enum {string}
+             */
+            aggregate?: "count" | "min" | "max" | "sum" | "average" | "first" | "last";
+            /** Criteria */
+            criteria?: components["schemas"]["EntityCriteriaGroupNode"] | components["schemas"]["ConnectionCriteriaGroupNode"];
+            /** Include In Result */
+            include_in_result?: boolean;
+            /** Name */
+            name: string;
+            /** Project */
+            project?: string;
+            /** Result Type */
+            result_type: string;
+            /**
+             * Select
+             * @enum {string}
+             */
+            select?: "entity" | "connection";
+            /** Tuple */
+            tuple?: string[];
+        };
+        /**
+         * QueryParameterSpec
+         * @description A declared execution parameter.
+         *
+         *     ``type`` is the element kind and ``cardinality`` the shape, deliberately orthogonal: a closed
+         *     set of strings and an open set of slugs differ only by ``allowed_values``, so a set-valued
+         *     parameter is not its own type name.
+         *
+         *     ``allowed_values`` present means a CLOSED vocabulary enforced at bind time. Absent means open —
+         *     an unmatched value yields an empty result rather than an error, so a saved filter survives a
+         *     model change.
+         */
+        QueryParameterSpec: {
+            /** Allowed Values */
+            allowed_values?: string[];
+            /**
+             * Cardinality
+             * @enum {string}
+             */
+            cardinality?: "one" | "many";
+            /** Default */
+            default?: string | number | boolean | (string | number | boolean)[];
+            /** Description */
+            description?: string;
+            /** Min Items */
+            min_items?: number;
+            /** Name */
+            name: string;
+            /**
+             * Required
+             * @constant
+             */
+            required?: false;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "string" | "integer" | "number" | "date" | "boolean" | "slug" | "entity-id";
+        };
+        /**
+         * RangeBandSpec
+         * @description One band of a ``range`` style rule: ``minimum`` inclusive, ``maximum`` exclusive.
+         *
+         *     Either end is absent when it is unbounded, which is exactly how the parser reads it back — so an
+         *     omitted bound is "no bound here", never an unknown one.
+         */
+        RangeBandSpec: {
+            /** Maximum */
+            maximum?: number;
+            /** Minimum */
+            minimum?: number;
+            /** Value */
+            value: string;
+        };
+        /**
          * RecordGsnPublicationBody
          * @description The analysis is the path; the body names only what is being published.
          */
@@ -8074,6 +8643,24 @@ export interface components {
                 string,
                 string
             ];
+        };
+        /**
+         * ScopeSummaryResponse
+         * @description The scope in words, for a list row that has no space for the scope itself.
+         */
+        ScopeSummaryResponse: {
+            /** Connection Types */
+            connection_types?: string[];
+            /** Entity Types */
+            entity_types?: string[];
+            /** Excluded Connection Types */
+            excluded_connection_types?: string[];
+            /** Excluded Domains */
+            excluded_domains?: string[];
+            /** Excluded Entity Types */
+            excluded_entity_types?: string[];
+            /** Unrestricted */
+            unrestricted: boolean;
         };
         /** SealBaselineBody */
         SealBaselineBody: {
@@ -8493,6 +9080,48 @@ export interface components {
             /** Rule Index */
             rule_index: number;
         };
+        /**
+         * StyleRuleSpec
+         * @description One authored styling rule for one capability.
+         *
+         *     Three modes, and each uses a different subset: ``match`` takes criteria and a token, ``range``
+         *     takes an attribute and bands, ``scale`` takes an attribute, bounds and two gradient endpoints.
+         *     Switching mode clears the others' fields, so a rule never carries two modes' worth of intent.
+         *
+         *     ``disabled`` is quarantine: saveable exactly as inherited but never evaluated, which is how a
+         *     fork keeps a rule whose attribute no longer resolves instead of silently dropping it.
+         */
+        StyleRuleSpec: {
+            /** Applies To */
+            applies_to?: string[];
+            /** Capability */
+            capability: string;
+            /** Disabled */
+            disabled?: boolean;
+            /** Match Criteria */
+            match_criteria?: components["schemas"]["EntityCriteriaGroupNode"] | components["schemas"]["ConnectionCriteriaGroupNode"];
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode?: "range" | "scale";
+            /** Range Attribute */
+            range_attribute?: string;
+            /** Range Bands */
+            range_bands?: components["schemas"]["RangeBandSpec"][];
+            /** Scale Attribute */
+            scale_attribute?: string;
+            /** Scale Max */
+            scale_max?: number | string;
+            /** Scale Min */
+            scale_min?: number | string;
+            /** Scale Tokens */
+            scale_tokens?: string[];
+            source_criteria?: components["schemas"]["EntityCriteriaGroupNode"];
+            target_criteria?: components["schemas"]["EntityCriteriaGroupNode"];
+            /** Value */
+            value?: string;
+        };
         /** SummarizeQueryBody */
         SummarizeQueryBody: {
             /** Query */
@@ -8711,6 +9340,15 @@ export interface components {
             via_outcome_id: string | null;
         };
         /**
+         * TraceBranchesRefSpec
+         * @description Branches shared by reference, preserved rather than expanded — expansion happens at
+         *     evaluation, never on save, so a saved definition still shows which set it points at.
+         */
+        TraceBranchesRefSpec: {
+            /** Ref */
+            ref: string;
+        };
+        /**
          * TraceCoverageResponse
          * @description The terminal-obligation ratio for one row: how many of the applicable branches are covered.
          */
@@ -8719,6 +9357,93 @@ export interface components {
             applicable: number;
             /** Covered */
             covered: number;
+        };
+        /**
+         * TraceDiagnosticEdgeSpec
+         * @description A shortcut branch, carrying the status it reports when it is the only path found.
+         */
+        TraceDiagnosticEdgeSpec: {
+            /** Connection */
+            connection: string;
+            /** Direction */
+            direction: string;
+            endpoint: components["schemas"]["TraceEndpointTypeSpec"];
+            /** Kind */
+            kind: string;
+            /** Status */
+            status: string;
+        };
+        /**
+         * TraceEndpointTypeSpec
+         * @description The entity type a branch edge is expected to land on.
+         */
+        TraceEndpointTypeSpec: {
+            /** Type */
+            type: string;
+        };
+        /**
+         * TraceLayerEndpointSpec
+         * @description A leaf endpoint named by ontology membership: a domain, optionally narrowed to a class.
+         */
+        TraceLayerEndpointSpec: {
+            /** Class */
+            class?: string;
+            /** Domain */
+            domain: string;
+        };
+        /**
+         * TraceLeafSpec
+         * @description How a pattern's chain terminates.
+         *
+         *     ``kind`` ``none`` is a pattern with no reachability leaf at all; the derived-reachability leaf
+         *     carries the connection to walk and the endpoint it must arrive at.
+         */
+        TraceLeafSpec: {
+            /** Connection */
+            connection?: string;
+            /** Endpoint */
+            endpoint?: components["schemas"]["TraceRegistryEndpointSpec"] | components["schemas"]["TraceLayerEndpointSpec"];
+            /** Kind */
+            kind: string;
+            /** Max Hops */
+            max_hops?: number;
+            /** Traversal */
+            traversal?: string;
+        };
+        /**
+         * TracePatternSpec
+         * @description One branch-complete coverage pattern.
+         *
+         *     ``branches`` is either a ``{"ref": ...}`` pointer or a map of branch label → edge; the labels
+         *     are the pattern author's, which is why that arm is a map and not a list.
+         *
+         *     ``diagnostic`` marks the pattern verdict-neutral: it observes, and its absence is neither a pass
+         *     nor a gap.
+         */
+        TracePatternSpec: {
+            /** Applies To */
+            applies_to: string[];
+            /** Branches */
+            branches: components["schemas"]["TraceBranchesRefSpec"] | {
+                [key: string]: components["schemas"]["TraceStoredEdgeSpec"];
+            };
+            /** Diagnostic */
+            diagnostic?: boolean;
+            /** Kind */
+            kind: string;
+            leaf: components["schemas"]["TraceLeafSpec"];
+            /** Name */
+            name: string;
+            /** Shortcuts */
+            shortcuts?: components["schemas"]["TraceDiagnosticEdgeSpec"][];
+        };
+        /**
+         * TraceRegistryEndpointSpec
+         * @description A leaf endpoint named by the registry it must be declared in.
+         */
+        TraceRegistryEndpointSpec: {
+            /** Registry */
+            registry: string;
         };
         /**
          * TraceRowResponse
@@ -8745,6 +9470,19 @@ export interface components {
              * @enum {string}
              */
             verdict: "pass" | "gap" | "not_applicable";
+        };
+        /**
+         * TraceStoredEdgeSpec
+         * @description One branch of a trace pattern: which connection to walk, which way, and what it should reach.
+         */
+        TraceStoredEdgeSpec: {
+            /** Connection */
+            connection: string;
+            /** Direction */
+            direction: string;
+            endpoint: components["schemas"]["TraceEndpointTypeSpec"];
+            /** Kind */
+            kind: string;
         };
         /**
          * TraceTableResponse
@@ -8892,6 +9630,80 @@ export interface components {
          */
         VexRevisionRecord: {
             [key: string]: unknown;
+        };
+        /**
+         * ViewpointDefinitionEnvelope
+         * @description One catalogue entry: the authored definition, and what the server knows about it.
+         *
+         *     The definition's own fields come first, in canonical form, so the editor can populate a form
+         *     from this row without a second request. The rest is computed per request: which tier owns it
+         *     (and therefore whether it is editable here), what its scope and query say in words, its current
+         *     content digest, whether a fork has fallen behind its origin, and which of its references are
+         *     broken.
+         *
+         *     ``selection_mode`` says which of ``scope`` and ``query`` is *active*. It is absent on
+         *     pre-migration definitions, where the legacy rule applies: the query when there is one, else the
+         *     scope.
+         */
+        ViewpointDefinitionEnvelope: {
+            /** Broken References */
+            broken_references: components["schemas"]["BrokenReferenceResponse"][];
+            /** Concerns */
+            concerns?: string[];
+            /** Content */
+            content: string | string[];
+            /** Definition Digest */
+            definition_digest: string;
+            /** Derivation Defaults */
+            derivation_defaults?: {
+                [key: string]: number | boolean | string;
+            };
+            /** Description */
+            description?: string;
+            /**
+             * Fork Status
+             * @enum {string}
+             */
+            fork_status?: "current" | "stale" | "origin-missing";
+            forked_from?: components["schemas"]["ForkLineageSpec"];
+            /** Name */
+            name: string;
+            presentation?: components["schemas"]["PresentationSpecResponse"];
+            /** Purpose */
+            purpose: string | string[];
+            query?: components["schemas"]["ViewpointQuerySpec"];
+            /** Query Summary */
+            query_summary?: string;
+            /** Rationale */
+            rationale?: string;
+            /** Representation Types */
+            representation_types?: string[];
+            scope?: components["schemas"]["ConceptScopeSpec"];
+            scope_summary: components["schemas"]["ScopeSummaryResponse"];
+            /**
+             * Selection Mode
+             * @enum {string}
+             */
+            selection_mode?: "scope" | "query";
+            /** Slug */
+            slug: string;
+            /** Stakeholders */
+            stakeholders?: string[];
+            /**
+             * Tier
+             * @enum {string}
+             */
+            tier: "module" | "enterprise" | "engagement";
+            /** Version */
+            version: number;
+        };
+        /**
+         * ViewpointDefinitionListResponse
+         * @description The effective merged catalogue: module, then enterprise, then engagement definitions.
+         */
+        ViewpointDefinitionListResponse: {
+            /** Viewpoints */
+            viewpoints: components["schemas"]["ViewpointDefinitionEnvelope"][];
         };
         /**
          * ViewpointDiagramRenderResponse
@@ -9065,6 +9877,45 @@ export interface components {
             target: "repository";
             /** Warnings */
             warnings: string[];
+        };
+        /**
+         * ViewpointQuerySpec
+         * @description The executable query: which entities, which of their connections, and what to compute.
+         *
+         *     ``entity_criteria`` is always present — a query with no filter still says so with an empty
+         *     group, because an absent criteria tree and one that matches everything are different claims.
+         */
+        ViewpointQuerySpec: {
+            /** Bindings */
+            bindings?: components["schemas"]["QueryBindingSpec"][];
+            connections?: components["schemas"]["ConnectionSelectionSpec"];
+            /** Derived */
+            derived?: components["schemas"]["DerivedAttributeSpec"][];
+            entity_criteria: components["schemas"]["EntityCriteriaGroupNode"];
+            /** Include Connected */
+            include_connected?: components["schemas"]["NeighborInclusionSpec"][];
+            /** Parameters */
+            parameters?: components["schemas"]["QueryParameterSpec"][];
+            /** Query Schema */
+            query_schema: number;
+            /**
+             * Repo Scope
+             * @enum {string}
+             */
+            repo_scope?: "enterprise" | "engagement" | "both";
+            /** Trace Patterns */
+            trace_patterns?: components["schemas"]["TracePatternSpec"][];
+        };
+        /**
+         * ViewpointQuerySummaryResponse
+         * @description A plain-language rendering of an in-progress query.
+         *
+         *     The same renderer the MCP list and execute tools use, so the builder's live preview cannot
+         *     disagree with what those surfaces say about the same definition later.
+         */
+        ViewpointQuerySummaryResponse: {
+            /** Summary */
+            summary: string;
         };
         /**
          * ViewpointReferencedDetails
@@ -17233,7 +18084,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["ViewpointDefinitionListResponse"];
                 };
             };
             /** @description Request validation failed */
@@ -17572,7 +18423,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["CriteriaCatalogResponse"];
                 };
             };
             /** @description Request validation failed */
@@ -17940,7 +18791,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["ViewpointQuerySummaryResponse"];
                 };
             };
             /** @description Request validation failed */

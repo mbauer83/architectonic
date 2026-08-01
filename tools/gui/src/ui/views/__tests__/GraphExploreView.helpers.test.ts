@@ -4,14 +4,17 @@ import {
   effectiveExplorationFill,
 } from '../GraphExploreView.helpers'
 import { tokenColor, tokenShape, tokenIconLetter, tokenEdgeEmphasis, resolveStyleColor } from '../../lib/viewpointStyleTokens'
-import type { ViewpointDefinitionEnvelope } from '../../../domain'
+import type { PresentationSpecWire, ViewpointDefinitionEnvelope } from '../../../domain'
+import { viewpointEnvelope } from '../../__tests__/viewpointFixtures'
 import { occurrence, repositoryProjection } from './projectionFixtures'
 
-const mkEnvelope = (representation: string | null): ViewpointDefinitionEnvelope => ({
-  slug: 'application-structure', version: 1, name: 'Application Structure', tier: 'module',
-  scope_summary: { unrestricted: true }, query_summary: null, fork_status: null,
-  presentation: representation === null ? undefined : { representation },
-})
+const mkEnvelope = (
+  representation: PresentationSpecWire['representation'] | null,
+): ViewpointDefinitionEnvelope =>
+  viewpointEnvelope({
+    slug: 'application-structure', name: 'Application Structure',
+    presentation: representation === null ? undefined : { representation },
+  })
 
 const entity = {
   type: 'application-component', group: 'core', specialization_slugs: ['custom-spec'],

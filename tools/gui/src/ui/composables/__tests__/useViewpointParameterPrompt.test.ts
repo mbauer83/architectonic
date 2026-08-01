@@ -1,12 +1,16 @@
 import { describe, it, expect, vi } from 'vitest'
 import { ref } from 'vue'
 import { useViewpointParameterPrompt } from '../useViewpointParameterPrompt'
-import type { ViewpointDefinitionEnvelope } from '../../../domain'
+import type { ViewpointDefinitionEnvelope, ViewpointQuerySpec } from '../../../domain'
+import { EMPTY_CRITERIA, viewpointEnvelope } from '../../__tests__/viewpointFixtures'
 
-const envelope = (slug: string, parameters: unknown[]): ViewpointDefinitionEnvelope => ({
-  slug, version: 1, name: slug, tier: 'module', scope_summary: { unrestricted: true }, query_summary: null, fork_status: null,
-  query: { query_schema: 1, entity_criteria: { kind: 'group', conjunction: 'and', children: [] }, parameters },
-})
+const envelope = (
+  slug: string, parameters: ViewpointQuerySpec['parameters'],
+): ViewpointDefinitionEnvelope =>
+  viewpointEnvelope({
+    slug, name: slug,
+    query: { query_schema: 1, entity_criteria: EMPTY_CRITERIA, parameters },
+  })
 
 describe('useViewpointParameterPrompt', () => {
   it('resolves immediately for a definition with no required-undefaulted parameters', async () => {

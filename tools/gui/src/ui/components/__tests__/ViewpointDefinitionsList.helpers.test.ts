@@ -3,13 +3,7 @@ import {
   brokenReferenceCount, brokenReferenceSummary, collapsedScopeSummary, definitionNeedsInput,
   filterAndSortDefinitions, nextCatalogSort, representationOf, toggledMember,
 } from '../ViewpointDefinitionsList.helpers'
-import type { ViewpointDefinitionEnvelope } from '../../../domain'
-
-const envelope = (overrides: Partial<ViewpointDefinitionEnvelope> = {}): ViewpointDefinitionEnvelope => ({
-  slug: 'sample', version: 1, name: 'Sample', tier: 'module',
-  scope_summary: { unrestricted: true }, query_summary: null, fork_status: null,
-  ...overrides,
-})
+import { EMPTY_CRITERIA, viewpointEnvelope as envelope } from '../../__tests__/viewpointFixtures'
 
 describe('representationOf', () => {
   it('reads the presentation representation, defaulting to exploration', () => {
@@ -22,11 +16,11 @@ describe('definitionNeedsInput', () => {
   it('is true only for a required, undefaulted parameter', () => {
     expect(definitionNeedsInput(envelope())).toBe(false)
     const parameterised = envelope({
-      query: { query_schema: 1, parameters: [{ name: 'anchor', value_type: 'entity-id', required: true }] },
+      query: { query_schema: 1, entity_criteria: EMPTY_CRITERIA, parameters: [{ name: 'anchor', type: 'entity-id' }] },
     })
     expect(definitionNeedsInput(parameterised)).toBe(true)
     const defaulted = envelope({
-      query: { query_schema: 1, parameters: [{ name: 'anchor', value_type: 'string', required: true, default: 'x' }] },
+      query: { query_schema: 1, entity_criteria: EMPTY_CRITERIA, parameters: [{ name: 'anchor', type: 'string', default: 'x' }] },
     })
     expect(definitionNeedsInput(defaulted)).toBe(false)
   })

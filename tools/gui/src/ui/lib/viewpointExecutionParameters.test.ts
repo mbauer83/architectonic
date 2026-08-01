@@ -3,19 +3,20 @@ import {
   coerceParameterValue, draftFromWireValues, initialParameterDraft, missingRequiredParameters,
   needsParameterPrompt, parameterSignatureOf, parametersToWireValues,
 } from './viewpointExecutionParameters'
-import type { ViewpointDefinitionEnvelope } from '../../domain'
+import type { ViewpointDefinitionEnvelope, ViewpointQuerySpec } from '../../domain'
+import { EMPTY_CRITERIA, viewpointEnvelope } from '../__tests__/viewpointFixtures'
 
-const envelopeWithParameters = (parameters: unknown[]): ViewpointDefinitionEnvelope => ({
-  slug: 'x', version: 1, name: 'X', tier: 'module',
-  scope_summary: { unrestricted: true }, query_summary: null, fork_status: null,
-  query: { query_schema: 1, entity_criteria: { kind: 'group', conjunction: 'and', children: [] }, parameters },
-})
+const envelopeWithParameters = (
+  parameters: ViewpointQuerySpec['parameters'],
+): ViewpointDefinitionEnvelope =>
+  viewpointEnvelope({
+    slug: 'x', name: 'X',
+    query: { query_schema: 1, entity_criteria: EMPTY_CRITERIA, parameters },
+  })
 
 describe('parameterSignatureOf', () => {
   it('is empty for a scope-only definition (no query)', () => {
-    const envelope: ViewpointDefinitionEnvelope = {
-      slug: 'x', version: 1, name: 'X', tier: 'module', scope_summary: { unrestricted: true }, query_summary: null, fork_status: null,
-    }
+    const envelope = viewpointEnvelope({ slug: 'x', name: 'X' })
     expect(parameterSignatureOf(envelope)).toEqual([])
   })
 

@@ -1,6 +1,5 @@
 import { Schema } from 'effect'
 
-import { BrokenReferenceSchema } from './viewpointReferences'
 import { TraceTableSchema } from './viewpointTrace'
 
 export type { PatternResult, TraceObligation, TraceRow, TraceTable } from './viewpointTrace'
@@ -244,69 +243,21 @@ export const ViewpointDiagramResultSchema = Schema.Struct({
 })
 export type ViewpointDiagramResult = typeof ViewpointDiagramResultSchema.Type
 
-// ── Viewpoint definitions (management view) ───────────────────────────────────
-// `query`/`presentation`/`scope` stay `Unknown` here (matching the existing
-// `ViewpointSummarySchema.scope` convention above) — their recursive wire shape is
-// modeled by plain TS types in `viewpointCriteria.ts`, decoded/encoded by
-// `viewpointCriteriaSerialization.ts`, not by Effect Schema.
+export type { PresentationSpecWire, ViewpointQuerySpec } from './viewpointLanguage'
+export type {
+  ConceptScopeSpec,
+  ForkLineageSpec,
+  ScopeSummary,
+  ViewpointDefinitionEnvelope,
+} from './viewpointDefinition'
+export {
+  ConceptScopeSpecSchema,
+  ForkLineageSpecSchema,
+  ScopeSummarySchema,
+  ViewpointDefinitionEnvelopeSchema,
+  ViewpointDefinitionListSchema,
+} from './viewpointDefinition'
 
-export const ScopeSummarySchema = Schema.Struct({
-  unrestricted: Schema.Boolean,
-  entity_types: Schema.optional(Schema.Array(Schema.String)),
-  connection_types: Schema.optional(Schema.Array(Schema.String)),
-  excluded_entity_types: Schema.optional(Schema.Array(Schema.String)),
-  excluded_domains: Schema.optional(Schema.Array(Schema.String)),
-  excluded_connection_types: Schema.optional(Schema.Array(Schema.String)),
-})
-export type ScopeSummary = typeof ScopeSummarySchema.Type
-
-export const ViewpointDefinitionEnvelopeSchema = Schema.Struct({
-  slug: Schema.String,
-  version: Schema.Number,
-  name: Schema.String,
-  description: Schema.optional(Schema.String),
-  rationale: Schema.optional(Schema.String),
-  purpose: Schema.optional(Schema.Union(Schema.String, Schema.Array(Schema.String))),
-  content: Schema.optional(Schema.Union(Schema.String, Schema.Array(Schema.String))),
-  stakeholders: Schema.optional(Schema.Array(Schema.String)),
-  concerns: Schema.optional(Schema.Array(Schema.String)),
-  scope: Schema.optional(Schema.Unknown),
-  representation_types: Schema.optional(Schema.Array(Schema.String)),
-  derivation_defaults: Schema.optional(Schema.Record({ key: Schema.String, value: Schema.Unknown })),
-  query: Schema.optional(Schema.Unknown),
-  presentation: Schema.optional(Schema.Unknown),
-  // Which selection layer is ACTIVE (scope | query); absent on pre-migration definitions,
-  // where the legacy behavior (query when present, else scope) applies.
-  selection_mode: Schema.optional(Schema.Literal('scope', 'query')),
-  /** Fork provenance, stamped server-side at fork time (origin slug/version/content
-   * digest); absent on non-forks. */
-  forked_from: Schema.optional(Schema.Struct({
-    slug: Schema.String,
-    version: Schema.Number,
-    definition_digest: Schema.String,
-    index_generation: Schema.optional(Schema.Number),
-  })),
-  /** Digest-computed staleness against the CURRENT origin — 'stale' the moment the
-   * origin's content changes, even without a version bump. Null for non-forks. */
-  fork_status: Schema.optionalWith(
-    Schema.NullOr(Schema.Literal('current', 'stale', 'origin-missing')),
-    { default: () => null },
-  ),
-  // The definition's CURRENT canonical content digest — verified execution references pin
-  // it so a later open can say the definition changed.
-  definition_digest: Schema.optional(Schema.String),
-  tier: Schema.Literal('module', 'enterprise', 'engagement'),
-  scope_summary: ScopeSummarySchema,
-  query_summary: Schema.NullOr(Schema.String),
-  // Broken references, computed on demand and never persisted; optional so an older
-  // backend (or a hand-built fixture) decodes cleanly. Treat absent as none.
-  broken_references: Schema.optional(Schema.Array(BrokenReferenceSchema)),
-})
-export type ViewpointDefinitionEnvelope = typeof ViewpointDefinitionEnvelopeSchema.Type
-
-export const ViewpointDefinitionListSchema = Schema.Struct({
-  viewpoints: Schema.Array(ViewpointDefinitionEnvelopeSchema),
-})
 
 export const ViewpointSummarizeResultSchema = Schema.Struct({ summary: Schema.String })
 

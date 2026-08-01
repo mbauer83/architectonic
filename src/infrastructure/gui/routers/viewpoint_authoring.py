@@ -40,12 +40,17 @@ from src.domain.viewpoints.viewpoint_serialization import viewpoint_definition_t
 from src.domain.viewpoints.viewpoint_summary import render_query_summary
 from src.domain.viewpoints.viewpoints import ViewpointCatalog, ViewpointDefinition
 from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry
+from src.infrastructure.gui.contracts.viewpoint_catalogs import (
+    CriteriaCatalogResponse,
+    ViewpointQuerySummaryResponse,
+)
+from src.infrastructure.gui.contracts.viewpoint_definition import ViewpointDefinitionListResponse
 from src.infrastructure.gui.contracts.viewpoints import (
     ViewpointPinsResponse,
     ViewpointReferencerListResponse,
 )
 from src.infrastructure.gui.routers import state as s
-from src.infrastructure.gui.routers._openapi import READ_RESPONSES, TAG_VIEWPOINTS, WRITE_RESPONSES, OpenMapResponse
+from src.infrastructure.gui.routers._openapi import READ_RESPONSES, TAG_VIEWPOINTS, WRITE_RESPONSES
 from src.infrastructure.gui.routers._viewpoint_write import router as _write_router
 from src.infrastructure.viewpoint_declarations import (
     load_effective_viewpoint_catalog,
@@ -137,7 +142,7 @@ def _full_entry(
 
 
 @router.get("/api/viewpoints", tags=[TAG_VIEWPOINTS], summary="List viewpoint definitions",
-    response_model=OpenMapResponse)
+    response_model=ViewpointDefinitionListResponse, response_model_exclude_none=True)
 def list_viewpoint_definitions() -> dict[str, Any]:
     """The effective merged catalog (module + enterprise + engagement), each entry
     carrying its full serialized mapping (to populate an edit form) and a ``tier`` so the
@@ -181,7 +186,7 @@ def _known_group_slugs() -> list[str]:
 
 
 @router.get("/api/viewpoints/criteria-catalog", tags=[TAG_VIEWPOINTS],
-    summary="Criteria catalog for viewpoint authoring", response_model=OpenMapResponse)
+    summary="Criteria catalog for viewpoint authoring", response_model=CriteriaCatalogResponse)
 def get_criteria_catalog() -> dict[str, Any]:
     """Registries snapshot the criteria-tree builder's pickers are fed from — the same
     ``RegistrySnapshot`` save-mode validation itself resolves attribute paths against."""
@@ -303,7 +308,7 @@ class SummarizeQueryBody(BaseModel):
 
 
 @router.post("/api/viewpoints/summarize", tags=[TAG_VIEWPOINTS], summary="Summarize a viewpoint definition",
-    response_model=OpenMapResponse)
+    response_model=ViewpointQuerySummaryResponse)
 def summarize_query(body: SummarizeQueryBody) -> dict[str, str]:
     """Plain-language rendering of an in-progress (possibly ad-hoc, unsaved) query — the
     same ``render_query_summary`` MCP ``list``/``execute`` and REST execution use, so the
