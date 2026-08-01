@@ -13,7 +13,7 @@ number nobody thinks of as content. ``visibility_limited`` says when the filteri
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict
 
@@ -188,3 +188,57 @@ class AssuranceSearchResponse(_Closed):
     query: str
     hits: list[AssuranceSearchHit]
     count: int
+
+
+class AssuranceBaselineRecord(_Closed):
+    """One sealed baseline: the audit-log entry it was taken at, and the hash that fixes it.
+
+    ``head_seq`` and ``head_hash`` are the seal. A baseline is a claim that the log up to that
+    sequence hashed to that value, so publishing both is what lets anyone re-verify it later without
+    trusting this system's own word — which is the only reason a baseline is worth having.
+
+    ``analysis_id`` is null for a store-wide seal: baselining the whole log is a different act from
+    baselining one analysis's work, and defaulting it to something would misreport which was done.
+    """
+
+    baseline_id: str
+    created_at: str
+    head_seq: int
+    head_hash: str
+    notes: str
+    analysis_id: str | None
+
+
+class AssuranceBaselineListResponse(_Closed):
+    """Every baseline, newest first."""
+
+    baselines: list[AssuranceBaselineRecord]
+    count: int
+
+
+class AssuranceBaselineSealedResponse(_Closed):
+    """What sealing produced. No ``notes`` and no ``analysis_id``: they were the caller's own input,
+    and echoing a request back as though it were a result is how a client comes to trust that the
+    server agreed with something it never checked."""
+
+    baseline_id: str
+    created_at: str
+    head_seq: int
+    head_hash: str
+
+
+class AssuranceArchRefRegisteredResponse(_Closed):
+    """The reference as it was stored, which is not always as it was sent.
+
+    ``arch_artifact_id`` comes back canonicalised: callers legitimately hold either the full or the
+    short form of an artifact id, and every surface that joins on this column matches by string
+    equality — so a control-structure node bound by one form and a failure mode bound by the other
+    would describe the same element and never meet. Echoing the request instead of the stored key
+    would hide that the two differ.
+    """
+
+    assurance_node_id: str
+    arch_artifact_id: str
+    ref_type: str
+    status: Literal["registered"]
+    verification_findings: list[dict[str, Any]] | None = None

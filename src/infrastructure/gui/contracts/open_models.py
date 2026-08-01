@@ -150,6 +150,7 @@ OPEN_RESPONSE_FIELDS: dict[str, OpenReason] = {
     # them. Closes with the assurance surface.
     "AssuranceNodeCreatedResponse.verification_findings": AWAITING_CONTRACT,
     "AssuranceNodeUpdatedResponse.verification_findings": AWAITING_CONTRACT,
+    "AssuranceArchRefRegisteredResponse.verification_findings": AWAITING_CONTRACT,
     # The viewpoint a diagram projects. Its definition language is determinate — the GUI editor already
     # enumerates every node kind to round-trip an edit — so this closes with the viewpoint surface.
     "DiagramSummary.viewpoint": AWAITING_CONTRACT,

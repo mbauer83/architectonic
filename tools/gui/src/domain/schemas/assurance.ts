@@ -92,3 +92,25 @@ export const AssuranceNeighborhoodSchema = Schema.Struct({
   visibility_limited: Schema.Boolean,
 })
 export type AssuranceNeighborhood = typeof AssuranceNeighborhoodSchema.Type
+
+/**
+ * One sealed baseline.
+ *
+ * `head_seq` and `head_hash` are the seal itself: a baseline claims the audit log up to that sequence
+ * hashed to that value, and both are needed to re-verify the claim without taking the server's word.
+ * `analysis_id` is null for a store-wide seal, which is a different act from sealing one analysis.
+ */
+export const AssuranceBaselineSchema = Schema.Struct({
+  baseline_id: Schema.String,
+  created_at: Schema.String,
+  head_seq: Schema.Number,
+  head_hash: Schema.String,
+  notes: Schema.String,
+  analysis_id: Schema.NullOr(Schema.String),
+})
+export type AssuranceBaseline = typeof AssuranceBaselineSchema.Type
+
+export const AssuranceBaselineListSchema = Schema.Struct({
+  baselines: Schema.Array(AssuranceBaselineSchema),
+  count: Schema.Number,
+})

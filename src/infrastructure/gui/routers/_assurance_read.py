@@ -38,6 +38,7 @@ from src.infrastructure.gui.contracts.assurance_nodes import (
     AssuranceNodeListResponse,
 )
 from src.infrastructure.gui.contracts.assurance_queries import (
+    AssuranceBaselineListResponse,
     AssuranceCoverageResponse,
     AssuranceRiskRegisterResponse,
     AssuranceSearchResponse,
@@ -265,13 +266,15 @@ def assurance_risk_register() -> JSONResponse:
 
 # ── Baselines ─────────────────────────────────────────────────────────────────
 
-@read_router.get("/api/assurance/baselines")
+@read_router.get("/api/assurance/baselines", response_model=AssuranceBaselineListResponse)
 def list_baselines() -> JSONResponse:
     ctx, pol = _policy()
     if pol.check_locked():
         raise _locked_response()
     baselines = ctx.archive.list_baselines()
-    return _ok({"baselines": baselines, "count": len(baselines)})
+    return _ok(
+        {"baselines": baselines, "count": len(baselines)}, AssuranceBaselineListResponse,
+    )
 
 
 # ── Architecture lens: assurance findings about one architecture element ─────

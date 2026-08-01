@@ -135,7 +135,15 @@ class _FakeArchive:
 
     def seal_baseline(self, *, notes: str = "",
                       analysis_id: str | None = None) -> dict[str, Any]:
-        return {"sealed": True, "notes": notes}
+        # What `_archive.seal_baseline` returns: the baseline id and the audit-log position sealed.
+        # `notes` and `analysis_id` are the caller's own input and are deliberately not echoed —
+        # returning a request as a result invites trusting an agreement the server never made.
+        return {
+            "baseline_id": "BSL@1781000000.deadbeef",
+            "created_at": "2026-06-20T12:00:00Z",
+            "head_seq": 1,
+            "head_hash": "aa11bb22",
+        }
 
     def list_baselines(self) -> list[Any]:
         return []
@@ -463,12 +471,20 @@ def test_delete_edge_not_found() -> None:
 
 # ── seal_baseline ──────────────────────────────────────────────────────────────
 
-def test_seal_baseline_success() -> None:
+def test_seal_baseline_returns_the_seal_rather_than_an_acknowledgement() -> None:
+    """`sealed: true` was never a field of anything — `_archive.seal_baseline` returns the baseline id
+    and the audit-log position it was taken at. That position is the whole point: a baseline claims the
+    log up to `head_seq` hashed to `head_hash`, and a boolean acknowledgement is unverifiable."""
     ctx = _FakeContext(_FakeStore())
     client = _make_client(ctx)
+
     resp = client.post("/api/assurance/baselines", json={"notes": "test"})
+
     assert resp.status_code == 200
-    assert resp.json()["sealed"] is True
+    body = resp.json()
+    assert body["baseline_id"]
+    assert body["head_seq"] == 1
+    assert body["head_hash"]
 
 
 # ── register_arch_ref ─────────────────────────────────────────────────────────

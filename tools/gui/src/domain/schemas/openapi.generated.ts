@@ -3280,6 +3280,84 @@ export interface components {
             resolved_at: string | null;
         };
         /**
+         * AssuranceArchRefRegisteredResponse
+         * @description The reference as it was stored, which is not always as it was sent.
+         *
+         *     ``arch_artifact_id`` comes back canonicalised: callers legitimately hold either the full or the
+         *     short form of an artifact id, and every surface that joins on this column matches by string
+         *     equality — so a control-structure node bound by one form and a failure mode bound by the other
+         *     would describe the same element and never meet. Echoing the request instead of the stored key
+         *     would hide that the two differ.
+         */
+        AssuranceArchRefRegisteredResponse: {
+            /** Arch Artifact Id */
+            arch_artifact_id: string;
+            /** Assurance Node Id */
+            assurance_node_id: string;
+            /** Ref Type */
+            ref_type: string;
+            /**
+             * Status
+             * @constant
+             */
+            status: "registered";
+            /** Verification Findings */
+            verification_findings?: {
+                [key: string]: unknown;
+            }[] | null;
+        };
+        /**
+         * AssuranceBaselineListResponse
+         * @description Every baseline, newest first.
+         */
+        AssuranceBaselineListResponse: {
+            /** Baselines */
+            baselines: components["schemas"]["AssuranceBaselineRecord"][];
+            /** Count */
+            count: number;
+        };
+        /**
+         * AssuranceBaselineRecord
+         * @description One sealed baseline: the audit-log entry it was taken at, and the hash that fixes it.
+         *
+         *     ``head_seq`` and ``head_hash`` are the seal. A baseline is a claim that the log up to that
+         *     sequence hashed to that value, so publishing both is what lets anyone re-verify it later without
+         *     trusting this system's own word — which is the only reason a baseline is worth having.
+         *
+         *     ``analysis_id`` is null for a store-wide seal: baselining the whole log is a different act from
+         *     baselining one analysis's work, and defaulting it to something would misreport which was done.
+         */
+        AssuranceBaselineRecord: {
+            /** Analysis Id */
+            analysis_id: string | null;
+            /** Baseline Id */
+            baseline_id: string;
+            /** Created At */
+            created_at: string;
+            /** Head Hash */
+            head_hash: string;
+            /** Head Seq */
+            head_seq: number;
+            /** Notes */
+            notes: string;
+        };
+        /**
+         * AssuranceBaselineSealedResponse
+         * @description What sealing produced. No ``notes`` and no ``analysis_id``: they were the caller's own input,
+         *     and echoing a request back as though it were a result is how a client comes to trust that the
+         *     server agreed with something it never checked.
+         */
+        AssuranceBaselineSealedResponse: {
+            /** Baseline Id */
+            baseline_id: string;
+            /** Created At */
+            created_at: string;
+            /** Head Hash */
+            head_hash: string;
+            /** Head Seq */
+            head_seq: number;
+        };
+        /**
          * AssuranceCoverageGaps
          * @description The gap categories, each naming the nodes that fall into it.
          *
@@ -9431,7 +9509,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["AssuranceArchRefRegisteredResponse"];
                 };
             };
             /** @description Request validation failed */
@@ -9469,7 +9547,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["AssuranceBaselineListResponse"];
                 };
             };
             /** @description Request validation failed */
@@ -9511,7 +9589,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["AssuranceBaselineSealedResponse"];
                 };
             };
             /** @description Request validation failed */

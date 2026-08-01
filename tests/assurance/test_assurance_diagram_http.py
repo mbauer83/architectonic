@@ -437,13 +437,26 @@ def test_baselines_empty_store(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_baselines_populated(monkeypatch: pytest.MonkeyPatch) -> None:
-    baseline = {"sealed_at": "2026-06-20T12:00:00Z", "notes": "Before CAST-001", "head_hash": "abc123"}
+    # The record the archive actually returns. This fixture named `sealed_at`, which is not a field of
+    # it — `_archive.seal_baseline` writes `created_at`, and the seal itself is `head_seq` + `head_hash`.
+    baseline = {
+        "baseline_id": "BSL@1781000000.abcd1234",
+        "created_at": "2026-06-20T12:00:00Z",
+        "head_seq": 42,
+        "head_hash": "abc123",
+        "notes": "Before CAST-001",
+        "analysis_id": None,
+    }
     ctx = _FakeContext(_FakeStore(), archive=_FakeArchive(baselines=[baseline]))
     r = _make_client(ctx, monkeypatch).get("/api/assurance/baselines")
 
     assert r.status_code == 200
     assert r.json()["count"] == 1
-    assert r.json()["baselines"][0]["head_hash"] == "abc123"
+    sealed = r.json()["baselines"][0]
+    # Both halves of the seal: a baseline claims the log up to `head_seq` hashed to `head_hash`, and
+    # without the sequence nobody can re-verify the claim.
+    assert sealed["head_hash"] == "abc123"
+    assert sealed["head_seq"] == 42
 
 
 def test_baselines_locked_returns_423(monkeypatch: pytest.MonkeyPatch) -> None:
