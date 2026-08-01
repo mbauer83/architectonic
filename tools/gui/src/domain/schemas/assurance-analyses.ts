@@ -163,3 +163,43 @@ export type AssuranceEdgeCatalog = typeof AssuranceEdgeCatalogSchema.Type
 
 export const decodeEdgeCatalog = (body: unknown): AssuranceEdgeCatalog =>
   Schema.decodeUnknownSync(AssuranceEdgeCatalogSchema)(body)
+
+/**
+ * One completeness check, shared by every method's report and by the argument-completeness pass.
+ *
+ * The shape genuinely is one shape — `_check` is written identically in the STPA, GRC, CAST and GSN
+ * report builders — so four decoders for it would be four things to keep in step.
+ */
+export const AssuranceCompletenessCheckSchema = Schema.Struct({
+  passed: Schema.Boolean,
+  gap_count: Schema.Number,
+  gaps: Schema.Array(Schema.Struct({ node_id: Schema.String, name: Schema.String })),
+})
+
+export const AssuranceCompletenessReportSchema = Schema.Struct({
+  passed: Schema.Boolean,
+  // Keyed by check name, which is what a client renders. An open map with a closed value: the check
+  // *set* belongs to the method's rules, not to this contract.
+  checks: Schema.Record({ key: Schema.String, value: AssuranceCompletenessCheckSchema }),
+  summary: Schema.String,
+})
+
+/**
+ * The completeness report for one analysis, for the method the analysis itself declares.
+ *
+ * `baseline_count` and `incident_count` are CAST's alone — reproducibility requires a sealed baseline —
+ * and are null for the other methods rather than zero: "not part of this method's report" and "none
+ * found" are different claims, and `method` is what tells them apart.
+ */
+export const AssuranceAnalysisCompletenessSchema = Schema.Struct({
+  analysis_id: Schema.String,
+  method: Schema.Literal('STPA', 'CAST', 'GRC'),
+  passed: Schema.Boolean,
+  checks: Schema.Record({ key: Schema.String, value: AssuranceCompletenessCheckSchema }),
+  summary: Schema.String,
+  baseline_count: Schema.optional(Schema.NullOr(Schema.Number)),
+  incident_count: Schema.optional(Schema.NullOr(Schema.Number)),
+  case: AssuranceCompletenessReportSchema,
+  visibility_limited: Schema.Boolean,
+})
+export type AssuranceAnalysisCompleteness = typeof AssuranceAnalysisCompletenessSchema.Type

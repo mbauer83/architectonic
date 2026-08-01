@@ -17,10 +17,6 @@ from __future__ import annotations
 
 #: Operation ids whose declared success body is not yet the DTO the manifest names.
 UNTYPED_RESPONSE_OPERATIONS: frozenset[str] = frozenset({
-    "assurance_list_diagrams",
-    "assurance_model_this",
-    "assurance_read_analysis_completeness",
-    "assurance_render_analysis_diagram",
     "connections_read_entity_neighbors",
     "diagrams_discover_diagram_entities",
     "diagrams_list_diagram_types",

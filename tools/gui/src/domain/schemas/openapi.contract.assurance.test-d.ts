@@ -11,6 +11,9 @@ import type {
   AssuranceGroupListSchema,
   AssuranceGroupRecordSchema,
   AssuranceParticipatingNodesSchema,
+  AssuranceAnalysisCompletenessSchema,
+  AssuranceCompletenessCheckSchema,
+  AssuranceCompletenessReportSchema,
   AssuranceEdgeCatalogSchema,
   AssuranceEdgeTypePairSchema,
   AssuranceSearchHitSchema,
@@ -175,6 +178,20 @@ describe('assurance analyses', () => {
     >()
     expectTypeOf<SchemaType<typeof AssuranceEdgeTypePairSchema>>().toEqualTypeOf<
       Immutable<components['schemas']['AssuranceEdgeTypePair']>
+    >()
+  })
+
+  it('decodes the completeness report the analysis own method decides', () => {
+    // Four endpoints used to answer this, each taking the analysis as an *optional* query parameter —
+    // so a CAST report about an STPA analysis came back empty and read like a clean bill of health.
+    expectTypeOf<SchemaType<typeof AssuranceAnalysisCompletenessSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['AssuranceAnalysisCompletenessResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof AssuranceCompletenessReportSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['AssuranceCompletenessReport']>
+    >()
+    expectTypeOf<SchemaType<typeof AssuranceCompletenessCheckSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['AssuranceCompletenessCheck']>
     >()
   })
 

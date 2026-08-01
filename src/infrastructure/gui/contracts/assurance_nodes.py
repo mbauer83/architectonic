@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, RootModel
 
 from src.infrastructure.gui.contracts.assurance_analyses import AssuranceAnalysisSummary
 
@@ -253,3 +253,63 @@ class AssuranceEdgeCreatedResponse(_Closed):
     target_id: str
     conn_type: str
     verification_findings: list[dict[str, Any]] | None = None
+
+
+class ModelThisTaskStep(_Closed):
+    """One step of the separation-of-duties task: which tool to call, where, and with what.
+
+    ``params`` belongs to the tool being called, not to this surface — three different tools appear
+    across the three steps — so it is not mirrored here (see ``contracts/open_models.py``). Restating
+    each tool's signature would make this DTO the place every one of their changes has to be echoed.
+
+    ``note`` is present only where a step needs a caveat the parameters cannot express — step one has
+    to be previewed with ``dry_run`` before it is committed, and its result feeds step two.
+    """
+
+    call: str
+    on_server: str
+    params: dict[str, Any]
+    note: str | None = None
+
+
+class ModelThisTaskRequiredResponse(_Closed):
+    """The work to do, for a caller that may not create architecture entities itself.
+
+    Separation of duties is the reason this exists: an assurance session with no architecture-write
+    authority cannot mint the entity, so it is handed the three calls that will — create, bind, then
+    mark the node bound — rather than a refusal. The steps are ordered and step two consumes step one's
+    result, which is why they are named rather than a list.
+    """
+
+    outcome: Literal["task_required"]
+    assurance_node_id: str
+    assurance_node_name: str
+    action_required: str
+    step_1: ModelThisTaskStep
+    step_2: ModelThisTaskStep
+    step_3: ModelThisTaskStep
+    note: str | None = None
+
+
+class ModelThisBoundResponse(_Closed):
+    """The architecture entity that was created and bound to the assurance node."""
+
+    outcome: Literal["bound"]
+    assurance_node_id: str
+    arch_artifact_id: str
+    verification_findings: list[dict[str, Any]] | None = None
+
+
+class ModelThisResponse(RootModel[ModelThisBoundResponse | ModelThisTaskRequiredResponse]):
+    """What ``POST /api/assurance/model-this`` answers: it either did the work or handed it over.
+
+    A genuine union rather than two addresses, because the caller does not choose the path by URL —
+    ``separation_of_duties`` in the body decides it, and both arms are successes of one operation.
+
+    A ``RootModel`` rather than a bare ``A | B`` annotation so the document carries a *named* component:
+    an inline union is a shape a generated client cannot refer to, and the response-contract fitness
+    function refuses it for that reason. Discriminated on ``outcome``, so the schema is honestly
+    ``oneOf`` with a discriminator rather than "one of these, work out which".
+    """
+
+    root: ModelThisBoundResponse | ModelThisTaskRequiredResponse = Field(discriminator="outcome")

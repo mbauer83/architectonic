@@ -18,17 +18,18 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict
 
 from src.infrastructure.gui.contracts.assurance_analyses import AssuranceAnalysisRecord
+from src.infrastructure.gui.contracts.assurance_queries import (
+    AssuranceNodeRef,
+)
 
 
 class _Closed(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
-class GsnNodeRef(_Closed):
-    """A store node named in a gap: enough to render the row and open it."""
-
-    node_id: str
-    name: str
+#: A node named in a gap. The same two fields every list on this surface uses to render a row, so it is
+#: the shared one rather than a fourth spelling of it.
+GsnNodeRef = AssuranceNodeRef
 
 
 class GsnTopGoal(_Closed):
@@ -123,30 +124,6 @@ class GsnDiagramEntities(_Closed):
 
     nodes: list[GsnDiagramNode]
     edges: list[GsnDiagramEdge]
-
-
-class GsnCompletenessCheck(_Closed):
-    """One argument-completeness check: whether it passed, and what it found if not.
-
-    ``gap_count`` accompanies ``gaps`` because a caller rendering a summary needs the number without
-    walking the list, and the two coming from one place is what keeps them agreeing.
-    """
-
-    passed: bool
-    gap_count: int
-    gaps: list[GsnNodeRef]
-
-
-class GsnCompleteness(_Closed):
-    """The three checks, keyed by name, with a sentence a person can read.
-
-    An open map with a closed value: the check set belongs to the argument rules, so adding a check
-    should not mean editing a delivery DTO.
-    """
-
-    passed: bool
-    checks: dict[str, GsnCompletenessCheck]
-    summary: str
 
 
 class GsnDraftResponse(_Closed):

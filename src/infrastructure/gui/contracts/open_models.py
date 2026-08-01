@@ -123,6 +123,11 @@ OPEN_RESPONSE_FIELDS: dict[str, OpenReason] = {
 
     # ── A diagram-type module owns the shape ──────────────────────────────────
     "EntityDetailResponse.display_blocks": MODULE_OWNED,
+    # The diagram type's own `project_store_graph` decides these. A bowtie's placement data is not
+    # shaped like a control structure's, and enumerating both would make the ontology's extensibility
+    # depend on this package.
+    "AssuranceRenderedDiagramResponse.nodes": MODULE_OWNED,
+    "AssuranceRenderedDiagramResponse.edges": MODULE_OWNED,
 
     # ── The rule that raised the finding owns the shape ───────────────────────
     "VerificationIssueResponse.details": RULE_OWNED,
@@ -132,6 +137,10 @@ OPEN_RESPONSE_FIELDS: dict[str, OpenReason] = {
     # A JSON Schema document, served so an authoring form validates against exactly what the verifier
     # validates against. Mirroring the meta-schema here would be this package's second-hand copy of it.
     "EntitySchemaResponse.schema": FOREIGN_VOCABULARY,
+    # The parameters of the MCP tool the step names — three different tools across the three steps.
+    # Their signatures are theirs, and restating them would make this the place every change to any of
+    # them has to be echoed.
+    "ModelThisTaskStep.params": FOREIGN_VOCABULARY,
     # A CycloneDX 1.6 ML-BOM. That specification versions itself, and mirroring its component,
     # dependency and model-card vocabulary here would make this package a second, lagging definition
     # of it — and drop whatever CycloneDX added since the last mirror, in transit, from a document
@@ -152,6 +161,7 @@ OPEN_RESPONSE_FIELDS: dict[str, OpenReason] = {
     "AssuranceNodeUpdatedResponse.verification_findings": AWAITING_CONTRACT,
     "AssuranceArchRefRegisteredResponse.verification_findings": AWAITING_CONTRACT,
     "AssuranceEdgeCreatedResponse.verification_findings": AWAITING_CONTRACT,
+    "ModelThisBoundResponse.verification_findings": AWAITING_CONTRACT,
     # The viewpoint a diagram projects. Its definition language is determinate — the GUI editor already
     # enumerates every node kind to round-trip an edit — so this closes with the viewpoint surface.
     "DiagramSummary.viewpoint": AWAITING_CONTRACT,

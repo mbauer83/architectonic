@@ -3172,6 +3172,51 @@ export interface components {
             analysis_id: string;
         };
         /**
+         * AssuranceAnalysisCompletenessResponse
+         * @description The completeness report for one analysis, for the method the analysis itself declares.
+         *
+         *     Four endpoints used to answer this, each taking the analysis as an *optional* query parameter — so
+         *     a caller could ask for a CAST report about an STPA analysis and receive an empty one that read like
+         *     a clean bill of health. The server reads the method rather than letting the URL assert it, and the
+         *     response names the method it answered for.
+         *
+         *     ``baseline_count`` and ``incident_count`` are CAST's alone: reproducibility requires a sealed
+         *     baseline (§10), so its report counts what it found. They are null for the other methods rather than
+         *     zero — "not part of this method's report" and "none found" are different claims, and ``method`` is
+         *     what a client branches on to know which it is reading.
+         *
+         *     ``case`` is the argument-completeness pass, which runs over an analysis of any method: the GSN
+         *     argument is a second view of the same analysis rather than a second resource, so its report travels
+         *     with this one instead of at an address of its own.
+         *
+         *     An analysis whose method defines no completeness report — FMEA, whose projection is its matrix —
+         *     answers a typed 409 rather than an empty report.
+         */
+        AssuranceAnalysisCompletenessResponse: {
+            /** Analysis Id */
+            analysis_id: string;
+            /** Baseline Count */
+            baseline_count?: number | null;
+            case: components["schemas"]["AssuranceCompletenessReport"];
+            /** Checks */
+            checks: {
+                [key: string]: components["schemas"]["AssuranceCompletenessCheck"];
+            };
+            /** Incident Count */
+            incident_count?: number | null;
+            /**
+             * Method
+             * @enum {string}
+             */
+            method: "STPA" | "CAST" | "GRC";
+            /** Passed */
+            passed: boolean;
+            /** Summary */
+            summary: string;
+            /** Visibility Limited */
+            visibility_limited: boolean;
+        };
+        /**
          * AssuranceAnalysisDetailResponse
          * @description One analysis with the size of its authored contents, as far as this reader may see.
          *
@@ -3358,6 +3403,43 @@ export interface components {
             head_seq: number;
         };
         /**
+         * AssuranceCompletenessCheck
+         * @description One completeness check: whether it passed, and what it found if not.
+         *
+         *     ``gap_count`` accompanies ``gaps`` because a caller rendering a summary needs the number without
+         *     walking the list, and the two coming from one place is what keeps them agreeing.
+         *
+         *     Shared by every method's report and by the argument-completeness pass, because the shape genuinely
+         *     is one shape — ``_check`` is written identically in ``stpa_complete``, ``grc_complete``,
+         *     ``cast_complete`` and ``case_draft``. Four DTOs for it would be four things to keep in step.
+         */
+        AssuranceCompletenessCheck: {
+            /** Gap Count */
+            gap_count: number;
+            /** Gaps */
+            gaps: components["schemas"]["AssuranceNodeRef"][];
+            /** Passed */
+            passed: boolean;
+        };
+        /**
+         * AssuranceCompletenessReport
+         * @description A set of completeness checks with a sentence a person can read.
+         *
+         *     ``checks`` is an open map with a closed value: the check *set* belongs to the method's rules, so
+         *     adding a check should not mean editing a delivery DTO — and the key is what a client renders as the
+         *     check's name.
+         */
+        AssuranceCompletenessReport: {
+            /** Checks */
+            checks: {
+                [key: string]: components["schemas"]["AssuranceCompletenessCheck"];
+            };
+            /** Passed */
+            passed: boolean;
+            /** Summary */
+            summary: string;
+        };
+        /**
          * AssuranceCoverageGaps
          * @description The gap categories, each naming the nodes that fall into it.
          *
@@ -3398,6 +3480,46 @@ export interface components {
             summary: string;
             /** Total Gaps */
             total_gaps: number;
+        };
+        /**
+         * AssuranceDiagramCatalogEntry
+         * @description One (analysis, diagram type) pair the surface can draw, as a picker needs it.
+         *
+         *     Every field is a string because every field is a label or an identity — the entry exists to be
+         *     listed and opened, and it carries no content of its own.
+         *
+         *     Filtered before the catalogue is built, not after: an entry names its analysis, so an above-ceiling
+         *     analysis appearing here would disclose both that it exists and which method it uses.
+         */
+        AssuranceDiagramCatalogEntry: {
+            /** Analysis Id */
+            analysis_id: string;
+            /** Analysis Name */
+            analysis_name: string;
+            /** Description */
+            description: string;
+            /** Diagram Id */
+            diagram_id: string;
+            /** Diagram Type */
+            diagram_type: string;
+            /** Method */
+            method: string;
+            /** Title */
+            title: string;
+            /** Type Label */
+            type_label: string;
+        };
+        /**
+         * AssuranceDiagramListResponse
+         * @description Every drawable diagram for the analyses this reader may see.
+         */
+        AssuranceDiagramListResponse: {
+            /** Count */
+            count: number;
+            /** Diagrams */
+            diagrams: components["schemas"]["AssuranceDiagramCatalogEntry"][];
+            /** Visibility Limited */
+            visibility_limited: boolean;
         };
         /**
          * AssuranceEdgeCatalogResponse
@@ -3811,6 +3933,21 @@ export interface components {
             node_id: string;
         };
         /**
+         * AssuranceNodeRepresentingEdge
+         * @description A drawn edge that stands for a node, and the node it stands for.
+         *
+         *     A control action is rendered as its arrow rather than as a shape, so a click on that arrow has to
+         *     select the action. Without this mapping the click does nothing, which reads as a broken diagram.
+         */
+        AssuranceNodeRepresentingEdge: {
+            /** Node Id */
+            node_id: string;
+            /** Source Id */
+            source_id: string;
+            /** Target Id */
+            target_id: string;
+        };
+        /**
          * AssuranceNodeUpdatedResponse
          * @description Which fields an edit actually changed.
          *
@@ -3918,6 +4055,53 @@ export interface components {
         AssuranceReloadBody: {
             /** Authorize */
             authorize?: boolean | null;
+        };
+        /**
+         * AssuranceRenderedDiagramResponse
+         * @description One analysis projected through one diagram type, drawn as far as the type can draw it.
+         *
+         *     ``puml`` and ``svg`` are both null for a type whose grid is built client-side from the nodes and
+         *     edges below — the UCA matrix has no PUML body, and a type that declines to render is not an error.
+         *
+         *     ``authored_node_ids`` is the working set's authorship split, narrowed to what was actually
+         *     projected: a borrowed node has to be drawable as borrowed rather than passing for native.
+         *
+         *     ``node_aliases`` maps each drawn alias back to its node, because the aliasing rule belongs to
+         *     whatever wrote the PUML. A client that reconstructs it is a second implementation of a contract
+         *     across a language boundary, and the two drifted once already — every shape in a bowtie was inert
+         *     because one side prefixed the alias and the other did not.
+         */
+        AssuranceRenderedDiagramResponse: {
+            /** Analysis Id */
+            analysis_id: string;
+            /** Analysis Name */
+            analysis_name: string;
+            /** Authored Node Ids */
+            authored_node_ids: string[];
+            /** Diagram Id */
+            diagram_id: string;
+            /** Diagram Type */
+            diagram_type: string;
+            /** Edges */
+            edges: {
+                [key: string]: unknown;
+            }[];
+            /** Node Aliases */
+            node_aliases: {
+                [key: string]: string;
+            };
+            /** Node Representing Edges */
+            node_representing_edges: components["schemas"]["AssuranceNodeRepresentingEdge"][];
+            /** Nodes */
+            nodes: {
+                [key: string]: unknown;
+            }[];
+            /** Puml */
+            puml: string | null;
+            /** Svg */
+            svg: string | null;
+            /** Visibility Limited */
+            visibility_limited: boolean;
         };
         /**
          * AssuranceRiskRegisterResponse
@@ -6073,19 +6257,9 @@ export interface components {
          */
         GsnGaps: {
             /** Constraints Without Evidence */
-            constraints_without_evidence: components["schemas"]["GsnNodeRef"][];
+            constraints_without_evidence: components["schemas"]["AssuranceNodeRef"][];
             /** Hazards Without Constraints */
-            hazards_without_constraints: components["schemas"]["GsnNodeRef"][];
-        };
-        /**
-         * GsnNodeRef
-         * @description A store node named in a gap: enough to render the row and open it.
-         */
-        GsnNodeRef: {
-            /** Name */
-            name: string;
-            /** Node Id */
-            node_id: string;
+            hazards_without_constraints: components["schemas"]["AssuranceNodeRef"][];
         };
         /**
          * GsnPublication
@@ -6453,6 +6627,88 @@ export interface components {
             suggested_arch_type: string;
             /** Suggested Name */
             suggested_name: string;
+        };
+        /**
+         * ModelThisBoundResponse
+         * @description The architecture entity that was created and bound to the assurance node.
+         */
+        ModelThisBoundResponse: {
+            /** Arch Artifact Id */
+            arch_artifact_id: string;
+            /** Assurance Node Id */
+            assurance_node_id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            outcome: "bound";
+            /** Verification Findings */
+            verification_findings?: {
+                [key: string]: unknown;
+            }[] | null;
+        };
+        /**
+         * ModelThisResponse
+         * @description What ``POST /api/assurance/model-this`` answers: it either did the work or handed it over.
+         *
+         *     A genuine union rather than two addresses, because the caller does not choose the path by URL —
+         *     ``separation_of_duties`` in the body decides it, and both arms are successes of one operation.
+         *
+         *     A ``RootModel`` rather than a bare ``A | B`` annotation so the document carries a *named* component:
+         *     an inline union is a shape a generated client cannot refer to, and the response-contract fitness
+         *     function refuses it for that reason. Discriminated on ``outcome``, so the schema is honestly
+         *     ``oneOf`` with a discriminator rather than "one of these, work out which".
+         */
+        ModelThisResponse: components["schemas"]["ModelThisBoundResponse"] | components["schemas"]["ModelThisTaskRequiredResponse"];
+        /**
+         * ModelThisTaskRequiredResponse
+         * @description The work to do, for a caller that may not create architecture entities itself.
+         *
+         *     Separation of duties is the reason this exists: an assurance session with no architecture-write
+         *     authority cannot mint the entity, so it is handed the three calls that will — create, bind, then
+         *     mark the node bound — rather than a refusal. The steps are ordered and step two consumes step one's
+         *     result, which is why they are named rather than a list.
+         */
+        ModelThisTaskRequiredResponse: {
+            /** Action Required */
+            action_required: string;
+            /** Assurance Node Id */
+            assurance_node_id: string;
+            /** Assurance Node Name */
+            assurance_node_name: string;
+            /** Note */
+            note?: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            outcome: "task_required";
+            step_1: components["schemas"]["ModelThisTaskStep"];
+            step_2: components["schemas"]["ModelThisTaskStep"];
+            step_3: components["schemas"]["ModelThisTaskStep"];
+        };
+        /**
+         * ModelThisTaskStep
+         * @description One step of the separation-of-duties task: which tool to call, where, and with what.
+         *
+         *     ``params`` belongs to the tool being called, not to this surface — three different tools appear
+         *     across the three steps — so it is not mirrored here (see ``contracts/open_models.py``). Restating
+         *     each tool's signature would make this DTO the place every one of their changes has to be echoed.
+         *
+         *     ``note`` is present only where a step needs a caveat the parameters cannot express — step one has
+         *     to be previewed with ``dry_run`` before it is committed, and its result feeds step two.
+         */
+        ModelThisTaskStep: {
+            /** Call */
+            call: string;
+            /** Note */
+            note?: string | null;
+            /** On Server */
+            on_server: string;
+            /** Params */
+            params: {
+                [key: string]: unknown;
+            };
         };
         /**
          * NotAFailureModeDetails
@@ -8714,7 +8970,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["AssuranceAnalysisCompletenessResponse"];
                 };
             };
             /** @description Request validation failed */
@@ -8755,7 +9011,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["AssuranceRenderedDiagramResponse"];
                 };
             };
             /** @description Request validation failed */
@@ -9741,7 +9997,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["AssuranceDiagramListResponse"];
                 };
             };
             /** @description Request validation failed */
@@ -10101,7 +10357,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ModelThisResponse"];
                 };
             };
             /** @description Request validation failed */

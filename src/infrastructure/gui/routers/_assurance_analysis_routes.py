@@ -28,6 +28,9 @@ from src.infrastructure.gui.contracts.assurance_analyses import (
     AssuranceAnalysisRecord,
     AssuranceGuidanceResponse,
 )
+from src.infrastructure.gui.contracts.assurance_queries import (
+    AssuranceAnalysisCompletenessResponse,
+)
 from src.infrastructure.gui.contracts.errors import (
     ApiError,
     LegacyInvalidDetails,
@@ -219,7 +222,8 @@ def get_guidance(topic: str) -> JSONResponse:
     return ok(found, AssuranceGuidanceResponse)
 
 
-@analysis_router.get("/api/assurance/analyses/{analysis_id}/completeness")
+@analysis_router.get("/api/assurance/analyses/{analysis_id}/completeness",
+    response_model=AssuranceAnalysisCompletenessResponse)
 def analysis_completeness(analysis_id: str) -> JSONResponse:
     """The completeness report for one analysis, discriminated by the analysis's own method.
 
@@ -251,7 +255,7 @@ def analysis_completeness(analysis_id: str) -> JSONResponse:
         **report,
         "case": case_completeness_from_records(nodes, edges),
         "visibility_limited": visibility_limited,
-    })
+    }, AssuranceAnalysisCompletenessResponse)
 
 
 def _completeness_for_method(

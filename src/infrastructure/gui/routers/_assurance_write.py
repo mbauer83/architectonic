@@ -34,7 +34,12 @@ from src.application.assurance_provenance_assignment import (
 )
 from src.infrastructure.assurance.edge_legality import legal_connection_types
 from src.infrastructure.assurance.write_serialization import run_write
-from src.infrastructure.gui.contracts.assurance_nodes import AssuranceEdgeCreatedResponse
+from src.infrastructure.gui.contracts.assurance_nodes import (
+    AssuranceEdgeCreatedResponse,
+    ModelThisBoundResponse,
+    ModelThisResponse,
+    ModelThisTaskRequiredResponse,
+)
 from src.infrastructure.gui.contracts.assurance_signals import (
     AssuranceNodeCreatedResponse,
     AssuranceNodeUpdatedResponse,
@@ -373,10 +378,9 @@ def _translate_bind(result: model_bind.ModelBindResult) -> JSONResponse:
     if isinstance(result, model_bind.BindInvalid):
         raise bind_invalid_as_api_error(result)
     if isinstance(result, model_bind.TaskRequired):
-        return JSONResponse(
-            content={"outcome": "task_required", **result.spec},
-            headers={"Cache-Control": _NO_STORE},
-        )
+        handover: dict[str, object] = {"outcome": "task_required", **result.spec}
+        ModelThisTaskRequiredResponse.model_validate(handover)
+        return JSONResponse(content=handover, headers={"Cache-Control": _NO_STORE})
     payload: dict[str, object] = {
         "outcome": "bound",
         "assurance_node_id": result.assurance_node_id,
@@ -384,10 +388,12 @@ def _translate_bind(result: model_bind.ModelBindResult) -> JSONResponse:
     }
     if result.findings:
         payload["verification_findings"] = result.findings
+    ModelThisBoundResponse.model_validate(payload)
     return JSONResponse(content=payload, headers={"Cache-Control": _NO_STORE})
 
 
-@write_router.post("/api/assurance/model-this", status_code=200)
+@write_router.post("/api/assurance/model-this", status_code=200,
+    response_model=ModelThisResponse)
 def model_this(body: ModelThisBody) -> JSONResponse:
     ctx = get_assurance_context()
     if not ctx.is_available():

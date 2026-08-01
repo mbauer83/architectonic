@@ -242,3 +242,64 @@ class AssuranceArchRefRegisteredResponse(_Closed):
     ref_type: str
     status: Literal["registered"]
     verification_findings: list[dict[str, Any]] | None = None
+
+
+class AssuranceCompletenessCheck(_Closed):
+    """One completeness check: whether it passed, and what it found if not.
+
+    ``gap_count`` accompanies ``gaps`` because a caller rendering a summary needs the number without
+    walking the list, and the two coming from one place is what keeps them agreeing.
+
+    Shared by every method's report and by the argument-completeness pass, because the shape genuinely
+    is one shape — ``_check`` is written identically in ``stpa_complete``, ``grc_complete``,
+    ``cast_complete`` and ``case_draft``. Four DTOs for it would be four things to keep in step.
+    """
+
+    passed: bool
+    gap_count: int
+    gaps: list[AssuranceNodeRef]
+
+
+class AssuranceCompletenessReport(_Closed):
+    """A set of completeness checks with a sentence a person can read.
+
+    ``checks`` is an open map with a closed value: the check *set* belongs to the method's rules, so
+    adding a check should not mean editing a delivery DTO — and the key is what a client renders as the
+    check's name.
+    """
+
+    passed: bool
+    checks: dict[str, AssuranceCompletenessCheck]
+    summary: str
+
+
+class AssuranceAnalysisCompletenessResponse(_Closed):
+    """The completeness report for one analysis, for the method the analysis itself declares.
+
+    Four endpoints used to answer this, each taking the analysis as an *optional* query parameter — so
+    a caller could ask for a CAST report about an STPA analysis and receive an empty one that read like
+    a clean bill of health. The server reads the method rather than letting the URL assert it, and the
+    response names the method it answered for.
+
+    ``baseline_count`` and ``incident_count`` are CAST's alone: reproducibility requires a sealed
+    baseline (§10), so its report counts what it found. They are null for the other methods rather than
+    zero — "not part of this method's report" and "none found" are different claims, and ``method`` is
+    what a client branches on to know which it is reading.
+
+    ``case`` is the argument-completeness pass, which runs over an analysis of any method: the GSN
+    argument is a second view of the same analysis rather than a second resource, so its report travels
+    with this one instead of at an address of its own.
+
+    An analysis whose method defines no completeness report — FMEA, whose projection is its matrix —
+    answers a typed 409 rather than an empty report.
+    """
+
+    analysis_id: str
+    method: Literal["STPA", "CAST", "GRC"]
+    passed: bool
+    checks: dict[str, AssuranceCompletenessCheck]
+    summary: str
+    baseline_count: int | None = None
+    incident_count: int | None = None
+    case: AssuranceCompletenessReport
+    visibility_limited: bool

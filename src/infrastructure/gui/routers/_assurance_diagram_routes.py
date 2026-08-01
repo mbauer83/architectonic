@@ -36,6 +36,10 @@ from src.domain.ontology_representation.ontology_protocol import (
     StoreGraphProjectingDiagramType,
 )
 from src.infrastructure.app_bootstrap import complete_diagram_type_catalog
+from src.infrastructure.gui.contracts.assurance_diagrams import (
+    AssuranceDiagramListResponse,
+    AssuranceRenderedDiagramResponse,
+)
 from src.infrastructure.gui.contracts.errors import ApiError, UnknownDiagramTypeDetails
 from src.infrastructure.gui.routers._assurance_http import (
     build_policy,
@@ -113,7 +117,7 @@ def _render_svg(puml: str, label: str) -> str | None:
         return None
 
 
-@diagram_router.get("/api/assurance/diagrams")
+@diagram_router.get("/api/assurance/diagrams", response_model=AssuranceDiagramListResponse)
 def list_assurance_diagrams() -> JSONResponse:
     ctx, pol = build_policy()
     if pol.check_locked():
@@ -126,10 +130,11 @@ def list_assurance_diagrams() -> JSONResponse:
         "diagrams": diagrams,
         "count": len(diagrams),
         "visibility_limited": pol.scope().visibility_limited,
-    })
+    }, AssuranceDiagramListResponse)
 
 
-@diagram_router.get("/api/assurance/analyses/{analysis_id}/diagrams/{diagram_type}/rendered")
+@diagram_router.get("/api/assurance/analyses/{analysis_id}/diagrams/{diagram_type}/rendered",
+    response_model=AssuranceRenderedDiagramResponse)
 def render_assurance_diagram(analysis_id: str, diagram_type: str) -> JSONResponse:
     ctx, pol = build_policy()
     if pol.check_locked():
@@ -192,4 +197,4 @@ def render_assurance_diagram(analysis_id: str, diagram_type: str) -> JSONRespons
         # click on one selects that node instead of doing nothing.
         "node_representing_edges": node_representing_edges,
         "visibility_limited": pol.scope().visibility_limited,
-    })
+    }, AssuranceRenderedDiagramResponse)
