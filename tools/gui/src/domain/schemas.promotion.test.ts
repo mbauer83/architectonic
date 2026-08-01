@@ -14,6 +14,14 @@ const basePlan = {
   doc_conflicts: [],
   diagram_conflicts: [],
   schema_errors: [],
+  // The five the plan always sends. Four were optional here and two were absent from the schema
+  // altogether — and `viewpoint_dependencies` and `missing_dependencies` are the two that can leave
+  // the enterprise repository broken, so a fixture that omits them proves nothing about a real plan.
+  structural_closure: [],
+  group_mapping: [],
+  available_enterprise_groups: [],
+  viewpoint_dependencies: [],
+  missing_dependencies: [],
 }
 
 describe('PromotionPlanSchema structural closure', () => {
@@ -40,8 +48,14 @@ describe('PromotionPlanSchema structural closure', () => {
     expect(plan.structural_closure[1].missing[0].name).toBe('Member')
   })
 
-  it('defaults to an empty closure list for plans from older backends', () => {
-    const plan = Schema.decodeUnknownSync(PromotionPlanSchema)(basePlan)
-    expect(plan.structural_closure).toEqual([])
+  it('refuses a plan missing a list, rather than defaulting it to empty', () => {
+    /* This used to default `structural_closure` to `[]` "for plans from older backends". There are no
+       older backends — the wire is versioned with the code — and the default made "no junction needs
+       closing" indistinguishable from "closure was never computed", in the one payload whose whole job
+       is to be read before someone agrees to it. */
+    const withoutClosure: Record<string, unknown> = { ...basePlan }
+    delete withoutClosure['structural_closure']
+
+    expect(() => Schema.decodeUnknownSync(PromotionPlanSchema)(withoutClosure)).toThrow()
   })
 })

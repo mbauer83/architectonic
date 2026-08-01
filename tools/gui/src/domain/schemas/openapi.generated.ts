@@ -5699,6 +5699,18 @@ export interface components {
             has_uncommitted_changes: boolean;
         };
         /**
+         * EnterpriseGroupOption
+         * @description One enterprise group a mapping may be redirected to.
+         */
+        EnterpriseGroupOption: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Slug */
+            slug: string;
+        };
+        /**
          * EnterpriseSaveResponse
          * @description A commit on the enterprise working branch. No ``pushed``: enterprise work is published by
          *     ``submit``, which is a separate operation with its own review semantics.
@@ -7126,6 +7138,66 @@ export interface components {
             /** Target Type */
             target_type: string;
         };
+        /**
+         * PromotionDiagramConflict
+         * @description A diagram that exists in both repositories.
+         */
+        PromotionDiagramConflict: {
+            /** Diagram Type */
+            diagram_type: string;
+            /** Engagement Id */
+            engagement_id: string;
+            /** Engagement Name */
+            engagement_name: string;
+            /** Enterprise Id */
+            enterprise_id: string;
+            /** Enterprise Name */
+            enterprise_name: string;
+        };
+        /**
+         * PromotionDocumentConflict
+         * @description A document that exists in both repositories.
+         */
+        PromotionDocumentConflict: {
+            /** Doc Type */
+            doc_type: string;
+            /** Engagement Id */
+            engagement_id: string;
+            /** Engagement Title */
+            engagement_title: string;
+            /** Enterprise Id */
+            enterprise_id: string;
+            /** Enterprise Title */
+            enterprise_title: string;
+        };
+        /**
+         * PromotionEntityConflict
+         * @description An entity that exists in both repositories, with both readings side by side.
+         *
+         *     ``engagement_fields`` and ``enterprise_fields`` are the two versions' frontmatter, published so the
+         *     resolution UI can show a field-by-field diff and offer a merge — which is the whole point of
+         *     surfacing a conflict rather than refusing the promotion.
+         */
+        PromotionEntityConflict: {
+            /** Artifact Type */
+            artifact_type: string;
+            /** Engagement Fields */
+            engagement_fields: {
+                [key: string]: unknown;
+            };
+            /** Engagement Id */
+            engagement_id: string;
+            /** Engagement Name */
+            engagement_name: string;
+            /** Enterprise Fields */
+            enterprise_fields: {
+                [key: string]: unknown;
+            };
+            /** Enterprise Id */
+            enterprise_id: string;
+            /** Enterprise Name */
+            enterprise_name: string;
+        };
         /** PromotionExecuteBody */
         PromotionExecuteBody: {
             /**
@@ -7185,6 +7257,44 @@ export interface components {
                 [key: string]: "promote_alongside" | "repin";
             };
         };
+        /**
+         * PromotionGroupMappingEntry
+         * @description Where one engagement group lands in the enterprise repository.
+         *
+         *     ``match_status`` is the decision: matched by id, a conflicting slug, or new. ``enterprise_group_id``
+         *     is null for ``new`` — there is nothing to point at yet.
+         */
+        PromotionGroupMappingEntry: {
+            /** Engagement Group Id */
+            engagement_group_id: string;
+            /** Engagement Slug */
+            engagement_slug: string;
+            /** Enterprise Group Id */
+            enterprise_group_id: string | null;
+            /** Enterprise Slug */
+            enterprise_slug: string;
+            /**
+             * Match Status
+             * @enum {string}
+             */
+            match_status: "matched_by_id" | "conflict" | "new";
+        };
+        /**
+         * PromotionMissingDependency
+         * @description An artifact the selection references but does not include, and what needs it.
+         */
+        PromotionMissingDependency: {
+            /** Artifact Id */
+            artifact_id: string;
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+            /** Record Type */
+            record_type: string;
+            /** Required By */
+            required_by: string;
+        };
         /** PromotionPlanBody */
         PromotionPlanBody: {
             /**
@@ -7226,6 +7336,104 @@ export interface components {
             viewpoint_resolutions: {
                 [key: string]: "promote_alongside" | "repin";
             };
+        };
+        /**
+         * PromotionPlanResponse
+         * @description What a promotion would do, and every question it raises before it may proceed.
+         *
+         *     Nothing here is optional. Four of these lists were optional in the client's decoder and two were
+         *     absent from it — ``viewpoint_dependencies`` and ``missing_dependencies``, which are the two that
+         *     can make a promotion produce a broken enterprise repository. An empty list and an uncomputed one
+         *     have to be distinguishable, and only one of them is representable when the key may be missing.
+         */
+        PromotionPlanResponse: {
+            /** Already In Enterprise */
+            already_in_enterprise: string[];
+            /** Available Enterprise Groups */
+            available_enterprise_groups: components["schemas"]["EnterpriseGroupOption"][];
+            /** Conflicts */
+            conflicts: components["schemas"]["PromotionEntityConflict"][];
+            /** Connection Ids */
+            connection_ids: string[];
+            /** Diagram Conflicts */
+            diagram_conflicts: components["schemas"]["PromotionDiagramConflict"][];
+            /** Diagrams To Add */
+            diagrams_to_add: string[];
+            /** Doc Conflicts */
+            doc_conflicts: components["schemas"]["PromotionDocumentConflict"][];
+            /** Documents To Add */
+            documents_to_add: string[];
+            /** Entities To Add */
+            entities_to_add: string[];
+            /** Entity Id */
+            entity_id: string;
+            /** Group Mapping */
+            group_mapping: components["schemas"]["PromotionGroupMappingEntry"][];
+            /** Missing Dependencies */
+            missing_dependencies: components["schemas"]["PromotionMissingDependency"][];
+            /** Schema Errors */
+            schema_errors: string[];
+            /** Structural Closure */
+            structural_closure: components["schemas"]["StructuralClosureRequirement"][];
+            /** Viewpoint Dependencies */
+            viewpoint_dependencies: components["schemas"]["PromotionViewpointDependency"][];
+            /** Warnings */
+            warnings: string[];
+        };
+        /**
+         * PromotionResultResponse
+         * @description What carrying out the plan actually did.
+         *
+         *     ``dry_run`` and ``executed`` are both stated because they answer different questions: a dry run
+         *     never executes, but an execution can also fail to, and a caller distinguishing "we did not try"
+         *     from "we tried and stopped" needs both.
+         *
+         *     ``rolled_back`` is the one to read after a failure. The promotion runs in a git worktree
+         *     transaction, so a verification error leaves the enterprise repository as it was — and saying so is
+         *     what stops an operator from going to clean up by hand.
+         *
+         *     ``warnings`` carries the plan's, which the dry-run branch does not currently populate; the key is
+         *     always present so a reader never has to tell an absent list from an empty one.
+         */
+        PromotionResultResponse: {
+            /** Copied Files */
+            copied_files: string[];
+            /** Dry Run */
+            dry_run: boolean;
+            /** Executed */
+            executed: boolean;
+            /** Rolled Back */
+            rolled_back: boolean;
+            /** Updated Files */
+            updated_files: string[];
+            /** Verification Errors */
+            verification_errors: string[];
+            /**
+             * Warnings
+             * @default []
+             */
+            warnings: string[];
+        };
+        /**
+         * PromotionViewpointDependency
+         * @description A viewpoint a promoted diagram or matrix is pinned to, and where it stands enterprise-side.
+         *
+         *     ``enterprise_version`` is null when the viewpoint is not there at all — which is the case that
+         *     forces a choice between promoting it alongside and repinning, and the reason this list exists.
+         */
+        PromotionViewpointDependency: {
+            /** Enterprise Version */
+            enterprise_version: string | null;
+            /** Pinned Version */
+            pinned_version: string;
+            /** Slug */
+            slug: string;
+            /** Status */
+            status: string;
+            /** Target Id */
+            target_id: string;
+            /** Target Kind */
+            target_kind: string;
         };
         /**
          * ProvenanceImmutableDetails
@@ -7746,6 +7954,39 @@ export interface components {
              * @default []
              */
             type_filter: string[];
+        };
+        /**
+         * StructuralClosureEntity
+         * @description One entity missing from the selection.
+         */
+        StructuralClosureEntity: {
+            /** Artifact Id */
+            artifact_id: string;
+            /** Artifact Type */
+            artifact_type: string;
+            /** Name */
+            name: string;
+        };
+        /**
+         * StructuralClosureRequirement
+         * @description A selected junction or grouping whose meaning-carrying entities are not in the selection.
+         *
+         *     A junction promoted without what it joins is a structure that means nothing at the far end, so the
+         *     entities are named rather than the promotion being refused: the GUI offers "include the missing
+         *     entities" from exactly this data.
+         */
+        StructuralClosureRequirement: {
+            /** Entity Id */
+            entity_id: string;
+            /** Entity Name */
+            entity_name: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "junction" | "grouping";
+            /** Missing */
+            missing: components["schemas"]["StructuralClosureEntity"][];
         };
         /** SummarizeQueryBody */
         SummarizeQueryBody: {
@@ -15698,9 +15939,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["PromotionResultResponse"];
                 };
             };
             /** @description Request validation failed */
@@ -15742,9 +15981,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["PromotionPlanResponse"];
                 };
             };
             /** @description Request validation failed */

@@ -9,6 +9,10 @@ from pydantic import BaseModel
 
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
+from src.infrastructure.gui.contracts.promotion import (
+    PromotionPlanResponse,
+    PromotionResultResponse,
+)
 from src.infrastructure.gui.routers import state as s
 
 router = APIRouter()
@@ -45,7 +49,7 @@ class PromotionExecuteBody(BaseModel):
     dry_run: bool = True
 
 
-@router.post("/api/promote/plan")
+@router.post("/api/promote/plan", response_model=PromotionPlanResponse)
 def promotion_plan(
     body: PromotionPlanBody,
     catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
@@ -164,7 +168,7 @@ def promotion_plan(
     }
 
 
-@router.post("/api/promote/execute")
+@router.post("/api/promote/execute", response_model=PromotionResultResponse)
 def promotion_execute(
     body: PromotionExecuteBody,
     catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),

@@ -120,6 +120,11 @@ OPEN_RESPONSE_FIELDS: dict[str, OpenReason] = {
     "EntityDetailResponse.extra": AUTHORED,
     "DocumentDetailResponse.extra": AUTHORED,
     "ConnectionSummary.metadata": AUTHORED,
+    # The two versions' frontmatter, side by side for a field-level diff. Whatever the author wrote is
+    # what the resolution UI has to show, so declaring a shape here would hide the fields it cannot
+    # name — in the one place a person is deciding which version to keep.
+    "PromotionEntityConflict.engagement_fields": AUTHORED,
+    "PromotionEntityConflict.enterprise_fields": AUTHORED,
 
     # ── A diagram-type module owns the shape ──────────────────────────────────
     "EntityDetailResponse.display_blocks": MODULE_OWNED,

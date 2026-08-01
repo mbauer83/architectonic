@@ -18,6 +18,12 @@ import type {
 } from './sync-status'
 import type { StatsSchema } from './stats'
 import type {
+  PromotionMissingDependencySchema,
+  PromotionPlanSchema,
+  PromotionResultSchema,
+  PromotionViewpointDependencySchema,
+} from './promotion'
+import type {
   ArtifactSearchHitSchema,
   ArtifactSearchResultSchema,
   ReferenceSearchHitSchema,
@@ -213,6 +219,26 @@ describe('groups and matrices', () => {
     >()
     expectTypeOf<SchemaType<typeof MatrixConnTypeConfigSchema>>().toEqualTypeOf<
       Immutable<components['schemas']['MatrixConnTypeConfig']>
+    >()
+  })
+})
+
+describe('promotion', () => {
+  it('decodes the plan a person agrees to, and the result of carrying it out', () => {
+    // Four of the plan's lists were optional here and two were absent outright —
+    // `viewpoint_dependencies` and `missing_dependencies`, the two that can leave the enterprise
+    // repository broken. `warnings` was missing from the result.
+    expectTypeOf<SchemaType<typeof PromotionPlanSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['PromotionPlanResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof PromotionResultSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['PromotionResultResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof PromotionViewpointDependencySchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['PromotionViewpointDependency']>
+    >()
+    expectTypeOf<SchemaType<typeof PromotionMissingDependencySchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['PromotionMissingDependency']>
     >()
   })
 })

@@ -23,8 +23,6 @@ UNTYPED_RESPONSE_OPERATIONS: frozenset[str] = frozenset({
     "diagrams_read_diagram_context",
     "diagrams_search_entity_display_items",
     "documents_read_document_schemata",
-    "promotion_execute_promotion",
-    "promotion_plan_promotion",
     "taxonomy_read_authoring_guidance",
     "taxonomy_read_write_help",
     "viewpoints_execute_viewpoint",
