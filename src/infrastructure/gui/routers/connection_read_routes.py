@@ -19,6 +19,7 @@ from src.infrastructure.gui.contracts.connections import ConnectionListResponse
 from src.infrastructure.gui.contracts.entities import EntityNeighborhoodResponse
 from src.infrastructure.gui.contracts.errors import ApiError, FieldError, ValidationErrorDetails
 from src.infrastructure.gui.contracts.search import KeywordSearchResponse
+from src.infrastructure.gui.contracts.write_help import WriteHelpResponse
 from src.infrastructure.gui.routers import state as s
 from src.infrastructure.gui.routers._global_search import (
     filter_global_hits,
@@ -30,7 +31,6 @@ from src.infrastructure.gui.routers._openapi import (
     TAG_CONNECTIONS,
     TAG_ENTITIES,
     TAG_TAXONOMY,
-    OpenMapResponse,
 )
 from src.infrastructure.gui.routers.connection_neighbors import DerivationLimitError, derive_neighbor_response
 
@@ -176,7 +176,7 @@ def register_connection_read_routes(router: APIRouter) -> None:
         }
 
     @router.get("/api/write-help", tags=[TAG_TAXONOMY], summary="Catalog of writable types",
-        response_model=OpenMapResponse)
+        response_model=WriteHelpResponse)
     def get_write_help() -> dict[str, Any]:
         from src.infrastructure.write.artifact_write.help import write_help
 

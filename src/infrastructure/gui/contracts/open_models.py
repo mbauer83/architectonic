@@ -134,6 +134,11 @@ OPEN_RESPONSE_FIELDS: dict[str, OpenReason] = {
     "AssuranceRenderedDiagramResponse.nodes": MODULE_OWNED,
     "AssuranceRenderedDiagramResponse.edges": MODULE_OWNED,
 
+    # A documentation block about the viewpoint query language, keyed by topic and heterogeneous by
+    # nature — a schema version, a comparator glossary, reserved paths, a worked example. A field per
+    # topic would make this DTO the place every change to the language has to be mirrored.
+    "WriteHelpResponse.viewpoints": MODULE_OWNED,
+
     # ── The rule that raised the finding owns the shape ───────────────────────
     "VerificationIssueResponse.details": RULE_OWNED,
     "VerificationIssueResponse.actions": RULE_OWNED,

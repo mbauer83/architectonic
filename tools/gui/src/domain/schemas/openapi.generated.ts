@@ -4554,6 +4554,26 @@ export interface components {
             version: string;
         };
         /**
+         * ConnectionTypeCatalogEntry
+         * @description What one connection type is, in the modelling language that defines it.
+         *
+         *     ``symmetric`` is load-bearing rather than descriptive: a symmetric relation belongs to neither
+         *     direction, so every count and every arrow depends on it.
+         *
+         *     ``language`` is not always ``archimate``: diagram-type modules contribute their own relation
+         *     vocabularies, which is why the ArchiMate mapping is nullable rather than assumed.
+         */
+        ConnectionTypeCatalogEntry: {
+            /** Archimate Relationship Type */
+            archimate_relationship_type: string | null;
+            /** Language */
+            language: string;
+            /** Puml Arrow */
+            puml_arrow: string;
+            /** Symmetric */
+            symmetric: boolean;
+        };
+        /**
          * ContextConnection
          * @description One connection in an entity's context, with both endpoints already resolved.
          *
@@ -5152,6 +5172,20 @@ export interface components {
         DiagramTypeEntityTypeListResponse: {
             /** Items */
             items: components["schemas"]["DiagramTypeMemberItem"][];
+        };
+        /**
+         * DiagramTypeHelpEntry
+         * @description One diagram type an author may create, and the domains it accepts.
+         *
+         *     ``accepted_domains`` empty means it accepts any — an unfiltered picker, not a broken one.
+         */
+        DiagramTypeHelpEntry: {
+            /** Accepted Domains */
+            accepted_domains: string[];
+            /** Label */
+            label: string;
+            /** Name */
+            name: string;
         };
         /**
          * DiagramTypeListResponse
@@ -6068,6 +6102,21 @@ export interface components {
         EntityTaxonomyResponse: {
             /** Domains */
             domains: components["schemas"]["TaxonomyDomainResponse"][];
+        };
+        /**
+         * EntityTypeCatalogEntry
+         * @description What one entity type is: its id prefix, where it sits, and what it counts as.
+         *
+         *     ``hierarchy`` is the path from domain to type, so a picker can group without a second lookup;
+         *     ``classes`` are the sets it belongs to, which is what a permitted-relationship rule matches on.
+         */
+        EntityTypeCatalogEntry: {
+            /** Classes */
+            classes: string[];
+            /** Hierarchy */
+            hierarchy: string[];
+            /** Prefix */
+            prefix: string;
         };
         /**
          * ErrorBody
@@ -8498,6 +8547,73 @@ export interface components {
              * @enum {string}
              */
             relationship: "authored" | "referenced";
+        };
+        /**
+         * WriteHelpConventions
+         * @description The house rules an author has to follow, stated rather than left to be inferred.
+         *
+         *     Five determinate keys with heterogeneous values, so it is a model and not a map: ``statuses`` is
+         *     the lifecycle vocabulary, ``connection_inference`` is a mode-to-meaning glossary, and the other
+         *     three are format rules. Typed as ``dict[str, str]`` this failed validation on two of the five —
+         *     which is what a wrong container type looks like when the payload finally has a contract.
+         */
+        WriteHelpConventions: {
+            /** Connection Inference */
+            connection_inference: {
+                [key: string]: string;
+            };
+            /** Dry Run */
+            dry_run: string;
+            /** Entity Id Format */
+            entity_id_format: string;
+            /** Puml Alias Format */
+            puml_alias_format: string;
+            /** Statuses */
+            statuses: string[];
+        };
+        /**
+         * WriteHelpResponse
+         * @description Everything an authoring surface needs to offer a valid write.
+         *
+         *     ``entity_types_by_domain`` and ``connection_types_by_language`` are the two catalogues indexed the
+         *     way a picker groups them; the catalogues themselves carry the facts. Both indexes and both
+         *     catalogues are served together because an author choosing a type needs the grouping and the
+         *     declaration in the same breath, and a request per type would be a request per option.
+         *
+         *     ``next_steps`` is prose telling the caller which tool to reach for next. It is in the payload
+         *     rather than the docs because the caller is as often an agent as a person, and an agent does not
+         *     read the docs.
+         */
+        WriteHelpResponse: {
+            /** Archimate Stereotypes */
+            archimate_stereotypes: string[];
+            /** Artifact Types */
+            artifact_types: string[];
+            /** Connection Type Catalog */
+            connection_type_catalog: {
+                [key: string]: components["schemas"]["ConnectionTypeCatalogEntry"];
+            };
+            /** Connection Types By Language */
+            connection_types_by_language: {
+                [key: string]: string[];
+            };
+            conventions: components["schemas"]["WriteHelpConventions"];
+            /** Diagram Types */
+            diagram_types: components["schemas"]["DiagramTypeHelpEntry"][];
+            /** Entity Type Catalog */
+            entity_type_catalog: {
+                [key: string]: components["schemas"]["EntityTypeCatalogEntry"];
+            };
+            /** Entity Types By Domain */
+            entity_types_by_domain: {
+                [key: string]: string[];
+            };
+            /** Next Steps */
+            next_steps: string;
+            /** Viewpoints */
+            viewpoints: {
+                [key: string]: unknown;
+            };
         };
         /**
          * WriteResultResponse
@@ -17168,7 +17284,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["WriteHelpResponse"];
                 };
             };
             /** @description Request validation failed */
