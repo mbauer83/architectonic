@@ -40,7 +40,8 @@ ENTITY_ROWS: tuple[RouteRow, ...] = (
     RouteRow(
         "GET", "/api/entities/{artifact_id}/neighbors", "subresource", "connections_read_entity_neighbors",
         TYPED,
-        identity_parameters=("artifact_id",), cache_directive="no-cache", timeout_class="derived-graph",
+        identity_parameters=("artifact_id",), cache_directive="no-cache", conditional_read="etag",
+        timeout_class="derived-graph",
     ),
     RouteRow(
         "GET", "/api/entities/{artifact_id}/display-item", "subresource", "diagrams_read_entity_display_item",
@@ -88,7 +89,7 @@ CONNECTION_ROWS: tuple[RouteRow, ...] = (
 SEARCH_ROWS: tuple[RouteRow, ...] = (
     RouteRow(
         "GET", "/api/search", "collection", "entities_search_artifacts", TYPED,
-        cache_directive="no-cache",
+        cache_directive="no-cache", conditional_read="etag",
     ),
     RouteRow(
         "GET", "/api/artifact-search", "collection", "entities_search_display_artifacts",
@@ -100,7 +101,7 @@ SEARCH_ROWS: tuple[RouteRow, ...] = (
     ),
     RouteRow(
         "GET", "/api/reference-search", "collection", "documents_search_reference_artifacts",
-        TYPED, cache_directive="no-cache",
+        TYPED, cache_directive="no-cache", conditional_read="etag",
     ),
 )
 

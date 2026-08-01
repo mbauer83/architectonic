@@ -38,7 +38,6 @@ class TestWhatMayBeCached:
         so eligibility cannot be decided from the path alone — the middleware only ever considers a
         GET, and these are the paths that prove why."""
         assert not _is_cacheable("/api/entities/APP@1.ab.thing/context/edit")
-        assert not _is_cacheable("/api/entities/APP@1.ab.thing/neighbors")
 
     def test_sources_outside_the_model_do_not(self) -> None:
         """Git state and the confidential store change without the model generation moving."""

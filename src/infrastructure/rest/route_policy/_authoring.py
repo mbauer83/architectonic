@@ -28,7 +28,7 @@ DOCUMENT_ROWS: tuple[RouteRow, ...] = (
     ),
     RouteRow(
         "GET", "/api/documents/{artifact_id}", "detail", "documents_read_document",
-        TYPED, identity_parameters=_ARTIFACT, cache_directive="no-cache",
+        TYPED, identity_parameters=_ARTIFACT, cache_directive="no-cache", conditional_read="etag",
     ),
     RouteRow(
         "PATCH", "/api/documents/{artifact_id}", "detail", "documents_update_document",

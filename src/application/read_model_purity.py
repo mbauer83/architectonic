@@ -8,9 +8,15 @@ generation-keyed memo. What is not right is deciding *which reads qualify* twice
 
 It was decided twice. The route-policy manifest marked eight route templates ``conditional_read="etag"``
 and ``install_read_cache`` held a separate frozenset of seven tool names, each with its own copy of the
-rationale and its own list of standing exclusions. They had already drifted: four reads the MCP
-transport treats as model-pure are not conditional on REST, and nothing related the two, so a read
-reclassified on one side would keep the old answer on the other indefinitely.
+rationale and its own list of standing exclusions. They had drifted, and relating them settled four
+questions neither registry could ask on its own:
+
+* three reads the MCP memo treated as pure were re-derived per request on REST, and are conditional now
+  — both non-entity detail reads and the neighbourhood traversal, whose derived arm is the expensive one;
+* two search routes qualify and are conditional now, and a third that *looks* like them does not:
+  ``/api/artifact-search`` merges assurance-store hits, which the model generation does not describe;
+* the datatype type catalogue qualifies on neither transport — it is read from module configuration
+  rather than the index — and was memoised on MCP against a validator that could not see it.
 
 **The rule.** A read qualifies when its body is a function of the indexed artifact model and the
 request's own arguments, and of nothing else. The standing exclusions, once:
@@ -47,7 +53,9 @@ class ModelPureRead:
     rest_templates: tuple[str, ...] = ()
     mcp_tools: tuple[str, ...] = ()
     #: Why a REST address here is not yet ``conditional_read="etag"`` though the read qualifies.
-    #: Empty means every REST address listed is expected to be conditional.
+    #: Empty means every REST address listed is expected to be conditional. Nothing is pending as of
+    #: 0.2.0; the field stays because the *next* qualifying read will be found before it is marked,
+    #: and recording that beats leaving it undeclared.
     rest_pending: str = ""
     tags: frozenset[str] = field(default_factory=frozenset)
 
@@ -65,8 +73,22 @@ MODEL_PURE_READS: tuple[ModelPureRead, ...] = (
     ),
     ModelPureRead(
         what="One artifact with its content.",
-        rest_templates=("/api/entities/{artifact_id}",),
+        rest_templates=(
+            "/api/entities/{artifact_id}",
+            "/api/documents/{artifact_id}",
+            "/api/diagrams/{artifact_id}",
+        ),
         mcp_tools=("artifact_query_read_artifact",),
+    ),
+    ModelPureRead(
+        what="Keyword and reference search over the indexed artifacts.",
+        rest_templates=("/api/search", "/api/reference-search"),
+        mcp_tools=("artifact_query_search_artifacts",),
+    ),
+    ModelPureRead(
+        what="An entity's neighbourhood, stated or derived.",
+        rest_templates=("/api/entities/{artifact_id}/neighbors",),
+        mcp_tools=("artifact_query_find_neighbors",),
     ),
     ModelPureRead(
         what="One entity with its resolved connections.",
@@ -81,42 +103,18 @@ MODEL_PURE_READS: tuple[ModelPureRead, ...] = (
         what="The entities one diagram places.",
         rest_templates=("/api/diagrams/{artifact_id}/entities",),
     ),
-    # ── Qualifying on MCP, not yet conditional on REST ─────────────────────────
+    # ── Refused, with the reason ───────────────────────────────────────────────
     #
-    # Each of these is served on both transports, memoised on one and re-derived on the other. The
-    # asymmetry is recorded rather than closed here: adding `conditional_read="etag"` to a served
-    # route changes the response a client receives — an ETag and `Cache-Control: no-cache` appear —
-    # and that is a surface change, not a consolidation.
-    ModelPureRead(
-        what="One document or diagram with its content.",
-        rest_templates=("/api/documents/{artifact_id}", "/api/diagrams/{artifact_id}"),
-        mcp_tools=(),
-        rest_pending=(
-            "Served by the same `artifact_query_read_artifact` the entity read is, which is "
-            "memoised; the two REST detail reads were never classified alongside the entity one."
-        ),
-    ),
-    ModelPureRead(
-        what="Keyword and reference search over the indexed artifacts.",
-        rest_templates=("/api/search", "/api/artifact-search", "/api/reference-search"),
-        mcp_tools=("artifact_query_search_artifacts",),
-        rest_pending="Scoring is a pure function of the index; no REST search route is conditional.",
-    ),
-    ModelPureRead(
-        what="An entity's neighbourhood, stated or derived.",
-        rest_templates=("/api/entities/{artifact_id}/neighbors",),
-        mcp_tools=("artifact_query_find_neighbors",),
-        rest_pending="Traversal reads only the index, and the derived arm is the expensive one.",
-    ),
-    ModelPureRead(
-        what="The datatype module's declared type catalogue.",
-        rest_templates=("/api/diagram-types/datatype/types",),
-        mcp_tools=("artifact_query_datatype_types",),
-        rest_pending=(
-            "Read from the module's own configuration rather than from the index, so the model "
-            "generation may not be the right validator at all. Classify before making it conditional."
-        ),
-    ),
+    # `/api/artifact-search` looks like the two searches above and is not one of them: it merges
+    # assurance-store hits into its result (`entities/search.py:110`). The store moves independently
+    # of the model, so a 304 keyed on the model generation would hide a node ingested since — and a
+    # stale 304 is invisible to the client. The MCP `artifact_query_search_artifacts` searches only
+    # the index, which is why it stays above while this route stays out.
+    #
+    # `/api/diagram-types/datatype/types` and its `artifact_query_datatype_types` tool read the
+    # datatype module's own `config.yaml`, not the index. The model generation says nothing about
+    # module configuration, so it is the wrong validator in both directions — the tool was memoised
+    # against it until 0.2.0, which is a defect rather than an optimisation, and neither is here now.
 )
 
 

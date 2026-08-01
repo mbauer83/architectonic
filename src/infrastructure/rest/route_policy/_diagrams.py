@@ -25,7 +25,7 @@ DIAGRAM_ROWS: tuple[RouteRow, ...] = (
     ),
     RouteRow(
         "GET", "/api/diagrams/{artifact_id}", "detail", "diagrams_read_diagram", TYPED,
-        identity_parameters=_ID, cache_directive="no-cache",
+        identity_parameters=_ID, cache_directive="no-cache", conditional_read="etag",
     ),
     RouteRow(
         "PUT", "/api/diagrams/{artifact_id}", "detail", "diagrams_replace_diagram", TYPED,

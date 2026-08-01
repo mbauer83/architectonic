@@ -5,10 +5,11 @@ memo a layer in. Two mechanisms, correctly — and one judgement about which rea
 stated twice: eight ``conditional_read="etag"`` rows in the route-policy manifest and a separate
 frozenset of seven tool names, each with its own copy of the rationale.
 
-They had drifted before anything related them. Four reads the MCP memo treats as pure are still
-re-derived per request on REST. That is recorded in ``read_model_purity`` with a reason each, because
-marking a served route conditional changes the response a client receives; what this file refuses is
-the *silent* divergence.
+They had drifted before anything related them, and relating them settled every divergence: three
+reads the MCP memo treated as pure are conditional on REST now, two search routes joined them, one
+that resembles them is refused because it merges assurance-store hits, and the datatype catalogue was
+removed from the MCP memo because module configuration is not what the model generation describes.
+Nothing is pending. What this file refuses is a *silent* divergence, not a declared one.
 
 The manifest stays the REST authority — one row per REST operation is what the rest of it rests on —
 so the relation is checked rather than the row generated.
@@ -84,7 +85,8 @@ def test_the_table_is_not_empty_on_either_side() -> None:
     assert len(MODEL_PURE_READS) > 5
     assert len(conditional_rest_templates()) > 5
     assert len(cacheable_mcp_tools()) > 5
-    assert len(pending_rest_templates()) > 0
+    # No floor under the pending set: it is empty as of 0.2.0, and a floor would mean requiring a
+    # known divergence to exist. The partition test above is what keeps it honest when it is not.
 
 
 def test_the_middleware_matches_what_the_manifest_marks() -> None:

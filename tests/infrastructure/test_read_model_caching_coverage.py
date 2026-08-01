@@ -134,9 +134,12 @@ class TestTheAllowlistStaysHonest:
     def test_a_template_does_not_adopt_its_own_sub_routes(self) -> None:
         """The eligibility set is templates now, matched whole. A prefix match would adopt every
         route added beneath a listed one without anyone deciding it qualified — and identity in the
-        path means those sub-routes exist: `/api/entities/{id}/neighbors` is not model-derived."""
+        path means those sub-routes exist. `/api/entities/{id}/display-item` is the witness: it sits
+        under two eligible templates and is not eligible itself. It replaced `/neighbors`, which was
+        the witness until 0.2.0 established that the neighbourhood *is* model-derived — an example
+        that has since become eligible proves nothing about prefix matching."""
         assert _is_cacheable("/api/entities")
-        assert not _is_cacheable("/api/entities/APP@1.ab.thing/neighbors")
+        assert not _is_cacheable("/api/entities/APP@1.ab.thing/display-item")
         assert not _is_cacheable("/api/entities/")
 
     @pytest.mark.parametrize("path", [
@@ -158,10 +161,20 @@ class TestTheAllowlistStaysHonest:
             "/api/entities",
             "/api/entities/{artifact_id}",
             "/api/entities/{artifact_id}/context",
+            # 0.2.0: the neighbourhood is a function of the index like the reads beside it, and its
+            # derived arm is the most expensive read this surface serves.
+            "/api/entities/{artifact_id}/neighbors",
             "/api/connections",
             "/api/diagrams",
+            # 0.2.0: the two detail reads the entity one was already eligible for. Same producer.
+            "/api/diagrams/{artifact_id}",
             "/api/diagrams/{artifact_id}/entities",
             "/api/documents",
+            "/api/documents/{artifact_id}",
+            # 0.2.0: scoring is a function of the index and the query. `/api/artifact-search` is
+            # deliberately absent — it merges assurance-store hits, which the generation cannot see.
+            "/api/search",
+            "/api/reference-search",
             "/api/stats",
         })
 
