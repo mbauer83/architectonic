@@ -9,7 +9,7 @@ import type { ErrorBody } from '../../domain/schemas/errors'
  */
 
 const envelope = (overrides: Partial<ErrorBody>): ErrorBody =>
-  ({ code: 'bad_request', message: 'boom', details: null, request_id: 'r-1', ...overrides }) as ErrorBody
+  ({ code: 'bad_request', message: 'boom', details: null, request_id: 'r-1', ...overrides })
 
 const rejected = (field: string, message: string): ErrorBody =>
   envelope({ code: 'validation_error', message, details: { field_errors: [{ field, message }] } })
