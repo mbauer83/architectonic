@@ -1,7 +1,9 @@
 import { computed, ref, type Ref } from 'vue'
 import { Effect, Exit } from 'effect'
 import type { ModelService } from '../../application/ModelService'
-import type { DiagramContext, DiagramConnection, EntityContextConnection, EntitySummary, EntityDisplayInfo } from '../../domain'
+import type {
+  DiagramConnection, DiagramContext, EntityContextConnection, EntityDisplayInfo, EntitySummary,
+} from '../../domain'
 import { stableConnectionId } from '../../domain/artifactId'
 
 /**
@@ -20,6 +22,8 @@ export function useDiagramEditSelection(options: {
 }) {
   const { svc, diagramType, viewpointSlug } = options
 
+  // The looser list-row types, deliberately: the context read fills both with its own stricter
+  // rows, and a diagram-type editor then replaces the connections with ones it built itself.
   const diagramEntities = ref<EntitySummary[]>([])
   const diagramConnections = ref<DiagramConnection[]>([])
   const includedEntities = ref<EntityDisplayInfo[]>([])
@@ -190,12 +194,12 @@ export function useDiagramEditSelection(options: {
   }
 
   const populateFromContext = (context: DiagramContext): void => {
-    diagramEntities.value = context.entities as EntitySummary[]
-    diagramConnections.value = context.connections as DiagramConnection[]
+    diagramEntities.value = [...context.entities]
+    diagramConnections.value = [...context.connections]
     includedEntities.value = context.entities.map((s) => ({
       artifact_id: s.artifact_id, name: s.name, artifact_type: s.artifact_type,
       domain: s.domain, subdomain: s.subdomain, status: s.status,
-      display_alias: s.display_alias ?? '', element_type: s.artifact_type, element_label: s.name, diagram_internal: false,
+      display_alias: s.display_alias, element_type: s.artifact_type, element_label: s.name, diagram_internal: false,
     }))
     allModelConns.value = new Map(context.candidate_connections.map((conn) => [conn.artifact_id, conn]))
     const inc = new Set<string>()

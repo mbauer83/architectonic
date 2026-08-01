@@ -13,11 +13,18 @@ diagram kind. Everything the surface itself decides is declared.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict
 
-from src.infrastructure.gui.contracts.entities import ContextConnection, EntityDisplayItemResponse
+from src.infrastructure.gui.contracts.connections import ConnectionSummary
+from src.infrastructure.gui.contracts.entities import (
+    ContextConnection,
+    EntityDisplayItemResponse,
+    EntitySummary,
+)
+from src.infrastructure.gui.contracts.viewpoints import ViewpointApplicationResponse
+from src.infrastructure.gui.contracts.wire_nulls import NullsOmitted
 
 
 class _Closed(BaseModel):
@@ -107,7 +114,7 @@ class DiagramSummary(_Closed):
     host_diagram_id: str | None = None
     last_updated: str | None = None
     tlp: str | None = None
-    viewpoint: dict[str, Any] | None = None
+    viewpoint: ViewpointApplicationResponse | None = None
 
 
 class DiagramListResponse(_Closed):
@@ -271,3 +278,103 @@ class DiagramPreviewResponse(_Closed):
     image: str | None
     warnings: list[str]
     derived_entities: list[DerivedViewEntityResponse] | None
+
+
+class _ModuleShapedRecord(NullsOmitted):
+    """A module-extensible payload whose unset optionals are absent rather than null.
+
+    Two claims that have to travel together on the diagram reads. ``extra="allow"`` because a
+    diagram-type module contributes top-level keys through ``read_diagram_extras`` and
+    ``build_context_extras`` — a matrix's body, a C4 diagram's navigation — and enumerating them here
+    would make the ontology's extensibility depend on this file. The null policy because the same
+    responses embed :class:`EntitySummary`, which is null-omitting on the entity list and cannot
+    have two policies for one schema.
+    """
+
+    model_config = ConfigDict(extra="allow")
+
+
+class DiagramDetailResponse(_ModuleShapedRecord):
+    """One diagram, read whole: the record, its source, and what the source declares.
+
+    ``entity_ids_used``/``connection_ids_used`` are present only when the file's frontmatter
+    declares them — an older diagram simply does not, and an empty list would claim it draws
+    nothing.
+
+    Open at this level, and only this level: ``read_diagram_extras`` is a diagram-type module hook
+    returning top-level keys, so what a matrix or a C4 diagram adds arrives beside these fields
+    rather than nested under them.
+    """
+
+    artifact_id: str
+    artifact_type: str
+    record_type: Literal["diagram"]
+    name: str
+    diagram_type: str
+    version: str
+    status: str
+    path: str
+    is_global: bool
+    group: str | None = None
+    last_updated: str | None = None
+    content_snippet: str
+    puml_source: str
+    #: The rendered image beside the source file, absent when nothing has been rendered yet.
+    rendered_filename: str | None = None
+    entity_ids_used: list[str] | None = None
+    connection_ids_used: list[str] | None = None
+    #: The diagram-kind's own placement data, keyed by entity id. Absent when the diagram places
+    #: nothing of its own — a hand-drawn ArchiMate view, say.
+    diagram_entities: dict[str, Any] | None = None
+    #: Frontmatter this surface does not model, returned as written.
+    extra: dict[str, Any] | None = None
+    viewpoint: ViewpointApplicationResponse | None = None
+
+
+class DiagramContextEntity(EntitySummary):
+    """One entity as this diagram places it: the list row, plus the alias it is drawn under.
+
+    ``display_alias`` is here and not on :class:`EntitySummary` because only a diagram read resolves
+    it — the entity list has no diagram to draw the entity on, and a field the list route never
+    fills would read as "this entity has no alias".
+    """
+
+    display_alias: str
+
+
+class DiagramContextConnection(ConnectionSummary, NullsOmitted):
+    """One connection as this diagram draws it: the record, plus how it is rendered here.
+
+    The aliases and ``edge_key`` are the PlantUML identity of the edge in *this* file, which is what
+    an overlay needs to find the drawn line for a connection. ``edge_label_override`` is the label
+    the author set for that edge and belongs to the diagram, not to the connection — the same
+    connection drawn on two diagrams can carry two labels.
+    """
+
+    source_alias: str
+    target_alias: str
+    edge_key: str
+    edge_label_override: str | None = None
+
+
+class DiagramContextResponse(_ModuleShapedRecord):
+    """A diagram and everything an editor needs to work on it, in one read.
+
+    Assembled server-side because an editor that fetched these separately could render a diagram
+    against one model generation and its candidate connections against another. ``generation`` and
+    ``etag`` are in the body for exactly that reason: they say which snapshot all of it came from.
+
+    ``explicit_connection_pairs`` are the source/target alias pairs the PUML actually draws, which
+    is how a stated connection is told from one that merely exists between two placed entities.
+
+    Open at this level for ``build_context_extras``: a C4 diagram contributes its navigation here.
+    """
+
+    diagram: DiagramDetailResponse
+    entities: list[DiagramContextEntity]
+    connections: list[DiagramContextConnection]
+    candidate_connections: list[ContextConnection]
+    suggested_entities: list[HopSuggestionGroup]
+    explicit_connection_pairs: list[tuple[str, str]]
+    generation: int
+    etag: str

@@ -4,8 +4,11 @@ import type { components } from './openapi.generated'
 import type { EntityContextConnectionSchema } from './connections'
 import type {
   DerivedEntitySchema,
+  DiagramContextConnectionSchema,
+  DiagramContextEntitySchema,
   DiagramEntityDiscoverySchema,
   DiagramPreviewResultSchema,
+  HopSuggestionGroupSchema,
 } from './diagrams'
 import type { EntityDisplayInfoSchema, EntityDisplaySearchResultSchema } from './entities'
 
@@ -35,6 +38,22 @@ describe('diagram palette', () => {
     >()
     expectTypeOf<SchemaType<typeof EntityContextConnectionSchema>>().toEqualTypeOf<
       Immutable<components['schemas']['ContextConnection']>
+    >()
+  })
+
+  it('decodes the rows a diagram context resolves', () => {
+    // The envelope itself cannot be asserted: `read_diagram_extras` and `build_context_extras` are
+    // diagram-type module hooks that contribute top-level keys, so it is open by design and the
+    // schema promises nothing to compare against. Its rows are closed, and they are the part a
+    // renderer reads field by field.
+    expectTypeOf<SchemaType<typeof DiagramContextEntitySchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['DiagramContextEntity']>
+    >()
+    expectTypeOf<SchemaType<typeof DiagramContextConnectionSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['DiagramContextConnection']>
+    >()
+    expectTypeOf<SchemaType<typeof HopSuggestionGroupSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['HopSuggestionGroup']>
     >()
   })
 

@@ -5510,6 +5510,206 @@ export interface components {
             items: components["schemas"]["DiagramConnectionItem"][];
         };
         /**
+         * DiagramContextConnection
+         * @description One connection as this diagram draws it: the record, plus how it is rendered here.
+         *
+         *     The aliases and ``edge_key`` are the PlantUML identity of the edge in *this* file, which is what
+         *     an overlay needs to find the drawn line for a connection. ``edge_label_override`` is the label
+         *     the author set for that edge and belongs to the diagram, not to the connection — the same
+         *     connection drawn on two diagrams can carry two labels.
+         */
+        DiagramContextConnection: {
+            /** Artifact Id */
+            artifact_id: string;
+            /** Associated Entities */
+            associated_entities: string[];
+            /** Conn Type */
+            conn_type: string;
+            /** Content Text */
+            content_text: string;
+            /** Edge Key */
+            edge_key: string;
+            /** Edge Label Override */
+            edge_label_override?: string;
+            /** Gar Artifact Id */
+            gar_artifact_id?: string;
+            /**
+             * Metadata
+             * @default {}
+             */
+            metadata: {
+                [key: string]: unknown;
+            };
+            /** Path */
+            path: string;
+            /** Source */
+            source: string;
+            /** Source Alias */
+            source_alias: string;
+            /** Source Name */
+            source_name: string;
+            /** Specialization */
+            specialization?: string;
+            /**
+             * Specializations
+             * @default []
+             */
+            specializations: string[];
+            /** Src Multiplicity */
+            src_multiplicity?: string;
+            /** Status */
+            status: string;
+            /** Target */
+            target: string;
+            /** Target Alias */
+            target_alias: string;
+            /** Target Name */
+            target_name: string;
+            /** Tgt Multiplicity */
+            tgt_multiplicity?: string;
+            /** Version */
+            version: string;
+        };
+        /**
+         * DiagramContextEntity
+         * @description One entity as this diagram places it: the list row, plus the alias it is drawn under.
+         *
+         *     ``display_alias`` is here and not on :class:`EntitySummary` because only a diagram read resolves
+         *     it — the entity list has no diagram to draw the entity on, and a field the list route never
+         *     fills would read as "this entity has no alias".
+         */
+        DiagramContextEntity: {
+            /** Artifact Id */
+            artifact_id: string;
+            /** Artifact Type */
+            artifact_type: string;
+            /** Conn In */
+            conn_in?: number;
+            /** Conn Out */
+            conn_out?: number;
+            /** Conn Sym */
+            conn_sym?: number;
+            /** Display Alias */
+            display_alias: string;
+            /** Domain */
+            domain: string;
+            /** Group */
+            group?: string;
+            /** Host Diagram Id */
+            host_diagram_id?: string;
+            /** Is Global */
+            is_global: boolean;
+            /** Last Updated */
+            last_updated?: string;
+            /** Name */
+            name: string;
+            /** Path */
+            path: string;
+            /** Specialization */
+            specialization?: string;
+            /** Status */
+            status: string;
+            /** Subdomain */
+            subdomain: string;
+            /** Version */
+            version: string;
+        };
+        /**
+         * DiagramContextResponse
+         * @description A diagram and everything an editor needs to work on it, in one read.
+         *
+         *     Assembled server-side because an editor that fetched these separately could render a diagram
+         *     against one model generation and its candidate connections against another. ``generation`` and
+         *     ``etag`` are in the body for exactly that reason: they say which snapshot all of it came from.
+         *
+         *     ``explicit_connection_pairs`` are the source/target alias pairs the PUML actually draws, which
+         *     is how a stated connection is told from one that merely exists between two placed entities.
+         *
+         *     Open at this level for ``build_context_extras``: a C4 diagram contributes its navigation here.
+         */
+        DiagramContextResponse: {
+            /** Candidate Connections */
+            candidate_connections: components["schemas"]["ContextConnection"][];
+            /** Connections */
+            connections: components["schemas"]["DiagramContextConnection"][];
+            diagram: components["schemas"]["DiagramDetailResponse"];
+            /** Entities */
+            entities: components["schemas"]["DiagramContextEntity"][];
+            /** Etag */
+            etag: string;
+            /** Explicit Connection Pairs */
+            explicit_connection_pairs: [
+                string,
+                string
+            ][];
+            /** Generation */
+            generation: number;
+            /** Suggested Entities */
+            suggested_entities: components["schemas"]["HopSuggestionGroup"][];
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * DiagramDetailResponse
+         * @description One diagram, read whole: the record, its source, and what the source declares.
+         *
+         *     ``entity_ids_used``/``connection_ids_used`` are present only when the file's frontmatter
+         *     declares them — an older diagram simply does not, and an empty list would claim it draws
+         *     nothing.
+         *
+         *     Open at this level, and only this level: ``read_diagram_extras`` is a diagram-type module hook
+         *     returning top-level keys, so what a matrix or a C4 diagram adds arrives beside these fields
+         *     rather than nested under them.
+         */
+        DiagramDetailResponse: {
+            /** Artifact Id */
+            artifact_id: string;
+            /** Artifact Type */
+            artifact_type: string;
+            /** Connection Ids Used */
+            connection_ids_used?: string[];
+            /** Content Snippet */
+            content_snippet: string;
+            /** Diagram Entities */
+            diagram_entities?: {
+                [key: string]: unknown;
+            };
+            /** Diagram Type */
+            diagram_type: string;
+            /** Entity Ids Used */
+            entity_ids_used?: string[];
+            /** Extra */
+            extra?: {
+                [key: string]: unknown;
+            };
+            /** Group */
+            group?: string;
+            /** Is Global */
+            is_global: boolean;
+            /** Last Updated */
+            last_updated?: string;
+            /** Name */
+            name: string;
+            /** Path */
+            path: string;
+            /** Puml Source */
+            puml_source: string;
+            /**
+             * Record Type
+             * @constant
+             */
+            record_type: "diagram";
+            /** Rendered Filename */
+            rendered_filename?: string;
+            /** Status */
+            status: string;
+            /** Version */
+            version: string;
+            viewpoint?: components["schemas"]["ViewpointApplicationResponse"];
+        } & {
+            [key: string]: unknown;
+        };
+        /**
          * DiagramEntityDiscoveryResponse
          * @description Three ways to find the next thing to put on a diagram, answered together.
          *
@@ -5709,10 +5909,7 @@ export interface components {
             tlp?: string | null;
             /** Version */
             version: string;
-            /** Viewpoint */
-            viewpoint?: {
-                [key: string]: unknown;
-            } | null;
+            viewpoint?: components["schemas"]["ViewpointApplicationResponse"] | null;
         };
         /** DiagramTypeConnectionTypeListResponse */
         DiagramTypeConnectionTypeListResponse: {
@@ -9721,6 +9918,29 @@ export interface components {
          */
         VexRevisionRecord: {
             [key: string]: unknown;
+        };
+        /**
+         * ViewpointApplicationResponse
+         * @description The viewpoint a diagram or matrix pins, as its frontmatter states it.
+         *
+         *     ``version`` is the *pinned* version, not the definition's current one: the point of pinning is
+         *     that the definition can move on and the artifact keeps saying which version it was drawn
+         *     against. The projection read is where staleness is reported.
+         *
+         *     ``enforcement_override`` is absent where the artifact accepts the repository default; a value
+         *     here is a deliberate per-artifact departure from it.
+         */
+        ViewpointApplicationResponse: {
+            /** Derivation Params */
+            derivation_params?: {
+                [key: string]: boolean | number | string | string[];
+            } | null;
+            /** Enforcement Override */
+            enforcement_override?: ("off" | "warn" | "ghost") | null;
+            /** Slug */
+            slug: string;
+            /** Version */
+            version: number;
         };
         /**
          * ViewpointDefinitionEnvelope
@@ -14631,7 +14851,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["DiagramDetailResponse"];
                 };
             };
             /** @description Artifact not found */
@@ -14912,7 +15132,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["DiagramContextResponse"];
                 };
             };
             /** @description Artifact not found */

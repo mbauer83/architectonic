@@ -13,6 +13,8 @@ from src.application.runtime_catalogs import RuntimeCatalogs
 from src.infrastructure.app_bootstrap import complete_diagram_type_catalog, runtime_catalogs_dependency
 from src.infrastructure.gui.contracts.diagrams import (
     DiagramConnectionListResponse,
+    DiagramContextResponse,
+    DiagramDetailResponse,
     DiagramEntityListResponse,
     DiagramListResponse,
     DiagramReferenceListResponse,
@@ -31,7 +33,7 @@ from src.infrastructure.gui.routers._diagram_serving import router as _serving_r
 from src.infrastructure.gui.routers._diagram_sub_entity import router as _sub_entity_router
 from src.infrastructure.gui.routers._diagram_write import router as _write_router
 from src.infrastructure.gui.routers._matrix_write import router as _matrix_write_router
-from src.infrastructure.gui.routers._openapi import READ_RESPONSES, TAG_DIAGRAMS, OpenMapResponse
+from src.infrastructure.gui.routers._openapi import READ_RESPONSES, TAG_DIAGRAMS
 
 router = APIRouter()
 router.include_router(_write_router)
@@ -104,7 +106,8 @@ def list_diagrams(
     "/api/diagrams/{artifact_id}",
     tags=[TAG_DIAGRAMS],
     summary="Read a diagram by id",
-    response_model=OpenMapResponse,
+    response_model=DiagramDetailResponse,
+    response_model_exclude_none=True,
     responses=READ_RESPONSES,
 )
 def read_diagram(
@@ -233,7 +236,8 @@ def get_diagram_connections(
     "/api/diagrams/{artifact_id}/context",
     tags=[TAG_DIAGRAMS],
     summary="Diagram with its resolved context",
-    response_model=OpenMapResponse,
+    response_model=DiagramContextResponse,
+    response_model_exclude_none=True,
     responses=READ_RESPONSES,
 )
 def get_diagram_context(

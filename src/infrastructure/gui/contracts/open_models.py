@@ -81,6 +81,11 @@ OPEN_RESPONSE_MODELS: dict[str, OpenReason] = {
     "DiagramEntityItem": MODULE_OWNED,
     "DiagramConnectionItem": MODULE_OWNED,
     "DiagramTypeMemberItem": MODULE_OWNED,
+    # ``read_diagram_extras`` and ``build_context_extras`` are diagram-type module hooks returning
+    # *top-level* keys — a matrix's body, a C4 diagram's navigation. Open at the envelope, which is the
+    # one place decision 6 permits it, because that is the level the module actually contributes to.
+    "DiagramDetailResponse": MODULE_OWNED,
+    "DiagramContextResponse": MODULE_OWNED,
 
     # ── The security feeds own these ──────────────────────────────────────────
     "SecurityComponentRecord": FEED_OWNED,
@@ -119,7 +124,9 @@ OPEN_RESPONSE_FIELDS: dict[str, OpenReason] = {
     "EntityDetailResponse.properties": AUTHORED,
     "EntityDetailResponse.extra": AUTHORED,
     "DocumentDetailResponse.extra": AUTHORED,
+    "DiagramDetailResponse.extra": AUTHORED,
     "ConnectionSummary.metadata": AUTHORED,
+    "DiagramContextConnection.metadata": AUTHORED,
     # The two versions' frontmatter, side by side for a field-level diff. Whatever the author wrote is
     # what the resolution UI has to show, so declaring a shape here would hide the fields it cannot
     # name — in the one place a person is deciding which version to keep.
@@ -134,6 +141,9 @@ OPEN_RESPONSE_FIELDS: dict[str, OpenReason] = {
 
     # ── A diagram-type module owns the shape ──────────────────────────────────
     "EntityDetailResponse.display_blocks": MODULE_OWNED,
+    # Placement data keyed by entity id, and the diagram kind decides what is in it: a datatype
+    # classifier's attributes are not shaped like a C4 container's boundary.
+    "DiagramDetailResponse.diagram_entities": MODULE_OWNED,
     # The diagram type's own `project_store_graph` decides these. A bowtie's placement data is not
     # shaped like a control structure's, and enumerating both would make the ontology's extensibility
     # depend on this package.
@@ -180,7 +190,4 @@ OPEN_RESPONSE_FIELDS: dict[str, OpenReason] = {
     "AssuranceArchRefRegisteredResponse.verification_findings": AWAITING_CONTRACT,
     "AssuranceEdgeCreatedResponse.verification_findings": AWAITING_CONTRACT,
     "ModelThisBoundResponse.verification_findings": AWAITING_CONTRACT,
-    # The viewpoint a diagram projects. Its definition language is determinate — the GUI editor already
-    # enumerates every node kind to round-trip an edit — so this closes with the viewpoint surface.
-    "DiagramSummary.viewpoint": AWAITING_CONTRACT,
 }

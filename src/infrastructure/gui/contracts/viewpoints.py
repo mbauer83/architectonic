@@ -93,3 +93,23 @@ class ViewpointPinsResponse(NullsOmitted):
 
     slugs: list[str]
     pruned: list[str] | None = None
+
+
+class ViewpointApplicationResponse(_Closed):
+    """The viewpoint a diagram or matrix pins, as its frontmatter states it.
+
+    ``version`` is the *pinned* version, not the definition's current one: the point of pinning is
+    that the definition can move on and the artifact keeps saying which version it was drawn
+    against. The projection read is where staleness is reported.
+
+    ``enforcement_override`` is absent where the artifact accepts the repository default; a value
+    here is a deliberate per-artifact departure from it.
+    """
+
+    slug: str
+    version: int
+    enforcement_override: Literal["off", "warn", "ghost"] | None = None
+    #: Values for the definition's declared parameters, bound at projection time. An open map — the
+    #: keys are the definition's parameter names, which are the definition's to choose — with the
+    #: same closed scalar value space binding produces.
+    derivation_params: dict[str, bool | int | float | str | list[str]] | None = None

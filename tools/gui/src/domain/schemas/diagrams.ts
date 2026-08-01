@@ -1,7 +1,7 @@
 import { Schema } from 'effect'
 import { ViewpointApplicationSchema } from './viewpoints'
-import { DiagramConnectionSchema, EntityContextConnectionSchema } from './connections'
-import { EntitySummarySchema, EntityDisplayInfoSchema } from './entities'
+import { EntityContextConnectionSchema } from './connections'
+import { EntityDisplayInfoSchema } from './entities'
 
 export const DiagramDetailSchema = Schema.Struct({
   artifact_id: Schema.String,
@@ -72,18 +72,78 @@ export const C4NavigationSchema = Schema.Struct({
 })
 export type C4Navigation = typeof C4NavigationSchema.Type
 
+/** One entity as this diagram places it: the list row, plus the alias it is drawn under.
+ *
+ * A struct of its own rather than `EntitySummarySchema`, which is the *list* row and carries
+ * several optional fields no diagram read fills. `display_alias` is required here because only a
+ * diagram read resolves it. */
+export const DiagramContextEntitySchema = Schema.Struct({
+  artifact_id: Schema.String,
+  artifact_type: Schema.String,
+  name: Schema.String,
+  version: Schema.String,
+  status: Schema.String,
+  domain: Schema.String,
+  subdomain: Schema.String,
+  path: Schema.String,
+  is_global: Schema.Boolean,
+  display_alias: Schema.String,
+  group: Schema.optional(Schema.String),
+  specialization: Schema.optional(Schema.String),
+  host_diagram_id: Schema.optional(Schema.String),
+  conn_in: Schema.optional(Schema.Number),
+  conn_sym: Schema.optional(Schema.Number),
+  conn_out: Schema.optional(Schema.Number),
+  last_updated: Schema.optional(Schema.String),
+})
+export type DiagramContextEntity = typeof DiagramContextEntitySchema.Type
+
+/** One connection as this diagram draws it: the record, plus its rendered identity here.
+ *
+ * The aliases and `edge_key` locate the drawn line in *this* file, and
+ * `edge_label_override` is the label the author set for that edge — it belongs to the diagram, not
+ * to the connection, since the same connection drawn twice can carry two labels. */
+export const DiagramContextConnectionSchema = Schema.Struct({
+  artifact_id: Schema.String,
+  source: Schema.String,
+  target: Schema.String,
+  conn_type: Schema.String,
+  version: Schema.String,
+  status: Schema.String,
+  path: Schema.String,
+  content_text: Schema.String,
+  associated_entities: Schema.Array(Schema.String),
+  source_name: Schema.String,
+  target_name: Schema.String,
+  source_alias: Schema.String,
+  target_alias: Schema.String,
+  edge_key: Schema.String,
+  edge_label_override: Schema.optional(Schema.String),
+  src_multiplicity: Schema.optional(Schema.String),
+  tgt_multiplicity: Schema.optional(Schema.String),
+  specialization: Schema.optional(Schema.String),
+  specializations: Schema.Array(Schema.String),
+  metadata: Schema.Record({ key: Schema.String, value: Schema.Unknown }),
+  gar_artifact_id: Schema.optional(Schema.String),
+})
+export type DiagramContextConnection = typeof DiagramContextConnectionSchema.Type
+
+/** Entities one hop further out than the last group. `hop` starts at 1 — hop 0 is what the
+ * diagram already holds. */
+export const HopSuggestionGroupSchema = Schema.Struct({
+  hop: Schema.Number,
+  items: Schema.Array(EntityDisplayInfoSchema),
+})
+
 export const DiagramContextSchema = Schema.Struct({
   diagram: DiagramDetailSchema,
-  entities: Schema.Array(EntitySummarySchema),
-  connections: Schema.Array(DiagramConnectionSchema),
+  entities: Schema.Array(DiagramContextEntitySchema),
+  connections: Schema.Array(DiagramContextConnectionSchema),
   candidate_connections: Schema.Array(EntityContextConnectionSchema),
-  suggested_entities: Schema.Array(
-    Schema.Struct({
-      hop: Schema.Number,
-      items: Schema.Array(EntityDisplayInfoSchema),
-    }),
-  ),
-  explicit_connection_pairs: Schema.Array(Schema.Array(Schema.String)),
+  suggested_entities: Schema.Array(HopSuggestionGroupSchema),
+  /** Source/target alias pairs the PUML actually draws — how a stated connection is told from
+   * one that merely exists between two placed entities. */
+  explicit_connection_pairs: Schema.Array(Schema.Tuple(Schema.String, Schema.String)),
   generation: Schema.Number,
   etag: Schema.String,
   c4_navigation: Schema.optional(Schema.NullOr(C4NavigationSchema)),
@@ -93,12 +153,7 @@ export type DiagramContext = typeof DiagramContextSchema.Type
 export const DiagramEntityDiscoverySchema = Schema.Struct({
   search_results: Schema.Array(EntityDisplayInfoSchema),
   candidate_connections: Schema.Array(EntityContextConnectionSchema),
-  suggested_entities: Schema.Array(
-    Schema.Struct({
-      hop: Schema.Number,
-      items: Schema.Array(EntityDisplayInfoSchema),
-    }),
-  ),
+  suggested_entities: Schema.Array(HopSuggestionGroupSchema),
 })
 export type DiagramEntityDiscovery = typeof DiagramEntityDiscoverySchema.Type
 

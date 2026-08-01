@@ -225,10 +225,12 @@ class TestReadDiagram:
         assert "name" in data
         assert "diagram_type" in data
 
-    def test_viewpoint_is_none_when_not_applied(self, sync_client) -> None:
+    def test_viewpoint_is_absent_when_not_applied(self, sync_client) -> None:
+        # Absent, not null: this read omits what is not set, so a diagram pinning no viewpoint
+        # simply does not carry the key.
         r = sync_client.get(f"/api/diagrams/{DIAG_ID}")
         assert r.status_code == 200
-        assert r.json()["viewpoint"] is None
+        assert "viewpoint" not in r.json()
 
     def test_viewpoint_surfaces_when_applied(self, sync_client) -> None:
         r = sync_client.get(f"/api/diagrams/{VIEWPOINT_DIAG_ID}")
