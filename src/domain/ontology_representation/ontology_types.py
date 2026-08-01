@@ -39,6 +39,22 @@ class MappingSourceSpec:
     entity_class: str | None = None
     transparent: bool = False
 
+    def as_config(self) -> dict[str, Any]:
+        """This source in the configuration form :func:`mapping_spec_from_config` reads back.
+
+        The round trip is the point, and ``test_ontology_types.py`` holds it: this is not "a dict of
+        the fields" but the *external representation* of this type, which the parser above already
+        owned one direction of. Five call sites had spelled it out by hand — four diagram-type
+        modules and the write boundary's guidance serialiser — and a field added here would have
+        reached the wire from none of them.
+        """
+        return {
+            "ontology": self.ontology,
+            "entity_type": self.entity_type,
+            "entity_class": self.entity_class,
+            "transparent": self.transparent,
+        }
+
 
 @dataclass(frozen=True)
 class PermittedMappingSpec:
@@ -50,6 +66,21 @@ class PermittedMappingSpec:
 
     def has_any(self) -> bool:
         return bool(self.entity_types or self.entity_classes or self.sources)
+
+    def as_config(self) -> dict[str, Any]:
+        """This spec in the configuration form :func:`mapping_spec_from_config` reads back.
+
+        ``sources`` is omitted when empty rather than written as ``[]``: the key's absence is what a
+        spec with no ontology sources has always looked like on the wire, and emitting an empty list
+        would change the payload of every diagram type that declares plain types and classes.
+        """
+        config: dict[str, Any] = {
+            "entity_types": list(self.entity_types),
+            "entity_classes": list(self.entity_classes),
+        }
+        if self.sources:
+            config["sources"] = [source.as_config() for source in self.sources]
+        return config
 
 
 def mapping_spec_from_config(raw: object) -> PermittedMappingSpec:

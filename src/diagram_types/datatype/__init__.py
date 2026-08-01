@@ -10,6 +10,7 @@ from src.diagram_types._base import DiagramTypeBase
 from src.diagram_types.datatype.renderer import DatatypePumlRenderer
 from src.domain.diagrams.diagram_entities_schema import derive_diagram_entities_schema
 from src.domain.diagrams.diagram_ontology_loader import DiagramOntology, load_diagram_ontology
+from src.domain.diagrams.diagram_ontology_merge import merge_ontology_into_diagram_only_types
 from src.domain.modules.bridges import BridgeDeclaration
 from src.domain.modules.module_types import ConnectionTypeName, DiagramTypeName, EntityTypeName, FreeOntology
 from src.domain.ontology_representation.ontology_protocol import (
@@ -112,93 +113,10 @@ def _parse_element_classes(config: dict[str, Any]) -> dict[str, ElementClassInfo
     }
 
 
-def _merge_ontology_into_config(
-    config: dict[str, Any],
-    ontology: DiagramOntology,
-) -> dict[str, Any]:
-    ui: dict[str, Any] = dict(config.get("ui") or {})
-    dot: list[Any] = list(ui.get("diagram_only_types") or [])
-    updated: list[dict[str, Any]] = []
-    seen_types: set[str] = set()
-
-    for entry in dot:
-        if not isinstance(entry, Mapping):
-            updated.append(entry)
-            continue
-        etype = str(entry.get("entity_type") or "")
-        seen_types.add(etype)
-        ont_et = ontology.entity_types.get(EntityTypeName(etype))
-        merged: dict[str, Any] = dict(entry)
-        if ont_et is not None:
-            _apply_ontology_fields(merged, ont_et, ontology)
-        updated.append(merged)
-
-    for etype_name, ont_et in ontology.entity_types.items():
-        if str(etype_name) in seen_types:
-            continue
-        stub: dict[str, Any] = {
-            "entity_type": str(etype_name),
-            "label": str(etype_name).title(),
-        }
-        _apply_ontology_fields(stub, ont_et, ontology)
-        updated.append(stub)
-
-    merged_ui = {**ui, "diagram_only_types": updated}
-    return {**config, "ui": merged_ui}
-
-
-def _apply_ontology_fields(
-    entry: dict[str, Any],
-    ont_et: EntityTypeInfo,
-    ontology: DiagramOntology,
-) -> None:
-    entry["classes"] = list(ont_et.classes)
-    entry["create_when"] = ont_et.create_when
-    entry["never_create_when"] = ont_et.never_create_when
-    entry["min"] = ont_et.min
-    entry["max"] = ont_et.max
-    entry["mapping_required"] = ont_et.mapping_required
-    pm = ont_et.permitted_mappings
-    if pm.has_any():
-        mapping_entry: dict[str, Any] = {
-            "entity_types": list(pm.entity_types),
-            "entity_classes": list(pm.entity_classes),
-        }
-        if pm.sources:
-            mapping_entry["sources"] = [
-                {
-                    "ontology": source.ontology,
-                    "entity_type": source.entity_type,
-                    "entity_class": source.entity_class,
-                    "transparent": source.transparent,
-                }
-                for source in pm.sources
-            ]
-        entry["permitted_mappings"] = mapping_entry
-    raw_props = ontology.entity_type_properties.get(str(ont_et.artifact_type))
-    if raw_props:
-        entry["properties"] = raw_props
-    raw_mf = ontology.entity_type_managed_fields.get(str(ont_et.artifact_type))
-    if raw_mf:
-        entry["managed_fields"] = raw_mf
-    if ont_et.required_connections:
-        entry["required_connections"] = [
-            {
-                "connection_type": rc.connection_type,
-                "target": rc.target,
-                "cardinality": [rc.cardinality_min, rc.cardinality_max],
-            }
-            for rc in ont_et.required_connections
-        ]
-    entry["identity_scope"] = ont_et.identity_scope
-    if ont_et.id_prefix is not None:
-        entry["id_prefix"] = ont_et.id_prefix
-
-
 class _DatatypeDiagramType(DiagramTypeBase):
     def __init__(self, config: dict[str, Any], ontology: DiagramOntology) -> None:
         self._ontology = ontology
-        merged_config = _merge_ontology_into_config(config, ontology)
+        merged_config = merge_ontology_into_diagram_only_types(config, ontology)
         self._config = merged_config
         self._name = DiagramTypeName(str(config["name"]))
         self._element_classes = _parse_element_classes(config)

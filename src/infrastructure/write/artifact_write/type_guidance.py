@@ -231,21 +231,7 @@ def _serialize_own_entity_type(oe) -> dict[str, object]:  # type: ignore[no-unty
         "never_create_when": oe.never_create_when,
     }
     if oe.permitted_mappings.has_any():
-        mapping_entry: dict[str, object] = {
-            "entity_types": list(oe.permitted_mappings.entity_types),
-            "entity_classes": list(oe.permitted_mappings.entity_classes),
-        }
-        if oe.permitted_mappings.sources:
-            mapping_entry["sources"] = [
-                {
-                    "ontology": source.ontology,
-                    "entity_type": source.entity_type,
-                    "entity_class": source.entity_class,
-                    "transparent": source.transparent,
-                }
-                for source in oe.permitted_mappings.sources
-            ]
-        entry["permitted_mappings"] = mapping_entry
+        entry["permitted_mappings"] = oe.permitted_mappings.as_config()
     managed: dict[str, str] = {"id": "required"}
     if oe.managed_fields is not None:
         managed.update(dict(oe.managed_fields))
