@@ -102,10 +102,18 @@ export const DiagramEntityDiscoverySchema = Schema.Struct({
 })
 export type DiagramEntityDiscovery = typeof DiagramEntityDiscoverySchema.Type
 
+/** One entity a model-backed diagram derived rather than the author placing it.
+ *
+ * `item_type` and `role` are the diagram-type module's vocabulary and are forwarded, never
+ * interpreted. `role` is load-bearing all the same: the scope root arrives as `scope` and the
+ * engine will not exclude it, so a checklist offering to uncheck it offers nothing. Both fields
+ * were absent here and stripped on decode, which is why that has gone unnoticed. */
 export const DerivedEntitySchema = Schema.Struct({
   id: Schema.String,
   name: Schema.String,
   item_type: Schema.String,
+  role: Schema.String,
+  excluded: Schema.Boolean,
 })
 export type DerivedEntity = typeof DerivedEntitySchema.Type
 

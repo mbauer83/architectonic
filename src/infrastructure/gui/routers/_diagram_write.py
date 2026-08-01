@@ -10,11 +10,12 @@ from src.application.derivation.preview import project_view_for_preview
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
 from src.infrastructure.artifact_index import shared_artifact_index
+from src.infrastructure.gui.contracts.diagrams import DiagramPreviewResponse
 from src.infrastructure.gui.routers import state as s
 from src.infrastructure.gui.routers._diagram_selection import resolve_diagram_selection
 from src.infrastructure.gui.routers._diagram_write_bodies import (
     CreateDiagramGuiBody,
-        DiagramPreviewBody,
+    DiagramPreviewBody,
     EditDiagramGuiBody,
     PatchDiagramEntityMetadataBody,
     SyncDiagramToModelBody,
@@ -29,7 +30,6 @@ from src.infrastructure.gui.routers._diagram_write_responses import (
 from src.infrastructure.gui.routers._openapi import (
     TAG_DIAGRAMS,
     WRITE_RESPONSES,
-    OpenMapResponse,
     WriteResultResponse,
 )
 
@@ -74,7 +74,7 @@ def _extract_conn_bindings(
 
 
 @router.post("/api/diagrams/preview", tags=[TAG_DIAGRAMS], summary="Preview a diagram write (dry-run)",
-    response_model=OpenMapResponse, responses=WRITE_RESPONSES)
+    response_model=DiagramPreviewResponse, responses=WRITE_RESPONSES)
 def preview_diagram(body: DiagramPreviewBody, catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency)) -> dict[str, Any]:  # noqa: E501
     repo_root = s.maybe_engagement_root()
     if repo_root is None:

@@ -2,7 +2,11 @@ import { describe, expectTypeOf, it } from 'vitest'
 import type { Immutable, SchemaType } from './contractOracle'
 import type { components } from './openapi.generated'
 import type { EntityContextConnectionSchema } from './connections'
-import type { DiagramEntityDiscoverySchema } from './diagrams'
+import type {
+  DerivedEntitySchema,
+  DiagramEntityDiscoverySchema,
+  DiagramPreviewResultSchema,
+} from './diagrams'
 import type { EntityDisplayInfoSchema, EntityDisplaySearchResultSchema } from './entities'
 
 /**
@@ -31,6 +35,15 @@ describe('diagram palette', () => {
     >()
     expectTypeOf<SchemaType<typeof EntityContextConnectionSchema>>().toEqualTypeOf<
       Immutable<components['schemas']['ContextConnection']>
+    >()
+  })
+
+  it('decodes a preview, the derived checklist included', () => {
+    expectTypeOf<SchemaType<typeof DiagramPreviewResultSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['DiagramPreviewResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof DerivedEntitySchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['DerivedViewEntityResponse']>
     >()
   })
 })

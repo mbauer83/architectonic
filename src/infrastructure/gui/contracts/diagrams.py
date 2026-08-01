@@ -240,3 +240,34 @@ class DiagramEntityDiscoveryResponse(_Closed):
     #: candidate to place.
     candidate_connections: list[ContextConnection]
     suggested_entities: list[HopSuggestionGroup]
+
+
+class DerivedViewEntityResponse(_Closed):
+    """One entity a model-backed diagram derived rather than the author placing it.
+
+    ``item_type`` and ``role`` are the diagram-type module's own vocabulary — generic code forwards
+    them and never interprets them. ``role`` is load-bearing all the same: the scope root arrives as
+    ``scope`` and cannot be excluded, so a checklist offering to remove it offers something the
+    engine will not do.
+    """
+
+    id: str
+    name: str
+    item_type: str
+    role: str
+    excluded: bool
+
+
+class DiagramPreviewResponse(_Closed):
+    """What a diagram write would produce, without writing it.
+
+    ``image`` is null when rendering failed and ``warnings`` says why — a preview that cannot render
+    is still a successful answer about the write. ``derived_entities`` is null when the diagram type
+    derives nothing, which is not the same as deriving nothing *this time*: an empty list means the
+    projection ran and found no candidates, and the two read differently to a user.
+    """
+
+    puml: str
+    image: str | None
+    warnings: list[str]
+    derived_entities: list[DerivedViewEntityResponse] | None

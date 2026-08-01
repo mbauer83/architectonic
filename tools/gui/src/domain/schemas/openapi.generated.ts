@@ -5446,6 +5446,27 @@ export interface components {
             traversal: "derived";
         };
         /**
+         * DerivedViewEntityResponse
+         * @description One entity a model-backed diagram derived rather than the author placing it.
+         *
+         *     ``item_type`` and ``role`` are the diagram-type module's own vocabulary — generic code forwards
+         *     them and never interprets them. ``role`` is load-bearing all the same: the scope root arrives as
+         *     ``scope`` and cannot be excluded, so a checklist offering to remove it offers something the
+         *     engine will not do.
+         */
+        DerivedViewEntityResponse: {
+            /** Excluded */
+            excluded: boolean;
+            /** Id */
+            id: string;
+            /** Item Type */
+            item_type: string;
+            /** Name */
+            name: string;
+            /** Role */
+            role: string;
+        };
+        /**
          * DiagnosticPatternResultResponse
          * @description A pattern that only observes. Its absence (``none_observed``) is verdict-neutral, and
          *     rendering it as a pass or a gap would report a finding the evaluation did not make.
@@ -5618,6 +5639,25 @@ export interface components {
             entity_ids: string[];
             /** Name */
             name: string;
+        };
+        /**
+         * DiagramPreviewResponse
+         * @description What a diagram write would produce, without writing it.
+         *
+         *     ``image`` is null when rendering failed and ``warnings`` says why — a preview that cannot render
+         *     is still a successful answer about the write. ``derived_entities`` is null when the diagram type
+         *     derives nothing, which is not the same as deriving nothing *this time*: an empty list means the
+         *     projection ran and found no candidates, and the two read differently to a user.
+         */
+        DiagramPreviewResponse: {
+            /** Derived Entities */
+            derived_entities: components["schemas"]["DerivedViewEntityResponse"][] | null;
+            /** Image */
+            image: string | null;
+            /** Puml */
+            puml: string;
+            /** Warnings */
+            warnings: string[];
         };
         /**
          * DiagramReference
@@ -15497,7 +15537,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["DiagramPreviewResponse"];
                 };
             };
             /** @description Validation error (bad or ambiguous write) */
