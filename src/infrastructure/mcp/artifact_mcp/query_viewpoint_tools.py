@@ -32,6 +32,7 @@ from src.domain.viewpoints.viewpoint_query_parsing import query_from_mapping
 from src.domain.viewpoints.viewpoint_scope_query import definition_with_scope_query
 from src.domain.viewpoints.viewpoint_summary import render_query_summary
 from src.domain.viewpoints.viewpoints import ViewpointCatalog, ViewpointDefinition
+from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.assurance.signal_attribute_capability import (
     composed_signal_attribute_capability,
 )
@@ -41,7 +42,6 @@ from src.infrastructure.mcp.artifact_mcp.context import (
     resolve_repo_root,
     resolve_repo_roots,
     roots_key,
-    runtime_catalogs,
 )
 from src.infrastructure.mcp.artifact_mcp.tool_annotations import READ_ONLY
 from src.infrastructure.viewpoint_declarations import load_effective_viewpoint_catalog
@@ -139,7 +139,7 @@ def register_query_viewpoint_tools(mcp: FastMCP) -> None:
         parsed_query = query_from_mapping(query, label="query") if query is not None else None
         request = ViewpointExecutionRequest(slug=slug, query=parsed_query, limit=limit, parameters=parameters)
 
-        catalogs = runtime_catalogs()
+        catalogs = process_runtime_catalogs()
         repo = repo_cached(roots_key(roots))
         registries = build_registry_snapshot(
             catalogs,

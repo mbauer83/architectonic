@@ -305,6 +305,26 @@ def get_module_registry() -> ModuleRegistry:
 
 
 @lru_cache(maxsize=1)
+def process_runtime_catalogs() -> RuntimeCatalogs:
+    """The catalogs for this process's registered modules, built once.
+
+    Twelve modules across five packages had this, each as a private
+    ``@lru_cache(maxsize=1)`` over ``build_runtime_catalogs(get_module_registry())`` — the same three
+    lines, added wherever a caller next needed catalogs and had no request in hand. Twelve memos of
+    one pure function of one process-wide singleton, and twelve places to remember if the registry
+    ever stops being immutable after bootstrap.
+
+    **Prefer :func:`runtime_catalogs_dependency` in a request handler.** The catalogs are installed on
+    the application by :func:`install_module_registry`, so a handler can be *given* them — which is
+    what lets a test override them. A handler reaching for this function instead reads process state
+    the test's override cannot reach, and the test then passes against catalogs the handler never
+    consulted. This is for the code that genuinely has no request: write paths, wiring, and the MCP
+    transport.
+    """
+    return build_runtime_catalogs(get_module_registry())
+
+
+@lru_cache(maxsize=1)
 def get_complete_module_registry() -> ModuleRegistry:
     """The complete-vocabulary registry, assembled once for the process.
 

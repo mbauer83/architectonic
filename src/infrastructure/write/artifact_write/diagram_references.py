@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from src.application.artifacts.parsing import extract_declared_puml_aliases, normalize_puml_alias
 from src.domain.artifact_id import stable_conn_id, stable_id
+from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.rendering.archimate_relation_rendering import strip_suppressed_relation_labels
 
 from ._artifact_deduplication import get_repository
@@ -16,7 +17,7 @@ if TYPE_CHECKING:
 
 @lru_cache(maxsize=1)
 def _registry():
-    from src.infrastructure.app_bootstrap import get_module_registry  # noqa: PLC0415
+    from src.infrastructure.app_bootstrap import get_module_registry  # noqa: PLC0415, process_runtime_catalogs
 
     return get_module_registry()
 
@@ -32,7 +33,7 @@ def _symmetric_conn_types() -> frozenset[str]:
 
 @lru_cache(maxsize=1)
 def _suppressed_stereotype_tokens() -> frozenset[str]:
-    from src.infrastructure.app_bootstrap import build_runtime_catalogs  # noqa: PLC0415
+    from src.infrastructure.app_bootstrap import build_runtime_catalogs  # noqa: PLC0415, process_runtime_catalogs
 
     return build_runtime_catalogs(_registry()).diagram_types.suppressed_stereotype_tokens()
 
@@ -138,13 +139,12 @@ def _infer_reference_ids_from_puml(
     uninferred rather than guessed.
     """
     from src.application.puml_relation_parsing import declared_relations  # noqa: PLC0415
-    from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry  # noqa: PLC0415
 
     from ._sync_helpers import resolve_untyped_relation  # noqa: PLC0415
 
     repo = get_repository(repo_root)
     alias_map = _alias_entity_lookup(repo_root)
-    stereo_map = build_runtime_catalogs(get_module_registry()).ontology.archimate_stereotype_to_connection_type()
+    stereo_map = process_runtime_catalogs().ontology.archimate_stereotype_to_connection_type()
 
     entity_ids: list[str] = []
     for alias in sorted(extract_declared_puml_aliases(puml_body)):

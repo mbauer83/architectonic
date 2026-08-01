@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from src.application.verification.artifact_verifier import ArtifactRegistry, ArtifactVerifier
+from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.mcp.artifact_mcp.context import expand_artifact_id
 from src.infrastructure.mcp.artifact_mcp.write._common import _out
 from src.infrastructure.verification.verifier_factory import build_artifact_verifier
@@ -61,11 +62,10 @@ def apply_create_entities(
             continue
         try:
             from src.domain.repository.groups import UNCATEGORIZED  # noqa: PLC0415
-            from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry  # noqa: PLC0415
 
             result = artifact_write_ops.create_entity(
                 repo_root=staged_root,
-                verifier=build_artifact_verifier(None, catalogs=build_runtime_catalogs(get_module_registry())),
+                verifier=build_artifact_verifier(None, catalogs=process_runtime_catalogs()),
                 clear_repo_caches=clear_repo_caches,
                 artifact_type=item["artifact_type"],
                 name=item["name"],
@@ -112,12 +112,11 @@ def apply_add_connections(
             results[index] = skipped_result("add_connection", dry_run=dry_run, operation_id=operation_id)
             continue
         try:
-            from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry  # noqa: PLC0415
 
             source = resolve_ref(item["source_entity"], ref_map)
             target = resolve_ref(item["target_entity"], ref_map)
             registry = current_registry()
-            verifier = build_artifact_verifier(registry, catalogs=build_runtime_catalogs(get_module_registry()))
+            verifier = build_artifact_verifier(registry, catalogs=process_runtime_catalogs())
             result = artifact_write_ops.add_connection(
                 repo_root=staged_root,
                 registry=registry,
@@ -164,10 +163,9 @@ def apply_edits(
             results[index] = skipped_result(op, dry_run=dry_run, operation_id=operation_id)
             continue
         try:
-            from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry  # noqa: PLC0415
 
             registry = current_registry()
-            verifier = build_artifact_verifier(registry, catalogs=build_runtime_catalogs(get_module_registry()))
+            verifier = build_artifact_verifier(registry, catalogs=process_runtime_catalogs())
             result = _apply_single_edit(
                 item=item,
                 op=op,

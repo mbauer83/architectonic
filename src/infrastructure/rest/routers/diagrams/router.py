@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from functools import lru_cache as _lru_cache
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -10,7 +9,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from src.application.artifacts.parsing import parse_diagram_source
 from src.application.assurance.diagrams import assurance_surface_diagram_types
 from src.application.runtime_catalogs import RuntimeCatalogs
-from src.infrastructure.app_bootstrap import complete_diagram_type_catalog, runtime_catalogs_dependency
+from src.infrastructure.app_bootstrap import (
+    complete_diagram_type_catalog,
+    runtime_catalogs_dependency,
+)
 from src.infrastructure.rest.contracts.diagrams import (
     DiagramConnectionListResponse,
     DiagramContextResponse,
@@ -42,13 +44,6 @@ router.include_router(_palette_router)
 router.include_router(_edge_label_router)
 router.include_router(_serving_router)
 router.include_router(_sub_entity_router)
-
-
-@_lru_cache(maxsize=1)
-def _catalogs():
-    from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry  # noqa: PLC0415
-
-    return build_runtime_catalogs(get_module_registry())
 
 
 def _read_diagram_impl(id: str, catalogs: RuntimeCatalogs) -> dict[str, Any]:

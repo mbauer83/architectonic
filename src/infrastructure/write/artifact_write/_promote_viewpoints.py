@@ -19,6 +19,7 @@ from src.application.viewpoints.registry_snapshot import build_registry_snapshot
 from src.domain.viewpoints.viewpoint_application_parsing import parse_viewpoint_application
 from src.domain.viewpoints.viewpoint_validation import validate_viewpoint_definition
 from src.domain.viewpoints.viewpoints import TargetKind, ViewpointCatalog
+from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.viewpoint_declarations import (
     load_effective_viewpoint_catalog,
     load_viewpoint_catalog_file,
@@ -27,7 +28,6 @@ from src.infrastructure.viewpoint_declarations import (
 )
 from src.infrastructure.write.artifact_write._promote_file_ops import rewrite_viewpoint_pin
 from src.infrastructure.write.artifact_write.promote_schema_check import (
-    _default_catalogs,
     _specialization_engagement_only,
 )
 
@@ -158,7 +158,7 @@ def viewpoint_dependency_errors(
     different — older or newer — version) resolves only via ``"repin"``: a newer enterprise
     version never satisfies the check by itself (D14)."""
     resolved = resolutions or {}
-    resolved_catalogs = catalogs or _default_catalogs()
+    resolved_catalogs = catalogs or process_runtime_catalogs()
     errors: list[str] = []
     checked_promote_alongside: set[str] = set()
     for dep in deps:

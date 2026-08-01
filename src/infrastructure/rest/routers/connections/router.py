@@ -10,6 +10,7 @@ from pydantic import BaseModel, ConfigDict, field_validator
 
 from src.application.entity_type_predicates import is_internal_entity_type
 from src.domain.artifact_id import ConnectionKey, MalformedArtifactIdError, parse_connection_id
+from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.rest.contracts.connections import BrokenReferenceCleanupResponse
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers._openapi import (
@@ -18,7 +19,7 @@ from src.infrastructure.rest.routers._openapi import (
     WRITE_RESPONSES,
     WriteResultResponse,
 )
-from src.infrastructure.rest.routers.connections.read_routes import _catalogs, register_connection_read_routes
+from src.infrastructure.rest.routers.connections.read_routes import register_connection_read_routes
 
 # Accepted multiplicity formats: n  |  n..m  |  n..*  |  *
 _MULTIPLICITY_RE = re.compile(r"^\d+$|^\d+\.\.\d+$|^\d+\.\.\*$|^\*$")
@@ -99,7 +100,7 @@ def _reject_if_non_entity_gar(artifact_id: str, role: str) -> None:
     if rec is None:
         return
     is_non_entity_gar = (
-        is_internal_entity_type(rec.artifact_type, _catalogs().ontology)
+        is_internal_entity_type(rec.artifact_type, process_runtime_catalogs().ontology)
         and rec.extra.get("global-artifact-type") != "entity"
     )
     if is_non_entity_gar:

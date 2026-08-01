@@ -27,6 +27,7 @@ from src.application.assurance.fmea_architecture import (
     EntityTypeSource,
     read_architecture_basis,
 )
+from src.infrastructure.app_bootstrap import process_runtime_catalogs
 
 
 @lru_cache(maxsize=1)
@@ -36,9 +37,8 @@ def _ontology() -> ConnectionTypeSource:
     Serves both type questions the basis asks: a connection's derivation role and strength, and an
     entity's domain and classes. One catalog rather than two lookups, because they are one source.
     """
-    from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry  # noqa: PLC0415
 
-    return build_runtime_catalogs(get_module_registry()).ontology
+    return process_runtime_catalogs().ontology
 
 
 def _shared_repository() -> ArchitectureModelSource | None:

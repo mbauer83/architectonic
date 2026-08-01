@@ -11,6 +11,7 @@ from typing import Protocol
 from src.application.artifacts.parsing import extract_declared_puml_aliases, normalize_puml_alias
 from src.application.puml_relation_parsing import declared_relations
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
+from src.infrastructure.app_bootstrap import process_runtime_catalogs
 
 
 class LookupStore(Protocol):
@@ -178,10 +179,9 @@ def infer_entities_from_puml(
 
 
 def stereotype_to_connection_type() -> dict[str, str]:
-    from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry  # noqa: PLC0415
 
     return dict(
-        build_runtime_catalogs(get_module_registry()).ontology.archimate_stereotype_to_connection_type()
+        process_runtime_catalogs().ontology.archimate_stereotype_to_connection_type()
     )
 
 
@@ -221,7 +221,7 @@ def resolve_untyped_relation(
 
 def _connection_type_info(conn_type: str):  # type: ignore[no-untyped-def]
     from src.domain.modules.module_types import ConnectionTypeName  # noqa: PLC0415
-    from src.infrastructure.app_bootstrap import get_module_registry  # noqa: PLC0415
+    from src.infrastructure.app_bootstrap import get_module_registry  # noqa: PLC0415, process_runtime_catalogs
 
     return get_module_registry().find_connection_type(ConnectionTypeName(conn_type))
 
@@ -252,7 +252,7 @@ def resolve_relation_connection(
     if direct is not None:
         return direct
     from src.domain.modules.module_types import ConnectionTypeName  # noqa: PLC0415
-    from src.infrastructure.app_bootstrap import get_module_registry  # noqa: PLC0415
+    from src.infrastructure.app_bootstrap import get_module_registry  # noqa: PLC0415, process_runtime_catalogs
 
     ct_info = get_module_registry().find_connection_type(ConnectionTypeName(conn_type))
     if ct_info is not None and ct_info.bidirectional_sync:

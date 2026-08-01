@@ -288,7 +288,7 @@ def plan_promotion(
 
     missing_dependencies: list[MissingDependency] = []
     if engagement_root is not None:
-        from src.infrastructure.write.artifact_write.promote_schema_check import _default_catalogs  # noqa: PLC0415
+        from src.infrastructure.app_bootstrap import process_runtime_catalogs  # noqa: PLC0415
 
         missing_dependencies = compute_reference_closure(
             document_ids=docs_to_add + [c.engagement_id for c in doc_conflicts],
@@ -297,7 +297,7 @@ def plan_promotion(
             repo=repo,
             registry=registry,
             engagement_root=engagement_root,
-            catalogs=catalogs or _default_catalogs(),
+            catalogs=catalogs or process_runtime_catalogs(),
         )
         schema_errors.extend(missing_dependency_errors(missing_dependencies))
 

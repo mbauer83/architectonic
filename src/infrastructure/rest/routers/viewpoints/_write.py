@@ -32,7 +32,7 @@ from src.config.viewpoints_settings import (
     viewpoints_derivation_time_budget_seconds,
 )
 from src.domain.viewpoints.viewpoint_parsing import viewpoint_definition_from_mapping
-from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry
+from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.rest.contracts.errors import (
     ApiError,
     DenialDetails,
@@ -98,7 +98,7 @@ class ViewpointWriteBody(BaseModel):
 def _persist(action: PersistAction, body: ViewpointWriteBody, *, operation_id: str) -> dict[str, Any]:
     engagement_root = _engagement_root()
     both_roots = _both_roots()
-    catalogs = build_runtime_catalogs(get_module_registry())
+    catalogs = process_runtime_catalogs()
     merged_catalog = load_effective_viewpoint_catalog(both_roots)
     local_catalog = load_viewpoint_catalog_file(engagement_root)
     registries = build_registry_snapshot(

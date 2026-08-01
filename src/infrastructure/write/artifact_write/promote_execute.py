@@ -9,6 +9,7 @@ from typing import Any
 
 from src.application.artifacts.query import ArtifactRepository
 from src.application.verification.artifact_verifier import ArtifactRegistry
+from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.artifact_index import notify_paths_changed, shared_artifact_index
 from src.infrastructure.verification.verifier_factory import build_artifact_verifier
 from src.infrastructure.write.artifact_write._promote_conflicts import build_handler
@@ -294,7 +295,6 @@ def _replace_artifact_with_gar(
         return
     name, entity_subtype = _infer_gar_name_subtype(src, aid, artifact_type, name)
 
-    from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry  # noqa: PLC0415
     from src.infrastructure.write.artifact_write.global_artifact_reference import (
         ensure_global_artifact_reference,  # noqa: PLC0415
     )
@@ -302,7 +302,7 @@ def _replace_artifact_with_gar(
     gar_result = ensure_global_artifact_reference(
         engagement_repo=eng_repo,
         engagement_root=eng_root,
-        verifier=build_artifact_verifier(None, catalogs=build_runtime_catalogs(get_module_registry())),
+        verifier=build_artifact_verifier(None, catalogs=process_runtime_catalogs()),
         clear_repo_caches=lambda _: None,
         global_artifact_id=aid,
         global_artifact_name=name,

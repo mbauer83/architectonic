@@ -52,7 +52,7 @@ def _install_catalog(monkeypatch: pytest.MonkeyPatch, catalogs, catalog: Viewpoi
     # request's own repo_root rather than the workspace-singleton catalogs — patch that
     # instead of runtime_catalogs, which still supplies ontology/registries only.
     monkeypatch.setattr(qvt, "load_effective_viewpoint_catalog", lambda roots: catalog)
-    monkeypatch.setattr(qvt, "runtime_catalogs", lambda: catalogs)
+    monkeypatch.setattr(qvt, "process_runtime_catalogs", lambda: catalogs)
 
 
 class TestListAction:
@@ -213,7 +213,7 @@ class TestMcpRestParity:
         merged = _catalog_with(definition)
         patched_catalogs = dataclasses.replace(catalogs, viewpoints=merged)
         monkeypatch.setattr(qvt, "load_effective_viewpoint_catalog", lambda roots: merged)
-        monkeypatch.setattr(qvt, "runtime_catalogs", lambda: patched_catalogs)
+        monkeypatch.setattr(qvt, "process_runtime_catalogs", lambda: patched_catalogs)
 
         # Same explicit limit on both transports — MCP and REST intentionally differ in
         # their *default* limit (§7.1: MCP defaults lower to protect agent context), which

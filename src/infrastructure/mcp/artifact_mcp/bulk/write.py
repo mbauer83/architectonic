@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.mcp.artifact_mcp.context import authoritative_callbacks_for
 from src.infrastructure.verification.verifier_factory import build_artifact_verifier
 from src.infrastructure.write.artifact_write.batch_transaction import (
@@ -220,7 +221,6 @@ def _sync_verify_and_commit(
                 touched_paths=changed_paths,
             ),
         )
-        from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry  # noqa: PLC0415
 
         auto_sync_diagrams(
             repo_root=staged_root,
@@ -230,7 +230,7 @@ def _sync_verify_and_commit(
                     staged_root=staged_root,
                     touched_paths=changed_paths,
                 ),
-                catalogs=build_runtime_catalogs(get_module_registry()),
+                catalogs=process_runtime_catalogs(),
             ),
             clear_repo_caches=clear_repo_caches,
             diagram_ids=auto_sync_diagram_ids,

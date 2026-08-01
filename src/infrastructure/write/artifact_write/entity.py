@@ -11,6 +11,7 @@ from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.domain.modules.module_types import EntityTypeName
 from src.domain.ontology_representation.ontology_types import EntityTypeInfo
 from src.domain.repository.groups import UNCATEGORIZED
+from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.atomic_file import write_atomic
 
 from ._artifact_deduplication import (
@@ -52,7 +53,7 @@ def _alias_for(info: EntityTypeInfo, eid: str) -> str:
 
 def _render_display(info: EntityTypeInfo, name: str, eid: str) -> tuple[str, str]:
     """Return ``(display_section_id, display_content)`` for a new entity."""
-    from src.infrastructure.app_bootstrap import get_module_registry  # noqa: PLC0415
+    from src.infrastructure.app_bootstrap import get_module_registry  # noqa: PLC0415, process_runtime_catalogs
 
     ontology = get_module_registry().ontology_for_entity_type(EntityTypeName(info.artifact_type))
     if ontology is None:
@@ -83,9 +84,11 @@ def create_entity(
 ) -> WriteResult:
     assert_engagement_write_root(repo_root)
 
-    from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry  # noqa: PLC0415
+    from src.infrastructure.app_bootstrap import (  # noqa: PLC0415, process_runtime_catalogs
+        get_module_registry,
+    )
 
-    catalogs = build_runtime_catalogs(get_module_registry())
+    catalogs = process_runtime_catalogs()
     if is_internal_entity_type(artifact_type, catalogs.ontology):
         raise ValueError(
             "global-artifact-reference entities may not be created directly. "

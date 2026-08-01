@@ -8,6 +8,7 @@ from src.application.modeling.artifact_write import format_entity_markdown, slug
 from src.application.profile_quarantine import assert_not_quarantined
 from src.application.verification.artifact_verifier import ArtifactRegistry, ArtifactVerifier
 from src.domain.modules.module_types import EntityTypeName
+from src.infrastructure.app_bootstrap import process_runtime_catalogs
 
 from ._artifact_deduplication import get_repository, validate_entity_unique
 from ._entity_edit_support import (
@@ -62,7 +63,7 @@ def _resolve_target_identity(
 
     if group is not None:
         from src.application.repo_path_helpers import group_fn_entity  # noqa: PLC0415
-        from src.infrastructure.app_bootstrap import get_module_registry  # noqa: PLC0415
+        from src.infrastructure.app_bootstrap import get_module_registry  # noqa: PLC0415, process_runtime_catalogs
 
         if group != group_fn_entity(entity_file, repo_root):
             info = get_module_registry().get_entity_type(EntityTypeName(artifact_type))
@@ -155,7 +156,9 @@ def edit_entity(
     # the slug off to build a rename target. The frontmatter is the authority for its own id.
     artifact_id = str(parsed.frontmatter.get("artifact-id", "")) or artifact_id
     artifact_type = str(parsed.frontmatter.get("artifact-type", ""))
-    from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry  # noqa: PLC0415
+    from src.infrastructure.app_bootstrap import (  # noqa: PLC0415, process_runtime_catalogs
+        get_module_registry,
+    )
 
     get_module_registry().get_entity_type(EntityTypeName(artifact_type))
 
@@ -176,7 +179,7 @@ def edit_entity(
     # onto a quarantined profile pair must be refused just like a create (WU-Q3).
     assert_not_quarantined(
         repo_root, "entity", artifact_type, list(merged.specializations) or [""],
-        catalogs=build_runtime_catalogs(get_module_registry()),
+        catalogs=process_runtime_catalogs(),
     )
     effective_artifact_id, target_entity_file = _resolve_target_identity(
         repo_root=repo_root,

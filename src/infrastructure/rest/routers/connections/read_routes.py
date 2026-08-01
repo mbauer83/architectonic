@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-from functools import lru_cache
 from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException
 
 from src.application.entity_type_predicates import is_internal_entity_type
 from src.application.runtime_catalogs import RuntimeCatalogs
-from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
+from src.infrastructure.app_bootstrap import process_runtime_catalogs, runtime_catalogs_dependency
 from src.infrastructure.rest.contracts.authoring_catalogs import (
     OntologyClassificationResponse,
     OntologyPairResponse,
@@ -33,13 +32,6 @@ from src.infrastructure.rest.routers._openapi import (
     TAG_TAXONOMY,
 )
 from src.infrastructure.rest.routers.connections.neighbors import DerivationLimitError, derive_neighbor_response
-
-
-@lru_cache(maxsize=1)
-def _catalogs():
-    from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry  # noqa: PLC0415
-
-    return build_runtime_catalogs(get_module_registry())
 
 
 def register_connection_read_routes(router: APIRouter) -> None:
@@ -183,7 +175,6 @@ def register_connection_read_routes(router: APIRouter) -> None:
         return write_help()
 
 
-
 def _not_a_connection_endpoint(field: str) -> ApiError:
     """A document or diagram reference named as a connection endpoint.
 
@@ -206,7 +197,7 @@ def _resolve_effective_type(artifact_id: str | None, declared_type: str) -> tupl
     if repo is None:
         return declared_type, False
     record = repo.get_entity(artifact_id)
-    if record is None or not is_internal_entity_type(record.artifact_type, _catalogs().ontology):
+    if record is None or not is_internal_entity_type(record.artifact_type, process_runtime_catalogs().ontology):
         return declared_type, False
     if record.extra.get("global-artifact-type") != "entity":
         return declared_type, True

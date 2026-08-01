@@ -8,6 +8,7 @@ import yaml
 
 import src.infrastructure.guidance_cache as guidance_cache_module
 from src.domain.guidance.guidance import GUIDANCE_FORMAT
+from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.cli import arch_import_guidance as cli
 from src.infrastructure.guidance_import import GuidanceImportError
 
@@ -177,7 +178,7 @@ class TestRestartEquivalentRebootstrap:
             importlib.reload(app_bootstrap)
             app_bootstrap.get_module_registry.cache_clear()
             type_guidance._registry.cache_clear()
-            type_guidance._default_catalogs.cache_clear()
+            process_runtime_catalogs.cache_clear()
 
             result = type_guidance.get_type_guidance(filter=["stakeholder"])
             connections = result["connection_types"]

@@ -33,7 +33,7 @@ def _spec(slug: str, bound: tuple[str, ...]) -> SpecializationInfo:
     )
 
 
-def _catalogs() -> RuntimeCatalogs:
+def _quarantined_catalogs() -> RuntimeCatalogs:
     from src.infrastructure.app_bootstrap import build_module_registry, build_runtime_catalogs
 
     base = build_runtime_catalogs(build_module_registry())
@@ -66,7 +66,7 @@ def setup_function() -> None:
 def test_conflicting_bound_profile_quarantines_the_pair(tmp_path: Path) -> None:
     _write_base(tmp_path, "string")  # base Score:string vs metrics Score:number => conflict
     conflicts = pair_quarantine_conflicts(
-        tmp_path, "entity", "application-component", ["service"], catalogs=_catalogs()
+        tmp_path, "entity", "application-component", ["service"], catalogs=_quarantined_catalogs()
     )
     assert [c.conflict_class for c in conflicts] == ["scoped"]
     assert "Score" in conflicts[0].message
@@ -75,13 +75,13 @@ def test_conflicting_bound_profile_quarantines_the_pair(tmp_path: Path) -> None:
 def test_non_conflicting_pair_is_not_quarantined(tmp_path: Path) -> None:
     _write_base(tmp_path, "string")  # base has no Owner; ownership adds Owner:string => no conflict
     assert pair_quarantine_conflicts(
-        tmp_path, "entity", "application-component", ["module"], catalogs=_catalogs()
+        tmp_path, "entity", "application-component", ["module"], catalogs=_quarantined_catalogs()
     ) == ()
 
 
 def test_quarantine_is_confined_to_the_affected_pair(tmp_path: Path) -> None:
     _write_base(tmp_path, "string")
-    quarantined = compute_quarantine_set(tmp_path, _catalogs())
+    quarantined = compute_quarantine_set(tmp_path, _quarantined_catalogs())
     assert ("entity", "application-component", "service") in quarantined
     # The sibling specialization of the SAME base type is unaffected.
     assert ("entity", "application-component", "module") not in quarantined
@@ -90,7 +90,9 @@ def test_quarantine_is_confined_to_the_affected_pair(tmp_path: Path) -> None:
 def test_assert_not_quarantined_raises_a_typed_error(tmp_path: Path) -> None:
     _write_base(tmp_path, "string")
     with pytest.raises(ProfileQuarantineError) as excinfo:
-        assert_not_quarantined(tmp_path, "entity", "application-component", ["service"], catalogs=_catalogs())
+        assert_not_quarantined(
+            tmp_path, "entity", "application-component", ["service"], catalogs=_quarantined_catalogs()
+        )
     assert "quarantined" in str(excinfo.value)
     assert excinfo.value.specialization == "service"
     assert isinstance(excinfo.value, ValueError)  # so every transport surfaces it
@@ -98,7 +100,7 @@ def test_assert_not_quarantined_raises_a_typed_error(tmp_path: Path) -> None:
 
 def test_assert_not_quarantined_allows_a_clean_pair(tmp_path: Path) -> None:
     _write_base(tmp_path, "string")
-    assert_not_quarantined(tmp_path, "entity", "application-component", ["module"], catalogs=_catalogs())
+    assert_not_quarantined(tmp_path, "entity", "application-component", ["module"], catalogs=_quarantined_catalogs())
 
 
 # ── Connection side (WU-W2): identical rules on the other concept kind ────────

@@ -43,7 +43,7 @@ def artifact_promote_to_enterprise(
     """
     from typing import cast
 
-    from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry
+    from src.infrastructure.app_bootstrap import process_runtime_catalogs
     from src.infrastructure.mcp.artifact_mcp.context import resolve_enterprise_repo_root
     from src.infrastructure.write.artifact_write.promote_execute import execute_promotion
     from src.infrastructure.write.artifact_write.promote_to_enterprise import ConflictResolution, plan_promotion
@@ -90,7 +90,7 @@ def artifact_promote_to_enterprise(
         diagram_ids=diagram_ids or None,
         engagement_root=eng_root,
         enterprise_root=ent_root,
-        catalogs=build_runtime_catalogs(get_module_registry()),
+        catalogs=process_runtime_catalogs(),
         viewpoint_resolutions=vp_resolutions,
     )
 

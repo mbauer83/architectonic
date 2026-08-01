@@ -7,21 +7,14 @@ population by construction, not by coincidence.
 
 from __future__ import annotations
 
-from functools import lru_cache as _lru_cache
 from typing import Any
 
 from src.application.artifacts.query import ArtifactRepository
 from src.application.entity_type_predicates import is_assurance_entity_type, is_internal_entity_type
 from src.application.record_sorting import sort_entity_records
 from src.domain.ontology_representation.artifact_types import EntityRecord
+from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.rest.routers import state as s
-
-
-@_lru_cache(maxsize=1)
-def _catalogs():
-    from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry  # noqa: PLC0415
-
-    return build_runtime_catalogs(get_module_registry())
 
 
 def browsable_entities(records: list[EntityRecord], *, scope: str | None = None) -> list[EntityRecord]:
@@ -36,7 +29,7 @@ def browsable_entities(records: list[EntityRecord], *, scope: str | None = None)
     ``scope`` narrows by repository tier: ``"global"`` to the enterprise repository,
     ``"engagement"`` to the local one, anything else (including None) spans both.
     """
-    catalogs = _catalogs()
+    catalogs = process_runtime_catalogs()
     return [
         record for record in records
         if record.host_diagram_id is None

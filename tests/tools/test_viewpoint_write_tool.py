@@ -9,8 +9,8 @@ from pathlib import Path
 
 import pytest
 
+from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.mcp import mcp_artifact_server as mcp
-from src.infrastructure.mcp.artifact_mcp.context import runtime_catalogs
 from src.infrastructure.viewpoint_declarations import load_viewpoint_catalog_file
 
 
@@ -24,9 +24,9 @@ def repo(tmp_path: Path) -> Path:
 
 @pytest.fixture(autouse=True)
 def _clear_catalog_cache():
-    runtime_catalogs.cache_clear()
+    process_runtime_catalogs.cache_clear()
     yield
-    runtime_catalogs.cache_clear()
+    process_runtime_catalogs.cache_clear()
 
 
 _MINIMAL_DEFINITION = {"slug": "test-viewpoint", "version": 1, "name": "Test Viewpoint"}

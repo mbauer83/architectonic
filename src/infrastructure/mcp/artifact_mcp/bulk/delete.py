@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.mcp.artifact_mcp.context import authoritative_callbacks_for
 from src.infrastructure.verification.verifier_factory import build_artifact_verifier
 from src.infrastructure.write.artifact_write.batch_transaction import (
@@ -130,10 +131,9 @@ def _execute_staged_delete_batch(
 ) -> dict[str, Any]:
     results: dict[int, dict[str, object]] = {}
     clear_repo_caches, changed_paths = temp_repo_callbacks(staged_root)
-    from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry  # noqa: PLC0415
 
     registry = candidate_registry(live_root=live_root, staged_root=staged_root, touched_paths=changed_paths)
-    verifier = build_artifact_verifier(registry, catalogs=build_runtime_catalogs(get_module_registry()))
+    verifier = build_artifact_verifier(registry, catalogs=process_runtime_catalogs())
     operation_registry.set_phase(operation_id, "apply")
 
     with staged_write_guard(staged_root):
@@ -145,7 +145,7 @@ def _execute_staged_delete_batch(
             clear_repo_caches=clear_repo_caches,
         )
         registry = candidate_registry(live_root=live_root, staged_root=staged_root, touched_paths=changed_paths)
-        verifier = build_artifact_verifier(registry, catalogs=build_runtime_catalogs(get_module_registry()))
+        verifier = build_artifact_verifier(registry, catalogs=process_runtime_catalogs())
         skipped = apply_planned_deletes(
             planned=planned,
             root=staged_root,
@@ -158,7 +158,7 @@ def _execute_staged_delete_batch(
             ),
             verifier_factory=lambda current: build_artifact_verifier(
                 current,
-                catalogs=build_runtime_catalogs(get_module_registry()),
+                catalogs=process_runtime_catalogs(),
             ),
             clear_repo_caches=clear_repo_caches,
             operation_id=operation_id,
@@ -176,7 +176,7 @@ def _execute_staged_delete_batch(
                     staged_root=staged_root,
                     touched_paths=changed_paths,
                 ),
-                catalogs=build_runtime_catalogs(get_module_registry()),
+                catalogs=process_runtime_catalogs(),
             ),
             clear_repo_caches=clear_repo_caches,
             diagram_ids=auto_sync_ids,

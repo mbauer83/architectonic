@@ -24,8 +24,8 @@ def _class_a_findings(repo_root: Path) -> list[str]:
     from src.application.profile_registry_loading import load_repo_profile_registry
     from src.domain.ontology_representation.profile_registry import ProfileRegistryError, unresolved_profile_bindings
     from src.infrastructure.app_bootstrap import (
-        build_runtime_catalogs,
         get_module_registry,
+        process_runtime_catalogs,
         registered_meta_ontology_values,
     )
     from src.infrastructure.specialization_declarations import load_specialization_catalog_file
@@ -35,7 +35,7 @@ def _class_a_findings(repo_root: Path) -> list[str]:
     except ProfileRegistryError as exc:
         return [str(exc)]
 
-    catalogs = build_runtime_catalogs(get_module_registry())
+    catalogs = process_runtime_catalogs()
     effective_registry = catalogs.profiles.overlay(repo_registry)
 
     specializations = list(catalogs.specializations.entries)

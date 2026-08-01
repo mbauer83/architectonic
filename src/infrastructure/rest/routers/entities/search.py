@@ -3,14 +3,13 @@
 from __future__ import annotations
 
 import logging
-from functools import lru_cache as _lru_cache
 from typing import Any
 
 from fastapi import APIRouter, Depends, Query, Request
 
 from src.application.entity_type_predicates import is_assurance_entity_type, is_internal_entity_type
 from src.application.runtime_catalogs import RuntimeCatalogs
-from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
+from src.infrastructure.app_bootstrap import process_runtime_catalogs, runtime_catalogs_dependency
 from src.infrastructure.rest.contracts.catalog import EntityTaxonomyResponse
 from src.infrastructure.rest.contracts.search import (
     DisplaySearchResponse,
@@ -31,12 +30,6 @@ from src.infrastructure.rest.routers.entities._filter import EntityFilter
 
 logger = logging.getLogger(__name__)
 
-
-@_lru_cache(maxsize=1)
-def _catalogs():
-    from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry  # noqa: PLC0415
-
-    return build_runtime_catalogs(get_module_registry())
 
 router = APIRouter()
 
@@ -137,7 +130,7 @@ def search_reference_artifacts(
 
     if kind in (None, "entity"):
         for entity in repo.list_entities():
-            if not entity_filter.matches(entity, ontology=_catalogs().ontology):
+            if not entity_filter.matches(entity, ontology=process_runtime_catalogs().ontology):
                 continue
             if q_lc and q_lc not in entity.name.lower() and q_lc not in entity.artifact_id.lower():
                 continue
@@ -208,7 +201,7 @@ def get_entity_taxonomy(
     # tooling but are not standalone model catalog entries.
     entities = [e for e in repo.list_entities(group=group) if e.host_diagram_id is None]
     if scope == "global":
-        _cat = _catalogs()
+        _cat = process_runtime_catalogs()
         entities = [
             e for e in entities
             if s.is_global(e.path)
@@ -216,7 +209,7 @@ def get_entity_taxonomy(
             and not is_assurance_entity_type(e.artifact_type, _cat.module_catalog)
         ]
     elif scope == "engagement":
-        _cat = _catalogs()
+        _cat = process_runtime_catalogs()
         entities = [
             e for e in entities
             if not s.is_global(e.path)
@@ -224,7 +217,7 @@ def get_entity_taxonomy(
             and not is_assurance_entity_type(e.artifact_type, _cat.module_catalog)
         ]
     else:
-        _cat = _catalogs()
+        _cat = process_runtime_catalogs()
         entities = [
             e for e in entities
             if not is_internal_entity_type(e.artifact_type, _cat.ontology)

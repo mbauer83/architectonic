@@ -6,6 +6,7 @@ from typing import Literal
 
 from src.application.verification.artifact_verifier import ArtifactVerifier, VerificationResult
 from src.config.repo_paths import ARCH_REPO, DIAGRAM_CATALOG, DIAGRAMS, DOCS, MODEL, PROJECTS
+from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.verification.verifier_factory import build_artifact_verifier
 
 
@@ -104,7 +105,6 @@ def collect_verification_errors(repo_root: Path, *, include_diagrams: bool = Fal
     """Build a verifier for *repo_root* and return formatted ``CODE: message (location)`` error strings."""
     from src.application.candidate_repository import committed_repository  # noqa: PLC0415
     from src.application.verification.artifact_verifier_registry import ArtifactRegistry  # noqa: PLC0415
-    from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry  # noqa: PLC0415
     from src.infrastructure.artifact_index import shared_artifact_index  # noqa: PLC0415
 
     store = shared_artifact_index(repo_root)
@@ -112,7 +112,7 @@ def collect_verification_errors(repo_root: Path, *, include_diagrams: bool = Fal
     committed_repo = committed_repository(store)
     verifier = build_artifact_verifier(
         registry,
-        catalogs=build_runtime_catalogs(get_module_registry()),
+        catalogs=process_runtime_catalogs(),
         committed_repo=committed_repo,
     )
     return [

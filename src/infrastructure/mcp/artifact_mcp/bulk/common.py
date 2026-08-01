@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Literal
 
 from src.application.verification.artifact_verifier import ArtifactRegistry
+from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.mcp.artifact_mcp.edit_tools import _require_registry, _resolve
 from src.infrastructure.verification.verifier_factory import build_artifact_verifier
@@ -195,10 +196,9 @@ def _preexisting_invalid_paths(
 
     live_registry = ArtifactRegistry(shared_artifact_index([live_root]))
     # check_puml_syntax=False: avoid spawning any subprocess in this path.
-    from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry  # noqa: PLC0415
 
     live_verifier = build_artifact_verifier(
-        live_registry, check_puml_syntax=False, catalogs=build_runtime_catalogs(get_module_registry())
+        live_registry, check_puml_syntax=False, catalogs=process_runtime_catalogs()
     )
     # Build the live inventory once to get authoritative file-type mappings.
     live_inv = inventory_files(live_root, include_diagrams=True)
@@ -250,7 +250,6 @@ def stage_batch_verification(
     directly_changed_paths: set[Path] | None = None,
     live_root: Path | None = None,
 ) -> dict[str, object]:
-    from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry  # noqa: PLC0415
 
     registry = (
         candidate_registry(live_root=live_root, staged_root=repo_root, touched_paths=changed_paths)
@@ -264,7 +263,7 @@ def stage_batch_verification(
     )
     verifier = build_artifact_verifier(
         registry,
-        catalogs=build_runtime_catalogs(get_module_registry()),
+        catalogs=process_runtime_catalogs(),
         file_inventory=inventory,
     )
     results = verifier.verify_paths(

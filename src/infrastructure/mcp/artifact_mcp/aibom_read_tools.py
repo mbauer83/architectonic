@@ -11,14 +11,9 @@ from __future__ import annotations
 
 from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
 
+from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.mcp.artifact_mcp.context import repo_cached, resolve_repo_roots, roots_key
 from src.infrastructure.mcp.artifact_mcp.tool_annotations import READ_ONLY
-
-
-def _catalogs():
-    from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry  # noqa: PLC0415
-
-    return build_runtime_catalogs(get_module_registry())
 
 
 def register_aibom_read_tools(mcp: FastMCP) -> None:
@@ -41,7 +36,9 @@ def register_aibom_read_tools(mcp: FastMCP) -> None:
         from src.infrastructure.assurance.aibom_service import export_model_derived_aibom  # noqa: PLC0415
 
         roots = resolve_repo_roots(repo_scope="engagement", repo_root=repo_root, repo_preset=None, enterprise_root=None)
-        return export_model_derived_aibom(repo_cached(roots_key(roots)), roots[0], _catalogs(), notes=notes)
+        return export_model_derived_aibom(
+            repo_cached(roots_key(roots)), roots[0], process_runtime_catalogs(), notes=notes
+        )
 
     @mcp.tool(
         name="artifact_aibom_coverage",
@@ -60,4 +57,4 @@ def register_aibom_read_tools(mcp: FastMCP) -> None:
         from src.infrastructure.assurance.aibom_service import aibom_coverage_report  # noqa: PLC0415
 
         roots = resolve_repo_roots(repo_scope="engagement", repo_root=repo_root, repo_preset=None, enterprise_root=None)
-        return aibom_coverage_report(repo_cached(roots_key(roots)), roots[0], _catalogs())
+        return aibom_coverage_report(repo_cached(roots_key(roots)), roots[0], process_runtime_catalogs())

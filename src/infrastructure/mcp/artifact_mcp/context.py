@@ -21,6 +21,7 @@ from src.application.read_models import ReadModelVersion
 from src.application.verification.artifact_verifier import ArtifactRegistry, ArtifactVerifier
 from src.config.repo_paths import MODEL
 from src.config.workspace_paths import resolve_workspace_repo_roots
+from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.artifact_index import notify_paths_changed, shared_artifact_index
 from src.infrastructure.artifact_index.coordination import (
     publish_authoritative_mutation,
@@ -167,13 +168,6 @@ def _shared_state_repo_for_roots(roots: list[Path]) -> ArtifactRepository | None
     return None
 
 
-@lru_cache(maxsize=1)
-def runtime_catalogs():
-    from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry  # noqa: PLC0415
-
-    return build_runtime_catalogs(get_module_registry())
-
-
 @lru_cache(maxsize=8)
 def repo_cached(roots_key_str: str) -> ArtifactRepository:
     roots = [Path(p) for p in roots_key_str.split("|") if p]
@@ -182,7 +176,7 @@ def repo_cached(roots_key_str: str) -> ArtifactRepository:
         return shared
     return ArtifactRepository(
         shared_artifact_index(roots),
-        excluded_entity_types=runtime_catalogs().ontology.entity_types_with_class("internal"),
+        excluded_entity_types=process_runtime_catalogs().ontology.entity_types_with_class("internal"),
     )
 
 
@@ -194,9 +188,8 @@ def registry_cached(roots_key_str: str) -> ArtifactRegistry:
 
 def verifier_for(roots_key_str: str, *, include_registry: bool) -> ArtifactVerifier:
     from src.application.candidate_repository import committed_repository  # noqa: PLC0415
-    from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry  # noqa: PLC0415
 
-    catalogs = build_runtime_catalogs(get_module_registry())
+    catalogs = process_runtime_catalogs()
     # The committed CandidateRepository lets datatype type-reference resolution (E332) see
     # classifiers defined in other diagrams; same-diagram references are resolved by the
     # projection from the diagram under verification (compile_projection's same-write step).
@@ -228,7 +221,6 @@ def _apply_paths_now(roots: list[Path], paths: list[Path]) -> ReadModelVersion:
     notify_paths_changed(paths)
     registry_cached.cache_clear()
     return index.read_model_version()
-
 
 
 def _normalize_roots(root_or_roots: Path | list[Path]) -> list[Path]:

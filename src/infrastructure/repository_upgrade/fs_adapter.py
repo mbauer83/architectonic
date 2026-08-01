@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
+from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.atomic_file import write_atomic
 from src.infrastructure.repository_upgrade.config_store import (
     read_applied_steps,
@@ -16,9 +17,8 @@ from src.infrastructure.repository_upgrade.config_store import (
 
 @lru_cache(maxsize=1)
 def _known_entity_type_names() -> frozenset[str]:
-    from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry  # noqa: PLC0415
 
-    return build_runtime_catalogs(get_module_registry()).ontology.all_entity_type_names()
+    return process_runtime_catalogs().ontology.all_entity_type_names()
 
 
 @dataclass(frozen=True)

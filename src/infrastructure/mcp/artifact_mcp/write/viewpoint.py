@@ -22,7 +22,8 @@ from src.config.viewpoints_settings import (
     viewpoints_derivation_time_budget_seconds,
 )
 from src.domain.viewpoints.viewpoint_parsing import viewpoint_definition_from_mapping
-from src.infrastructure.mcp.artifact_mcp.context import repo_cached, resolve_repo_roots, roots_key, runtime_catalogs
+from src.infrastructure.app_bootstrap import process_runtime_catalogs
+from src.infrastructure.mcp.artifact_mcp.context import repo_cached, resolve_repo_roots, roots_key
 from src.infrastructure.mcp.artifact_mcp.tool_annotations import LOCAL_WRITE
 from src.infrastructure.viewpoint_declarations import (
     load_effective_viewpoint_catalog,
@@ -56,7 +57,7 @@ def artifact_viewpoint(
     merged_catalog = load_effective_viewpoint_catalog(both_roots)
     local_catalog = load_viewpoint_catalog_file(engagement_root)
     registries = build_registry_snapshot(
-        runtime_catalogs(),
+        process_runtime_catalogs(),
         both_roots,
         derivation_max_hops=viewpoints_derivation_max_hops(),
         derivation_max_relationships=viewpoints_derivation_max_relationships(),
@@ -94,7 +95,7 @@ def artifact_viewpoint(
 
     if result.ok and not dry_run and result.catalog_to_write is not None:
         write_viewpoint_catalog_file(engagement_root, result.catalog_to_write)
-        runtime_catalogs.cache_clear()
+        process_runtime_catalogs.cache_clear()
     return result.as_answer(dry_run=dry_run)
 
 

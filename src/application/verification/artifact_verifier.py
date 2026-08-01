@@ -97,7 +97,7 @@ class ArtifactVerifier:
     @functools.cached_property
     def _runtime_catalogs(self) -> RuntimeCatalogs:
         if self._catalogs is None:
-            raise RuntimeError("ArtifactVerifier requires catalogs from build_runtime_catalogs(get_module_registry())")
+            raise RuntimeError("ArtifactVerifier requires catalogs from process_runtime_catalogs()")
         return self._catalogs
 
     @functools.cached_property

@@ -2,6 +2,7 @@
 
 from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
 
+from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.mcp.artifact_mcp.tool_annotations import LOCAL_WRITE, READ_ONLY
 from src.infrastructure.mcp.artifact_mcp.write._common import (
     _out,
@@ -22,14 +23,13 @@ def artifact_authoring_guidance(
     diagram_type: str | None = None,
     target: str | None = None,
 ) -> dict[str, object]:
-    from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry  # noqa: PLC0415
     from src.infrastructure.mcp.artifact_mcp.context import resolve_repo_root  # noqa: PLC0415
 
     return artifact_write_ops.get_type_guidance(
         filter=filter,
         diagram_type=diagram_type,
         target=target,
-        catalogs=build_runtime_catalogs(get_module_registry()),
+        catalogs=process_runtime_catalogs(),
         # REST/MCP parity: the connection metadata schemata are per-repo files, so both
         # transports must resolve a root or neither can carry them.
         repo_root=resolve_repo_root(repo_root=None, repo_preset=None),

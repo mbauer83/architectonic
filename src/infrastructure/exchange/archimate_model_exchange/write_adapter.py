@@ -10,7 +10,7 @@ from pathlib import Path
 from src.application.exchange.write_ports import ExchangeWriteOutcome, InvalidRelationshipError
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.domain.repository.groups import UNCATEGORIZED
-from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry
+from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.verification.verifier_factory import build_artifact_verifier
 from src.infrastructure.write import artifact_write_ops
@@ -35,7 +35,7 @@ class ArtifactWriteExchangeAdapter:
         self._repo_root = repo_root
         self._group = group
         self._registry = ArtifactRegistry(shared_artifact_index([repo_root]))
-        self._verifier = build_artifact_verifier(self._registry, catalogs=build_runtime_catalogs(get_module_registry()))
+        self._verifier = build_artifact_verifier(self._registry, catalogs=process_runtime_catalogs())
 
     def _clear_caches(self, _path: Path) -> None:
         self._registry.refresh()

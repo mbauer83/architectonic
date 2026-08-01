@@ -14,6 +14,7 @@ from src.application.artifacts.schema import load_attribute_schema
 from src.application.document_links import reference_dicts_for_entity
 from src.application.entity_type_predicates import is_internal_entity_type
 from src.application.read_models import EntityContextReadModel
+from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.rest.contracts.catalog import (
     BackendIdentityResponse,
     RepositoryStatsResponse,
@@ -33,7 +34,6 @@ from src.infrastructure.rest.routers._openapi import (
     WriteResultResponse,
 )
 from src.infrastructure.rest.routers.entities.listing import (
-    _catalogs,
     build_entity_list_rows,
     select_entity_population,
 )
@@ -237,8 +237,8 @@ def get_entity_schemata(artifact_type: str, specialization: str = "") -> dict[st
         repo_root,
         artifact_type,
         applied or [""],
-        specialization_catalog=_catalogs().specializations,
-        profile_registry=_catalogs().profiles,
+        specialization_catalog=process_runtime_catalogs().specializations,
+        profile_registry=process_runtime_catalogs().profiles,
     )
     # `quarantined` is a derived read of the SAME conflicts channel (not a parallel one):
     # a non-empty conflict set means this (type, specialization) pair is Class B quarantined,
@@ -302,7 +302,7 @@ class EditEntityBody(_Body):
     response_model=WriteResultResponse, responses=_CREATE_RESPONSES,
     status_code=status.HTTP_201_CREATED)
 def create_entity(body: CreateEntityBody, response: Response) -> dict[str, Any]:
-    if is_internal_entity_type(body.artifact_type, _catalogs().ontology):
+    if is_internal_entity_type(body.artifact_type, process_runtime_catalogs().ontology):
         raise HTTPException(400, "global-artifact-reference entities cannot be created directly")
     repo_root, _registry, verifier = s.get_write_deps()
     from src.infrastructure.write.artifact_write.entity import create_entity as _create

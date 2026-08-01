@@ -13,13 +13,13 @@ from src.domain.relationships.relationship_reachability import (
     RelationshipDerivationRequest,
     derive_relationships,
 )
+from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.mcp.artifact_mcp.context import (
     RepoScope,
     expand_artifact_id,
     repo_cached,
     resolve_repo_roots,
     roots_key,
-    runtime_catalogs,
 )
 from src.infrastructure.mcp.artifact_mcp.tool_annotations import READ_ONLY
 
@@ -28,7 +28,7 @@ def _allowed_bindings_for(diagram_type: str | None):  # type: ignore[return]
     """Return AllowedBindingsSpec for diagram_type, or None if not found / empty."""
     if not diagram_type:
         return None
-    mod = runtime_catalogs().diagram_types.find_diagram_type(diagram_type)
+    mod = process_runtime_catalogs().diagram_types.find_diagram_type(diagram_type)
     if mod is None:
         return None
     guidance = mod.write_guidance()
@@ -149,7 +149,7 @@ def register_query_graph_tools(mcp: FastMCP) -> None:
                         ),
                     ),
                     read_access=repo,
-                    registries=runtime_catalogs().module_catalog,
+                    registries=process_runtime_catalogs().module_catalog,
                 ).relationships
             except DerivationLimitError as exc:
                 return {"error": {"code": "derivation-limit", "message": str(exc)}}

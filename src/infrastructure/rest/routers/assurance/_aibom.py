@@ -19,12 +19,11 @@ All responses carry ``Cache-Control: no-store``.
 
 from __future__ import annotations
 
-from functools import lru_cache
-
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict
 
+from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.rest.contracts.assurance_aibom import (
     AiBomCoverageResponse,
     AiBomExportResponse,
@@ -68,13 +67,6 @@ def _repository_required() -> ApiError:
             remedy="Start the backend with an engagement repository root.",
         ),
     )
-
-
-@lru_cache(maxsize=1)
-def _catalogs():
-    from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry  # noqa: PLC0415
-
-    return build_runtime_catalogs(get_module_registry())
 
 
 @aibom_router.get("/api/assurance/aibom/scan", response_model=AiBomScanResponse)
@@ -126,7 +118,7 @@ def aibom_export(body: AiBomExportBody = AiBomExportBody()) -> JSONResponse:
     if repo is None or repo_root is None:
         raise _repository_required()
     return _ok(
-        export_model_derived_aibom(repo, repo_root, _catalogs(), notes=body.notes),
+        export_model_derived_aibom(repo, repo_root, process_runtime_catalogs(), notes=body.notes),
         AiBomExportResponse,
     )
 
@@ -142,7 +134,7 @@ def aibom_coverage() -> JSONResponse:
     repo_root = s.maybe_engagement_root()
     if repo is None or repo_root is None:
         raise _repository_required()
-    return _ok(aibom_coverage_report(repo, repo_root, _catalogs()), AiBomCoverageResponse)
+    return _ok(aibom_coverage_report(repo, repo_root, process_runtime_catalogs()), AiBomCoverageResponse)
 
 
 _SCAN_NOTE = (

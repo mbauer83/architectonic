@@ -12,6 +12,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from src.application.repo_path_helpers import diagram_source_root, resolve_diagram_source_path
+from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.mcp.artifact_mcp.write._common import _out
 from src.infrastructure.write.artifact_write.diagram_edit import edit_diagram
 from src.infrastructure.write.artifact_write.parse_existing import parse_diagram_file
@@ -92,11 +93,10 @@ def _refresh_derivation(
 
     from src.application.derivation.refresh import compute_derivation_diff  # noqa: PLC0415
     from src.infrastructure.artifact_index import shared_artifact_index  # noqa: PLC0415
-    from src.infrastructure.mcp.artifact_mcp.context import runtime_catalogs  # noqa: PLC0415
 
     roots = [Path(p) for p in key.split("|") if p]
     index = shared_artifact_index(roots)
-    catalogs = runtime_catalogs()
+    catalogs = process_runtime_catalogs()
     diff = compute_derivation_diff(
         path, parsed.frontmatter, vd_entry, index, catalogs.derivation, ontology_catalog=catalogs.module_catalog,
     )
@@ -196,7 +196,6 @@ def _propose_bindings(
     from src.application.derivation.refresh import compute_revision  # noqa: PLC0415
     from src.domain.diagrams.allowed_bindings import AllowedBindingsSpec  # noqa: PLC0415
     from src.infrastructure.artifact_index import shared_artifact_index  # noqa: PLC0415
-    from src.infrastructure.mcp.artifact_mcp.context import runtime_catalogs  # noqa: PLC0415
 
     base_revision = compute_revision(path)
     parsed = parse_diagram_file(path)
@@ -204,7 +203,7 @@ def _propose_bindings(
 
     allowed_bindings: AllowedBindingsSpec | None = None
     if diagram_type_name:
-        mod = runtime_catalogs().diagram_types.find_diagram_type(diagram_type_name)
+        mod = process_runtime_catalogs().diagram_types.find_diagram_type(diagram_type_name)
         if mod is not None:
             guidance = mod.write_guidance()
             allowed_bindings = guidance.allowed_bindings

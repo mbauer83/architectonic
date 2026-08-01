@@ -12,14 +12,12 @@ the bare ``ModelQuery``/``SourceModelSnapshot`` a strategy normally sees:
 
 from __future__ import annotations
 
-from functools import lru_cache
 from pathlib import Path
 
 from src.application.artifacts.repository import ArtifactRepository
 from src.application.derivation.derived_relationships import evaluate_candidates as derive_relationship_candidates
 from src.application.derivation.types import CandidateSet, ModelQuery
 from src.application.derivation.viewpoint_execution import evaluate_candidates
-from src.application.runtime_catalogs import RuntimeCatalogs
 from src.application.viewpoints.registry_snapshot import build_registry_snapshot
 from src.config.viewpoints_settings import (
     viewpoints_derivation_max_hops,
@@ -30,15 +28,9 @@ from src.config.viewpoints_settings import (
     viewpoints_execution_timeout_seconds,
 )
 from src.domain.viewpoints.view_derivations import SourceModelSnapshot
+from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.viewpoint_declarations import load_effective_viewpoint_catalog
-
-
-@lru_cache(maxsize=1)
-def _cached_runtime_catalogs() -> RuntimeCatalogs:
-    from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry  # noqa: PLC0415
-
-    return build_runtime_catalogs(get_module_registry())
 
 
 def _repo_roots(params: dict[str, object]) -> list[Path]:
@@ -53,7 +45,7 @@ def viewpoint_execution_derive(
 ) -> CandidateSet:
     roots = _repo_roots(params)
     read_access = ArtifactRepository(shared_artifact_index(roots))
-    runtime_catalogs = _cached_runtime_catalogs()
+    runtime_catalogs = process_runtime_catalogs()
     return evaluate_candidates(
         params,
         catalog=load_effective_viewpoint_catalog(roots),
@@ -79,7 +71,7 @@ def derived_relationships_derive(
     return derive_relationship_candidates(
         params,
         read_access=query,
-        catalog=_cached_runtime_catalogs().module_catalog,
+        catalog=process_runtime_catalogs().module_catalog,
         default_max_hops=viewpoints_derivation_max_hops(),
         max_relationships=viewpoints_derivation_max_relationships(),
     )

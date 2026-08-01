@@ -34,6 +34,7 @@ from src.domain.ontology_representation.artifact_types import (
     summary_from_document,
     summary_from_entity,
 )
+from src.infrastructure.app_bootstrap import process_runtime_catalogs
 
 from . import _sqlite_queries as _q
 from ._identity_resolver import _IdentityResolver
@@ -94,13 +95,12 @@ class ArtifactIndex(_ReverseReferenceQueries):
                 self.refresh()
 
     def _get_domain_names(self) -> frozenset[str]:
-        from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry  # noqa: PLC0415
 
-        return build_runtime_catalogs(get_module_registry()).ontology.known_domain_names()
+        return process_runtime_catalogs().ontology.known_domain_names()
 
     def _get_workspace_types(self) -> dict[str, frozenset[str]]:
         from src.domain.ontology_representation.ontology_protocol import DiagramTypeModule  # noqa: PLC0415
-        from src.infrastructure.app_bootstrap import get_module_registry  # noqa: PLC0415
+        from src.infrastructure.app_bootstrap import get_module_registry  # noqa: PLC0415, process_runtime_catalogs
 
         def _ws(dk: DiagramTypeModule) -> frozenset[str]:
             return frozenset(

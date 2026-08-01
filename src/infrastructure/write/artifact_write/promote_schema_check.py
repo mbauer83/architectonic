@@ -19,18 +19,13 @@ from src.application.artifacts.schema import (
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.config.workspace_paths import infer_repo_scope
 from src.domain.ontology_representation.specializations import SpecializationInfo
+from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.specialization_declarations import load_specialization_catalog_file
 
 if TYPE_CHECKING:
     from src.application.artifacts.document_schema import DocumentSchema
     from src.application.artifacts.query import ArtifactRepository
     from src.application.verification.artifact_verifier import ArtifactRegistry
-
-
-def _default_catalogs() -> RuntimeCatalogs:
-    from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry  # noqa: PLC0415
-
-    return build_runtime_catalogs(get_module_registry())
 
 
 def _schema_superset_errors(
@@ -296,7 +291,7 @@ def check_promotion_schema_compatibility(
     return [
         *_attribute_schema_errors(eng_root, ent_root, entity_ids, repo),
         *_specialization_errors(
-            eng_root, ent_root, entity_ids, connection_ids or [], repo, catalogs or _default_catalogs()
+            eng_root, ent_root, entity_ids, connection_ids or [], repo, catalogs or process_runtime_catalogs()
         ),
         *_frontmatter_schema_errors(eng_root, ent_root, bool(entity_ids), has_diagrams),
         *_document_schema_errors(eng_root, ent_root, document_ids, repo),

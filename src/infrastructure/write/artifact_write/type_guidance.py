@@ -23,6 +23,7 @@ from src.domain.diagrams.allowed_bindings import serialize_allowed_bindings
 from src.domain.modules.module_types import ConnectionTypeName, EntityTypeName
 from src.domain.ontology_representation.ontology_protocol import DiagramTypeWriteGuidance
 from src.domain.ontology_representation.specializations import SpecializationCatalog
+from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.write.artifact_write._connection_metadata_guidance import (
     connection_type_guidance,
     serialize_specialization,
@@ -64,13 +65,6 @@ def _registry():
     from src.infrastructure.app_bootstrap import get_module_registry  # noqa: PLC0415
 
     return get_module_registry()
-
-
-@lru_cache(maxsize=1)
-def _default_catalogs() -> RuntimeCatalogs:
-    from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry  # noqa: PLC0415
-
-    return build_runtime_catalogs(get_module_registry())
 
 
 def _classify_connections(source_type: str) -> dict[str, dict[str, list[str]]]:
@@ -134,7 +128,7 @@ def get_type_guidance(
     metadata schema it authors against (and whether the pair is quarantined). Without it the
     payload is guidance only, exactly as before.
     """
-    cats = catalogs if catalogs is not None else _default_catalogs()
+    cats = catalogs if catalogs is not None else process_runtime_catalogs()
     result: dict[str, object] = {}
 
     if target is not None:

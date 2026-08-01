@@ -9,6 +9,7 @@ from src.application.verification.artifact_verifier import ArtifactRegistry, Art
 from src.domain.artifact_id import stable_id
 from src.domain.modules.module_types import ConnectionTypeName, ElementClassName
 from src.domain.repository.connection_declaration import ConnectionDeclaration, format_connection_declaration
+from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.atomic_file import write_atomic
 
 from .boundary import assert_engagement_write_root, modification_stamp, normalize_specializations
@@ -17,7 +18,7 @@ from .types import WriteResult
 
 @lru_cache(maxsize=None)
 def _junction_types() -> frozenset[str]:
-    from src.infrastructure.app_bootstrap import get_module_registry  # noqa: PLC0415
+    from src.infrastructure.app_bootstrap import get_module_registry  # noqa: PLC0415, process_runtime_catalogs
 
     return frozenset(get_module_registry().entity_types_with_class(ElementClassName("junction")))
 
@@ -98,7 +99,10 @@ def _validate_inputs(
     target_entity: str,
     extra_known_ids: frozenset[str] = frozenset(),
 ) -> None:
-    from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry  # noqa: PLC0415
+    from src.infrastructure.app_bootstrap import (  # noqa: PLC0415, process_runtime_catalogs
+        build_runtime_catalogs,
+        get_module_registry,
+    )
 
     reg = get_module_registry()
     if reg.find_connection_type(ConnectionTypeName(connection_type)) is None:
@@ -142,12 +146,11 @@ def _assert_pair_writable(
     ``(connection-type, specialization)`` pair, exactly as the entity paths do. Kept at the
     write boundary both transports funnel through, so REST and MCP cannot diverge."""
     from src.application.profile_quarantine import assert_not_quarantined  # noqa: PLC0415
-    from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry  # noqa: PLC0415
 
     applied = normalize_specializations(specialization, specializations)
     assert_not_quarantined(
         repo_root, "connection", connection_type, list(applied) or [""],
-        catalogs=build_runtime_catalogs(get_module_registry()),
+        catalogs=process_runtime_catalogs(),
     )
 
 

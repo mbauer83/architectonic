@@ -24,7 +24,7 @@ from __future__ import annotations
 import argparse
 import sys
 
-from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry
+from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.cli._assurance_commands import (
     cmd_backup,
     cmd_export,
@@ -157,7 +157,7 @@ def main() -> None:
     p_scan.add_argument("--entities-file", metavar="PATH", help="JSON file with architecture entity dicts")
 
     args = parser.parse_args()
-    build_runtime_catalogs(get_module_registry())
+    process_runtime_catalogs()
     dispatch = {
         "init": cmd_init, "status": cmd_status, "use-backend": cmd_use_backend,
         "unlock": cmd_unlock, "lock": cmd_lock, "backup": cmd_backup, "export": cmd_export,

@@ -276,7 +276,7 @@ def _initialise_repo(
     repo_root_path: Path, enterprise_root_path: Path | None, args: argparse.Namespace
 ) -> "ArtifactRepository":
     from src.application.artifacts.query import ArtifactRepository
-    from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry
+    from src.infrastructure.app_bootstrap import process_runtime_catalogs
     from src.infrastructure.artifact_index import combined_artifact_index, shared_artifact_index
     from src.infrastructure.backend._group_registry_startup import repair_group_registries
     from src.infrastructure.backend._profile_registry_startup import validate_profile_registries
@@ -305,7 +305,7 @@ def _initialise_repo(
     validate_profile_registries(repo_root_path, enterprise_root_path)
     repo = ArtifactRepository(
         index,
-        excluded_entity_types=build_runtime_catalogs(get_module_registry()).ontology.entity_types_with_class(
+        excluded_entity_types=process_runtime_catalogs().ontology.entity_types_with_class(
             "internal"
         ),
     )

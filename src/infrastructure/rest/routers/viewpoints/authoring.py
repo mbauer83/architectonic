@@ -4,7 +4,7 @@ are built from, a plain-language query-summary preview, and create/edit/delete �
 ``persist_edit``-mode validation and catalog-file persistence as the ``artifact_viewpoint``
 MCP tool. One write path, two front ends.
 
-Catalogs are rebuilt fresh per request (``build_runtime_catalogs(get_module_registry())``,
+Catalogs are rebuilt fresh per request (``process_runtime_catalogs()``,
 not the app-state-cached ``runtime_catalogs_dependency``) — the same pattern every other
 write-adjacent GUI router uses, so a definition written here is visible to the very next
 request without a backend restart.
@@ -39,7 +39,7 @@ from src.domain.viewpoints.viewpoint_scope_query import definition_with_scope_qu
 from src.domain.viewpoints.viewpoint_serialization import viewpoint_definition_to_mapping
 from src.domain.viewpoints.viewpoint_summary import render_query_summary
 from src.domain.viewpoints.viewpoints import ViewpointCatalog, ViewpointDefinition
-from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry
+from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.rest.contracts.viewpoint_catalogs import (
     CriteriaCatalogResponse,
     ViewpointQuerySummaryResponse,
@@ -81,7 +81,7 @@ def _tier(slug: str, *, engagement_catalog: ViewpointCatalog, enterprise_catalog
 
 
 def _reference_report_settings() -> RegistrySnapshot:
-    catalogs = build_runtime_catalogs(get_module_registry())
+    catalogs = process_runtime_catalogs()
     return build_registry_snapshot(
         catalogs,
         _both_roots(),
@@ -190,7 +190,7 @@ def _known_group_slugs() -> list[str]:
 def get_criteria_catalog() -> dict[str, Any]:
     """Registries snapshot the criteria-tree builder's pickers are fed from — the same
     ``RegistrySnapshot`` save-mode validation itself resolves attribute paths against."""
-    catalogs = build_runtime_catalogs(get_module_registry())
+    catalogs = process_runtime_catalogs()
     registries: RegistrySnapshot = build_registry_snapshot(
         catalogs,
         _both_roots(),
