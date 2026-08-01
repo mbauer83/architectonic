@@ -2936,6 +2936,125 @@ export interface components {
             [key: string]: unknown;
         };
         /**
+         * AiBomCandidate
+         * @description One architecture entity the scan thinks might be an AI component, and why.
+         *
+         *     ``score`` is a heuristic rank capped at 100, and ``reasons`` is what produced it — published
+         *     together because a suggestion an operator cannot interrogate is one they either take on faith or
+         *     ignore. Entities already carrying an AI specialization are absent: the scan proposes marks, it does
+         *     not re-propose the ones already made.
+         */
+        AiBomCandidate: {
+            /** Entity Id */
+            entity_id: string;
+            /** Entity Type */
+            entity_type: string;
+            /** Name */
+            name: string;
+            /** Reasons */
+            reasons: string[];
+            /** Score */
+            score: number;
+        };
+        /**
+         * AiBomComponentCoverage
+         * @description The gaps for one AI component, in two tiers.
+         *
+         *     The split is the point. A missing REQUIRED attribute, dataset link or governance edge is
+         *     *blocking* — the BOM is under-documented without it. A missing RECOMMENDED attribute is
+         *     *advisory*, surfaced to help and never a validity blocker. Collapsing them into one list would
+         *     make a wizard demand information that is optional or genuinely unavailable.
+         *
+         *     Optional attributes are not tracked here at all, which is why there is no third list.
+         */
+        AiBomComponentCoverage: {
+            /** Entity Id */
+            entity_id: string;
+            /** Missing Dataset Linkage */
+            missing_dataset_linkage: boolean;
+            /** Missing Governance */
+            missing_governance: boolean;
+            /** Missing Recommended Attributes */
+            missing_recommended_attributes: string[];
+            /** Missing Required Attributes */
+            missing_required_attributes: string[];
+            /** Name */
+            name: string;
+            /** Specialization */
+            specialization: string;
+        };
+        /**
+         * AiBomCoverageResponse
+         * @description Per-component gaps, plus the derivation roles nothing in the repository binds to.
+         */
+        AiBomCoverageResponse: {
+            /** Components */
+            components: components["schemas"]["AiBomComponentCoverage"][];
+            /** Unbound Roles */
+            unbound_roles: string[];
+        };
+        /**
+         * AiBomExportBody
+         * @description What to stamp on the exported BOM. The components are not a caller's to supply.
+         *
+         *     Was ``dict[str, object]`` via ``Body(default={})`` — the last untyped request body on this surface,
+         *     and one that read as though a caller could hand over a component list. It cannot: the export is
+         *     derived from the architecture model, which is the whole point of it being trustworthy, and the only
+         *     thing left for a request to say is what note to record alongside.
+         */
+        AiBomExportBody: {
+            /**
+             * Notes
+             * @default
+             */
+            notes: string;
+        };
+        /**
+         * AiBomExportResponse
+         * @description The ML-BOM, its size, and what is missing from it — in one response, deliberately.
+         *
+         *     A caller emitting a BOM needs to know in the same breath what it does not document; fetching the
+         *     coverage separately invites exporting first and asking afterwards.
+         *
+         *     ``bom`` is a CycloneDX 1.6 document. Its vocabulary is that specification's, not this surface's, so
+         *     it is not mirrored here — see ``contracts/open_models.py``. Mirroring it would make this package a
+         *     second, lagging definition of a schema someone else versions.
+         */
+        AiBomExportResponse: {
+            /** Bom */
+            bom: {
+                [key: string]: unknown;
+            };
+            /** Component Count */
+            component_count: number;
+            coverage: components["schemas"]["AiBomCoverageResponse"];
+        };
+        /**
+         * AiBomRolesResponse
+         * @description The canonical derivation-role vocabulary, from the exporter that maps each role to a CycloneDX
+         *     type. One source: a client restating it would be a second, and the export would then accept roles
+         *     the picker never offers or offer roles it rejects.
+         */
+        AiBomRolesResponse: {
+            /** Roles */
+            roles: string[];
+        };
+        /**
+         * AiBomScanResponse
+         * @description The ranked candidates, with the caveat attached to the response rather than to the docs.
+         *
+         *     ``note`` travels in the body because this is assistive output: the surface that renders it has to
+         *     say so where the operator is looking, not where a schema reader is.
+         */
+        AiBomScanResponse: {
+            /** Candidates */
+            candidates: components["schemas"]["AiBomCandidate"][];
+            /** Count */
+            count: number;
+            /** Note */
+            note: string;
+        };
+        /**
          * AllocatedIdentifierResponse
          * @description A freshly minted workspace-scoped id for a diagram-owned entity.
          *
@@ -7829,7 +7948,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["AiBomCoverageResponse"];
                 };
             };
             /** @description Request validation failed */
@@ -7861,9 +7980,7 @@ export interface operations {
         };
         requestBody?: {
             content: {
-                "application/json": {
-                    [key: string]: unknown;
-                };
+                "application/json": components["schemas"]["AiBomExportBody"];
             };
         };
         responses: {
@@ -7873,7 +7990,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["AiBomExportResponse"];
                 };
             };
             /** @description Request validation failed */
@@ -7911,7 +8028,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["AiBomRolesResponse"];
                 };
             };
             /** @description Request validation failed */
@@ -7952,7 +8069,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["AiBomScanResponse"];
                 };
             };
             /** @description Request validation failed */

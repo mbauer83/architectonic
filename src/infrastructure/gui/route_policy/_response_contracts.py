@@ -18,12 +18,9 @@ from __future__ import annotations
 #: Operation ids whose declared success body is not yet the DTO the manifest names.
 UNTYPED_RESPONSE_OPERATIONS: frozenset[str] = frozenset({
     "assurance_create_edge",
-    "assurance_export_aibom",
-    "assurance_list_aibom_roles",
     "assurance_list_baselines",
     "assurance_list_diagrams",
     "assurance_model_this",
-    "assurance_read_aibom_coverage",
     "assurance_read_analysis_completeness",
     "assurance_read_edge_catalog",
     "assurance_read_gsn_draft",
@@ -31,7 +28,6 @@ UNTYPED_RESPONSE_OPERATIONS: frozenset[str] = frozenset({
     "assurance_record_gsn_publication",
     "assurance_register_arch_ref",
     "assurance_render_analysis_diagram",
-    "assurance_scan_aibom_candidates",
     "assurance_seal_baseline",
     "connections_read_entity_neighbors",
     "diagrams_discover_diagram_entities",

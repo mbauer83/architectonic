@@ -7,26 +7,36 @@ import {
 } from '../AssuranceAibom.helpers'
 
 describe('parseCandidates', () => {
-  it('decodes candidates and coerces fields', () => {
+  it('decodes the candidates the route sends', () => {
     const out = parseCandidates({
       candidates: [
         {
           entity_id: 'APP@1', name: 'Claude', entity_type: 'application-component',
           score: 55, reasons: ['LLM name pattern'],
         },
-        { entity_id: 'APP@2', name: 'X', entity_type: 't', score: 'bad', reasons: 'bad' },
       ],
+      count: 1,
+      note: 'Heuristic suggestions only.',
     })
-    expect(out).toHaveLength(2)
+
+    expect(out).toHaveLength(1)
     expect(out[0].score).toBe(55)
-    expect(out[1].score).toBe(0)
-    expect(out[1].reasons).toEqual([])
+    expect(out[0].reasons).toEqual(['LLM name pattern'])
   })
 
-  it('returns empty when candidates is absent or malformed', () => {
-    expect(parseCandidates({})).toEqual([])
-    expect(parseCandidates({ candidates: 'nope' })).toEqual([])
-    expect(parseCandidates(null)).toEqual([])
+  it('refuses a body that does not match the contract, rather than emptying it', () => {
+    /* These used to coerce: a string score became 0, a string `reasons` became [], and an absent
+       `candidates` key became an empty scan. Every one of those reads as a real answer — "no AI
+       components found" is a conclusion an operator would act on — so the contract turning them into
+       a failure is the point of having one. */
+    expect(() => parseCandidates({})).toThrow()
+    expect(() => parseCandidates({ candidates: 'nope', count: 0, note: '' })).toThrow()
+    expect(() => parseCandidates(null)).toThrow()
+    expect(() => parseCandidates({
+      candidates: [{ entity_id: 'A', name: 'X', entity_type: 't', score: 'bad', reasons: [] }],
+      count: 1,
+      note: '',
+    })).toThrow()
   })
 })
 
@@ -48,9 +58,11 @@ describe('parseCoverage', () => {
     expect(cov.unbound_roles).toEqual(['governed-by'])
   })
 
-  it('is empty and total on a malformed or empty body', () => {
-    expect(parseCoverage(null)).toEqual({ components: [], unbound_roles: [] })
-    expect(parseCoverage({ components: 'nope' })).toEqual({ components: [], unbound_roles: [] })
+  it('refuses a malformed body rather than reporting clean coverage', () => {
+    /* The dangerous coercion of the three: an unreadable body became `{components: [], unbound_roles:
+       []}`, which is precisely the shape of a repository with no gaps at all. */
+    expect(() => parseCoverage(null)).toThrow()
+    expect(() => parseCoverage({ components: 'nope', unbound_roles: [] })).toThrow()
   })
 })
 

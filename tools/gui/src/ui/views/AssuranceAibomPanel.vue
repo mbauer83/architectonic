@@ -8,6 +8,7 @@ import {
   type ScanCandidate,
   type AibomCoverage,
 } from './AssuranceAibom.helpers'
+import { decodeAiBomExport } from '../../domain/schemas/assurance-aibom'
 
 const candidates = ref<ScanCandidate[]>([])
 const coverage = ref<AibomCoverage | null>(null)
@@ -49,9 +50,11 @@ async function exportBom() {
       body: JSON.stringify({ notes: 'Model-derived ML-BOM.' }),
     })
     if (!resp.ok) { error.value = `HTTP ${resp.status}`; return }
-    const body = await resp.json() as { bom: unknown; coverage: unknown }
+    // Decoded: the export's coverage is the same report the coverage route serves, and a cast let the
+    // two disagree silently.
+    const body = decodeAiBomExport(await resp.json())
     exportJson.value = JSON.stringify(body.bom, null, 2)
-    if (body.coverage) coverage.value = parseCoverage(body.coverage)
+    coverage.value = body.coverage
   } catch (e) {
     error.value = String(e)
   } finally {

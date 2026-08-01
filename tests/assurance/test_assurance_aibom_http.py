@@ -14,10 +14,11 @@ from dataclasses import dataclass, field
 from typing import Any
 
 import pytest
-from fastapi import FastAPI
 
 pytest.importorskip("httpx")
 from starlette.testclient import TestClient  # noqa: E402
+
+from tests.support.api_app import build_api_app  # noqa: E402
 
 _HTTP_CTX = "src.infrastructure.gui.routers._assurance_http.get_assurance_context"
 _REPO = "src.infrastructure.gui.routers.state.maybe_get_repo"
@@ -62,8 +63,10 @@ def _client(ctx: _FakeContext, monkeypatch: pytest.MonkeyPatch,
             repo: _FakeRepo | None = None, root: Any = None) -> TestClient:
     from src.infrastructure.gui.routers.assurance import router
 
-    app = FastAPI()
-    app.include_router(router)
+    # `build_api_app`, not a bare `FastAPI()`: without the error contracts installed a raised
+    # `ApiError` is a 500 with an empty body, so a test asserting a refusal's code would be reading a
+    # shape no client ever receives.
+    app = build_api_app(router)
     monkeypatch.setattr(_HTTP_CTX, lambda: ctx)
     if repo is not None:
         monkeypatch.setattr(_REPO, lambda: repo)
@@ -99,12 +102,20 @@ def test_scan_honours_limit(monkeypatch: pytest.MonkeyPatch) -> None:
     assert r.json()["count"] == 2
 
 
-def test_scan_no_repo_returns_empty(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_scan_without_a_repository_is_not_configured(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Not a 200 with an empty candidate list. "Nothing to suggest" and "no model to suggest from"
+    are different answers, and a caller acts on them differently — one is a clean scan, the other an
+    operator action. `not_configured` is the code this release reserves for a statement about the
+    server rather than about the request."""
     ctx = _FakeContext(unlocked=True)
     monkeypatch.setattr(_REPO, lambda: None)
+
     r = _client(ctx, monkeypatch).get("/api/assurance/aibom/scan")
-    assert r.status_code == 200
-    assert r.json()["candidates"] == []
+
+    assert r.status_code == 500
+    detail = r.json()["detail"]
+    assert detail["code"] == "not_configured"
+    assert detail["details"]["capability"] == "engagement-repository"
 
 
 # ── Roles ─────────────────────────────────────────────────────────────────────
@@ -143,12 +154,16 @@ def test_export_derives_the_mlbom_from_the_model(monkeypatch: pytest.MonkeyPatch
     assert body["coverage"] is not None  # coverage rides along with the export
 
 
-def test_export_no_repo_returns_empty(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_export_without_a_repository_is_not_configured(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A BOM of zero components and no repository to derive one from are not the same claim, and the
+    first would have been published as a valid empty ML-BOM."""
     ctx = _FakeContext(unlocked=True)
     monkeypatch.setattr(_REPO, lambda: None)
+
     r = _client(ctx, monkeypatch).post("/api/assurance/aibom/export", json={})
-    assert r.status_code == 200
-    assert r.json()["component_count"] == 0
+
+    assert r.status_code == 500
+    assert r.json()["detail"]["code"] == "not_configured"
 
 
 def test_coverage_reports_gaps_over_the_model(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:

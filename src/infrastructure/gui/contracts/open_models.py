@@ -132,6 +132,11 @@ OPEN_RESPONSE_FIELDS: dict[str, OpenReason] = {
     # A JSON Schema document, served so an authoring form validates against exactly what the verifier
     # validates against. Mirroring the meta-schema here would be this package's second-hand copy of it.
     "EntitySchemaResponse.schema": FOREIGN_VOCABULARY,
+    # A CycloneDX 1.6 ML-BOM. That specification versions itself, and mirroring its component,
+    # dependency and model-card vocabulary here would make this package a second, lagging definition
+    # of it — and drop whatever CycloneDX added since the last mirror, in transit, from a document
+    # whose whole purpose is to be exchanged with other tools.
+    "AiBomExportResponse.bom": FOREIGN_VOCABULARY,
 
     # ── The drain, field by field ─────────────────────────────────────────────
     # `attribute_descriptors` (`application/artifact_schema.py:310`) builds each descriptor here, from a

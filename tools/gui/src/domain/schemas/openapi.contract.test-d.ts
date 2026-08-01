@@ -16,6 +16,13 @@ import type {
 } from './sync-status'
 import type { StatsSchema } from './stats'
 import type {
+  AiBomCandidateSchema,
+  AiBomComponentCoverageSchema,
+  AiBomCoverageSchema,
+  AiBomRolesSchema,
+  AiBomScanSchema,
+} from './assurance-aibom'
+import type {
   ActionPriority,
   AssessmentState,
   FmeaCellSchema,
@@ -340,6 +347,26 @@ describe('assurance analyses', () => {
       components['schemas']['FmeaCellView']['action_priority']
     >()
     expectTypeOf<AssessmentState>().toEqualTypeOf<components['schemas']['FmeaCellView']['state']>()
+  })
+
+  it('decodes the AI-BOM scan, roles and coverage', () => {
+    // `bom` itself is not asserted: it is a CycloneDX document, declared open on both sides, and the
+    // assertion would compare two deliberate `unknown`s.
+    expectTypeOf<SchemaType<typeof AiBomScanSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['AiBomScanResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof AiBomCandidateSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['AiBomCandidate']>
+    >()
+    expectTypeOf<SchemaType<typeof AiBomRolesSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['AiBomRolesResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof AiBomCoverageSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['AiBomCoverageResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof AiBomComponentCoverageSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['AiBomComponentCoverage']>
+    >()
   })
 
   it('covers exactly the methods and statuses the backend declares', () => {
