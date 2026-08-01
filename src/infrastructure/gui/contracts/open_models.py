@@ -81,6 +81,10 @@ OPEN_RESPONSE_MODELS: dict[str, OpenReason] = {
     "DiagramEntityItem": MODULE_OWNED,
     "DiagramConnectionItem": MODULE_OWNED,
     "DiagramTypeMemberItem": MODULE_OWNED,
+    # A document schema is a repository-local JSON file served after normalization, so its top level
+    # is the author's. Refusing a key this package does not know would 500 a read of a repository
+    # whose schema file simply says more than the loader normalizes.
+    "DocumentSchemaEntry": AUTHORED,
     # ``read_diagram_extras`` and ``build_context_extras`` are diagram-type module hooks returning
     # *top-level* keys — a matrix's body, a C4 diagram's navigation. Open at the envelope, which is the
     # one place decision 6 permits it, because that is the level the module actually contributes to.
@@ -100,9 +104,6 @@ OPEN_RESPONSE_MODELS: dict[str, OpenReason] = {
     # from this system's own impact analysis, not from a feed, so `feed-owned` was never true of it —
     # it is closeable, and the shape simply has not been derived from the producer yet.
     "AffectedEntity": PENDING_DECISION,
-
-    # ── The drain ─────────────────────────────────────────────────────────────
-    "OpenMapResponse": AWAITING_CONTRACT,
 }
 
 #: Every *field* of a closed model whose type publishes `additionalProperties: true` — the other way an
@@ -149,6 +150,9 @@ OPEN_RESPONSE_FIELDS: dict[str, OpenReason] = {
     # depend on this package.
     "AssuranceRenderedDiagramResponse.nodes": MODULE_OWNED,
     "AssuranceRenderedDiagramResponse.edges": MODULE_OWNED,
+    # The properties a diagram kind declares on its *own* entity types, each a JSON Schema fragment
+    # with `required` beside it. A sequence lifeline's properties are not a swimlane's.
+    "OwnEntityTypeGuidance.domain_properties": MODULE_OWNED,
 
     # A documentation block about the viewpoint query language, keyed by topic and heterogeneous by
     # nature — a schema version, a comparator glossary, reserved paths, a worked example. A field per
@@ -174,6 +178,12 @@ OPEN_RESPONSE_FIELDS: dict[str, OpenReason] = {
     # of it — and drop whatever CycloneDX added since the last mirror, in transit, from a document
     # whose whole purpose is to be exchanged with other tools.
     "AiBomExportResponse.bom": FOREIGN_VOCABULARY,
+    # Three more JSON Schema documents, for the same reason as the entity schema route's: the merged
+    # metadata schema a connection pair authors against, the schema for a diagram kind's
+    # `diagram-entities` block, and a document type's frontmatter schema.
+    "MetadataSchemaBlock.schema": FOREIGN_VOCABULARY,
+    "DiagramTypeGuidance.diagram_entities_schema": FOREIGN_VOCABULARY,
+    "DocumentSchemaEntry.frontmatter_schema": FOREIGN_VOCABULARY,
 
     # ── The drain, field by field ─────────────────────────────────────────────
     # `attribute_descriptors` (`application/artifact_schema.py:310`) builds each descriptor here, from a

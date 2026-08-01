@@ -19,6 +19,4 @@ from __future__ import annotations
 UNTYPED_RESPONSE_OPERATIONS: frozenset[str] = frozenset({
     "diagrams_read_diagram",
     "diagrams_read_diagram_context",
-    "documents_read_document_schemata",
-    "taxonomy_read_authoring_guidance",
 })

@@ -16,6 +16,9 @@ const baseEntity = {
   create_when: 'cw',
   never_create_when: 'nw',
   permitted_connections: { outgoing: {}, incoming: {}, symmetric: {} },
+  // Always sent, even when empty: the route enumerates a type's specializations, and an
+  // absent list would mean "not asked" rather than "none declared".
+  specializations: [],
 }
 
 describe('AuthoringGuidanceSchema v2 context', () => {

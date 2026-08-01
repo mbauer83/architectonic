@@ -3145,6 +3145,23 @@ export interface components {
             id: string;
         };
         /**
+         * AllowedBindings
+         * @description Which of a diagram kind's elements may be bound to the model, keyed by element type.
+         *
+         *     Two open *maps* with a closed value: the keys are the kind's own element types, which are the
+         *     module's to name, and enumerating them here would make this file change with every module.
+         */
+        AllowedBindings: {
+            /** Connection */
+            connection: {
+                [key: string]: components["schemas"]["BindingTargetSpec"];
+            };
+            /** Entity */
+            entity: {
+                [key: string]: components["schemas"]["BindingTargetSpec"];
+            };
+        };
+        /**
          * AnalysisNodePageResponse
          * @description One page of the working set, with the role totals of the visible population.
          *
@@ -4422,6 +4439,60 @@ export interface components {
             value?: components["schemas"]["ParameterValueRef"] | components["schemas"]["BindingValueRef"] | components["schemas"]["AttributeValueRef"] | string | number | boolean | (string | number | boolean)[];
         };
         /**
+         * AttributeConstraints
+         * @description The JSON Schema constraint keywords an authoring input can enforce.
+         *
+         *     A fixed set — the seven ``_CONSTRAINT_KEYS`` the descriptor builder copies — not the whole
+         *     vocabulary: these are the ones a form field can act on, and copying the rest would publish
+         *     keywords no input reads.
+         */
+        AttributeConstraints: {
+            /** Exclusivemaximum */
+            exclusiveMaximum?: number;
+            /** Exclusiveminimum */
+            exclusiveMinimum?: number;
+            /** Maximum */
+            maximum?: number;
+            /** Maxlength */
+            maxLength?: number;
+            /** Minimum */
+            minimum?: number;
+            /** Minlength */
+            minLength?: number;
+            /** Pattern */
+            pattern?: string;
+        };
+        /**
+         * AttributeDescriptor
+         * @description One attribute, as an authoring input needs it.
+         *
+         *     ``default`` is stringified whatever the declared type — an input renders text, and a client
+         *     that had to know the JSON type to read the default would be doing the schema's job twice.
+         */
+        AttributeDescriptor: {
+            constraints?: components["schemas"]["AttributeConstraints"];
+            /** Default */
+            default?: string;
+            /** Enum */
+            enum?: string[];
+            items?: components["schemas"]["AttributeItemDescriptor"];
+            /** Type */
+            type: string;
+        };
+        /**
+         * AttributeItemDescriptor
+         * @description An array attribute's per-item shape, so a list editor can type each element rather than
+         *     falling back to a free-text JSON box. One level deep, deliberately: a list of objects is
+         *     authored as text, and pretending otherwise would mean recursing into arbitrary JSON Schema.
+         */
+        AttributeItemDescriptor: {
+            constraints?: components["schemas"]["AttributeConstraints"];
+            /** Enum */
+            enum?: string[];
+            /** Type */
+            type: string;
+        };
+        /**
          * AttributeValueRef
          * @description Compare against another attribute rather than a literal.
          *
@@ -4436,6 +4507,34 @@ export interface components {
              * @enum {string}
              */
             from: "self" | "source" | "target";
+        };
+        /**
+         * AuthoringGuidanceResponse
+         * @description Four independent answers, each present only if it was asked for.
+         *
+         *     ``entity_types``/``total``/``connection_types`` arrive together and describe the type
+         *     vocabulary; ``domains`` names the filter when the request selected by domain rather than by
+         *     type; ``diagram_type_guidance`` answers ``diagram_type=``; ``pair_guidance`` answers
+         *     ``target=``. A request that names none of them gets the whole type vocabulary.
+         */
+        AuthoringGuidanceResponse: {
+            /** Connection Types */
+            connection_types?: components["schemas"]["ConnectionTypeGuidance"][];
+            diagram_type_guidance?: components["schemas"]["DiagramTypeGuidance"];
+            /** Domains */
+            domains?: string[];
+            /** Entity Types */
+            entity_types?: components["schemas"]["EntityTypeGuidance"][];
+            /** Guidance Hint */
+            guidance_hint?: string;
+            /**
+             * Guidance Status
+             * @constant
+             */
+            guidance_status?: "empty";
+            pair_guidance?: components["schemas"]["PairGuidance"];
+            /** Total */
+            total?: number;
         };
         /**
          * AuthoritativePatternResultResponse
@@ -4505,6 +4604,27 @@ export interface components {
             result_types: string[];
             /** Select */
             select: string[];
+        };
+        /**
+         * BindingTargetSpec
+         * @description What one diagram element may be bound to, and under which correspondence.
+         *
+         *     ``target_connection_types``/``target_connection_classes`` narrow a connection binding; an entity
+         *     binding has neither, which is why they are absent rather than empty.
+         */
+        BindingTargetSpec: {
+            /** Correspondence Kinds */
+            correspondence_kinds: string[];
+            /** Default Correspondence Kind */
+            default_correspondence_kind: string;
+            /** Target Connection Classes */
+            target_connection_classes?: string[];
+            /** Target Connection Types */
+            target_connection_types?: string[];
+            /** Target Forms */
+            target_forms: string[];
+            /** Visual Roles */
+            visual_roles?: string[];
         };
         /**
          * BindingValueRef
@@ -4931,6 +5051,24 @@ export interface components {
             puml_arrow: string;
             /** Symmetric */
             symmetric: boolean;
+        };
+        /**
+         * ConnectionTypeGuidance
+         * @description One connection type, its specializations, and the schema they author against.
+         *
+         *     A type appears only when it has something to say — imported guidance, a specialization, or a
+         *     base schema — so the absence of a type here is not a claim that it is illegal.
+         */
+        ConnectionTypeGuidance: {
+            /** Create When */
+            create_when: string;
+            metadata_schema?: components["schemas"]["MetadataSchemaBlock"];
+            /** Name */
+            name: string;
+            /** Never Create When */
+            never_create_when: string;
+            /** Specializations */
+            specializations: components["schemas"]["SpecializationGuidance"][];
         };
         /**
          * ContextConnection
@@ -5922,6 +6060,40 @@ export interface components {
             items: components["schemas"]["DiagramTypeMemberItem"][];
         };
         /**
+         * DiagramTypeGuidance
+         * @description One diagram kind: when to draw it, what it owns, and what it may bind to.
+         *
+         *     ``guidance_status`` is ``empty`` when the shipped ontology carries no ``create_when`` text —
+         *     stripped for licence reasons — and ``guidance_hint`` says how to import it. A surface that
+         *     showed blank guidance without saying why would look broken.
+         */
+        DiagramTypeGuidance: {
+            /** Accepted Domains */
+            accepted_domains?: string[];
+            allowed_bindings?: components["schemas"]["AllowedBindings"];
+            /** Diagram Entities Schema */
+            diagram_entities_schema?: {
+                [key: string]: unknown;
+            };
+            /** Guidance Hint */
+            guidance_hint?: string;
+            /**
+             * Guidance Status
+             * @constant
+             */
+            guidance_status?: "empty";
+            /** Name */
+            name: string;
+            /** Own Entity Types */
+            own_entity_types?: components["schemas"]["OwnEntityTypeGuidance"][];
+            /** Puml Notes */
+            puml_notes?: string[];
+            /** When Not To Use */
+            when_not_to_use: string;
+            /** When To Use */
+            when_to_use: string;
+        };
+        /**
          * DiagramTypeHelpEntry
          * @description One diagram type an author may create, and the domains it accepts.
          *
@@ -6202,6 +6374,55 @@ export interface components {
             title: string;
         };
         /**
+         * DocumentSchemaEntry
+         * @description One document type's schema file, normalized.
+         *
+         *     Open, and this is the ``authored`` case rather than a gap: the body is a repository-local JSON
+         *     file, and everything below is what the loader normalizes out of it. A key the loader does not
+         *     know is the author's, and refusing it would 500 a read of a repository whose schema file simply
+         *     says more than this package does.
+         *
+         *     ``required_sections`` is derived from ``sections`` rather than read from the file — the two
+         *     disagreed in older files, and the section list is the one the writer enforces.
+         */
+        DocumentSchemaEntry: {
+            /** Abbreviation */
+            abbreviation?: string;
+            /** Frontmatter Schema */
+            frontmatter_schema?: {
+                [key: string]: unknown;
+            };
+            /** Name */
+            name?: string;
+            /** Required Entity Type Connections */
+            required_entity_type_connections?: string[];
+            /** Required Sections */
+            required_sections: string[];
+            /** Section Templates */
+            section_templates?: {
+                [key: string]: string;
+            };
+            /** Sections */
+            sections: components["schemas"]["DocumentSectionSpecEntry"][];
+            /** Subdirectory */
+            subdirectory?: string;
+            /** Suggested Entity Type Connections */
+            suggested_entity_type_connections?: string[];
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * DocumentSchemataResponse
+         * @description Every document type's schema, keyed by doc type.
+         *
+         *     A ``RootModel`` rather than ``dict[str, …]`` on the route: the latter publishes an inline schema
+         *     a generated client cannot refer to. An open *map* with a closed key set is not the shape here —
+         *     the keys are whichever schema files the repository holds, which is the repository's to decide.
+         */
+        DocumentSchemataResponse: {
+            [key: string]: components["schemas"]["DocumentSchemaEntry"];
+        };
+        /**
          * DocumentSectionSpec
          * @description One section a document of this type carries, and what it should link to.
          *
@@ -6211,6 +6432,21 @@ export interface components {
          *     look the same, and only the first is a thing the schema can express.
          */
         DocumentSectionSpec: {
+            /** Name */
+            name: string;
+            /** Required Entity Type Connections */
+            required_entity_type_connections?: string[];
+            /** Suggested Entity Type Connections */
+            suggested_entity_type_connections?: string[];
+            /** Template */
+            template?: string;
+        };
+        /**
+         * DocumentSectionSpecEntry
+         * @description One section a document type declares: its heading, an optional starter, and which entity
+         *     types a section of this kind is expected — or merely invited — to connect to.
+         */
+        DocumentSectionSpecEntry: {
             /** Name */
             name: string;
             /** Required Entity Type Connections */
@@ -6981,6 +7217,32 @@ export interface components {
             prefix: string;
         };
         /**
+         * EntityTypeGuidance
+         * @description One entity type: how it is identified, what it counts as, and when to create it.
+         *
+         *     ``domain`` is present when the request selected types rather than domains — a domain-filtered
+         *     answer already states the domain once, at the top, and repeating it per row would be noise.
+         */
+        EntityTypeGuidance: {
+            /** Classes */
+            classes: string[];
+            /** Context */
+            context?: components["schemas"]["GuidanceContextLayer"][];
+            /** Create When */
+            create_when: string;
+            /** Domain */
+            domain?: string;
+            /** Name */
+            name: string;
+            /** Never Create When */
+            never_create_when: string;
+            permitted_connections: components["schemas"]["PermittedConnectionsByPeer"];
+            /** Prefix */
+            prefix: string;
+            /** Specializations */
+            specializations: components["schemas"]["SpecializationGuidance"][];
+        };
+        /**
          * ErrorBody
          * @description The value of ``detail``: what went wrong, in a form both a client and a person can use.
          */
@@ -7574,6 +7836,18 @@ export interface components {
             source_losses: string[];
         };
         /**
+         * GuidanceContextLayer
+         * @description One layer of composed ancestry context, from the guidance hierarchy this type sits in.
+         */
+        GuidanceContextLayer: {
+            /** Level */
+            level: string;
+            /** Node */
+            node: string;
+            /** Text */
+            text: string;
+        };
+        /**
          * HopSuggestionGroup
          * @description Entities one hop further out than the last group, so a picker can offer "and their
          *     neighbours" without asking the user to think in graph distance.
@@ -7873,6 +8147,35 @@ export interface components {
             to_entity_ids?: string[] | null;
         };
         /**
+         * MetadataSchemaBlock
+         * @description The effective metadata schema a (connection type, specialization) pair authors against.
+         *
+         *     Connections have no schema endpoint of their own — unlike entities, which fetch theirs from
+         *     ``/api/entity-schemata/{artifact_type}`` — so it rides along here.
+         *
+         *     ``quarantined`` is a derived read of the *same* conflicts channel, never a parallel one: true
+         *     means the write boundary refuses this pair, and the flag only explains a refusal the backend
+         *     already guarantees.
+         */
+        MetadataSchemaBlock: {
+            /** Conflicts */
+            conflicts: string[];
+            /** Descriptors */
+            descriptors: {
+                [key: string]: components["schemas"]["AttributeDescriptor"];
+            };
+            /** Properties */
+            properties: string[];
+            /** Quarantined */
+            quarantined: boolean;
+            /** Required */
+            required: string[];
+            /** Schema */
+            schema?: {
+                [key: string]: unknown;
+            };
+        };
+        /**
          * MethodMismatchDetails
          * @description ``analysis_method_mismatch``: a projection asked of an analysis of another method.
          */
@@ -8131,18 +8434,55 @@ export interface components {
             target_type: string;
         };
         /**
-         * OpenMapResponse
-         * @description The migration placeholder: an operation whose response has not been derived from its producer yet.
+         * OwnEntityTypeGuidance
+         * @description One entity type a diagram kind owns rather than borrows from the model.
          *
-         *     Not a decision, and not "a genuinely dynamic map" as this docstring once claimed — that reading is
-         *     what let it spread to a third of the surface. Every operation still using it is listed in
-         *     ``route_policy._response_contracts.UNTYPED_RESPONSE_OPERATIONS``, a shrink-only ledger, and a
-         *     fitness function refuses this model on any operation absent from it. **Do not annotate a new handler
-         *     with this.** Derive a closed DTO from what the handler returns; that is cheap when the code is in
-         *     front of you and expensive once a client depends on the ambiguity.
+         *     ``min``/``max`` are the cardinality the kind requires on a diagram — a sequence diagram with no
+         *     lifelines is not a sequence diagram.
          */
-        OpenMapResponse: {
-            [key: string]: unknown;
+        OwnEntityTypeGuidance: {
+            /** Classes */
+            classes: string[];
+            /** Create When */
+            create_when: string;
+            /** Domain Properties */
+            domain_properties?: {
+                [key: string]: unknown;
+            };
+            /** Entity Type */
+            entity_type: string;
+            /** Label */
+            label: string;
+            /** Managed Fields */
+            managed_fields: {
+                [key: string]: string;
+            };
+            /** Max */
+            max?: number;
+            /** Min */
+            min: number;
+            /** Never Create When */
+            never_create_when: string;
+            permitted_mappings?: components["schemas"]["PermittedMappings"];
+        };
+        /**
+         * PairGuidance
+         * @description Which connection types are legal between one ordered pair of entity types.
+         *
+         *     Closed and error-free: an unknown target used to arrive here as a 200 carrying ``error`` and
+         *     ``known_types``, which the route now rejects as a 422 like every other bad input.
+         */
+        PairGuidance: {
+            /** Incoming */
+            incoming: string[];
+            /** Outgoing */
+            outgoing: string[];
+            /** Source */
+            source: string;
+            /** Symmetric */
+            symmetric: string[];
+            /** Target */
+            target: string;
         };
         /**
          * ParameterCatalogResponse
@@ -8188,6 +8528,56 @@ export interface components {
             patch: {
                 [key: string]: unknown;
             };
+        };
+        /**
+         * PermittedConnectionsByPeer
+         * @description Which connection types are legal to each peer type, by direction.
+         *
+         *     Three maps rather than one: a symmetric relation belongs to neither direction, and folding it
+         *     into either would tell an author it has a source and a target when it does not.
+         */
+        PermittedConnectionsByPeer: {
+            /** Incoming */
+            incoming: {
+                [key: string]: string[];
+            };
+            /** Outgoing */
+            outgoing: {
+                [key: string]: string[];
+            };
+            /** Symmetric */
+            symmetric: {
+                [key: string]: string[];
+            };
+        };
+        /**
+         * PermittedMappings
+         * @description What a diagram-owned entity type may be linked to in the model.
+         */
+        PermittedMappings: {
+            /** Entity Classes */
+            entity_classes: string[];
+            /** Entity Types */
+            entity_types: string[];
+            /** Sources */
+            sources?: components["schemas"]["PermittedMappingSource"][];
+        };
+        /**
+         * PermittedMappingSource
+         * @description One ontology a diagram-owned entity type may map onto, and how transparently.
+         *
+         *     A source names *either* a type or a class, so the other one is absent rather than empty — an
+         *     empty string would read as "a class whose name is nothing".
+         */
+        PermittedMappingSource: {
+            /** Entity Class */
+            entity_class?: string;
+            /** Entity Type */
+            entity_type?: string;
+            /** Ontology */
+            ontology: string;
+            /** Transparent */
+            transparent: boolean;
         };
         /**
          * PermittedMappingSpecResponse
@@ -9266,6 +9656,34 @@ export interface components {
          */
         SnapshotRecord: {
             [key: string]: unknown;
+        };
+        /**
+         * SpecializationGuidance
+         * @description One specialization of an entity or connection type, and when to reach for it.
+         */
+        SpecializationGuidance: {
+            /** Create When */
+            create_when: string;
+            /** Description */
+            description: string;
+            metadata_schema?: components["schemas"]["MetadataSchemaBlock"];
+            /** Name */
+            name: string;
+            /** Never Create When */
+            never_create_when: string;
+            notation?: components["schemas"]["SpecializationNotation"];
+            /** Slug */
+            slug: string;
+        };
+        /**
+         * SpecializationNotation
+         * @description How a specialization is drawn, where it says anything about that at all.
+         */
+        SpecializationNotation: {
+            /** Color */
+            color?: string;
+            /** Icon */
+            icon?: string;
         };
         /** CreateGroupBody */
         src__infrastructure__gui__routers___assurance_grouping_routes__CreateGroupBody: {
@@ -13755,7 +14173,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["AuthoringGuidanceResponse"];
                 };
             };
             /** @description Request validation failed */
@@ -15831,7 +16249,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["DocumentSchemataResponse"];
                 };
             };
             /** @description Request validation failed */
@@ -16092,7 +16510,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["WriteResultResponse"];
                 };
             };
             /** @description Successful Response */

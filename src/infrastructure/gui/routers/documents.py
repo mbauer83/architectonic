@@ -10,13 +10,16 @@ from pydantic import BaseModel
 
 from src.application.artifact_document_schema import get_document_subdirectory, load_document_schemata
 from src.infrastructure.gui.contracts.authoring_catalogs import DocumentTypeListResponse
-from src.infrastructure.gui.contracts.documents import DocumentDetailResponse, DocumentListResponse
+from src.infrastructure.gui.contracts.documents import (
+    DocumentDetailResponse,
+    DocumentListResponse,
+    DocumentSchemataResponse,
+)
 from src.infrastructure.gui.routers import state as s
 from src.infrastructure.gui.routers._openapi import (
     READ_RESPONSES,
     TAG_DOCUMENTS,
     WRITE_RESPONSES,
-    OpenMapResponse,
     WriteResultResponse,
 )
 
@@ -103,7 +106,7 @@ def list_document_types() -> dict[str, object]:
 
 
 @router.get("/api/document-schemata", tags=[TAG_DOCUMENTS], summary="Document frontmatter schemata",
-    response_model=OpenMapResponse)
+    response_model=DocumentSchemataResponse, response_model_exclude_none=True)
 def get_document_schemata() -> dict[str, Any]:
     repo_root = _get_engagement_root()
     return load_document_schemata(repo_root)
@@ -234,7 +237,7 @@ def edit_document(artifact_id: str, req: EditDocumentRequest) -> dict[str, Any]:
 #: smuggled into the 204.
 _DELETE_RESPONSES: dict[int | str, Any] = {
     **WRITE_RESPONSES,
-    200: {"model": OpenMapResponse, "description": "Dry-run plan; nothing was deleted"},
+    200: {"model": WriteResultResponse, "description": "Dry-run plan; nothing was deleted"},
 }
 
 

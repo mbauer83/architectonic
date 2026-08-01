@@ -57,24 +57,39 @@ def isolated_catalogs(engagement_root: Path) -> RuntimeCatalogs:
     )
 
 
+def _without_nulls(value: object) -> object:
+    """``value`` with every null-valued key dropped, at every depth.
+
+    The route serves the use case's payload under one null policy — unset optionals are absent, not
+    null — so comparing the two verbatim compares the payload against a *different* spelling of
+    itself. Normalizing the use case side is what keeps this a test of the route's fidelity rather
+    than of its serializer's defaults.
+    """
+    if isinstance(value, dict):
+        return {k: _without_nulls(v) for k, v in value.items() if v is not None}
+    if isinstance(value, list):
+        return [_without_nulls(v) for v in value]
+    return value
+
+
 class TestEntityTypeAndDomainFilters:
     def test_entity_type_filter_matches_domain_function(
         self, client: TestClient, isolated_catalogs: RuntimeCatalogs, engagement_root: Path,
     ) -> None:
         resp = client.get("/api/authoring-guidance", params={"entity_type": "requirement"})
         assert resp.status_code == 200
-        assert resp.json() == get_type_guidance(
+        assert resp.json() == _without_nulls(get_type_guidance(
             filter=["requirement"], catalogs=isolated_catalogs, repo_root=engagement_root
-        )
+        ))
 
     def test_domain_filter_matches_domain_function(
         self, client: TestClient, isolated_catalogs: RuntimeCatalogs, engagement_root: Path,
     ) -> None:
         resp = client.get("/api/authoring-guidance", params={"domain": "motivation"})
         assert resp.status_code == 200
-        assert resp.json() == get_type_guidance(
+        assert resp.json() == _without_nulls(get_type_guidance(
             filter=["motivation"], catalogs=isolated_catalogs, repo_root=engagement_root
-        )
+        ))
 
     def test_connection_types_carry_the_effective_metadata_schema(
         self, client: TestClient, engagement_root: Path

@@ -50,7 +50,11 @@ WIRE_NULLS_KEYWORD = "x-arch-wire-nulls"
 NULLS_OMITTED = "omitted"
 
 
-def _mark_nulls_omitted(schema: dict[str, Any]) -> None:
+def mark_nulls_omitted(schema: dict[str, Any]) -> None:
+    """Stamp the claim onto a schema. Public because :class:`NullsOmitted` cannot be a base for
+    every response DTO: a ``RootModel`` has its own root type and cannot inherit a second
+    ``BaseModel``, yet it is served by null-omitting routes like any other and the document has to
+    say so. Such a model sets ``json_schema_extra=mark_nulls_omitted`` directly."""
     schema[WIRE_NULLS_KEYWORD] = NULLS_OMITTED
 
 
@@ -64,13 +68,13 @@ class NullsOmitted(BaseModel):
     false on another is worse than the permissive default.
     """
 
-    model_config = ConfigDict(extra="forbid", json_schema_extra=_mark_nulls_omitted)
+    model_config = ConfigDict(extra="forbid", json_schema_extra=mark_nulls_omitted)
 
 
 def omits_nulls(model: type[BaseModel]) -> bool:
     """Whether ``model`` claims its unset optionals are absent from the wire."""
     extra = model.model_config.get("json_schema_extra")
-    return extra is _mark_nulls_omitted
+    return extra is mark_nulls_omitted
 
 
 def _without_null_arm(property_schema: dict[str, Any]) -> dict[str, Any]:

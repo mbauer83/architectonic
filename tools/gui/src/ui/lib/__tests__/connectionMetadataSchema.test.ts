@@ -20,6 +20,7 @@ const guidance: AuthoringGuidance = {
   connection_types: [
     {
       name: 'archimate-assignment',
+      create_when: '', never_create_when: '',
       metadata_schema: block({ properties: ['cadence'], descriptors: { cadence: { type: 'string' } } }),
       specializations: [
         spec('responsibility-assignment', block({
@@ -30,7 +31,7 @@ const guidance: AuthoringGuidance = {
         spec('behavior-assignment'),
       ],
     },
-    { name: 'archimate-flow', specializations: [spec('deployment-flow')] },
+    { name: 'archimate-flow', create_when: '', never_create_when: '', specializations: [spec('deployment-flow')] },
   ],
 }
 
@@ -66,9 +67,7 @@ describe('connectionMetadataSchema', () => {
 
   it('surfaces quarantine from the selected pair', () => {
     const quarantined: AuthoringGuidance = {
-      connection_types: [{
-        name: 'archimate-serving',
-        specializations: [spec('critical-serving', block({
+      connection_types: [{ name: 'archimate-serving', create_when: '', never_create_when: '', specializations: [spec('critical-serving', block({
           quarantined: true, conflicts: ["Conflicting definitions for attribute 'Score'"],
         }))],
       }],

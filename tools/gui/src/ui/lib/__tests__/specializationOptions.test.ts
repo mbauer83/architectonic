@@ -24,7 +24,7 @@ const guidance: AuthoringGuidance = {
     },
   ],
   connection_types: [
-    { name: 'archimate-assignment', specializations: [spec('responsibility-assignment', 'Responsibility Assignment')] },
+    { name: 'archimate-assignment', create_when: '', never_create_when: '', specializations: [spec('responsibility-assignment', 'Responsibility Assignment')] },
   ],
 }
 

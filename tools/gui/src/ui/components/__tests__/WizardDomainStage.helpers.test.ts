@@ -10,7 +10,7 @@ describe('WIZARD_DRAFT_KEYWORD', () => {
 
 const typeGuidance = (name: string, domain?: string): EntityTypeGuidance => ({
   name, prefix: name.slice(0, 3).toUpperCase(), domain, classes: [],
-  create_when: '', never_create_when: '',
+  create_when: '', never_create_when: '', specializations: [],
   permitted_connections: { outgoing: {}, incoming: {}, symmetric: {} },
 })
 

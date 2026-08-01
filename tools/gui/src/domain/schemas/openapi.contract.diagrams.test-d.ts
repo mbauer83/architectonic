@@ -11,6 +11,23 @@ import type {
   HopSuggestionGroupSchema,
 } from './diagrams'
 import type { EntityDisplayInfoSchema, EntityDisplaySearchResultSchema } from './entities'
+import type {
+  AllowedBindingsSchema,
+  AuthoringGuidanceSchema,
+  BindingTargetSpecSchema,
+  ConnectionMetadataSchemaSchema,
+  ConnectionTypeGuidanceSchema,
+  DiagramTypeGuidanceSchema,
+  EntityTypeGuidanceSchema,
+  GuidanceContextLayerSchema,
+  OwnEntityTypeGuidanceSchema,
+  PairGuidanceSchema,
+  PermittedConnectionsByPeerSchema,
+  PermittedMappingSourceSchema,
+  PermittedMappingsSchema,
+  SpecializationGuidanceSchema,
+  SpecializationNotationSchema,
+} from './authoring-guidance'
 
 /**
  * Type-level contract assertions for the diagram palette — what a user can find to place on a
@@ -63,6 +80,67 @@ describe('diagram palette', () => {
     >()
     expectTypeOf<SchemaType<typeof DerivedEntitySchema>>().toEqualTypeOf<
       Immutable<components['schemas']['DerivedViewEntityResponse']>
+    >()
+  })
+})
+
+describe('authoring guidance', () => {
+  it('decodes the four answers and the type rows they carry', () => {
+    expectTypeOf<SchemaType<typeof AuthoringGuidanceSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['AuthoringGuidanceResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof EntityTypeGuidanceSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['EntityTypeGuidance']>
+    >()
+    expectTypeOf<SchemaType<typeof ConnectionTypeGuidanceSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['ConnectionTypeGuidance']>
+    >()
+    expectTypeOf<SchemaType<typeof PermittedConnectionsByPeerSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['PermittedConnectionsByPeer']>
+    >()
+    expectTypeOf<SchemaType<typeof GuidanceContextLayerSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['GuidanceContextLayer']>
+    >()
+  })
+
+  it('decodes a pair answer with no error arm', () => {
+    // It had one: an unknown target arrived as a 200 whose `pair_guidance` carried `error` and
+    // `known_types`. Only the top-level error was translated, so this one reached clients.
+    expectTypeOf<SchemaType<typeof PairGuidanceSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['PairGuidance']>
+    >()
+  })
+
+  it('decodes a specialization and the schema it authors against', () => {
+    expectTypeOf<SchemaType<typeof SpecializationGuidanceSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['SpecializationGuidance']>
+    >()
+    expectTypeOf<SchemaType<typeof SpecializationNotationSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['SpecializationNotation']>
+    >()
+    expectTypeOf<SchemaType<typeof ConnectionMetadataSchemaSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['MetadataSchemaBlock']>
+    >()
+  })
+
+  it('decodes a diagram kind’s own guidance, bindings included', () => {
+    expectTypeOf<SchemaType<typeof DiagramTypeGuidanceSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['DiagramTypeGuidance']>
+    >()
+    expectTypeOf<SchemaType<typeof OwnEntityTypeGuidanceSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['OwnEntityTypeGuidance']>
+    >()
+    expectTypeOf<SchemaType<typeof PermittedMappingsSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['PermittedMappings']>
+    >()
+    expectTypeOf<SchemaType<typeof PermittedMappingSourceSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['PermittedMappingSource']>
+    >()
+    expectTypeOf<SchemaType<typeof AllowedBindingsSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['AllowedBindings']>
+    >()
+    expectTypeOf<SchemaType<typeof BindingTargetSpecSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['BindingTargetSpec']>
     >()
   })
 })
