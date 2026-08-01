@@ -18,11 +18,18 @@ export type SchemaType<S> = S extends { readonly Type: infer T } ? T : never
  * property for a cosmetic one, so the modifier is normalised on the oracle side instead. `readonly`
  * is a modifier, not a shape: every structural difference still fails, including the presence or
  * absence of `null` in a union and whether a key is optional.
+ *
+ * A **tuple** is mapped element-wise rather than collapsed into an array. `[string, X]` extends
+ * `(string | X)[]`, so the array branch would infer the union and hand back
+ * `ReadonlyArray<string | X>` — which is what a positional pair looks like once its positions are
+ * forgotten. The oracle then accepted any sequence of either type where the document declares
+ * exactly two, and an effect `Schema.Tuple` failed the comparison for being *more* precise than the
+ * thing it is checked against.
  */
-export type Immutable<T> = T extends (infer E)[]
-  ? ReadonlyArray<Immutable<E>>
-  : T extends ReadonlyArray<infer E>
+export type Immutable<T> = T extends readonly (infer E)[]
+  ? number extends T['length']
     ? ReadonlyArray<Immutable<E>>
-    : T extends object
-      ? { readonly [K in keyof T]: Immutable<T[K]> }
-      : T
+    : { readonly [K in keyof T]: Immutable<T[K]> }
+  : T extends object
+    ? { readonly [K in keyof T]: Immutable<T[K]> }
+    : T

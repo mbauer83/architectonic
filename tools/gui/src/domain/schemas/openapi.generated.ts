@@ -2948,6 +2948,72 @@ export interface components {
             [key: string]: unknown;
         };
         /**
+         * AggregateEdgeResponse
+         * @description Every connection between two aggregates, bundled into one edge.
+         *
+         *     ``provenance`` keeps a bundle of derived edges from reading as modelled fact.
+         */
+        AggregateEdgeResponse: {
+            /** Connection Type */
+            connection_type: string;
+            /** Id */
+            id: string;
+            /** Member Connection Ids */
+            member_connection_ids: string[];
+            /** Member Count */
+            member_count: number;
+            /**
+             * Provenance
+             * @enum {string}
+             */
+            provenance: "modeled" | "derived-certain" | "derived-potential";
+            /** Source Aggregate Id */
+            source_aggregate_id: string;
+            /** Target Aggregate Id */
+            target_aggregate_id: string;
+        };
+        /**
+         * AggregateNodeResponse
+         * @description A super-node standing for every member entity sharing one dimension value.
+         */
+        AggregateNodeResponse: {
+            /**
+             * Dimension
+             * @enum {string}
+             */
+            dimension: "group" | "domain" | "type";
+            /** Dimension Value */
+            dimension_value: string;
+            /** Entity Type */
+            entity_type: string;
+            /** Id */
+            id: string;
+            /** Member Count */
+            member_count: number;
+            /** Member Ids */
+            member_ids: string[];
+        };
+        /**
+         * AggregationSummaryResponse
+         * @description The collapsed view a graph surface opens with when the population exceeds its budget.
+         *
+         *     Always computed over the COMPLETE population, independent of the entity limit, so the overview
+         *     describes the result rather than its first page.
+         */
+        AggregationSummaryResponse: {
+            /**
+             * Dimension
+             * @enum {string}
+             */
+            dimension: "group" | "domain" | "type";
+            /** Edges */
+            edges: components["schemas"]["AggregateEdgeResponse"][];
+            /** Legibility Budget */
+            legibility_budget: number;
+            /** Nodes */
+            nodes: components["schemas"]["AggregateNodeResponse"][];
+        };
+        /**
          * AiBomCandidate
          * @description One architecture entity the scan thinks might be an AI component, and why.
          *
@@ -4299,6 +4365,45 @@ export interface components {
             warning_count: number;
         };
         /**
+         * AuthoritativePatternResultResponse
+         * @description A pattern that decides the row's verdict.
+         *
+         *     ``failing_obligations`` and ``last_satisfied_ids`` are capped server-side; ``failing_overflow``
+         *     is how many were dropped, so a client never presents a truncated list as complete.
+         */
+        AuthoritativePatternResultResponse: {
+            coverage: components["schemas"]["TraceCoverageResponse"];
+            /** Diagnostic Code */
+            diagnostic_code: ("cycle" | "budget_aborted" | "ambiguous_link") | null;
+            /** Failing Obligations */
+            failing_obligations: (components["schemas"]["TerminalObligationResponse"] | components["schemas"]["ShortcutObligationResponse"] | components["schemas"]["MissingRequirementObligationResponse"] | components["schemas"]["MissingOutcomeObligationResponse"])[];
+            /** Failing Overflow */
+            failing_overflow: number;
+            /** Incomplete Branch Count */
+            incomplete_branch_count: number;
+            /** Last Satisfied Ids */
+            last_satisfied_ids: string[];
+            /** Missing Expected */
+            missing_expected: string[];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            role: "authoritative";
+            /** Shortcut */
+            shortcut: boolean;
+            /**
+             * Status Code
+             * @enum {string}
+             */
+            status_code: "ok" | "shortcut" | "incomplete_branch" | "partial_branches" | "no_trace" | "ambiguous_link" | "cycle" | "observed" | "none_observed" | "not_applicable";
+            /**
+             * Verdict
+             * @enum {string}
+             */
+            verdict: "pass" | "gap" | "not_applicable";
+        };
+        /**
          * BackendIdentityResponse
          * @description Which repository this backend serves, and which build is serving it.
          *
@@ -4489,6 +4594,32 @@ export interface components {
             dry_run: boolean;
             /** Remove Entities */
             remove_entities?: string[] | null;
+        };
+        /**
+         * ConnectionItemSummaryResponse
+         * @description One selected connection, modelled or derived.
+         *
+         *     ``via_connection_ids`` is unordered membership and is not renderable as a path;
+         *     ``witness_steps`` is the ordered walk. Empty steps on a derived connection means the chain
+         *     could not be reconstructed, which surfaces show as "chain unavailable" rather than as no chain.
+         */
+        ConnectionItemSummaryResponse: {
+            /** Certainty */
+            certainty: ("certain" | "potential") | null;
+            /** Hops */
+            hops: number | null;
+            /** Id */
+            id: string;
+            /** Source */
+            source: string;
+            /** Target */
+            target: string;
+            /** Type */
+            type: string;
+            /** Via Connection Ids */
+            via_connection_ids: string[];
+            /** Witness Steps */
+            witness_steps: components["schemas"]["WitnessStepResponse"][];
         };
         /**
          * ConnectionListResponse
@@ -4968,6 +5099,25 @@ export interface components {
              * @enum {string}
              */
             traversal: "derived";
+        };
+        /**
+         * DiagnosticPatternResultResponse
+         * @description A pattern that only observes. Its absence (``none_observed``) is verdict-neutral, and
+         *     rendering it as a pass or a gap would report a finding the evaluation did not make.
+         */
+        DiagnosticPatternResultResponse: {
+            /** Last Satisfied Ids */
+            last_satisfied_ids: string[];
+            /**
+             * Observation
+             * @enum {string}
+             */
+            observation: "observed" | "none_observed" | "not_applicable";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            role: "diagnostic";
         };
         /**
          * DiagramConnectionItem
@@ -5991,6 +6141,44 @@ export interface components {
             referencing_analysis_ids: string[];
         };
         /**
+         * EntityItemSummaryResponse
+         * @description One selected entity, summarised the same way for every surface.
+         *
+         *     ``domain`` is carried here rather than looked up per entity because grouping and layered
+         *     presentation both need it at the moment the result is laid out.
+         */
+        EntityItemSummaryResponse: {
+            /** Anchor Modeled Distance */
+            anchor_modeled_distance: number | null;
+            /** Column Values */
+            column_values: {
+                [key: string]: unknown;
+            } | null;
+            /** Domain */
+            domain: string;
+            /** Group */
+            group: string;
+            /** Id */
+            id: string;
+            /** Matched Via Derived Hops */
+            matched_via_derived_hops: number | null;
+            /**
+             * Membership
+             * @enum {string}
+             */
+            membership: "primary" | "expanded";
+            /** Name */
+            name: string;
+            /** Specialization Slugs */
+            specialization_slugs: string[];
+            /** Status */
+            status: string;
+            /** Type */
+            type: string;
+            /** Version */
+            version: string;
+        };
+        /**
          * EntityListResponse
          * @description A page of entities, with the count of the *filtered* population.
          *
@@ -6873,6 +7061,19 @@ export interface components {
             transparent: boolean;
         };
         /**
+         * MatrixAxisIdsResponse
+         * @description The row and column populations of a criteria-axes matrix.
+         *
+         *     Sorted subsets of the result's own entity ids. Entities on neither axis are the complement and
+         *     are derivable, so they are not repeated here.
+         */
+        MatrixAxisIdsResponse: {
+            /** Column Entity Ids */
+            column_entity_ids: string[];
+            /** Row Entity Ids */
+            row_entity_ids: string[];
+        };
+        /**
          * MatrixConfigResponse
          * @description A matrix diagram's authored configuration, parsed out of its PUML frontmatter.
          *
@@ -6944,6 +7145,35 @@ export interface components {
             analysis_id: string;
             /** Expected Method */
             expected_method: string;
+        };
+        /**
+         * MissingOutcomeObligationResponse
+         * @description A goal with no outcome and no shortcut: zero expected branches, and a gap rather than a
+         *     vacuous pass.
+         */
+        MissingOutcomeObligationResponse: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "missing-outcome";
+            /** Root Id */
+            root_id: string;
+        };
+        /**
+         * MissingRequirementObligationResponse
+         * @description An outcome branch with no active realizing requirement — the expected node is absent.
+         */
+        MissingRequirementObligationResponse: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "missing-requirement";
+            /** Outcome Id */
+            outcome_id: string;
+            /** Root Id */
+            root_id: string;
         };
         /** ModelThisBody */
         ModelThisBody: {
@@ -7912,6 +8142,21 @@ export interface components {
             value: string;
         };
         /**
+         * ShortcutObligationResponse
+         * @description A direct ``requirement —influence→ root`` branch: a gap, because it skips the outcome.
+         */
+        ShortcutObligationResponse: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "shortcut";
+            /** Requirement Id */
+            requirement_id: string;
+            /** Root Id */
+            root_id: string;
+        };
+        /**
          * SignalAnchorTypeListResponse
          * @description The admissible anchor types, so a client never redeclares the vocabulary.
          */
@@ -8189,6 +8434,27 @@ export interface components {
             enterprise: components["schemas"]["EnterpriseSyncStateResponse"] | null;
         };
         /**
+         * TargetPopulationSummaryResponse
+         * @description The full (pre-truncation) result classified against the definition's declared targets.
+         *
+         *     ``incidental_type_counts`` are the types that arrived because something else pulled them in;
+         *     ``structural_count`` is what the query's own structure added. Null on the execution when the
+         *     target population is unknown — an undeclared query-mode definition, or an ad-hoc query — in
+         *     which case a header shows plain counts and makes no absence claim.
+         */
+        TargetPopulationSummaryResponse: {
+            /** Incidental Type Counts */
+            incidental_type_counts: {
+                [key: string]: number;
+            };
+            /** Structural Count */
+            structural_count: number;
+            /** Target Count */
+            target_count: number;
+            /** Target Types */
+            target_types: string[];
+        };
+        /**
          * TaxonomyDomainResponse
          * @description One domain and the types found in it.
          *
@@ -8212,6 +8478,83 @@ export interface components {
             count: number;
             /** Name */
             name: string;
+        };
+        /**
+         * TerminalObligationResponse
+         * @description A terminal ``requirement`` obligation.
+         *
+         *     ``via_outcome_id`` is the outcome a goal-rooted row reached the requirement through, and null on
+         *     an outcome-rooted row — where there is no intermediate hop, not an unknown one.
+         */
+        TerminalObligationResponse: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "requirement";
+            /** Requirement Id */
+            requirement_id: string;
+            /** Root Id */
+            root_id: string;
+            /** Via Outcome Id */
+            via_outcome_id: string | null;
+        };
+        /**
+         * TraceCoverageResponse
+         * @description The terminal-obligation ratio for one row: how many of the applicable branches are covered.
+         */
+        TraceCoverageResponse: {
+            /** Applicable */
+            applicable: number;
+            /** Covered */
+            covered: number;
+        };
+        /**
+         * TraceRowResponse
+         * @description One traced entity: its identity, its composed verdict, and each pattern's result.
+         *
+         *     ``pattern_results`` pairs a pattern's declared name with its result, in declaration order.
+         */
+        TraceRowResponse: {
+            /** Entity Id */
+            entity_id: string;
+            /** Entity Type */
+            entity_type: string;
+            /** Name */
+            name: string;
+            /** Pattern Results */
+            pattern_results: [
+                string,
+                components["schemas"]["AuthoritativePatternResultResponse"] | components["schemas"]["DiagnosticPatternResultResponse"]
+            ][];
+            /** Tier */
+            tier: string;
+            /**
+             * Verdict
+             * @enum {string}
+             */
+            verdict: "pass" | "gap" | "not_applicable";
+        };
+        /**
+         * TraceTableResponse
+         * @description The branch-complete coverage table, already gaps-filtered, sorted and paged.
+         *
+         *     ``total_rows`` counts the applicable population *before* the page limit, so a gap beyond the
+         *     page still registers in the header rather than disappearing with the rows.
+         *     ``derived_truncated`` reports separately that the derived-realization pass hit its time budget:
+         *     the rows shown are sound, but absence is no longer evidence of a gap.
+         */
+        TraceTableResponse: {
+            /** Derived Truncated */
+            derived_truncated: boolean;
+            /** Returned Rows */
+            returned_rows: number;
+            /** Rows */
+            rows: components["schemas"]["TraceRowResponse"][];
+            /** Total Rows */
+            total_rows: number;
+            /** Truncated */
+            truncated: boolean;
         };
         /**
          * UnknownDiagramTypeDetails
@@ -8338,6 +8681,65 @@ export interface components {
          */
         VexRevisionRecord: {
             [key: string]: unknown;
+        };
+        /**
+         * ViewpointExecutionResponse
+         * @description One execution: what ran, what it selected, and how much of it was returned.
+         *
+         *     ``slug``/``version`` are null for an ad-hoc query, which has no identity to report.
+         *     ``entity_ids``/``connection_ids`` are the complete selected populations while ``entities``/
+         *     ``connections`` carry only the returned page, so ``truncated`` and the four counts are what
+         *     tell a reader whether they are looking at all of it.
+         */
+        ViewpointExecutionResponse: {
+            aggregation: components["schemas"]["AggregationSummaryResponse"] | null;
+            /** Anchor Ids */
+            anchor_ids: string[];
+            /** Bound Parameters */
+            bound_parameters: {
+                [key: string]: boolean | number | string | string[];
+            };
+            /** Connection Ids */
+            connection_ids: string[];
+            /** Connections */
+            connections: components["schemas"]["ConnectionItemSummaryResponse"][];
+            /** Duration Ms */
+            duration_ms: number;
+            /** Entities */
+            entities: components["schemas"]["EntityItemSummaryResponse"][];
+            /** Entity Ids */
+            entity_ids: string[];
+            /** Entity Limit */
+            entity_limit: number;
+            /** Executed At */
+            executed_at: string;
+            /** Index Generation */
+            index_generation: number | null;
+            matrix_axes: components["schemas"]["MatrixAxisIdsResponse"] | null;
+            /** Query Schema */
+            query_schema: number;
+            /** Query Summary */
+            query_summary: string;
+            /** Repo Scope */
+            repo_scope: string;
+            /** Returned Connection Count */
+            returned_connection_count: number;
+            /** Returned Entity Count */
+            returned_entity_count: number;
+            /** Slug */
+            slug: string | null;
+            target_population: components["schemas"]["TargetPopulationSummaryResponse"] | null;
+            /** Total Connection Count */
+            total_connection_count: number;
+            /** Total Entity Count */
+            total_entity_count: number;
+            trace_table: components["schemas"]["TraceTableResponse"] | null;
+            /** Truncated */
+            truncated: boolean;
+            /** Version */
+            version: number | null;
+            /** Warnings */
+            warnings: string[];
         };
         /**
          * ViewpointPersistResponse
@@ -8531,6 +8933,30 @@ export interface components {
              * @default false
              */
             confirm: boolean;
+        };
+        /**
+         * WitnessStepResponse
+         * @description One hop of a derived connection's witness chain, ordered source→target.
+         *
+         *     ``direction`` says whether the underlying modelled edge was walked forwards or against its
+         *     arrow; without it a chain reads as a path that does not exist in the model.
+         */
+        WitnessStepResponse: {
+            /** Connection Id */
+            connection_id: string;
+            /** Connection Type */
+            connection_type: string;
+            /**
+             * Direction
+             * @enum {string}
+             */
+            direction: "forward" | "reverse";
+            /** Hop Index */
+            hop_index: number;
+            /** Source */
+            source: string;
+            /** Target */
+            target: string;
         };
         /**
          * WorkingSetNodeItem
@@ -16920,7 +17346,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["ViewpointExecutionResponse"];
                 };
             };
             /** @description Request validation failed */

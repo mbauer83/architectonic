@@ -24,7 +24,6 @@ UNTYPED_RESPONSE_OPERATIONS: frozenset[str] = frozenset({
     "diagrams_search_entity_display_items",
     "documents_read_document_schemata",
     "taxonomy_read_authoring_guidance",
-    "viewpoints_execute_viewpoint",
     "viewpoints_execute_viewpoint_diagram",
     "viewpoints_execute_viewpoint_projection",
     "viewpoints_list_viewpoints",

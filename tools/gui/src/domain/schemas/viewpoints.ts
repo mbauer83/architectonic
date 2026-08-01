@@ -218,10 +218,16 @@ export const ViewpointExecutionResultSchema = Schema.Struct({
   anchor_ids: Schema.optionalWith(Schema.Array(Schema.String), { default: () => [] }),
   target_population: Schema.optionalWith(Schema.NullOr(TargetPopulationSummarySchema), { default: () => null }),
   aggregation: Schema.optionalWith(Schema.NullOr(AggregationSummarySchema), { default: () => null }),
-  /** The canonical values this execution ran with — what a shared URL must reproduce. */
-  bound_parameters: Schema.optionalWith(Schema.Record({ key: Schema.String, value: Schema.Unknown }), {
-    default: () => ({}),
-  }),
+  /** The canonical values this execution ran with — what a shared URL must reproduce. A
+   * parameter declares a scalar element kind and a cardinality, and a set-valued one
+   * canonicalizes to strings, so these arms are the whole value space binding produces. */
+  bound_parameters: Schema.optionalWith(
+    Schema.Record({
+      key: Schema.String,
+      value: Schema.Union(Schema.Boolean, Schema.Number, Schema.String, Schema.Array(Schema.String)),
+    }),
+    { default: () => ({}) },
+  ),
   trace_table: Schema.optionalWith(Schema.NullOr(TraceTableSchema), { default: () => null }),
 })
 export type ViewpointExecutionResult = typeof ViewpointExecutionResultSchema.Type

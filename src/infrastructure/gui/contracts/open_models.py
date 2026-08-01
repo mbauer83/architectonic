@@ -125,6 +125,11 @@ OPEN_RESPONSE_FIELDS: dict[str, OpenReason] = {
     # name — in the one place a person is deciding which version to keep.
     "PromotionEntityConflict.engagement_fields": AUTHORED,
     "PromotionEntityConflict.enterprise_fields": AUTHORED,
+    # Keys are the definition's authored column sources; values are whatever those attribute paths
+    # resolve to on the entity — its Properties table, its frontmatter, or a derived attribute. The
+    # column source decides the type, so declaring one here would be this package deciding what an
+    # attribute may hold.
+    "EntityItemSummaryResponse.column_values": AUTHORED,
 
     # ── A diagram-type module owns the shape ──────────────────────────────────
     "EntityDetailResponse.display_blocks": MODULE_OWNED,

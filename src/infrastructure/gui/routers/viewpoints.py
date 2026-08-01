@@ -37,6 +37,7 @@ from src.domain.viewpoints.viewpoints import PresentationSpec, TargetKind
 from src.infrastructure.assurance.signal_attribute_capability import (
     composed_signal_attribute_capability,
 )
+from src.infrastructure.gui.contracts.viewpoint_execution import ViewpointExecutionResponse
 from src.infrastructure.gui.routers import state as s
 from src.infrastructure.gui.routers._diagram_selection import resolve_diagram_selection
 from src.infrastructure.gui.routers._openapi import READ_RESPONSES, TAG_VIEWPOINTS, OpenMapResponse, media_response
@@ -93,7 +94,7 @@ def _presentation_label_attribute(presentation: PresentationSpec | None) -> str 
 
 
 @router.post("/api/viewpoints/execute", tags=[TAG_VIEWPOINTS], summary="Execute a viewpoint query",
-    response_model=OpenMapResponse)
+    response_model=ViewpointExecutionResponse)
 def execute_viewpoint(
     slug: Annotated[str | None, Body()] = None,
     query: Annotated[dict[str, object] | None, Body()] = None,
