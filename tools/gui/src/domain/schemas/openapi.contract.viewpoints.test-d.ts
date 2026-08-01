@@ -5,11 +5,19 @@ import type {
   AggregateEdgeSchema,
   AggregateNodeSchema,
   AggregationSummarySchema,
+  AppliedDiagramViewpointSchema,
   ConnectionItemSummarySchema,
+  DiagramViewpointProjectionSchema,
   EntityItemSummarySchema,
   MatrixAxisIdsSchema,
+  NoDiagramViewpointSchema,
+  ProjectedOccurrenceSchema,
+  ScaleLegendDataSchema,
+  ScaleStyleValueSchema,
+  StyleRuleOutcomeSchema,
   TargetPopulationSummarySchema,
   ViewpointExecutionResultSchema,
+  ViewpointProjectionSchema,
   WitnessStepSchema,
 } from './viewpoints'
 import type {
@@ -68,6 +76,45 @@ describe('viewpoint execution', () => {
     >()
     expectTypeOf<SchemaType<typeof AggregateEdgeSchema>>().toEqualTypeOf<
       Immutable<components['schemas']['AggregateEdgeResponse']>
+    >()
+  })
+})
+
+describe('viewpoint projection', () => {
+  it('decodes the repository projection, whose every field is present', () => {
+    // `index_generation` was missing from the decoder outright, so the one field that lets a
+    // caller prove a result and its styling came from the same snapshot was stripped on decode.
+    expectTypeOf<SchemaType<typeof ViewpointProjectionSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['ViewpointProjectionResponse']>
+    >()
+  })
+
+  it('decodes a diagram projection as the two answers it actually is', () => {
+    expectTypeOf<SchemaType<typeof DiagramViewpointProjectionSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['DiagramViewpointProjectionResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof NoDiagramViewpointSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['NoDiagramViewpointResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof AppliedDiagramViewpointSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['AppliedDiagramViewpointResponse']>
+    >()
+  })
+
+  it('decodes a projected occurrence whole, connection legs included', () => {
+    // Eight of its fourteen fields were undeclared, and an effect struct strips what it does not
+    // declare — a derived connection arrived with its certainty, hops and witness ids gone.
+    expectTypeOf<SchemaType<typeof ProjectedOccurrenceSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['ProjectedOccurrenceResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof ScaleStyleValueSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['ScaleStyleValueResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof ScaleLegendDataSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['ScaleLegendResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof StyleRuleOutcomeSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['StyleRuleOutcomeResponse']>
     >()
   })
 })

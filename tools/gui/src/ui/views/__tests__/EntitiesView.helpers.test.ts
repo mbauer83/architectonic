@@ -5,7 +5,8 @@ import {
 } from '../EntitiesView.helpers'
 import { mkPresentation, mkStyleRule } from '../../../domain/viewpointPresentation'
 import type { ColumnSpecNode } from '../../../domain/viewpointPresentation'
-import type { EntityItemSummary, ViewpointProjection } from '../../../domain'
+import type { EntityItemSummary } from '../../../domain'
+import { occurrence, repositoryProjection } from './projectionFixtures'
 
 const entity = (overrides: Partial<EntityItemSummary> = {}): EntityItemSummary => ({
   id: 'APC@1.EntSch.a', name: 'Alpha', type: 'application-component',
@@ -145,13 +146,9 @@ describe('groupTableRows', () => {
 describe('projectionByItemId', () => {
   it('indexes projection items by id, empty map for null projection', () => {
     expect(projectionByItemId(null).size).toBe(0)
-    const projection: ViewpointProjection = {
-      applied: true,
-      target: 'repository',
-      items: [{ item_id: 'a', item_kind: 'entity', state: 'visible', membership: 'primary', reasons: [], style: { badges: 'positive' } }],
-      stale_pin: false,
-      warnings: [],
-    }
+    const projection = repositoryProjection({
+      items: [occurrence({ item_id: 'a', style: { badges: 'positive' } })],
+    })
     const byId = projectionByItemId(projection)
     expect(byId.get('a')?.style.badges).toBe('positive')
   })

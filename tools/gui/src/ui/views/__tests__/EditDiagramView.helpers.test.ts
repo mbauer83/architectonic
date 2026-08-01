@@ -1,11 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { reasonHint, effectiveOcclusionState, projectionByItemId } from '../EditDiagramView.helpers'
-import type { ProjectedOccurrence, ViewpointProjection } from '../../../domain'
-
-const occurrence = (overrides: Partial<ProjectedOccurrence> = {}): ProjectedOccurrence => ({
-  item_id: 'X@1.a.x', item_kind: 'entity', state: 'visible', membership: 'primary', reasons: [], style: {},
-  ...overrides,
-})
+import { diagramProjection, occurrence } from './projectionFixtures'
 
 describe('reasonHint', () => {
   it('returns null when there are no reasons (fully matching)', () => {
@@ -48,10 +43,10 @@ describe('projectionByItemId', () => {
   })
 
   it('indexes items by item_id', () => {
-    const projection: ViewpointProjection = {
-      applied: true, target: 'diagram',
-      items: [occurrence({ item_id: 'A' }), occurrence({ item_id: 'B', item_kind: 'connection' })],
-    }
+    const projection = diagramProjection([
+      occurrence({ item_id: 'A' }),
+      occurrence({ item_id: 'B', item_kind: 'connection' }),
+    ])
     const index = projectionByItemId(projection)
     expect(index.get('A')?.item_id).toBe('A')
     expect(index.get('B')?.item_kind).toBe('connection')

@@ -1,4 +1,4 @@
-import type { ProjectedOccurrence, ViewpointProjection } from '../../domain'
+import type { DiagramViewpointProjection, ProjectedOccurrence } from '../../domain'
 
 /** Companion plan §6.2 exclusion reasons — "why excluded" hint text for the ghost/hide
  * overlay, one clause per reason (a connection can carry more than one, e.g. an excluded
@@ -23,6 +23,8 @@ export const effectiveOcclusionState = (
   occurrence.state === 'ghosted' && hideInsteadOfGhost ? 'hidden' : occurrence.state
 
 export const projectionByItemId = (
-  projection: ViewpointProjection | null,
+  projection: DiagramViewpointProjection | null,
 ): ReadonlyMap<string, ProjectedOccurrence> =>
-  new Map((projection?.items ?? []).map((item) => [item.item_id, item]))
+  new Map(
+    (projection !== null && projection.applied ? projection.items : []).map((item) => [item.item_id, item]),
+  )

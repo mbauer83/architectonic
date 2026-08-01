@@ -5,7 +5,8 @@ import {
 import { mkPresentation } from '../../../domain/viewpointPresentation'
 import { mkGroup } from '../../../domain/viewpointCriteria'
 import type { PresentationNode } from '../../../domain/viewpointPresentation'
-import type { ConnectionItemSummary, ProjectedOccurrence, ViewpointExecutionResult, ViewpointProjection } from '../../../domain'
+import type { ConnectionItemSummary, ProjectedOccurrence, ViewpointExecutionResult } from '../../../domain'
+import { occurrence, repositoryProjection } from './projectionFixtures'
 
 const conn = (overrides: Partial<ConnectionItemSummary> = {}): ConnectionItemSummary => ({
   id: 'c1', type: 'serving', source: 'a', target: 'b',
@@ -70,15 +71,14 @@ describe('buildMatrixCells', () => {
   })
 })
 
-const occurrence = (itemId: string, style: Record<string, string>): ProjectedOccurrence => ({
-  item_id: itemId, item_kind: 'entity', state: 'visible', membership: 'primary', reasons: [], style,
-})
+const styled = (itemId: string, style: Record<string, string>): ProjectedOccurrence =>
+  occurrence({ item_id: itemId, style })
 
 describe('cellEmphasisToken', () => {
   it('prefers the row entity token, falling back to the column entity token', () => {
     const byId = new Map([
-      ['row1', occurrence('row1', { cell_emphasis: 'critical' })],
-      ['col1', occurrence('col1', { cell_emphasis: 'positive' })],
+      ['row1', styled('row1', { cell_emphasis: 'critical' })],
+      ['col1', styled('col1', { cell_emphasis: 'positive' })],
     ])
     expect(cellEmphasisToken('row1', 'col1', byId)).toBe('critical')
     expect(cellEmphasisToken('row-none', 'col1', byId)).toBe('positive')
@@ -89,7 +89,7 @@ describe('cellEmphasisToken', () => {
 describe('projectionByItemId', () => {
   it('indexes by item id, empty for a null projection', () => {
     expect(projectionByItemId(null).size).toBe(0)
-    const projection: ViewpointProjection = { applied: true, target: 'repository', items: [occurrence('a', {})], stale_pin: false, warnings: [] }
+    const projection = repositoryProjection({ items: [styled('a', {})] })
     expect(projectionByItemId(projection).has('a')).toBe(true)
   })
 })

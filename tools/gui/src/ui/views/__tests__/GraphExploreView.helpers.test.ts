@@ -5,6 +5,7 @@ import {
 } from '../GraphExploreView.helpers'
 import { tokenColor, tokenShape, tokenIconLetter, tokenEdgeEmphasis, resolveStyleColor } from '../../lib/viewpointStyleTokens'
 import type { ViewpointDefinitionEnvelope } from '../../../domain'
+import { occurrence, repositoryProjection } from './projectionFixtures'
 
 const mkEnvelope = (representation: string | null): ViewpointDefinitionEnvelope => ({
   slug: 'application-structure', version: 1, name: 'Application Structure', tier: 'module',
@@ -118,12 +119,9 @@ describe('buildConnectionSummaryIndex', () => {
 
 describe('projectionByItemId', () => {
   it('indexes items by item_id', () => {
-    const projection = {
-      applied: true, target: 'repository' as const,
-      items: [
-        { item_id: 'ENT@A', item_kind: 'entity' as const, state: 'visible' as const, membership: 'primary' as const, reasons: [], style: { node_color: 'positive' } },
-      ],
-    }
+    const projection = repositoryProjection({
+      items: [occurrence({ item_id: 'ENT@A', style: { node_color: 'positive' } })],
+    })
     const byId = projectionByItemId(projection)
     expect(byId.get('ENT@A')?.style).toEqual({ node_color: 'positive' })
   })
@@ -136,15 +134,9 @@ describe('projectionByItemId', () => {
 describe('buildConnectionStyleIndex', () => {
   it('joins a connection style back onto its source/target/type key', () => {
     const connections = [{ id: 'CON@ab', type: 'archimate-serving', source: 'ENT@A', target: 'ENT@B', certainty: null, hops: null, via_connection_ids: [], witness_steps: [] }]
-    const projection = {
-      applied: true, target: 'repository' as const,
-      items: [
-        {
-          item_id: 'CON@ab', item_kind: 'connection' as const, state: 'visible' as const,
-          membership: 'primary' as const, reasons: [], style: { edge_color: 'critical' },
-        },
-      ],
-    }
+    const projection = repositoryProjection({
+      items: [occurrence({ item_id: 'CON@ab', item_kind: 'connection', style: { edge_color: 'critical' } })],
+    })
     const index = buildConnectionStyleIndex(connections, projection)
     expect(index.get(edgeStyleKey('ENT@A', 'ENT@B', 'archimate-serving'))).toEqual({ edge_color: 'critical' })
   })

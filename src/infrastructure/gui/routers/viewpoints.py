@@ -38,6 +38,10 @@ from src.infrastructure.assurance.signal_attribute_capability import (
     composed_signal_attribute_capability,
 )
 from src.infrastructure.gui.contracts.viewpoint_execution import ViewpointExecutionResponse
+from src.infrastructure.gui.contracts.viewpoint_projection import (
+    DiagramViewpointProjectionResponse,
+    ViewpointProjectionResponse,
+)
 from src.infrastructure.gui.routers import state as s
 from src.infrastructure.gui.routers._diagram_selection import resolve_diagram_selection
 from src.infrastructure.gui.routers._openapi import READ_RESPONSES, TAG_VIEWPOINTS, OpenMapResponse, media_response
@@ -205,7 +209,7 @@ def export_viewpoint_csv(
 
 
 @router.post("/api/viewpoints/execute-projection", tags=[TAG_VIEWPOINTS], summary="Execute a viewpoint projection",
-    response_model=OpenMapResponse)
+    response_model=ViewpointProjectionResponse)
 def execute_viewpoint_projection(
     slug: Annotated[str | None, Body()] = None,
     query: Annotated[dict[str, object] | None, Body()] = None,
@@ -344,7 +348,8 @@ def execute_viewpoint_diagram(
 
 
 @router.get("/api/diagrams/{artifact_id}/viewpoint-projection", tags=[TAG_VIEWPOINTS],
-    summary="Viewpoint projection for a diagram", response_model=OpenMapResponse, responses=READ_RESPONSES)
+    summary="Viewpoint projection for a diagram", response_model=DiagramViewpointProjectionResponse,
+    responses=READ_RESPONSES)
 def get_diagram_viewpoint_projection(
     artifact_id: str,
     catalogs: RuntimeCatalogs = Depends(fresh_viewpoints_runtime_catalogs_dependency),

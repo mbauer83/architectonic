@@ -5,7 +5,7 @@ import { Effect, Exit } from 'effect'
 import { modelServiceKey, toastKey } from '../keys'
 import type {
   DiagramContext, DiagramPreviewResult, WriteResult,
-  DiagramTypeUiConfig, ViewpointSummary, ViewpointProjection,
+  DiagramTypeUiConfig, ViewpointSummary, DiagramViewpointProjection,
 } from '../../domain'
 import type { RepoError } from '../../ports/ModelRepository'
 import type { NotFoundError } from '../../domain'
@@ -43,7 +43,7 @@ const uiConfig = ref<DiagramTypeUiConfig | null>(null)
 const viewpoints = ref<ViewpointSummary[]>([])
 const viewpointSlug = ref<string | null>(null)
 const viewpointPinnedVersion = ref<number | null>(null)
-const viewpointProjection = ref<ViewpointProjection | null>(null)
+const viewpointProjection = ref<DiagramViewpointProjection | null>(null)
 const hideInsteadOfGhost = ref(false)
 
 const loadViewpoints = async () => {
@@ -63,7 +63,10 @@ const onSelectViewpoint = (viewpoint: ViewpointSummary | null) => {
 const currentDefinitionVersion = computed(
   () => findViewpointBySlug(viewpoints.value, viewpointSlug.value)?.version ?? null,
 )
-const stalePin = computed(() => viewpointProjection.value?.stale_pin === true)
+const stalePin = computed(() => {
+  const projection = viewpointProjection.value
+  return projection !== null && projection.applied && projection.stale_pin
+})
 
 const doRePin = () => {
   if (currentDefinitionVersion.value !== null) viewpointPinnedVersion.value = currentDefinitionVersion.value

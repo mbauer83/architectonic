@@ -3185,6 +3185,35 @@ export interface components {
             /** Authored Node Count */
             authored_node_count: number;
         };
+        /**
+         * AppliedDiagramViewpointResponse
+         * @description The projection a diagram or matrix saved in its own frontmatter.
+         *
+         *     ``stale_pin`` is what this route carries that the repository projection cannot: the artifact
+         *     pinned a version, and the definition has since moved past it.
+         */
+        AppliedDiagramViewpointResponse: {
+            /**
+             * Applied
+             * @constant
+             */
+            applied: true;
+            /** Items */
+            items: components["schemas"]["ProjectedOccurrenceResponse"][];
+            /** Rule Outcomes */
+            rule_outcomes: components["schemas"]["StyleRuleOutcomeResponse"][];
+            /** Scale Legends */
+            scale_legends: components["schemas"]["ScaleLegendResponse"][];
+            /** Stale Pin */
+            stale_pin: boolean;
+            /**
+             * Target
+             * @enum {string}
+             */
+            target: "diagram" | "matrix";
+            /** Warnings */
+            warnings: string[];
+        };
         /** ArchiveGroupBody */
         ArchiveGroupBody: {
             /** Confirm */
@@ -5399,6 +5428,28 @@ export interface components {
             };
         };
         /**
+         * DiagramViewpointProjectionResponse
+         * @description Two genuinely different answers, told apart by ``applied``.
+         *
+         *     A flat model with every projection field optional would have been the smaller diff and the worse
+         *     contract: it makes a client null-check ``items`` on the branch where the server guarantees them,
+         *     and it cannot say that ``applied: false`` means *exactly* one key. Not ``NullsOmitted`` either —
+         *     ``response_model_exclude_none`` reaches into nested models, and it would have stripped the nulls
+         *     off every :class:`ProjectedOccurrenceResponse` here while the repository projection sends them,
+         *     leaving one shape with two null policies.
+         *
+         *     A ``RootModel`` so the document carries a named component: a bare ``A | B`` on the route
+         *     publishes an inline union a generated client cannot refer to.
+         *
+         *     No ``Field(discriminator=...)``, unlike the other unions on this surface, and for a mechanical
+         *     reason: pydantic writes the discriminator mapping with Python's spelling of the key, so a
+         *     *boolean* tag becomes ``"True"``/``"False"`` in the document and the TypeScript generator then
+         *     emits ``applied: "True"`` — a string where the body carries a bool. The arms are closed and their
+         *     tags are ``const``, so validation resolves them without the mapping, and the published ``anyOf``
+         *     is the truthful one.
+         */
+        DiagramViewpointProjectionResponse: components["schemas"]["NoDiagramViewpointResponse"] | components["schemas"]["AppliedDiagramViewpointResponse"];
+        /**
          * DirectNeighborhood
          * @description Neighbours reached over stated connections, keyed by hop distance.
          */
@@ -7277,6 +7328,20 @@ export interface components {
             };
         };
         /**
+         * NoDiagramViewpointResponse
+         * @description The artifact pins no viewpoint, so there is no projection and nothing else to say.
+         *
+         *     The ordinary case rather than an error — most diagrams are hand-drawn — which is why it is a 200
+         *     with a one-key body and not a 404.
+         */
+        NoDiagramViewpointResponse: {
+            /**
+             * Applied
+             * @constant
+             */
+            applied: false;
+        };
+        /**
          * NotAFailureModeDetails
          * @description ``not_a_failure_mode``: the node a factor assessment was aimed at.
          *
@@ -7416,6 +7481,60 @@ export interface components {
             source_type: string;
             /** Target Type */
             target_type: string;
+        };
+        /**
+         * ProjectedOccurrenceResponse
+         * @description One entity or connection, and what the viewpoint does with it.
+         *
+         *     ``style`` is empty whenever ``reasons`` is non-empty, in every enforcement mode: style tokens
+         *     express the viewpoint's semantics, which an excluded item by definition does not satisfy.
+         *
+         *     The connection fields (``connection_type`` through ``via_connection_ids``) are null on an
+         *     entity, and the entity fields (``derived_match_hops``, ``column_values``) are null on a
+         *     connection — the row describes both kinds, and ``item_kind`` says which one it is.
+         */
+        ProjectedOccurrenceResponse: {
+            /** Certainty */
+            certainty: ("certain" | "potential") | null;
+            /** Column Values */
+            column_values: {
+                [key: string]: unknown;
+            } | null;
+            /** Connection Type */
+            connection_type: string | null;
+            /** Derived Match Hops */
+            derived_match_hops: number | null;
+            /** Hops */
+            hops: number | null;
+            /** Item Id */
+            item_id: string;
+            /**
+             * Item Kind
+             * @enum {string}
+             */
+            item_kind: "entity" | "connection";
+            /**
+             * Membership
+             * @enum {string}
+             */
+            membership: "primary" | "expanded";
+            /** Reasons */
+            reasons: ("out_of_scope" | "criteria_mismatch" | "endpoint_excluded")[];
+            /** Source Id */
+            source_id: string | null;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "visible" | "ghosted";
+            /** Style */
+            style: {
+                [key: string]: string | components["schemas"]["ScaleStyleValueResponse"];
+            };
+            /** Target Id */
+            target_id: string | null;
+            /** Via Connection Ids */
+            via_connection_ids: string[];
         };
         /**
          * PromotionDiagramConflict
@@ -7920,6 +8039,42 @@ export interface components {
              */
             push: boolean;
         };
+        /**
+         * ScaleLegendResponse
+         * @description A scale's resolved bounds and endpoint tokens, so a legend can be drawn without re-deriving
+         *     the data range the styling used.
+         */
+        ScaleLegendResponse: {
+            /** Attribute */
+            attribute: string;
+            /** Capability */
+            capability: string;
+            /** Maximum */
+            maximum: number;
+            /** Minimum */
+            minimum: number;
+            /** Tokens */
+            tokens: [
+                string,
+                string
+            ];
+        };
+        /**
+         * ScaleStyleValueResponse
+         * @description A continuous style: interpolate between ``tokens`` at ``position`` (0..1).
+         *
+         *     Never a discrete token — a ``scale`` rule declares a spectrum, and collapsing it to a band
+         *     would report a value the rule did not compute.
+         */
+        ScaleStyleValueResponse: {
+            /** Position */
+            position: number;
+            /** Tokens */
+            tokens: [
+                string,
+                string
+            ];
+        };
         /** SealBaselineBody */
         SealBaselineBody: {
             /** Analysis Id */
@@ -8281,6 +8436,31 @@ export interface components {
             kind: "junction" | "grouping";
             /** Missing */
             missing: components["schemas"]["StructuralClosureEntity"][];
+        };
+        /**
+         * StyleRuleOutcomeResponse
+         * @description What one authored style rule actually did — the "no silent no-op" contract.
+         *
+         *     ``expected-empty`` is a legitimate state (a gap rule over a healthy model) and warns nowhere;
+         *     only ``unresolvable`` and ``shadowed`` are defects. ``disabled`` is a deliberate authoring
+         *     state, not a failure.
+         */
+        StyleRuleOutcomeResponse: {
+            /** Applied Count */
+            applied_count: number;
+            /** Capability */
+            capability: string;
+            /** Detail */
+            detail: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "applied" | "expected-empty" | "shadowed" | "unresolvable" | "disabled";
+            /** Matched Count */
+            matched_count: number;
+            /** Rule Index */
+            rule_index: number;
         };
         /** SummarizeQueryBody */
         SummarizeQueryBody: {
@@ -8797,6 +8977,41 @@ export interface components {
             pruned?: string[];
             /** Slugs */
             slugs: string[];
+        };
+        /**
+         * ViewpointProjectionResponse
+         * @description The repository projection for an executed viewpoint.
+         *
+         *     ``applied`` is always true here: this operation *computes* a projection, so there is no
+         *     unprojected outcome to report. It is on the body because the diagram route's response carries
+         *     the same key and a client reads both through one branch.
+         *
+         *     ``index_generation`` is the same provenance contract ``/execute`` publishes, so a caller
+         *     correlating a result with its styling can verify both came from one model snapshot.
+         */
+        ViewpointProjectionResponse: {
+            /**
+             * Applied
+             * @constant
+             */
+            applied: true;
+            /** Index Generation */
+            index_generation: number | null;
+            /** Items */
+            items: components["schemas"]["ProjectedOccurrenceResponse"][];
+            /** Rule Outcomes */
+            rule_outcomes: components["schemas"]["StyleRuleOutcomeResponse"][];
+            /** Scale Legends */
+            scale_legends: components["schemas"]["ScaleLegendResponse"][];
+            /** Stale Pin */
+            stale_pin: boolean;
+            /**
+             * Target
+             * @constant
+             */
+            target: "repository";
+            /** Warnings */
+            warnings: string[];
         };
         /**
          * ViewpointReferencedDetails
@@ -14276,7 +14491,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["DiagramViewpointProjectionResponse"];
                 };
             };
             /** @description Artifact not found */
@@ -17430,7 +17645,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["ViewpointProjectionResponse"];
                 };
             };
             /** @description Request validation failed */

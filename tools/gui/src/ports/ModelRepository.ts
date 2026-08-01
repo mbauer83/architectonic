@@ -47,6 +47,7 @@ import type {
   GroupList,
   EntityTaxonomy,
   AuthoringGuidance,
+  DiagramViewpointProjection,
   ViewpointProjection,
   ViewpointDefinitionEnvelope,
   CriteriaCatalog,
@@ -221,7 +222,7 @@ export interface ModelRepository extends EnterpriseAdminRepository {
     attribute_id?: string;
     patch: Record<string, unknown>; dry_run?: boolean;
   }) => Effect.Effect<WriteResult, RepoError>
-  readonly getViewpointProjection: (diagramId: string) => Effect.Effect<ViewpointProjection, RepoError>
+  readonly getViewpointProjection: (diagramId: string) => Effect.Effect<DiagramViewpointProjection, RepoError>
   readonly listViewpointDefinitions: () => Effect.Effect<readonly ViewpointDefinitionEnvelope[], RepoError>
   /** Fixed, unstyled content — repository-context execution by slug or ad-hoc query. */
   readonly executeViewpoint: (request: ViewpointExecutionRequest) => Effect.Effect<ViewpointExecutionResult, RepoError>

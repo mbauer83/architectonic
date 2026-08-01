@@ -130,6 +130,7 @@ OPEN_RESPONSE_FIELDS: dict[str, OpenReason] = {
     # column source decides the type, so declaring one here would be this package deciding what an
     # attribute may hold.
     "EntityItemSummaryResponse.column_values": AUTHORED,
+    "ProjectedOccurrenceResponse.column_values": AUTHORED,
 
     # ── A diagram-type module owns the shape ──────────────────────────────────
     "EntityDetailResponse.display_blocks": MODULE_OWNED,

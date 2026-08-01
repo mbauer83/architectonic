@@ -3,6 +3,7 @@ import { NetworkError } from '../../domain/errors'
 import type { ModelRepository } from '../../ports/ModelRepository'
 import {
   CriteriaCatalogSchema,
+  DiagramViewpointProjectionSchema,
   ViewpointDefinitionListSchema,
   ViewpointDiagramResultSchema,
   ViewpointExecutionResultSchema,
@@ -51,7 +52,7 @@ export const viewpointMethods = (): Pick<
   getViewpointProjection: (diagramId: string) =>
     fetchJson(
       buildUrl(`/diagrams/${encodeURIComponent(diagramId)}/viewpoint-projection`),
-      ViewpointProjectionSchema,
+      DiagramViewpointProjectionSchema,
     ),
   listViewpointDefinitions: () =>
     fetchJson(buildUrl('/viewpoints'), ViewpointDefinitionListSchema).pipe(Effect.map((r) => r.viewpoints)),

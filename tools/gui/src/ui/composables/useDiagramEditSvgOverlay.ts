@@ -1,5 +1,5 @@
 import { watch, type Ref } from 'vue'
-import type { DiagramConnection, EntitySummary, ViewpointProjection } from '../../domain'
+import type { DiagramConnection, DiagramViewpointProjection, EntitySummary } from '../../domain'
 import { resolveElementMap, neutralizeSentinelLink } from '../lib/diagramViewerExtensions'
 import { reasonHint, effectiveOcclusionState, projectionByItemId } from '../views/EditDiagramView.helpers'
 
@@ -21,7 +21,7 @@ export function useDiagramEditSvgOverlay(options: {
   selectedNewConnIds: Ref<Set<string>>
   isConnIncluded: (connId: string) => boolean
   includedConnIds: Ref<Set<string>>
-  viewpointProjection: Ref<ViewpointProjection | null>
+  viewpointProjection: Ref<DiagramViewpointProjection | null>
   hideInsteadOfGhost: Ref<boolean>
   toggleEntityRemoval: (id: string) => void
   toggleConn: (connId: string) => void

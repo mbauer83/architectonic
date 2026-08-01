@@ -10,6 +10,7 @@ import {
   toDiagramConnectionStub, toEntitySummaryStub, unionRect,
 } from '../ViewpointDiagramView.helpers'
 import type { ConnectionItemSummary, DiagramConnection, EntityItemSummary, ProjectedOccurrence } from '../../../domain'
+import { occurrence } from './projectionFixtures'
 
 const SVG_NS = 'http://www.w3.org/2000/svg'
 const svgEl = (tag: string): SVGElement => document.createElementNS(SVG_NS, tag)
@@ -341,9 +342,7 @@ describe('centerDelta', () => {
 
 describe('projectionByItemId', () => {
   it('indexes projected occurrences by item id', () => {
-    const items: ProjectedOccurrence[] = [
-      { item_id: 'a', item_kind: 'entity', state: 'visible', membership: 'primary', reasons: [], style: { node_color: 'positive' } },
-    ]
+    const items: ProjectedOccurrence[] = [occurrence({ item_id: 'a', style: { node_color: 'positive' } })]
     expect(projectionByItemId(items).get('a')?.style.node_color).toBe('positive')
   })
 })

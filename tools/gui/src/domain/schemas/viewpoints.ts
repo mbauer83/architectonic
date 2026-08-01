@@ -27,60 +27,27 @@ export const ViewpointSummarySchema = Schema.Struct({
 })
 export type ViewpointSummary = typeof ViewpointSummarySchema.Type
 
-/** A `mode: "scale"` style rule's per-item value: interpolate between `tokens` at
- * `position` (0..1) — never a discrete token, since the rule declares a continuous
- * spectrum rather than named bands. */
-export const ScaleStyleValueSchema = Schema.Struct({
-  position: Schema.Number,
-  tokens: Schema.Tuple(Schema.String, Schema.String),
-})
-export type ScaleStyleValue = typeof ScaleStyleValueSchema.Type
+export type {
+  DiagramViewpointProjection,
+  ProjectedOccurrence,
+  ScaleLegendData,
+  ScaleStyleValue,
+  StyleRuleOutcome,
+  StyleValue,
+  ViewpointProjection,
+} from './viewpointProjection'
+export {
+  AppliedDiagramViewpointSchema,
+  DiagramViewpointProjectionSchema,
+  NoDiagramViewpointSchema,
+  ProjectedOccurrenceSchema,
+  ScaleLegendDataSchema,
+  ScaleStyleValueSchema,
+  StyleRuleOutcomeSchema,
+  StyleValueSchema,
+  ViewpointProjectionSchema,
+} from './viewpointProjection'
 
-export const StyleValueSchema = Schema.Union(Schema.String, ScaleStyleValueSchema)
-export type StyleValue = typeof StyleValueSchema.Type
-
-export const ProjectedOccurrenceSchema = Schema.Struct({
-  item_id: Schema.String,
-  item_kind: Schema.Literal('entity', 'connection'),
-  state: Schema.Literal('visible', 'ghosted'),
-  membership: Schema.Literal('primary', 'expanded'),
-  reasons: Schema.Array(Schema.Literal('out_of_scope', 'criteria_mismatch', 'endpoint_excluded')),
-  style: Schema.Record({ key: Schema.String, value: StyleValueSchema }),
-})
-export type ProjectedOccurrence = typeof ProjectedOccurrenceSchema.Type
-
-export const ScaleLegendDataSchema = Schema.Struct({
-  capability: Schema.String,
-  attribute: Schema.String,
-  minimum: Schema.Number,
-  maximum: Schema.Number,
-  tokens: Schema.Array(Schema.String),
-})
-export type ScaleLegendData = typeof ScaleLegendDataSchema.Type
-
-/** One authored style rule's observable outcome for an execution — the "no silent
- * no-op" contract. `expected-empty` is a legitimate state rendered as a quiet badge;
- * `unresolvable` and `shadowed` also arrive as warnings. */
-export const StyleRuleOutcomeSchema = Schema.Struct({
-  rule_index: Schema.Number,
-  capability: Schema.String,
-  kind: Schema.Literal('applied', 'expected-empty', 'shadowed', 'unresolvable', 'disabled'),
-  matched_count: Schema.Number,
-  applied_count: Schema.Number,
-  detail: Schema.NullOr(Schema.String),
-})
-export type StyleRuleOutcome = typeof StyleRuleOutcomeSchema.Type
-
-export const ViewpointProjectionSchema = Schema.Struct({
-  applied: Schema.Boolean,
-  target: Schema.optional(Schema.Literal('repository', 'diagram', 'matrix')),
-  items: Schema.optional(Schema.Array(ProjectedOccurrenceSchema)),
-  stale_pin: Schema.optional(Schema.Boolean),
-  warnings: Schema.optional(Schema.Array(Schema.String)),
-  scale_legends: Schema.optional(Schema.Array(ScaleLegendDataSchema)),
-  rule_outcomes: Schema.optional(Schema.Array(StyleRuleOutcomeSchema)),
-})
-export type ViewpointProjection = typeof ViewpointProjectionSchema.Type
 
 // ── Viewpoint execution ────────────────────────────────────────────────────────
 // Fixed, non-customizable per-item summaries — deliberately unstyled.
