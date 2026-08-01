@@ -5,7 +5,9 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
-### Breaking — REST resource addressing (0.2.0)
+## [0.2.0] — 2026-08-01
+
+### Breaking — REST resource addressing
 
 Identity of the resource an HTTP operation addresses now belongs in the path; filters stay in the
 query. There are **no aliases and no redirects**: this is a local-first product first released on
@@ -209,5 +211,6 @@ Provenance and Participation Are Three Relations*.
 - Confidential assurance tier (STPA/CAST/GRC/FMEA/GSN) on an encrypted store with tamper-evident history
 - Viewpoint query engine with diagram/matrix/table representations
 
-[Unreleased]: https://github.com/mbauer83/architectonic/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/mbauer83/architectonic/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/mbauer83/architectonic/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/mbauer83/architectonic/releases/tag/v0.1.0
