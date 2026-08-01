@@ -28,7 +28,6 @@ UNTYPED_RESPONSE_OPERATIONS: frozenset[str] = frozenset({
     "assurance_read_edge_catalog",
     "assurance_read_gsn_draft",
     "assurance_read_gsn_render",
-    "assurance_read_guidance",
     "assurance_record_gsn_publication",
     "assurance_register_arch_ref",
     "assurance_render_analysis_diagram",

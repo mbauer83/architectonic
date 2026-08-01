@@ -39,6 +39,9 @@ export const ERROR_CODES = [
   'not_a_failure_mode',
   'traversal_time_budget_exceeded',
   'unknown_diagram_type',
+  // Same reasoning, one surface over: the guidance catalogue is fixed, so an unknown topic names no
+  // resource, and the reply is worth more as the topics that do exist than as prose.
+  'unknown_guidance_topic',
   // The deployment lacks a capability: nothing the caller sends will fix it.
   'not_configured',
   'viewpoint_referenced',
@@ -120,6 +123,11 @@ export const UnknownDiagramTypeDetailsSchema = Schema.Struct({
   available: Schema.Array(Schema.String),
 })
 
+export const UnknownGuidanceTopicDetailsSchema = Schema.Struct({
+  topic: Schema.String,
+  available_topics: Schema.Array(Schema.String),
+})
+
 export const NotConfiguredDetailsSchema = Schema.Struct({
   capability: Schema.String,
   remedy: Schema.String,
@@ -148,6 +156,7 @@ export const ErrorDetailsSchema = Schema.Union(
   IllegalConnectionTypeDetailsSchema,
   NotAFailureModeDetailsSchema,
   UnknownDiagramTypeDetailsSchema,
+  UnknownGuidanceTopicDetailsSchema,
   NotConfiguredDetailsSchema,
   ViewpointReferencedDetailsSchema,
 )

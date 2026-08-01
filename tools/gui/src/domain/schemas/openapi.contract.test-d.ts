@@ -64,6 +64,7 @@ import type {
   LegacyInvalidDetailsSchema,
   MethodMismatchDetailsSchema,
   ProvenanceImmutableDetailsSchema,
+  UnknownGuidanceTopicDetailsSchema,
   ValidationErrorDetailsSchema,
 } from './errors'
 
@@ -119,6 +120,9 @@ describe('error envelope', () => {
     >()
     expectTypeOf<SchemaType<typeof LegacyInvalidDetailsSchema>>().toEqualTypeOf<
       Immutable<components['schemas']['LegacyInvalidDetails']>
+    >()
+    expectTypeOf<SchemaType<typeof UnknownGuidanceTopicDetailsSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['UnknownGuidanceTopicDetails']>
     >()
   })
 })

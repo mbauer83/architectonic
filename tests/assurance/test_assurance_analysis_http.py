@@ -259,10 +259,23 @@ def test_guidance_returns_topic(monkeypatch: pytest.MonkeyPatch) -> None:
     assert resp.json()["topic"] == "stpa-losses"
 
 
-def test_guidance_unknown_topic_lists_available(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_guidance_unknown_topic_is_a_404_carrying_the_topics_that_exist(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """404, not a 200 whose body says no guidance was found. The catalogue is fixed and the topic is a
+    path segment, so an unrecognised one names no resource — and a 200 made every caller read the body
+    to discover whether it had an answer, which is two shapes at one address.
+
+    The available topics travel in ``details`` rather than as prose, because a client offering them
+    needs them as data. Same reasoning as ``unknown_diagram_type``, one surface over."""
     ctx = _FakeContext(_FakeStore())
-    body = _client(ctx, monkeypatch).get("/api/assurance/guidance/zzz").json()
-    assert "available_topics" in body
+    resp = _client(ctx, monkeypatch).get("/api/assurance/guidance/zzz")
+
+    assert resp.status_code == 404
+    detail = resp.json()["detail"]
+    assert detail["code"] == "unknown_guidance_topic"
+    assert detail["details"]["topic"] == "zzz"
+    assert "stpa-losses" in detail["details"]["available_topics"]
 
 
 def test_completeness_answers_for_the_analysis_own_method(monkeypatch: pytest.MonkeyPatch) -> None:

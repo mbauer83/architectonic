@@ -55,6 +55,9 @@ ErrorCode: TypeAlias = Literal[
     # analysis *does* project to, and a field error can only render that as prose. A client offering
     # the alternatives needs them as data.
     "unknown_diagram_type",
+    # Same reasoning, one surface over: the guidance catalogue is fixed, so an unknown topic names no
+    # resource — and the reply is worth more as the list of topics that do exist than as prose.
+    "unknown_guidance_topic",
     # the deployment lacks a prerequisite — a statement about the server, not about the request, so
     # neither `conflict` nor `validation_error` describes it
     "not_configured",
@@ -198,6 +201,18 @@ class UnknownDiagramTypeDetails(_Details):
     available: list[str]
 
 
+class UnknownGuidanceTopicDetails(_Details):
+    """``unknown_guidance_topic``: the topic asked for, and the ones this build has guidance for.
+
+    404 rather than a 200 carrying a "no guidance found" message. The catalogue is fixed and the topic
+    is a path segment, so an unrecognised one names no resource — and a 200 made every caller inspect
+    the body to find out whether it had an answer, which is the shape this release removes.
+    """
+
+    topic: str
+    available_topics: list[str]
+
+
 class NotConfiguredDetails(_Details):
     """``not_configured``: the capability this deployment lacks.
 
@@ -254,6 +269,7 @@ ERROR_DETAIL_TYPES: dict[str, type[_Details] | None] = {
     # carries the machine-readable part, which is the only actionable thing there is.
     "traversal_time_budget_exceeded": None,
     "unknown_diagram_type": UnknownDiagramTypeDetails,
+    "unknown_guidance_topic": UnknownGuidanceTopicDetails,
     "not_configured": NotConfiguredDetails,
     "viewpoint_referenced": ViewpointReferencedDetails,
 }
@@ -270,6 +286,7 @@ ErrorDetails: TypeAlias = (
     | IllegalConnectionTypeDetails
     | NotAFailureModeDetails
     | UnknownDiagramTypeDetails
+    | UnknownGuidanceTopicDetails
     | NotConfiguredDetails
     | ProvenanceImmutableDetails
     | InvalidParticipationDetails

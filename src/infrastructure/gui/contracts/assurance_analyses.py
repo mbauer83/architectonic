@@ -126,3 +126,28 @@ class AssuranceAnalysisDetailResponse(_Closed):
 
     analysis: AssuranceAnalysisRecord
     node_count: int
+
+
+class AssuranceGuidanceResponse(_Closed):
+    """Method coaching for one topic: what it is, why it matters, how to do it, and what says so.
+
+    Static content, so this route is callable with the store locked — there is nothing confidential in
+    an explanation of what a hazard is, and a wizard that could not explain its own step until the
+    store was unlocked would be useless exactly when a newcomer needs it.
+
+    The three trailing fields are prose a particular topic adds and the others do not: an FMEA reader
+    arriving from a spreadsheet tradition needs to be told what is deliberately absent
+    (``if_you_already_know_fmea``), and the two priority notes exist because the commonest way to
+    misuse an action-priority band is to treat it as permission to skip a constraint. Optional here
+    because they are per-topic, not because they are unreliable.
+    """
+
+    topic: str
+    step: str
+    what: str
+    why: str
+    how: str
+    standards: list[str]
+    if_you_already_know_fmea: str | None = None
+    priority_never_overrides_a_constraint: str | None = None
+    targeting_signals_are_not_factors: str | None = None

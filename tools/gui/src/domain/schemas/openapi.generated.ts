@@ -834,7 +834,14 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Guidance */
+        /**
+         * Get Guidance
+         * @description Method coaching for one topic. Static content, so this is callable with the store locked.
+         *
+         *     An unrecognised topic is a 404 carrying the topics that do exist, not a 200 whose body says no
+         *     guidance was found. The catalogue is fixed and the topic is a path segment, so an unknown one names
+         *     no resource — and the 200 made every caller read the body to discover whether it had an answer.
+         */
         get: operations["assurance_read_guidance"];
         put?: never;
         post?: never;
@@ -3259,6 +3266,40 @@ export interface components {
             updated_at: string;
         };
         /**
+         * AssuranceGuidanceResponse
+         * @description Method coaching for one topic: what it is, why it matters, how to do it, and what says so.
+         *
+         *     Static content, so this route is callable with the store locked — there is nothing confidential in
+         *     an explanation of what a hazard is, and a wizard that could not explain its own step until the
+         *     store was unlocked would be useless exactly when a newcomer needs it.
+         *
+         *     The three trailing fields are prose a particular topic adds and the others do not: an FMEA reader
+         *     arriving from a spreadsheet tradition needs to be told what is deliberately absent
+         *     (``if_you_already_know_fmea``), and the two priority notes exist because the commonest way to
+         *     misuse an action-priority band is to treat it as permission to skip a constraint. Optional here
+         *     because they are per-topic, not because they are unreliable.
+         */
+        AssuranceGuidanceResponse: {
+            /** How */
+            how: string;
+            /** If You Already Know Fmea */
+            if_you_already_know_fmea?: string | null;
+            /** Priority Never Overrides A Constraint */
+            priority_never_overrides_a_constraint?: string | null;
+            /** Standards */
+            standards: string[];
+            /** Step */
+            step: string;
+            /** Targeting Signals Are Not Factors */
+            targeting_signals_are_not_factors?: string | null;
+            /** Topic */
+            topic: string;
+            /** What */
+            what: string;
+            /** Why */
+            why: string;
+        };
+        /**
          * AssuranceNeighborhoodEdge
          * @description An edge crossed by a traversal, from the perspective of the node it was crossed from.
          *
@@ -5352,9 +5393,9 @@ export interface components {
              * Code
              * @enum {string}
              */
-            code: "bad_request" | "forbidden" | "not_found" | "conflict" | "validation_error" | "write_rejected" | "internal_error" | "assurance_store_locked" | "signal_mutation_denied" | "invalid_vex_assessment" | "analysis_method_mismatch" | "analysis_not_empty" | "entity_in_use" | "provenance_immutable" | "provenance_required" | "invalid_participation" | "node_legacy_invalid" | "duplicate_edge" | "illegal_connection_type" | "not_a_failure_mode" | "traversal_time_budget_exceeded" | "unknown_diagram_type" | "not_configured" | "viewpoint_referenced";
+            code: "bad_request" | "forbidden" | "not_found" | "conflict" | "validation_error" | "write_rejected" | "internal_error" | "assurance_store_locked" | "signal_mutation_denied" | "invalid_vex_assessment" | "analysis_method_mismatch" | "analysis_not_empty" | "entity_in_use" | "provenance_immutable" | "provenance_required" | "invalid_participation" | "node_legacy_invalid" | "duplicate_edge" | "illegal_connection_type" | "not_a_failure_mode" | "traversal_time_budget_exceeded" | "unknown_diagram_type" | "unknown_guidance_topic" | "not_configured" | "viewpoint_referenced";
             /** Details */
-            details?: components["schemas"]["ValidationErrorDetails"] | components["schemas"]["DenialDetails"] | components["schemas"]["MethodMismatchDetails"] | components["schemas"]["AnalysisNotEmptyDetails"] | components["schemas"]["EntityInUseDetails"] | components["schemas"]["DuplicateEdgeDetails"] | components["schemas"]["IllegalConnectionTypeDetails"] | components["schemas"]["NotAFailureModeDetails"] | components["schemas"]["UnknownDiagramTypeDetails"] | components["schemas"]["NotConfiguredDetails"] | components["schemas"]["ProvenanceImmutableDetails"] | components["schemas"]["InvalidParticipationDetails"] | components["schemas"]["LegacyInvalidDetails"] | components["schemas"]["ViewpointReferencedDetails"] | null;
+            details?: components["schemas"]["ValidationErrorDetails"] | components["schemas"]["DenialDetails"] | components["schemas"]["MethodMismatchDetails"] | components["schemas"]["AnalysisNotEmptyDetails"] | components["schemas"]["EntityInUseDetails"] | components["schemas"]["DuplicateEdgeDetails"] | components["schemas"]["IllegalConnectionTypeDetails"] | components["schemas"]["NotAFailureModeDetails"] | components["schemas"]["UnknownDiagramTypeDetails"] | components["schemas"]["UnknownGuidanceTopicDetails"] | components["schemas"]["NotConfiguredDetails"] | components["schemas"]["ProvenanceImmutableDetails"] | components["schemas"]["InvalidParticipationDetails"] | components["schemas"]["LegacyInvalidDetails"] | components["schemas"]["ViewpointReferencedDetails"] | null;
             /** Message */
             message: string;
             /** Request Id */
@@ -6706,6 +6747,20 @@ export interface components {
             diagram_type: string;
             /** Method */
             method: string;
+        };
+        /**
+         * UnknownGuidanceTopicDetails
+         * @description ``unknown_guidance_topic``: the topic asked for, and the ones this build has guidance for.
+         *
+         *     404 rather than a 200 carrying a "no guidance found" message. The catalogue is fixed and the topic
+         *     is a path segment, so an unrecognised one names no resource — and a 200 made every caller inspect
+         *     the body to find out whether it had an answer, which is the shape this release removes.
+         */
+        UnknownGuidanceTopicDetails: {
+            /** Available Topics */
+            available_topics: string[];
+            /** Topic */
+            topic: string;
         };
         /** UpdateAnalysisBody */
         UpdateAnalysisBody: {
@@ -9487,7 +9542,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["AssuranceGuidanceResponse"];
                 };
             };
             /** @description Request validation failed */

@@ -27,6 +27,7 @@ from src.infrastructure.gui.contracts.assurance_analyses import (
     AssuranceAnalysisDetailResponse,
     AssuranceAnalysisListResponse,
     AssuranceAnalysisRecord,
+    AssuranceGuidanceResponse,
 )
 from src.infrastructure.gui.contracts.assurance_signals import GsnPublicationListResponse
 from src.infrastructure.gui.contracts.errors import (
@@ -34,6 +35,7 @@ from src.infrastructure.gui.contracts.errors import (
     LegacyInvalidDetails,
     MethodMismatchDetails,
     NotConfiguredDetails,
+    UnknownGuidanceTopicDetails,
 )
 from src.infrastructure.gui.routers._assurance_http import (
     NO_STORE,
@@ -211,10 +213,28 @@ def _translate_write(
 # ── Method support (wizards) ─────────────────────────────────────────────────────
 
 
-@analysis_router.get("/api/assurance/guidance/{topic}")
+@analysis_router.get("/api/assurance/guidance/{topic}", response_model=AssuranceGuidanceResponse)
 def get_guidance(topic: str) -> JSONResponse:
-    # Method coaching is static content — always callable, no store required.
-    return ok(guidance_lookup(topic))
+    """Method coaching for one topic. Static content, so this is callable with the store locked.
+
+    An unrecognised topic is a 404 carrying the topics that do exist, not a 200 whose body says no
+    guidance was found. The catalogue is fixed and the topic is a path segment, so an unknown one names
+    no resource — and the 200 made every caller read the body to discover whether it had an answer.
+    """
+    found = guidance_lookup(topic)
+    # `available_topics` is present only on the miss branch of `guidance_lookup`, which is how the
+    # lookup reports that nothing matched — it has no other way to say so.
+    available = found.get("available_topics")
+    if isinstance(available, list):
+        raise ApiError(
+            404,
+            "unknown_guidance_topic",
+            f"No guidance for {topic!r}.",
+            UnknownGuidanceTopicDetails(
+                topic=topic, available_topics=[str(name) for name in available],
+            ),
+        )
+    return ok(found, AssuranceGuidanceResponse)
 
 
 @analysis_router.get("/api/assurance/analyses/{analysis_id}/completeness")
