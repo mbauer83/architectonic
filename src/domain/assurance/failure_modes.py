@@ -21,6 +21,7 @@ accepted and then silently dropped by the surfaces that did not recognise them.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Literal, TypeAlias, get_args
 
 
 @dataclass(frozen=True)
@@ -107,8 +108,11 @@ NOT_CREDIBLE = "not-credible"
 #: A real failure mode, carrying its effect, controls and factors.
 RECORDED = "recorded"
 
-#: Vocabulary of the `assessment_state` attribute.
-ASSESSMENT_STATES: tuple[str, ...] = (UNTOUCHED, NOT_CREDIBLE, RECORDED)
+#: Vocabulary of the `assessment_state` attribute, at type level so a response contract can publish
+#: it without restating it. The tuple derives from the type: written twice they drift, and the wire
+#: would go on offering a state the domain had retired.
+AssessmentState: TypeAlias = Literal["untouched", "not-credible", "recorded"]
+ASSESSMENT_STATES: tuple[AssessmentState, ...] = get_args(AssessmentState)
 
 #: The states a stored failure mode can be in. `untouched` is excluded by construction.
 PERSISTED_ASSESSMENT_STATES: tuple[str, ...] = (NOT_CREDIBLE, RECORDED)

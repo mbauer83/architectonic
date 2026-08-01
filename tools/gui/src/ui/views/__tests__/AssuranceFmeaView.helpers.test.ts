@@ -33,7 +33,8 @@ function cell(overrides: Partial<CellView> = {}): CellView {
     action_priority: 'medium',
     occurrence_is_requested: true,
     next_action: '',
-    dismissal: {},
+    // Both fields, empty: the route sends a dismissal on every cell, not only a dismissed one.
+    dismissal: { by: '', reason: '' },
     factors: {
       severity: { value: 'major', basis: 'derived', basis_digest: 'sev-1', superseded: null },
       occurrence: { value: null, basis: 'absent', basis_digest: 'occ-1', superseded: null },
@@ -47,6 +48,10 @@ function cell(overrides: Partial<CellView> = {}): CellView {
 function row(overrides: Partial<RowView> = {}): RowView {
   return {
     element_id: 'APP@one',
+    // Always sent, empty when the architecture model cannot describe the element — which the view's
+    // own type had declared optional, so an absent name and an undescribable one read alike.
+    element_name: '',
+    element_type: '',
     nominated_by: ['control-structure'],
     cells: [cell()],
     answered_cells: 1,
@@ -216,10 +221,15 @@ describe('awaitsOccurrence', () => {
   })
 
   it('is false once a judgement has been recorded', () => {
-    const judged = cell()
-    judged.factors.occurrence = {
-      value: 'occasional', basis: 'asserted', basis_digest: 'occ-1', superseded: null,
-    }
+    // Rebuilt rather than mutated: the decoded factor map is readonly, as decoded data should be.
+    const judged = cell({
+      factors: {
+        ...cell().factors,
+        occurrence: {
+          value: 'occasional', basis: 'asserted', basis_digest: 'occ-1', superseded: null,
+        },
+      },
+    })
 
     expect(awaitsOccurrence(judged)).toBe(false)
   })

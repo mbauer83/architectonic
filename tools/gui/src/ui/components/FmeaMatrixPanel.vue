@@ -24,6 +24,7 @@ import {
   worklistOrder,
 } from '../views/AssuranceFmeaView.helpers'
 import type { CellView, RowView } from '../views/AssuranceFmeaView.helpers'
+import { decodeFmeaMatrix } from '../../domain/schemas/assurance-fmea'
 
 const props = defineProps<{
   /** The FMEA this grid belongs to. Required: there is one matrix per FMEA analysis, and a grid
@@ -59,9 +60,11 @@ async function load() {
     return
   }
   if (resp.ok) {
-    const body = await resp.json() as { rows: RowView[]; occurrence_scale: string[] }
-    rows.value = body.rows
-    occurrenceScale.value = body.occurrence_scale
+    // Decoded, not cast: the cast asserted a shape nothing checked, and a grid that silently drops
+    // its rows renders as a clean sheet — the one thing this surface must never do.
+    const body = decodeFmeaMatrix(await resp.json())
+    rows.value = [...body.rows]
+    occurrenceScale.value = [...body.occurrence_scale]
   }
   loaded.value = true
 }

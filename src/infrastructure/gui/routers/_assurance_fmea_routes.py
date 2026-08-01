@@ -27,6 +27,10 @@ from src.application.assurance_legacy_invalid import LegacyInvalidNode
 from src.domain.assurance.fmea_factors import OCCURRENCE_SCALE, FactorAssessment
 from src.infrastructure.assurance.architecture_basis import current_architecture_basis
 from src.infrastructure.assurance.write_serialization import run_write
+from src.infrastructure.gui.contracts.assurance_fmea import (
+    FmeaFactorRecordedResponse,
+    FmeaMatrixResponse,
+)
 from src.infrastructure.gui.contracts.errors import (
     ApiError,
     FieldError,
@@ -51,7 +55,8 @@ def _policy() -> tuple[object, AssuranceExposurePolicy]:
     return ctx, AssuranceExposurePolicy(ctx.max_classification, ctx.is_available())
 
 
-@fmea_router.get("/api/assurance/analyses/{analysis_id}/matrix")
+@fmea_router.get("/api/assurance/analyses/{analysis_id}/matrix",
+    response_model=FmeaMatrixResponse)
 def fmea_matrix(analysis_id: str) -> JSONResponse:
     """The failure-mode matrix of one analysis: candidate elements crossed with the guidewords.
 
@@ -111,7 +116,7 @@ def fmea_matrix(analysis_id: str) -> JSONResponse:
         "rows": rows,
         "count": len(rows),
         "occurrence_scale": list(OCCURRENCE_SCALE),
-    })
+    }, FmeaMatrixResponse)
 
 
 def _as_assessment(row: dict[str, object]) -> FactorAssessment:
@@ -137,7 +142,8 @@ class SetFactorBody(BaseModel):
     basis_digest: str
 
 
-@fmea_router.post("/api/assurance/nodes/{node_id}/factor-assessments", status_code=200)
+@fmea_router.post("/api/assurance/nodes/{node_id}/factor-assessments", status_code=200,
+    response_model=FmeaFactorRecordedResponse)
 def set_fmea_factor(node_id: str, body: SetFactorBody) -> JSONResponse:
     """Append one factor judgement to a failure mode's assessment series.
 
@@ -196,4 +202,4 @@ def set_fmea_factor(node_id: str, body: SetFactorBody) -> JSONResponse:
         "value": result.value,
         "revision": result.revision,
         "created_at": result.created_at,
-    })
+    }, FmeaFactorRecordedResponse)

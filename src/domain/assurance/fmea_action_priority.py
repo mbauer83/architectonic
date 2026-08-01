@@ -21,6 +21,7 @@ higher. The inversion happens here, once, where the table is written — which i
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
+from typing import Literal, TypeAlias, get_args
 
 from src.domain.assurance.fmea_factors import DETECTABILITY_SCALE, OCCURRENCE_SCALE, SEVERITY_SCALE
 
@@ -33,7 +34,11 @@ LOW = "low"
 #: is how an un-analysed component comes to look safe.
 INDETERMINATE = "indeterminate"
 
-ACTION_PRIORITY_BANDS: tuple[str, ...] = (HIGH, MEDIUM, LOW, INDETERMINATE)
+#: The bands, at type level as well, so the matrix contract publishes the vocabulary rather than a
+#: bare string. `indeterminate` is one of them and not an absence: an unrated cell must never read as
+#: a low-priority one.
+ActionPriority: TypeAlias = Literal["high", "medium", "low", "indeterminate"]
+ACTION_PRIORITY_BANDS: tuple[ActionPriority, ...] = get_args(ActionPriority)
 
 _SEVERE = frozenset({"catastrophic", "major"})
 _SLIGHT = frozenset({"negligible", "minor"})

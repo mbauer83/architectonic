@@ -15,7 +15,8 @@ export function cellAwaitingOccurrence(overrides: Partial<CellView> = {}): CellV
     action_priority: 'indeterminate',
     occurrence_is_requested: true,
     next_action: 'Record an occurrence with a rationale; the band cannot be decided without it.',
-    dismissal: {},
+    // Both fields, empty: the route sends a dismissal on every cell, not only a dismissed one.
+    dismissal: { by: '', reason: '' },
     factors: {
       severity: { value: 'major', basis: 'derived', basis_digest: 'sev-1', superseded: null },
       occurrence: { value: null, basis: 'absent', basis_digest: 'occ-1', superseded: null },

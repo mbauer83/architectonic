@@ -10,43 +10,16 @@
  *   only one of them has been looked at.
  * - Nothing here composes a score. The worklist is ordered, never rated.
  */
+import type { FmeaCell, FmeaFactor, FmeaMatrixRow } from '../../domain/schemas/assurance-fmea'
 
-export interface FactorView {
-  value: string | null
-  basis: string
-  basis_digest: string
-  /** The digest of the model inputs the derived value came from. A judgement has to be filed
-   *  against it, because one filed against a basis that has since moved no longer applies. */
-  superseded: { value: string; author: string; justification: string } | null
-}
 
-export interface CellView {
-  guideword: string
-  state: 'untouched' | 'not-credible' | 'recorded'
-  node_id: string | null
-  action_priority: string
-  occurrence_is_requested: boolean
-  next_action: string
-  dismissal: { by?: string; reason?: string }
-  factors: Record<string, FactorView>
-  occurrence_rationale_draft: string
-  /** What the model already knows about this element, offered to whoever is about to judge its
-   *  occurrence. Facts only — nothing in it proposes a rank, so a form may pre-fill the rationale
-   *  and must never pre-fill the value. */
-}
-
-export interface RowView {
-  element_id: string
-  /** The element's reader-facing name, or '' when the architecture model cannot describe it. */
-  element_name?: string
-  /** The element's artifact type, or '' for the same reason. */
-  element_type?: string
-  nominated_by: string[]
-  cells: CellView[]
-  answered_cells: number
-  unanswered_cells: number
-  worst_action_priority: string | null
-}
+/* The route's own shapes, decoded rather than restated. Two of the three interfaces here were looser
+   than what it sends: `element_name`/`element_type` were optional for fields the route always sends
+   (empty when the architecture model cannot describe the element — a value, not an absence), and
+   `dismissal` had both of its fields optional. */
+export type FactorView = FmeaFactor
+export type CellView = FmeaCell
+export type RowView = FmeaMatrixRow
 
 export const GUIDEWORD_LABELS: Record<string, string> = {
   'no-function': 'No function',

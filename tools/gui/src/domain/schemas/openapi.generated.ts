@@ -5394,6 +5394,174 @@ export interface components {
             group_id?: string | null;
         };
         /**
+         * FmeaCellDismissal
+         * @description Who judged this cell not credible, and why.
+         *
+         *     Both fields empty on a cell that was not dismissed. Dismissing is a judgement someone is
+         *     accountable for — it has to be as cheap as filling the cell in, or analysts write filler to make
+         *     the grid look finished — so it is recorded with an author and a reason and it counts as coverage.
+         */
+        FmeaCellDismissal: {
+            /**
+             * By
+             * @default
+             */
+            by: string;
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+        };
+        /**
+         * FmeaCellView
+         * @description One (element, guideword) cell.
+         *
+         *     ``node_id`` is null for a cell no failure mode has been written against — the absence *is* the
+         *     untouched state, and writing a node to say nothing has happened would make coverage depend on
+         *     bookkeeping.
+         *
+         *     ``factors`` is keyed by factor name. An open map with a closed value, deliberately: the factor set
+         *     belongs to the FMEA vocabulary rather than to this contract.
+         *
+         *     ``occurrence_rationale_draft`` is facts the model already knows, offered to whoever is about to
+         *     judge. Nothing in it proposes a rank, which is why a form may pre-fill the rationale and must never
+         *     pre-fill the value. ``occurrence_is_requested`` is false where occurrence cannot change the band,
+         *     and the field is then not rendered at all.
+         */
+        FmeaCellView: {
+            /**
+             * Action Priority
+             * @enum {string}
+             */
+            action_priority: "high" | "medium" | "low" | "indeterminate";
+            dismissal: components["schemas"]["FmeaCellDismissal"];
+            /** Factors */
+            factors: {
+                [key: string]: components["schemas"]["FmeaFactorView"];
+            };
+            /** Guideword */
+            guideword: string;
+            /** Next Action */
+            next_action: string;
+            /** Node Id */
+            node_id: string | null;
+            /** Occurrence Is Requested */
+            occurrence_is_requested: boolean;
+            /** Occurrence Rationale Draft */
+            occurrence_rationale_draft: string;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "untouched" | "not-credible" | "recorded";
+        };
+        /**
+         * FmeaFactorRecordedResponse
+         * @description The revision a recorded judgement produced.
+         *
+         *     ``revision`` always advances: this appends to a series rather than replacing a value, which is why
+         *     the route is a POST. Sending the same judgement twice produces two revisions, and keeping the
+         *     series is the point — a factor's history is the evidence that it was considered.
+         */
+        FmeaFactorRecordedResponse: {
+            /** Created At */
+            created_at: string;
+            /** Factor */
+            factor: string;
+            /** Node Id */
+            node_id: string;
+            /** Revision */
+            revision: number;
+            /** Value */
+            value: string;
+        };
+        /**
+         * FmeaFactorView
+         * @description One factor's effective value, and where it came from.
+         *
+         *     ``value`` is null when the factor has no value a reader should act on — occurrence is
+         *     asserted-only, so it has no derived value to fall back to. ``basis_digest`` is the digest of the
+         *     model inputs the derived value came from, published because a judgement applies only while its
+         *     basis still holds and a caller recording one has to send the digest back.
+         */
+        FmeaFactorView: {
+            /** Basis */
+            basis: string;
+            /** Basis Digest */
+            basis_digest: string;
+            superseded: components["schemas"]["FmeaSupersededAssessment"] | null;
+            /** Value */
+            value: string | null;
+        };
+        /**
+         * FmeaMatrixResponse
+         * @description The failure-mode matrix of one analysis.
+         *
+         *     Scoped to an analysis by construction: unscoped, this returned every failure mode in the store
+         *     under a heading that said "all", and with two analyses it read as a single ranking. An analysis of
+         *     another method has no matrix and answers a typed 409 rather than an empty grid that reads clean.
+         *
+         *     ``occurrence_scale`` travels with the matrix because a recording surface has to offer the members
+         *     of the scale and nothing else, and restating an ordinal set whose order is load-bearing in the
+         *     client would be a second source of truth for it.
+         */
+        FmeaMatrixResponse: {
+            /** Analysis Id */
+            analysis_id: string;
+            /** Count */
+            count: number;
+            /** Occurrence Scale */
+            occurrence_scale: string[];
+            /** Rows */
+            rows: components["schemas"]["FmeaMatrixRow"][];
+        };
+        /**
+         * FmeaMatrixRow
+         * @description One candidate element, crossed with every guideword.
+         *
+         *     ``element_name`` and ``element_type`` are empty when the architecture model cannot describe the
+         *     element. The row still exists, keyed by its id — which is honest, where inventing a label for
+         *     something nothing can describe would not be.
+         *
+         *     ``answered_cells`` and ``unanswered_cells`` are both stated rather than one and a total: a
+         *     dismissal counts as answered, so the split is the coverage figure and deriving it from a length
+         *     would get it wrong. ``worst_action_priority`` is null when no cell has a failure mode at all.
+         */
+        FmeaMatrixRow: {
+            /** Answered Cells */
+            answered_cells: number;
+            /** Cells */
+            cells: components["schemas"]["FmeaCellView"][];
+            /** Element Id */
+            element_id: string;
+            /** Element Name */
+            element_name: string;
+            /** Element Type */
+            element_type: string;
+            /** Nominated By */
+            nominated_by: string[];
+            /** Unanswered Cells */
+            unanswered_cells: number;
+            /** Worst Action Priority */
+            worst_action_priority: ("high" | "medium" | "low" | "indeterminate") | null;
+        };
+        /**
+         * FmeaSupersededAssessment
+         * @description A judgement that no longer applies because the basis it was made against moved.
+         *
+         *     Retained and shown rather than dropped: a reader has to be able to see that someone did judge
+         *     this, and what they judged, before deciding whether the new basis changes the answer.
+         */
+        FmeaSupersededAssessment: {
+            /** Author */
+            author: string;
+            /** Justification */
+            justification: string;
+            /** Value */
+            value: string;
+        };
+        /**
          * GroupEntryResponse
          * @description One group within one axis, with its whole-catalog member count.
          *
@@ -8263,7 +8431,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["FmeaMatrixResponse"];
                 };
             };
             /** @description Request validation failed */
@@ -9574,7 +9742,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["FmeaFactorRecordedResponse"];
                 };
             };
             /** @description Request validation failed */

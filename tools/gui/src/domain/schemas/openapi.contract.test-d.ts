@@ -16,6 +16,13 @@ import type {
 } from './sync-status'
 import type { StatsSchema } from './stats'
 import type {
+  ActionPriority,
+  AssessmentState,
+  FmeaCellSchema,
+  FmeaMatrixRowSchema,
+  FmeaMatrixSchema,
+} from './assurance-fmea'
+import type {
   AssuranceNeighborhoodEdgeSchema,
   AssuranceNeighborhoodNodeSchema,
   AssuranceNeighborhoodSchema,
@@ -308,6 +315,27 @@ describe('assurance analyses', () => {
     expectTypeOf<SchemaType<typeof AssuranceNeighborhoodEdgeSchema>>().toEqualTypeOf<
       Immutable<components['schemas']['AssuranceNeighborhoodEdge']>
     >()
+  })
+
+  it('decodes the FMEA matrix, its rows and its cells', () => {
+    expectTypeOf<SchemaType<typeof FmeaMatrixSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['FmeaMatrixResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof FmeaMatrixRowSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['FmeaMatrixRow']>
+    >()
+    expectTypeOf<SchemaType<typeof FmeaCellSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['FmeaCellView']>
+    >()
+  })
+
+  it('covers exactly the action-priority bands and assessment states', () => {
+    // `indeterminate` is a band, not an absence. A client whose union omitted it would fall through
+    // to its default branch and paint an unrated cell as a rated one.
+    expectTypeOf<ActionPriority>().toEqualTypeOf<
+      components['schemas']['FmeaCellView']['action_priority']
+    >()
+    expectTypeOf<AssessmentState>().toEqualTypeOf<components['schemas']['FmeaCellView']['state']>()
   })
 
   it('covers exactly the methods and statuses the backend declares', () => {
