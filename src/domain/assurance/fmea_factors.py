@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
 from src.domain.assurance.assessment_scales import CONSEQUENCE_SEVERITY_SCALE, LIKELIHOOD_SCALE
@@ -81,6 +81,26 @@ class FactorAssessment:
     justification: str
     author: str
     created_at: str
+
+    @classmethod
+    def from_row(cls, row: Mapping[str, object]) -> "FactorAssessment":
+        """Rebuild one judgement from a stored row.
+
+        The rows mirror this shape, which is why every reader could write the reconstruction itself —
+        and three did, byte-identically, in the application lens, the MCP tool and the REST route. A
+        field added here reached none of them. It lives with the type it produces: the coercions are
+        this type's tolerance for what a store returns, not each caller's guess at it.
+        """
+        return cls(
+            node_id=str(row.get("node_id") or ""),
+            factor=str(row.get("factor") or ""),
+            basis_digest=str(row.get("basis_digest") or ""),
+            revision=int(str(row.get("revision") or 0)),
+            value=str(row.get("value") or ""),
+            justification=str(row.get("justification") or ""),
+            author=str(row.get("author") or ""),
+            created_at=str(row.get("created_at") or ""),
+        )
 
 
 @dataclass(frozen=True)

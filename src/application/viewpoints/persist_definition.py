@@ -16,7 +16,7 @@ result is ``ok`` and not a dry run, persist ``result.catalog_to_write`` via
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import dataclass, replace
+from dataclasses import asdict, dataclass, replace
 from typing import Literal, Protocol
 
 from src.domain.ontology_representation.artifact_types import DiagramRecord
@@ -51,6 +51,27 @@ class ViewpointPersistResult:
     issues: tuple[ViewpointValidationIssue, ...] = ()
     referencers: tuple[ViewpointReferencer, ...] = ()
     catalog_to_write: ViewpointCatalog | None = None  # set iff ok — the caller persists this
+
+    def as_answer(self, *, dry_run: bool) -> dict[str, object]:
+        """This result as both transports answer with it.
+
+        ``catalog_to_write`` is deliberately absent: it is the caller's instruction, not part of the
+        answer, and a serialiser walking the dataclass would have published a whole catalogue on
+        every write. ``dry_run`` is a parameter because it is the *request's* property, echoed back —
+        the result does not know whether it was asked to commit.
+
+        The REST route and the MCP tool each had this, identically, which is how a shape served by
+        two transports drifts on one of them.
+        """
+        return {
+            "ok": self.ok,
+            "action": self.action,
+            "slug": self.slug,
+            "version": self.version,
+            "dry_run": dry_run,
+            "issues": [asdict(issue) for issue in self.issues],
+            "referencers": [asdict(referencer) for referencer in self.referencers],
+        }
 
 
 def _validate(

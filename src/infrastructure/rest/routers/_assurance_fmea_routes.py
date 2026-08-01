@@ -103,7 +103,7 @@ def fmea_matrix(analysis_id: str) -> JSONResponse:
         edges=edges,
         arch_refs=ctx.store.list_arch_refs(),  # type: ignore[attr-defined]
         assessments={
-            node_id: [_as_assessment(row) for row in revisions]
+            node_id: [FactorAssessment.from_row(row) for row in revisions]
             for node_id, revisions in stored.items()
         },
         basis=current_architecture_basis(),
@@ -117,19 +117,6 @@ def fmea_matrix(analysis_id: str) -> JSONResponse:
         "count": len(rows),
         "occurrence_scale": list(OCCURRENCE_SCALE),
     }, FmeaMatrixResponse)
-
-
-def _as_assessment(row: dict[str, object]) -> FactorAssessment:
-    return FactorAssessment(
-        node_id=str(row.get("node_id") or ""),
-        factor=str(row.get("factor") or ""),
-        basis_digest=str(row.get("basis_digest") or ""),
-        revision=int(str(row.get("revision") or 0)),
-        value=str(row.get("value") or ""),
-        justification=str(row.get("justification") or ""),
-        author=str(row.get("author") or ""),
-        created_at=str(row.get("created_at") or ""),
-    )
 
 
 class SetFactorBody(BaseModel):

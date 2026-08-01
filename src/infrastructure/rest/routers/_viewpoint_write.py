@@ -13,7 +13,6 @@ caller could forget to read.
 
 from __future__ import annotations
 
-from dataclasses import asdict
 from typing import Any
 from urllib.parse import quote
 
@@ -86,18 +85,6 @@ def _both_roots() -> list[Any]:
     return list(s.get_repo().repo_roots)
 
 
-def _result_to_dict(result: ViewpointPersistResult, *, dry_run: bool) -> dict[str, Any]:
-    return {
-        "ok": result.ok,
-        "action": result.action,
-        "slug": result.slug,
-        "version": result.version,
-        "dry_run": dry_run,
-        "issues": [asdict(i) for i in result.issues],
-        "referencers": [asdict(r) for r in result.referencers],
-    }
-
-
 class ViewpointWriteBody(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -144,7 +131,7 @@ def _persist(action: PersistAction, body: ViewpointWriteBody, *, operation_id: s
         s.authorized_write(
             operation_id, write_viewpoint_catalog_file, engagement_root, result.catalog_to_write
         )
-    return _result_to_dict(result, dry_run=body.dry_run)
+    return result.as_answer(dry_run=body.dry_run)
 
 
 #: A create answers 201 and names the resource in ``Location``; a dry run created nothing and
@@ -223,7 +210,7 @@ def delete_viewpoint_definition_route(
     # A dry run reports what would happen — including the reasons it would not — as a plan.
     if dry_run:
         response.status_code = status.HTTP_200_OK
-        return _result_to_dict(result, dry_run=True)
+        return result.as_answer(dry_run=True)
     if not result.ok:
         raise _delete_refusal(slug, result)
     if result.catalog_to_write is not None:

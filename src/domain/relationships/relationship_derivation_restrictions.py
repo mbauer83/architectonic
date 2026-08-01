@@ -4,11 +4,10 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Literal, cast
+from typing import cast
 
 from src.domain.ontology_representation.ontology_types import ConnectionTypeInfo, EntityTypeInfo
-
-DerivationDomain = Literal["motivation", "strategy", "core", "implementation_migration", "relationships"]
+from src.domain.relationships.derivation_domains import DerivationDomain, derivation_domain
 
 
 @dataclass(frozen=True)
@@ -81,21 +80,6 @@ def permits_derived_relationship(
             if rule.always_disallow or connection.artifact_type not in rule.allowed_connection_artifact_types:
                 return False
     return True
-
-
-def derivation_domain(info: EntityTypeInfo) -> DerivationDomain:
-    if "junction" in info.classes:
-        return "relationships"
-    if not info.hierarchy:
-        raise ValueError(f"entity type {info.artifact_type!r} has no hierarchy")
-    head = info.hierarchy[0]
-    if head in {"business", "application", "technology", "common"}:
-        return "core"
-    if head == "implementation":
-        return "implementation_migration"
-    if head in {"motivation", "strategy"}:
-        return cast(DerivationDomain, head)
-    raise ValueError(f"entity type {info.artifact_type!r} has unknown derivation domain {head!r}")
 
 
 def _matches(

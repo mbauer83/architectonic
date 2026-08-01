@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from src.domain.relationships.relationship_derivation import derivation_domain
+from src.domain.relationships.derivation_domains import derivation_domain
 from src.ontologies.archimate_4._loader import _PACKAGE_DIR, load_archimate_4_module
 
 

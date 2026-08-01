@@ -29,19 +29,6 @@ from src.infrastructure.mcp.assurance_mcp.context import get_assurance_context
 FAILURE_MODE = "failure-mode"
 
 
-def _as_assessment(row: dict[str, object]) -> FactorAssessment:
-    return FactorAssessment(
-        node_id=str(row.get("node_id") or ""),
-        factor=str(row.get("factor") or ""),
-        basis_digest=str(row.get("basis_digest") or ""),
-        revision=int(str(row.get("revision") or 0)),
-        value=str(row.get("value") or ""),
-        justification=str(row.get("justification") or ""),
-        author=str(row.get("author") or ""),
-        created_at=str(row.get("created_at") or ""),
-    )
-
-
 def register_fmea_read_tools(server: FastMCP) -> None:
     ctx = get_assurance_context()
 
@@ -86,7 +73,7 @@ def register_fmea_read_tools(server: FastMCP) -> None:
             edges=edges,
             arch_refs=ctx.store.list_arch_refs(),
             assessments={
-                node_id: [_as_assessment(row) for row in revisions]
+                node_id: [FactorAssessment.from_row(row) for row in revisions]
                 for node_id, revisions in stored.items()
             },
             basis=current_architecture_basis(),

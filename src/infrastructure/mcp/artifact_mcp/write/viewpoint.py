@@ -7,13 +7,11 @@ merged catalog via ``artifact_query_viewpoint``.
 
 from __future__ import annotations
 
-from dataclasses import asdict
 from typing import Literal
 
 from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
 
 from src.application.viewpoints.persist_definition import (
-    ViewpointPersistResult,
     delete_viewpoint_definition,
     persist_viewpoint_definition,
 )
@@ -31,18 +29,6 @@ from src.infrastructure.viewpoint_declarations import (
     load_viewpoint_catalog_file,
     write_viewpoint_catalog_file,
 )
-
-
-def _result_to_dict(result: ViewpointPersistResult, *, dry_run: bool) -> dict[str, object]:
-    return {
-        "ok": result.ok,
-        "action": result.action,
-        "slug": result.slug,
-        "version": result.version,
-        "dry_run": dry_run,
-        "issues": [asdict(i) for i in result.issues],
-        "referencers": [asdict(r) for r in result.referencers],
-    }
 
 
 def artifact_viewpoint(
@@ -109,7 +95,7 @@ def artifact_viewpoint(
     if result.ok and not dry_run and result.catalog_to_write is not None:
         write_viewpoint_catalog_file(engagement_root, result.catalog_to_write)
         runtime_catalogs.cache_clear()
-    return _result_to_dict(result, dry_run=dry_run)
+    return result.as_answer(dry_run=dry_run)
 
 
 def register(mcp: FastMCP) -> None:

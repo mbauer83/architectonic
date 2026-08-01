@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal, cast
+from typing import Literal
 
 from src.domain.modules.module_types import ConnectionTypeName, EntityTypeName
 from src.domain.ontology_representation.ontology_types import ConnectionTypeInfo, EntityTypeInfo
@@ -14,7 +14,6 @@ from src.domain.relationships.relationship_derivation_restrictions import (
 )
 from src.domain.relationships.relationship_derivation_rules import Certainty, CompositionRule
 
-DerivationDomain = Literal["motivation", "strategy", "core", "implementation_migration", "relationships"]
 Orientation = Literal["forward", "reverse"]
 
 
@@ -41,21 +40,6 @@ class DerivedStep:
     potential_steps: int = 0
     source_info: EntityTypeInfo | None = None
     target_info: EntityTypeInfo | None = None
-
-
-def derivation_domain(info: EntityTypeInfo) -> DerivationDomain:
-    if "junction" in info.classes:
-        return "relationships"
-    if not info.hierarchy:
-        raise ValueError(f"entity type {info.artifact_type!r} has no hierarchy")
-    head = info.hierarchy[0]
-    if head in {"business", "application", "technology", "common"}:
-        return "core"
-    if head == "implementation":
-        return "implementation_migration"
-    if head in {"motivation", "strategy"}:
-        return cast(DerivationDomain, head)
-    raise ValueError(f"entity type {info.artifact_type!r} has unknown derivation domain {head!r}")
 
 
 def compose(
