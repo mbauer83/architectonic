@@ -20,8 +20,8 @@ from __future__ import annotations
 
 from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
 
-from src.application.assurance_exposure import AssuranceExposurePolicy
-from src.application.assurance_node_sorting import MOST_RECENTLY_UPDATED_FIRST
+from src.application.assurance.exposure import AssuranceExposurePolicy
+from src.application.assurance.node_sorting import MOST_RECENTLY_UPDATED_FIRST
 from src.infrastructure.assurance.architecture_basis import current_architecture_basis
 from src.infrastructure.mcp.assurance_mcp.context import (
     _exposure_log,
@@ -126,7 +126,7 @@ def register_read_tools(server: FastMCP) -> None:
             return ctx.locked_response()
         policy = AssuranceExposurePolicy(ctx.max_classification, True)
         node = ctx.store.get_node(node_id)
-        from src.application.assurance_exposure import Visible  # noqa: PLC0415
+        from src.application.assurance.exposure import Visible  # noqa: PLC0415
         outcome = policy.apply_node(node)
         if not isinstance(outcome, Visible):
             return ctx.not_found_response(node_id)
@@ -141,7 +141,7 @@ def register_read_tools(server: FastMCP) -> None:
         # agent working through MCP has no other read of the matrix, so without this the write
         # tool cannot be used at all.
         if str(dict(outcome.value).get("node_type") or "") == FAILURE_MODE_NODE_TYPE:
-            from src.application.assurance_fmea_lens import factor_report  # noqa: PLC0415
+            from src.application.assurance.fmea_lens import factor_report  # noqa: PLC0415
             from src.infrastructure.assurance.architecture_basis import (  # noqa: PLC0415
                 current_architecture_basis,
             )
@@ -232,7 +232,7 @@ def register_read_tools(server: FastMCP) -> None:
         ),
     )
     def assurance_guidance(topic: str) -> dict[str, object]:
-        from src.application.assurance_guidance import lookup  # noqa: PLC0415
+        from src.application.assurance.guidance import lookup  # noqa: PLC0415
 
         return lookup(topic)
 
@@ -285,7 +285,7 @@ def register_read_tools(server: FastMCP) -> None:
             return ctx.locked_response()
         policy = AssuranceExposurePolicy(ctx.max_classification, True)
         if analysis_id:
-            from src.application.assurance_exposure import Visible  # noqa: PLC0415
+            from src.application.assurance.exposure import Visible  # noqa: PLC0415
 
             outcome = policy.apply_analysis(ctx.store.get_analysis(analysis_id))
             if isinstance(outcome, Visible):

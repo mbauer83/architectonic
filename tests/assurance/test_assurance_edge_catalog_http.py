@@ -8,7 +8,7 @@ from __future__ import annotations
 import pytest
 from starlette.testclient import TestClient
 
-from src.application.assurance_edge_catalog import build_edge_catalog
+from src.application.assurance.edge_catalog import build_edge_catalog
 from src.domain.modules.module_registry import ModuleRegistry
 from src.infrastructure.app_bootstrap import assurance_ontology_module
 from tests.support.api_app import build_api_app

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from src.application.artifact_query import ArtifactRepository
+from src.application.artifacts.query import ArtifactRepository
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.write.artifact_write.promote_to_enterprise import plan_promotion

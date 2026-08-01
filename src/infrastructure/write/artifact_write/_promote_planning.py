@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from src.application.artifact_query import ArtifactRepository
+from src.application.artifacts.query import ArtifactRepository
 from src.application.verification.artifact_verifier import ArtifactRegistry
 from src.domain.artifact_id import stable_id
 from src.infrastructure.write.artifact_write.parse_existing import parse_entity_file

@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pytest
 
-from src.application.artifact_schema import clear_schema_cache
+from src.application.artifacts.schema import clear_schema_cache
 from src.application.profile_quarantine import (
     ProfileQuarantineError,
     assert_not_quarantined,

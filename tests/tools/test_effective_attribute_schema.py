@@ -8,7 +8,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from src.application.artifact_schema import (
+from src.application.artifacts.schema import (
     clear_schema_cache,
     compute_effective_attribute_schema,
     find_orphan_attachment_schemata,

@@ -12,8 +12,8 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict
 
-from src.application.assurance_exposure import AssuranceExposurePolicy, Visible
-from src.application.assurance_fmea_factors import (
+from src.application.assurance.exposure import AssuranceExposurePolicy, Visible
+from src.application.assurance.fmea_factors import (
     FactorInvalid,
     FactorLegacyInvalid,
     FactorNodeNotFound,
@@ -22,8 +22,8 @@ from src.application.assurance_fmea_factors import (
     RecordFactorRequest,
     record_factor_assessment,
 )
-from src.application.assurance_fmea_rows import matrix_rows
-from src.application.assurance_legacy_invalid import LegacyInvalidNode
+from src.application.assurance.fmea_rows import matrix_rows
+from src.application.assurance.legacy_invalid import LegacyInvalidNode
 from src.domain.assurance.fmea_factors import OCCURRENCE_SCALE, FactorAssessment
 from src.infrastructure.assurance.architecture_basis import current_architecture_basis
 from src.infrastructure.assurance.write_serialization import run_write

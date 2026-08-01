@@ -17,7 +17,7 @@ from typing import Any
 
 import pytest
 
-from src.application import assurance_mutations as mutations
+from src.application.assurance import mutations as mutations
 
 pytest.importorskip("sqlcipher3", reason="sqlcipher3 not installed")
 

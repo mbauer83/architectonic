@@ -209,7 +209,7 @@ def verify_document(  # noqa: C901
     else:
         repo_root = _doc_repo_root(path, registry)
         if repo_root is not None:
-            from src.application.artifact_document_schema import get_document_schema  # noqa: PLC0415
+            from src.application.artifacts.document_schema import get_document_schema  # noqa: PLC0415
 
             schema = get_document_schema(repo_root, doc_type)
             if schema is None:
@@ -224,7 +224,7 @@ def verify_document(  # noqa: C901
             else:
                 fm_schema = schema.get("frontmatter_schema")
                 if fm_schema:
-                    from src.application.artifact_schema import validate_against_schema  # noqa: PLC0415
+                    from src.application.artifacts.schema import validate_against_schema  # noqa: PLC0415
 
                     errors = validate_against_schema(fm, fm_schema)
                     for err in errors:

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from src.application.artifact_query import ArtifactRepository
+from src.application.artifacts.query import ArtifactRepository
 from src.infrastructure.artifact_index import mutable_artifact_index
 from src.infrastructure.artifact_index.coordination import (
     publish_authoritative_mutation,

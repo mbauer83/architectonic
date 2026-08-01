@@ -20,8 +20,8 @@ from __future__ import annotations
 
 from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
 
-from src.application.assurance_exposure import AssuranceExposurePolicy
-from src.application.assurance_fmea_rows import matrix_rows
+from src.application.assurance.exposure import AssuranceExposurePolicy
+from src.application.assurance.fmea_rows import matrix_rows
 from src.domain.assurance.fmea_factors import FactorAssessment
 from src.infrastructure.assurance.architecture_basis import current_architecture_basis
 from src.infrastructure.mcp.assurance_mcp.context import get_assurance_context

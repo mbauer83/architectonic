@@ -8,8 +8,8 @@ from typing import Any
 
 import pytest
 
-from src.application.assurance_exposure import AssuranceExposurePolicy
-from src.application.assurance_neighbors import (
+from src.application.assurance.exposure import AssuranceExposurePolicy
+from src.application.assurance.neighbors import (
     NeighborBudgets,
     NeighborhoodGraph,
     NeighborTimeBudgetExceeded,

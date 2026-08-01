@@ -56,7 +56,7 @@ def _score_reference_hit(name: str, artifact_id: str, query: str) -> tuple[int, 
 def _try_assurance_hits(q: str, limit: int) -> list[dict[str, Any]]:
     """Return assurance search hits when the store is unlocked; silent empty on any failure."""
     try:
-        from src.application.assurance_exposure import AssuranceExposurePolicy  # noqa: PLC0415
+        from src.application.assurance.exposure import AssuranceExposurePolicy  # noqa: PLC0415
         from src.infrastructure.mcp.assurance_mcp.context import get_assurance_context  # noqa: PLC0415
         ctx = get_assurance_context()
         pol = AssuranceExposurePolicy(ctx.max_classification, ctx.is_available())

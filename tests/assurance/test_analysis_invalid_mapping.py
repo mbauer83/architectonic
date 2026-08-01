@@ -15,8 +15,8 @@ from __future__ import annotations
 import ast
 import pathlib
 
-from src.application.assurance_analysis import AnalysisInvalid
-from src.application.assurance_model_bind import BindInvalid
+from src.application.assurance.analysis import AnalysisInvalid
+from src.application.assurance.model_bind import BindInvalid
 from src.infrastructure.rest.contracts.errors import ERROR_DETAIL_TYPES
 from src.infrastructure.rest.routers._assurance_invalid import (
     _BIND_MAPPING,

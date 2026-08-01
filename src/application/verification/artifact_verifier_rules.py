@@ -1,7 +1,7 @@
 import re
 from typing import Literal
 
-from src.application.artifact_parsing import extract_declared_puml_aliases as _extract_declared_puml_aliases_shared
+from src.application.artifacts.parsing import extract_declared_puml_aliases as _extract_declared_puml_aliases_shared
 from src.application.derivation.strategy_registry import DerivationStrategyCatalog
 from src.application.verification._verifier_rules_bindings import check_bindings_scoped, get_allowed_bindings
 from src.application.verification._verifier_rules_puml_relations import (

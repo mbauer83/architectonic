@@ -10,8 +10,8 @@ from typing import Any
 
 import pytest
 
-from src.application import assurance_mutations as mut
-from src.application.assurance_edge_catalog import legal_connection_types_for
+from src.application.assurance import mutations as mut
+from src.application.assurance.edge_catalog import legal_connection_types_for
 from src.ontologies.assurance._loader import _PACKAGE_DIR, load_assurance_module
 
 _MODULE = load_assurance_module(_PACKAGE_DIR)

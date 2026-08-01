@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from src.application.artifact_schema import SchemaFileRef, list_schema_files
+from src.application.artifacts.schema import SchemaFileRef, list_schema_files
 
 
 def _touch(repo_root: Path, filename: str) -> None:

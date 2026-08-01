@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import replace
 
-from src.application.artifact_parsing import normalize_puml_alias
+from src.application.artifacts.parsing import normalize_puml_alias
 from src.domain.ontology_representation.artifact_types import EntityRecord
 
 

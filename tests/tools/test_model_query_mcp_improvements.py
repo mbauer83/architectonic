@@ -9,7 +9,7 @@ Updated for ArchiMate 4.0 conventions:
 
 from pathlib import Path
 
-from src.application.artifact_query import ArtifactRepository
+from src.application.artifacts.query import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.mcp import mcp_artifact_server
 

@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from src.application.artifact_repository import ArtifactRepository
+from src.application.artifacts.repository import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
 
 # ── helpers ──────────────────────────────────────────────────────────────────

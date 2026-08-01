@@ -23,13 +23,13 @@ from typing import Any
 from fastapi import APIRouter, Query, Response
 from fastapi.responses import JSONResponse
 
-from src.application.assurance_edge_enrichment import enrich_edges, visible_nodes_by_id
-from src.application.assurance_exposure import AssuranceExposurePolicy, Visible
-from src.application.assurance_fmea_lens import failure_mode_summary
-from src.application.assurance_node_degrees import with_degrees
-from src.application.assurance_node_sorting import MOST_RECENTLY_UPDATED_FIRST
-from src.application.assurance_provenance import analyses_by_id, author_of, provenance
-from src.application.assurance_queries import coverage_gaps, risk_register
+from src.application.assurance.edge_enrichment import enrich_edges, visible_nodes_by_id
+from src.application.assurance.exposure import AssuranceExposurePolicy, Visible
+from src.application.assurance.fmea_lens import failure_mode_summary
+from src.application.assurance.node_degrees import with_degrees
+from src.application.assurance.node_sorting import MOST_RECENTLY_UPDATED_FIRST
+from src.application.assurance.provenance import analyses_by_id, author_of, provenance
+from src.application.assurance.queries import coverage_gaps, risk_register
 from src.domain.artifact_id import canonical_entity_key
 from src.infrastructure.assurance.architecture_basis import current_architecture_basis
 from src.infrastructure.mcp.assurance_mcp.context import AssuranceContext, get_assurance_context

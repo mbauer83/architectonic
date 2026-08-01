@@ -20,7 +20,7 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from src.application.assurance_edge_catalog import build_edge_catalog
+from src.application.assurance.edge_catalog import build_edge_catalog
 from src.infrastructure.app_bootstrap import assurance_ontology_module, get_module_registry
 from src.infrastructure.rest.contracts.assurance_nodes import AssuranceEdgeCatalogResponse
 from src.infrastructure.rest.contracts.assurance_store import AssuranceStoreStatusResponse

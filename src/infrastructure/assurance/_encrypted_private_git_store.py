@@ -21,7 +21,7 @@ import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from src.application.assurance_node_sorting import sorted_node_dicts
+from src.application.assurance.node_sorting import sorted_node_dicts
 from src.domain.assurance.assurance_node_types import NODE_UPDATABLE
 from src.domain.clock import utc_now_iso as _now_iso
 from src.infrastructure.assurance._analysis_records import ANALYSES_DIR, FileAnalysisStoreMixin

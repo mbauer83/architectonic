@@ -36,7 +36,7 @@ class _FakeStore:
 
     def list_nodes(self, *, node_type=None, status=None, concern_class=None, tlp=None,
                    analysis_id=None, sort=None, order=None):
-        from src.application.assurance_node_sorting import sorted_node_dicts
+        from src.application.assurance.node_sorting import sorted_node_dicts
 
         return sorted_node_dicts(self._nodes, sort, order)
 

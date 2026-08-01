@@ -16,7 +16,7 @@ from unittest.mock import patch
 
 import pytest
 
-from src.application.assurance_node_sorting import NODE_SORT_COLUMNS, sorted_node_dicts
+from src.application.assurance.node_sorting import NODE_SORT_COLUMNS, sorted_node_dicts
 from tests.support.api_app import build_api_app
 from tests.support.assurance_records import node_record
 

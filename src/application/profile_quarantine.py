@@ -21,7 +21,7 @@ from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Any
 
-from src.application.artifact_schema import (
+from src.application.artifacts.schema import (
     compute_effective_attribute_schema,
     compute_effective_connection_metadata_schema,
 )

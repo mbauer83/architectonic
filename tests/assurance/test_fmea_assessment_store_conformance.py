@@ -18,7 +18,7 @@ from typing import Any
 
 import pytest
 
-from src.application.assurance_ports import ConfidentialAssuranceStore
+from src.application.assurance.ports import ConfidentialAssuranceStore
 from tests.assurance._pocketbase_stub import StubPocketBaseClient
 
 

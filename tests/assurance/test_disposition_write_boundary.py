@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from src.application import assurance_mutations as mut
+from src.application.assurance import mutations as mut
 from tests.assurance.test_assurance_mutations import _FakeArchive, _FakeStore
 
 

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from src.application.assurance_exposure import AssuranceExposurePolicy
+from src.application.assurance.exposure import AssuranceExposurePolicy
 from src.application.security_signals.metrics import compute_security_metrics
 
 RUN = {"snapshot_id": "SNAP@1", "activated_at": "2026-07-20T00:00:00Z", "tlp": "TLP:AMBER"}

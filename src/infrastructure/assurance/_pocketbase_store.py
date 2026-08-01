@@ -20,7 +20,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from src.application.assurance_node_sorting import resolve_node_sort
+from src.application.assurance.node_sorting import resolve_node_sort
 from src.domain.assurance.assurance_node_types import NODE_UPDATABLE
 from src.domain.clock import utc_now_iso
 from src.infrastructure.assurance._edge_records import as_arch_ref_records, as_edge_records

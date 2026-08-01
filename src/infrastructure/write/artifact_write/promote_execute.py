@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from src.application.artifact_query import ArtifactRepository
+from src.application.artifacts.query import ArtifactRepository
 from src.application.verification.artifact_verifier import ArtifactRegistry
 from src.infrastructure.artifact_index import notify_paths_changed, shared_artifact_index
 from src.infrastructure.verification.verifier_factory import build_artifact_verifier

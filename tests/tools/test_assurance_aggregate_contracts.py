@@ -15,6 +15,8 @@ from __future__ import annotations
 import ast
 import pathlib
 
+from src.application.assurance import exposure, queries
+from src.application.verification import assurance_verifier
 from src.infrastructure.rest.contracts.assurance_queries import (
     AssuranceCoverageGaps,
     AssuranceCoverageResponse,
@@ -26,10 +28,12 @@ from src.infrastructure.rest.contracts.assurance_queries import (
     AssuranceVerifyResponse,
 )
 
-_SRC = pathlib.Path(__file__).resolve().parents[2] / "src" / "application"
-_QUERIES = _SRC / "assurance_queries.py"
-_EXPOSURE = _SRC / "assurance_exposure.py"
-_VERIFIER = _SRC / "verification" / "assurance_verifier.py"
+# Asked of the modules rather than spelled as paths — the same technique this file already uses for
+# `assurance_issues` below. A path constant goes stale on a move with nothing to catch it, which is
+# exactly what happened when these two modules were grouped into `application.assurance`.
+_QUERIES = pathlib.Path(queries.__file__)
+_EXPOSURE = pathlib.Path(exposure.__file__)
+_VERIFIER = pathlib.Path(assurance_verifier.__file__)
 
 
 def _function(path: pathlib.Path, name: str) -> ast.AST:

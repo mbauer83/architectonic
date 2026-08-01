@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from src.application.artifact_repository import ArtifactRepository
+from src.application.artifacts.repository import ArtifactRepository
 from src.application.ports import ReadableArtifactStore
 from src.infrastructure.artifact_index import combined_artifact_index
 

@@ -14,8 +14,8 @@ import logging
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
-from src.application.assurance_exposure import AssuranceExposurePolicy
-from src.application.assurance_neighbors import (
+from src.application.assurance.exposure import AssuranceExposurePolicy
+from src.application.assurance.neighbors import (
     NeighborBudgets,
     NeighborTimeBudgetExceeded,
     traverse_neighbors,

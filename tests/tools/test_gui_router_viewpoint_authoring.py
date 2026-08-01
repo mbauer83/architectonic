@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from src.application.artifact_repository import ArtifactRepository
+from src.application.artifacts.repository import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.rest.routers import state as gui_state
 from src.infrastructure.rest.routers.viewpoint_authoring import router as viewpoint_authoring_router

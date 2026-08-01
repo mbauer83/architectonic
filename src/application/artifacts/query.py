@@ -1,6 +1,6 @@
 """Application-layer query facade."""
 
-from src.application.artifact_repository import ArtifactRepository
+from src.application.artifacts.repository import ArtifactRepository
 from src.domain.ontology_representation.artifact_types import (
     ArtifactSummary,
     ConnectionRecord,

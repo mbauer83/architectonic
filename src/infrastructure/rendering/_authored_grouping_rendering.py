@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from src.application.artifact_parsing import normalize_puml_alias
+from src.application.artifacts.parsing import normalize_puml_alias
 from src.domain.artifact_id import stable_id
 from src.domain.ontology_representation.artifact_types import EntityRecord
 from src.infrastructure.rendering._diagram_layout import wrapped_grid_lines

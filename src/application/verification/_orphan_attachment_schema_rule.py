@@ -19,7 +19,7 @@ class OrphanAttachmentSchemaContribution:
     def run(self, ctx: Any, result: Any) -> None:
         if ctx.catalogs is None:
             return
-        from src.application.artifact_schema import find_orphan_attachment_schemata  # noqa: PLC0415
+        from src.application.artifacts.schema import find_orphan_attachment_schemata  # noqa: PLC0415
         from src.application.verification.artifact_verifier_types import Issue, Severity  # noqa: PLC0415
 
         specialization_catalog = getattr(ctx.catalogs, "specializations", None)

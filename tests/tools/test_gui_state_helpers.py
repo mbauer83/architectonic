@@ -78,7 +78,7 @@ def _make_diagram(artifact_id: str = "DIAG@1.CC.diag", name: str = "My Diag") ->
 
 class TestInitState:
     def test_sets_repo_and_roots(self, tmp_path: Path) -> None:
-        from src.application.artifact_query import ArtifactRepository
+        from src.application.artifacts.query import ArtifactRepository
         from src.infrastructure.artifact_index import shared_artifact_index
 
         root = tmp_path / "engagements" / "ENG-S" / "architecture-repository"
@@ -91,7 +91,7 @@ class TestInitState:
         assert s.is_read_only() is False
 
     def test_admin_mode(self, tmp_path: Path) -> None:
-        from src.application.artifact_query import ArtifactRepository
+        from src.application.artifacts.query import ArtifactRepository
         from src.infrastructure.artifact_index import shared_artifact_index
 
         root = tmp_path / "engagements" / "ENG-S2" / "architecture-repository"
@@ -103,7 +103,7 @@ class TestInitState:
         assert s.is_admin_mode() is True
 
     def test_read_only(self, tmp_path: Path) -> None:
-        from src.application.artifact_query import ArtifactRepository
+        from src.application.artifacts.query import ArtifactRepository
         from src.infrastructure.artifact_index import shared_artifact_index
 
         root = tmp_path / "engagements" / "ENG-S3" / "architecture-repository"
@@ -118,7 +118,7 @@ class TestInitState:
 
 class TestConfiguredRoots:
     def test_with_enterprise_root(self, tmp_path: Path) -> None:
-        from src.application.artifact_query import ArtifactRepository
+        from src.application.artifacts.query import ArtifactRepository
         from src.infrastructure.artifact_index import shared_artifact_index
 
         eng = tmp_path / "engagements" / "ENG-CR" / "architecture-repository"
@@ -131,7 +131,7 @@ class TestConfiguredRoots:
         assert len(roots) == 2
 
     def test_without_enterprise_root(self, tmp_path: Path) -> None:
-        from src.application.artifact_query import ArtifactRepository
+        from src.application.artifacts.query import ArtifactRepository
         from src.infrastructure.artifact_index import shared_artifact_index
 
         eng = tmp_path / "engagements" / "ENG-CR2" / "architecture-repository"
@@ -147,7 +147,7 @@ class TestConfiguredRoots:
 
 class TestIsGlobal:
     def test_path_under_enterprise_root(self, tmp_path: Path) -> None:
-        from src.application.artifact_query import ArtifactRepository
+        from src.application.artifacts.query import ArtifactRepository
         from src.infrastructure.artifact_index import shared_artifact_index
 
         eng = tmp_path / "engagements" / "ENG-IG" / "architecture-repository"
@@ -162,7 +162,7 @@ class TestIsGlobal:
         assert s.is_global(global_path) is True
 
     def test_engagement_path_is_not_global(self, tmp_path: Path) -> None:
-        from src.application.artifact_query import ArtifactRepository
+        from src.application.artifacts.query import ArtifactRepository
         from src.infrastructure.artifact_index import shared_artifact_index
 
         eng = tmp_path / "engagements" / "ENG-IG2" / "architecture-repository"
@@ -180,7 +180,7 @@ class TestIsGlobal:
 
 class TestEntityToSummary:
     def test_without_conn_counts(self, tmp_path: Path) -> None:
-        from src.application.artifact_query import ArtifactRepository
+        from src.application.artifacts.query import ArtifactRepository
         from src.infrastructure.artifact_index import shared_artifact_index
 
         eng = tmp_path / "engagements" / "ENG-ES" / "architecture-repository"
@@ -193,7 +193,7 @@ class TestEntityToSummary:
         assert "conn_in" not in result
 
     def test_with_conn_counts(self, tmp_path: Path) -> None:
-        from src.application.artifact_query import ArtifactRepository
+        from src.application.artifacts.query import ArtifactRepository
         from src.infrastructure.artifact_index import shared_artifact_index
 
         eng = tmp_path / "engagements" / "ENG-ES2" / "architecture-repository"
@@ -213,7 +213,7 @@ class TestEntityToSummary:
 
 class TestConnectionToDict:
     def test_basic(self, tmp_path: Path) -> None:
-        from src.application.artifact_query import ArtifactRepository
+        from src.application.artifacts.query import ArtifactRepository
         from src.infrastructure.artifact_index import shared_artifact_index
 
         eng = tmp_path / "engagements" / "ENG-CD" / "architecture-repository"
@@ -245,7 +245,7 @@ class TestDiagramToSummary:
 
 class TestGetBothRoots:
     def test_raises_when_enterprise_missing(self, tmp_path: Path) -> None:
-        from src.application.artifact_query import ArtifactRepository
+        from src.application.artifacts.query import ArtifactRepository
         from src.infrastructure.artifact_index import shared_artifact_index
 
         eng = tmp_path / "engagements" / "ENG-BR" / "architecture-repository"

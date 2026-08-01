@@ -208,7 +208,7 @@ class TestCrossSurfaceConsistency:
         viewpoint provider joins this comparison when it lands."""
         from dataclasses import asdict
 
-        from src.application.assurance_exposure import AssuranceExposurePolicy
+        from src.application.assurance.exposure import AssuranceExposurePolicy
         from src.application.security_signals.metrics import compute_security_metrics
 
         _ingest(ctx, "APP@1")

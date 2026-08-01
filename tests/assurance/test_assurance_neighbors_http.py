@@ -153,7 +153,7 @@ class TestBudgets:
         assert len(body["edges"]) == 1  # the cut node's edge is omitted with it
 
     def test_time_budget_exceeded_is_a_typed_retryable_503(self, seeded, monkeypatch) -> None:  # type: ignore[no-untyped-def]
-        import src.application.assurance_neighbors as traversal_module
+        import src.application.assurance.neighbors as traversal_module
         import src.infrastructure.rest.routers._assurance_neighbors_routes as routes
 
         store, ids, _ = seeded

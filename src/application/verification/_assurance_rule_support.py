@@ -11,7 +11,7 @@ in `assurance_node_attributes` and is re-exported here for the rules.
 
 from __future__ import annotations
 
-from src.application.assurance_node_attributes import attributes_of
+from src.application.assurance.node_attributes import attributes_of
 
 __all__ = ["attributes_of", "edges_from", "edges_into"]
 

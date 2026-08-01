@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from src.application.artifact_query import ArtifactRepository
+    from src.application.artifacts.query import ArtifactRepository
 
 import uvicorn
 
@@ -275,7 +275,7 @@ def _run_foreground(args: argparse.Namespace, parser: argparse.ArgumentParser, r
 def _initialise_repo(
     repo_root_path: Path, enterprise_root_path: Path | None, args: argparse.Namespace
 ) -> "ArtifactRepository":
-    from src.application.artifact_query import ArtifactRepository
+    from src.application.artifacts.query import ArtifactRepository
     from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry
     from src.infrastructure.artifact_index import combined_artifact_index, shared_artifact_index
     from src.infrastructure.backend._group_registry_startup import repair_group_registries
@@ -350,7 +350,7 @@ def _run_startup_validations(repo: "ArtifactRepository") -> None:
 def _configure_server_state(
     repo: "ArtifactRepository", repo_root_path: Path, enterprise_root_path: Path | None, args: argparse.Namespace
 ) -> None:
-    from src.application.artifact_document_schema import load_document_schemata
+    from src.application.artifacts.document_schema import load_document_schemata
     from src.infrastructure.mcp.artifact_mcp.mutation_registration import install_mutation_executor
     from src.infrastructure.rest.routers import state as gui_state
     from src.infrastructure.workspace.mutation_gate import get_workspace_gate

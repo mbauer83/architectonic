@@ -21,7 +21,7 @@ import json
 from dataclasses import dataclass
 from typing import Any
 
-from src.application.assurance_fmea_rows import candidates, matrix_rows
+from src.application.assurance.fmea_rows import candidates, matrix_rows
 from src.domain.assurance.failure_modes import NOT_CREDIBLE, RECORDED, UNTOUCHED
 from src.domain.assurance.fmea_factors import FactorAssessment
 from src.domain.assurance.fmea_structural_signals import TypedEdge

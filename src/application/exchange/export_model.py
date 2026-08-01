@@ -17,7 +17,7 @@ import re
 from dataclasses import dataclass
 from typing import Literal
 
-from src.application.artifact_parsing import parse_entity_content_sections
+from src.application.artifacts.parsing import parse_entity_content_sections
 from src.application.exchange.concept_mapping import ExchangeConceptMapper, UnmappableArchimateTypeError
 from src.application.exchange.document import (
     ExchangeElement,

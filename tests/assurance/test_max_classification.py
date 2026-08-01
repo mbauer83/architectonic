@@ -55,7 +55,7 @@ class TestTLPHelpers:
 
 class TestFilterByCeiling:
     def test_all_pass_when_below_ceiling(self) -> None:
-        from src.application.assurance_exposure import AssuranceExposurePolicy
+        from src.application.assurance.exposure import AssuranceExposurePolicy
 
         pol = AssuranceExposurePolicy("TLP:AMBER", True)
         records = [
@@ -68,7 +68,7 @@ class TestFilterByCeiling:
         assert withheld == 0
 
     def test_red_withheld_at_amber_ceiling(self) -> None:
-        from src.application.assurance_exposure import AssuranceExposurePolicy
+        from src.application.assurance.exposure import AssuranceExposurePolicy
 
         pol = AssuranceExposurePolicy("TLP:AMBER", True)
         records = [
@@ -81,7 +81,7 @@ class TestFilterByCeiling:
         assert withheld == 1
 
     def test_all_withheld_at_white_ceiling(self) -> None:
-        from src.application.assurance_exposure import AssuranceExposurePolicy
+        from src.application.assurance.exposure import AssuranceExposurePolicy
 
         pol = AssuranceExposurePolicy("TLP:WHITE", True)
         records = [
@@ -94,7 +94,7 @@ class TestFilterByCeiling:
         assert withheld == 3
 
     def test_missing_tlp_treated_as_amber_passes_amber_ceiling(self) -> None:
-        from src.application.assurance_exposure import AssuranceExposurePolicy
+        from src.application.assurance.exposure import AssuranceExposurePolicy
 
         pol = AssuranceExposurePolicy("TLP:AMBER", True)
         records = [{"id": 1}]  # no tlp field → defaults TLP:AMBER → passes ceiling
@@ -103,7 +103,7 @@ class TestFilterByCeiling:
         assert withheld == 0
 
     def test_empty_input(self) -> None:
-        from src.application.assurance_exposure import AssuranceExposurePolicy
+        from src.application.assurance.exposure import AssuranceExposurePolicy
 
         pol = AssuranceExposurePolicy("TLP:AMBER", True)
         kept, withheld = pol.filter_security_records([])

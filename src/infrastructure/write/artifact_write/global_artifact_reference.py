@@ -12,7 +12,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from pathlib import Path
 
-from src.application.artifact_query import ArtifactRepository
+from src.application.artifacts.query import ArtifactRepository
 from src.application.identifier_allocator import get_default_allocator
 from src.application.modeling.artifact_write_formatting import format_entity_markdown
 from src.application.verification.artifact_verifier import ArtifactVerifier

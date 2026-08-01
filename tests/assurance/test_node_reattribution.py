@@ -26,8 +26,8 @@ from typing import Any
 
 import pytest
 
-from src.application import assurance_mutations as mutations
-from src.application.assurance_provenance_assignment import (
+from src.application.assurance import mutations as mutations
+from src.application.assurance.provenance_assignment import (
     ProvenanceAssigned,
     ProvenanceImmutable,
     assign_provenance,

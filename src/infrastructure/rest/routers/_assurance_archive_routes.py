@@ -14,7 +14,7 @@ from __future__ import annotations
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
-from src.application import assurance_mutations as mutations
+from src.application.assurance import mutations as mutations
 from src.infrastructure.assurance.write_serialization import run_write
 from src.infrastructure.mcp.assurance_mcp.context import get_assurance_context
 from src.infrastructure.rest.contracts.assurance_queries import (

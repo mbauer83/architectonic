@@ -12,7 +12,7 @@ from pathlib import Path
 import pytest
 from starlette.testclient import TestClient
 
-from src.application.artifact_repository import ArtifactRepository
+from src.application.artifacts.repository import ArtifactRepository
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry, install_module_registry
 from src.infrastructure.artifact_index import shared_artifact_index
@@ -96,7 +96,7 @@ class TestEntityTypeAndDomainFilters:
     ) -> None:
         """Connections have no schema endpoint of their own, so the guidance payload
         carries the effective merged metadata schema each pair authors against."""
-        from src.application.artifact_schema import clear_schema_cache
+        from src.application.artifacts.schema import clear_schema_cache
 
         schemata = engagement_root / ".arch-repo" / "schemata"
         schemata.mkdir(parents=True, exist_ok=True)
@@ -114,7 +114,7 @@ class TestEntityTypeAndDomainFilters:
     def test_base_schema_is_included_without_specializations(
         self, client: TestClient, engagement_root: Path
     ) -> None:
-        from src.application.artifact_schema import clear_schema_cache
+        from src.application.artifacts.schema import clear_schema_cache
 
         schemata = engagement_root / ".arch-repo" / "schemata"
         schemata.mkdir(parents=True, exist_ok=True)

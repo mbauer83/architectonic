@@ -20,7 +20,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from src.application.assurance_analysis import (
+from src.application.assurance.analysis import (
     AnalysisInvalid,
     AnalysisLegacyInvalid,
     AnalysisLocked,
@@ -28,10 +28,10 @@ from src.application.assurance_analysis import (
     AnalysisOk,
     AnalysisResult,
 )
-from src.application.assurance_legacy_invalid import refuse_if_legacy_invalid
+from src.application.assurance.legacy_invalid import refuse_if_legacy_invalid
 
 if TYPE_CHECKING:
-    from src.application.assurance_ports import AssuranceArchive, ConfidentialAssuranceStore
+    from src.application.assurance.ports import AssuranceArchive, ConfidentialAssuranceStore
 
 
 # ── Groups ─────────────────────────────────────────────────────────────────────

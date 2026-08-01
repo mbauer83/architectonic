@@ -3,7 +3,7 @@ from pathlib import Path
 
 import yaml  # type: ignore[import-untyped]
 
-from src.application.artifact_document_schema import get_document_schema, get_document_subdirectory
+from src.application.artifacts.document_schema import get_document_schema, get_document_subdirectory
 from src.application.identifier_allocator import get_default_allocator
 from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.config.repo_paths import DOCS

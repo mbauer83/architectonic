@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from src.application.artifact_repository import ArtifactRepository
+from src.application.artifacts.repository import ArtifactRepository
 from src.domain.ontology_representation.artifact_types import SemanticSearchProvider
 from src.infrastructure.artifact_index import shared_artifact_index
 from tests.support.search_visibility_fixtures import (

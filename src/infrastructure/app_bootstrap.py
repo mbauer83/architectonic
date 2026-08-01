@@ -9,7 +9,7 @@ from typing import Any
 
 from fastapi import Request
 
-from src.application.assurance_edge_catalog import EdgeCatalogSource
+from src.application.assurance.edge_catalog import EdgeCatalogSource
 from src.application.derivation.strategy_registry import DerivationStrategyCatalogBuilder
 from src.application.guidance_composition import ComposedContext, GuidanceContextView
 from src.application.runtime_catalogs import RuntimeCatalogs

@@ -137,7 +137,7 @@ class TestHeatMapResolvesWithShippedDefaultSchema:
     def test_properties_table_values_band_end_to_end(self, tmp_path: Path) -> None:
         """Live-shaped regression: values living in the entity's Properties TABLE
         (not fixture `extra`) must reach scale styling through the parser."""
-        from src.application.artifact_parsing import parse_entity
+        from src.application.artifacts.parsing import parse_entity
 
         model_root = tmp_path / "model"
         path = model_root / "strategy" / "resource" / "RES@1.abc.parsed-asset.md"

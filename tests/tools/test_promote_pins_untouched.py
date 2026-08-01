@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from src.application.artifact_query import ArtifactRepository
+from src.application.artifacts.query import ArtifactRepository
 from src.application.verification.artifact_verifier import ArtifactRegistry
 from src.application.viewpoints.pins import save_pinned_slugs
 from src.infrastructure.artifact_index import shared_artifact_index

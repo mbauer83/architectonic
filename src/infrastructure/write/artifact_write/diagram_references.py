@@ -4,7 +4,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from src.application.artifact_parsing import extract_declared_puml_aliases, normalize_puml_alias
+from src.application.artifacts.parsing import extract_declared_puml_aliases, normalize_puml_alias
 from src.domain.artifact_id import stable_conn_id, stable_id
 from src.infrastructure.rendering.archimate_relation_rendering import strip_suppressed_relation_labels
 

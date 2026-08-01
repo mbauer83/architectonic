@@ -5,7 +5,7 @@ matrix exactly."""
 
 from __future__ import annotations
 
-from src.application.assurance_edge_catalog import build_edge_catalog, legal_connection_types_for
+from src.application.assurance.edge_catalog import build_edge_catalog, legal_connection_types_for
 from src.domain.modules.module_types import ConnectionTypeName, EntityTypeName
 from src.ontologies.assurance._loader import _PACKAGE_DIR, load_assurance_module
 

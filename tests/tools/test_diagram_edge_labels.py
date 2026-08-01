@@ -548,7 +548,7 @@ def test_mcp_edge_labels_merges_with_existing(repo: Path) -> None:
 
 def test_rest_edge_label_endpoint_calls_service(repo: Path) -> None:
     """Thin adapter test: the REST handler calls set_diagram_edge_label and returns a result dict."""
-    from src.application.artifact_repository import ArtifactRepository
+    from src.application.artifacts.repository import ArtifactRepository
     from src.infrastructure.artifact_index import shared_artifact_index
     from src.infrastructure.rest.routers import state as gui_state
     from src.infrastructure.rest.routers._diagram_edge_label import SetEdgeLabelBody, set_edge_label_gui
@@ -588,7 +588,7 @@ def test_archimate_renderer_accepts_edge_labels_param() -> None:
 
 def test_archimate_renderer_applies_edge_label_via_generate(repo: Path) -> None:
     """generate_archimate_puml_body passes edge_labels to the renderer (via MCP entity+connection)."""
-    from src.application.artifact_repository import ArtifactRepository
+    from src.application.artifacts.repository import ArtifactRepository
     from src.infrastructure.artifact_index import shared_artifact_index
     from src.infrastructure.rendering.diagram_builder import generate_archimate_puml_body
 

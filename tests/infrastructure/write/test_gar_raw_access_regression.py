@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from src.application.artifact_repository import ArtifactRepository
+from src.application.artifacts.repository import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.write.artifact_write.global_artifact_reference import build_gar_map, find_existing_gar
 from tests.support.search_visibility_fixtures import (

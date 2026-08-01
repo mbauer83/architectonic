@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
 
-from src.application.artifact_parsing import normalize_puml_alias
+from src.application.artifacts.parsing import normalize_puml_alias
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
 from src.domain.ontology_representation.ontology_types import ConnectionTypeInfo
 from src.domain.ontology_representation.specializations import SpecializationCatalog

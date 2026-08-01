@@ -20,7 +20,7 @@ from src.application._diagram_entity_extraction import (
 from src.application._diagram_entity_extraction import (
     extract_diagram_entities as _extract_diagram_entities,
 )
-from src.application.artifact_query import ArtifactRepository
+from src.application.artifacts.query import ArtifactRepository
 from src.domain.ontology_representation.artifact_types import DiagramRecord
 from src.infrastructure.artifact_index import shared_artifact_index
 

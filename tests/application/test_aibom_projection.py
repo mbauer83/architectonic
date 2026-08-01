@@ -6,8 +6,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from src.application.aibom_projection import aibom_schema_levels, project_aibom
-from src.application.artifact_schema import clear_schema_cache
+from src.application.aibom.projection import aibom_schema_levels, project_aibom
+from src.application.artifacts.schema import clear_schema_cache
 from src.domain.assurance.aibom_roles import role_bindings_from_mapping
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
 from src.domain.repository.repo_default_attribute_schemata import ARCHIMATE_ATTRIBUTE_SCHEMATA

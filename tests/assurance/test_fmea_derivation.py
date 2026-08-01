@@ -15,7 +15,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from src.application.assurance_fmea_derivation import (
+from src.application.assurance.fmea_derivation import (
     CONTROL_ONLY,
     EVIDENCED,
     NO_CONTROL,
@@ -215,9 +215,9 @@ class TestDeclaredTelemetryNeverRaisesTheBand:
         import ast
         import inspect
 
-        from src.application import assurance_fmea_derivation
+        from src.application.assurance import fmea_derivation
 
-        tree = ast.parse(inspect.getsource(assurance_fmea_derivation))
+        tree = ast.parse(inspect.getsource(fmea_derivation))
         docstring_nodes = {
             id(holder.body[0].value)
             for holder in ast.walk(tree)

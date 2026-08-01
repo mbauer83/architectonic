@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from src.application.artifact_parsing import parse_entity
+from src.application.artifacts.parsing import parse_entity
 from src.domain.viewpoints.viewpoint_condition_evaluation import read_attribute_value
 
 _DOMAINS = frozenset({"strategy", "motivation", "business", "application", "technology", "common"})

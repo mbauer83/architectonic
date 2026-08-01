@@ -15,8 +15,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from src.application.assurance_legacy_invalid import PERMITTED_OPERATION, is_legacy_invalid
-from src.application.assurance_ports import AssuranceArchive, ConfidentialAssuranceStore
+from src.application.assurance.legacy_invalid import PERMITTED_OPERATION, is_legacy_invalid
+from src.application.assurance.ports import AssuranceArchive, ConfidentialAssuranceStore
 from src.domain.assurance.fmea_factors import FactorValidationError, validate_factor_assessment
 
 FAILURE_MODE_NODE_TYPE = "failure-mode"

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import Literal
 
-from src.application._artifact_query_helpers import single_or_none as _single_or_none
-from src.application._artifact_query_helpers import summary_group_key as _summary_group_key
+from src.application.artifacts._query_helpers import single_or_none as _single_or_none
+from src.application.artifacts._query_helpers import summary_group_key as _summary_group_key
 from src.application.ports import ReadableArtifactStore
 
 _NONE_LABEL = "(none)"

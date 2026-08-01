@@ -17,7 +17,7 @@ from typing import Any
 from fastapi import APIRouter, status
 from pydantic import BaseModel, ConfigDict
 
-from src.application.assurance_exposure import AssuranceExposurePolicy
+from src.application.assurance.exposure import AssuranceExposurePolicy
 from src.application.security_signals.capability import SignalMutationDenied
 from src.application.security_signals.metrics import compute_security_metrics
 from src.application.security_signals.read_token import AvailabilityState, evaluate_pinned

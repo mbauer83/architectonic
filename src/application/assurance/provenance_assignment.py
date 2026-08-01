@@ -25,7 +25,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from src.application.assurance_ports import AssuranceArchive, ConfidentialAssuranceStore
+from src.application.assurance.ports import AssuranceArchive, ConfidentialAssuranceStore
 
 
 @dataclass(frozen=True)

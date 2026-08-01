@@ -175,7 +175,7 @@ def _reconciled_authored_groupings(
 
 def _captured_authored_groupings(puml_body: str, entity_records: list, parse) -> list[dict[str, object]]:
     """Migrate hand-authored grouping rectangles from a body into structured form."""
-    from src.application.artifact_parsing import normalize_puml_alias  # noqa: PLC0415
+    from src.application.artifacts.parsing import normalize_puml_alias  # noqa: PLC0415
     from src.infrastructure.app_bootstrap import get_module_registry  # noqa: PLC0415
     from src.infrastructure.rendering.archimate_entity_declarations import (  # noqa: PLC0415
         ordered_entity_type_groups,

@@ -25,8 +25,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, NamedTuple
 
 if TYPE_CHECKING:
-    from src.application.assurance_exposure import AssuranceExposurePolicy
-    from src.application.assurance_ports import ConfidentialAssuranceStore
+    from src.application.assurance.exposure import AssuranceExposurePolicy
+    from src.application.assurance.ports import ConfidentialAssuranceStore
 
 
 class AnalysisWorkingSet(NamedTuple):

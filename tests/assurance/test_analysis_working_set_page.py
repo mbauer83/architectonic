@@ -21,8 +21,8 @@ from typing import Any
 
 import pytest
 
-from src.application.assurance_exposure import AssuranceExposurePolicy
-from src.application.assurance_working_set_page import (
+from src.application.assurance.exposure import AssuranceExposurePolicy
+from src.application.assurance.working_set_page import (
     DEFAULT_LIMIT,
     MAX_LIMIT,
     analysis_working_set_page,

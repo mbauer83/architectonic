@@ -118,7 +118,7 @@ def _patch_initialise(monkeypatch: pytest.MonkeyPatch, order: list[str], index: 
         def refresh(self) -> None:
             self._idx.refresh()
 
-    monkeypatch.setattr("src.application.artifact_query.ArtifactRepository", _FakeRepo, raising=True)
+    monkeypatch.setattr("src.application.artifacts.query.ArtifactRepository", _FakeRepo, raising=True)
     return backend
 
 

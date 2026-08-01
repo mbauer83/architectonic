@@ -20,7 +20,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from src.application.artifact_repository import ArtifactRepository
+from src.application.artifacts.repository import ArtifactRepository
 from src.domain.clock import frozen_now
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.mcp import mcp_artifact_server as mcp
@@ -539,7 +539,7 @@ class TestArchiMateEmptyPreservesDiagram:
 class TestRestSyncAdapter:
     def test_rest_sync_endpoint_calls_refresh_diagram(self, repo: Path) -> None:
         """Thin adapter test: the REST handler calls refresh_diagram and returns correct keys."""
-        from src.application.artifact_repository import ArtifactRepository
+        from src.application.artifacts.repository import ArtifactRepository
         from src.infrastructure.artifact_index import shared_artifact_index
         from src.infrastructure.rest.routers import state as gui_state
         from src.infrastructure.rest.routers._diagram_write import SyncDiagramToModelBody, sync_diagram_to_model_gui
@@ -582,7 +582,7 @@ class TestRestSyncAdapter:
 
     def test_rest_sync_scope_bound_not_deleted(self, repo: Path) -> None:
         """REST sync on a scope-bound diagram must leave the file on disk."""
-        from src.application.artifact_repository import ArtifactRepository
+        from src.application.artifacts.repository import ArtifactRepository
         from src.infrastructure.artifact_index import shared_artifact_index
         from src.infrastructure.rest.routers import state as gui_state
         from src.infrastructure.rest.routers._diagram_write import SyncDiagramToModelBody, sync_diagram_to_model_gui

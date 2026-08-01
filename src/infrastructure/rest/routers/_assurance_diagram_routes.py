@@ -24,12 +24,12 @@ from pathlib import Path
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
-from src.application.assurance_diagrams import (
+from src.application.assurance.diagrams import (
     assurance_surface_diagrams,
     diagram_types_for_method,
 )
-from src.application.assurance_exposure import Visible
-from src.application.assurance_working_set import analysis_working_set
+from src.application.assurance.exposure import Visible
+from src.application.assurance.working_set import analysis_working_set
 from src.diagram_types._assurance_puml_alias import safe_alias
 from src.domain.ontology_representation.ontology_protocol import (
     NodeRepresentingEdgeRenderer,

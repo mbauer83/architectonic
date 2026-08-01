@@ -14,14 +14,14 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 
-from src.application.assurance_fmea_architecture import ArchitectureBasis
-from src.application.assurance_fmea_derivation import derive_factors
-from src.application.assurance_fmea_occurrence_evidence import (
+from src.application.assurance.fmea_architecture import ArchitectureBasis
+from src.application.assurance.fmea_derivation import derive_factors
+from src.application.assurance.fmea_occurrence_evidence import (
     ElementSecurityBasis,
     OccurrenceEvidence,
     occurrence_evidence,
 )
-from src.application.assurance_node_attributes import attribute
+from src.application.assurance.node_attributes import attribute
 from src.domain.assurance.failure_modes import NOT_CREDIBLE, RECORDED, UNTOUCHED
 from src.domain.assurance.fmea_action_priority import INDETERMINATE, action_priority, occurrence_is_decisive
 from src.domain.assurance.fmea_factors import (

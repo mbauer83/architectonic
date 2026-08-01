@@ -14,7 +14,7 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-from src.application.assurance_ports import (
+from src.application.assurance.ports import (
     AssuranceArchive,
     ConfidentialAssuranceStore,
     WORMAssuranceArchive,

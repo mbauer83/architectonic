@@ -126,7 +126,7 @@ class ConfidentialAssuranceStore(Protocol):
         order: str | None = None,
     ) -> list[dict[str, object]]:
         """``sort``/``order`` name a field from
-        ``src.application.assurance_node_sorting.NODE_SORT_COLUMNS``; unspecified or
+        ``src.application.assurance.node_sorting.NODE_SORT_COLUMNS``; unspecified or
         unrecognised means that module's natural ordering. Ordering happens here, ahead of
         the caller's exposure filter, which preserves relative order."""
         ...

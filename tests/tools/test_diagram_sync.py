@@ -19,7 +19,7 @@ from typing import cast
 import pytest
 import yaml
 
-from src.application.artifact_repository import ArtifactRepository
+from src.application.artifacts.repository import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.mcp import mcp_artifact_server as mcp
 from src.infrastructure.write.artifact_write.diagram_sync import sync_diagram_to_model

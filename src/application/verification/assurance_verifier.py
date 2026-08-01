@@ -17,8 +17,8 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import TYPE_CHECKING
 
-from src.application.assurance_fmea_architecture import ArchitectureBasis
-from src.application.assurance_fmea_occurrence_evidence import ElementSecurityBasis
+from src.application.assurance.fmea_architecture import ArchitectureBasis
+from src.application.assurance.fmea_occurrence_evidence import ElementSecurityBasis
 from src.application.verification import _assurance_rules_chain as chain
 from src.application.verification import _assurance_rules_constraints as constraints
 from src.application.verification import _assurance_rules_failure_modes as failures
@@ -36,7 +36,7 @@ from src.application.verification.assurance_issues import (
 from src.domain.artifact_id import canonical_entity_key
 
 if TYPE_CHECKING:
-    from src.application.assurance_ports import ConfidentialAssuranceStore
+    from src.application.assurance.ports import ConfidentialAssuranceStore
 
 __all__ = [
     "AssuranceIssue",

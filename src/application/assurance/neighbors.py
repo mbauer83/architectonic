@@ -29,8 +29,8 @@ from dataclasses import dataclass
 from time import monotonic
 from typing import Any, Callable, Protocol
 
-from src.application.assurance_edge_enrichment import enrich_edges, visible_nodes_by_id
-from src.application.assurance_exposure import AssuranceExposurePolicy
+from src.application.assurance.edge_enrichment import enrich_edges, visible_nodes_by_id
+from src.application.assurance.exposure import AssuranceExposurePolicy
 
 
 class NeighborGraphReads(Protocol):

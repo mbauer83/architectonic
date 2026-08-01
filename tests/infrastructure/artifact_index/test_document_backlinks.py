@@ -3,7 +3,7 @@ from __future__ import annotations
 import posixpath
 from pathlib import Path
 
-from src.application.artifact_repository import ArtifactRepository
+from src.application.artifacts.repository import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
 
 

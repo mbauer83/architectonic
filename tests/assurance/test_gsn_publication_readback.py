@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import pytest
 
-from src.application.assurance_gsn import list_publications, record_publication
+from src.application.assurance.gsn import list_publications, record_publication
 
 pytest.importorskip("sqlcipher3", reason="sqlcipher3 not installed")
 
@@ -123,6 +123,6 @@ def test_the_recorder_and_the_reader_name_the_same_ref_type() -> None:
     remove, reintroduced."""
     import inspect
 
-    from src.application.assurance_gsn import GSN_SOURCE_REF_TYPE
+    from src.application.assurance.gsn import GSN_SOURCE_REF_TYPE
 
     assert f'"{GSN_SOURCE_REF_TYPE}"' in inspect.getsource(record_publication)

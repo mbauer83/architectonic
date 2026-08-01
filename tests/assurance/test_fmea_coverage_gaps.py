@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from src.application.assurance_queries import coverage_gaps
+from src.application.assurance.queries import coverage_gaps
 
 
 def _node(node_id: str, node_type: str, **extra: object) -> dict[str, Any]:

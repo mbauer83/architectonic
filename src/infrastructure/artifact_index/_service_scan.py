@@ -17,7 +17,7 @@ from src.application._diagram_entity_extraction import (
 from src.application._diagram_entity_extraction import (
     extract_diagram_entities as _extract_diagram_entities,
 )
-from src.application.artifact_parsing import parse_diagram, parse_document, parse_entity, parse_outgoing_file
+from src.application.artifacts.parsing import parse_diagram, parse_document, parse_entity, parse_outgoing_file
 from src.application.ports import Candidate
 from src.application.repo_path_helpers import (
     all_model_roots,

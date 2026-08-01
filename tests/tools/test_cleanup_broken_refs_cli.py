@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from src.application.artifact_query import ArtifactRepository
+from src.application.artifacts.query import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.write.artifact_write.cleanup_broken_refs import (
     cleanup_broken_refs,

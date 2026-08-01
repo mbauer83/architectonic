@@ -6,7 +6,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from src.application.artifact_repository import ArtifactRepository
+from src.application.artifacts.repository import ArtifactRepository
 from src.application.modeling.artifact_write import generate_diagram_id
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.application.verification.artifact_verifier import ArtifactRegistry, ArtifactVerifier

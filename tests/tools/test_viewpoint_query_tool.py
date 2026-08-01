@@ -155,7 +155,7 @@ class TestMcpRestParity:
     def test_parameterized_derived_query_has_same_content(self, monkeypatch, catalogs, repo: Path) -> None:
         from starlette.testclient import TestClient
 
-        from src.application.artifact_repository import ArtifactRepository
+        from src.application.artifacts.repository import ArtifactRepository
         from src.infrastructure.artifact_index import shared_artifact_index
         from src.infrastructure.rest.routers import state as gui_state
         from src.infrastructure.rest.routers.viewpoints import fresh_viewpoints_runtime_catalogs_dependency
@@ -202,7 +202,7 @@ class TestMcpRestParity:
     def test_same_query_same_content_both_transports(self, monkeypatch, catalogs, repo: Path) -> None:
         from starlette.testclient import TestClient
 
-        from src.application.artifact_repository import ArtifactRepository
+        from src.application.artifacts.repository import ArtifactRepository
         from src.infrastructure.artifact_index import shared_artifact_index
         from src.infrastructure.rest.routers import state as gui_state
         from src.infrastructure.rest.routers.viewpoints import fresh_viewpoints_runtime_catalogs_dependency

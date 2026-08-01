@@ -16,7 +16,7 @@ from collections import defaultdict
 from functools import lru_cache
 from pathlib import Path
 
-from src.application.artifact_parsing import normalize_puml_alias
+from src.application.artifacts.parsing import normalize_puml_alias
 from src.config.repo_paths import DIAGRAM_CATALOG
 from src.domain.modules.module_types import ConnectionTypeName, ElementClassName
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord

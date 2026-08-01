@@ -3,8 +3,8 @@ specified component reporting clean."""
 
 from __future__ import annotations
 
-from src.application.aibom_coverage import evaluate_coverage
-from src.application.aibom_derivation import AibomComponent, ProvenancedValue, RoleMatch
+from src.application.aibom.coverage import evaluate_coverage
+from src.application.aibom.derivation import AibomComponent, ProvenancedValue, RoleMatch
 from src.domain.assurance.aibom_roles import role_bindings_from_mapping
 
 

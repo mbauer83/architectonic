@@ -16,7 +16,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from src.application.artifact_schema import clear_schema_cache, compute_effective_attribute_schema
+from src.application.artifacts.schema import clear_schema_cache, compute_effective_attribute_schema
 from src.domain.ontology_representation.profile_registry import profile_registry_from_mapping
 from src.domain.ontology_representation.specializations import SpecializationCatalog, SpecializationInfo
 

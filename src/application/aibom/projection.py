@@ -14,8 +14,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 
-from src.application.aibom_coverage import AibomCoverage, evaluate_coverage
-from src.application.aibom_derivation import AI_SPECIALIZATIONS, AibomComponent, derive_aibom
+from src.application.aibom.coverage import AibomCoverage, evaluate_coverage
+from src.application.aibom.derivation import AI_SPECIALIZATIONS, AibomComponent, derive_aibom
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.domain.assurance.aibom_roles import DerivationRoleBindings
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
@@ -63,7 +63,7 @@ def aibom_schema_levels(
     """``(required_by_spec, recommended_by_spec)`` for every AI specialization, read from its
     effective attribute schema. The caller passes these into ``project_aibom`` so coverage
     knows which attributes are blocking vs advisory for each specialization."""
-    from src.application.artifact_schema import compute_effective_attribute_schema  # noqa: PLC0415
+    from src.application.artifacts.schema import compute_effective_attribute_schema  # noqa: PLC0415
 
     parent_by_slug = _ai_specialization_parents(catalogs)
     required: dict[str, list[str]] = {}

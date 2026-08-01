@@ -6,7 +6,7 @@ import json
 import subprocess
 from pathlib import Path
 
-from src.application.artifact_document_schema import get_document_subdirectory
+from src.application.artifacts.document_schema import get_document_subdirectory
 from src.config.repo_paths import ARCH_DOC_SCHEMATA, ARCH_REPO, DIAGRAM_CATALOG, DIAGRAMS, DOCS, MODEL, RENDERED
 from src.domain.repository.repo_default_schemata import (
     BASE_DOCUMENT_SCHEMAS,

@@ -52,9 +52,9 @@ class TestExposureRemainsIndependentOfTheSchema:
     def test_the_exposure_policy_does_not_consult_declared_scales(self) -> None:
         import inspect
 
-        from src.application import assurance_exposure
+        from src.application.assurance import exposure
 
-        source = inspect.getsource(assurance_exposure)
+        source = inspect.getsource(exposure)
         assert "x-scale" not in source
         assert ORDINAL_KIND not in source
         assert "attribute_scales" not in source

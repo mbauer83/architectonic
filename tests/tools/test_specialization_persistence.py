@@ -22,7 +22,7 @@ from pathlib import Path
 
 import pytest
 
-from src.application.artifact_parsing import parse_entity, parse_outgoing_file
+from src.application.artifacts.parsing import parse_entity, parse_outgoing_file
 from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry

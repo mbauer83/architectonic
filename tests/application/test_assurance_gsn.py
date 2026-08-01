@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from src.application.assurance_gsn import build_gsn_draft, record_publication
+from src.application.assurance.gsn import build_gsn_draft, record_publication
 
 
 class _Store:

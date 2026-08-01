@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from src.application.assurance_fmea_effect_suggestion import EffectSuggestion, suggest_effects
+from src.application.assurance.fmea_effect_suggestion import EffectSuggestion, suggest_effects
 from src.domain.assurance.fmea_structural_signals import TypedEdge
 
 
@@ -194,7 +194,7 @@ class TestNothingIsLinked:
         not something a future edit could do here by reaching for what is already in scope."""
         import inspect
 
-        from src.application import assurance_fmea_effect_suggestion as module
+        from src.application.assurance import fmea_effect_suggestion as module
 
         parameters = {
             name
@@ -207,7 +207,7 @@ class TestNothingIsLinked:
     def test_it_calls_no_mutation(self) -> None:
         import inspect
 
-        from src.application import assurance_fmea_effect_suggestion as module
+        from src.application.assurance import fmea_effect_suggestion as module
 
         source = inspect.getsource(module)
 

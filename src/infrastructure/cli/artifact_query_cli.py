@@ -3,7 +3,7 @@ import textwrap
 from pathlib import Path
 from typing import Any
 
-from src.application.artifact_query import ArtifactRepository
+from src.application.artifacts.query import ArtifactRepository
 from src.config.workspace_paths import resolve_workspace_repo_roots
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, DiagramRecord, EntityRecord
 from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry

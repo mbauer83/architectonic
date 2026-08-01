@@ -9,8 +9,8 @@ from pathlib import Path
 
 import pytest
 
-from src.application._artifact_query_helpers import read_connection
-from src.application.artifact_parsing import parse_entity, parse_outgoing_file
+from src.application.artifacts._query_helpers import read_connection
+from src.application.artifacts.parsing import parse_entity, parse_outgoing_file
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
 
 

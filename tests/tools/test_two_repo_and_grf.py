@@ -20,7 +20,7 @@ from pathlib import Path
 
 import pytest
 
-from src.application.artifact_query import ArtifactRepository
+from src.application.artifacts.query import ArtifactRepository
 from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.infrastructure.artifact_index import shared_artifact_index

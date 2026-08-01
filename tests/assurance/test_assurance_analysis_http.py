@@ -12,7 +12,7 @@ from typing import Any
 import pytest
 from starlette.testclient import TestClient
 
-from src.application.assurance_exposure import AssuranceExposurePolicy
+from src.application.assurance.exposure import AssuranceExposurePolicy
 from src.infrastructure.assurance._analysis_records import as_analysis_record
 from src.infrastructure.rest.routers._assurance_analysis_routes import analysis_router
 from src.infrastructure.rest.routers._assurance_gsn_routes import gsn_router

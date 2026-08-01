@@ -15,8 +15,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from src.application.assurance_exposure import AssuranceExposurePolicy
-from src.application.assurance_working_set import analysis_working_set
+from src.application.assurance.exposure import AssuranceExposurePolicy
+from src.application.assurance.working_set import analysis_working_set
 
 _STPA = "STPA@1.aaaa.000001"
 _FMEA = "FMEA@1.bbbb.000002"

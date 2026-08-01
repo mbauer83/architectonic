@@ -18,7 +18,7 @@ from pathlib import Path
 
 import pytest
 
-from src.application.artifact_query import ArtifactRepository
+from src.application.artifacts.query import ArtifactRepository
 from src.infrastructure.artifact_index import combined_artifact_index, shared_artifact_index
 from src.infrastructure.git import enterprise_sync_state
 from src.infrastructure.git.git_sync import GitSyncManager

@@ -10,8 +10,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from src.application import assurance_mutations as mutations
-from src.application.assurance_legacy_invalid import LegacyInvalidNode
+from src.application.assurance import mutations as mutations
+from src.application.assurance.legacy_invalid import LegacyInvalidNode
 
 
 def _legacy_invalid(node_id: str, permitted_operation: str) -> dict[str, object]:
@@ -84,7 +84,7 @@ def _envelope(result: Any, ctx: Any) -> dict[str, object]:
 
 
 def _analysis_result(result: Any, ctx: Any) -> dict[str, object]:
-    from src.application import assurance_analysis as analysis_uc  # noqa: PLC0415
+    from src.application.assurance import analysis as analysis_uc  # noqa: PLC0415
 
     if isinstance(result, analysis_uc.AnalysisLocked):
         return ctx.locked_response()

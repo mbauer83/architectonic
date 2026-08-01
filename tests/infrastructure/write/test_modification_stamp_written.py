@@ -10,7 +10,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from src.application.artifact_parsing import extract_yaml_block
+from src.application.artifacts.parsing import extract_yaml_block
 from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.domain.clock import frozen_now

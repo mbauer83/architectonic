@@ -18,7 +18,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from src.application.artifact_query import ArtifactRepository
+from src.application.artifacts.query import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.mcp import mcp_artifact_server as mcp
 from src.infrastructure.rest.routers import state as gui_state

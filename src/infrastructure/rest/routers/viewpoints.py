@@ -316,7 +316,7 @@ def execute_viewpoint_diagram(
             "scope (filter by group/type, or anchor the view).",
         )
 
-    from src.application.artifact_parsing import normalize_puml_alias
+    from src.application.artifacts.parsing import normalize_puml_alias
     from src.infrastructure.rendering.diagram_builder import generate_archimate_puml_body, render_puml_svg
 
     modeled_connection_ids = [cid for cid in result.connection_ids if not is_derived_connection_id(cid)]

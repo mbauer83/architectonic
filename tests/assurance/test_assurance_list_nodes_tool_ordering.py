@@ -12,7 +12,7 @@ from typing import Any
 
 import pytest
 
-from src.application.assurance_node_sorting import sorted_node_dicts
+from src.application.assurance.node_sorting import sorted_node_dicts
 
 mcp_server = pytest.importorskip("mcp.server.fastmcp", reason="mcp package not installed")
 

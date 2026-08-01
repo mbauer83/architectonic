@@ -11,7 +11,7 @@ from fastapi import Response, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from src.application.assurance_exposure import AssuranceExposurePolicy
+from src.application.assurance.exposure import AssuranceExposurePolicy
 from src.infrastructure.mcp.assurance_mcp.context import AssuranceContext, get_assurance_context
 from src.infrastructure.rest.contracts.errors import ApiError
 

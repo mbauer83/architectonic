@@ -22,9 +22,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Literal
 
-from src.application.assurance_exposure import AssuranceExposurePolicy
-from src.application.assurance_ports import ConfidentialAssuranceStore
-from src.application.assurance_working_set import analysis_working_set
+from src.application.assurance.exposure import AssuranceExposurePolicy
+from src.application.assurance.ports import ConfidentialAssuranceStore
+from src.application.assurance.working_set import analysis_working_set
 
 #: The house defaults. A maximum exists so one request cannot ask the store for everything.
 DEFAULT_LIMIT = 50

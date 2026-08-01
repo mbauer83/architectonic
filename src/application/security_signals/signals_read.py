@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from typing import Any, Mapping, Protocol
 
-from src.application.assurance_exposure import AssuranceExposurePolicy
+from src.application.assurance.exposure import AssuranceExposurePolicy
 
 
 class SnapshotReadStore(Protocol):

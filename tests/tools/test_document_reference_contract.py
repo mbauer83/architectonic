@@ -18,7 +18,7 @@ from pathlib import Path
 
 import pytest
 
-from src.application.artifact_query import ArtifactRepository
+from src.application.artifacts.query import ArtifactRepository
 from src.application.document_links import DocumentEntityReference, references_to_entity
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.rest.contracts.entities import DocumentReference

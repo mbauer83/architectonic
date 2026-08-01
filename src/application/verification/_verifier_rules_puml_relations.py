@@ -109,7 +109,7 @@ def _build_alias_lookup(
         if display_alias:
             alias_map[display_alias] = eid_str
 
-    from src.application.artifact_parsing import (  # noqa: PLC0415
+    from src.application.artifacts.parsing import (  # noqa: PLC0415
         extract_declared_puml_aliases as _extract_declared_puml_aliases,
     )
 

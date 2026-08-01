@@ -60,7 +60,7 @@ class TestRestMcpParity:
     def test_element_dependents_matches_across_transports(self, repo: Path) -> None:
         from starlette.testclient import TestClient
 
-        from src.application.artifact_repository import ArtifactRepository
+        from src.application.artifacts.repository import ArtifactRepository
         from src.infrastructure.artifact_index import shared_artifact_index
         from src.infrastructure.rest.routers import state as gui_state
         from src.infrastructure.rest.routers.viewpoints import fresh_viewpoints_runtime_catalogs_dependency

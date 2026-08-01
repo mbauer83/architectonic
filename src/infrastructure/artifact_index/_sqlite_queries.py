@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import sqlite3
 
-from src.application.artifact_scoring import tokenize
+from src.application.artifacts.scoring import tokenize
 
 from .types import EntityContextConnection, EntityContextCounts, EntityContextReadModel
 

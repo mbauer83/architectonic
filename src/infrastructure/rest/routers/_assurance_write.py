@@ -22,10 +22,10 @@ from fastapi import APIRouter, Response
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict
 
-from src.application import assurance_model_bind as model_bind
-from src.application import assurance_mutations as mutations
-from src.application.assurance_legacy_invalid import LegacyInvalidNode
-from src.application.assurance_provenance_assignment import (
+from src.application.assurance import model_bind as model_bind
+from src.application.assurance import mutations as mutations
+from src.application.assurance.legacy_invalid import LegacyInvalidNode
+from src.application.assurance.provenance_assignment import (
     ProvenanceAnalysisNotFound,
     ProvenanceImmutable,
     ProvenanceLocked,

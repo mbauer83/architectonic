@@ -15,7 +15,7 @@ from __future__ import annotations
 from functools import lru_cache
 from pathlib import Path
 
-from src.application.artifact_repository import ArtifactRepository
+from src.application.artifacts.repository import ArtifactRepository
 from src.application.derivation.derived_relationships import evaluate_candidates as derive_relationship_candidates
 from src.application.derivation.types import CandidateSet, ModelQuery
 from src.application.derivation.viewpoint_execution import evaluate_candidates

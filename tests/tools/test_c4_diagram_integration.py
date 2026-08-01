@@ -3,7 +3,7 @@ from __future__ import annotations
 from functools import lru_cache
 from pathlib import Path
 
-from src.application.artifact_query import ArtifactRepository
+from src.application.artifacts.query import ArtifactRepository
 from src.application.startup_validation import validate_repo_compatibility
 from src.application.verification.artifact_verifier import ArtifactRegistry, ArtifactVerifier
 from src.infrastructure.app_bootstrap import build_module_registry

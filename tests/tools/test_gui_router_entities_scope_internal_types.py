@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from src.application.artifact_query import ArtifactRepository
+from src.application.artifacts.query import ArtifactRepository
 from src.infrastructure.artifact_index import combined_artifact_index
 from src.infrastructure.rest.routers import state as gui_state
 from tests.support.api_app import build_api_app

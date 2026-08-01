@@ -22,7 +22,7 @@ import threading
 from pathlib import Path
 from typing import Any
 
-from src.application.assurance_ports import AssuranceArchive, ConfidentialAssuranceStore
+from src.application.assurance.ports import AssuranceArchive, ConfidentialAssuranceStore
 from src.config import storage_settings
 from src.domain.clock import epoch_seconds
 

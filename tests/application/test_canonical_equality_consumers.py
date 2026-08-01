@@ -129,7 +129,7 @@ class TestStableIdFunctions:
 
 class TestConnectionArtifactIdIsStable:
     def test_connection_artifact_id_strips_slugs(self, repo_root: Path) -> None:
-        from src.application.artifact_parsing import parse_outgoing_file
+        from src.application.artifacts.parsing import parse_outgoing_file
 
         src_dir = repo_root / "model" / "application" / "component"
         out_path = src_dir / f"{_SRC_NEW}.outgoing.md"
@@ -141,7 +141,7 @@ class TestConnectionArtifactIdIsStable:
         assert records[0].artifact_id == expected_stable_id
 
     def test_stale_slug_source_produces_same_artifact_id(self, repo_root: Path) -> None:
-        from src.application.artifact_parsing import parse_outgoing_file
+        from src.application.artifacts.parsing import parse_outgoing_file
 
         src_dir = repo_root / "model" / "application" / "component"
         out_new = src_dir / f"{_SRC_NEW}.outgoing.md"

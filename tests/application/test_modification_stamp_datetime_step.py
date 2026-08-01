@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from src.application.artifact_parsing import extract_yaml_block
+from src.application.artifacts.parsing import extract_yaml_block
 from src.application.repository_upgrade.steps.modification_stamp_datetime import (
     ModificationStampDatetimeStep,
 )
@@ -203,7 +203,7 @@ class TestApply:
         _fixture_repo(tmp_path)
         _apply_all(tmp_path)
 
-        from src.application.artifact_parsing import _canonical_stamp
+        from src.application.artifacts.parsing import _canonical_stamp
 
         stamp = _stamp_of(tmp_path, "model/motivation/requirement/REQ@1.abc.quoted.md")
         assert _canonical_stamp(stamp) == "2026-01-01T00:00:00Z"

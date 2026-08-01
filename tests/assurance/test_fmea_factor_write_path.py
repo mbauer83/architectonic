@@ -13,7 +13,7 @@ from typing import Any
 
 import pytest
 
-from src.application.assurance_fmea_factors import (
+from src.application.assurance.fmea_factors import (
     FactorInvalid,
     FactorNodeNotFound,
     FactorRecorded,

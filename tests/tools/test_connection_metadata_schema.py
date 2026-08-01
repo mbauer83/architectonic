@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from src.application.artifact_schema import clear_schema_cache
+from src.application.artifacts.schema import clear_schema_cache
 from src.application.verification._verifier_rules_schema import check_connection_metadata_schema
 from src.application.verification.artifact_verifier_types import Severity, VerificationResult
 from src.domain.ontology_representation.specializations import SpecializationCatalog, SpecializationInfo

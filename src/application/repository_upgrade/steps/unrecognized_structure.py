@@ -13,7 +13,7 @@ attempts a rewrite, it only raises attention.
 
 from __future__ import annotations
 
-from src.application.artifact_parsing import extract_yaml_block
+from src.application.artifacts.parsing import extract_yaml_block
 from src.application.repository_upgrade.ports import RepoUpgradeView, RepoUpgradeWriter
 from src.application.repository_upgrade.steps._frontmatter_scan import list_frontmatter_candidate_files
 from src.domain.repository.repository_upgrade import AppliedFinding, ScannedSurface, UpgradeFinding

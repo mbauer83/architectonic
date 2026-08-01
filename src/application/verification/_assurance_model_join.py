@@ -9,13 +9,13 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 
-from src.application.assurance_fmea_architecture import ArchitectureBasis
-from src.application.assurance_fmea_occurrence_evidence import (
+from src.application.assurance.fmea_architecture import ArchitectureBasis
+from src.application.assurance.fmea_occurrence_evidence import (
     ElementSecurityBasis,
     occurrence_evidence,
 )
-from src.application.assurance_node_attributes import attribute
-from src.application.assurance_ports import ConfidentialAssuranceStore
+from src.application.assurance.node_attributes import attribute
+from src.application.assurance.ports import ConfidentialAssuranceStore
 from src.application.verification.assurance_issues import (
     AssuranceIssue,
     AssuranceVerificationResult,

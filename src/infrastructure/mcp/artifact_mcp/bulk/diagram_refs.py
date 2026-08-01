@@ -6,7 +6,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from src.application.artifact_repository import ArtifactRepository
+from src.application.artifacts.repository import ArtifactRepository
 from src.application.verification.artifact_verifier import ArtifactRegistry, ArtifactVerifier
 from src.application.verification.artifact_verifier_parsing import (
     parse_diagram_refs,

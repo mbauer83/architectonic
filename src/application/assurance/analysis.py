@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING, Any
 from src.domain.assurance.assurance_analysis import ANALYSIS_METHODS, ANALYSIS_STATUSES
 
 if TYPE_CHECKING:
-    from src.application.assurance_ports import AssuranceArchive, ConfidentialAssuranceStore
+    from src.application.assurance.ports import AssuranceArchive, ConfidentialAssuranceStore
 
 # ── Typed outcomes ──────────────────────────────────────────────────────────────
 

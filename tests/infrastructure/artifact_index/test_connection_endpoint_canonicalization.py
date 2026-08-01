@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from src.application.artifact_parsing import parse_outgoing_file
+from src.application.artifacts.parsing import parse_outgoing_file
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.mcp import mcp_artifact_server as mcp
 

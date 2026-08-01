@@ -7,7 +7,7 @@ two backends would page differently over equal timestamps.
 
 from __future__ import annotations
 
-from src.application.assurance_node_sorting import (
+from src.application.assurance.node_sorting import (
     MOST_RECENTLY_UPDATED_FIRST,
     NATURAL_NODE_ORDERING,
     resolve_node_sort,

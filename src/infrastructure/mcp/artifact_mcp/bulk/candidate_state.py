@@ -4,7 +4,7 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Literal
 
-from src.application.artifact_parsing import parse_diagram, parse_document, parse_entity, parse_outgoing_file
+from src.application.artifacts.parsing import parse_diagram, parse_document, parse_entity, parse_outgoing_file
 from src.application.ports import ArtifactStorePort, Candidate
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.application.verification.artifact_verifier_types import entity_id_from_path

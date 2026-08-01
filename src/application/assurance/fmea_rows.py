@@ -34,9 +34,9 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
-from src.application.assurance_fmea_architecture import ArchitectureBasis
-from src.application.assurance_fmea_cells import cell_for, cell_payload
-from src.application.assurance_fmea_occurrence_evidence import ElementSecurityBasis
+from src.application.assurance.fmea_architecture import ArchitectureBasis
+from src.application.assurance.fmea_cells import cell_for, cell_payload
+from src.application.assurance.fmea_occurrence_evidence import ElementSecurityBasis
 from src.domain.artifact_id import canonical_entity_key
 from src.domain.assurance.failure_modes import (
     ANSWERED_ASSESSMENT_STATES,

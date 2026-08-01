@@ -15,10 +15,10 @@ from typing import TYPE_CHECKING, Any
 import jsonschema
 import yaml
 
-from src.application.artifact_schema import list_schema_files
+from src.application.artifacts.schema import list_schema_files
 
 if TYPE_CHECKING:
-    from src.application.artifact_repository import ArtifactRepository
+    from src.application.artifacts.repository import ArtifactRepository
 
 _ARCH_REPO_DIR = ".arch-repo"
 _SCHEMATA_SUBDIR = "schemata"

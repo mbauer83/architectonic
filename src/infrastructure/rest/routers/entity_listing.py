@@ -10,7 +10,7 @@ from __future__ import annotations
 from functools import lru_cache as _lru_cache
 from typing import Any
 
-from src.application.artifact_query import ArtifactRepository
+from src.application.artifacts.query import ArtifactRepository
 from src.application.entity_type_predicates import is_assurance_entity_type, is_internal_entity_type
 from src.application.record_sorting import sort_entity_records
 from src.domain.ontology_representation.artifact_types import EntityRecord

@@ -14,7 +14,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from src.application.assurance_fmea_occurrence_evidence import OccurrenceEvidence, occurrence_evidence
+from src.application.assurance.fmea_occurrence_evidence import OccurrenceEvidence, occurrence_evidence
 from src.domain.assurance.fmea_structural_signals import TypedEdge
 
 

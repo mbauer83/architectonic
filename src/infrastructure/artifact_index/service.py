@@ -7,7 +7,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Callable, Literal, TypeVar
 
-from src.application._artifact_query_helpers import (
+from src.application.artifacts._query_helpers import (
     matches_connection,
     matches_connection_sets,
     matches_diagram,

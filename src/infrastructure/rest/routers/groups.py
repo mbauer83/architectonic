@@ -10,7 +10,7 @@ from urllib.parse import quote
 from fastapi import APIRouter, HTTPException, Query, Response, status
 from pydantic import BaseModel, ConfigDict
 
-from src.application.assurance_diagrams import assurance_surface_diagram_types
+from src.application.assurance.diagrams import assurance_surface_diagram_types
 from src.domain.repository.groups import GroupAxis, GroupEntry, GroupRegistry
 from src.infrastructure.app_bootstrap import complete_diagram_type_catalog
 from src.infrastructure.rest.contracts.authoring_catalogs import GroupListResponse

@@ -14,7 +14,7 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 
-from src.application.artifact_schema import compute_effective_attribute_schema, load_connection_metadata_schema
+from src.application.artifacts.schema import compute_effective_attribute_schema, load_connection_metadata_schema
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.domain.ontology_representation.attribute_scales import ORDINAL_KIND, declares_ordinal
 from src.domain.viewpoints.viewpoint_condition_validation import RegistrySnapshot

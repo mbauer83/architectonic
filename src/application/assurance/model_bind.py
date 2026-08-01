@@ -22,10 +22,10 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
-from src.application import assurance_mutations as mutations
+from src.application.assurance import mutations as mutations
 
 if TYPE_CHECKING:
-    from src.application.assurance_ports import AssuranceArchive, ConfidentialAssuranceStore
+    from src.application.assurance.ports import AssuranceArchive, ConfidentialAssuranceStore
 
 _BIND_REF_TYPE = "binds-to"
 

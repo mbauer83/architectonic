@@ -99,7 +99,7 @@ class TestReconcileAiBom:
     def test_reconcile_over_the_new_mlbom_component_shape(self) -> None:
         # WU-C3: reconcile keys by name (no purl on derived AI components), so it works over
         # the richer ML-BOM nodes build_mlbom emits — a discovered extra shows as added.
-        from src.application.aibom_derivation import AibomComponent
+        from src.application.aibom.derivation import AibomComponent
         from src.infrastructure.assurance.mlbom_builder import build_mlbom
 
         model = AibomComponent(

@@ -8,7 +8,7 @@ from __future__ import annotations
 import re
 from typing import Protocol
 
-from src.application.artifact_parsing import extract_declared_puml_aliases, normalize_puml_alias
+from src.application.artifacts.parsing import extract_declared_puml_aliases, normalize_puml_alias
 from src.application.puml_relation_parsing import declared_relations
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
 

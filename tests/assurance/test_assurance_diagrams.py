@@ -15,7 +15,7 @@ the defect this scoping exists to fix.
 
 from __future__ import annotations
 
-from src.application.assurance_diagrams import (
+from src.application.assurance.diagrams import (
     assurance_surface_diagram_types,
     assurance_surface_diagrams,
     diagram_types_for_method,

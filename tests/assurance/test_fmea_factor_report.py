@@ -17,8 +17,8 @@ from typing import Any
 
 import pytest
 
-from src.application.assurance_exposure import AssuranceExposurePolicy
-from src.application.assurance_fmea_lens import factor_report
+from src.application.assurance.exposure import AssuranceExposurePolicy
+from src.application.assurance.fmea_lens import factor_report
 
 pytest.importorskip("sqlcipher3", reason="sqlcipher3 not installed")
 
@@ -103,7 +103,7 @@ class TestTheReportCarriesWhatAJudgementNeeds:
 class TestRecordingAgainstThePublishedDigestApplies:
     def test_an_occurrence_recorded_against_it_becomes_the_effective_value(self, store: Any) -> None:
         """The end-to-end contract: read the digest, record against it, and the judgement holds."""
-        from src.application.assurance_fmea_factors import RecordFactorRequest, record_factor_assessment
+        from src.application.assurance.fmea_factors import RecordFactorRequest, record_factor_assessment
 
         node_id = _failure_mode(store)
         factors = _report(store, node_id)["factors"]
@@ -129,7 +129,7 @@ class TestRecordingAgainstThePublishedDigestApplies:
 
     def test_a_judgement_against_a_made_up_digest_never_applies(self, store: Any) -> None:
         """Why the digest cannot be invented when a caller has no way to read it."""
-        from src.application.assurance_fmea_factors import RecordFactorRequest, record_factor_assessment
+        from src.application.assurance.fmea_factors import RecordFactorRequest, record_factor_assessment
 
         node_id = _failure_mode(store)
         record_factor_assessment(

@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from src.application.assurance_ports import ConfidentialAssuranceStore
+    from src.application.assurance.ports import ConfidentialAssuranceStore
 
 _SAFETY_CLASSES = frozenset({"safety", "security"})
 _CLASSIFIED_TLP = frozenset({"TLP:AMBER", "TLP:RED"})

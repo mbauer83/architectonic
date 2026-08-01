@@ -27,7 +27,7 @@ from typing import TYPE_CHECKING, Literal
 
 import yaml  # type: ignore[import-untyped]
 
-from src.application.artifact_document_schema import get_document_schema
+from src.application.artifacts.document_schema import get_document_schema
 from src.application.verification._verifier_document import (
     ResolvedEntityLink,
     document_body,
@@ -37,7 +37,7 @@ from src.application.verification._verifier_document import (
 from src.domain.artifact_id import stable_conn_id, stable_id
 
 if TYPE_CHECKING:
-    from src.application.artifact_repository import ArtifactRepository
+    from src.application.artifacts.repository import ArtifactRepository
     from src.application.runtime_catalogs import RuntimeCatalogs
     from src.application.verification.artifact_verifier import ArtifactRegistry
 

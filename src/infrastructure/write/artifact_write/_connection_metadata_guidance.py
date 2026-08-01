@@ -13,7 +13,7 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
-from src.application.artifact_schema import (
+from src.application.artifacts.schema import (
     attribute_descriptors,
     compute_effective_connection_metadata_schema,
     schema_all_properties,

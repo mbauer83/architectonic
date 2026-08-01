@@ -24,7 +24,7 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from src.application.artifact_query import ArtifactRepository
+from src.application.artifacts.query import ArtifactRepository
 from src.config.repo_paths import MODEL
 from src.infrastructure.artifact_index import shared_artifact_index
 

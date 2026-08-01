@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from src.application.artifact_query import ArtifactRepository
+from src.application.artifacts.query import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.git import enterprise_git_ops, enterprise_sync_state
 from src.infrastructure.rest.routers import state as gui_state

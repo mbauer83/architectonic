@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from src.application.assurance_exposure import (
+from src.application.assurance.exposure import (
     AssuranceExposurePolicy,
     Locked,
     NotFound,

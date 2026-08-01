@@ -272,7 +272,7 @@ class ArtifactParsers:
     def default(domain_names: frozenset[str]) -> "ArtifactParsers":
         import functools
 
-        from src.application.artifact_parsing import (
+        from src.application.artifacts.parsing import (
             parse_diagram,
             parse_document,
             parse_entity,

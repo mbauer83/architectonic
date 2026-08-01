@@ -32,7 +32,7 @@ from src.infrastructure.write.artifact_write.promote_schema_check import (
 )
 
 if TYPE_CHECKING:
-    from src.application.artifact_query import ArtifactRepository
+    from src.application.artifacts.query import ArtifactRepository
     from src.application.runtime_catalogs import RuntimeCatalogs
     from src.application.verification.artifact_verifier import ArtifactRegistry
     from src.domain.ontology_representation.specializations import SpecializationInfo

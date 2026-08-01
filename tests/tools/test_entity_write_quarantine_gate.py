@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from src.application.artifact_schema import clear_schema_cache
+from src.application.artifacts.schema import clear_schema_cache
 from src.application.profile_quarantine import ProfileQuarantineError
 from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry

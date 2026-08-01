@@ -6,7 +6,7 @@ unit; mirrors ``_diagram_group_move.py``'s equivalent for diagrams.
 
 from pathlib import Path
 
-from src.application.artifact_document_schema import get_document_schema, get_document_subdirectory
+from src.application.artifacts.document_schema import get_document_schema, get_document_subdirectory
 from src.application.repo_path_helpers import docs_root
 from src.domain.repository.groups import UNCATEGORIZED
 

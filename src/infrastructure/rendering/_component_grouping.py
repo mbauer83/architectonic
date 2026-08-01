@@ -165,7 +165,7 @@ def type_layer_order(
 
 def collect_subtree_aliases(entity: Any, children_map: Mapping[str, list[Any]]) -> set[str]:
     """Aliases of *entity* and every visually nested descendant."""
-    from src.application.artifact_parsing import normalize_puml_alias  # noqa: PLC0415
+    from src.application.artifacts.parsing import normalize_puml_alias  # noqa: PLC0415
 
     aliases: set[str] = set()
     stack = [entity]

@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Literal, cast
 
 from src.application._search_eligibility import EntityEligibility, semantic_entity_hits
-from src.application.artifact_scoring import (
+from src.application.artifacts.scoring import (
     score_connection,
     score_diagram,
     score_document,

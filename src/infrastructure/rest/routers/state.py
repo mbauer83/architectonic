@@ -22,7 +22,7 @@ else:
 
 from functools import lru_cache as _lru_cache
 
-from src.application.artifact_query import ArtifactRepository
+from src.application.artifacts.query import ArtifactRepository
 from src.application.entity_type_predicates import is_internal_entity_type
 from src.domain.ontology_representation.artifact_types import (
     ConnectionRecord,

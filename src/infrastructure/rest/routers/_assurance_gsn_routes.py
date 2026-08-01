@@ -16,8 +16,8 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
 
-from src.application.assurance_exposure import NotFound, Visible
-from src.application.assurance_gsn import build_gsn_draft, list_publications, record_publication
+from src.application.assurance.exposure import NotFound, Visible
+from src.application.assurance.gsn import build_gsn_draft, list_publications, record_publication
 from src.infrastructure.assurance.write_serialization import run_write
 from src.infrastructure.mcp.assurance_mcp.context import AssuranceContext
 from src.infrastructure.rest.contracts.assurance_gsn import (

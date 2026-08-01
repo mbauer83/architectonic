@@ -19,7 +19,7 @@ from pathlib import Path
 import pytest
 from fastapi import FastAPI
 
-from src.application.artifact_query import ArtifactRepository
+from src.application.artifacts.query import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.rest.routers import entities as entity_router
 from src.infrastructure.rest.routers import state as gui_state

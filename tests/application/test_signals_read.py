@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from src.application.assurance_exposure import AssuranceExposurePolicy
+from src.application.assurance.exposure import AssuranceExposurePolicy
 from src.application.security_signals.signals_read import (
     list_active_components,
     list_active_findings,

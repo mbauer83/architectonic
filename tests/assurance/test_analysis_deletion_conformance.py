@@ -26,8 +26,8 @@ from typing import Any
 
 import pytest
 
-from src.application import assurance_analysis as uc
-from src.application import assurance_mutations as mutations
+from src.application.assurance import analysis as uc
+from src.application.assurance import mutations as mutations
 from tests.support.assurance_backends import ASSURANCE_BACKENDS, BACKEND_NAMES
 
 

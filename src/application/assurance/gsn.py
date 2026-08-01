@@ -9,7 +9,7 @@ from src.application.verification.case_draft import draft_gsn_from_records, draf
 from src.domain.assurance.classification import TLP_ORDER, is_publishable, normalize_tlp, tlp_rank
 
 if TYPE_CHECKING:
-    from src.application.assurance_ports import AssuranceArchive, ConfidentialAssuranceStore
+    from src.application.assurance.ports import AssuranceArchive, ConfidentialAssuranceStore
 
 
 def _node(

@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Literal
 
-from src.application.artifact_query import ArtifactRepository
+from src.application.artifacts.query import ArtifactRepository
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.application.verification.artifact_verifier import ArtifactRegistry
 from src.infrastructure.write.artifact_write._promote_groups import GroupMappingEntry

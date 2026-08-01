@@ -13,7 +13,7 @@ Tools registered on arch-assurance-write:
   assurance_set_fmea_factor     — record a failure-mode factor judgement (own module)
   filing + participation        — groups, filing, membership (own module)
 
-All node/edge/ref mutations delegate to src.application.assurance_mutations use cases,
+All node/edge/ref mutations delegate to src.application.assurance.mutations use cases,
 which enforce the three-step protocol: unlock-check → write → audit → post-write verify.
 """
 
@@ -21,7 +21,7 @@ from __future__ import annotations
 
 from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
 
-from src.application import assurance_mutations as mutations
+from src.application.assurance import mutations as mutations
 from src.infrastructure.assurance.edge_legality import legal_connection_types
 from src.infrastructure.assurance.write_serialization import run_write
 from src.infrastructure.mcp.assurance_mcp._write_envelopes import _analysis_result, _envelope
@@ -239,7 +239,7 @@ def register_write_tools(server: FastMCP) -> None:
         suggested_name: str,
         domain: str = "application",
     ) -> dict[str, object]:
-        from src.application import assurance_model_bind as model_bind  # noqa: PLC0415
+        from src.application.assurance import model_bind as model_bind  # noqa: PLC0415
 
         if not ctx.is_available():
             return ctx.locked_response()
@@ -290,7 +290,7 @@ def register_write_tools(server: FastMCP) -> None:
         tlp: str = "TLP:WHITE",
         status: str = "draft",
     ) -> dict[str, object]:
-        from src.application import assurance_analysis as analysis_uc  # noqa: PLC0415
+        from src.application.assurance import analysis as analysis_uc  # noqa: PLC0415
 
         if not ctx.is_available():
             return ctx.locked_response()
@@ -314,7 +314,7 @@ def register_write_tools(server: FastMCP) -> None:
         status: str | None = None,
         tlp: str | None = None,
     ) -> dict[str, object]:
-        from src.application import assurance_analysis as analysis_uc  # noqa: PLC0415
+        from src.application.assurance import analysis as analysis_uc  # noqa: PLC0415
 
         if not ctx.is_available():
             return ctx.locked_response()
@@ -333,7 +333,7 @@ def register_write_tools(server: FastMCP) -> None:
         ),
     )
     def assurance_delete_analysis(analysis_id: str) -> dict[str, object]:
-        from src.application import assurance_analysis as analysis_uc  # noqa: PLC0415
+        from src.application.assurance import analysis as analysis_uc  # noqa: PLC0415
 
         if not ctx.is_available():
             return ctx.locked_response()
@@ -356,6 +356,6 @@ def register_write_tools(server: FastMCP) -> None:
     ) -> dict[str, object]:
         if not ctx.is_available():
             return ctx.locked_response()
-        from src.application.assurance_promotion import promotion_preflight  # noqa: PLC0415
+        from src.application.assurance.promotion import promotion_preflight  # noqa: PLC0415
 
         return promotion_preflight(ctx.store, node_ids=node_ids)

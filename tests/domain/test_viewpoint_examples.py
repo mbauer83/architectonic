@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from src.application.artifact_schema import load_attribute_schema
+from src.application.artifacts.schema import load_attribute_schema
 from src.domain.viewpoints.viewpoint_parsing import viewpoint_catalog_from_mapping
 from src.domain.viewpoints.viewpoint_serialization import viewpoint_catalog_to_mapping
 from src.domain.viewpoints.viewpoint_validation import validate_viewpoint_definition

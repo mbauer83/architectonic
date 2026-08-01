@@ -4,7 +4,7 @@ literal list exists at any transport layer."""
 
 from __future__ import annotations
 
-from src.application.assurance_edge_catalog import legal_connection_types_for
+from src.application.assurance.edge_catalog import legal_connection_types_for
 from src.infrastructure.app_bootstrap import assurance_ontology_module
 
 

@@ -13,7 +13,7 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
-from src.application.artifact_parsing import (
+from src.application.artifacts.parsing import (
     _canonical_stamp,
     parse_diagram,
     parse_document,

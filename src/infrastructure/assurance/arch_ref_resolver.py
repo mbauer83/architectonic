@@ -24,7 +24,7 @@ import logging
 from typing import TYPE_CHECKING, Protocol
 
 if TYPE_CHECKING:
-    from src.application.assurance_ports import ConfidentialAssuranceStore
+    from src.application.assurance.ports import ConfidentialAssuranceStore
     from src.domain.ontology_representation.artifact_types import EntityRecord
 
 logger = logging.getLogger(__name__)

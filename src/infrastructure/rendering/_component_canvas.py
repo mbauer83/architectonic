@@ -9,7 +9,7 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from typing import Any
 
-from src.application.artifact_parsing import normalize_puml_alias
+from src.application.artifacts.parsing import normalize_puml_alias
 from src.application.modeling.flow_ordering import order_aliases_along_flow
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
 from src.infrastructure.rendering._component_grouping import (

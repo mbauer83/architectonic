@@ -21,7 +21,7 @@ from __future__ import annotations
 
 from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
 
-from src.application import assurance_grouping as grouping_uc
+from src.application.assurance import grouping as grouping_uc
 from src.infrastructure.assurance.write_serialization import run_write
 from src.infrastructure.mcp.assurance_mcp._write_envelopes import _analysis_result
 from src.infrastructure.mcp.assurance_mcp.context import get_assurance_context

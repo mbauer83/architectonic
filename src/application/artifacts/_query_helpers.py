@@ -13,7 +13,7 @@ from src.domain.ontology_representation.artifact_types import (
 )
 
 if TYPE_CHECKING:
-    from src.application.artifact_repository import ArtifactRepository
+    from src.application.artifacts.repository import ArtifactRepository
 
 _NONE_LABEL = "(none)"
 

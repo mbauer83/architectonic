@@ -19,12 +19,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from src.application.assurance_fmea_architecture import (
+from src.application.assurance.fmea_architecture import (
     ArchitectureBasis,
     read_architecture_basis,
 )
-from src.application.assurance_fmea_occurrence_evidence import ElementSecurityBasis
-from src.application.assurance_fmea_rows import candidates, matrix_rows
+from src.application.assurance.fmea_occurrence_evidence import ElementSecurityBasis
+from src.application.assurance.fmea_rows import candidates, matrix_rows
 from src.application.verification.assurance_verifier import verify_store
 from src.domain.artifact_id import canonical_entity_key
 from src.domain.assurance.failure_modes import FAILURE_GUIDEWORD_SLUGS
@@ -33,7 +33,7 @@ SRC = Path(__file__).resolve().parents[2] / "src"
 
 #: The one call that is deliberately given no graph, with the reason recorded at the call site: it
 #: reports on the single node just written, and element-scoped findings would bury that answer.
-GRAPH_FREE_VERIFY_CALLS = {"src/application/assurance_mutations.py"}
+GRAPH_FREE_VERIFY_CALLS = {"src/application/assurance/mutations.py"}
 
 # Written in the slugged form a GUI navigation carries, and looked up in the stable form the
 # graph keys on — the two spellings meeting is part of what the wiring has to get right.
@@ -259,7 +259,7 @@ def _record_occurrence(unlocked_store: Any, node_id: str, digest: str) -> None:
 def _occurrence_digest(unlocked_store: Any, node_id: str, *, security: dict[str, ElementSecurityBasis]) -> str:
     result = verify_store(unlocked_store, basis=_basis(), security=security)
     del result  # the digest is read from the derivation, not the findings
-    from src.application.assurance_fmea_rows import matrix_rows as build
+    from src.application.assurance.fmea_rows import matrix_rows as build
 
     rows = build(
         nodes=unlocked_store.list_nodes(), edges=unlocked_store.list_edges(), arch_refs=unlocked_store.list_arch_refs(),

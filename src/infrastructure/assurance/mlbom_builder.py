@@ -13,7 +13,7 @@ import uuid
 from collections.abc import Mapping, Sequence
 from typing import Any
 
-from src.application.aibom_derivation import AibomComponent, ProvenancedValue
+from src.application.aibom.derivation import AibomComponent, ProvenancedValue
 from src.domain.clock import utc_now_iso
 
 # Authored "Approach" (Title Case enum) → CycloneDX learning-type enum.

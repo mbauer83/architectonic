@@ -13,10 +13,10 @@ from fastapi import APIRouter, Response
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from src.application import assurance_analysis as uc
-from src.application.assurance_exposure import NotFound, Visible
-from src.application.assurance_guidance import lookup as guidance_lookup
-from src.application.assurance_legacy_invalid import LegacyInvalidNode
+from src.application.assurance import analysis as uc
+from src.application.assurance.exposure import NotFound, Visible
+from src.application.assurance.guidance import lookup as guidance_lookup
+from src.application.assurance.legacy_invalid import LegacyInvalidNode
 from src.application.verification.case_draft import case_completeness_from_records
 from src.application.verification.cast_complete import run_cast_complete
 from src.application.verification.grc_complete import run_grc_complete

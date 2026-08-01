@@ -25,17 +25,17 @@ from fastapi import APIRouter, Response, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from src.application import assurance_grouping as uc
-from src.application.assurance_analysis import (
+from src.application.assurance import grouping as uc
+from src.application.assurance.analysis import (
     AnalysisInvalid,
     AnalysisLegacyInvalid,
     AnalysisLocked,
     AnalysisNotFound,
     AnalysisResult,
 )
-from src.application.assurance_exposure import AssuranceExposurePolicy, Visible
-from src.application.assurance_legacy_invalid import LegacyInvalidNode
-from src.application.assurance_working_set_page import analysis_working_set_page
+from src.application.assurance.exposure import AssuranceExposurePolicy, Visible
+from src.application.assurance.legacy_invalid import LegacyInvalidNode
+from src.application.assurance.working_set_page import analysis_working_set_page
 from src.infrastructure.assurance.write_serialization import run_write
 from src.infrastructure.mcp.assurance_mcp.context import AssuranceContext
 from src.infrastructure.rest.contracts.assurance_analyses import (

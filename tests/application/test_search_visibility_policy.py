@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from src.application.artifact_repository import ArtifactRepository
+from src.application.artifacts.repository import ArtifactRepository
 from src.infrastructure.artifact_index import combined_artifact_index, shared_artifact_index
 from tests.support.search_visibility_fixtures import (
     CAP_ID,

@@ -8,7 +8,7 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
-from src.application.artifact_parsing import normalize_puml_alias
+from src.application.artifacts.parsing import normalize_puml_alias
 from src.domain.modules.module_types import ConnectionTypeName, ElementClassName
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
 from src.domain.ontology_representation.ontology_protocol import DiagramRendererReferences

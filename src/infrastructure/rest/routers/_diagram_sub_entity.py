@@ -11,9 +11,9 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException
 
-from src.application._artifact_query_helpers import read_entity as serialize_entity
 from src.application._diagram_entity_extraction import extract_diagram_entities
-from src.application.artifact_parsing import parse_entity_content_sections
+from src.application.artifacts._query_helpers import read_entity as serialize_entity
+from src.application.artifacts.parsing import parse_entity_content_sections
 from src.infrastructure.rest.contracts.entities import EntityDetailResponse
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers._openapi import READ_RESPONSES, TAG_DIAGRAMS

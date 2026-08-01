@@ -24,7 +24,7 @@ def register_security_read_tools(server: FastMCP) -> None:
     ctx = get_assurance_context()
 
     def _policy():  # type: ignore[no-untyped-def]
-        from src.application.assurance_exposure import AssuranceExposurePolicy  # noqa: PLC0415
+        from src.application.assurance.exposure import AssuranceExposurePolicy  # noqa: PLC0415
 
         return AssuranceExposurePolicy(ctx.max_classification, ctx.is_available())
 
@@ -154,7 +154,7 @@ def register_security_read_tools(server: FastMCP) -> None:
     def assurance_security_metrics(anchor_entity_id: str) -> dict[str, object]:
         from dataclasses import asdict  # noqa: PLC0415
 
-        from src.application.assurance_exposure import AssuranceExposurePolicy  # noqa: PLC0415
+        from src.application.assurance.exposure import AssuranceExposurePolicy  # noqa: PLC0415
         from src.application.security_signals.metrics import compute_security_metrics  # noqa: PLC0415
 
         if not ctx.is_available():

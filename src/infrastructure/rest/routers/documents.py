@@ -8,7 +8,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Query, Response, status
 from pydantic import BaseModel
 
-from src.application.artifact_document_schema import get_document_subdirectory, load_document_schemata
+from src.application.artifacts.document_schema import get_document_subdirectory, load_document_schemata
 from src.infrastructure.rest.contracts.authoring_catalogs import DocumentTypeListResponse
 from src.infrastructure.rest.contracts.documents import (
     DocumentDetailResponse,

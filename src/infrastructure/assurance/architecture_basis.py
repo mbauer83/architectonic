@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 
 from functools import lru_cache
 
-from src.application.assurance_fmea_architecture import (
+from src.application.assurance.fmea_architecture import (
     ArchitectureBasis,
     ArchitectureModelSource,
     ConnectionTypeSource,

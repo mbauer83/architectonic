@@ -5,8 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Literal
 
-from src.application._artifact_aggregation import count_artifacts_by as _count_artifacts_by
-from src.application._artifact_search import (
+from src.application.artifacts._aggregation import count_artifacts_by as _count_artifacts_by
+from src.application.artifacts._search import (
     search_artifacts as _search_artifacts,
 )
 from src.application.document_links import reference_dicts_for_entity

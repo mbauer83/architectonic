@@ -20,7 +20,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from src.application.assurance_ports import ConfidentialAssuranceStore
+from src.application.assurance.ports import ConfidentialAssuranceStore
 
 #: The only operation permitted against a legacy-invalid node.
 PERMITTED_OPERATION = "assign_provenance"

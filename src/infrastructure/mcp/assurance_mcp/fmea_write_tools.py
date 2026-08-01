@@ -15,7 +15,7 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
 
-from src.application.assurance_fmea_factors import (
+from src.application.assurance.fmea_factors import (
     FactorInvalid,
     FactorNodeNotFound,
     FactorRecorded,

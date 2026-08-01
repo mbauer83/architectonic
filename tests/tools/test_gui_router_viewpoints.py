@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from src.application.artifact_repository import ArtifactRepository
+from src.application.artifacts.repository import ArtifactRepository
 from src.application.viewpoints.evaluate_viewpoint import ViewpointExecutionTimeoutError
 from src.domain.relationships.relationship_reachability import DerivationLimitError
 from src.domain.viewpoints.viewpoint_binding_evaluation import BindingCardinalityError

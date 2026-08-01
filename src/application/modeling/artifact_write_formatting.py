@@ -5,7 +5,7 @@ from typing import Any
 
 import yaml  # type: ignore[import-untyped]
 
-from src.application.artifact_schema import (
+from src.application.artifacts.schema import (
     load_attribute_schema,
     schema_all_properties,
     schema_required_properties,

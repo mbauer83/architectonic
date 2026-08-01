@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from src.application import assurance_model_bind as mb
+from src.application.assurance import model_bind as mb
 
 
 class _FakeArchive:

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
 
-from src.application.assurance_provenance_assignment import (
+from src.application.assurance.provenance_assignment import (
     ProvenanceAnalysisNotFound,
     ProvenanceImmutable,
     ProvenanceLocked,

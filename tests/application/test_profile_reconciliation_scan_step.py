@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from src.application.artifact_schema import clear_schema_cache
+from src.application.artifacts.schema import clear_schema_cache
 from src.application.repository_upgrade.steps.profile_reconciliation_scan import ProfileReconciliationScanStep
 from src.infrastructure.repository_upgrade.fs_adapter import FilesystemRepoUpgradeView
 

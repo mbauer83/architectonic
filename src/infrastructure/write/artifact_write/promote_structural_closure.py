@@ -18,7 +18,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
-from src.application.artifact_repository import ArtifactRepository
+from src.application.artifacts.repository import ArtifactRepository
 
 _GROUPING_TYPE = "grouping"
 _MEMBERSHIP_CONNECTION_TYPES = frozenset({"archimate-composition", "archimate-aggregation"})

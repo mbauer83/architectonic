@@ -12,7 +12,7 @@ from typing import Any
 
 import pytest
 
-from src.application import assurance_analysis as uc
+from src.application.assurance import analysis as uc
 from src.infrastructure.assurance._analysis_records import ANALYSIS_METHODS
 from src.infrastructure.assurance._private_git_store import PrivateGitAssuranceStore
 

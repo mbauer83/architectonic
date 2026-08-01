@@ -94,7 +94,7 @@ class TestStoreFactoryPrivateGit:
         clear_factory_cache()
 
     def test_builds_private_git_bundle(self) -> None:
-        from src.application.assurance_ports import (
+        from src.application.assurance.ports import (
             AssuranceArchive,
             ConfidentialAssuranceStore,
         )

@@ -8,7 +8,7 @@ analysis listed twice.
 
 from __future__ import annotations
 
-from src.application.assurance_provenance import analysis_summary, provenance
+from src.application.assurance.provenance import analysis_summary, provenance
 
 _STPA = {
     "analysis_id": "STPA@1.aaaa.000001",

@@ -7,10 +7,10 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Query, Request, Response, status
 from pydantic import BaseModel, ConfigDict
 
-from src.application._artifact_query_helpers import read_entity as serialize_entity
 from src.application._diagram_entity_extraction import extract_diagram_entities
-from src.application.artifact_parsing import decode_entity_properties, parse_entity_content_sections
-from src.application.artifact_schema import load_attribute_schema
+from src.application.artifacts._query_helpers import read_entity as serialize_entity
+from src.application.artifacts.parsing import decode_entity_properties, parse_entity_content_sections
+from src.application.artifacts.schema import load_attribute_schema
 from src.application.document_links import reference_dicts_for_entity
 from src.application.entity_type_predicates import is_internal_entity_type
 from src.application.read_models import EntityContextReadModel
@@ -225,7 +225,7 @@ def get_entity_schemata(artifact_type: str, specialization: str = "") -> dict[st
     repo_root = s.maybe_engagement_root()
     if repo_root is None:
         raise HTTPException(500, "Repository not initialized")
-    from src.application.artifact_schema import (
+    from src.application.artifacts.schema import (
         attribute_descriptors,
         compute_effective_attribute_schema,
         schema_all_properties,

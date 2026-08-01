@@ -20,8 +20,8 @@ from typing import Any
 
 import pytest
 
-from src.application.assurance_fmea_effect_suggestion import suggest_effects
-from src.application.assurance_fmea_rows import candidates, matrix_rows
+from src.application.assurance.fmea_effect_suggestion import suggest_effects
+from src.application.assurance.fmea_rows import candidates, matrix_rows
 from src.application.verification.assurance_verifier import verify_store
 from src.domain.artifact_id import canonical_entity_key
 from src.domain.assurance.fmea_structural_signals import sole_providers, typed_edges

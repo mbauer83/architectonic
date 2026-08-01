@@ -22,7 +22,7 @@ from typing import Any
 
 import pytest
 
-from src.application.assurance_fmea_rows import matrix_rows
+from src.application.assurance.fmea_rows import matrix_rows
 from src.application.verification.assurance_verifier import verify_store
 from src.domain.assurance.failure_modes import NOT_CREDIBLE, RECORDED
 

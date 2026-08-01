@@ -11,7 +11,7 @@ from collections.abc import Callable, Iterable
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
-from src.application.artifact_schema import (
+from src.application.artifacts.schema import (
     load_attribute_schema,
     load_frontmatter_schema,
     load_specialization_attachment_schema,
@@ -22,8 +22,8 @@ from src.domain.ontology_representation.specializations import SpecializationInf
 from src.infrastructure.specialization_declarations import load_specialization_catalog_file
 
 if TYPE_CHECKING:
-    from src.application.artifact_document_schema import DocumentSchema
-    from src.application.artifact_query import ArtifactRepository
+    from src.application.artifacts.document_schema import DocumentSchema
+    from src.application.artifacts.query import ArtifactRepository
     from src.application.verification.artifact_verifier import ArtifactRegistry
 
 
@@ -247,7 +247,7 @@ def _document_schema_errors(
 ) -> list[str]:
     if not document_ids:
         return []
-    from src.application.artifact_document_schema import get_document_schema_object
+    from src.application.artifacts.document_schema import get_document_schema_object
 
     doc_types = sorted({doc.doc_type for did in document_ids if (doc := repo.get_document(did)) is not None})
     errors: list[str] = []

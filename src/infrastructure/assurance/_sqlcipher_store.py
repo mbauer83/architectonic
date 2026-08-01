@@ -22,7 +22,7 @@ import logging
 from pathlib import Path
 from typing import Any
 
-from src.application.assurance_node_sorting import resolve_node_sort
+from src.application.assurance.node_sorting import resolve_node_sort
 from src.domain.assurance.assurance_node_types import NODE_UPDATABLE
 from src.infrastructure.assurance import _credential_accounts as accounts
 from src.infrastructure.assurance import _sqlcipher_analysis as _analysis

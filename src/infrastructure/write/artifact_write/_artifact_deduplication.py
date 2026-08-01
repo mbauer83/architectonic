@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from src.application.artifact_repository import ArtifactRepository
+from src.application.artifacts.repository import ArtifactRepository
 from src.application.identifier_allocator import get_default_allocator
 from src.domain.artifact_id import stable_id
 from src.domain.ontology_representation.artifact_types import DiagramRecord, DocumentRecord, EntityRecord

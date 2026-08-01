@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from src.application.aibom_derivation import (
+from src.application.aibom.derivation import (
     AibomComponent,
     Considerations,
     MotivationRef,

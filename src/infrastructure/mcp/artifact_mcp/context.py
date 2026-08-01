@@ -16,7 +16,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from src.application.artifact_query import ArtifactRepository
+from src.application.artifacts.query import ArtifactRepository
 from src.application.read_models import ReadModelVersion
 from src.application.verification.artifact_verifier import ArtifactRegistry, ArtifactVerifier
 from src.config.repo_paths import MODEL

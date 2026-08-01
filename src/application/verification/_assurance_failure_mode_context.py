@@ -12,9 +12,9 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from src.application.assurance_fmea_architecture import ArchitectureBasis
-from src.application.assurance_fmea_occurrence_evidence import ElementSecurityBasis
-from src.application.assurance_ports import ConfidentialAssuranceStore
+from src.application.assurance.fmea_architecture import ArchitectureBasis
+from src.application.assurance.fmea_occurrence_evidence import ElementSecurityBasis
+from src.application.assurance.ports import ConfidentialAssuranceStore
 from src.application.verification import _assurance_rules_failure_modes as failures
 from src.application.verification._assurance_model_join import bound_elements, occurrence_basis
 from src.application.verification.assurance_two_way_coverage import SEVERE_LOSS_VALUES
@@ -31,7 +31,7 @@ def read_failure_mode_context(
     security: Mapping[str, ElementSecurityBasis],
 ) -> "FailureModeContext":
     """One batched read and one derivation pass for every failure-mode rule that needs them."""
-    from src.application.assurance_fmea_derivation import derive_factors  # noqa: PLC0415
+    from src.application.assurance.fmea_derivation import derive_factors  # noqa: PLC0415
     from src.domain.assurance.fmea_action_priority import action_priority  # noqa: PLC0415
     from src.domain.assurance.fmea_factors import (  # noqa: PLC0415
         DETECTABILITY,

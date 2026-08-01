@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from src.application.artifact_document_schema import (
+from src.application.artifacts.document_schema import (
     get_document_schema,
     get_document_schema_object,
     normalize_document_schema,

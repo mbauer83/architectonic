@@ -11,11 +11,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from src.application.assurance_fmea_architecture import (
+from src.application.assurance.fmea_architecture import (
     ArchitectureBasis,
     read_architecture_basis,
 )
-from src.application.assurance_fmea_rows import matrix_rows
+from src.application.assurance.fmea_rows import matrix_rows
 from src.application.verification.assurance_verifier import verify_store
 from src.domain.artifact_id import canonical_entity_key
 from src.domain.assurance.failure_modes import UNTOUCHED

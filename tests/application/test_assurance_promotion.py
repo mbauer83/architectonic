@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-from src.application.assurance_promotion import promotion_preflight
+from src.application.assurance.promotion import promotion_preflight
 
 
 def _make_store(nodes: list[dict], edges: list[dict] | None = None) -> MagicMock:

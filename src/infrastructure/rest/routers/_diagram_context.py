@@ -11,7 +11,7 @@ from src.application._diagram_entity_extraction import (
     extract_diagram_connections,
     extract_diagram_entities,
 )
-from src.application.artifact_parsing import extract_declared_puml_aliases, normalize_puml_alias
+from src.application.artifacts.parsing import extract_declared_puml_aliases, normalize_puml_alias
 from src.application.entity_type_predicates import is_internal_entity_type
 from src.domain.modules.module_types import EntityTypeName
 from src.domain.ontology_representation.artifact_types import DiagramRecord, EntityRecord

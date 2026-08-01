@@ -6473,7 +6473,7 @@ export interface components {
          * DocumentSectionSpec
          * @description One section a document of this type carries, and what it should link to.
          *
-         *     Mirrors ``application.artifact_document_schema.SectionSpec.to_dict``, which omits a field it has no
+         *     Mirrors ``application.artifacts.document_schema.SectionSpec.to_dict``, which omits a field it has no
          *     value for rather than sending an empty one — so the three optionals are *absent*, not null. A
          *     section with no suggested connections and one whose suggestions are an empty list would otherwise
          *     look the same, and only the first is a thing the schema can express.

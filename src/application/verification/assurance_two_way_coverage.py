@@ -23,12 +23,12 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
-from src.application.assurance_fmea_architecture import (
+from src.application.assurance.fmea_architecture import (
     ArchitectureBasis,
     accessed_data_by_element,
     classifications,
 )
-from src.application.assurance_fmea_occurrence_evidence import (
+from src.application.assurance.fmea_occurrence_evidence import (
     ACCESS_CONNECTION_TYPE,
     CLASSIFIED_TYPES,
     SENSITIVITY_ATTRIBUTE,

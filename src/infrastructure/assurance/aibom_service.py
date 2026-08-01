@@ -13,8 +13,8 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
-from src.application.aibom_projection import ModelReader, aibom_schema_levels, project_aibom
-from src.application.aibom_role_loading import resolve_aibom_role_bindings
+from src.application.aibom.projection import ModelReader, aibom_schema_levels, project_aibom
+from src.application.aibom.role_loading import resolve_aibom_role_bindings
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.infrastructure.assurance.mlbom_builder import build_mlbom
 from src.ontologies.archimate_4._loader import _PACKAGE_DIR as _ARCHIMATE_DIR

@@ -22,7 +22,7 @@ from typing import Any
 
 import yaml  # type: ignore[import-untyped]
 
-from src.application.artifact_schema import (
+from src.application.artifacts.schema import (
     compute_effective_attribute_schema,
     compute_effective_connection_metadata_schema,
 )

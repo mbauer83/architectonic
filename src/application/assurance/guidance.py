@@ -6,7 +6,7 @@ modules inside the length policy, and looked up through the same function.
 
 from __future__ import annotations
 
-from src.application.assurance_guidance_failure_modes import FAILURE_MODE_GUIDANCE
+from src.application.assurance.guidance_failure_modes import FAILURE_MODE_GUIDANCE
 
 _GUIDANCE: dict[str, dict[str, object]] = {
     "stpa-losses": {

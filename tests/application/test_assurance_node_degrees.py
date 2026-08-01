@@ -11,8 +11,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from src.application.assurance_exposure import AssuranceExposurePolicy
-from src.application.assurance_node_degrees import degrees_by_node_id, with_degrees
+from src.application.assurance.exposure import AssuranceExposurePolicy
+from src.application.assurance.node_degrees import degrees_by_node_id, with_degrees
 
 
 def _node(node_id: str, tlp: str = "TLP:WHITE") -> dict[str, Any]:

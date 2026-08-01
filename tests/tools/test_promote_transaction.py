@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from src.application.artifact_query import ArtifactRepository
+from src.application.artifacts.query import ArtifactRepository
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.infrastructure.artifact_index import combined_artifact_index
 from src.infrastructure.write.artifact_write.promote_execute import execute_promotion

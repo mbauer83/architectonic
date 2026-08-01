@@ -83,7 +83,7 @@ def _percentile(samples: list[float], percentile: float) -> float:
 
 
 def _run_load_profile(profile: _LoadProfile, db_path: Path) -> _LoadOutcome:
-    from src.application import assurance_mutations as mutations
+    from src.application.assurance import mutations as mutations
     from src.infrastructure.assurance._archive import SQLCipherAssuranceArchive
     from src.infrastructure.assurance._sqlcipher_store import SQLCipherAssuranceStore
     from src.infrastructure.assurance.lifecycle import init_store

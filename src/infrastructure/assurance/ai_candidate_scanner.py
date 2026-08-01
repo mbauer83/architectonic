@@ -42,7 +42,7 @@ def _already_ai_marked(ent: dict[str, object]) -> bool:
     """True when the entity already carries an AI specialization — a scalar ``specialization``
     or any of a ``specializations`` list. Such an entity is already an AIBOM component, so the
     heuristic scan skips it rather than re-suggesting it."""
-    from src.application.aibom_derivation import AI_SPECIALIZATIONS  # noqa: PLC0415
+    from src.application.aibom.derivation import AI_SPECIALIZATIONS  # noqa: PLC0415
 
     scalar = ent.get("specialization")
     if isinstance(scalar, str) and scalar in AI_SPECIALIZATIONS:

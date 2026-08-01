@@ -19,7 +19,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Literal, Mapping, Protocol, Sequence
 
-from src.application.assurance_exposure import AssuranceExposurePolicy
+from src.application.assurance.exposure import AssuranceExposurePolicy
 from src.domain.assurance.vex_assessment import SUPPRESSING_VEX_STATUSES
 
 ContentState = Literal["complete", "visibility_limited", "no_active_snapshot", "no_findings"]

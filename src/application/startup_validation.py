@@ -18,12 +18,12 @@ from collections.abc import Iterable, Iterator
 from itertools import chain
 from typing import TYPE_CHECKING
 
-from src.application.artifact_schema import list_schema_files
+from src.application.artifacts.schema import list_schema_files
 from src.domain.diagrams.bindings import CORE_CORRESPONDENCE_KINDS
 from src.domain.relationships.permitted_mappings import concept_scope_from_mapping_spec
 
 if TYPE_CHECKING:
-    from src.application.artifact_repository import ArtifactRepository
+    from src.application.artifacts.repository import ArtifactRepository
     from src.domain.modules.bridges import BridgeDeclaration
     from src.domain.modules.module_registry import ModuleRegistry
 

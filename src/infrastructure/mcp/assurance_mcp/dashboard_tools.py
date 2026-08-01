@@ -11,8 +11,8 @@ from __future__ import annotations
 
 from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
 
-from src.application.assurance_exposure import AssuranceExposurePolicy
-from src.application.assurance_queries import coverage_gaps, risk_register
+from src.application.assurance.exposure import AssuranceExposurePolicy
+from src.application.assurance.queries import coverage_gaps, risk_register
 from src.infrastructure.mcp.assurance_mcp.context import get_assurance_context
 
 

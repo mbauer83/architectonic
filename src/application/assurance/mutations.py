@@ -16,7 +16,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Callable
 
-from src.application.assurance_legacy_invalid import (
+from src.application.assurance.legacy_invalid import (
     PERMITTED_OPERATION,
     refuse_if_legacy_invalid,
 )
@@ -25,7 +25,7 @@ from src.domain.assurance.assurance_node_types import CREATABLE_NODE_TYPES
 from src.domain.assurance.constraint_dispositions import DispositionRejection, accept_written_value
 
 if TYPE_CHECKING:
-    from src.application.assurance_ports import AssuranceArchive, ConfidentialAssuranceStore
+    from src.application.assurance.ports import AssuranceArchive, ConfidentialAssuranceStore
 
 # ── Typed outcomes ──────────────────────────────────────────────────────────────
 
@@ -257,7 +257,7 @@ def edit_node(
     Provenance is not editable here. ``assign_provenance`` is the one audited path that may set it,
     and only for a node that has none — an ordinary edit that could re-attribute authorship would
     let an analysis's recorded output be moved silently. A node still awaiting that repair cannot be
-    edited at all: see :mod:`src.application.assurance_legacy_invalid`.
+    edited at all: see :mod:`src.application.assurance.legacy_invalid`.
     """
     if not store.is_unlocked():
         return MutationLocked()

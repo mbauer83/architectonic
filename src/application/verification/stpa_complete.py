@@ -15,7 +15,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, TypedDict
 
 if TYPE_CHECKING:
-    from src.application.assurance_ports import ConfidentialAssuranceStore
+    from src.application.assurance.ports import ConfidentialAssuranceStore
 
 
 class _CheckEntry(TypedDict):

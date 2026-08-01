@@ -14,7 +14,7 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 from dataclasses import asdict
 
-from src.application.assurance_exposure import AssuranceExposurePolicy
+from src.application.assurance.exposure import AssuranceExposurePolicy
 from src.application.security_signals.metrics import compute_security_metrics
 from src.application.security_signals.read_token import (
     AvailabilityState,

@@ -6,7 +6,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from src.application.assurance_diagrams import assurance_surface_diagram_types
+from src.application.assurance.diagrams import assurance_surface_diagram_types
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.infrastructure.app_bootstrap import complete_diagram_type_catalog, runtime_catalogs_dependency
 from src.infrastructure.rest.contracts.diagram_types import (

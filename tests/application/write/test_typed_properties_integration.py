@@ -12,7 +12,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from src.application.artifact_parsing import decode_entity_properties
+from src.application.artifacts.parsing import decode_entity_properties
 from src.application.modeling.artifact_write_formatting import format_entity_markdown
 from src.application.verification._verifier_rules_schema import check_attribute_schema
 from src.application.verification.artifact_verifier_types import VerificationResult
@@ -74,7 +74,7 @@ def _write_schema(repo_root: Path, artifact_type: str, schema: dict) -> None:
 
 class TestTypedPropertyRoundTrip:
     def test_integer_survives_roundtrip(self, tmp_path: Path) -> None:
-        from src.application.artifact_parsing import parse_entity_content_sections
+        from src.application.artifacts.parsing import parse_entity_content_sections
 
         content = _write_entity(
             tmp_path / "entity.md",
@@ -88,7 +88,7 @@ class TestTypedPropertyRoundTrip:
         assert isinstance(result["Count"], int)
 
     def test_boolean_survives_roundtrip(self, tmp_path: Path) -> None:
-        from src.application.artifact_parsing import parse_entity_content_sections
+        from src.application.artifacts.parsing import parse_entity_content_sections
 
         content = _write_entity(
             tmp_path / "entity.md",
@@ -101,7 +101,7 @@ class TestTypedPropertyRoundTrip:
         assert result["Enabled"] is True
 
     def test_number_survives_roundtrip(self, tmp_path: Path) -> None:
-        from src.application.artifact_parsing import parse_entity_content_sections
+        from src.application.artifacts.parsing import parse_entity_content_sections
 
         content = _write_entity(
             tmp_path / "entity.md",
@@ -114,7 +114,7 @@ class TestTypedPropertyRoundTrip:
         assert abs(result["Score"] - 3.14) < 1e-9
 
     def test_string_property_preserved_without_type(self, tmp_path: Path) -> None:
-        from src.application.artifact_parsing import parse_entity_content_sections
+        from src.application.artifacts.parsing import parse_entity_content_sections
 
         content = _write_entity(
             tmp_path / "entity.md",
@@ -126,7 +126,7 @@ class TestTypedPropertyRoundTrip:
         assert result["Note"] == "hello world"
 
     def test_array_of_strings_survives_roundtrip(self, tmp_path: Path) -> None:
-        from src.application.artifact_parsing import parse_entity_content_sections
+        from src.application.artifacts.parsing import parse_entity_content_sections
 
         content = _write_entity(
             tmp_path / "entity.md",
@@ -139,7 +139,7 @@ class TestTypedPropertyRoundTrip:
         assert result["Tags"] == ["a", "b", "c"]
 
     def test_schema_type_takes_precedence_over_adhoc(self, tmp_path: Path) -> None:
-        from src.application.artifact_parsing import parse_entity_content_sections
+        from src.application.artifacts.parsing import parse_entity_content_sections
 
         content = _write_entity(
             tmp_path / "entity.md",

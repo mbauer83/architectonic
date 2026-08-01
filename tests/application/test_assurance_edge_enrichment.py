@@ -7,8 +7,8 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from src.application.assurance_edge_enrichment import enrich_edges, visible_nodes_by_id
-from src.application.assurance_exposure import AssuranceExposurePolicy
+from src.application.assurance.edge_enrichment import enrich_edges, visible_nodes_by_id
+from src.application.assurance.exposure import AssuranceExposurePolicy
 
 
 def _node(node_id: str, name: str, node_type: str = "hazard", tlp: str = "TLP:WHITE") -> dict[str, Any]:

@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from src.application.aibom_role_loading import resolve_aibom_role_bindings
+from src.application.aibom.role_loading import resolve_aibom_role_bindings
 from src.domain.assurance.aibom_roles import (
     AIBOM_DERIVATION_ROLES,
     DerivationRoleError,
