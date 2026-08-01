@@ -15,7 +15,10 @@ import type {
   ScaleLegendDataSchema,
   ScaleStyleValueSchema,
   StyleRuleOutcomeSchema,
+  SignalBannerSchema,
+  SignalBasisSnapshotSchema,
   TargetPopulationSummarySchema,
+  ViewpointDiagramResultSchema,
   ViewpointExecutionResultSchema,
   ViewpointProjectionSchema,
   WitnessStepSchema,
@@ -76,6 +79,22 @@ describe('viewpoint execution', () => {
     >()
     expectTypeOf<SchemaType<typeof AggregateEdgeSchema>>().toEqualTypeOf<
       Immutable<components['schemas']['AggregateEdgeResponse']>
+    >()
+  })
+})
+
+describe('ad-hoc diagram render', () => {
+  it('decodes the render and its classification banner', () => {
+    // `entity_aliases` and `signal_banner` were both optional here against a route that keys them
+    // on every response — so click-to-select carried a fallback for a map it always receives.
+    expectTypeOf<SchemaType<typeof ViewpointDiagramResultSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['ViewpointDiagramRenderResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof SignalBannerSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['SignalBannerResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof SignalBasisSnapshotSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['SignalBasisSnapshotResponse']>
     >()
   })
 })

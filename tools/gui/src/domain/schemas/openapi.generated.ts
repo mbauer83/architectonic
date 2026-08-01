@@ -8320,6 +8320,37 @@ export interface components {
             anchor_types: string[];
         };
         /**
+         * SignalBannerResponse
+         * @description The classification a signal-declaring render carries, and what it was computed from.
+         *
+         *     ``available`` false means the metrics could not be read at all — ``classification`` is then null
+         *     and ``note`` says why, which is not the same as a render that is genuinely unclassified.
+         */
+        SignalBannerResponse: {
+            /** Available */
+            available: boolean;
+            /** Basis Snapshots */
+            basis_snapshots: components["schemas"]["SignalBasisSnapshotResponse"][];
+            /** Classification */
+            classification: string | null;
+            /** Generated At */
+            generated_at: string;
+            /** Note */
+            note: string | null;
+        };
+        /**
+         * SignalBasisSnapshotResponse
+         * @description One security snapshot a classification rests on, and the anchor it was read through.
+         */
+        SignalBasisSnapshotResponse: {
+            /** Activated At */
+            activated_at: string;
+            /** Anchor Entity Id */
+            anchor_entity_id: string;
+            /** Snapshot Id */
+            snapshot_id: string;
+        };
+        /**
          * SignalIngestResponse
          * @description The outcome of an ingest, projected the same way the MCP tool projects it.
          *
@@ -8861,6 +8892,28 @@ export interface components {
          */
         VexRevisionRecord: {
             [key: string]: unknown;
+        };
+        /**
+         * ViewpointDiagramRenderResponse
+         * @description An unpersisted ArchiMate render of the evaluated population, produced entirely in memory.
+         *
+         *     ``svg`` is null when rendering failed; ``warnings`` then says what went wrong, so a failed
+         *     render is a successful response describing a failure rather than a 500.
+         *
+         *     ``entity_aliases`` maps each entity id to the PlantUML alias its node carries in the returned
+         *     SVG — never the raw artifact id. Click-to-select needs it to resolve an SVG element back to an
+         *     artifact, the same way a persisted diagram's viewer does from its own ``diagram_entities``.
+         */
+        ViewpointDiagramRenderResponse: {
+            /** Entity Aliases */
+            entity_aliases: {
+                [key: string]: string;
+            };
+            signal_banner: components["schemas"]["SignalBannerResponse"] | null;
+            /** Svg */
+            svg: string | null;
+            /** Warnings */
+            warnings: string[];
         };
         /**
          * ViewpointExecutionResponse
@@ -17603,7 +17656,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["ViewpointDiagramRenderResponse"];
                 };
             };
             /** @description Request validation failed */

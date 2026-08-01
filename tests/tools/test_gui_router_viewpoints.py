@@ -328,7 +328,10 @@ class TestExecuteDiagram:
         resp = client.post("/api/viewpoints/execute-diagram", json={"slug": "exec-test"})
         assert resp.status_code == 200
         body = resp.json()
-        assert set(body.keys()) == {"svg", "warnings", "entity_aliases"}
+        assert set(body.keys()) == {"svg", "warnings", "entity_aliases", "signal_banner"}
+        # Keyed and null: a plain definition declares no signal source, and "absent" versus
+        # "null" would be two spellings of that one state.
+        assert body["signal_banner"] is None
         assert body["svg"] is not None
         assert "<svg" in body["svg"]
         assert isinstance(body["warnings"], list)

@@ -37,14 +37,17 @@ from src.domain.viewpoints.viewpoints import PresentationSpec, TargetKind
 from src.infrastructure.assurance.signal_attribute_capability import (
     composed_signal_attribute_capability,
 )
-from src.infrastructure.gui.contracts.viewpoint_execution import ViewpointExecutionResponse
+from src.infrastructure.gui.contracts.viewpoint_execution import (
+    ViewpointDiagramRenderResponse,
+    ViewpointExecutionResponse,
+)
 from src.infrastructure.gui.contracts.viewpoint_projection import (
     DiagramViewpointProjectionResponse,
     ViewpointProjectionResponse,
 )
 from src.infrastructure.gui.routers import state as s
 from src.infrastructure.gui.routers._diagram_selection import resolve_diagram_selection
-from src.infrastructure.gui.routers._openapi import READ_RESPONSES, TAG_VIEWPOINTS, OpenMapResponse, media_response
+from src.infrastructure.gui.routers._openapi import READ_RESPONSES, TAG_VIEWPOINTS, media_response
 from src.infrastructure.gui.routers._viewpoint_freshness import fresh_viewpoints_runtime_catalogs_dependency
 from src.infrastructure.gui.routers._viewpoint_request_parsing import (
     execution_error,
@@ -251,7 +254,7 @@ def execute_viewpoint_projection(
 
 
 @router.post("/api/viewpoints/execute-diagram", tags=[TAG_VIEWPOINTS],
-    summary="Execute a viewpoint against a diagram", response_model=OpenMapResponse)
+    summary="Execute a viewpoint against a diagram", response_model=ViewpointDiagramRenderResponse)
 def execute_viewpoint_diagram(
     response: Response,
     slug: Annotated[str | None, Body()] = None,
@@ -335,16 +338,18 @@ def execute_viewpoint_diagram(
     # select overlay needs this mapping to resolve SVG elements back to artifact ids, the
     # same way a real persisted diagram's viewer already does from its own diagram_entities.
     entity_aliases = {e.artifact_id: normalize_puml_alias(e.display_alias) for e in entities if e.display_alias}
-    payload: dict[str, object] = {
-        "svg": svg,
-        "warnings": [*result.warnings, *render_warnings],
-        "entity_aliases": entity_aliases,
-    }
     banner = signal_banner_for(slug, catalogs, list(result.entity_ids))
     if banner is not None:
         response.headers["Cache-Control"] = "no-store"
-        payload["signal_banner"] = banner
-    return payload
+    # ``signal_banner`` is always keyed, null where the definition declares no signal source. It was
+    # omitted in that case, which asked a client to read absence and null as two states when there
+    # is only one: the render is classified, or it is not.
+    return {
+        "svg": svg,
+        "warnings": [*result.warnings, *render_warnings],
+        "entity_aliases": entity_aliases,
+        "signal_banner": banner,
+    }
 
 
 @router.get("/api/diagrams/{artifact_id}/viewpoint-projection", tags=[TAG_VIEWPOINTS],

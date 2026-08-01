@@ -213,29 +213,34 @@ export interface ViewpointExecutionRequest {
 /** GUI-only ad-hoc ArchiMate-notation rendering (the ad-hoc `diagram` representation) —
  * unstyled; `node_color`/`edge_color`/`edge_emphasis` overlays are applied client-side
  * onto the returned SVG. */
+/** One security snapshot a classification rests on, and the anchor it was read through. */
+export const SignalBasisSnapshotSchema = Schema.Struct({
+  anchor_entity_id: Schema.String,
+  snapshot_id: Schema.String,
+  activated_at: Schema.String,
+})
+
 export const SignalBannerSchema = Schema.Struct({
   classification: Schema.NullOr(Schema.String),
   available: Schema.Boolean,
   note: Schema.NullOr(Schema.String),
-  basis_snapshots: Schema.Array(Schema.Struct({
-    anchor_entity_id: Schema.String,
-    snapshot_id: Schema.String,
-    activated_at: Schema.String,
-  })),
+  basis_snapshots: Schema.Array(SignalBasisSnapshotSchema),
   generated_at: Schema.String,
 })
 export type SignalBanner = typeof SignalBannerSchema.Type
 
 export const ViewpointDiagramResultSchema = Schema.Struct({
+  /** Null when rendering failed; `warnings` then says why. A failed render is a successful
+   * response describing a failure, not a 500. */
   svg: Schema.NullOr(Schema.String),
   warnings: Schema.Array(Schema.String),
   // Entity id -> the rendered SVG's PlantUML alias (never the raw artifact id) — needed to
   // resolve SVG elements back to artifact ids for click-to-select, the same way a real
   // persisted diagram's viewer already does from its own diagram_entities.
-  entity_aliases: Schema.optional(Schema.Record({ key: Schema.String, value: Schema.String })),
-  // Present ONLY for definitions declaring a security-signal source: computed
-  // classification + basis snapshots + generation timestamp (the D11 ephemeral render).
-  signal_banner: Schema.optional(Schema.NullOr(SignalBannerSchema)),
+  entity_aliases: Schema.Record({ key: Schema.String, value: Schema.String }),
+  /** Null for a definition declaring no security-signal source. Always keyed: absence and
+   * null were two spellings of the one state "this render is not classified". */
+  signal_banner: Schema.NullOr(SignalBannerSchema),
 })
 export type ViewpointDiagramResult = typeof ViewpointDiagramResultSchema.Type
 

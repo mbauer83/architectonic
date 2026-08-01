@@ -199,3 +199,45 @@ class ViewpointExecutionResponse(_Closed):
     #: export provenance records, so neither has to re-derive the binding.
     bound_parameters: dict[str, BoundParameterValue]
     trace_table: TraceTableResponse | None
+
+
+class SignalBasisSnapshotResponse(_Closed):
+    """One security snapshot a classification rests on, and the anchor it was read through."""
+
+    anchor_entity_id: str
+    snapshot_id: str
+    activated_at: str
+
+
+class SignalBannerResponse(_Closed):
+    """The classification a signal-declaring render carries, and what it was computed from.
+
+    ``available`` false means the metrics could not be read at all — ``classification`` is then null
+    and ``note`` says why, which is not the same as a render that is genuinely unclassified.
+    """
+
+    classification: str | None
+    available: bool
+    note: str | None
+    basis_snapshots: list[SignalBasisSnapshotResponse]
+    generated_at: str
+
+
+class ViewpointDiagramRenderResponse(_Closed):
+    """An unpersisted ArchiMate render of the evaluated population, produced entirely in memory.
+
+    ``svg`` is null when rendering failed; ``warnings`` then says what went wrong, so a failed
+    render is a successful response describing a failure rather than a 500.
+
+    ``entity_aliases`` maps each entity id to the PlantUML alias its node carries in the returned
+    SVG — never the raw artifact id. Click-to-select needs it to resolve an SVG element back to an
+    artifact, the same way a persisted diagram's viewer does from its own ``diagram_entities``.
+    """
+
+    svg: str | None
+    warnings: list[str]
+    entity_aliases: dict[str, str]
+    #: Null for a definition that declares no security-signal source. It used to be *absent* in that
+    #: case, which made a client distinguish two states where there is one: either the render is
+    #: classified or it is not. A banner present also marks the response ``no-store``.
+    signal_banner: SignalBannerResponse | None
