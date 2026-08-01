@@ -1,18 +1,6 @@
 import { Schema } from 'effect'
 
 /**
- * Decoders for the assurance analysis aggregate.
- *
- * The picker and the filing tree each described an analysis with their own hand-written interface and
- * a cast over `resp.json()`, and both declared `status`, `tlp` and `architecture_anchor_id` optional
- * for a route that has always sent them — a decoder more permissive than the server, which is the
- * direction that hides a real absence rather than reporting it.
- *
- * `method` and `status` are the closed vocabularies the backend now publishes. A method the domain
- * retires stops type-checking here, which is the check the duplicated `ANALYSIS_METHODS` list in
- * `AssuranceAnalysisPicker.helpers.ts` was standing in for.
- */
-/**
  * The methods and statuses an analysis may have, in one place on this side of the wire.
  *
  * They were spelled out again in `AssuranceAnalysisPicker.helpers.ts`, whose comment asked a test to
@@ -137,3 +125,41 @@ export const decodeAnalysisList = (body: unknown): AssuranceAnalysisRecord[] => 
 export const decodeGroupList = (body: unknown): AssuranceGroupRecord[] => [
   ...Schema.decodeUnknownSync(AssuranceGroupListSchema)(body).groups,
 ]
+
+/**
+ * The edge and reference vocabularies of the loaded assurance module.
+ *
+ * Edge types and reference types stay apart, and that is a module invariant rather than a
+ * presentation choice: they are disjoint sets, and a reference type submitted as an edge type would
+ * ask for a relation the graph rules do not define.
+ *
+ * `permitted` is grouped per (source, target) pair because that is the picker's actual question —
+ * given these two ends, what may I draw — and a flat legality table would make the client re-derive
+ * the grouping the module already knows.
+ */
+export const AssuranceEdgeTypeOptionSchema = Schema.Struct({
+  name: Schema.String,
+  label: Schema.String,
+})
+
+export const AssuranceEdgeTypePairSchema = Schema.Struct({
+  source_type: Schema.String,
+  target_type: Schema.String,
+  connection_types: Schema.Array(Schema.String),
+})
+export type AssuranceEdgeTypePair = typeof AssuranceEdgeTypePairSchema.Type
+
+export const AssuranceReferenceTypeOptionSchema = Schema.Struct({
+  name: Schema.String,
+  description: Schema.String,
+})
+
+export const AssuranceEdgeCatalogSchema = Schema.Struct({
+  edge_types: Schema.Array(AssuranceEdgeTypeOptionSchema),
+  permitted: Schema.Array(AssuranceEdgeTypePairSchema),
+  reference_types: Schema.Array(AssuranceReferenceTypeOptionSchema),
+})
+export type AssuranceEdgeCatalog = typeof AssuranceEdgeCatalogSchema.Type
+
+export const decodeEdgeCatalog = (body: unknown): AssuranceEdgeCatalog =>
+  Schema.decodeUnknownSync(AssuranceEdgeCatalogSchema)(body)

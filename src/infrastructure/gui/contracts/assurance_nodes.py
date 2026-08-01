@@ -15,7 +15,7 @@ number nobody thinks of as content, which is why ``assurance_node_degrees`` runs
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict
 
@@ -196,3 +196,60 @@ class AssuranceNeighborhoodResponse(_Closed):
     frontier_node_ids: list[str]
     max_hops: int
     visibility_limited: bool
+
+
+class AssuranceEdgeTypeOption(_Closed):
+    """One connection type an edge may have, with the phrase a picker shows for it."""
+
+    name: str
+    label: str
+
+
+class AssuranceEdgeTypePair(_Closed):
+    """The connection types legal between one (source, target) node-type pair.
+
+    Grouped per pair rather than served as a flat legality table, because a picker's question is
+    always "given these two ends, what may I draw?" — and answering it from a flat table means the
+    client re-deriving the grouping the module already knows.
+    """
+
+    source_type: str
+    target_type: str
+    connection_types: list[str]
+
+
+class AssuranceReferenceTypeOption(_Closed):
+    """One architecture-reference type, with what it means."""
+
+    name: str
+    description: str
+
+
+class AssuranceEdgeCatalogResponse(_Closed):
+    """The edge and reference vocabularies of the loaded assurance module.
+
+    Edge types and reference types are kept apart, and that separation is a module invariant rather
+    than a presentation choice: they are disjoint sets, and a reference type submitted as an edge type
+    would create a relation the graph rules do not define. One list would invite exactly that.
+
+    Module configuration, not store content — which is why this route is configured-gated and not
+    unlock-gated, and answers ``not_configured`` when the module is absent.
+    """
+
+    edge_types: list[AssuranceEdgeTypeOption]
+    permitted: list[AssuranceEdgeTypePair]
+    reference_types: list[AssuranceReferenceTypeOption]
+
+
+class AssuranceEdgeCreatedResponse(_Closed):
+    """The edge that was created, named by the id the store minted for it.
+
+    ``verification_findings`` rides along when the post-write verify found something. Advisory: the
+    edge exists either way, and a finding blocks sign-off rather than the write.
+    """
+
+    edge_id: str
+    source_id: str
+    target_id: str
+    conn_type: str
+    verification_findings: list[dict[str, Any]] | None = None

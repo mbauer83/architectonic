@@ -13,19 +13,15 @@
  * filtering candidates by it: crossing methods stays possible, and becomes deliberate.
  */
 
-import type { AssuranceAnalysisSummary } from '../../domain/schemas/assurance-analyses'
+import type {
+  AssuranceAnalysisSummary,
+  AssuranceEdgeCatalog,
+  AssuranceEdgeTypePair,
+} from '../../domain/schemas/assurance-analyses'
 
-export interface EdgeCatalogRow {
-  source_type: string
-  target_type: string
-  connection_types: string[]
-}
-
-export interface EdgeCatalog {
-  edge_types: { name: string; label: string }[]
-  permitted: EdgeCatalogRow[]
-  reference_types: { name: string; description: string }[]
-}
+/* The route's own shapes, decoded rather than restated here. */
+export type EdgeCatalogRow = AssuranceEdgeTypePair
+export type EdgeCatalog = AssuranceEdgeCatalog
 
 export type EdgeDirection = 'outgoing' | 'incoming'
 

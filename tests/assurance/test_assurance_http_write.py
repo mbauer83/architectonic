@@ -177,13 +177,19 @@ class _FakeContext:
 
 _CTX_PATH = "src.infrastructure.gui.routers._assurance_write.get_assurance_context"
 _CTX_PATH_READ = "src.infrastructure.gui.routers._assurance_read.get_assurance_context"
+# The baseline and architecture-reference writes moved to their own module when the write router
+# crossed the file-length limit, and every route module on this surface looks the context up in its own
+# namespace on purpose — so each is patched, exactly as `_assurance_read`'s own docstring explains.
+_CTX_PATH_ARCHIVE = (
+    "src.infrastructure.gui.routers._assurance_archive_routes.get_assurance_context"
+)
 
 
 def _make_client(ctx: _FakeContext) -> TestClient:
     from src.infrastructure.gui.routers.assurance import router
 
     client = TestClient(build_api_app(router), raise_server_exceptions=False)
-    for path in (_CTX_PATH, _CTX_PATH_READ):
+    for path in (_CTX_PATH, _CTX_PATH_READ, _CTX_PATH_ARCHIVE):
         p = patch(path, return_value=ctx)
         p.start()
     return client

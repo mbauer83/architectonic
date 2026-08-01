@@ -12,7 +12,11 @@ import {
   type EdgeCatalog, type EdgeDirection,
 } from './AssuranceEdgePicker.helpers'
 // The hit shape is the route's, decoded — it was a four-field restatement of an eight-field body.
-import { decodeSearchHits, type AssuranceSearchHit as SearchHit } from '../../domain/schemas/assurance-analyses'
+import {
+  decodeEdgeCatalog,
+  decodeSearchHits,
+  type AssuranceSearchHit as SearchHit,
+} from '../../domain/schemas/assurance-analyses'
 
 
 const props = defineProps<{
@@ -46,7 +50,7 @@ onMounted(async () => {
       catalogError.value = `Edge catalog unavailable (HTTP ${resp.status})`
       return
     }
-    catalog.value = await resp.json() as EdgeCatalog
+    catalog.value = decodeEdgeCatalog(await resp.json())
   } catch (e) {
     catalogError.value = String(e)
   }

@@ -34,10 +34,7 @@ from src.application.assurance_provenance_assignment import (
 )
 from src.infrastructure.assurance.edge_legality import legal_connection_types
 from src.infrastructure.assurance.write_serialization import run_write
-from src.infrastructure.gui.contracts.assurance_queries import (
-    AssuranceArchRefRegisteredResponse,
-    AssuranceBaselineSealedResponse,
-)
+from src.infrastructure.gui.contracts.assurance_nodes import AssuranceEdgeCreatedResponse
 from src.infrastructure.gui.contracts.assurance_signals import (
     AssuranceNodeCreatedResponse,
     AssuranceNodeUpdatedResponse,
@@ -345,7 +342,8 @@ def delete_node(node_id: str) -> Response:
 # ── Edge endpoints ─────────────────────────────────────────────────────────────
 
 
-@write_router.post("/api/assurance/edges", status_code=200)
+@write_router.post("/api/assurance/edges", status_code=200,
+    response_model=AssuranceEdgeCreatedResponse)
 def add_edge(body: AddEdgeBody) -> JSONResponse:
     ctx = get_assurance_context()
     return _translate(run_write(lambda: mutations.add_edge(
@@ -353,7 +351,7 @@ def add_edge(body: AddEdgeBody) -> JSONResponse:
         source_id=body.source_id, target_id=body.target_id,
         conn_type=body.conn_type, attributes=body.attributes,
         legal_connection_types=legal_connection_types,
-    )))
+    )), AssuranceEdgeCreatedResponse)
 
 
 @write_router.delete("/api/assurance/edges/{edge_id}", status_code=204, response_model=None)
@@ -362,37 +360,6 @@ def delete_edge(edge_id: str) -> Response:
     return deleted_response(
         _translate(run_write(lambda: mutations.delete_edge(ctx.store, ctx.archive, edge_id=edge_id)))
     )
-
-
-# ── Baselines ─────────────────────────────────────────────────────────────────
-
-
-@write_router.post("/api/assurance/baselines", status_code=200,
-    response_model=AssuranceBaselineSealedResponse)
-def seal_baseline(body: SealBaselineBody) -> JSONResponse:
-    """Sealing *is* creating a baseline, so it posts to the collection rather than naming the act
-    in a trailing segment: there is no other way to make one, and no baseline to seal beforehand."""
-    ctx = get_assurance_context()
-    if not ctx.is_available():
-        raise _locked()
-    result = run_write(lambda: ctx.archive.seal_baseline(notes=body.notes, analysis_id=body.analysis_id))
-    AssuranceBaselineSealedResponse.model_validate(result)
-    return JSONResponse(content=result, headers={"Cache-Control": _NO_STORE})  # type: ignore[arg-type]
-
-
-# ── Architecture references ────────────────────────────────────────────────────
-
-
-@write_router.post("/api/assurance/arch-refs", status_code=200,
-    response_model=AssuranceArchRefRegisteredResponse)
-def register_arch_ref(body: RegisterArchRefBody) -> JSONResponse:
-    ctx = get_assurance_context()
-    return _translate(run_write(lambda: mutations.register_arch_ref(
-        ctx.store, ctx.archive,
-        assurance_node_id=body.assurance_node_id,
-        arch_artifact_id=body.arch_artifact_id,
-        ref_type=body.ref_type,
-    )), AssuranceArchRefRegisteredResponse)
 
 
 # ── Model-this (create+bind, or task for an architecture-write session) ───────────

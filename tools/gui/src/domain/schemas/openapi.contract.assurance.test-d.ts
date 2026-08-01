@@ -11,6 +11,8 @@ import type {
   AssuranceGroupListSchema,
   AssuranceGroupRecordSchema,
   AssuranceParticipatingNodesSchema,
+  AssuranceEdgeCatalogSchema,
+  AssuranceEdgeTypePairSchema,
   AssuranceSearchHitSchema,
   AssuranceSearchSchema,
 } from './assurance-analyses'
@@ -164,6 +166,15 @@ describe('assurance analyses', () => {
     >()
     expectTypeOf<SchemaType<typeof AiBomComponentCoverageSchema>>().toEqualTypeOf<
       Immutable<components['schemas']['AiBomComponentCoverage']>
+    >()
+  })
+
+  it('decodes the edge catalog, grouped per node-type pair as the picker asks it', () => {
+    expectTypeOf<SchemaType<typeof AssuranceEdgeCatalogSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['AssuranceEdgeCatalogResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof AssuranceEdgeTypePairSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['AssuranceEdgeTypePair']>
     >()
   })
 

@@ -22,10 +22,12 @@ from pydantic import BaseModel
 
 from src.application.assurance_edge_catalog import build_edge_catalog
 from src.infrastructure.app_bootstrap import assurance_ontology_module, get_module_registry
+from src.infrastructure.gui.contracts.assurance_nodes import AssuranceEdgeCatalogResponse
 from src.infrastructure.gui.contracts.assurance_store import AssuranceStoreStatusResponse
 from src.infrastructure.gui.contracts.errors import ApiError, NotConfiguredDetails
 from src.infrastructure.gui.routers._assurance_aibom import aibom_router
 from src.infrastructure.gui.routers._assurance_analysis_routes import analysis_router
+from src.infrastructure.gui.routers._assurance_archive_routes import archive_router
 from src.infrastructure.gui.routers._assurance_diagram_routes import diagram_router
 from src.infrastructure.gui.routers._assurance_fmea_routes import fmea_router
 from src.infrastructure.gui.routers._assurance_grouping_routes import grouping_router
@@ -44,6 +46,7 @@ router.include_router(neighbors_router)
 router.include_router(signals_router)
 router.include_router(signal_deletion_router)
 router.include_router(write_router)
+router.include_router(archive_router)
 router.include_router(analysis_router)
 router.include_router(gsn_router)
 router.include_router(grouping_router)
@@ -88,7 +91,7 @@ def assurance_reload(body: AssuranceReloadBody | None = None) -> dict[str, objec
     return assurance_status()
 
 
-@router.get("/api/assurance/edge-catalog")
+@router.get("/api/assurance/edge-catalog", response_model=AssuranceEdgeCatalogResponse)
 def assurance_edge_catalog() -> JSONResponse:
     """Edge and reference type catalog from the loaded assurance module.
 
@@ -105,7 +108,9 @@ def assurance_edge_catalog() -> JSONResponse:
                 remedy="Enable the assurance module in config/settings.yaml.",
             ),
         )
-    return JSONResponse(content=build_edge_catalog(assurance_ontology_module()))
+    catalog = build_edge_catalog(assurance_ontology_module())
+    AssuranceEdgeCatalogResponse.model_validate(catalog)
+    return JSONResponse(content=catalog)
 
 
 @router.get("/api/assurance/status", response_model=AssuranceStoreStatusResponse)

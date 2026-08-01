@@ -3400,6 +3400,46 @@ export interface components {
             total_gaps: number;
         };
         /**
+         * AssuranceEdgeCatalogResponse
+         * @description The edge and reference vocabularies of the loaded assurance module.
+         *
+         *     Edge types and reference types are kept apart, and that separation is a module invariant rather
+         *     than a presentation choice: they are disjoint sets, and a reference type submitted as an edge type
+         *     would create a relation the graph rules do not define. One list would invite exactly that.
+         *
+         *     Module configuration, not store content — which is why this route is configured-gated and not
+         *     unlock-gated, and answers ``not_configured`` when the module is absent.
+         */
+        AssuranceEdgeCatalogResponse: {
+            /** Edge Types */
+            edge_types: components["schemas"]["AssuranceEdgeTypeOption"][];
+            /** Permitted */
+            permitted: components["schemas"]["AssuranceEdgeTypePair"][];
+            /** Reference Types */
+            reference_types: components["schemas"]["AssuranceReferenceTypeOption"][];
+        };
+        /**
+         * AssuranceEdgeCreatedResponse
+         * @description The edge that was created, named by the id the store minted for it.
+         *
+         *     ``verification_findings`` rides along when the post-write verify found something. Advisory: the
+         *     edge exists either way, and a finding blocks sign-off rather than the write.
+         */
+        AssuranceEdgeCreatedResponse: {
+            /** Conn Type */
+            conn_type: string;
+            /** Edge Id */
+            edge_id: string;
+            /** Source Id */
+            source_id: string;
+            /** Target Id */
+            target_id: string;
+            /** Verification Findings */
+            verification_findings?: {
+                [key: string]: unknown;
+            }[] | null;
+        };
+        /**
          * AssuranceEdgeListResponse
          * @description The visible edges, enriched. ``count`` is the length of the list after filtering.
          */
@@ -3410,6 +3450,32 @@ export interface components {
             edges: components["schemas"]["AssuranceEnrichedEdge"][];
             /** Visibility Limited */
             visibility_limited: boolean;
+        };
+        /**
+         * AssuranceEdgeTypeOption
+         * @description One connection type an edge may have, with the phrase a picker shows for it.
+         */
+        AssuranceEdgeTypeOption: {
+            /** Label */
+            label: string;
+            /** Name */
+            name: string;
+        };
+        /**
+         * AssuranceEdgeTypePair
+         * @description The connection types legal between one (source, target) node-type pair.
+         *
+         *     Grouped per pair rather than served as a flat legality table, because a picker's question is
+         *     always "given these two ends, what may I draw?" — and answering it from a flat table means the
+         *     client re-deriving the grouping the module already knows.
+         */
+        AssuranceEdgeTypePair: {
+            /** Connection Types */
+            connection_types: string[];
+            /** Source Type */
+            source_type: string;
+            /** Target Type */
+            target_type: string;
         };
         /**
          * AssuranceEnrichedEdge
@@ -3831,6 +3897,16 @@ export interface components {
             participating_node_ids: string[];
             /** Visibility Limited */
             visibility_limited: boolean;
+        };
+        /**
+         * AssuranceReferenceTypeOption
+         * @description One architecture-reference type, with what it means.
+         */
+        AssuranceReferenceTypeOption: {
+            /** Description */
+            description: string;
+            /** Name */
+            name: string;
         };
         /**
          * AssuranceReloadBody
@@ -9703,7 +9779,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["AssuranceEdgeCatalogResponse"];
                 };
             };
             /** @description Request validation failed */
@@ -9787,7 +9863,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["AssuranceEdgeCreatedResponse"];
                 };
             };
             /** @description Request validation failed */
