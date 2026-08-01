@@ -15,12 +15,13 @@ Twelve was the memoised count. Twenty-eight further sites called the same expres
 they rebuilt the whole thing — merging every ontology's specialization catalogue and profile registry —
 on each call. All forty go through the one memo now.
 
-**What is not yet true, and is recorded rather than asserted.** ``install_module_registry`` puts the
-catalogs on the application and ``runtime_catalogs_dependency`` hands them to a handler — which is
-what lets a test override them. Nine router modules still read process state instead, so a test
-overriding the dependency does not reach them and passes against catalogs the handler never
-consulted. Converting each is a signature change per handler, and several of the readers are
-module-level helpers with no request in hand. The list below is the work; it must shrink, never grow.
+**And handlers are given them.** ``install_module_registry`` puts the catalogs on the application and
+``runtime_catalogs_dependency`` hands them to a handler — which is what lets a test override them.
+Eleven router modules read process state instead, one of them *inside a handler that already took the
+dependency and ignored it*, so a test overriding it passed against catalogs the handler never
+consulted. Every handler-reachable reader takes the dependency now, threaded into the helpers it calls;
+the three modules left are reached from write paths and background threads, where there is no request,
+and each says so below.
 """
 
 from __future__ import annotations
@@ -35,19 +36,22 @@ _BOOTSTRAP = SRC / "infrastructure" / "app_bootstrap.py"
 #: The one expression this file is about: the catalogs of the process-wide registry.
 _PROCESS_CATALOGS = "build_runtime_catalogs(get_module_registry())"
 
-#: Router modules still reading process catalogs rather than taking the dependency. Shrink-only.
-_READS_PROCESS_STATE = {
-    "assurance/_aibom.py",
-    "connections/read_routes.py",
-    "connections/router.py",
-    "diagrams/_context.py",
-    "diagrams/_matrix_markdown.py",
-    "entities/listing.py",
-    "entities/router.py",
-    "entities/search.py",
-    "state.py",
-    "viewpoints/_write.py",
-    "viewpoints/authoring.py",
+#: Router modules that read the process's catalogs rather than being given them, and why each has to.
+#: Shrink-only: every handler-reachable reader was converted in 0.2.0, and what is left is genuinely
+#: request-less. A *new* entry means a handler took process state where the dependency was available.
+_READS_PROCESS_STATE: dict[str, str] = {
+    "state.py": (
+        "Shared helpers called from write paths and background threads as well as handlers, so a "
+        "request is not always in hand."
+    ),
+    "diagrams/_context.py": (
+        "Diagram-context helpers reached from both the read routes and the write path; the write "
+        "path has no request."
+    ),
+    "diagrams/_matrix_markdown.py": (
+        "Renders a matrix body for the read route and for the writer that stores it — the writer "
+        "has no request."
+    ),
 }
 
 
@@ -92,14 +96,17 @@ def test_the_routers_reading_process_state_are_exactly_the_recorded_ones() -> No
         for path in sorted(REST_ROUTERS.rglob("*.py"))
         if "process_runtime_catalogs" in path.read_text(encoding="utf-8")
     }
-    assert reading - _READS_PROCESS_STATE == set(), (
+    declared = set(_READS_PROCESS_STATE)
+    assert reading - declared == set(), (
         "A router module started reading the process's catalogs. Take "
-        f"`runtime_catalogs_dependency`, which a test can override: {sorted(reading - _READS_PROCESS_STATE)}"
+        f"`runtime_catalogs_dependency`, which a test can override: {sorted(reading - declared)}"
     )
-    assert _READS_PROCESS_STATE - reading == set(), (
+    assert declared - reading == set(), (
         "These no longer read process catalogs — remove them from the list, which only shrinks: "
-        f"{sorted(_READS_PROCESS_STATE - reading)}"
+        f"{sorted(declared - reading)}"
     )
+    for name, reason in _READS_PROCESS_STATE.items():
+        assert len(reason.strip()) > 30, f"{name} is listed with no reason"
 
 
 def test_the_scanner_reads_the_expression_it_is_looking_for() -> None:

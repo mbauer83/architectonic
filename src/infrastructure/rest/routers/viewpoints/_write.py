@@ -16,9 +16,10 @@ from __future__ import annotations
 from typing import Any
 from urllib.parse import quote
 
-from fastapi import APIRouter, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from pydantic import BaseModel, ConfigDict
 
+from src.application.runtime_catalogs import RuntimeCatalogs
 from src.application.viewpoints.persist_definition import (
     PersistAction,
     ViewpointPersistResult,
@@ -32,7 +33,7 @@ from src.config.viewpoints_settings import (
     viewpoints_derivation_time_budget_seconds,
 )
 from src.domain.viewpoints.viewpoint_parsing import viewpoint_definition_from_mapping
-from src.infrastructure.app_bootstrap import process_runtime_catalogs
+from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
 from src.infrastructure.rest.contracts.errors import (
     ApiError,
     DenialDetails,
@@ -95,10 +96,15 @@ class ViewpointWriteBody(BaseModel):
     lineage server-side; a client can never assert its own provenance."""
 
 
-def _persist(action: PersistAction, body: ViewpointWriteBody, *, operation_id: str) -> dict[str, Any]:
+def _persist(
+    action: PersistAction,
+    body: ViewpointWriteBody,
+    *,
+    operation_id: str,
+    catalogs: RuntimeCatalogs,
+) -> dict[str, Any]:
     engagement_root = _engagement_root()
     both_roots = _both_roots()
-    catalogs = process_runtime_catalogs()
     merged_catalog = load_effective_viewpoint_catalog(both_roots)
     local_catalog = load_viewpoint_catalog_file(engagement_root)
     registries = build_registry_snapshot(
@@ -155,8 +161,12 @@ _DELETE_RESPONSES: dict[int | str, Any] = {
 @router.post("/api/viewpoints", tags=[TAG_VIEWPOINTS], summary="Create a viewpoint",
     response_model=ViewpointPersistResponse, responses=_CREATE_RESPONSES,
     status_code=status.HTTP_201_CREATED)
-def create_viewpoint_definition(body: ViewpointWriteBody, response: Response) -> dict[str, Any]:
-    result = _persist("create", body, operation_id="viewpoints_create_viewpoint")
+def create_viewpoint_definition(
+    body: ViewpointWriteBody,
+    response: Response,
+    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
+) -> dict[str, Any]:
+    result = _persist("create", body, operation_id="viewpoints_create_viewpoint", catalogs=catalogs)
     # A dry run created nothing, so it cannot answer 201 or name a Location.
     if body.dry_run or not result["ok"]:
         response.status_code = status.HTTP_200_OK
@@ -167,7 +177,11 @@ def create_viewpoint_definition(body: ViewpointWriteBody, response: Response) ->
 
 @router.put("/api/viewpoints/{slug}", tags=[TAG_VIEWPOINTS], summary="Replace a viewpoint",
     response_model=ViewpointPersistResponse, responses=WRITE_RESPONSES)
-def replace_viewpoint_definition(slug: str, body: ViewpointWriteBody) -> dict[str, Any]:
+def replace_viewpoint_definition(
+    slug: str,
+    body: ViewpointWriteBody,
+    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
+) -> dict[str, Any]:
     """The path names the definition to replace; the body carries the whole new definition.
 
     A viewpoint's slug is its *natural* key and part of the definition record, so the body
@@ -190,7 +204,7 @@ def replace_viewpoint_definition(slug: str, body: ViewpointWriteBody) -> dict[st
                 ]
             ),
         )
-    return _persist("edit", body, operation_id="viewpoints_replace_viewpoint")
+    return _persist("edit", body, operation_id="viewpoints_replace_viewpoint", catalogs=catalogs)
 
 
 @router.delete("/api/viewpoints/{slug}", tags=[TAG_VIEWPOINTS], summary="Delete a viewpoint",

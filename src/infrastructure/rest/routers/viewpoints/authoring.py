@@ -4,7 +4,7 @@ are built from, a plain-language query-summary preview, and create/edit/delete �
 ``persist_edit``-mode validation and catalog-file persistence as the ``artifact_viewpoint``
 MCP tool. One write path, two front ends.
 
-Catalogs are rebuilt fresh per request (``process_runtime_catalogs()``,
+Catalogs are rebuilt fresh per request (``catalogs``,
 not the app-state-cached ``runtime_catalogs_dependency``) — the same pattern every other
 write-adjacent GUI router uses, so a definition written here is visible to the very next
 request without a backend restart.
@@ -15,10 +15,11 @@ from __future__ import annotations
 from dataclasses import asdict
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from src.application.entity_type_predicates import is_internal_entity_type
+from src.application.runtime_catalogs import RuntimeCatalogs
 from src.application.verification.artifact_verifier_types import VALID_STATUSES
 from src.application.viewpoints.persist_definition import (
     find_viewpoint_referencers,
@@ -39,7 +40,7 @@ from src.domain.viewpoints.viewpoint_scope_query import definition_with_scope_qu
 from src.domain.viewpoints.viewpoint_serialization import viewpoint_definition_to_mapping
 from src.domain.viewpoints.viewpoint_summary import render_query_summary
 from src.domain.viewpoints.viewpoints import ViewpointCatalog, ViewpointDefinition
-from src.infrastructure.app_bootstrap import process_runtime_catalogs
+from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
 from src.infrastructure.rest.contracts.viewpoint_catalogs import (
     CriteriaCatalogResponse,
     ViewpointQuerySummaryResponse,
@@ -80,8 +81,9 @@ def _tier(slug: str, *, engagement_catalog: ViewpointCatalog, enterprise_catalog
     return "module"
 
 
-def _reference_report_settings() -> RegistrySnapshot:
-    catalogs = process_runtime_catalogs()
+def _reference_report_settings(catalogs: RuntimeCatalogs) -> RegistrySnapshot:
+    """Given the catalogs rather than reading process state: its callers are handlers, and catalogs a
+    handler is given are the ones a test can override."""
     return build_registry_snapshot(
         catalogs,
         _both_roots(),
@@ -143,7 +145,9 @@ def _full_entry(
 
 @router.get("/api/viewpoints", tags=[TAG_VIEWPOINTS], summary="List viewpoint definitions",
     response_model=ViewpointDefinitionListResponse, response_model_exclude_none=True)
-def list_viewpoint_definitions() -> dict[str, Any]:
+def list_viewpoint_definitions(
+    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
+) -> dict[str, Any]:
     """The effective merged catalog (module + enterprise + engagement), each entry
     carrying its full serialized mapping (to populate an edit form) and a ``tier`` so the
     GUI can mark enterprise/module definitions read-only."""
@@ -156,7 +160,7 @@ def list_viewpoint_definitions() -> dict[str, Any]:
     merged = load_effective_viewpoint_catalog(_both_roots())
     # Registries + model generation resolved ONCE per request; the report is a pure function
     # of (definition, model) and is recomputed on demand, never persisted (Stream R).
-    registries = _reference_report_settings()
+    registries = _reference_report_settings(catalogs)
     index_generation = s.get_repo().read_model_version().generation
     entries = [
         _full_entry(
@@ -187,10 +191,9 @@ def _known_group_slugs() -> list[str]:
 
 @router.get("/api/viewpoints/criteria-catalog", tags=[TAG_VIEWPOINTS],
     summary="Criteria catalog for viewpoint authoring", response_model=CriteriaCatalogResponse)
-def get_criteria_catalog() -> dict[str, Any]:
+def get_criteria_catalog(catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency)) -> dict[str, Any]:
     """Registries snapshot the criteria-tree builder's pickers are fed from — the same
     ``RegistrySnapshot`` save-mode validation itself resolves attribute paths against."""
-    catalogs = process_runtime_catalogs()
     registries: RegistrySnapshot = build_registry_snapshot(
         catalogs,
         _both_roots(),

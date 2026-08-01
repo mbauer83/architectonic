@@ -10,6 +10,7 @@ from fastapi import FastAPI, Request
 
 from src.application.artifacts.query import ArtifactRepository
 from src.domain.artifact_id import stable_id
+from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.rest.routers import state as gui_state
 from src.infrastructure.rest.routers.documents import read_document
@@ -167,7 +168,10 @@ def test_entity_catalog_excludes_diagram_owned_entities(
     assert {"action", "swimlane"} <= all_types
 
     # ... but the catalog endpoint omits them.
-    payload = list_entities(request=cast("Request", None), limit=2000, offset=0)
+    payload = list_entities(
+        request=cast("Request", None), limit=2000, offset=0,
+        catalogs=process_runtime_catalogs(),
+    )
     catalog_types = {row["artifact_type"] for row in payload["items"]}
     catalog_ids = {row["artifact_id"] for row in payload["items"]}
 
@@ -178,7 +182,10 @@ def test_entity_catalog_excludes_diagram_owned_entities(
 
     app = FastAPI()
     install_module_registry(app)
-    taxonomy = get_entity_taxonomy(request=cast("Request", SimpleNamespace(app=app)))
+    taxonomy = get_entity_taxonomy(
+        request=cast("Request", SimpleNamespace(app=app)),
+        catalogs=process_runtime_catalogs(),
+    )
     taxonomy_types = {
         entry["name"]
         for domain in taxonomy["domains"]

@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from src.application.entity_type_predicates import is_internal_entity_type
 from src.application.runtime_catalogs import RuntimeCatalogs
-from src.infrastructure.app_bootstrap import process_runtime_catalogs, runtime_catalogs_dependency
+from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
 from src.infrastructure.rest.contracts.authoring_catalogs import (
     OntologyClassificationResponse,
     OntologyPairResponse,
@@ -131,7 +131,7 @@ def register_connection_read_routes(router: APIRouter) -> None:
         ``target_type`` was supplied, so no schema could describe it — and an invalid endpoint came back
         as a 200 carrying an ``error`` string, which is a whole-operation failure wearing a success code.
         """
-        source, source_invalid = _resolve_effective_type(source_id, source_type)
+        source, source_invalid = _resolve_effective_type(source_id, source_type, catalogs)
         if source_invalid:
             raise _not_a_connection_endpoint("source_id")
         return {"source_type": source_type, **catalogs.connections.classify_connections(source)}
@@ -151,8 +151,8 @@ def register_connection_read_routes(router: APIRouter) -> None:
         ``target_type`` is required here, which is the point of the split: it is not a filter that
         narrows the classification, it selects a different question with a different answer.
         """
-        source, source_invalid = _resolve_effective_type(source_id, source_type)
-        target, target_invalid = _resolve_effective_type(target_id, target_type)
+        source, source_invalid = _resolve_effective_type(source_id, source_type, catalogs)
+        target, target_invalid = _resolve_effective_type(target_id, target_type, catalogs)
         if source_invalid:
             raise _not_a_connection_endpoint("source_id")
         if target_invalid:
@@ -191,14 +191,16 @@ def _not_a_connection_endpoint(field: str) -> ApiError:
         ValidationErrorDetails(field_errors=[FieldError(field=field, message=message)]),
     )
 
-def _resolve_effective_type(artifact_id: str | None, declared_type: str) -> tuple[str, bool]:
+def _resolve_effective_type(
+        artifact_id: str | None, declared_type: str, catalogs: RuntimeCatalogs
+    ) -> tuple[str, bool]:
     if artifact_id is None:
         return declared_type, False
     repo = s.maybe_get_repo()
     if repo is None:
         return declared_type, False
     record = repo.get_entity(artifact_id)
-    if record is None or not is_internal_entity_type(record.artifact_type, process_runtime_catalogs().ontology):
+    if record is None or not is_internal_entity_type(record.artifact_type, catalogs.ontology):
         return declared_type, False
     if record.extra.get("global-artifact-type") != "entity":
         return declared_type, True

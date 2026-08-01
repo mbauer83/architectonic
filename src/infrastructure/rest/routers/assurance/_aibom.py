@@ -19,11 +19,12 @@ All responses carry ``Cache-Control: no-store``.
 
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict
 
-from src.infrastructure.app_bootstrap import process_runtime_catalogs
+from src.application.runtime_catalogs import RuntimeCatalogs
+from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
 from src.infrastructure.rest.contracts.assurance_aibom import (
     AiBomCoverageResponse,
     AiBomExportResponse,
@@ -106,7 +107,10 @@ def aibom_roles() -> JSONResponse:
 
 
 @aibom_router.post("/api/assurance/aibom/export", response_model=AiBomExportResponse)
-def aibom_export(body: AiBomExportBody = AiBomExportBody()) -> JSONResponse:
+def aibom_export(
+    body: AiBomExportBody = AiBomExportBody(),
+    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
+) -> JSONResponse:
     """Emit a CycloneDX 1.6 ML-BOM DERIVED from the architecture model — every entity carrying
     an AI specialization, with its model card, dataset/governance links, and dependency graph.
     No caller-supplied component list: the model is the source of truth."""
@@ -118,13 +122,13 @@ def aibom_export(body: AiBomExportBody = AiBomExportBody()) -> JSONResponse:
     if repo is None or repo_root is None:
         raise _repository_required()
     return _ok(
-        export_model_derived_aibom(repo, repo_root, process_runtime_catalogs(), notes=body.notes),
+        export_model_derived_aibom(repo, repo_root, catalogs, notes=body.notes),
         AiBomExportResponse,
     )
 
 
 @aibom_router.get("/api/assurance/aibom/coverage", response_model=AiBomCoverageResponse)
-def aibom_coverage() -> JSONResponse:
+def aibom_coverage(catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency)) -> JSONResponse:
     """Per-AI-component coverage: blocking gaps (missing required attributes, dataset link,
     governance) vs advisory (recommended), plus repo-wide unbound derivation roles."""
     from src.infrastructure.assurance.aibom_service import aibom_coverage_report  # noqa: PLC0415
@@ -134,7 +138,7 @@ def aibom_coverage() -> JSONResponse:
     repo_root = s.maybe_engagement_root()
     if repo is None or repo_root is None:
         raise _repository_required()
-    return _ok(aibom_coverage_report(repo, repo_root, process_runtime_catalogs()), AiBomCoverageResponse)
+    return _ok(aibom_coverage_report(repo, repo_root, catalogs), AiBomCoverageResponse)
 
 
 _SCAN_NOTE = (

@@ -12,12 +12,14 @@ from typing import Any
 from src.application.artifacts.query import ArtifactRepository
 from src.application.entity_type_predicates import is_assurance_entity_type, is_internal_entity_type
 from src.application.record_sorting import sort_entity_records
+from src.application.runtime_catalogs import RuntimeCatalogs
 from src.domain.ontology_representation.artifact_types import EntityRecord
-from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.rest.routers import state as s
 
 
-def browsable_entities(records: list[EntityRecord], *, scope: str | None = None) -> list[EntityRecord]:
+def browsable_entities(
+    records: list[EntityRecord], catalogs: RuntimeCatalogs, *, scope: str | None = None
+) -> list[EntityRecord]:
     """The model-entity catalog: what browsing entities means.
 
     Excluded, and why: diagram-owned entities (swimlanes, lifelines, actions, …) live inside a
@@ -29,7 +31,6 @@ def browsable_entities(records: list[EntityRecord], *, scope: str | None = None)
     ``scope`` narrows by repository tier: ``"global"`` to the enterprise repository,
     ``"engagement"`` to the local one, anything else (including None) spans both.
     """
-    catalogs = process_runtime_catalogs()
     return [
         record for record in records
         if record.host_diagram_id is None
@@ -47,15 +48,18 @@ def _matches_tier(record: EntityRecord, scope: str | None) -> bool:
     return True
 
 
-def engagement_model_catalog(records: list[EntityRecord]) -> list[EntityRecord]:
+def engagement_model_catalog(
+    records: list[EntityRecord], catalogs: RuntimeCatalogs
+) -> list[EntityRecord]:
     """The engagement-side model-entity catalog — the exact population
     `/api/entities?scope=engagement` lists, shared with `/api/groups`'s member counts so a
     sidebar badge can never disagree with what opening that group shows."""
-    return browsable_entities(records, scope="engagement")
+    return browsable_entities(records, catalogs, scope="engagement")
 
 
 def select_entity_population(
     repo: ArtifactRepository,
+    catalogs: RuntimeCatalogs,
     *,
     domain: str | None,
     artifact_type: str | None,
@@ -73,6 +77,7 @@ def select_entity_population(
     """
     records = browsable_entities(
         repo.list_entities(domain=domain, artifact_type=artifact_type, status=status, group=group),
+        catalogs,
         scope=scope,
     )
     if allowed_types is not None:

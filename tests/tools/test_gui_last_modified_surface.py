@@ -15,6 +15,7 @@ import pytest
 from fastapi import Request
 
 from src.application.artifacts.query import ArtifactRepository
+from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.rest.routers import state as gui_state
 from tests.support.api_app import build_api_app
@@ -101,7 +102,10 @@ def repo_root(tmp_path: Path) -> Path:
 def _list_entities(**kwargs: object) -> dict:
     from src.infrastructure.rest.routers.entities.router import list_entities
 
-    return list_entities(request=cast("Request", None), limit=2000, offset=0, **kwargs)  # type: ignore[arg-type]
+    return list_entities(  # type: ignore[arg-type]
+        request=cast("Request", None), limit=2000, offset=0,
+        catalogs=process_runtime_catalogs(), **kwargs,
+    )
 
 
 def _stamp_by_id(items: list[dict]) -> dict[str, str | None]:
@@ -167,7 +171,10 @@ class TestOrdering:
     def test_ordering_spans_the_population_not_the_page(self, repo_root: Path) -> None:
         from src.infrastructure.rest.routers.entities.router import list_entities
 
-        page = list_entities(request=cast("Request", None), sort="last_updated", order="desc", limit=1, offset=0)
+        page = list_entities(
+            request=cast("Request", None), sort="last_updated", order="desc",
+            limit=1, offset=0, catalogs=process_runtime_catalogs(),
+        )
         assert page["total"] == len(_STAMPS)
         assert [row["artifact_id"] for row in page["items"]] == ["REQ@1000000003.NewAAA.newest-requirement"]
 

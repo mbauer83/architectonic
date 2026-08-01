@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from pydantic import BaseModel, ConfigDict
 
 from src.application._diagram_entity_extraction import extract_diagram_entities
@@ -14,7 +14,8 @@ from src.application.artifacts.schema import load_attribute_schema
 from src.application.document_links import reference_dicts_for_entity
 from src.application.entity_type_predicates import is_internal_entity_type
 from src.application.read_models import EntityContextReadModel
-from src.infrastructure.app_bootstrap import process_runtime_catalogs
+from src.application.runtime_catalogs import RuntimeCatalogs
+from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
 from src.infrastructure.rest.contracts.catalog import (
     BackendIdentityResponse,
     RepositoryStatsResponse,
@@ -117,10 +118,12 @@ def list_entities(
     order: str = "asc",
     limit: int = Query(default=200, le=2000),
     offset: int = 0,
+    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
 ) -> dict[str, Any]:
     repo = s.get_repo()
     entities = select_entity_population(
         repo,
+        catalogs,
         domain=domain, artifact_type=artifact_type, status=status, group=group, scope=scope,
         allowed_types=_meta_ontology_types(meta_ontology, request),
         sort=sort, order=order,
@@ -215,7 +218,11 @@ def read_entity_context(artifact_id: str) -> EntityContextReadModel:
 @router.get("/api/entity-schemata/{artifact_type}", tags=[TAG_ENTITIES],
     summary="Effective attribute schema for a (type, specialization) pair",
     response_model=EntitySchemaResponse, response_model_exclude_none=True)
-def get_entity_schemata(artifact_type: str, specialization: str = "") -> dict[str, Any]:
+def get_entity_schemata(
+    artifact_type: str,
+    specialization: str = "",
+    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
+) -> dict[str, Any]:
     """Effective attribute schema for an entity type, merged with the selected
     specialization(s)' contributed attributes — the same schema the verifier validates
     against, so the authoring form and verification can never drift.
@@ -237,8 +244,8 @@ def get_entity_schemata(artifact_type: str, specialization: str = "") -> dict[st
         repo_root,
         artifact_type,
         applied or [""],
-        specialization_catalog=process_runtime_catalogs().specializations,
-        profile_registry=process_runtime_catalogs().profiles,
+        specialization_catalog=catalogs.specializations,
+        profile_registry=catalogs.profiles,
     )
     # `quarantined` is a derived read of the SAME conflicts channel (not a parallel one):
     # a non-empty conflict set means this (type, specialization) pair is Class B quarantined,
@@ -301,8 +308,12 @@ class EditEntityBody(_Body):
 @router.post("/api/entities", tags=[TAG_ENTITIES], summary="Create an entity (dry-run or committed)",
     response_model=WriteResultResponse, responses=_CREATE_RESPONSES,
     status_code=status.HTTP_201_CREATED)
-def create_entity(body: CreateEntityBody, response: Response) -> dict[str, Any]:
-    if is_internal_entity_type(body.artifact_type, process_runtime_catalogs().ontology):
+def create_entity(
+    body: CreateEntityBody,
+    response: Response,
+    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
+) -> dict[str, Any]:
+    if is_internal_entity_type(body.artifact_type, catalogs.ontology):
         raise HTTPException(400, "global-artifact-reference entities cannot be created directly")
     repo_root, _registry, verifier = s.get_write_deps()
     from src.infrastructure.write.artifact_write.entity import create_entity as _create

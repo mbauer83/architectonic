@@ -7,12 +7,13 @@ from collections import Counter
 from typing import Any
 from urllib.parse import quote
 
-from fastapi import APIRouter, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from pydantic import BaseModel, ConfigDict
 
 from src.application.assurance.diagrams import assurance_surface_diagram_types
+from src.application.runtime_catalogs import RuntimeCatalogs
 from src.domain.repository.groups import GroupAxis, GroupEntry, GroupRegistry
-from src.infrastructure.app_bootstrap import complete_diagram_type_catalog
+from src.infrastructure.app_bootstrap import complete_diagram_type_catalog, runtime_catalogs_dependency
 from src.infrastructure.rest.contracts.authoring_catalogs import GroupListResponse
 from src.infrastructure.rest.contracts.groups import GroupOperationResponse
 from src.infrastructure.rest.routers import state as s
@@ -76,7 +77,9 @@ def _entry_dict(e: GroupEntry, member_count: int) -> dict[str, Any]:
     }
 
 
-def _axis_member_counts(kind: GroupAxis, store_projected: frozenset[str]) -> Counter[str]:
+def _axis_member_counts(
+    kind: GroupAxis, store_projected: frozenset[str], catalogs: RuntimeCatalogs
+) -> Counter[str]:
     """Whole-repo member counts per group slug, matching each axis's browse-list population —
     the sidebar badges must reflect the full catalog, never the currently loaded (group-filtered)
     page, or every non-active group reads zero.
@@ -87,7 +90,7 @@ def _axis_member_counts(kind: GroupAxis, store_projected: frozenset[str]) -> Cou
     if kind == "model-project":
         from src.infrastructure.rest.routers.entities.listing import engagement_model_catalog  # noqa: PLC0415
 
-        return Counter(e.group for e in engagement_model_catalog(repo.list_entities()))
+        return Counter(e.group for e in engagement_model_catalog(repo.list_entities(), catalogs))
     if kind == "diagram-collection":
         return Counter(
             d.group for d in repo.list_diagrams()
@@ -101,8 +104,9 @@ def _axis_member_counts(kind: GroupAxis, store_projected: frozenset[str]) -> Cou
 
 def _axis_entries(
     registry: GroupRegistry, kind: GroupAxis, store_projected: frozenset[str],
+    catalogs: RuntimeCatalogs,
 ) -> list[dict[str, Any]]:
-    counts = _axis_member_counts(kind, store_projected)
+    counts = _axis_member_counts(kind, store_projected, catalogs)
     return [_entry_dict(e, counts.get(e.slug, 0)) for e in registry.list_axis(kind)]
 
 
@@ -110,7 +114,10 @@ def _axis_entries(
     # `exclude_none`: an axis the `kind` filter left out is absent, not an empty list — "not asked for"
     # and "has no groups" are different answers and a client branches on them differently.
     response_model=GroupListResponse, response_model_exclude_none=True)
-def list_groups(kind: str | None = None) -> dict[str, Any]:
+def list_groups(
+    kind: str | None = None,
+    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
+) -> dict[str, Any]:
     """Return groups from the registry, optionally filtered by axis."""
     repo_root = s.maybe_engagement_root()
     if repo_root is None:
@@ -121,13 +128,13 @@ def list_groups(kind: str | None = None) -> dict[str, Any]:
     store_projected = assurance_surface_diagram_types(complete_diagram_type_catalog())
     result: dict[str, Any] = {}
     if kind is None or kind == "model-project":
-        result["model-projects"] = _axis_entries(registry, "model-project", store_projected)
+        result["model-projects"] = _axis_entries(registry, "model-project", store_projected, catalogs)
     if kind is None or kind == "diagram-collection":
-        result["diagram-collections"] = _axis_entries(registry, "diagram-collection", store_projected)
+        result["diagram-collections"] = _axis_entries(registry, "diagram-collection", store_projected, catalogs)
     if kind is None or kind == "document-collection":
-        result["document-collections"] = _axis_entries(registry, "document-collection", store_projected)
+        result["document-collections"] = _axis_entries(registry, "document-collection", store_projected, catalogs)
     if kind is None or kind == "analysis-collection":
-        result["analysis-collections"] = _axis_entries(registry, "analysis-collection", store_projected)
+        result["analysis-collections"] = _axis_entries(registry, "analysis-collection", store_projected, catalogs)
     return result
 
 

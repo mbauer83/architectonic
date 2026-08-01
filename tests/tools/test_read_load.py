@@ -6,6 +6,7 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 from src.application.artifacts.query import ArtifactRepository
+from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.rest.routers import state as gui_state
 from src.infrastructure.rest.routers.entities import router as entity_router
@@ -100,7 +101,10 @@ def test_parallel_read_endpoints_hold_up_under_moderate_concurrency(tmp_path: Pa
 
     # Warm the shared index before starting the timed parallel section.
     warm_context = entity_router.read_entity_context(entity_ids[0])
-    warm_list = entity_router.list_entities(_MOCK_REQUEST, domain="motivation", limit=50, offset=0)
+    warm_list = entity_router.list_entities(
+        _MOCK_REQUEST, domain="motivation", limit=50, offset=0,
+        catalogs=process_runtime_catalogs(),
+    )
     assert warm_context["entity"]["artifact_id"] == entity_ids[0]
     assert warm_list["total"] == len(entity_ids)
 
@@ -114,6 +118,7 @@ def test_parallel_read_endpoints_hold_up_under_moderate_concurrency(tmp_path: Pa
             domain="motivation",
             limit=50,
             offset=(task_index % 3) * 50,
+            catalogs=process_runtime_catalogs(),
         )
         return str(page["items"][0]["artifact_id"]) if page["items"] else ""
 

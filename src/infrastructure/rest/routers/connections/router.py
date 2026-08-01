@@ -5,12 +5,13 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from pydantic import BaseModel, ConfigDict, field_validator
 
 from src.application.entity_type_predicates import is_internal_entity_type
+from src.application.runtime_catalogs import RuntimeCatalogs
 from src.domain.artifact_id import ConnectionKey, MalformedArtifactIdError, parse_connection_id
-from src.infrastructure.app_bootstrap import process_runtime_catalogs
+from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
 from src.infrastructure.rest.contracts.connections import BrokenReferenceCleanupResponse
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers._openapi import (
@@ -93,14 +94,14 @@ class AddConnectionBody(_Body):
         return _check_multiplicity(v)
 
 
-def _reject_if_non_entity_gar(artifact_id: str, role: str) -> None:
+def _reject_if_non_entity_gar(artifact_id: str, role: str, catalogs: RuntimeCatalogs) -> None:
     """Raise 400 if the given artifact is a document/diagram GAR (not valid as connection endpoint)."""
     repo = s.maybe_get_repo()
     rec = repo.get_entity(artifact_id) if repo is not None else None
     if rec is None:
         return
     is_non_entity_gar = (
-        is_internal_entity_type(rec.artifact_type, process_runtime_catalogs().ontology)
+        is_internal_entity_type(rec.artifact_type, catalogs.ontology)
         and rec.extra.get("global-artifact-type") != "entity"
     )
     if is_non_entity_gar:
@@ -110,7 +111,11 @@ def _reject_if_non_entity_gar(artifact_id: str, role: str) -> None:
 @router.post("/api/connections", tags=[TAG_CONNECTIONS], summary="Add a connection between two entities",
     response_model=WriteResultResponse, responses=_CREATE_RESPONSES,
     status_code=status.HTTP_201_CREATED)
-def add_connection(body: AddConnectionBody, response: Response) -> dict[str, Any]:
+def add_connection(
+    body: AddConnectionBody,
+    response: Response,
+    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
+) -> dict[str, Any]:
     repo_root, registry, verifier = s.get_write_deps()
     from src.infrastructure.write.artifact_write.connection import add_connection as _add
 
@@ -151,8 +156,8 @@ def add_connection(body: AddConnectionBody, response: Response) -> dict[str, Any
         return gar_result.artifact_id
 
     # Reject document/diagram GAR endpoints
-    _reject_if_non_entity_gar(body.source_entity, "source")
-    _reject_if_non_entity_gar(body.target_entity, "target")
+    _reject_if_non_entity_gar(body.source_entity, "source", catalogs)
+    _reject_if_non_entity_gar(body.target_entity, "target", catalogs)
 
     _enterprise_root = s.maybe_enterprise_root()
     if _enterprise_root is not None and registry.scope_of_entity(body.source_entity) == "enterprise":
