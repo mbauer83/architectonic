@@ -74,3 +74,30 @@ export const SyncSaveResultSchema = Schema.Struct({
   already_submitted: Schema.optional(Schema.Boolean),
 })
 export type SyncSaveResult = typeof SyncSaveResultSchema.Type
+
+/**
+ * One artifact with uncommitted changes, every file change that touches it merged in.
+ *
+ * Merged deliberately: an entity and its outgoing-connections file are two files and one artifact, so
+ * listing them separately would ask the author to reason about a file layout the rest of the product
+ * hides. `changes` gains `"connections"` when the outgoing file moved.
+ */
+export const SyncChangedArtifactSchema = Schema.Struct({
+  artifact_id: Schema.String,
+  name: Schema.String,
+  record_type: Schema.Literal('entity', 'diagram', 'document'),
+  // Null for an artifact whose frontmatter names none — a connections-only change is attributed to
+  // its source entity, which this code has not read.
+  artifact_type: Schema.NullOr(Schema.String),
+  file_status: Schema.Literal('added', 'deleted', 'modified'),
+  changes: Schema.Array(Schema.String),
+})
+export type SyncChangedArtifact = typeof SyncChangedArtifactSchema.Type
+
+/** `repo` is closed: the handler treats everything that is not `enterprise` as the engagement repo,
+ *  so an unrecognised name used to be answered with the wrong repository's changes. */
+export const SyncChangesSchema = Schema.Struct({
+  repo: Schema.Literal('engagement', 'enterprise'),
+  artifacts: Schema.Array(SyncChangedArtifactSchema),
+})
+export type SyncChanges = typeof SyncChangesSchema.Type

@@ -16,6 +16,7 @@ POST /api/sync/enterprise/withdraw  — discard all pending enterprise changes
 from __future__ import annotations
 
 import asyncio
+from typing import Literal
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -26,6 +27,7 @@ from src.infrastructure.gui.contracts.sync import (
     EnterpriseSaveResponse,
     EnterpriseSubmitResponse,
     EnterpriseWithdrawResponse,
+    SyncChangesResponse,
 )
 from src.infrastructure.gui.routers import sync_status_cache
 
@@ -54,9 +56,15 @@ async def sync_status() -> dict:
     return await sync_status_cache.get_sync_status()
 
 
-@router.get("/api/sync/changes")
-async def sync_changes(repo: str = "engagement") -> dict:
-    """Return a per-artifact summary of uncommitted changes for the GUI save-dialog."""
+@router.get("/api/sync/changes", response_model=SyncChangesResponse)
+async def sync_changes(repo: Literal["engagement", "enterprise"] = "engagement") -> dict:
+    """Return a per-artifact summary of uncommitted changes for the GUI save-dialog.
+
+    ``repo`` is a closed vocabulary rather than a string: the branch below treats everything that is
+    not ``enterprise`` as the engagement repository, so an unrecognised name used to be answered with
+    the wrong repository's changes and its own name echoed back as though it had been understood. It is
+    a typed 422 now.
+    """
     from src.infrastructure.gui.routers import state as s
     from src.infrastructure.gui.routers.sync_changes import list_changes
 

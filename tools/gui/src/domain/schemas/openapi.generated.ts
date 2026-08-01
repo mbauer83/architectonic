@@ -2398,6 +2398,11 @@ export interface paths {
         /**
          * Sync Changes
          * @description Return a per-artifact summary of uncommitted changes for the GUI save-dialog.
+         *
+         *     ``repo`` is a closed vocabulary rather than a string: the branch below treats everything that is
+         *     not ``enterprise`` as the engagement repository, so an unrecognised name used to be answered with
+         *     the wrong repository's changes and its own name echoed back as though it had been understood. It is
+         *     a typed 422 now.
          */
         get: operations["sync_read_sync_changes"];
         put?: never;
@@ -4939,9 +4944,8 @@ export interface components {
             /** Neighbors */
             neighbors: components["schemas"]["DerivedNeighbor"][];
             /**
-             * Traversal
-             * @default derived
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
              */
             traversal: "derived";
         };
@@ -5220,9 +5224,8 @@ export interface components {
                 [key: string]: string[];
             };
             /**
-             * Traversal
-             * @default direct
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
              */
             traversal: "direct";
         };
@@ -5954,6 +5957,20 @@ export interface components {
             /** Total */
             total: number;
         };
+        /**
+         * EntityNeighborhoodResponse
+         * @description A traversal-discriminated union of the two genuinely different answers.
+         *
+         *     A hop map against a witnessed relationship list. The direct arm previously carried no
+         *     discriminator at all, so a client could not tell which it had received. ``traversal`` is an
+         *     alternate execution specification, which the addressing rule leaves in the query; what it must not
+         *     do is leave the *response* untagged.
+         *
+         *     A ``RootModel`` so the document carries a named component: annotated as a bare ``A | B`` on the
+         *     route it published an inline union, which a generated client cannot refer to and which is why this
+         *     operation stayed on the untyped ledger despite already declaring both arms.
+         */
+        EntityNeighborhoodResponse: components["schemas"]["DirectNeighborhood"] | components["schemas"]["DerivedNeighborhood"];
         /**
          * EntitySchemaResponse
          * @description The effective attribute schema for a type, merged with its applied specializations.
@@ -7758,6 +7775,55 @@ export interface components {
             denied_intents: {
                 [key: string]: components["schemas"]["DeniedIntentResponse"];
             };
+        };
+        /**
+         * SyncChangedArtifact
+         * @description One artifact with uncommitted changes, with every file change that touches it merged in.
+         *
+         *     Merged deliberately: an entity and its outgoing-connections file are two files and one artifact, so
+         *     a save dialog listing them separately would ask the author to reason about a file layout the rest
+         *     of the product hides. ``changes`` names what changed within the artifact, and gains
+         *     ``"connections"`` when the outgoing file moved.
+         *
+         *     ``artifact_type`` is null for an artifact whose frontmatter names none — a connections-only change
+         *     is attributed to its source entity, which this code has not read.
+         */
+        SyncChangedArtifact: {
+            /** Artifact Id */
+            artifact_id: string;
+            /** Artifact Type */
+            artifact_type: string | null;
+            /** Changes */
+            changes: string[];
+            /**
+             * File Status
+             * @enum {string}
+             */
+            file_status: "added" | "deleted" | "modified";
+            /** Name */
+            name: string;
+            /**
+             * Record Type
+             * @enum {string}
+             */
+            record_type: "entity" | "diagram" | "document";
+        };
+        /**
+         * SyncChangesResponse
+         * @description The uncommitted changes in one repository, as the save dialog needs them.
+         *
+         *     ``repo`` echoes which repository was read. It is a closed vocabulary because the handler branches
+         *     on exactly one value and treats everything else as the engagement repo — so an unrecognised name
+         *     used to be answered with the wrong repository's changes and its own name echoed back.
+         */
+        SyncChangesResponse: {
+            /** Artifacts */
+            artifacts: components["schemas"]["SyncChangedArtifact"][];
+            /**
+             * Repo
+             * @enum {string}
+             */
+            repo: "engagement" | "enterprise";
         };
         /** SyncDiagramToModelBody */
         SyncDiagramToModelBody: {
@@ -14428,7 +14494,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DirectNeighborhood"] | components["schemas"]["DerivedNeighborhood"];
+                    "application/json": components["schemas"]["EntityNeighborhoodResponse"];
                 };
             };
             /** @description Artifact not found */
@@ -15866,7 +15932,7 @@ export interface operations {
     sync_read_sync_changes: {
         parameters: {
             query?: {
-                repo?: string;
+                repo?: "engagement" | "enterprise";
             };
             header?: never;
             path?: never;
@@ -15880,9 +15946,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["SyncChangesResponse"];
                 };
             };
             /** @description Request validation failed */

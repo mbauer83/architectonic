@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, RootModel
 
 from src.infrastructure.gui.contracts.wire_nulls import NullsOmitted
 
@@ -249,12 +249,20 @@ class DerivedNeighborhood(_Closed):
     neighbors: list[DerivedNeighbor]
 
 
-#: A traversal-discriminated union. The two arms are genuinely different answers — a hop map against
-#: a witnessed relationship list — and the direct arm previously carried no discriminator at all, so
-#: a client could not tell which it had received. ``traversal`` is an alternate execution
-#: specification, which the addressing rule leaves in the query; what it must not do is leave the
-#: *response* untagged.
-EntityNeighborhoodResponse = DirectNeighborhood | DerivedNeighborhood
+class EntityNeighborhoodResponse(RootModel[DirectNeighborhood | DerivedNeighborhood]):
+    """A traversal-discriminated union of the two genuinely different answers.
+
+    A hop map against a witnessed relationship list. The direct arm previously carried no
+    discriminator at all, so a client could not tell which it had received. ``traversal`` is an
+    alternate execution specification, which the addressing rule leaves in the query; what it must not
+    do is leave the *response* untagged.
+
+    A ``RootModel`` so the document carries a named component: annotated as a bare ``A | B`` on the
+    route it published an inline union, which a generated client cannot refer to and which is why this
+    operation stayed on the untyped ledger despite already declaring both arms.
+    """
+
+    root: DirectNeighborhood | DerivedNeighborhood = Field(discriminator="traversal")
 
 
 class EntitySchemaResponse(_Closed):

@@ -16,7 +16,7 @@ from src.infrastructure.gui.contracts.authoring_catalogs import (
     RelationNotationsResponse,
 )
 from src.infrastructure.gui.contracts.connections import ConnectionListResponse
-from src.infrastructure.gui.contracts.entities import DerivedNeighborhood, DirectNeighborhood
+from src.infrastructure.gui.contracts.entities import EntityNeighborhoodResponse
 from src.infrastructure.gui.contracts.errors import ApiError, FieldError, ValidationErrorDetails
 from src.infrastructure.gui.contracts.search import KeywordSearchResponse
 from src.infrastructure.gui.routers import state as s
@@ -59,7 +59,7 @@ def register_connection_read_routes(router: APIRouter) -> None:
 
     @router.get("/api/entities/{artifact_id}/neighbors", tags=[TAG_CONNECTIONS],
         summary="Neighbouring entities of an entity",
-        response_model=DirectNeighborhood | DerivedNeighborhood, responses=READ_RESPONSES)
+        response_model=EntityNeighborhoodResponse, responses=READ_RESPONSES)
     def get_neighbors(
         artifact_id: str,
         max_hops: int = 1,

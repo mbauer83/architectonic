@@ -20,7 +20,15 @@ Every field below is one the handlers in ``routers/sync.py`` actually return;
 
 from __future__ import annotations
 
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict
+
 from src.infrastructure.gui.contracts.wire_nulls import NullsOmitted
+
+
+class _Closed(BaseModel):
+    model_config = ConfigDict(extra="forbid")
 
 
 class _SyncOutcome(NullsOmitted):
@@ -85,3 +93,35 @@ class EnterpriseWithdrawResponse(_SyncOutcome):
     """
 
     discarded_branch: str
+
+
+class SyncChangedArtifact(_Closed):
+    """One artifact with uncommitted changes, with every file change that touches it merged in.
+
+    Merged deliberately: an entity and its outgoing-connections file are two files and one artifact, so
+    a save dialog listing them separately would ask the author to reason about a file layout the rest
+    of the product hides. ``changes`` names what changed within the artifact, and gains
+    ``"connections"`` when the outgoing file moved.
+
+    ``artifact_type`` is null for an artifact whose frontmatter names none — a connections-only change
+    is attributed to its source entity, which this code has not read.
+    """
+
+    artifact_id: str
+    name: str
+    record_type: Literal["entity", "diagram", "document"]
+    artifact_type: str | None
+    file_status: Literal["added", "deleted", "modified"]
+    changes: list[str]
+
+
+class SyncChangesResponse(_Closed):
+    """The uncommitted changes in one repository, as the save dialog needs them.
+
+    ``repo`` echoes which repository was read. It is a closed vocabulary because the handler branches
+    on exactly one value and treats everything else as the engagement repo — so an unrecognised name
+    used to be answered with the wrong repository's changes and its own name echoed back.
+    """
+
+    repo: Literal["engagement", "enterprise"]
+    artifacts: list[SyncChangedArtifact]

@@ -11,6 +11,8 @@ import type {
   DeniedIntentSchema,
   EnterpriseSyncStatusSchema,
   SyncAuthoritySchema,
+  SyncChangedArtifactSchema,
+  SyncChangesSchema,
   SyncHealthSchema,
   SyncStatusSchema,
 } from './sync-status'
@@ -164,6 +166,15 @@ describe('platform surface', () => {
     >()
     expectTypeOf<SchemaType<typeof DeniedIntentSchema>>().toEqualTypeOf<
       Immutable<components['schemas']['DeniedIntentResponse']>
+    >()
+  })
+
+  it('decodes the uncommitted changes the save dialog reads', () => {
+    expectTypeOf<SchemaType<typeof SyncChangesSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['SyncChangesResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof SyncChangedArtifactSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['SyncChangedArtifact']>
     >()
   })
 })
