@@ -15,8 +15,8 @@ from fastapi import FastAPI
 from src.application.artifact_query import ArtifactRepository
 from src.application.mutation_authorization import SyncHealth
 from src.infrastructure.artifact_index import shared_artifact_index
-from src.infrastructure.gui.routers import state as gui_state
-from src.infrastructure.gui.routers.sync import router as sync_router
+from src.infrastructure.rest.routers import state as gui_state
+from src.infrastructure.rest.routers.sync import router as sync_router
 from src.infrastructure.workspace.mutation_gate import get_workspace_gate
 from src.infrastructure.write.authorized_mutation_executor import build_workspace_mutation_executor
 from src.infrastructure.write.mutation_executor_registry import (

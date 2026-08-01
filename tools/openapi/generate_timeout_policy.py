@@ -21,8 +21,8 @@ DOCUMENT = (
 
 
 def main(argv: list[str]) -> int:
-    from src.infrastructure.gui.route_policy import ROUTE_POLICY
-    from src.infrastructure.gui.route_policy.timeout_policy_document import serialize
+    from src.infrastructure.rest.route_policy import ROUTE_POLICY
+    from src.infrastructure.rest.route_policy.timeout_policy_document import serialize
 
     expected = serialize(ROUTE_POLICY)
     if "--check" in argv:

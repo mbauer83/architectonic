@@ -15,7 +15,7 @@ from fastapi import FastAPI
 
 from src.application.artifact_query import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
-from src.infrastructure.gui.routers import state as gui_state
+from src.infrastructure.rest.routers import state as gui_state
 from src.infrastructure.workspace.mutation_gate import get_workspace_gate
 from src.infrastructure.write.authorized_mutation_executor import build_workspace_mutation_executor
 from src.infrastructure.write.mutation_executor_registry import (
@@ -48,10 +48,10 @@ def _install(engagement: Path, enterprise: Path | None, *, read_only: bool = Fal
 def workspace(tmp_path: Path):
     from starlette.testclient import TestClient
 
-    from src.infrastructure.gui.routers.entities import router as entities_router
-    from src.infrastructure.gui.routers.groups import router as groups_router
-    from src.infrastructure.gui.routers.promote import router as promote_router
-    from src.infrastructure.gui.routers.viewpoint_authoring import router as viewpoint_authoring_router
+    from src.infrastructure.rest.routers.entities import router as entities_router
+    from src.infrastructure.rest.routers.groups import router as groups_router
+    from src.infrastructure.rest.routers.promote import router as promote_router
+    from src.infrastructure.rest.routers.viewpoint_authoring import router as viewpoint_authoring_router
 
     engagement = tmp_path / "engagements" / "ENG-ATH" / "architecture-repository"
     enterprise = tmp_path / "enterprise-repository"
@@ -154,7 +154,7 @@ def git_workspace(tmp_path: Path):
     from starlette.testclient import TestClient
 
     from src.infrastructure.app_bootstrap import install_module_registry
-    from src.infrastructure.gui.routers.promote import router as promote_router
+    from src.infrastructure.rest.routers.promote import router as promote_router
     from tests.support.git_workflow_fixtures import build_workflow_pair, git
 
     engagement, enterprise = build_workflow_pair(tmp_path)

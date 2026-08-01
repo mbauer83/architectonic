@@ -248,9 +248,9 @@ class TestHttpSurface:
     def _blocked_write(self, tmp_path: Path, reason):
         from fastapi import HTTPException
 
-        from src.infrastructure.gui.routers import state as gui_state
-        from src.infrastructure.gui.routers.state import authorized_write
         from src.infrastructure.mcp.artifact_mcp.write_queue import shutdown
+        from src.infrastructure.rest.routers import state as gui_state
+        from src.infrastructure.rest.routers.state import authorized_write
         from src.infrastructure.workspace.mutation_gate import get_workspace_gate as _gwg
         from src.infrastructure.write.authorized_mutation_executor import build_workspace_mutation_executor
         from src.infrastructure.write.mutation_executor_registry import (

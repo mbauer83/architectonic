@@ -15,8 +15,8 @@ import pytest
 from fastapi import FastAPI, Query
 from fastapi.testclient import TestClient
 
-from src.infrastructure.gui.contracts.error_responses import install_error_contracts
-from src.infrastructure.gui.contracts.identity_resolution import (
+from src.infrastructure.rest.contracts.error_responses import install_error_contracts
+from src.infrastructure.rest.contracts.identity_resolution import (
     reject_repeated_scalar_query_parameters,
 )
 

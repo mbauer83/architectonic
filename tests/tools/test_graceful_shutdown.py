@@ -29,7 +29,7 @@ from src.infrastructure.backend.shutdown import (
     run_teardown,
     shutdown_signal,
 )
-from src.infrastructure.gui.routers.events import _HEARTBEAT_SECONDS, _event_stream, event_bus
+from src.infrastructure.rest.routers.events import _HEARTBEAT_SECONDS, _event_stream, event_bus
 
 
 @contextmanager

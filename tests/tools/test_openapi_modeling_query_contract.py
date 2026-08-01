@@ -60,7 +60,7 @@ def spec() -> dict:
 
     app = FastAPI()
     for name in _IN_SCOPE_ROUTER_MODULES:
-        app.include_router(importlib.import_module(f"src.infrastructure.gui.routers.{name}").router)
+        app.include_router(importlib.import_module(f"src.infrastructure.rest.routers.{name}").router)
     install_module_registry(app)
     return app.openapi()
 

@@ -17,7 +17,7 @@ from tests.support.api_app import build_api_app
 
 pytest.importorskip("sqlcipher3", reason="sqlcipher3 not installed")
 
-_ASSURANCE_CTX_PATH = "src.infrastructure.gui.routers._assurance_read.get_assurance_context"
+_ASSURANCE_CTX_PATH = "src.infrastructure.rest.routers._assurance_read.get_assurance_context"
 
 
 class _RealContext:
@@ -58,7 +58,7 @@ def seeded(tmp_path: Path):
 
 
 def _client(store: Any, ceiling: str) -> TestClient:
-    from src.infrastructure.gui.routers.assurance import router
+    from src.infrastructure.rest.routers.assurance import router
 
     # `build_api_app`, not a bare `FastAPI()`: without the error contracts a raised `ApiError` never
     # becomes an envelope, so the test compares two empty bodies and calls them indistinguishable.

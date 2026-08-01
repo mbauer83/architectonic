@@ -15,8 +15,8 @@ from src.application.artifact_repository import ArtifactRepository
 from src.domain.concept_scope import ConceptScope
 from src.domain.viewpoints.viewpoints import ViewpointCatalog, ViewpointDefinition
 from src.infrastructure.artifact_index import shared_artifact_index
-from src.infrastructure.gui.routers import state as gui_state
-from src.infrastructure.gui.routers.viewpoints import router as viewpoints_router
+from src.infrastructure.rest.routers import state as gui_state
+from src.infrastructure.rest.routers.viewpoints import router as viewpoints_router
 
 httpx = pytest.importorskip("httpx")
 
@@ -88,7 +88,7 @@ def client(populated_root: Path):
     from starlette.testclient import TestClient
 
     from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry
-    from src.infrastructure.gui.routers.viewpoints import fresh_viewpoints_runtime_catalogs_dependency
+    from src.infrastructure.rest.routers.viewpoints import fresh_viewpoints_runtime_catalogs_dependency
 
     repo = ArtifactRepository(shared_artifact_index([populated_root]))
     gui_state.init_state(repo, populated_root, None)

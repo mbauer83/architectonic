@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import re
 
-from src.infrastructure.gui.route_policy import ROUTE_POLICY, path_parameters
+from src.infrastructure.rest.route_policy import ROUTE_POLICY, path_parameters
 
 #: Parameter names that would mean an external identifier had become an address. Matched on the
 #: whole segment name, so `canonical_vulnerability_id` is caught while `component_id` is not.

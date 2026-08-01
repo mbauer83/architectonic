@@ -35,7 +35,7 @@ class _AdmissibleAnchors:
         )
 
 
-_CTX_PATH = "src.infrastructure.gui.routers._assurance_signals_routes.get_assurance_context"
+_CTX_PATH = "src.infrastructure.rest.routers._assurance_signals_routes.get_assurance_context"
 _counter = itertools.count(1)
 
 
@@ -76,7 +76,7 @@ def ctx(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 
 
 def _client(ctx: Any) -> TestClient:
-    from src.infrastructure.gui.routers._assurance_signals_routes import signals_router
+    from src.infrastructure.rest.routers._assurance_signals_routes import signals_router
 
     client = TestClient(build_api_app(signals_router), raise_server_exceptions=False)
     client._patch = patch(_CTX_PATH, return_value=ctx)  # type: ignore[attr-defined]

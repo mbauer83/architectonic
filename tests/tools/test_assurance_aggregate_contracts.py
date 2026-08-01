@@ -15,7 +15,7 @@ from __future__ import annotations
 import ast
 import pathlib
 
-from src.infrastructure.gui.contracts.assurance_queries import (
+from src.infrastructure.rest.contracts.assurance_queries import (
     AssuranceCoverageGaps,
     AssuranceCoverageResponse,
     AssuranceNodeRef,

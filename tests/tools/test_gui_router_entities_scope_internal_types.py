@@ -13,7 +13,7 @@ from fastapi import FastAPI
 
 from src.application.artifact_query import ArtifactRepository
 from src.infrastructure.artifact_index import combined_artifact_index
-from src.infrastructure.gui.routers import state as gui_state
+from src.infrastructure.rest.routers import state as gui_state
 from tests.support.search_visibility_fixtures import (
     ENTERPRISE_REQ_ID,
     GAR_TYPE,
@@ -35,8 +35,8 @@ def client(tmp_path: Path):
     from starlette.testclient import TestClient
 
     from src.infrastructure.app_bootstrap import install_module_registry
-    from src.infrastructure.gui.routers.entities import router as entities_router
-    from src.infrastructure.gui.routers.entity_search import router as entity_search_router
+    from src.infrastructure.rest.routers.entities import router as entities_router
+    from src.infrastructure.rest.routers.entity_search import router as entity_search_router
 
     engagement = build_engagement_repo(tmp_path)
     enterprise = build_enterprise_repo(tmp_path)

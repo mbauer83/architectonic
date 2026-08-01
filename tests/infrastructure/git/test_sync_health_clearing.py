@@ -49,7 +49,7 @@ def quiet_bus(monkeypatch: pytest.MonkeyPatch) -> list[dict[str, object]]:
     async def capture(event: dict[str, object]) -> None:
         events.append(event)
 
-    from src.infrastructure.gui.routers import events as events_module
+    from src.infrastructure.rest.routers import events as events_module
 
     monkeypatch.setattr(events_module.event_bus, "publish", capture)
     return events

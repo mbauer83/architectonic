@@ -9747,7 +9747,7 @@ export interface components {
             icon?: string;
         };
         /** CreateGroupBody */
-        src__infrastructure__gui__routers___assurance_grouping_routes__CreateGroupBody: {
+        src__infrastructure__rest__routers___assurance_grouping_routes__CreateGroupBody: {
             /**
              * Description
              * @default
@@ -9761,7 +9761,7 @@ export interface components {
          * @description A create carries the slug: it is the caller's chosen natural key, not a minted id, and the
          *     collection route has nowhere else to put it.
          */
-        src__infrastructure__gui__routers__groups__CreateGroupBody: {
+        src__infrastructure__rest__routers__groups__CreateGroupBody: {
             /**
              * Description
              * @default
@@ -13337,7 +13337,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["src__infrastructure__gui__routers___assurance_grouping_routes__CreateGroupBody"];
+                "application/json": components["schemas"]["src__infrastructure__rest__routers___assurance_grouping_routes__CreateGroupBody"];
             };
         };
         responses: {
@@ -17440,7 +17440,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["src__infrastructure__gui__routers__groups__CreateGroupBody"];
+                "application/json": components["schemas"]["src__infrastructure__rest__routers__groups__CreateGroupBody"];
             };
         };
         responses: {

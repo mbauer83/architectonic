@@ -13,10 +13,10 @@ from fastapi import FastAPI
 
 from src.application.artifact_query import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
-from src.infrastructure.gui.routers import state as gui_state
-from src.infrastructure.gui.routers.admin import router as admin_router
-from src.infrastructure.gui.routers.entity_search import _score_reference_hit
-from src.infrastructure.gui.routers.entity_search import router as entity_search_router
+from src.infrastructure.rest.routers import state as gui_state
+from src.infrastructure.rest.routers.admin import router as admin_router
+from src.infrastructure.rest.routers.entity_search import _score_reference_hit
+from src.infrastructure.rest.routers.entity_search import router as entity_search_router
 
 httpx = pytest.importorskip("httpx")
 

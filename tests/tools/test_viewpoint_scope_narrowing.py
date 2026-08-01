@@ -15,12 +15,12 @@ from fastapi import HTTPException
 from src.domain.concept_scope import ConceptScope
 from src.domain.viewpoints.viewpoints import ViewpointCatalog, ViewpointDefinition
 from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry
-from src.infrastructure.gui.routers._diagram_context import (
+from src.infrastructure.rest.routers._diagram_context import (
     diagram_kind_connection_type_items,
     diagram_kind_entity_type_items,
 )
-from src.infrastructure.gui.routers._entity_display_search import accepted_entity_types
-from src.infrastructure.gui.routers._viewpoint_scope import resolve_viewpoint_scope
+from src.infrastructure.rest.routers._entity_display_search import accepted_entity_types
+from src.infrastructure.rest.routers._viewpoint_scope import resolve_viewpoint_scope
 
 _NARROW = ViewpointDefinition(
     slug="narrow-app",

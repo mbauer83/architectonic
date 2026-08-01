@@ -17,7 +17,7 @@ from __future__ import annotations
 import ast
 import pathlib
 
-from src.infrastructure.gui.contracts.catalog import (
+from src.infrastructure.rest.contracts.catalog import (
     BackendIdentityResponse,
     EntityTaxonomyResponse,
     LoadedModuleListResponse,
@@ -29,7 +29,7 @@ from src.infrastructure.gui.contracts.catalog import (
 
 _ROOT = pathlib.Path(__file__).resolve().parents[2]
 _INDEX = _ROOT / "src" / "infrastructure" / "artifact_index" / "service.py"
-_ROUTERS = _ROOT / "src" / "infrastructure" / "gui" / "routers"
+_ROUTERS = _ROOT / "src" / "infrastructure" / "rest" / "routers"
 
 
 def _function(path: pathlib.Path, name: str) -> ast.AST:

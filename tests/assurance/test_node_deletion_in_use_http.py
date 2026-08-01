@@ -23,7 +23,7 @@ from tests.support.api_app import build_api_app
 
 pytest.importorskip("sqlcipher3", reason="sqlcipher3 not installed")
 
-_CTX_PATH = "src.infrastructure.gui.routers._assurance_write.get_assurance_context"
+_CTX_PATH = "src.infrastructure.rest.routers._assurance_write.get_assurance_context"
 
 
 class _RealContext:
@@ -63,7 +63,7 @@ def ctx(tmp_path: Path):  # type: ignore[no-untyped-def]
 
 @pytest.fixture()
 def client(ctx: Any):  # type: ignore[no-untyped-def]
-    from src.infrastructure.gui.routers._assurance_write import write_router
+    from src.infrastructure.rest.routers._assurance_write import write_router
 
     started = patch(_CTX_PATH, return_value=ctx)
     started.start()

@@ -10,7 +10,7 @@ aware of its own migration state.
 from __future__ import annotations
 
 from src.infrastructure.backend.arch_backend_app import _build_app
-from src.infrastructure.gui.route_policy import (
+from src.infrastructure.rest.route_policy import (
     ROUTE_POLICY,
     UNSERVED_OPERATIONS,
     RouteRow,

@@ -15,7 +15,7 @@ from __future__ import annotations
 import ast
 import pathlib
 
-from src.infrastructure.gui.contracts.sync import (
+from src.infrastructure.rest.contracts.sync import (
     EngagementSaveResponse,
     EnterpriseSaveResponse,
     EnterpriseSubmitResponse,
@@ -24,7 +24,7 @@ from src.infrastructure.gui.contracts.sync import (
 
 _SYNC = (
     pathlib.Path(__file__).resolve().parents[2]
-    / "src" / "infrastructure" / "gui" / "routers" / "sync.py"
+    / "src" / "infrastructure" / "rest" / "routers" / "sync.py"
 )
 
 #: Handler name → the contract it declares.

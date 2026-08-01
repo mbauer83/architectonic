@@ -57,11 +57,11 @@ class _DynamicWorkspaceSnapshots:
 
     def snapshot(self):  # -> AuthorizationSnapshot
         from src.application.mutation_authorization import AuthorizationSnapshot, SyncHealth  # noqa: PLC0415
-        from src.infrastructure.gui.routers import state as gui_state  # noqa: PLC0415
         from src.infrastructure.mcp.artifact_mcp.context import (  # noqa: PLC0415
             resolve_enterprise_repo_root,
             resolve_repo_root,
         )
+        from src.infrastructure.rest.routers import state as gui_state  # noqa: PLC0415
         from src.infrastructure.workspace.mutation_gate import get_workspace_gate  # noqa: PLC0415
 
         engagement = gui_state.maybe_engagement_root() or resolve_repo_root(repo_root=None, repo_preset=None)

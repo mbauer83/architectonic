@@ -14,9 +14,9 @@ from fastapi import FastAPI
 
 from src.application.artifact_query import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
-from src.infrastructure.gui.routers import state as gui_state
-from src.infrastructure.gui.routers.documents import router as documents_router
-from src.infrastructure.gui.routers.groups import router as groups_router
+from src.infrastructure.rest.routers import state as gui_state
+from src.infrastructure.rest.routers.documents import router as documents_router
+from src.infrastructure.rest.routers.groups import router as groups_router
 from tests.support.identity_resolution_conformance import DetailRoute, assert_conforms
 
 httpx = pytest.importorskip("httpx")

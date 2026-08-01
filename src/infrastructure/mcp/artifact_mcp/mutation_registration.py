@@ -70,14 +70,14 @@ def _promotion(arguments: ToolArguments) -> MutationRequest:
 
 
 def _configured_engagement_root() -> Path:
-    from src.infrastructure.gui.routers import state as gui_state  # noqa: PLC0415
+    from src.infrastructure.rest.routers import state as gui_state  # noqa: PLC0415
 
     root = gui_state.maybe_engagement_root()
     return root if root is not None else resolve_repo_root(repo_root=None, repo_preset=None)
 
 
 def _configured_enterprise_root() -> Path:
-    from src.infrastructure.gui.routers import state as gui_state  # noqa: PLC0415
+    from src.infrastructure.rest.routers import state as gui_state  # noqa: PLC0415
 
     root = gui_state.maybe_enterprise_root()
     return root if root is not None else resolve_enterprise_repo_root(enterprise_root=None)

@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from src.infrastructure.gui.route_policy import BY_OPERATION, RETIRED_ROUTES
+from src.infrastructure.rest.route_policy import BY_OPERATION, RETIRED_ROUTES
 
 _CHANGELOG = Path(__file__).resolve().parents[2] / "CHANGELOG.md"
 

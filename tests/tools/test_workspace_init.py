@@ -318,7 +318,7 @@ class TestArchInitFlags:
 
 
 class TestResolveServerRoots:
-    """Regression tests for the root resolution priority in gui_server.
+    """Regression tests for the root resolution priority in backend.server_roots.
 
     Covers the Docker use case: when --enterprise-root is not given as a CLI
     arg but ARCH_ENTERPRISE_ROOT is set in the environment, the env var must
@@ -326,7 +326,7 @@ class TestResolveServerRoots:
     """
 
     def test_explicit_args_take_priority(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-        from src.infrastructure.gui.gui_server import resolve_server_roots
+        from src.infrastructure.backend.server_roots import resolve_server_roots
 
         eng = tmp_path / "eng-arg"
         ent = tmp_path / "ent-arg"
@@ -339,7 +339,7 @@ class TestResolveServerRoots:
     def test_env_vars_used_when_no_args_and_no_init_state(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from src.infrastructure.gui.gui_server import resolve_server_roots
+        from src.infrastructure.backend.server_roots import resolve_server_roots
 
         eng = tmp_path / "eng-env"
         ent = tmp_path / "ent-env"
@@ -355,7 +355,7 @@ class TestResolveServerRoots:
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Mirrors the Docker scenario: --repo-root /repo set, ARCH_ENTERPRISE_ROOT=/enterprise-repo."""
-        from src.infrastructure.gui.gui_server import resolve_server_roots
+        from src.infrastructure.backend.server_roots import resolve_server_roots
 
         ent = tmp_path / "enterprise-repo"
         monkeypatch.setenv("ARCH_ENTERPRISE_ROOT", str(ent))
@@ -368,7 +368,7 @@ class TestResolveServerRoots:
     def test_init_state_used_as_fallback_when_no_env_vars(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from src.infrastructure.gui.gui_server import resolve_server_roots
+        from src.infrastructure.backend.server_roots import resolve_server_roots
 
         eng = tmp_path / "eng-state"
         ent = tmp_path / "ent-state"
@@ -381,7 +381,7 @@ class TestResolveServerRoots:
         assert ent_result == ent
 
     def test_returns_none_when_nothing_configured(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-        from src.infrastructure.gui.gui_server import resolve_server_roots
+        from src.infrastructure.backend.server_roots import resolve_server_roots
 
         monkeypatch.delenv("ARCH_REPO_ROOT", raising=False)
         monkeypatch.delenv("ARCH_ENTERPRISE_ROOT", raising=False)

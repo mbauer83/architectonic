@@ -15,7 +15,7 @@ from __future__ import annotations
 import ast
 import pathlib
 
-from src.infrastructure.gui.contracts.groups import GroupOperationResponse
+from src.infrastructure.rest.contracts.groups import GroupOperationResponse
 
 _GROUP_OPS = (
     pathlib.Path(__file__).resolve().parents[2]

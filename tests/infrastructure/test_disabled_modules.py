@@ -10,7 +10,7 @@ from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.infrastructure.app_bootstrap import build_module_registry, build_runtime_catalogs
 from src.infrastructure.artifact_index import shared_artifact_index
-from src.infrastructure.gui.routers.modules import list_modules
+from src.infrastructure.rest.routers.modules import list_modules
 from src.infrastructure.write.artifact_write.entity import create_entity
 
 

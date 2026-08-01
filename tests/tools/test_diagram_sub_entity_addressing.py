@@ -26,7 +26,7 @@ from fastapi import FastAPI
 
 from src.application.artifact_query import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
-from src.infrastructure.gui.routers import state as gui_state
+from src.infrastructure.rest.routers import state as gui_state
 
 pytest.importorskip("httpx")
 
@@ -69,7 +69,7 @@ def diagram_client(tmp_path: Path):
     from starlette.testclient import TestClient
 
     from src.infrastructure.app_bootstrap import install_module_registry
-    from src.infrastructure.gui.routers.diagrams import router as diagrams_router
+    from src.infrastructure.rest.routers.diagrams import router as diagrams_router
 
     root = tmp_path / "engagements" / "ENG-SUBENT" / "architecture-repository"
     diagram_dir = root / "diagram-catalog" / "diagrams"

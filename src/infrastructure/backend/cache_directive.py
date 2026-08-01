@@ -23,7 +23,7 @@ from collections.abc import Awaitable, Callable
 from starlette.requests import Request
 from starlette.responses import Response
 
-from src.infrastructure.gui.route_policy import ROUTE_POLICY, served_templates_for
+from src.infrastructure.rest.route_policy import ROUTE_POLICY, served_templates_for
 
 
 def _pattern(template: str) -> re.Pattern[str]:

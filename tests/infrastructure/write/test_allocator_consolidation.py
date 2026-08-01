@@ -19,8 +19,8 @@ _OLD_CALLERS = [
     SRC / "infrastructure/write/artifact_write/_artifact_deduplication.py",
     SRC / "infrastructure/write/artifact_write/global_artifact_reference.py",
     SRC / "infrastructure/write/artifact_write/matrix.py",
-    SRC / "infrastructure/gui/routers/_diagram_write.py",
-    SRC / "infrastructure/gui/routers/admin.py",
+    SRC / "infrastructure/rest/routers/_diagram_write.py",
+    SRC / "infrastructure/rest/routers/admin.py",
 ]
 
 _FORBIDDEN_DIRECT = {"generate_entity_id", "generate_diagram_id"}

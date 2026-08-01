@@ -8,7 +8,7 @@ import pytest
 from fastapi import FastAPI
 
 from src.infrastructure.app_bootstrap import install_module_registry
-from src.infrastructure.gui.routers.identifiers import router as identifiers_router
+from src.infrastructure.rest.routers.identifiers import router as identifiers_router
 
 _WORKSPACE_ID_RE = re.compile(r"^[A-Z]+@[0-9]+\.[A-Za-z0-9_-]+\..+$")
 

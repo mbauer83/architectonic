@@ -24,10 +24,10 @@ from pathlib import Path
 
 import pytest
 
-from src.infrastructure.gui.route_policy import BY_OPERATION
-from src.infrastructure.gui.routers.rest_mutation_manifest import REST_MUTATION_MANIFEST
+from src.infrastructure.rest.route_policy import BY_OPERATION
+from src.infrastructure.rest.routers.rest_mutation_manifest import REST_MUTATION_MANIFEST
 
-_ROUTERS = Path(__file__).resolve().parents[2] / "src" / "infrastructure" / "gui" / "routers"
+_ROUTERS = Path(__file__).resolve().parents[2] / "src" / "infrastructure" / "rest" / "routers"
 
 _AUTHORIZED_WRITE_NAMES = frozenset({"authorized_write", "authorized_write_async"})
 

@@ -49,7 +49,7 @@ def _shared_repository() -> ArchitectureModelSource | None:
     rather than take down a read that has a sound answer without one.
     """
     try:
-        from src.infrastructure.gui.routers import state as gui_state  # noqa: PLC0415
+        from src.infrastructure.rest.routers import state as gui_state  # noqa: PLC0415
     except ImportError:
         return None
     return gui_state.maybe_get_repo()
@@ -65,7 +65,7 @@ def shared_artifact_lookup() -> "ArchitectureEntityLookup | None":
     it could not check rather than that it found nothing.
     """
     try:
-        from src.infrastructure.gui.routers import state as gui_state  # noqa: PLC0415
+        from src.infrastructure.rest.routers import state as gui_state  # noqa: PLC0415
     except ImportError:
         return None
     return gui_state.maybe_get_repo()

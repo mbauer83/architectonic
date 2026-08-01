@@ -66,10 +66,10 @@ class TestEveryRequestBuilderInvoked:
         engagement.mkdir(parents=True)
         enterprise.mkdir(parents=True)
         monkeypatch.setattr(
-            "src.infrastructure.gui.routers.state.maybe_engagement_root", lambda: engagement
+            "src.infrastructure.rest.routers.state.maybe_engagement_root", lambda: engagement
         )
         monkeypatch.setattr(
-            "src.infrastructure.gui.routers.state.maybe_enterprise_root", lambda: enterprise
+            "src.infrastructure.rest.routers.state.maybe_enterprise_root", lambda: enterprise
         )
         return engagement, enterprise
 

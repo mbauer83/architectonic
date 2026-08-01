@@ -1,7 +1,7 @@
 """Admin-mode write operations — enterprise repository writes.
 
 This module is the ONLY authorised path for writing to the enterprise repo.
-It is called exclusively from src/infrastructure/gui/routers/admin.py and never
+It is called exclusively from src/infrastructure/rest/routers/admin.py and never
 from any MCP tool. It enforces the enterprise boundary via
 assert_enterprise_write_root at every entry point.
 

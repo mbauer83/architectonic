@@ -106,8 +106,8 @@ class _FakeContext:
         return self._store.is_unlocked()
 
 
-_READ_CTX = "src.infrastructure.gui.routers._assurance_read.get_assurance_context"
-_HTTP_CTX = "src.infrastructure.gui.routers._assurance_http.get_assurance_context"
+_READ_CTX = "src.infrastructure.rest.routers._assurance_read.get_assurance_context"
+_HTTP_CTX = "src.infrastructure.rest.routers._assurance_http.get_assurance_context"
 
 _STPA_ID = "STPA@1.aaaa.000001"
 _FMEA_ID = "FMEA@1.bbbb.000002"
@@ -115,7 +115,7 @@ _FMEA_ID = "FMEA@1.bbbb.000002"
 
 def _make_client(ctx: _FakeContext, monkeypatch: pytest.MonkeyPatch) -> TestClient:
     """Both context lookups point at ``ctx``; monkeypatch so nothing leaks into the next test."""
-    from src.infrastructure.gui.routers.assurance import router
+    from src.infrastructure.rest.routers.assurance import router
 
     # `build_api_app`, not a bare `FastAPI()`: without the error contracts installed a raised
     # `ApiError` becomes a 500 and the test asserts a shape no client receives.
@@ -378,7 +378,7 @@ def test_rendered_control_structure_svg_null_when_no_plantuml(
         raising=False,
     )
     monkeypatch.setattr(
-        "src.infrastructure.gui.routers.state.maybe_engagement_root",
+        "src.infrastructure.rest.routers.state.maybe_engagement_root",
         lambda: Path("/tmp/does-not-matter"),
         raising=False,
     )
@@ -402,7 +402,7 @@ def test_rendered_passes_diagram_type_as_render_type(
     types whose renderers know how to expand the body).
     """
     monkeypatch.setattr(
-        "src.infrastructure.gui.routers.state.maybe_engagement_root",
+        "src.infrastructure.rest.routers.state.maybe_engagement_root",
         lambda: Path("/tmp/does-not-matter"),
         raising=False,
     )

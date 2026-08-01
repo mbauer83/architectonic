@@ -17,9 +17,9 @@ from fastapi import FastAPI
 from src.application.artifact_repository import ArtifactRepository
 from src.infrastructure.app_bootstrap import install_module_registry
 from src.infrastructure.artifact_index import shared_artifact_index
-from src.infrastructure.gui.routers import state as gui_state
-from src.infrastructure.gui.routers.viewpoint_authoring import router as viewpoint_authoring_router
-from src.infrastructure.gui.routers.viewpoints import router as viewpoints_router
+from src.infrastructure.rest.routers import state as gui_state
+from src.infrastructure.rest.routers.viewpoint_authoring import router as viewpoint_authoring_router
+from src.infrastructure.rest.routers.viewpoints import router as viewpoints_router
 
 httpx = pytest.importorskip("httpx")
 

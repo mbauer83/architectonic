@@ -140,7 +140,7 @@ async def ent_on_main(sync: GitSyncManager, root: Path) -> bool:
     """Returns True when the poll assessed the remote relationship cleanly (a dirty
     tree or a read-only gate merely SKIPS the pull — that is lifecycle state, never
     a health fault, so the orchestrator may still clear a prior block)."""
-    from src.infrastructure.gui.routers.events import event_bus
+    from src.infrastructure.rest.routers.events import event_bus
     from src.infrastructure.workspace.mutation_gate import get_workspace_gate
 
     upstream = await sync._upstream_ref(root)
@@ -196,7 +196,7 @@ async def ent_on_main(sync: GitSyncManager, root: Path) -> bool:
                 await sync._git(root, "worktree", "remove", "--force", str(worktree_path))
             await sync._git(root, "reset", "--mixed", "HEAD")
     except Exception as exc:
-        from src.infrastructure.gui.routers.events import event_bus as _bus  # noqa: PLC0415
+        from src.infrastructure.rest.routers.events import event_bus as _bus  # noqa: PLC0415
         await _bus.publish({
             "type": "sync_pull_failed", "repo": root_label, "error": str(exc),
             "auto_unblock_in_seconds": int(_AUTO_UNBLOCK_S),
@@ -214,7 +214,7 @@ async def ent_accumulating(
     root: Path,
     state: enterprise_sync_state.EnterpriseSyncState,
 ) -> None:
-    from src.infrastructure.gui.routers.events import event_bus
+    from src.infrastructure.rest.routers.events import event_bus
 
     behind = await sync._count(root, "HEAD..origin/main")
     if behind != state.commits_behind:
@@ -267,7 +267,7 @@ async def ent_switch_to_main(
     root: Path,
     state: enterprise_sync_state.EnterpriseSyncState,
 ) -> None:
-    from src.infrastructure.gui.routers.events import event_bus
+    from src.infrastructure.rest.routers.events import event_bus
     from src.infrastructure.workspace.write_block_manager import block_repo, unblock_repo
 
     root_label = str(root)

@@ -157,9 +157,9 @@ class TestMcpRestParity:
 
         from src.application.artifact_repository import ArtifactRepository
         from src.infrastructure.artifact_index import shared_artifact_index
-        from src.infrastructure.gui.routers import state as gui_state
-        from src.infrastructure.gui.routers.viewpoints import fresh_viewpoints_runtime_catalogs_dependency
-        from src.infrastructure.gui.routers.viewpoints import router as viewpoints_router
+        from src.infrastructure.rest.routers import state as gui_state
+        from src.infrastructure.rest.routers.viewpoints import fresh_viewpoints_runtime_catalogs_dependency
+        from src.infrastructure.rest.routers.viewpoints import router as viewpoints_router
 
         entity_id = _make(repo, "application-component", "Parameterized Entity")
         _install_catalog(monkeypatch, catalogs, ViewpointCatalog.empty())
@@ -206,9 +206,9 @@ class TestMcpRestParity:
 
         from src.application.artifact_repository import ArtifactRepository
         from src.infrastructure.artifact_index import shared_artifact_index
-        from src.infrastructure.gui.routers import state as gui_state
-        from src.infrastructure.gui.routers.viewpoints import fresh_viewpoints_runtime_catalogs_dependency
-        from src.infrastructure.gui.routers.viewpoints import router as viewpoints_router
+        from src.infrastructure.rest.routers import state as gui_state
+        from src.infrastructure.rest.routers.viewpoints import fresh_viewpoints_runtime_catalogs_dependency
+        from src.infrastructure.rest.routers.viewpoints import router as viewpoints_router
 
         entity_id = _make(repo, "application-component", "Parity Entity")
         definition = ViewpointDefinition(slug="parity-test", version=1, name="P", query=ExecutableViewpointQuery())

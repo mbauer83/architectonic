@@ -54,8 +54,8 @@ def _notify_gui_dirty() -> None:
     if _event_loop is None or not _event_loop.is_running():
         return
     try:
-        from src.infrastructure.gui.routers.events import event_bus
-        from src.infrastructure.gui.routers.sync_status_cache import invalidate_sync_status_cache
+        from src.infrastructure.rest.routers.events import event_bus
+        from src.infrastructure.rest.routers.sync_status_cache import invalidate_sync_status_cache
 
         invalidate_sync_status_cache()
         asyncio.run_coroutine_threadsafe(

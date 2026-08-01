@@ -15,7 +15,7 @@ from fastapi import FastAPI
 
 from src.application.artifact_query import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
-from src.infrastructure.gui.routers import state as gui_state
+from src.infrastructure.rest.routers import state as gui_state
 from tests.support.search_visibility_fixtures import (
     EXCLUDED_TYPES,
     GAR_ID,
@@ -36,9 +36,9 @@ def client(tmp_path: Path):
         get_module_registry,
         runtime_catalogs_dependency,
     )
-    from src.infrastructure.gui.routers.connections import router as connections_router
-    from src.infrastructure.gui.routers.diagrams import router as diagrams_router
-    from src.infrastructure.gui.routers.entity_search import router as entity_search_router
+    from src.infrastructure.rest.routers.connections import router as connections_router
+    from src.infrastructure.rest.routers.diagrams import router as diagrams_router
+    from src.infrastructure.rest.routers.entity_search import router as entity_search_router
 
     root = build_engagement_repo(tmp_path)
     repo = ArtifactRepository(shared_artifact_index([root]), excluded_entity_types=EXCLUDED_TYPES)

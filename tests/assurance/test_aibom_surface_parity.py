@@ -74,8 +74,8 @@ def test_rest_and_mcp_share_the_one_service() -> None:
     # reimplementing derivation — so they cannot diverge.
     import inspect
 
-    from src.infrastructure.gui.routers import _assurance_aibom as rest
     from src.infrastructure.mcp.artifact_mcp import aibom_read_tools as mcp
+    from src.infrastructure.rest.routers import _assurance_aibom as rest
 
     assert "export_model_derived_aibom" in inspect.getsource(rest)
     assert "aibom_coverage_report" in inspect.getsource(rest)

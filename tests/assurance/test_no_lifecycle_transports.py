@@ -18,7 +18,7 @@ _FORBIDDEN_FRAGMENTS = (
 
 
 def test_rest_exposes_no_snapshot_lifecycle_route() -> None:
-    from src.infrastructure.gui.routers.assurance import router
+    from src.infrastructure.rest.routers.assurance import router
     from tests.support.route_introspection import openapi_paths
 
     paths = openapi_paths(router)

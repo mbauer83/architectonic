@@ -19,7 +19,7 @@ from tests.support.api_app import build_api_app
 
 pytest.importorskip("sqlcipher3", reason="sqlcipher3 not installed")
 
-_CTX_PATH = "src.infrastructure.gui.routers._assurance_signals_routes.get_assurance_context"
+_CTX_PATH = "src.infrastructure.rest.routers._assurance_signals_routes.get_assurance_context"
 def _snapshot_route(snapshot_id: str) -> str:
     return f"/api/assurance/security-snapshots/{snapshot_id}"
 
@@ -62,7 +62,7 @@ def ctx(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):  # type: ignore[no-unt
 
 
 def _client(ctx: Any) -> TestClient:
-    from src.infrastructure.gui.routers._assurance_signal_deletion_routes import (
+    from src.infrastructure.rest.routers._assurance_signal_deletion_routes import (
         signal_deletion_router,
     )
 

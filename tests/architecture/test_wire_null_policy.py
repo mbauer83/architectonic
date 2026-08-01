@@ -24,7 +24,7 @@ from pydantic import BaseModel
 from starlette.responses import Response
 
 from src.infrastructure.backend.arch_backend_app import _build_app
-from src.infrastructure.gui.contracts.wire_nulls import WIRE_NULLS_KEYWORD, omits_nulls
+from src.infrastructure.rest.contracts.wire_nulls import WIRE_NULLS_KEYWORD, omits_nulls
 from tests.support.route_introspection import api_routes
 
 

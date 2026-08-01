@@ -12,11 +12,11 @@ import pytest
 from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 
-from src.infrastructure.gui.contracts.error_responses import (
+from src.infrastructure.rest.contracts.error_responses import (
     REQUEST_ID_HEADER,
     install_error_contracts,
 )
-from src.infrastructure.gui.contracts.errors import (
+from src.infrastructure.rest.contracts.errors import (
     ERROR_DETAIL_TYPES,
     ApiError,
     MethodMismatchDetails,
@@ -143,6 +143,6 @@ def test_every_declared_code_has_a_details_decision() -> None:
     """Adding a code means deciding what it carries — including deciding that it carries nothing."""
     from typing import get_args
 
-    from src.infrastructure.gui.contracts.errors import ErrorCode
+    from src.infrastructure.rest.contracts.errors import ErrorCode
 
     assert set(get_args(ErrorCode)) == set(ERROR_DETAIL_TYPES)

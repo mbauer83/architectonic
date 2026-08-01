@@ -18,8 +18,8 @@ from typing import Any
 
 import pytest
 
-from src.infrastructure.gui.route_policy import ROUTE_POLICY
-from src.infrastructure.gui.route_policy.timeout_policy_document import (
+from src.infrastructure.rest.route_policy import ROUTE_POLICY
+from src.infrastructure.rest.route_policy.timeout_policy_document import (
     NON_DEFAULT_CLASSES,
     serialize,
     template_pattern,

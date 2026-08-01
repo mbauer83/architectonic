@@ -19,9 +19,9 @@ from fastapi import FastAPI
 
 from src.application.artifact_query import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
-from src.infrastructure.gui.contracts.error_responses import install_error_contracts
-from src.infrastructure.gui.routers import state as gui_state
-from src.infrastructure.gui.routers.entities import router as entities_router
+from src.infrastructure.rest.contracts.error_responses import install_error_contracts
+from src.infrastructure.rest.routers import state as gui_state
+from src.infrastructure.rest.routers.entities import router as entities_router
 
 TARGET_ID = "REQ@1000000901.IdBody.identity-in-the-path"
 OTHER_ID = "REQ@1000000902.IdBody.the-other-one"

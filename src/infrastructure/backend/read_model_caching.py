@@ -34,7 +34,7 @@ from typing import Any
 from starlette.requests import Request
 from starlette.responses import Response
 
-from src.infrastructure.gui.route_policy import SERVED_CONDITIONAL_READ_TEMPLATES
+from src.infrastructure.rest.route_policy import SERVED_CONDITIONAL_READ_TEMPLATES
 
 #: Route templates whose body is a pure function of the indexed model and the URL, compiled once.
 #:
@@ -76,7 +76,7 @@ def _entity_tag(model_etag: str, request: Request) -> str:
 
 def _current_model_etag() -> str | None:
     """The read model's own version tag, or None when no repository is initialized yet."""
-    from src.infrastructure.gui.routers import state as s  # noqa: PLC0415
+    from src.infrastructure.rest.routers import state as s  # noqa: PLC0415
 
     try:
         return str(s.get_repo().read_model_version().etag)

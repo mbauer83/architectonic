@@ -20,7 +20,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from src.infrastructure.gui.route_policy import BODYLESS, MEDIA, STREAM, RouteRow
+from src.infrastructure.rest.route_policy import BODYLESS, MEDIA, STREAM, RouteRow
 
 _SUCCESS_STATUSES = ("200", "201", "204")
 _ERROR_ENVELOPE_REF = "#/components/schemas/ErrorEnvelope"

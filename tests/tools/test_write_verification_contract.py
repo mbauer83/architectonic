@@ -28,7 +28,7 @@ from src.application.verification.artifact_verifier_types import (
     Severity,
     VerificationResult,
 )
-from src.infrastructure.gui.contracts.verification import (
+from src.infrastructure.rest.contracts.verification import (
     VerificationIssueResponse,
     WriteVerificationResponse,
 )

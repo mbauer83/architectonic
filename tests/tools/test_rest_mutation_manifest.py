@@ -21,8 +21,8 @@ from src.application.mutation_authorization import (
     PromotionWrite,
     RepositoryWrite,
 )
-from src.infrastructure.gui.route_policy import ROUTE_POLICY, UNSERVED_OPERATIONS
-from src.infrastructure.gui.routers.rest_mutation_manifest import (
+from src.infrastructure.rest.route_policy import ROUTE_POLICY, UNSERVED_OPERATIONS
+from src.infrastructure.rest.routers.rest_mutation_manifest import (
     ASSURANCE_ROUTE_PREFIX,
     NON_MUTATING_REST_OPERATIONS,
     REST_MUTATION_MANIFEST,
@@ -61,10 +61,10 @@ class TestBuildRestRequest:
         enterprise = tmp_path / "enterprise-repository"
         engagement.mkdir(parents=True)
         enterprise.mkdir(parents=True)
-        monkeypatch.setattr("src.infrastructure.gui.routers.state.maybe_engagement_root", lambda: engagement)
-        monkeypatch.setattr("src.infrastructure.gui.routers.state.maybe_enterprise_root", lambda: enterprise)
+        monkeypatch.setattr("src.infrastructure.rest.routers.state.maybe_engagement_root", lambda: engagement)
+        monkeypatch.setattr("src.infrastructure.rest.routers.state.maybe_enterprise_root", lambda: enterprise)
         monkeypatch.setattr(
-            "src.infrastructure.gui.routers.state.get_both_roots", lambda: (engagement, enterprise)
+            "src.infrastructure.rest.routers.state.get_both_roots", lambda: (engagement, enterprise)
         )
         return engagement, enterprise
 

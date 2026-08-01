@@ -103,7 +103,7 @@ class _FakeContext:
 
 # ── Client factory ────────────────────────────────────────────────────────────
 
-_ASSURANCE_CTX_PATH = "src.infrastructure.gui.routers._assurance_read.get_assurance_context"
+_ASSURANCE_CTX_PATH = "src.infrastructure.rest.routers._assurance_read.get_assurance_context"
 
 # Whole records, because that is what a store returns and what the closed response contract
 # validates against — a five-key fake described a node no deployment sends.
@@ -116,7 +116,7 @@ _RED_NODE: dict[str, Any] = node_record(
 
 
 def _make_client(ctx: _FakeContext) -> TestClient:
-    from src.infrastructure.gui.routers.assurance import router
+    from src.infrastructure.rest.routers.assurance import router
 
     # `build_api_app`, not a bare `FastAPI()`: without the error contracts installed a raised
     # `ApiError` becomes a 500, and the test asserts a shape no client receives.

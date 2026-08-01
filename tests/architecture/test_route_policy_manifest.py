@@ -17,14 +17,14 @@ from pathlib import Path
 
 import pytest
 
-from src.infrastructure.gui.route_policy import (
+from src.infrastructure.rest.route_policy import (
     BY_OPERATION,
     CONDITIONAL_READ_TEMPLATES,
     ROUTE_POLICY,
     UNSERVED_OPERATIONS,
     served_templates_for,
 )
-from src.infrastructure.gui.routers.rest_mutation_manifest import (
+from src.infrastructure.rest.routers.rest_mutation_manifest import (
     ASSURANCE_ROUTE_PREFIX,
     NON_MUTATING_REST_OPERATIONS,
     REST_MUTATION_MANIFEST,

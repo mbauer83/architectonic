@@ -16,7 +16,7 @@ from tests.support.api_app import build_api_app
 
 pytest.importorskip("sqlcipher3", reason="sqlcipher3 not installed")
 
-_CTX_PATH = "src.infrastructure.gui.routers._assurance_neighbors_routes.get_assurance_context"
+_CTX_PATH = "src.infrastructure.rest.routers._assurance_neighbors_routes.get_assurance_context"
 
 
 class _RealContext:
@@ -56,7 +56,7 @@ def seeded(tmp_path: Path):
 
 
 def _client(store: Any, ceiling: str) -> TestClient:
-    from src.infrastructure.gui.routers.assurance import router
+    from src.infrastructure.rest.routers.assurance import router
 
     # `build_api_app`, not a bare `FastAPI()`: without the error contracts installed a raised
     # `ApiError` becomes a 500 and the test asserts a shape no client receives.
@@ -141,7 +141,7 @@ class TestTraversal:
 
 class TestBudgets:
     def test_node_budget_truncates_with_frontier(self, seeded, monkeypatch) -> None:  # type: ignore[no-untyped-def]
-        import src.infrastructure.gui.routers._assurance_neighbors_routes as routes
+        import src.infrastructure.rest.routers._assurance_neighbors_routes as routes
 
         store, ids, _ = seeded
         monkeypatch.setattr(routes, "assurance_neighbors_max_nodes", lambda: 2)
@@ -154,7 +154,7 @@ class TestBudgets:
 
     def test_time_budget_exceeded_is_a_typed_retryable_503(self, seeded, monkeypatch) -> None:  # type: ignore[no-untyped-def]
         import src.application.assurance_neighbors as traversal_module
-        import src.infrastructure.gui.routers._assurance_neighbors_routes as routes
+        import src.infrastructure.rest.routers._assurance_neighbors_routes as routes
 
         store, ids, _ = seeded
         monkeypatch.setattr(

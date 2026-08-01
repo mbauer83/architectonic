@@ -81,7 +81,7 @@ def test_concurrent_search_via_http_completes() -> None:
     from fastapi import FastAPI
     from starlette.testclient import TestClient
 
-    from src.infrastructure.gui.routers.assurance import router
+    from src.infrastructure.rest.routers.assurance import router
 
     class _ThreadSafeStore:
         """Simple dict-backed store safe for concurrent HTTP handler calls."""
@@ -151,7 +151,7 @@ def test_concurrent_search_via_http_completes() -> None:
     # thread's __exit__ can restore the real (locked) context while another is
     # mid-request, yielding a spurious 423. The target is read-only here.
     with patch(
-        "src.infrastructure.gui.routers._assurance_read.get_assurance_context",
+        "src.infrastructure.rest.routers._assurance_read.get_assurance_context",
         return_value=ctx,
     ):
         for t in threads:

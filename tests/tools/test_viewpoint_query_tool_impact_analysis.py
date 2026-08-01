@@ -62,9 +62,9 @@ class TestRestMcpParity:
 
         from src.application.artifact_repository import ArtifactRepository
         from src.infrastructure.artifact_index import shared_artifact_index
-        from src.infrastructure.gui.routers import state as gui_state
-        from src.infrastructure.gui.routers.viewpoints import fresh_viewpoints_runtime_catalogs_dependency
-        from src.infrastructure.gui.routers.viewpoints import router as viewpoints_router
+        from src.infrastructure.rest.routers import state as gui_state
+        from src.infrastructure.rest.routers.viewpoints import fresh_viewpoints_runtime_catalogs_dependency
+        from src.infrastructure.rest.routers.viewpoints import router as viewpoints_router
 
         anchor_id = mcp.artifact_create_entity(
             artifact_type="application-component", name="Anchor", dry_run=False, repo_root=str(repo)

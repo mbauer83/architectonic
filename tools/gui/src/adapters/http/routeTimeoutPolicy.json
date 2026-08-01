@@ -1,5 +1,5 @@
 {
-  "$comment": "Generated from the REST route-policy manifest by src/infrastructure/gui/route_policy/timeout_policy_document.py. Do not edit. Both frontend consumers \u2014 the HTTP client and the Vite dev config \u2014 read this document rather than deriving anything, because they live in different TypeScript programs and a shared module can only be owned by one of them.",
+  "$comment": "Generated from the REST route-policy manifest by src/infrastructure/rest/route_policy/timeout_policy_document.py. Do not edit. Both frontend consumers \u2014 the HTTP client and the Vite dev config \u2014 read this document rather than deriving anything, because they live in different TypeScript programs and a shared module can only be owned by one of them.",
   "budgetMs": {
     "default": 10000,
     "derived-graph": 60000,

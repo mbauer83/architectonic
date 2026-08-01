@@ -91,9 +91,9 @@ def artifact_create_diagram(
     entity_ids_used: list[str] | None = None
     connection_ids_used: list[str] | None = None
     if entity_ids and not puml:
-        from src.infrastructure.gui.routers._diagram_selection import resolve_diagram_selection  # noqa: PLC0415
         from src.infrastructure.mcp.artifact_mcp.context import expand_artifact_id  # noqa: PLC0415
         from src.infrastructure.rendering.diagram_builder import generate_archimate_puml_body  # noqa: PLC0415
+        from src.infrastructure.rest.routers._diagram_selection import resolve_diagram_selection  # noqa: PLC0415
 
         roots = resolve_repo_roots(
             repo_scope="engagement",

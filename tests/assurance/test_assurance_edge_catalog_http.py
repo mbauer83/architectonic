@@ -15,7 +15,7 @@ from tests.support.api_app import build_api_app
 
 
 def _client() -> TestClient:
-    from src.infrastructure.gui.routers.assurance import router
+    from src.infrastructure.rest.routers.assurance import router
 
     # `build_api_app`, not a bare `FastAPI()`: without the error contracts installed a raised
     # `ApiError` becomes a 500 and the test asserts a shape no client receives.
@@ -26,7 +26,7 @@ def _client() -> TestClient:
 def test_configured_catalog_equals_the_module_representation(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    import src.infrastructure.gui.routers.assurance as routes
+    import src.infrastructure.rest.routers.assurance as routes
 
     registry = ModuleRegistry()
     module = assurance_ontology_module()
@@ -39,7 +39,7 @@ def test_configured_catalog_equals_the_module_representation(
 
 
 def test_unconfigured_capability_is_a_404(monkeypatch: pytest.MonkeyPatch) -> None:
-    import src.infrastructure.gui.routers.assurance as routes
+    import src.infrastructure.rest.routers.assurance as routes
 
     monkeypatch.setattr(routes, "get_module_registry", lambda: ModuleRegistry())
     resp = _client().get("/api/assurance/edge-catalog")
@@ -54,7 +54,7 @@ def test_unconfigured_capability_is_a_404(monkeypatch: pytest.MonkeyPatch) -> No
 def test_catalog_needs_no_unlock(monkeypatch: pytest.MonkeyPatch) -> None:
     """No assurance context is touched at all — a locked or absent store cannot
     influence the catalog (it would raise if the endpoint tried)."""
-    import src.infrastructure.gui.routers.assurance as routes
+    import src.infrastructure.rest.routers.assurance as routes
     from src.infrastructure.mcp.assurance_mcp import context as ctx_module
 
     registry = ModuleRegistry()

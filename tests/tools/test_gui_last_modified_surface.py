@@ -16,7 +16,7 @@ from fastapi import Request
 
 from src.application.artifact_query import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
-from src.infrastructure.gui.routers import state as gui_state
+from src.infrastructure.rest.routers import state as gui_state
 
 _STAMPS = {
     "REQ@1000000001.OldAAA.oldest-requirement": "2026-01-01T00:00:00Z",
@@ -98,7 +98,7 @@ def repo_root(tmp_path: Path) -> Path:
 
 
 def _list_entities(**kwargs: object) -> dict:
-    from src.infrastructure.gui.routers.entities import list_entities
+    from src.infrastructure.rest.routers.entities import list_entities
 
     return list_entities(request=cast("Request", None), limit=2000, offset=0, **kwargs)  # type: ignore[arg-type]
 
@@ -113,13 +113,13 @@ class TestFieldPresence:
         assert stamps == _STAMPS
 
     def test_entity_detail_carries_the_stamp(self, repo_root: Path) -> None:
-        from src.infrastructure.gui.routers.entities import read_entity
+        from src.infrastructure.rest.routers.entities import read_entity
 
         detail = read_entity(artifact_id="REQ@1000000003.NewAAA.newest-requirement")
         assert detail["last_updated"] == "2026-07-24T09:15:00Z"
 
     def test_diagram_list_and_detail_carry_the_stamp(self, repo_root: Path) -> None:
-        from src.infrastructure.gui.routers.diagrams import list_diagrams
+        from src.infrastructure.rest.routers.diagrams import list_diagrams
 
         (row,) = list_diagrams()["items"]
         assert row["last_updated"] == "2026-05-05T05:05:05Z"
@@ -129,7 +129,7 @@ class TestFieldPresence:
         assert detail["last_updated"] == "2026-05-05T05:05:05Z"
 
     def test_document_list_and_detail_carry_the_stamp(self, repo_root: Path) -> None:
-        from src.infrastructure.gui.routers.documents import list_documents
+        from src.infrastructure.rest.routers.documents import list_documents
 
         (row,) = list_documents(limit=200)["items"]
         assert row["last_updated"] == "2026-06-06T06:06:06Z"
@@ -164,7 +164,7 @@ class TestOrdering:
         assert descending == list(reversed(list(_STAMPS)))
 
     def test_ordering_spans_the_population_not_the_page(self, repo_root: Path) -> None:
-        from src.infrastructure.gui.routers.entities import list_entities
+        from src.infrastructure.rest.routers.entities import list_entities
 
         page = list_entities(request=cast("Request", None), sort="last_updated", order="desc", limit=1, offset=0)
         assert page["total"] == len(_STAMPS)
@@ -202,7 +202,7 @@ class TestOverHttp:
         from starlette.testclient import TestClient
 
         from src.infrastructure.app_bootstrap import install_module_registry
-        from src.infrastructure.gui.routers.entities import router as entities_router
+        from src.infrastructure.rest.routers.entities import router as entities_router
 
         app = FastAPI()
         install_module_registry(app)

@@ -20,8 +20,8 @@ from starlette.testclient import TestClient  # noqa: E402
 
 from tests.support.api_app import build_api_app  # noqa: E402
 
-_HTTP_CTX = "src.infrastructure.gui.routers._assurance_http.get_assurance_context"
-_REPO = "src.infrastructure.gui.routers.state.maybe_get_repo"
+_HTTP_CTX = "src.infrastructure.rest.routers._assurance_http.get_assurance_context"
+_REPO = "src.infrastructure.rest.routers.state.maybe_get_repo"
 
 
 class _FakeContext:
@@ -56,12 +56,12 @@ class _FakeRepo:
         return self._connections
 
 
-_ROOT = "src.infrastructure.gui.routers.state.maybe_engagement_root"
+_ROOT = "src.infrastructure.rest.routers.state.maybe_engagement_root"
 
 
 def _client(ctx: _FakeContext, monkeypatch: pytest.MonkeyPatch,
             repo: _FakeRepo | None = None, root: Any = None) -> TestClient:
-    from src.infrastructure.gui.routers.assurance import router
+    from src.infrastructure.rest.routers.assurance import router
 
     # `build_api_app`, not a bare `FastAPI()`: without the error contracts installed a raised
     # `ApiError` is a 500 with an empty body, so a test asserting a refusal's code would be reading a

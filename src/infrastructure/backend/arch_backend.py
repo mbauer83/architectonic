@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 import uvicorn
 
 from src.config.settings import backend_min_log_level
-from src.infrastructure.backend import backend_control
+from src.infrastructure.backend import backend_control, server_roots
 from src.infrastructure.backend._lifecycle_cli import (
     _run_status,
     _run_stop,
@@ -37,7 +37,6 @@ from src.infrastructure.backend.backend_state import (
     write_backend_state,
 )
 from src.infrastructure.backend.shutdown import DRAIN_SECONDS, shutdown_signal
-from src.infrastructure.gui import gui_server
 
 logger = logging.getLogger(__name__)
 
@@ -251,7 +250,7 @@ def _serve(app: "Callable[..., Any]", *, host: str, port: int) -> None:
 def _run_foreground(args: argparse.Namespace, parser: argparse.ArgumentParser, resolved_port: int) -> None:
     if not _guard_prestart(resolved_port, for_daemon=False, restart=False):
         return
-    repo_root_path, enterprise_root_path = gui_server.resolve_server_roots(args.repo_root, args.enterprise_root)
+    repo_root_path, enterprise_root_path = server_roots.resolve_server_roots(args.repo_root, args.enterprise_root)
     if repo_root_path is None:
         parser.error(
             "No --repo-root given, ARCH_REPO_ROOT not set, and no .arch/init-state.yaml found. Run arch-init first.")
@@ -352,8 +351,8 @@ def _configure_server_state(
     repo: "ArtifactRepository", repo_root_path: Path, enterprise_root_path: Path | None, args: argparse.Namespace
 ) -> None:
     from src.application.artifact_document_schema import load_document_schemata
-    from src.infrastructure.gui.routers import state as gui_state
     from src.infrastructure.mcp.artifact_mcp.mutation_registration import install_mutation_executor
+    from src.infrastructure.rest.routers import state as gui_state
     from src.infrastructure.workspace.mutation_gate import get_workspace_gate
     from src.infrastructure.write.authorized_mutation_executor import build_workspace_mutation_executor
     from src.infrastructure.write.workspace_authorization import (

@@ -2,7 +2,7 @@ from pathlib import Path
 
 from src.domain.ontology_representation.artifact_types import DocumentRecord, EntityRecord, SearchHit
 from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry
-from src.infrastructure.gui.routers._global_search import filter_global_hits, prioritize_global_hits
+from src.infrastructure.rest.routers._global_search import filter_global_hits, prioritize_global_hits
 
 
 def _entity(artifact_id: str, *, host_diagram_id: str | None = None) -> EntityRecord:

@@ -37,7 +37,7 @@ def artifact_save_changes(
     effect for the enterprise target.
     """
     from src.infrastructure.git import enterprise_git_ops
-    from src.infrastructure.gui.routers.state import maybe_engagement_root, maybe_enterprise_root
+    from src.infrastructure.rest.routers.state import maybe_engagement_root, maybe_enterprise_root
 
     if target not in ("engagement", "enterprise"):
         return {"ok": False, "error": "target must be 'engagement' or 'enterprise'"}
@@ -97,7 +97,7 @@ def artifact_submit_for_review() -> dict[str, object]:
     """
     from src.infrastructure.git import enterprise_git_ops
     from src.infrastructure.git.enterprise_sync_state import load as load_state
-    from src.infrastructure.gui.routers.state import maybe_enterprise_root
+    from src.infrastructure.rest.routers.state import maybe_enterprise_root
 
     ent_root = maybe_enterprise_root()
     if ent_root is None:
@@ -144,7 +144,7 @@ def artifact_withdraw_changes(*, confirm: bool = False) -> dict[str, object]:
     repository is affected; engagement repository changes are never discarded.
     """
     from src.infrastructure.git import enterprise_git_ops
-    from src.infrastructure.gui.routers.state import maybe_enterprise_root
+    from src.infrastructure.rest.routers.state import maybe_enterprise_root
 
     if not confirm:
         return {

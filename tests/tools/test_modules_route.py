@@ -12,7 +12,7 @@ from typing import Any
 
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.infrastructure.app_bootstrap import build_module_registry, build_runtime_catalogs
-from src.infrastructure.gui.routers.modules import list_modules
+from src.infrastructure.rest.routers.modules import list_modules
 
 
 @lru_cache(maxsize=1)

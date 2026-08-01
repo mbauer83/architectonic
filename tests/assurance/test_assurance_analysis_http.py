@@ -14,9 +14,9 @@ from starlette.testclient import TestClient
 
 from src.application.assurance_exposure import AssuranceExposurePolicy
 from src.infrastructure.assurance._analysis_records import as_analysis_record
-from src.infrastructure.gui.routers._assurance_analysis_routes import analysis_router
-from src.infrastructure.gui.routers._assurance_gsn_routes import gsn_router
-from src.infrastructure.gui.routers._assurance_read import read_router
+from src.infrastructure.rest.routers._assurance_analysis_routes import analysis_router
+from src.infrastructure.rest.routers._assurance_gsn_routes import gsn_router
+from src.infrastructure.rest.routers._assurance_read import read_router
 from tests.support.api_app import build_api_app
 from tests.support.assurance_records import node_record
 
@@ -118,8 +118,8 @@ class _FakeContext:
         return self._available
 
 
-_HTTP_CTX = "src.infrastructure.gui.routers._assurance_http.get_assurance_context"
-_READ_POLICY = "src.infrastructure.gui.routers._assurance_read._policy"
+_HTTP_CTX = "src.infrastructure.rest.routers._assurance_http.get_assurance_context"
+_READ_POLICY = "src.infrastructure.rest.routers._assurance_read._policy"
 
 
 def _client(ctx: _FakeContext, monkeypatch: pytest.MonkeyPatch) -> TestClient:
@@ -375,7 +375,7 @@ def test_gsn_publication_rejects_confidential_analysis(monkeypatch: pytest.Monke
     client = _client(ctx, monkeypatch)
     aid = store.create_analysis("Secret", "STPA", tlp="TLP:AMBER")
     monkeypatch.setattr(
-        "src.infrastructure.gui.routers.state.get_repo",
+        "src.infrastructure.rest.routers.state.get_repo",
         lambda: _Repo(),
     )
     response = client.post(f"/api/assurance/analyses/{aid}/gsn/publications", json={
@@ -405,7 +405,7 @@ def test_gsn_publication_records_bindings_and_audit(monkeypatch: pytest.MonkeyPa
         "node_id": "H@1", "node_type": "hazard", "name": "Hazard",
         "analysis_id": aid, "tlp": "TLP:GREEN",
     }
-    monkeypatch.setattr("src.infrastructure.gui.routers.state.get_repo", lambda: _Repo())
+    monkeypatch.setattr("src.infrastructure.rest.routers.state.get_repo", lambda: _Repo())
     response = client.post(f"/api/assurance/analyses/{aid}/gsn/publications", json={
         "diagram_id": "GSN@1.case",
         "source_bindings": [{"assurance_node_id": "H@1", "gsn_node_id": "G-H@1"}],

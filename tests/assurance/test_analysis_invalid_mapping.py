@@ -17,8 +17,8 @@ import pathlib
 
 from src.application.assurance_analysis import AnalysisInvalid
 from src.application.assurance_model_bind import BindInvalid
-from src.infrastructure.gui.contracts.errors import ERROR_DETAIL_TYPES
-from src.infrastructure.gui.routers._assurance_invalid import (
+from src.infrastructure.rest.contracts.errors import ERROR_DETAIL_TYPES
+from src.infrastructure.rest.routers._assurance_invalid import (
     _BIND_MAPPING,
     _MAPPING,
     bind_invalid_as_api_error,

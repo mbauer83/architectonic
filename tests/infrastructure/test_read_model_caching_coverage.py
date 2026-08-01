@@ -28,8 +28,8 @@ from fastapi import FastAPI
 from src.application.artifact_query import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.backend.read_model_caching import _entity_tag, _is_cacheable
-from src.infrastructure.gui.routers import state as gui_state
 from src.infrastructure.mcp import mcp_artifact_server as mcp
+from src.infrastructure.rest.routers import state as gui_state
 
 httpx = pytest.importorskip("httpx")
 
@@ -153,7 +153,7 @@ class TestTheAllowlistStaysHonest:
 
         Read from the manifest, which is where eligibility is decided; pinning a literal copy here
         would be the second copy this migration removed."""
-        from src.infrastructure.gui.route_policy import CONDITIONAL_READ_TEMPLATES
+        from src.infrastructure.rest.route_policy import CONDITIONAL_READ_TEMPLATES
 
         assert CONDITIONAL_READ_TEMPLATES == frozenset({
             "/api/entities",
@@ -180,7 +180,7 @@ class TestEndToEndThroughHttp:
         from starlette.testclient import TestClient
 
         from src.infrastructure.backend.read_model_caching import conditional_read_middleware
-        from src.infrastructure.gui.routers.entities import router
+        from src.infrastructure.rest.routers.entities import router
 
         app = FastAPI()
         app.middleware("http")(conditional_read_middleware)

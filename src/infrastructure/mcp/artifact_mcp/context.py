@@ -153,7 +153,7 @@ def roots_key(roots: list[Path]) -> str:
 
 def _shared_state_repo_for_roots(roots: list[Path]) -> ArtifactRepository | None:
     try:
-        from src.infrastructure.gui.routers import state as gui_state
+        from src.infrastructure.rest.routers import state as gui_state
     except Exception:  # noqa: BLE001
         return None
 

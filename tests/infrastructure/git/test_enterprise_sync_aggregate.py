@@ -172,7 +172,7 @@ class TestFailedPersistenceOrdering:
         async def capture(event: dict[str, object]) -> None:
             published.append(event)
 
-        from src.infrastructure.gui.routers import events as events_module
+        from src.infrastructure.rest.routers import events as events_module
 
         monkeypatch.setattr(events_module.event_bus, "publish", capture)
 
@@ -198,7 +198,7 @@ class TestFailedPersistenceOrdering:
         async def capture(event: dict[str, object]) -> None:
             published.append(event)
 
-        from src.infrastructure.gui.routers import events as events_module
+        from src.infrastructure.rest.routers import events as events_module
 
         monkeypatch.setattr(events_module.event_bus, "publish", capture)
         manager = GitSyncManager([], on_health_changed=invalidations.append)

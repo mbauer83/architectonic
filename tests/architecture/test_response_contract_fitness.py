@@ -13,7 +13,7 @@ from typing import Any
 import pytest
 
 from src.infrastructure.backend.arch_backend_app import _build_app
-from src.infrastructure.gui.route_policy import (
+from src.infrastructure.rest.route_policy import (
     BY_KEY,
     BY_OPERATION,
     UNTYPED_RESPONSE_OPERATIONS,

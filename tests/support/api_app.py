@@ -14,7 +14,7 @@ from __future__ import annotations
 from fastapi import APIRouter, FastAPI
 
 from src.infrastructure.backend.cache_directive import apply_cache_directive
-from src.infrastructure.gui.contracts.error_responses import install_error_contracts
+from src.infrastructure.rest.contracts.error_responses import install_error_contracts
 
 
 def build_api_app(*routers: APIRouter) -> FastAPI:

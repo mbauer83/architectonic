@@ -85,7 +85,7 @@ class _Bus:
 
 @pytest.fixture
 def bus(monkeypatch: pytest.MonkeyPatch) -> _Bus:
-    from src.infrastructure.gui.routers import events as ev
+    from src.infrastructure.rest.routers import events as ev
 
     fake = _Bus()
     monkeypatch.setattr(ev.event_bus, "publish", fake.publish)

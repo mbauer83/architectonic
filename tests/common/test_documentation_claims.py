@@ -48,7 +48,7 @@ def _registered_paths() -> set[str]:
 
     from fastapi import APIRouter
 
-    import src.infrastructure.gui.routers as routers_pkg
+    import src.infrastructure.rest.routers as routers_pkg
 
     paths: set[str] = set()
     for module_info in pkgutil.iter_modules(routers_pkg.__path__):

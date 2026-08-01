@@ -20,10 +20,10 @@ from src.infrastructure.backend._teardown import teardown_steps
 from src.infrastructure.backend.cache_directive import apply_cache_directive
 from src.infrastructure.backend.read_model_caching import conditional_read_middleware
 from src.infrastructure.backend.shutdown import run_teardown
-from src.infrastructure.gui.routers import state as gui_state
 from src.infrastructure.mcp.artifact_mcp import auto_start_default_watcher
 from src.infrastructure.mcp.mcp_artifact_server import mcp_read, mcp_write
 from src.infrastructure.mcp.mcp_assurance_server import mcp_assurance_read, mcp_assurance_write
+from src.infrastructure.rest.routers import state as gui_state
 
 logger = logging.getLogger(__name__)
 
@@ -162,8 +162,8 @@ async def _on_repo_changed(repo_path: Path) -> None:
     repo = gui_state.maybe_get_repo()
     if repo is not None:
         await asyncio.to_thread(repo.refresh)
-    from src.infrastructure.gui.routers.events import event_bus  # noqa: PLC0415
-    from src.infrastructure.gui.routers.sync_status_cache import invalidate_sync_status_cache  # noqa: PLC0415
+    from src.infrastructure.rest.routers.events import event_bus  # noqa: PLC0415
+    from src.infrastructure.rest.routers.sync_status_cache import invalidate_sync_status_cache  # noqa: PLC0415
 
     invalidate_sync_status_cache(repo=repo_path)
     await event_bus.publish({
@@ -211,30 +211,30 @@ def _build_app(credentials: "GitCredentials | None" = None):  # type: ignore[no-
     from fastapi.middleware.cors import CORSMiddleware
 
     from src.infrastructure.app_bootstrap import install_module_registry
-    from src.infrastructure.gui.contracts.error_responses import install_error_contracts
-    from src.infrastructure.gui.contracts.identity_resolution import (
+    from src.infrastructure.rest.contracts.error_responses import install_error_contracts
+    from src.infrastructure.rest.contracts.identity_resolution import (
         reject_repeated_scalar_query_parameters,
     )
-    from src.infrastructure.gui.contracts.operation_ids import manifest_operation_id
-    from src.infrastructure.gui.contracts.wire_nulls import install_wire_null_policy
-    from src.infrastructure.gui.routers._openapi import APP_RESPONSES
-    from src.infrastructure.gui.routers.admin import router as admin_router
-    from src.infrastructure.gui.routers.assurance import router as assurance_router
-    from src.infrastructure.gui.routers.authoring_guidance import router as authoring_guidance_router
-    from src.infrastructure.gui.routers.connections import router as connections_router
-    from src.infrastructure.gui.routers.diagram_types import router as diagram_types_router
-    from src.infrastructure.gui.routers.diagrams import router as diagrams_router
-    from src.infrastructure.gui.routers.documents import router as documents_router
-    from src.infrastructure.gui.routers.entities import router as entities_router
-    from src.infrastructure.gui.routers.entity_search import router as entity_search_router
-    from src.infrastructure.gui.routers.events import router as events_router
-    from src.infrastructure.gui.routers.groups import router as groups_router
-    from src.infrastructure.gui.routers.identifiers import router as identifiers_router
-    from src.infrastructure.gui.routers.modules import router as modules_router
-    from src.infrastructure.gui.routers.promote import router as promote_router
-    from src.infrastructure.gui.routers.sync import router as sync_router
-    from src.infrastructure.gui.routers.viewpoint_authoring import router as viewpoint_authoring_router
-    from src.infrastructure.gui.routers.viewpoints import router as viewpoints_router
+    from src.infrastructure.rest.contracts.operation_ids import manifest_operation_id
+    from src.infrastructure.rest.contracts.wire_nulls import install_wire_null_policy
+    from src.infrastructure.rest.routers._openapi import APP_RESPONSES
+    from src.infrastructure.rest.routers.admin import router as admin_router
+    from src.infrastructure.rest.routers.assurance import router as assurance_router
+    from src.infrastructure.rest.routers.authoring_guidance import router as authoring_guidance_router
+    from src.infrastructure.rest.routers.connections import router as connections_router
+    from src.infrastructure.rest.routers.diagram_types import router as diagram_types_router
+    from src.infrastructure.rest.routers.diagrams import router as diagrams_router
+    from src.infrastructure.rest.routers.documents import router as documents_router
+    from src.infrastructure.rest.routers.entities import router as entities_router
+    from src.infrastructure.rest.routers.entity_search import router as entity_search_router
+    from src.infrastructure.rest.routers.events import router as events_router
+    from src.infrastructure.rest.routers.groups import router as groups_router
+    from src.infrastructure.rest.routers.identifiers import router as identifiers_router
+    from src.infrastructure.rest.routers.modules import router as modules_router
+    from src.infrastructure.rest.routers.promote import router as promote_router
+    from src.infrastructure.rest.routers.sync import router as sync_router
+    from src.infrastructure.rest.routers.viewpoint_authoring import router as viewpoint_authoring_router
+    from src.infrastructure.rest.routers.viewpoints import router as viewpoints_router
 
     mcp_read.streamable_http_app()
     mcp_write.streamable_http_app()
@@ -270,7 +270,7 @@ def _build_app(credentials: "GitCredentials | None" = None):  # type: ignore[no-
                     "Starting git-sync for repos: %s",
                     ", ".join(f"{r.path}({r.role})" for r in git_repos),
                 )
-                from src.infrastructure.gui.routers.sync_status_cache import invalidate_sync_status_cache
+                from src.infrastructure.rest.routers.sync_status_cache import invalidate_sync_status_cache
 
                 sync_mgr = GitSyncManager(
                     git_repos,

@@ -22,9 +22,9 @@ from fastapi import FastAPI
 from src.application.artifact_query import ArtifactRepository
 from src.application.document_links import DocumentEntityReference, references_to_entity
 from src.infrastructure.artifact_index import shared_artifact_index
-from src.infrastructure.gui.contracts.entities import DocumentReference
-from src.infrastructure.gui.routers import state as gui_state
-from src.infrastructure.gui.routers.entities import router as entities_router
+from src.infrastructure.rest.contracts.entities import DocumentReference
+from src.infrastructure.rest.routers import state as gui_state
+from src.infrastructure.rest.routers.entities import router as entities_router
 
 pytest.importorskip("httpx")
 

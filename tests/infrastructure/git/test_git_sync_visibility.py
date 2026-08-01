@@ -32,7 +32,7 @@ class _Bus:
 
 
 def _patch_bus(monkeypatch: pytest.MonkeyPatch) -> _Bus:
-    from src.infrastructure.gui.routers import events as ev
+    from src.infrastructure.rest.routers import events as ev
 
     bus = _Bus()
     monkeypatch.setattr(ev.event_bus, "publish", bus.publish)

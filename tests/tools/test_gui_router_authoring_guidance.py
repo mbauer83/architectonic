@@ -16,8 +16,8 @@ from src.application.artifact_repository import ArtifactRepository
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry, install_module_registry
 from src.infrastructure.artifact_index import shared_artifact_index
-from src.infrastructure.gui.routers import state as gui_state
-from src.infrastructure.gui.routers.authoring_guidance import router as authoring_guidance_router
+from src.infrastructure.rest.routers import state as gui_state
+from src.infrastructure.rest.routers.authoring_guidance import router as authoring_guidance_router
 from src.infrastructure.viewpoint_declarations import load_effective_viewpoint_catalog
 from src.infrastructure.write.artifact_write.type_guidance import get_type_guidance
 from tests.support.api_app import build_api_app

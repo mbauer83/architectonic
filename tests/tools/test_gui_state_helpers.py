@@ -13,7 +13,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, DiagramRecord, EntityRecord
-from src.infrastructure.gui.routers import state as s
+from src.infrastructure.rest.routers import state as s
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 

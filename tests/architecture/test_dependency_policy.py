@@ -44,7 +44,7 @@ _COMPOSITION_ROOTS: frozenset[str] = frozenset(
         "src/infrastructure/mcp/arch_mcp_stdio_assurance.py",
         "src/infrastructure/mcp/mcp_artifact_server.py",
         "src/infrastructure/mcp/mcp_assurance_server.py",
-        "src/infrastructure/gui/gui_server.py",
+        "src/infrastructure/backend/server_roots.py",
         "src/infrastructure/backend/arch_backend.py",
         "src/infrastructure/backend/arch_backend_app.py",
     }

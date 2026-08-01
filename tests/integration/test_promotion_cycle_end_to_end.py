@@ -24,8 +24,8 @@ from src.infrastructure.artifact_index import combined_artifact_index, shared_ar
 from src.infrastructure.git import enterprise_sync_state
 from src.infrastructure.git.git_sync import GitSyncManager
 from src.infrastructure.git.git_sync_enterprise import sync_enterprise
-from src.infrastructure.gui.routers import state as gui_state
-from src.infrastructure.gui.routers import sync_status_cache
+from src.infrastructure.rest.routers import state as gui_state
+from src.infrastructure.rest.routers import sync_status_cache
 from src.infrastructure.workspace.mutation_gate import get_workspace_gate
 from src.infrastructure.write.authorized_mutation_executor import build_workspace_mutation_executor
 from src.infrastructure.write.mutation_executor_registry import install_mutation_executor
@@ -49,11 +49,11 @@ def cycle(tmp_path: Path):
     from starlette.testclient import TestClient
 
     from src.infrastructure.app_bootstrap import install_module_registry
-    from src.infrastructure.gui.routers.connections import router as connections_router
-    from src.infrastructure.gui.routers.entities import router as entities_router
-    from src.infrastructure.gui.routers.entity_search import router as entity_search_router
-    from src.infrastructure.gui.routers.promote import router as promote_router
-    from src.infrastructure.gui.routers.sync import router as sync_router
+    from src.infrastructure.rest.routers.connections import router as connections_router
+    from src.infrastructure.rest.routers.entities import router as entities_router
+    from src.infrastructure.rest.routers.entity_search import router as entity_search_router
+    from src.infrastructure.rest.routers.promote import router as promote_router
+    from src.infrastructure.rest.routers.sync import router as sync_router
 
     sync_status_cache.reset_sync_status_cache()
     engagement, enterprise = build_workflow_pair(tmp_path)

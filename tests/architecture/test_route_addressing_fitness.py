@@ -12,7 +12,7 @@ from typing import Any
 
 import pytest
 
-from src.infrastructure.gui.route_policy import (
+from src.infrastructure.rest.route_policy import (
     BODYLESS,
     RESPONSE_KINDS,
     RETIRED_PATH_LITERALS,

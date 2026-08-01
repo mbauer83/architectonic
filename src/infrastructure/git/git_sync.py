@@ -179,7 +179,7 @@ class GitSyncManager:
         if self._last_block_reason.get(repo) == reason:
             return
         self._last_block_reason[repo] = reason
-        from src.infrastructure.gui.routers.events import event_bus  # noqa: PLC0415
+        from src.infrastructure.rest.routers.events import event_bus  # noqa: PLC0415
 
         logger.warning("enterprise sync blocked for %s: %s", repo, reason)
         await event_bus.publish({"type": "sync_blocked", "repo": str(repo), "reason": reason})
@@ -211,7 +211,7 @@ class GitSyncManager:
             return
         if self._on_health_changed is not None:
             self._on_health_changed(repo)
-        from src.infrastructure.gui.routers.events import event_bus  # noqa: PLC0415
+        from src.infrastructure.rest.routers.events import event_bus  # noqa: PLC0415
 
         await event_bus.publish({"type": "sync_status_changed", "repo": str(repo)})
 
@@ -222,7 +222,7 @@ class GitSyncManager:
     async def _auto_unblock(self, repo: Path, delay_s: float, was_blocked: bool) -> None:
         await asyncio.sleep(delay_s)
         if not was_blocked:
-            from src.infrastructure.gui.routers.events import event_bus
+            from src.infrastructure.rest.routers.events import event_bus
             from src.infrastructure.workspace.write_block_manager import unblock_repo
 
             unblock_repo(repo)
@@ -234,14 +234,14 @@ class GitSyncManager:
     # ------------------------------------------------------------------
 
     async def _publish_dirty_state_change(self, repo: Path, *, is_dirty: bool) -> None:
-        from src.infrastructure.gui.routers.events import event_bus  # noqa: PLC0415
+        from src.infrastructure.rest.routers.events import event_bus  # noqa: PLC0415
 
         if is_dirty != self._last_dirty_state.get(repo, False):
             self._last_dirty_state[repo] = is_dirty
             await event_bus.publish({"type": "sync_status_changed", "repo": str(repo)})
 
     async def _sync_engagement(self, repo: Path) -> None:
-        from src.infrastructure.gui.routers.events import event_bus  # noqa: PLC0415
+        from src.infrastructure.rest.routers.events import event_bus  # noqa: PLC0415
         from src.infrastructure.workspace.mutation_gate import get_workspace_gate  # noqa: PLC0415
 
         if not await self._is_git_repo(repo):

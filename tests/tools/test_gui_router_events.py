@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import asyncio
 
-from src.infrastructure.gui.routers.events import EventBus
+from src.infrastructure.rest.routers.events import EventBus
 
 # ── subscribe / unsubscribe ───────────────────────────────────────────────────
 

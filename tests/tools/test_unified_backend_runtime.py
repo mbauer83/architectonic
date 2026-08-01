@@ -1115,7 +1115,7 @@ def test_arch_backend_redirects_stdio_when_background_tty_job(monkeypatch, tmp_p
     )
     monkeypatch.setattr(arch_backend, "read_backend_state", lambda: None)
     monkeypatch.setattr(
-        arch_backend.gui_server,
+        arch_backend.server_roots,
         "resolve_server_roots",
         lambda repo_root, enterprise_root: (tmp_path, None),
     )
@@ -1181,7 +1181,7 @@ def test_arch_backend_restart_stops_then_returns_to_startup(monkeypatch, capsys,
     )
     monkeypatch.setattr(arch_backend, "read_backend_state", lambda: None)
     monkeypatch.setattr(
-        arch_backend.gui_server,
+        arch_backend.server_roots,
         "resolve_server_roots",
         lambda repo_root, enterprise_root: (tmp_path, None),
     )
@@ -1216,7 +1216,7 @@ def test_arch_backend_build_failure_does_not_write_backend_state(monkeypatch, tm
         lambda port=8000: {"running": False, "reason": "not_running"},
     )
     monkeypatch.setattr(
-        arch_backend.gui_server,
+        arch_backend.server_roots,
         "resolve_server_roots",
         lambda repo_root, enterprise_root: (tmp_path, None),
     )

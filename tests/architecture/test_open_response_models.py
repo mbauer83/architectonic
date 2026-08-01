@@ -31,13 +31,13 @@ from fastapi.routing import APIRoute
 from pydantic import BaseModel
 
 from src.infrastructure.backend.arch_backend_app import _build_app
-from src.infrastructure.gui.contracts.open_models import (
+from src.infrastructure.rest.contracts.open_models import (
     AWAITING_CONTRACT,
     OPEN_RESPONSE_FIELDS,
     OPEN_RESPONSE_MODELS,
     PENDING_DECISION,
 )
-from src.infrastructure.gui.route_policy import BY_KEY, UNTYPED_RESPONSE_OPERATIONS
+from src.infrastructure.rest.route_policy import BY_KEY, UNTYPED_RESPONSE_OPERATIONS
 from tests.support.route_introspection import api_routes
 
 

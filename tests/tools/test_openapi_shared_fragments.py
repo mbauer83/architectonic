@@ -3,8 +3,8 @@ that let types drive the schema."""
 
 from __future__ import annotations
 
-from src.infrastructure.gui.contracts.errors import ErrorEnvelope
-from src.infrastructure.gui.routers._openapi import (
+from src.infrastructure.rest.contracts.errors import ErrorEnvelope
+from src.infrastructure.rest.routers._openapi import (
     APP_RESPONSES,
     READ_RESPONSES,
     WRITE_RESPONSES,
