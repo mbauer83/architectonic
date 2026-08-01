@@ -13,9 +13,15 @@ from __future__ import annotations
 
 import threading
 from contextlib import contextmanager
-from typing import Iterator, Literal
+from typing import Iterator
 
-BlockReason = Literal["sync_in_progress", "read_only"]
+from src.application.mutation_authorization import GateBlock
+
+#: What the gate can refuse for. The same alias the authorization policy uses, not a second copy:
+#: this module re-declared the identical two-value Literal under its own name, so adding a third
+#: block reason would have meant remembering both — and the REST layer's retryability set listed the
+#: values as bare strings besides.
+BlockReason = GateBlock
 
 
 class GateRejected(Exception):

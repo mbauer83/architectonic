@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from src.infrastructure.rest.contracts.errors import ApiError, DenialDetails
 from src.infrastructure.workspace.mutation_gate import (
     GateRejected,
     WorkspaceMutationGate,
@@ -246,8 +247,6 @@ class TestHttpSurface:
     """REST writes fail closed with HTTP 423 while the workspace gate is blocked."""
 
     def _blocked_write(self, tmp_path: Path, reason):
-        from fastapi import HTTPException
-
         from src.infrastructure.mcp.artifact_mcp.write_queue import shutdown
         from src.infrastructure.rest.routers import state as gui_state
         from src.infrastructure.rest.routers.state import authorized_write
@@ -279,7 +278,7 @@ class TestHttpSurface:
             import unittest.mock
 
             with unittest.mock.patch.object(gui_state, "maybe_engagement_root", lambda: engagement):
-                with pytest.raises(HTTPException) as exc_info:
+                with pytest.raises(ApiError) as exc_info:
                     authorized_write("entities_create_entity", lambda: None)
             return exc_info.value
         finally:
@@ -288,15 +287,28 @@ class TestHttpSurface:
             shutdown()
             del previous_engagement
 
-    def test_authorized_write_returns_423_on_sync_blocked(self, tmp_path: Path):
+    def test_a_sync_in_progress_is_refused_as_retryable_and_says_so(self, tmp_path: Path):
+        # The reason as *data*: this asserted `"sync" in exc.detail` while the refusal was a bare
+        # HTTPException, so a client had to match on English to tell a running sync from a read-only
+        # workspace. Both now arrive as `DenialDetails`, whose docstring always said they should.
         exc = self._blocked_write(tmp_path, "sync_in_progress")
         assert exc.status_code == 423
-        assert "sync" in exc.detail
+        assert exc.code == "write_rejected"
+        assert exc.details == DenialDetails(reason_code="sync_in_progress", retryable=True)
 
-    def test_authorized_write_returns_423_on_read_only(self, tmp_path: Path):
+    def test_a_read_only_workspace_is_refused_as_retryable_and_says_so(self, tmp_path: Path):
         exc = self._blocked_write(tmp_path, "read_only")
         assert exc.status_code == 423
-        assert "read-only" in exc.detail
+        assert exc.code == "write_rejected"
+        assert exc.details == DenialDetails(reason_code="read_only", retryable=True)
+
+    @pytest.mark.parametrize("reason", ["sync_in_progress", "read_only"])
+    def test_the_status_and_the_retryable_flag_cannot_disagree(self, tmp_path: Path, reason: str):
+        # They were decided in two places — a status chosen from a set of bare strings in the REST
+        # layer, and a flag the error handler derived from that status. One vocabulary answers both.
+        exc = self._blocked_write(tmp_path, reason)
+        assert exc.details is not None
+        assert exc.details.retryable is (exc.status_code == 423)
 
 
 # ---------------------------------------------------------------------------

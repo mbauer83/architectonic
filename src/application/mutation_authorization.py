@@ -39,8 +39,13 @@ SyncHealthReason = Literal[
     "repository_uninitialized",
 ]
 
-GateBlock = Literal["read_only", "sync_in_progress"]
-
+#: Every reason a repository mutation can be refused, in one place.
+#:
+#: It was in three. This alias, ``mutation_gate.BlockReason`` and the ``GateBlock`` below each
+#: declared the same two-value vocabulary — the same two values, one of them in a different order,
+#: under three names — because the gate, the policy and the delivery layer each needed to name a
+#: refusal and each named it where it stood. A fourth place, a set of bare strings in the REST layer,
+#: decided which of them were retryable.
 DenialCode = Literal[
     "read_only",
     "sync_in_progress",
@@ -51,6 +56,24 @@ DenialCode = Literal[
     "admin_mode_required",
     "target_shape_mismatch",
 ]
+
+#: The subset the workspace gate itself can raise: it holds the lock, so it knows only that writing
+#: is blocked and why, not anything about the target.
+GateBlock = Literal["read_only", "sync_in_progress"]
+
+#: Whether a refusal means "try again" or "no". A property of the reason, declared beside it and
+#: typed against it, so a member that is not a reason is a type error rather than a string nobody
+#: checks. `sync_health` is retryable because the health overlay clears when the remote recovers.
+RETRYABLE_DENIALS: frozenset[DenialCode] = frozenset({
+    "read_only",
+    "sync_in_progress",
+    "sync_health",
+})
+
+
+def is_retryable(code: DenialCode) -> bool:
+    """Whether a caller refused for ``code`` should try the write again."""
+    return code in RETRYABLE_DENIALS
 
 
 @dataclass(frozen=True)

@@ -334,12 +334,30 @@ def refresh_now() -> None:
         repo.refresh()
 
 
-_RETRYABLE_DENIALS = frozenset({"read_only", "sync_in_progress", "sync_health"})
+def _refusal(code: Any, message: str) -> Any:
+    """One refused write, as the client receives it.
 
+    Both channels arrive here. The authorization policy raises ``MutationRejected`` with a typed
+    denial; the workspace gate raises ``GateRejected`` with a block reason from the same vocabulary.
+    They were translated separately — the policy's code used only to choose 423 over 403 and then
+    discarded, the gate's reason interpolated into prose — so a client could not tell "the workspace
+    is read-only" from "a sync is running" from "the remote is unreachable" without matching on
+    English, and `DenialDetails.reason_code` arrived carrying a copy of the envelope's own generic
+    code. Its docstring says what it is for: *a client branches on `reason_code`*.
 
-def _rejection_to_http(exc: Any) -> HTTPException:
-    status = 423 if exc.denial.code in _RETRYABLE_DENIALS else 403
-    return HTTPException(status, f"Write rejected: {exc.denial.message}")
+    Retryability is asked of the vocabulary rather than decided here, so the status and the flag
+    cannot disagree.
+    """
+    from src.application.mutation_authorization import is_retryable
+    from src.infrastructure.rest.contracts.errors import ApiError, DenialDetails
+
+    retryable = is_retryable(code)
+    return ApiError(
+        423 if retryable else 403,
+        "write_rejected" if retryable else "forbidden",
+        f"Write rejected: {message}",
+        DenialDetails(reason_code=code, retryable=retryable),
+    )
 
 
 def authorized_write(operation_id: str, fn: Any, /, *args: Any, **kwargs: Any) -> Any:
@@ -359,9 +377,9 @@ def authorized_write(operation_id: str, fn: Any, /, *args: Any, **kwargs: Any) -
     try:
         return mutation_executor().run(request, lambda: fn(*args, **kwargs), operation_name=fn.__name__)
     except MutationRejected as exc:
-        raise _rejection_to_http(exc) from exc
+        raise _refusal(exc.denial.code, exc.denial.message) from exc
     except GateRejected as exc:
-        raise HTTPException(423, f"Write rejected: {exc.reason}") from exc
+        raise _refusal(exc.reason, str(exc.reason)) from exc
 
 
 async def authorized_write_async(operation_id: str, fn: Any, /, *args: Any, **kwargs: Any) -> Any:
@@ -379,9 +397,9 @@ async def authorized_write_async(operation_id: str, fn: Any, /, *args: Any, **kw
         future = mutation_executor().submit(request, lambda: fn(*args, **kwargs), operation_name=fn.__name__)
         return await asyncio.wrap_future(future)
     except MutationRejected as exc:
-        raise _rejection_to_http(exc) from exc
+        raise _refusal(exc.denial.code, exc.denial.message) from exc
     except GateRejected as exc:
-        raise HTTPException(423, f"Write rejected: {exc.reason}") from exc
+        raise _refusal(exc.reason, str(exc.reason)) from exc
 
 
 def write_result_to_dict(result: Any) -> dict[str, Any]:
