@@ -11,11 +11,10 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Response
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel
 
 from src.application import assurance_analysis as uc
 from src.application.assurance_exposure import NotFound, Visible
-from src.application.assurance_gsn import build_gsn_draft, list_publications, record_publication
 from src.application.assurance_guidance import lookup as guidance_lookup
 from src.application.assurance_legacy_invalid import LegacyInvalidNode
 from src.application.verification.case_draft import case_completeness_from_records
@@ -29,16 +28,13 @@ from src.infrastructure.gui.contracts.assurance_analyses import (
     AssuranceAnalysisRecord,
     AssuranceGuidanceResponse,
 )
-from src.infrastructure.gui.contracts.assurance_signals import GsnPublicationListResponse
 from src.infrastructure.gui.contracts.errors import (
     ApiError,
     LegacyInvalidDetails,
     MethodMismatchDetails,
-    NotConfiguredDetails,
     UnknownGuidanceTopicDetails,
 )
 from src.infrastructure.gui.routers._assurance_http import (
-    NO_STORE,
     build_policy,
     deleted,
     locked_response,
@@ -63,20 +59,6 @@ class UpdateAnalysisBody(BaseModel):
     name: str | None = None
     status: str | None = None
     tlp: str | None = None
-
-
-class GsnPublicationBinding(BaseModel):
-    assurance_node_id: str
-    gsn_node_id: str
-
-
-class RecordGsnPublicationBody(BaseModel):
-    """The analysis is the path; the body names only what is being published."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    diagram_id: str
-    source_bindings: list[GsnPublicationBinding] = Field(default_factory=list)
 
 
 def _invalid(result: uc.AnalysisInvalid) -> ApiError:
@@ -301,118 +283,3 @@ def _method_mismatch(analysis_id: str, actual_method: str) -> ApiError:
             actual_method=actual_method,
         ),
     )
-
-
-@analysis_router.get("/api/assurance/analyses/{analysis_id}/gsn/draft")
-def gsn_draft(analysis_id: str) -> JSONResponse:
-    ctx, outcome, nodes, edges, visibility_limited = _visible_gsn_graph(analysis_id)
-    if not ctx.is_available():
-        raise locked_response()
-    if not isinstance(outcome, Visible):
-        raise not_found_response()
-    result = build_gsn_draft(
-        ctx.store, analysis_id=analysis_id, visible_nodes=nodes, visible_edges=edges
-    )
-    if result is None:
-        raise not_found_response()
-    return ok({
-        **result,
-        "publishable": bool(result["publishable"]) and not visibility_limited,
-        "visibility_limited": visibility_limited,
-    })
-
-
-@analysis_router.get("/api/assurance/analyses/{analysis_id}/gsn/rendered")
-def gsn_rendered(analysis_id: str) -> JSONResponse:
-    from src.infrastructure.gui.routers import state  # noqa: PLC0415
-    from src.infrastructure.rendering.diagram_builder import (  # noqa: PLC0415
-        generate_archimate_puml_body,
-        render_puml_svg,
-    )
-
-    ctx, outcome, nodes, edges, visibility_limited = _visible_gsn_graph(analysis_id)
-    if not ctx.is_available():
-        raise locked_response()
-    if not isinstance(outcome, Visible):
-        raise not_found_response()
-    result = build_gsn_draft(
-        ctx.store, analysis_id=analysis_id, visible_nodes=nodes, visible_edges=edges
-    )
-    if result is None:
-        raise not_found_response()
-    repo_root = state.maybe_engagement_root()
-    if repo_root is None:
-        raise ApiError(
-            500,
-            "not_configured",
-            "No engagement repository is configured, so there is nothing to render against.",
-            NotConfiguredDetails(
-                capability="engagement-repository",
-                remedy="Start the backend with an engagement repository root.",
-            ),
-        )
-    puml = generate_archimate_puml_body(
-        f"GSN {analysis_id}",
-        [],
-        [],
-        diagram_type="gsn",
-        repo_root=repo_root,
-        diagram_entities=result["diagram_entities"],  # type: ignore[arg-type]
-    )
-    svg, warnings = render_puml_svg(puml, repo_root, "gsn")
-    return ok({
-        "svg": svg,
-        "warnings": warnings,
-        **result,
-        "publishable": bool(result["publishable"]) and not visibility_limited,
-        "visibility_limited": visibility_limited,
-    })
-
-
-@analysis_router.get("/api/assurance/analyses/{analysis_id}/gsn/publications",
-    response_model=GsnPublicationListResponse)
-def list_gsn_publications(analysis_id: str) -> JSONResponse:
-    """What this analysis has been published to, read back from the bindings recording left.
-
-    New in this release: recording a publication was possible and reading it back was not, so the
-    only way to learn whether an assurance case had been published was to look at a diagram and infer
-    it. 404 for an analysis the reader may not see, like every other route here — listing publications
-    of something whose existence is withheld would confirm it exists.
-    """
-    ctx, pol = build_policy()
-    if pol.check_locked():
-        raise locked_response()
-    if not isinstance(pol.apply_analysis(ctx.store.get_analysis(analysis_id)), Visible):
-        raise not_found_response()
-    visible, _withheld = pol.filter_nodes(ctx.store.list_nodes())
-    publications = list_publications(
-        ctx.store,
-        analysis_id=analysis_id,
-        visible_node_ids=frozenset(str(node.get("node_id", "")) for node in visible),
-    )
-    return ok({
-        "publications": publications,
-        "visibility_limited": pol.scope().visibility_limited,
-    })
-
-
-@analysis_router.post("/api/assurance/analyses/{analysis_id}/gsn/publications")
-def record_gsn_publication(analysis_id: str, body: RecordGsnPublicationBody) -> JSONResponse:
-    from src.infrastructure.gui.routers import state  # noqa: PLC0415
-
-    ctx, pol = build_policy()
-    if pol.check_locked():
-        raise locked_response()
-    if state.get_repo().get_diagram(body.diagram_id) is None:
-        raise not_found_response()
-    result = run_write(lambda: record_publication(
-        ctx.store,
-        ctx.archive,
-        analysis_id=analysis_id,
-        diagram_id=body.diagram_id,
-        source_bindings=[binding.model_dump() for binding in body.source_bindings],
-    ))
-    status = 409 if result.get("error") == "classification_not_publishable" else 200
-    if result.get("error") == "analysis_not_found":
-        raise not_found_response()
-    return JSONResponse(status_code=status, content=result, headers={"Cache-Control": NO_STORE})

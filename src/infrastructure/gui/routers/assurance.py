@@ -29,6 +29,7 @@ from src.infrastructure.gui.routers._assurance_analysis_routes import analysis_r
 from src.infrastructure.gui.routers._assurance_diagram_routes import diagram_router
 from src.infrastructure.gui.routers._assurance_fmea_routes import fmea_router
 from src.infrastructure.gui.routers._assurance_grouping_routes import grouping_router
+from src.infrastructure.gui.routers._assurance_gsn_routes import gsn_router
 from src.infrastructure.gui.routers._assurance_neighbors_routes import neighbors_router
 from src.infrastructure.gui.routers._assurance_read import read_router
 from src.infrastructure.gui.routers._assurance_signal_deletion_routes import (
@@ -44,6 +45,7 @@ router.include_router(signals_router)
 router.include_router(signal_deletion_router)
 router.include_router(write_router)
 router.include_router(analysis_router)
+router.include_router(gsn_router)
 router.include_router(grouping_router)
 router.include_router(diagram_router)
 router.include_router(aibom_router)

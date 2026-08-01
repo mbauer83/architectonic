@@ -15,6 +15,7 @@ from starlette.testclient import TestClient
 from src.application.assurance_exposure import AssuranceExposurePolicy
 from src.infrastructure.assurance._analysis_records import as_analysis_record
 from src.infrastructure.gui.routers._assurance_analysis_routes import analysis_router
+from src.infrastructure.gui.routers._assurance_gsn_routes import gsn_router
 from src.infrastructure.gui.routers._assurance_read import read_router
 from tests.support.api_app import build_api_app
 from tests.support.assurance_records import node_record
@@ -127,7 +128,9 @@ def _client(ctx: _FakeContext, monkeypatch: pytest.MonkeyPatch) -> TestClient:
     Uses monkeypatch (auto-reverted after each test) so patches never leak into
     other tests sharing the same worker process.
     """
-    app = build_api_app(analysis_router, read_router)
+    # `gsn_router` too: the GSN view of an analysis moved to its own module when this one crossed the
+    # file-length limit, and these tests exercise both halves of the same aggregate.
+    app = build_api_app(analysis_router, gsn_router, read_router)
     monkeypatch.setattr(_HTTP_CTX, lambda: ctx)
     monkeypatch.setattr(
         _READ_POLICY,
@@ -380,7 +383,13 @@ def test_gsn_publication_rejects_confidential_analysis(monkeypatch: pytest.Monke
         "source_bindings": [],
     })
     assert response.status_code == 409
-    assert response.json()["error"] == "classification_not_publishable"
+    # The typed envelope, not a bare `{"error": ...}`. This route was the last one answering in the
+    # older shape, so a client branching on `detail.code` fell through on the one refusal this
+    # operation makes — and the classification it carries is what tells the caller whether to
+    # reclassify a node or to stop.
+    detail = response.json()["detail"]
+    assert detail["code"] == "classification_not_publishable"
+    assert detail["details"]["effective_tlp"] == "TLP:AMBER"
 
 
 def test_gsn_publication_records_bindings_and_audit(monkeypatch: pytest.MonkeyPatch) -> None:

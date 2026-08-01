@@ -70,6 +70,7 @@ import type {
   InvalidParticipationDetailsSchema,
   LegacyInvalidDetailsSchema,
   MethodMismatchDetailsSchema,
+  ClassificationNotPublishableDetailsSchema,
   ProvenanceImmutableDetailsSchema,
   UnknownGuidanceTopicDetailsSchema,
   ValidationErrorDetailsSchema,
@@ -130,6 +131,9 @@ describe('error envelope', () => {
     >()
     expectTypeOf<SchemaType<typeof UnknownGuidanceTopicDetailsSchema>>().toEqualTypeOf<
       Immutable<components['schemas']['UnknownGuidanceTopicDetails']>
+    >()
+    expectTypeOf<SchemaType<typeof ClassificationNotPublishableDetailsSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['ClassificationNotPublishableDetails']>
     >()
   })
 })

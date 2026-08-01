@@ -379,7 +379,14 @@ export interface paths {
          */
         get: operations["assurance_list_gsn_publications"];
         put?: never;
-        /** Record Gsn Publication */
+        /**
+         * Record Gsn Publication
+         * @description Record that this analysis's argument has been published to a diagram.
+         *
+         *     A refusal is the typed envelope, not a 2xx carrying ``{"error": ...}``. This route was the last one
+         *     on the surface still answering in that older shape: a client branching on ``detail.code`` fell
+         *     through on the one refusal this operation actually makes — an argument too sensitive to publish.
+         */
         post: operations["assurance_record_gsn_publication"];
         delete?: never;
         options?: never;
@@ -4095,6 +4102,17 @@ export interface components {
             /** Executed */
             executed: boolean;
         };
+        /**
+         * ClassificationNotPublishableDetails
+         * @description ``classification_not_publishable``: the effective classification that forbids publication.
+         *
+         *     The *argument's*, not the analysis's own — the most sensitive thing it reasons over. A caller who
+         *     knows only that publication was refused cannot tell whether to reclassify a node or to stop.
+         */
+        ClassificationNotPublishableDetails: {
+            /** Effective Tlp */
+            effective_tlp: string;
+        };
         /** CleanupBrokenRefsBody */
         CleanupBrokenRefsBody: {
             /**
@@ -5512,9 +5530,9 @@ export interface components {
              * Code
              * @enum {string}
              */
-            code: "bad_request" | "forbidden" | "not_found" | "conflict" | "validation_error" | "write_rejected" | "internal_error" | "assurance_store_locked" | "signal_mutation_denied" | "invalid_vex_assessment" | "analysis_method_mismatch" | "analysis_not_empty" | "entity_in_use" | "provenance_immutable" | "provenance_required" | "invalid_participation" | "node_legacy_invalid" | "duplicate_edge" | "illegal_connection_type" | "not_a_failure_mode" | "traversal_time_budget_exceeded" | "unknown_diagram_type" | "unknown_guidance_topic" | "not_configured" | "viewpoint_referenced";
+            code: "bad_request" | "forbidden" | "not_found" | "conflict" | "validation_error" | "write_rejected" | "internal_error" | "assurance_store_locked" | "signal_mutation_denied" | "invalid_vex_assessment" | "analysis_method_mismatch" | "analysis_not_empty" | "entity_in_use" | "provenance_immutable" | "provenance_required" | "invalid_participation" | "node_legacy_invalid" | "duplicate_edge" | "illegal_connection_type" | "not_a_failure_mode" | "traversal_time_budget_exceeded" | "unknown_diagram_type" | "unknown_guidance_topic" | "classification_not_publishable" | "not_configured" | "viewpoint_referenced";
             /** Details */
-            details?: components["schemas"]["ValidationErrorDetails"] | components["schemas"]["DenialDetails"] | components["schemas"]["MethodMismatchDetails"] | components["schemas"]["AnalysisNotEmptyDetails"] | components["schemas"]["EntityInUseDetails"] | components["schemas"]["DuplicateEdgeDetails"] | components["schemas"]["IllegalConnectionTypeDetails"] | components["schemas"]["NotAFailureModeDetails"] | components["schemas"]["UnknownDiagramTypeDetails"] | components["schemas"]["UnknownGuidanceTopicDetails"] | components["schemas"]["NotConfiguredDetails"] | components["schemas"]["ProvenanceImmutableDetails"] | components["schemas"]["InvalidParticipationDetails"] | components["schemas"]["LegacyInvalidDetails"] | components["schemas"]["ViewpointReferencedDetails"] | null;
+            details?: components["schemas"]["ValidationErrorDetails"] | components["schemas"]["DenialDetails"] | components["schemas"]["MethodMismatchDetails"] | components["schemas"]["AnalysisNotEmptyDetails"] | components["schemas"]["EntityInUseDetails"] | components["schemas"]["DuplicateEdgeDetails"] | components["schemas"]["IllegalConnectionTypeDetails"] | components["schemas"]["NotAFailureModeDetails"] | components["schemas"]["UnknownDiagramTypeDetails"] | components["schemas"]["UnknownGuidanceTopicDetails"] | components["schemas"]["ClassificationNotPublishableDetails"] | components["schemas"]["NotConfiguredDetails"] | components["schemas"]["ProvenanceImmutableDetails"] | components["schemas"]["InvalidParticipationDetails"] | components["schemas"]["LegacyInvalidDetails"] | components["schemas"]["ViewpointReferencedDetails"] | null;
             /** Message */
             message: string;
             /** Request Id */
@@ -5814,6 +5832,108 @@ export interface components {
             slug: string;
         };
         /**
+         * GsnDiagramEdge
+         * @description One edge of the drawable graph, in the GSN relation vocabulary.
+         */
+        GsnDiagramEdge: {
+            /**
+             * Conn Type
+             * @enum {string}
+             */
+            conn_type: "supported-by" | "in-context-of";
+            /** Source Id */
+            source_id: string;
+            /** Target Id */
+            target_id: string;
+        };
+        /**
+         * GsnDiagramEntities
+         * @description The draft as a graph, ready for the renderer. A projection of the draft, not a second source.
+         */
+        GsnDiagramEntities: {
+            /** Edges */
+            edges: components["schemas"]["GsnDiagramEdge"][];
+            /** Nodes */
+            nodes: components["schemas"]["GsnDiagramNode"][];
+        };
+        /**
+         * GsnDiagramNode
+         * @description One node of the drawable graph, carrying the store ids it was derived from.
+         */
+        GsnDiagramNode: {
+            /** Gsn Type */
+            gsn_type: string;
+            /** Name */
+            name: string;
+            /** Node Id */
+            node_id: string;
+            /** Source Assurance Ids */
+            source_assurance_ids: string[];
+        };
+        /**
+         * GsnDraft
+         * @description The scaffold: a top claim, a sub-goal per hazard, a strategy each, and the evidence found.
+         */
+        GsnDraft: {
+            gaps: components["schemas"]["GsnGaps"];
+            /** Solutions */
+            solutions: components["schemas"]["GsnSolution"][];
+            /** Strategies */
+            strategies: components["schemas"]["GsnStrategy"][];
+            /** Sub Goals */
+            sub_goals: components["schemas"]["GsnSubGoal"][];
+            top_goal: components["schemas"]["GsnTopGoal"];
+        };
+        /**
+         * GsnDraftResponse
+         * @description The drafted argument for one analysis, with whether it may leave the store.
+         *
+         *     ``effective_tlp`` is the classification of the argument as a whole — the most sensitive thing it
+         *     reasons over, not the analysis's own label — and ``publishable`` is derived from it. It is forced
+         *     ``false`` when the reader's view was filtered: a case drawn from a partial graph would argue from
+         *     evidence its own author cannot see, and publishing that is worse than not publishing.
+         *
+         *     ``classification_order`` travels along so a client can rank the value it was given without holding
+         *     a second copy of an ordered vocabulary.
+         */
+        GsnDraftResponse: {
+            analysis: components["schemas"]["AssuranceAnalysisRecord"];
+            /** Classification Order */
+            classification_order: string[];
+            diagram_entities: components["schemas"]["GsnDiagramEntities"];
+            draft: components["schemas"]["GsnDraft"];
+            /** Effective Tlp */
+            effective_tlp: string;
+            /** Publishable */
+            publishable: boolean;
+            /** Visibility Limited */
+            visibility_limited: boolean;
+        };
+        /**
+         * GsnGaps
+         * @description What the argument does not yet cover: the two ways it can be incomplete.
+         *
+         *     Kept apart rather than summed. A constraint with no evidence is an argument that asserts something
+         *     unsupported; a hazard with no constraint is one that does not argue about it at all. The second is
+         *     the more serious, and a single count would hide which it was.
+         */
+        GsnGaps: {
+            /** Constraints Without Evidence */
+            constraints_without_evidence: components["schemas"]["GsnNodeRef"][];
+            /** Hazards Without Constraints */
+            hazards_without_constraints: components["schemas"]["GsnNodeRef"][];
+        };
+        /**
+         * GsnNodeRef
+         * @description A store node named in a gap: enough to render the row and open it.
+         */
+        GsnNodeRef: {
+            /** Name */
+            name: string;
+            /** Node Id */
+            node_id: string;
+        };
+        /**
          * GsnPublication
          * @description One GSN diagram this analysis has been published to.
          *
@@ -5855,6 +5975,69 @@ export interface components {
             visibility_limited: boolean;
         };
         /**
+         * GsnPublicationRecordedResponse
+         * @description What a publication recorded: the diagram, and how many source bindings were written.
+         *
+         *     ``binding_count`` is what was *written*, not what was sent. A binding naming a node that does not
+         *     exist is skipped rather than failing the publication, so the two numbers can differ — and the one
+         *     worth reporting is the one that will be there when someone follows the diagram back.
+         */
+        GsnPublicationRecordedResponse: {
+            /** Binding Count */
+            binding_count: number;
+            /** Diagram Id */
+            diagram_id: string;
+            /**
+             * Status
+             * @constant
+             */
+            status: "published";
+        };
+        /**
+         * GsnRenderedResponse
+         * @description The draft, plus the drawn diagram and whatever the renderer complained about.
+         *
+         *     ``warnings`` is the renderer's, not the argument's: a layout the renderer could not honour is a
+         *     different concern from a gap in the case, and folding them together would let a cosmetic
+         *     complaint read as an assurance finding.
+         */
+        GsnRenderedResponse: {
+            analysis: components["schemas"]["AssuranceAnalysisRecord"];
+            /** Classification Order */
+            classification_order: string[];
+            diagram_entities: components["schemas"]["GsnDiagramEntities"];
+            draft: components["schemas"]["GsnDraft"];
+            /** Effective Tlp */
+            effective_tlp: string;
+            /** Publishable */
+            publishable: boolean;
+            /** Svg */
+            svg: string;
+            /** Visibility Limited */
+            visibility_limited: boolean;
+            /** Warnings */
+            warnings: string[];
+        };
+        /**
+         * GsnSolution
+         * @description One piece of evidence discharging a constraint.
+         */
+        GsnSolution: {
+            /** Constraint Id */
+            constraint_id: string;
+            /** Description */
+            description: string;
+            /** Evidence Id */
+            evidence_id: string;
+            /**
+             * Gsn Type
+             * @constant
+             */
+            gsn_type: "solution";
+            /** Node Id */
+            node_id: string;
+        };
+        /**
          * GsnSourceBinding
          * @description One assurance node bound to one node of a published GSN diagram.
          */
@@ -5863,6 +6046,69 @@ export interface components {
             assurance_node_id: string;
             /** Gsn Node Id */
             gsn_node_id: string;
+        };
+        /**
+         * GsnStrategy
+         * @description How a sub-goal is argued: by constraint derivation from the STPA unsafe control actions.
+         *
+         *     ``uca_ids`` and ``constraint_ids`` are the derivation itself, published so a reader can check that
+         *     the strategy rests on the chain it claims to.
+         */
+        GsnStrategy: {
+            /** Constraint Ids */
+            constraint_ids: string[];
+            /** Description */
+            description: string;
+            /**
+             * Gsn Type
+             * @constant
+             */
+            gsn_type: "strategy";
+            /** Node Id */
+            node_id: string;
+            /** Source Hazard */
+            source_hazard: string;
+            /** Uca Ids */
+            uca_ids: string[];
+        };
+        /**
+         * GsnSubGoal
+         * @description One claim per hazard: that the hazard is controlled.
+         */
+        GsnSubGoal: {
+            /** Claim */
+            claim: string;
+            /**
+             * Gsn Type
+             * @constant
+             */
+            gsn_type: "goal";
+            /** Leads To Losses */
+            leads_to_losses: string[];
+            /** Node Id */
+            node_id: string;
+            /** Source Hazard */
+            source_hazard: string;
+        };
+        /**
+         * GsnTopGoal
+         * @description The overall claim, derived from the losses the analysis identified.
+         *
+         *     ``source_losses`` is empty when the analysis has none — the goal still exists, stated generically,
+         *     because an argument has to have a top claim even before its losses are written down.
+         */
+        GsnTopGoal: {
+            /** Claim */
+            claim: string;
+            /**
+             * Gsn Type
+             * @constant
+             */
+            gsn_type: "goal";
+            /** Node Id */
+            node_id: string;
+            /** Source Losses */
+            source_losses: string[];
         };
         /**
          * IllegalConnectionTypeDetails
@@ -8439,7 +8685,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["GsnDraftResponse"];
                 };
             };
             /** @description Request validation failed */
@@ -8523,7 +8769,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["GsnPublicationRecordedResponse"];
                 };
             };
             /** @description Request validation failed */
@@ -8563,7 +8809,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["GsnRenderedResponse"];
                 };
             };
             /** @description Request validation failed */

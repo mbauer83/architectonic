@@ -58,6 +58,10 @@ ErrorCode: TypeAlias = Literal[
     # Same reasoning, one surface over: the guidance catalogue is fixed, so an unknown topic names no
     # resource — and the reply is worth more as the list of topics that do exist than as prose.
     "unknown_guidance_topic",
+    # A GSN diagram leaves the confidential store, so publishing one is refused when the argument's
+    # effective classification does not permit it. It carries that classification, because the caller's
+    # next question is always "how sensitive?" and prose cannot be ranked.
+    "classification_not_publishable",
     # the deployment lacks a prerequisite — a statement about the server, not about the request, so
     # neither `conflict` nor `validation_error` describes it
     "not_configured",
@@ -213,6 +217,16 @@ class UnknownGuidanceTopicDetails(_Details):
     available_topics: list[str]
 
 
+class ClassificationNotPublishableDetails(_Details):
+    """``classification_not_publishable``: the effective classification that forbids publication.
+
+    The *argument's*, not the analysis's own — the most sensitive thing it reasons over. A caller who
+    knows only that publication was refused cannot tell whether to reclassify a node or to stop.
+    """
+
+    effective_tlp: str
+
+
 class NotConfiguredDetails(_Details):
     """``not_configured``: the capability this deployment lacks.
 
@@ -270,6 +284,7 @@ ERROR_DETAIL_TYPES: dict[str, type[_Details] | None] = {
     "traversal_time_budget_exceeded": None,
     "unknown_diagram_type": UnknownDiagramTypeDetails,
     "unknown_guidance_topic": UnknownGuidanceTopicDetails,
+    "classification_not_publishable": ClassificationNotPublishableDetails,
     "not_configured": NotConfiguredDetails,
     "viewpoint_referenced": ViewpointReferencedDetails,
 }
@@ -287,6 +302,7 @@ ErrorDetails: TypeAlias = (
     | NotAFailureModeDetails
     | UnknownDiagramTypeDetails
     | UnknownGuidanceTopicDetails
+    | ClassificationNotPublishableDetails
     | NotConfiguredDetails
     | ProvenanceImmutableDetails
     | InvalidParticipationDetails

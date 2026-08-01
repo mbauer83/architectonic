@@ -42,6 +42,9 @@ export const ERROR_CODES = [
   // Same reasoning, one surface over: the guidance catalogue is fixed, so an unknown topic names no
   // resource, and the reply is worth more as the topics that do exist than as prose.
   'unknown_guidance_topic',
+  // A GSN diagram leaves the confidential store, so publishing one is refused when the argument's own
+  // effective classification forbids it. It carries that classification: prose cannot be ranked.
+  'classification_not_publishable',
   // The deployment lacks a capability: nothing the caller sends will fix it.
   'not_configured',
   'viewpoint_referenced',
@@ -128,6 +131,10 @@ export const UnknownGuidanceTopicDetailsSchema = Schema.Struct({
   available_topics: Schema.Array(Schema.String),
 })
 
+export const ClassificationNotPublishableDetailsSchema = Schema.Struct({
+  effective_tlp: Schema.String,
+})
+
 export const NotConfiguredDetailsSchema = Schema.Struct({
   capability: Schema.String,
   remedy: Schema.String,
@@ -157,6 +164,7 @@ export const ErrorDetailsSchema = Schema.Union(
   NotAFailureModeDetailsSchema,
   UnknownDiagramTypeDetailsSchema,
   UnknownGuidanceTopicDetailsSchema,
+  ClassificationNotPublishableDetailsSchema,
   NotConfiguredDetailsSchema,
   ViewpointReferencedDetailsSchema,
 )
