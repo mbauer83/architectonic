@@ -17,6 +17,8 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict
 
+from src.infrastructure.gui.contracts.entities import ContextConnection, EntityDisplayItemResponse
+
 
 class _Closed(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -199,3 +201,42 @@ class MatrixConfigResponse(_Closed):
     combined: bool
     #: The diagram's authored PUML body, which the matrix owns rather than deriving.
     matrix_body: str
+
+
+class EntityDisplaySearchResponse(_Closed):
+    """A page of entities a user could place on a diagram.
+
+    ``next_cursor`` is an offset the caller passes back verbatim; null means this page is the last.
+    The cursor is opaque by contract — the ordering it encodes is the server's to change.
+    """
+
+    items: list[EntityDisplayItemResponse]
+    next_cursor: str | None
+
+
+class HopSuggestionGroup(_Closed):
+    """Entities one hop further out than the last group, so a picker can offer "and their
+    neighbours" without asking the user to think in graph distance.
+
+    ``hop`` starts at 1: hop 0 is what the diagram already holds, and repeating it would invite a
+    surface to offer removing an entity as a suggestion to add one.
+    """
+
+    hop: int
+    items: list[EntityDisplayItemResponse]
+
+
+class DiagramEntityDiscoveryResponse(_Closed):
+    """Three ways to find the next thing to put on a diagram, answered together.
+
+    A search over the whole model, the connections that would appear if the entities already
+    selected were placed, and what lies one, two or three hops out. One request rather than three
+    because the panel shows all three at once, and three would race.
+    """
+
+    search_results: list[EntityDisplayItemResponse]
+    #: Connections between the entities already selected — what the diagram would gain, not what it
+    #: has. Excluded from ``search_results`` by construction: an entity already placed is not a
+    #: candidate to place.
+    candidate_connections: list[ContextConnection]
+    suggested_entities: list[HopSuggestionGroup]

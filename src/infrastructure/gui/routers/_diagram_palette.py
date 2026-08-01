@@ -14,8 +14,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
 from src.infrastructure.gui.contracts.diagrams import (
+    DiagramEntityDiscoveryResponse,
     DiagramTypeConnectionTypeListResponse,
     DiagramTypeEntityTypeListResponse,
+    EntityDisplaySearchResponse,
 )
 from src.infrastructure.gui.contracts.entities import EntityDisplayItemResponse
 from src.infrastructure.gui.routers import state as s
@@ -27,7 +29,7 @@ from src.infrastructure.gui.routers._diagram_context import (
     hop_suggestions,
 )
 from src.infrastructure.gui.routers._entity_display_search import entity_display_search_impl
-from src.infrastructure.gui.routers._openapi import READ_RESPONSES, TAG_DIAGRAMS, OpenMapResponse
+from src.infrastructure.gui.routers._openapi import READ_RESPONSES, TAG_DIAGRAMS
 
 router = APIRouter()
 
@@ -92,7 +94,7 @@ def get_entity_display_item(
     "/api/entity-display-search",
     tags=[TAG_DIAGRAMS],
     summary="Search entities for diagram placement",
-    response_model=OpenMapResponse,
+    response_model=EntityDisplaySearchResponse,
 )
 def entity_display_search(
     q: str,
@@ -116,7 +118,7 @@ def entity_display_search(
     "/api/diagram-entity-discovery",
     tags=[TAG_DIAGRAMS],
     summary="Discover entities to add to a diagram",
-    response_model=OpenMapResponse,
+    response_model=DiagramEntityDiscoveryResponse,
 )
 def diagram_entity_discovery(
     q: str | None = None,

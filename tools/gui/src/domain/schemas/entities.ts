@@ -123,6 +123,7 @@ export const EntityDisplayInfoSchema = Schema.Struct({
   domain: Schema.String,
   subdomain: Schema.String,
   status: Schema.String,
+  /** The PlantUML alias the entity is drawn under; always present. */
   display_alias: Schema.String,
   element_type: Schema.String,
   element_label: Schema.String,

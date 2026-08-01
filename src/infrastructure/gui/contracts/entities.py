@@ -146,12 +146,17 @@ class EntityConnectionCounts(NullsOmitted):
     conn_sym: int
 
 
-class ContextConnection(NullsOmitted):
+class ContextConnection(_Closed):
     """One connection in an entity's context, with both endpoints already resolved.
 
     The endpoint names, types, domains and scopes ride along rather than being looked up per row:
     a context view renders every connection, and a client resolving each endpoint itself would issue
     one request per row against data the server already had in hand.
+
+    Closed rather than null-omitting, and with no optional left on it. The diagram-discovery read
+    serves the same row permissively, so a null policy claimed here would be true on one path and
+    false on the other — and there is nothing to claim: the index stores both endpoint columns
+    ``NOT NULL``, so every producer fills every field.
     """
 
     artifact_id: str
@@ -177,8 +182,8 @@ class ContextConnection(NullsOmitted):
     # Which end of this connection the entity being read is *not*, and which bucket it fell into.
     # Carried rather than derived, because a symmetric relation has no source-or-target answer and a
     # client comparing ids would have to reinvent that rule per view.
-    other_entity_id: str | None = None
-    direction: str | None = None
+    other_entity_id: str
+    direction: Literal["outbound", "inbound", "symmetric"]
 
 
 class EntityContextResponse(NullsOmitted):
@@ -214,7 +219,9 @@ class EntityDisplayItemResponse(_Closed):
     domain: str
     subdomain: str
     status: str
-    display_alias: str | None = None
+    #: The PlantUML alias this entity is drawn under. Always present — the record stores it as a
+    #: plain string, and a diagram cannot place an entity it cannot name.
+    display_alias: str
     element_type: str
     element_label: str
     diagram_internal: bool

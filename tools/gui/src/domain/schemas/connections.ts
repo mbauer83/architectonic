@@ -33,19 +33,43 @@ export const ConnectionListResponseSchema = Schema.Struct({
   items: ConnectionListSchema,
 })
 
-export const EntityContextConnectionSchema = Schema.extend(
-  ConnectionRecordSchema,
-  Schema.Struct({
-    source_artifact_type: Schema.String,
-    target_artifact_type: Schema.String,
-    source_domain: Schema.String,
-    target_domain: Schema.String,
-    source_scope: Schema.String,
-    target_scope: Schema.String,
-    other_entity_id: Schema.String,
-    direction: Schema.String,
-  }),
-)
+/**
+ * One connection in an entity's context, both endpoints already resolved.
+ *
+ * Declared in its own right rather than by extending `ConnectionRecordSchema`, which was the
+ * shorter spelling and the wrong shape. That schema describes the *list* read, where several fields
+ * are genuinely optional and two more (`specializations`, `metadata`) exist that a context row never
+ * carries — so extending it made six always-present fields optional and added two that cannot
+ * arrive. The context read fills every field from a `NOT NULL` index column.
+ */
+export const EntityContextConnectionSchema = Schema.Struct({
+  artifact_id: Schema.String,
+  source: Schema.String,
+  target: Schema.String,
+  conn_type: Schema.String,
+  version: Schema.String,
+  status: Schema.String,
+  path: Schema.String,
+  content_text: Schema.String,
+  associated_entities: Schema.Array(Schema.String),
+  src_multiplicity: Schema.String,
+  tgt_multiplicity: Schema.String,
+  specialization: Schema.String,
+  source_name: Schema.String,
+  target_name: Schema.String,
+  source_artifact_type: Schema.String,
+  target_artifact_type: Schema.String,
+  source_domain: Schema.String,
+  target_domain: Schema.String,
+  source_scope: Schema.String,
+  target_scope: Schema.String,
+  /** Which end of the connection the entity being read is *not*. */
+  other_entity_id: Schema.String,
+  /** Which bucket this connection fell into. A closed vocabulary on the server, so it is one
+   * here: a symmetric relation has no source-or-target answer, and a reader that treats the
+   * value as free text has to reinvent that rule. */
+  direction: Schema.Literal('outbound', 'inbound', 'symmetric'),
+})
 export type EntityContextConnection = typeof EntityContextConnectionSchema.Type
 
 // ── Diagram preview result ────────────────────────────────────────────────────

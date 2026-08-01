@@ -4939,6 +4939,11 @@ export interface components {
          *     The endpoint names, types, domains and scopes ride along rather than being looked up per row:
          *     a context view renders every connection, and a client resolving each endpoint itself would issue
          *     one request per row against data the server already had in hand.
+         *
+         *     Closed rather than null-omitting, and with no optional left on it. The diagram-discovery read
+         *     serves the same row permissively, so a null policy claimed here would be true on one path and
+         *     false on the other — and there is nothing to claim: the index stores both endpoint columns
+         *     ``NOT NULL``, so every producer fills every field.
          */
         ContextConnection: {
             /** Artifact Id */
@@ -4949,10 +4954,13 @@ export interface components {
             conn_type: string;
             /** Content Text */
             content_text: string;
-            /** Direction */
-            direction?: string;
+            /**
+             * Direction
+             * @enum {string}
+             */
+            direction: "outbound" | "inbound" | "symmetric";
             /** Other Entity Id */
-            other_entity_id?: string;
+            other_entity_id: string;
             /** Path */
             path: string;
             /** Source */
@@ -5479,6 +5487,22 @@ export interface components {
         DiagramConnectionListResponse: {
             /** Items */
             items: components["schemas"]["DiagramConnectionItem"][];
+        };
+        /**
+         * DiagramEntityDiscoveryResponse
+         * @description Three ways to find the next thing to put on a diagram, answered together.
+         *
+         *     A search over the whole model, the connections that would appear if the entities already
+         *     selected were placed, and what lies one, two or three hops out. One request rather than three
+         *     because the panel shows all three at once, and three would race.
+         */
+        DiagramEntityDiscoveryResponse: {
+            /** Candidate Connections */
+            candidate_connections: components["schemas"]["ContextConnection"][];
+            /** Search Results */
+            search_results: components["schemas"]["EntityDisplayItemResponse"][];
+            /** Suggested Entities */
+            suggested_entities: components["schemas"]["HopSuggestionGroup"][];
         };
         /**
          * DiagramEntityItem
@@ -6516,7 +6540,7 @@ export interface components {
             /** Diagram Internal */
             diagram_internal: boolean;
             /** Display Alias */
-            display_alias?: string | null;
+            display_alias: string;
             /** Domain */
             domain: string;
             /** Element Label */
@@ -6529,6 +6553,19 @@ export interface components {
             status: string;
             /** Subdomain */
             subdomain: string;
+        };
+        /**
+         * EntityDisplaySearchResponse
+         * @description A page of entities a user could place on a diagram.
+         *
+         *     ``next_cursor`` is an offset the caller passes back verbatim; null means this page is the last.
+         *     The cursor is opaque by contract — the ordering it encodes is the server's to change.
+         */
+        EntityDisplaySearchResponse: {
+            /** Items */
+            items: components["schemas"]["EntityDisplayItemResponse"][];
+            /** Next Cursor */
+            next_cursor: string | null;
         };
         /**
          * EntityInUseDetails
@@ -7298,6 +7335,20 @@ export interface components {
             node_id: string;
             /** Source Losses */
             source_losses: string[];
+        };
+        /**
+         * HopSuggestionGroup
+         * @description Entities one hop further out than the last group, so a picker can offer "and their
+         *     neighbours" without asking the user to think in graph distance.
+         *
+         *     ``hop`` starts at 1: hop 0 is what the diagram already holds, and repeating it would invite a
+         *     surface to offer removing an entity as a suggestion to add one.
+         */
+        HopSuggestionGroup: {
+            /** Hop */
+            hop: number;
+            /** Items */
+            items: components["schemas"]["EntityDisplayItemResponse"][];
         };
         /**
          * IllegalConnectionTypeDetails
@@ -14006,7 +14057,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["DiagramEntityDiscoveryResponse"];
                 };
             };
             /** @description Request validation failed */
@@ -16452,7 +16503,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["EntityDisplaySearchResponse"];
                 };
             };
             /** @description Request validation failed */
