@@ -35,6 +35,18 @@ class PermittedRelationshipSet:
     ) -> frozenset[ConnectionTypeName]:
         return frozenset(r.connection_type for r in self._rules if r.source_type == src and r.target_type == tgt)
 
+    def rules(self) -> tuple[PermittedRelationship, ...]:
+        """Every rule, in a stable order — the public reading of the set.
+
+        Exists because the set's only field is private and ``dataclasses.asdict`` does not care: a
+        response built that way published ``{"_rules": [...]}``, so a private attribute name became
+        part of an HTTP contract. Sorted rather than frozenset-ordered, because a payload that
+        reshuffles between processes is a diff for every reader of it.
+        """
+        return tuple(
+            sorted(self._rules, key=lambda r: (r.source_type, r.target_type, r.connection_type))
+        )
+
     def by_source(self) -> dict[EntityTypeName, list[tuple[EntityTypeName, ConnectionTypeName]]]:
         out: dict[EntityTypeName, list[tuple[EntityTypeName, ConnectionTypeName]]] = {}
         for r in self._rules:

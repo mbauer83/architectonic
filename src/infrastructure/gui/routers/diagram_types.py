@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -10,18 +9,23 @@ from fastapi import APIRouter, Depends, HTTPException
 from src.application.assurance_diagrams import assurance_surface_diagram_types
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.infrastructure.app_bootstrap import complete_diagram_type_catalog, runtime_catalogs_dependency
+from src.infrastructure.gui.contracts.diagram_types import (
+    DiagramTypeListResponse,
+    DiagramTypeUiConfigResponse,
+)
 from src.infrastructure.gui.contracts.diagrams import (
     DatatypeTypeListResponse,
     DatatypeTypeUsageResponse,
 )
 from src.infrastructure.gui.routers import state as s
-from src.infrastructure.gui.routers._openapi import READ_RESPONSES, TAG_DIAGRAMS, OpenMapResponse
+from src.infrastructure.gui.routers._diagram_type_payload import ui_config_payload
+from src.infrastructure.gui.routers._openapi import READ_RESPONSES, TAG_DIAGRAMS
 
 router = APIRouter()
 
 
 @router.get("/api/diagram-types", tags=[TAG_DIAGRAMS], summary="List diagram types",
-    response_model=list[OpenMapResponse])
+    response_model=DiagramTypeListResponse)
 def list_diagram_types(catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency)) -> list[dict[str, str]]:
     store_projected = assurance_surface_diagram_types(complete_diagram_type_catalog())
     return [
@@ -36,7 +40,8 @@ def list_diagram_types(catalogs: RuntimeCatalogs = Depends(runtime_catalogs_depe
 
 
 @router.get("/api/diagram-types/{diagram_type}/ui-config", tags=[TAG_DIAGRAMS],
-    summary="UI config for one diagram type", response_model=OpenMapResponse, responses=READ_RESPONSES)
+    summary="UI config for one diagram type", response_model=DiagramTypeUiConfigResponse,
+    responses=READ_RESPONSES)
 def read_diagram_kind_ui_config(
     diagram_type: str,
     catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
@@ -44,7 +49,7 @@ def read_diagram_kind_ui_config(
     kind = catalogs.diagram_types.find_diagram_type(diagram_type)
     if kind is None:
         raise HTTPException(404, f"Diagram type not found: {diagram_type!r}")
-    return asdict(kind.ui_config)
+    return ui_config_payload(kind.ui_config)
 
 
 @router.get("/api/diagram-types/datatype/types", tags=[TAG_DIAGRAMS], summary="Datatype classifier types",

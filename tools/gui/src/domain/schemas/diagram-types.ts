@@ -26,10 +26,12 @@ export const DiagramTypeSummarySchema = Schema.Struct({
 })
 export type DiagramTypeSummary = typeof DiagramTypeSummarySchema.Type
 
+/** `entity_type` and `entity_class` are always sent and null where the source names the other kind —
+ *  they were `optional` here, so "maps from a class, not a type" read as "field absent". */
 export const MappingSourceSpecSchema = Schema.Struct({
   ontology: Schema.String,
-  entity_type: Schema.optional(Schema.NullOr(Schema.String)),
-  entity_class: Schema.optional(Schema.NullOr(Schema.String)),
+  entity_type: Schema.NullOr(Schema.String),
+  entity_class: Schema.NullOr(Schema.String),
   transparent: Schema.Boolean,
 })
 export type MappingSourceSpec = typeof MappingSourceSpecSchema.Type
@@ -43,7 +45,8 @@ export type PermittedMappingSpec = typeof PermittedMappingSpecSchema.Type
 
 export const DiagramOwnEntityTypePropertySpecSchema = Schema.Struct({
   name: Schema.String,
-  schema: Schema.Unknown,
+  // A JSON Schema fragment: its keywords are that specification's, not this surface's.
+  schema: Schema.Record({ key: Schema.String, value: Schema.Unknown }),
   required: Schema.Boolean,
 })
 export type DiagramOwnEntityTypePropertySpec = typeof DiagramOwnEntityTypePropertySpecSchema.Type
@@ -63,6 +66,33 @@ export const EditableMetadataSpecSchema = Schema.Struct({
 })
 export type EditableMetadataSpec = typeof EditableMetadataSpecSchema.Type
 
+export const PermittedRelationshipSchema = Schema.Struct({
+  source_type: Schema.String,
+  target_type: Schema.String,
+  connection_type: Schema.String,
+})
+
+/** `cardinality_max` null means unbounded. */
+export const RequiredConnectionSchema = Schema.Struct({
+  connection_type: Schema.String,
+  target: Schema.String,
+  cardinality_min: Schema.Number,
+  cardinality_max: Schema.NullOr(Schema.Number),
+})
+
+/**
+ * One construct a diagram type owns rather than borrowing from the model.
+ *
+ * This schema described ten of the eighteen fields the route sends, and declared two of those ten
+ * optional though it always sends them. The eight it omitted are the ones that govern authoring:
+ * `identity_scope` decides whether editing one diagram can affect another, and
+ * `permitted_connections` is what a construct may legally connect to — invisible to a client that had
+ * decoded the config successfully.
+ *
+ * `permitted_connections` used to arrive as `{"_rules": [...]}`, the private field of a domain
+ * dataclass serialised by `asdict`. It is a list of triples now, projected through the set's public
+ * reading.
+ */
 export const DiagramOwnEntityTypeUiConfigSchema = Schema.Struct({
   entity_type: Schema.String,
   label: Schema.String,
@@ -71,9 +101,18 @@ export const DiagramOwnEntityTypeUiConfigSchema = Schema.Struct({
   max: Schema.NullOr(Schema.Number),
   permitted_mappings: PermittedMappingSpecSchema,
   mapping_required: Schema.Boolean,
-  include_in_global_search: Schema.optional(Schema.Boolean),
+  classes: Schema.Array(Schema.String),
+  create_when: Schema.String,
+  never_create_when: Schema.String,
   properties: Schema.Array(DiagramOwnEntityTypePropertySpecSchema),
-  editable_metadata: Schema.optional(EditableMetadataSpecSchema),
+  permitted_connections: Schema.Array(PermittedRelationshipSchema),
+  required_connections: Schema.Array(RequiredConnectionSchema),
+  // Null where nothing is managed, as against an empty list meaning "managed, nothing yet".
+  managed_fields: Schema.NullOr(Schema.Array(Schema.Array(Schema.String))),
+  identity_scope: Schema.Literal('diagram', 'workspace'),
+  id_prefix: Schema.NullOr(Schema.String),
+  include_in_global_search: Schema.Boolean,
+  editable_metadata: EditableMetadataSpecSchema,
 })
 export type DiagramOwnEntityTypeUiConfig = typeof DiagramOwnEntityTypeUiConfigSchema.Type
 
@@ -83,7 +122,7 @@ export const DiagramTypeUiConfigSchema = Schema.Struct({
   entity_search_filter: Schema.Boolean,
   diagram_only_types: Schema.Array(DiagramOwnEntityTypeUiConfigSchema),
   type_ui_slots: Schema.Record({ key: Schema.String, value: Schema.String }),
-  primitive_types: Schema.optional(Schema.Array(Schema.String)),
+  primitive_types: Schema.Array(Schema.String),
 })
 export type DiagramTypeUiConfig = typeof DiagramTypeUiConfigSchema.Type
 

@@ -141,6 +141,8 @@ OPEN_RESPONSE_FIELDS: dict[str, OpenReason] = {
     # Their signatures are theirs, and restating them would make this the place every change to any of
     # them has to be echoed.
     "ModelThisTaskStep.params": FOREIGN_VOCABULARY,
+    # A JSON Schema fragment, for the same reason as the entity schema route's.
+    "DiagramOwnPropertySpecResponse.schema": FOREIGN_VOCABULARY,
     # A CycloneDX 1.6 ML-BOM. That specification versions itself, and mirroring its component,
     # dependency and model-card vocabulary here would make this package a second, lagging definition
     # of it — and drop whatever CycloneDX added since the last mirror, in transit, from a document

@@ -19,11 +19,9 @@ from __future__ import annotations
 UNTYPED_RESPONSE_OPERATIONS: frozenset[str] = frozenset({
     "connections_read_entity_neighbors",
     "diagrams_discover_diagram_entities",
-    "diagrams_list_diagram_types",
     "diagrams_preview_diagram",
     "diagrams_read_diagram",
     "diagrams_read_diagram_context",
-    "diagrams_read_diagram_type_ui_config",
     "diagrams_search_entity_display_items",
     "documents_read_document_schemata",
     "documents_search_reference_artifacts",

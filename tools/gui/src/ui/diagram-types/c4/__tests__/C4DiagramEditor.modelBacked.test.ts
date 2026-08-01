@@ -28,6 +28,18 @@ const makeDot = (
   mapping_required: false,
   permitted_mappings: { entity_types: archimateTypes, entity_classes: [], sources: [] },
   properties: [],
+  // The eight fields the schema used to omit. `identity_scope` and `permitted_connections` are the
+  // ones that govern authoring, and a config decoded without them looked complete.
+  classes: [],
+  create_when: '',
+  never_create_when: '',
+  permitted_connections: [],
+  required_connections: [],
+  managed_fields: null,
+  identity_scope: 'diagram',
+  id_prefix: null,
+  include_in_global_search: false,
+  editable_metadata: { entity: [], subparts: {} },
 })
 
 const makeEntity = (id: string, archType: EntityTypeName, name = id): EntityDisplayInfo => ({

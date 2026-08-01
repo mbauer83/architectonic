@@ -5001,6 +5001,74 @@ export interface components {
             /** Total */
             total: number;
         };
+        /**
+         * DiagramOwnEntityTypeResponse
+         * @description One construct a diagram type owns rather than borrowing from the model.
+         *
+         *     ``identity_scope`` decides whether the construct's id is unique to its diagram or to the whole
+         *     workspace — a GSN goal is the diagram's, a datatype classifier is the workspace's — and it is the
+         *     field that decides whether editing one diagram can affect another.
+         *
+         *     ``create_when``/``never_create_when`` are guard expressions the authoring surface evaluates;
+         *     ``managed_fields`` is null where nothing is managed, as against an empty list meaning "managed,
+         *     nothing yet".
+         */
+        DiagramOwnEntityTypeResponse: {
+            /** Classes */
+            classes: string[];
+            /** Create When */
+            create_when: string;
+            editable_metadata: components["schemas"]["EditableMetadataSpecResponse"];
+            /** Entity Type */
+            entity_type: string;
+            /** Id Prefix */
+            id_prefix: string | null;
+            /**
+             * Identity Scope
+             * @enum {string}
+             */
+            identity_scope: "diagram" | "workspace";
+            /** Include In Global Search */
+            include_in_global_search: boolean;
+            /** Label */
+            label: string;
+            /** Managed Fields */
+            managed_fields: string[][] | null;
+            /** Mapping Required */
+            mapping_required: boolean;
+            /** Max */
+            max: number | null;
+            /** Min */
+            min: number;
+            /** Never Create When */
+            never_create_when: string;
+            /** Permitted Connections */
+            permitted_connections: components["schemas"]["PermittedRelationshipResponse"][];
+            permitted_mappings: components["schemas"]["PermittedMappingSpecResponse"];
+            /** Plural */
+            plural: string;
+            /** Properties */
+            properties: components["schemas"]["DiagramOwnPropertySpecResponse"][];
+            /** Required Connections */
+            required_connections: components["schemas"]["RequiredConnectionResponse"][];
+        };
+        /**
+         * DiagramOwnPropertySpecResponse
+         * @description One property a diagram-own construct carries.
+         *
+         *     ``schema`` is a JSON Schema fragment: its keywords are that specification's, not this surface's —
+         *     the same reason the entity schema route does not mirror them either.
+         */
+        DiagramOwnPropertySpecResponse: {
+            /** Name */
+            name: string;
+            /** Required */
+            required: boolean;
+            /** Schema */
+            schema: {
+                [key: string]: unknown;
+            };
+        };
         /** DiagramPreviewBody */
         DiagramPreviewBody: {
             /** Connection Ids */
@@ -5082,6 +5150,16 @@ export interface components {
             items: components["schemas"]["DiagramTypeMemberItem"][];
         };
         /**
+         * DiagramTypeListResponse
+         * @description The creatable diagram types, as a bare array on the wire.
+         *
+         *     A ``RootModel`` rather than ``list[DiagramTypeSummary]`` on the route: the latter publishes an
+         *     inline array schema, which a generated client cannot refer to by name and which the
+         *     response-contract fitness function refuses for that reason. The payload is byte-identical either
+         *     way — this names it.
+         */
+        DiagramTypeListResponse: components["schemas"]["DiagramTypeSummary"][];
+        /**
          * DiagramTypeMemberItem
          * @description One entity or connection type a diagram kind accepts, with its presentation data.
          */
@@ -5092,6 +5170,45 @@ export interface components {
             label?: string | null;
         } & {
             [key: string]: unknown;
+        };
+        /**
+         * DiagramTypeSummary
+         * @description One diagram type a user may create, as a picker needs it.
+         *
+         *     Store-projected types are absent: an assurance diagram is derived from an analysis rather than
+         *     authored, so offering it here would offer a "create" that has no meaning.
+         */
+        DiagramTypeSummary: {
+            /** Description */
+            description: string;
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+        };
+        /**
+         * DiagramTypeUiConfigResponse
+         * @description How one diagram type wants its authoring surface built.
+         *
+         *     ``type_ui_slots`` maps a construct type to the editor component that should render it, and
+         *     ``primitive_types`` is the built-in type vocabulary a datatype diagram offers — both keyed or listed
+         *     by the module, both closed in shape.
+         */
+        DiagramTypeUiConfigResponse: {
+            /** Description */
+            description: string;
+            /** Diagram Only Types */
+            diagram_only_types: components["schemas"]["DiagramOwnEntityTypeResponse"][];
+            /** Entity Search Filter */
+            entity_search_filter: boolean;
+            /** Label */
+            label: string;
+            /** Primitive Types */
+            primitive_types: string[];
+            /** Type Ui Slots */
+            type_ui_slots: {
+                [key: string]: string;
+            };
         };
         /**
          * DirectNeighborhood
@@ -5316,6 +5433,31 @@ export interface components {
             source_id: string;
             /** Target Id */
             target_id: string;
+        };
+        /**
+         * EditableMetadataFieldResponse
+         * @description One editable field, and the control an editor should render for it.
+         */
+        EditableMetadataFieldResponse: {
+            /** Control */
+            control: string;
+            /** Field */
+            field: string;
+        };
+        /**
+         * EditableMetadataSpecResponse
+         * @description Which metadata an editor may change, on the construct and on its subparts.
+         *
+         *     ``subparts`` is keyed by subpart name — an open map with a closed value, because which subparts a
+         *     construct has is the module's business and the field list is not.
+         */
+        EditableMetadataSpecResponse: {
+            /** Entity */
+            entity: components["schemas"]["EditableMetadataFieldResponse"][];
+            /** Subparts */
+            subparts: {
+                [key: string]: components["schemas"]["EditableMetadataFieldResponse"][];
+            };
         };
         /** EditConnectionBody */
         EditConnectionBody: {
@@ -6537,6 +6679,22 @@ export interface components {
             requires: string[];
         };
         /**
+         * MappingSourceSpecResponse
+         * @description One ontology source a diagram-own type may be mapped onto.
+         *
+         *     ``transparent`` marks a source that maps through without appearing as a choice of its own.
+         */
+        MappingSourceSpecResponse: {
+            /** Entity Class */
+            entity_class: string | null;
+            /** Entity Type */
+            entity_type: string | null;
+            /** Ontology */
+            ontology: string;
+            /** Transparent */
+            transparent: boolean;
+        };
+        /**
          * MatrixConfigResponse
          * @description A matrix diagram's authored configuration, parsed out of its PUML frontmatter.
          *
@@ -6824,6 +6982,33 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /**
+         * PermittedMappingSpecResponse
+         * @description What a diagram-own construct may be mapped to in the model.
+         *
+         *     Types and classes are separate because a class is a set of types: a construct permitted for a class
+         *     accepts anything in it, and flattening the two would freeze today's membership into the payload.
+         */
+        PermittedMappingSpecResponse: {
+            /** Entity Classes */
+            entity_classes: string[];
+            /** Entity Types */
+            entity_types: string[];
+            /** Sources */
+            sources: components["schemas"]["MappingSourceSpecResponse"][];
+        };
+        /**
+         * PermittedRelationshipResponse
+         * @description One (source, target, connection) triple a diagram type permits.
+         */
+        PermittedRelationshipResponse: {
+            /** Connection Type */
+            connection_type: string;
+            /** Source Type */
+            source_type: string;
+            /** Target Type */
+            target_type: string;
+        };
         /** PromotionExecuteBody */
         PromotionExecuteBody: {
             /**
@@ -7053,6 +7238,20 @@ export interface components {
             entities_by_group: {
                 [key: string]: number;
             };
+        };
+        /**
+         * RequiredConnectionResponse
+         * @description A connection a construct must have, with how many. ``cardinality_max`` null means unbounded.
+         */
+        RequiredConnectionResponse: {
+            /** Cardinality Max */
+            cardinality_max: number | null;
+            /** Cardinality Min */
+            cardinality_min: number;
+            /** Connection Type */
+            connection_type: string;
+            /** Target */
+            target: string;
         };
         /** SaveBody */
         SaveBody: {
@@ -11818,7 +12017,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"][];
+                    "application/json": components["schemas"]["DiagramTypeListResponse"];
                 };
             };
             /** @description Request validation failed */
@@ -11960,7 +12159,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenMapResponse"];
+                    "application/json": components["schemas"]["DiagramTypeUiConfigResponse"];
                 };
             };
             /** @description Artifact not found */

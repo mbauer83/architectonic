@@ -24,7 +24,13 @@ import type {
 import type { DocumentTypeSchema, DocumentTypesSchema, SectionSpecSchema } from './documents'
 import type { GroupEntrySchema, GroupListSchema } from './groups'
 import type { MatrixConfigSchema, MatrixConnTypeConfigSchema } from './diagrams'
-import type { OntologyClassificationSchema, OntologyPairSchema } from './diagram-types'
+import type {
+  DiagramOwnEntityTypeUiConfigSchema,
+  DiagramTypeSummarySchema,
+  DiagramTypeUiConfigSchema,
+  OntologyClassificationSchema,
+  OntologyPairSchema,
+} from './diagram-types'
 import type {
   AnalysisNotEmptyDetailsSchema,
   DenialDetailsSchema,
@@ -188,6 +194,25 @@ describe('groups and matrices', () => {
     >()
     expectTypeOf<SchemaType<typeof MatrixConnTypeConfigSchema>>().toEqualTypeOf<
       Immutable<components['schemas']['MatrixConnTypeConfig']>
+    >()
+  })
+})
+
+describe('diagram types', () => {
+  it('decodes the creatable types and one type authoring config', () => {
+    // The construct schema described ten of eighteen fields and marked two of those ten optional
+    // though the route always sends them. The eight it omitted govern authoring — `identity_scope`
+    // decides whether editing one diagram can affect another — so a config decoded without them
+    // looked complete. `permitted_connections` also used to arrive as `{"_rules": [...]}`: a private
+    // field of a domain dataclass, published because `asdict` does not know what private means.
+    expectTypeOf<SchemaType<typeof DiagramTypeSummarySchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['DiagramTypeSummary']>
+    >()
+    expectTypeOf<SchemaType<typeof DiagramTypeUiConfigSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['DiagramTypeUiConfigResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof DiagramOwnEntityTypeUiConfigSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['DiagramOwnEntityTypeResponse']>
     >()
   })
 })
