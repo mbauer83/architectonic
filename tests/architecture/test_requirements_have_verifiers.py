@@ -195,57 +195,51 @@ def _owed() -> set[str]:
     }
 
 
-#: **Two kinds of entry live here, and the difference decides who resolves them.**
+#: **Empty, as of 2026-08-02.** Every requirement the model marks active, and something claims to
+#: realise, now has an artefact declaring that it verifies it. The register began at eight.
 #:
-#: *A test nobody has written yet* — the ordinary kind. Someone finds the assertion, adds the marker.
+#: Two kinds of entry lived here, and the difference decided who resolved them. *A test nobody has
+#: written yet* — the ordinary kind; someone finds the assertion and adds the marker. And *a
+#: requirement the product only partly implements*, where writing the verifier is blocked on a
+#: decision rather than on effort: marking a fragment would clear the entry while leaving the feature
+#: half built, so those stayed owed on purpose.
 #:
-#: *A requirement the product only partly implements* — where writing the verifier is blocked on a
-#: decision, not on effort. Marking a fragment would clear the entry while leaving the feature half
-#: built, so these stay owed on purpose. Currently:
+#: **Four of the eight were recorded as the second kind, and three of those were the first.** That is
+#: the lesson worth keeping, because "this needs a decision" is a comfortable place for an entry to
+#: sit for a release, and nothing about a register makes anyone re-read the claim behind an entry.
 #:
-#: * ``REQ@1777372175.eFz3z9`` names the treemap's grouping axes as "ArchiMate domain and
-#:   entity-type". The second axis is subdomain. Sizing by connection total is verified.
-#: * ``REQ@1712870400.NfAmrl`` (GUI exploration and authoring) asserts four things at once — browsing by
-#:   domain, navigating connections, viewing rendered diagrams, and creating artifacts with frontmatter
-#:   auto-populated. The browser suite covers the first three across several specs; no single spec
-#:   carries the conjunction, and marking one for all four would overstate it.
+#: * ``pSvaRl`` was recorded as possibly-superseded, "and nothing per-file-type for diagrams". There
+#:   is: ``frontmatter.diagram.schema.json`` ships as a repository default, exists in this repository,
+#:   and ``check_frontmatter_schema(fm, root, "diagram", …)`` is called from both diagram branches of
+#:   the verifier, as it is for ``entity`` and ``outgoing``. Documents are the fourth file type through
+#:   ``.arch-repo/documents/{abbr}.json``, exactly as the requirement's own Implementation section
+#:   says. Owed a test, not a decision — and being a constituent of three grouping parents, that one
+#:   test cleared four entries.
+#: * ``eFz3z9`` was recorded as grouping by "subdomain" where the requirement says "entity-type". They
+#:   are one axis: an entity is filed at ``model/<domain>/<artifact-type>/``, every ontology loader
+#:   builds that leaf from the artifact type, and ``derive_domain`` reads the subdomain out of exactly
+#:   that segment. A naming difference, verified as such — including the clause that makes it one, that
+#:   no declared type is filed deeper than two segments.
+#: * ``NfAmrl`` asserted four things at once, and the browser suite covered three of them across
+#:   several specs. It needed the fourth *and* the conjunction, which is one spec walking
+#:   browse → connection → diagram → create in a single flow rather than four independent ones.
+#: * ``HR7AGz`` genuinely needed an amendment, and a smaller one than "is the design superseded".
+#:   Writing the verifier found that documents are keyed by ``title`` where entities and diagrams are
+#:   keyed by ``name``, so "all three share the same frontmatter schema" was literally false.
+#:   Collapsing those would rename a field in every document in every repository to satisfy a phrase,
+#:   so the requirement was amended to claim what is true and deliberate — one ID convention, one
+#:   verification pass, one frontmatter *base*, and a per-category label — and verified as amended.
 #:
-#: **Two entries left this register on 2026-08-02 by being read rather than decided, and the note here
-#: was wrong about both.** Worth recording, because "this needs a decision" is a comfortable place for an
-#: entry to sit for a release.
-#:
-#: ``pSvaRl`` — recorded above as possibly-superseded, "and nothing per-file-type for diagrams". There
-#: is: ``frontmatter.diagram.schema.json`` ships as a repository default, exists in this repository, and
-#: ``check_frontmatter_schema(fm, root, "diagram", …)`` is called from both diagram branches of the
-#: verifier, as it is for ``entity`` and ``outgoing``. Documents are the fourth file type through
-#: ``.arch-repo/documents/{abbr}.json``, exactly as the requirement's own Implementation section says.
-#: It was owed a test, not a decision — and being the constituent of three grouping parents, that one
-#: test cleared four entries.
-#:
-#: ``HR7AGz`` — this one *did* need an amendment, but a smaller one than "is the design superseded".
-#: Writing the verifier found that documents are keyed by ``title`` where entities and diagrams are
-#: keyed by ``name``, so "all three share the same frontmatter schema" was literally false. Collapsing
-#: those would rename a field in every document in every repository to satisfy a phrase, so the
-#: requirement was amended to claim what is true and deliberate — one ID convention, one verification
-#: pass, one frontmatter *base*, and a per-category label — and then verified as amended.
-#:
-#: Grouping requirements are no longer in this register at all: see ``COMPOSED_REQUIREMENTS`` above,
-#: which resolves a parent once every constituent is verified. Every parent still unresolved traces
-#: back to ``NfAmrl``.
+#: Grouping requirements are not in this register at all: see ``COMPOSED_REQUIREMENTS`` above, which
+#: resolves a parent once every constituent is verified.
 #:
 #: Requirements that are active, realised, and not yet declared as verified by anything.
 #:
 #: Shrink-only, like `NEVER_REQUESTED_OPERATIONS` and `SOURCE_FILE_BASELINE_LIMITS`: an entry leaves
-#: when something declares it verifies the requirement, and no entry may be added. A *new* entry is
-#: the statement "we built a feature and nothing checks it", which is the condition this whole
-#: exercise exists to make visible rather than discoverable.
-UNVERIFIED_REQUIREMENTS: frozenset[str] = frozenset(
-    {
-        "REQ@1712870400.5PPAX3",
-        "REQ@1712870400.NfAmrl",
-        "REQ@1777372175.eFz3z9",
-    }
-)
+#: when something declares it verifies the requirement, and no entry may be added. Now that it is
+#: empty, *any* addition is the statement "we built a feature and nothing checks it" — which is the
+#: condition this whole exercise exists to make visible rather than discoverable.
+UNVERIFIED_REQUIREMENTS: frozenset[str] = frozenset()
 
 
 def test_the_scan_finds_the_model_and_the_suite_it_means_to_read() -> None:

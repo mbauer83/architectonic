@@ -1,53 +1,35 @@
 <script setup lang="ts">
 /**
- * The entity catalog as a treemap: grouped by domain (or by subdomain once a domain is chosen),
+ * The entity catalog as a treemap: grouped by domain, or by entity type once a domain is chosen,
  * sized by total connections.
  *
  * An adapter now, not a treemap. The layout, pan/zoom, tooltip placement and legibility thresholds
- * moved to `Treemap`, which the assurance browse surface draws through as well; what stays here is
- * the ArchiMate vocabulary — which domain a group is, what colour it takes, which glyph an entity
- * type deserves, and where clicking one goes. That split is the whole point: the shared component
- * names none of it, so a second module can use it without inheriting the first one's words.
+ * moved to `Treemap`, which the assurance browse surface draws through as well; the ArchiMate
+ * vocabulary — which domain a group is, what colour it takes, how an entity is weighed — moved to
+ * `EntitiesTreemap.helpers`, mirroring `AssuranceTreemap.helpers` on the other surface. What stays
+ * here is what only a component can do: which glyph an entity type deserves, and where clicking one
+ * goes. The split is the whole point twice over: the shared component names none of the vocabulary,
+ * so a second module can use it without inheriting the first one's words — and the vocabulary is
+ * testable, which logic inside an SFC is not, because these tests run in `node` and mount nothing.
  */
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import type { EntitySummary } from '../../domain'
 import ArchimateTypeGlyph from './ArchimateTypeGlyph.vue'
 import Treemap from './Treemap.vue'
-import { groupLeaves, type TreemapLeaf } from './Treemap.helpers'
-import { friendlyEntityId, getDomainColor, getDomainLabel, getEntityConnectionTotal } from '../lib/domains'
+import { entityTreemapGroups, treemapNote } from './EntitiesTreemap.helpers'
+import { friendlyEntityId } from '../lib/domains'
 import { entityDetailRoute } from '../router/artifactRoutes'
 
 const props = defineProps<{ items: EntitySummary[]; activeDomain: string }>()
 
 const router = useRouter()
 
-const groupMode = computed(() => (props.activeDomain ? 'subdomain' : 'domain'))
-const domainColor = computed(() => getDomainColor(props.activeDomain))
-
 const byId = computed(() => new Map(props.items.map((entity) => [entity.artifact_id, entity])))
 
-const leafOf = (entity: EntitySummary): TreemapLeaf => {
-  const connections = getEntityConnectionTotal(entity)
-  return {
-    key: entity.artifact_id,
-    label: entity.name || entity.artifact_id,
-    meta: `${connections} connections`,
-    value: connections,
-    color: groupMode.value === 'domain' ? getDomainColor(entity.domain) : domainColor.value,
-  }
-}
+const groups = computed(() => entityTreemapGroups(props.items, props.activeDomain))
 
-const groupOf = (entity: EntitySummary) => ({
-  name: groupMode.value === 'domain' ? getDomainLabel(entity.domain) : entity.subdomain || 'General',
-  color: groupMode.value === 'domain' ? getDomainColor(entity.domain) : domainColor.value,
-})
-
-const groups = computed(() => groupLeaves(props.items, leafOf, groupOf))
-
-const note = computed(() =>
-  'Sized by total connections. Drag to pan, wheel to zoom. '
-  + (groupMode.value === 'domain' ? 'Grouped by domain.' : 'Grouped by subdomain.'))
+const note = computed(() => treemapNote(props.activeDomain))
 
 const openEntity = (id: string) => void router.push(entityDetailRoute(id))
 const entityFor = (key: string): EntitySummary | undefined => byId.value.get(key)
