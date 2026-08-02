@@ -229,6 +229,38 @@ async def update_group(kind: str, slug: str, body: UpdateGroupBody) -> dict[str,
     )
 
 
+def project_group_delete(result: dict[str, Any], *, axis: str, slug: str) -> dict[str, Any]:
+    """Bring a delete's answer into this router's contract, whichever producer answered it.
+
+    Deleting a *model-project* does not go through `group_ops`' own delete: it delegates to
+    `cascade_delete_model_project`, which answers in its own envelope — `{project, dry_run, applied,
+    staged_paths, warnings, owned_deleted, foreign_connections_deleted, diagrams_updated}` — with no
+    `action`, no `axis` and no `slug`. Returned verbatim under `response_model=GroupOperationResponse`
+    that is eleven validation errors and a **500 on every model-project deletion**, which is what it was
+    doing: three required fields missing and eight extras forbidden.
+
+    Projected here rather than changed at the source, because `cascade_delete_model_project` is shared
+    with the MCP tools and the CLI, and neither of those has this router's contract. The layer that
+    declares a wire shape is the layer that owes the mapping into it — the same seam the assurance
+    routers gained when they started serialising through their DTO instead of past it.
+
+    Three of the cascade's keys are deliberately not carried over. `project` is `slug` under another
+    name. `applied` restates the status code. `staged_paths` is which files the git index now holds,
+    which is how the write was made rather than what it did.
+    """
+    if "action" in result:
+        return result
+    return {
+        "action": "deleted",
+        "axis": axis,
+        "slug": slug,
+        "owned_deleted": result.get("owned_deleted", 0),
+        "foreign_connections_deleted": result.get("foreign_connections_deleted", 0),
+        "diagrams_updated": result.get("diagrams_updated", 0),
+        "warnings": result.get("warnings", []),
+    }
+
+
 @router.delete("/api/groups/{kind}/{slug}", tags=[TAG_GROUPS], summary="Delete a group",
     response_model=GroupOperationResponse, response_model_exclude_none=True, responses=WRITE_RESPONSES)
 async def delete_group(
@@ -236,4 +268,7 @@ async def delete_group(
     slug: str,
     confirm: str | None = Query(default=None),
 ) -> dict[str, Any]:
-    return await _exec_op("groups_delete_group", axis=kind, action="delete", target=slug, confirm=confirm)
+    result = await _exec_op(
+        "groups_delete_group", axis=kind, action="delete", target=slug, confirm=confirm
+    )
+    return project_group_delete(result, axis=kind, slug=slug)

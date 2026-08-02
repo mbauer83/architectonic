@@ -101,26 +101,13 @@ UNWALKED: Mapping[str, str] = {
 
 #: Operations the walk reaches and finds **broken**, pinned to the behaviour they currently have.
 #:
-#: Not `UNWALKED`: these are requested, reached, and answered wrongly. Pinning the wrong answer is
-#: deliberate — a walk that merely failed would be switched off, and one that skipped them would report
-#: a surface that works. So the step declares the defect as its expectation, and *fixing* the defect
-#: fails this walk, which is the signal to remove the entry. Shrink-only, like every other register
-#: here, and this is the only one whose entries are defects rather than preconditions.
-KNOWN_DEFECTS: Mapping[str, str] = {
-    "groups_delete_group": (
-        "500 on a model-project delete. `delete_group` declares `response_model=GroupOperationResponse`, "
-        "which requires `action`/`axis`/`slug` and forbids extras; the model-project path returns a "
-        "cascade report instead — `{project, dry_run, applied, staged_paths, warnings, owned_deleted, "
-        "foreign_connections_deleted, diagrams_updated}` — so FastAPI raises ResponseValidationError "
-        "with 11 errors and every such delete answers 500. One producer, two declared shapes: the same "
-        "defect class as the matrix-preview 500 and the FMEA one before it.\n\n"
-        "The contract's own docstring names the fix: \"a seventh action, or an extra that is not "
-        "obviously tied to one verb, is the point at which the union earns its keep\". A cascade report "
-        "is not an extra field, it is a second shape. Not fixed here because a REST response model "
-        "change ripples into `openapi.generated.ts`, the hand-written effect schemas and the wire-null "
-        "policy tests, and that needs the full gate set to validate rather than a partial pass."
-    ),
-}
+#: Not `UNWALKED`: those are preconditions this fixture does not build. These are requested, reached,
+#: and answered wrongly. Pinning the wrong answer is deliberate — a walk that merely failed would be
+#: switched off, and one that skipped the route would report a surface that works — so the step declares
+#: the defect as its expectation and *fixing* it turns this walk red, which is the signal to remove the
+#: entry. Shrink-only, and it has been shrunk once already: `groups_delete_group` was pinned at 500 for
+#: exactly as long as it took to read the traceback.
+KNOWN_DEFECTS: Mapping[str, str] = {}
 
 
 def _q(identifier: str) -> str:
@@ -190,13 +177,14 @@ STEPS: tuple[WriteStep, ...] = (
         lambda _c: {}, must_have_written=False,
     ),
     WriteStep(
-        # Two things found here, because nothing had ever requested this operation. First, `confirm` is
-        # a typed-slug confirmation the route requires before destroying a model-project, answering 400
-        # and naming the expected value when it is missing — correct, and undocumented anywhere a
-        # caller would look. Second, with `confirm` supplied it answers **500**: see KNOWN_DEFECTS.
+        # Two things found here, because nothing had ever requested this operation. `confirm` is a
+        # typed-slug confirmation the route requires before destroying a model-project, answering 400
+        # and naming the expected value when it is missing — correct, and documented nowhere a caller
+        # would look. And with `confirm` supplied it used to answer **500**: the cascade report was
+        # returned verbatim under a closed response model. Fixed, and this step is what keeps it fixed.
         "groups_delete_group", "DELETE",
         lambda _c: "/api/groups/model-project/walk-project?confirm=walk-project",
-        expect=(500,), must_have_written=False,
+        expect=(200, 204), must_have_written=False,
     ),
     WriteStep(
         "diagrams_sync_diagram_to_model", "POST",

@@ -8,6 +8,14 @@ something that fails when it stops being true.
 
 `group_ops` returns six shapes, one per action. Their union is the DTO's field set, and no member may
 be absent from it or invented by it.
+
+**A seventh shape hid behind that sentence for a release.** Deleting a *model-project* does not go
+through `group_ops`' own delete — it delegates to `cascade_delete_model_project` in another module,
+which answers in its own envelope with no `action` at all. This file scanned one module for returns
+containing `action`, so the one shape that broke the contract was the one shape it structurally could
+not see, and every model-project deletion through REST answered 500 until a write walk requested the
+route. The producer set below now includes the router's projection of that envelope, obtained by
+*calling* it rather than by restating its keys.
 """
 
 from __future__ import annotations
@@ -48,10 +56,32 @@ def test_the_producer_returns_the_six_shapes_this_contract_projects() -> None:
     assert len(shapes) == 6, f"expected one summary per action, found {len(shapes)}"
 
 
+#: A cascade report as `cascade_delete_model_project` answers one, used to obtain the projected shape.
+#: Values are irrelevant here — only the keys are — but they are realistic so the DTO validation below
+#: is meaningful rather than vacuous.
+_CASCADE_REPORT = {
+    "project": "payments",
+    "dry_run": False,
+    "applied": True,
+    "staged_paths": [".arch-repo/groups.yaml"],
+    "warnings": ["one diagram could not be rewritten"],
+    "owned_deleted": 4,
+    "foreign_connections_deleted": 2,
+    "diagrams_updated": 1,
+}
+
+
+def _projected_delete_keys() -> frozenset[str]:
+    """What the router hands the DTO for a model-project delete, by calling the projection."""
+    from src.infrastructure.rest.routers.groups import project_group_delete
+
+    return frozenset(project_group_delete(dict(_CASCADE_REPORT), axis="model-project", slug="payments"))
+
+
 def test_the_dto_declares_every_field_the_producer_can_emit() -> None:
     """A key the producer emits and the DTO does not is a rejected response — the model is closed."""
     declared = set(GroupOperationResponse.model_fields)
-    emitted = set().union(*_returned_key_sets())
+    emitted = set().union(*_returned_key_sets()) | _projected_delete_keys()
     assert emitted <= declared, f"producer emits fields the contract omits: {sorted(emitted - declared)}"
 
 
@@ -59,7 +89,7 @@ def test_the_dto_invents_no_field_the_producer_never_emits() -> None:
     """The other direction. A field no producer sets is either dead or a rename in disguise, and a
     rename is what made the entity read answer 500."""
     declared = set(GroupOperationResponse.model_fields)
-    emitted = set().union(*_returned_key_sets())
+    emitted = set().union(*_returned_key_sets()) | _projected_delete_keys()
     assert declared <= emitted, f"contract declares fields nothing produces: {sorted(declared - emitted)}"
 
 
@@ -106,3 +136,46 @@ def test_a_real_summary_from_each_action_validates() -> None:
         {"action": "deleted", "axis": "docs", "slug": "gone", "files_removed": 0}
     )
     assert deleted.model_dump(exclude_none=True)["files_removed"] == 0
+
+
+def test_a_projected_cascade_report_validates_against_the_contract() -> None:
+    """The regression. Returned verbatim, this envelope was eleven validation errors and a 500.
+
+    Watched fail without the projection: three required fields missing (`action`, `axis`, `slug`) and
+    eight extras forbidden. Validating the projection rather than asserting its keys, because what broke
+    was the *model rejecting the body* — the same failure mode either way, checked the way it happens.
+    """
+    from src.infrastructure.rest.routers.groups import project_group_delete
+
+    projected = project_group_delete(dict(_CASCADE_REPORT), axis="model-project", slug="payments")
+    response = GroupOperationResponse.model_validate(projected)
+
+    assert response.action == "deleted"
+    assert response.slug == "payments"
+    # The cascade's own facts survive: a caller has to be able to learn that a neighbouring project's
+    # diagram changed under it, which is the whole reason these fields are on the wire.
+    assert response.owned_deleted == 4
+    assert response.foreign_connections_deleted == 2
+    assert response.diagrams_updated == 1
+    assert response.warnings == ["one diagram could not be rewritten"]
+
+
+def test_the_projection_leaves_a_normal_group_result_alone() -> None:
+    """Five of the six actions already answer in the contract's shape; the projection must not touch
+    them, or a rename would start reporting itself as a delete."""
+    from src.infrastructure.rest.routers.groups import project_group_delete
+
+    already = {"action": "deleted", "axis": "diagram-collection", "slug": "views", "files_removed": 3}
+    assert project_group_delete(dict(already), axis="diagram-collection", slug="views") == already
+
+
+def test_a_cascade_that_deleted_nothing_reports_zero_rather_than_absence() -> None:
+    """Zero is an outcome; absence means "no cascade ran". The null-omitting policy makes those two
+    indistinguishable if the projection drops a zero, so it must not."""
+    from src.infrastructure.rest.routers.groups import project_group_delete
+
+    empty = {"project": "empty", "warnings": [], "owned_deleted": 0,
+             "foreign_connections_deleted": 0, "diagrams_updated": 0}
+    projected = project_group_delete(empty, axis="model-project", slug="empty")
+    assert projected["owned_deleted"] == 0
+    assert GroupOperationResponse.model_validate(projected).owned_deleted == 0

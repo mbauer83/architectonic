@@ -7709,14 +7709,22 @@ export interface components {
             action: "created" | "renamed" | "archived" | "unarchived" | "updated" | "deleted";
             /** Axis */
             axis: string;
+            /** Diagrams Updated */
+            diagrams_updated?: number;
             /** Files Removed */
             files_removed?: number;
+            /** Foreign Connections Deleted */
+            foreign_connections_deleted?: number;
             /** Id */
             id?: string;
             /** Old Slug */
             old_slug?: string;
+            /** Owned Deleted */
+            owned_deleted?: number;
             /** Slug */
             slug: string;
+            /** Warnings */
+            warnings?: string[];
         };
         /**
          * GsnDiagramEdge
