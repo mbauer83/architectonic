@@ -54,7 +54,29 @@ router.include_router(diagram_router)
 router.include_router(aibom_router)
 router.include_router(fmea_router)
 
-_DEFAULT_DB = Path(__file__).resolve().parents[4] / ".arch-assurance" / "store.db"
+
+def _store_path() -> Path:
+    """Where the confidential store is, **asked of the deployment manifest** rather than computed.
+
+    This used to be `Path(__file__).resolve().parents[4] / ".arch-assurance" / "store.db"`, which is one
+    level short: `parents[4]` from `src/infrastructure/rest/routers/assurance/` is `src/`, so the
+    constant named a store under `src/.arch-assurance/` that has never existed. `db_exists` was
+    therefore always False, `configured` always False, and a store that was merely **locked** reported
+    `not_initialised` — with the GUI banner telling the operator to *initialise* it. `init` generates a
+    new key and takes the old one's place, and losing that key has cost this repository its store four
+    times, so a status route steering an operator there is the most expensive kind of wrong.
+
+    Nothing saw it because the *key* lookup succeeded anyway: `_credential_accounts.read` falls back to
+    the legacy unscoped account when the path-scoped one is absent, which is deliberate and right, and
+    it made a wrong path look like a working one.
+
+    The manifest is where the path lives — it honours the env and settings overrides too, which a
+    literal never could — and the CLI (`_assurance_commands._default_db_path`) and the MCP read tool
+    (`assurance_mcp.context.default_db_path`) both already ask it. This is the third copy, deleted.
+    """
+    from src.infrastructure.mcp.assurance_mcp.context import default_db_path
+
+    return default_db_path()
 
 
 class AssuranceReloadBody(BaseModel):
@@ -120,14 +142,15 @@ def assurance_status() -> dict[str, object]:
     Always callable — does not require the store to be unlocked.
     Used by the frontend to show the locked/unlocked banner.
     """
+    store_path = _store_path()
     try:
         from src.infrastructure.assurance import _credential_accounts as accounts  # noqa: PLC0415
 
-        key_present = accounts.present(accounts.DB_KEY, _DEFAULT_DB)
+        key_present = accounts.present(accounts.DB_KEY, store_path)
     except Exception:  # noqa: BLE001
         key_present = False
 
-    db_exists = _DEFAULT_DB.exists()
+    db_exists = store_path.exists()
     configured = db_exists and key_present
 
     try:

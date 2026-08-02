@@ -17,6 +17,8 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import TestExclude from 'test-exclude'
+
 const GUI_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const MERGED = join(GUI_ROOT, 'coverage-e2e', 'coverage-final.json')
 
@@ -29,18 +31,32 @@ const MERGED = join(GUI_ROOT, 'coverage-e2e', 'coverage-final.json')
  * ever visits contributes no entry at all — so reading only the report's own keys reports it as
  * neither reached nor unreached, but as absent, which rounds to "fine".
  *
- * **`.ts` only, and that is a limitation rather than a choice.** `vite.config.ts` asks
- * `vite-plugin-istanbul` for `extension: ['.ts', '.vue']`, and the merged report contains **zero**
- * `.vue` entries: `@vitejs/plugin-vue` hands the plugin ids like `App.vue?vue&type=script&setup=true`,
- * and the extension filter does not match them. So single-file components — the views this signal
- * would be most useful about — are outside it. Counting them as candidates would report `App.vue`,
- * which every flow executes, as never loaded; 233 files arrived that way on the first run. Until the
- * filter reaches SFCs, the honest scope is `.ts`.
+ * **`.ts` and `.vue`.** Single-file components — the views this signal is most useful about — were
+ * outside it for one release, and the recorded reason was wrong: the diagnosis on file blamed
+ * `@vitejs/plugin-vue` handing the plugin ids like `App.vue?vue&type=script&setup=true` past an
+ * extension filter that could not match them. The instrumented bundle in fact carried 214 `.vue` files
+ * and the browser's own counters carried 115 of them per flush. They were dropped by `nyc report`,
+ * whose default extension list (`@istanbuljs/schema/default-extension`) has no `.vue` — a second
+ * declaration of "what counts as source", defaulting independently of the first. `.nycrc.json` now
+ * states it once and both consumers read it.
+ *
+ * Worth recording, because the wrong diagnosis was the more plausible one and cost a release: the
+ * instrumentation was never broken, the *merge* was, and nothing said so — a filter that silently
+ * drops a file class looks exactly like a file class that was never instrumented.
+ *
+ * **The candidate list is decided by `test-exclude`, not by rules restated here.** It is the module
+ * `nyc` and `vite-plugin-istanbul` both use, reading the same `.nycrc.json` they read, so what this
+ * script calls a candidate is exactly what the bundle instruments and the merge keeps. That matters
+ * more here than anywhere: a file excluded from instrumentation is indistinguishable, in the merged
+ * report, from a file no flow ever loaded — so a candidate list that disagreed with the filter would
+ * report generated modules as unreached views forever, and it did.
  */
-const CANDIDATE_EXT = /\.ts$/
-const IS_TEST = /\.(test|test-d|spec)\.[cm]?tsx?$/
+const shouldInstrument = new TestExclude({
+  cwd: GUI_ROOT,
+  ...JSON.parse(readFileSync(join(GUI_ROOT, '.nycrc.json'), 'utf8')),
+})
+
 const SKIP_DIRS = new Set(['__tests__', 'node_modules'])
-const SKIP_FILES = new Set(['vite-env.d.ts'])
 
 const instrumentableFiles = (dir) => {
   const found = []
@@ -48,12 +64,7 @@ const instrumentableFiles = (dir) => {
     if (entry.isDirectory()) {
       if (SKIP_DIRS.has(entry.name)) continue
       found.push(...instrumentableFiles(join(dir, entry.name)))
-    } else if (
-      CANDIDATE_EXT.test(entry.name)
-      && !IS_TEST.test(entry.name)
-      && !entry.name.endsWith('.d.ts')
-      && !SKIP_FILES.has(entry.name)
-    ) {
+    } else if (shouldInstrument.shouldInstrument(join(dir, entry.name))) {
       found.push(relative(GUI_ROOT, join(dir, entry.name)))
     }
   }

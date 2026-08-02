@@ -67,15 +67,24 @@ const derivedGraphContexts = contextsFor('derived-graph')
 // never gated — see the e2e job + tests/e2e/coverage-fixture.ts).
 const e2eCoverage = process.env.VITE_COVERAGE === 'true'
 
+// What to instrument, stated once. `nyc report` merges what the browser collected and applies these
+// same three filters again, from the same file — `vite-plugin-istanbul` and `nyc` both read `.nycrc`,
+// and having each default independently is exactly how the signal lost every SFC: the instrumented
+// bundle carried 214 `.vue` files and the merged report showed none, because nyc's own default
+// extension list has no `.vue` in it and nothing here contradicted it.
+const nycConfig = JSON.parse(
+  readFileSync(new URL('./.nycrc.json', import.meta.url), 'utf8'),
+) as { extension: string[], include: string[], exclude: string[] }
+
 export default defineConfig({
   plugins: [
     vue(),
     ...(e2eCoverage
       ? [
           istanbul({
-            include: 'src/**',
-            exclude: ['src/**/*.test.ts', 'src/domain/types.generated.ts'],
-            extension: ['.ts', '.vue'],
+            include: nycConfig.include,
+            exclude: nycConfig.exclude,
+            extension: nycConfig.extension,
             // The E2E build is a production `vite build`; instrument it anyway (the plugin
             // skips production by default to avoid shipping instrumented code).
             forceBuildInstrument: true,
