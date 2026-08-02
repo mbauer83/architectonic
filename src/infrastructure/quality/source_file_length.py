@@ -37,6 +37,21 @@ _FRONTEND_GENERATED_SUFFIX = ".generated.ts"
 # store the `close()` it lacked would have pushed it to 415, so the read connection pool moved
 # to `_read_pool.py`, which is where its sizing, check-out and draining belonged anyway. That is
 # how an entry here is meant to move.
+# Two entries were lowered by the method that works: lift a self-contained panel into its own
+# component, move its scoped styles with it, and lower the number. `EntityCreateView.vue` went 530 → 490
+# when its dry-run preview pane became `WriteDryRunPreview.vue` — a pane with no knowledge of entities,
+# rendering a `WriteResult` every create surface produces. That also removed the bare
+# `export { entityDetailRoute }` pass-through its helpers module carried, which existed for one reason:
+# the view was exactly at its limit and could not take another import line.
+#
+# `EntitiesView.vue` (505) has the same pass-through for the same reason and **no panel left to lift**:
+# it already delegates to seven components — nav tree, treemap, table, tier facet, glyph, badge,
+# viewpoint page — and what remains is orchestration. Its seam is elsewhere and is named by its own
+# siblings: `useDiagramsListState` and `useDocumentsListState` exist, `useEntitiesListState` does not, and
+# `EntitiesView` holds `const STORAGE_KEY = 'arch_group_model-project'` and its group/domain/tier query
+# handling inline instead. Extracting that composable is the change that lowers this entry, and it is a
+# focused pass on the most-used view rather than a tail-end tidy — recorded here so the next reader gets
+# the seam rather than the search for it.
 SOURCE_FILE_BASELINE_LIMITS: dict[str, int] = {
     "src/application/verification/artifact_verifier.py": 403,
     "src/infrastructure/artifact_index/_sqlite_store.py": 391,
@@ -56,7 +71,7 @@ SOURCE_FILE_BASELINE_LIMITS: dict[str, int] = {
     "tools/gui/src/ui/views/DocumentCreateView.vue": 606,
     "tools/gui/src/ui/views/DocumentDetailView.vue": 432,
     "tools/gui/src/ui/views/EntitiesView.vue": 505,
-    "tools/gui/src/ui/views/EntityCreateView.vue": 530,
+    "tools/gui/src/ui/views/EntityCreateView.vue": 490,
     "tools/gui/src/ui/views/GraphExploreView.vue": 457,
     "tools/gui/src/ui/views/GroupManagementView.vue": 618,
 }

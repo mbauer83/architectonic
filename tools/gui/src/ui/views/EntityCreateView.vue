@@ -9,8 +9,10 @@ import { hasVerificationErrors, readErrorMessage, collectVerificationIssues } fr
 import { specializationOptionsForEntityType, specializationOptionLabel } from '../lib/specializationOptions'
 import { reconcileRowsWithSchema, rowsFromSchema } from '../lib/schemaPropertyRows'
 import SchemaQuarantineBanner from '../components/SchemaQuarantineBanner.vue'
+import WriteDryRunPreview from '../components/WriteDryRunPreview.vue'
 import { NO_QUARANTINE, quarantineFromSchemaInfo } from '../lib/schemaQuarantine'
-import { createBlockedReason, entityDetailRoute, previewBlockedReason } from './EntityCreateView.helpers'
+import { createBlockedReason, previewBlockedReason } from './EntityCreateView.helpers'
+import { entityDetailRoute } from '../router/artifactRoutes'
 
 const svc = inject(modelServiceKey)!
 const router = useRouter()
@@ -463,44 +465,12 @@ const doCreate = () => {
       </section>
 
       <!-- Preview pane -->
-      <section
+      <WriteDryRunPreview
         v-if="preview"
-        class="preview-section card"
-      >
-        <h2 class="preview-title">
-          Dry-run preview
-        </h2>
-        <div class="preview-meta">
-          <span class="mono">{{ preview.artifact_id }}</span>
-          <span class="preview-path mono">→ {{ preview.path }}</span>
-        </div>
-
-        <div
-          v-if="!previewClean"
-          class="state-msg state-msg--error"
-        >
-          <strong>Verification issues found:</strong>
-          <ul style="margin-top: 4px; font-size: 12px; margin-bottom: 0; padding-left: 18px;">
-            <li
-              v-for="issue in previewIssues"
-              :key="issue"
-            >
-              {{ issue }}
-            </li>
-          </ul>
-        </div>
-        <div
-          v-else
-          class="state-msg state-msg--ok"
-        >
-          Verification passed.
-        </div>
-
-        <pre
-          v-if="preview.content"
-          class="preview-content"
-        >{{ preview.content }}</pre>
-      </section>
+        :preview="preview"
+        :clean="previewClean"
+        :issues="previewIssues"
+      />
     </div>
   </div>
 </template>
@@ -575,16 +545,4 @@ const doCreate = () => {
 .create-btn:hover:not(:disabled) { background: #15803d; }
 .preview-btn:disabled, .create-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-/* Preview pane */
-.preview-title {
-  font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em;
-  color: #374151; margin-bottom: 12px;
-}
-.preview-meta { font-size: 12px; color: #6b7280; margin-bottom: 8px; display: flex; flex-direction: column; gap: 2px; }
-.preview-path { color: #9ca3af; }
-.mono { font-family: monospace; }
-.preview-content {
-  font-size: 11px; color: #374151; white-space: pre-wrap; max-height: 400px; overflow-y: auto;
-  font-family: monospace; margin-top: 12px; background: #f9fafb; border-radius: 6px; padding: 10px;
-}
 </style>

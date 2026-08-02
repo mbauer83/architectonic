@@ -21,6 +21,7 @@ from pathlib import Path
 
 from src.application.assurance.node_sorting import sorted_node_dicts
 from src.domain.assurance.assurance_node_types import NODE_UPDATABLE
+from src.domain.assurance.node_search import rank_node_matches
 from src.domain.clock import utc_now_iso as _now_iso
 from src.infrastructure.assurance._analysis_records import ANALYSES_DIR, FileAnalysisStoreMixin
 from src.infrastructure.assurance._edge_records import as_arch_ref_records, as_edge_records
@@ -298,14 +299,13 @@ class PrivateGitAssuranceStore(
         *,
         limit: int = 20,
     ) -> list[dict[str, object]]:
-        q = query.lower()
-        results: list[dict[str, object]] = []
-        for node in self.list_nodes():
-            if q in str(node.get("name", "")).lower() or q in str(node.get("content_text", "")).lower():
-                results.append(node)
-                if len(results) >= limit:
-                    break
-        return results
+        """Matching and ranking are the domain's rule, not this store's — see `node_search`.
+
+        This used to be a local substring filter, identical in three stores and *less* capable than the
+        SQLCipher store's SQL, which ranks a name match above a body match. Sharing the rule is what
+        makes the four backends answer the same question.
+        """
+        return rank_node_matches(self.list_nodes(), query, limit=limit)
 
     # ── Stats ─────────────────────────────────────────────────────────────────
 
