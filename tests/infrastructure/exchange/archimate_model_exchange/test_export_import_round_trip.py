@@ -21,6 +21,7 @@ from src.infrastructure.exchange.archimate_model_exchange.concept_mapping import
 from src.infrastructure.exchange.archimate_model_exchange.identity_store import RepoExchangeIdentityStore
 from src.infrastructure.exchange.archimate_model_exchange.write_adapter import ArtifactWriteExchangeAdapter
 from src.infrastructure.mcp import mcp_artifact_server as mcp
+import pytest
 
 
 def _eng_root(tmp_path: Path, tag: str) -> Path:
@@ -58,6 +59,7 @@ def _connect(repo: Path, source: str, target: str, connection_type: str, *, spec
     assert result["wrote"], result
 
 
+@pytest.mark.verifies("REQ@1783870983.rWP8Hl")
 def test_export_then_import_round_trip_preserves_mapped_concepts(tmp_path: Path) -> None:
     source_root = _eng_root(tmp_path, "EXP1")
 

@@ -60,6 +60,7 @@ def repo(tmp_path: Path) -> Path:
 
 
 class TestGroupCreate:
+    @pytest.mark.verifies("REQ@1780505955.MdtfC3")
     def test_creates_model_project(self, repo: Path) -> None:
         result = group_create(repo, axis="model-project", slug="alpha", name="Alpha Project")
         assert result["action"] == "created"
@@ -70,6 +71,7 @@ class TestGroupCreate:
         assert entry is not None
         assert entry.name == "Alpha Project"
 
+    @pytest.mark.verifies("REQ@1780505955.MdtfC3")
     def test_creates_diagram_collection(self, repo: Path) -> None:
         result = group_create(
             repo,
@@ -86,6 +88,7 @@ class TestGroupCreate:
         # model-project ignores type_filter
         assert entry.meta_ontology == ""
 
+    @pytest.mark.verifies("REQ@1780505955.MdtfC3")
     def test_creates_document_collection(self, repo: Path) -> None:
         group_create(repo, axis="document-collection", slug="docs-main", name="Docs Main")
         registry = load_group_registry(repo)

@@ -85,6 +85,7 @@ def test_dry_run_never_mutates(tmp_path: Path, capsys) -> None:
     assert "legacy-marker" in capsys.readouterr().out
 
 
+@pytest.mark.verifies("REQ@1783872530.VyosDa")
 def test_commit_applies_and_is_idempotent(tmp_path: Path) -> None:
     repo = tmp_path / "repo"
     _init_repo(repo)

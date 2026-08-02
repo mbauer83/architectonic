@@ -12,6 +12,7 @@ from pathlib import Path
 
 from src.application.artifacts.query import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
+import pytest
 
 
 def _write(path: Path, text: str) -> None:
@@ -109,6 +110,7 @@ def _balanced_repo(root: Path) -> Path:
     return root
 
 
+@pytest.mark.verifies("REQ@1712870400.Cc2Dd2")
 def test_minority_kinds_not_crowded_out_by_entity_flood(tmp_path: Path) -> None:
     repo = ArtifactRepository(shared_artifact_index(_balanced_repo(tmp_path / "repo")))
 
@@ -118,6 +120,7 @@ def test_minority_kinds_not_crowded_out_by_entity_flood(tmp_path: Path) -> None:
     assert {"entity", "diagram", "document"} <= kinds, f"A kind was crowded out. Got: {kinds}"
 
 
+@pytest.mark.verifies("REQ@1712870400.Cc2Dd2")
 def test_diagram_found_by_contained_entity_name(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     member_id = "APP@1000000061.Quag00.quagmire-subsystem"

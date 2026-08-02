@@ -112,6 +112,7 @@ def _attempt(source_type: str, target_type: str, conn_type: str) -> tuple[mut.Mu
     return result, archive
 
 
+@pytest.mark.verifies("REQ@1784502380.oiS35Q")
 @pytest.mark.parametrize(("source_type", "target_type", "conn_type"), _MATRIX_ROWS)
 def test_every_matrix_row_is_accepted_and_audited(
     source_type: str, target_type: str, conn_type: str,
@@ -141,6 +142,7 @@ def test_rejection_carries_the_pairs_full_legal_set() -> None:
     assert "leads-to" in result.legal_types
 
 
+@pytest.mark.verifies("REQ@1784502380.oiS35Q")
 def test_matrix_row_count_is_the_module_matrix() -> None:
     """The parametrization above is EXHAUSTIVE over the module — if the matrix
     grows, this file automatically covers the new rows."""

@@ -7,6 +7,8 @@ no-overwrite guarantee that protects an operator's local edits.
 
 from __future__ import annotations
 
+import pytest
+
 import json
 from pathlib import Path
 
@@ -24,6 +26,7 @@ def _make_repo(tmp_path: Path) -> Path:
     return repo
 
 
+@pytest.mark.verifies("REQ@1712870400.cz8L4W")
 def test_populates_missing_documents_schemata_and_config(tmp_path: Path) -> None:
     repo = _make_repo(tmp_path)
     summary = ensure_arch_repo_defaults(repo)

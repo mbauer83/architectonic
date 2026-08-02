@@ -34,6 +34,7 @@ def fresh_gate():
 # ---------------------------------------------------------------------------
 
 class TestGateWriting:
+    @pytest.mark.verifies("REQ@1782080517.IIl8-4")
     def test_write_excludes_concurrent_write(self):
         gate = WorkspaceMutationGate()
         order: list[str] = []
@@ -85,6 +86,7 @@ class TestGateWriting:
 
         assert events == ["write-done", "read-in"]
 
+    @pytest.mark.verifies("REQ@1782080517.IIl8-4")
     def test_multiple_reads_concurrent(self):
         gate = WorkspaceMutationGate()
         inside: list[int] = []

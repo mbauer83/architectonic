@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -157,6 +159,7 @@ def test_scope_filter_enterprise():
     assert result.classifiers[0].type_id == _CLF_ENT
 
 
+@pytest.mark.verifies("REQ@1712870400.kOU3al")
 def test_engagement_diagram_sees_engagement_and_enterprise_classifiers():
     eng_path = Path("/eng/order.md")
     ent_path = Path("/ent/product.md")
@@ -172,6 +175,7 @@ def test_engagement_diagram_sees_engagement_and_enterprise_classifiers():
     assert {classifier.type_id for classifier in result.classifiers} == {_CLF_A, _CLF_ENT}
 
 
+@pytest.mark.verifies("REQ@1712870400.kOU3al")
 def test_enterprise_diagram_excludes_engagement_classifiers():
     eng_path = Path("/eng/order.md")
     ent_path = Path("/ent/product.md")

@@ -42,6 +42,7 @@ def test_verify_chain_empty(store_and_archive) -> None:  # type: ignore[no-untyp
     assert archive.verify_chain()
 
 
+@pytest.mark.verifies("REQ@1780655839.ySK1bT")
 def test_verify_chain_with_entries(store_and_archive) -> None:  # type: ignore[no-untyped-def]
     _, archive = store_and_archive
     archive.append("CREATE", node_id="N1")
@@ -50,6 +51,7 @@ def test_verify_chain_with_entries(store_and_archive) -> None:  # type: ignore[n
     assert archive.verify_chain()
 
 
+@pytest.mark.verifies("REQ@1780655839.ySK1bT")
 def test_seal_baseline(store_and_archive) -> None:  # type: ignore[no-untyped-def]
     _, archive = store_and_archive
     archive.append("CREATE", node_id="N1")

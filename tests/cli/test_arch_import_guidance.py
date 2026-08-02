@@ -50,6 +50,7 @@ def _isolated_cache_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path
 
 
 class TestRunImportHappyPath:
+    @pytest.mark.verifies("REQ@1783870978.mUf9JQ")
     def test_writes_cache_and_sidecar(self, source_file: Path, _isolated_cache_dir: Path) -> None:
         summaries = cli.run_import(source=str(source_file), module=None, dry_run=False, strict=False, allow_http=False)
         assert [s.alias for s in summaries] == ["archimate-4", "workspace"]

@@ -125,6 +125,7 @@ def repo(tmp_path: Path) -> Path:
 
 
 class TestVerifyEntityFile:
+    @pytest.mark.verifies("REQ@1712870400.V5EdQk")
     def test_valid_entity_passes(self, repo: Path) -> None:
         eid = "REQ@1000000000.AbcDef.my-req"
         path = repo / "model" / "motivation" / "requirement" / f"{eid}.md"
@@ -132,6 +133,7 @@ class TestVerifyEntityFile:
         result = ArtifactVerifier(catalogs=_catalogs()).verify_entity_file(path)
         assert result.valid, [i.message for i in result.issues]
 
+    @pytest.mark.verifies("REQ@1712870400.Aa1Bb1")
     def test_missing_artifact_id_field(self, repo: Path) -> None:
         path = repo / "model" / "motivation" / "requirement" / "REQ@1000000001.XxXxXx.bad.md"
         _write(
@@ -170,6 +172,7 @@ alias: REQ_XxXxXx
         assert not result.valid
         assert any(i.code == "E102" for i in result.issues)
 
+    @pytest.mark.verifies("REQ@1712870400.V5EdQk")
     def test_missing_content_section(self, repo: Path) -> None:
         eid = "REQ@1000000003.AbcDef.no-content"
         path = repo / "model" / "motivation" / "requirement" / f"{eid}.md"
@@ -333,6 +336,7 @@ class TestVerifyOutgoingFile:
         assert not result.valid
         assert any(i.code == "E120" for i in result.issues)
 
+    @pytest.mark.verifies("REQ@1712870400.Ee3Ff3")
     def test_unknown_target_entity(self, repo: Path) -> None:
         src = "REQ@1000000000.SrcAaa.src"
         self._setup_entities(repo, (src, "requirement"))
@@ -700,6 +704,7 @@ class TestVerifyDocumentFile:
 
 
 class TestVerifyAll:
+    @pytest.mark.verifies("REQ@1712870400.JTRw1x")
     def test_verify_all_passes_clean_repo(self, repo: Path) -> None:
         eid = "REQ@1000000000.AbcDef.clean"
         _write(

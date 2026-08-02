@@ -12,6 +12,7 @@ from pathlib import Path
 from src.domain.ontology_representation.artifact_types import EntityRecord
 from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry
 from src.infrastructure.rest.routers.entities._filter import EntityFilter, parse_csv_filter
+import pytest
 
 _ONTOLOGY = build_runtime_catalogs(get_module_registry()).ontology
 
@@ -59,12 +60,14 @@ def test_internal_entity_type_never_matches() -> None:
     assert entity_filter.matches(internal, ontology=_ONTOLOGY) is False
 
 
+@pytest.mark.verifies("REQ@1712870400.s5B3gB")
 def test_domain_filter_excludes_non_matching_domain() -> None:
     entity_filter = EntityFilter.from_params(domains="application", entity_types=None)
     assert entity_filter.matches(_entity(domain="motivation"), ontology=_ONTOLOGY) is False
     assert entity_filter.matches(_entity(domain="application"), ontology=_ONTOLOGY) is True
 
 
+@pytest.mark.verifies("REQ@1712870400.s5B3gB")
 def test_entity_type_filter_excludes_non_matching_type() -> None:
     entity_filter = EntityFilter.from_params(domains=None, entity_types="goal")
     assert entity_filter.matches(_entity(artifact_type="requirement"), ontology=_ONTOLOGY) is False

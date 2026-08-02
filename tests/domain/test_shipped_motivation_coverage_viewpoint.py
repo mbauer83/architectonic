@@ -16,6 +16,7 @@ from src.domain.viewpoints.viewpoint_validation import validate_viewpoint_defini
 from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry
 from src.infrastructure.viewpoint_declarations import load_module_viewpoint_catalog
 from tests.domain.test_default_viewpoint_library import _ARCH_PACKAGE_DIR
+import pytest
 
 _REGISTRIES = build_registry_snapshot(build_runtime_catalogs(get_module_registry()), [])
 
@@ -57,6 +58,7 @@ class TestShippedPatterns:
             "motivation", "overall_realization", "behavior_coverage", "business_coverage", "application_coverage",
         ]
 
+    @pytest.mark.verifies("REQ@1784609467.2I2fS1")
     def test_motivation_is_branch_completeness_only_with_both_shortcut_kinds(self) -> None:
         motivation = _patterns().by_name("motivation")
         assert motivation is not None

@@ -3,6 +3,12 @@ import { expect, test } from '@playwright/test'
 const HAZARD = 'HAZ@1784721764.wra3.48aefe'
 const UCA_NAME = 'Renderer is given an untrusted PUML body carrying a file/network preprocessor directive'
 
+/**
+ * Endpoint names and deep links on every visible edge, bounded neighbour traversal, and a graph view
+ * — the four things the requirement asks for, exercised against the real store rather than a mock.
+ *
+ * @verifies REQ@1784502378.Z09NNS
+ */
 test('a real assurance neighborhood supports deep-linking, expansion, selection, and zoom', async ({ page }) => {
   await page.goto(`/assurance/nodes/${encodeURIComponent(HAZARD)}/graph`)
 

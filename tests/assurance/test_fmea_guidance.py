@@ -25,6 +25,7 @@ _TOPICS = ("fmea-failure-modes", "fmea-effects", "fmea-causes", "fmea-controls",
 
 
 class TestEveryTopicIsReachableAndComplete:
+    @pytest.mark.verifies("REQ@1780655839.az20QC")
     def test_the_five_topics_exist(self) -> None:
         assert set(FAILURE_MODE_GUIDANCE) == set(_TOPICS)
 
@@ -40,6 +41,7 @@ class TestEveryTopicIsReachableAndComplete:
         for field in ("step", "what", "why", "how", "standards"):
             assert str(entry.get(field) or "").strip(), f"{topic} has no {field}"
 
+    @pytest.mark.verifies("REQ@1780655839.az20QC")
     @pytest.mark.parametrize("topic", _TOPICS)
     def test_the_topic_cites_the_published_standards(self, topic: str) -> None:
         standards = lookup(topic)["standards"]

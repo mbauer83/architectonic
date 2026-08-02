@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from src.application.assurance import model_bind as mb
+import pytest
 
 
 class _FakeArchive:
@@ -129,6 +130,7 @@ def test_unknown_arch_type_is_invalid() -> None:
 # ── Bound (creator present) ──────────────────────────────────────────────────────
 
 
+@pytest.mark.verifies("REQ@1780655839.kjBJrh")
 def test_bound_creates_registers_and_marks_bound() -> None:
     store = _FakeStore(_node())
     archive = _FakeArchive()

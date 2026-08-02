@@ -118,6 +118,7 @@ def _build_test_app(repo_root: Path) -> tuple[FastAPI, list[str]]:
 # ── Tests ─────────────────────────────────────────────────────────────────────
 
 
+@pytest.mark.verifies("REQ@1776637159.X5jYC0")
 def test_concurrent_tab_reads_are_not_serialized(tmp_path: Path) -> None:
     """16 tabs hitting /api/entities simultaneously should finish in parallel, not
     one after the other.  We assert wall-clock time < 4 × single-request baseline."""

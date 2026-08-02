@@ -37,6 +37,7 @@ class TestStorageSettings:
 
         assert storage_assurance_max_classification() in {"TLP:WHITE", "TLP:GREEN", "TLP:AMBER", "TLP:RED"}
 
+    @pytest.mark.verifies("REQ@1780655839.IriicS")
     def test_unknown_store_backend_fails_closed(self) -> None:
         from src.config.storage_settings import storage_assurance_store_backend
 

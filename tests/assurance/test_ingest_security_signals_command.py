@@ -92,6 +92,7 @@ class TestValidation:
 
 
 class TestExecution:
+    @pytest.mark.verifies("REQ@1780655839.urjIeU")
     def test_successful_ingest_activates_atomically(self, store: Any) -> None:
         result = ingest_security_signals(
             _bundle(findings=({"component_id": "C1", "external_ids": ["CVE-2024-1"]},)),

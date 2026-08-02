@@ -16,6 +16,7 @@ from src.application.artifacts.parsing import decode_entity_properties
 from src.application.modeling.artifact_write_formatting import format_entity_markdown
 from src.application.verification._verifier_rules_schema import check_attribute_schema
 from src.application.verification.artifact_verifier_types import VerificationResult
+import pytest
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -73,6 +74,7 @@ def _write_schema(repo_root: Path, artifact_type: str, schema: dict) -> None:
 
 
 class TestTypedPropertyRoundTrip:
+    @pytest.mark.verifies("REQ@1781886727.m0KjkK")
     def test_integer_survives_roundtrip(self, tmp_path: Path) -> None:
         from src.application.artifacts.parsing import parse_entity_content_sections
 
@@ -161,6 +163,7 @@ class TestTypedPropertyRoundTrip:
 
 
 class TestAttributeTypesFrontmatter:
+    @pytest.mark.verifies("REQ@1781886727.m0KjkK")
     def test_attribute_types_written_to_frontmatter(self, tmp_path: Path) -> None:
         content = _write_entity(
             tmp_path / "entity.md",

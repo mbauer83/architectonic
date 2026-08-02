@@ -77,6 +77,7 @@ def test_cross_repo_duplicate_ids_detects_a_persistent_full_id_collision(tmp_pat
     assert combined.cross_repo_duplicate_ids() == {dup_id}
 
 
+@pytest.mark.verifies("REQ@1712870400.Kk6Ll6")
 def test_startup_check_fails_closed_on_a_persistent_cross_repo_id_collision(tmp_path: Path) -> None:
     from src.infrastructure.backend._startup_id_checks import assert_no_cross_repo_id_collisions
 

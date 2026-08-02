@@ -111,6 +111,7 @@ def _poll_until_synced(enterprise: Path) -> None:
     raise AssertionError(f"sync did not reach synced within {POLL_DEADLINE_S}s")
 
 
+@pytest.mark.verifies("REQ@1712870400.Gg4Hh4")
 def test_full_cycle_promote_save_submit_merge_poll(cycle, tmp_path: Path) -> None:
     client, engagement, enterprise, origin, repo = cycle
 

@@ -63,6 +63,7 @@ def _fm_e330_trigger():
 # ── Tests ─────────────────────────────────────────────────────────────────────
 
 
+@pytest.mark.verifies("REQ@1781976357.A5WgC8")
 def test_datatype_module_has_backing_contribution() -> None:
     """Datatype module exposes a contribution with diagnostic_codes == ('E330','E331')."""
     contribs = datatype_module.diagram_verification_contributions()

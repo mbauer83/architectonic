@@ -118,6 +118,7 @@ class TestSingleSubmissionSingleGate:
 
 
 class TestRejectionBeforeSubmission:
+    @pytest.mark.verifies("REQ@1712870400.m117_R")
     def test_denied_request_never_reaches_the_queue(self, harness: _Harness) -> None:
         harness.provider.read_only = True
         with pytest.raises(MutationRejected) as excinfo:

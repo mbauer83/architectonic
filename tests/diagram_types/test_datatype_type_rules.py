@@ -24,6 +24,7 @@ from src.application.verification.artifact_verifier_types import Severity, Verif
 from src.diagram_types.datatype._contributions import _ProjectionBasedContributions
 from src.domain.diagrams.diagram_verification import BaseDiagramVerificationContext
 from src.domain.ontology_representation.artifact_types import EntityRecord
+import pytest
 
 _PRIMITIVE_NAMES: frozenset[str] = frozenset(
     ["String", "Integer", "Number", "Boolean", "Date", "DateTime", "UUID"]
@@ -142,6 +143,7 @@ def _run(
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.verifies("REQ@1781976356.EPkivp")
 def test_e332_unknown_primitive() -> None:
     fm = _fm_with_attrs("CLF@1.ab.x", [{"name": "f", "type": {"kind": "primitive", "name": "Blob"}}])
     e332, _ = _run(fm)
@@ -160,6 +162,7 @@ def test_e332_missing_classifier_id() -> None:
     assert e332[0].details["reason"] == "missing-id"
 
 
+@pytest.mark.verifies("REQ@1781976356.EPkivp")
 def test_e332_out_of_scope_enterprise_sees_engagement() -> None:
     eng_clf = _entity("CLF@1.ab.order", name="Order", scope_str="engagement")
     repo = _StubRepo([eng_clf], scope="engagement")

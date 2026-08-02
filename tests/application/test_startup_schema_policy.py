@@ -57,10 +57,12 @@ def test_load_repo_config_reads_policy(tmp_path: Path) -> None:
 # ── get_required_defaults_policy ──────────────────────────────────────────────
 
 
+@pytest.mark.verifies("REQ@1781886720.VJ2ml-")
 def test_policy_defaults_to_non_strict_when_no_config(tmp_path: Path) -> None:
     assert get_required_defaults_policy(tmp_path) == "non-strict"
 
 
+@pytest.mark.verifies("REQ@1781886720.VJ2ml-")
 def test_policy_reads_strict(tmp_path: Path) -> None:
     root = _make_repo_root(tmp_path, policy="strict")
     assert get_required_defaults_policy(root) == "strict"

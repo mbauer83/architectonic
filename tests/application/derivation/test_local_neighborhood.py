@@ -15,6 +15,7 @@ from __future__ import annotations
 from src.application.derivation.local_neighborhood import SPEC, derive
 from src.domain.viewpoints.view_derivations import SourceModelSnapshot
 from tests.application.derivation._fixtures import FakeQuery, _connection, _entity
+import pytest
 
 _SNAPSHOT = SourceModelSnapshot(repo_scope="both")
 
@@ -56,6 +57,7 @@ class TestLocalNeighborhoodBFS:
         assert "C@3" not in result.entity_ids
         assert "A@1---B@2@@serving" in result.connection_ids
 
+    @pytest.mark.verifies("REQ@1712870400.eBAa26")
     def test_max_hops_2_reaches_c(self) -> None:
         result = derive(
             params={"root_entity_ids": ["A@1"], "max_hops": 2},

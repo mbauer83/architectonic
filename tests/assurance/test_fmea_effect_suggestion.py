@@ -15,6 +15,7 @@ from typing import Any
 
 from src.application.assurance.fmea_effect_suggestion import EffectSuggestion, suggest_effects
 from src.domain.assurance.fmea_structural_signals import TypedEdge
+import pytest
 
 
 def _typed(source: str, target: str, *, strength: int = 4) -> TypedEdge:
@@ -49,6 +50,7 @@ def _uca_world() -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[
 
 
 class TestSuggestionsComeFromHazardsTheAnalysisAlreadyDrew:
+    @pytest.mark.verifies("REQ@1785058330.-LmyST")
     def test_a_hazard_reached_through_an_analysed_neighbour_is_suggested(self) -> None:
         nodes, assurance_edges, refs = _uca_world()
 

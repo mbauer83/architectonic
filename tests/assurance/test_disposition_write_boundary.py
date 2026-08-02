@@ -12,6 +12,7 @@ from typing import Any
 
 from src.application.assurance import mutations as mut
 from tests.assurance.test_assurance_mutations import _FakeArchive, _FakeStore
+import pytest
 
 
 def _constraint(store: Any, disposition: str) -> str:
@@ -51,6 +52,7 @@ class TestRefusal:
 
         assert archive.entries == []
 
+    @pytest.mark.verifies("REQ@1780655839.IOPvsf")
     def test_a_risk_treatment_value_does_not_pass_as_a_disposition(self) -> None:
         result = mut.create_node(
             _FakeStore(), _FakeArchive(),
