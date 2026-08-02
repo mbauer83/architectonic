@@ -32,6 +32,8 @@ export const enterpriseAdminMethods = (): EnterpriseAdminRepository => ({
     deleteNoContent(
       buildUrl(`/connections/${encodeIdentitySegment(connectionId)}`, { dry_run: false }, true),
     ),
+  adminCreateDiagram: (body) =>
+    postJson(buildUrl('/diagrams', undefined, true), body, WriteResultSchema),
   previewAdminDeleteDiagram: (id) =>
     deleteReq(
       buildUrl(`/diagrams/${encodeIdentitySegment(id)}`, { dry_run: true }, true), WriteResultSchema,

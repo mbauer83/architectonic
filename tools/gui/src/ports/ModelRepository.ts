@@ -217,13 +217,28 @@ export interface ModelRepository extends EnterpriseAdminRepository {
     viewpoint?: { slug: string; version: number; enforcement_override?: 'off' | 'warn' | 'ghost' } | null;
     dry_run?: boolean;
   }) => Effect.Effect<WriteResult, RepoError>
-  /** Merge a whitelisted metadata delta into one datatype classifier (attribute_id omitted) or
-   * one of its attributes (attribute_id set). Server reads the file + merges — the GUI sends only
-   * the target ids and the delta, never the whole diagram-entities map. */
-  readonly patchDiagramEntityMetadata: (id: string, classifierId: string, body: {
-    attribute_id?: string;
+  /**
+   * Merge a whitelisted metadata delta into one datatype classifier. The server reads the file and
+   * merges — the GUI sends only the target ids and the delta, never the whole diagram-entities map.
+   *
+   * Two methods rather than one with an optional `attribute_id`, because they address two different
+   * resources and the server says so: `/…/entities/{clf}/metadata` and
+   * `/…/entities/{clf}/attributes/{a}/metadata`, two operation ids, and a body that **forbids**
+   * `attribute_id` outright. This port used to carry one method with that field in the body, which is
+   * the shape the backend's redesign removed and which the client never followed: every attribute
+   * metadata edit from the diagram sidebar answered 422, because the field the client sent to select
+   * the resource is the field the server rejects. Nothing caught it because nothing had ever driven
+   * the method — it was one of 42 in the conformance harness's unexercised register.
+   */
+  readonly patchDiagramClassifierMetadata: (id: string, classifierId: string, body: {
     patch: Record<string, unknown>; dry_run?: boolean;
   }) => Effect.Effect<WriteResult, RepoError>
+  /** The same, one level deeper: the attribute is identity, not a body field. */
+  readonly patchDiagramAttributeMetadata: (
+    id: string, classifierId: string, attributeId: string, body: {
+      patch: Record<string, unknown>; dry_run?: boolean;
+    },
+  ) => Effect.Effect<WriteResult, RepoError>
   readonly getViewpointProjection: (diagramId: string) => Effect.Effect<DiagramViewpointProjection, RepoError>
   readonly listViewpointDefinitions: () => Effect.Effect<readonly ViewpointDefinitionEnvelope[], RepoError>
   /** Fixed, unstyled content — repository-context execution by slug or ad-hoc query. */

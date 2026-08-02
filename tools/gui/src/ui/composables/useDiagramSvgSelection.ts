@@ -149,12 +149,16 @@ export function useDiagramSvgSelection(options: {
     patch: Record<string, unknown>
   }): Promise<void> => {
     if (!diagramId.value) return
+    // Which of two addressed resources is being written is decided *here*, by whether the sidebar
+    // handed us an attribute — not by a field in the body. The server forbids that field, and sending
+    // it made every attribute edit a 422.
+    const body = { patch: payload.patch, dry_run: false }
     const exit = await metadataMutation.run(
-      svc.patchDiagramEntityMetadata(diagramId.value, payload.classifierId, {
-        attribute_id: payload.attributeId,
-        patch: payload.patch,
-        dry_run: false,
-      }),
+      payload.attributeId === undefined
+        ? svc.patchDiagramClassifierMetadata(diagramId.value, payload.classifierId, body)
+        : svc.patchDiagramAttributeMetadata(
+            diagramId.value, payload.classifierId, payload.attributeId, body,
+          ),
     )
     if (Exit.isSuccess(exit)) reload()
   }

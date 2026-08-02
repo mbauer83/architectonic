@@ -39,15 +39,11 @@ import {
   MatrixPreviewResultSchema,
   PromotionPlanSchema,
   PromotionResultSchema,
-  SyncStatusSchema,
-  SyncSaveResultSchema,
   ServerInfoSchema,
   ModuleSummaryListSchema,
   WriteHelpSchema,
-  GroupListSchema,
   AuthoringGuidanceSchema,
 } from '../../domain/schemas'
-import { SyncChangesResultSchema } from '../../domain/schemas-changes'
 import {
   buildUrl, deleteNoContent, deleteReq, entityAddress, fetchJson, fetchJsonNotFound, fetchText,
   fetchWithTimeout, patchJson, postJson, putJson,
@@ -56,18 +52,12 @@ import { encodeIdentitySegment } from '../../domain/identitySegments'
 import { parseMarkdown } from '../../application/MarkdownService'
 import { enterpriseAdminMethods } from './HttpEnterpriseAdminRepository'
 import { viewpointMethods } from './HttpViewpointRepository'
+import { workspaceMethods } from './HttpWorkspaceRepository'
 
 // Timeout budgets are no longer set here. Viewpoint execution and the other derived-graph
 // routes are classified in `routeTimeoutPolicy`, which the transport and the dev proxy both
 // read — a budget passed at the call site could only ever agree with the proxy by coincidence.
 let serverInfoPromise: Promise<unknown> | null = null
-
-// A group is addressed by the pair (axis kind, slug); both segments are encoded, because a slug is
-// author-chosen text and an axis is a vocabulary term neither of which the URL grammar guarantees.
-const groupPath = (kind: string, slug: string, action = ''): string =>
-  `/groups/${encodeIdentitySegment(kind)}/${encodeIdentitySegment(slug)}${action}`
-const groupUrl = (kind: string, slug: string, action = ''): string =>
-  buildUrl(groupPath(kind, slug, action))
 
 // ── Factory ───────────────────────────────────────────────────────────────────
 
@@ -347,10 +337,19 @@ export const makeHttpModelRepository = (): ModelRepository => ({
   createDiagram: (body) => postJson(buildUrl('/diagrams'), body, WriteResultSchema),
   editDiagram: (id, body) =>
     putJson(buildUrl(`/diagrams/${encodeIdentitySegment(id)}`), body, WriteResultSchema),
-  patchDiagramEntityMetadata: (id, classifierId, body) =>
+  patchDiagramClassifierMetadata: (id, classifierId, body) =>
     patchJson(
       buildUrl(
         `/diagrams/${encodeIdentitySegment(id)}/entities/${encodeIdentitySegment(classifierId)}/metadata`,
+      ),
+      body,
+      WriteResultSchema,
+    ),
+  patchDiagramAttributeMetadata: (id, classifierId, attributeId, body) =>
+    patchJson(
+      buildUrl(
+        `/diagrams/${encodeIdentitySegment(id)}/entities/${encodeIdentitySegment(classifierId)}`
+        + `/attributes/${encodeIdentitySegment(attributeId)}/metadata`,
       ),
       body,
       WriteResultSchema,
@@ -392,25 +391,5 @@ export const makeHttpModelRepository = (): ModelRepository => ({
   executePromotion: (body) =>
     postJson(buildUrl('/promote/execute'), body, PromotionResultSchema),
 
-  getSyncStatus: () => fetchJson(buildUrl('/sync/status'), SyncStatusSchema),
-  saveEngagementChanges: (body) =>
-    postJson(buildUrl('/sync/engagement/save'), { push: true, ...body }, SyncSaveResultSchema),
-  saveEnterpriseChanges: (body) => postJson(buildUrl('/sync/enterprise/save'), body, SyncSaveResultSchema),
-  submitEnterpriseChanges: () => postJson(buildUrl('/sync/enterprise/submit'), {}, SyncSaveResultSchema),
-  withdrawEnterpriseChanges: () =>
-    postJson(buildUrl('/sync/enterprise/withdraw'), { confirm: true }, SyncSaveResultSchema),
-  getChanges: (repo) => fetchJson(buildUrl('/sync/changes', { repo }), SyncChangesResultSchema),
-
-  listGroups: (kind?: string) =>
-    fetchJson(buildUrl('/groups', kind ? { kind } : undefined), GroupListSchema),
-  createGroup: (body) => postJson(buildUrl('/groups'), body, Schema.Record({ key: Schema.String, value: Schema.Unknown })),
-  renameGroup: (kind, slug, body) =>
-    postJson(groupUrl(kind, slug, '/rename'), body, Schema.Record({ key: Schema.String, value: Schema.Unknown })),
-  archiveGroup: (kind, slug, body) =>
-    postJson(groupUrl(kind, slug, '/archive'), body, Schema.Record({ key: Schema.String, value: Schema.Unknown })),
-  unarchiveGroup: (kind, slug) =>
-    postJson(groupUrl(kind, slug, '/unarchive'), {}, Schema.Record({ key: Schema.String, value: Schema.Unknown })),
-  deleteGroup: (kind, slug, confirm) =>
-    deleteReq(buildUrl(groupPath(kind, slug), { confirm }), Schema.Record({ key: Schema.String, value: Schema.Unknown })),
-  updateGroup: (kind, slug, body) => patchJson(groupUrl(kind, slug), body, Schema.Record({ key: Schema.String, value: Schema.Unknown })),
+  ...workspaceMethods(),
 })

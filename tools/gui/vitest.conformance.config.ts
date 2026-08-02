@@ -24,6 +24,12 @@ export default defineConfig({
     environment: 'jsdom',
     environmentOptions: { jsdom: { url: `${baseUrl}/` } },
     include: ['tests/conformance/**/*.conformance.test.ts'],
+    // The write walk is excluded by name, and has `vitest.writeconformance.config.ts` of its own for
+    // the reason this file's own docstring gives about `npm test`: it answers to a *stricter*
+    // precondition. It must run against a disposable repository, so it refuses without the fixture
+    // handoff its orchestrator supplies — which, folded in here, would fail this gate for everyone
+    // running it the documented way, against their own backend.
+    exclude: ['tests/conformance/writes.conformance.test.ts'],
     // One file at a time: the steps share a live backend and a discovered seed, and interleaving two
     // files' discovery would make a failure's cause ambiguous.
     fileParallelism: false,

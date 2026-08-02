@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { makeHttpModelRepository } from '../../src/adapters/http/HttpModelRepository'
 import { READ_STEPS } from './readSteps'
+import { ADMIN_WRITE_STEPS, WRITE_STEPS } from './writeSteps'
 
 /**
  * The harness's own completeness, held against the port rather than against a list of good
@@ -19,69 +20,35 @@ const portMethods = (): readonly string[] =>
     .map(([name]) => name)
 
 /**
- * Methods no step drives yet, each with why. Two kinds only:
+ * Methods no step drives, each with why. **One entry, as of 2026-08-02.**
  *
- * * **mutating** — creates, edits, deletes. They are the next slice (handoff §1.9 step 4) and need a
- *   fixture repository to write into; run against the dogfood repository they would author content.
- *   That every one of them is dark is not news: `NEVER_REQUESTED_OPERATIONS` says 73% of the write
- *   surface has never been requested at all.
- * * **needs a differently-started backend** — the admin tier answers 403 unless the server was
- *   started with `--admin-mode`, so a step here would assert the refusal, not the contract.
+ * It held 42: every mutating method, plus the whole admin tier. Both kinds had the same precondition —
+ * a repository they could write into, and for the admin tier a backend started with `--admin-mode` —
+ * and both are met now by `tools/quality/gui_write_walk.py`, which builds a disposable workspace, serves
+ * it on its own port, and runs the write harness against it twice: once per tier, sequentially, because
+ * admin mode is process-wide.
+ *
+ * Two defects came out of the first run, both invisible for exactly as long as these methods were dark:
+ * `patchDiagramEntityMetadata` sent `attribute_id` in the body, which the server had moved into the path
+ * and now forbids outright — so every attribute-metadata edit in the shipped UI answered 422 — and the
+ * port declared `adminDeleteDiagram` with no way to create the diagram it deletes.
+ *
+ * What is left is not a request at all.
  */
 const UNEXERCISED: Readonly<Record<string, string>> = {
-  // Mutating — engagement tier.
-  createEntity: 'mutating: authors an entity',
-  editEntity: 'mutating: rewrites an entity',
-  deleteEntity: 'mutating: removes an entity',
-  addConnection: 'mutating: authors a connection',
-  editConnection: 'mutating: rewrites a connection',
-  removeConnection: 'mutating: removes a connection',
-  manageConnectionAssociations: 'mutating: rewrites a set-valued relation',
-  createDiagram: 'mutating: authors a diagram',
-  editDiagram: 'mutating: replaces a diagram wholesale',
-  deleteDiagram: 'mutating: removes a diagram',
-  patchDiagramEntityMetadata: 'mutating: merges a metadata delta into a diagram',
-  setEdgeLabel: 'mutating: writes an edge label into a diagram',
-  syncDiagramToModel: 'mutating: promotes diagram content into the model',
-  createDocument: 'mutating: authors a document',
-  editDocument: 'mutating: rewrites a document',
-  deleteDocument: 'mutating: removes a document',
-  createMatrixDiagram: 'mutating: authors a matrix diagram',
-  editMatrixDiagram: 'mutating: rewrites a matrix diagram',
-  createGroup: 'mutating: authors a group',
-  updateGroup: 'mutating: rewrites a group',
-  renameGroup: 'mutating: renames a group, moving its members',
-  archiveGroup: 'mutating: archives a group',
-  unarchiveGroup: 'mutating: unarchives a group',
-  deleteGroup: 'mutating: removes a group',
-  createViewpointDefinition: 'mutating: authors a viewpoint definition',
-  replaceViewpointDefinition: 'mutating: replaces a viewpoint definition',
-  deleteViewpointDefinition: 'mutating: removes a viewpoint definition',
-  setViewpointPins: 'mutating: rewrites the pin list',
-  executePromotion: 'mutating: copies content into the enterprise repository',
-  saveEngagementChanges: 'mutating: commits the engagement repository',
-  saveEnterpriseChanges: 'mutating: commits the enterprise repository',
-  submitEnterpriseChanges: 'mutating: opens an enterprise review',
-  withdrawEnterpriseChanges: 'mutating: withdraws an enterprise review',
-
-  // Admin tier — 403 unless the backend was started with --admin-mode.
-  adminCreateEntity: 'admin-mode backend, and mutating',
-  adminEditEntity: 'admin-mode backend, and mutating',
-  adminDeleteEntity: 'admin-mode backend, and mutating',
-  adminAddConnection: 'admin-mode backend, and mutating',
-  adminRemoveConnection: 'admin-mode backend, and mutating',
-  adminDeleteDiagram: 'admin-mode backend, and mutating',
-  previewAdminDeleteEntity: 'admin-mode backend: without it the body is a refusal, not the contract',
-  previewAdminRemoveConnection: 'admin-mode backend: the body would be a refusal',
-  previewAdminDeleteDiagram: 'admin-mode backend: the body would be a refusal',
-
   // Not a request.
   diagramImageUrl: 'builds a URL for an <img> src; performs no request and decodes nothing',
 }
 
+/** Every method any walk drives — reads, engagement writes, admin writes. */
+const drivenMethods = (): Set<string> =>
+  new Set(
+    [...READ_STEPS, ...WRITE_STEPS, ...ADMIN_WRITE_STEPS].map((step) => step.method as string),
+  )
+
 describe('the conformance walk covers the port it claims to', () => {
   it('drives every repository method that is not registered as unexercised', () => {
-    const driven = new Set(READ_STEPS.map((step) => step.method as string))
+    const driven = drivenMethods()
     const uncovered = portMethods()
       .filter((name) => !driven.has(name) && !(name in UNEXERCISED))
       .sort()
@@ -93,7 +60,7 @@ describe('the conformance walk covers the port it claims to', () => {
   })
 
   it('registers nothing that a step now drives', () => {
-    const driven = new Set(READ_STEPS.map((step) => step.method as string))
+    const driven = drivenMethods()
     const stale = Object.keys(UNEXERCISED).filter((name) => driven.has(name)).sort()
     expect(stale, 'a step drives these — remove them from UNEXERCISED').toEqual([])
   })
@@ -106,9 +73,7 @@ describe('the conformance walk covers the port it claims to', () => {
 
   it('names every step after a method the port actually has', () => {
     const present = new Set(portMethods())
-    const unknown = READ_STEPS.map((step) => step.method as string)
-      .filter((name) => !present.has(name))
-      .sort()
+    const unknown = [...drivenMethods()].filter((name) => !present.has(name)).sort()
     expect(unknown, 'these steps name methods the port does not expose').toEqual([])
   })
 

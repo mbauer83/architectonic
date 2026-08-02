@@ -32,6 +32,25 @@ export interface EnterpriseAdminRepository {
   }) => Effect.Effect<WriteResult, RepoError>
   readonly previewAdminRemoveConnection: (connectionId: string) => Effect.Effect<WriteResult, RepoError>
   readonly adminRemoveConnection: (connectionId: string) => Effect.Effect<void, RepoError>
+  /**
+   * A diagram in the enterprise repository, over enterprise entities.
+   *
+   * Added because the interface declared the two halves of a diagram's life on this tier — a preview
+   * and a delete — and no way to bring one into existence. `POST /admin/api/diagrams` has always been
+   * served, so the gap was on this side of the boundary: a caller holding this port could delete an
+   * enterprise diagram and could not make one, which left the delete reachable only for a diagram some
+   * other surface had put there.
+   *
+   * `entity_ids` and `connection_ids` are the *selection*; the server renders the body from it and
+   * records what it drew. Not optional: a diagram whose frontmatter does not name what its body draws
+   * is one the verifier refuses, which is what `admin_create_diagram` did for its whole life until
+   * something requested it.
+   */
+  readonly adminCreateDiagram: (body: {
+    diagram_type: string; name: string;
+    entity_ids: string[]; connection_ids: string[];
+    keywords?: string[]; version?: string; status?: string; dry_run?: boolean;
+  }) => Effect.Effect<WriteResult, RepoError>
   readonly previewAdminDeleteDiagram: (id: string) => Effect.Effect<WriteResult, RepoError>
   readonly adminDeleteDiagram: (id: string) => Effect.Effect<void, RepoError>
 }

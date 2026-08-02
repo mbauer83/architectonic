@@ -75,10 +75,14 @@ export const makeModelService = (repo: ModelRepository) =>
     createDiagram: (body: Parameters<ModelRepository['createDiagram']>[0]) => repo.createDiagram(body),
     editDiagram: (id: string, body: Parameters<ModelRepository['editDiagram']>[1]) =>
       repo.editDiagram(id, body),
-    patchDiagramEntityMetadata: (
+    patchDiagramClassifierMetadata: (
       id: string, classifierId: string,
-      body: Parameters<ModelRepository['patchDiagramEntityMetadata']>[2],
-    ) => repo.patchDiagramEntityMetadata(id, classifierId, body),
+      body: Parameters<ModelRepository['patchDiagramClassifierMetadata']>[2],
+    ) => repo.patchDiagramClassifierMetadata(id, classifierId, body),
+    patchDiagramAttributeMetadata: (
+      id: string, classifierId: string, attributeId: string,
+      body: Parameters<ModelRepository['patchDiagramAttributeMetadata']>[3],
+    ) => repo.patchDiagramAttributeMetadata(id, classifierId, attributeId, body),
     getViewpointProjection: (diagramId: string) => repo.getViewpointProjection(diagramId),
     listViewpointDefinitions: () => repo.listViewpointDefinitions(),
     getCriteriaCatalog: () => repo.getCriteriaCatalog(),
