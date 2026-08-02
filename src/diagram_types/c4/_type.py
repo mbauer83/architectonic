@@ -29,6 +29,7 @@ from src.domain.ontology_representation.ontology_protocol import (
     DiagramTypeModule,
     DiagramTypeWriteGuidance,
     diagram_type_ui_config_from_mapping,
+    element_classes_from_config,
 )
 from src.domain.ontology_representation.ontology_types import ConnectionTypeInfo, ElementClassInfo, EntityTypeInfo
 from src.domain.relationships.permitted_mappings import concept_scope_for_diagram_only_types
@@ -61,25 +62,12 @@ def _load_config(package_dir: Path) -> dict[str, Any]:
         return yaml.safe_load(handle) or {}
 
 
-def _parse_element_classes(config: dict[str, Any]) -> dict[str, ElementClassInfo]:
-    raw: object = config.get("element_classes") or {}
-    if not isinstance(raw, Mapping):
-        return {}
-    return {
-        str(name): ElementClassInfo(
-            name=str(name),
-            description=str((info or {}).get("description") or "") if isinstance(info, Mapping) else "",
-        )
-        for name, info in raw.items()
-    }
-
-
 class _C4DiagramType(DiagramTypeBase):
     def __init__(self, config: dict[str, Any], ontology: DiagramOntology) -> None:
         self._ontology = ontology
         self._config = merge_ontology_into_diagram_only_types(config, ontology)
         self._name = DiagramTypeName(str(config["name"]))
-        self._element_classes = _parse_element_classes(config)
+        self._element_classes = element_classes_from_config(config)
         self._ui_config = diagram_type_ui_config_from_mapping(
             self._config,
             default_label=str(config.get("ui", {}).get("label") or self._name).replace("-", " ").title(),

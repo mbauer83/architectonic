@@ -13,6 +13,7 @@ from typing import Any, Literal
 
 from src.domain.diagrams.allowed_bindings import AllowedBindingsSpec
 from src.domain.ontology_representation.ontology_types import (
+    ElementClassInfo,
     PermittedMappingSpec,
     RequiredConnection,
     mapping_spec_from_config,
@@ -211,3 +212,27 @@ class DiagramRendererReferences:
 
     entity_ids: tuple[str, ...] = ()
     connection_ids: tuple[str, ...] = ()
+
+
+def element_classes_from_config(config: Mapping[str, Any]) -> dict[str, ElementClassInfo]:
+    """The ``element_classes:`` block of one diagram type's configuration.
+
+    Four diagram types — c4, datatype, sequence, activity — each carried a byte-identical private
+    copy of this. Reading a *configuration key* is not a per-kind decision: the key, its shape and
+    the tolerance for a malformed block all belong to whatever defines the configuration, which is
+    this module. Four copies is four places for a schema change to be applied three times.
+
+    A block that is not a mapping yields nothing rather than raising. A diagram type whose
+    configuration is malformed here still loads and simply declares no element classes; refusing the
+    whole type would take the ontology down for a cosmetic field.
+    """
+    raw: object = config.get("element_classes") or {}
+    if not isinstance(raw, Mapping):
+        return {}
+    return {
+        str(name): ElementClassInfo(
+            name=str(name),
+            description=str((info or {}).get("description") or "") if isinstance(info, Mapping) else "",
+        )
+        for name, info in raw.items()
+    }

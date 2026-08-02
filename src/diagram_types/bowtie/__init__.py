@@ -27,7 +27,6 @@ from src.domain.modules.module_types import ConnectionTypeName, DiagramTypeName,
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
 from src.domain.ontology_representation.ontology_protocol import (
     DiagramRenderer,
-    DiagramRendererReferences,
     DiagramTypeModule,
     DiagramTypeWriteGuidance,
 )
@@ -58,18 +57,6 @@ class _BowtieDiagramRenderer:
     def inject_includes(self, body: str, repo_root: Path) -> str:
         del repo_root
         return body
-
-    def collect_references(
-        self,
-        diagram_type: str,
-        repo_root: Path,
-        *,
-        diagram_entities: Mapping[str, object] | None = None,
-        diagram_connections: list[dict[str, object]] | None = None,
-        bindings: list[dict[str, object]] | None = None,
-    ) -> DiagramRendererReferences:
-        del diagram_type, repo_root, diagram_entities, diagram_connections, bindings
-        return DiagramRendererReferences()
 
 
 class _BowtieDiagramType(DiagramTypeBase):

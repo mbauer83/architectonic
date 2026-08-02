@@ -45,18 +45,27 @@ def _collect_diagram_renderer_references(
     diagram_connections: list[dict[str, object]] | None,
     bindings: list[dict[str, object]] | None = None,
 ) -> tuple[list[str] | None, list[str] | None]:
+    from src.domain.ontology_representation.ontology_protocol import (  # noqa: PLC0415
+        ModelReferencingDiagramRenderer,
+    )
     from src.infrastructure.diagram_type_registry import get_diagram_type  # noqa: PLC0415
 
-    diagram_type_mod = get_diagram_type(diagram_type)
-    refs = diagram_type_mod.renderer.collect_references(
+    renderer = get_diagram_type(diagram_type).renderer
+    # One `isinstance`, in the one place that asks. `collect_references` used to be required of every
+    # renderer, so twelve of the thirteen implementations existed only to answer "nothing" — seven of
+    # them with the same four lines. A renderer whose diagram-owned data names no model artifact says
+    # so by not implementing the capability.
+    if not isinstance(renderer, ModelReferencingDiagramRenderer):
+        return None, None
+    refs = renderer.collect_references(
         diagram_type,
         repo_root,
         diagram_entities=diagram_entities,
         diagram_connections=diagram_connections,
         bindings=bindings,
     )
-    entity_ids = list(refs.entity_ids) if getattr(refs, "entity_ids", None) else None
-    connection_ids = list(refs.connection_ids) if getattr(refs, "connection_ids", None) else None
+    entity_ids = list(refs.entity_ids) or None
+    connection_ids = list(refs.connection_ids) or None
     return entity_ids, connection_ids
 
 

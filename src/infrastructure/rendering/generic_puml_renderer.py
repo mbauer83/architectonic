@@ -11,7 +11,6 @@ from typing import Any
 from src.application.artifacts.parsing import normalize_puml_alias
 from src.domain.modules.module_types import ConnectionTypeName, ElementClassName
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
-from src.domain.ontology_representation.ontology_protocol import DiagramRendererReferences
 from src.domain.ontology_representation.ontology_types import ConnectionTypeInfo
 from src.domain.ontology_representation.specializations import SpecializationCatalog, merge_specialization_catalogs
 from src.infrastructure.rendering._archimate_includes import inject_archimate_includes
@@ -318,17 +317,6 @@ class GenericPumlRenderer:
                 body = re.sub(r"(@startuml(?:\s+\S+)?)\n", rf"\1\n{marker}\n", body, count=1)
         return inject_archimate_includes(body, repo_root)
 
-    def collect_references(
-        self,
-        diagram_type: str,
-        repo_root: Path,
-        *,
-        diagram_entities: Mapping[str, object] | None = None,
-        diagram_connections: list[dict[str, object]] | None = None,
-        bindings: list[dict[str, object]] | None = None,
-    ) -> DiagramRendererReferences:
-        del diagram_type, repo_root, diagram_entities, diagram_connections, bindings
-        return DiagramRendererReferences()
 
     def visible_connection_label(
         self,

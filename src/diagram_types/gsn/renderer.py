@@ -11,7 +11,6 @@ from typing import Any
 
 from src.diagram_types.gsn.svg_renderer import render_gsn_svg
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
-from src.domain.ontology_representation.ontology_protocol import DiagramRendererReferences
 
 _NOTATION = (Path(__file__).parent / "notation.puml").read_text(encoding="utf-8").strip()
 
@@ -110,14 +109,3 @@ class GsnDiagramRenderer:
     def render_svg(self, puml_body: str) -> str:
         return render_gsn_svg(puml_body)
 
-    def collect_references(
-        self,
-        diagram_type: str,
-        repo_root: Path,
-        *,
-        diagram_entities: Mapping[str, object] | None = None,
-        diagram_connections: list[dict[str, object]] | None = None,
-        bindings: list[dict[str, object]] | None = None,
-    ) -> DiagramRendererReferences:
-        del diagram_type, repo_root, diagram_entities, diagram_connections, bindings
-        return DiagramRendererReferences()

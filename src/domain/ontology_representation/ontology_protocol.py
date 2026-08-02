@@ -14,6 +14,7 @@ from src.domain.diagrams.diagram_type_config import (
     DiagramTypeUiConfig,
     DiagramTypeWriteGuidance,
     diagram_type_ui_config_from_mapping,
+    element_classes_from_config,
 )
 from src.domain.modules.bridges import BridgeDeclaration
 from src.domain.modules.module_types import (
@@ -53,10 +54,12 @@ __all__ = [
     "DiagramTypeWriteGuidance",
     "DiagramRenderer",
     "NativeSvgDiagramRenderer",
+    "ModelReferencingDiagramRenderer",
     "ModuleClass",
     "OntologyModule",
     "PrimaryOntology",
     "diagram_type_ui_config_from_mapping",
+    "element_classes_from_config",
 ]
 
 PrimaryOntology: TypeAlias = "OntologyModule | _FreeOntologyType"
@@ -142,6 +145,30 @@ class DiagramRenderer(Protocol):
 
     def inject_includes(self, body: str, repo_root: Path) -> str: ...
 
+
+@runtime_checkable
+class NativeSvgDiagramRenderer(Protocol):
+    """Optional capability for diagram types that own their SVG notation."""
+
+    def render_svg(self, puml_body: str) -> str: ...
+
+
+@runtime_checkable
+class ModelReferencingDiagramRenderer(Protocol):
+    """Optional capability for a renderer whose diagram-owned data *names model artifacts*.
+
+    Required of every renderer, it was answered honestly by one — ``ArchimatePumlRenderer``, which
+    reads connection ids out of a diagram's ``diagram-connections``. The other twelve implementations
+    had nothing to discover, and seven of those were the same four lines: delete every argument,
+    return an empty result. A method a class must define in order to say "not applicable" is a
+    question asked in the wrong place.
+
+    So it is a capability, the idiom :class:`NativeSvgDiagramRenderer` already establishes here, and
+    the single caller (`artifact_write/diagram_references.py`) asks once with `isinstance`. A renderer
+    that discovers no references now says so by not implementing this, which is both shorter and the
+    truth — and a *new* renderer that does discover them cannot forget to be asked.
+    """
+
     def collect_references(
         self,
         diagram_type: str,
@@ -151,13 +178,6 @@ class DiagramRenderer(Protocol):
         diagram_connections: list[dict[str, object]] | None = None,
         bindings: list[dict[str, object]] | None = None,
     ) -> DiagramRendererReferences: ...
-
-
-@runtime_checkable
-class NativeSvgDiagramRenderer(Protocol):
-    """Optional capability for diagram types that own their SVG notation."""
-
-    def render_svg(self, puml_body: str) -> str: ...
 
 
 @runtime_checkable
