@@ -27,7 +27,10 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Callable
 
-from src.infrastructure.artifact_index.coordination import publish_write_queue_state
+from src.infrastructure.artifact_index.coordination import (
+    publish_write_queue_state,
+    running_on_write_worker,
+)
 from src.infrastructure.write.operation_registry import operation_registry
 
 _WRITE_EXECUTOR_WORKERS = 1
@@ -105,7 +108,11 @@ def _run_job(tool_name: str, fn: Callable[..., Any], /, *args: Any, **kwargs: An
             active_phase=_active_phase,
         )
     try:
-        result = fn(*args, **kwargs)
+        # Marked for the duration of the job, so anything the job reaches that waits for this queue to
+        # drain can tell that it *is* the queue. A maintenance tool whose body refreshes the index does
+        # exactly that, and without the mark it waits on its own job count for ever.
+        with running_on_write_worker():
+            result = fn(*args, **kwargs)
         _notify_gui_dirty()
         return result
     finally:

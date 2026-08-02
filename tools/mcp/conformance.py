@@ -15,6 +15,7 @@ having — and the same shape of register for what is not covered yet.
 Usage:
     uv run tools/mcp/conformance.py                      # walk the read mounts
     uv run tools/mcp/conformance.py --url http://host:8000
+    uv run tools/mcp/conformance.py --fixture            # ...and the write mount, disposably
 """
 
 from __future__ import annotations
@@ -23,15 +24,24 @@ import argparse
 import sys
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from tools.mcp import write_walk  # noqa: E402
+from tools.mcp._answers import decoded as _decoded  # noqa: E402
+from tools.mcp._answers import rows_of as _rows_of  # noqa: E402
+from tools.mcp._answers import text_of as _text_of  # noqa: E402
 
 DEFAULT_URL = "http://localhost:8000"
 
-#: Mounts this walk covers. The two write mounts (`write`, `assurance-write`: 47 tools) are absent for
-#: the same reason the GUI harness's write half is: run against the dogfood repository and the live
-#: confidential store, they would author and destroy real content. They need the seeded fixture
-#: repository of handoff §1.4, and that is the next slice — recorded here rather than left implicit,
-#: because "the walk covers MCP" would otherwise read as covering all 82.
+#: Mounts this walk covers, and how. The read mounts are walked against whatever backend `--url`
+#: names, because a read cannot damage it. The `write` mount is walked only under `--fixture`, against
+#: a repository built to be destroyed — see `write_walk`. `assurance-write` is still dark, and
+#: `write_walk.ASSURANCE_WRITE_MOUNT_REASON` says what it is waiting for.
 READ_MOUNTS = ("read", "assurance-read")
 WRITE_MOUNTS = ("write", "assurance-write")
 
@@ -139,49 +149,6 @@ UNEXERCISED: Mapping[str, str] = {
 }
 
 
-def _text_of(result: Any) -> str:
-    """The tool's answer as text. MCP wraps content in a list of typed blocks."""
-    parts = []
-    for block in getattr(result, "content", []) or []:
-        text = getattr(block, "text", None)
-        if isinstance(text, str):
-            parts.append(text)
-    return "\n".join(parts)
-
-
-def _decoded(text: str) -> object:
-    """The answer as data. **YAML**, which is what this surface serves.
-
-    verifies: REQ@1776705655.Ga1zwy  (YAML instead of JSON for structured output via MCP)
-verifies: REQ@1712870400.peinbQ  (MCP is one of the three tool interfaces, walked over its real transport)
-
-    The first version of this walk asserted JSON and reported every tool as broken. That is the
-    harness being wrong about the contract rather than the contract being wrong — `_dump_yaml_text`
-    in `name_normalization` is deliberate, and an agent reading a tool result reads YAML. Worth
-    recording, because "the answer is not JSON" is exactly the sort of confident false positive that
-    makes a new gate get switched off.
-    """
-    import yaml
-
-    return yaml.safe_load(text)
-
-
-def _rows_of(decoded: object) -> list[Mapping[str, Any]]:
-    """The list a catalogue read answers with, wherever it put it.
-
-    Some tools wrap their payload in ``result``; others answer a mapping directly. Both are read
-    rather than assumed, so a seed does not silently come back empty because the envelope moved.
-    """
-    if isinstance(decoded, Mapping):
-        for key in ("result", "artifacts", "items", "nodes"):
-            inner = decoded.get(key)
-            if isinstance(inner, list):
-                return [row for row in inner if isinstance(row, Mapping)]
-    if isinstance(decoded, list):
-        return [row for row in decoded if isinstance(row, Mapping)]
-    return []
-
-
 async def _discover_seed(session: Any) -> Seed:
     """Identifiers for the detail reads, from the catalogue reads that publish them."""
     listed = await session.call_tool("artifact_query_list_artifacts", {})
@@ -207,22 +174,40 @@ async def _discover_assurance_seed(session: Any, base: Seed) -> Seed:
     )
 
 
-async def _walk(url: str) -> int:
+@dataclass
+class Report:
+    """What a walk covered, what it did not, and what went wrong.
+
+    Each walk fills its own `mounts` and `notes` rather than the printer deciding from a flag which
+    kind of walk it is looking at: a reporter that branches on "was this the write half" has to be
+    edited every time a half is added, and the half already knows.
+    """
+
+    mounts: list[str] = field(default_factory=list)
+    listed: int = 0
+    called: int = 0
+    failures: list[str] = field(default_factory=list)
+    #: What is not covered, and why — printed verbatim, because the reason is the value.
+    notes: list[str] = field(default_factory=list)
+
+
+async def _walk_reads(url: str, report: Report) -> None:
     from mcp import ClientSession
-    from mcp.client.streamable_http import streamablehttp_client
+    from mcp.client.streamable_http import streamable_http_client
 
     by_name = {call.tool: call for call in READ_CALLS}
-    failures: list[str] = []
-    listed_total = 0
-    called_total = 0
+    failures = report.failures
     seed = Seed()
+    report.mounts.extend(READ_MOUNTS)
+    report.notes.append(f"not called, registered with a reason: {len(UNEXERCISED)}")
+    report.notes.append(f"write mounts not walked here: {list(WRITE_MOUNTS)} (pass --fixture)")
 
     for mount in READ_MOUNTS:
-        async with streamablehttp_client(f"{url}/mcp/{mount}") as (reader, writer, _):
+        async with streamable_http_client(f"{url}/mcp/{mount}") as (reader, writer, _):
             async with ClientSession(reader, writer) as session:
                 await session.initialize()
                 names = [tool.name for tool in (await session.list_tools()).tools]
-                listed_total += len(names)
+                report.listed += len(names)
 
                 uncovered = [n for n in names if n not in by_name and n not in UNEXERCISED]
                 if uncovered:
@@ -264,7 +249,7 @@ async def _walk(url: str) -> int:
                             f"the tool declares {sorted(declared.get(name, set()))}"
                         )
                         continue
-                    called_total += 1
+                    report.called += 1
                     try:
                         result = await session.call_tool(name, arguments)
                     except Exception as exc:  # noqa: BLE001 - any transport error is this tool's failure
@@ -278,26 +263,81 @@ async def _walk(url: str) -> int:
                         failures.append(f"{mount}/{name}: TOOL empty answer")
                         continue
                     try:
-                        decoded = _decoded(text)
+                        payload = _decoded(text)
                     except Exception as exc:  # noqa: BLE001 - a YAML error is the answer being undecodable
                         failures.append(f"{mount}/{name}: TOOL answer is not YAML ({exc}): {text[:200]}")
                         continue
-                    if decoded is None:
+                    if payload is None:
                         failures.append(f"{mount}/{name}: TOOL answer decoded to nothing: {text[:200]}")
 
     stale = sorted(set(UNEXERCISED) & set(by_name))
     if stale:
         failures.append(f"registered as unexercised, but a call exists: {stale}")
 
-    print(f"mounts {list(READ_MOUNTS)}: {listed_total} tools listed, {called_total} called")
-    print(f"not called, registered with a reason: {len(UNEXERCISED)}")
-    print(f"write mounts not walked yet: {list(WRITE_MOUNTS)} (needs the fixture repository)")
-    for failure in failures:
+
+async def walk_writes(url: str, workspace: Any, report: Report) -> None:
+    """Invoke the `write` mount's tools against the fixture backend serving ``workspace``.
+
+    Kept here rather than in `write_walk` so both halves share one listing check: the question "is
+    every tool the mount lists either invoked or registered with a reason" is the same question, and
+    asking it twice in two places is how the two answers drift.
+    """
+    from mcp import ClientSession
+    from mcp.client.streamable_http import streamable_http_client
+
+    by_name = {call.tool: call for call in write_walk.WRITE_CALLS}
+    report.mounts.append(write_walk.MOUNT)
+    report.notes.append(
+        f"not invoked, registered with a reason: {len(write_walk.WRITE_UNEXERCISED)}"
+    )
+    report.notes.append(f"still dark: assurance-write — {write_walk.ASSURANCE_WRITE_MOUNT_REASON}")
+    async with streamable_http_client(f"{url}/mcp/{write_walk.MOUNT}") as (reader, writer, _):
+        async with ClientSession(reader, writer) as session:
+            await session.initialize()
+            tools = (await session.list_tools()).tools
+            report.listed += len(tools)
+
+            uncovered = [
+                tool.name
+                for tool in tools
+                if tool.name not in by_name and tool.name not in write_walk.WRITE_UNEXERCISED
+            ]
+            if uncovered:
+                report.failures.append(
+                    f"{write_walk.MOUNT}: these tools are neither invoked nor registered as "
+                    f"unexercised — add a call, or register one with a reason: {sorted(uncovered)}"
+                )
+
+            declared = {
+                tool.name: set((tool.inputSchema or {}).get("properties") or {}) for tool in tools
+            }
+            context = write_walk.WriteContext(workspace=workspace)
+            invoked, failures = await write_walk.walk(session, context, declared)
+            report.called += len(invoked)
+            report.failures.extend(f"{write_walk.MOUNT}/{failure}" for failure in failures)
+
+            stale = sorted(set(write_walk.WRITE_UNEXERCISED) & set(by_name))
+            if stale:
+                report.failures.append(
+                    f"{write_walk.MOUNT}: registered as unexercised, but a call exists: {stale}"
+                )
+            missing = sorted(set(by_name) - set(declared))
+            if missing:
+                report.failures.append(
+                    f"{write_walk.MOUNT}: a call names a tool the mount does not list: {missing}"
+                )
+
+
+def _print_report(report: Report) -> int:
+    print(f"mounts {report.mounts}: {report.listed} tools listed, {report.called} called")
+    for note in report.notes:
+        print(note)
+    for failure in report.failures:
         print(f"FAIL {failure}", file=sys.stderr)
-    if failures:
-        print(f"\n{len(failures)} failure(s)", file=sys.stderr)
+    if report.failures:
+        print(f"\n{len(report.failures)} failure(s)", file=sys.stderr)
         return 1
-    print("every listed read-mount tool answered decodable YAML")
+    print("every listed tool answered decodably, and every declared mutation wrote")
     return 0
 
 
@@ -323,14 +363,47 @@ def _unreachable(url: str) -> str | None:
     return None
 
 
+async def _run(url: str, workspace: Any) -> int:
+    """Walk the read mounts, or — when a fixture workspace was built — the write mount.
+
+    One or the other, not both. The read mounts are walked against the dogfood repository on purpose:
+    what they establish is that the tools survive *real* content, and a fixture holding four entities
+    would weaken that rather than add to it. The fixture backend also resolves the confidential store
+    from the source tree rather than from the workspace it serves, so `assurance-read` against it would
+    be reading the developer's store through a process that has no business being pointed at it.
+    """
+    report = Report()
+    if workspace is None:
+        await _walk_reads(url, report)
+    else:
+        await walk_writes(url, workspace, report)
+    return _print_report(report)
+
+
 def main(argv: list[str]) -> int:
     import anyio
 
     parser = argparse.ArgumentParser(prog="conformance.py", description=__doc__)
     parser.add_argument("--url", default=DEFAULT_URL, help="backend base URL")
+    parser.add_argument(
+        "--fixture",
+        action="store_true",
+        help=(
+            "build a disposable fixture repository, serve it on its own port, and walk the `write` "
+            "mount against that instead of --url. The only way to walk writes: there is deliberately "
+            "no flag that points them at a backend somebody else's content is in."
+        ),
+    )
     args = parser.parse_args(argv[1:])
-    url = args.url.rstrip("/")
 
+    if args.fixture:
+        from tools.quality.fixture_backend import fixture_backend
+
+        with fixture_backend() as backend:
+            print(f"fixture backend on {backend.base_url}, serving {backend.workspace.engagement_root}")
+            return int(anyio.run(_run, backend.base_url, backend.workspace))
+
+    url = args.url.rstrip("/")
     reason = _unreachable(url)
     if reason is not None:
         print(
@@ -339,11 +412,13 @@ def main(argv: list[str]) -> int:
             "  uv run arch-backend --daemon\n"
             "  uv run tools/mcp/conformance.py --url http://host:port\n\n"
             "The assurance mount also needs the confidential store held open — "
-            "`uv run arch-assurance unlock`, which `arch-assurance status` will confirm.",
+            "`uv run arch-assurance unlock`, which `arch-assurance status` will confirm.\n\n"
+            "To walk the write mount instead, pass --fixture: it builds and serves its own "
+            "repository, so it needs no backend of yours.",
             file=sys.stderr,
         )
         return 1
-    return int(anyio.run(_walk, url))
+    return int(anyio.run(_run, url, None))
 
 
 if __name__ == "__main__":

@@ -11,8 +11,10 @@ This module is the process-local orchestration boundary between two concerns:
 
 from __future__ import annotations
 
+import contextlib
 import threading
 import time
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -30,9 +32,30 @@ __all__ = [
     "publish_authoritative_mutation",
     "publish_background_refresh_completed",
     "publish_write_queue_state",
+    "running_on_write_worker",
     "suppress_redundant_refresh_paths",
     "wait_for_write_queue_drain",
 ]
+
+#: Set on the serialized write worker's thread for the duration of one job. Lives here rather than in
+#: `write_queue` because this is the module that owns the *waiting* side: a waiter has to be able to
+#: ask "am I the thing I am waiting for", and `write_queue` already depends on this module, so putting
+#: the flag the other way round would invert the dependency.
+_on_write_worker = threading.local()
+
+
+@contextlib.contextmanager
+def running_on_write_worker() -> Iterator[None]:
+    """Mark this thread as the serialized write worker while a job runs on it.
+
+    Held by `write_queue._run_job`, and read by :func:`wait_for_write_queue_drain`.
+    """
+    previous = getattr(_on_write_worker, "active", False)
+    _on_write_worker.active = True
+    try:
+        yield
+    finally:
+        _on_write_worker.active = previous
 
 
 def publish_write_queue_state(
@@ -112,7 +135,18 @@ def wait_for_write_queue_drain(
 
     Pass both, and both apply: adaptive patience under a ceiling, which is what a shutdown needs —
     it must not outlive the deadline something else will kill it at.
+
+    **A caller running on the write worker is already the only writer**, so for it the queue is drained
+    by construction and this returns immediately. Without that, such a caller waits for a job count
+    that includes its own job and can therefore never reach zero: it deadlocks, and because the worker
+    is single-threaded it takes every subsequent write on the process with it, permanently. That is not
+    hypothetical — `artifact_admin_reindex` did exactly this, through
+    `sync_refresh_for_roots`, and no test saw it because every test calls the tool *function* rather
+    than submitting it to the queue the way the MCP mutation executor does. The transport walk found
+    it on its first run.
     """
+    if getattr(_on_write_worker, "active", False):
+        return True
 
     def _state() -> tuple[int, int, str | None]:
         return _active_write_jobs, _pending_write_jobs, _active_write_operation_id
