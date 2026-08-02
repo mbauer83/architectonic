@@ -16,7 +16,6 @@ All notable changes to this project are documented here. The format follows
   bare `ValueError` that no route caught, so a caller naming the wrong address got a non-disclosing
   500 — the one status they can neither retry nor correct on. Malformed payloads on those routes now
   answer 400, matching the entity routes beside them.
-
 - **A rejected viewpoint parameter no longer carries a retired code word in its `message`.** The
   0.2.0 notes said the finer distinction "still appears inside the `message`"; it does not any more.
   `"parameter-type-mismatch: anchor"` is now `"anchor: expected entity-id, got boolean"`, on REST and
