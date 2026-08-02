@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import fcntl
 import os
+import sys
 
 import pytest
 
@@ -208,3 +209,29 @@ def _restore_root_logging():
     if list(root.handlers) != handlers or root.level != level:
         root.handlers[:] = handlers
         root.setLevel(level)
+
+
+@pytest.fixture(autouse=True)
+def _never_redirect_the_workers_stdio(monkeypatch: pytest.MonkeyPatch):
+    """`arch-backend`'s background-TTY probe answers False under test, always.
+
+    `arch_backend.main()` asks `_is_background_tty_job()` — `sys.stderr.isatty()` and a terminal
+    process-group comparison — and on True calls `_redirect_stdio_to_backend_log`, which is
+    `os.dup2(log_fd, sys.stdout.fileno())`. That is a **file-descriptor** redirect, so it does not end
+    with the test: it repoints the xdist worker's fd 1 and fd 2 at a log file for every test that
+    follows on that worker, and their captured output silently becomes empty.
+
+    Which is exactly what was seen: two or three `test_unified_backend_runtime` tests failing per full
+    run, a *different* two or three each time, all asserting on captured stdout, and every one of them
+    passing in isolation. Restoring the root logger did not help because the damage is below logging.
+    The probe reads the environment, so under pytest its answer is environment-dependent — pinning it
+    is the fix, and it belongs here rather than in each test that happens to call `main()`.
+
+    A test that wants the True branch monkeypatches the probe itself, which overrides this and is what
+    `test_arch_backend_redirects_stdio_when_background_tty_job` already does — safely, because it
+    stubs the redirect too.
+    """
+    module = sys.modules.get("src.infrastructure.backend.arch_backend")
+    if module is not None:
+        monkeypatch.setattr(module, "_is_background_tty_job", lambda: False)
+    yield

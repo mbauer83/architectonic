@@ -22,5 +22,5 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["tests/conformance/**/*.ts", "vitest.conformance.config.ts", "src/**/*.ts"]
+  "include": ["tests/conformance/**/*.ts", "src/**/*.ts"]
 }
