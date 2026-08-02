@@ -152,6 +152,8 @@ def _text_of(result: Any) -> str:
 def _decoded(text: str) -> object:
     """The answer as data. **YAML**, which is what this surface serves.
 
+    verifies: REQ@1776705655.Ga1zwy  (YAML instead of JSON for structured output via MCP)
+
     The first version of this walk asserted JSON and reported every tool as broken. That is the
     harness being wrong about the contract rather than the contract being wrong — `_dump_yaml_text`
     in `name_normalization` is deliberate, and an agent reading a tool result reads YAML. Worth

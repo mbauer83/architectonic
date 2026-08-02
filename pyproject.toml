@@ -78,6 +78,10 @@ testpaths = ["tests"]
 addopts = "-n auto"
 markers = [
     "perf_manual: opt-in, machine-dependent performance benchmarks; enable with ARCH_PERF_MANUAL=1",
+    # Names the self-model requirement a test verifies, so `requirement -> realising component ->
+    # verifying artefact` is a chain the suite can close. Held by
+    # tests/architecture/test_requirements_have_verifiers.py; `-m verifies` selects them.
+    "verifies(requirement_id): the self-model requirement this test verifies (REQ@epoch.random)",
 ]
 # A warning nobody reads is a warning that hides the next one. Twenty identical
 # `StarletteDeprecationWarning`s scrolled past every run, which is exactly enough noise to make a

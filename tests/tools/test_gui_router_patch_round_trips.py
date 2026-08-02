@@ -174,6 +174,7 @@ class TestDocumentPatchRoundTrip:
         )
         assert "Rewritten by the patch." in stored
 
+    @pytest.mark.verifies("REQ@1777367639.4iTd6A")
     def test_a_body_missing_a_required_section_is_not_written(
         self, client: Any, populated_root: Path
     ) -> None:

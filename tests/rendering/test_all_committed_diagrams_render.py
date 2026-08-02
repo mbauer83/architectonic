@@ -10,6 +10,9 @@ It renders each diagram exactly as the serving endpoint does — `render_puml_sv
 offending file. Confidential assurance diagrams (gated from on-disk rendering) are skipped.
 Diagrams in group-collection subdirectories are included via a recursive scan, so a flat
 layout is never assumed.
+
+verifies: REQ@1712870400.NkMp_0  (PlantUML diagrams are the stored, rendered-on-demand form)
+verifies: REQ@1712870400.t_NpFC  (diagram syntax is verified automatically)
 """
 from __future__ import annotations
 

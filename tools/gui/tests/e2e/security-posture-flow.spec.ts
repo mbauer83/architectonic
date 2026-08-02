@@ -1,3 +1,8 @@
+/**
+ * @verifies REQ@1784532453.NGg0tV  entity-level security posture metrics
+ * @verifies REQ@1784532460.n0Qwax  signal-derived styling is never persisted
+ * @verifies REQ@1781640247.cmI5m2  assurance diagram outputs are classification-gated
+ */
 import fs from 'node:fs'
 import { expect, test, type Page } from '@playwright/test'
 import {

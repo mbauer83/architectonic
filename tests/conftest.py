@@ -235,3 +235,24 @@ def _never_redirect_the_workers_stdio(monkeypatch: pytest.MonkeyPatch):
     if module is not None:
         monkeypatch.setattr(module, "_is_background_tty_job", lambda: False)
     yield
+
+
+@pytest.fixture(autouse=True)
+def _reset_rest_server_state():
+    """No test may leave the REST layer's process state configured for its successors.
+
+    `state.py` holds five module globals that `arch_backend.main()` and every router test set through
+    `init_state`. Two of them are `_admin_mode` and `_read_only`: a test that initialises with
+    `admin_mode=True` leaves the whole process in admin mode, so a later test asserting an enterprise
+    write is *refused* gets a 200 and passes for the wrong reason.
+
+    The sibling fixture above resets the installed mutation executor for the same reason; the state
+    these globals hold was simply never included. Added while chasing a `test_unified_backend_runtime`
+    flake that appears once per full run, on a different test each time, and never at module or
+    directory scope — the signature of inherited process state. Whether it closes that flake or not,
+    an `_admin_mode` that outlives its test is worth closing on its own.
+    """
+    yield
+    from tests.support.rest_state import reset_state_for_test
+
+    reset_state_for_test()
