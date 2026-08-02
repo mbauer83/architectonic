@@ -205,25 +205,33 @@ def _owed() -> set[str]:
 #:
 #: * ``REQ@1777372175.eFz3z9`` names the treemap's grouping axes as "ArchiMate domain and
 #:   entity-type". The second axis is subdomain. Sizing by connection total is verified.
-#: * ``REQ@1712870400.pSvaRl`` requires "configurable frontmatter schemata specific to each of the four
-#:   main file types", with core-required fields non-removable. The product configures document
-#:   *frontmatter* per doc-type (``3cJ1Yi``, verified) and entity/connection *attributes* per
-#:   specialization (``6ZR3nk``, verified) — two mechanisms, neither of them the one stated, and
-#:   nothing per-file-type for diagrams. Either the requirement describes a design that was superseded
-#:   by those two, or it is a real gap; that is a decision, so it stays owed. It is also the most
-#:   expensive entry here: three grouping parents list it as a constituent.
 #: * ``REQ@1712870400.NfAmrl`` (GUI exploration and authoring) asserts four things at once — browsing by
 #:   domain, navigating connections, viewing rendered diagrams, and creating artifacts with frontmatter
 #:   auto-populated. The browser suite covers the first three across several specs; no single spec
 #:   carries the conjunction, and marking one for all four would overstate it.
-#: * ``REQ@1712870400.HR7AGz`` claims all three artifact categories share one frontmatter schema, ID
-#:   convention and verification infrastructure. The obvious candidate, ``test_verify_all_passes_clean
-#:   _repo``, writes a single entity and passes ``include_diagrams=False``, so it evidences none of the
-#:   three-way claim.
+#:
+#: **Two entries left this register on 2026-08-02 by being read rather than decided, and the note here
+#: was wrong about both.** Worth recording, because "this needs a decision" is a comfortable place for an
+#: entry to sit for a release.
+#:
+#: ``pSvaRl`` — recorded above as possibly-superseded, "and nothing per-file-type for diagrams". There
+#: is: ``frontmatter.diagram.schema.json`` ships as a repository default, exists in this repository, and
+#: ``check_frontmatter_schema(fm, root, "diagram", …)`` is called from both diagram branches of the
+#: verifier, as it is for ``entity`` and ``outgoing``. Documents are the fourth file type through
+#: ``.arch-repo/documents/{abbr}.json``, exactly as the requirement's own Implementation section says.
+#: It was owed a test, not a decision — and being the constituent of three grouping parents, that one
+#: test cleared four entries.
+#:
+#: ``HR7AGz`` — this one *did* need an amendment, but a smaller one than "is the design superseded".
+#: Writing the verifier found that documents are keyed by ``title`` where entities and diagrams are
+#: keyed by ``name``, so "all three share the same frontmatter schema" was literally false. Collapsing
+#: those would rename a field in every document in every repository to satisfy a phrase, so the
+#: requirement was amended to claim what is true and deliberate — one ID convention, one verification
+#: pass, one frontmatter *base*, and a per-category label — and then verified as amended.
 #:
 #: Grouping requirements are no longer in this register at all: see ``COMPOSED_REQUIREMENTS`` above,
 #: which resolves a parent once every constituent is verified. Every parent still unresolved traces
-#: back to ``pSvaRl`` or ``NfAmrl``.
+#: back to ``NfAmrl``.
 #:
 #: Requirements that are active, realised, and not yet declared as verified by anything.
 #:
@@ -234,12 +242,7 @@ def _owed() -> set[str]:
 UNVERIFIED_REQUIREMENTS: frozenset[str] = frozenset(
     {
         "REQ@1712870400.5PPAX3",
-        "REQ@1712870400.HR7AGz",
         "REQ@1712870400.NfAmrl",
-        "REQ@1712870400.pSvaRl",
-        "REQ@1777369404.aDohcf",
-        "REQ@1777369633.UoHGZy",
-        "REQ@1777370410.qpOBOQ",
         "REQ@1777372175.eFz3z9",
     }
 )

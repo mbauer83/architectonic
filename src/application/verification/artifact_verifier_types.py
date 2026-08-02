@@ -4,6 +4,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Final, Literal, TypeAlias
 
+from src.domain.artifact_id import RANDOM_KEY_PATTERN
+
 
 class Severity:
     ERROR: Final[Literal["error"]] = "error"
@@ -78,7 +80,11 @@ def entity_id_from_path(path: Path) -> str:
     return path.stem
 
 
-ENTITY_ID_RE = re.compile(r"^[A-Z]{2,6}@\d+\.[A-Za-z0-9_-]+\..+$")
+#: A *full* artifact id — this one insists on the slug, where `artifact_id` accepts the short form too,
+#: which is why it is its own pattern rather than a re-export. The random key is taken from the
+#: canonical module rather than restated: the two spellings of that charset disagreed for a release,
+#: and the copy that was right was this one.
+ENTITY_ID_RE = re.compile(rf"^[A-Z]{{2,6}}@\d+\.{RANDOM_KEY_PATTERN}\..+$")
 
 
 def connection_header_matches_shape(header: str) -> bool:

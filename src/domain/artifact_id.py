@@ -19,8 +19,27 @@ from dataclasses import dataclass
 #: looser one silently matches text that is not part of an id.
 SLUG_PATTERN = r"[A-Za-z0-9][A-Za-z0-9-]*"
 
+#: The short random key, over the alphabet the generator actually draws from —
+#: ``string.ascii_letters + string.digits + "-_"`` in ``application.modeling.artifact_write``.
+#:
+#: It said ``[A-Za-z0-9-]+`` until 2026-08-02, omitting the underscore, so this module rejected about
+#: **9%** of the ids the product itself mints (six characters from a 64-symbol alphabet: 1 − (63/64)⁶).
+#: Every other grammar in the codebase already allowed it — the verifier's ``ENTITY_ID_RE``, the
+#: workspace identity rules, the datatype classifier pattern, and all three shipped frontmatter
+#: JSON Schemas — so the canonical module was the one that had drifted.
+#:
+#: The damage was not a crash. ``is_entity_id`` returned False for such an id, so
+#: ``canonical_entity_key`` handed back the *full* id instead of the stable short form, and its own
+#: docstring already describes what that costs: "the same element is listed twice, or a record filed
+#: under one form is invisible to a reader using the other". Thirty-odd call sites depend on that key,
+#: most of them in the join between assurance nodes and architecture entities, and one entity in eleven
+#: silently joined on the wrong form. Intermittency is why it survived: an id either has an underscore
+#: or it does not, and nothing that mints one looks at it again.
+RANDOM_KEY_PATTERN = r"[A-Za-z0-9_-]+"
+
 _ENTITY_ID_RE = re.compile(
-    rf"^(?P<prefix>[A-Z]{{2,6}})@(?P<epoch>\d+)\.(?P<random>[A-Za-z0-9-]+)(?:\.(?P<slug>{SLUG_PATTERN}))?$"
+    rf"^(?P<prefix>[A-Z]{{2,6}})@(?P<epoch>\d+)\.(?P<random>{RANDOM_KEY_PATTERN})"
+    rf"(?:\.(?P<slug>{SLUG_PATTERN}))?$"
 )
 
 
