@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from src.domain.modules.module_types import ConnectionTypeName, EntityTypeName
 from src.ontologies.archimate_4._loader import _PACKAGE_DIR, load_archimate_4_module
+import pytest
 
 # technology-node -> artifact is a pre-existing aggregation rule that Appendix B's Technology
 # domain table does not support in either direction (no "G" cell for that pair or its
@@ -13,6 +14,7 @@ from src.ontologies.archimate_4._loader import _PACKAGE_DIR, load_archimate_4_mo
 _KNOWN_AGGREGATION_ONLY_EXCEPTIONS = frozenset({("technology-node", "artifact")})
 
 
+@pytest.mark.verifies("REQ@1712870400.KeGCZE")
 def test_composition_permitted_wherever_aggregation_is() -> None:
     module = load_archimate_4_module(_PACKAGE_DIR)
     rules = module.permitted_relationships

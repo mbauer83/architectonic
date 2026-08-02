@@ -7,11 +7,13 @@ import pytest
 from src.ontologies.assurance import module as assurance_module
 
 
+@pytest.mark.verifies("REQ@1780655839.JpAJkO")
 def test_module_name_and_class() -> None:
     assert assurance_module.name == "assurance"
     assert assurance_module.module_class == "assurance"
 
 
+@pytest.mark.verifies("REQ@1780655839.JpAJkO")
 def test_module_requires_confidential_store() -> None:
     requires = list(getattr(assurance_module, "requires", []))
     assert "confidential_store" in requires

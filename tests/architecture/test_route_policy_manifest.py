@@ -67,6 +67,7 @@ def test_every_operation_id_is_tag_verb_resource() -> None:
         assert match.group("tag") in _TAGS, f"{row.operation_id!r} has an unknown tag"
 
 
+@pytest.mark.verifies("REQ@1712870400.peinbQ")
 def test_the_served_surface_is_exactly_the_manifest(served: frozenset[tuple[str, str]]) -> None:
     """A plain equality, in both directions: nothing is served that the manifest has not classified,
     and nothing the manifest declares is unmounted.

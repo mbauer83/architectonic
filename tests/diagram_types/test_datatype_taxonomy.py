@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import src.infrastructure.app_bootstrap as app_bootstrap
 from src.domain.ontology_representation.ontology_types import RELATIONSHIP_KINDS
+import pytest
 
 _VISUAL_CLASS_TAGS = frozenset({"nesting", "dynamic"})
 
@@ -24,6 +25,7 @@ def _dt_conn_types():
     return registry.all_diagram_types()["datatype"].own_connection_types
 
 
+@pytest.mark.verifies("REQ@1781704600.TbcGSB")
 def test_all_dt_types_present():
     names = frozenset(_dt_conn_types())
     assert _DT_TYPES <= names, f"Missing dt-* types: {_DT_TYPES - names}"

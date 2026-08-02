@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 import json
 from pathlib import Path
 
@@ -34,6 +36,7 @@ def test_normalize_legacy_required_sections_and_templates() -> None:
     assert schema.sections[1].template is None
 
 
+@pytest.mark.verifies("REQ@1777369067.3cJ1Yi")
 def test_normalize_sections_shape_preserves_per_section_rules() -> None:
     schema = normalize_document_schema(
         "standard",
@@ -79,6 +82,7 @@ def test_loader_returns_legacy_compatible_dict_with_sections(tmp_path: Path) -> 
     ]
 
 
+@pytest.mark.verifies("REQ@1777369067.3cJ1Yi")
 def test_loader_exposes_typed_document_schema(tmp_path: Path) -> None:
     _write_schema(
         tmp_path,

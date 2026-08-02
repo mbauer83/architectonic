@@ -26,6 +26,7 @@ def _console_scripts() -> dict[str, str]:
     return project["project"]["scripts"]
 
 
+@pytest.mark.verifies("REQ@1712870400.peinbQ")
 @pytest.mark.parametrize(("command", "target"), sorted(_console_scripts().items()))
 def test_console_script_target_resolves_to_a_callable(command: str, target: str) -> None:
     module_path, _, attribute = target.partition(":")

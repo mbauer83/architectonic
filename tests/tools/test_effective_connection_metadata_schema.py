@@ -17,6 +17,7 @@ from src.application.artifacts.schema import (
 )
 from src.domain.ontology_representation.profile_registry import profile_registry_from_mapping
 from src.domain.ontology_representation.specializations import SpecializationCatalog, SpecializationInfo
+import pytest
 
 
 def _write_schema(repo_root: Path, filename: str, schema: dict) -> None:
@@ -74,6 +75,7 @@ class TestComputeEffectiveConnectionMetadataSchema:
         assert schema is not None
         assert set(schema["properties"]) == {"cadence"}
 
+    @pytest.mark.verifies("REQ@1712870400.6ZR3nk")
     def test_specialization_inline_attributes_merge_in(self, tmp_path: Path) -> None:
         schema, conflicts = compute_effective_connection_metadata_schema(
             tmp_path, "flow", ["deployment-flow"],

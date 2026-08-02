@@ -6,8 +6,10 @@ from __future__ import annotations
 
 from src.domain.modules.module_types import ConnectionTypeName, EntityTypeName
 from src.ontologies.archimate_4._loader import _PACKAGE_DIR, load_archimate_4_module
+import pytest
 
 
+@pytest.mark.verifies("REQ@1712870400.KeGCZE")
 def test_collaboration_entity_type_exists_with_expected_classes() -> None:
     module = load_archimate_4_module(_PACKAGE_DIR)
     collaboration = module.entity_types[EntityTypeName("collaboration")]

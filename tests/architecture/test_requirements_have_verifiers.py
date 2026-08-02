@@ -139,17 +139,11 @@ def _owed() -> set[str]:
 UNVERIFIED_REQUIREMENTS: frozenset[str] = frozenset(
     {
         "REQ@1712870400.5PPAX3",
-        "REQ@1712870400.6ZR3nk",
         "REQ@1712870400.F4tfa3",
         "REQ@1712870400.HR7AGz",
-        "REQ@1712870400.Ii5Jj5",
-        "REQ@1712870400.KeGCZE",
         "REQ@1712870400.NfAmrl",
-        "REQ@1712870400.O-Ppmp",
         "REQ@1712870400.pSvaRl",
-        "REQ@1712870400.peinbQ",
         "REQ@1712870400.vlMSrd",
-        "REQ@1777369067.3cJ1Yi",
         "REQ@1777369240.dGaLkH",
         "REQ@1777369404.aDohcf",
         "REQ@1777369633.UoHGZy",
@@ -159,10 +153,6 @@ UNVERIFIED_REQUIREMENTS: frozenset[str] = frozenset(
         "REQ@1777372175.eFz3z9",
         "REQ@1777372455.LnytwA",
         "REQ@1777372662.64JvM1",
-        "REQ@1780655839.JpAJkO",
-        "REQ@1781704600.TbcGSB",
-        "REQ@1783870981.mdH8Uv",
-        "REQ@1784609467.na0At3",
     }
 )
 

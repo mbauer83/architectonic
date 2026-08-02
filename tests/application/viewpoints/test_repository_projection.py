@@ -19,6 +19,7 @@ from src.domain.viewpoints.viewpoints import (
     ViewpointDefinition,
 )
 from tests.application.viewpoints._fixtures import REGISTRIES, Store, connection, entity
+import pytest
 
 
 def _type_condition(value: str) -> AttributeCondition:
@@ -58,6 +59,7 @@ class TestOnlyMatchesPresent:
 
 
 class TestStyling:
+    @pytest.mark.verifies("REQ@1783870981.mdH8Uv")
     def test_matching_entities_are_styled(self) -> None:
         store = Store(entities={"ENT@A": entity(artifact_id="ENT@A", status="deprecated")})
         query = ExecutableViewpointQuery(entity_criteria=EntityCriteriaGroup())

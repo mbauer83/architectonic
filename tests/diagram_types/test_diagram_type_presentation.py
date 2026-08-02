@@ -51,6 +51,7 @@ EXPECTED_LABELS = {
 }
 
 
+@pytest.mark.verifies("REQ@1712870400.Ii5Jj5")
 def test_every_registered_type_has_a_curated_label() -> None:
     assert {name: ui.label for name, ui in PRESENTATION.items()} == EXPECTED_LABELS
 

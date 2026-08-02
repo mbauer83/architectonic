@@ -78,6 +78,7 @@ def test_populated_remote_is_cloned_not_initialized(tmp_path: Path) -> None:
     assert rc == 0 and ref == "origin/main"
 
 
+@pytest.mark.verifies("REQ@1712870400.O-Ppmp")
 def test_empty_remote_is_initialized_and_published(tmp_path: Path) -> None:
     remote = _bare_remote(tmp_path)
     ws = tmp_path / "ws"

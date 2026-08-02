@@ -9,6 +9,7 @@ import io
 from src.application.viewpoints.execution_result import EntityItemSummary, ViewpointExecutionResult
 from src.application.viewpoints.export_csv import build_execution_csv
 from src.domain.viewpoints.viewpoints import ColumnSpec
+import pytest
 
 
 def _entity(identifier: str, **kw: object) -> EntityItemSummary:
@@ -32,6 +33,7 @@ def _result(entities: tuple[EntityItemSummary, ...]) -> ViewpointExecutionResult
     )
 
 
+@pytest.mark.verifies("REQ@1783870981.mdH8Uv")
 def test_export_carries_provenance_and_every_row() -> None:
     entities = tuple(_entity(f"REQ@{i}") for i in range(242))
     text = build_execution_csv(_result(entities), None, {"anchor": "X@1"})
@@ -48,6 +50,7 @@ def test_export_carries_provenance_and_every_row() -> None:
     assert len(rows) - 1 == 242  # COMPLETE — every row, not a visible page
 
 
+@pytest.mark.verifies("REQ@1784609467.na0At3")
 def test_authored_columns_use_server_resolved_values_with_honest_empties() -> None:
     entities = (
         _entity("REQ@1", column_values={"criticality": "high"}),
