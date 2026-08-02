@@ -16,6 +16,7 @@ Usage:
 
 from __future__ import annotations
 
+import argparse
 import re
 import sys
 from pathlib import Path
@@ -84,7 +85,9 @@ def _check_file(md: Path, anchor_cache: dict[Path, set[str]], referenced: set[Pa
     return errors
 
 
-def main() -> int:
+def main(argv: list[str]) -> int:
+    """Takes no arguments, and says so rather than running the check on `--help`."""
+    argparse.ArgumentParser(prog="check_doc_links.py", description=__doc__).parse_args(argv[1:])
     anchor_cache: dict[Path, set[str]] = {}
     referenced: set[Path] = set()
     errors: list[str] = []
@@ -113,4 +116,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(sys.argv))

@@ -11,6 +11,7 @@ Usage:
 
 from __future__ import annotations
 
+import argparse
 import sys
 from pathlib import Path
 
@@ -21,11 +22,23 @@ DOCUMENT = (
 
 
 def main(argv: list[str]) -> int:
+    """Parsed rather than scanned for a substring.
+
+    ``"--check" in argv`` meant every other argument — including ``--help`` — fell through to the
+    *write* branch, so the one interrogative the command offers rewrote a committed file instead of
+    describing itself. Same defect as ``export_doc_diagrams.py`` and ``generate_types.py`` had.
+    """
+    parser = argparse.ArgumentParser(prog="generate_timeout_policy.py", description=__doc__)
+    parser.add_argument(
+        "--check", action="store_true", help="fail when the committed document is stale, writing nothing"
+    )
+    args = parser.parse_args(argv)
+
     from src.infrastructure.rest.route_policy import ROUTE_POLICY
     from src.infrastructure.rest.route_policy.timeout_policy_document import serialize
 
     expected = serialize(ROUTE_POLICY)
-    if "--check" in argv:
+    if args.check:
         current = DOCUMENT.read_text(encoding="utf-8") if DOCUMENT.exists() else ""
         if current == expected:
             return 0

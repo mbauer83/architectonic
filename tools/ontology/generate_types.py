@@ -7,6 +7,8 @@ Run from the project root:
 
 from __future__ import annotations
 
+import argparse
+import sys
 from pathlib import Path
 
 from src.infrastructure.app_bootstrap import build_module_registry
@@ -27,7 +29,10 @@ def _const_array(const_name: str, type_name: str, values: list[str]) -> str:
     )
 
 
-def main() -> None:
+def main(argv: list[str]) -> None:
+    """Takes no arguments. It used to ignore them, so `--help` regenerated the file instead of
+    describing the command — the same defect `export_doc_diagrams.py` had, on a script that writes."""
+    argparse.ArgumentParser(prog="generate_types.py", description=__doc__).parse_args(argv[1:])
     # Emit the complete vocabulary (all modules + diagram types) regardless of which
     # optional runtime capabilities are present, so the generated file is identical on
     # every machine — e.g. with or without the confidential assurance store configured.
@@ -49,4 +54,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv)
