@@ -1,4 +1,4 @@
-"""Which REST operations have ever executed through the running server.
+"""Which REST operations have not executed through the running server, within the recorded window.
 
 Every gate in this project answers "does the code agree with itself". None of them answers
 "has the real application ever run this". The difference is measurable, because the backend
@@ -8,11 +8,19 @@ the write surface had never executed outside an in-process ``TestClient`` — in
 ``POST /api/entities`` and all ten ``PATCH`` routes, every one of which the 0.2.0 release had
 just moved to a new address *and* a new method.
 
-The register is therefore **shrink-only**, in the same spirit as
-``SOURCE_FILE_BASELINE_LIMITS``: an entry may be removed once something drives the operation
-through the server, and no entry may be added. Adding one is the statement "this release ships
-an address nothing has ever called", which is the precondition of every defect the browser
-suite found in 0.2.0.
+"Within the recorded window" is the honest form of the claim, and it took a deleted log to see
+why. The measurement was first taken against a log spanning 43 restarts, and read as "never,
+ever". Then the log — 45 MB of it — was replaced, and the same code would have reported 60-odd
+dark operations from ten minutes of history: the most confident wrong answer available. A log is
+**positive** evidence only. That an operation appears in it proves the operation ran; that it does
+not appear proves nothing unless the log spans the period being claimed about. So the register
+records the instant it was taken (:data:`REGISTER_TAKEN`), and the negative half of the check runs
+only against a log that predates it.
+
+The register is **shrink-only**, in the same spirit as ``SOURCE_FILE_BASELINE_LIMITS``: an entry
+may be removed once something drives the operation through the server, and no entry may be added.
+Adding one is the statement "this release ships an address nothing in the window has called",
+which is the precondition of every defect the browser suite found in 0.2.0.
 
 **Success only.** A 400 or a 404 means the route's *guard* ran and its handler did not, so a
 rejected request is not evidence the operation works. Under the first, looser rule the initial
@@ -23,7 +31,7 @@ answered 409 both times.
 
 **What this is and is not.** It is a risk map, not a coverage figure: it measures requests, and any
 request counts — a browser spec, the conformance harness, a hand-run ``curl``. So it cannot prove an
-operation is *tested*, only that it has never once been *exercised*, which is the weaker claim and
+operation is *tested*, only that nothing in the window *exercised* it, which is the weaker claim and
 the one worth gating. Shrinking an entry without adding something that keeps exercising it is
 visible in the commit that shrinks it, and that visibility is the whole enforcement mechanism.
 
@@ -45,6 +53,7 @@ from __future__ import annotations
 import re
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 
 from src.infrastructure.rest.route_policy import RouteRow
@@ -53,20 +62,46 @@ from src.infrastructure.rest.route_policy import RouteRow
 #: entry when something exercises it, never add one. A new operation that would need an entry
 #: has to be exercised before it is served instead.
 #:
-#: Taken 2026-08-02 against a log spanning 43 backend restarts since 2026-07-27.
+#: Taken 2026-08-02 against a window containing one full `npm run conformance` and one full
+#: `npm run test:e2e` — 461 distinct successful routes, 79 of 166 operations untouched.
+#:
+#: That window is deliberately *reproducible*, which the first take was not. The first was measured
+#: against 43 restarts' worth of accumulated history including every hand-run `curl`, so it flattered
+#: the read surface (9 dark GETs where an honest automated window has 27) and could never be
+#: reproduced by running anything. This one is a statement about what the **suites** exercise, which
+#: is the thing worth gating: re-taking it means running those two suites, not remembering what was
+#: poked at over five days.
 NEVER_REQUESTED_OPERATIONS: frozenset[str] = frozenset(
     {
-        # GET — 9 dark
+        # GET — 27 dark
+        "assurance_read_aibom_coverage",
+        "assurance_list_aibom_roles",
+        "assurance_scan_aibom_candidates",
+        "assurance_read_analysis",
+        "assurance_read_analysis_completeness",
+        "assurance_read_gsn_draft",
+        "assurance_list_gsn_publications",
+        "assurance_read_gsn_render",
+        "assurance_list_analysis_nodes",
+        "assurance_list_participating_nodes",
         "assurance_list_security_components",
         "assurance_list_security_findings",
         "assurance_list_vex_assessments",
+        "assurance_read_coverage",
+        "assurance_read_edge_catalog",
+        "assurance_read_risk_register",
+        "assurance_search_nodes",
         "assurance_read_security_component",
+        "assurance_read_security_stats",
+        "assurance_read_stats",
         "assurance_read_vulnerability_impact",
+        "taxonomy_read_backend_identity",
         "diagrams_read_diagram_image",
         "diagrams_list_diagram_type_connection_types",
         "diagrams_list_diagram_type_entity_types",
         "diagrams_download_diagram_source",
-        # POST — 27 dark
+        "documents_read_document_schemata",
+        # POST — 25 dark
         "admin_create_connection",
         "admin_create_diagram",
         "admin_create_entity",
@@ -86,9 +121,7 @@ NEVER_REQUESTED_OPERATIONS: frozenset[str] = frozenset(
         "groups_archive_group",
         "groups_rename_group",
         "groups_unarchive_group",
-        "entities_allocate_identifiers",
         "matrices_create_matrix",
-        "matrices_preview_matrix",
         "promotion_execute_promotion",
         "sync_save_engagement",
         "sync_save_enterprise",
@@ -113,7 +146,7 @@ NEVER_REQUESTED_OPERATIONS: frozenset[str] = frozenset(
         "documents_update_document",
         "entities_update_entity",
         "groups_update_group",
-        # DELETE — 11 dark
+        # DELETE — 10 dark
         "admin_delete_connection",
         "admin_delete_diagram",
         "admin_delete_entity",
@@ -123,13 +156,26 @@ NEVER_REQUESTED_OPERATIONS: frozenset[str] = frozenset(
         "assurance_delete_group",
         "assurance_delete_security_snapshot",
         "documents_delete_document",
-        "entities_delete_entity",
         "groups_delete_group",
     }
 )
 
 #: The default log location. A deployment-local artefact, not a repository one.
+#:
+#: Authoritative only while the backend was started the way that owns this file — `arch-backend
+#: --daemon` (or `--restart --daemon`). Launched any other way, with the caller capturing stdout, the
+#: server logs *there* and this file stops growing while still looking like a record. That is how a
+#: 45 MB log came to be 30 minutes stale during a run, which is the failure this module's coverage
+#: check exists to refuse.
 DEFAULT_REQUEST_LOG = Path(".arch/backend.log")
+
+#: When the register below was last taken. The log half of the check is only sound where the log
+#: *spans* this instant: a log that begins afterwards has no way to show that an operation was
+#: requested before it started, so absence in it is not evidence of never.
+REGISTER_TAKEN = datetime(2026, 8, 2, 12, 40, tzinfo=UTC)
+
+#: The timestamp uvicorn/`logging.basicConfig` puts at the head of a line: `2026-08-02 12:20:49,123`.
+_LOG_TIMESTAMP = re.compile(r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})", re.MULTILINE)
 
 #: uvicorn's access-log format: ``… "METHOD /path HTTP/1.1" 200``. Matched rather than parsed
 #: line-by-line because the log interleaves application logging at several levels, and a
@@ -145,6 +191,34 @@ class RequestedRoute:
 
     method: str
     path: str
+
+
+def log_begins_at(log_text: str) -> datetime | None:
+    """The first timestamp the log carries, or ``None`` if it carries none.
+
+    Local time, because that is what the logger writes; compared against a register epoch recorded
+    the same way. Precision beyond the minute is irrelevant here — the question is whether the log
+    predates the register by any margin at all.
+    """
+    match = _LOG_TIMESTAMP.search(log_text)
+    if match is None:
+        return None
+    naive = datetime.strptime(match.group(1), "%Y-%m-%d %H:%M:%S")
+    return naive.replace(tzinfo=UTC)
+
+
+def covers_the_register(log_text: str, taken: datetime | None = None) -> bool:
+    """Whether this log can support the claim that an operation has *never* been requested.
+
+    Positive evidence needs no coverage: a request recorded anywhere proves the operation ran. The
+    negative direction is the one that needs history, and a fresh log — after a rotation, on a new
+    machine, or because someone deleted 45 MB of it — has none. Reporting 60 dark operations from a
+    log that is ten minutes old would be the most confident wrong answer this module could give.
+    """
+    begins = log_begins_at(log_text)
+    if begins is None:
+        return False
+    return begins <= (REGISTER_TAKEN if taken is None else taken)
 
 
 def parse_requested_routes(log_text: str) -> frozenset[RequestedRoute]:

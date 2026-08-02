@@ -1,5 +1,5 @@
 /**
- * Run-wide setup: fail immediately when the target stack is unreachable, and reset the media
+ * Run-wide setup: fail immediately when the target stack cannot support the run, and reset the media
  * manifest once.
  *
  * Without this, an unreachable base URL is the quietest possible failure: every `page.goto` waits out
@@ -21,6 +21,35 @@ import { resetManifest } from './media/mediaHelpers'
 
 const PROBE_TIMEOUT_MS = 5_000
 const MEDIA_PROJECT = 'media'
+
+/**
+ * The assurance store must be open, and this is where that is established.
+ *
+ * Twenty-one of the 150 chromium tests read the confidential store. Restarting the backend leaves it
+ * activated but not *held*, and `arch-assurance unlock` is what tells the running process to hold it —
+ * so a run started after a restart fails those twenty-one on navigation and visibility timeouts, twenty
+ * seconds apiece, in ways that read as GUI defects. The handoff documents that trap, which is the
+ * problem: a precondition a human has to remember is a precondition the harness should assert.
+ *
+ * One probe, before any test starts, naming the command that fixes it. A locked store is not a reason
+ * to skip those tests either — they are the only coverage the assurance surface has, and a run that
+ * quietly omitted them would report a green suite over an untested third of the product.
+ */
+const assuranceStoreState = async (baseURL: string): Promise<{ unlocked: boolean; detail: string }> => {
+  try {
+    const response = await fetch(new URL('/api/assurance/status', baseURL), {
+      signal: AbortSignal.timeout(PROBE_TIMEOUT_MS),
+    })
+    if (!response.ok) return { unlocked: false, detail: `HTTP ${response.status}` }
+    const body = await response.json() as { status?: string; unlocked?: boolean }
+    return {
+      unlocked: body.unlocked === true,
+      detail: `status=${body.status ?? 'unknown'}`,
+    }
+  } catch (error) {
+    return { unlocked: false, detail: error instanceof Error ? error.message : String(error) }
+  }
+}
 
 export default async function preflight(config: FullConfig): Promise<void> {
   const baseURL = config.projects[0]?.use?.baseURL
@@ -51,6 +80,20 @@ export default async function preflight(config: FullConfig): Promise<void> {
       + '  • Vite dev server (proxies /api to the backend) — npm run dev, then :5173\n\n'
       + 'Figures are shot against the built SPA, which is why `npm run media` defaults to :8000: a '
       + 'screenshot has to show shipped code rather than whatever the dev server is holding.',
+    )
+  }
+
+  const store = await assuranceStoreState(baseURL)
+  if (!store.unlocked) {
+    throw new Error(
+      `The assurance store is not open at ${baseURL} (${store.detail}).\n\n`
+      + 'Twenty-one tests read the confidential store. Each would have waited out a navigation or '
+      + 'visibility timeout and reported what looks like a GUI defect, so this run stops here '
+      + 'instead.\n\n'
+      + '  uv run arch-assurance unlock\n\n'
+      + 'Activation is not enough: a restarted backend has the key but is not holding the store, and '
+      + '`unlock` is what tells the running process to hold it. `arch-assurance status` says which of '
+      + 'the two states you are in.',
     )
   }
 

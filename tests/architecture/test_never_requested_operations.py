@@ -1,4 +1,4 @@
-"""The set of REST operations nothing has ever requested may shrink and never grow.
+"""The set of REST operations nothing has requested, in the log's window, may shrink and never grow.
 
 Every other gate in this suite asks whether the code agrees with itself. This one asks whether the
 *running application* has ever executed an operation, which is a different question and the one the
@@ -14,16 +14,28 @@ Two halves, with deliberately different reach:
 * the log half needs `.arch/backend.log`, which is deployment-local and gitignored. Where there is
   no log it skips *loudly*, because a check that passes on absent evidence is the green lie this
   whole register is a response to.
+
+The two halves of the *log* check need different amounts of evidence, and conflating them was a real
+hole. That a registered operation has since been requested is **positive** evidence and needs no
+history at all. That an *unregistered* operation is dark is a claim about a period, and a log that
+begins after the register was taken cannot support it — a freshly rotated log would otherwise report
+sixty dark operations from ten minutes of history. So that half runs only where the log predates
+`REGISTER_TAKEN`, and says which it is rather than passing quietly.
 """
 
 from __future__ import annotations
+
+from datetime import UTC, datetime
 
 import pytest
 
 from src.infrastructure.rest.route_policy import BY_OPERATION, ROUTE_POLICY, RouteRow
 from tools.quality.operation_execution import (
     NEVER_REQUESTED_OPERATIONS,
+    REGISTER_TAKEN,
     RequestedRoute,
+    covers_the_register,
+    log_begins_at,
     never_requested_operations,
     operation_for,
     parse_requested_routes,
@@ -129,17 +141,29 @@ def test_a_log_with_no_request_lines_leaves_every_operation_dark() -> None:
     )
 
 
-def _measured_dark_operations() -> frozenset[str]:
+def _log_text_or_skip() -> str:
     log_text = read_request_log()
     if log_text is None:
         pytest.skip(
             "no .arch/backend.log — the register's log half is unmeasurable here. Run "
             "`uv run tools/quality/never_requested_operations.py` where a backend has served."
         )
-    return never_requested_operations(parse_requested_routes(log_text), ROUTE_POLICY)
+    return log_text
+
+
+def _measured_dark_operations() -> frozenset[str]:
+    return never_requested_operations(parse_requested_routes(_log_text_or_skip()), ROUTE_POLICY)
 
 
 def test_no_operation_outside_the_register_is_dark() -> None:
+    log_text = _log_text_or_skip()
+    if not covers_the_register(log_text):
+        pytest.skip(
+            f"the log begins at {log_begins_at(log_text)}, after the register was taken at "
+            f"{REGISTER_TAKEN} — it cannot show what was requested before it started, so absence in "
+            "it is not evidence. Re-take the register: "
+            "`uv run tools/quality/never_requested_operations.py`."
+        )
     grown = sorted(_measured_dark_operations() - NEVER_REQUESTED_OPERATIONS)
     assert grown == [], (
         "These operations are served and nothing has ever requested one. Drive each through the "
@@ -162,3 +186,28 @@ def test_the_register_is_a_minority_of_the_surface_and_says_which_part() -> None
     assert len(NEVER_REQUESTED_OPERATIONS) < len(ROUTE_POLICY) / 2
     dark_writes = sum(1 for op in NEVER_REQUESTED_OPERATIONS if BY_OPERATION[op].is_write_shaped)
     assert dark_writes > len(NEVER_REQUESTED_OPERATIONS) / 2
+
+
+def test_a_log_that_begins_after_the_register_cannot_prove_an_operation_is_dark() -> None:
+    """The coverage rule, on fixtures this test owns.
+
+    Positive evidence needs no history; the negative claim does. A log rotated ten minutes ago would
+    otherwise report every operation as dark with complete confidence — which is how deleting 45 MB
+    of history turned this module from a measurement into an assertion about nothing.
+    """
+    taken = datetime(2026, 8, 2, 12, 0, tzinfo=UTC)
+    before = '2026-08-02 11:00:00,000 INFO started\n"GET /api/things HTTP/1.1" 200\n'
+    after = '2026-08-02 12:30:00,000 INFO started\n"GET /api/things HTTP/1.1" 200\n'
+
+    assert covers_the_register(before, taken) is True
+    assert covers_the_register(after, taken) is False
+    # No timestamp at all is not coverage either: a log whose format changed would otherwise read as
+    # spanning all of history.
+    assert covers_the_register('"GET /api/things HTTP/1.1" 200', taken) is False
+
+
+def test_the_log_window_is_read_from_the_log_rather_than_assumed() -> None:
+    assert log_begins_at("2026-08-02 11:00:00,000 INFO started\n") == datetime(
+        2026, 8, 2, 11, 0, tzinfo=UTC
+    )
+    assert log_begins_at("no timestamps here") is None
