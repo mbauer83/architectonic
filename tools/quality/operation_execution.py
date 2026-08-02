@@ -14,6 +14,19 @@ through the server, and no entry may be added. Adding one is the statement "this
 an address nothing has ever called", which is the precondition of every defect the browser
 suite found in 0.2.0.
 
+**Success only.** A 400 or a 404 means the route's *guard* ran and its handler did not, so a
+rejected request is not evidence the operation works. Under the first, looser rule the initial
+conformance run appeared to retire ``entities_allocate_identifiers`` on the strength of a request
+that named an entity type the diagram kind does not own. Tightening it also *found* something:
+``GET /api/assurance/analyses/{id}/completeness`` had been requested twice in 43 restarts and had
+answered 409 both times.
+
+**What this is and is not.** It is a risk map, not a coverage figure: it measures requests, and any
+request counts — a browser spec, the conformance harness, a hand-run ``curl``. So it cannot prove an
+operation is *tested*, only that it has never once been *exercised*, which is the weaker claim and
+the one worth gating. Shrinking an entry without adding something that keeps exercising it is
+visible in the commit that shrinks it, and that visibility is the whole enforcement mechanism.
+
 The log lives outside the repository (``.arch/backend.log``, gitignored), so the two halves of
 the check have different reach. The manifest half — every registered id is a declared
 operation — runs anywhere and catches a register entry stranded by a rename. The log half
@@ -43,19 +56,17 @@ from src.infrastructure.rest.route_policy import ROUTE_POLICY, RouteRow
 #: Taken 2026-08-02 against a log spanning 43 backend restarts since 2026-07-27.
 NEVER_REQUESTED_OPERATIONS: frozenset[str] = frozenset(
     {
-        # GET — 11 dark
+        # GET — 9 dark
         "assurance_list_security_components",
         "assurance_list_security_findings",
         "assurance_list_vex_assessments",
         "assurance_read_security_component",
         "assurance_read_vulnerability_impact",
         "diagrams_read_diagram_image",
-        "diagrams_list_datatype_type_usages",
         "diagrams_list_diagram_type_connection_types",
         "diagrams_list_diagram_type_entity_types",
         "diagrams_download_diagram_source",
-        "matrices_read_matrix_config",
-        # POST — 28 dark
+        # POST — 27 dark
         "admin_create_connection",
         "admin_create_diagram",
         "admin_create_entity",
@@ -83,7 +94,6 @@ NEVER_REQUESTED_OPERATIONS: frozenset[str] = frozenset(
         "sync_save_enterprise",
         "sync_submit_enterprise",
         "sync_withdraw_enterprise",
-        "viewpoints_export_viewpoint_csv",
         # PUT — 7 dark
         "assurance_file_analysis",
         "assurance_add_participating_node",
@@ -103,7 +113,7 @@ NEVER_REQUESTED_OPERATIONS: frozenset[str] = frozenset(
         "documents_update_document",
         "entities_update_entity",
         "groups_update_group",
-        # DELETE — 12 dark
+        # DELETE — 11 dark
         "admin_delete_connection",
         "admin_delete_diagram",
         "admin_delete_entity",
@@ -112,7 +122,6 @@ NEVER_REQUESTED_OPERATIONS: frozenset[str] = frozenset(
         "assurance_delete_edge",
         "assurance_delete_group",
         "assurance_delete_security_snapshot",
-        "connections_delete_connection",
         "documents_delete_document",
         "entities_delete_entity",
         "groups_delete_group",
@@ -125,7 +134,7 @@ DEFAULT_REQUEST_LOG = Path(".arch/backend.log")
 #: uvicorn's access-log format: ``… "METHOD /path HTTP/1.1" 200``. Matched rather than parsed
 #: line-by-line because the log interleaves application logging at several levels, and a
 #: request line is recognisable by its own shape wherever it appears.
-_ACCESS_LINE = re.compile(r'"(GET|POST|PUT|PATCH|DELETE) (\S+) HTTP/[0-9.]+"')
+_ACCESS_LINE = re.compile(r'"(GET|POST|PUT|PATCH|DELETE) (\S+) HTTP/[0-9.]+" (\d{3})')
 
 _PARAMETER_SEGMENT = re.compile(r"^\{[A-Za-z_][A-Za-z0-9_]*\}$")
 
@@ -139,14 +148,22 @@ class RequestedRoute:
 
 
 def parse_requested_routes(log_text: str) -> frozenset[RequestedRoute]:
-    """Every distinct ``(method, path)`` an access log records.
+    """Every distinct ``(method, path)`` an access log records **answering 2xx**.
 
-    Deduplicated on the way in: the question is *whether* an operation ran, never how often,
-    and the log this was built against carries 101,389 request lines.
+    Deduplicated on the way in: the question is *whether* an operation ran, never how often, and
+    the log this was built against carries 101,389 request lines.
+
+    Only success counts, and the distinction is the whole value of the measurement. A 400 or a 404
+    means the route's *guard* ran — a validator rejected the body, an identifier resolved to
+    nothing — and the handler's own work never happened. Counting those would have let the first
+    conformance run retire ``entities_allocate_identifiers`` from the register on the strength of a
+    request that asked for an entity type the diagram kind does not own, which is the sort of
+    evidence this register exists to refuse.
     """
     return frozenset(
-        RequestedRoute(method, target.split("?", 1)[0]) for method, target in
-        _ACCESS_LINE.findall(log_text)
+        RequestedRoute(method, target.split("?", 1)[0])
+        for method, target, status in _ACCESS_LINE.findall(log_text)
+        if status.startswith("2")
     )
 
 

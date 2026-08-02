@@ -108,6 +108,20 @@ def test_the_query_string_is_not_part_of_the_address() -> None:
     assert requested_operations(routes, _FIXTURE_ROWS) == frozenset({"things_list_things"})
 
 
+def test_only_a_successful_request_counts_as_having_exercised_an_operation() -> None:
+    """A 400 means the validator ran, not the handler. Counting a rejection as evidence is how a
+    register like this quietly empties: every operation has been *asked for* at some point."""
+    rejected = '"POST /api/things HTTP/1.1" 400\n"GET /api/things/x HTTP/1.1" 404\n'
+    assert parse_requested_routes(rejected) == frozenset()
+    accepted = '"POST /api/things HTTP/1.1" 201\n"GET /api/things/x HTTP/1.1" 200\n'
+    assert requested_operations(parse_requested_routes(accepted), _FIXTURE_ROWS) == frozenset(
+        {"things_create_thing", "things_read_thing"}
+    )
+    # 204 counts: a deletion has no body and says so with a status, which is still the handler
+    # having done its work.
+    assert parse_requested_routes('"GET /api/things HTTP/1.1" 204') != frozenset()
+
+
 def test_a_log_with_no_request_lines_leaves_every_operation_dark() -> None:
     quiet = "2026-08-02 08:36:00,000 INFO src.infrastructure.backend: started\n"
     assert never_requested_operations(parse_requested_routes(quiet), _FIXTURE_ROWS) == frozenset(

@@ -1,0 +1,26 @@
+{
+  "//": [
+    "The conformance suite is the only test code that imports the application's own adapters — that",
+    "is the point of it: the URL builder and the decoder under test are the ones the product ships.",
+    "So it cannot live in `tsconfig.node.json`, whose program is the tooling (`vite.config.ts`,",
+    "`playwright.config.ts`, the Playwright specs) and deliberately excludes `src`. A project of its",
+    "own, carrying both, rather than widening the tooling project to see the whole application.",
+    "Not a referenced project of `tsconfig.json`: a reference must emit declarations, and this",
+    "one is a pure type check run on its own by `npm run typecheck`."
+  ],
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "verbatimModuleSyntax": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "types": ["node"]
+  },
+  "include": ["tests/conformance/**/*.ts", "vitest.conformance.config.ts", "src/**/*.ts"]
+}

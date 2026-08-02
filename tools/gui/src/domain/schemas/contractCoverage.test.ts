@@ -45,7 +45,10 @@ const UNASSERTED_SCHEMAS: Readonly<Record<string, string>> = {
   DatatypeTypeUsagesSchema:
     'Remaining work. Wraps `DatatypeTypeUsageSchema`; blocked on the same comparison.',
   DiagramConnectionSchema:
-    'Remaining work. The preview`s connection row; `DiagramConnectionItem` is its counterpart.',
+    'Deliberately a superset of two producers. `/api/diagrams/{id}/connections` sends ' +
+    '`DiagramContextConnection`, and the viewpoint-diagram viewer composes the same shape ' +
+    'client-side with `certainty`, `hops` and `via_connection_ids` for a derived edge. Asserting it ' +
+    'against either counterpart would make one of the two wrong.',
   DiagramRefSchema:
     'Remaining work. `DiagramReference` exists in the document; not yet compared.',
   DiagramRefsSchema:
@@ -63,9 +66,6 @@ const UNASSERTED_SCHEMAS: Readonly<Record<string, string>> = {
   NeighborsSchema:
     'Remaining work. The hop map, reached only through `DirectNeighborhoodSchema`; blocked on that ' +
     'comparison.',
-  MatrixPreviewResultSchema:
-    'Client-side composite. The matrix view folds a diagram read and a config read into one shape ' +
-    'the server never sends whole.',
   SyncSaveResultSchema:
     'Remaining work. The save route`s result; served through the write-result envelope, which is ' +
     'asserted, but this narrower shape is not.',

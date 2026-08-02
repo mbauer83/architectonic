@@ -39,35 +39,6 @@ class _ModuleShaped(BaseModel):
     model_config = ConfigDict(extra="allow")
 
 
-class DiagramEntityItem(_ModuleShaped):
-    """One entity as it is placed on a diagram: identity plus the kind's own placement data."""
-
-    artifact_id: str
-    name: str | None = None
-    artifact_type: str | None = None
-
-
-class DiagramEntityListResponse(Closed):
-    """Entities placed on one diagram."""
-
-    items: list[DiagramEntityItem]
-
-
-class DiagramConnectionItem(_ModuleShaped):
-    """One connection as it is drawn on a diagram."""
-
-    artifact_id: str | None = None
-    source: str | None = None
-    target: str | None = None
-    conn_type: str | None = None
-
-
-class DiagramConnectionListResponse(Closed):
-    """Connections drawn on one diagram."""
-
-    items: list[DiagramConnectionItem]
-
-
 class DiagramReference(Closed):
     """A diagram that draws a given source/target pair."""
 
@@ -181,6 +152,24 @@ class MatrixConnTypeConfig(Closed):
 
     conn_type: str
     active: bool
+
+
+class MatrixPreviewResponse(Closed):
+    """A matrix write's dry run: the rendered body it would store, and nothing else.
+
+    The route declared ``WriteResultResponse`` — the six-key mutation envelope — while returning
+    ``{"markdown": …}``, so FastAPI's response validation raised on every single call and the
+    preview answered 500 with a body that deliberately carries no diagnostic. Nothing noticed
+    because a preview is a write-shaped operation, and ``NEVER_REQUESTED_OPERATIONS`` recorded
+    ``matrices_preview_matrix`` as never once having answered 2xx: the Preview button on both matrix
+    views has never worked through the running server.
+
+    A dry run is not a mutation and does not share its envelope. There is no ``wrote``, no ``path``
+    and no ``artifact_id``, because nothing was written and nothing has an address yet.
+    """
+
+    #: The matrix body the write would store, with entity ids already linkified.
+    markdown: str
 
 
 class MatrixConfigResponse(Closed):
@@ -345,6 +334,29 @@ class DiagramContextConnection(ConnectionSummary, NullsOmitted):
     target_alias: str
     edge_key: str
     edge_label_override: str | None = None
+
+
+class DiagramEntityListResponse(NullsOmitted):
+    """Entities placed on one diagram.
+
+    The rows are :class:`DiagramContextEntity` because they are *the same rows* — the list route and
+    the context read both return what ``diagram_entities_and_puml`` produced, and the connection pair
+    below does the same for ``diagram_context_payload``'s ``connections``. They used to be declared
+    as a pair of open three-field placeholders, which is how one producer came to have two contracts:
+    the context read declared the real shape and omitted its unset optionals, while these two
+    published a shape nothing produced and sent `"last_updated": null` on the wire. The client
+    decodes both with the context read's schema, so the entity list threw in the decoder before a
+    row was drawn — the FMEA defect's exact shape, one release later, on a route no browser spec
+    happens to read.
+    """
+
+    items: list[DiagramContextEntity]
+
+
+class DiagramConnectionListResponse(NullsOmitted):
+    """Connections drawn on one diagram — literally ``diagram_context_payload``'s ``connections``."""
+
+    items: list[DiagramContextConnection]
 
 
 class DiagramContextResponse(NullsOmitted):

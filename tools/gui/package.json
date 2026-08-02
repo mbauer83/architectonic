@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "generate-types": "cd ../.. && if command -v uv >/dev/null 2>&1; then uv run tools/ontology/generate_types.py; else echo 'generate-types: uv not found on PATH; building from committed types.generated.ts'; fi",
-    "typecheck": "vue-tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json",
+    "typecheck": "vue-tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.conformance.json",
     "lint": "eslint . --max-warnings=0",
     "lint:fast": "LINT_TYPED=0 eslint . --cache --cache-location node_modules/.cache/eslint/.eslintcache-fast --max-warnings=0",
     "lint:fix": "npm run lint -- --fix",
@@ -16,6 +16,7 @@
     "build": "npm run typecheck && vite build",
     "preview": "vite preview",
     "test": "vitest run",
+    "conformance": "vitest run --config vitest.conformance.config.ts",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test --project=chromium",
     "media": "E2E_BASE_URL=${E2E_BASE_URL:-http://localhost:8000} playwright test --project=media",

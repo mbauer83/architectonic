@@ -5733,28 +5733,12 @@ export interface components {
             role: "diagnostic";
         };
         /**
-         * DiagramConnectionItem
-         * @description One connection as it is drawn on a diagram.
-         */
-        DiagramConnectionItem: {
-            /** Artifact Id */
-            artifact_id?: string | null;
-            /** Conn Type */
-            conn_type?: string | null;
-            /** Source */
-            source?: string | null;
-            /** Target */
-            target?: string | null;
-        } & {
-            [key: string]: unknown;
-        };
-        /**
          * DiagramConnectionListResponse
-         * @description Connections drawn on one diagram.
+         * @description Connections drawn on one diagram — literally ``diagram_context_payload``'s ``connections``.
          */
         DiagramConnectionListResponse: {
             /** Items */
-            items: components["schemas"]["DiagramConnectionItem"][];
+            items: components["schemas"]["DiagramContextConnection"][];
         };
         /**
          * DiagramContextConnection
@@ -5976,26 +5960,22 @@ export interface components {
             suggested_entities: components["schemas"]["HopSuggestionGroup"][];
         };
         /**
-         * DiagramEntityItem
-         * @description One entity as it is placed on a diagram: identity plus the kind's own placement data.
-         */
-        DiagramEntityItem: {
-            /** Artifact Id */
-            artifact_id: string;
-            /** Artifact Type */
-            artifact_type?: string | null;
-            /** Name */
-            name?: string | null;
-        } & {
-            [key: string]: unknown;
-        };
-        /**
          * DiagramEntityListResponse
          * @description Entities placed on one diagram.
+         *
+         *     The rows are :class:`DiagramContextEntity` because they are *the same rows* — the list route and
+         *     the context read both return what ``diagram_entities_and_puml`` produced, and the connection pair
+         *     below does the same for ``diagram_context_payload``'s ``connections``. They used to be declared
+         *     as a pair of open three-field placeholders, which is how one producer came to have two contracts:
+         *     the context read declared the real shape and omitted its unset optionals, while these two
+         *     published a shape nothing produced and sent `"last_updated": null` on the wire. The client
+         *     decodes both with the context read's schema, so the entity list threw in the decoder before a
+         *     row was drawn — the FMEA defect's exact shape, one release later, on a route no browser spec
+         *     happens to read.
          */
         DiagramEntityListResponse: {
             /** Items */
-            items: components["schemas"]["DiagramEntityItem"][];
+            items: components["schemas"]["DiagramContextEntity"][];
         };
         /**
          * DiagramListResponse
@@ -8296,6 +8276,24 @@ export interface components {
             from_entity_ids?: string[] | null;
             /** To Entity Ids */
             to_entity_ids?: string[] | null;
+        };
+        /**
+         * MatrixPreviewResponse
+         * @description A matrix write's dry run: the rendered body it would store, and nothing else.
+         *
+         *     The route declared ``WriteResultResponse`` — the six-key mutation envelope — while returning
+         *     ``{"markdown": …}``, so FastAPI's response validation raised on every single call and the
+         *     preview answered 500 with a body that deliberately carries no diagnostic. Nothing noticed
+         *     because a preview is a write-shaped operation, and ``NEVER_REQUESTED_OPERATIONS`` recorded
+         *     ``matrices_preview_matrix`` as never once having answered 2xx: the Preview button on both matrix
+         *     views has never worked through the running server.
+         *
+         *     A dry run is not a mutation and does not share its envelope. There is no ``wrote``, no ``path``
+         *     and no ``artifact_id``, because nothing was written and nothing has an address yet.
+         */
+        MatrixPreviewResponse: {
+            /** Markdown */
+            markdown: string;
         };
         /**
          * MetadataSchemaBlock
@@ -18239,7 +18237,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["WriteResultResponse"];
+                    "application/json": components["schemas"]["MatrixPreviewResponse"];
                 };
             };
             /** @description Validation error (bad or ambiguous write) */

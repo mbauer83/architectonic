@@ -19,5 +19,8 @@
     "vite.config.ts",
     "playwright.config.ts",
     "tests/**/*.ts"
+  ],
+  "exclude": [
+    "tests/conformance/**/*.ts"
   ]
 }

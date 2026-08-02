@@ -11,6 +11,7 @@ import type {
   DiagramEntityDiscoverySchema,
   DiagramPreviewResultSchema,
   HopSuggestionGroupSchema,
+  MatrixPreviewResultSchema,
 } from './diagrams'
 import type {
   EntityAttributeDescriptorSchema,
@@ -93,6 +94,16 @@ describe('diagram palette', () => {
     >()
     expectTypeOf<SchemaType<typeof DerivedEntitySchema>>().toEqualTypeOf<
       Immutable<components['schemas']['DerivedViewEntityResponse']>
+    >()
+  })
+
+  it('decodes a matrix dry run', () => {
+    // Recorded as a client-side composite "the server never sends whole", which was simply untrue:
+    // `POST /api/matrices/preview` sends exactly this. The route meanwhile declared the six-key
+    // mutation envelope and returned `{markdown}`, so it answered 500 to every caller — and the
+    // wrong exemption here is what kept anything from noticing.
+    expectTypeOf<SchemaType<typeof MatrixPreviewResultSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['MatrixPreviewResponse']>
     >()
   })
 })

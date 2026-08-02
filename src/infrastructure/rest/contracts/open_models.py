@@ -80,8 +80,6 @@ AWAITING_CONTRACT: OpenReason = "awaiting-contract"
 #: exists, which is how the next one gets waved through.
 OPEN_RESPONSE_MODELS: dict[str, OpenReason] = {
     # ── The diagram-type modules own these shapes ─────────────────────────────
-    "DiagramEntityItem": MODULE_OWNED,
-    "DiagramConnectionItem": MODULE_OWNED,
     "DiagramTypeMemberItem": MODULE_OWNED,
     # A document schema is a repository-local JSON file served after normalization, so its top level
     # is the author's. Refusing a key this package does not know would 500 a read of a repository

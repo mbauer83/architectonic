@@ -201,6 +201,7 @@ def get_diagram_refs(source_id: str, target_id: str) -> dict[str, Any]:
     tags=[TAG_DIAGRAMS],
     summary="Entities placed on a diagram",
     response_model=DiagramEntityListResponse,
+    response_model_exclude_none=True,
     responses=READ_RESPONSES,
 )
 def get_diagram_entities(
@@ -220,6 +221,7 @@ def get_diagram_entities(
     tags=[TAG_DIAGRAMS],
     summary="Connections drawn on a diagram",
     response_model=DiagramConnectionListResponse,
+    response_model_exclude_none=True,
     responses=READ_RESPONSES,
 )
 def get_diagram_connections(

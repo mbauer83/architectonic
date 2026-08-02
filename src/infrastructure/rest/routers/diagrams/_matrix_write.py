@@ -12,6 +12,7 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException, Response, status
 
+from src.infrastructure.rest.contracts.diagrams import MatrixPreviewResponse
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers._openapi import TAG_DIAGRAMS, WRITE_RESPONSES, WriteResultResponse
 from src.infrastructure.rest.routers.diagrams._matrix_markdown import build_matrix_markdown
@@ -30,7 +31,7 @@ router = APIRouter(responses=WRITE_RESPONSES)
 
 
 @router.post("/api/matrices/preview", tags=[TAG_DIAGRAMS], summary="Preview a matrix write (dry-run)",
-    response_model=WriteResultResponse, responses=WRITE_RESPONSES)
+    response_model=MatrixPreviewResponse, responses=WRITE_RESPONSES)
 def preview_matrix(body: MatrixPreviewBody) -> dict[str, Any]:
     repo = s.get_repo()
     repo_root, registry, _ = s.get_write_deps()

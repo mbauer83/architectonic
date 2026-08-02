@@ -389,11 +389,11 @@ export const makeHttpModelRepository = (): ModelRepository => ({
   executePromotion: (body) =>
     postJson(buildUrl('/promote/execute'), body, PromotionResultSchema),
 
-  getSyncStatus: () => fetchJson('/api/sync/status', SyncStatusSchema),
-  saveEngagementChanges: (body) => postJson('/api/sync/engagement/save', { push: true, ...body }, SyncSaveResultSchema),
-  saveEnterpriseChanges: (body) => postJson('/api/sync/enterprise/save', body, SyncSaveResultSchema),
-  submitEnterpriseChanges: () => postJson('/api/sync/enterprise/submit', {}, SyncSaveResultSchema),
-  withdrawEnterpriseChanges: () => postJson('/api/sync/enterprise/withdraw', { confirm: true }, SyncSaveResultSchema),
+  getSyncStatus: () => fetchJson(buildUrl('/sync/status'), SyncStatusSchema),
+  saveEngagementChanges: (body) => postJson(buildUrl('/sync/engagement/save'), { push: true, ...body }, SyncSaveResultSchema),
+  saveEnterpriseChanges: (body) => postJson(buildUrl('/sync/enterprise/save'), body, SyncSaveResultSchema),
+  submitEnterpriseChanges: () => postJson(buildUrl('/sync/enterprise/submit'), {}, SyncSaveResultSchema),
+  withdrawEnterpriseChanges: () => postJson(buildUrl('/sync/enterprise/withdraw'), { confirm: true }, SyncSaveResultSchema),
   getChanges: (repo) => fetchJson(buildUrl('/sync/changes', { repo }), SyncChangesResultSchema),
 
   listGroups: (kind?: string) =>
