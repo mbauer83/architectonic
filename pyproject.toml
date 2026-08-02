@@ -82,6 +82,10 @@ markers = [
     # verifying artefact` is a chain the suite can close. Held by
     # tests/architecture/test_requirements_have_verifiers.py; `-m verifies` selects them.
     "verifies(requirement_id): the self-model requirement this test verifies (REQ@epoch.random)",
+    # Starts a real backend subprocess and drives the write surface through it. Named so a developer
+    # can `-m "not slow_walk"` while iterating; it stays in the default run because the surface it
+    # covers has no other oracle.
+    "slow_walk: drives a real backend subprocess (~20s); the REST write walk",
 ]
 # A warning nobody reads is a warning that hides the next one. Twenty identical
 # `StarletteDeprecationWarning`s scrolled past every run, which is exactly enough noise to make a
