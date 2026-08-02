@@ -42,6 +42,7 @@ Usage — the workspace is disposable, so point a backend at it rather than at t
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -119,6 +120,51 @@ def _roots(root: Path) -> tuple[Path, Path]:
     engagement = root / "engagements" / ENGAGEMENT / "architecture-repository"
     enterprise = root / "enterprise-repository"
     return engagement, enterprise
+
+
+def _git(repo: Path, *args: str) -> None:
+    """One git command against `repo`, loud on failure.
+
+    Loud because a half-initialised repository is worse than none: the sync operations would then fail
+    for a reason ("not a git repository", "no upstream") that reads as a product defect.
+    """
+    import subprocess
+
+    result = subprocess.run(  # noqa: S603 - fixed argv, no shell
+        ["git", "-C", str(repo), *args],  # noqa: S607 - git from PATH is the product's own assumption
+        capture_output=True,
+        text=True,
+        check=False,
+        env={**os.environ, "GIT_CONFIG_GLOBAL": "/dev/null", "GIT_CONFIG_SYSTEM": "/dev/null"},
+    )
+    if result.returncode != 0:
+        raise RuntimeError(f"fixture: git {' '.join(args)} in {repo} failed: {result.stderr.strip()}")
+
+
+def _init_git(repo: Path, remote: Path) -> None:
+    """Make `repo` a git repository whose current branch has an upstream it may push to.
+
+    Three things the sync operations need and a directory does not have. `ensure_working_branch` runs
+    `checkout -b`, which needs a commit to branch from; `commit_engagement_work` refuses when there is
+    nothing uncommitted, so the fixture's generated content is committed here and the *walk's* writes
+    are what it later saves; and `push_engagement` runs a bare `git push`, which needs an upstream.
+
+    The remote is a bare repository beside the workspace, so a push has somewhere real to go and no
+    network is involved. `GIT_CONFIG_GLOBAL=/dev/null` in `_git` keeps the developer's own git config —
+    signing keys, hooks, `push.default` — out of it: a fixture that failed because someone's global
+    config demanded a GPG signature would be reporting the developer's machine, not the product.
+    """
+    remote.parent.mkdir(parents=True, exist_ok=True)
+    _git(remote.parent, "init", "--bare", "--initial-branch=main", remote.name)
+
+    _git(repo, "init", "--initial-branch=main")
+    _git(repo, "config", "user.name", "Fixture Generator")
+    _git(repo, "config", "user.email", "fixture@example.invalid")
+    _git(repo, "config", "commit.gpgsign", "false")
+    _git(repo, "remote", "add", "origin", str(remote))
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-m", "Fixture content as generated")
+    _git(repo, "push", "-u", "origin", "main")
 
 
 def _prepare_roots(root: Path) -> tuple[Path, Path]:
@@ -266,6 +312,10 @@ def build_fixture_workspace(root: Path) -> FixtureWorkspace:
     # against — so a diagram known only by its specialised role would make that check fail on a
     # diagram the fixture itself authored.
     record("diagram", annotated[0])
+
+    # ── Git, last: the content has to exist before there is anything to commit ────────────────────
+    _init_git(engagement, root / "remotes" / "engagement.git")
+    _init_git(enterprise, root / "remotes" / "enterprise.git")
 
     return FixtureWorkspace(
         root=root, engagement_root=engagement, enterprise_root=enterprise, authored=authored

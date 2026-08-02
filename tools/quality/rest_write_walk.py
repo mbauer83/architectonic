@@ -144,10 +144,6 @@ UNWALKED: Mapping[str, str] = {
         "second fixture backend, which the workspace-keyed pre-start guard forbids, so it needs its "
         "own sequential run."
     ),
-    "sync/*, promotion": (
-        "needs a git remote to push to and an enterprise repository with history; the fixture builds "
-        "neither. `tests/integration/test_promotion_cycle_end_to_end.py` covers the cycle in-process."
-    ),
 }
 
 
@@ -365,6 +361,38 @@ STEPS: tuple[Step, ...] = (
         "connections_cleanup_broken_references", "POST",
         lambda _c: "/api/connections/cleanup-broken-refs",
         lambda _c: {"dry_run": False}, must_have_written=False,
+    ),
+    # ── git: the engagement save, then the promotion and enterprise lifecycle it enables ──────────
+    # Last on purpose, and in this order. `commit_engagement_work` refuses when there is nothing
+    # uncommitted, so everything above is what it has to commit; and the enterprise branch lifecycle
+    # presupposes a promotion having put something in the enterprise repository to commit.
+    Step(
+        "sync_save_engagement", "POST", lambda _c: "/api/sync/engagement/save",
+        lambda _c: {"message": "Saved by the REST write walk", "push": True},
+        must_have_written=False,
+    ),
+    Step(
+        # File-level promotion into the fixture's own enterprise repository, and the step that gives
+        # the three enterprise operations below something to be about.
+        "promotion_execute_promotion", "POST", lambda _c: "/api/promote/execute",
+        lambda c: {"entity_id": c.created["entity"], "dry_run": False},
+        must_have_written=False,
+    ),
+    Step(
+        "sync_save_enterprise", "POST", lambda _c: "/api/sync/enterprise/save",
+        lambda _c: {"message": "Promoted by the REST write walk", "push": False},
+        must_have_written=False,
+    ),
+    Step(
+        "sync_submit_enterprise", "POST", lambda _c: "/api/sync/enterprise/submit",
+        must_have_written=False,
+    ),
+    Step(
+        # Irreversible, and it takes the submitted branch with it — which is exactly why it belongs
+        # against a throwaway remote and nowhere else. `confirm` is a typed acknowledgement, not a
+        # formality: without it the route answers 400 and says so.
+        "sync_withdraw_enterprise", "POST", lambda _c: "/api/sync/enterprise/withdraw",
+        lambda _c: {"confirm": True}, must_have_written=False,
     ),
 )
 

@@ -94,12 +94,16 @@ def test_the_walk_runs_green_against_a_fixture_backend() -> None:
         report = anyio.run(_walk, backend.base_url, backend.workspace)
 
     assert report.failures == [], report.failures
-    invoked_count = len(write_walk.WRITE_CALLS)
-    assert report.called == invoked_count, (report.called, invoked_count)
+    assert report.called == len(write_walk.WRITE_CALLS), (report.called, len(write_walk.WRITE_CALLS))
     # Complete against the served surface: nothing the mount lists is missing from both buckets. The
     # walk reports that as a failure, so an empty `failures` above already proves it — this asserts the
     # count so a mount that stopped listing tools altogether cannot pass by serving nothing.
-    assert report.listed == invoked_count + len(write_walk.WRITE_UNEXERCISED)
+    #
+    # *Distinct* tools, not calls: `artifact_save_changes` is invoked twice, once per repository target,
+    # because the two take different paths through `enterprise_git_ops` and covering only the default
+    # would report the tool covered on half its contract.
+    covered = {call.tool for call in write_walk.WRITE_CALLS}
+    assert report.listed == len(covered) + len(write_walk.WRITE_UNEXERCISED), (report.listed, len(covered))
 
 
 async def _walk(url: str, workspace: object) -> conformance.Report:

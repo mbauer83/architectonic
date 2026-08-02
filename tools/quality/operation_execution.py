@@ -65,6 +65,13 @@ from src.infrastructure.rest.route_policy import RouteRow
 #: Taken 2026-08-02 against a window containing one full `npm run conformance` and one full
 #: `npm run test:e2e` — 461 distinct successful routes, 79 of 166 operations untouched.
 #:
+#: **Re-cut 2026-08-02 to 50.** The git slice: the fixture workspace became a pair of real git
+#: repositories, each with a throwaway bare remote beside it, and the five operations that were waiting
+#: on "needs a git remote to push to and an enterprise repository with history" went green on the first
+#: run — save, promote, save-enterprise, submit, withdraw, in that order, because each presupposes the
+#: one before. POST went 15 dark to 10. The same slice emptied the MCP write mount's own register: all
+#: 25 tools on `/mcp/write` are now invoked over the transport.
+#:
 #: **Re-cut 2026-08-02 to 55.** Ten more steps in the write walk, and the two worst surfaces stopped
 #: being the worst: PUT went 7-of-8 dark to 3-of-8, PATCH 6-of-10 to 3-of-10, and every entry remaining
 #: in either is assurance or admin. What unblocked the two deepest was giving the fixture a datatype
@@ -145,11 +152,6 @@ NEVER_REQUESTED_OPERATIONS: frozenset[str] = frozenset(
         "diagrams_list_diagram_type_entity_types",
         "diagrams_read_diagram_image",
         "documents_read_document_schemata",
-        "promotion_execute_promotion",
-        "sync_save_engagement",
-        "sync_save_enterprise",
-        "sync_submit_enterprise",
-        "sync_withdraw_enterprise",
     }
 )
 

@@ -312,33 +312,53 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
         "artifact_delete_entity",
         lambda c: {"artifact_id": c.doomed_entity, "dry_run": False},
     ),
+    # ── git: promote, then the save/submit/withdraw lifecycle that presupposes it ─────────────────
+    # After everything above, in this order, and for the same reasons the REST walk's git steps are:
+    # `artifact_save_changes` refuses when there is nothing uncommitted, so the calls above are what it
+    # commits; and the enterprise branch lifecycle presupposes a promotion having put something in the
+    # enterprise repository to commit.
+    WriteCall(
+        "artifact_promote_to_enterprise",
+        lambda c: {
+            "entity_id": c.created["entity"],
+            "enterprise_root": str(c.workspace.enterprise_root),
+            "dry_run": False,
+        },
+        mutates=False,
+    ),
+    WriteCall(
+        "artifact_save_changes",
+        lambda _c: {"message": "Saved by the MCP write walk", "target": "engagement", "push": True},
+        mutates=False,
+    ),
+    WriteCall(
+        # The same tool against the other repository. Two calls rather than one, because the two
+        # targets take different paths — the enterprise branch is opened here and pushed below — and a
+        # walk that only exercised the default would report the tool covered on half its contract.
+        "artifact_save_changes",
+        lambda _c: {"message": "Promoted by the MCP write walk", "target": "enterprise"},
+        mutates=False,
+    ),
+    WriteCall("artifact_submit_for_review", mutates=False),
+    WriteCall(
+        # Irreversible, and it takes the branch just submitted with it. Safe only because the remote is
+        # a bare repository the fixture made and throws away.
+        "artifact_withdraw_changes",
+        lambda _c: {"confirm": True},
+        mutates=False,
+    ),
     # ── last, because it rebuilds the index everything above just changed ────────────────────────
     WriteCall("artifact_admin_reindex", mutates=False),
 )
 
 #: Write-mount tools this walk does not invoke, each with why. Shrink-only, like every register here.
-#: These are **preconditions the fixture does not build**, not oversights — and all four are the *same*
-#: precondition: the fixture workspace is a pair of directories, not a pair of git repositories. They
-#: leave together, when it grows one.
-WRITE_UNEXERCISED: Mapping[str, str] = {
-    "artifact_save_changes": (
-        "commits and pushes through `enterprise_git_ops`; the fixture workspace is not a git "
-        "repository and has no remote. Needs the git slice, alongside the REST `sync_*` operations."
-    ),
-    "artifact_submit_for_review": (
-        "pushes the enterprise working branch to a remote the fixture does not have. Same slice."
-    ),
-    "artifact_withdraw_changes": (
-        "abandons the enterprise working branch, which presupposes that a branch was opened and that "
-        "there is a remote to reconcile the abandonment against. Same slice, and irreversible, so it "
-        "wants the throwaway remote rather than a repository anyone keeps."
-    ),
-    "artifact_promote_to_enterprise": (
-        "promotion opens a working branch on the enterprise repository before it copies anything, so "
-        "it answers `fatal: not a git repository` against the fixture's plain directory. Reached and "
-        "refused rather than unreachable — which is why it is recorded here and not as a defect."
-    ),
-}
+#:
+#: **Empty as of 2026-08-02.** It held four, all on one precondition: the fixture workspace was a pair of
+#: directories rather than a pair of git repositories, so save, submit, withdraw and promote had no
+#: branch, no upstream and — for promotion, which opens a working branch before it copies anything —
+#: not even a `.git`. They left together, when the fixture grew both, each with a throwaway bare remote
+#: beside it. All 25 tools on this mount are now invoked over the transport.
+WRITE_UNEXERCISED: Mapping[str, str] = {}
 
 #: The other write mount, and why it is not here. Walking it against this fixture would author analyst
 #: content into the **real** confidential store: the store path is resolved from the source tree, not

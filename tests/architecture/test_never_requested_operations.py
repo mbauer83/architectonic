@@ -198,11 +198,33 @@ def test_the_register_holds_nothing_that_has_since_been_requested() -> None:
 
 
 def test_the_register_is_a_minority_of_the_surface_and_says_which_part() -> None:
-    # The register is evidence, so it has to stay legible as evidence: it is worth knowing at a
-    # glance that it covers the write surface and barely touches reads.
+    """The register is evidence, so it has to stay legible as evidence.
+
+    This used to assert that dark *writes* outnumbered dark reads — "it is worth knowing at a glance
+    that it covers the write surface and barely touches reads". That was a description of the register's
+    composition on the day it was written, encoded as an invariant, and it inverted the moment the write
+    surface actually got covered: 24 write-shaped against 26 read-shaped. A gate that fails because the
+    work it measures succeeded is a gate that forbids finishing, so the assertion is now the property
+    that was wanted underneath it.
+    """
     assert len(NEVER_REQUESTED_OPERATIONS) < len(ROUTE_POLICY) / 2
-    dark_writes = sum(1 for op in NEVER_REQUESTED_OPERATIONS if BY_OPERATION[op].is_write_shaped)
-    assert dark_writes > len(NEVER_REQUESTED_OPERATIONS) / 2
+
+    # Which part it covers, stated as a claim that survives progress: the write surface is dark only
+    # where a precondition is *recorded*. Every write-shaped entry belongs to a family the write walk
+    # registers in `UNWALKED` with a reason, so a newly dark write cannot hide among the ones that are
+    # dark on purpose — and when those slices land this narrows to nothing rather than needing an edit.
+    from tools.quality.rest_write_walk import UNWALKED
+
+    excused = {key.split("/", 1)[0] for key in UNWALKED}
+    unexcused = sorted(
+        operation
+        for operation in NEVER_REQUESTED_OPERATIONS
+        if BY_OPERATION[operation].is_write_shaped and operation.split("_", 1)[0] not in excused
+    )
+    assert unexcused == [], (
+        "these write operations are dark and no precondition in the write walk's UNWALKED register "
+        f"accounts for them: {unexcused}"
+    )
 
 
 def test_a_log_that_begins_after_the_register_cannot_prove_an_operation_is_dark() -> None:
