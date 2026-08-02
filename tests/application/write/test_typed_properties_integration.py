@@ -12,11 +12,12 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from src.application.artifacts.parsing import decode_entity_properties
 from src.application.modeling.artifact_write_formatting import format_entity_markdown
 from src.application.verification._verifier_rules_schema import check_attribute_schema
 from src.application.verification.artifact_verifier_types import VerificationResult
-import pytest
 
 # ---------------------------------------------------------------------------
 # Helpers

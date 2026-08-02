@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from src.application.viewpoints.repository_projection import project_repository
 from src.domain.viewpoints.viewpoint_criteria import (
     AttributeCondition,
@@ -19,7 +21,6 @@ from src.domain.viewpoints.viewpoints import (
     ViewpointDefinition,
 )
 from tests.application.viewpoints._fixtures import REGISTRIES, Store, connection, entity
-import pytest
 
 
 def _type_condition(value: str) -> AttributeCondition:

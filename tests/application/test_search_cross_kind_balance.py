@@ -10,9 +10,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from src.application.artifacts.query import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
-import pytest
 
 
 def _write(path: Path, text: str) -> None:

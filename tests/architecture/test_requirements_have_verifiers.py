@@ -138,10 +138,6 @@ def _owed() -> set[str]:
 #: decision, not on effort. Marking a fragment would clear the entry while leaving the feature half
 #: built, so these stay owed on purpose. Currently:
 #:
-#: * ``REQ@1777371979.W-G4L5`` asks the entity list duplicate specialization/aggregation/composition
-#:   children under each parent, indented into a tree. The table is flat. Everything else the
-#:   requirement asks — the two filters, sorting by type and by connection count — is verified by
-#:   ``tools/gui/tests/e2e/multi-item-overviews.spec.ts``, which records the unmet clause in place.
 #: * ``REQ@1777372175.eFz3z9`` names the treemap's grouping axes as "ArchiMate domain and
 #:   entity-type". The second axis is subdomain. Sizing by connection total is verified.
 #: * The six structural requirements (``5PPAX3`` authoring-tools, ``F4tfa3`` discovery-tools,
@@ -170,7 +166,6 @@ UNVERIFIED_REQUIREMENTS: frozenset[str] = frozenset(
         "REQ@1777369404.aDohcf",
         "REQ@1777369633.UoHGZy",
         "REQ@1777370410.qpOBOQ",
-        "REQ@1777371979.W-G4L5",
         "REQ@1777372175.eFz3z9",
     }
 )

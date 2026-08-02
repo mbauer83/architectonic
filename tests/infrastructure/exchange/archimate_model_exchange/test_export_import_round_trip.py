@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from src.application.exchange.export_model import export_model
 from src.application.exchange.import_model import import_model
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
@@ -21,7 +23,6 @@ from src.infrastructure.exchange.archimate_model_exchange.concept_mapping import
 from src.infrastructure.exchange.archimate_model_exchange.identity_store import RepoExchangeIdentityStore
 from src.infrastructure.exchange.archimate_model_exchange.write_adapter import ArtifactWriteExchangeAdapter
 from src.infrastructure.mcp import mcp_artifact_server as mcp
-import pytest
 
 
 def _eng_root(tmp_path: Path, tag: str) -> Path:

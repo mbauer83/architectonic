@@ -1,13 +1,11 @@
 from __future__ import annotations
 
 import json
-import os
-import queue
 import sqlite3
-from contextlib import contextmanager
+from contextlib import AbstractContextManager
 from functools import lru_cache
 from pathlib import Path
-from typing import Callable, Generator
+from typing import Callable
 
 from src.domain.ontology_representation.artifact_types import (
     ConnectionRecord,
@@ -18,6 +16,7 @@ from src.domain.ontology_representation.artifact_types import (
 
 from ._diagram_fts import diagram_fts_row
 from ._mem_store import _MemStore
+from ._read_pool import ReadConnectionPool
 from ._sqlite_schema import FTS_SQL, SCHEMA_SQL
 
 _INS_ENTITY = (
@@ -61,7 +60,6 @@ _INS_ATTR_TYPE_REF = (
 )
 
 
-_READ_POOL_SIZE = min(max(os.cpu_count() or 4, 4), 8)
 
 
 @lru_cache(maxsize=None)
@@ -88,28 +86,21 @@ class _SqliteStore:
                 self._conn.executescript(FTS_SQL)
         except sqlite3.OperationalError:
             self._fts_enabled = False
-        # Read connection pool: each caller gets its own connection so SQLite
-        # SHARED locks can coexist and reads truly parallelise up to pool size.
-        # Pool connections share the same in-memory cache as self._conn and
-        # always see its committed writes automatically.
-        self._read_pool: queue.Queue[sqlite3.Connection] = queue.Queue()
-        for _ in range(_READ_POOL_SIZE):
-            c = sqlite3.connect(self._uri, uri=True, check_same_thread=False)
-            c.row_factory = sqlite3.Row
-            self._read_pool.put(c)
+        self._read_pool = ReadConnectionPool(self._uri)
 
-    @contextmanager
-    def reader(self) -> Generator[sqlite3.Connection, None, None]:
-        """Check out a read connection from the pool and yield it.
+    def reader(self) -> AbstractContextManager[sqlite3.Connection]:
+        """Check out a pooled read connection. See `ReadConnectionPool.reader` for the why."""
+        return self._read_pool.reader()
 
-        Must be called inside _lock.reading() so the write connection cannot
-        be modifying tables while a pool connection is reading them.
+    def close(self) -> None:
+        """Release the write connection and every pooled reader. Idempotent.
+
+        Without this, connections were reclaimed only when the collector got to them —
+        `ResourceWarning: unclosed database`, 433 once warnings became errors, and one shared-cache
+        database held alive per index for a served process's whole life.
         """
-        conn = self._read_pool.get()
-        try:
-            yield conn
-        finally:
-            self._read_pool.put(conn)
+        self._read_pool.close()
+        self._conn.close()
 
     @property
     def fts_enabled(self) -> bool:

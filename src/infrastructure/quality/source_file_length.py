@@ -31,13 +31,15 @@ _FRONTEND_GENERATED_SUFFIX = ".generated.ts"
 # must satisfy SOURCE_FILE_HARD_LIMIT outright. Remove each entry as its file is
 # refactored below the hard limit.
 #
-# One entry has been raised since it was recorded: `_sqlite_store.py` went 396 → 401 when
-# the domain layer was grouped into concern subpackages and one four-name import no longer
-# fit on a single line. That is import reflow, not new logic, and the file is still owed a
-# refactor — but a mechanical re-wrap should not read as an unexplained ratchet upward.
+# One entry was raised once, and has since been lowered by real work. `_sqlite_store.py` went
+# 396 → 401 when the domain layer was grouped into concern subpackages and one four-name import
+# no longer fit on a single line — import reflow, not new logic. It is now **391**: giving the
+# store the `close()` it lacked would have pushed it to 415, so the read connection pool moved
+# to `_read_pool.py`, which is where its sizing, check-out and draining belonged anyway. That is
+# how an entry here is meant to move.
 SOURCE_FILE_BASELINE_LIMITS: dict[str, int] = {
     "src/application/verification/artifact_verifier.py": 403,
-    "src/infrastructure/artifact_index/_sqlite_store.py": 401,
+    "src/infrastructure/artifact_index/_sqlite_store.py": 391,
     "src/infrastructure/artifact_index/service.py": 543,
     "tools/gui/src/ui/components/ArtifactReferenceInput.vue": 619,
     "tools/gui/src/ui/components/AssuranceAnalysisPicker.vue": 407,

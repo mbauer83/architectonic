@@ -32,6 +32,17 @@ class CombinedArtifactView(
         self._engagement = engagement
         self._enterprise = enterprise
 
+    def close(self) -> None:
+        """Close both sides. A caller holding the view cannot reach the halves to close them itself."""
+        self._engagement.close()
+        self._enterprise.close()
+
+    def __enter__(self) -> CombinedArtifactView:
+        return self
+
+    def __exit__(self, *_exc: object) -> None:
+        self.close()
+
     @property
     def repo_mounts(self) -> list[RepoMount]:
         return [*self._engagement.repo_mounts, *self._enterprise.repo_mounts]

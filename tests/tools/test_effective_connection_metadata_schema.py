@@ -9,6 +9,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from src.application.artifacts.schema import (
     clear_schema_cache,
     compute_effective_connection_metadata_schema,
@@ -17,7 +19,6 @@ from src.application.artifacts.schema import (
 )
 from src.domain.ontology_representation.profile_registry import profile_registry_from_mapping
 from src.domain.ontology_representation.specializations import SpecializationCatalog, SpecializationInfo
-import pytest
 
 
 def _write_schema(repo_root: Path, filename: str, schema: dict) -> None:

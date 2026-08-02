@@ -94,16 +94,20 @@ filterwarnings = [
     # class Starlette actually raises — `StarletteDeprecationWarning` derives from `UserWarning`, not
     # from `DeprecationWarning`, so naming the latter matched nothing.
     "ignore:Using `httpx` with `starlette.testclient` is deprecated:starlette.exceptions.StarletteDeprecationWarning",
-    # `ArtifactIndex` has no `close()`, so its SQLite connection is collected rather than closed —
-    # 433 of these appeared the moment warnings became errors, which is how a known backlog item
-    # ("index close()") turns out to be measurable. It is also a plausible contributor to the
-    # load-dependent flakes: a connection per test, six xdist workers, and the release of the file
-    # lock deferred to whenever the collector runs.
+    # `ArtifactIndex` now *has* a `close()` — the lifecycle it was missing, declared on
+    # `ArtifactIndexLifecycle`, delegated by the repository facade, and named as a step in the
+    # backend's teardown, so a served process no longer holds one shared-cache database plus a reader
+    # pool per index for its whole life. That was the leak worth fixing and it is fixed.
     #
-    # Ignored rather than fixed here because the fix is an owning lifecycle for the index, not a
-    # `filterwarnings` entry — and because `ResourceWarning` fires at collection time, so an `error`
-    # on it fails whichever test the collector happened to be inside. Both messages: pytest wraps the
-    # unraisable one.
+    # These stay because *tests* construct indices and mostly do not close them: several hundred call
+    # sites, each of which would need the context manager or an explicit close. The remaining warnings
+    # are therefore about test hygiene rather than about the product, which is a different and much
+    # smaller problem — and one an `error` here cannot help with, since `ResourceWarning` fires at
+    # collection time and so fails whichever test the collector happened to be inside rather than the
+    # one that leaked. Both messages: pytest wraps the unraisable one.
+    #
+    # `tests/infrastructure/artifact_index/test_index_close_releases_connections.py` asserts both
+    # directions locally, so neither the fix nor the leak can be silently reversed behind these.
     "ignore:unclosed database:ResourceWarning",
     "ignore:Exception ignored while finalizing database connection:pytest.PytestUnraisableExceptionWarning",
 ]

@@ -6,10 +6,11 @@ from __future__ import annotations
 import csv
 import io
 
+import pytest
+
 from src.application.viewpoints.execution_result import EntityItemSummary, ViewpointExecutionResult
 from src.application.viewpoints.export_csv import build_execution_csv
 from src.domain.viewpoints.viewpoints import ColumnSpec
-import pytest
 
 
 def _entity(identifier: str, **kw: object) -> EntityItemSummary:

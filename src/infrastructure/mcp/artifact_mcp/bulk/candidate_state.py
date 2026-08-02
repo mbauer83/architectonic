@@ -119,6 +119,15 @@ class CandidateStore(CandidateListMixin):
     def refresh(self) -> None:
         return None
 
+    def close(self) -> None:
+        """Nothing to release: this store overlays staged records on a live one it does not own.
+
+        Not delegated to `self._live` on purpose. A staging overlay is created and discarded per bulk
+        write while the live index outlives every one of them, so closing the overlay must not close
+        the index underneath it — that would be a use-after-close for the next caller.
+        """
+        return None
+
     def read_model_version(self):
         return self._live.read_model_version()
 

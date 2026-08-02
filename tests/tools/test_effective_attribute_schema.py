@@ -8,6 +8,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from src.application.artifacts.schema import (
     clear_schema_cache,
     compute_effective_attribute_schema,
@@ -17,7 +19,6 @@ from src.application.verification._verifier_rules_schema import check_attribute_
 from src.application.verification.artifact_verifier_types import VerificationResult
 from src.domain.ontology_representation.profile_registry import profile_registry_from_mapping
 from src.domain.ontology_representation.specializations import SpecializationCatalog, SpecializationInfo
-import pytest
 
 _FAKE_PATH = Path("/tmp/entity.md")
 

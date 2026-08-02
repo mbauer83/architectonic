@@ -59,6 +59,10 @@ class ArtifactRepository:
     def refresh(self) -> None:
         self._store.refresh()
 
+    def close(self) -> None:
+        """Release the underlying store's connections. Idempotent."""
+        self._store.close()
+
     def read_model_version(self) -> ReadModelVersion:
         return self._store.read_model_version()
 

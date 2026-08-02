@@ -3,6 +3,8 @@ registries, and carries its declared pattern set with the branch/leaf/diagnostic
 
 from __future__ import annotations
 
+import pytest
+
 from src.application.viewpoints.registry_snapshot import build_registry_snapshot
 from src.domain.viewpoints.viewpoint_trace_pattern_validation import expand_branch_edges
 from src.domain.viewpoints.viewpoint_trace_patterns import (
@@ -16,7 +18,6 @@ from src.domain.viewpoints.viewpoint_validation import validate_viewpoint_defini
 from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry
 from src.infrastructure.viewpoint_declarations import load_module_viewpoint_catalog
 from tests.domain.test_default_viewpoint_library import _ARCH_PACKAGE_DIR
-import pytest
 
 _REGISTRIES = build_registry_snapshot(build_runtime_catalogs(get_module_registry()), [])
 

@@ -13,9 +13,10 @@ from __future__ import annotations
 
 from typing import Any
 
+import pytest
+
 from src.application.assurance.fmea_effect_suggestion import EffectSuggestion, suggest_effects
 from src.domain.assurance.fmea_structural_signals import TypedEdge
-import pytest
 
 
 def _typed(source: str, target: str, *, strength: int = 4) -> TypedEdge:

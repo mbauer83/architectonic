@@ -9,10 +9,11 @@ from __future__ import annotations
 from dataclasses import replace
 from pathlib import Path
 
+import pytest
+
 from src.domain.ontology_representation.artifact_types import EntityRecord
 from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry
 from src.infrastructure.rest.routers.entities._filter import EntityFilter, parse_csv_filter
-import pytest
 
 _ONTOLOGY = build_runtime_catalogs(get_module_registry()).ontology
 

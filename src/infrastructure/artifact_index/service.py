@@ -86,6 +86,21 @@ class ArtifactIndex(_ReverseReferenceQueries):
         self._registry = _ScopeRegistry(self._mem, self._lock, self._ensure_loaded, self.scope_for_path)
         self._identity = _IdentityResolver(self._mem, self._lock, self._ensure_loaded, self.scope_for_path)
 
+    def close(self) -> None:
+        """Release the index's database connections. Idempotent.
+
+        The delegation this class was missing: `_SqliteStore` owns the connections and callers hold an
+        `ArtifactIndex`, so without a method here the only way to release them was to reach through to
+        the private store — which is the workaround this codebase rejects on principle.
+        """
+        self._db.close()
+
+    def __enter__(self) -> ArtifactIndex:
+        return self
+
+    def __exit__(self, *_exc: object) -> None:
+        self.close()
+
     def _ensure_loaded(self) -> None:
         if self._ready.is_set():
             return

@@ -4,9 +4,10 @@ WU-C2 Appendix B recheck)."""
 
 from __future__ import annotations
 
+import pytest
+
 from src.domain.modules.module_types import ConnectionTypeName, EntityTypeName
 from src.ontologies.archimate_4._loader import _PACKAGE_DIR, load_archimate_4_module
-import pytest
 
 
 @pytest.mark.verifies("REQ@1712870400.KeGCZE")

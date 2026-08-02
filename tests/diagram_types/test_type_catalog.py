@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-import pytest
-
 from dataclasses import dataclass, field
 from pathlib import Path
+
+import pytest
 
 from src.diagram_types.datatype._type_catalog import (
     TypeCatalogResult,

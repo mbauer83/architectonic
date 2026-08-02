@@ -10,9 +10,10 @@ from __future__ import annotations
 
 from typing import Any
 
+import pytest
+
 from src.application.assurance import mutations as mut
 from tests.assurance.test_assurance_mutations import _FakeArchive, _FakeStore
-import pytest
 
 
 def _constraint(store: Any, disposition: str) -> str:

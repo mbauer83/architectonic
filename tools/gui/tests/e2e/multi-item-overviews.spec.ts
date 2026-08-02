@@ -6,12 +6,14 @@
  * the view renders, filters, or sorts. So the requirements they satisfy were owed a verifier, and
  * marking a fragment would have reported coverage that did not exist.
  *
- * Writing this found two requirements whose implementation is *partial*, and corrected one assumption
- * of my own. The two partials are recorded at the assertion that would have covered the missing
- * clause, and neither is claimed as verified: see `UNVERIFIED_REQUIREMENTS` in
- * tests/architecture/test_requirements_have_verifiers.py. The correction was the diagram grid, which
- * does satisfy its requirement — the type badge *is* the ArchiMate domain, and each domain has its
- * own filter button, so "filterable by type and domain" holds in the only sense that applies.
+ * Writing this found two requirements whose implementation looked *partial*, and both turned out to
+ * resolve rather than linger. The entity list's tree-like clause was withdrawn from the requirement —
+ * incompatible with pagination, and served better by graph-explore — so this spec covers the whole of
+ * it. The treemap's second grouping axis is still specified as entity-type and implemented as
+ * subdomain, so REQ@1777372175.eFz3z9 stays owed; the assertion that would have covered it records
+ * that in place. One correction was mine: the diagram grid does satisfy its requirement — the type
+ * badge *is* the ArchiMate domain, and each domain has its own filter button, so "filterable by type
+ * and domain" holds in the only sense that applies to a type key that encodes its domain.
  *
  * Counts are never pinned. Authoring an entity is the product working; a test that fails because
  * someone modelled something is reporting a false regression.
@@ -19,6 +21,7 @@
  * @verifies REQ@1777372662.64JvM1
  * @verifies REQ@1777371781.v0TJX4
  * @verifies REQ@1777372455.LnytwA
+ * @verifies REQ@1777371979.W-G4L5
  */
 import { expect, test } from '@playwright/test'
 
@@ -110,10 +113,12 @@ test.describe('entities list view', () => {
     const shown = await rows.locator('.type-cell .mono').allTextContents()
     expect(new Set(shown.map(s => s.trim())).size).toBe(1)
 
-    // NOT verified, and deliberately not asserted: the requirement also asks that specialization,
-    // aggregation and composition duplicate the child row under each parent, indented into a tree.
-    // The table is flat — there is no depth or parent column and no indentation — so the clause is
-    // unimplemented rather than untested. REQ@1777371979.W-G4L5 stays owed.
+    // The tree-like clause this comment used to record as an unmet gap is gone from the requirement,
+    // withdrawn rather than deferred: duplicating a child row under every parent cannot coexist with
+    // pagination, because a page is a window over an ordered population and a child's presence would
+    // depend on whether its parent fell inside that window — the same entity appearing, vanishing or
+    // repeating with page size and sort order. The graph-explore view serves the hierarchy properly,
+    // as edges over a bounded neighbourhood. So what this test asserts is now the whole requirement.
   })
 
   test('offers a treemap grouped by domain and sized by connection count', async ({ page }) => {

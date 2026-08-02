@@ -3,9 +3,10 @@ allowed in exactly the same cases where an aggregation relationship would be all
 
 from __future__ import annotations
 
+import pytest
+
 from src.domain.modules.module_types import ConnectionTypeName, EntityTypeName
 from src.ontologies.archimate_4._loader import _PACKAGE_DIR, load_archimate_4_module
-import pytest
 
 # technology-node -> artifact is a pre-existing aggregation rule that Appendix B's Technology
 # domain table does not support in either direction (no "G" cell for that pair or its

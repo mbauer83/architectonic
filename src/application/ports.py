@@ -200,9 +200,16 @@ class RepositoryScopeResolver(Protocol):
 
 
 class ArtifactIndexLifecycle(Protocol):
-    """Index read-model versioning, refresh, and ID-membership sets."""
+    """Index read-model versioning, refresh, ID-membership sets, and release.
+
+    `close` belongs here because "lifecycle" is the contract it is part of, and because it was the
+    method the port did not declare: the connections had no owner a caller could reach, so releasing
+    them meant reaching through to a private store. Idempotent by contract, so a caller need not track
+    whether it has already closed.
+    """
 
     def refresh(self) -> None: ...
+    def close(self) -> None: ...
     def read_model_version(self) -> ReadModelVersion: ...
     def entity_ids(self) -> set[str]: ...
     def connection_ids(self) -> set[str]: ...

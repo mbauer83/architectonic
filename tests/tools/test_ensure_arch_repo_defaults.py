@@ -7,10 +7,10 @@ no-overwrite guarantee that protects an operator's local edits.
 
 from __future__ import annotations
 
-import pytest
-
 import json
 from pathlib import Path
+
+import pytest
 
 from src.infrastructure.workspace.engagement_repo_template import (
     BASE_DOCUMENT_SCHEMAS,

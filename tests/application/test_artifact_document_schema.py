@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import pytest
-
 import json
 from pathlib import Path
+
+import pytest
 
 from src.application.artifacts.document_schema import (
     get_document_schema,

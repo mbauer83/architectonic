@@ -12,10 +12,11 @@ Coverage:
 
 from __future__ import annotations
 
+import pytest
+
 from src.application.derivation.local_neighborhood import SPEC, derive
 from src.domain.viewpoints.view_derivations import SourceModelSnapshot
 from tests.application.derivation._fixtures import FakeQuery, _connection, _entity
-import pytest
 
 _SNAPSHOT = SourceModelSnapshot(repo_scope="both")
 

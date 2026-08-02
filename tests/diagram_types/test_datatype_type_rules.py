@@ -20,11 +20,12 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Literal
 
+import pytest
+
 from src.application.verification.artifact_verifier_types import Severity, VerificationResult
 from src.diagram_types.datatype._contributions import _ProjectionBasedContributions
 from src.domain.diagrams.diagram_verification import BaseDiagramVerificationContext
 from src.domain.ontology_representation.artifact_types import EntityRecord
-import pytest
 
 _PRIMITIVE_NAMES: frozenset[str] = frozenset(
     ["String", "Integer", "Number", "Boolean", "Date", "DateTime", "UUID"]

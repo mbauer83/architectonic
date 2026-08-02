@@ -5,9 +5,10 @@ is in the canonical RELATIONSHIP_KINDS set and must not be a visual class tag
 
 from __future__ import annotations
 
+import pytest
+
 import src.infrastructure.app_bootstrap as app_bootstrap
 from src.domain.ontology_representation.ontology_types import RELATIONSHIP_KINDS
-import pytest
 
 _VISUAL_CLASS_TAGS = frozenset({"nesting", "dynamic"})
 
