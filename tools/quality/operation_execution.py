@@ -90,13 +90,22 @@ from src.infrastructure.rest.route_policy import RouteRow
 #: `/api/diagrams/{id}/entities/{clf}/attributes/{a}/metadata` needs, and the likeliest reason nothing
 #: had ever requested it.
 #:
-#: Five *reads* were dark for the same reason and are still here on purpose. Adding
-#: `diagrams_read_diagram_image`, `diagrams_download_diagram_source`,
-#: `documents_read_document_schemata` and the two `diagram-types/{t}/…` lists to the write walk made all
-#: five green immediately, and `test_the_write_walk_covers_only_write_shaped_operations` rejected it —
-#: correctly. A register whose read half is partly measured by a write harness cannot answer the
-#: question the read half exists to ask. They belong to the GUI conformance harness once it is pointed
-#: at a fixture origin, which is where the other 33 unexercised read methods are waiting too.
+#: Five *reads* were dark for the same reason and are still here — and the note that used to say they
+#: "belong to the GUI conformance harness once it is pointed at a fixture origin" was **wrong**. That
+#: harness is complete now: its unexercised register is empty and every port method is driven. These
+#: five stayed dark through a full browser suite, a full read conformance run and both write walks, so
+#: they are not waiting on a harness. They divide in three, and none of the three is a gate's problem:
+#:
+#: * `diagrams_download_diagram_source` — `DownloadMenu.vue` builds the URL and a *user click* fetches
+#:   it. Reachable only by a gesture no spec makes; a download-assertion spec would cover it.
+#: * `diagrams_read_diagram_image` — `diagramImageUrl` builds it for an `<img>` src, and the diagram
+#:   surface renders inline SVG instead, so the image path is a fallback nothing currently takes.
+#: * `documents_read_document_schemata`, `diagrams_list_diagram_type_entity_types`,
+#:   `diagrams_list_diagram_type_connection_types` — **no consumer anywhere in the repository**. Not the
+#:   GUI (only the generated OpenAPI types mention them), not the CLI, not MCP. Three GETs the product
+#:   serves and nothing asks for. Whether that is dead surface to retire or a client that was never
+#:   written is a product decision, not a measurement one, which is why they are recorded rather than
+#:   quietly covered by a harness reaching for them on nobody's behalf.
 #:
 #: **Re-cut 2026-08-02 to 64.** Coverage stopped coming from one process: `tools/quality/
 #: rest_write_walk.py` requests fourteen write operations against its *own* fixture backend, on its own

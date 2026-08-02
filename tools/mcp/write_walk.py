@@ -365,9 +365,12 @@ WRITE_UNEXERCISED: Mapping[str, str] = {}
 #: from the served workspace, so a fixture backend sees `<repo>/.arch-assurance/store.db`. That is the
 #: precondition, and it is a fixture *store* rather than a flag.
 ASSURANCE_WRITE_MOUNT_REASON = (
-    "`assurance-write`'s 22 tools need the confidential store unlocked, and a fixture backend "
-    "resolves that store from the source tree rather than from the workspace it serves — so a walk "
-    "here would write into the analyst's real store. Needs a fixture store, which is its own slice."
+    "`assurance-write`'s 22 tools need the confidential store unlocked, and a fixture backend resolves "
+    "that store from the source tree rather than from the workspace it serves — so a walk here would "
+    "write into the analyst's real store. Needs a fixture store, and the three hazards that slice has "
+    "to clear are written out in `tools/quality/rest_write_walk.py`'s `UNWALKED['assurance/*']`: a "
+    "teardown that would delete unscoped key material, a capability sentinel that reads a different "
+    "store from the manifest, and a credential path with four key-loss incidents behind it."
 )
 
 

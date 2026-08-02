@@ -135,9 +135,24 @@ class Step:
 #: here. These are **preconditions this fixture does not build**, not oversights.
 UNWALKED: Mapping[str, str] = {
     "assurance/*": (
-        "every `/api/assurance/*` write needs the confidential store unlocked, which the fixture "
-        "deliberately does not build — a walk that authored there would be writing analyst content "
-        "into the real store. Needs a fixture *store*, which is its own slice."
+        "every `/api/assurance/*` write needs the confidential store unlocked, and the fixture "
+        "deliberately does not build one. Needs a fixture *store*, and that slice has three specific "
+        "hazards, measured 2026-08-03 rather than guessed:\n"
+        "  1. `_credential_accounts.clear` deletes the **unscoped** account as well as the scoped one, "
+        "by design — it is written for revocation. Both accounts exist on this machine, so a fixture "
+        "teardown calling it would destroy key material belonging to no fixture. A fixture store must "
+        "never call `clear`; orphaned scoped credentials naming dead temp paths are the harmless "
+        "alternative.\n"
+        "  2. `app_bootstrap._DEFAULT_ASSURANCE_DB` is `Path(__file__).parents[2]/.arch-assurance/"
+        "store.db` — the source tree, not the deployment manifest. So a fixture backend's *capability "
+        "sentinel* reads the live store's presence while the manifest (which honours "
+        "`ARCH_ASSURANCE_DB_PATH`) points elsewhere: the module registry would enable assurance "
+        "modules on one store's existence and serve another. That is the same off-by-one class as the "
+        "status route's, and it wants fixing first.\n"
+        "  3. `init_store` writes to the OS credential store, which on WSL2 spawns `powershell.exe` per "
+        "operation. Four key-loss incidents are on record here and the read path was implicated in one "
+        "of them. This is the only slice in the handoff where a mistake destroys content that cannot "
+        "be regenerated."
     ),
 }
 
