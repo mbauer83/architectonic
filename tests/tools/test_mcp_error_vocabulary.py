@@ -29,7 +29,9 @@ REST_CODES = frozenset(get_args(ErrorCode))
 def _emitted() -> list[dict[str, object]]:
     """One answer from every constructor the module offers."""
     return [
-        failures.rejected_parameter(ViewpointParameterError("parameter-type-mismatch", "anchor")),
+        failures.rejected_parameter(
+            ViewpointParameterError("type-mismatch", "anchor", "expected entity-id, got boolean")
+        ),
         failures.rejected_input("query: unknown key(s)"),
         failures.binding_cardinality(BindingCardinalityError("anchor", "exactly one", 3)),
         failures.traversal_budget_exceeded("the traversal exceeded its time budget"),
@@ -59,11 +61,16 @@ def test_every_mcp_error_carries_a_path_and_a_message(answer: dict[str, object])
 
 
 def test_a_rejected_parameter_names_the_parameter_in_its_path() -> None:
-    answer = failures.rejected_parameter(ViewpointParameterError("missing-parameter", "anchor"))
+    answer = failures.rejected_parameter(
+        ViewpointParameterError("missing", "anchor", "a required parameter with no default was not supplied")
+    )
 
     assert answer["error"]["path"] == "parameters/anchor"
-    # The finer distinction lives in the message, exactly as it does on the REST surface.
-    assert "missing-parameter" in answer["error"]["message"]
+    # The message is a sentence about the expectation the value failed, not a code word. It used to
+    # carry `missing-parameter` — the hyphenated code this release retired — which put the retired
+    # vocabulary back on the wire in prose while `code` already said `validation_error`.
+    assert answer["error"]["message"] == "anchor: a required parameter with no default was not supplied"
+    assert "missing-parameter" not in answer["error"]["message"]
 
 
 def test_both_traversal_bounds_answer_the_one_budget_code() -> None:

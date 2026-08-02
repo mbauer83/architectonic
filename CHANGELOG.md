@@ -5,6 +5,14 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Breaking
+
+- **A rejected viewpoint parameter no longer carries a retired code word in its `message`.** The
+  0.2.0 notes said the finer distinction "still appears inside the `message`"; it does not any more.
+  `"parameter-type-mismatch: anchor"` is now `"anchor: expected entity-id, got boolean"`, on REST and
+  MCP alike. Branch on `detail.code` (`validation_error`) and read the parameter from
+  `details.field_errors[].field` — or `path` on MCP — which is where both have always been.
+
 ## [0.2.0] — 2026-08-01
 
 ### Breaking — REST resource addressing and response contracts
@@ -87,7 +95,7 @@ Path, Filters in the Query*, *Response Contracts Are Owned by the Server and Gen
   is now the same word REST uses. `execution-timeout` and `derivation-limit` become
   `traversal_time_budget_exceeded`, `binding-cardinality-violation` becomes
   `binding_cardinality_violation`, and `missing-parameter` / `unknown-parameter` /
-  `parameter-type-mismatch` become `validation_error` with the finer distinction in the message.
+  `parameter-type-mismatch` become `validation_error`, with the parameter named in `path`.
   An agent reading both surfaces saw two names for one failure.
 
 #### CLI

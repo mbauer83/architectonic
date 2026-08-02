@@ -120,10 +120,12 @@ class TestPresentationOverride:
 class TestParameters:
     def test_missing_unknown_and_mistyped_parameters_raise_typed_errors(self) -> None:
         query = ExecutableViewpointQuery(parameters=(QueryParameter("limit", "integer"),))
-        for supplied, code in (
-            (None, "missing-parameter"),
-            ({"other": 1}, "unknown-parameter"),
-            ({"limit": "1"}, "parameter-type-mismatch"),
+        # The classification is `reason`, held as data on the exception; the message is a sentence
+        # naming the parameter and the expectation it failed.
+        for supplied, reason in (
+            (None, "missing"),
+            ({"other": 1}, "undeclared"),
+            ({"limit": "1"}, "type-mismatch"),
         ):
             with pytest.raises(ViewpointParameterError) as error:
                 _run(
@@ -131,7 +133,7 @@ class TestParameters:
                     catalog=ViewpointCatalog.empty(),
                     read_access=Store(),
                 )
-            assert error.value.code == code
+            assert error.value.reason == reason
 
 
 class TestAnchorIds:

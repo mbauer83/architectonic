@@ -244,10 +244,16 @@ class TestParameters:
             assert response.status_code == 400
             # One payload shape on every route, and the input is named as data: `parameters.x` is
             # where the GUI reads an input path, exactly as it does for a rejected body field.
+            #
+            # The message is a sentence about the expectation, not a code word. It used to read
+            # `"unknown-parameter: x"` — the hyphenated code this release retired, in prose, on both
+            # surfaces, while the machine-readable part was already carried properly by `code` and
+            # `details.field_errors[].field`.
+            message = "x: the query declares no such parameter"
             assert response.json()["detail"] | {"request_id": None} == {
                 "code": "validation_error",
-                "message": "unknown-parameter: x",
-                "details": {"field_errors": [{"field": "parameters.x", "message": "unknown-parameter: x"}]},
+                "message": message,
+                "details": {"field_errors": [{"field": "parameters.x", "message": message}]},
                 "request_id": None,
             }
 

@@ -26,7 +26,11 @@ describe('parameterNameFromField', () => {
 
 describe('executionErrorDisplay', () => {
   it('names the rejected parameter', () => {
-    const display = executionErrorDisplay(rejected('parameters.bogus', 'unknown-parameter: bogus'))
+    // The wire message is a sentence about the expectation now; the parameter name is read from
+    // `field`, which is why dropping the retired code word from the prose changed nothing here.
+    const display = executionErrorDisplay(
+      rejected('parameters.bogus', 'bogus: the query declares no such parameter'),
+    )
     expect(display.title).toBe('A parameter was not accepted')
     expect(display.detail).toContain('bogus')
   })

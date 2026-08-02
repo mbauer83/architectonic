@@ -42,19 +42,19 @@ class TestEnumSetBinding:
     def test_scalar_where_array_rejected(self) -> None:
         with pytest.raises(ViewpointParameterError) as exc:
             _bind(_query(), {"scope": "goal"})
-        assert exc.value.code == "parameter-not-a-set"
+        assert exc.value.reason == "not-a-set"
 
     def test_unknown_member_rejected(self) -> None:
         with pytest.raises(ViewpointParameterError) as exc:
             _bind(_query(), {"scope": ["goal", "bogus"]})
-        assert exc.value.code == "set-parameter-unknown-member"
+        assert exc.value.reason == "unknown-member"
 
     def test_below_min_items_rejected(self) -> None:
         with pytest.raises(ViewpointParameterError) as exc:
             _bind(_query(min_items=2), {"scope": ["goal"]})
-        assert exc.value.code == "set-parameter-below-min-items"
+        assert exc.value.reason == "below-minimum"
 
     def test_empty_set_rejected_as_below_min(self) -> None:
         with pytest.raises(ViewpointParameterError) as exc:
             _bind(_query(), {"scope": []})
-        assert exc.value.code == "set-parameter-below-min-items"
+        assert exc.value.reason == "below-minimum"

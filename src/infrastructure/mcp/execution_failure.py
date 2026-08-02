@@ -45,9 +45,11 @@ def _error(code: ErrorCode, path: str, message: str) -> dict[str, object]:
 def rejected_parameter(exc: ViewpointParameterError) -> dict[str, object]:
     """A parameter the query does not declare, declares as required, or types differently.
 
-    ``validation_error``, as REST reports it. The finer code the exception carries
-    (``missing-parameter``, ``parameter-type-mismatch``) is already in the message, which is where
-    REST keeps it too — a client branches on the code and reads the message.
+    ``validation_error``, as REST reports it, with the parameter in ``path`` — the machine-readable
+    part, in the field a client reads it from. The message is a sentence about the *expectation* the
+    value failed (``"anchor: expected entity-id, got boolean"``); it used to be the exception's own
+    finer code followed by the parameter name, which put a word this release retired into prose on
+    both surfaces and said nothing a caller could act on.
     """
     return _error("validation_error", f"parameters/{exc.parameter}", str(exc))
 

@@ -519,13 +519,18 @@ both surfaces: REST carries it in the error envelope's `detail.code`, MCP in ban
 
 | Code | HTTP | Fires when |
 |---|---|---|
-| `validation_error` | 400 | a required parameter has no value, a supplied name isn't declared, or a value doesn't match its declared type — `details.field_errors[].field` names it (`parameters.<name>`), and the message carries which of the three it was |
+| `validation_error` | 400 | a required parameter has no value, a supplied name isn't declared, or a value doesn't match its declared type — `details.field_errors[].field` names it (`parameters.<name>`), and the message states the expectation the value failed (`anchor: expected entity-id, got boolean`) |
 | `binding_cardinality_violation` | 400 | a binding declared exactly-one/zero-or-one resolved to a different actual count; `details` carries the binding, what it declared, and what it found |
 | `traversal_time_budget_exceeded` | 400 / 504 | the traversal ran out of relationships (the `derivation_max_relationships` memory ceiling, 400) or of time (`execution_timeout_seconds`, 504). One code, because the remedy is the same — narrow the query. The ordinary slow-but-tractable search instead stops gracefully at the time budget and returns a genuine partial result flagged `truncated`, with a warning, not this error |
 
 The hyphenated `missing-parameter`, `parameter-type-mismatch`, `binding-cardinality-violation`,
-`derivation-limit` and `execution-timeout` were MCP's own spelling before 0.2.0 and are gone; the
-first three still appear inside the `message`, which is where the finer distinction lives.
+`derivation-limit` and `execution-timeout` were MCP's own spelling before 0.2.0 and are gone — from
+the `message` too. The machine-readable part is `code` plus `details.field_errors[].field`; the
+message is prose about the expectation, and a retired code word sitting in it was a second
+vocabulary that no client could branch on and every reader could mistake for one.
+
+The hyphenated codes in the table above it are a *different* vocabulary: they classify findings
+against a stored **definition** (`ViewpointValidationIssueDto.code`), not failures of one execution.
 
 &nbsp;
 
