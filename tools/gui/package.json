@@ -20,7 +20,11 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test --project=chromium",
     "media": "E2E_BASE_URL=${E2E_BASE_URL:-http://localhost:8000} playwright test --project=media",
-    "test:e2e:install": "playwright install --with-deps chromium"
+    "test:e2e:install": "playwright install --with-deps chromium",
+    "postbuild": "node scripts/buildStamp.mjs",
+    "build:coverage": "VITE_COVERAGE=true npm run build",
+    "coverage:e2e": "nyc report --report-dir=coverage-e2e --reporter=lcov --reporter=json --reporter=text-summary",
+    "coverage:e2e:unreached": "npm run coverage:e2e --silent && node scripts/e2eUnreached.mjs"
   },
   "dependencies": {
     "@codemirror/commands": "^6.10.3",

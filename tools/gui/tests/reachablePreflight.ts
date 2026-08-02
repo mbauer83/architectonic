@@ -15,12 +15,78 @@
  * wiped — the figure appeared on disk while the manifest denied it existed. Resetting once, before
  * any spec, makes the order irrelevant.
  */
+import { readFileSync } from 'node:fs'
+import { dirname, join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
 import type { FullConfig } from '@playwright/test'
 
+// @ts-expect-error - plain ESM helper shared with the postbuild script; no type declarations by design
+import { computeSourceHash, readStamp } from '../scripts/buildStamp.mjs'
 import { resetManifest } from './media/mediaHelpers'
 
 const PROBE_TIMEOUT_MS = 5_000
 const MEDIA_PROJECT = 'media'
+const GUI_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+
+/**
+ * The served bundle must be the one this working tree builds.
+ *
+ * Two questions, and both have to hold. *Is `dist/` current?* — compare the stamp `postbuild` wrote
+ * against a fingerprint recomputed now over every bundled input. *Is the server serving that `dist/`?*
+ * — compare the hashed asset filenames in the served `index.html` against the local one. Either check
+ * alone leaves a hole: a fresh `dist/` proves nothing if the backend is serving a copy from
+ * somewhere else, and a matching server proves nothing if what it matches is three edits old.
+ *
+ * Skipped, with the reason named, when the target is not a built bundle — the Vite dev server
+ * transforms on demand and references `/src/main.ts`, so there is nothing to be stale.
+ */
+const staleBundleReason = async (baseURL: string): Promise<string | null> => {
+  // An escape hatch, because there is one legitimate case: driving a bundle built elsewhere on
+  // purpose. It has to be asked for, so forgetting to rebuild never silently takes it.
+  if (process.env.E2E_SKIP_BUILD_CHECK === '1') return null
+
+  let servedHtml: string
+  try {
+    const response = await fetch(baseURL, { signal: AbortSignal.timeout(PROBE_TIMEOUT_MS) })
+    servedHtml = await response.text()
+  } catch {
+    return null // reachability is reported by its own probe, which runs first
+  }
+
+  const assetsOf = (html: string) => [...html.matchAll(/\/assets\/([\w.-]+\.(?:js|css))/g)]
+    .map((match) => match[1])
+    .sort()
+
+  const servedAssets = assetsOf(servedHtml)
+  if (servedAssets.length === 0) return null // a dev server, or an unbuilt target
+
+  let localAssets: string[]
+  try {
+    localAssets = assetsOf(readFileSync(join(GUI_ROOT, 'dist', 'index.html'), 'utf8'))
+  } catch {
+    return 'the server is serving a built bundle, but there is no local dist/index.html to compare it '
+      + 'against. Run `npm run build`.'
+  }
+
+  if (servedAssets.join() !== localAssets.join()) {
+    return `the served bundle is not the local dist/. Served ${servedAssets.join(', ') || '(none)'}; `
+      + `dist/ holds ${localAssets.join(', ') || '(none)'}. Whatever is being served was built from a `
+      + 'different tree, so this run would report on code the browser never loads.'
+  }
+
+  const stamp = readStamp() as { hash?: string; fileCount?: number } | null
+  if (!stamp?.hash) {
+    return 'dist/ carries no build stamp, so its age cannot be established. Run `npm run build`.'
+  }
+  const { hash, fileCount } = computeSourceHash() as { hash: string; fileCount: number }
+  if (hash !== stamp.hash) {
+    return `dist/ was built from different sources than the working tree holds (stamp `
+      + `${String(stamp.hash).slice(0, 12)} over ${stamp.fileCount} inputs; tree is `
+      + `${hash.slice(0, 12)} over ${fileCount}). Run \`npm run build\`.`
+  }
+  return null
+}
 
 /**
  * The assurance store must be open, and this is where that is established.
@@ -94,6 +160,17 @@ export default async function preflight(config: FullConfig): Promise<void> {
       + 'Activation is not enough: a restarted backend has the key but is not holding the store, and '
       + '`unlock` is what tells the running process to hold it. `arch-assurance status` says which of '
       + 'the two states you are in.',
+    )
+  }
+
+  const stale = await staleBundleReason(baseURL)
+  if (stale) {
+    throw new Error(
+      `The bundle at ${baseURL} is not this working tree's: ${stale}\n\n`
+      + 'Every test would have passed or failed against code you did not write, which is the one '
+      + 'result worse than a red run, so this run stops here instead.\n\n'
+      + 'Set E2E_SKIP_BUILD_CHECK=1 to run anyway — deliberately, against a bundle you know is not '
+      + 'the tree.',
     )
   }
 

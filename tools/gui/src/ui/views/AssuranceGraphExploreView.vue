@@ -40,7 +40,7 @@ const {
 } = useForceGraph(() => svgWidth.value, () => svgHeight.value)
 
 const panel = ref<AssuranceGraphPanelState>(emptyPanelState())
-const loading = ref(false)
+const loading = ref(true)  // a view that loads on mount is loading from its first frame, not after it
 const nodeTypeById = ref(new Map<string, string>())
 const selectedEdge = ref<GraphEdge | null>(null)
 

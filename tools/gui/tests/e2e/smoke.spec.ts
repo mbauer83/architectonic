@@ -67,8 +67,11 @@ function watch(page: Page): { problems: Problem[] } {
 async function expectHealthyMain(page: Page, problems: Problem[]): Promise<void> {
   const main = page.locator('#app > main')
   await expect(main).toBeVisible()
-  const text = (await main.innerText()).trim()
-  expect(text.length, 'main content should not be empty (header-only blank)').toBeGreaterThan(0)
+  // Auto-retrying, not a one-shot `innerText()`: a view whose first frame is empty and whose second
+  // says "Loading…" would fail a sample taken between the two. That is a harness race, not a defect,
+  // and it showed up as one under an instrumented (slower) bundle. The *blank frame itself* is a
+  // separate, real problem and is fixed where it lives, in the views' initial loading state.
+  await expect(main, 'main content should not be empty (header-only blank)').not.toHaveText('')
   expect(problems, `runtime problems:\n${problems.map((p) => `  [${p.kind}] ${p.detail}`).join('\n')}`).toEqual([])
 }
 

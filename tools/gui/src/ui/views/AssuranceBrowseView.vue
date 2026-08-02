@@ -37,7 +37,7 @@ const route = useRoute()
 const router = useRouter()
 
 const nodes = ref<AssuranceNode[]>([])
-const loading = ref(false)
+const loading = ref(true)  // a view that loads on mount is loading from its first frame, not after it
 const error = ref<string | null>(null)
 const visibilityLimited = ref(false)
 

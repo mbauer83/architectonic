@@ -18,7 +18,7 @@ const router = useRouter()
 
 const documentId = computed(() => route.params.artifactId as string)
 const detail = ref<DocumentDetail | null>(null)
-const loading = ref(false)
+const loading = ref(true)  // a view that loads on mount is loading from its first frame, not after it
 const saving = ref(false)
 const deleting = ref(false)
 const error = ref<string | null>(null)
