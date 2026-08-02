@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import hashlib
-import json
 import threading
 from collections import Counter
 from pathlib import Path
@@ -589,33 +588,7 @@ class ArtifactIndex(_ReverseReferenceQueries):
         with self._lock.reading():
             with self._db.reader() as conn:
                 rows = _q.connections_for_entity_set(conn, frozenset(entity_ids))
-        return [
-            EntityContextConnection(
-                artifact_id=str(row["connection_id"]),
-                source=str(row["source_id"]),
-                target=str(row["target_id"]),
-                conn_type=str(row["conn_type"]),
-                version=str(row["connection_version"]),
-                status=str(row["connection_status"]),
-                path=str(row["path"]),
-                content_text=str(row["content_text"]),
-                associated_entities=json.loads(str(row["associated_entities_json"])),
-                src_multiplicity=str(row["src_multiplicity"]),
-                tgt_multiplicity=str(row["tgt_multiplicity"]),
-                specialization=str(row["specialization"]),
-                source_name=str(row["source_name"]),
-                target_name=str(row["target_name"]),
-                source_artifact_type=str(row["source_artifact_type"]),
-                target_artifact_type=str(row["target_artifact_type"]),
-                source_domain=str(row["source_domain"]),
-                target_domain=str(row["target_domain"]),
-                source_scope=str(row["source_scope"]),
-                target_scope=str(row["target_scope"]),
-                other_entity_id=str(row["other_entity_id"]),
-                direction=str(row["direction_bucket"]),
-            )
-            for row in rows
-        ]
+        return [_q.entity_context_connection(row) for row in rows]
 
     # ── Internal helpers ──────────────────────────────────────────────────────
 

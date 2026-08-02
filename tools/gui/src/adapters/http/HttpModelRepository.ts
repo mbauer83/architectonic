@@ -26,7 +26,7 @@ import {
   DiagramEntityDiscoverySchema,
   WriteResultSchema,
   SyncDiagramToModelResultSchema,
-  DiagramRefsSchema,
+  DiagramRefListSchema,
   OntologyClassificationSchema,
   OntologyPairSchema,
   EntitySchemaInfoSchema,
@@ -243,7 +243,7 @@ export const makeHttpModelRepository = (): ModelRepository => ({
   getDiagramRefs: (sourceId: string, targetId: string) =>
     fetchJson(
       buildUrl('/diagram-refs', { source_id: sourceId, target_id: targetId }),
-      Schema.Struct({ items: DiagramRefsSchema }),
+      DiagramRefListSchema,
     ).pipe(Effect.map((r) => r.items)),
 
   addConnection: (body) => postJson(buildUrl('/connections'), body, WriteResultSchema),

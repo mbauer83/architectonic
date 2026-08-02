@@ -6965,6 +6965,27 @@ export interface components {
             conn_sym: number;
         };
         /**
+         * EntityContextConnectionGroups
+         * @description One entity's connections grouped by direction — three fields, always all three.
+         *
+         *     It was ``dict[str, list[ContextConnection]]``, so the published document said
+         *     ``{[key: string]: ContextConnection[]}``: an object with some string keys, about a set of exactly
+         *     three. A client could not know which keys to read, and the frontend's decoder — which names all
+         *     three and no others — could not be held against it, so `EntityContextSchema` sat in
+         *     `UNASSERTED_SCHEMAS` as "only the envelope is unpinned" while the envelope was the divergence.
+         *
+         *     Mirrors :class:`~src.application.read_models.EntityContextConnections`, which is where the
+         *     grouping is decided.
+         */
+        EntityContextConnectionGroups: {
+            /** Inbound */
+            inbound: components["schemas"]["ContextConnection"][];
+            /** Outbound */
+            outbound: components["schemas"]["ContextConnection"][];
+            /** Symmetric */
+            symmetric: components["schemas"]["ContextConnection"][];
+        };
+        /**
          * EntityContextResponse
          * @description One entity together with its connections, and the model generation they were read at.
          *
@@ -6973,19 +6994,19 @@ export interface components {
          *
          *     ``etag``/``generation`` are part of the body, not only the header: a client that holds a
          *     neighbourhood and a detail read needs to know they came from the same generation before drawing
-         *     them as one picture.
+         *     them as one picture. Which is also why neither carries a default: ``EntityContextReadModel``
+         *     types both as required, so the ``| None = None`` here published as *optional* two fields the
+         *     producer cannot omit — and with ``response_model_exclude_none=True`` on the route, a None would
+         *     have been dropped from a body whose whole purpose is to say which snapshot it came from.
          */
         EntityContextResponse: {
-            /** Connections */
-            connections: {
-                [key: string]: components["schemas"]["ContextConnection"][];
-            };
+            connections: components["schemas"]["EntityContextConnectionGroups"];
             counts: components["schemas"]["EntityConnectionCounts"];
             entity: components["schemas"]["EntityDetailResponse"];
             /** Etag */
-            etag?: string;
+            etag: string;
             /** Generation */
-            generation?: number;
+            generation: number;
         };
         /**
          * EntityCriteriaGroupNode
@@ -10654,7 +10675,7 @@ export interface components {
             /** Slug */
             slug: string;
             /** Version */
-            version?: number | null;
+            version: number | null;
         };
         /** ViewpointPinsBody */
         ViewpointPinsBody: {
@@ -10814,14 +10835,19 @@ export interface components {
          *     ``expected``/``found`` are always serialized, as null where the finding has no comparison to
          *     report: a client that had to distinguish "absent" from "null" would be reading a fourth state
          *     that never occurs.
+         *
+         *     Which is why neither carries a default. They did, and the document then published both as
+         *     *optional* — contradicting the paragraph above it, and disagreeing with the frontend's decoder,
+         *     which requires them present and nullable. A default here describes the field's value; it is the
+         *     absence of one that describes its presence.
          */
         ViewpointValidationIssueDto: {
             /** Code */
             code: string;
             /** Expected */
-            expected?: string | null;
+            expected: string | null;
             /** Found */
-            found?: string | null;
+            found: string | null;
             /** Message */
             message: string;
             /** Path */

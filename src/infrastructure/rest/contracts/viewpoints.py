@@ -28,14 +28,19 @@ class ViewpointValidationIssueDto(Closed):
     ``expected``/``found`` are always serialized, as null where the finding has no comparison to
     report: a client that had to distinguish "absent" from "null" would be reading a fourth state
     that never occurs.
+
+    Which is why neither carries a default. They did, and the document then published both as
+    *optional* — contradicting the paragraph above it, and disagreeing with the frontend's decoder,
+    which requires them present and nullable. A default here describes the field's value; it is the
+    absence of one that describes its presence.
     """
 
     severity: Literal["error", "warning"]
     code: str
     path: str
     message: str
-    expected: str | None = None
-    found: str | None = None
+    expected: str | None
+    found: str | None
 
 
 class ViewpointReferencerDto(Closed):
@@ -56,7 +61,11 @@ class ViewpointPersistResponse(Closed):
     ok: bool
     action: Literal["create", "edit", "delete"]
     slug: str
-    version: int | None = None
+    #: Present on every answer, and null where the action has no version to report — a deletion, or
+    #: a refused create. It carried ``= None``, which published it as *optional*, but
+    #: ``PersistResult.as_answer`` emits the key unconditionally: the default described the field's
+    #: value, not its presence, and the client's decoder had it right.
+    version: int | None
     dry_run: bool
     issues: list[ViewpointValidationIssueDto] = []
     referencers: list[ViewpointReferencerDto] = []

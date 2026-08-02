@@ -193,3 +193,15 @@ export type DiagramRef = typeof DiagramRefSchema.Type
 
 export const DiagramRefsSchema = Schema.Array(DiagramRefSchema)
 export type DiagramRefs = typeof DiagramRefsSchema.Type
+
+/**
+ * The response envelope, named here rather than assembled at the call site.
+ *
+ * `getDiagramRefs` built `Schema.Struct({ items: DiagramRefsSchema })` inline and mapped `.items`
+ * away, so the shape the server actually sends existed only as an anonymous expression inside an
+ * adapter — nothing the contract-coverage check could hold against
+ * `DiagramReferenceListResponse`, and the bare array beside it looked like the response while being
+ * only its contents.
+ */
+export const DiagramRefListSchema = Schema.Struct({ items: DiagramRefsSchema })
+export type DiagramRefList = typeof DiagramRefListSchema.Type

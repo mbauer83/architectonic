@@ -2,10 +2,18 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from collections.abc import Mapping
+from typing import Any, cast
 
 from src.application.artifacts.scoring import tokenize
 
-from .types import EntityContextConnection, EntityContextCounts, EntityContextReadModel
+from .types import (
+    CONNECTION_DIRECTIONS,
+    ConnectionDirection,
+    EntityContextConnection,
+    EntityContextCounts,
+    EntityContextReadModel,
+)
 
 # Entity name column (position 1) gets 15× weight over content_text (0.5).
 # Columns: artifact_id(UNINDEXED), name, artifact_type, domain, subdomain, keywords, content_text, display_label
@@ -237,6 +245,60 @@ def diagrams_referencing_type(
     return [(str(r[0]), str(r[1]), str(r[2])) for r in rows]
 
 
+def _direction_of(row: Mapping[str, Any]) -> ConnectionDirection:
+    """The row's direction bucket, narrowed to the vocabulary the indexer writes it from.
+
+    An unknown value is a defect in our own index, not in the model, so it is raised rather than
+    skipped: dropping the edge would render an entity with fewer connections than it has and report
+    nothing, which is the failure mode this whole slice of work is about.
+    """
+    bucket = str(row["direction_bucket"])
+    if bucket not in CONNECTION_DIRECTIONS:
+        raise ValueError(
+            f"entity_context_edges.direction_bucket is {bucket!r}, which is not one of "
+            f"{sorted(CONNECTION_DIRECTIONS)} — reindex with `artifact_admin_reindex`."
+        )
+    return cast("ConnectionDirection", bucket)
+
+
+def entity_context_connection(row: Mapping[str, Any]) -> EntityContextConnection:
+    """One ``entity_context_edges`` row as the application's read model.
+
+    The twenty-two-field mapping existed twice — here and in the service's
+    ``connections_for_entity_set`` translation — over the same table and the same column names. Two
+    copies of a projection is two places for a column rename to be half-applied, and the read model
+    is the only thing either caller wanted.
+
+    Typed on ``Mapping`` rather than ``sqlite3.Row`` because one caller has already turned its rows
+    into dicts to deduplicate them. Both are row-shaped reads of the same columns, which is all this
+    needs to know.
+    """
+    return EntityContextConnection(
+        artifact_id=str(row["connection_id"]),
+        source=str(row["source_id"]),
+        target=str(row["target_id"]),
+        conn_type=str(row["conn_type"]),
+        version=str(row["connection_version"]),
+        status=str(row["connection_status"]),
+        path=str(row["path"]),
+        content_text=str(row["content_text"]),
+        associated_entities=json.loads(str(row["associated_entities_json"])),
+        src_multiplicity=str(row["src_multiplicity"]),
+        tgt_multiplicity=str(row["tgt_multiplicity"]),
+        specialization=str(row["specialization"]),
+        source_name=str(row["source_name"]),
+        target_name=str(row["target_name"]),
+        source_artifact_type=str(row["source_artifact_type"]),
+        target_artifact_type=str(row["target_artifact_type"]),
+        source_domain=str(row["source_domain"]),
+        target_domain=str(row["target_domain"]),
+        source_scope=str(row["source_scope"]),
+        target_scope=str(row["target_scope"]),
+        other_entity_id=str(row["other_entity_id"]),
+        direction=_direction_of(row),
+    )
+
+
 def entity_context(
     conn: sqlite3.Connection,
     entity_id: str,
@@ -253,11 +315,13 @@ def entity_context(
         "conn_out": int(counts_row["conn_out"]) if counts_row is not None else 0,
         "conn_sym": int(counts_row["conn_sym"]) if counts_row is not None else 0,
     }
-    grouped: dict[str, list[EntityContextConnection]] = {
-        "outbound": [],
-        "inbound": [],
-        "symmetric": [],
-    }
+    # Three named lists, assembled into the closed read model at the end. Indexing a closed shape
+    # with a *stored* key cannot be type-checked, and the alternative — an open map — is what let the
+    # published contract say "an object with some string keys" about a set of exactly three.
+    outbound: list[EntityContextConnection] = []
+    inbound: list[EntityContextConnection] = []
+    symmetric: list[EntityContextConnection] = []
+    by_bucket = {"outbound": outbound, "inbound": inbound, "symmetric": symmetric}
     rows = conn.execute(
         """
         SELECT *
@@ -268,35 +332,10 @@ def entity_context(
         (entity_id,),
     ).fetchall()
     for row in rows:
-        grouped[str(row["direction_bucket"])].append(
-            {
-                "artifact_id": str(row["connection_id"]),
-                "source": str(row["source_id"]),
-                "target": str(row["target_id"]),
-                "conn_type": str(row["conn_type"]),
-                "version": str(row["connection_version"]),
-                "status": str(row["connection_status"]),
-                "path": str(row["path"]),
-                "content_text": str(row["content_text"]),
-                "associated_entities": json.loads(str(row["associated_entities_json"])),
-                "src_multiplicity": str(row["src_multiplicity"]),
-                "tgt_multiplicity": str(row["tgt_multiplicity"]),
-                "specialization": str(row["specialization"]),
-                "source_name": str(row["source_name"]),
-                "target_name": str(row["target_name"]),
-                "source_artifact_type": str(row["source_artifact_type"]),
-                "target_artifact_type": str(row["target_artifact_type"]),
-                "source_domain": str(row["source_domain"]),
-                "target_domain": str(row["target_domain"]),
-                "source_scope": str(row["source_scope"]),
-                "target_scope": str(row["target_scope"]),
-                "other_entity_id": str(row["other_entity_id"]),
-                "direction": str(row["direction_bucket"]),
-            }
-        )
+        by_bucket[_direction_of(row)].append(entity_context_connection(row))
     return {
         "entity": entity_data,
-        "connections": grouped,
+        "connections": {"outbound": outbound, "inbound": inbound, "symmetric": symmetric},
         "counts": counts,
         "generation": generation,
         "etag": etag,

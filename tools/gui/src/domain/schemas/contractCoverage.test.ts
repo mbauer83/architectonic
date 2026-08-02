@@ -26,66 +26,25 @@ const SCHEMA_DIR = import.meta.dirname
  * costs a sentence explaining it, not a silent line.
  */
 const UNASSERTED_SCHEMAS: Readonly<Record<string, string>> = {
-  AiBomExportSchema:
-    'Remaining work. `AiBomExportResponse` exists in the document; the client shape predates it.',
-  AllocatedIdentifierSchema:
-    'Remaining work. `AllocatedIdentifierResponse` exists in the document; not yet compared.',
   C4NavLinkSchema:
     'Client-side composite. Assembled by the C4 navigation adapter from a diagram read; no single ' +
     'server component describes it.',
   C4NavigationSchema:
     'Client-side composite, built from `C4NavLinkSchema`; the server sends the diagram, not the nav.',
-  DatatypeClassifierInfoSchema:
-    'Remaining work. `DatatypeClassifierInfo` exists in the document; not yet compared.',
-  DatatypeTypeCatalogSchema:
-    'Remaining work. Served under the datatype module`s own extras; the envelope around it is ' +
-    'declared, the catalogue inside is not.',
-  DatatypeTypeUsageSchema:
-    'Remaining work. `DatatypeTypeUsage` exists in the document; not yet compared.',
-  DatatypeTypeUsagesSchema:
-    'Remaining work. Wraps `DatatypeTypeUsageSchema`; blocked on the same comparison.',
   DiagramConnectionSchema:
     'Deliberately a superset of two producers. `/api/diagrams/{id}/connections` sends ' +
     '`DiagramContextConnection`, and the viewpoint-diagram viewer composes the same shape ' +
     'client-side with `certainty`, `hops` and `via_connection_ids` for a derived edge. Asserting it ' +
     'against either counterpart would make one of the two wrong.',
-  DiagramRefSchema:
-    'Remaining work. `DiagramReference` exists in the document; not yet compared.',
-  DiagramRefsSchema:
-    'Remaining work. Wraps `DiagramRefSchema`; blocked on the same comparison.',
-  DirectNeighborhoodSchema:
-    'Remaining work. The direct arm of the neighbourhood union; `DirectNeighborhood` is its ' +
-    'counterpart, and asserting it would carry `NeighborsSchema` with it.',
-  DocumentListSchema:
-    'Remaining work. `DocumentListResponse` exists in the document; not yet compared.',
-  DocumentSummarySchema:
-    'Remaining work. Reached only through `DocumentListSchema`; blocked on that comparison.',
-  EntityContextSchema:
-    'Remaining work. `EntityContextResponse` exists in the document. Its two members — the entity ' +
-    'detail and the context connection — are both asserted, so only the envelope is unpinned.',
-  NeighborsSchema:
-    'Remaining work. The hop map, reached only through `DirectNeighborhoodSchema`; blocked on that ' +
-    'comparison.',
   SyncSaveResultSchema:
-    'Remaining work. The save route`s result; served through the write-result envelope, which is ' +
-    'asserted, but this narrower shape is not.',
-  ViewpointPersistResultSchema:
-    'Remaining work. No single component in the document yet describes the persist answer.',
-  ViewpointPinsSchema:
-    'Remaining work. `ViewpointPinsResponse` exists in the document; not yet compared.',
-  ViewpointReferencerListSchema:
-    'Remaining work. `ViewpointReferencerListResponse` exists in the document; not yet compared.',
-  ViewpointReferencerSchema:
-    'Remaining work. Reached only through `ViewpointReferencerListSchema`; blocked on that comparison.',
+    'Deliberately a superset of four producers. `engagement/save`, `enterprise/save`, ' +
+    '`enterprise/submit` and `enterprise/withdraw` each declare their own outcome DTO deriving from ' +
+    '`_SyncOutcome`, and this one decoder reads all four — so it is the union of their fields and ' +
+    'equal to none of them. Asserting it against any one would make the other three wrong.',
   ViewpointSummarySchema:
-    'Remaining work. The viewpoint list row; served inside catalogues whose envelopes are asserted ' +
-    'while the row itself is not.',
-  ViewpointValidationIssueSchema:
-    'Remaining work. `ViewpointValidationIssueDto` exists in the document; not yet compared.',
-  WriteHelpEntityTypeCatalogEntrySchema:
-    'Remaining work. Reached only through `WriteHelpSchema`; blocked on that comparison.',
-  WriteHelpSchema:
-    'Remaining work. `WriteHelpResponse` exists in the document; not yet compared.',
+    'Client-side projection. `viewpointSummaryFromEnvelope` narrows the asserted ' +
+    '`ViewpointDefinitionEnvelope` to the handful of fields the pickers need; no route sends this ' +
+    'shape, so there is no counterpart to compare it against.',
 }
 
 // ── Scanning ──────────────────────────────────────────────────────────────────

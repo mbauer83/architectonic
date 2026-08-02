@@ -29,16 +29,25 @@ export const WriteHelpEntityTypeCatalogEntrySchema = Schema.Struct({
 export type WriteHelpEntityTypeCatalogEntry =
   typeof WriteHelpEntityTypeCatalogEntrySchema.Type
 
+/**
+ * The slice of `/api/write-help` this client reads.
+ *
+ * The response declares ten fields; two are used here, and one of those only for its `prefix`. A
+ * decoder narrower than its document is not drift — `Schema.Struct` ignores excess keys — but it
+ * cannot be asserted with plain equality either, which is how it sat in `UNASSERTED_SCHEMAS` as
+ * "not yet compared" and hid the one real divergence: `entity_type_catalog` is required in the
+ * document and the server has no default for it, so the `optional` here was the client permitting
+ * an absence the producer cannot express. The contract test asserts this against a named projection
+ * of the document, so drift in the fields it *does* read still fails.
+ */
 export const WriteHelpSchema = Schema.Struct({
   entity_types_by_domain: Schema.Record({
     key: Schema.String,
     value: Schema.Array(Schema.String),
   }),
-  entity_type_catalog: Schema.optional(
-    Schema.Record({
-      key: Schema.String,
-      value: WriteHelpEntityTypeCatalogEntrySchema,
-    }),
-  ),
+  entity_type_catalog: Schema.Record({
+    key: Schema.String,
+    value: WriteHelpEntityTypeCatalogEntrySchema,
+  }),
 })
 export type WriteHelp = typeof WriteHelpSchema.Type

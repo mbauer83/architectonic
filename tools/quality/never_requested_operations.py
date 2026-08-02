@@ -40,7 +40,7 @@ def main(argv: list[str]) -> int:
         print(f"no access log at {log_path} — nothing to measure", file=sys.stderr)
         return 1
 
-    dark = never_requested_operations(parse_requested_routes(log_text))
+    dark = never_requested_operations(parse_requested_routes(log_text), ROUTE_POLICY)
     declared = Counter(row.method for row in ROUTE_POLICY)
     measured = Counter(BY_OPERATION[operation].method for operation in dark)
 

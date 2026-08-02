@@ -136,7 +136,7 @@ def _measured_dark_operations() -> frozenset[str]:
             "no .arch/backend.log — the register's log half is unmeasurable here. Run "
             "`uv run tools/quality/never_requested_operations.py` where a backend has served."
         )
-    return never_requested_operations(parse_requested_routes(log_text))
+    return never_requested_operations(parse_requested_routes(log_text), ROUTE_POLICY)
 
 
 def test_no_operation_outside_the_register_is_dark() -> None:

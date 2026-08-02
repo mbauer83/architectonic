@@ -47,7 +47,7 @@ from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-from src.infrastructure.rest.route_policy import ROUTE_POLICY, RouteRow
+from src.infrastructure.rest.route_policy import RouteRow
 
 #: Operations no request has ever reached through the running server. Shrink-only: remove an
 #: entry when something exercises it, never add one. A new operation that would need an entry
@@ -196,33 +196,38 @@ def operation_for(route: RequestedRoute, rows: Iterable[RouteRow]) -> str | None
     addresses this release retired.
     """
     path_segments = route.path.split("/")
-    best: tuple[int, str] | None = None
-    for row in rows:
-        if row.method != route.method:
-            continue
-        literals = _matches(row.template.split("/"), path_segments)
-        if literals is None:
-            continue
-        if best is None or literals > best[0]:
-            best = (literals, row.operation_id)
+    candidates = (
+        (literals, row.operation_id)
+        for row in rows
+        if row.method == route.method
+        and (literals := _matches(row.template.split("/"), path_segments)) is not None
+    )
+    # Most literal segments wins, and the operation id breaks a tie — deterministic rather than
+    # "whichever row the manifest happens to list first".
+    best = max(candidates, default=None)
     return None if best is None else best[1]
 
 
 def requested_operations(
-    routes: Iterable[RequestedRoute], rows: Iterable[RouteRow] | None = None
+    routes: Iterable[RequestedRoute], rows: Iterable[RouteRow]
 ) -> frozenset[str]:
-    """The manifest operations a set of requests reached."""
-    manifest = tuple(ROUTE_POLICY if rows is None else rows)
-    reached = (operation_for(route, manifest) for route in routes)
+    """The manifest operations a set of requests reached.
+
+    ``rows`` is required, not defaulted to the process's manifest. An optional parameter falling back
+    to a module-level singleton is the shape ``333c29d`` removed from eleven router modules: it reads
+    as an injection seam and behaves as a service locator, so a caller that meant to supply rows and
+    passed them to the wrong argument silently measures the real manifest instead.
+    """
+    reached = (operation_for(route, rows) for route in routes)
     return frozenset(operation_id for operation_id in reached if operation_id is not None)
 
 
 def never_requested_operations(
-    routes: Iterable[RequestedRoute], rows: Iterable[RouteRow] | None = None
+    routes: Iterable[RequestedRoute], rows: Iterable[RouteRow]
 ) -> frozenset[str]:
     """Declared operations that no request in ``routes`` reached."""
-    manifest = tuple(ROUTE_POLICY if rows is None else rows)
-    return frozenset(row.operation_id for row in manifest) - requested_operations(routes, manifest)
+    declared = tuple(rows)
+    return frozenset(row.operation_id for row in declared) - requested_operations(routes, declared)
 
 
 def read_request_log(log_path: Path | None = None) -> str | None:

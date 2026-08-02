@@ -3,13 +3,25 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, TypedDict
+from typing import Any, Literal, TypedDict, get_args
 
 
 @dataclass(frozen=True)
 class ReadModelVersion:
     generation: int
     etag: str
+
+
+#: Which way a connection runs relative to the entity being read.
+#:
+#: Named here because this is where the grouping is *produced*. The vocabulary was spelled as a
+#: ``Literal`` in the REST contract and as a bare ``str`` in this model, which puts the closed set on
+#: the delivery side of a boundary whose application side decides it — so the delivery layer's
+#: precision was a claim about someone else's data rather than a property of it.
+ConnectionDirection = Literal["outbound", "inbound", "symmetric"]
+
+#: The three directions, for a producer that has to validate a stored bucket name against them.
+CONNECTION_DIRECTIONS: frozenset[str] = frozenset(get_args(ConnectionDirection))
 
 
 class EntityContextConnection(TypedDict):
@@ -34,7 +46,23 @@ class EntityContextConnection(TypedDict):
     source_scope: str
     target_scope: str
     other_entity_id: str
-    direction: str
+    direction: ConnectionDirection
+
+
+class EntityContextConnections(TypedDict):
+    """One entity's connections grouped by direction — three keys, always all three.
+
+    A closed shape rather than ``dict[str, list[...]]``. The producer has always emitted exactly
+    these three, and a symmetric relation belongs to neither direction, which is *why* they are
+    grouped instead of flattened — so the key set is a decision, not a runtime accident. Typed as an
+    open map it reached the published document as ``{[key: string]: ContextConnection[]}``: a client
+    could not know which keys to read, and the frontend's decoder, which names all three and no
+    others, could not be held against it.
+    """
+
+    outbound: list[EntityContextConnection]
+    inbound: list[EntityContextConnection]
+    symmetric: list[EntityContextConnection]
 
 
 class EntityContextCounts(TypedDict):
@@ -45,7 +73,7 @@ class EntityContextCounts(TypedDict):
 
 class EntityContextReadModel(TypedDict):
     entity: dict[str, Any]
-    connections: dict[str, list[EntityContextConnection]]
+    connections: EntityContextConnections
     counts: EntityContextCounts
     generation: int
     etag: str

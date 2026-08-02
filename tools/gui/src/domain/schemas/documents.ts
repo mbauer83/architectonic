@@ -51,7 +51,10 @@ export const DocumentSummarySchema = Schema.Struct({
   path: Schema.String,
   keywords: Schema.Array(Schema.String),
   sections: Schema.Array(Schema.String),
-  group: Schema.optional(Schema.String),
+  // Required, not optional. `DocumentSummary.group` has no default, so the route would 500 rather
+  // than omit it — the client was the permissive side, and a decoder wider than its producer hides
+  // the day the producer stops filling the field.
+  group: Schema.String,
   is_global: Schema.Boolean,
   last_updated: Schema.optional(Schema.NullOr(Schema.String)),
 })

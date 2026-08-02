@@ -18,6 +18,7 @@ from typing import Any, Literal
 
 from pydantic import ConfigDict, Field, RootModel
 
+from src.application.read_models import ConnectionDirection
 from src.infrastructure.rest.contracts.wire_nulls import NullsOmitted
 from src.infrastructure.rest.contracts.wire_shape import Closed
 
@@ -187,7 +188,28 @@ class ContextConnection(Closed):
     # Carried rather than derived, because a symmetric relation has no source-or-target answer and a
     # client comparing ids would have to reinvent that rule per view.
     other_entity_id: str
-    direction: Literal["outbound", "inbound", "symmetric"]
+    #: The vocabulary comes from the application read model that produces the grouping, rather than
+    #: being restated here. It was declared in this file and nowhere else, which put the closed set on
+    #: the delivery side of a boundary whose application side decides it.
+    direction: ConnectionDirection
+
+
+class EntityContextConnectionGroups(NullsOmitted):
+    """One entity's connections grouped by direction — three fields, always all three.
+
+    It was ``dict[str, list[ContextConnection]]``, so the published document said
+    ``{[key: string]: ContextConnection[]}``: an object with some string keys, about a set of exactly
+    three. A client could not know which keys to read, and the frontend's decoder — which names all
+    three and no others — could not be held against it, so `EntityContextSchema` sat in
+    `UNASSERTED_SCHEMAS` as "only the envelope is unpinned" while the envelope was the divergence.
+
+    Mirrors :class:`~src.application.read_models.EntityContextConnections`, which is where the
+    grouping is decided.
+    """
+
+    outbound: list[ContextConnection]
+    inbound: list[ContextConnection]
+    symmetric: list[ContextConnection]
 
 
 class EntityContextResponse(NullsOmitted):
@@ -198,14 +220,17 @@ class EntityContextResponse(NullsOmitted):
 
     ``etag``/``generation`` are part of the body, not only the header: a client that holds a
     neighbourhood and a detail read needs to know they came from the same generation before drawing
-    them as one picture.
+    them as one picture. Which is also why neither carries a default: ``EntityContextReadModel``
+    types both as required, so the ``| None = None`` here published as *optional* two fields the
+    producer cannot omit — and with ``response_model_exclude_none=True`` on the route, a None would
+    have been dropped from a body whose whole purpose is to say which snapshot it came from.
     """
 
     entity: EntityDetailResponse
-    connections: dict[str, list[ContextConnection]]
+    connections: EntityContextConnectionGroups
     counts: EntityConnectionCounts
-    etag: str | None = None
-    generation: int | None = None
+    etag: str
+    generation: int
 
 
 class EntityDisplayItemResponse(Closed):
