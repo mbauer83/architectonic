@@ -83,7 +83,7 @@ class WriteContext:
 
     @property
     def fixture_diagram(self) -> str:
-        return self.workspace.ids("diagram")[0]
+        return self.workspace.application_diagram
 
 
 @dataclass(frozen=True)

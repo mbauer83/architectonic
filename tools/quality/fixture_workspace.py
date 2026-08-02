@@ -13,6 +13,10 @@ tools makes the fixture *itself* a write round-trip. Every artifact below is aut
 `artifact_create_diagram` with `dry_run=False`, through the same path an agent uses. If the write layer
 is broken, generation fails; nothing is faked into place with `Path.write_text`.
 
+The content list is a checklist rather than a sample, and it grows when a walk names a precondition it
+cannot meet: the datatype diagram below arrived because two metadata PATCHes address a classifier and an
+attribute, and nothing in the repository had either.
+
 **Why this content and not more.** The dogfood repository is what the read walks run against today, and
 what it happens to hold decides what they cover: `npm run conformance` passes 66/66 having only ever
 seen `max_cvss_score: null`, `basis_snapshot_id: null`, `visibility_limited: false` — the *absent*
@@ -87,6 +91,28 @@ class FixtureWorkspace:
         """Two entities with a real connection between them — what a matrix preview needs."""
         source, target = self.authored["connected_entities"]
         return source, target
+
+    @property
+    def application_diagram(self) -> str:
+        """The ArchiMate diagram over the two connected entities — what an edge label needs.
+
+        Named by role, not taken from `ids("diagram")[0]`. That worked while there was one diagram and
+        became a positional accident the moment a second kind arrived: `ids("diagram")` is the complete
+        list, because that is what "served content is generated content" is checked against, and a walk
+        wanting *this* diagram has to say so.
+        """
+        return self.authored["application_diagram"][0]
+
+    @property
+    def annotated_classifier(self) -> tuple[str, str, str]:
+        """A datatype diagram, a classifier in it, and an attribute on that classifier.
+
+        Three levels of identity, because that is what the deepest write address in the product names:
+        `/api/diagrams/{id}/entities/{classifier}/attributes/{attribute}/metadata`. Being the fiddliest
+        precondition to assemble is the likeliest reason nothing had ever requested it.
+        """
+        diagram, classifier, attribute = self.authored["annotated_classifier"]
+        return diagram, classifier, attribute
 
 
 def _roots(root: Path) -> tuple[Path, Path]:
@@ -222,7 +248,7 @@ def build_fixture_workspace(root: Path) -> FixtureWorkspace:
     ))
 
     # ── A diagram, so diagram reads and the render path have a subject ───────────────────────────
-    record("diagram", _wrote(
+    authored["application_diagram"] = [record("diagram", _wrote(
         write.artifact_create_diagram(
             diagram_type="archimate-application",
             name="Fixture Application View",
@@ -231,11 +257,72 @@ def build_fixture_workspace(root: Path) -> FixtureWorkspace:
             repo_root=where,
         ),
         "diagram",
-    ))
+    ))]
+
+    # ── A datatype diagram, for the two metadata writes that address three levels deep ───────────
+    annotated = _datatype_diagram(write, where)
+    authored["annotated_classifier"] = list(annotated)
+    # Also a diagram, and `ids("diagram")` is what "served content is generated content" is checked
+    # against — so a diagram known only by its specialised role would make that check fail on a
+    # diagram the fixture itself authored.
+    record("diagram", annotated[0])
 
     return FixtureWorkspace(
         root=root, engagement_root=engagement, enterprise_root=enterprise, authored=authored
     )
+
+
+#: The attribute's id is the caller's to choose and is kept verbatim; the classifier's is *generated*,
+#: which is why the diagram has to be read back below rather than assumed.
+_ATTRIBUTE_ID = "attr_placed_at"
+
+
+def _datatype_diagram(write: Any, where: str) -> tuple[str, str, str]:
+    """Author a datatype diagram with one classifier carrying one attribute, and say what they are.
+
+    The classifier id cannot be predicted: `artifact_create_diagram` replaces the label-derived id the
+    caller supplies with a generated `CLF@…`, which is correct — a classifier is an artifact and gets
+    an artifact's identity. So the diagram is read back through the product's own diagram parser. That
+    is not hand-editing a model file: the content was authored by the write tool, and this reads what
+    the tool decided rather than deciding it here.
+    """
+    from src.infrastructure.write.artifact_write.parse_existing import parse_diagram_file
+
+    result = write.artifact_create_diagram(
+        diagram_type="datatype",
+        name="Fixture Annotated Types",
+        diagram_entities={
+            "classifier": [
+                {
+                    "id": "clf_fixture_order",
+                    "label": "Fixture Order",
+                    "kind": "entity",
+                    "attributes": [
+                        {
+                            "id": _ATTRIBUTE_ID,
+                            "name": "placed_at",
+                            "type": {"kind": "primitive", "name": "DateTime"},
+                        }
+                    ],
+                }
+            ]
+        },
+        dry_run=False,
+        repo_root=where,
+    )
+    diagram_id = _wrote(result, "datatype diagram")
+
+    path = result.get("path")
+    if not isinstance(path, str):
+        raise RuntimeError(f"fixture: datatype diagram reported no path: {result}")
+    classifiers = parse_diagram_file(Path(path)).frontmatter.get("diagram-entities", {})
+    rows = classifiers.get("classifier") if isinstance(classifiers, dict) else None
+    if not rows:
+        raise RuntimeError(f"fixture: the datatype diagram at {path} carries no classifier")
+    classifier_id = rows[0].get("id")
+    if not isinstance(classifier_id, str):
+        raise RuntimeError(f"fixture: the classifier in {path} has no id: {rows[0]}")
+    return diagram_id, classifier_id, _ATTRIBUTE_ID
 
 
 def main(argv: list[str] | None = None) -> int:
