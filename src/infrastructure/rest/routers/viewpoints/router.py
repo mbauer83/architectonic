@@ -45,13 +45,13 @@ from src.infrastructure.rest.contracts.viewpoint_projection import (
     DiagramViewpointProjectionResponse,
     ViewpointProjectionResponse,
 )
-from src.infrastructure.rest.routers import state as s
-from src.infrastructure.rest.routers._openapi import READ_RESPONSES, TAG_VIEWPOINTS, media_response
-from src.infrastructure.rest.routers.diagrams._selection import resolve_diagram_selection
 
 # Named as a module at the call sites: every one of these turns an execution failure into the
 # published envelope, and `failures.derivation_limit(...)` says that where four bare names did not.
-from src.infrastructure.rest.routers.viewpoints import _request_parsing as failures
+from src.infrastructure.rest.routers import _failures as failures
+from src.infrastructure.rest.routers import state as s
+from src.infrastructure.rest.routers._openapi import READ_RESPONSES, TAG_VIEWPOINTS, media_response
+from src.infrastructure.rest.routers.diagrams._selection import resolve_diagram_selection
 from src.infrastructure.rest.routers.viewpoints._freshness import fresh_viewpoints_runtime_catalogs_dependency
 from src.infrastructure.rest.routers.viewpoints._request_parsing import parse_presentation, parse_query
 from src.infrastructure.rest.routers.viewpoints.signal_render import (

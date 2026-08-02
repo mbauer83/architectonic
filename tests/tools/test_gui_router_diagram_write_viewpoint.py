@@ -148,3 +148,49 @@ class TestEditDiagramViewpoint:
         body = edit.json()
         assert body["verification"]["valid"], body["verification"]
         assert _fm(body["content"])["viewpoint"] == {"slug": "layered", "version": 1}
+
+
+class TestRepoAuthoredViewpointIsVisibleToTheWriteVerifier:
+    """A viewpoint written into this repository must be one a diagram may apply.
+
+    The write path built its verifier from ``process_runtime_catalogs()``, whose viewpoint catalog
+    is the module-shipped starter library and nothing else — it reads no repository at all. So a
+    definition authored through ``POST /api/viewpoints`` was listed by every read surface and
+    rejected by every write: creating the diagram that uses it answered
+    ``E180 Unknown viewpoint slug``, permanently rather than until a restart.
+    """
+
+    def _author_viewpoint(self, root: Path, slug: str) -> None:
+        from src.domain.viewpoints.viewpoints import ViewpointCatalog, ViewpointDefinition
+        from src.infrastructure.viewpoint_declarations import write_viewpoint_catalog_file
+
+        write_viewpoint_catalog_file(
+            root,
+            ViewpointCatalog(entries=(ViewpointDefinition(slug=slug, version=1, name="Repo Authored"),)),
+        )
+
+    def test_a_diagram_may_apply_a_definition_this_repo_authored(self, sync_client, populated_root) -> None:
+        self._author_viewpoint(populated_root, "repo-authored-vp")
+
+        r = sync_client.post(
+            "/api/diagrams",
+            json=_create_body(viewpoint={"slug": "repo-authored-vp", "version": 1}),
+        )
+
+        assert r.status_code == 200
+        verification = r.json()["verification"]
+        assert verification["valid"], verification
+
+    def test_a_slug_no_repo_declares_is_still_refused(self, sync_client, populated_root) -> None:
+        # The check must still be a check: reloading the catalog widens what is known, not what
+        # is accepted.
+        self._author_viewpoint(populated_root, "repo-authored-vp")
+
+        r = sync_client.post(
+            "/api/diagrams",
+            json=_create_body(viewpoint={"slug": "no-such-viewpoint-anywhere", "version": 1}),
+        )
+
+        verification = r.json()["verification"]
+        assert not verification["valid"]
+        assert any(issue["code"] == "E180" for issue in verification["issues"]), verification

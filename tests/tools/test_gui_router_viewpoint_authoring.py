@@ -55,7 +55,9 @@ class TestCriteriaCatalog:
         }
         assert "application-component" in body["entity_types"]
         assert "type" in body["reserved_entity_paths"]
-        assert body["bindings"]["select"] == ["entity", "connection"]
+        # The plural the domain declares and the write path stores; the singular this asserted
+        # was a third spelling that no producer used.
+        assert body["bindings"]["select"] == ["entities", "connections"]
         assert "entity-id" in body["parameters"]["types"]
         assert body["derived"]["certainty"] == ["certain", "potential"]
         assert body["connection_derivation"]["archimate-realization"]["role"] == "structural"
@@ -156,6 +158,38 @@ class TestCreate:
         entry = next(e for e in listed["viewpoints"] if e["slug"] == "test-viewpoint")
         assert entry["tier"] == "engagement"
         assert entry["name"] == "Test Viewpoint"
+
+
+    def test_a_definition_with_a_binding_is_readable_after_it_is_written(self, client) -> None:
+        """Whatever the write stores, the list must be able to serve.
+
+        The response contract declared ``select`` as ``entity``/``connection``; the domain and the
+        write path use ``entities``/``connections``. So the first definition saved with a binding
+        made ``GET /api/viewpoints`` answer 500 — not for that definition, for *every* caller, and
+        for as long as it stayed in the catalogue. Every unit test around bindings passed: none of
+        them listed one back through the response model.
+        """
+        definition = {
+            **_MINIMAL_DEFINITION,
+            "query": {
+                "query_schema": 1,
+                "entity_criteria": {"kind": "group", "conjunction": "and", "children": []},
+                "bindings": [{
+                    "name": "critical-processes",
+                    "result_type": "entities[]",
+                    "select": "entities",
+                    "criteria": {"kind": "group", "conjunction": "and", "children": []},
+                }],
+            },
+        }
+        created = client.post("/api/viewpoints", json={"definition": definition, "dry_run": False})
+        assert created.json()["ok"] is True, created.json()
+
+        listed = client.get("/api/viewpoints")
+
+        assert listed.status_code == 200, listed.text
+        entry = next(e for e in listed.json()["viewpoints"] if e["slug"] == "test-viewpoint")
+        assert entry["query"]["bindings"][0]["select"] == "entities"
 
 
 class TestEdit:

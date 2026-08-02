@@ -64,11 +64,21 @@ export function useWitnessChain(svc: WitnessChainReadAccess) {
     viaConnectionIds: readonly string[],
   ): Promise<void> => {
     loading.value = true
-    const connectionById = await resolveChainConnections(sourceEntityId, targetEntityId, viaConnectionIds)
-    const steps = walkWitnessChain(sourceEntityId, viaConnectionIds, connectionById)
-    segments.value = witnessChainProse(steps)
-    broken.value = steps.length < viaConnectionIds.length
-    loading.value = false
+    try {
+      const connectionById = await resolveChainConnections(sourceEntityId, targetEntityId, viaConnectionIds)
+      const steps = walkWitnessChain(sourceEntityId, viaConnectionIds, connectionById)
+      segments.value = witnessChainProse(steps)
+      broken.value = steps.length < viaConnectionIds.length
+    } catch {
+      // A chain that could not be read is the same outcome as one that could not be reconstructed:
+      // unavailable, and said so. Without this the rejection escaped, `loading` was never cleared,
+      // and the dialog sat on "Loading witness chain…" for as long as it stayed open — the one
+      // state that tells a reader nothing and never resolves.
+      segments.value = []
+      broken.value = true
+    } finally {
+      loading.value = false
+    }
   }
 
   const clear = (): void => {

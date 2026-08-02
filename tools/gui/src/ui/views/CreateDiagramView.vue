@@ -13,6 +13,7 @@ import EntityPickerInput from '../components/EntityPickerInput.vue'
 import DiagramTypeSelect from '../components/DiagramTypeSelect.vue'
 import DiagramTypeConfigPanel from '../components/DiagramTypeConfigPanel.vue'
 import PreviewViewport from '../components/PreviewViewport.vue'
+import DerivedEntityChecklist from '../components/DerivedEntityChecklist.vue'
 import ArchimateOccurrenceControls from '../components/ArchimateOccurrenceControls.vue'
 import ViewpointSelect from '../components/ViewpointSelect.vue'
 import { findViewpointBySlug } from '../components/ViewpointSelect.helpers'
@@ -482,40 +483,12 @@ watch(diagramType, () => {
             </ul>
           </div>
           <!-- Derived entity checklist (model-backed C4) -->
-          <template v-if="preview.derived_entities !== null && preview.derived_entities !== undefined">
-            <div
-              v-if="preview.derived_entities.length === 0"
-              class="derived-empty"
-            >
-              No external connections found — consider a C4 Container diagram instead.
-            </div>
-            <div
-              v-else
-              class="derived-list"
-            >
-              <div class="derived-hdr">
-                {{ preview.derived_entities.length }} entities auto-derived
-                <span
-                  v-if="excludedEntityIds.size"
-                  class="derived-excluded-badge"
-                >{{ excludedEntityIds.size }} excluded</span>
-                — uncheck to exclude, then re-preview:
-              </div>
-              <label
-                v-for="item in preview.derived_entities"
-                :key="item.id"
-                class="derived-item"
-              >
-                <input
-                  type="checkbox"
-                  :checked="!excludedEntityIds.has(item.id)"
-                  @change="toggleExclusion(item.id)"
-                >
-                <span class="derived-name">{{ item.name }}</span>
-                <span class="derived-type">{{ item.item_type }}</span>
-              </label>
-            </div>
-          </template>
+          <DerivedEntityChecklist
+            v-if="preview.derived_entities !== null && preview.derived_entities !== undefined"
+            :derived="preview.derived_entities"
+            :excluded-ids="excludedEntityIds"
+            @toggle="toggleExclusion"
+          />
 
           <button
             class="toggle-src"
@@ -565,12 +538,4 @@ watch(diagramType, () => {
 .toggle-src:hover { text-decoration: underline; }
 .puml-src { font-size: 11px; font-family: monospace; white-space: pre-wrap; margin-top: 8px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 10px; max-height: 400px; overflow-y: auto; }
 .render-warnings { margin: 6px 0 0 0; padding-left: 18px; font-size: 12px; color: #b45309; }
-.derived-empty { margin-top: 10px; font-size: 12px; color: #b45309; padding: 8px 10px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; }
-.derived-list { margin-top: 10px; border: 1px solid #e5e7eb; border-radius: 6px; padding: 8px 10px; background: #f9fafb; }
-.derived-hdr { font-size: 11px; font-weight: 600; color: #374151; margin-bottom: 6px; }
-.derived-excluded-badge { background: #fee2e2; color: #b91c1c; border-radius: 3px; padding: 1px 5px; font-size: 10px; margin-left: 4px; }
-.derived-item { display: flex; align-items: center; gap: 6px; padding: 3px 0; cursor: pointer; font-size: 12px; }
-.derived-item input[type=checkbox] { cursor: pointer; }
-.derived-name { color: #1e293b; font-weight: 500; }
-.derived-type { color: #9ca3af; font-size: 11px; }
 </style>

@@ -17,10 +17,13 @@ import { failureGuidewordLabel } from '../lib/failureGuidewords'
 import {
   FMEA_STEPS,
   firstIncompleteStep,
+  fmeaMatrixAnalysisId,
   relationSatisfied,
   remainingGuidewords,
 } from './AssuranceFmeaWizard.helpers'
 import type { WizardEdge, WizardNode } from './AssuranceFmeaWizard.helpers'
+import { ASSURANCE_BROWSE_PATH } from '../router/assuranceRoutes'
+import { assuranceAnalysisMethodRoute } from '../router/artifactRoutes'
 
 const stepKey = ref('component')
 const nodes = ref<WizardNode[]>([])
@@ -31,6 +34,13 @@ const locked = ref(false)
 const step = computed(() => FMEA_STEPS.find((s) => s.key === stepKey.value) ?? FMEA_STEPS[0])
 const remaining = computed(() => remainingGuidewords(nodes.value))
 const failureModes = computed(() => nodes.value.filter((n) => n.node_type === 'failure-mode'))
+
+// The matrix is scoped to an analysis since 0.2.0. Falls back to browse when the recorded modes
+// name no single one — the list is a true answer where an arbitrary matrix would be a wrong one.
+const matrixRoute = computed(() => {
+  const analysisId = fmeaMatrixAnalysisId(nodes.value)
+  return analysisId === null ? ASSURANCE_BROWSE_PATH : assuranceAnalysisMethodRoute(analysisId, 'fmea')
+})
 
 const relationTargets = computed(() => {
   const wanted = step.value.relation?.targetType
@@ -151,7 +161,7 @@ watch(step, (s) => { void loadGuidance(s.guidanceTopic) })
           Severity and detectability are derived from what you linked in the previous steps.
           Occurrence is asked for only where it could change the priority — many rows need no
           numeric input at all. Record factors on the
-          <RouterLink to="/assurance/fmea">
+          <RouterLink :to="matrixRoute">
             matrix
           </RouterLink>, where each row shows what it still needs.
         </p>
@@ -163,7 +173,7 @@ watch(step, (s) => { void loadGuidance(s.guidanceTopic) })
       >
         <p>
           {{ failureModes.length }} failure mode(s) recorded. The
-          <RouterLink to="/assurance/fmea">
+          <RouterLink :to="matrixRoute">
             matrix
           </RouterLink>
           is where they are reviewed and rated from here on.

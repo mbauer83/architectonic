@@ -75,12 +75,19 @@ export const missingRequiredParameters = (
  * expects — `entity-id`/`string`/`slug` pass through as strings (an artifact id is a
  * string), `integer`/`number` parse numerically, `boolean` from a checkbox's own
  * true/false string, `date` stays an ISO date string (the wire format already used
- * elsewhere in this codebase). Non-numeric numeric input yields `null` (caller's own
+ * elsewhere in this codebase). Input the type cannot represent yields `null` (caller's own
  * required-field check already prevents submitting an empty one; a malformed one is
  * caught by save-mode... execution-mode validation server-side, never silently coerced
- * to 0). */
+ * to 0).
+ *
+ * A boolean obeys that same rule. It used to read `raw === 'true'`, which is right for a
+ * checkbox and wrong for the other producer of these drafts: a `?param.` URL carries
+ * arbitrary text, so a shared link with `gaps_only=maybe` became `false` and rendered a
+ * DIFFERENT, plausible result instead of reporting the value it could not honour. */
+const BOOLEAN_DRAFT_VALUES = new Map<string, boolean>([['true', true], ['false', false]])
+
 export const coerceParameterValue = (valueType: ParameterValueType, raw: string): unknown => {
-  if (valueType === 'boolean') return raw === 'true'
+  if (valueType === 'boolean') return BOOLEAN_DRAFT_VALUES.get(raw) ?? null
   if (valueType === 'integer') {
     const parsed = Number.parseInt(raw, 10)
     return Number.isNaN(parsed) ? null : parsed

@@ -411,3 +411,48 @@ class TestDiagramRefs:
         r = sync_client.get("/api/diagram-refs?source_id=REQ@9.ZZZ.x&target_id=REQ@9.ZZZ.y")
         assert r.status_code == 200
         assert r.json()["items"] == []
+
+
+# ── POST /api/diagrams/preview ────────────────────────────────────────────────
+
+
+class TestPreviewRejectsAnUnusableSelection:
+    """A selection the diagram type cannot draw is a rejected input, not a broken server.
+
+    The C4 resolver refused a scope entity the repository does not hold with a plain
+    ``ValueError``; nothing caught it, so it reached ``unhandled_exception_handler`` and became a
+    500 whose body deliberately carries none of the exception text. The caller — who had supplied
+    a scope id of the wrong type, or a stale one — was told the server was broken, and the only
+    statement of what was actually wrong stayed in the log.
+    """
+
+    def test_a_missing_c4_scope_entity_is_a_400_naming_the_input(self, sync_client) -> None:
+        r = sync_client.post("/api/diagrams/preview", json={
+            "diagram_type": "c4-system-context",
+            "name": "Preview With A Scope That Is Not There",
+            "entity_ids": [],
+            "connection_ids": [],
+            "diagram_entities": {"_scope_entity_id": "APP@9999999999.ZZZZZZ.no-such-system"},
+        })
+
+        assert r.status_code == 400, r.text
+        detail = r.json()["detail"]
+        assert detail["code"] == "validation_error"
+        # The field a client highlights, and the sentence the resolver actually produced.
+        fields = [error["field"] for error in detail["details"]["field_errors"]]
+        assert fields == ["diagram_entities"]
+        assert "no-such-system" in detail["message"]
+
+    def test_a_standalone_c4_with_no_scope_type_item_is_also_a_400(self, sync_client) -> None:
+        # The other selection C4 refuses: no `_scope_entity_id`, and nothing of the scope type
+        # among the diagram's own entities. Same class of mistake, same answer.
+        r = sync_client.post("/api/diagrams/preview", json={
+            "diagram_type": "c4-system-context",
+            "name": "Standalone With No System",
+            "entity_ids": [],
+            "connection_ids": [],
+            "diagram_entities": {"person": [{"id": "p1", "label": "An Analyst"}]},
+        })
+
+        assert r.status_code == 400, r.text
+        assert r.json()["detail"]["code"] == "validation_error"

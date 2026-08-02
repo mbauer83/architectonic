@@ -36,6 +36,7 @@ from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.assurance.signal_attribute_capability import (
     composed_signal_attribute_capability,
 )
+from src.infrastructure.mcp import execution_failure as failures
 from src.infrastructure.mcp.artifact_mcp.context import (
     RepoScope,
     repo_cached,
@@ -163,16 +164,14 @@ def register_query_viewpoint_tools(mcp: FastMCP) -> None:
             )
         except UnknownViewpointSlugError as exc:
             raise ValueError(str(exc)) from exc
+        # MCP answers in-band — `{"error": {code, path, message}}`, no HTTP envelope — but with the
+        # SAME codes REST returns. See `mcp.execution_failure`.
         except ViewpointParameterError as exc:
-            return {"error": {"code": exc.code, "path": f"parameters/{exc.parameter}", "message": str(exc)}}
+            return failures.rejected_parameter(exc)
         except BindingCardinalityError as exc:
-            # MCP answers in-band with its own `{"error": {code, path, message}}` shape; it is not the
-            # REST envelope and is not changed here. The code is named rather than read off the
-            # exception, which no longer advertises one — REST carries the binding, expectation and
-            # count as typed `details` instead of relying on a class attribute.
-            return {"error": {"code": "binding-cardinality-violation", "path": "query", "message": str(exc)}}
+            return failures.binding_cardinality(exc)
         except DerivationLimitError as exc:
-            return {"error": {"code": "derivation-limit", "path": "query", "message": str(exc)}}
+            return failures.traversal_budget_exceeded(str(exc))
         except ViewpointExecutionTimeoutError as exc:
-            return {"error": {"code": "execution-timeout", "path": "query", "message": str(exc)}}
+            return failures.traversal_budget_exceeded(str(exc))
         return asdict(result)

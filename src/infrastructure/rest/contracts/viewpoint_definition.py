@@ -42,7 +42,11 @@ class QueryBindingSpec(NullsOmitted):
     #: A type *expression* rather than a closed vocabulary — ``entity[type-slug]``,
     #: ``list[result-type]`` and ``tuple[result-type, ...]`` are grammar with holes in them.
     result_type: str
-    select: Literal["entity", "connection"] | None = None
+    #: ``entities``/``connections``, the plural the domain's ``BindingSelect`` uses and the write
+    #: path stores. The singular was declared here and never produced: the first definition saved
+    #: with a binding made ``GET /api/viewpoints`` answer 500 for *every* caller — one write, and
+    #: the whole catalogue unreadable — because the response model rejected the stored value.
+    select: Literal["entities", "connections"] | None = None
     criteria: EntityCriteriaGroupNode | ConnectionCriteriaGroupNode | None = None
     project: str | None = None
     aggregate: AggregateKind | None = None

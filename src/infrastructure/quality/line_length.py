@@ -154,7 +154,7 @@ LINE_LENGTH_BASELINE: dict[str, int] = {
     "tools/gui/src/ui/lib/viewpointExecutionErrorText.ts": 2,
     "tools/gui/src/ui/lib/viewpointExecutionParameters.ts": 1,
     "tools/gui/src/ui/lib/viewpointUrlState.ts": 1,
-    "tools/gui/src/ui/router/index.ts": 5,
+
     "tools/gui/src/ui/views/AssuranceAibomPanel.vue": 5,
     "tools/gui/src/ui/views/AssuranceBaselinesView.vue": 3,
     "tools/gui/src/ui/views/AssuranceCastWizard.helpers.ts": 1,

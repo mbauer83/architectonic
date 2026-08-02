@@ -91,6 +91,15 @@ describe('coerceParameterValue', () => {
     expect(coerceParameterValue('boolean', 'false')).toBe(false)
   })
 
+  it('yields null for a boolean the type cannot represent rather than silently reading it as false', () => {
+    // A `?param.` URL carries arbitrary text. `raw === 'true'` turned every unrecognised value
+    // into `false`, so a shared link with a corrupt value rendered a different, plausible
+    // result; null reaches the server, which rejects it as a parameter-type-mismatch.
+    expect(coerceParameterValue('boolean', 'maybe')).toBeNull()
+    expect(coerceParameterValue('boolean', 'TRUE')).toBeNull()
+    expect(coerceParameterValue('boolean', '1')).toBeNull()
+  })
+
   it('passes string/slug/entity-id/date through unchanged', () => {
     expect(coerceParameterValue('string', 'hello')).toBe('hello')
     expect(coerceParameterValue('slug', 'my-slug')).toBe('my-slug')

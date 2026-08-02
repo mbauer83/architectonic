@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AssuranceNodeDetail from '../components/AssuranceNodeDetail.vue'
+import { assuranceNodeDetailRoute } from '../router/artifactRoutes'
 import AssuranceNodeForm from './AssuranceNodeForm.vue'
 import type { AssuranceNodeFormData } from './AssuranceNodeForm.vue'
 import AssuranceEdgePicker from '../components/AssuranceEdgePicker.vue'
@@ -127,7 +128,7 @@ async function loadNodes() {
  * always worked this way: the table stays whole and `/entity` is its own page.
  */
 function selectNode(nodeId: string) {
-  void router.push({ path: `/assurance/node/${nodeId}` })
+  void router.push(assuranceNodeDetailRoute(nodeId))
 }
 
 function closePanel() {
@@ -277,7 +278,7 @@ onMounted(() => {
   // send the reader there rather than silently ignoring the parameter.
   const qNodeId = route.query['node_id']
   if (typeof qNodeId === 'string' && qNodeId) {
-    void router.replace({ path: `/assurance/node/${qNodeId}` })
+    void router.replace(assuranceNodeDetailRoute(qNodeId))
     return
   }
   void loadNodes()

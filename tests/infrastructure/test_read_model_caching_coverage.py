@@ -21,6 +21,7 @@ The safety argument has two parts, and this module tests both.
 from __future__ import annotations
 
 from pathlib import Path
+from urllib.parse import quote
 
 import pytest
 
@@ -28,6 +29,7 @@ from src.application.artifacts.query import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.backend.read_model_caching import _entity_tag, _is_cacheable
 from src.infrastructure.mcp import mcp_artifact_server as mcp
+from src.infrastructure.rest.route_policy import CONDITIONAL_READ_TEMPLATES
 from src.infrastructure.rest.routers import state as gui_state
 from tests.support.api_app import build_api_app
 
@@ -50,6 +52,13 @@ def repo(tmp_path: Path):  # type: ignore[no-untyped-def]
     (root / "model").mkdir(parents=True)
     (root / "diagram-catalog" / "diagrams").mkdir(parents=True)
     (root / "docs").mkdir(parents=True)
+    # A document type, so the walk below can address a document. Declared by the repository, not
+    # shipped by the product: without one, `POST /api/documents` has no schema to validate against.
+    (root / ".arch-repo" / "documents").mkdir(parents=True)
+    (root / ".arch-repo" / "documents" / "adr.json").write_text(
+        '{"abbreviation": "ADR", "required_sections": ["Context", "Decision", "Consequences"]}',
+        encoding="utf-8",
+    )
     index = shared_artifact_index([root])
     index.refresh()
     gui_state.init_state(ArtifactRepository(index), root, None)
@@ -224,6 +233,99 @@ class TestEndToEndThroughHttp:
         other = client.get("/api/entities?domain=motivation", headers={"If-None-Match": tag})
 
         assert other.status_code == 200
+
+class TestEveryEligibleTemplateRevalidates:
+    """Each cache-eligible address answers 304 while nothing moved, and 200 once something did.
+
+    Driven from ``CONDITIONAL_READ_TEMPLATES`` — the manifest's own decision — rather than from a
+    list written here, so a route made eligible is covered by the fact of being made eligible. The
+    end-to-end chain used to be exercised for ``/api/entities`` alone, and five more templates
+    became eligible in 0.2.0 with nothing observing them through HTTP.
+
+    A wrong 304 is silent by construction: the client renders what it holds and never learns the
+    server moved on. That is why every eligible address is walked rather than a representative one.
+    """
+
+    def _client(self, root: Path):  # type: ignore[no-untyped-def]
+        from starlette.testclient import TestClient
+
+        from src.infrastructure.rest.routers.connections.router import router as connections_router
+        from src.infrastructure.rest.routers.diagrams.router import router as diagrams_router
+        from src.infrastructure.rest.routers.documents import router as documents_router
+        from src.infrastructure.rest.routers.entities.router import router as entities_router
+        from src.infrastructure.rest.routers.entities.search import router as entity_search_router
+
+        return TestClient(build_api_app(
+            entities_router, entity_search_router, connections_router, diagrams_router, documents_router,
+        ))
+
+    def _seed(self, client) -> dict[str, str]:  # type: ignore[no-untyped-def]
+        """One artifact of each kind an eligible template addresses, and its id."""
+        entity = client.post("/api/entities", json={
+            "artifact_type": "requirement", "name": "Cache Walk Requirement",
+            "summary": "S.", "dry_run": False,
+        }).json()
+        diagram = client.post("/api/diagrams", json={
+            "diagram_type": "archimate-motivation", "name": "Cache Walk Diagram",
+            "entity_ids": [entity["artifact_id"]], "connection_ids": [], "dry_run": False,
+        }).json()
+        document = client.post("/api/documents", json={
+            "doc_type": "adr", "title": "Cache Walk Decision", "dry_run": False,
+        }).json()
+        return {
+            "entity": str(entity["artifact_id"]),
+            "diagram": str(diagram["artifact_id"]),
+            "document": str(document["artifact_id"]),
+        }
+
+    @staticmethod
+    def _address(template: str, seeded: dict[str, str]) -> str:
+        """A template with its identity filled in, or the collection address unchanged.
+
+        `/api/connections` and `/api/search` take their subject in the query, so they are addressed
+        the way a client addresses them rather than skipped — a read with a required parameter is
+        still a read whose validator has to move.
+        """
+        kind = ("diagram" if template.startswith("/api/diagrams")
+                else "document" if template.startswith("/api/documents")
+                else "entity")
+        filled = template.replace("{artifact_id}", quote(seeded[kind], safe=""))
+        if filled == "/api/connections":
+            return f"/api/connections?entity_id={quote(seeded['entity'], safe='')}"
+        if filled in {"/api/search", "/api/reference-search"}:
+            return f"{filled}?q=Cache"
+        return filled
+
+    def test_the_manifest_names_the_addresses_this_walk_covers(self) -> None:
+        # A frozenset that emptied would make the parametrised walk below vacuous.
+        assert len(CONDITIONAL_READ_TEMPLATES) > 5
+
+    @pytest.mark.parametrize("template", sorted(CONDITIONAL_READ_TEMPLATES))
+    def test_the_address_revalidates_and_a_write_makes_its_validator_stale(
+        self, repo, template: str,  # type: ignore[no-untyped-def]
+    ) -> None:
+        root, _index = repo
+        client = self._client(root)
+        seeded = self._seed(client)
+        address = self._address(template, seeded)
+
+        first = client.get(address)
+        assert first.status_code == 200, f"{address}: {first.text}"
+        tag = first.headers.get("ETag")
+        assert tag, f"{address} is cache-eligible and served no ETag"
+
+        unchanged = client.get(address, headers={"If-None-Match": tag})
+        assert unchanged.status_code == 304, f"{address} did not revalidate against its own tag"
+
+        client.post("/api/entities", json={
+            "artifact_type": "requirement", "name": "Cache Walk Invalidator",
+            "summary": "S.", "dry_run": False,
+        })
+
+        after = client.get(address, headers={"If-None-Match": tag})
+        assert after.status_code == 200, f"{address} told a client holding the pre-write answer it was current"
+        assert after.headers.get("ETag") != tag
+
 
 class TestTheIncrementalDoorNoticesEveryKind:
     """`apply_file_changes` is the path a live write and the watcher both take.

@@ -36,7 +36,8 @@ test.describe('shipped default executes non-empty', () => {
 test.describe('a non-exploration definition redirects off the graph explorer', () => {
   test('selecting a diagram-representation viewpoint on /graph redirects to the diagram surface', async ({ page }) => {
     await page.goto('/graph?viewpoint=application-structure')
-    await expect(page).toHaveURL(/\/viewpoints\/diagram\?viewpoint=application-structure/)
+    // Identity in the path since 0.2.0: `/viewpoints/{slug}/diagram`, not `?viewpoint=`.
+    await expect(page).toHaveURL(/\/viewpoints\/application-structure\/diagram$/)
     await expect(page.getByRole('heading', { name: /Application Structure \(application-structure\) — diagram/ })).toBeVisible()
   })
 })
@@ -60,12 +61,10 @@ test.describe('parameterized execution prompts typed inputs', () => {
   })
 })
 
-// Every typed execution error code (missing-parameter, parameter-type-mismatch,
-// execution-timeout, derivation-limit, binding-cardinality-violation) has its own per-code
-// display text unit-tested in viewpointExecutionErrorText.test.ts, and its REST
-// {code, path, message} payload shape proven identical across all four execution routes in
-// the backend's TestTypedExecutionErrors suite. The test below covers the one thing those
-// unit tests can't: what actually renders on screen when a real execution call fails.
+// Every typed execution error code has its own per-code display text unit-tested in
+// viewpointExecutionErrorText.test.ts, against the published error envelope. The tests below
+// cover the one thing that unit test cannot: what actually renders on screen when an
+// execution call fails.
 
 test.describe('execution failure does not show a misleading empty-result state', () => {
   test('a failed execution shows only the error banner, never the "no entities matched" diagnostics text', async ({ page }) => {
@@ -81,15 +80,56 @@ test.describe('execution failure does not show a misleading empty-result state',
   })
 })
 
-// Each typed execution error code renders its own distinct, actionable title — not the
-// generic "Execution failed" fallback the network-abort test above exercises. The per-code
-// prose itself is unit-tested in viewpointExecutionErrorText.test.ts; this proves each code
-// actually reaches the screen through a real (mocked) execution round-trip.
+// A rejected parameter, refused by the REAL backend and rendered by the REAL client.
+//
+// This is the case the mocked block below cannot be trusted for, and the reason it exists: for a
+// whole release the mocked tests injected a `{code, path, message}` body the wire never carried,
+// so all four passed while the surface they claim to cover was unreachable and a raw JSON envelope
+// reached the screen. Mocking the producer proves only that the client is self-consistent.
+//
+// `motivation-coverage` declares a boolean parameter, and a `?param.` URL always carries a string,
+// so `gaps_only=maybe` is a rejection the backend genuinely produces — no interception anywhere.
+test.describe('a parameter the backend rejects reaches the screen as its own state', () => {
+  test('a wrong-typed URL parameter renders the typed banner, not a JSON blob', async ({ page }) => {
+    await page.goto('/entities?viewpoint=motivation-coverage&param.gaps_only=maybe')
+    await expect(page.getByText('A parameter was not accepted')).toBeVisible({ timeout: 15000 })
+    await expect(page.getByText(/parameter: gaps_only/)).toBeVisible()
+    // The regression this whole surface exists for: the raw envelope on screen.
+    await expect(page.getByText(/"request_id"|"field_errors"/)).toHaveCount(0)
+  })
+})
+
+// Each typed execution error code renders its own distinct, actionable title — not the generic
+// "Execution failed" fallback the network-abort test above exercises. The per-code prose itself is
+// unit-tested in viewpointExecutionErrorText.test.ts; these prove the code reaches the screen
+// through an execution round-trip.
+//
+// The codes below are ones a shipped definition cannot be made to produce on demand (a budget
+// overrun, a binding that resolves to the wrong count), so they are injected — but the shape of
+// every injected body is first checked against a refusal the REAL backend produced, in beforeAll.
+// A mock the server could not have sent is a mock of nothing, and that is exactly what the
+// previous version of this block was: it injected `{code, path, message}`, a body no route has
+// ever returned. The e2e specs are their own TypeScript program, so the published schema cannot
+// be imported here — asking the producer is both available and stronger.
 test.describe('each typed execution error renders its own distinct, actionable state', () => {
+  let wireKeys: readonly string[] = []
+
+  test.beforeAll(async ({ request }) => {
+    const response = await request.post('/api/viewpoints/execute', {
+      data: { slug: 'motivation-coverage', parameters: { gaps_only: 'maybe' } },
+    })
+    expect(response.status()).toBe(400)
+    const body = await response.json() as { detail: Record<string, unknown> }
+    wireKeys = Object.keys(body.detail).sort()
+    expect(wireKeys).toEqual(['code', 'details', 'message', 'request_id'])
+  })
+
   const runWithTypedError = async (
     page: import('@playwright/test').Page,
-    detail: { code: string; path: string; message: string },
+    detail: Record<string, unknown>,
   ) => {
+    expect(Object.keys(detail).sort(), 'the injected body is not shaped like one the server sends')
+      .toEqual(wireKeys)
     const body = JSON.stringify({ detail })
     await page.route('**/api/viewpoints/execute', (route) => route.fulfill({ status: 400, contentType: 'application/json', body }))
     await page.route('**/api/viewpoints/execute-projection', (route) => route.fulfill({ status: 400, contentType: 'application/json', body }))
@@ -100,23 +140,61 @@ test.describe('each typed execution error renders its own distinct, actionable s
     await page.getByRole('button', { name: 'Run' }).click()
   }
 
-  test('execution-timeout', async ({ page }) => {
-    await runWithTypedError(page, { code: 'execution-timeout', path: 'query', message: 'Execution exceeded the time budget.' })
-    await expect(page.getByText('This took too long to execute')).toBeVisible()
+  //: `request_id` is required by `ErrorBody`, so a body omitting it does not decode and the banner
+  //: silently falls back to the generic message.
+  const REQUEST_ID = '00000000000000000000000000000000'
+
+  test('traversal_time_budget_exceeded', async ({ page }) => {
+    await runWithTypedError(page, {
+      code: 'traversal_time_budget_exceeded',
+      message: 'The traversal exceeded its time budget.',
+      details: null,
+      request_id: REQUEST_ID,
+    })
+    await expect(page.getByText('The traversal exceeded its budget')).toBeVisible()
+    await expect(page.getByText(/Narrow the query/)).toBeVisible()
   })
 
-  test('derivation-limit', async ({ page }) => {
-    await runWithTypedError(page, { code: 'derivation-limit', path: 'query', message: 'Too many relationships to derive.' })
-    await expect(page.getByText('Derived-relationship traversal limit exceeded')).toBeVisible()
-  })
-
-  test('binding-cardinality-violation', async ({ page }) => {
-    await runWithTypedError(page, { code: 'binding-cardinality-violation', path: 'query/bindings/0', message: 'Expected exactly one match, found 3.' })
+  test('binding_cardinality_violation', async ({ page }) => {
+    await runWithTypedError(page, {
+      code: 'binding_cardinality_violation',
+      message: 'A binding resolved to the wrong number of items.',
+      details: { binding: 'anchor', expected: 'exactly one', found: 3 },
+      request_id: REQUEST_ID,
+    })
     await expect(page.getByText('A binding matched the wrong number of items')).toBeVisible()
+    // The binding name is the actionable part — a query may declare several.
+    await expect(page.getByText(/Binding “anchor” declared exactly one and resolved to 3/)).toBeVisible()
   })
 
-  test('parameter-type-mismatch', async ({ page }) => {
-    await runWithTypedError(page, { code: 'parameter-type-mismatch', path: 'parameters/anchor', message: 'Expected an entity id.' })
-    await expect(page.getByText("Parameter value doesn't match its type")).toBeVisible()
+  test('validation_error naming the query', async ({ page }) => {
+    await runWithTypedError(page, {
+      code: 'validation_error',
+      message: 'query: unknown key(s).',
+      details: { field_errors: [{ field: 'query', message: 'query: unknown key(s).' }] },
+      request_id: REQUEST_ID,
+    })
+    await expect(page.getByText('That query was not accepted')).toBeVisible()
+  })
+
+  test('validation_error naming the presentation', async ({ page }) => {
+    await runWithTypedError(page, {
+      code: 'validation_error',
+      message: 'presentation: unknown column source.',
+      details: { field_errors: [{ field: 'presentation', message: 'presentation: unknown column source.' }] },
+      request_id: REQUEST_ID,
+    })
+    await expect(page.getByText('That presentation was not accepted')).toBeVisible()
+  })
+
+  test('an unrecognized code falls back to the generic banner rather than a JSON blob', async ({ page }) => {
+    await runWithTypedError(page, {
+      code: 'conflict',
+      message: 'Something the client has no per-code state for.',
+      details: null,
+      request_id: REQUEST_ID,
+    })
+    await expect(page.getByText('Execution failed')).toBeVisible()
+    await expect(page.getByText('Something the client has no per-code state for.')).toBeVisible()
   })
 })

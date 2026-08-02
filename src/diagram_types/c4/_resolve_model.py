@@ -14,6 +14,7 @@ from src.diagram_types.c4._c4_types import (
     _ResolvedItem,
     _ResolvedState,
 )
+from src.domain.diagrams.diagram_selection import DiagramSelectionError
 
 
 def _short_description(entity: Any) -> str:
@@ -66,7 +67,7 @@ def resolve_model_backed(
     query = shared_artifact_index([repo_root])
     scope_entity = query.get_entity(scope_entity_id)
     if scope_entity is None:
-        raise ValueError(f"{diagram_type!r}: scope entity {scope_entity_id!r} not found")
+        raise DiagramSelectionError(f"{diagram_type!r}: scope entity {scope_entity_id!r} not found")
 
     projection = project_c4(
         diagram_type, scope_entity_id, query,

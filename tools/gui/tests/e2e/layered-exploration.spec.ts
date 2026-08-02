@@ -43,7 +43,16 @@ const executionResult = (overrides: Partial<Record<string, unknown>> = {}) => ({
   query_summary: 'mocked', ...overrides,
 })
 
-const projectionResult = () => ({ applied: true, target: 'repository', items: [], warnings: [] })
+/**
+ * The styling projection is left to the real backend.
+ *
+ * It was a four-key literal, and `ViewpointProjectionSchema` has since grown `index_generation`,
+ * `stale_pin`, `scale_legends` and `rule_outcomes`. The decode then failed, `execute` and
+ * `execute-projection` are awaited together, and the rejection took the whole render down — so
+ * every test here rendered nothing while asserting the mock it had written. Nothing in this file
+ * asserts styling, so the honest fixture is the server's own answer: a mock of a shape no test
+ * reads is only a shape to keep up to date.
+ */
 
 test.describe('layered view: quality flow', () => {
   test('selecting a root by name/id renders only the selected element plus its indirectly connected technology neighbor, and a derived arrow shows witness-chain prose with clickable entity links', async ({ page }) => {
@@ -58,31 +67,44 @@ test.describe('layered view: quality flow', () => {
         subdomain: '', status: 'active', display_alias: 'Root Process', element_type: 'process', element_label: 'Process',
       } }))
     await page.route('**/api/viewpoints/execute', (route) => route.fulfill({ json: executionResult() }))
-    await page.route('**/api/viewpoints/execute-projection', (route) => route.fulfill({ json: projectionResult() }))
     // `{ items: [...] }`, not a bare array: the collection read answers with the house envelope, and
     // `ConnectionListResponseSchema` decodes that. A bare array fails the decode, the witness chain
     // comes back empty, and the only symptom is a dialog with no links in it.
+    //
+    // `specializations`, `metadata` and `associated_entities` are required by that decoder and were
+    // absent here, so every record was rejected — the dialog then sat on "Loading witness chain…"
+    // indefinitely. Spelled once, so a field added to the record is added in one place.
+    const record = (fields: Record<string, unknown>) => ({
+      version: '1', status: 'active', path: '', content_text: '',
+      specializations: [], metadata: {}, associated_entities: [], ...fields,
+    })
     const connectionList = (...items: unknown[]) => ({ json: { items } })
-    const TECH_TO_HOP_ONE = {
+    const TECH_TO_HOP_ONE = record({
       artifact_id: CONN_A, source: TECH_ID, target: 'ENT@test.hop1', conn_type: 'archimate-serving',
-      version: '1', status: 'active', path: '', content_text: '', source_name: 'Tech Node', target_name: 'Hop One',
-    }
-    const HOP_ONE_TO_HOP_TWO = {
+      source_name: 'Tech Node', target_name: 'Hop One',
+    })
+    const HOP_ONE_TO_HOP_TWO = record({
       artifact_id: CONN_B, source: 'ENT@test.hop1', target: 'ENT@test.hop2', conn_type: 'archimate-composition',
-      version: '1', status: 'active', path: '', content_text: '', source_name: 'Hop One', target_name: 'Hop Two',
-    }
-    const HOP_TWO_TO_ROOT = {
+      source_name: 'Hop One', target_name: 'Hop Two',
+    })
+    const HOP_TWO_TO_ROOT = record({
       artifact_id: CONN_C, source: 'ENT@test.hop2', target: ROOT_ID, conn_type: 'archimate-association',
-      version: '1', status: 'active', path: '', content_text: '', source_name: 'Hop Two', target_name: 'Root Process',
+      source_name: 'Hop Two', target_name: 'Root Process',
+    })
+    // Matched by reading the parsed query rather than by a URL glob. A glob has to spell the
+    // percent-encoding of an artifact id and the order of the other parameters, and when it stops
+    // matching the request falls through to the real backend and answers about a different entity —
+    // which surfaces only as a dialog with no links in it, several assertions later.
+    const connectionsFor: Record<string, unknown[]> = {
+      [TECH_ID]: [TECH_TO_HOP_ONE],
+      'ENT@test.hop1': [TECH_TO_HOP_ONE, HOP_ONE_TO_HOP_TWO],
+      'ENT@test.hop2': [HOP_ONE_TO_HOP_TWO, HOP_TWO_TO_ROOT],
+      [ROOT_ID]: [HOP_TWO_TO_ROOT],
     }
-    await page.route(`**/api/connections?entity_id=${encodeURIComponent(TECH_ID)}*`, (route) =>
-      route.fulfill(connectionList(TECH_TO_HOP_ONE)))
-    await page.route(`**/api/connections?entity_id=${encodeURIComponent('ENT@test.hop1')}*`, (route) =>
-      route.fulfill(connectionList(TECH_TO_HOP_ONE, HOP_ONE_TO_HOP_TWO)))
-    await page.route(`**/api/connections?entity_id=${encodeURIComponent('ENT@test.hop2')}*`, (route) =>
-      route.fulfill(connectionList(HOP_ONE_TO_HOP_TWO, HOP_TWO_TO_ROOT)))
-    await page.route(`**/api/connections?entity_id=${encodeURIComponent(ROOT_ID)}*`, (route) =>
-      route.fulfill(connectionList(HOP_TWO_TO_ROOT)))
+    await page.route('**/api/connections?*', (route) => {
+      const entityId = new URL(route.request().url()).searchParams.get('entity_id') ?? ''
+      return route.fulfill(connectionList(...(connectionsFor[entityId] ?? [])))
+    })
 
     await page.goto('/graph/layered')
     await expect(page.getByRole('heading', { name: 'Build a layered view' })).toBeVisible()
@@ -112,7 +134,6 @@ test.describe('layered view: quality flow', () => {
 
   test('selecting roots by criteria (instead of by name/id) reaches the same execution path', async ({ page }) => {
     await page.route('**/api/viewpoints/execute', (route) => route.fulfill({ json: executionResult() }))
-    await page.route('**/api/viewpoints/execute-projection', (route) => route.fulfill({ json: projectionResult() }))
 
     await page.goto('/graph/layered')
     await page.getByRole('button', { name: 'By criteria' }).click()
@@ -139,7 +160,6 @@ test.describe('stale-finding review after a re-run', () => {
         : executionResult({ connections: [] })
       return route.fulfill({ json: result })
     })
-    await page.route('**/api/viewpoints/execute-projection', (route) => route.fulfill({ json: projectionResult() }))
 
     await page.goto('/graph/layered')
     await page.getByRole('button', { name: 'By criteria' }).click()
@@ -205,7 +225,6 @@ test.describe('motivation-support flow', () => {
         },
       ],
     }) }))
-    await page.route('**/api/viewpoints/execute-projection', (route) => route.fulfill({ json: projectionResult() }))
 
     await page.goto('/graph/layered')
     await page.getByRole('button', { name: 'Motivation support' }).click()
@@ -220,7 +239,10 @@ test.describe('motivation-support flow', () => {
     await page.getByRole('button', { name: 'Render' }).click()
 
     // All three domains' supporting elements render — not just whichever one domain a
-    // narrower fixture would have exercised.
+    // narrower fixture would have exercised. Awaited first: `allTextContents` does not retry, and
+    // reading it straight after the click raced the execution — invisibly, while the projection
+    // was a local mock, and visibly once it became a real request.
+    await expect(page.locator('.rendered-entities li')).toHaveCount(4)
     const renderedItems = await page.locator('.rendered-entities li').allTextContents()
     expect(renderedItems.sort()).toEqual([
       'A Goal', 'Supporting Application Service', 'Supporting Function', 'Supporting Process',

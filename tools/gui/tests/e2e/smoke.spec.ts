@@ -118,6 +118,17 @@ async function clickEntityNodeForDetail(page: Page, label: string): Promise<stri
   throw new Error(`${label}: no entity node click populated the detail sidebar (${count} candidates): ${String(lastErr)}`)
 }
 
+/**
+ * A link to one entity's own page, from the catalog's table.
+ *
+ * `main a[href*="/entities/"]` used to mean this and stopped: the sidebar's group cog
+ * (`/entities/groups`) and the "+ Create Entity" button (`/entities/new`) match it too, and both
+ * sit above the table. So the "click the first entity" walk below was clicking the cog and
+ * asserting the group page was healthy, and the empty-group test counted two chrome links as
+ * stale rows. Scoped to the table, which only ever holds entity rows.
+ */
+const entityRowLinks = (page: Page) => page.locator('main .table-card a[href*="/entities/"]')
+
 const STATIC_ROUTES = [
   '/',
   '/entities',
@@ -126,8 +137,11 @@ const STATIC_ROUTES = [
   '/documents',
   '/diagrams',
   '/viewpoints',
-  '/viewpoints/matrix',
-  '/viewpoints/diagram',
+  // Identity in the path since 0.2.0: the matrix and diagram surfaces are addressed by their
+  // definition. The bare `/viewpoints/matrix` and `/viewpoints/diagram` this list held until now
+  // stopped naming anything at that rename, and each rendered a blank page for a whole release.
+  '/viewpoints/motivation-coverage/matrix',
+  '/viewpoints/application-structure/diagram',
   // A viewpoint population large enough to aggregate: the exploration renders synthetic
   // cluster super-nodes alongside real entities, and anything that treats one as a
   // lookupable entity shows up here as a 404 the route-walk refuses.
@@ -140,19 +154,20 @@ const STATIC_ROUTES = [
   '/assurance/browse',
   '/assurance/graph',
   '/assurance/analyses',
-  '/assurance/stpa',
-  '/assurance/grc',
-  '/assurance/cast',
-  '/assurance/gsn',
+  // The create surface of each method, at its 0.2.0 address. The flat `/assurance/stpa` family
+  // this list held is gone — an analysis is in the path now — and each of those entries walked a
+  // route that matched nothing, so the walk certified a blank page as a clean render.
+  '/assurance/analyses/new/stpa',
+  '/assurance/analyses/new/grc',
+  '/assurance/analyses/new/cast',
+  '/assurance/analyses/new/gsn',
+  '/assurance/analyses/new/fmea',
   '/assurance/supply-chain',
   '/assurance/baselines',
-  '/assurance/fmea',
-  '/assurance/fmea/new',
+  // The FMEA matrix and a derived diagram are both scoped to an analysis, and the ids in this
+  // store are not knowable to a static list — the catalog page below is what a static walk can
+  // assert, and the populated cases are reached by clicking a card in it.
   '/assurance/diagrams',
-  // No `?analysis=…&type=…` here: a derived diagram is scoped to an analysis, and the ids in this
-  // store are not knowable to a static list. The unselected page has to render cleanly too, and the
-  // populated case is walked below by clicking a card in the catalog.
-  '/assurance/diagram',
   '/global/entities',
   '/global/diagrams',
 ]
@@ -177,7 +192,9 @@ test('assurance node deep link: unknown id renders the indistinguishable not-fou
     if (/Failed to load resource.*status of 404/.test(msg.text()) && msg.location().url.includes('/api/assurance/nodes/')) return
     problems.push({ kind: 'console.error', detail: msg.text() })
   })
-  await page.goto('/assurance/node/HAZ%40does-not-exist', { waitUntil: 'load' })
+  // `nodes`, plural — the 0.2.0 address. The singular path this test used matched no route at
+  // all, so it walked the blank page rather than the not-found state it is named for.
+  await page.goto('/assurance/nodes/HAZ%40does-not-exist', { waitUntil: 'load' })
   await page.waitForTimeout(1500)
   const main = page.locator('#app > main')
   await expect(main).toBeVisible()
@@ -191,7 +208,7 @@ test('assurance node deep link: unknown id renders the indistinguishable not-fou
 test('entity detail renders (exercises the ontology connection editor)', async ({ page }) => {
   const { problems } = watch(page)
   await page.goto('/entities', { waitUntil: 'load' })
-  const firstEntity = page.locator('main a[href*="/entities/"]').first()
+  const firstEntity = entityRowLinks(page).first()
   await firstEntity.waitFor({ timeout: 10000 })
   await firstEntity.click()
   await page.waitForTimeout(2000)
@@ -203,7 +220,7 @@ test('empty uncategorized group does not show stale ungrouped entities', async (
   await page.goto('/entities?group=uncategorized', { waitUntil: 'load' })
   await expect(page.getByRole('heading', { name: /Entities\s+\(0\)/ })).toBeVisible()
   await expect(page.getByText('No entities in "Uncategorized" yet.')).toBeVisible()
-  await expect(page.locator('main a[href*="/entities/"]')).toHaveCount(0)
+  await expect(entityRowLinks(page)).toHaveCount(0)
   await expectHealthyMain(page, problems)
 })
 
@@ -401,9 +418,11 @@ test('assurance-only diagrams are selectable on the unified surface', async ({ p
     await expect(page.locator('.fmea-table')).toBeVisible()
     const elementLink = page.locator('.fmea-table .fmea-element-link').first()
     await expect(elementLink).toBeVisible()
-    await expect(elementLink).toHaveAttribute('href', /\/entity\?id=/)
+    // `/entities/{id}` since 0.2.0 — identity in the path. The `/entity?id=` this asserted was
+    // retired with it, so the step could only ever have passed against the old surface.
+    await expect(elementLink).toHaveAttribute('href', /\/entities\//)
     await elementLink.click()
-    await expect(page).toHaveURL(/\/entity\?id=/)
+    await expect(page).toHaveURL(/\/entities\//)
     await expectHealthyMain(page, problems)
   })
   await expectHealthyMain(page, problems)

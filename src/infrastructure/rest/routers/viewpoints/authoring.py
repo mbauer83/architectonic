@@ -39,6 +39,7 @@ from src.domain.viewpoints.viewpoint_query_parsing import query_from_mapping
 from src.domain.viewpoints.viewpoint_scope_query import definition_with_scope_query
 from src.domain.viewpoints.viewpoint_serialization import viewpoint_definition_to_mapping
 from src.domain.viewpoints.viewpoint_summary import render_query_summary
+from src.domain.viewpoints.viewpoint_value_types import BINDING_SELECT_NAMES
 from src.domain.viewpoints.viewpoints import ViewpointCatalog, ViewpointDefinition
 from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
 from src.infrastructure.rest.contracts.viewpoint_catalogs import (
@@ -245,7 +246,7 @@ def get_criteria_catalog(catalogs: RuntimeCatalogs = Depends(runtime_catalogs_de
         "depth_cap": registries.depth_cap,
         "entity_type_domains": entity_type_domains,
         "bindings": {
-            "select": ["entity", "connection"],
+            "select": list(BINDING_SELECT_NAMES),
             "aggregate": ["count", "min", "max", "sum", "average", "first", "last"],
             "result_types": [
                 "entity[type-slug]", "connection[type-slug]", "entities[type-slug]", "connections[type-slug]",

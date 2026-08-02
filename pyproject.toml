@@ -31,7 +31,6 @@ dependencies = [
 
 
 [project.scripts]
-arch-gui-server = "src.infrastructure.gui.gui_server:main"
 arch-backend = "src.infrastructure.backend.arch_backend:main"
 arch-mcp-stdio-read = "src.infrastructure.mcp.arch_mcp_stdio:main"
 arch-mcp-stdio-write = "src.infrastructure.mcp.arch_mcp_stdio_write:main_write"

@@ -82,6 +82,51 @@ Path, Filters in the Query*, *Response Contracts Are Owned by the Server and Gen
 
 - **`assurance_create_node` requires `analysis_id`**, `assurance_edit_node` no longer accepts it, and
   `assurance_assign_provenance` is the repair tool for an unattributed node.
+- **Execution errors report the REST vocabulary.** The shape is unchanged — JSON-RPC has no HTTP
+  envelope, so a failure still arrives in band as `{"error": {code, path, message}}` — but the `code`
+  is now the same word REST uses. `execution-timeout` and `derivation-limit` become
+  `traversal_time_budget_exceeded`, `binding-cardinality-violation` becomes
+  `binding_cardinality_violation`, and `missing-parameter` / `unknown-parameter` /
+  `parameter-type-mismatch` become `validation_error` with the finer distinction in the message.
+  An agent reading both surfaces saw two names for one failure.
+
+#### CLI
+
+- **`arch-gui-server` is gone.** It named `src.infrastructure.gui.gui_server`, a module this release
+  renamed, so the command raised `ModuleNotFoundError` on any invocation. Nothing referenced it and
+  `arch-backend` is the documented way to run the server, so it was removed rather than repointed.
+
+#### Fixed
+
+Each of these was reachable in ordinary use and invisible to every gate; the browser suite is what
+found them.
+
+- **A repository-authored viewpoint could not be applied to anything.** The write path built its
+  verifier from the process catalogs, whose viewpoint catalogue is the module-shipped starter
+  library and reads no repository — so a diagram or matrix naming a definition you had just saved
+  was refused with `E180 Unknown viewpoint slug`, permanently rather than until a restart.
+- **A viewpoint with a binding made `GET /api/viewpoints` answer 500 for everyone.** The response
+  contract declared `select` as `entity`/`connection`; the domain and the write path use
+  `entities`/`connections`. One saved definition took the whole catalogue down with it.
+- **The FMEA matrix rendered blank for any analysis with no dismissals.** `dismissal` was served as
+  `{}` while the published contract declares both of its fields present, so the client's decode
+  threw before a single row was drawn.
+- **Three assurance links pointed at retired addresses** — the node list and its rows to
+  `/assurance/node/{id}`, "Explore graph" to `/assurance/graph?node_id=`, and the FMEA wizard to the
+  flat `/assurance/fmea` — and the standalone node page read the pre-rename `id` route parameter, so
+  every assurance deep link resolved to an empty page.
+- **An unserved address renders a not-found page.** There was no catch-all route, so a retired
+  address, an old bookmark or a stale link rendered the chrome and an empty `<main>`.
+- **`/api/diagrams/preview` answers 400 for a selection the diagram type cannot draw**, naming
+  `diagram_entities`, instead of a 500 whose body deliberately carries no diagnostic.
+- **A `?param.` value on a shared link is honoured.** For a definition whose parameters are all
+  optional or defaulted the gate discarded them and the address-rewriting surfaces then erased them
+  from the URL, so such a link could not even be re-shared. A value the parameter's type cannot
+  represent now reaches the server and is refused, rather than being silently read as `false`.
+- **The preview's derived-entity checklist honours the server.** The scope root can no longer be
+  unchecked — the engine will not exclude it — and a server-side exclusion renders as excluded.
+- **A witness chain that cannot be read says so** instead of showing "Loading witness chain…"
+  for as long as the dialog stays open.
 
 #### Additive
 

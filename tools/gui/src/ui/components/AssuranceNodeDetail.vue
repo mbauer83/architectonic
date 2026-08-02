@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { assuranceNodeDetailRoute, entityDetailRoute } from '../router/artifactRoutes'
+import { assuranceNodeDetailRoute, assuranceNodeGraphRoute, entityDetailRoute } from '../router/artifactRoutes'
 import { ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import ModelThisPanel from './ModelThisPanel.vue'
@@ -99,7 +99,7 @@ async function deleteEdge(edge: Edge) {
       <span class="detail-title">Node detail</span>
       <RouterLink
         v-if="data"
-        :to="{ path: '/assurance/graph', query: { node_id: data.node.node_id } }"
+        :to="assuranceNodeGraphRoute(data.node.node_id)"
         class="explore-link"
       >
         Explore graph

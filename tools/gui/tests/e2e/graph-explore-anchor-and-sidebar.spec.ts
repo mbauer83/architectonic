@@ -17,11 +17,31 @@ const ANCHOR = 'OUT@1780655839.Vhhne7.assurance-analysis-surfaces-modeling-gaps'
 const haloed = (page: Page) =>
   page.locator('.graph-node polygon[fill="none"][stroke="#1e293b"]')
 
+/**
+ * Wait until the force layout stops moving nodes.
+ *
+ * `networkidle` says the data has arrived; the simulation keeps running after it. Playwright
+ * refuses to click an element that is still moving, so a click issued mid-simulation retries
+ * until the test times out — which is what made this file intermittent rather than wrong.
+ */
+const settled = async (page: Page): Promise<void> => {
+  const layout = () => page.locator('.graph-node')
+    .evaluateAll((els) => els.map((el) => el.getAttribute('transform') ?? '').join('|'))
+  let previous = await layout()
+  await expect.poll(async () => {
+    const current = await layout()
+    const unchanged = current === previous && current !== ''
+    previous = current
+    return unchanged
+  }, { timeout: 20_000, intervals: [250] }).toBe(true)
+}
+
 const openGraph = async (page: Page): Promise<void> => {
   await page.goto(`/entities/${encodeURIComponent(ANCHOR)}/graph`, { waitUntil: 'load' })
   await expect(page.locator('.graph-node').first()).toBeAttached({ timeout: 20_000 })
   await expect(page.locator('.graph-svg')).toBeVisible({ timeout: 20_000 })
   await page.waitForLoadState('networkidle')
+  await settled(page)
 }
 
 test('the entity the walk started from carries the anchor ring', async ({ page }) => {
@@ -57,14 +77,19 @@ test('the sidebar headline names the selected entity and links to its page', asy
   const name = (await headline.textContent())?.trim() ?? ''
   expect(name).not.toBe('')
   expect(name).not.toBe('Details')
-  expect(await headline.getAttribute('href')).toBe(`/entities/${ANCHOR}`)
+  // The id is percent-encoded in the path, as `entityDetailRoute` encodes it — an artifact id
+  // carries an `@`, and a raw one here would be asserting a link the router never builds.
+  expect(await headline.getAttribute('href')).toBe(`/entities/${encodeURIComponent(ANCHOR)}`)
 
   // Selecting a different node re-points the headline at that entity, not the one before it.
   // Pick a node whose label differs from the current headline — clicking a same-named
   // node would satisfy the intent yet fail the "changed" assertion under load.
+  await settled(page)
   await page.locator('.graph-node').filter({ hasNotText: name }).first().click()
   await expect.poll(async () => headline.textContent(), { timeout: 20_000 }).not.toBe(name)
 
   await headline.click()
-  await expect(page).toHaveURL(/\/entity\?id=/)
+  // `/entities/{id}` since 0.2.0 — identity in the path. The `/entity?id=` this asserted has not
+  // been served for a release, so the step could only ever have passed against the old surface.
+  await expect(page).toHaveURL(/\/entities\//)
 })

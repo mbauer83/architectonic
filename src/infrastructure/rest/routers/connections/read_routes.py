@@ -20,6 +20,7 @@ from src.infrastructure.rest.contracts.errors import ApiError, FieldError, Valid
 from src.infrastructure.rest.contracts.search import KeywordSearchResponse
 from src.infrastructure.rest.contracts.write_help import WriteHelpResponse
 from src.infrastructure.rest.routers import state as s
+from src.infrastructure.rest.routers._failures import derivation_limit
 from src.infrastructure.rest.routers._global_search import (
     filter_global_hits,
     hidden_diagram_entity_types,
@@ -32,7 +33,6 @@ from src.infrastructure.rest.routers._openapi import (
     TAG_TAXONOMY,
 )
 from src.infrastructure.rest.routers.connections.neighbors import DerivationLimitError, derive_neighbor_response
-from src.infrastructure.rest.routers.viewpoints._request_parsing import derivation_limit
 
 
 def register_connection_read_routes(router: APIRouter) -> None:

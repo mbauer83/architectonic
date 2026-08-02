@@ -58,6 +58,9 @@ export interface WizardNode {
   node_type: string
   name: string
   failure_type?: string
+  /** The analysis that authored the node. Null only for a node that predates mandatory
+   *  provenance; the wizard needs it to address the matrix, which is scoped to one analysis. */
+  analysis_id?: string | null
 }
 
 export interface WizardEdge {
@@ -98,4 +101,23 @@ export function firstIncompleteStep(nodes: WizardNode[], edges: WizardEdge[]): s
     .filter((n) => n.node_type === 'failure-mode')
     .some((n) => !relationSatisfied(n, effects?.relation, edges))
   return unlinked ? 'effects' : 'review'
+}
+
+/**
+ * The analysis whose FMEA matrix this wizard's work belongs to, or null when there is no single
+ * answer — nothing recorded yet, or failure modes spanning more than one analysis.
+ *
+ * The matrix is addressed by its analysis since 0.2.0. The wizard linked to the retired flat
+ * `/assurance/fmea` twice, so both of its "record factors on the matrix" affordances landed on a
+ * page that did not exist. Null is a real outcome and the caller must handle it: sending an author
+ * to an arbitrary one of several matrices is worse than sending them to the list.
+ */
+export function fmeaMatrixAnalysisId(nodes: readonly WizardNode[]): string | null {
+  const analyses = new Set(
+    nodes
+      .filter((node) => node.node_type === 'failure-mode')
+      .map((node) => node.analysis_id)
+      .filter((id): id is string => typeof id === 'string' && id !== ''),
+  )
+  return analyses.size === 1 ? [...analyses][0] : null
 }

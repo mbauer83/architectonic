@@ -157,6 +157,26 @@ class TestEveryCandidateGetsFiveCells:
         assert cell["dismissal"]["by"] == "analyst"
         assert rows[0]["answered_cells"] == 1
 
+    def test_an_undismissed_cell_still_states_both_dismissal_fields(self) -> None:
+        """The contract declares them present-and-empty, and the served body must agree.
+
+        They were omitted, so the body carried ``"dismissal": {}`` while the published document
+        described two fields with an empty default. The handler validates its payload against the
+        response model but serialises the payload rather than the model, so nothing reconciled the
+        two — and the generated client type reads a defaulted response field as always sent, so
+        decoding threw and the whole matrix rendered blank for every analysis with no dismissals.
+        """
+        nodes = [
+            _node("CSN@1", "control-structure-node"),
+            _node("FMD@1", "failure-mode", failure_type="no-function"),
+        ]
+        refs = [_ref("CSN@1", "APP@store"), _ref("FMD@1", "APP@store")]
+
+        rows = self._rows(nodes, refs, [])
+
+        for cell in rows[0]["cells"]:
+            assert cell["dismissal"] == {"by": "", "reason": ""}, cell["guideword"]
+
     def test_a_dismissed_cell_needs_no_further_action(self) -> None:
         nodes = [
             _node("CSN@1", "control-structure-node"),

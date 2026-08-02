@@ -1,8 +1,8 @@
-"""Utility helpers for the GUI / backend server CLI.
+"""Root resolution for the backend server CLI.
 
-The FastAPI application itself is built in ``arch_backend_app._build_app`` — this
-module only provides ``resolve_server_roots`` (used by the backend CLI) and a thin
-``main()`` shim that delegates to the real entry-point.
+The FastAPI application itself is built in ``arch_backend_app._build_app`` and the
+entry point is ``arch_backend.main`` — this module only answers where the engagement
+and enterprise repositories live.
 """
 
 from __future__ import annotations
@@ -44,13 +44,3 @@ def resolve_server_roots(
         else None
     )
     return eng, ent
-
-
-def main(argv: list[str] | None = None) -> None:
-    from src.infrastructure.backend.arch_backend import main as backend_main
-
-    backend_main(argv)
-
-
-if __name__ == "__main__":
-    main()

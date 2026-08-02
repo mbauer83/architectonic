@@ -93,9 +93,8 @@ test('an occurrence recorded from the matrix reaches the store and comes back', 
   const { analysisId, failureModeId } = await stage(request)
 
   try {
-    // The matrix is a projection of one analysis, so the page is opened scoped — unscoped it
-    // shows an analysis picker rather than a grid.
-    await page.goto(`/assurance/fmea?analysis=${encodeURIComponent(analysisId)}`)
+    // The matrix is a projection of one analysis, and since 0.2.0 the analysis is in the path.
+    await page.goto(`/assurance/analyses/${encodeURIComponent(analysisId)}/fmea`)
     await expect(page.getByRole('heading', { name: 'FMEA Matrix' })).toBeVisible()
 
     const opener = page.getByRole('button', { name: 'Record occurrence' }).first()

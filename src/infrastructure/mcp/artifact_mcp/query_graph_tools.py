@@ -14,6 +14,7 @@ from src.domain.relationships.relationship_reachability import (
     derive_relationships,
 )
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
+from src.infrastructure.mcp import execution_failure as failures
 from src.infrastructure.mcp.artifact_mcp.context import (
     RepoScope,
     expand_artifact_id,
@@ -152,7 +153,7 @@ def register_query_graph_tools(mcp: FastMCP) -> None:
                     registries=process_runtime_catalogs().module_catalog,
                 ).relationships
             except DerivationLimitError as exc:
-                return {"error": {"code": "derivation-limit", "message": str(exc)}}
+                return failures.traversal_budget_exceeded(str(exc), path="max_hops")
             normalized = {
                 "derived": [
                     {

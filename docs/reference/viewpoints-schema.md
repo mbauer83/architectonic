@@ -513,17 +513,19 @@ and `expected`/`found` values, so both the GUI and an agent can converge on the 
 | `derived-of-source-traversal-mismatch` | `of: relationship.hops` used without `traversal: derived` |
 | `derived-attribute-reference-unsupported` | a derived attribute's own criteria references another `derived.*` path |
 
-**Execution-time errors** (typed, never a silent empty/partial result; mapped to a REST
-`{code, path, message}` body and the equivalent MCP error shape):
+**Execution-time errors** — typed, never a silent empty or partial result. One vocabulary across
+both surfaces: REST carries it in the error envelope's `detail.code`, MCP in band as
+`{"error": {code, path, message}}`, and the `code` is the same word on each.
 
 | Code | HTTP | Fires when |
 |---|---|---|
-| `missing-parameter` | 400 | a required parameter has no supplied value and no default |
-| `unknown-parameter` | 400 | a supplied parameter name isn't declared |
-| `parameter-type-mismatch` | 400 | a supplied value doesn't match its parameter's declared type |
-| `binding-cardinality-violation` | 400 | a binding declared exactly-one/zero-or-one resolved to a different actual count |
-| `derivation-limit` | 400 | the `derivation_max_relationships` hard memory ceiling was hit — the ordinary case (a slow-but-tractable search) instead stops gracefully at the time budget and returns a genuine partial result flagged `truncated`, with a warning, not this error |
-| `execution-timeout` | 504 | whole-pipeline elapsed time exceeds `execution_timeout_seconds` |
+| `validation_error` | 400 | a required parameter has no value, a supplied name isn't declared, or a value doesn't match its declared type — `details.field_errors[].field` names it (`parameters.<name>`), and the message carries which of the three it was |
+| `binding_cardinality_violation` | 400 | a binding declared exactly-one/zero-or-one resolved to a different actual count; `details` carries the binding, what it declared, and what it found |
+| `traversal_time_budget_exceeded` | 400 / 504 | the traversal ran out of relationships (the `derivation_max_relationships` memory ceiling, 400) or of time (`execution_timeout_seconds`, 504). One code, because the remedy is the same — narrow the query. The ordinary slow-but-tractable search instead stops gracefully at the time budget and returns a genuine partial result flagged `truncated`, with a warning, not this error |
+
+The hyphenated `missing-parameter`, `parameter-type-mismatch`, `binding-cardinality-violation`,
+`derivation-limit` and `execution-timeout` were MCP's own spelling before 0.2.0 and are gone; the
+first three still appear inside the `message`, which is where the finer distinction lives.
 
 &nbsp;
 
@@ -609,7 +611,7 @@ viewpoints:
   max_query_parameters: 4                  # save-time ergonomics cap
   max_derived_attributes: 8                # save-time ergonomics cap
   derivation_max_hops: 4                   # default max_hops when a derived-traversal node omits it
-  derivation_max_relationships: 20000      # hard memory-protection ceiling — raises derivation-limit
+  derivation_max_relationships: 20000      # hard ceiling — raises traversal_time_budget_exceeded
   derivation_time_budget_seconds: 2.0      # the practical enforcement: derivation stops gracefully here
   diagram_render_max_entities: 250         # pre-flight ceiling for the ad-hoc diagram representation —
                                            # larger results get a friendly refusal, never a renderer stack error

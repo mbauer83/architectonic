@@ -11,7 +11,7 @@ import { expect, test } from '@playwright/test'
 const HAZARD = 'HAZ@1785068474.d8my.105615'
 
 const openGraph = async (page: import('@playwright/test').Page): Promise<void> => {
-  await page.goto(`/assurance/graph?node_id=${encodeURIComponent(HAZARD)}`, { waitUntil: 'load' })
+  await page.goto(`/assurance/nodes/${encodeURIComponent(HAZARD)}/graph`, { waitUntil: 'load' })
   await expect(page.locator('.graph-svg')).toBeVisible({ timeout: 20_000 })
   await expect(page.locator('.graph-node').first()).toBeAttached({ timeout: 20_000 })
 }

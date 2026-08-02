@@ -65,5 +65,6 @@ def test_limit_error_has_no_neighbor_payload(repo: Path, monkeypatch: pytest.Mon
 
     result = _tool()(entity_id=component, traversal="derived", max_hops=2, repo_root=str(repo), repo_scope="engagement")
 
-    assert result["error"]["code"] == "derivation-limit"
+    # The same code REST answers with: one failure, one word, whichever surface asked.
+    assert result["error"]["code"] == "traversal_time_budget_exceeded"
     assert "neighbors" not in result

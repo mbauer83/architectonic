@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Standalone, deep-linkable page for one assurance node: /assurance/node/:id.
+ * Standalone, deep-linkable page for one assurance node: /assurance/nodes/:nodeId.
  * Wraps the same detail component the browse split view uses. Unknown and
  * above-ceiling ids render the identical not-found page (the backend already
  * keeps them indistinguishable); a locked store renders the locked banner.
@@ -11,7 +11,10 @@ import AssuranceNodeDetail from '../components/AssuranceNodeDetail.vue'
 
 const route = useRoute()
 const router = useRouter()
-const nodeId = computed(() => String(route.params.id ?? ''))
+// `nodeId`, the name the route template declares. It read `id` — the pre-0.2.0 name — so every
+// deep link resolved to the empty string and the page rendered an empty detail frame for a node
+// that exists, with no statement that anything was wrong.
+const nodeId = computed(() => String(route.params.nodeId ?? ''))
 
 type LoadState = 'ok' | 'not-found' | 'locked' | 'error' | 'pending'
 const loadState = ref<LoadState>('pending')

@@ -164,7 +164,9 @@ export const QueryBindingSpecSchema = Schema.Struct({
   /** A type *expression*, not a closed vocabulary: `entity[type-slug]` and
    * `tuple[result-type, ...]` are grammar with holes in them. */
   result_type: Schema.String,
-  select: Schema.optional(Schema.Literal('entity', 'connection')),
+  /** `entities`/`connections` — the plural the domain's `BindingSelect` uses and the write path
+   *  stores. The singular was declared on both sides and produced by neither. */
+  select: Schema.optional(Schema.Literal('entities', 'connections')),
   criteria: Schema.optional(Schema.Union(EntityCriteriaGroupNodeSchema, ConnectionCriteriaGroupNodeSchema)),
   project: Schema.optional(Schema.String),
   aggregate: Schema.optional(AggregateKindSchema),

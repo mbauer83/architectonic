@@ -1,64 +1,22 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import type { RouteRecordRaw } from 'vue-router'
 import { assuranceRoutes } from './assuranceRoutes'
-import { ROUTE_TEMPLATES } from './artifactRoutes'
-import HomeView from '../views/HomeView.vue'
-import EntitiesView from '../views/EntitiesView.vue'
-import EntityDetailView from '../views/EntityDetailView.vue'
-import EntityCreateView from '../views/EntityCreateView.vue'
-import SearchView from '../views/SearchView.vue'
-import DiagramsView from '../views/DiagramsView.vue'
-import DiagramDetailView from '../views/DiagramDetailView.vue'
-import CreateDiagramView from '../views/CreateDiagramView.vue'
-import GraphExploreView from '../views/GraphExploreView.vue'
-import EditDiagramView from '../views/EditDiagramView.vue'
-import PromoteView from '../views/PromoteView.vue'
+import { modelRoutes } from './modelRoutes'
+
+/**
+ * Matches everything left. Without it an unserved address renders the chrome and an empty <main>,
+ * which reads as a broken page rather than a wrong one. Declared apart from the two area tables so
+ * a check over "the addresses this application serves" can exclude it: it matches every string, and
+ * counting it would make every dead link look live.
+ */
+export const notFoundRoute: RouteRecordRaw = {
+  path: '/:pathMatch(.*)*',
+  component: () => import('../views/NotFoundView.vue'),
+}
 
 export const router = createRouter({
   history: createWebHistory(),
-  routes: [
-    { path: '/', component: HomeView },
-    // Engagement repo routes
-    { path: ROUTE_TEMPLATES.entityList, component: EntitiesView },
-    // Literal siblings before the identifier route: an entity whose id were `new` or `groups`
-    // would otherwise address the create or the group surface, and lose.
-    { path: ROUTE_TEMPLATES.entityCreate, component: EntityCreateView },
-    { path: ROUTE_TEMPLATES.entityGroups, component: () => import('../views/GroupManagementView.vue'), props: () => ({ axis: 'model-project' }) },
-    { path: ROUTE_TEMPLATES.entityDetail, component: EntityDetailView },
-    { path: ROUTE_TEMPLATES.entityGraph, component: GraphExploreView },
-    // The same surface unanchored: a viewpoint's whole population rather than one entity's
-    // neighbourhood. No identity, so nothing to put in the path.
-    { path: ROUTE_TEMPLATES.graphExplore, component: GraphExploreView },
-    { path: ROUTE_TEMPLATES.documentList, component: () => import('../views/DocumentsView.vue') },
-    { path: ROUTE_TEMPLATES.documentCreate, component: () => import('../views/DocumentCreateView.vue') },
-    { path: ROUTE_TEMPLATES.documentGroups, component: () => import('../views/GroupManagementView.vue'), props: () => ({ axis: 'document-collection' }) },
-    { path: ROUTE_TEMPLATES.documentDetail, component: () => import('../views/DocumentDetailView.vue') },
-    { path: '/search', component: SearchView },
-    { path: ROUTE_TEMPLATES.diagramList, component: DiagramsView },
-    { path: ROUTE_TEMPLATES.diagramGroups, component: () => import('../views/GroupManagementView.vue'), props: () => ({ axis: 'diagram-collection' }) },
-    { path: ROUTE_TEMPLATES.diagramCreate, component: CreateDiagramView },
-    { path: ROUTE_TEMPLATES.diagramDetail, component: DiagramDetailView },
-    { path: ROUTE_TEMPLATES.diagramEdit, component: EditDiagramView },
-    // A matrix is a diagram of the matrix kind, and its authoring surfaces are the kind-specific
-    // projection of it — so they address `/matrices`, which has no detail route of its own.
-    { path: ROUTE_TEMPLATES.matrixCreate, component: () => import('../views/CreateMatrixView.vue') },
-    { path: ROUTE_TEMPLATES.matrixEdit, component: () => import('../views/EditMatrixView.vue') },
-    { path: '/graph/layered', component: () => import('../views/LayeredExplorationView.vue') },
-    { path: ROUTE_TEMPLATES.viewpointList, component: () => import('../views/ViewpointsManagementView.vue') },
-    { path: ROUTE_TEMPLATES.viewpointQuery, component: () => import('../views/EphemeralViewpointQueryView.vue') },
-    { path: ROUTE_TEMPLATES.viewpointCreate, component: () => import('../views/ViewpointsManagementView.vue') },
-    { path: ROUTE_TEMPLATES.viewpointEdit, component: () => import('../views/ViewpointsManagementView.vue') },
-    { path: ROUTE_TEMPLATES.viewpointMatrix, component: () => import('../views/ViewpointMatrixView.vue') },
-    { path: ROUTE_TEMPLATES.viewpointDiagram, component: () => import('../views/ViewpointDiagramView.vue') },
-    // Legacy tier-first deep links → faceted routes (query + hash preserved)
-    { path: '/global/entities', redirect: to => ({ path: '/entities', query: { ...to.query, tier: 'enterprise' }, hash: to.hash }) },
-    { path: '/global/diagrams', redirect: to => ({ path: '/diagrams', query: { ...to.query, tier: 'enterprise' }, hash: to.hash }) },
-    { path: '/global/search', redirect: '/search' },
-    // Promotion
-    { path: '/promote', component: PromoteView },
-    // Guided modeling wizard
-    { path: '/model/wizard', component: () => import('../views/ModelWizardView.vue') },
-    // Assurance (enabled-gated, separate from model nav) — declared as data in
-    // `assuranceRoutes` so the route table can be asserted on without building a router.
-    ...assuranceRoutes,
-  ],
+  // Assurance is enabled-gated and separate from the model nav; the catch-all is last, so a real
+  // address is never shadowed by it.
+  routes: [...modelRoutes, ...assuranceRoutes, notFoundRoute],
 })

@@ -5,14 +5,12 @@ can depend on it too, without duplicating the staleness fix.
 
 from __future__ import annotations
 
-from dataclasses import replace
-
 from fastapi import Depends
 
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
 from src.infrastructure.rest.routers import state as s
-from src.infrastructure.viewpoint_declarations import load_effective_viewpoint_catalog
+from src.infrastructure.viewpoint_declarations import with_effective_viewpoints
 
 
 def fresh_viewpoints_runtime_catalogs_dependency(
@@ -29,4 +27,4 @@ def fresh_viewpoints_runtime_catalogs_dependency(
     docstring), using the same request-scoped ``load_effective_viewpoint_catalog`` rather
     than the fixed-workspace-config resolution ``app_bootstrap._load_viewpoints`` uses at
     startup."""
-    return replace(catalogs, viewpoints=load_effective_viewpoint_catalog(list(s.get_repo().repo_roots)))
+    return with_effective_viewpoints(catalogs, list(s.get_repo().repo_roots))

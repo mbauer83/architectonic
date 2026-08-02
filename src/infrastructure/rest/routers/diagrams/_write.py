@@ -8,10 +8,12 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 
 from src.application.derivation.preview import project_view_for_preview
 from src.application.runtime_catalogs import RuntimeCatalogs
+from src.domain.diagrams.diagram_selection import DiagramSelectionError
 from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.rest.contracts.diagrams import DiagramPreviewResponse
 from src.infrastructure.rest.routers import state as s
+from src.infrastructure.rest.routers._failures import rejected_input
 from src.infrastructure.rest.routers._openapi import (
     TAG_DIAGRAMS,
     WRITE_RESPONSES,
@@ -87,15 +89,23 @@ def preview_diagram(body: DiagramPreviewBody, catalogs: RuntimeCatalogs = Depend
 
     query = shared_artifact_index([repo_root])
 
-    puml = generate_archimate_puml_body(
-        body.name,
-        entities,
-        connections,
-        diagram_type=body.diagram_type,
-        repo_root=repo_root,
-        diagram_entities=de,
-        diagram_connections=dc,
-    )
+    # A selection this diagram type cannot draw is a rejected input, not a broken server: a C4
+    # scope naming an entity the repository does not hold used to reach the unhandled-exception
+    # handler and answer 500, whose body deliberately carries none of the exception text — so the
+    # caller was told the server was broken and the only diagnostic stayed in the log. Config and
+    # renderer faults still raise plain ValueError and still answer 500, which is honest for them.
+    try:
+        puml = generate_archimate_puml_body(
+            body.name,
+            entities,
+            connections,
+            diagram_type=body.diagram_type,
+            repo_root=repo_root,
+            diagram_entities=de,
+            diagram_connections=dc,
+        )
+    except DiagramSelectionError as exc:
+        raise rejected_input(str(exc), field="diagram_entities") from exc
     image, warnings = render_puml_preview(puml, repo_root, body.diagram_type)
 
     items = project_view_for_preview(catalogs.diagram_types.get_diagram_type(body.diagram_type), body.diagram_type, de or {}, query)  # noqa: E501

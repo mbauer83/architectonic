@@ -7,6 +7,7 @@ from src.domain.viewpoints.viewpoint_criteria import (
     RESERVED_ENTITY_PATHS,
     VALID_VALUE_REF_KINDS,
 )
+from src.domain.viewpoints.viewpoint_value_types import BINDING_SELECT_NAMES
 from src.domain.viewpoints.viewpoints import QUERY_SCHEMA_VERSION, REPRESENTATION_CAPABILITIES
 
 _COMPARATOR_SEMANTICS: dict[str, str] = {
@@ -46,7 +47,7 @@ def viewpoints_help_topic() -> dict[str, object]:
         },
         "canonical_form_example": _CANONICAL_FORM_EXAMPLE,
         "bindings": {
-            "select": ["entities", "connections"],
+            "select": list(BINDING_SELECT_NAMES),
             "result_types": ["entity[type]", "connection[type]", "entities[type]", "connections[type]", "scalar"],
             "quantifiers": ["any", "all"],
         },

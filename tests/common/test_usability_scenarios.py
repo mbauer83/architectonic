@@ -22,11 +22,11 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 _USABILITY_DIR = _REPO_ROOT / "tools" / "usability_test"
 _SCENARIOS_DIR = _USABILITY_DIR / "scenarios"
 _ROUTER_DIR = _REPO_ROOT / "tools" / "gui" / "src" / "ui" / "router"
-#: The route table and the template catalogue it is declared from. Both, because the table names
-#: most of its paths through `ROUTE_TEMPLATES` — reading only the table would shrink this oracle
-#: to the handful of literals left in it, and a scenario reference would then resolve against
-#: almost nothing while still passing.
-_ROUTER_FILES = ("index.ts", "assuranceRoutes.ts", "artifactRoutes.ts")
+#: Every module of the router package, not a named few. The table names most of its paths through
+#: `ROUTE_TEMPLATES`, so the catalogue has to be read as well as the table — and a hand-written list
+#: of which files those are goes stale the moment a route table is split out, which is what happened
+#: when `modelRoutes.ts` was extracted: the oracle silently stopped knowing about `/search` and
+#: every other model route, and only a scenario that referenced one made it visible.
 _VIEWPOINT_LIBRARY = _REPO_ROOT / "src" / "ontologies" / "archimate_4" / "viewpoints.yaml"
 
 _KEBAB = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
@@ -88,10 +88,14 @@ def _iter_route_refs(scenario: dict[str, Any]) -> list[tuple[str, dict[str, Any]
 
 
 def _known_gui_routes() -> frozenset[str]:
+    modules = sorted(
+        path for path in _ROUTER_DIR.glob("*.ts") if not path.name.endswith(".test.ts")
+    )
+    assert modules, f"no router modules under {_ROUTER_DIR}"
     return frozenset(
         route
-        for name in _ROUTER_FILES
-        for route in _ROUTER_PATH.findall((_ROUTER_DIR / name).read_text(encoding="utf-8"))
+        for path in modules
+        for route in _ROUTER_PATH.findall(path.read_text(encoding="utf-8"))
     )
 
 

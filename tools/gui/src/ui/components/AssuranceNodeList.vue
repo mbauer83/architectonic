@@ -17,6 +17,7 @@ import DataTable from './DataTable.vue'
 import FilterBar from './FilterBar.vue'
 import AssuranceTreemap from './AssuranceTreemap.vue'
 import { tlpColor } from './tlp'
+import { assuranceNodeDetailRoute } from '../router/artifactRoutes'
 import { directionSplit } from './connectionCounts'
 import type { DataTableColumn, SortDirection, SortRequest } from './DataTable.types'
 import type { FilterSpec } from './FilterBar.vue'
@@ -123,7 +124,7 @@ const emit = defineEmits<{
         <template #name="{ row: node }">
           <RouterLink
             class="node-name node-name--link"
-            :to="{ path: '/assurance/node/' + node.node_id }"
+            :to="assuranceNodeDetailRoute(node.node_id)"
             @click.stop
           >
             {{ node.name }}

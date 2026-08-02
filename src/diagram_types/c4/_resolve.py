@@ -14,6 +14,7 @@ from src.diagram_types.c4._c4_types import (  # noqa: F401
     _ResolvedState,
 )
 from src.diagram_types.c4._resolve_model import resolve_model_backed
+from src.domain.diagrams.diagram_selection import DiagramSelectionError
 
 
 def resolve_c4_state(
@@ -66,7 +67,9 @@ def _resolve_standalone(
 
     scope_items_of_type = [i for i in items if i.item_type == scope_entity_type]
     if not scope_items_of_type:
-        raise ValueError(f"{diagram_type!r} (standalone): needs at least one '{scope_entity_type}' item")
+        raise DiagramSelectionError(
+            f"{diagram_type!r} (standalone): needs at least one '{scope_entity_type}' item"
+        )
 
     raw_scope_marked = _scope_marked_id(diagram_entities, scope_entity_type)
     scope_item = next(

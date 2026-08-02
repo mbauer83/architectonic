@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal, TypeAlias, cast
+from typing import Literal, TypeAlias, cast, get_args
 
 from src.domain.ontology_representation.attribute_scales import ORDINAL_KIND
 from src.domain.viewpoints.viewpoint_condition_validation import (
@@ -26,6 +26,15 @@ AggregateKind = Literal["count", "sum", "avg", "min", "max"]
 SCALAR_KIND_NAMES: frozenset[str] = frozenset(
     {"string", "integer", "number", "date", "boolean", "slug", ORDINAL_KIND}
 )
+
+#: What a binding may select, as an ordered list a surface can publish.
+#:
+#: Derived from :data:`BindingSelect` rather than spelled again. It had been spelled three times —
+#: the authoring catalogue and the response contract said ``entity``/``connection``, the help topic
+#: and the domain said ``entities``/``connections`` — and the two that disagreed with the writer
+#: were the two a reader saw. The first definition saved with a binding made ``GET /api/viewpoints``
+#: answer 500 for every caller, because the response model rejected the value the write had stored.
+BINDING_SELECT_NAMES: tuple[str, ...] = get_args(BindingSelect)
 
 
 @dataclass(frozen=True)

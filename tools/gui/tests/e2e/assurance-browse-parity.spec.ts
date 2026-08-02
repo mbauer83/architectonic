@@ -76,11 +76,11 @@ test('opening a node goes to its own page, leaving the list unsqueezed', async (
   await openBrowse(page)
   const link = page.locator('tbody tr').first().locator('a').first()
   const href = await link.getAttribute('href')
-  expect(href).toMatch(/^\/assurance\/node\//)
+  expect(href).toMatch(/^\/assurance\/nodes\//)
 
   await link.click()
 
-  await expect(page).toHaveURL(/\/assurance\/node\//)
+  await expect(page).toHaveURL(/\/assurance\/nodes\//)
   await expect(page.getByRole('link', { name: /Open in browse/ })).toBeVisible({ timeout: 20_000 })
 })
 
@@ -93,7 +93,7 @@ test('a legacy ?node_id= deep link lands on the node page', async ({ page }) => 
 
   await page.goto(`/assurance?node_id=${encodeURIComponent(nodeId)}`, { waitUntil: 'load' })
 
-  await expect(page).toHaveURL(/\/assurance\/node\//, { timeout: 20_000 })
+  await expect(page).toHaveURL(/\/assurance\/nodes\//, { timeout: 20_000 })
 })
 
 test('the list can be read as a treemap, the same two views the architecture catalog offers', async ({ page }) => {
@@ -114,7 +114,7 @@ test('the list can be read as a treemap, the same two views the architecture cat
   await expect(page.locator('.group-label').first()).toBeVisible()
 
   await tiles.first().click()
-  await expect(page).toHaveURL(/\/assurance\/node\//, { timeout: 20_000 })
+  await expect(page).toHaveURL(/\/assurance\/nodes\//, { timeout: 20_000 })
 })
 
 test('the treemap switch is linkable and the table is the default', async ({ page }) => {

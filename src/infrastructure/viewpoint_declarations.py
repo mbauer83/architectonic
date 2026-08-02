@@ -15,13 +15,16 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import yaml  # type: ignore[import-untyped]
 
 from src.domain.viewpoints.viewpoint_parsing import viewpoint_catalog_from_mapping
 from src.domain.viewpoints.viewpoint_serialization import viewpoint_catalog_to_mapping
 from src.domain.viewpoints.viewpoints import ViewpointCatalog
+
+if TYPE_CHECKING:
+    from src.application.runtime_catalogs import RuntimeCatalogs
 
 VIEWPOINTS_FILENAME = "viewpoints.yaml"
 
@@ -80,6 +83,25 @@ def load_effective_viewpoint_catalog(roots: Sequence[Path]) -> ViewpointCatalog:
     for root in roots:
         repo_catalog = repo_catalog | load_viewpoint_catalog_file(root)
     return module_catalog | repo_catalog
+
+
+def with_effective_viewpoints(catalogs: "RuntimeCatalogs", roots: Sequence[Path]) -> "RuntimeCatalogs":
+    """``catalogs`` with only its viewpoint catalog reloaded for ``roots``.
+
+    The other catalogs — module registry, ontology, specializations — are expensive to rebuild and
+    change only when code or a module does, which a restart is the right moment for. A viewpoint
+    definition is ordinary repository data a user may have written seconds ago, and every surface
+    that resolves a slug has to see it.
+
+    One function because both surfaces need the same answer and had different ones. Reads went
+    through a request-scoped dependency that did this; writes took ``process_runtime_catalogs()``,
+    whose viewpoint catalog is the module-shipped starter library and nothing else. So a diagram or
+    matrix applying a repo-authored viewpoint failed verification with ``E180 Unknown viewpoint
+    slug`` — not merely until a restart, but always, because the process catalog never reads a repo.
+    """
+    from dataclasses import replace  # noqa: PLC0415
+
+    return replace(catalogs, viewpoints=load_effective_viewpoint_catalog(roots))
 
 
 def write_viewpoint_catalog_file(repo_root: Path, catalog: ViewpointCatalog) -> None:

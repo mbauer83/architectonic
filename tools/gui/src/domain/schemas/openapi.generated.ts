@@ -9181,7 +9181,7 @@ export interface components {
              * Select
              * @enum {string}
              */
-            select?: "entity" | "connection";
+            select?: "entities" | "connections";
             /** Tuple */
             tuple?: string[];
         };

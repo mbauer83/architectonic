@@ -34,6 +34,17 @@ from src.domain.assurance.fmea_factors import (
     effective_factor,
 )
 
+#: A cell nobody dismissed, stated rather than omitted.
+#:
+#: This was ``{}``, and the served body then carried ``"dismissal": {}`` for every undismissed cell
+#: while the published contract declares both fields present with an empty default. The handler
+#: validates its payload against the response model but ships the payload, not the model's dump, so
+#: a defaulted field that the payload omits is absent on the wire and present in the document. The
+#: generated client type reads it as always sent, so decoding threw and the whole matrix page
+#: rendered blank — for exactly the analyses where nothing had been dismissed yet, which is every
+#: new one.
+NO_DISMISSAL: Mapping[str, str] = {"by": "", "reason": ""}
+
 
 @dataclass(frozen=True)
 class Cell:
@@ -58,7 +69,7 @@ class Cell:
     occurrence_is_requested: bool = False
     """False where occurrence cannot change the band, so the field is not rendered at all."""
     next_action: str = ""
-    dismissal: Mapping[str, str] = field(default_factory=dict)
+    dismissal: Mapping[str, str] = field(default_factory=lambda: dict(NO_DISMISSAL))
 
 
 
