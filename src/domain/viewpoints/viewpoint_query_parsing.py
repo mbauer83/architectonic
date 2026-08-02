@@ -56,13 +56,20 @@ def _require_direction(value: object) -> IncidentDirection:
 
 
 def query_from_mapping(raw: object, *, label: str) -> ExecutableViewpointQuery:
+    """Parse the ad-hoc query mapping. ``label`` names *this* mapping, as everywhere else here.
+
+    It used to name the mapping's *container* on one raise and this mapping on every other, so the
+    two callers each read wrong on half the messages: a rejection from ``POST /api/viewpoints/execute``
+    said ``query: query: unknown key(s)``, while one from a stored definition said
+    ``my-viewpoint: query_schema is required`` without saying which of its mappings was meant. One
+    convention — the caller supplies the path, the callee appends only what it descends into —
+    and both read correctly.
+    """
     if not isinstance(raw, Mapping):
         return ExecutableViewpointQuery()
     if not raw:
         return ExecutableViewpointQuery()
-    unknown = set(raw.keys()) - _QUERY_KEYS
-    if unknown:
-        raise ValueError(f"{label}: query: unknown key(s) {sorted(unknown)}")
+    _check_unknown(raw, _QUERY_KEYS, label)
     if "query_schema" not in raw:
         raise ValueError(f"{label}: query_schema is required")
     schema_version = int(raw["query_schema"])

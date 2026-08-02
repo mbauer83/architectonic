@@ -176,7 +176,11 @@ def viewpoint_definition_from_mapping(raw: Mapping[str, Any]) -> ViewpointDefini
         scope=_scope_from_mapping(raw.get("scope")),
         representation_types=_string_tuple(raw.get("representation_types")),
         derivation_defaults=dict(derivation_defaults) if isinstance(derivation_defaults, Mapping) else {},
-        query=query_from_mapping(raw.get("query"), label=label) if raw.get("query") is not None else None,
+        query=(
+            query_from_mapping(raw.get("query"), label=f"{label}: query")
+            if raw.get("query") is not None
+            else None
+        ),
         presentation=presentation_from_mapping(raw.get("presentation"), label=label),
         selection_mode=_selection_mode(raw.get("selection_mode"), label=label),
         forked_from=_fork_lineage_from_mapping(raw.get("forked_from"), label=label),
