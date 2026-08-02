@@ -127,6 +127,11 @@ mode = "default"
 python_version = "3.13"
 files = [
     "src",
+    # Development-time policy modules a fitness function imports. They carry real logic — a route
+    # matcher, a baseline register — so the reason the two older ones sit under `src` was that this
+    # list said `src`. Named here instead, so a dev-only module need not ship in the wheel to be
+    # type-checked. The rest of `tools/` is not yet clean under zuban.
+    "tools/quality",
 ]
 exclude = "(^|/)(\\.arch|\\.venv|engagements|enterprise-repository|tools/gui)(/|$)"
 ignore_missing_imports = true
