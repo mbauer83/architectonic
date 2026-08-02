@@ -151,8 +151,25 @@ def _log_text_or_skip() -> str:
     return log_text
 
 
+def _walked_by_the_write_walk() -> frozenset[str]:
+    """Operations the REST write walk requests every run, against its own fixture backend.
+
+    Subtracted from what this log shows, because coverage stopped coming from one process. The walk
+    serves a disposable workspace on its own port and writes its access log there, so `.arch/backend.log`
+    — the dogfood backend's — cannot contain those requests however many times the walk has run.
+
+    Reading `STEPS` is a *claim*; the evidence is `tests/tools/test_rest_write_walk.py`, which runs the
+    walk and asserts every step appears in that backend's own log. So the two halves are separate and
+    both in this suite: a step that stops being requested fails there, not silently here.
+    """
+    from tools.quality.rest_write_walk import STEPS
+
+    return frozenset(step.operation_id for step in STEPS)
+
+
 def _measured_dark_operations() -> frozenset[str]:
-    return never_requested_operations(parse_requested_routes(_log_text_or_skip()), ROUTE_POLICY)
+    dark = never_requested_operations(parse_requested_routes(_log_text_or_skip()), ROUTE_POLICY)
+    return dark - _walked_by_the_write_walk()
 
 
 def test_no_operation_outside_the_register_is_dark() -> None:
@@ -211,3 +228,21 @@ def test_the_log_window_is_read_from_the_log_rather_than_assumed() -> None:
         2026, 8, 2, 11, 0, tzinfo=UTC
     )
     assert log_begins_at("no timestamps here") is None
+
+
+def test_the_write_walk_subtraction_names_only_declared_operations() -> None:
+    """Guards the subtraction: an operation id that is not in the manifest would silently exempt nothing
+    while looking like it exempted something, and a typo is exactly how that happens."""
+    from src.infrastructure.rest.route_policy import BY_OPERATION
+
+    unknown = sorted(_walked_by_the_write_walk() - set(BY_OPERATION))
+    assert unknown == [], f"the write walk names operations the manifest does not declare: {unknown}"
+
+
+def test_the_write_walk_covers_only_write_shaped_operations() -> None:
+    """A walk that started subtracting GETs would be hiding read coverage behind a write fixture, which
+    is the kind of quiet reclassification this register exists to prevent."""
+    from src.infrastructure.rest.route_policy import BY_OPERATION
+
+    reads = sorted(op for op in _walked_by_the_write_walk() if BY_OPERATION[op].method == "GET")
+    assert reads == [], f"the write walk subtracts read operations: {reads}"

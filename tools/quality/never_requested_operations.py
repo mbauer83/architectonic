@@ -9,6 +9,13 @@ Usage:
     uv run tools/quality/never_requested_operations.py            # the table, and the diff
     uv run tools/quality/never_requested_operations.py --check    # non-zero if the register is wrong
     uv run tools/quality/never_requested_operations.py --log path/to/backend.log
+    uv run tools/quality/never_requested_operations.py --log a.log --log b.log   # union of both
+
+`--log` is repeatable because coverage no longer comes from one process. The dogfood backend's log holds
+what the browser and conformance suites reached; the REST write walk runs against its *own* fixture
+backend on its own port, and writes its log wherever `--log-out` says. Reading only one of them reports
+operations as dark that a walk requests every run — a register that understates coverage teaches people
+to distrust it, which is the same failure as overstating it.
 """
 
 from __future__ import annotations
@@ -17,12 +24,16 @@ import argparse
 import sys
 from collections import Counter
 from pathlib import Path
+from typing import Any
 
 
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(prog="never_requested_operations.py", description=__doc__)
     parser.add_argument("--check", action="store_true", help="fail when the register is stale")
-    parser.add_argument("--log", type=Path, default=None, help="access log to read")
+    parser.add_argument(
+        "--log", type=Path, action="append", default=None,
+        help="access log to read; repeat to union several (dogfood backend + fixture write walk)",
+    )
     args = parser.parse_args(argv[1:])
 
     from src.infrastructure.rest.route_policy import BY_OPERATION, ROUTE_POLICY
@@ -34,13 +45,20 @@ def main(argv: list[str]) -> int:
         read_request_log,
     )
 
-    log_path = args.log or DEFAULT_REQUEST_LOG
-    log_text = read_request_log(log_path)
-    if log_text is None:
-        print(f"no access log at {log_path} — nothing to measure", file=sys.stderr)
+    log_paths = args.log or [DEFAULT_REQUEST_LOG]
+    texts = [(path, read_request_log(path)) for path in log_paths]
+    missing = [str(path) for path, text in texts if text is None]
+    if missing:
+        print(f"no access log at {', '.join(missing)} — nothing to measure", file=sys.stderr)
         return 1
 
-    dark = never_requested_operations(parse_requested_routes(log_text), ROUTE_POLICY)
+    # Union of the requests, not of the darkness: an operation is covered if *any* log shows it
+    # answering 2xx, and intersecting the dark sets instead would let one log's silence hide another's
+    # evidence.
+    routes: frozenset[Any] = frozenset()
+    for _path, text in texts:
+        routes |= parse_requested_routes(text or "")
+    dark = never_requested_operations(routes, ROUTE_POLICY)
     declared = Counter(row.method for row in ROUTE_POLICY)
     measured = Counter(BY_OPERATION[operation].method for operation in dark)
 
