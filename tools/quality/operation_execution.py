@@ -65,6 +65,17 @@ from src.infrastructure.rest.route_policy import RouteRow
 #: Taken 2026-08-02 against a window containing one full `npm run conformance` and one full
 #: `npm run test:e2e` — 461 distinct successful routes, 79 of 166 operations untouched.
 #:
+#: **Re-cut 2026-08-02 to 43.** The admin slice: `--admin-mode` is process-wide, so the enterprise write
+#: surface needed a *second, sequential* fixture backend rather than more steps in the first walk — which
+#: is exactly what `UNWALKED` said, and what `fixture_backend(admin_mode=True)` plus the cross-process
+#: lock now provide. All seven `/admin/api/*` writes go green, and the first run that reached them found
+#: `admin_create_diagram` answering 200 with `wrote: false` on *every* non-empty selection: the route
+#: discarded the used-id lists `resolve_diagram_selection` hands it, and the verifier refuses a body that
+#: draws what the frontmatter does not name. An operation nothing had ever requested, broken for as long
+#: as it had existed, found by requesting it once.
+#:
+#: `UNWALKED` is down to one entry, `assurance/*`, waiting on a fixture store.
+#:
 #: **Re-cut 2026-08-02 to 50.** The git slice: the fixture workspace became a pair of real git
 #: repositories, each with a throwaway bare remote beside it, and the five operations that were waiting
 #: on "needs a git remote to push to and an enterprise repository with history" went green on the first
@@ -102,13 +113,6 @@ from src.infrastructure.rest.route_policy import RouteRow
 #: poked at over five days.
 NEVER_REQUESTED_OPERATIONS: frozenset[str] = frozenset(
     {
-        "admin_create_connection",
-        "admin_create_diagram",
-        "admin_create_entity",
-        "admin_delete_connection",
-        "admin_delete_diagram",
-        "admin_delete_entity",
-        "admin_update_entity",
         "assurance_add_participating_node",
         "assurance_assign_node_provenance",
         "assurance_create_group",

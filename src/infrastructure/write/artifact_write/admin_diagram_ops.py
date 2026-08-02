@@ -40,9 +40,24 @@ def _write_diagram_to_enterprise(
     keywords: list[str] | None = None,
     version: str,
     status: str,
+    entity_ids_used: list[str] | None = None,
+    connection_ids_used: list[str] | None = None,
     dry_run: bool,
 ) -> WriteResult:
-    """Write a diagram PUML file into the enterprise repo's diagram-catalog."""
+    """Write a diagram PUML file into the enterprise repo's diagram-catalog.
+
+    ``entity_ids_used`` / ``connection_ids_used`` are what the body *draws*, recorded in the
+    frontmatter. Not optional in practice, despite the signature: the verifier refuses a diagram whose
+    body draws an alias listed in neither `entity-ids-used` nor `diagram-entities` (E315), and likewise
+    a relation absent from `connection-ids-used` (E316). They defaulted to nothing and the caller had no
+    way to supply them, so `POST /admin/api/diagrams` could not write a diagram over *any* entity
+    selection: it answered 200 with `wrote: false` and three verification errors, every time. Nothing
+    saw it because nothing had ever requested the operation — it was one of the seven entries
+    `NEVER_REQUESTED_OPERATIONS` held for the admin surface.
+
+    They stay optional-shaped rather than required because "the caller passed an empty selection" and
+    "the caller had no way to say" are different, and it was the second that broke this.
+    """
     assert_enterprise_write_root(repo_root)
     from src.application.modeling.artifact_write import format_diagram_puml  # noqa: PLC0415
 
@@ -52,6 +67,7 @@ def _write_diagram_to_enterprise(
     content = format_diagram_puml(
         artifact_id=artifact_id, diagram_type=diagram_type, name=name, puml_body=puml,
         keywords=keywords, version=version, status=status, last_updated=modification_stamp(),
+        entity_ids_used=entity_ids_used, connection_ids_used=connection_ids_used,
     )
 
     if dry_run:

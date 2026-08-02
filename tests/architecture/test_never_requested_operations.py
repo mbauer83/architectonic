@@ -158,13 +158,16 @@ def _walked_by_the_write_walk() -> frozenset[str]:
     serves a disposable workspace on its own port and writes its access log there, so `.arch/backend.log`
     — the dogfood backend's — cannot contain those requests however many times the walk has run.
 
-    Reading `STEPS` is a *claim*; the evidence is `tests/tools/test_rest_write_walk.py`, which runs the
-    walk and asserts every step appears in that backend's own log. So the two halves are separate and
-    both in this suite: a step that stops being requested fails there, not silently here.
-    """
-    from tools.quality.rest_write_walk import STEPS
+    Reading the step tuples is a *claim*; the evidence is `tests/tools/test_rest_write_walk.py`, which
+    runs both walks and asserts every step appears in that backend's own log. So the two halves are
+    separate and both in this suite: a step that stops being requested fails there, not silently here.
 
-    return frozenset(step.operation_id for step in STEPS)
+    Both tuples, because the enterprise surface needs a backend in a different *mode* and therefore a
+    second sequential run — a second log this one cannot contain either.
+    """
+    from tools.quality.rest_write_walk import ADMIN_STEPS, STEPS
+
+    return frozenset(step.operation_id for step in (*STEPS, *ADMIN_STEPS))
 
 
 def _measured_dark_operations() -> frozenset[str]:

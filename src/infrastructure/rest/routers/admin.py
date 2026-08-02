@@ -326,7 +326,12 @@ def admin_create_diagram(body: AdminCreateDiagramBody, response: Response,
 
     assert_enterprise_write_root(ent_root)
     repo = s.get_repo()
-    entities, connections, _, _ = resolve_diagram_selection(repo, body.entity_ids, body.connection_ids)
+    # The used-id lists are not spare: the verifier refuses a body that draws an alias the frontmatter
+    # does not list (E315/E316), so discarding them here — which this route did — made every non-empty
+    # selection answer 200 with `wrote: false`.
+    entities, connections, entity_ids_used, connection_ids_used = resolve_diagram_selection(
+        repo, body.entity_ids, body.connection_ids
+    )
     puml = generate_archimate_puml_body(body.name, entities, connections, diagram_type=body.diagram_type)
     try:
         result = s.authorized_write(
@@ -344,6 +349,8 @@ def admin_create_diagram(body: AdminCreateDiagramBody, response: Response,
             keywords=body.keywords,
             version=body.version,
             status=body.status,
+            entity_ids_used=entity_ids_used,
+            connection_ids_used=connection_ids_used,
             dry_run=body.dry_run,
         )
     except ValueError as e:

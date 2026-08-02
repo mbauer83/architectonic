@@ -170,12 +170,17 @@ def _child_env(workspace: FixtureWorkspace) -> dict[str, str]:
 
 
 @contextlib.contextmanager
-def fixture_backend(root: Path | None = None) -> Iterator[FixtureBackend]:
+def fixture_backend(root: Path | None = None, *, admin_mode: bool = False) -> Iterator[FixtureBackend]:
     """Build a fixture workspace, serve it on a free port, and stop the process on the way out.
 
     `root=None` uses a temporary directory removed afterwards, which is the normal case: the content
     is disposable by design and a walk that leaves a repository behind will have someone point a
     backend at it by accident. Pass a path to keep the workspace for inspection after a failure.
+
+    `admin_mode=True` adds `--admin-mode`, which opens `/admin/api/*` — the enterprise write surface.
+    It is process-wide: one backend cannot be both, and `_require_admin` answers 403 rather than
+    pretending. So the admin operations need a **second, sequential** run rather than more steps in the
+    first one, and the cross-process lock is what makes "sequential" true rather than hoped for.
     """
     with contextlib.ExitStack() as stack:
         # Taken before the workspace is built, so a waiting walk does not generate content it then
@@ -211,6 +216,7 @@ def fixture_backend(root: Path | None = None) -> Iterator[FixtureBackend]:
                 "127.0.0.1",
                 "--port",
                 str(port),
+                *(["--admin-mode"] if admin_mode else []),
             ],
             cwd=str(REPO_ROOT),
             stdout=sink,

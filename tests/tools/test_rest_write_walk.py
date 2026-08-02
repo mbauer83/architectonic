@@ -19,7 +19,14 @@ from __future__ import annotations
 import pytest
 
 from tools.quality.fixture_backend import fixture_backend
-from tools.quality.rest_write_walk import KNOWN_DEFECTS, STEPS, UNWALKED, reached_operations, walk
+from tools.quality.rest_write_walk import (
+    ADMIN_STEPS,
+    KNOWN_DEFECTS,
+    STEPS,
+    UNWALKED,
+    reached_operations,
+    walk,
+)
 
 
 def test_the_registers_are_disjoint_and_reasoned() -> None:
@@ -69,3 +76,26 @@ def test_the_walk_runs_green_against_a_fixture_backend() -> None:
         "a pinned-broken operation appears as successfully requested, so either it is fixed (remove "
         "the KNOWN_DEFECTS entry) or the log parser has started counting non-2xx answers"
     )
+
+
+@pytest.mark.slow_walk
+def test_the_admin_walk_runs_green_against_an_admin_mode_fixture_backend() -> None:
+    """The enterprise write surface, which needs a backend in a different *mode* rather than different
+    content.
+
+    A second, sequential run because `--admin-mode` is process-wide — `_require_admin` answers 403
+    without it, and one backend cannot be both. Its own test rather than more steps in the one above,
+    for the same reason.
+
+    The first run that reached these found `admin_create_diagram` answering 200 with `wrote: false` on
+    every non-empty selection; see `test_admin_diagram_records_what_it_draws`. That is what an operation
+    nothing had ever requested looks like from the inside.
+    """
+    with fixture_backend(admin_mode=True) as backend:
+        answered, failures = walk(backend, ADMIN_STEPS)
+        reached = reached_operations(backend)
+
+    assert failures == [], failures
+    assert len(answered) == len(ADMIN_STEPS), sorted({s.operation_id for s in ADMIN_STEPS} - set(answered))
+    expected = {step.operation_id for step in ADMIN_STEPS}
+    assert expected <= reached, sorted(expected - reached)

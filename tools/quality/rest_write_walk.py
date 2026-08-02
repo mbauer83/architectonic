@@ -139,11 +139,6 @@ UNWALKED: Mapping[str, str] = {
         "deliberately does not build — a walk that authored there would be writing analyst content "
         "into the real store. Needs a fixture *store*, which is its own slice."
     ),
-    "admin/*": (
-        "`/admin/api/*` needs --admin-mode, which is process-wide: one backend cannot be both. Needs a "
-        "second fixture backend, which the workspace-keyed pre-start guard forbids, so it needs its "
-        "own sequential run."
-    ),
 }
 
 
@@ -397,6 +392,85 @@ STEPS: tuple[Step, ...] = (
 )
 
 
+#: The enterprise write surface, walked by a **second, sequential** run against a second fixture backend
+#: started with `--admin-mode`.
+#:
+#: Two runs rather than more steps in one, because `--admin-mode` is process-wide: `_require_admin`
+#: answers 403 without it, and one backend cannot be both. That was recorded in `UNWALKED` as a
+#: precondition needing "its own sequential run", and this is it — the cross-process lock in
+#: `fixture_backend` is what makes *sequential* a fact rather than a hope.
+#:
+#: Everything here targets the **enterprise** repository, which is what `/admin/api/*` is for and why
+#: these operations cannot be reached from the engagement surface at all: `admin_ops` asserts the
+#: enterprise write root at every entry point.
+ADMIN_STEPS: tuple[Step, ...] = (
+    Step(
+        "admin_create_entity", "POST", lambda _c: "/admin/api/entities",
+        lambda _c: {
+            "artifact_type": "application-component",
+            "name": "Admin Walk Component",
+            "dry_run": False,
+        },
+        captures="admin_entity",
+    ),
+    Step(
+        "admin_update_entity", "PATCH",
+        lambda c: f"/admin/api/entities/{_q(c.created['admin_entity'])}",
+        lambda _c: {"summary": "Patched through the admin surface.", "dry_run": False},
+    ),
+    Step(
+        # A second entity, so the connection below has two enterprise endpoints. The fixture's
+        # enterprise repository starts empty of model content on purpose — it is what a promotion
+        # target looks like before anything is promoted into it.
+        "admin_create_entity", "POST", lambda _c: "/admin/api/entities",
+        lambda _c: {
+            "artifact_type": "application-component",
+            "name": "Admin Walk Counterpart",
+            "dry_run": False,
+        },
+        captures="admin_other_entity",
+    ),
+    Step(
+        "admin_create_connection", "POST", lambda _c: "/admin/api/connections",
+        lambda c: {
+            "source_entity": c.created["admin_entity"],
+            "connection_type": "archimate-serving",
+            "target_entity": c.created["admin_other_entity"],
+            "dry_run": False,
+        },
+        captures="admin_connection",
+    ),
+    Step(
+        "admin_create_diagram", "POST", lambda _c: "/admin/api/diagrams",
+        lambda c: {
+            "diagram_type": "archimate-application",
+            "name": "Admin Walk View",
+            "entity_ids": [c.created["admin_entity"], c.created["admin_other_entity"]],
+            "connection_ids": [c.created["admin_connection"]],
+            "dry_run": False,
+        },
+        captures="admin_diagram",
+    ),
+    Step(
+        "admin_delete_diagram", "DELETE",
+        lambda c: f"/admin/api/diagrams/{_q(c.created['admin_diagram'])}?dry_run=false",
+        expect=(200, 204), must_have_written=False,
+    ),
+    Step(
+        # Before the entities, because deleting an endpoint out from under a connection is a different
+        # thing to test and not this walk's business.
+        "admin_delete_connection", "DELETE",
+        lambda c: f"/admin/api/connections/{_q(c.created['admin_connection'])}?dry_run=false",
+        expect=(200, 204), must_have_written=False,
+    ),
+    Step(
+        "admin_delete_entity", "DELETE",
+        lambda c: f"/admin/api/entities/{_q(c.created['admin_entity'])}?dry_run=false",
+        expect=(200, 204), must_have_written=False,
+    ),
+)
+
+
 def _request(backend: FixtureBackend, step: Step, path: str, body: Any) -> tuple[int, Any]:
     data = None if body is None else json.dumps(body).encode("utf-8")
     request = urllib.request.Request(  # noqa: S310 - fixed scheme, local fixture backend
@@ -434,13 +508,20 @@ def _decoded_or_none(raw: bytes) -> Any:
         return None
 
 
-def walk(backend: FixtureBackend) -> tuple[list[str], list[str]]:
-    """Run every step in order. Returns (operations that answered as declared, failures)."""
+def walk(
+    backend: FixtureBackend, steps: tuple[Step, ...] = STEPS
+) -> tuple[list[str], list[str]]:
+    """Run every step in order. Returns (operations that answered as declared, failures).
+
+    `steps` is a parameter rather than always `STEPS` because the enterprise surface needs a backend in
+    a different *mode*, not different content — see `ADMIN_STEPS`. The engine is the same; what differs
+    is which backend it is pointed at.
+    """
     context = Context(backend=backend)
     answered: list[str] = []
     failures: list[str] = []
 
-    for step in STEPS:
+    for step in steps:
         try:
             path = step.path(context)
             body = step.body(context) if step.body is not None else None
@@ -488,6 +569,13 @@ def reached_operations(backend: FixtureBackend) -> frozenset[str]:
     return requested_operations(parse_requested_routes(log_text), ROUTE_POLICY)
 
 
+def _report(label: str, steps: tuple[Step, ...], answered: list[str], reached: frozenset[str]) -> None:
+    print(f"\n{label}: {len(answered)} of {len(steps)} steps answered as declared:")
+    for operation in answered:
+        print(f"  {operation}")
+    print(f"{len(reached)} manifest operations appear in that server's own log")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -497,22 +585,40 @@ def main(argv: list[str] | None = None) -> int:
         "--log-out", type=Path, default=None,
         help="copy the backend's access log here, so the operation register can read it",
     )
+    parser.add_argument(
+        "--admin-log-out", type=Path, default=None,
+        help="the same, for the second (admin-mode) run's log",
+    )
     args = parser.parse_args(argv)
 
+    failures: list[str] = []
+
+    # Two runs, sequentially, because `--admin-mode` is process-wide and the cross-process lock in
+    # `fixture_backend` will not let the second start while the first is up. Each gets its own fresh
+    # workspace, which is also what makes the admin run's empty enterprise repository honest: it is what
+    # a promotion target looks like before anything has been promoted into it.
     with fixture_backend(args.keep) as backend:
-        answered, failures = walk(backend)
+        answered, run_failures = walk(backend, STEPS)
         reached = reached_operations(backend)
         if args.log_out is not None:
             args.log_out.write_text(
                 backend.log.read_text(encoding="utf-8", errors="replace"), encoding="utf-8"
             )
+    _report("engagement surface", STEPS, answered, reached)
+    failures.extend(run_failures)
 
-    print(f"{len(answered)} of {len(STEPS)} steps answered as declared:")
-    for operation in answered:
-        print(f"  {operation}")
-    print(f"\n{len(reached)} manifest operations appear in the server's own log")
-    print(f"not walked, by precondition: {', '.join(UNWALKED)}")
-    print(f"reached but broken, pinned: {', '.join(KNOWN_DEFECTS)}")
+    with fixture_backend(admin_mode=True) as admin_backend:
+        admin_answered, admin_failures = walk(admin_backend, ADMIN_STEPS)
+        admin_reached = reached_operations(admin_backend)
+        if args.admin_log_out is not None:
+            args.admin_log_out.write_text(
+                admin_backend.log.read_text(encoding="utf-8", errors="replace"), encoding="utf-8"
+            )
+    _report("enterprise surface (--admin-mode)", ADMIN_STEPS, admin_answered, admin_reached)
+    failures.extend(admin_failures)
+
+    print(f"\nnot walked, by precondition: {', '.join(UNWALKED) or '(nothing)'}")
+    print(f"reached but broken, pinned: {', '.join(KNOWN_DEFECTS) or '(nothing)'}")
     if failures:
         print(f"\n{len(failures)} failure(s):")
         for failure in failures:
