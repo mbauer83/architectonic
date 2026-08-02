@@ -315,7 +315,7 @@ def create_entity(
 ) -> dict[str, Any]:
     if is_internal_entity_type(body.artifact_type, catalogs.ontology):
         raise HTTPException(400, "global-artifact-reference entities cannot be created directly")
-    repo_root, _registry, verifier = s.get_write_deps()
+    repo_root, _registry, verifier = s.get_write_deps(catalogs)
     from src.infrastructure.write.artifact_write.entity import create_entity as _create
 
     try:
@@ -353,8 +353,10 @@ def create_entity(
 
 @router.patch("/api/entities/{artifact_id}", tags=[TAG_ENTITIES], summary="Edit an entity (partial update)",
     response_model=WriteResultResponse, responses=WRITE_RESPONSES)
-def edit_entity(artifact_id: str, body: EditEntityBody) -> dict[str, Any]:
-    repo_root, registry, verifier = s.get_write_deps()
+def edit_entity(artifact_id: str, body: EditEntityBody,
+    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
+) -> dict[str, Any]:
+    repo_root, registry, verifier = s.get_write_deps(catalogs)
     from src.infrastructure.write.artifact_write.entity_edit import _UNSET
     from src.infrastructure.write.artifact_write.entity_edit import edit_entity as _edit
 
@@ -388,9 +390,10 @@ def edit_entity(artifact_id: str, body: EditEntityBody) -> dict[str, Any]:
 @router.delete("/api/entities/{artifact_id}", tags=[TAG_ENTITIES], summary="Delete an entity",
     response_model=None, responses=_DELETE_RESPONSES, status_code=status.HTTP_204_NO_CONTENT)
 def delete_entity(
-    artifact_id: str, response: Response, dry_run: bool = True
+    artifact_id: str, response: Response, dry_run: bool = True,
+    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
 ) -> dict[str, Any] | None:
-    repo_root, registry, _verifier = s.get_write_deps()
+    repo_root, registry, _verifier = s.get_write_deps(catalogs)
     from src.infrastructure.write.artifact_write.entity_delete import delete_entity as _delete
 
     try:

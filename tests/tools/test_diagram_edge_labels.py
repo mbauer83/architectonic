@@ -549,6 +549,7 @@ def test_mcp_edge_labels_merges_with_existing(repo: Path) -> None:
 def test_rest_edge_label_endpoint_calls_service(repo: Path) -> None:
     """Thin adapter test: the REST handler calls set_diagram_edge_label and returns a result dict."""
     from src.application.artifacts.repository import ArtifactRepository
+    from src.infrastructure.app_bootstrap import process_runtime_catalogs
     from src.infrastructure.artifact_index import shared_artifact_index
     from src.infrastructure.rest.routers import state as gui_state
     from src.infrastructure.rest.routers.diagrams._edge_label import SetEdgeLabelBody, set_edge_label_gui
@@ -561,7 +562,8 @@ def test_rest_edge_label_endpoint_calls_service(repo: Path) -> None:
 
     # Diagram and edge are path identity; the body carries only the label.
     body = SetEdgeLabelBody(label="via REST", dry_run=True)
-    result = set_edge_label_gui(diag_id, "APP_A:APP_B", body)
+    # Called as a plain function, so the test supplies what FastAPI would have injected.
+    result = set_edge_label_gui(diag_id, "APP_A:APP_B", body, process_runtime_catalogs())
     assert "wrote" in result
 
 

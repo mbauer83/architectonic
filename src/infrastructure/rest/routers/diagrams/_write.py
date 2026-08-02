@@ -116,14 +116,16 @@ def preview_diagram(body: DiagramPreviewBody, catalogs: RuntimeCatalogs = Depend
 @router.post("/api/diagrams", tags=[TAG_DIAGRAMS], summary="Create a diagram",
     response_model=WriteResultResponse, responses=CREATE_RESPONSES,
     status_code=status.HTTP_201_CREATED)
-def create_diagram_gui(body: CreateDiagramGuiBody, response: Response) -> dict[str, Any]:
+def create_diagram_gui(body: CreateDiagramGuiBody, response: Response,
+    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
+) -> dict[str, Any]:
     from src.application.identifier_allocator import get_default_allocator
     from src.application.modeling.artifact_write import prefix_for_diagram_type
     from src.infrastructure.rendering.diagram_builder import generate_archimate_puml_body
     from src.infrastructure.write.artifact_write.diagram import create_diagram
 
     repo = s.get_repo()
-    repo_root, _, verifier = s.get_write_deps()
+    repo_root, _, verifier = s.get_write_deps(catalogs)
     entities, connections, entity_ids_used, connection_ids_used = resolve_diagram_selection(
         repo,
         body.entity_ids,
@@ -175,12 +177,14 @@ def create_diagram_gui(body: CreateDiagramGuiBody, response: Response) -> dict[s
 
 @router.put("/api/diagrams/{artifact_id}", tags=[TAG_DIAGRAMS], summary="Replace a diagram",
     response_model=WriteResultResponse, responses=DETAIL_RESPONSES)
-def edit_diagram_gui(artifact_id: str, body: EditDiagramGuiBody) -> dict[str, Any]:
+def edit_diagram_gui(artifact_id: str, body: EditDiagramGuiBody,
+    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
+) -> dict[str, Any]:
     from src.infrastructure.rendering.diagram_builder import generate_archimate_puml_body
     from src.infrastructure.write.artifact_write.diagram_edit import edit_diagram
 
     repo = s.get_repo()
-    repo_root, _, verifier = s.get_write_deps()
+    repo_root, _, verifier = s.get_write_deps(catalogs)
     entities, connections, entity_ids_used, connection_ids_used = resolve_diagram_selection(
         repo,
         body.entity_ids,
@@ -229,6 +233,7 @@ def edit_diagram_gui(artifact_id: str, body: EditDiagramGuiBody) -> dict[str, An
 def _patch_diagram_metadata(
     *, operation_id: str, artifact_id: str, classifier_id: str, attribute_id: str | None,
     body: PatchDiagramEntityMetadataBody,
+    catalogs: RuntimeCatalogs,
 ) -> dict[str, Any]:
     """The one write behind both metadata routes, differing only in what the path addressed.
 
@@ -242,7 +247,7 @@ def _patch_diagram_metadata(
     )
 
     repo = s.get_repo()
-    repo_root, _, verifier = s.get_write_deps()
+    repo_root, _, verifier = s.get_write_deps(catalogs)
     try:
         result = s.authorized_write(
             operation_id,
@@ -265,11 +270,13 @@ def _patch_diagram_metadata(
 @router.patch("/api/diagrams/{artifact_id}/entities/{classifier_id}/metadata", tags=[TAG_DIAGRAMS],
     summary="Patch a diagram-entity's metadata", response_model=WriteResultResponse)
 def patch_diagram_entity_metadata_gui(
-    artifact_id: str, classifier_id: str, body: PatchDiagramEntityMetadataBody
+    artifact_id: str, classifier_id: str, body: PatchDiagramEntityMetadataBody,
+    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
 ) -> dict[str, Any]:
     return _patch_diagram_metadata(
         operation_id="diagrams_update_diagram_classifier_metadata",
         artifact_id=artifact_id, classifier_id=classifier_id, attribute_id=None, body=body,
+        catalogs=catalogs,
     )
 
 
@@ -280,6 +287,7 @@ def patch_diagram_entity_metadata_gui(
 def patch_diagram_attribute_metadata_gui(
     artifact_id: str, classifier_id: str, attribute_id: str,
     body: PatchDiagramEntityMetadataBody,
+    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
 ) -> dict[str, Any]:
     """The attribute's own address, split out of the classifier route.
 
@@ -291,16 +299,19 @@ def patch_diagram_attribute_metadata_gui(
     return _patch_diagram_metadata(
         operation_id="diagrams_update_diagram_attribute_metadata",
         artifact_id=artifact_id, classifier_id=classifier_id, attribute_id=attribute_id, body=body,
+        catalogs=catalogs,
     )
 
 
 @router.post("/api/diagrams/{artifact_id}/sync", tags=[TAG_DIAGRAMS], summary="Sync a diagram to the model",
     response_model=SyncDiagramToModelResponse, responses=WRITE_RESPONSES)
-def sync_diagram_to_model_gui(artifact_id: str, body: SyncDiagramToModelBody) -> dict[str, Any]:
+def sync_diagram_to_model_gui(artifact_id: str, body: SyncDiagramToModelBody,
+    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
+) -> dict[str, Any]:
     from src.infrastructure.write.artifact_write.diagram_sync import refresh_diagram
 
     repo = s.get_repo()
-    repo_root, _, verifier = s.get_write_deps()
+    repo_root, _, verifier = s.get_write_deps(catalogs)
     try:
         result = s.authorized_write(
             "diagrams_sync_diagram_to_model", 
@@ -328,13 +339,14 @@ def sync_diagram_to_model_gui(artifact_id: str, body: SyncDiagramToModelBody) ->
 @router.delete("/api/diagrams/{artifact_id}", tags=[TAG_DIAGRAMS], summary="Remove a diagram",
     response_model=None, responses=DELETE_RESPONSES, status_code=status.HTTP_204_NO_CONTENT)
 def delete_diagram_gui(
-    artifact_id: str, response: Response, dry_run: bool = True
+    artifact_id: str, response: Response, dry_run: bool = True,
+    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
 ) -> dict[str, Any] | None:
     from src.application.candidate_repository import committed_repository  # noqa: PLC0415
     from src.infrastructure.write.artifact_write.diagram_delete import delete_diagram
 
     repo = s.get_repo()
-    repo_root, _registry, _verifier = s.get_write_deps()
+    repo_root, _registry, _verifier = s.get_write_deps(catalogs)
     try:
         result = s.authorized_write(
             "diagrams_delete_diagram", 

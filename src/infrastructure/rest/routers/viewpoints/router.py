@@ -368,7 +368,7 @@ def get_diagram_viewpoint_projection(
     module = catalogs.diagram_types.find_diagram_type(diag_rec.diagram_type if target_kind == "diagram" else "matrix")
     if module is None:
         raise HTTPException(404, f"Diagram type not found: {diag_rec.diagram_type!r}")
-    _, registry, _ = s.get_write_deps()
+    _, registry, _ = s.get_write_deps(catalogs)
     registries = _registry_snapshot(catalogs, repo.repo_roots)
     projection = project_artifact_by_frontmatter(
         diag_rec.extra,

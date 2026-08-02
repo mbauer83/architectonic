@@ -2,12 +2,14 @@ import { describe, expectTypeOf, it } from 'vitest'
 import type { Immutable, SchemaType } from './contractOracle'
 import type { components } from './openapi.generated'
 import type {
+  DirectNeighborhoodSchema,
   DocumentReferenceSchema,
+  EntityContextSchema,
   EntityDetailSchema,
   EntityListSchema,
   EntitySummarySchema,
 } from './entities'
-import type { DocumentDetailSchema } from './documents'
+import type { DocumentDetailSchema, DocumentListSchema } from './documents'
 import type { DiagramListSchema, DiagramSummarySchema } from './diagram-types'
 import type {
   ConnectionListResponseSchema,
@@ -93,6 +95,44 @@ describe('the connection list', () => {
     >()
     expectTypeOf<SchemaType<typeof ConnectionRecordSchema>>().toEqualTypeOf<
       Immutable<components['schemas']['ConnectionSummary']>
+    >()
+  })
+})
+
+describe('the entity context', () => {
+  /**
+   * `connections` was `dict[str, list[ContextConnection]]` on the DTO, so the document published "an
+   * object with arbitrary string keys" for a set of exactly three — and the decoder, which names all
+   * three and no others, could not be compared to it at all. The grouping is decided in the
+   * application read model, so that is where it is closed; `ConnectionDirection` is named there too,
+   * having previously been a `Literal` in the delivery layer and a bare `str` in the layer that
+   * produces it.
+   *
+   * `etag` and `generation` carried `| None = None`, publishing as optional two fields the read model
+   * types as required — on a route with `response_model_exclude_none=True`, so a None would have been
+   * dropped from the body whose whole purpose is to say which snapshot it came from.
+   */
+  it('decodes an entity with its connections grouped by direction', () => {
+    expectTypeOf<SchemaType<typeof EntityContextSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['EntityContextResponse']>
+    >()
+  })
+})
+
+describe('the neighbourhood', () => {
+  it('decodes a direct neighbourhood, and the hop map inside it', () => {
+    expectTypeOf<SchemaType<typeof DirectNeighborhoodSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['DirectNeighborhood']>
+    >()
+  })
+})
+
+describe('the document list', () => {
+  // `DocumentSummary.group` was `optional` on the client and required with no default on the DTO, so
+  // the route would answer 500 rather than omit it. The client was the permissive side.
+  it('decodes a page of documents, and one row', () => {
+    expectTypeOf<SchemaType<typeof DocumentListSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['DocumentListResponse']>
     >()
   })
 })

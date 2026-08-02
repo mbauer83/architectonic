@@ -10,8 +10,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 
+from src.application.runtime_catalogs import RuntimeCatalogs
+from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
 from src.infrastructure.rest.contracts.diagrams import MatrixPreviewResponse
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers._openapi import TAG_DIAGRAMS, WRITE_RESPONSES, WriteResultResponse
@@ -32,9 +34,11 @@ router = APIRouter(responses=WRITE_RESPONSES)
 
 @router.post("/api/matrices/preview", tags=[TAG_DIAGRAMS], summary="Preview a matrix write (dry-run)",
     response_model=MatrixPreviewResponse, responses=WRITE_RESPONSES)
-def preview_matrix(body: MatrixPreviewBody) -> dict[str, Any]:
+def preview_matrix(body: MatrixPreviewBody,
+    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
+) -> dict[str, Any]:
     repo = s.get_repo()
-    repo_root, registry, _ = s.get_write_deps()
+    repo_root, registry, _ = s.get_write_deps(catalogs)
     from src.infrastructure.write.artifact_write._matrix_content import _linkify_matrix_ids
 
     md = build_matrix_markdown(
@@ -57,11 +61,13 @@ def preview_matrix(body: MatrixPreviewBody) -> dict[str, Any]:
 
 @router.post("/api/matrices", tags=[TAG_DIAGRAMS], summary="Create a matrix diagram",
     response_model=WriteResultResponse, responses=CREATE_RESPONSES, status_code=status.HTTP_201_CREATED)
-def create_matrix_gui(body: CreateMatrixBody, response: Response) -> dict[str, Any]:
+def create_matrix_gui(body: CreateMatrixBody, response: Response,
+    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
+) -> dict[str, Any]:
     from src.infrastructure.write.artifact_write.matrix import create_matrix
 
     repo = s.get_repo()
-    repo_root, registry, verifier = s.get_write_deps()
+    repo_root, registry, verifier = s.get_write_deps(catalogs)
     md = build_matrix_markdown(
         body.entity_ids,
         body.conn_type_configs,
@@ -99,11 +105,13 @@ def create_matrix_gui(body: CreateMatrixBody, response: Response) -> dict[str, A
 
 @router.put("/api/matrices/{artifact_id}", tags=[TAG_DIAGRAMS], summary="Replace a matrix diagram",
     response_model=WriteResultResponse, responses=DETAIL_RESPONSES)
-def edit_matrix_gui(artifact_id: str, body: EditMatrixBody) -> dict[str, Any]:
+def edit_matrix_gui(artifact_id: str, body: EditMatrixBody,
+    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
+) -> dict[str, Any]:
     from src.infrastructure.write.artifact_write.matrix import create_matrix
 
     repo = s.get_repo()
-    repo_root, registry, verifier = s.get_write_deps()
+    repo_root, registry, verifier = s.get_write_deps(catalogs)
     md = build_matrix_markdown(
         body.entity_ids,
         body.conn_type_configs,

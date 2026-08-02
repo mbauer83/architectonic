@@ -5,10 +5,12 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from pydantic import BaseModel
 
 from src.application.artifacts.document_schema import get_document_subdirectory, load_document_schemata
+from src.application.runtime_catalogs import RuntimeCatalogs
+from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
 from src.infrastructure.rest.contracts.authoring_catalogs import DocumentTypeListResponse
 from src.infrastructure.rest.contracts.documents import (
     DocumentDetailResponse,
@@ -174,10 +176,12 @@ _CREATE_RESPONSES: dict[int | str, Any] = {
 @router.post("/api/documents", tags=[TAG_DOCUMENTS], summary="Create a document",
     response_model=WriteResultResponse, responses=_CREATE_RESPONSES,
     status_code=status.HTTP_201_CREATED)
-def create_document(req: CreateDocumentRequest, response: Response) -> dict[str, Any]:
+def create_document(req: CreateDocumentRequest, response: Response,
+    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
+) -> dict[str, Any]:
     from src.infrastructure.write.artifact_write.document import create_document as _create
 
-    repo_root, _, verifier = s.get_write_deps()
+    repo_root, _, verifier = s.get_write_deps(catalogs)
 
     result = s.authorized_write(
             "documents_create_document", 
@@ -207,10 +211,12 @@ def create_document(req: CreateDocumentRequest, response: Response) -> dict[str,
 
 @router.patch("/api/documents/{artifact_id}", tags=[TAG_DOCUMENTS], summary="Edit a document",
     response_model=WriteResultResponse, responses=WRITE_RESPONSES)
-def edit_document(artifact_id: str, req: EditDocumentRequest) -> dict[str, Any]:
+def edit_document(artifact_id: str, req: EditDocumentRequest,
+    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
+) -> dict[str, Any]:
     from src.infrastructure.write.artifact_write.document import edit_document as _edit
 
-    repo_root, _, verifier = s.get_write_deps()
+    repo_root, _, verifier = s.get_write_deps(catalogs)
 
     result = s.authorized_write(
             "documents_update_document", 
@@ -243,10 +249,12 @@ _DELETE_RESPONSES: dict[int | str, Any] = {
 
 @router.delete("/api/documents/{artifact_id}", tags=[TAG_DOCUMENTS], summary="Delete a document",
     response_model=None, responses=_DELETE_RESPONSES, status_code=status.HTTP_204_NO_CONTENT)
-def delete_document(artifact_id: str, response: Response, dry_run: bool = False) -> dict[str, Any] | None:
+def delete_document(artifact_id: str, response: Response, dry_run: bool = False,
+    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
+) -> dict[str, Any] | None:
     from src.infrastructure.write.artifact_write.document import delete_document as _delete
 
-    repo_root, _, _ = s.get_write_deps()
+    repo_root, _, _ = s.get_write_deps(catalogs)
 
     result = s.authorized_write(
             "documents_delete_document", 

@@ -1,5 +1,14 @@
 import { describe, expectTypeOf, it } from 'vitest'
 import type { Immutable, SchemaType } from './contractOracle'
+import type { WriteHelpSchema } from './server'
+import type {
+  AllocatedIdentifierSchema,
+  DatatypeClassifierInfoSchema,
+  DatatypeTypeCatalogSchema,
+  DatatypeTypeUsageSchema,
+  DatatypeTypeUsagesSchema,
+  DiagramRefListSchema,
+} from './diagram-types'
 import type { components } from './openapi.generated'
 import type {
   EntityTaxonomyDomainSchema,
@@ -346,5 +355,64 @@ describe('entity taxonomy', () => {
     expectTypeOf<SchemaType<typeof EntityTaxonomyTypeSchema>>().toEqualTypeOf<
       Immutable<components['schemas']['TaxonomyTypeResponse']>
     >()
+  })
+})
+
+describe('identifier allocation', () => {
+  it('decodes an allocated diagram-entity identifier', () => {
+    expectTypeOf<SchemaType<typeof AllocatedIdentifierSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['AllocatedIdentifierResponse']>
+    >()
+  })
+})
+
+describe('the datatype classifier catalogue', () => {
+  it('decodes a page of classifier types, and one classifier', () => {
+    expectTypeOf<SchemaType<typeof DatatypeTypeCatalogSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['DatatypeTypeListResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof DatatypeClassifierInfoSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['DatatypeClassifierInfo']>
+    >()
+  })
+
+  it('decodes where a classifier type is used', () => {
+    expectTypeOf<SchemaType<typeof DatatypeTypeUsagesSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['DatatypeTypeUsageResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof DatatypeTypeUsageSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['DatatypeTypeUsage']>
+    >()
+  })
+})
+
+describe('diagram references', () => {
+  // The envelope existed only as an anonymous `Schema.Struct` inside `getDiagramRefs`, so nothing
+  // could hold it against the document while the bare array beside it looked like the response.
+  it('decodes which diagrams draw a given pair', () => {
+    expectTypeOf<SchemaType<typeof DiagramRefListSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['DiagramReferenceListResponse']>
+    >()
+  })
+})
+
+describe('write help', () => {
+  /**
+   * The client reads two of this response's ten fields, and one of those only for its `prefix`, so
+   * the oracle is a *named projection* of the document rather than the whole component.
+   *
+   * Plain equality would fail for a narrowing that is not drift; an entry in `UNASSERTED_SCHEMAS`
+   * would give up strictness on the fields the client does read — which is exactly how the one real
+   * divergence here survived, `entity_type_catalog` being required in the document and `optional` in
+   * the decoder.
+   */
+  type CatalogEntry = Pick<components['schemas']['EntityTypeCatalogEntry'], 'prefix'>
+  type WriteHelpRead = {
+    entity_types_by_domain: components['schemas']['WriteHelpResponse']['entity_types_by_domain']
+    entity_type_catalog: { [key: string]: CatalogEntry }
+  }
+
+  it('decodes the slice of the catalogue it reads', () => {
+    expectTypeOf<SchemaType<typeof WriteHelpSchema>>().toEqualTypeOf<Immutable<WriteHelpRead>>()
   })
 })

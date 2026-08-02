@@ -3,6 +3,12 @@ import type { Immutable, SchemaType } from './contractOracle'
 import type { components } from './openapi.generated'
 import type { CriteriaCatalogSchema } from './viewpointCatalogs'
 import type {
+  ViewpointPersistResultSchema,
+  ViewpointPinsSchema,
+  ViewpointReferencerListSchema,
+  ViewpointValidationIssueSchema,
+} from './viewpoints'
+import type {
   ConceptScopeSpecSchema,
   ForkLineageSpecSchema,
   ScopeSummarySchema,
@@ -148,6 +154,38 @@ describe('authoring pickers', () => {
     >()
     expectTypeOf<SchemaType<typeof ViewpointSummarizeResultSchema>>().toEqualTypeOf<
       Immutable<components['schemas']['ViewpointQuerySummaryResponse']>
+    >()
+  })
+})
+
+describe('persisting a definition', () => {
+  /**
+   * `version` carried `= None`, publishing as optional a key `PersistResult.as_answer` emits
+   * unconditionally; and `ViewpointValidationIssueDto.expected`/`found` did the same while the DTO's
+   * own docstring said both are always serialised. A default describes a field's *value*; it is the
+   * absence of one that describes its presence.
+   */
+  it('decodes a persist outcome, with its issues and referencers', () => {
+    expectTypeOf<SchemaType<typeof ViewpointPersistResultSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['ViewpointPersistResponse']>
+    >()
+  })
+
+  it('decodes one validation finding', () => {
+    expectTypeOf<SchemaType<typeof ViewpointValidationIssueSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['ViewpointValidationIssueDto']>
+    >()
+  })
+
+  it('decodes the diagrams and matrices that pin a viewpoint', () => {
+    expectTypeOf<SchemaType<typeof ViewpointReferencerListSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['ViewpointReferencerListResponse']>
+    >()
+  })
+
+  it('decodes the pin list', () => {
+    expectTypeOf<SchemaType<typeof ViewpointPinsSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['ViewpointPinsResponse']>
     >()
   })
 })

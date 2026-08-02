@@ -23,6 +23,7 @@ else:
 
 from src.application.artifacts.query import ArtifactRepository
 from src.application.entity_type_predicates import is_internal_entity_type
+from src.application.runtime_catalogs import RuntimeCatalogs
 from src.domain.ontology_representation.artifact_types import (
     ConnectionRecord,
     DiagramRecord,
@@ -253,8 +254,17 @@ def diagram_to_summary(d: DiagramRecord) -> dict[str, Any]:
     }
 
 
-def get_write_deps() -> tuple[Path, Any, Any]:
-    """Return (engagement_root, registry, verifier). Registry spans both repos."""
+def get_write_deps(catalogs: RuntimeCatalogs) -> tuple[Path, Any, Any]:
+    """Return (engagement_root, registry, verifier). Registry spans both repos.
+
+    ``catalogs`` is a parameter, not a lookup. Every one of these twenty-nine call sites is a request
+    handler, so the catalogs a test overrode through ``runtime_catalogs_dependency`` reached every
+    *read* and no write at all — the write path built its own from process state, which is the shape
+    of the ``E180`` defect: the process catalogue's viewpoints are the module starter library and read
+    no repository, so a diagram applying a definition you had just saved failed verification
+    permanently. Reloading the viewpoints here fixed that one catalogue; taking the catalogs from the
+    caller is what stops the next divergence between what a handler reads and what it writes against.
+    """
     from src.application.verification.artifact_verifier_registry import ArtifactRegistry
     from src.infrastructure.artifact_index import combined_artifact_index, shared_artifact_index
 
@@ -273,8 +283,8 @@ def get_write_deps() -> tuple[Path, Any, Any]:
     # process catalog's viewpoints are the module-shipped starter library only, so a diagram or
     # matrix applying a repo-authored definition failed verification with `E180 Unknown viewpoint
     # slug` — permanently, not until a restart.
-    catalogs = with_effective_viewpoints(process_runtime_catalogs(), _write_catalog_roots(repo_root, enterprise_root))
-    return repo_root, registry, build_artifact_verifier(registry, catalogs=catalogs)
+    effective = with_effective_viewpoints(catalogs, _write_catalog_roots(repo_root, enterprise_root))
+    return repo_root, registry, build_artifact_verifier(registry, catalogs=effective)
 
 
 def _write_catalog_roots(repo_root: Path | None, enterprise_root: Path | None) -> list[Path]:
@@ -288,7 +298,7 @@ def _write_catalog_roots(repo_root: Path | None, enterprise_root: Path | None) -
     return [root for root in (enterprise_root, repo_root) if root is not None]
 
 
-def get_admin_write_deps() -> tuple[Path, Any, Any]:
+def get_admin_write_deps(catalogs: RuntimeCatalogs) -> tuple[Path, Any, Any]:
     """Return (enterprise_root, registry, verifier) for admin-mode writes.
 
     Raises 403 when admin mode is not enabled, 500 when enterprise root is
@@ -314,8 +324,8 @@ def get_admin_write_deps() -> tuple[Path, Any, Any]:
     registry = ArtifactRegistry(index)
     # Same reload as the engagement write path: an enterprise-tier write may apply an
     # enterprise-authored viewpoint, which the process catalog also does not hold.
-    catalogs = with_effective_viewpoints(process_runtime_catalogs(), _write_catalog_roots(repo_root, enterprise_root))
-    return enterprise_root, registry, build_artifact_verifier(registry, catalogs=catalogs)
+    effective = with_effective_viewpoints(catalogs, _write_catalog_roots(repo_root, enterprise_root))
+    return enterprise_root, registry, build_artifact_verifier(registry, catalogs=effective)
 
 
 def clear_caches(path: Path | list[Path]) -> None:

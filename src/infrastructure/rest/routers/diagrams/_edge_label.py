@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict
 
+from src.application.runtime_catalogs import RuntimeCatalogs
+from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers._openapi import TAG_DIAGRAMS, WRITE_RESPONSES, WriteResultResponse
 
@@ -28,10 +30,12 @@ class SetEdgeLabelBody(BaseModel):
 @router.put("/api/diagrams/{artifact_id}/edges/{edge_key}/label", tags=[TAG_DIAGRAMS],
     summary="Set a per-diagram edge label override", response_model=WriteResultResponse,
     responses=WRITE_RESPONSES)
-def set_edge_label_gui(artifact_id: str, edge_key: str, body: SetEdgeLabelBody) -> dict[str, Any]:
+def set_edge_label_gui(artifact_id: str, edge_key: str, body: SetEdgeLabelBody,
+    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
+) -> dict[str, Any]:
     from src.infrastructure.write.artifact_write._diagram_edge_labels import set_diagram_edge_label
 
-    repo_root, _, verifier = s.get_write_deps()
+    repo_root, _, verifier = s.get_write_deps(catalogs)
     try:
         result = s.authorized_write(
             "diagrams_set_diagram_edge_label", 

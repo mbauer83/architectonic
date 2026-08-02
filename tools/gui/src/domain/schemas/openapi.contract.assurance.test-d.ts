@@ -1,5 +1,6 @@
 import { describe, expectTypeOf, it } from 'vitest'
 import type { Immutable, SchemaType } from './contractOracle'
+import type { AiBomExportSchema } from './assurance-aibom'
 import type { components } from './openapi.generated'
 import type {
   AnalysisMethod,
@@ -205,6 +206,14 @@ describe('assurance analyses', () => {
     >()
     expectTypeOf<AnalysisStatus>().toEqualTypeOf<
       components['schemas']['AssuranceAnalysisRecord']['status']
+    >()
+  })
+})
+
+describe('assurance AI-BOM', () => {
+  it('decodes an AI-BOM export', () => {
+    expectTypeOf<SchemaType<typeof AiBomExportSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['AiBomExportResponse']>
     >()
   })
 })

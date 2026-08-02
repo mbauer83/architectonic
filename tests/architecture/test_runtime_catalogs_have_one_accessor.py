@@ -41,8 +41,12 @@ _PROCESS_CATALOGS = "build_runtime_catalogs(get_module_registry())"
 #: request-less. A *new* entry means a handler took process state where the dependency was available.
 _READS_PROCESS_STATE: dict[str, str] = {
     "state.py": (
-        "Shared helpers called from write paths and background threads as well as handlers, so a "
-        "request is not always in hand."
+        "One reader left: `resolve_gar` needs the ontology to tell an internal "
+        "global-artifact-reference type from an authorable one, and it is reached through "
+        "`connection_to_dict` from `diagrams/_context.py`, which the write path calls with no "
+        "request in hand. `get_write_deps`/`get_admin_write_deps` were the handler-reachable ones "
+        "and they take their catalogs now — all twenty-nine call sites are request handlers, so a "
+        "test overriding the dependency used to reach every read and no write at all."
     ),
     "diagrams/_context.py": (
         "Diagram-context helpers reached from both the read routes and the write path; the write "

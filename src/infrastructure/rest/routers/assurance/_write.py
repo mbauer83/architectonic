@@ -18,7 +18,7 @@ Response semantics:
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Response
+from fastapi import APIRouter, Depends, Response
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict
 
@@ -32,6 +32,8 @@ from src.application.assurance.provenance_assignment import (
     ProvenanceNodeNotFound,
     assign_provenance,
 )
+from src.application.runtime_catalogs import RuntimeCatalogs
+from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
 from src.infrastructure.assurance.edge_legality import legal_connection_types
 from src.infrastructure.assurance.write_serialization import run_write
 from src.infrastructure.mcp.assurance_mcp.context import get_assurance_context
@@ -397,11 +399,14 @@ def _translate_bind(result: model_bind.ModelBindResult) -> JSONResponse:
 
 @write_router.post("/api/assurance/model-this", status_code=200,
     response_model=ModelThisResponse)
-def model_this(body: ModelThisBody) -> JSONResponse:
+def model_this(
+    body: ModelThisBody,
+    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
+) -> JSONResponse:
     ctx = get_assurance_context()
     if not ctx.is_available():
         raise _locked()
-    creator = None if body.separation_of_duties else GuiArchitectureEntityCreator()
+    creator = None if body.separation_of_duties else GuiArchitectureEntityCreator(catalogs)
     result = run_write(lambda: model_bind.model_and_bind(
         ctx.store, ctx.archive,
         assurance_node_id=body.assurance_node_id,

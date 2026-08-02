@@ -11,9 +11,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from pydantic import BaseModel, ConfigDict
 
+from src.application.runtime_catalogs import RuntimeCatalogs
+from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
 from src.infrastructure.rest.contracts.platform import ServerInfoResponse
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers._openapi import WRITE_RESPONSES, WriteResultResponse
@@ -114,9 +116,11 @@ class AdminEditEntityBody(BaseModel):
 
 @router.post("/entities", status_code=status.HTTP_201_CREATED,
     response_model=WriteResultResponse, responses=_ADMIN_CREATE_RESPONSES)
-def admin_create_entity(body: AdminCreateEntityBody, response: Response) -> dict[str, Any]:
+def admin_create_entity(body: AdminCreateEntityBody, response: Response,
+    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
+) -> dict[str, Any]:
     _require_admin()
-    ent_root, _, verifier = s.get_admin_write_deps()
+    ent_root, _, verifier = s.get_admin_write_deps(catalogs)
     from src.infrastructure.write.artifact_write.admin_ops import admin_create_entity as _create
 
     try:
@@ -145,9 +149,11 @@ def admin_create_entity(body: AdminCreateEntityBody, response: Response) -> dict
 
 @router.patch("/entities/{artifact_id}",
     response_model=WriteResultResponse, responses=WRITE_RESPONSES)
-def admin_edit_entity(artifact_id: str, body: AdminEditEntityBody) -> dict[str, Any]:
+def admin_edit_entity(artifact_id: str, body: AdminEditEntityBody,
+    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
+) -> dict[str, Any]:
     _require_admin()
-    ent_root, registry, verifier = s.get_admin_write_deps()
+    ent_root, registry, verifier = s.get_admin_write_deps(catalogs)
     from src.infrastructure.write.artifact_write.admin_ops import _UNSET
     from src.infrastructure.write.artifact_write.admin_ops import admin_edit_entity as _edit
 
@@ -178,10 +184,11 @@ def admin_edit_entity(artifact_id: str, body: AdminEditEntityBody) -> dict[str, 
 @router.delete("/entities/{artifact_id}", status_code=status.HTTP_204_NO_CONTENT,
     response_model=None, responses=_ADMIN_DELETE_RESPONSES)
 def admin_delete_entity(
-    artifact_id: str, response: Response, dry_run: bool = True
+    artifact_id: str, response: Response, dry_run: bool = True,
+    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
 ) -> dict[str, Any] | None:
     _require_admin()
-    ent_root, registry, _verifier = s.get_admin_write_deps()
+    ent_root, registry, _verifier = s.get_admin_write_deps(catalogs)
     from src.infrastructure.write.artifact_write.admin_ops import admin_delete_entity as _delete
 
     try:
@@ -212,9 +219,11 @@ class AdminAddConnectionBody(BaseModel):
 
 @router.post("/connections", status_code=status.HTTP_201_CREATED,
     response_model=WriteResultResponse, responses=_ADMIN_CREATE_RESPONSES)
-def admin_add_connection(body: AdminAddConnectionBody, response: Response) -> dict[str, Any]:
+def admin_add_connection(body: AdminAddConnectionBody, response: Response,
+    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
+) -> dict[str, Any]:
     _require_admin()
-    ent_root, registry, verifier = s.get_admin_write_deps()
+    ent_root, registry, verifier = s.get_admin_write_deps(catalogs)
     from src.infrastructure.write.artifact_write.admin_ops import admin_add_connection as _add
 
     try:
@@ -242,7 +251,8 @@ def admin_add_connection(body: AdminAddConnectionBody, response: Response) -> di
 @router.delete("/connections/{connection_id}", status_code=status.HTTP_204_NO_CONTENT,
     response_model=None, responses=_ADMIN_DELETE_RESPONSES)
 def admin_remove_connection(
-    connection_id: str, response: Response, dry_run: bool = True
+    connection_id: str, response: Response, dry_run: bool = True,
+    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
 ) -> dict[str, Any] | None:
     _require_admin()
     # A connection's identity is the single-segment composite ``{src}---{tgt}@@{type}`` — the same
@@ -253,7 +263,7 @@ def admin_remove_connection(
         key = parse_connection_id(connection_id)
     except MalformedArtifactIdError:
         raise HTTPException(404, f"Not found: {connection_id!r}") from None
-    ent_root, registry, verifier = s.get_admin_write_deps()
+    ent_root, registry, verifier = s.get_admin_write_deps(catalogs)
     from src.infrastructure.write.artifact_write.admin_ops import admin_remove_connection as _remove
 
     try:
@@ -293,7 +303,9 @@ class AdminCreateDiagramBody(BaseModel):
 
 @router.post("/diagrams", status_code=status.HTTP_201_CREATED,
     response_model=WriteResultResponse, responses=_ADMIN_CREATE_RESPONSES)
-def admin_create_diagram(body: AdminCreateDiagramBody, response: Response) -> dict[str, Any]:
+def admin_create_diagram(body: AdminCreateDiagramBody, response: Response,
+    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
+) -> dict[str, Any]:
     """Create a diagram in the enterprise (global) repository.
 
     Uses the same diagram creation logic as the engagement router but the
@@ -302,7 +314,7 @@ def admin_create_diagram(body: AdminCreateDiagramBody, response: Response) -> di
     logic directly via the verifier, bypassing the engagement guard entirely.
     """
     _require_admin()
-    ent_root, _, verifier = s.get_admin_write_deps()
+    ent_root, _, verifier = s.get_admin_write_deps(catalogs)
     from src.application.identifier_allocator import get_default_allocator
     from src.application.modeling.artifact_write import prefix_for_diagram_type
     from src.infrastructure.rendering.diagram_builder import generate_archimate_puml_body
@@ -342,10 +354,11 @@ def admin_create_diagram(body: AdminCreateDiagramBody, response: Response) -> di
 @router.delete("/diagrams/{artifact_id}", status_code=status.HTTP_204_NO_CONTENT,
     response_model=None, responses=_ADMIN_DELETE_RESPONSES)
 def admin_delete_diagram(
-    artifact_id: str, response: Response, dry_run: bool = True
+    artifact_id: str, response: Response, dry_run: bool = True,
+    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
 ) -> dict[str, Any] | None:
     _require_admin()
-    ent_root, _registry, _verifier = s.get_admin_write_deps()
+    ent_root, _registry, _verifier = s.get_admin_write_deps(catalogs)
     from src.infrastructure.write.artifact_write.admin_ops import admin_delete_diagram as _delete
 
     try:

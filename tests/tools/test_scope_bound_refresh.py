@@ -540,6 +540,7 @@ class TestRestSyncAdapter:
     def test_rest_sync_endpoint_calls_refresh_diagram(self, repo: Path) -> None:
         """Thin adapter test: the REST handler calls refresh_diagram and returns correct keys."""
         from src.application.artifacts.repository import ArtifactRepository
+        from src.infrastructure.app_bootstrap import process_runtime_catalogs
         from src.infrastructure.artifact_index import shared_artifact_index
         from src.infrastructure.rest.routers import state as gui_state
         from src.infrastructure.rest.routers.diagrams._write import SyncDiagramToModelBody, sync_diagram_to_model_gui
@@ -549,7 +550,9 @@ class TestRestSyncAdapter:
 
         gui_state.init_state(ArtifactRepository(shared_artifact_index(repo)), repo, None)
 
-        result = sync_diagram_to_model_gui(diag_id, SyncDiagramToModelBody(dry_run=True))
+        result = sync_diagram_to_model_gui(
+            diag_id, SyncDiagramToModelBody(dry_run=True), process_runtime_catalogs()
+        )
 
         assert "wrote" in result
         assert result["deleted_diagram"] is False, (
@@ -583,6 +586,7 @@ class TestRestSyncAdapter:
     def test_rest_sync_scope_bound_not_deleted(self, repo: Path) -> None:
         """REST sync on a scope-bound diagram must leave the file on disk."""
         from src.application.artifacts.repository import ArtifactRepository
+        from src.infrastructure.app_bootstrap import process_runtime_catalogs
         from src.infrastructure.artifact_index import shared_artifact_index
         from src.infrastructure.rest.routers import state as gui_state
         from src.infrastructure.rest.routers.diagrams._write import SyncDiagramToModelBody, sync_diagram_to_model_gui
@@ -593,5 +597,7 @@ class TestRestSyncAdapter:
 
         gui_state.init_state(ArtifactRepository(shared_artifact_index(repo)), repo, None)
 
-        sync_diagram_to_model_gui(diag_id, SyncDiagramToModelBody(dry_run=False))
+        sync_diagram_to_model_gui(
+            diag_id, SyncDiagramToModelBody(dry_run=False), process_runtime_catalogs()
+        )
         assert path.exists()

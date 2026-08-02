@@ -116,7 +116,7 @@ def add_connection(
     response: Response,
     catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
 ) -> dict[str, Any]:
-    repo_root, registry, verifier = s.get_write_deps()
+    repo_root, registry, verifier = s.get_write_deps(catalogs)
     from src.infrastructure.write.artifact_write.connection import add_connection as _add
 
     effective_source = body.source_entity
@@ -150,7 +150,7 @@ def add_connection(
         )
         if gar_result.wrote:
             gar_warnings.append(f"Created global-artifact-reference proxy {gar_result.artifact_id}")
-            _, registry, verifier = s.get_write_deps()
+            _, registry, verifier = s.get_write_deps(catalogs)
         else:
             gar_warnings.append(f"Routed via existing global-artifact-reference {gar_result.artifact_id}")
         return gar_result.artifact_id
@@ -235,9 +235,11 @@ class ConnectionAssociateBody(_Body):
 @router.patch("/api/connections/{connection_id}", tags=[TAG_CONNECTIONS],
     summary="Edit a connection's attributes", response_model=WriteResultResponse,
     responses=_DETAIL_RESPONSES)
-def edit_connection(connection_id: str, body: EditConnectionBody) -> dict[str, Any]:
+def edit_connection(connection_id: str, body: EditConnectionBody,
+    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
+) -> dict[str, Any]:
     key = _endpoints_of(connection_id)
-    repo_root, registry, verifier = s.get_write_deps()
+    repo_root, registry, verifier = s.get_write_deps(catalogs)
     from src.infrastructure.write.artifact_write.connection_edit import _UNSET
     from src.infrastructure.write.artifact_write.connection_edit import edit_connection as _edit
 
@@ -270,12 +272,13 @@ def edit_connection(connection_id: str, body: EditConnectionBody) -> dict[str, A
     summary="Add/remove a connection's associated entities", response_model=WriteResultResponse,
     responses=_DETAIL_RESPONSES)
 def manage_connection_associations(
-    connection_id: str, body: ConnectionAssociateBody
+    connection_id: str, body: ConnectionAssociateBody,
+    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
 ) -> dict[str, Any]:
     """A delta over a set-valued relation, which is why it is a PATCH rather than a PUT: the caller
     says what to add and remove, not what the whole set should become."""
     key = _endpoints_of(connection_id)
-    repo_root, registry, verifier = s.get_write_deps()
+    repo_root, registry, verifier = s.get_write_deps(catalogs)
     from src.infrastructure.write.artifact_write.connection_edit import edit_connection_associations as _assoc
 
     try:
@@ -302,10 +305,11 @@ def manage_connection_associations(
     summary="Remove a connection", response_model=None, responses=_DELETE_RESPONSES,
     status_code=status.HTTP_204_NO_CONTENT)
 def remove_connection(
-    connection_id: str, response: Response, dry_run: bool = True
+    connection_id: str, response: Response, dry_run: bool = True,
+    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
 ) -> dict[str, Any] | None:
     key = _endpoints_of(connection_id)
-    repo_root, registry, verifier = s.get_write_deps()
+    repo_root, registry, verifier = s.get_write_deps(catalogs)
     from src.infrastructure.write.artifact_write.connection_edit import remove_connection as _remove
 
     try:

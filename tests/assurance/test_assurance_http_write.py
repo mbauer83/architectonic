@@ -542,6 +542,11 @@ def test_model_this_default_creates_and_binds() -> None:
     client = _make_client(ctx)
 
     class _StubCreator:
+        # Takes the catalogs the handler injects, like the real adapter: they are constructor state
+        # now rather than something `create` looks up out of process globals.
+        def __init__(self, catalogs: object) -> None:
+            self._catalogs = catalogs
+
         def is_known_type(self, artifact_type: str) -> bool:
             return True
 
