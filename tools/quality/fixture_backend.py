@@ -10,15 +10,18 @@ adapters.
 the developer's backend is serving — the live self-model. Port 0 is bound and released to find a free
 one, so no walk can collide with a running dev backend.
 
-**One at a time, and the product decides that, not this module.** `arch_backend`'s pre-start guard is
-keyed on the *workspace*: if a backend is registered for it and answering, a second invocation prints
-"backend already running on port N" and **exits 0**, whatever `--port` says. So two fixture backends
-cannot coexist — a second one does not fail, it silently does not start, and a walk would then run
-against the first one's content. Found the hard way, by a test that opened two.
+**One at a time, enforced here.** `arch_backend`'s pre-start guard reads the backend registered for the
+*state directory*, and if one is answering it prints "backend already running on port N" and **exits
+0**, whatever `--port` says — it does not fail, it silently does not start, and a walk would then talk
+to that backend's content believing it had its own. Found the hard way, by a test that opened two.
 
-Rather than argue with that guard, this serialises against it with a cross-process lock, the same way
-`tests/conftest.py` bounds the PlantUML JVM at its one acquisition point. The consequence for the write
-walks is worth stating plainly: they **share one fixture backend** rather than each starting its own.
+The state directory is this module's to choose (`ARCH_BACKEND_STATE_DIR`, see `_child_env`), and it
+chooses one inside the fixture workspace — so the guard now compares fixture backends with fixture
+backends, and the developer's own backend is neither consulted nor overwritten. What keeps it to one is
+therefore this module's cross-process lock, the same way `tests/conftest.py` bounds the PlantUML JVM at
+its one acquisition point. Worth stating plainly: the write walks **share one fixture backend** rather
+than each starting its own, and that is a deliberate bound on a developer machine rather than a
+limitation of the product.
 
 **Started as a subprocess, not in-process.** A `TestClient` app would be a different object from the
 served one: no uvicorn lifespan, no teardown steps, no real transport. The defects this release found
@@ -135,6 +138,37 @@ def _stop(process: subprocess.Popen[bytes]) -> None:
         process.wait(timeout=10)
 
 
+def state_dir_for(workspace: FixtureWorkspace) -> Path:
+    """Where the fixture backend registers itself. Inside its own workspace, never the developer's."""
+    return workspace.root / ".arch"
+
+
+def _child_env(workspace: FixtureWorkspace) -> dict[str, str]:
+    """The environment that keeps the child inside the workspace it is meant to serve.
+
+    Three variables, and each one is a mistake this module exists to make impossible.
+
+    ``ARCH_REPO_ROOT`` / ``ARCH_ENTERPRISE_ROOT``: without them the child inherits the developer's
+    roots and serves the live model whatever the flags say.
+
+    ``ARCH_BACKEND_STATE_DIR``: without it the child resolves its state directory from *cwd*, which is
+    the repository root — so it read, wrote and deleted the developer's `.arch/backend.pid`.
+    Two consequences, and the first hid the second. A dev backend registered there made
+    `_guard_prestart` find it, print "backend already running on port 8000" and **exit 0**, so the whole
+    write-walk suite failed whenever a developer had a backend up — which is the state running the
+    browser suite requires. And with no dev backend, the guard passed and the child *overwrote* that
+    file with its own pid and port for the length of the walk, then deleted it on the way out.
+
+    The seam was already there: `backend_state._state_dir` checks this variable before anything else.
+    """
+    return {
+        **os.environ,
+        "ARCH_REPO_ROOT": str(workspace.engagement_root),
+        "ARCH_ENTERPRISE_ROOT": str(workspace.enterprise_root),
+        "ARCH_BACKEND_STATE_DIR": str(state_dir_for(workspace)),
+    }
+
+
 @contextlib.contextmanager
 def fixture_backend(root: Path | None = None) -> Iterator[FixtureBackend]:
     """Build a fixture workspace, serve it on a free port, and stop the process on the way out.
@@ -181,10 +215,7 @@ def fixture_backend(root: Path | None = None) -> Iterator[FixtureBackend]:
             cwd=str(REPO_ROOT),
             stdout=sink,
             stderr=subprocess.STDOUT,
-            # Without this the child inherits the developer's roots and would serve the live model
-            # whatever the flags say — the one mistake this module exists to make impossible.
-            env={**os.environ, "ARCH_REPO_ROOT": str(workspace.engagement_root),
-                 "ARCH_ENTERPRISE_ROOT": str(workspace.enterprise_root)},
+            env=_child_env(workspace),
         )
         stack.callback(_stop, process)
         _await_ready(base_url, process, log, time.monotonic() + STARTUP_TIMEOUT_SECONDS)
