@@ -7,6 +7,16 @@ All notable changes to this project are documented here. The format follows
 
 ### Breaking
 
+- **`dry_run` defaults to `true` on every write.** It already did on 25 of the 29 write operations —
+  plan unless you say otherwise. The three document routes and `DELETE /api/viewpoints/{slug}`
+  defaulted to committing, so the same flag meant "preview" on most of the surface and "commit" on the
+  rest. A client that omitted it on those four now gets a plan; pass `dry_run: false` (body) or
+  `?dry_run=false` (query) to commit, as the other 25 have always required.
+- **Editing or deleting a document that does not exist answers 404, not 500.** The write raised a
+  bare `ValueError` that no route caught, so a caller naming the wrong address got a non-disclosing
+  500 — the one status they can neither retry nor correct on. Malformed payloads on those routes now
+  answer 400, matching the entity routes beside them.
+
 - **A rejected viewpoint parameter no longer carries a retired code word in its `message`.** The
   0.2.0 notes said the finer distinction "still appears inside the `message`"; it does not any more.
   `"parameter-type-mismatch: anchor"` is now `"anchor: expected entity-id, got boolean"`, on REST and

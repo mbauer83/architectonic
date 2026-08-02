@@ -92,7 +92,7 @@ export const viewpointMethods = (): Pick<
       ViewpointPersistResultSchema,
     ),
   deleteViewpointDefinition: (slug) =>
-    deleteNoContent(buildUrl(`/viewpoints/${encodeIdentitySegment(slug)}`)),
+    deleteNoContent(buildUrl(`/viewpoints/${encodeIdentitySegment(slug)}`, { dry_run: false })),
   getViewpointReferencers: (slug: string) =>
     fetchJson(buildUrl(`/viewpoints/${encodeURIComponent(slug)}/referencers`), ViewpointReferencerListSchema).pipe(
       Effect.map((r) => r.referencers),

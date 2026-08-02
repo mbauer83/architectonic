@@ -189,8 +189,11 @@ export const makeHttpModelRepository = (): ModelRepository => ({
   editDocument: (id, body) =>
     patchJson(buildUrl(`/documents/${encodeIdentitySegment(id)}`), body, WriteResultSchema),
 
+  // `dry_run: false` explicitly, as every other delete in this adapter does. It relied on the
+  // route's default, and that default was the odd one out on the whole write surface — so the two
+  // mistakes cancelled, and neither was visible from either side alone.
   deleteDocument: (id) =>
-    deleteNoContent(buildUrl(`/documents/${encodeIdentitySegment(id)}`)),
+    deleteNoContent(buildUrl(`/documents/${encodeIdentitySegment(id)}`, { dry_run: false })),
 
   artifactSearch: (q, params = {}) =>
     fetchJson(buildUrl('/artifact-search', { q, ...params }), ArtifactSearchResultSchema),

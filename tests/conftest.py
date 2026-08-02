@@ -138,10 +138,18 @@ def _forbid_real_credential_backend(tmp_path_factory):
 # cannot be forgotten by a new test, and holds the lock for the render rather than for the whole test,
 # so everything else in that test still runs in parallel.
 #
-# The lock is taken *before* `subprocess.run`, so the 60-second budget starts after the wait: queueing
-# costs wall-clock, never a timeout. The lock file lives in the parent of this worker's base temp
-# directory, which is the directory xdist shares between workers — a per-worker path would serialise
-# each worker against itself and nothing else.
+# The lock is taken *before* `subprocess.run`, so the budget starts after the wait: queueing costs
+# wall-clock, never a timeout. The lock file lives in the parent of this worker's base temp directory,
+# which is the directory xdist shares between workers — a per-worker path would serialise each worker
+# against itself and nothing else.
+#
+# The budget is also widened, and the two go together. Serialising the JVMs removed 30 of the 31
+# failures; the last was a cold JVM that still exceeded 60 seconds while nineteen other workers ran
+# Python flat out. 60 is a *production* budget — a server answering one preview request — and applying
+# it to a deliberately saturated box measures the box, not the renderer. Widened here rather than in
+# `puml_runtime` because production's budget is a product decision with latency consequences, and
+# nothing has asked for it to change; a config knob added for a test-only need is its own smell.
+_RENDER_BUDGET_SECONDS = 300
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -163,7 +171,7 @@ def _bound_concurrent_plantuml_renders(tmp_path_factory: pytest.TempPathFactory)
             with lock_path.open("a+") as handle:
                 fcntl.flock(handle, fcntl.LOCK_EX)
                 try:
-                    return real_subprocess.run(*args, **kwargs)
+                    return real_subprocess.run(*args, **{**kwargs, "timeout": _RENDER_BUDGET_SECONDS})
                 finally:
                     fcntl.flock(handle, fcntl.LOCK_UN)
 
@@ -175,3 +183,28 @@ def _bound_concurrent_plantuml_renders(tmp_path_factory: pytest.TempPathFactory)
         yield
     finally:
         puml_runtime.subprocess = real_subprocess
+
+
+@pytest.fixture(autouse=True)
+def _restore_root_logging():
+    """No test may leave the root logger reconfigured for its successors.
+
+    `arch_backend.main()` calls `logging.basicConfig(..., force=True)`, which *replaces* the root
+    logger's handlers — by design, since it owns the process when run as a command. Called from a test,
+    it takes that decision away from pytest's own logging and capture plugins for every test that
+    follows on the same xdist worker.
+
+    Three `test_unified_backend_runtime` tests asserting on captured output failed once in a full run
+    and never in isolation, which is the signature. A run-last pin would not fix it: the problem is
+    not ordering but that the mutation outlives the test, and the suite has 8,600 successors. Snapshot
+    and restore is the narrow fix, and it costs a list copy per test.
+    """
+    import logging
+
+    root = logging.getLogger()
+    handlers = list(root.handlers)
+    level = root.level
+    yield
+    if list(root.handlers) != handlers or root.level != level:
+        root.handlers[:] = handlers
+        root.setLevel(level)

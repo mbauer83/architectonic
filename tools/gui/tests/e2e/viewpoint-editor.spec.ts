@@ -27,12 +27,12 @@ const uniqueSlug = (label: string) => {
 
 test.afterEach(async ({ request }) => {
   for (const slug of createdSlugs.splice(0)) {
-    await request.delete(`/api/viewpoints/${encodeURIComponent(slug)}`)
+    await request.delete(`/api/viewpoints/${encodeURIComponent(slug)}?dry_run=false`)
   }
 })
 
 const removeViewpoint = async (request: APIRequestContext, slug: string) => {
-  await request.delete(`/api/viewpoints/${encodeURIComponent(slug)}`)
+  await request.delete(`/api/viewpoints/${encodeURIComponent(slug)}?dry_run=false`)
 }
 
 const createViewpoint = async (request: APIRequestContext, definition: Record<string, unknown>) => {

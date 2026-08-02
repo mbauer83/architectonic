@@ -5276,7 +5276,7 @@ export interface components {
             doc_type: string;
             /**
              * Dry Run
-             * @default false
+             * @default true
              */
             dry_run: boolean;
             /** Extra Frontmatter */
@@ -6726,7 +6726,7 @@ export interface components {
             body?: string | null;
             /**
              * Dry Run
-             * @default false
+             * @default true
              */
             dry_run: boolean;
             /** Extra Frontmatter */

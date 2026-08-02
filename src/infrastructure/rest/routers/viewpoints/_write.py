@@ -210,7 +210,7 @@ def replace_viewpoint_definition(
 @router.delete("/api/viewpoints/{slug}", tags=[TAG_VIEWPOINTS], summary="Delete a viewpoint",
     response_model=None, responses=_DELETE_RESPONSES, status_code=status.HTTP_204_NO_CONTENT)
 def delete_viewpoint_definition_route(
-    slug: str, response: Response, dry_run: bool = False
+    slug: str, response: Response, dry_run: bool = True
 ) -> dict[str, Any] | None:
     _reject_reserved_slug(slug)
     engagement_root = _engagement_root()

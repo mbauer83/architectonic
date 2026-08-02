@@ -17,7 +17,7 @@ const uniqueSlug = () => {
 
 test.afterEach(async ({ request }) => {
   for (const slug of createdSlugs.splice(0)) {
-    await request.delete(`/api/viewpoints/${encodeURIComponent(slug)}`)
+    await request.delete(`/api/viewpoints/${encodeURIComponent(slug)}?dry_run=false`)
   }
 })
 

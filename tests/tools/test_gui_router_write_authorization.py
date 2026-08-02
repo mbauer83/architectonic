@@ -120,7 +120,7 @@ class TestViewpointWritesGoThroughExecutor:
         assert create.status_code == 201, create.text
         assert create.json()["ok"] is True
         _install(engagement, enterprise, read_only=True)
-        response = client.delete("/api/viewpoints/auth-probe-viewpoint")
+        response = client.delete("/api/viewpoints/auth-probe-viewpoint?dry_run=false")
         assert response.status_code == 423
 
     def test_create_rejected_read_only_when_it_would_write(self, workspace) -> None:

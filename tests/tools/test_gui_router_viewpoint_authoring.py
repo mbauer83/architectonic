@@ -310,7 +310,7 @@ class TestDelete:
         from src.infrastructure.viewpoint_declarations import load_viewpoint_catalog_file
 
         client.post("/api/viewpoints", json={"definition": _MINIMAL_DEFINITION, "dry_run": False})
-        resp = client.delete("/api/viewpoints/test-viewpoint")
+        resp = client.delete("/api/viewpoints/test-viewpoint?dry_run=false")
         # 204: a committed deletion has nothing to report, so it reports nothing.
         assert resp.status_code == 204
         assert resp.content == b""
@@ -350,7 +350,7 @@ title Referencing Diagram
             encoding="utf-8",
         )
         gui_state.maybe_get_repo().refresh()
-        resp = client.delete("/api/viewpoints/test-viewpoint")
+        resp = client.delete("/api/viewpoints/test-viewpoint?dry_run=false")
         # A refusal is an error, not a 200 whose `ok` a caller has to remember to read.
         assert resp.status_code == 409
         detail = resp.json()["detail"]
@@ -359,7 +359,7 @@ title Referencing Diagram
         assert detail["details"]["referencers"][0]["target_kind"] == "diagram"
 
     def test_unknown_slug_is_not_found(self, client) -> None:
-        resp = client.delete("/api/viewpoints/never-created")
+        resp = client.delete("/api/viewpoints/never-created?dry_run=false")
         assert resp.status_code == 404
         assert resp.json()["detail"]["code"] == "not_found"
 
@@ -391,7 +391,7 @@ class TestLiteralSiblingSegments:
         """``DELETE /api/viewpoints/pins`` does reach the delete handler — the parameterised route
         matches where the pins route has no DELETE. It must not answer "no viewpoint named pins",
         which reads as an invitation to create one."""
-        resp = client.delete("/api/viewpoints/pins")
+        resp = client.delete("/api/viewpoints/pins?dry_run=false")
         assert resp.status_code == 400
         assert resp.json()["detail"]["code"] == "bad_request"
 
@@ -439,6 +439,6 @@ class TestPins:
     def test_slug_removed_from_catalog_after_pinning_is_pruned_with_a_warning(self, client) -> None:
         client.post("/api/viewpoints", json={"definition": _MINIMAL_DEFINITION, "dry_run": False})
         client.put("/api/viewpoints/pins", json={"slugs": ["test-viewpoint"]})
-        client.delete("/api/viewpoints/test-viewpoint")
+        client.delete("/api/viewpoints/test-viewpoint?dry_run=false")
         resp = client.get("/api/viewpoints/pins")
         assert resp.json() == {"slugs": [], "pruned": ["test-viewpoint"]}

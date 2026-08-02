@@ -95,7 +95,6 @@ NEVER_REQUESTED_OPERATIONS: frozenset[str] = frozenset(
         "assurance_read_security_stats",
         "assurance_read_stats",
         "assurance_read_vulnerability_impact",
-        "taxonomy_read_backend_identity",
         "diagrams_read_diagram_image",
         "diagrams_list_diagram_type_connection_types",
         "diagrams_list_diagram_type_entity_types",

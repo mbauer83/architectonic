@@ -37,7 +37,7 @@ class CreateDocumentRequest(BaseModel):
     version: str = "0.1.0"
     status: str = "draft"
     last_updated: str | None = None
-    dry_run: bool = False
+    dry_run: bool = True
 
 
 class EditDocumentRequest(BaseModel):
@@ -48,7 +48,7 @@ class EditDocumentRequest(BaseModel):
     status: str | None = None
     version: str | None = None
     last_updated: str | None = None
-    dry_run: bool = False
+    dry_run: bool = True
 
 
 def _get_engagement_root() -> Path:
@@ -214,26 +214,37 @@ def create_document(req: CreateDocumentRequest, response: Response,
 def edit_document(artifact_id: str, req: EditDocumentRequest,
     catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
 ) -> dict[str, Any]:
+    from src.infrastructure.write.artifact_write.document import DocumentNotFoundError
     from src.infrastructure.write.artifact_write.document import edit_document as _edit
 
     repo_root, _, verifier = s.get_write_deps(catalogs)
 
-    result = s.authorized_write(
-            "documents_update_document", 
-        _edit,
-        repo_root=repo_root,
-        verifier=verifier,
-        clear_repo_caches=s.clear_caches,
-        artifact_id=artifact_id,
-        title=req.title,
-        body=req.body,
-        keywords=req.keywords,
-        extra_frontmatter=req.extra_frontmatter,
-        status=req.status,
-        version=req.version,
-        last_updated=req.last_updated,
-        dry_run=req.dry_run,
-    )
+    # Both refusals are the caller's, and neither was translated: a bare `ValueError` reached the
+    # error middleware and became a non-disclosing 500, so "you named a document that is not there"
+    # was indistinguishable from "the server broke" — on the one status a client can neither retry
+    # nor correct for. The entity edit beside it has always done this; the document edit never did,
+    # and nothing noticed because nothing had ever requested the route.
+    try:
+        result = s.authorized_write(
+            "documents_update_document",
+            _edit,
+            repo_root=repo_root,
+            verifier=verifier,
+            clear_repo_caches=s.clear_caches,
+            artifact_id=artifact_id,
+            title=req.title,
+            body=req.body,
+            keywords=req.keywords,
+            extra_frontmatter=req.extra_frontmatter,
+            status=req.status,
+            version=req.version,
+            last_updated=req.last_updated,
+            dry_run=req.dry_run,
+        )
+    except DocumentNotFoundError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
     return s.write_result_to_dict(result)
 
 
@@ -249,21 +260,29 @@ _DELETE_RESPONSES: dict[int | str, Any] = {
 
 @router.delete("/api/documents/{artifact_id}", tags=[TAG_DOCUMENTS], summary="Delete a document",
     response_model=None, responses=_DELETE_RESPONSES, status_code=status.HTTP_204_NO_CONTENT)
-def delete_document(artifact_id: str, response: Response, dry_run: bool = False,
+def delete_document(artifact_id: str, response: Response, dry_run: bool = True,
     catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
 ) -> dict[str, Any] | None:
+    from src.infrastructure.write.artifact_write.document import DocumentNotFoundError
     from src.infrastructure.write.artifact_write.document import delete_document as _delete
 
     repo_root, _, _ = s.get_write_deps(catalogs)
 
-    result = s.authorized_write(
-            "documents_delete_document", 
-        _delete,
-        repo_root=repo_root,
-        clear_repo_caches=s.clear_caches,
-        artifact_id=artifact_id,
-        dry_run=dry_run,
-    )
+    # Same translation as the edit above, and the same reason: deleting a document that is not there
+    # is the caller naming the wrong address, which is a 404 and was a 500.
+    try:
+        result = s.authorized_write(
+            "documents_delete_document",
+            _delete,
+            repo_root=repo_root,
+            clear_repo_caches=s.clear_caches,
+            artifact_id=artifact_id,
+            dry_run=dry_run,
+        )
+    except DocumentNotFoundError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
     # A deletion has nothing to say, so it says nothing. A *dry-run* deletion has the plan to
     # report, which is a body — and a body needs a status that permits one.
     if dry_run:

@@ -21,6 +21,17 @@ from .types import WriteResult
 from .verify import verify_content_in_temp_path
 
 
+class DocumentNotFoundError(ValueError):
+    """The addressed document does not exist.
+
+    A ``ValueError`` subclass, following ``GroupOpError`` and ``SaveVerificationError``, so every
+    existing ``except ValueError`` caller — the MCP write tools among them — keeps working unchanged
+    while a caller that cares can tell "you named a document that is not there" from "this payload is
+    malformed". The distinction is a status code: the first is 404 and the second 400, and both were
+    a non-disclosing 500 while this was a bare ``ValueError`` that no route caught.
+    """
+
+
 def _dump_yaml_text(data: object) -> str:
     dumped = yaml.dump(data, default_flow_style=False, allow_unicode=True, sort_keys=False)
     if not isinstance(dumped, str):
@@ -246,7 +257,7 @@ def edit_document(
     docs_root = repo_root / DOCS
     path = _resolve_document_path(docs_root, artifact_id)
     if path is None:
-        raise ValueError(f"Document '{artifact_id}' not found under {docs_root}")
+        raise DocumentNotFoundError(f"Document '{artifact_id}' not found under {docs_root}")
 
     fm, existing_body = _split_document_frontmatter(path.read_text(encoding="utf-8"), path)
     fm.update({k: v for k, v in {"title": title, "status": status, "version": version, "keywords": keywords}.items()
@@ -330,7 +341,7 @@ def delete_document(
     if path is None:
         path = _resolve_document_path(docs_root, artifact_id)
     if path is None:
-        raise ValueError(f"Document '{artifact_id}' not found under {docs_root}")
+        raise DocumentNotFoundError(f"Document '{artifact_id}' not found under {docs_root}")
 
     if not dry_run:
         path.unlink()
