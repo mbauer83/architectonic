@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
+import sys
 import time
 from pathlib import Path
 from unittest.mock import patch
@@ -139,18 +141,23 @@ class TestProcessExists:
     def test_zombie_counts_as_gone(self) -> None:
         """Regression: a SIGKILLed backend whose spawner never reaped it stays a
         zombie — os.kill(pid, 0) still succeeds, so stop_backend waited out its
-        full timeout and reported 'failed to stop' for an already-dead process."""
-        pid = os.fork()
-        if pid == 0:
-            os._exit(0)  # child dies immediately; parent deliberately delays reaping
+        full timeout and reported 'failed to stop' for an already-dead process.
+
+        Spawned rather than forked. `os.fork()` in a process with threads — which pytest-xdist's
+        worker is — warns for good reason: the child inherits the lock state of every thread that was
+        not running, and a deadlock there would hang the whole run rather than fail it. `Popen` of a
+        process that exits at once produces the same zombie, because the test simply does not `wait`
+        for it yet, which is the state under test.
+        """
+        child = subprocess.Popen([sys.executable, "-c", ""])  # exits immediately, unreaped
         try:
             deadline = time.monotonic() + 5.0
-            while _read_process_state(pid) != "Z" and time.monotonic() < deadline:
+            while _read_process_state(child.pid) != "Z" and time.monotonic() < deadline:
                 time.sleep(0.01)
-            assert _read_process_state(pid) == "Z"
-            assert _process_exists(pid) is False
+            assert _read_process_state(child.pid) == "Z"
+            assert _process_exists(child.pid) is False
         finally:
-            os.waitpid(pid, 0)
+            child.wait()
 
 
 # ── write_backend_state ───────────────────────────────────────────────────────

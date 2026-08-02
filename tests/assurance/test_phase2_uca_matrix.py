@@ -58,8 +58,16 @@ def test_inject_includes_noop() -> None:
     assert body == "@startuml\n@enduml"
 
 
-def test_collect_references_returns_empty() -> None:
-    from src.domain.ontology_representation.ontology_protocol import DiagramRendererReferences
+def test_the_renderer_does_not_claim_to_discover_model_references() -> None:
+    """This notation's diagram-owned data names no model artifact, and it says so by *not*
+    implementing the capability.
 
-    result = uca_module.renderer.collect_references("uca-matrix", Path("/fake"))
-    assert isinstance(result, DiagramRendererReferences)
+    It used to be a required method returning an empty result — twelve of thirteen renderers had one,
+    seven of them identical. `collect_references` is `ModelReferencingDiagramRenderer` now, and the
+    single caller asks with `isinstance`, so "nothing to discover" is the absence of an implementation
+    rather than four lines that delete their arguments."""
+    from src.domain.ontology_representation.ontology_protocol import (
+        ModelReferencingDiagramRenderer,
+    )
+
+    assert not isinstance(uca_module.renderer, ModelReferencingDiagramRenderer)

@@ -390,10 +390,12 @@ export const makeHttpModelRepository = (): ModelRepository => ({
     postJson(buildUrl('/promote/execute'), body, PromotionResultSchema),
 
   getSyncStatus: () => fetchJson(buildUrl('/sync/status'), SyncStatusSchema),
-  saveEngagementChanges: (body) => postJson(buildUrl('/sync/engagement/save'), { push: true, ...body }, SyncSaveResultSchema),
+  saveEngagementChanges: (body) =>
+    postJson(buildUrl('/sync/engagement/save'), { push: true, ...body }, SyncSaveResultSchema),
   saveEnterpriseChanges: (body) => postJson(buildUrl('/sync/enterprise/save'), body, SyncSaveResultSchema),
   submitEnterpriseChanges: () => postJson(buildUrl('/sync/enterprise/submit'), {}, SyncSaveResultSchema),
-  withdrawEnterpriseChanges: () => postJson(buildUrl('/sync/enterprise/withdraw'), { confirm: true }, SyncSaveResultSchema),
+  withdrawEnterpriseChanges: () =>
+    postJson(buildUrl('/sync/enterprise/withdraw'), { confirm: true }, SyncSaveResultSchema),
   getChanges: (repo) => fetchJson(buildUrl('/sync/changes', { repo }), SyncChangesResultSchema),
 
   listGroups: (kind?: string) =>

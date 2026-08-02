@@ -9,6 +9,7 @@ serializing everything.
 
 from __future__ import annotations
 
+import fcntl
 import os
 
 import pytest
@@ -115,3 +116,62 @@ def _forbid_real_credential_backend(tmp_path_factory):
     os.environ[_CREDENTIALS_DIR_ENV] = str(tmp_path_factory.mktemp("hermetic-credentials"))
     yield
 
+
+# ── The PlantUML toolchain is a bounded resource, and the bound is here ───────
+#
+# Each render shells out to a cold JVM (which in turn runs GraphViz) under a fixed 60-second budget.
+# `addopts` says `-n auto`: twenty workers on this box, so up to twenty simultaneous JVM starts, and
+# the budget does not survive that. Measured: the render-touching selection was 31 failures at twenty
+# workers and 1,863 passed at six. The gate command has always prefixed
+# `PYTEST_XDIST_AUTO_NUM_WORKERS=6` for this reason, which made the *documented* invocation safe and
+# the default one report three dozen defects that are not there.
+#
+# The bound belongs at the resource, not at the worker pool and not at a list of tests:
+#
+# * capping workers would slow the pure-Python majority of 8,600 tests to protect a few hundred;
+# * `--dist loadgroup` would change the scheduler for the whole session, and the run-last guarantee
+#   above is written against `--dist load`'s dispatch order;
+# * classifying tests — by marker or by scanning their source for a render call — puts the knowledge
+#   in a second place, and the failure mode of forgetting is a flake that reads as a product defect.
+#
+# `puml_runtime` starts the JVM in exactly one place. Wrapping that one call needs no classification,
+# cannot be forgotten by a new test, and holds the lock for the render rather than for the whole test,
+# so everything else in that test still runs in parallel.
+#
+# The lock is taken *before* `subprocess.run`, so the 60-second budget starts after the wait: queueing
+# costs wall-clock, never a timeout. The lock file lives in the parent of this worker's base temp
+# directory, which is the directory xdist shares between workers — a per-worker path would serialise
+# each worker against itself and nothing else.
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _bound_concurrent_plantuml_renders(tmp_path_factory: pytest.TempPathFactory):
+    """One PlantUML subprocess at a time, across every xdist worker in the session."""
+    from src.infrastructure.rendering import puml_runtime
+
+    lock_path = tmp_path_factory.getbasetemp().parent / "plantuml-render.lock"
+    real_subprocess = puml_runtime.subprocess
+
+    class _OneRenderAtATime:
+        """`subprocess` as this module uses it, with `run` serialised.
+
+        Delegates everything else — the module also reads `subprocess.TimeoutExpired` — so this stays
+        correct if the adapter grows a second use rather than silently losing one.
+        """
+
+        def run(self, *args: object, **kwargs: object) -> object:
+            with lock_path.open("a+") as handle:
+                fcntl.flock(handle, fcntl.LOCK_EX)
+                try:
+                    return real_subprocess.run(*args, **kwargs)
+                finally:
+                    fcntl.flock(handle, fcntl.LOCK_UN)
+
+        def __getattr__(self, name: str) -> object:
+            return getattr(real_subprocess, name)
+
+    puml_runtime.subprocess = _OneRenderAtATime()
+    try:
+        yield
+    finally:
+        puml_runtime.subprocess = real_subprocess

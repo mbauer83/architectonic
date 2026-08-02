@@ -79,6 +79,30 @@ addopts = "-n auto"
 markers = [
     "perf_manual: opt-in, machine-dependent performance benchmarks; enable with ARCH_PERF_MANUAL=1",
 ]
+# A warning nobody reads is a warning that hides the next one. Twenty identical
+# `StarletteDeprecationWarning`s scrolled past every run, which is exactly enough noise to make a
+# real `DeprecationWarning` — from our own code, about behaviour that is going to change — invisible.
+# So: unknown warnings are errors, and each exception is narrow and says why.
+filterwarnings = [
+    "error",
+    # `starlette.testclient` asks for `httpx2`; 59 test modules use it, and the choice of HTTP client
+    # backing a test helper is not ours to make in a patch. Narrowed to the one message, and to the
+    # class Starlette actually raises — `StarletteDeprecationWarning` derives from `UserWarning`, not
+    # from `DeprecationWarning`, so naming the latter matched nothing.
+    "ignore:Using `httpx` with `starlette.testclient` is deprecated:starlette.exceptions.StarletteDeprecationWarning",
+    # `ArtifactIndex` has no `close()`, so its SQLite connection is collected rather than closed —
+    # 433 of these appeared the moment warnings became errors, which is how a known backlog item
+    # ("index close()") turns out to be measurable. It is also a plausible contributor to the
+    # load-dependent flakes: a connection per test, six xdist workers, and the release of the file
+    # lock deferred to whenever the collector runs.
+    #
+    # Ignored rather than fixed here because the fix is an owning lifecycle for the index, not a
+    # `filterwarnings` entry — and because `ResourceWarning` fires at collection time, so an `error`
+    # on it fails whichever test the collector happened to be inside. Both messages: pytest wraps the
+    # unraisable one.
+    "ignore:unclosed database:ResourceWarning",
+    "ignore:Exception ignored while finalizing database connection:pytest.PytestUnraisableExceptionWarning",
+]
 # Coverage is opt-in to keep the default quality-gate run fast. Enable with:
 #   uv run pytest --cov            (terminal summary with missing lines)
 #   uv run pytest --cov --cov-report=html   (browsable htmlcov/ report)

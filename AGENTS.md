@@ -23,9 +23,13 @@ After every such fix: add a unit test verifying the delegation, and a regression
 ## Quality gates (every change)
 
 Run one at a time, never concurrently, before committing:
-1. `uv run pytest --tb=short -q` — must be 0 failures. Not `python -m pytest`: `pyproject.toml`
-   sets `addopts = "-n auto"`, and only `uv run` resolves pytest-xdist, so the bare form dies
-   with `error: unrecognized arguments: -n` before running anything.
+1. `uv run pytest --tb=short -q` — must be 0 failures, and 0 warnings: `filterwarnings` makes an
+   unrecognised warning an error, with each exception narrowed to one message and a reason. Not
+   `python -m pytest`: `pyproject.toml` sets `addopts = "-n auto"`, and only `uv run` resolves
+   pytest-xdist, so the bare form dies with `error: unrecognized arguments: -n` before running
+   anything. `-n auto` is safe at full width now — the PlantUML toolchain is bounded at its one
+   acquisition point in `tests/conftest.py`, so the `PYTEST_XDIST_AUTO_NUM_WORKERS=6` prefix this
+   list used to carry is no longer needed (and the capped run is the *slower* of the two).
 2. `ruff check src/ tests/` — must be 0 errors (including E501)
 3. `uv run zuban check` — must pass
 4. `uv run tools/openapi/generate_timeout_policy.py --check` — the frontend's committed timeout

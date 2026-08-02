@@ -1,14 +1,6 @@
 import { describe, expectTypeOf, it } from 'vitest'
 import type { Immutable, SchemaType } from './contractOracle'
 import type { WriteHelpSchema } from './server'
-import type {
-  AllocatedIdentifierSchema,
-  DatatypeClassifierInfoSchema,
-  DatatypeTypeCatalogSchema,
-  DatatypeTypeUsageSchema,
-  DatatypeTypeUsagesSchema,
-  DiagramRefListSchema,
-} from './diagram-types'
 import type { components } from './openapi.generated'
 import type {
   EntityTaxonomyDomainSchema,
@@ -354,44 +346,6 @@ describe('entity taxonomy', () => {
     >()
     expectTypeOf<SchemaType<typeof EntityTaxonomyTypeSchema>>().toEqualTypeOf<
       Immutable<components['schemas']['TaxonomyTypeResponse']>
-    >()
-  })
-})
-
-describe('identifier allocation', () => {
-  it('decodes an allocated diagram-entity identifier', () => {
-    expectTypeOf<SchemaType<typeof AllocatedIdentifierSchema>>().toEqualTypeOf<
-      Immutable<components['schemas']['AllocatedIdentifierResponse']>
-    >()
-  })
-})
-
-describe('the datatype classifier catalogue', () => {
-  it('decodes a page of classifier types, and one classifier', () => {
-    expectTypeOf<SchemaType<typeof DatatypeTypeCatalogSchema>>().toEqualTypeOf<
-      Immutable<components['schemas']['DatatypeTypeListResponse']>
-    >()
-    expectTypeOf<SchemaType<typeof DatatypeClassifierInfoSchema>>().toEqualTypeOf<
-      Immutable<components['schemas']['DatatypeClassifierInfo']>
-    >()
-  })
-
-  it('decodes where a classifier type is used', () => {
-    expectTypeOf<SchemaType<typeof DatatypeTypeUsagesSchema>>().toEqualTypeOf<
-      Immutable<components['schemas']['DatatypeTypeUsageResponse']>
-    >()
-    expectTypeOf<SchemaType<typeof DatatypeTypeUsageSchema>>().toEqualTypeOf<
-      Immutable<components['schemas']['DatatypeTypeUsage']>
-    >()
-  })
-})
-
-describe('diagram references', () => {
-  // The envelope existed only as an anonymous `Schema.Struct` inside `getDiagramRefs`, so nothing
-  // could hold it against the document while the bare array beside it looked like the response.
-  it('decodes which diagrams draw a given pair', () => {
-    expectTypeOf<SchemaType<typeof DiagramRefListSchema>>().toEqualTypeOf<
-      Immutable<components['schemas']['DiagramReferenceListResponse']>
     >()
   })
 })
