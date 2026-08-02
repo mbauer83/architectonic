@@ -103,12 +103,18 @@ filterwarnings = [
     # backend's teardown, so a served process no longer holds one shared-cache database plus a reader
     # pool per index for its whole life. That was the leak worth fixing and it is fixed.
     #
-    # These stay because *tests* construct indices and mostly do not close them: several hundred call
-    # sites, each of which would need the context manager or an explicit close. The remaining warnings
-    # are therefore about test hygiene rather than about the product, which is a different and much
-    # smaller problem — and one an `error` here cannot help with, since `ResourceWarning` fires at
-    # collection time and so fails whichever test the collector happened to be inside rather than the
-    # one that leaked. Both messages: pytest wraps the unraisable one.
+    # These stay because *tests* construct indices and mostly do not close them: **343 of 347 call
+    # sites** as of 2026-08-02, each of which would need the context manager or an explicit close. The
+    # remaining warnings are therefore about test hygiene rather than about the product, which is a
+    # different and much smaller problem — and one an `error` here cannot help with, since
+    # `ResourceWarning` fires at collection time and so fails whichever test the collector happened to
+    # be inside rather than the one that leaked. Both messages: pytest wraps the unraisable one.
+    #
+    # Counted rather than estimated, because "several hundred" is the kind of figure that justifies not
+    # doing something without anyone checking it. It is a real 343, and converting them is a diff across
+    # a seventh of the suite that changes no behaviour and can silently shorten an index's lifetime
+    # inside a test that still needs it. Left undone on purpose, with the number attached so the trade
+    # can be re-judged rather than re-guessed.
     #
     # `tests/infrastructure/artifact_index/test_index_close_releases_connections.py` asserts both
     # directions locally, so neither the fix nor the leak can be silently reversed behind these.

@@ -239,9 +239,25 @@ def _sha256(path: Path) -> str:
 
 @pytest.mark.skipif(
     not _ENABLED or _VOLUME_EXPORT is None,
-    reason="set ARCH_DOCKER_ACCEPTANCE=1 and ARCH_DOCKER_VOLUME_EXPORT to an exported volume set",
+    reason=(
+        "needs a real previous-release volume export: ARCH_DOCKER_ACCEPTANCE=1 plus "
+        "ARCH_DOCKER_VOLUME_EXPORT=<dir holding arch-data/ arch-state/ arch-assurance/ arch-home/>"
+    ),
 )
 def test_exported_compose_volumes_upgrade_before_healthy(tmp_path: Path) -> None:
+    """The only opt-in set in this suite that cannot be run without an operator supplying something.
+
+    Its sibling above builds a pre-release deployment programmatically and covers the migration itself;
+    what this one covers is the *volume-export* shape — four docker volumes as `docker compose` leaves
+    them, carrying `meta_ontology: archimate-next` from a release that actually shipped. Synthesising
+    that would assert the migration against content invented here, which is a fixture standing in for
+    the producer whose output is the whole question. So it stays skipped until someone hands it a real
+    export, and the skip says what "real" means.
+
+    Verified 2026-08-02 that the other three opt-in sets pass when run deliberately (the two
+    `ARCH_PERF_MANUAL` ones alone rather than under `-n auto`, and the sibling below with the acceptance
+    image built).
+    """
     assert _VOLUME_EXPORT is not None
     export = Path(_VOLUME_EXPORT).resolve()
     source_data = _volume_data(export, "arch-data")

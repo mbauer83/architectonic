@@ -194,13 +194,24 @@ class TestTheProfileHoldsItsConcurrencyInvariants:
 @pytest.mark.perf_manual
 @pytest.mark.skipif(
     os.environ.get("ARCH_PERF_MANUAL") != "1",
-    reason="machine-dependent read-latency budget; set ARCH_PERF_MANUAL=1 to run",
+    reason=(
+        "machine-dependent read-latency budget; run it alone: "
+        "ARCH_PERF_MANUAL=1 PYTEST_ADDOPTS='-n0' uv run pytest "
+        "tests/integration/test_assurance_load_profiles.py"
+    ),
 )
 def test_read_latency_stays_within_budget(outcome: _LoadOutcome) -> None:
     """Opt-in because the figure measures the machine as much as the store.
 
     Left in the default suite it reported a regression whenever the suite's other xdist workers
     happened to be busy, which is a false one: the invariants above all held in the same run.
+
+    **And "machine-dependent" understates it: it is parallelism-dependent.** `ARCH_PERF_MANUAL=1 uv run
+    pytest` — the obvious way to honour the flag — runs this under `-n auto`, twenty workers deep, where
+    the observed p95 is around 1.5s against a 0.75s budget. Alone (`-n0`) the same run measures under a
+    hundredth of that. So the skip reason names the command rather than only the variable: a
+    "regression" that is really nineteen other workers is exactly the false positive that gets a
+    performance gate deleted, and someone re-deriving that costs half an hour.
     """
     assert _percentile(outcome.read_latencies, 0.95) <= _READ_P95_BUDGET_S
 
