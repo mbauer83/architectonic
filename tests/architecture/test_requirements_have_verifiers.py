@@ -130,6 +130,28 @@ def _owed() -> set[str]:
     }
 
 
+#: **Two kinds of entry live here, and the difference decides who resolves them.**
+#:
+#: *A test nobody has written yet* — the ordinary kind. Someone finds the assertion, adds the marker.
+#:
+#: *A requirement the product only partly implements* — where writing the verifier is blocked on a
+#: decision, not on effort. Marking a fragment would clear the entry while leaving the feature half
+#: built, so these stay owed on purpose. Currently:
+#:
+#: * ``REQ@1777371979.W-G4L5`` asks the entity list duplicate specialization/aggregation/composition
+#:   children under each parent, indented into a tree. The table is flat. Everything else the
+#:   requirement asks — the two filters, sorting by type and by connection count — is verified by
+#:   ``tools/gui/tests/e2e/multi-item-overviews.spec.ts``, which records the unmet clause in place.
+#: * ``REQ@1777372175.eFz3z9`` names the treemap's grouping axes as "ArchiMate domain and
+#:   entity-type". The second axis is subdomain. Sizing by connection total is verified.
+#: * The six structural requirements (``5PPAX3`` authoring-tools, ``F4tfa3`` discovery-tools,
+#:   ``HR7AGz`` support-models-diagrams-documents, ``aDohcf`` extensibility, ``UoHGZy``
+#:   configurable-entities-and-connections, ``qpOBOQ`` configurable-diagrams) have other requirements
+#:   as their content. A parent is verified when its children are, and the model carries aggregation
+#:   edges — but ``authoring-tools`` aggregates one child and *associates* two more, so a rule reading
+#:   aggregation alone clears it on a third of its stated grouping. Making the edges say what the
+#:   prose says is a modelling decision, not a test.
+#:
 #: Requirements that are active, realised, and not yet declared as verified by anything.
 #:
 #: Shrink-only, like `NEVER_REQUESTED_OPERATIONS` and `SOURCE_FILE_BASELINE_LIMITS`: an entry leaves
@@ -148,11 +170,8 @@ UNVERIFIED_REQUIREMENTS: frozenset[str] = frozenset(
         "REQ@1777369404.aDohcf",
         "REQ@1777369633.UoHGZy",
         "REQ@1777370410.qpOBOQ",
-        "REQ@1777371781.v0TJX4",
         "REQ@1777371979.W-G4L5",
         "REQ@1777372175.eFz3z9",
-        "REQ@1777372455.LnytwA",
-        "REQ@1777372662.64JvM1",
     }
 )
 
