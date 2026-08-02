@@ -66,15 +66,27 @@ def not_found_response() -> ApiError:
 def ok(payload: dict[str, object], model: type[BaseModel] | None = None) -> JSONResponse:
     """A read's body, with the ``no-store`` every response on this surface carries.
 
-    ``model`` validates the payload against the DTO the route documents. The raw ``JSONResponse`` is
-    what the header requires, and FastAPI does not apply ``response_model`` to a response the handler
-    built — so the validation the framework would have done happens here, and a declared contract stays
-    a checked one rather than documentation of what someone believed. Same seam as the write side's
-    ``_ok``; both exist because both must set the header themselves.
+    ``model`` validates the payload against the DTO the route documents, **and serialises it**. The
+    raw ``JSONResponse`` is what the header requires, and FastAPI does not apply ``response_model`` to
+    a response the handler built — so the validation and the serialisation the framework would have
+    done both happen here. Same seam as the write side's ``_ok``; both exist because both must set the
+    header themselves.
+
+    It used to validate the payload and then serialise the *payload*, discarding the model object it
+    had just built. ``model_validate`` applies defaults into that object, so a field the handler
+    omitted and the DTO defaults was present in the published document, present in the generated
+    client type — ``openapi-typescript`` renders a defaulted response field as required, the server
+    being understood always to send it — and absent on the wire. That is the FMEA defect exactly: the
+    matrix handler emitted ``dismissal: {}``, ``FmeaCellDismissal`` defaults both of its fields, the
+    client's decoder required both, and the whole matrix rendered blank. It was fixed at that one
+    producer while nineteen other call sites kept the same seam.
     """
-    if model is not None:
-        model.model_validate(payload)
-    return JSONResponse(content=payload, headers={"Cache-Control": NO_STORE})
+    if model is None:
+        return JSONResponse(content=payload, headers={"Cache-Control": NO_STORE})
+    return JSONResponse(
+        content=model.model_validate(payload).model_dump(mode="json"),
+        headers={"Cache-Control": NO_STORE},
+    )
 
 
 def deleted(response: JSONResponse) -> Response:

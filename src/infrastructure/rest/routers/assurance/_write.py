@@ -93,19 +93,22 @@ def _not_found(artifact_id: str) -> ApiError:
 def _ok(result: mutations.MutationOk, model: type[BaseModel] | None = None) -> JSONResponse:
     """A successful mutation's body, with the ``no-store`` every response on this surface carries.
 
-    ``model`` validates the payload before it becomes a response. A raw ``JSONResponse`` is
-    unavoidable here — the header is the confidentiality contract and FastAPI does not apply
-    ``response_model`` to a Response the handler built — so the validation the framework would have
-    done is done here instead, which is what keeps a declared contract from being documentation of
-    something nobody checked. Without it, a payload key the DTO does not declare would reach a client
-    that had been promised otherwise.
+    ``model`` validates the payload **and serialises it**. A raw ``JSONResponse`` is unavoidable here
+    — the header is the confidentiality contract and FastAPI does not apply ``response_model`` to a
+    Response the handler built — so the validation and the serialisation the framework would have done
+    are both done here, which is what keeps a declared contract from being documentation of something
+    nobody checked. See :func:`_http.ok` for why serialising the *payload* instead of the validated
+    model is the FMEA defect's seam, on all twenty of these call sites.
     """
     out: dict[str, object] = dict(result.payload)
     if result.findings:
         out["verification_findings"] = result.findings
-    if model is not None:
-        model.model_validate(out)
-    return JSONResponse(content=out, headers={"Cache-Control": _NO_STORE})
+    if model is None:
+        return JSONResponse(content=out, headers={"Cache-Control": _NO_STORE})
+    return JSONResponse(
+        content=model.model_validate(out).model_dump(mode="json"),
+        headers={"Cache-Control": _NO_STORE},
+    )
 
 
 def _translate(
