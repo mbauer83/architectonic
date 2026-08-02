@@ -11,6 +11,7 @@ from src.ontologies.archimate_4._loader import _PACKAGE_DIR, META_ONTOLOGY_ALIAS
 
 
 class TestArchimate4SpecializationLibrary:
+    @pytest.mark.verifies("REQ@1777369240.dGaLkH")
     def test_module_loads_informative_entity_and_connection_library(self) -> None:
         module = load_archimate_4_module(_PACKAGE_DIR)
         catalog = module.specialization_catalog
@@ -43,6 +44,7 @@ class TestArchimate4SpecializationLibrary:
         }
         assert {"service", "module", "endpoint"} <= component_specs
 
+    @pytest.mark.verifies("REQ@1777369240.dGaLkH")
     def test_guidance_overlay_applies_to_entity_and_connection_specializations(self) -> None:
         overlay = GuidanceOverlay(
             {

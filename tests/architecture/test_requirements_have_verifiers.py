@@ -118,11 +118,76 @@ def _short(identifier: str) -> str:
     return ".".join(parts[:2]) if len(parts) > 2 else identifier
 
 
+#: Requirements whose content *is* other requirements, and the requirements that constitute them.
+#:
+#: Some requirements assert nothing of their own: their prose says, in as many words, "this is a parent
+#: requirement grouping X, Y and Z". Such a requirement is verified exactly when X, Y and Z are, and no
+#: test can be written for it directly — a test naming the parent would be a test of one of the
+#: children wearing a label.
+#:
+#: **Read from the prose, by hand, once — not derived from the model's edges.** Deriving it was the
+#: obvious move and it is wrong: `authoring-tools` *aggregates* one child and *associates* two more, so
+#: a rule reading aggregation alone would clear it on a third of its stated grouping, while a rule
+#: reading association too would clear anything adjacent to anything. The edges and the prose disagree,
+#: and a gate that resolves that disagreement by picking the convenient one is the register lying with
+#: extra steps. So this is a judgement, recorded where a reviewer can check it against the prose.
+#:
+#: It is *mechanically maintained* even though it is hand-authored: every constituent must itself be
+#: verified for the parent to count, so a child that loses its verifier fails the parent too, and
+#: `test_every_composition_names_requirements_the_model_has` catches a constituent that stops existing.
+#: What that buys is a dependency graph instead of six opaque entries — right now every unresolved
+#: parent traces back to exactly two roots, `pSvaRl` and `NfAmrl`.
+COMPOSED_REQUIREMENTS: dict[str, tuple[str, ...]] = {
+    # "grouping three specific discovery mechanisms: semantic full-text search, metadata-based
+    # querying, and graph-based relationship discovery" — named, in that order, in its own prose.
+    "REQ@1712870400.F4tfa3": (
+        "REQ@1712870400.Cc2Dd2",
+        "REQ@1712870400.s5B3gB",
+        "REQ@1712870400.eBAa26",
+    ),
+    # "a parent requirement grouping: write-access-only-via-tools ... and GUI exploration and
+    # authoring for humans".
+    "REQ@1712870400.5PPAX3": ("REQ@1712870400.m117_R", "REQ@1712870400.NfAmrl"),
+    # "the frontmatter (one per file type) and the attribute profile (per specialization ...)".
+    "REQ@1777369633.UoHGZy": ("REQ@1712870400.pSvaRl", "REQ@1712870400.6ZR3nk"),
+    # Prose is one line ("specific aspects of diagrams should be configurable"), so the constituents
+    # come from what it aggregates: the per-file-type frontmatter, and datatype diagram authoring.
+    "REQ@1777370410.qpOBOQ": ("REQ@1712870400.pSvaRl", "REQ@1781704600.TbcGSB"),
+    # Likewise: the four things it aggregates are what "extensible & configurable" means here.
+    "REQ@1777369404.aDohcf": (
+        "REQ@1777369067.3cJ1Yi",
+        "REQ@1777369633.UoHGZy",
+        "REQ@1777370410.qpOBOQ",
+        "REQ@1781976357.A5WgC8",
+    ),
+}
+
+
+def _verified_by_composition(directly_verified: set[str]) -> set[str]:
+    """Parents every one of whose constituents is verified, resolved to a fixed point.
+
+    A fixed point rather than one pass, because a parent may be a constituent of another parent —
+    `qpOBOQ` is part of `aDohcf`. Iterating until nothing new resolves means the order entries appear
+    in above cannot change the answer, which a single pass would let it do.
+    """
+    resolved = set(directly_verified)
+    while True:
+        grown = {
+            parent
+            for parent, parts in COMPOSED_REQUIREMENTS.items()
+            if parent not in resolved and parts and all(part in resolved for part in parts)
+        }
+        if not grown:
+            return resolved - directly_verified
+        resolved |= grown
+
+
 def _owed() -> set[str]:
     """Active, realised, and unverified — the obligation this file is about."""
     status = _requirement_status()
     realised = {_short(r) for r in _realised()}
     verified = {_short(v) for v in _declared_verified()}
+    verified |= _verified_by_composition(verified)
     return {
         _short(identifier)
         for identifier, state in status.items()
@@ -140,13 +205,25 @@ def _owed() -> set[str]:
 #:
 #: * ``REQ@1777372175.eFz3z9`` names the treemap's grouping axes as "ArchiMate domain and
 #:   entity-type". The second axis is subdomain. Sizing by connection total is verified.
-#: * The six structural requirements (``5PPAX3`` authoring-tools, ``F4tfa3`` discovery-tools,
-#:   ``HR7AGz`` support-models-diagrams-documents, ``aDohcf`` extensibility, ``UoHGZy``
-#:   configurable-entities-and-connections, ``qpOBOQ`` configurable-diagrams) have other requirements
-#:   as their content. A parent is verified when its children are, and the model carries aggregation
-#:   edges — but ``authoring-tools`` aggregates one child and *associates* two more, so a rule reading
-#:   aggregation alone clears it on a third of its stated grouping. Making the edges say what the
-#:   prose says is a modelling decision, not a test.
+#: * ``REQ@1712870400.pSvaRl`` requires "configurable frontmatter schemata specific to each of the four
+#:   main file types", with core-required fields non-removable. The product configures document
+#:   *frontmatter* per doc-type (``3cJ1Yi``, verified) and entity/connection *attributes* per
+#:   specialization (``6ZR3nk``, verified) — two mechanisms, neither of them the one stated, and
+#:   nothing per-file-type for diagrams. Either the requirement describes a design that was superseded
+#:   by those two, or it is a real gap; that is a decision, so it stays owed. It is also the most
+#:   expensive entry here: three grouping parents list it as a constituent.
+#: * ``REQ@1712870400.NfAmrl`` (GUI exploration and authoring) asserts four things at once — browsing by
+#:   domain, navigating connections, viewing rendered diagrams, and creating artifacts with frontmatter
+#:   auto-populated. The browser suite covers the first three across several specs; no single spec
+#:   carries the conjunction, and marking one for all four would overstate it.
+#: * ``REQ@1712870400.HR7AGz`` claims all three artifact categories share one frontmatter schema, ID
+#:   convention and verification infrastructure. The obvious candidate, ``test_verify_all_passes_clean
+#:   _repo``, writes a single entity and passes ``include_diagrams=False``, so it evidences none of the
+#:   three-way claim.
+#:
+#: Grouping requirements are no longer in this register at all: see ``COMPOSED_REQUIREMENTS`` above,
+#: which resolves a parent once every constituent is verified. Every parent still unresolved traces
+#: back to ``pSvaRl`` or ``NfAmrl``.
 #:
 #: Requirements that are active, realised, and not yet declared as verified by anything.
 #:
@@ -157,12 +234,9 @@ def _owed() -> set[str]:
 UNVERIFIED_REQUIREMENTS: frozenset[str] = frozenset(
     {
         "REQ@1712870400.5PPAX3",
-        "REQ@1712870400.F4tfa3",
         "REQ@1712870400.HR7AGz",
         "REQ@1712870400.NfAmrl",
         "REQ@1712870400.pSvaRl",
-        "REQ@1712870400.vlMSrd",
-        "REQ@1777369240.dGaLkH",
         "REQ@1777369404.aDohcf",
         "REQ@1777369633.UoHGZy",
         "REQ@1777370410.qpOBOQ",
@@ -204,6 +278,42 @@ def test_no_realised_requirement_loses_its_verifier() -> None:
         "them. Add `@pytest.mark.verifies(\"REQ@...\")` to the test that does, or `@verifies REQ@...` "
         f"in a spec or harness — rather than adding to the register, which only shrinks: {grown}"
     )
+
+
+def test_every_composition_names_requirements_the_model_has() -> None:
+    """A composition pointing at a requirement that no longer exists would resolve its parent on a
+    constituent nobody can check — the same stranded-reference failure the marker scan guards against.
+    """
+    known = {_short(identifier) for identifier in _requirement_status()}
+    stranded = {
+        parent: sorted(set(parts) - known)
+        for parent, parts in COMPOSED_REQUIREMENTS.items()
+        if set(parts) - known
+    }
+    assert stranded == {}, f"compositions naming requirements the model does not declare: {stranded}"
+    assert not (set(COMPOSED_REQUIREMENTS) - known), sorted(set(COMPOSED_REQUIREMENTS) - known)
+
+
+def test_no_composition_is_empty_or_names_itself() -> None:
+    # An empty tuple would resolve its parent vacuously; a self-reference would resolve it circularly.
+    for parent, parts in COMPOSED_REQUIREMENTS.items():
+        assert parts, f"{parent} composes nothing, so it would be verified by default"
+        assert parent not in parts, f"{parent} names itself as its own constituent"
+
+
+def test_a_composed_parent_is_owed_while_any_constituent_is() -> None:
+    """The property that makes the hand-authored table safe: a parent cannot outrun its children.
+
+    Stated as a check over the real data rather than a synthetic one, so it fails if the fixed-point
+    resolution ever starts clearing a parent whose constituent is still owed.
+    """
+    owed = _owed()
+    for parent, parts in COMPOSED_REQUIREMENTS.items():
+        still_owed = sorted(part for part in parts if part in owed)
+        if still_owed:
+            assert parent in owed, (
+                f"{parent} is treated as verified while its constituents {still_owed} are not"
+            )
 
 
 def test_the_register_holds_nothing_that_is_now_verified() -> None:
