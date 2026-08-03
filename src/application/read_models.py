@@ -36,7 +36,7 @@ class EntityContextConnection(TypedDict):
     associated_entities: list[str]
     src_multiplicity: str
     tgt_multiplicity: str
-    specialization: str
+    specializations: list[str]
     source_name: str
     target_name: str
     source_artifact_type: str

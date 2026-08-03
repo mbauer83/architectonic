@@ -61,14 +61,22 @@ SECTION_TAGS: dict[str, frozenset[str]] = {
 }
 
 
-def filtered_document(document: dict[str, Any], tags: frozenset[str]) -> dict[str, Any]:
+#: An OpenAPI document. `Any` in the value position because the structure is recursive JSON and this is
+#: what `FastAPI.openapi()` itself returns; the parts this module *traverses* are typed precisely below.
+OpenApiDocument = dict[str, Any]
+
+#: One path item: method → operation object. Specific enough to say what the filter reads.
+PathItem = dict[str, object]
+
+
+def filtered_document(document: OpenApiDocument, tags: frozenset[str]) -> OpenApiDocument:
     """`document` with only the operations carrying one of `tags`.
 
     Deep-copied: the app caches its schema, and filtering in place would make the first section view
     requested the only complete document the process ever serves again.
     """
     filtered = copy.deepcopy(document)
-    paths: dict[str, Any] = {}
+    paths: dict[str, PathItem] = {}
     for path, methods in filtered.get("paths", {}).items():
         kept = {
             method: operation

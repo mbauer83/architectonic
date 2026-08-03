@@ -6,6 +6,7 @@ from collections.abc import Mapping
 from typing import Any, cast
 
 from src.application.artifacts.scoring import tokenize
+from src.domain.ontology_representation.specialization_values import applied_specialization_slugs
 
 from .types import (
     CONNECTION_DIRECTIONS,
@@ -285,7 +286,7 @@ def entity_context_connection(row: Mapping[str, Any]) -> EntityContextConnection
         associated_entities=json.loads(str(row["associated_entities_json"])),
         src_multiplicity=str(row["src_multiplicity"]),
         tgt_multiplicity=str(row["tgt_multiplicity"]),
-        specialization=str(row["specialization"]),
+        specializations=list(applied_specialization_slugs(json.loads(str(row["specializations_json"])))),
         source_name=str(row["source_name"]),
         target_name=str(row["target_name"]),
         source_artifact_type=str(row["source_artifact_type"]),

@@ -14,6 +14,9 @@ from dataclasses import dataclass
 
 from src.application.verification.artifact_verifier_parsing import parse_frontmatter_from_path
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
+from src.domain.ontology_representation.specialization_values import (
+    applied_specialization_slugs,
+)
 
 GLOBAL_ARTIFACT_REFERENCE_TYPE = "global-artifact-reference"
 _GLOBAL_ID_KEY = "global-artifact-id"
@@ -25,7 +28,14 @@ class EffectiveEndpoint:
     """One connection endpoint with GAR proxies resolved to what they reference."""
 
     entity_type: str | None
-    specialization: str
+    #: Every applied specialization, in declaration order.
+    #:
+    #: This was a scalar holding only the first, and `_verifier_rules_semantic` feeds it to
+    #: `_check_entity_relationship_restriction` — so a concept carrying two specializations had the
+    #: second one's relationship restrictions **silently unenforced**. Nothing in the current model
+    #: carries more than one (146 of 500 entities carry exactly one), so widening it changes no verdict
+    #: today; what it removes is a rule that would have started failing to hold the day one did.
+    specializations: tuple[str, ...]
     is_global_reference: bool
 
 
@@ -35,6 +45,7 @@ def _frontmatter(registry: ArtifactRegistry, entity_id: str) -> dict[str, object
         return None
     fm = parse_frontmatter_from_path(path)
     return fm if isinstance(fm, dict) else None
+
 
 
 def effective_endpoint(registry: ArtifactRegistry, entity_id: str) -> EffectiveEndpoint:
@@ -47,12 +58,12 @@ def effective_endpoint(registry: ArtifactRegistry, entity_id: str) -> EffectiveE
     internal type."""
     fm = _frontmatter(registry, entity_id)
     if fm is None:
-        return EffectiveEndpoint(entity_type=None, specialization="", is_global_reference=False)
+        return EffectiveEndpoint(entity_type=None, specializations=(), is_global_reference=False)
     own_type = str(fm.get("artifact-type", "")) or None
     if own_type != GLOBAL_ARTIFACT_REFERENCE_TYPE:
         return EffectiveEndpoint(
             entity_type=own_type,
-            specialization=str(fm.get("specialization", "") or ""),
+            specializations=applied_specialization_slugs(fm.get('specialization')),
             is_global_reference=False,
         )
     referenced_id = str(fm.get(_GLOBAL_ID_KEY, "") or "")
@@ -60,11 +71,13 @@ def effective_endpoint(registry: ArtifactRegistry, entity_id: str) -> EffectiveE
     if referenced_fm is not None:
         return EffectiveEndpoint(
             entity_type=str(referenced_fm.get("artifact-type", "")) or None,
-            specialization=str(referenced_fm.get("specialization", "") or ""),
+            specializations=applied_specialization_slugs(referenced_fm.get('specialization')),
             is_global_reference=True,
         )
     cached_type = str(fm.get(_GLOBAL_ENTITY_TYPE_KEY, "") or "")
-    return EffectiveEndpoint(entity_type=cached_type or None, specialization="", is_global_reference=True)
+    return EffectiveEndpoint(
+        entity_type=cached_type or None, specializations=(), is_global_reference=True
+    )
 
 
 GLOBAL_REFERENCE_SOURCE_ERROR = (

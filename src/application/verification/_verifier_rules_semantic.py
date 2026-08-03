@@ -26,6 +26,9 @@ from src.application.verification.artifact_verifier_parsing import parse_frontma
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.application.verification.artifact_verifier_types import Issue, Severity, VerificationResult
 from src.domain.modules.catalogs import ConnectionSemantics, OntologyCatalog
+from src.domain.ontology_representation.specialization_values import (
+    applied_specialization_slugs,
+)
 from src.domain.ontology_representation.specializations import (
     EndpointRestriction,
     RelationshipRestriction,
@@ -54,20 +57,23 @@ def _endpoint(registry: ArtifactRegistry, entity_id: str, *, read_specialization
     if own_type != GLOBAL_ARTIFACT_REFERENCE_TYPE:
         return EffectiveEndpoint(
             entity_type=own_type,
-            specialization=_entity_specialization(registry, entity_id) if read_specialization else "",
+            specializations=(
+                _entity_specializations(registry, entity_id) if read_specialization else ()
+            ),
             is_global_reference=False,
         )
     return effective_endpoint(registry, entity_id)
 
 
-def _entity_specialization(registry: ArtifactRegistry, entity_id: str) -> str:
+def _entity_specializations(registry: ArtifactRegistry, entity_id: str) -> tuple[str, ...]:
+    """Every specialization the entity's frontmatter applies, whichever shape the value used."""
     path = registry.find_file_by_id(entity_id)
     if path is None:
-        return ""
+        return ()
     fm = parse_frontmatter_from_path(path)
     if not isinstance(fm, dict):
-        return ""
-    return str(fm.get("specialization", "") or "")
+        return ()
+    return applied_specialization_slugs(fm.get('specialization'))
 
 
 def _permitted(
@@ -218,7 +224,7 @@ def check_connection_semantics(
     source_type = source_endpoint.entity_type
     if source_type is None:
         return
-    source_specialization = source_endpoint.specialization
+    source_specializations = source_endpoint.specializations
 
     for decl in connections:
         conn_type, target_id = decl.conn_type, decl.target_id
@@ -267,7 +273,10 @@ def check_connection_semantics(
                     result=result,
                     loc=loc,
                 )
-            if source_specialization:
+            # Every applied specialization, not just the first. A concept may carry several
+            # (ArchiMate §15.2) and each may declare its own relationship restrictions; checking one
+            # left the rest unenforced, silently, for as long as nothing carried two.
+            for source_specialization in source_specializations:
                 _check_entity_relationship_restriction(
                     specialization_catalog,
                     entity_id=source_id,
@@ -280,8 +289,7 @@ def check_connection_semantics(
                     result=result,
                     loc=loc,
                 )
-            target_specialization = target_endpoint.specialization
-            if target_specialization:
+            for target_specialization in target_endpoint.specializations:
                 _check_entity_relationship_restriction(
                     specialization_catalog,
                     entity_id=target_id,

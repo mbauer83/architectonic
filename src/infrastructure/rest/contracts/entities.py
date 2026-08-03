@@ -42,7 +42,12 @@ class EntitySummary(NullsOmitted):
     path: str
     is_global: bool
     group: str | None = None
-    specialization: str | None = None
+    #: Every applied specialization slug, in declaration order.
+    #:
+    #: A concept may carry several (ArchiMate §15.2). This row used to publish only the first one, so a
+    #: list surface could show a badge for a concept's primary specialization and no way to learn it had
+    #: others — the detail read had the same shape, so there was nowhere to find out.
+    specializations: list[str] = []
     host_diagram_id: str | None = None
     conn_in: int | None = None
     conn_sym: int | None = None
@@ -175,7 +180,8 @@ class ContextConnection(Closed):
     associated_entities: list[str]
     src_multiplicity: str
     tgt_multiplicity: str
-    specialization: str
+    #: Every applied connection specialization slug, in declaration order — see `EntitySummary`.
+    specializations: list[str]
     source_name: str
     target_name: str
     source_artifact_type: str

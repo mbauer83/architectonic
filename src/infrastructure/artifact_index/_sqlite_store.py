@@ -28,7 +28,7 @@ _INS_ENTITY = (
 _INS_CONNECTION = (
     "INSERT INTO connections (artifact_id,source,target,conn_type,version,status,"
     "path,scope,extra_json,content_text,associated_entities_json,"
-    "src_multiplicity,tgt_multiplicity,specialization,group_name) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+    "src_multiplicity,tgt_multiplicity,specializations_json,group_name) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
 )
 _INS_DIAGRAM = (
     "INSERT INTO diagrams (artifact_id,artifact_type,name,diagram_type,version,"
@@ -44,7 +44,7 @@ _INS_EDGE = (
     "connection_status,connection_version,source_id,target_id,source_name,"
     "target_name,source_artifact_type,target_artifact_type,source_domain,"
     "target_domain,source_scope,target_scope,path,content_text,"
-    "associated_entities_json,src_multiplicity,tgt_multiplicity,specialization) "
+    "associated_entities_json,src_multiplicity,tgt_multiplicity,specializations_json) "
     "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
 )
 _INS_EFTS = (
@@ -369,7 +369,7 @@ class _SqliteStore:
             json.dumps(list(r.associated_entities)),
             r.src_multiplicity,
             r.tgt_multiplicity,
-            r.specialization,
+            json.dumps(list(r.specializations)),
             r.group,
         )
 
@@ -424,7 +424,7 @@ class _SqliteStore:
             json.dumps(list(rec.associated_entities)),
             rec.src_multiplicity,
             rec.tgt_multiplicity,
-            rec.specialization,
+            json.dumps(list(rec.specializations)),
         )
         if _is_symmetric_conn(rec.conn_type):
             rows: list[tuple[str, ...]] = [(rec.source, rec.artifact_id, "symmetric", rec.target, *shared)]

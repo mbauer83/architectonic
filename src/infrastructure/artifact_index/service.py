@@ -389,7 +389,7 @@ class ArtifactIndex(_ReverseReferenceQueries):
                 "path": str(entity.path),
                 "content_snippet": entity.content_text[:240],
                 "keywords": list(entity.keywords),
-                "specialization": entity.specialization,
+                "specializations": list(entity.specializations),
                 "content_text": entity.content_text,
                 "display_blocks": entity.display_blocks,
                 "extra": entity.extra,
