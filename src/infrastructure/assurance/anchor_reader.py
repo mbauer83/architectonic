@@ -62,14 +62,27 @@ def anchor_reader_for(repo_root: Path | None = None) -> IndexAnchorReader | Unav
     read surface resolves against.
 
     **Which repository, resolved the way the server resolved it.** This used to ask
-    `resolve_workspace_repo_roots(Path.cwd())` and nothing else, so the model consulted
-    was whatever workspace happened to lie at or above the working directory. That is
-    not a wrong answer but a refusal: with no workspace there, `UnavailableAnchorReader`
-    reports every anchor as unknown — deliberately, so an ingest fails rather than
-    skipping validation — and an ingest naming an entity that plainly exists was told
-    "no architecture entity exists". It bit a container, a service manager, and a
-    backend serving a generated fixture repository, all of which set `ARCH_REPO_ROOT`
-    and none of which run from the workspace.
+    `resolve_workspace_repo_roots(Path.cwd())` and nothing else — so the *configured*
+    roots were ignored, and the model consulted was whatever workspace happened to lie
+    at or above the working directory. `--repo-root` and `ARCH_REPO_ROOT` exist exactly
+    so the roots need not be relative to cwd, and they are the only seams a container
+    has; this reader honoured neither.
+
+    A deployment that runs from its workspace was unaffected, which is why it went
+    unnoticed: `WORKDIR /app` plus the entrypoint's default `/app/arch-workspace.yaml`
+    puts a marker at cwd. It bit two configurations, and they failed differently.
+
+    *Roots configured, no workspace config* — a mode `docker/entrypoint.sh` supports
+    explicitly ("relying on ARCH_REPO_ROOT/ARCH_ENTERPRISE_ROOT"). Nothing at or above
+    cwd, so `resolve_workspace_repo_roots` answered None and `UnavailableAnchorReader`
+    reported every anchor unknown — deliberately, so an ingest fails rather than
+    skipping validation. Every ingest refused, naming entities that plainly existed.
+
+    *cwd holding a different workspace* — the worse one, and the one that surfaced
+    this. A fixture backend served `/tmp/arch-fixture-…` while its cwd was the source
+    tree, which does have a marker: so the check resolved successfully against the
+    **developer's** model and refused an entity belonging to the repository it was
+    serving. Not a failure to resolve, but a resolution of the wrong model.
 
     `resolve_server_roots` is asked rather than the environment being read here,
     because it is where the precedence — explicit argument, then environment, then

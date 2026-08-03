@@ -2,11 +2,15 @@
 
 Every other read surface answers from the roots the server resolved — `--repo-root`, else
 `ARCH_REPO_ROOT`, else the arch-init state — and `anchor_reader_for` resolved from `Path.cwd()`
-instead. The consequence is not a wrong answer but a *refusal*: `UnavailableAnchorReader` reports every
-anchor as unknown, deliberately, so an ingest fails rather than skipping validation. So an ingest naming
-an entity that plainly exists was told "no architecture entity exists" whenever the working directory
-was not the workspace — a container, a service manager, or a fixture backend serving a generated
-repository.
+instead, honouring none of the three. A deployment that runs from its workspace was unaffected, which
+is why it went unnoticed. Two configurations were not, and they failed differently:
+
+* **roots configured, no workspace config** — the mode `docker/entrypoint.sh` supports explicitly.
+  Nothing at or above cwd, so `UnavailableAnchorReader` reported every anchor unknown — deliberately,
+  so an ingest fails rather than skipping validation — and every ingest was refused for entities that
+  plainly existed.
+* **cwd holding a *different* workspace** — the worse case: resolution *succeeded*, against the wrong
+  model, and refused an entity belonging to the repository the server was actually serving.
 
 It survived because both existing ingest suites monkeypatch `anchor_reader_for` away
 (`test_ingest_security_signals_tool.py`, `test_security_ingest_http.py`): the resolution nothing

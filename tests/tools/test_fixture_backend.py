@@ -194,10 +194,21 @@ class TestItKeepsOutOfTheDevelopersBackendState:
         assert status["configured"] is True, status
         assert status["unlocked"] is True, status
 
+        # Every role the content checklist authors as a *node*, listed rather than derived: this is the
+        # one place that says "these and no others", and a fixture that gained a node kind should have
+        # to say so here. It already has once — the two control-structure nodes arrived when the FMEA
+        # matrix turned out to need a bound controller to nominate a row and model-and-bind an unbound
+        # one to act on, and this assertion is what noticed.
         authored = backend.workspace.authored
         expected = {
             authored[role][0]
-            for role in ("assurance_hazard_node", "assurance_bare_node", "assurance_failure_mode")
+            for role in (
+                "assurance_hazard_node",
+                "assurance_bare_node",
+                "assurance_failure_mode",
+                "assurance_bindable_node",
+                "assurance_bound_node",
+            )
         }
         # `nodes`, not `items`: the assurance list contracts name their own collection, so the generic
         # `_items` helper falls through to the envelope and iterating it yields keys.
