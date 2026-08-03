@@ -49,10 +49,60 @@ For any change touching the GUI, its API payloads, or model content the GUI rend
 
 The browser suite is the only one that exercises the real application, so leaving it to CI means UI and content regressions are discovered after the fact rather than before the commit.
 
+## Commit messages
+
+**`Area: clause`, where the clause completes "When applied, this commit will …".**
+
+```
+Quality: empty the operation register — 38 assurance operations requested
+REST: stop operations that return bytes advertising JSON
+Assurance: refuse to delete a node another analysis references
+```
+
+- **One area, from the vocabulary below.** Pick an existing name rather than coining a synonym;
+  a second word for the same concern makes the history unsearchable, which is the only thing the
+  prefix is for.
+- **Imperative, lowercase after the colon** — identifiers and numbers keep their own form, so a
+  clause may open `` `--help` `` or `404`. "REST: typed contracts for the platform reads" is a
+  label; "REST: type the contracts for the platform reads" says what applying it does.
+- **One concern per commit.** Where a commit genuinely carries two, lead with the more prominent
+  and name the second after a semicolon, with its own area:
+  `Index: add the close() it never had; Model: withdraw a requirement pagination made impossible`.
+  Three areas means it should have been two commits.
+- **The body says why**, and quotes the numbers a register moved by. The subject says what.
+
+**The vocabulary.** Layers and long-lived concerns, not a taxonomy to be extended per change:
+
+| Area | Covers |
+| --- | --- |
+| `REST` | the HTTP surface: routers, response contracts, the served OpenAPI document |
+| `Manifest` | the route-policy manifest itself, as distinct from what it governs |
+| `GUI` | `tools/gui/` — views, client, generated types, browser suite |
+| `MCP` | the MCP tool mounts and what they answer |
+| `Assurance` | the confidential store and the STPA/CAST/GRC/GSN/security surfaces |
+| `Backend` | the `arch-backend` process: startup, shutdown, runtime catalogs |
+| `Viewpoints` | viewpoint execution and authoring |
+| `Diagram types` | the diagram-type and datatype catalogues |
+| `Groups` | the group lifecycle |
+| `Sync` | diagram synchronisation |
+| `Index` | the artifact index |
+| `Domain` | `src/domain/` — the ontology and its projections |
+| `Write` | the write path and its refusal vocabulary |
+| `Quality` | gates, fixtures, walks, and the shrink-only registers |
+| `Docs` | `docs/`, `README.md`, `CHANGELOG.md` and its assets |
+| `Model` | repository content: entities, connections, requirements, verifiers |
+| `Tooling` | `tools/` other than the GUI |
+| `Consolidation` | removing a duplication that spans layers, so no single layer owns it |
+| `Release` | the version bump and what advertises it |
+
+`tests/architecture/test_commit_message_convention.py` holds the shape and the vocabulary. It exists
+because the convention silently lapsed for 81 consecutive commits: a rule with no gate reads as
+optional to whoever arrives next.
+
 ## REST routes and response contracts
 
 Every REST operation has exactly one row in the route-policy manifest
-(`src/infrastructure/gui/route_policy/`), and that row — not the decorator — is what the fitness
+(`src/infrastructure/rest/route_policy/`), and that row — not the decorator — is what the fitness
 functions in `tests/architecture/` compare the served surface against. Adding or renaming an
 operation means editing the row, and a handler that names an operation id the manifest does not
 declare fails its request rather than only a test.
