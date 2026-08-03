@@ -151,8 +151,8 @@ def _log_text_or_skip() -> str:
     return log_text
 
 
-def _walked_by_the_write_walk() -> frozenset[str]:
-    """Operations the REST write walk requests every run, against its own fixture backend.
+def _walked_by_a_fixture_walk() -> frozenset[str]:
+    """Operations a fixture-backend walk requests every run.
 
     Subtracted from what this log shows, because coverage stopped coming from one process. The walk
     serves a disposable workspace on its own port and writes its access log there, so `.arch/backend.log`
@@ -162,17 +162,25 @@ def _walked_by_the_write_walk() -> frozenset[str]:
     runs both walks and asserts every step appears in that backend's own log. So the two halves are
     separate and both in this suite: a step that stops being requested fails there, not silently here.
 
-    Both tuples, because the enterprise surface needs a backend in a different *mode* and therefore a
-    second sequential run — a second log this one cannot contain either.
+    Three tuples, because there are three runs and each has its own log this one cannot contain: the
+    engagement write surface, the enterprise write surface (a backend in a different *mode*, so a second
+    sequential run), and the reads no client drives.
+
+    The read walk is separate from the write ones on purpose, and
+    `test_the_write_walk_covers_only_write_shaped_operations` is what keeps it so — a register whose read
+    half were measured by a write harness could not answer the question the read half exists to ask.
     """
+    from tools.quality.rest_read_walk import READ_STEPS
     from tools.quality.rest_write_walk import ADMIN_STEPS, STEPS
 
-    return frozenset(step.operation_id for step in (*STEPS, *ADMIN_STEPS))
+    return frozenset(
+        step.operation_id for step in (*STEPS, *ADMIN_STEPS, *READ_STEPS)
+    )
 
 
 def _measured_dark_operations() -> frozenset[str]:
     dark = never_requested_operations(parse_requested_routes(_log_text_or_skip()), ROUTE_POLICY)
-    return dark - _walked_by_the_write_walk()
+    return dark - _walked_by_a_fixture_walk()
 
 
 def test_no_operation_outside_the_register_is_dark() -> None:
@@ -260,7 +268,7 @@ def test_the_write_walk_subtraction_names_only_declared_operations() -> None:
     while looking like it exempted something, and a typo is exactly how that happens."""
     from src.infrastructure.rest.route_policy import BY_OPERATION
 
-    unknown = sorted(_walked_by_the_write_walk() - set(BY_OPERATION))
+    unknown = sorted(_walked_by_a_fixture_walk() - set(BY_OPERATION))
     assert unknown == [], f"the write walk names operations the manifest does not declare: {unknown}"
 
 
@@ -268,6 +276,8 @@ def test_the_write_walk_covers_only_write_shaped_operations() -> None:
     """A walk that started subtracting GETs would be hiding read coverage behind a write fixture, which
     is the kind of quiet reclassification this register exists to prevent."""
     from src.infrastructure.rest.route_policy import BY_OPERATION
+    from tools.quality.rest_write_walk import ADMIN_STEPS, STEPS
 
-    reads = sorted(op for op in _walked_by_the_write_walk() if BY_OPERATION[op].method == "GET")
+    walked = {step.operation_id for step in (*STEPS, *ADMIN_STEPS)}
+    reads = sorted(op for op in walked if BY_OPERATION[op].method == "GET")
     assert reads == [], f"the write walk subtracts read operations: {reads}"

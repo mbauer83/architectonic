@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from difflib import SequenceMatcher
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from src.application._diagram_entity_extraction import (
     extract_diagram_connections,
@@ -12,14 +12,16 @@ from src.application._diagram_entity_extraction import (
 )
 from src.application.artifacts.parsing import extract_declared_puml_aliases, normalize_puml_alias
 from src.application.entity_type_predicates import is_internal_entity_type
+from src.application.modeling.diagram_kind_palette import (
+    diagram_kind_connection_types,
+    diagram_kind_entity_types,
+)
+from src.application.runtime_catalogs import RuntimeCatalogs
 from src.domain.modules.module_types import EntityTypeName
 from src.domain.ontology_representation.artifact_types import DiagramRecord, EntityRecord
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers.viewpoints._scope import resolve_viewpoint_scope
-
-if TYPE_CHECKING:
-    from src.application.runtime_catalogs import RuntimeCatalogs
 
 
 def _workspace_entity_types(catalogs: RuntimeCatalogs, diagram_type: str) -> frozenset[str]:
@@ -285,42 +287,20 @@ def fuzzy_entity_hits(
 def diagram_kind_entity_type_items(
     diagram_type: str, catalogs: RuntimeCatalogs, *, viewpoint: str | None = None
 ) -> list[dict[str, Any]]:
-    kind = catalogs.diagram_types.get_diagram_type(diagram_type)
-    viewpoint_scope = resolve_viewpoint_scope(viewpoint, catalogs)
-    ordered_domains = catalogs.ontology.domain_order()
-    items = [
-        {
-            "artifact_type": artifact_type,
-            "prefix": info.prefix,
-            "domain": info.hierarchy[0] if info.hierarchy else "",
-            "classes": list(info.classes),
-        }
-        for artifact_type, info in kind.effective_entity_types().items()
-        if not info.internal and (viewpoint_scope is None or viewpoint_scope.admits_entity_type(artifact_type, info))
-    ]
-    items.sort(
-        key=lambda item: (
-            ordered_domains.index(str(item["domain"])) if item["domain"] in ordered_domains else 99,
-            item["artifact_type"],
-        )
+    """The palette, with the `?viewpoint=` slug resolved to a scope here.
+
+    A thin adapter over `application.modeling.diagram_kind_palette`, which is where the composition
+    moved so authoring guidance can answer with the same lists. What stays is the HTTP-shaped half:
+    turning a slug into a scope, and answering 404 when it names nothing.
+    """
+    return diagram_kind_entity_types(
+        diagram_type, catalogs, scope=resolve_viewpoint_scope(viewpoint, catalogs)
     )
-    return items
 
 
 def diagram_kind_connection_type_items(
     diagram_type: str, catalogs: RuntimeCatalogs, *, viewpoint: str | None = None
 ) -> list[dict[str, Any]]:
-    kind = catalogs.diagram_types.get_diagram_type(diagram_type)
-    viewpoint_scope = resolve_viewpoint_scope(viewpoint, catalogs)
-    items = [
-        {
-            "connection_type": connection_type,
-            "conn_lang": info.conn_lang,
-            "symmetric": info.symmetric,
-            "classes": list(info.classes),
-        }
-        for connection_type, info in kind.effective_connection_types().items()
-        if viewpoint_scope is None or viewpoint_scope.admits_connection_type(connection_type)
-    ]
-    items.sort(key=lambda item: item["connection_type"])
-    return items
+    return diagram_kind_connection_types(
+        diagram_type, catalogs, scope=resolve_viewpoint_scope(viewpoint, catalogs)
+    )

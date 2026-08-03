@@ -132,10 +132,31 @@ export const AllowedBindingsSchema = Schema.Struct({
   connection: Schema.Record({ key: Schema.String, value: BindingTargetSpecSchema }),
 })
 
+/** One entity or connection type a diagram kind accepts.
+ *
+ * Open, mirroring the server's `_ModuleShaped`: the fields belong to a diagram-type *module*, so a kind
+ * that adds one must not need an edit here. `key` and `label` are the two this surface names; the rest —
+ * `artifact_type`, `prefix`, `domain`, `classes` for entities, `connection_type`, `conn_lang`,
+ * `symmetric`, `classes` for connections — arrive through the index signature and are read by whatever
+ * knows the kind.
+ */
+export const DiagramTypeMemberItemSchema = Schema.Struct(
+  {
+    key: Schema.optional(Schema.NullOr(Schema.String)),
+    label: Schema.optional(Schema.NullOr(Schema.String)),
+  },
+  Schema.Record({ key: Schema.String, value: Schema.Unknown }),
+)
+export type DiagramTypeMemberItem = typeof DiagramTypeMemberItemSchema.Type
+
 export const DiagramTypeGuidanceSchema = Schema.Struct({
   name: Schema.String,
   when_to_use: Schema.String,
   when_not_to_use: Schema.String,
+  /** The authoring palette: the same lists `GET /api/diagram-types/{t}/entity-types` and its connection
+   *  twin serve, from one composition on the server. `accepted_domains` is the coarser answer and stays. */
+  accepted_entity_types: Schema.optional(Schema.Array(DiagramTypeMemberItemSchema)),
+  accepted_connection_types: Schema.optional(Schema.Array(DiagramTypeMemberItemSchema)),
   accepted_domains: Schema.optional(Schema.Array(Schema.String)),
   diagram_entities_schema: Schema.optional(Schema.Record({ key: Schema.String, value: Schema.Unknown })),
   own_entity_types: Schema.optional(Schema.Array(OwnEntityTypeGuidanceSchema)),

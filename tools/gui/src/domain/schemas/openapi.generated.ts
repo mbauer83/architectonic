@@ -6168,8 +6168,12 @@ export interface components {
          *     showed blank guidance without saying why would look broken.
          */
         DiagramTypeGuidance: {
+            /** Accepted Connection Types */
+            accepted_connection_types?: components["schemas"]["DiagramTypeMemberItem"][];
             /** Accepted Domains */
             accepted_domains?: string[];
+            /** Accepted Entity Types */
+            accepted_entity_types?: components["schemas"]["DiagramTypeMemberItem"][];
             allowed_bindings?: components["schemas"]["AllowedBindings"];
             /** Diagram Entities Schema */
             diagram_entities_schema?: {

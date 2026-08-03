@@ -18,6 +18,7 @@ from typing import Any, Literal
 
 from pydantic import ConfigDict, Field
 
+from src.infrastructure.rest.contracts.diagrams import DiagramTypeMemberItem
 from src.infrastructure.rest.contracts.entities import AttributeDescriptor
 from src.infrastructure.rest.contracts.wire_nulls import NullsOmitted
 
@@ -215,6 +216,16 @@ class DiagramTypeGuidance(NullsOmitted):
     name: str
     when_to_use: str
     when_not_to_use: str
+    #: The authoring **palette** — the same lists `GET /api/diagram-types/{t}/entity-types` and its
+    #: connection twin serve, from the one composition in `application.modeling.diagram_kind_palette`.
+    #: Declared with the palette routes' own item model rather than a second one, because two models for
+    #: one payload shape is how the two addresses would come to describe it differently.
+    #:
+    #: Present whenever a diagram type was asked about — `accepted_domains` is the coarser answer and
+    #: stays, so a client reading it keeps working. Unnarrowed here: the palette routes accept
+    #: `?viewpoint=`, and this block has no viewpoint to narrow by.
+    accepted_entity_types: list[DiagramTypeMemberItem] | None = None
+    accepted_connection_types: list[DiagramTypeMemberItem] | None = None
     accepted_domains: list[str] | None = None
     #: A JSON Schema for the kind's ``diagram-entities`` block. The document's own vocabulary, so it
     #: is served as written rather than mirrored here.

@@ -18,6 +18,10 @@ from functools import lru_cache
 from pathlib import Path
 
 from src.application.guidance_composition import GuidanceContextView
+from src.application.modeling.diagram_kind_palette import (
+    diagram_kind_connection_types,
+    diagram_kind_entity_types,
+)
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.domain.diagrams.allowed_bindings import serialize_allowed_bindings
 from src.domain.modules.module_types import ConnectionTypeName, EntityTypeName
@@ -160,7 +164,7 @@ def get_type_guidance(
                 "known_diagram_types": known,
             }
         result["diagram_type_guidance"] = _serialize_diagram_type_guidance(
-            diagram_type, diagram_type_mod.write_guidance()
+            diagram_type, diagram_type_mod.write_guidance(), cats
         )
 
     if filter is not None or diagram_type is None:
@@ -191,11 +195,32 @@ def _entity_type_guidance_is_empty(entries: list[dict[str, object]]) -> bool:
 def _serialize_diagram_type_guidance(
     name: str,
     g: DiagramTypeWriteGuidance,
+    catalogs: RuntimeCatalogs,
 ) -> dict[str, object]:
+    """Guidance for one diagram type, including the types it will actually accept.
+
+    ``accepted_entity_types`` / ``accepted_connection_types`` are the **palette** — the same lists
+    `GET /api/diagram-types/{t}/entity-types` and its connection twin serve, read from the one
+    composition in `application.modeling.diagram_kind_palette` so the two transports cannot disagree.
+
+    They are here rather than behind a new tool or a new parameter, and that placement is the point.
+    `artifact_authoring_guidance` already takes `diagram_type` and is already the tool an agent asks
+    "what may I author on this diagram" — it just answered with accepted *domains* and left the agent to
+    derive the type list from them. That derivation is what these two REST routes do centrally, and the
+    agent could not reproduce the viewpoint-narrowed form of it at all. Enriching a payload costs no
+    tool surface and no argument; a `diagram_palette` tool would have been a second address for a
+    question this tool is already asked.
+
+    Unnarrowed on purpose: narrowing takes a viewpoint, which is the one thing this signature does not
+    have. REST offers it as `?viewpoint=`, and adding it here later is a parameter on the tool whose job
+    it is rather than on a bystander — worth doing when an agent flow needs it, not before.
+    """
     out: dict[str, object] = {
         "name": name,
         "when_to_use": g.when_to_use,
         "when_not_to_use": g.when_not_to_use,
+        "accepted_entity_types": diagram_kind_entity_types(name, catalogs),
+        "accepted_connection_types": diagram_kind_connection_types(name, catalogs),
     }
     if g.accepted_domains:
         out["accepted_domains"] = list(g.accepted_domains)

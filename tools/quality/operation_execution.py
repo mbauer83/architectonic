@@ -90,6 +90,19 @@ from src.infrastructure.rest.route_policy import RouteRow
 #: `/api/diagrams/{id}/entities/{clf}/attributes/{a}/metadata` needs, and the likeliest reason nothing
 #: had ever requested it.
 #:
+#: **Re-cut 2026-08-03 to 38.** The reads no client drives now have a walk of their own,
+#: `tools/quality/rest_read_walk.py`, against the same fixture backend — separate from the write walks
+#: because `test_the_write_walk_covers_only_write_shaped_operations` refuses reads there and is right to.
+#: Five operations, each with its reason printed by the walk: two reachable only by a user gesture (an
+#: `<img>` src the inline-SVG surface never takes, a download-menu click no spec makes) and three with no
+#: consumer at all, kept because each answers something no other address does.
+#:
+#: The palette pair got more than coverage. `artifact_authoring_guidance(diagram_type=…)` answered
+#: accepted *domains* and left an agent to derive the type list; both transports now read
+#: `application.modeling.diagram_kind_palette`, so the tool answers the same lists the route serves and
+#: `tests/application/test_diagram_kind_palette_parity.py` holds them together. No new MCP tool and no
+#: new parameter — the tool already took `diagram_type`; what changed is what it answers.
+#:
 #: **Two entries left on 2026-08-03 for an uncomfortable reason, recorded because the register is only
 #: worth having if this is written down.** `documents_read_document_schemata` and
 #: `diagrams_list_diagram_type_entity_types` were requested by a hand-run `curl` against the dev backend
@@ -179,9 +192,6 @@ NEVER_REQUESTED_OPERATIONS: frozenset[str] = frozenset(
         "assurance_search_nodes",
         "assurance_update_analysis",
         "assurance_update_node",
-        "diagrams_download_diagram_source",
-        "diagrams_list_diagram_type_connection_types",
-        "diagrams_read_diagram_image",
     }
 )
 
