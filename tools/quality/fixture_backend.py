@@ -161,11 +161,31 @@ def _child_env(workspace: FixtureWorkspace) -> dict[str, str]:
 
     The seam was already there: `backend_state._state_dir` checks this variable before anything else.
     """
+    credentials = workspace.root / "credentials"
+    credentials.mkdir(parents=True, exist_ok=True)
     return {
         **os.environ,
         "ARCH_REPO_ROOT": str(workspace.engagement_root),
         "ARCH_ENTERPRISE_ROOT": str(workspace.enterprise_root),
         "ARCH_BACKEND_STATE_DIR": str(state_dir_for(workspace)),
+        # A throwaway Fernet vault inside the workspace, rather than the developer's OS credential
+        # store. `tests/conftest.py` sets both of these for the whole suite and says why — "subprocesses
+        # inherit the env, and any test that deliberately replaces a child's env must set both
+        # variables" — so a fixture backend started *under pytest* was already hermetic. Started by hand
+        # it was not: neither variable is set, so `_get_backend` selected Windows DPAPI and the served
+        # `/api/assurance/status` read the developer's real credential accounts on every call.
+        #
+        # Harmless today, because nothing in the walks writes a credential and `_credential_accounts.read`
+        # no longer writes on the read path. Not harmless the moment there is a fixture *store*: that
+        # slice calls `init_store`, which writes a key, and `clear`, which deletes both the scoped and the
+        # unscoped account. With these two set, all of that lands in a directory the workspace owns.
+        #
+        # A master password rather than `ARCH_ASSURANCE_FORBID_REAL_CREDENTIAL_BACKEND`: the forbid check
+        # precedes the password branch in `_get_backend` and *raises*, so forbidding gives no credential
+        # store at all. The password path is the documented headless escape hatch, and it gives a real
+        # one that happens to be disposable.
+        "ARCH_ASSURANCE_CREDENTIALS_DIR": str(credentials),
+        "ARCH_ASSURANCE_MASTER_PASSWORD": "fixture-backend-throwaway",
     }
 
 

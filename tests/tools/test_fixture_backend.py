@@ -12,6 +12,7 @@ below can be made against the same one.
 from __future__ import annotations
 
 import json
+import os
 import urllib.request
 from collections.abc import Iterator
 from pathlib import Path
@@ -134,6 +135,38 @@ class TestItKeepsOutOfTheDevelopersBackendState:
 
         assert fixture_state != repository_state
         assert not fixture_state.is_relative_to(REPO_ROOT), fixture_state
+
+    def test_its_credential_store_is_a_throwaway_inside_the_workspace(
+        self, backend: FixtureBackend
+    ) -> None:
+        """The same isolation, for the other piece of global state a backend reaches for.
+
+        `tests/conftest.py` redirects the credential directory for the whole suite and says why:
+        subprocesses inherit the env, so a child that copies it is hermetic and a child run outside
+        pytest is not. A fixture backend started by hand had neither variable set, so `_get_backend`
+        selected the real OS backend and the served `/api/assurance/status` read the developer's own
+        credential accounts on every call.
+
+        Set here rather than left to the caller, because the fixture backend is the thing that knows it
+        owns a disposable workspace. And a master password rather than the forbid flag: the forbid check
+        precedes the password branch and raises, so forbidding leaves no credential store at all.
+        """
+        from tools.quality.fixture_backend import _child_env
+
+        env = _child_env(backend.workspace)
+        credentials = Path(env["ARCH_ASSURANCE_CREDENTIALS_DIR"])
+
+        assert credentials.is_relative_to(backend.workspace.root), credentials
+        assert not credentials.is_relative_to(Path.home() / ".config"), credentials
+        assert env["ARCH_ASSURANCE_MASTER_PASSWORD"], env
+
+        # And it does not add the forbid flag, which is the one combination that cannot work: the forbid
+        # check precedes the password branch in `_get_backend` and raises, so a child given both has no
+        # credential store at all. Asserted over what this module *adds* rather than over the child's
+        # whole environment, because the suite sets that flag for every test and inheriting it is not
+        # this module's decision.
+        added = {key for key in env if os.environ.get(key) != env[key]}
+        assert "ARCH_ASSURANCE_FORBID_REAL_CREDENTIAL_BACKEND" not in added, sorted(added)
 
     def test_the_variable_it_passes_is_the_one_the_state_reader_obeys(
         self, backend: FixtureBackend, monkeypatch: pytest.MonkeyPatch

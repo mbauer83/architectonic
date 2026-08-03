@@ -90,11 +90,30 @@ from src.infrastructure.rest.route_policy import RouteRow
 #: `/api/diagrams/{id}/entities/{clf}/attributes/{a}/metadata` needs, and the likeliest reason nothing
 #: had ever requested it.
 #:
-#: Five *reads* were dark for the same reason and are still here — and the note that used to say they
+#: **Two entries left on 2026-08-03 for an uncomfortable reason, recorded because the register is only
+#: worth having if this is written down.** `documents_read_document_schemata` and
+#: `diagrams_list_diagram_type_entity_types` were requested by a hand-run `curl` against the dev backend
+#: while somebody was working out what they were *for*. That put them in the log, which made the
+#: register's claim about them false, and `test_the_register_holds_nothing_that_has_since_been_requested`
+#: said so. The gate is right and the register shrank.
+#:
+#: What it does **not** mean is that they are covered. This module's own docstring says any request
+#: counts — "a browser spec, the conformance harness, a hand-run `curl`" — and that is deliberate,
+#: because the register measures reachability rather than testing. But a diagnostic `curl` is not
+#: repeatable evidence, so the honest reading is: these two have **no consumer**, still, and the fact now
+#: lives in this prose instead of in a register entry that can never be re-added. Anyone measuring the
+#: read surface from here should treat those two as unmeasured rather than as covered.
+#:
+#: The lesson is about method, not about these routes: investigating a dark operation against a logged
+#: backend consumes the evidence that it was dark. Probe a fixture backend instead — its log is its own.
+#:
+#: Three *reads* remain dark, and the note that used to say they
 #: "belong to the GUI conformance harness once it is pointed at a fixture origin" was **wrong**. That
 #: harness is complete now: its unexercised register is empty and every port method is driven. These
 #: five stayed dark through a full browser suite, a full read conformance run and both write walks, so
-#: they are not waiting on a harness. They divide in three, and none of the three is a gate's problem:
+#: they are not waiting on a harness. Two have since been consumed by the `curl` described above; the
+#: three groupings below are what they *are*, whether or not the register still lists them, and none of
+#: the three is a gate's problem:
 #:
 #: * `diagrams_download_diagram_source` — `DownloadMenu.vue` builds the URL and a *user click* fetches
 #:   it. Reachable only by a gesture no spec makes; a download-assertion spec would cover it.
@@ -162,9 +181,7 @@ NEVER_REQUESTED_OPERATIONS: frozenset[str] = frozenset(
         "assurance_update_node",
         "diagrams_download_diagram_source",
         "diagrams_list_diagram_type_connection_types",
-        "diagrams_list_diagram_type_entity_types",
         "diagrams_read_diagram_image",
-        "documents_read_document_schemata",
     }
 )
 
