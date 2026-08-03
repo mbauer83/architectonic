@@ -50,6 +50,7 @@ from src.infrastructure.rest.contracts.errors import (
     InvalidParticipationDetails,
     LegacyInvalidDetails,
 )
+from src.infrastructure.rest.routers._openapi import TAG_ASSURANCE_ANALYSES
 from src.infrastructure.rest.routers.assurance._http import (
     build_policy,
     deleted,
@@ -61,7 +62,7 @@ from src.infrastructure.rest.routers.assurance._http import (
 )
 from src.infrastructure.rest.routers.assurance._invalid import invalid_as_api_error
 
-grouping_router = APIRouter()
+grouping_router = APIRouter(tags=[TAG_ASSURANCE_ANALYSES])
 
 
 class CreateAssuranceGroupBody(BaseModel):

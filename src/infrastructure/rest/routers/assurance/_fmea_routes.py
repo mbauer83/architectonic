@@ -40,11 +40,12 @@ from src.infrastructure.rest.contracts.errors import (
     NotAFailureModeDetails,
     ValidationErrorDetails,
 )
+from src.infrastructure.rest.routers._openapi import TAG_ASSURANCE_FMEA
 from src.infrastructure.rest.routers.assurance._http import locked_response as _locked_response
 from src.infrastructure.rest.routers.assurance._http import not_found_response as _not_found_response
 from src.infrastructure.rest.routers.assurance._http import ok as _ok
 
-fmea_router = APIRouter()
+fmea_router = APIRouter(tags=[TAG_ASSURANCE_FMEA])
 
 _NO_STORE = "no-store"
 

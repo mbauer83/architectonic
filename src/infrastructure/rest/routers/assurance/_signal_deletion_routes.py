@@ -20,11 +20,11 @@ from typing import Any
 from fastapi import APIRouter
 
 from src.infrastructure.rest.contracts.assurance_signals import SecuritySnapshotDeletionResponse
-from src.infrastructure.rest.routers._openapi import TAG_ASSURANCE
+from src.infrastructure.rest.routers._openapi import TAG_ASSURANCE_SECURITY
 from src.infrastructure.rest.routers.assurance._http import not_found as _not_found
 from src.infrastructure.rest.routers.assurance._signals_routes import _mutating_context
 
-signal_deletion_router = APIRouter(tags=[TAG_ASSURANCE])
+signal_deletion_router = APIRouter(tags=[TAG_ASSURANCE_SECURITY])
 
 
 @signal_deletion_router.delete("/api/assurance/security-snapshots/{snapshot_id}",

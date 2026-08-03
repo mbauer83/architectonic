@@ -125,11 +125,21 @@ def register_connection_read_routes(router: APIRouter) -> None:
         source_id: str | None = None,
         catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
     ) -> dict[str, Any]:
-        """Every relationship available from this type, grouped by direction.
+        # Split from `/api/ontology/pairs`. One address used to answer both questions, choosing its
+        # response shape by whether `target_type` was supplied, so no schema could describe it — and an
+        # invalid endpoint came back as a 200 carrying an `error` string, a whole-operation failure
+        # wearing a success code. That rationale lives here rather than in the docstring because
+        # FastAPI serves the docstring as the OpenAPI `description`, where it described a parameter
+        # this operation does not have and left readers of /docs looking for `target_type`.
+        """Every relationship available from this entity type, grouped by direction.
 
-        Split from the pair read below. One address used to answer both, choosing the shape by whether
-        ``target_type`` was supplied, so no schema could describe it — and an invalid endpoint came back
-        as a 200 carrying an ``error`` string, which is a whole-operation failure wearing a success code.
+        For what may be drawn between an ordered *pair* of types, use `/api/ontology/pairs`.
+
+        `source_id` is optional and does not narrow the answer — it corrects what the answer is about.
+        Given the id of a global-artifact reference, the governing type is the type of the entity it
+        *references* rather than the internal proxy type `source_type` names, and a caller cannot know
+        that without asking. Naming a document or diagram reference is refused (422) rather than
+        answered about the wrong type.
         """
         source, source_invalid = _resolve_effective_type(source_id, source_type, catalogs)
         if source_invalid:
@@ -146,10 +156,15 @@ def register_connection_read_routes(router: APIRouter) -> None:
         target_id: str | None = None,
         catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
     ) -> dict[str, Any]:
-        """What may be drawn between this ordered pair.
+        # `target_type` is required here, which is the point of the split: it is not a filter that
+        # narrows the classification, it selects a different question with a different answer.
+        """What may be drawn between this ordered pair of entity types.
 
-        ``target_type`` is required here, which is the point of the split: it is not a filter that
-        narrows the classification, it selects a different question with a different answer.
+        For everything reachable from a single type, use `/api/ontology/classification`.
+
+        `source_id` and `target_id` are optional and resolve global-artifact references to the type of
+        the entity referenced, as on the classification read; either naming a document or diagram
+        reference is refused (422).
         """
         source, source_invalid = _resolve_effective_type(source_id, source_type, catalogs)
         target, target_invalid = _resolve_effective_type(target_id, target_type, catalogs)

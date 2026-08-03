@@ -14,8 +14,9 @@ from src.infrastructure.rest.contracts.promotion import (
     PromotionResultResponse,
 )
 from src.infrastructure.rest.routers import state as s
+from src.infrastructure.rest.routers._openapi import TAG_PROMOTION
 
-router = APIRouter()
+router = APIRouter(tags=[TAG_PROMOTION])
 
 
 class PromotionPlanBody(BaseModel):

@@ -48,11 +48,11 @@ from src.infrastructure.rest.contracts.errors import (
     FieldError,
     ValidationErrorDetails,
 )
-from src.infrastructure.rest.routers._openapi import TAG_ASSURANCE
+from src.infrastructure.rest.routers._openapi import TAG_ASSURANCE_SECURITY
 from src.infrastructure.rest.routers.assurance._http import not_found as _not_found
 from src.infrastructure.rest.routers.assurance._http import store_locked as _store_locked
 
-signals_router = APIRouter(tags=[TAG_ASSURANCE])
+signals_router = APIRouter(tags=[TAG_ASSURANCE_SECURITY])
 
 _NO_SIGNALS_STORE = "no co-located signals store"
 

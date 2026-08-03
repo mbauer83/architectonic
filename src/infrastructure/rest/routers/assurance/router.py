@@ -25,6 +25,10 @@ from src.infrastructure.app_bootstrap import assurance_ontology_module, get_modu
 from src.infrastructure.rest.contracts.assurance_nodes import AssuranceEdgeCatalogResponse
 from src.infrastructure.rest.contracts.assurance_store import AssuranceStoreStatusResponse
 from src.infrastructure.rest.contracts.errors import ApiError, NotConfiguredDetails
+from src.infrastructure.rest.routers._openapi import (
+    TAG_ASSURANCE_NODES,
+    TAG_ASSURANCE_STORE,
+)
 from src.infrastructure.rest.routers.assurance._aibom import aibom_router
 from src.infrastructure.rest.routers.assurance._analysis_routes import analysis_router
 from src.infrastructure.rest.routers.assurance._archive_routes import archive_router
@@ -89,7 +93,7 @@ class AssuranceReloadBody(BaseModel):
     authorize: bool | None = None
 
 
-@router.post("/api/assurance/reload", status_code=200,
+@router.post("/api/assurance/reload", tags=[TAG_ASSURANCE_STORE], status_code=200,
     response_model=AssuranceStoreStatusResponse)
 def assurance_reload(body: AssuranceReloadBody | None = None) -> dict[str, object]:
     """Evict the assurance bundle cache and rebuild it, applying the activation policy.
@@ -113,7 +117,8 @@ def assurance_reload(body: AssuranceReloadBody | None = None) -> dict[str, objec
     return assurance_status()
 
 
-@router.get("/api/assurance/edge-catalog", response_model=AssuranceEdgeCatalogResponse)
+@router.get("/api/assurance/edge-catalog", tags=[TAG_ASSURANCE_NODES],
+    response_model=AssuranceEdgeCatalogResponse)
 def assurance_edge_catalog() -> JSONResponse:
     """Edge and reference type catalog from the loaded assurance module.
 
@@ -135,7 +140,8 @@ def assurance_edge_catalog() -> JSONResponse:
     return JSONResponse(content=catalog)
 
 
-@router.get("/api/assurance/status", response_model=AssuranceStoreStatusResponse)
+@router.get("/api/assurance/status", tags=[TAG_ASSURANCE_STORE],
+    response_model=AssuranceStoreStatusResponse)
 def assurance_status() -> dict[str, object]:
     """Return confidential assurance store configuration and lock status.
 

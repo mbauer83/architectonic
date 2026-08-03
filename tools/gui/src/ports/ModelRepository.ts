@@ -111,8 +111,9 @@ export interface ModelRepository extends EnterpriseAdminRepository {
     cursor?: string; diagramId?: string;
   }) => Effect.Effect<DatatypeTypeCatalog, RepoError>
   readonly getDatatypeTypeUsages: (typeId: string) => Effect.Effect<DatatypeTypeUsages, RepoError>
+  /** `diagram_type` + `entity_type` are a composite key: the type must be one that diagram type owns. */
   readonly allocateDiagramEntityId: (body: {
-    owner_kind: 'diagram'; diagram_type: string; entity_type: string; name_hint?: string;
+    diagram_type: string; entity_type: string; name_hint?: string;
   }) => Effect.Effect<AllocatedIdentifier, RepoError>
   readonly getDiagram: (id: string) => Effect.Effect<DiagramDetail, RepoError | NotFoundError>
   readonly getDiagramContext: (id: string) => Effect.Effect<DiagramContext, RepoError | NotFoundError>

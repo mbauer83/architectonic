@@ -41,6 +41,7 @@ from src.infrastructure.rest.contracts.assurance_diagrams import (
     AssuranceRenderedDiagramResponse,
 )
 from src.infrastructure.rest.contracts.errors import ApiError, UnknownDiagramTypeDetails
+from src.infrastructure.rest.routers._openapi import TAG_ASSURANCE_ARGUMENTS
 from src.infrastructure.rest.routers.assurance._http import (
     build_policy,
     locked_response,
@@ -50,7 +51,7 @@ from src.infrastructure.rest.routers.assurance._http import (
 
 logger = logging.getLogger(__name__)
 
-diagram_router = APIRouter()
+diagram_router = APIRouter(tags=[TAG_ASSURANCE_ARGUMENTS])
 
 
 def _assurance_diagram_type(diagram_type: str) -> StoreGraphProjectingDiagramType | None:

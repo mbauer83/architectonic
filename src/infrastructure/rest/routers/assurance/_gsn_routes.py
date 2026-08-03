@@ -31,6 +31,7 @@ from src.infrastructure.rest.contracts.errors import (
     ClassificationNotPublishableDetails,
     NotConfiguredDetails,
 )
+from src.infrastructure.rest.routers._openapi import TAG_ASSURANCE_ARGUMENTS
 from src.infrastructure.rest.routers.assurance._http import (
     build_policy,
     locked_response,
@@ -38,7 +39,7 @@ from src.infrastructure.rest.routers.assurance._http import (
     ok,
 )
 
-gsn_router = APIRouter()
+gsn_router = APIRouter(tags=[TAG_ASSURANCE_ARGUMENTS])
 
 
 class GsnPublicationBinding(BaseModel):

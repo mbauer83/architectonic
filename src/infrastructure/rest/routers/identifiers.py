@@ -20,33 +20,22 @@ from src.infrastructure.rest.routers._openapi import TAG_ENTITIES
 router = APIRouter()
 
 
-class _AllocateRequest:
-    def __init__(
-        self,
-        diagram_type: str = Body(...),
-        entity_type: str = Body(...),
-        name_hint: str | None = Body(default=None),
-        owner_kind: str = Body(default="diagram"),
-    ) -> None:
-        self.diagram_type = diagram_type
-        self.entity_type = entity_type
-        self.name_hint = name_hint
-        self.owner_kind = owner_kind
-
-
 @router.post("/api/identifiers/allocate", tags=[TAG_ENTITIES], summary="Allocate artifact identifiers",
     response_model=AllocatedIdentifierResponse)
 def allocate_identifier(
     diagram_type: Annotated[str, Body()],
     entity_type: Annotated[str, Body()],
     name_hint: Annotated[str | None, Body()] = None,
-    owner_kind: Annotated[str, Body()] = "diagram",
     catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
 ) -> dict[str, str]:
     """Mint a workspace-identity ID for a diagram entity (non-persistent).
 
-    The prefix is resolved from the entity-type's ``id_prefix`` metadata registered
-    in the diagram-type module. Caller-supplied prefixes are never accepted.
+    `diagram_type` and `entity_type` are a composite key, not alternatives: the entity type must be
+    one the *named diagram type* owns, workspace-scoped, with an `id_prefix` declared in its ontology.
+    "classifier" is only meaningful as the classifier type of the datatype diagram type, which is why
+    neither parameter can be dropped in favour of a generic artifact type.
+
+    The prefix is resolved from that `id_prefix` metadata. Caller-supplied prefixes are never accepted.
 
     Returns ``{"id": "CLF@epoch.random.slug"}`` for a ``classifier`` entity type.
     """

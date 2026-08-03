@@ -30,7 +30,24 @@ from pydantic import BaseModel, ConfigDict
 from src.infrastructure.rest.contracts.errors import ErrorEnvelope
 from src.infrastructure.rest.contracts.verification import WriteVerificationResponse
 
-#: FastAPI tag names, one per modeling/query surface, so ``/docs`` groups by concept.
+#: FastAPI tag names, one per surface, so ``/docs`` groups by concept.
+#:
+#: **Every served operation must carry exactly one of these**, which
+#: ``tests/architecture/test_openapi_tags.py`` holds. Tags were previously optional and 59 of 166
+#: operations had none, so ``/docs`` presented a third of the surface — the whole assurance module, plus
+#: sync, promotion and the event stream — under an unnamed "default" heading. A tag is the only thing
+#: that makes a 166-operation document navigable, and the omission was invisible because nothing
+#: compared the served surface against a vocabulary.
+#:
+#: Declared on the router (``APIRouter(tags=[...])``) rather than per route: a section is a property of
+#: the module, every route in it shares one, and stating it once means a new route inherits it instead
+#: of needing to remember it.
+#:
+#: Not derived from the route-policy manifest, though that was the first plan. The manifest's row groups
+#: and these sections genuinely disagree in about ten places, and the disagreements are deliberate — the
+#: three search operations are grouped together for *addressing* and want tagging by the artifact kind
+#: each one searches, which is what a reader looks under. Addressing and documentation are different
+#: concerns over the same operations; coupling them would have made one hostage to the other.
 TAG_ENTITIES = "entities"
 TAG_CONNECTIONS = "connections"
 TAG_DIAGRAMS = "diagrams"
@@ -38,7 +55,30 @@ TAG_VIEWPOINTS = "viewpoints"
 TAG_DOCUMENTS = "documents"
 TAG_GROUPS = "groups"
 TAG_TAXONOMY = "taxonomy"
-TAG_ASSURANCE = "assurance"
+TAG_SYNC = "sync"
+TAG_PROMOTION = "promotion"
+TAG_PLATFORM = "platform"
+
+#: The assurance surface, subdivided along the sub-routers it already composes.
+#:
+#: One `assurance` tag would hold 62 operations — twice the next largest section — which is a heading a
+#: reader collapses rather than uses. The twelve sub-routers were already the module's own partition;
+#: these six sections group them by the question a reader arrives with, so nothing had to be invented.
+TAG_ASSURANCE_STORE = "assurance: store"
+TAG_ASSURANCE_ANALYSES = "assurance: analyses"
+TAG_ASSURANCE_NODES = "assurance: nodes & edges"
+TAG_ASSURANCE_FMEA = "assurance: FMEA"
+TAG_ASSURANCE_ARGUMENTS = "assurance: arguments"
+TAG_ASSURANCE_SECURITY = "assurance: security signals"
+
+#: Every tag the served surface may use. The fitness function compares against this, so a new section
+#: is a deliberate addition here rather than a string that quietly becomes its own heading.
+ALL_TAGS: frozenset[str] = frozenset({
+    TAG_ENTITIES, TAG_CONNECTIONS, TAG_DIAGRAMS, TAG_VIEWPOINTS, TAG_DOCUMENTS, TAG_GROUPS,
+    TAG_TAXONOMY, TAG_SYNC, TAG_PROMOTION, TAG_PLATFORM, "admin",
+    TAG_ASSURANCE_STORE, TAG_ASSURANCE_ANALYSES, TAG_ASSURANCE_NODES, TAG_ASSURANCE_FMEA,
+    TAG_ASSURANCE_ARGUMENTS, TAG_ASSURANCE_SECURITY,
+})
 
 
 class WriteResultResponse(BaseModel):

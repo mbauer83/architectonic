@@ -57,7 +57,6 @@ async function refreshUsageCounts() {
 
 async function createClassifier(attrOwnerId?: string, attrIndex?: number) {
   const allocated = await Effect.runPromise(svc.allocateDiagramEntityId({
-    owner_kind: 'diagram',
     diagram_type: 'datatype',
     entity_type: 'classifier',
     name_hint: 'Classifier',
@@ -74,7 +73,6 @@ async function createClassifier(attrOwnerId?: string, attrIndex?: number) {
 
 async function createGeneralizationSet() {
   const allocated = await Effect.runPromise(svc.allocateDiagramEntityId({
-    owner_kind: 'diagram',
     diagram_type: 'datatype',
     entity_type: 'generalization_set',
     name_hint: 'Generalization set',

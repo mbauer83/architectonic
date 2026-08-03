@@ -32,9 +32,10 @@ from src.infrastructure.rest.contracts.assurance_aibom import (
     AiBomScanResponse,
 )
 from src.infrastructure.rest.contracts.errors import ApiError, NotConfiguredDetails
+from src.infrastructure.rest.routers._openapi import TAG_ASSURANCE_SECURITY
 from src.infrastructure.rest.routers.assurance._http import ok as _ok
 
-aibom_router = APIRouter()
+aibom_router = APIRouter(tags=[TAG_ASSURANCE_SECURITY])
 
 
 class AiBomExportBody(BaseModel):

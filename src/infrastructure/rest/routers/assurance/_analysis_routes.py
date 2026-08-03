@@ -38,6 +38,7 @@ from src.infrastructure.rest.contracts.errors import (
     MethodMismatchDetails,
     UnknownGuidanceTopicDetails,
 )
+from src.infrastructure.rest.routers._openapi import TAG_ASSURANCE_ANALYSES
 from src.infrastructure.rest.routers.assurance._http import (
     build_policy,
     deleted,
@@ -47,7 +48,7 @@ from src.infrastructure.rest.routers.assurance._http import (
 )
 from src.infrastructure.rest.routers.assurance._invalid import invalid_as_api_error
 
-analysis_router = APIRouter()
+analysis_router = APIRouter(tags=[TAG_ASSURANCE_ANALYSES])
 
 
 class CreateAnalysisBody(BaseModel):

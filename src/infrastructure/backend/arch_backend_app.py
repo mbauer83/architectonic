@@ -217,6 +217,7 @@ def _build_app(credentials: "GitCredentials | None" = None):  # type: ignore[no-
     )
     from src.infrastructure.rest.contracts.operation_ids import manifest_operation_id
     from src.infrastructure.rest.contracts.wire_nulls import install_wire_null_policy
+    from src.infrastructure.rest.routers._docs_views import install_docs_views
     from src.infrastructure.rest.routers._openapi import APP_RESPONSES
     from src.infrastructure.rest.routers.admin import router as admin_router
     from src.infrastructure.rest.routers.assurance.router import router as assurance_router
@@ -323,6 +324,11 @@ def _build_app(credentials: "GitCredentials | None" = None):  # type: ignore[no-
     )
 
     app.add_api_route("/health", _health_check, include_in_schema=False)
+
+    # Section views over the one document — `/docs/architecture`, `/docs/assurance`. Installed before
+    # the routers only because order does not matter: the schema is generated lazily, so the views
+    # filter whatever the finished application publishes rather than a snapshot taken here.
+    install_docs_views(app)
 
     for router in (
         entities_router, entity_search_router, connections_router, diagram_types_router,

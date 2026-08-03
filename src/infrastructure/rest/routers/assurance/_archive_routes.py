@@ -21,6 +21,7 @@ from src.infrastructure.rest.contracts.assurance_queries import (
     AssuranceArchRefRegisteredResponse,
     AssuranceBaselineSealedResponse,
 )
+from src.infrastructure.rest.routers._openapi import TAG_ASSURANCE_STORE
 from src.infrastructure.rest.routers.assurance._write import (
     _NO_STORE,
     RegisterArchRefBody,
@@ -29,7 +30,7 @@ from src.infrastructure.rest.routers.assurance._write import (
     _translate,
 )
 
-archive_router = APIRouter()
+archive_router = APIRouter(tags=[TAG_ASSURANCE_STORE])
 
 
 # ── Baselines ─────────────────────────────────────────────────────────────────

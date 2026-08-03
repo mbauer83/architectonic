@@ -47,13 +47,14 @@ from src.infrastructure.rest.contracts.assurance_queries import (
     AssuranceVerifyResponse,
 )
 from src.infrastructure.rest.contracts.assurance_signals import ArchLensResponse
+from src.infrastructure.rest.routers._openapi import TAG_ASSURANCE_NODES
 from src.infrastructure.rest.routers.assurance._http import locked_response as _locked_response
 from src.infrastructure.rest.routers.assurance._http import not_found_response as _not_found_response
 from src.infrastructure.rest.routers.assurance._http import ok as _ok
 
 logger = logging.getLogger(__name__)
 
-read_router = APIRouter()
+read_router = APIRouter(tags=[TAG_ASSURANCE_NODES])
 
 _NO_STORE = "no-store"
 

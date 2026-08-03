@@ -30,13 +30,14 @@ from src.config.assurance_settings import (
 from src.infrastructure.mcp.assurance_mcp.context import AssuranceContext, get_assurance_context
 from src.infrastructure.rest.contracts.assurance_nodes import AssuranceNeighborhoodResponse
 from src.infrastructure.rest.contracts.errors import ApiError
+from src.infrastructure.rest.routers._openapi import TAG_ASSURANCE_NODES
 from src.infrastructure.rest.routers.assurance._http import locked_response as _locked_response
 from src.infrastructure.rest.routers.assurance._http import not_found_response as _not_found_response
 from src.infrastructure.rest.routers.assurance._http import ok as _ok
 
 logger = logging.getLogger(__name__)
 
-neighbors_router = APIRouter()
+neighbors_router = APIRouter(tags=[TAG_ASSURANCE_NODES])
 
 
 def _policy() -> tuple[AssuranceContext, AssuranceExposurePolicy]:

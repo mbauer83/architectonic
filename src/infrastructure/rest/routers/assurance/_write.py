@@ -57,6 +57,7 @@ from src.infrastructure.rest.contracts.errors import (
     ProvenanceImmutableDetails,
     ValidationErrorDetails,
 )
+from src.infrastructure.rest.routers._openapi import TAG_ASSURANCE_NODES
 from src.infrastructure.rest.routers.assurance._http import (
     deleted as deleted_response,
 )
@@ -67,7 +68,7 @@ from src.infrastructure.rest.routers.assurance._http import (
 from src.infrastructure.rest.routers.assurance._invalid import bind_invalid_as_api_error
 from src.infrastructure.rest.routers.entities._creator import GuiArchitectureEntityCreator
 
-write_router = APIRouter()
+write_router = APIRouter(tags=[TAG_ASSURANCE_NODES])
 
 _NO_STORE = "no-store"
 

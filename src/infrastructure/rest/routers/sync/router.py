@@ -29,9 +29,10 @@ from src.infrastructure.rest.contracts.sync import (
     EnterpriseWithdrawResponse,
     SyncChangesResponse,
 )
+from src.infrastructure.rest.routers._openapi import TAG_SYNC
 from src.infrastructure.rest.routers.sync import status_cache as sync_status_cache
 
-router = APIRouter()
+router = APIRouter(tags=[TAG_SYNC])
 
 
 class SaveBody(BaseModel):

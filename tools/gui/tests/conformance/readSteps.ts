@@ -172,7 +172,6 @@ export const READ_STEPS: readonly ReadStep[] = [
     method: 'allocateDiagramEntityId',
     run: (r) =>
       r.allocateDiagramEntityId({
-        owner_kind: 'diagram',
         diagram_type: 'datatype',
         entity_type: 'classifier',
         name_hint: 'Conformance classifier',

@@ -12,10 +12,10 @@ from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 
 from src.infrastructure.backend.shutdown import shutdown_signal
-from src.infrastructure.rest.routers._openapi import media_response
+from src.infrastructure.rest.routers._openapi import TAG_PLATFORM, media_response
 
 logger = logging.getLogger(__name__)
-router = APIRouter()
+router = APIRouter(tags=[TAG_PLATFORM])
 
 
 class EventBus:

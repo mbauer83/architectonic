@@ -48,10 +48,9 @@ const { tier } = useTierFacet(LIST_TIERS)
 const isGlobal = computed(() => tier.value === 'enterprise')
 
 const activeDomain = computed(() => (route.query.domain as string | undefined) ?? '')
-const rawGroupParam = computed(() => route.query.group as string | undefined)
-// `?group=all` resolves to "every collection", the same as no parameter — but the two mean different
-// things to the saved-preference merge in `onMounted`, which is why the raw value is kept alongside.
-const activeGroup = computed(() => groupFromQuery(rawGroupParam.value))
+// `?group=all` resolves to "every collection", the same as an absent parameter — but the two mean
+// different things to the saved-preference merge in `onMounted`, which reads the raw value for that.
+const activeGroup = computed(() => groupFromQuery(route.query.group as string | undefined))
 const viewMode = computed<ViewMode>(() => route.query.view === 'treemap' ? 'treemap' : 'table')
 const typeFilter = ref((route.query.type as string | undefined) ?? '')
 const sortKey = ref<string | null>(null)
@@ -135,7 +134,9 @@ const viewpointSlug = computed(() => (route.query.viewpoint as string | undefine
 
 onMounted(() => {
   if (viewpointSlug.value) return
-  const saved = savedGroupToMerge(rawGroupParam.value, tier.value, localStorage.getItem(STORAGE_KEY))
+  // The *raw* `?group=`, not `activeGroup`: an absent parameter restores the last collection browsed
+  // and an explicit `all` does not, though both resolve to the same empty selection.
+  const saved = savedGroupToMerge(route.query.group as string | undefined, tier.value, localStorage.getItem(STORAGE_KEY))
   if (saved) {
     void router.replace({ query: { ...route.query, group: saved }, hash: route.hash })
   }
