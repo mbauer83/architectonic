@@ -1,8 +1,11 @@
 import { describe, it, expect } from 'vitest'
 import {
+  ALL_GROUPS,
   diagramListParams,
   documentListParams,
   entityListScope,
+  groupFromQuery,
+  repositoryWideDomainQuery,
   savedGroupToMerge,
   tierFromViewpointFilter,
   viewpointFilterFromTier,
@@ -41,21 +44,61 @@ describe('entities facet → fetch mapping', () => {
   })
 })
 
-describe('saved collection preference', () => {
-  it('clean localStorage never merges — the list loads directly, no redirect', () => {
-    expect(savedGroupToMerge('', 'all', null)).toBeNull()
-    expect(savedGroupToMerge('', 'engagement', null)).toBeNull()
+describe('the ?group= value resolves to a collection', () => {
+  it('an absent parameter and the all-collections value both mean every collection', () => {
+    expect(groupFromQuery(undefined)).toBe('')
+    expect(groupFromQuery(ALL_GROUPS)).toBe('')
   })
 
-  it('merges only when no group is selected and the tier allows collections', () => {
-    expect(savedGroupToMerge('', 'all', 'my-project')).toBe('my-project')
-    expect(savedGroupToMerge('', 'engagement', 'my-project')).toBe('my-project')
+  it('any other value is the collection itself', () => {
+    expect(groupFromQuery('my-project')).toBe('my-project')
+    expect(groupFromQuery('uncategorized')).toBe('uncategorized')
+  })
+})
+
+describe('a repository-wide domain link', () => {
+  it('names the scope its count was computed in, rather than leaving it absent', () => {
+    expect(repositoryWideDomainQuery('motivation')).toEqual({
+      domain: 'motivation',
+      group: ALL_GROUPS,
+    })
+  })
+
+  it('survives the saved-preference merge, which `{ domain }` alone does not', () => {
+    // The regression, as a pair. The link the Home page used to build is the first line; the one it
+    // builds now is the second. Only the second still means "every collection" on arrival.
+    expect(savedGroupToMerge(undefined, 'all', 'my-project')).toBe('my-project')
+    expect(
+      savedGroupToMerge(repositoryWideDomainQuery('motivation').group, 'all', 'my-project'),
+    ).toBeNull()
+  })
+})
+
+describe('saved collection preference', () => {
+  it('clean localStorage never merges — the list loads directly, no redirect', () => {
+    expect(savedGroupToMerge(undefined, 'all', null)).toBeNull()
+    expect(savedGroupToMerge(undefined, 'engagement', null)).toBeNull()
+  })
+
+  it('merges only when the caller expressed no scope and the tier allows collections', () => {
+    expect(savedGroupToMerge(undefined, 'all', 'my-project')).toBe('my-project')
+    expect(savedGroupToMerge(undefined, 'engagement', 'my-project')).toBe('my-project')
     expect(savedGroupToMerge('active', 'all', 'my-project')).toBeNull()
-    expect(savedGroupToMerge('', 'enterprise', 'my-project')).toBeNull()
+    expect(savedGroupToMerge(undefined, 'enterprise', 'my-project')).toBeNull()
   })
 
   it('an empty saved preference means All — nothing to restore', () => {
-    expect(savedGroupToMerge('', 'all', '')).toBeNull()
+    expect(savedGroupToMerge(undefined, 'all', '')).toBeNull()
+  })
+
+  it('an explicit all-collections link is a decision, so the preference does not override it', () => {
+    // The Home page's domain cards report `/api/stats`, which is repository-wide. Carrying no `group`
+    // left them arriving inside whatever collection was last browsed: the card said 12 Motivation
+    // entities and the destination showed the two that collection happened to hold. Both values below
+    // resolve to "every collection" — the distinction is whether the caller *chose* it.
+    expect(savedGroupToMerge(ALL_GROUPS, 'all', 'my-project')).toBeNull()
+    expect(savedGroupToMerge(ALL_GROUPS, 'engagement', 'my-project')).toBeNull()
+    expect(groupFromQuery(ALL_GROUPS)).toBe(groupFromQuery(undefined))
   })
 })
 

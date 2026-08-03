@@ -13,7 +13,7 @@ import {
   withTier,
   type TierSelection,
 } from '../lib/tierUrlState'
-import { entityListScope, savedGroupToMerge } from '../composables/listRequestParams'
+import { entityListScope, groupFromQuery, savedGroupToMerge } from '../composables/listRequestParams'
 import TierBadge from '../components/TierBadge.vue'
 import TierFacet from '../components/TierFacet.vue'
 import { tierFromIsGlobal } from '../components/TierBadge.helpers'
@@ -48,7 +48,10 @@ const { tier } = useTierFacet(LIST_TIERS)
 const isGlobal = computed(() => tier.value === 'enterprise')
 
 const activeDomain = computed(() => (route.query.domain as string | undefined) ?? '')
-const activeGroup = computed(() => (route.query.group as string | undefined) ?? '')
+const rawGroupParam = computed(() => route.query.group as string | undefined)
+// `?group=all` resolves to "every collection", the same as no parameter — but the two mean different
+// things to the saved-preference merge in `onMounted`, which is why the raw value is kept alongside.
+const activeGroup = computed(() => groupFromQuery(rawGroupParam.value))
 const viewMode = computed<ViewMode>(() => route.query.view === 'treemap' ? 'treemap' : 'table')
 const typeFilter = ref((route.query.type as string | undefined) ?? '')
 const sortKey = ref<string | null>(null)
@@ -132,7 +135,7 @@ const viewpointSlug = computed(() => (route.query.viewpoint as string | undefine
 
 onMounted(() => {
   if (viewpointSlug.value) return
-  const saved = savedGroupToMerge(activeGroup.value, tier.value, localStorage.getItem(STORAGE_KEY))
+  const saved = savedGroupToMerge(rawGroupParam.value, tier.value, localStorage.getItem(STORAGE_KEY))
   if (saved) {
     void router.replace({ query: { ...route.query, group: saved }, hash: route.hash })
   }

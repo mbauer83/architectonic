@@ -6,6 +6,7 @@ import { useQuery } from '../composables/useQuery'
 import type { Stats, EntityList } from '../../domain'
 import type { RepoError } from '../../ports/ModelRepository'
 import { domainOptionsForDomains } from '../lib/domains'
+import { repositoryWideDomainQuery } from '../composables/listRequestParams'
 import PinnedViewpointsSection from '../components/PinnedViewpointsSection.vue'
 
 const svc = inject(modelServiceKey)!
@@ -101,7 +102,7 @@ const activeDomainOptions = computed(() =>
         <RouterLink
           v-for="d in activeDomainOptions"
           :key="d.key"
-          :to="{ path: '/entities', query: { domain: d.key } }"
+          :to="{ path: '/entities', query: repositoryWideDomainQuery(d.key) }"
           class="card card--domain"
           :class="`domain--${d.key}`"
         >
