@@ -45,6 +45,19 @@ def _items(payload: Any) -> list[dict[str, Any]]:
     return payload["items"] if isinstance(payload, dict) and "items" in payload else payload
 
 
+def _post(backend: FixtureBackend, path: str, body: dict[str, Any]) -> Any:
+    """A write against the fixture, for the one assertion that needs the *answer* and not the status."""
+    request = urllib.request.Request(  # noqa: S310
+        f"{backend.base_url}{path}",
+        data=json.dumps(body).encode(),
+        method="POST",
+        headers={"Content-Type": "application/json"},
+    )
+    with urllib.request.urlopen(request, timeout=60) as response:  # noqa: S310
+        assert response.status in (200, 201), (path, response.status)
+        return json.loads(response.read())
+
+
 def test_it_serves_on_its_own_port_not_the_default(backend: FixtureBackend) -> None:
     # 8000 is the developer's. A walk that wrote there would be writing into the live model.
     assert backend.port != 8000
@@ -242,6 +255,62 @@ class TestItKeepsOutOfTheDevelopersBackendState:
         anchor = backend.workspace.assurance.security_anchor
         findings = _get(backend, f"/api/assurance/arch-artifacts/{anchor}/security-findings")
         assert findings["findings"], findings
+
+    def test_the_architecture_references_join_back_through_the_lens(
+        self, backend: FixtureBackend
+    ) -> None:
+        """`register_arch_ref` stores an id without checking that it resolves, so the join is the test.
+
+        `mutations.register_arch_ref` canonicalises the artifact id and writes the row; nothing verifies
+        that an architecture entity by that name exists. So a reference to a typo would be accepted, the
+        write would report success, and every surface that joins on the column would silently drop it —
+        a passing step proving nothing.
+
+        `/lens` is that join in the other direction: given an architecture artifact, which assurance
+        nodes concern it. Asserting all three of the fixture's referring nodes come back is what
+        distinguishes a stored reference from a resolved one, and it covers both ref types — the
+        hazard's `evidenced-by-artifact` and the `binds-to` pair the FMEA matrix needs.
+        """
+        roles = backend.workspace.assurance
+        payload = _get(
+            backend, f"/api/assurance/arch-artifacts/{roles.security_anchor}/lens"
+        )
+
+        assert payload["locked"] is False, payload
+        referring = {str(node["node_id"]) for node in payload["nodes"]}
+        expected = {roles.hazard_node, roles.failure_mode, roles.bound_node}
+        assert expected <= referring, sorted(expected - referring)
+
+    def test_model_and_bind_offers_a_task_when_duties_are_separated(
+        self, backend: FixtureBackend
+    ) -> None:
+        """The path that writes nothing, asserted for what it answers instead of for its status.
+
+        `model_and_bind` is a two-repository write and "never atomic" by its own comment: with a creator
+        it makes an architecture entity and then binds it, and if the binding fails the entity survives
+        unbound. The separation-of-duties path exists so an agent with no architecture-write capability
+        gets a *task* rather than a half-done pair, and the MCP mount takes it unconditionally —
+        `arch_creator=None`, always a spec.
+
+        So the thing worth asserting is the spec: three named steps, on the right server. A status
+        assertion would pass on an empty body, which is exactly how the walk step next door reports this
+        operation as covered while proving only that it answered.
+        """
+        response = _post(
+            backend,
+            "/api/assurance/model-this",
+            {
+                "assurance_node_id": backend.workspace.assurance.bindable_node,
+                "suggested_arch_type": "application-component",
+                "suggested_name": "Separation Of Duties Probe",
+                "separation_of_duties": True,
+            },
+        )
+
+        assert response["action_required"] == "create_arch_entity_then_bind", response
+        assert response["step_1"]["on_server"] == "arch-repo-write", response
+        for step in ("step_1", "step_2", "step_3"):
+            assert response[step]["call"], (step, response)
 
     def test_the_store_it_serves_is_not_the_developers(self, backend: FixtureBackend) -> None:
         """Stated as a path claim as well, because the content claim above is only circumstantial.
