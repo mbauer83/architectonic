@@ -86,7 +86,7 @@ class TestEntityWrite:
         created = create_entity(
             repo_root=root, verifier=verifier, clear_repo_caches=lambda p: None,
             artifact_type="collaboration", name="Editable", summary=None, properties=None,
-            notes=None, specialization="business-collaboration",
+            notes=None, specializations=("business-collaboration",),
             artifact_id=None, version="0.1.0", status="draft", last_updated=None, dry_run=False,
         )
         registry, verifier = _deps(root)
@@ -109,7 +109,7 @@ class TestConnectionWrite:
                 create_entity(
                     repo_root=root, verifier=verifier, clear_repo_caches=lambda p: None,
                     artifact_type="role", name=name, summary=None, properties=None, notes=None,
-                    specialization=None, artifact_id=None, version="0.1.0", status="draft",
+                    specializations=None, artifact_id=None, version="0.1.0", status="draft",
                     last_updated=None, dry_run=False,
                 ).artifact_id
             )

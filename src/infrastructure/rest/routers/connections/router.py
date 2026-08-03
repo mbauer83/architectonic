@@ -83,7 +83,6 @@ class AddConnectionBody(_Body):
     description: str | None = None
     src_multiplicity: str | None = None
     tgt_multiplicity: str | None = None
-    specialization: str | None = None
     specializations: list[str] | None = None
     metadata: dict[str, object] | None = None
     dry_run: bool = True
@@ -182,7 +181,6 @@ def add_connection(
             description=body.description,
             src_multiplicity=body.src_multiplicity,
             tgt_multiplicity=body.tgt_multiplicity,
-            specialization=body.specialization,
             specializations=body.specializations,
             metadata=body.metadata,
             version="0.1.0",
@@ -215,7 +213,6 @@ class EditConnectionBody(_Body):
     description: str | None = None
     src_multiplicity: str | None = None
     tgt_multiplicity: str | None = None
-    specialization: str | None = None
     specializations: list[str] | None = None
     metadata: dict[str, object] | None = None
     dry_run: bool = True
@@ -258,7 +255,6 @@ def edit_connection(connection_id: str, body: EditConnectionBody,
             description=body.description if "description" in provided else _UNSET,
             src_multiplicity=body.src_multiplicity if "src_multiplicity" in provided else _UNSET,
             tgt_multiplicity=body.tgt_multiplicity if "tgt_multiplicity" in provided else _UNSET,
-            specialization=body.specialization if "specialization" in provided else _UNSET,
             specializations=body.specializations if "specializations" in provided else _UNSET,
             metadata=body.metadata if "metadata" in provided else _UNSET,
             dry_run=body.dry_run,

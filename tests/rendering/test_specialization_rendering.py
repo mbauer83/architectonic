@@ -34,7 +34,7 @@ _ARCHIMATE_CONFIG = {
 
 def _entity(
     artifact_id: str, artifact_type: str, name: str, alias: str, *,
-    specialization: str = "", specializations: tuple[str, ...] = (),
+    specializations: tuple[str, ...] = (),
 ) -> EntityRecord:
     display_blocks = {"archimate": f'```yaml\nlabel: "{name}"\nalias: {alias}\n```'}
     return EntityRecord(
@@ -52,13 +52,12 @@ def _entity(
         display_blocks=display_blocks,
         display_label=name,
         display_alias=alias,
-        specialization=specialization,
         specializations=specializations,
     )
 
 
 def _conn(
-    source: str, target: str, conn_type: str, *, specialization: str = "", specializations: tuple[str, ...] = ()
+    source: str, target: str, conn_type: str, *, specializations: tuple[str, ...] = ()
 ) -> ConnectionRecord:
     return ConnectionRecord(
         artifact_id=f"{source}---{target}@@{conn_type}",
@@ -70,7 +69,6 @@ def _conn(
         path=Path("/tmp/test.outgoing.md"),
         extra={},
         content_text="",
-        specialization=specialization,
         specializations=specializations,
     )
 
@@ -106,7 +104,7 @@ class TestEntityRendering:
     def test_specialization_guillemet_renders_via_real_catalog(self, tmp_path: Path) -> None:
         renderer = GenericPumlRenderer(_ARCHIMATE_CONFIG)
         team = _entity(
-            "COL@1.a.team", "collaboration", "Cross-team", "COL_TEAM", specialization="business-collaboration"
+            "COL@1.a.team", "collaboration", "Cross-team", "COL_TEAM", specializations=("business-collaboration",)
         )
 
         puml = renderer.render_body("Team", [team], [], "archimate-business", tmp_path)
@@ -118,7 +116,7 @@ class TestEntityRendering:
 
     def test_specialization_icon_and_color_override_parent_notation(self) -> None:
         team = _entity(
-            "COL@1.a.team", "collaboration", "Cross-team", "COL_TEAM", specialization="iconic-collaboration"
+            "COL@1.a.team", "collaboration", "Cross-team", "COL_TEAM", specializations=("iconic-collaboration",)
         )
 
         line = entity_declaration(team, "COL_TEAM", _real_registry(), frozenset(), _synthetic_catalog())
@@ -158,7 +156,7 @@ class TestConnectionRendering:
         src = _entity("GRP@1.a.src", "grouping", "Src", "GRP_SRC")
         tgt = _entity("REQ@1.a.tgt", "requirement", "Tgt", "REQ_TGT")
         conn = _conn(
-            src.artifact_id, tgt.artifact_id, "archimate-assignment", specialization="responsibility-assignment"
+            src.artifact_id, tgt.artifact_id, "archimate-assignment", specializations=("responsibility-assignment",)
         )
 
         puml = renderer.render_body("Diag", [src, tgt], [conn], "archimate-motivation", tmp_path)
@@ -193,7 +191,7 @@ class TestConnectionRendering:
         _patch_catalog(monkeypatch, _synthetic_catalog())
         src = _entity("GRP@1.a.src", "grouping", "Src", "GRP_SRC")
         tgt = _entity("REQ@1.a.tgt", "requirement", "Tgt", "REQ_TGT")
-        conn = _conn(src.artifact_id, tgt.artifact_id, "archimate-flow", specialization="styled-flow")
+        conn = _conn(src.artifact_id, tgt.artifact_id, "archimate-flow", specializations=("styled-flow",))
 
         puml = renderer.render_body("Diag", [src, tgt], [conn], "archimate-motivation", tmp_path)
 
@@ -214,7 +212,7 @@ class TestConnectionRendering:
         tgt = _entity("REQ@1.a.tgt", "requirement", "Tgt", "REQ_TGT")
         conn = _conn(
             src.artifact_id, tgt.artifact_id, "archimate-flow",
-            specialization="styled-flow",
+            specializations=("styled-flow",),
         )
 
         puml = renderer.render_body("Diag", [src, tgt], [conn], "archimate-motivation", tmp_path)
@@ -233,7 +231,7 @@ class TestConnectionRendering:
         _patch_catalog(monkeypatch, _synthetic_catalog())
         src = _entity("GRP@1.a.src", "grouping", "Src", "GRP_SRC")
         tgt = _entity("REQ@1.a.tgt", "requirement", "Tgt", "REQ_TGT")
-        conn = _conn(src.artifact_id, tgt.artifact_id, "archimate-flow", specialization="styled-flow")
+        conn = _conn(src.artifact_id, tgt.artifact_id, "archimate-flow", specializations=("styled-flow",))
 
         puml = renderer.render_body("Diag", [src, tgt], [conn], "archimate-motivation", tmp_path)
 

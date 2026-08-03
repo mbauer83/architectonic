@@ -16,7 +16,7 @@ const svc = inject(modelServiceKey)!
 const description = ref(props.connection.content_text ?? '')
 const sourceMultiplicity = ref(props.connection.src_multiplicity ?? '')
 const targetMultiplicity = ref(props.connection.tgt_multiplicity ?? '')
-const specialization = ref(props.connection.specialization ?? '')
+const specialization = ref(props.connection.specializations[0] ?? '')
 const mutation = useMutation<WriteResult, RepoError>()
 
 const metadataValues = ref<Record<string, string>>(

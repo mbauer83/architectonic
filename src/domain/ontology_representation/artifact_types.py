@@ -19,29 +19,6 @@ class DuplicateArtifactIdError(ValueError):
     pass
 
 
-def _reconcile_specializations(record: object) -> None:
-    """Keep an artifact's scalar ``specialization`` and list ``specializations`` consistent,
-    so a constructor may set EITHER one. The list is canonical; the scalar is its first
-    element. A caller that passes only the scalar (the many existing sites) gets a
-    one-element list; one that passes only the list gets the primary scalar derived. Passing
-    both that disagree is a programming error, not silently reconciled.
-
-    Frozen-dataclass safe: uses ``object.__setattr__`` in ``__post_init__``.
-    """
-    scalar: str = getattr(record, "specialization", "") or ""
-    listed: tuple[str, ...] = tuple(getattr(record, "specializations", ()) or ())
-    if listed:
-        primary = listed[0]
-        if scalar and scalar != primary:
-            raise ValueError(
-                f"specialization {scalar!r} disagrees with specializations[0] {primary!r}; "
-                "set one or the other, not both"
-            )
-        object.__setattr__(record, "specialization", primary)
-    elif scalar:
-        object.__setattr__(record, "specializations", (scalar,))
-
-
 def infer_engagement_label(root: Path, *, scope: MountScope) -> str:
     if scope == "enterprise":
         return "enterprise"
@@ -78,14 +55,14 @@ class EntityRecord:
     host_diagram_id: str | None = None
     """None for model entities; the owning diagram's artifact_id for diagram-only entities."""
     group: str = "uncategorized"
-    specialization: str = ""
-    """The PRIMARY specialization — the first of ``specializations``, kept as a scalar for
-    the many consumers that need one label. A concept may carry several (ArchiMate §15.2);
-    read ``specializations`` for the full ordered set."""
     specializations: tuple[str, ...] = ()
     """Every applied specialization slug, in declaration order. Canonical for resolution,
-    rendering, and styling. ``specialization`` is its first element; the two are kept
-    consistent in ``__post_init__`` so a caller may set either one."""
+    rendering, and styling.
+
+    A scalar ``specialization`` sat beside this holding the first element, kept consistent in
+    ``__post_init__`` so a caller could set either. Two spellings of one fact is a standing
+    invitation to disagree, and the reconciliation existed only to stop them — a consumer wanting
+    the primary reads ``specializations[0]``, which says what it is taking."""
     attributes: Mapping[str, object] = field(default_factory=dict)
     """Typed values decoded from the entity's Properties table (the user-facing
     attribute surface). Distinct from `extra`, which carries frontmatter fields —
@@ -94,9 +71,6 @@ class EntityRecord:
     """The `last-updated` frontmatter stamp (UTC ISO-8601, e.g. 2026-07-24T09:15:00Z).
     None for records with no stamp — diagram-only entities and pre-migration repos that
     predate the field. Surfaced through the REST/MCP summaries as `last_updated`."""
-
-    def __post_init__(self) -> None:
-        _reconcile_specializations(self)
 
     def __str__(self) -> str:
         return (
@@ -121,19 +95,13 @@ class ConnectionRecord:
     src_multiplicity: str = ""
     tgt_multiplicity: str = ""
     group: str = "uncategorized"
-    specialization: str = ""
-    """The PRIMARY specialization — the first of ``specializations`` (see EntityRecord)."""
     specializations: tuple[str, ...] = ()
-    """Every applied connection specialization slug, in declaration order; kept consistent
-    with ``specialization`` in ``__post_init__``."""
+    """Every applied connection specialization slug, in declaration order — see EntityRecord."""
     attributes: Mapping[str, object] = field(default_factory=dict)
     """Typed values from the connection's metadata block, excluding specialization."""
     last_updated: str | None = None
     """The owning outgoing file's `last-updated` stamp (UTC ISO-8601); None when absent.
     Every connection declared in one file shares it — the file is the unit that is written."""
-
-    def __post_init__(self) -> None:
-        _reconcile_specializations(self)
 
     @property
     def source_ids(self) -> list[str]:

@@ -52,7 +52,7 @@ def connected(tmp_path: Path) -> tuple[Path, str, str]:
             create_entity(
                 repo_root=root, verifier=_verifier(registry), clear_repo_caches=lambda p: None,
                 artifact_type="role", name=name, summary=None, properties=None,
-                notes=None, specialization=None, artifact_id=None, version="0.1.0", status="draft",
+                notes=None, specializations=None, artifact_id=None, version="0.1.0", status="draft",
                 last_updated=None, dry_run=False,
             ).artifact_id
         )
@@ -109,7 +109,7 @@ class TestWritePath:
 
     def test_add_persists_metadata_alongside_a_specialization(self, connected: tuple[Path, str, str]) -> None:
         root, source, target = connected
-        _add(root, source, target, specialization="responsibility-assignment", metadata={"cadence": "weekly"})
+        _add(root, source, target, specializations=("responsibility-assignment",), metadata={"cadence": "weekly"})
         block = _metadata_of(root, source)
         assert block["cadence"] == "weekly"
         assert block["specialization"] == "responsibility-assignment"

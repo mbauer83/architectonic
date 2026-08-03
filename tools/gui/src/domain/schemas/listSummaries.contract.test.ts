@@ -22,6 +22,7 @@ const ENTITY_ROW = {
   domain: 'motivation',
   subdomain: 'requirement',
   path: '/repo/model/motivation/requirement/row.md',
+  specializations: [],
 }
 
 const DOCUMENT_ROW = {

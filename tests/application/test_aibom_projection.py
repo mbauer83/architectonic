@@ -28,13 +28,14 @@ class _FakeSearch:
 
 
 def _entity(
-    artifact_id: str, artifact_type: str, *, specialization: str = "", attributes: dict | None = None
+    artifact_id: str, artifact_type: str, *,
+    specializations: tuple[str, ...] = (), attributes: dict | None = None,
 ) -> EntityRecord:
     return EntityRecord(
         artifact_id=artifact_id, artifact_type=artifact_type, name=artifact_id.split(".")[-1],
         version="0.1.0", status="draft", domain="application", subdomain="", path=Path(f"/{artifact_id}.md"),
         keywords=(), extra={}, content_text="", display_blocks={}, display_label="", display_alias="",
-        specialization=specialization, attributes=attributes or {},
+        specializations=specializations, attributes=attributes or {},
     )
 
 
@@ -51,7 +52,7 @@ def _bindings():
 
 
 def test_projection_derives_components_and_coverage() -> None:
-    model = _entity("APP@1.a.model", "application-component", specialization="ai-model", attributes={"Task": "x"})
+    model = _entity("APP@1.a.model", "application-component", specializations=("ai-model",), attributes={"Task": "x"})
     search = _FakeSearch([model], [])
     projection = project_aibom(
         search, _bindings(), required_by_spec={"ai-model": ["Task", "Approach"]},

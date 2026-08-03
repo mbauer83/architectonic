@@ -155,9 +155,12 @@ const edit = inject(entityEditFormKey)!
         >/ {{ detail.subdomain }}</span>
         <span class="sep">·</span>
         <span class="meta-item">v{{ detail.version }}</span>
-        <template v-if="detail.specialization">
+        <template
+          v-for="spec in detail.specializations"
+          :key="spec"
+        >
           <span class="sep">·</span>
-          <span class="specialization-badge">«{{ detail.specialization }}»</span>
+          <span class="specialization-badge">«{{ spec }}»</span>
         </template>
       </div>
       <div class="artifact-id mono">

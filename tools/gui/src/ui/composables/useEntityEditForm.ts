@@ -124,7 +124,7 @@ export function useEntityEditForm(options: {
     editKeywords.value = (d.keywords ?? []).join(', ')
     editStatus.value = d.status
     editNotes.value = d.notes ?? ''
-    const current = d.specializations ?? (d.specialization ? [d.specialization] : [])
+    const current = d.specializations ?? []
     if (editSpecializations.value.join(',') !== current.join(',')) {
       specializationSeededByStartEdit = true
       editSpecializations.value = [...current]

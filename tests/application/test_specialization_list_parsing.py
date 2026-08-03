@@ -7,8 +7,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
 from src.application.artifacts._query_helpers import read_connection
 from src.application.artifacts.parsing import parse_entity, parse_outgoing_file
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
@@ -36,18 +34,17 @@ def _parse(tmp_path: Path, spec_line: str) -> EntityRecord:
 class TestEntityFrontmatter:
     def test_scalar_round_trips_as_a_one_element_set(self, tmp_path: Path) -> None:
         rec = _parse(tmp_path, "specialization: service\n")
-        assert rec.specialization == "service"
+        assert rec.specializations == ("service",)
         assert rec.specializations == ("service",)
 
     def test_absent_specialization_is_empty_on_both_views(self, tmp_path: Path) -> None:
         rec = _parse(tmp_path, "")
-        assert rec.specialization == ""
+        assert rec.specializations == ()
         assert rec.specializations == ()
 
     def test_a_list_reads_in_order(self, tmp_path: Path) -> None:
         rec = _parse(tmp_path, "specialization:\n  - service\n  - audited\n")
         assert rec.specializations == ("service", "audited")
-        assert rec.specialization == "service"  # the primary is the first
 
     def test_a_list_is_de_duplicated_and_blanks_dropped(self, tmp_path: Path) -> None:
         rec = _parse(tmp_path, "specialization:\n  - service\n  - ''\n  - service\n  - audited\n")
@@ -68,7 +65,7 @@ class TestConnectionMetadata:
         self._outgoing(tmp_path / "c.outgoing.md", "specialization: responsibility-assignment\n")
         recs = parse_outgoing_file(tmp_path / "c.outgoing.md")
         assert isinstance(recs[0], ConnectionRecord)
-        assert recs[0].specialization == "responsibility-assignment"
+        assert recs[0].specializations == ("responsibility-assignment",)
         assert recs[0].specializations == ("responsibility-assignment",)
 
     def test_list_specialization_reads_in_order(self, tmp_path: Path) -> None:
@@ -93,26 +90,28 @@ class TestConnectionMetadata:
 
 
 class TestRecordInvariant:
-    def test_setting_only_the_list_derives_the_primary(self) -> None:
+    """What the record guarantees now that one field carries the fact.
+
+    Three tests here asserted the scalar/list reconciliation: that setting one derived the other, and
+    that setting both to disagreeing values raised. All three described a mechanism that existed only
+    because there were two spellings of one fact. What survives is the fact itself, stated once.
+    """
+
+    def test_the_set_is_kept_in_declaration_order(self) -> None:
         rec = EntityRecord(
             artifact_id="A", artifact_type="t", name="n", version="", status="", domain="d", subdomain="s",
             path=Path("/x"), keywords=(), extra={}, content_text="", display_blocks={}, display_label="",
             display_alias="", specializations=("a", "b"),
         )
-        assert rec.specialization == "a"
+        assert rec.specializations == ("a", "b")
 
-    def test_setting_only_the_scalar_derives_the_list(self) -> None:
-        rec = EntityRecord(
-            artifact_id="A", artifact_type="t", name="n", version="", status="", domain="d", subdomain="s",
-            path=Path("/x"), keywords=(), extra={}, content_text="", display_blocks={}, display_label="",
-            display_alias="", specialization="a",
-        )
-        assert rec.specializations == ("a",)
+    def test_one_field_means_there_is_nothing_to_reconcile(self) -> None:
+        """The scalar/list disagreement this used to guard cannot be expressed any more.
 
-    def test_disagreeing_scalar_and_list_is_a_programming_error(self) -> None:
-        with pytest.raises(ValueError, match="disagrees"):
-            EntityRecord(
-                artifact_id="A", artifact_type="t", name="n", version="", status="", domain="d", subdomain="s",
-                path=Path("/x"), keywords=(), extra={}, content_text="", display_blocks={}, display_label="",
-                display_alias="", specialization="a", specializations=("b", "a"),
-            )
+        `EntityRecord` carried `specialization` beside `specializations`, reconciled in
+        `__post_init__`, and raised when a caller set both to disagreeing values. Removing the scalar
+        removes the disagreement rather than the check: there is one field, so the invariant is
+        structural. Kept as a named assertion so the removal reads as deliberate rather than lost.
+        """
+        assert not hasattr(EntityRecord, "specialization")
+        assert "specializations" in EntityRecord.__dataclass_fields__

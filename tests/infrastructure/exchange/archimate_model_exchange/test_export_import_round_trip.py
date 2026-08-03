@@ -35,11 +35,14 @@ def _registry(root: Path) -> ArtifactRegistry:
     return ArtifactRegistry(shared_artifact_index([root]))
 
 
-def _create(repo: Path, artifact_type: str, name: str, *, specialization: str | None = None, properties=None) -> str:
+def _create(
+    repo: Path, artifact_type: str, name: str, *,
+    specializations: tuple[str, ...] = (), properties=None,
+) -> str:
     result = mcp.artifact_create_entity(
         artifact_type=artifact_type,
         name=name,
-        specialization=specialization,
+        specializations=specializations,
         properties=properties,
         dry_run=False,
         repo_root=str(repo),
@@ -48,12 +51,15 @@ def _create(repo: Path, artifact_type: str, name: str, *, specialization: str | 
     return str(result["artifact_id"])
 
 
-def _connect(repo: Path, source: str, target: str, connection_type: str, *, specialization: str | None = None) -> None:
+def _connect(
+    repo: Path, source: str, target: str, connection_type: str, *,
+    specializations: tuple[str, ...] = (),
+) -> None:
     result = mcp.artifact_add_connection(
         source_entity=source,
         connection_type=connection_type,
         target_entity=target,
-        specialization=specialization,
+        specializations=specializations,
         dry_run=False,
         repo_root=str(repo),
     )
@@ -66,15 +72,16 @@ def test_export_then_import_round_trip_preserves_mapped_concepts(tmp_path: Path)
 
     alice = _create(source_root, "business-actor", "Alice Actor")
     bob = _create(source_root, "business-actor", "Bob Actor")
-    ops_role = _create(source_root, "role", "Ops Role", specialization="business-role")
+    ops_role = _create(source_root, "role", "Ops Role", specializations=("business-role",))
     approve = _create(
-        source_root, "service", "Approve Requests", specialization="business-service", properties={"Owner": "Ops Team"}
+        source_root, "service", "Approve Requests",
+        specializations=("business-service",), properties={"Owner": "Ops Team"}
     )
-    backend = _create(source_root, "application-component", "Backend Module", specialization="module")
-    must_scale = _create(source_root, "requirement", "Must Scale", specialization="constraint")
+    backend = _create(source_root, "application-component", "Backend Module", specializations=("module",))
+    must_scale = _create(source_root, "requirement", "Must Scale", specializations=("constraint",))
 
     _connect(source_root, alice, bob, "archimate-composition")
-    _connect(source_root, alice, ops_role, "archimate-assignment", specialization="responsibility-assignment")
+    _connect(source_root, alice, ops_role, "archimate-assignment", specializations=("responsibility-assignment",))
 
     mapper = DeclarativeConceptMapper()
     source_registry = _registry(source_root)
@@ -117,25 +124,25 @@ def test_export_then_import_round_trip_preserves_mapped_concepts(tmp_path: Path)
 
     ops_role_dest = _dest_entity(exported_by_source_id[ops_role])
     assert ops_role_dest.artifact_type == "role"
-    assert ops_role_dest.specialization == "business-role"
+    assert ops_role_dest.specializations == ("business-role",)
 
     approve_dest = _dest_entity(exported_by_source_id[approve])
     assert approve_dest.artifact_type == "service"
-    assert approve_dest.specialization == "business-service"
+    assert approve_dest.specializations == ("business-service",)
 
     backend_dest = _dest_entity(exported_by_source_id[backend])
     assert backend_dest.artifact_type == "application-component"
-    assert backend_dest.specialization == "module"
+    assert backend_dest.specializations == ("module",)
 
     must_scale_dest = _dest_entity(exported_by_source_id[must_scale])
     assert must_scale_dest.artifact_type == "requirement"
-    assert must_scale_dest.specialization == "constraint"
+    assert must_scale_dest.specializations == ("constraint",)
 
     alice_connections = dest_registry.find_connections_for(alice_dest.artifact_id, direction="outbound")
     connection_types = sorted(c.conn_type for c in alice_connections)
     assert connection_types == ["archimate-assignment", "archimate-composition"]
     assignment = next(c for c in alice_connections if c.conn_type == "archimate-assignment")
-    assert assignment.specialization == "responsibility-assignment"
+    assert assignment.specializations == ("responsibility-assignment",)
 
 
 def test_export_composition_never_downgrades_through_the_full_round_trip(tmp_path: Path) -> None:

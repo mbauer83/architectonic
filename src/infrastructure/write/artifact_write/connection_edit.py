@@ -6,17 +6,16 @@ from pathlib import Path
 from src.application.modeling.artifact_write import format_outgoing_markdown
 from src.application.verification.artifact_verifier import ArtifactRegistry, ArtifactVerifier
 from src.domain.artifact_id import stable_id
+from src.domain.ontology_representation.specialization_values import (
+    applied_specialization_slugs,
+)
 
-from .boundary import assert_engagement_write_root, modification_stamp, normalize_specializations
+from .boundary import assert_engagement_write_root, modification_stamp
 from .coerce import as_optional_str_list
 from .connection import _assert_pair_writable, _resolve_outgoing_path, _rollback, verification_to_conn_dict
 from .types import WriteResult
 
 _UNSET = object()
-
-
-def _as_list(value: object) -> list[str]:
-    return [str(v) for v in value] if isinstance(value, list) else []
 
 
 def _set_specialization(conn: dict[str, object], applied: Sequence[str]) -> None:
@@ -42,19 +41,18 @@ def edit_connection(
     description: str | None | object = _UNSET,
     src_multiplicity: str | None | object = _UNSET,
     tgt_multiplicity: str | None | object = _UNSET,
-    specialization: str | None | object = _UNSET,
     specializations: Sequence[str] | None | object = _UNSET,
     metadata: dict[str, object] | None | object = _UNSET,
     dry_run: bool,
 ) -> WriteResult:
-    """Update an existing connection (description, multiplicities, and/or specialization).
+    """Update an existing connection (description, multiplicities, and/or specializations).
 
     Identifies the connection by (source, target, type) triple.
     Rebuilds the .outgoing.md file with the updated fields — every other connection's dict
     (incl. its own specialization, if any) is carried through `parsed.connections`
     unmodified, so a sibling's metadata block round-trips byte-for-byte.
     Pass src_multiplicity="" or tgt_multiplicity="" to remove an existing multiplicity, or
-    specialization="" to remove an existing specialization. ``metadata`` is PATCHED key by
+    specializations=[] to remove them. ``metadata`` is PATCHED key by
     key (truly mirroring the entity edit API's `properties`): send only the keys you are
     changing, map a key to None to remove it, pass None for the whole parameter to clear
     every attribute. Omit (leave as _UNSET) to preserve the existing value.
@@ -87,10 +85,7 @@ def edit_connection(
                 else:
                     conn.pop("tgt_multiplicity", None)
             if specializations is not _UNSET:
-                _set_specialization(conn, normalize_specializations(None, _as_list(specializations)))
-            elif specialization is not _UNSET:
-                scalar = str(specialization) if isinstance(specialization, str) else None
-                _set_specialization(conn, normalize_specializations(scalar, None))
+                _set_specialization(conn, applied_specialization_slugs(specializations))
             if metadata is not _UNSET:
                 # PATCH key by key, truly mirroring the entity edit API's `properties`:
                 # only sent keys change, a None value removes its key, and None for the
@@ -110,9 +105,8 @@ def edit_connection(
                     else:
                         conn.pop("metadata", None)
             found = True
-            effective = normalize_specializations(None, _as_list(conn.get("specialization")))
-            if not effective and isinstance(conn.get("specialization"), str):
-                effective = normalize_specializations(str(conn.get("specialization")), None)
+            # One reader for the value's two shapes, shared with every other consumer.
+            effective = applied_specialization_slugs(conn.get("specialization"))
             break
 
     if not found:
@@ -120,7 +114,7 @@ def edit_connection(
 
     # Gate on the effective post-merge specialization set: an edit that moves a connection
     # onto a quarantined pair must be refused just like an add.
-    _assert_pair_writable(repo_root, connection_type, None, effective)
+    _assert_pair_writable(repo_root, connection_type, effective)
 
     content = format_outgoing_markdown(
         source_entity=source_entity,

@@ -69,20 +69,20 @@ def _two_entities(root: Path) -> tuple[str, str]:
         result = create_entity(
             repo_root=root, verifier=_verifier(registry), clear_repo_caches=lambda p: None,
             artifact_type="application-component", name=name, summary=None, properties=None,
-            notes=None, specialization=None, artifact_id=None, version="0.1.0", status="draft",
+            notes=None, specializations=None, artifact_id=None, version="0.1.0", status="draft",
             last_updated=None, dry_run=False,
         )
         ids.append(result.artifact_id)
     return ids[0], ids[1]
 
 
-def _add(root: Path, source: str, target: str, *, specialization: str | None) -> object:
+def _add(root: Path, source: str, target: str, *, specializations: tuple[str, ...]) -> object:
     registry = _registry(root)
     return add_connection(
         repo_root=root, registry=registry, verifier=_verifier(registry),
         clear_repo_caches=lambda p: None, source_entity=source, connection_type=_CONNECTION_TYPE,
         target_entity=target, description=None, version="0.1.0", status="draft",
-        last_updated=None, dry_run=True, specialization=specialization,
+        last_updated=None, dry_run=True, specializations=specializations,
     )
 
 
@@ -94,7 +94,7 @@ def test_add_onto_a_quarantined_pair_is_rejected(tmp_path: Path) -> None:
     _write_schema(root, _ATTACHMENT, _SCORE_NUMBER)
     clear_schema_cache()
     with pytest.raises(ProfileQuarantineError) as excinfo:
-        _add(root, source, target, specialization=_SPECIALIZATION)
+        _add(root, source, target, specializations=(_SPECIALIZATION,))
     assert "Score" in str(excinfo.value)
     assert isinstance(excinfo.value, ValueError)  # REST → 400, MCP → tool error
 
@@ -106,7 +106,7 @@ def test_add_without_the_quarantined_specialization_is_allowed(tmp_path: Path) -
     _write_schema(root, _BASE_SCHEMA, _SCORE_STRING)
     _write_schema(root, _ATTACHMENT, _SCORE_NUMBER)
     clear_schema_cache()
-    result = _add(root, source, target, specialization=None)
+    result = _add(root, source, target, specializations=())
     assert getattr(result, "artifact_id", None) is not None
 
 
@@ -116,7 +116,7 @@ def test_add_onto_a_clean_specialized_pair_is_allowed(tmp_path: Path) -> None:
     _write_schema(root, _BASE_SCHEMA, _SCORE_STRING)
     _write_schema(root, _ATTACHMENT, _SCORE_STRING)  # agrees with the base
     clear_schema_cache()
-    result = _add(root, source, target, specialization=_SPECIALIZATION)
+    result = _add(root, source, target, specializations=(_SPECIALIZATION,))
     assert getattr(result, "artifact_id", None) is not None
 
 
@@ -143,5 +143,5 @@ def test_edit_onto_a_quarantined_pair_is_rejected(tmp_path: Path) -> None:
         edit_connection(
             repo_root=root, registry=registry, verifier=_verifier(registry),
             clear_repo_caches=lambda p: None, source_entity=source, target_entity=target,
-            connection_type=_CONNECTION_TYPE, specialization=_SPECIALIZATION, dry_run=True,
+            connection_type=_CONNECTION_TYPE, specializations=(_SPECIALIZATION,), dry_run=True,
         )

@@ -14,6 +14,7 @@ is a sanitized derivative of the real artifact id, not the id itself.
 from __future__ import annotations
 
 import re
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Literal
 
@@ -109,6 +110,18 @@ def _multiplicity_property(identifier: str, name: str, value: str, defs: _Proper
     return ExchangeProperty(property_definition_ref=identifier, values=(LangString(value),))
 
 
+
+def _exchange_specialization(applied: Sequence[str]) -> str | None:
+    """The one specialization the ArchiMate exchange format can carry, or None.
+
+    A narrowing at the boundary, not a projection of the model: the format names at most one, so an
+    export of a concept carrying several emits the primary. The others are not lost — they stay in the
+    repository — but a round trip through the exchange format cannot preserve them, which is a property
+    of the format and belongs stated here rather than discovered downstream.
+    """
+    return applied[0] if applied else None
+
+
 def export_model(
     entity_ids: list[str],
     *,
@@ -136,7 +149,7 @@ def export_model(
             continue
         try:
             mapping = mapper.element_to_exchange(
-                entity.artifact_type, entity.specialization or None, domain_hint=entity.domain
+                entity.artifact_type, _exchange_specialization(entity.specializations), domain_hint=entity.domain
             )
         except UnmappableArchimateTypeError as exc:
             unexportable.append(UnexportableItem(artifact_id, "element", entity.artifact_type, str(exc)))
@@ -178,7 +191,9 @@ def export_model(
                 )
                 continue
             try:
-                mapping = mapper.relationship_to_exchange(conn.conn_type, conn.specialization or None)
+                mapping = mapper.relationship_to_exchange(
+                    conn.conn_type, _exchange_specialization(conn.specializations)
+                )
             except UnmappableArchimateTypeError as exc:
                 unexportable.append(UnexportableItem(conn.artifact_id, "relationship", conn.conn_type, str(exc)))
                 continue

@@ -172,7 +172,7 @@ class TestQuarantineHoldsWithoutTheFlag:
             json={
                 "artifact_type": "collaboration",
                 "name": "Unaware Client Collaboration",
-                "specialization": "business-collaboration",
+                "specializations": ["business-collaboration"],
                 "dry_run": False,
             },
         )

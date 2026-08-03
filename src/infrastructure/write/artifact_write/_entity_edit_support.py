@@ -13,6 +13,9 @@ from pathlib import Path
 from typing import Any
 
 from src.application.repo_path_helpers import all_model_roots
+from src.domain.ontology_representation.specialization_values import (
+    applied_specialization_slugs,
+)
 
 from .boundary import normalize_specializations
 from .coerce import as_optional_str, as_optional_str_dict, as_optional_str_list, as_optional_typed_dict
@@ -24,23 +27,20 @@ _UNSET = object()
 
 
 def _fm_specializations(value: object) -> tuple[str, ...]:
-    """The current applied set from a frontmatter ``specialization`` value (scalar, list, or
-    absent) — the read mirror of what the writer serialises."""
-    if isinstance(value, list):
-        return normalize_specializations(None, [str(v) for v in value])
-    return normalize_specializations(str(value) if isinstance(value, str) else None, None)
+    """The current applied set from a frontmatter ``specialization`` value — the read mirror of
+    what the writer serialises, and the same reader every other consumer uses."""
+    return applied_specialization_slugs(value)
 
 
-def _merge_specializations(current: object, specialization: object, specializations: object) -> tuple[str, ...]:
-    """The post-edit applied set. An explicit update (either the scalar ``specialization`` or
-    the list ``specializations``) REPLACES the current set; ``_UNSET`` on both keeps it.
-    Passing ``""``/``[]`` clears it, exactly as the single-value edit already cleared one."""
+def _merge_specializations(current: object, specializations: object) -> tuple[str, ...]:
+    """The post-edit applied set. An explicit ``specializations`` REPLACES the current set;
+    ``_UNSET`` keeps it, and ``[]`` clears it."""
     if specializations is not _UNSET:
-        raw = specializations if isinstance(specializations, list) else []
-        return normalize_specializations(None, [str(v) for v in raw])
-    if specialization is not _UNSET:
-        scalar = str(specialization) if isinstance(specialization, str) else None
-        return normalize_specializations(scalar, None)
+        # Any sequence, not just `list`. This read `isinstance(specializations, list) else []`, so a
+        # *tuple* — an ordinary way to pass an ordered set, and what every caller in the tests uses —
+        # silently cleared the specializations instead of setting them. The identical bug sat in
+        # `connection_edit._as_list`; both now use the one reader that knows the value's shapes.
+        return normalize_specializations(applied_specialization_slugs(specializations))
     return _fm_specializations(current)
 
 
@@ -91,7 +91,6 @@ def merge_fields(
     version: str | None,
     status: str | None,
     keywords: object,
-    specialization: object = _UNSET,
     specializations: object = _UNSET,
     summary: object,
     properties: object,
@@ -110,7 +109,7 @@ def merge_fields(
         version=version if version is not None else str(fm.get("version", "0.1.0")),
         status=status if status is not None else str(fm.get("status", "draft")),
         keywords=as_optional_str_list(keywords if keywords is not _UNSET else fm.get("keywords")),
-        specializations=_merge_specializations(fm.get("specialization"), specialization, specializations),
+        specializations=_merge_specializations(fm.get("specialization"), specializations),
         summary=as_optional_str(summary) if summary is not _UNSET else parsed.summary,
         properties=(
             patch_map(parsed.properties, as_optional_typed_dict(properties))

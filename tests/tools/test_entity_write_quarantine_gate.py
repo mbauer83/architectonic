@@ -54,11 +54,11 @@ def _quarantine_fixture(tmp_path: Path) -> Path:
     return root
 
 
-def _create(root: Path, *, specialization: str | None) -> object:
+def _create(root: Path, *, specializations: tuple[str, ...]) -> object:
     return create_entity(
         repo_root=root, verifier=_verifier(root), clear_repo_caches=lambda p: None,
         artifact_type="application-component", name="Gate Probe", summary=None, properties=None,
-        notes=None, specialization=specialization, artifact_id=None, version="0.1.0", status="draft",
+        notes=None, specializations=specializations, artifact_id=None, version="0.1.0", status="draft",
         last_updated=None, dry_run=True,
     )
 
@@ -66,7 +66,7 @@ def _create(root: Path, *, specialization: str | None) -> object:
 def test_create_onto_a_quarantined_pair_is_rejected(tmp_path: Path) -> None:
     root = _quarantine_fixture(tmp_path)
     with pytest.raises(ProfileQuarantineError) as excinfo:
-        _create(root, specialization="service")
+        _create(root, specializations=("service",))
     assert "Score" in str(excinfo.value)
     assert isinstance(excinfo.value, ValueError)  # REST → 400, MCP → tool error
 
@@ -76,7 +76,7 @@ def test_create_onto_a_clean_pair_is_allowed(tmp_path: Path) -> None:
     root = _eng_root(tmp_path)
     _write_schema(root, _BASE_SCHEMA, _SCORE_STRING)
     clear_schema_cache()
-    result = _create(root, specialization=None)
+    result = _create(root, specializations=())
     assert getattr(result, "artifact_id", None) is not None  # produced a result, no rejection
 
 
@@ -89,7 +89,7 @@ def test_edit_onto_a_quarantined_pair_is_rejected(tmp_path: Path) -> None:
     created = create_entity(
         repo_root=root, verifier=_verifier(root), clear_repo_caches=lambda p: None,
         artifact_type="application-component", name="Editable", summary=None, properties=None,
-        notes=None, specialization="service", artifact_id=None, version="0.1.0", status="draft",
+        notes=None, specializations=("service",), artifact_id=None, version="0.1.0", status="draft",
         last_updated=None, dry_run=False,
     )
     _write_schema(root, _SERVICE_ATTACHMENT, _SCORE_NUMBER)

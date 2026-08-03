@@ -86,6 +86,7 @@ const C4_CONTEXT_RESPONSE = {
     is_global: false,
     group: 'uncategorized',
     display_alias: 'ROL_udXPfB',
+    specializations: [],
   }],
   connections: [],
   candidate_connections: [],

@@ -33,6 +33,7 @@ const entity = (over: Partial<EntitySummary>): EntitySummary => ({
   domain: 'application',
   subdomain: 'application-component',
   path: '/model/application/application-component/APP@1700000000.aaaaaa.thing.md',
+  specializations: [],
   is_global: false,
   ...over,
 })

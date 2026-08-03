@@ -39,7 +39,7 @@ class TestCreateEntitySpecialization:
         payload = {
             "artifact_type": "requirement",
             "name": "Espec Requirement",
-            "specialization": "constraint",
+            "specializations": ["constraint"],
             "dry_run": False,
         }
         r = client.post("/api/entities", json=payload)
@@ -66,7 +66,7 @@ class TestEditEntitySpecialization:
 
         r = client.patch(
             f"/api/entities/{artifact_id}",
-            json={"specialization": "constraint", "dry_run": False},
+            json={"specializations": ["constraint"], "dry_run": False},
         )
         assert r.status_code == 200
         assert r.json()["wrote"] is True
@@ -75,7 +75,7 @@ class TestEditEntitySpecialization:
 
         r = client.patch(
             f"/api/entities/{artifact_id}",
-            json={"specialization": "", "dry_run": False},
+            json={"specializations": [], "dry_run": False},
         )
         assert r.status_code == 200
         assert r.json()["wrote"] is True

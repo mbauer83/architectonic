@@ -66,7 +66,6 @@ def artifact_edit_entity(
     attribute_types: dict[str, str] | None = None,
     notes: str | None = None,
     keywords: list[str] | None = None,
-    specialization: str | None = None,
     specializations: list[str] | None = None,
     version: str | None = None,
     status: str | None = None,
@@ -83,7 +82,7 @@ def artifact_edit_entity(
         k: v for k, v in (
             ("name", name), ("summary", summary), ("properties", properties),
             ("attribute_types", attribute_types),
-            ("notes", notes), ("keywords", keywords), ("specialization", specialization),
+            ("notes", notes), ("keywords", keywords),
             ("specializations", specializations),
             ("version", version), ("status", status), ("group", group),
         ) if v is not None
@@ -113,7 +112,6 @@ def artifact_edit_connection(
     description: str | None = None,
     src_multiplicity: str | None = None,
     tgt_multiplicity: str | None = None,
-    specialization: str | None = None,
     specializations: list[str] | None = None,
     metadata: dict[str, object] | None = None,
     dry_run: bool = True,
@@ -121,8 +119,8 @@ def artifact_edit_connection(
 ) -> dict[str, object]:
     """Edit or remove a connection.
 
-    For operation='update': description, src_multiplicity, tgt_multiplicity, specialization,
-    metadata are applied. Pass "" for a multiplicity or specialization to remove it; omit
+    For operation='update': description, src_multiplicity, tgt_multiplicity, specializations,
+    metadata are applied. Pass "" for a multiplicity or [] for specializations to remove them; omit
     (None) to preserve it. metadata REPLACES the schema-declared per-connection attributes
     wholesale; pass {} to clear them.
     """
@@ -157,7 +155,6 @@ def artifact_edit_connection(
             description=description if description is not None else _UNSET,
             src_multiplicity=src_multiplicity if src_multiplicity is not None else _UNSET,
             tgt_multiplicity=tgt_multiplicity if tgt_multiplicity is not None else _UNSET,
-            specialization=specialization if specialization is not None else _UNSET,
             specializations=specializations if specializations is not None else _UNSET,
             metadata=metadata if metadata is not None else _UNSET,
             dry_run=dry_run,

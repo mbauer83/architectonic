@@ -309,7 +309,7 @@ class TestAddConnection:
             "source_entity": TGT_ID,
             "connection_type": "archimate-association",
             "target_entity": SRC_ID,
-            "specialization": "",
+            "specializations": [],
             "dry_run": True,
         }
         r = sync_client.post("/api/connections", json=payload)
@@ -329,7 +329,7 @@ class TestEditConnection:
     def test_specialization_field_accepted_and_passed_through(self, sync_client) -> None:
         r = sync_client.patch(
             f"/api/connections/{_connection_id(SRC_ID, TGT_ID)}",
-            json={"specialization": "", "dry_run": True},
+            json={"specializations": [], "dry_run": True},
         )
         assert r.status_code == 200
         assert "wrote" in r.json()

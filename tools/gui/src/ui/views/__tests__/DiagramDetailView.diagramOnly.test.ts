@@ -29,6 +29,7 @@ const gsnNodeSummaryRaw = {
   subdomain: 'nodes',
   path: '/tmp/my-assurance-case.puml',
   is_global: false,
+  specializations: [],
   group: 'uncategorized',
   host_diagram_id: GSN_ID,
   // The diagram read resolves the alias each entity is drawn under, and every row carries it —
@@ -85,6 +86,7 @@ describe('EntityDetailSchema — diagram-only entity', () => {
 // ── 2. buildAliasToId — alias map includes diagram-only node aliases ──────────
 
 const makeEntity = (artifactId: string, display_alias: string, host_diagram_id?: string): DiagramContextEntity => ({
+  specializations: [],
   artifact_id: artifactId,
   artifact_type: 'nodes',
   name: 'Test',

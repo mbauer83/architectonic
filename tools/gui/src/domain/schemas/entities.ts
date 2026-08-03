@@ -45,7 +45,7 @@ export const EntitySummarySchema = Schema.Struct({
   conn_sym: Schema.optional(Schema.Number),
   conn_out: Schema.optional(Schema.Number),
   group: Schema.optional(Schema.String),
-  specialization: Schema.optional(Schema.String),
+  specializations: Schema.Array(Schema.String),
   last_updated: Schema.optional(Schema.String),
 })
 export type EntitySummary = typeof EntitySummarySchema.Type
@@ -96,7 +96,6 @@ export const EntityDetailSchema = Schema.Struct({
   notes: Schema.optional(Schema.String),
   group: Schema.optional(Schema.String),
   last_updated: Schema.optional(Schema.String),
-  specialization: Schema.optional(Schema.String),
   specializations: Schema.Array(Schema.String),
   is_global: Schema.optional(Schema.Boolean),
   host_diagram_id: Schema.optional(Schema.String),

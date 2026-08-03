@@ -139,7 +139,7 @@ def _validate_inputs(
 
 
 def _assert_pair_writable(
-    repo_root: Path, connection_type: str, specialization: str | None,
+    repo_root: Path, connection_type: str,
     specializations: Sequence[str] | None = None,
 ) -> None:
     """Refuse a write onto a quarantined
@@ -147,7 +147,7 @@ def _assert_pair_writable(
     write boundary both transports funnel through, so REST and MCP cannot diverge."""
     from src.application.profile_quarantine import assert_not_quarantined  # noqa: PLC0415
 
-    applied = normalize_specializations(specialization, specializations)
+    applied = normalize_specializations(specializations)
     assert_not_quarantined(
         repo_root, "connection", connection_type, list(applied) or [""],
         catalogs=process_runtime_catalogs(),
@@ -155,14 +155,14 @@ def _assert_pair_writable(
 
 
 def _connection_metadata(
-    specialization: str | None, metadata: dict[str, object] | None, specializations: Sequence[str] | None = None
+    metadata: dict[str, object] | None, specializations: Sequence[str] | None = None
 ) -> dict[str, object]:
-    """One per-connection metadata block from the inputs that feed it. ``specialization`` is
+    """One per-connection metadata block from the inputs that feed it. The applied set is
     authoritative for its own key — it selects which schema applies, so it is never something
     the schema-declared attributes can overwrite. A single specialization is written as a
     scalar (byte-identical to existing files), several as a list (§15.2)."""
     block: dict[str, object] = dict(metadata) if metadata else {}
-    applied = normalize_specializations(specialization, specializations)
+    applied = normalize_specializations(specializations)
     if len(applied) == 1:
         block["specialization"] = applied[0]
     elif applied:
@@ -201,11 +201,10 @@ def _build_content(
     last_updated: str,
     src_multiplicity: str | None = None,
     tgt_multiplicity: str | None = None,
-    specialization: str | None = None,
     specializations: Sequence[str] | None = None,
     metadata: dict[str, object] | None = None,
 ) -> str:
-    applied = normalize_specializations(specialization, specializations)
+    applied = normalize_specializations(specializations)
     if outgoing_path.exists():
         existing = outgoing_path.read_text(encoding="utf-8")
         # Duplicate check ignores multiplicities — same (conn_type, target) pair is a duplicate
@@ -235,7 +234,7 @@ def _build_content(
             src_multiplicity=src_multiplicity or "",
             tgt_multiplicity=tgt_multiplicity or "",
             description=(description or "").strip(),
-            metadata=_connection_metadata(None, metadata, applied),
+            metadata=_connection_metadata(metadata, applied),
         )
         return existing.rstrip("\n") + "\n\n" + format_connection_declaration(decl) + "\n"
 
@@ -341,7 +340,6 @@ def add_connection(
     dry_run: bool,
     src_multiplicity: str | None = None,
     tgt_multiplicity: str | None = None,
-    specialization: str | None = None,
     specializations: Sequence[str] | None = None,
     metadata: dict[str, object] | None = None,
     extra_known_ids: frozenset[str] = frozenset(),
@@ -355,7 +353,7 @@ def add_connection(
     """
     assert_engagement_write_root(repo_root)
     _validate_inputs(registry, connection_type, source_entity, target_entity, extra_known_ids)
-    _assert_pair_writable(repo_root, connection_type, specialization, specializations)
+    _assert_pair_writable(repo_root, connection_type, specializations)
     source_entity = _canonical_entity_id(registry, source_entity, extra_known_ids)
     target_entity = _canonical_entity_id(registry, target_entity, extra_known_ids)
 
@@ -382,7 +380,6 @@ def add_connection(
         last,
         src_multiplicity=src_multiplicity,
         tgt_multiplicity=tgt_multiplicity,
-        specialization=specialization,
         specializations=specializations,
         metadata=metadata,
     )

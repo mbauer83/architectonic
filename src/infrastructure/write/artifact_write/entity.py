@@ -73,7 +73,6 @@ def create_entity(
     attribute_types: dict[str, str] | None = None,
     notes: str | None,
     keywords: list[str] | None = None,
-    specialization: str | None = None,
     specializations: Sequence[str] | None = None,
     artifact_id: str | None,
     version: str,
@@ -95,7 +94,7 @@ def create_entity(
             "Use ensure_global_artifact_reference (MCP) or "
             "POST /api/global-entity-reference (GUI) instead."
         )
-    applied = normalize_specializations(specialization, specializations)
+    applied = normalize_specializations(specializations)
     assert_not_quarantined(repo_root, "entity", artifact_type, list(applied) or [""], catalogs=catalogs)
 
     info = get_module_registry().find_entity_type(EntityTypeName(artifact_type))

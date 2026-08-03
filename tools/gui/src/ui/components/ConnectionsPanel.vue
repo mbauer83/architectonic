@@ -224,9 +224,10 @@ const removeModal = ref<InstanceType<typeof ConnectionRemoveModal> | null>(null)
               <div class="conn-item">
                 <span class="conn-type-badge">{{ c.conn_type.replace('archimate-', '') }}</span>
                 <span
-                  v-if="c.specialization"
+                  v-for="spec in c.specializations"
+                  :key="spec"
                   class="conn-spec-badge"
-                >«{{ c.specialization }}»</span>
+                >«{{ spec }}»</span>
                 <span
                   v-if="c.src_multiplicity || c.tgt_multiplicity"
                   class="conn-mult-badge"

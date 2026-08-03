@@ -224,14 +224,14 @@ class TestReservedPaths:
             assert _eval_entity(_condition(path, "eq", expected), entity).matched is True
 
     def test_specialization_empty_string_is_absent(self) -> None:
-        entity = _entity(specialization="")
+        entity = _entity(specializations=())
         absent = AttributeCondition(attribute="specialization", comparator="absent")
         exists = AttributeCondition(attribute="specialization", comparator="exists")
         assert _eval_entity(absent, entity).matched is True
         assert _eval_entity(exists, entity).matched is False
 
     def test_specialization_present_when_set(self) -> None:
-        entity = _entity(specialization="business-process")
+        entity = _entity(specializations=("business-process",))
         assert _eval_entity(AttributeCondition(attribute="specialization", comparator="exists"), entity).matched is True
 
     def test_connection_reserved_type_readable(self) -> None:

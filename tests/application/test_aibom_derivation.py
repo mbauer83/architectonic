@@ -18,13 +18,14 @@ from src.domain.ontology_representation.artifact_types import ConnectionRecord, 
 
 
 def _entity(
-    artifact_id: str, artifact_type: str, *, specialization: str = "", attributes: dict | None = None
+    artifact_id: str, artifact_type: str, *,
+    specializations: tuple[str, ...] = (), attributes: dict | None = None,
 ) -> EntityRecord:
     return EntityRecord(
         artifact_id=artifact_id, artifact_type=artifact_type, name=artifact_id.split(".")[-1],
         version="0.1.0", status="draft", domain="application", subdomain="", path=Path(f"/{artifact_id}.md"),
         keywords=(), extra={}, content_text="", display_blocks={}, display_label="", display_alias="",
-        specialization=specialization, attributes=attributes or {},
+        specializations=specializations, attributes=attributes or {},
     )
 
 
@@ -63,7 +64,7 @@ def test_drift_guard_every_shipped_ai_specialization_has_a_component_type() -> N
 
 def test_only_ai_entities_become_components() -> None:
     entities = [
-        _entity("APP@1.a.model", "application-component", specialization="ai-model"),
+        _entity("APP@1.a.model", "application-component", specializations=("ai-model",)),
         _entity("APP@1.b.plain", "application-component"),  # no AI specialization
     ]
     comps = derive_aibom(entities, [], _bindings())
@@ -72,8 +73,8 @@ def test_only_ai_entities_become_components() -> None:
 
 
 def test_trained_on_dataset_role_resolves() -> None:
-    model = _entity("APP@1.a.model", "application-component", specialization="ai-model")
-    dataset = _entity("DOB@1.b.data", "data-object", specialization="ai-dataset")
+    model = _entity("APP@1.a.model", "application-component", specializations=("ai-model",))
+    dataset = _entity("DOB@1.b.data", "data-object", specializations=("ai-dataset",))
     conns = [_conn(model.artifact_id, dataset.artifact_id, "archimate-access")]
     comps = derive_aibom([model, dataset], conns, _bindings())
     model_comp = next(c for c in comps if c.specialization == "ai-model")
@@ -82,8 +83,8 @@ def test_trained_on_dataset_role_resolves() -> None:
 
 
 def test_role_does_not_match_wrong_target_specialization() -> None:
-    model = _entity("APP@1.a.model", "application-component", specialization="ai-model")
-    prompt = _entity("DOB@1.c.prompt", "data-object", specialization="ai-prompt-asset")
+    model = _entity("APP@1.a.model", "application-component", specializations=("ai-model",))
+    prompt = _entity("DOB@1.c.prompt", "data-object", specializations=("ai-prompt-asset",))
     conns = [_conn(model.artifact_id, prompt.artifact_id, "archimate-access")]
     comps = derive_aibom([model, prompt], conns, _bindings())
     model_comp = next(c for c in comps if c.specialization == "ai-model")
@@ -91,7 +92,7 @@ def test_role_does_not_match_wrong_target_specialization() -> None:
 
 
 def test_governance_role_resolves() -> None:
-    model = _entity("APP@1.a.model", "application-component", specialization="ai-model")
+    model = _entity("APP@1.a.model", "application-component", specializations=("ai-model",))
     owner = _entity("BRL@1.d.owner", "role")  # a plain accountable role
     conns = [_conn(model.artifact_id, owner.artifact_id, "archimate-assignment")]
     comps = derive_aibom([model, owner], conns, _bindings())
@@ -100,8 +101,8 @@ def test_governance_role_resolves() -> None:
 
 
 def test_dependency_graph_between_ai_components() -> None:
-    agent = _entity("APP@1.a.agent", "application-component", specialization="ai-agent")
-    model = _entity("APP@1.b.model", "application-component", specialization="ai-model")
+    agent = _entity("APP@1.a.agent", "application-component", specializations=("ai-agent",))
+    model = _entity("APP@1.b.model", "application-component", specializations=("ai-model",))
     conns = [_conn(agent.artifact_id, model.artifact_id, "archimate-serving")]
     comps = derive_aibom([agent, model], conns, _bindings())
     agent_comp = next(c for c in comps if c.specialization == "ai-agent")
@@ -109,8 +110,8 @@ def test_dependency_graph_between_ai_components() -> None:
 
 
 def test_dependency_cycle_terminates() -> None:
-    a = _entity("APP@1.a.a", "application-component", specialization="ai-agent")
-    b = _entity("APP@1.b.b", "application-component", specialization="ai-model")
+    a = _entity("APP@1.a.a", "application-component", specializations=("ai-agent",))
+    b = _entity("APP@1.b.b", "application-component", specializations=("ai-model",))
     conns = [_conn(a.artifact_id, b.artifact_id, "archimate-serving"),
              _conn(b.artifact_id, a.artifact_id, "archimate-serving")]
     comps = derive_aibom([a, b], conns, _bindings())  # must not loop
@@ -121,7 +122,7 @@ def test_dependency_cycle_terminates() -> None:
 
 def test_authored_attributes_are_carried_with_authored_provenance() -> None:
     model = _entity(
-        "APP@1.a.model", "application-component", specialization="ai-model",
+        "APP@1.a.model", "application-component", specializations=("ai-model",),
         attributes={"Task": "classification", "Supplier": "ACME", "Inputs": ""},
     )
     comps = derive_aibom([model], [], _bindings())
@@ -132,7 +133,7 @@ def test_authored_attributes_are_carried_with_authored_provenance() -> None:
 
 
 def test_entity_with_no_relations_is_a_valid_sparse_component() -> None:
-    model = _entity("APP@1.a.model", "application-component", specialization="ai-model")
+    model = _entity("APP@1.a.model", "application-component", specializations=("ai-model",))
     comps = derive_aibom([model], [], _bindings())
     c = comps[0]
     assert c.datasets == () and c.governance == () and c.dependency_ids == () and c.authored == {}
@@ -141,7 +142,7 @@ def test_entity_with_no_relations_is_a_valid_sparse_component() -> None:
 
 def test_considerations_reach_stakeholders_and_drivers_within_depth() -> None:
     # WU-B2: users ← stakeholders, useCases ← drivers/goals, bounded by depth.
-    model = _entity("APP@1.a.model", "application-component", specialization="ai-model")
+    model = _entity("APP@1.a.model", "application-component", specializations=("ai-model",))
     stakeholder = _entity("STK@1.b.user", "stakeholder")
     driver = _entity("DRV@1.c.why", "driver")
     conns = [
@@ -156,7 +157,7 @@ def test_considerations_reach_stakeholders_and_drivers_within_depth() -> None:
 
 def test_considerations_depth_bound_is_honoured() -> None:
     # A driver two hops away is unreachable at depth 1.
-    model = _entity("APP@1.a.model", "application-component", specialization="ai-model")
+    model = _entity("APP@1.a.model", "application-component", specializations=("ai-model",))
     mid = _entity("APP@1.m.mid", "application-component")
     driver = _entity("DRV@1.c.why", "driver")
     conns = [
@@ -170,7 +171,7 @@ def test_considerations_depth_bound_is_honoured() -> None:
 
 
 def test_unreachable_motivation_yields_empty_not_error() -> None:
-    model = _entity("APP@1.a.model", "application-component", specialization="ai-model")
+    model = _entity("APP@1.a.model", "application-component", specializations=("ai-model",))
     comps = derive_aibom([model], [], _bindings())
     assert comps[0].considerations.users == () and comps[0].considerations.use_cases == ()
 

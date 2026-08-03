@@ -40,6 +40,7 @@ const makeEntity = (id: string, alias: string): DiagramContextEntity => ({
   domain: 'application',
   subdomain: '',
   path: '/tmp/x.md',
+  specializations: [],
   is_global: false,
   group: 'uncategorized',
   display_alias: alias,

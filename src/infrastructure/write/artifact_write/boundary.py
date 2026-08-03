@@ -12,16 +12,14 @@ def modification_stamp() -> str:
     return utc_now_iso()
 
 
-def normalize_specializations(
-    specialization: str | None, specializations: Sequence[str] | None
-) -> tuple[str, ...]:
-    """The applied-specialization set a write path should use, from its two inputs.
+def normalize_specializations(specializations: Sequence[str] | None) -> tuple[str, ...]:
+    """The applied-specialization set a write path should use.
 
-    ``specializations`` (the list, from a multi-select client) wins when given; otherwise
-    the single ``specialization`` scalar is lifted to a one-element set (every existing
-    caller and the single-value REST/MCP field). Order preserved, blanks and duplicates
-    dropped. A concept may carry several (ArchiMate §15.2)."""
-    raw = list(specializations) if specializations else ([specialization] if specialization else [])
+    Order preserved, blanks and duplicates dropped. A concept may carry several
+    (ArchiMate §15.2), and this is the only shape a write path accepts — the scalar it also
+    took was a second way to say the one-element case, which every layer above had to thread
+    and every layer could disagree about."""
+    raw = list(specializations) if specializations else []
     seen: dict[str, None] = {}
     for item in raw:
         if item and item not in seen:

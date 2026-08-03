@@ -24,7 +24,6 @@ export const ConnectionRecordSchema = Schema.Struct({
   content_text: Schema.String,
   src_multiplicity: Schema.optional(Schema.NullOr(Schema.String)),
   tgt_multiplicity: Schema.optional(Schema.NullOr(Schema.String)),
-  specialization: Schema.optional(Schema.NullOr(Schema.String)),
   specializations: Schema.Array(Schema.String),
   metadata: Schema.Record({ key: Schema.String, value: Schema.Unknown }),
   associated_entities: Schema.Array(Schema.String),
@@ -68,7 +67,7 @@ export const EntityContextConnectionSchema = Schema.Struct({
   associated_entities: Schema.Array(Schema.String),
   src_multiplicity: Schema.String,
   tgt_multiplicity: Schema.String,
-  specialization: Schema.String,
+  specializations: Schema.Array(Schema.String),
   source_name: Schema.String,
   target_name: Schema.String,
   source_artifact_type: Schema.String,
@@ -112,7 +111,7 @@ export type ConnectionRowView = {
   readonly source_name: string
   readonly target_name: string
   readonly associated_entities: readonly string[]
-  readonly specialization?: string | null
+  readonly specializations: readonly string[]
   readonly src_multiplicity?: string | null
   readonly tgt_multiplicity?: string | null
   readonly metadata?: Readonly<Record<string, unknown>>

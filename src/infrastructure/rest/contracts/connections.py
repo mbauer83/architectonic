@@ -35,7 +35,6 @@ class ConnectionSummary(Closed):
     associated_entities: list[str]
     src_multiplicity: str | None = None
     tgt_multiplicity: str | None = None
-    specialization: str | None = None
     specializations: list[str] = []
     metadata: dict[str, Any] = {}
     source_name: str

@@ -449,9 +449,10 @@ const displayCount = computed(() => {
                   />
                   <span class="mono">{{ entity.artifact_type }}</span>
                   <span
-                    v-if="entity.specialization"
+                    v-for="spec in entity.specializations"
+                    :key="spec"
                     class="type-specialization"
-                  >«{{ entity.specialization }}»</span>
+                  >«{{ spec }}»</span>
                 </span>
               </template>
 

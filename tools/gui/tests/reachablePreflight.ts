@@ -15,6 +15,7 @@
  * wiped — the figure appeared on disk while the manifest denied it existed. Resetting once, before
  * any spec, makes the order irrelevant.
  */
+import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -26,6 +27,9 @@ import { computeSourceHash, readStamp } from '../scripts/buildStamp.mjs'
 import { resetManifest } from './media/mediaHelpers'
 
 const PROBE_TIMEOUT_MS = 5_000
+const SCHEMA_PROBE_TIMEOUT_MS = 20_000
+//: Building the tree's document imports the whole application; generous, and bounded.
+const SCHEMA_DUMP_TIMEOUT_MS = 120_000
 const MEDIA_PROJECT = 'media'
 const GUI_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -41,6 +45,62 @@ const GUI_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
  * Skipped, with the reason named, when the target is not a built bundle — the Vite dev server
  * transforms on demand and references `/src/main.ts`, so there is nothing to be stale.
  */
+/**
+ * Whether the *backend* serving `baseURL` predates this tree's response contracts.
+ *
+ * The bundle check above covers the frontend half; this covers the half it does not. A backend left
+ * running across a contract change serves the old field names while the freshly built SPA decodes the
+ * new ones, so every read fails in the browser and the suite reports twenty GUI defects that do not
+ * exist. That is not hypothetical: it cost an 8.8-minute run on 2026-08-03, when `specialization`
+ * became `specializations` and a two-hour-old server kept answering with the former.
+ *
+ * The signal is the served document's own component schemas against the tree's. Comparing schemas
+ * rather than the whole document keeps the check about the thing that breaks a decoder — a route's
+ * *shape* — so a difference in summaries or tags does not stop a run that would have been fine.
+ */
+const staleBackendReason = async (baseURL: string): Promise<string | null> => {
+  if (process.env.E2E_SKIP_BACKEND_CHECK === '1') return null
+
+  let servedSchemas: string
+  try {
+    const response = await fetch(`${baseURL}/openapi.json`, {
+      signal: AbortSignal.timeout(SCHEMA_PROBE_TIMEOUT_MS),
+    })
+    if (!response.ok) return null // not a backend origin (a bare Vite dev server has no such route)
+    const document = (await response.json()) as { components?: { schemas?: unknown } }
+    if (!document.components?.schemas) return null
+    servedSchemas = stableJson(document.components.schemas)
+  } catch {
+    return null // reachability has its own probe, which runs first
+  }
+
+  let treeSchemas: string
+  try {
+    const dumped = execFileSync(
+      'uv', ['run', 'tools/openapi/dump_openapi.py', '/dev/stdout'],
+      { cwd: resolve(GUI_ROOT, '..', '..'), encoding: 'utf8', timeout: SCHEMA_DUMP_TIMEOUT_MS,
+        stdio: ['ignore', 'pipe', 'ignore'] },
+    )
+    const document = JSON.parse(dumped) as { components?: { schemas?: unknown } }
+    if (!document.components?.schemas) return null
+    treeSchemas = stableJson(document.components.schemas)
+  } catch {
+    return null // cannot build the tree's document here; not a reason to block a run
+  }
+
+  if (servedSchemas === treeSchemas) return null
+  return 'the response schemas it serves are not this tree\'s. Whatever is running was started before '
+    + 'a contract change, so the browser decodes fields the server does not send.'
+}
+
+/** Key-ordered JSON, so two equal documents compare equal whatever order they were built in. */
+const stableJson = (value: unknown): string =>
+  JSON.stringify(value, (_key, inner) =>
+    inner && typeof inner === 'object' && !Array.isArray(inner)
+      ? Object.fromEntries(Object.entries(inner as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b)))
+      : inner)
+
+
 const staleBundleReason = async (baseURL: string): Promise<string | null> => {
   // An escape hatch, because there is one legitimate case: driving a bundle built elsewhere on
   // purpose. It has to be asked for, so forgetting to rebuild never silently takes it.
@@ -170,6 +230,18 @@ export default async function preflight(config: FullConfig): Promise<void> {
       + 'Every test would have passed or failed against code you did not write, which is the one '
       + 'result worse than a red run, so this run stops here instead.\n\n'
       + 'Set E2E_SKIP_BUILD_CHECK=1 to run anyway — deliberately, against a bundle you know is not '
+      + 'the tree.',
+    )
+  }
+
+  const staleServer = await staleBackendReason(baseURL)
+  if (staleServer) {
+    throw new Error(
+      `The backend at ${baseURL} is not this working tree's: ${staleServer}\n\n`
+      + 'Every read would fail in the browser and the failures would read as GUI defects, so this run '
+      + 'stops here instead.\n\n'
+      + '  uv run arch-backend --restart --daemon && uv run arch-assurance unlock\n\n'
+      + 'Set E2E_SKIP_BACKEND_CHECK=1 to run anyway — deliberately, against a server you know is not '
       + 'the tree.',
     )
   }

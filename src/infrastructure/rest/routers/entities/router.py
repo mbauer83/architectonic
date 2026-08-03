@@ -284,7 +284,6 @@ class CreateEntityBody(_Body):
     attribute_types: dict[str, str] | None = None
     notes: str | None = None
     keywords: list[str] | None = None
-    specialization: str | None = None
     specializations: list[str] | None = None
     version: str = "0.1.0"
     status: str = "draft"
@@ -298,7 +297,6 @@ class EditEntityBody(_Body):
     attribute_types: dict[str, str] | None = None
     notes: str | None = None
     keywords: list[str] | None = None
-    specialization: str | None = None
     specializations: list[str] | None = None
     version: str | None = None
     status: str | None = None
@@ -332,7 +330,6 @@ def create_entity(
             attribute_types=body.attribute_types,
             notes=body.notes,
             keywords=body.keywords,
-            specialization=body.specialization,
             specializations=body.specializations,
             artifact_id=None,
             version=body.version,
@@ -376,7 +373,6 @@ def edit_entity(artifact_id: str, body: EditEntityBody,
             attribute_types=body.attribute_types if "attribute_types" in provided else _UNSET,
             notes=body.notes if "notes" in provided else _UNSET,
             keywords=body.keywords if "keywords" in provided else _UNSET,
-            specialization=body.specialization if "specialization" in provided else _UNSET,
             specializations=body.specializations if "specializations" in provided else _UNSET,
             version=body.version,
             status=body.status,

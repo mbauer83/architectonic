@@ -68,12 +68,12 @@ def repo(tmp_path: Path):
     return root, src, tgt, tgt2
 
 
-def _add(root, registry, verifier, *, source, target, specialization=None):
+def _add(root, registry, verifier, *, source, target, specializations=None):
     add_connection(
         repo_root=root, registry=registry, verifier=verifier, clear_repo_caches=lambda p: None,
         source_entity=source, connection_type="archimate-assignment", target_entity=target,
         description=None, version="0.1.0", status="draft", last_updated="2026-01-01",
-        dry_run=False, specialization=specialization,
+        dry_run=False, specializations=specializations,
     )
 
 
@@ -84,28 +84,28 @@ def _outgoing_path(root: Path, src: str) -> Path:
 def test_add_connection_with_specialization_round_trips(repo) -> None:
     root, src, tgt, _ = repo
     registry, verifier = _build_deps(root)
-    _add(root, registry, verifier, source=src, target=tgt, specialization="responsibility-assignment")
+    _add(root, registry, verifier, source=src, target=tgt, specializations=("responsibility-assignment",))
 
     (record,) = parse_outgoing_file(_outgoing_path(root, src))
-    assert record.specialization == "responsibility-assignment"
+    assert record.specializations == ("responsibility-assignment",)
 
 
 def test_two_connections_carry_different_specializations(repo) -> None:
     root, src, tgt, tgt2 = repo
     registry, verifier = _build_deps(root)
-    _add(root, registry, verifier, source=src, target=tgt, specialization="responsibility-assignment")
-    _add(root, registry, verifier, source=src, target=tgt2, specialization="behavior-assignment")
+    _add(root, registry, verifier, source=src, target=tgt, specializations=("responsibility-assignment",))
+    _add(root, registry, verifier, source=src, target=tgt2, specializations=("behavior-assignment",))
 
     records = parse_outgoing_file(_outgoing_path(root, src))
-    by_target = {r.target: r.specialization for r in records}
-    assert by_target == {tgt: "responsibility-assignment", tgt2: "behavior-assignment"}
+    by_target = {r.target: r.specializations for r in records}
+    assert by_target == {tgt: ("responsibility-assignment",), tgt2: ("behavior-assignment",)}
 
 
 def test_editing_one_connection_preserves_sibling_metadata_block_byte_exact(repo) -> None:
     root, src, tgt, tgt2 = repo
     registry, verifier = _build_deps(root)
-    _add(root, registry, verifier, source=src, target=tgt, specialization="responsibility-assignment")
-    _add(root, registry, verifier, source=src, target=tgt2, specialization="behavior-assignment")
+    _add(root, registry, verifier, source=src, target=tgt, specializations=("responsibility-assignment",))
+    _add(root, registry, verifier, source=src, target=tgt2, specializations=("behavior-assignment",))
     outgoing = _outgoing_path(root, src)
     before = outgoing.read_text(encoding="utf-8")
     sibling_marker = f"### archimate-assignment → {tgt2}"
@@ -123,23 +123,23 @@ def test_editing_one_connection_preserves_sibling_metadata_block_byte_exact(repo
     records = parse_outgoing_file(outgoing)
     by_target = {r.target: r for r in records}
     assert by_target[tgt].content_text == "now has a description"
-    assert by_target[tgt2].specialization == "behavior-assignment"
+    assert by_target[tgt2].specializations == ("behavior-assignment",)
 
 
 def test_edit_connection_clears_specialization_with_empty_string(repo) -> None:
     root, src, tgt, _ = repo
     registry, verifier = _build_deps(root)
-    _add(root, registry, verifier, source=src, target=tgt, specialization="responsibility-assignment")
+    _add(root, registry, verifier, source=src, target=tgt, specializations=("responsibility-assignment",))
     outgoing = _outgoing_path(root, src)
 
     edit_connection(
         repo_root=root, registry=registry, verifier=verifier, clear_repo_caches=lambda p: None,
         source_entity=src, target_entity=tgt, connection_type="archimate-assignment",
-        specialization="", dry_run=False,
+        specializations=(), dry_run=False,
     )
 
     (record,) = parse_outgoing_file(outgoing)
-    assert record.specialization == ""
+    assert record.specializations == ()
     assert "```yaml" not in outgoing.read_text(encoding="utf-8")
 
 
@@ -152,13 +152,13 @@ def test_entity_create_and_parse_round_trip_specialization(tmp_path: Path) -> No
         repo_root=root, verifier=verifier, clear_repo_caches=lambda p: None,
         artifact_type="collaboration", name="Cross-team Incident Response", summary=None, properties=None,
         notes=None, artifact_id="COL@1000000310.CrossTeam.cross-team-incident-response", version="0.1.0",
-        status="draft", last_updated="2026-01-01", dry_run=False, specialization="business-collaboration",
+        status="draft", last_updated="2026-01-01", dry_run=False, specializations=("business-collaboration",),
     )
     assert result.wrote, result.verification
 
     record = parse_entity(result.path, root / "model", domain_names=frozenset({"business"}))
     assert record is not None
-    assert record.specialization == "business-collaboration"
+    assert record.specializations == ("business-collaboration",)
 
 
 def test_entity_edit_updates_specialization_preserving_other_fields(tmp_path: Path) -> None:
@@ -170,17 +170,17 @@ def test_entity_edit_updates_specialization_preserving_other_fields(tmp_path: Pa
         repo_root=root, verifier=verifier, clear_repo_caches=lambda p: None,
         artifact_type="collaboration", name="Cross-team Incident Response", summary=None, properties=None,
         notes=None, artifact_id=eid, version="0.1.0", status="draft", last_updated="2026-01-01",
-        dry_run=False, specialization="business-collaboration",
+        dry_run=False, specializations=("business-collaboration",),
     )
     entity_file = root / "model" / "common" / "collaboration" / f"{eid}.md"
     registry2, verifier2 = _build_deps(root)
 
     edit_entity(
         repo_root=root, registry=registry2, verifier=verifier2, clear_repo_caches=lambda p: None,
-        artifact_id=eid, specialization="application-collaboration", dry_run=False,
+        artifact_id=eid, specializations=("application-collaboration",), dry_run=False,
     )
 
     record = parse_entity(entity_file, root / "model", domain_names=frozenset({"common"}))
     assert record is not None
-    assert record.specialization == "application-collaboration"
+    assert record.specializations == ("application-collaboration",)
     assert record.name == "Cross-team Incident Response"

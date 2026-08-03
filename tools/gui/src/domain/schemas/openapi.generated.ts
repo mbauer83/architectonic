@@ -2824,8 +2824,6 @@ export interface components {
             } | null;
             /** Source Entity */
             source_entity: string;
-            /** Specialization */
-            specialization?: string | null;
             /** Specializations */
             specializations?: string[] | null;
             /** Src Multiplicity */
@@ -5075,8 +5073,6 @@ export interface components {
             source: string;
             /** Source Name */
             source_name: string;
-            /** Specialization */
-            specialization?: string | null;
             /**
              * Specializations
              * @default []
@@ -5174,8 +5170,8 @@ export interface components {
             source_name: string;
             /** Source Scope */
             source_scope: string;
-            /** Specialization */
-            specialization: string;
+            /** Specializations */
+            specializations: string[];
             /** Src Multiplicity */
             src_multiplicity: string;
             /** Status */
@@ -5329,8 +5325,6 @@ export interface components {
             properties?: {
                 [key: string]: unknown;
             } | null;
-            /** Specialization */
-            specialization?: string | null;
             /** Specializations */
             specializations?: string[] | null;
             /**
@@ -5785,8 +5779,6 @@ export interface components {
             source_alias: string;
             /** Source Name */
             source_name: string;
-            /** Specialization */
-            specialization?: string;
             /**
              * Specializations
              * @default []
@@ -5842,8 +5834,11 @@ export interface components {
             name: string;
             /** Path */
             path: string;
-            /** Specialization */
-            specialization?: string;
+            /**
+             * Specializations
+             * @default []
+             */
+            specializations: string[];
             /** Status */
             status: string;
             /** Subdomain */
@@ -6691,8 +6686,6 @@ export interface components {
             metadata?: {
                 [key: string]: unknown;
             } | null;
-            /** Specialization */
-            specialization?: string | null;
             /** Specializations */
             specializations?: string[] | null;
             /** Src Multiplicity */
@@ -6775,8 +6768,6 @@ export interface components {
             properties?: {
                 [key: string]: unknown;
             } | null;
-            /** Specialization */
-            specialization?: string | null;
             /** Specializations */
             specializations?: string[] | null;
             /** Status */
@@ -7120,8 +7111,6 @@ export interface components {
              * @default []
              */
             referenced_in_documents: components["schemas"]["DocumentReference"][];
-            /** Specialization */
-            specialization?: string;
             /**
              * Specializations
              * @default []
@@ -7324,8 +7313,11 @@ export interface components {
             name: string;
             /** Path */
             path: string;
-            /** Specialization */
-            specialization?: string;
+            /**
+             * Specializations
+             * @default []
+             */
+            specializations: string[];
             /** Status */
             status: string;
             /** Subdomain */

@@ -88,7 +88,11 @@ def _reserved_entity_field(record: EntityRecord, head: str) -> tuple[object, boo
     if head == "type":
         return record.artifact_type, True
     if head == "specialization":
-        return record.specialization, bool(record.specialization)
+        # The whole set. `_compare` already reads a collection the right way — `eq` means "any
+        # element equals", `in` means "any element is among" — so a viewpoint condition on
+        # `specialization` now matches a concept by any of its specializations rather than only
+        # by whichever happened to be first.
+        return record.specializations, bool(record.specializations)
     if head == "group":
         return record.group, True
     if head == "domain":
@@ -108,7 +112,7 @@ def _reserved_connection_field(record: ConnectionRecord, head: str) -> tuple[obj
     if head == "type":
         return record.conn_type, True
     if head == "specialization":
-        return record.specialization, bool(record.specialization)
+        return record.specializations, bool(record.specializations)
     raise AssertionError(f"unhandled reserved connection path {head!r}")
 
 

@@ -64,7 +64,7 @@ def _entity(
     name: str,
     *,
     domain: str = "business",
-    specialization: str = "",
+    specializations: tuple[str, ...] = (),
     content_text: str = "",
 ) -> EntityRecord:
     return EntityRecord(
@@ -82,7 +82,7 @@ def _entity(
         display_blocks={},
         display_label=name,
         display_alias=name,
-        specialization=specialization,
+        specializations=specializations,
     )
 
 
@@ -92,7 +92,7 @@ def _connection(
     target: str,
     conn_type: str,
     *,
-    specialization: str = "",
+    specializations: tuple[str, ...] = (),
     src_multiplicity: str = "",
     tgt_multiplicity: str = "",
     content_text: str = "",
@@ -107,7 +107,7 @@ def _connection(
         path=Path("dummy.outgoing.md"),
         extra={},
         content_text=content_text,
-        specialization=specialization,
+        specializations=specializations,
         src_multiplicity=src_multiplicity,
         tgt_multiplicity=tgt_multiplicity,
     )
@@ -152,7 +152,7 @@ def test_unmappable_archimate_type_is_unexportable_not_raised() -> None:
 
 def test_specialization_extension_carried_as_property() -> None:
     entities = FakeEntities({
-        "APP@1.a.svc": _entity("APP@1.a.svc", "application-component", "Svc", specialization="module"),
+        "APP@1.a.svc": _entity("APP@1.a.svc", "application-component", "Svc", specializations=("module",)),
     })
     mapper = FakeExportMapper(
         elements={
@@ -314,7 +314,7 @@ def test_connection_specialization_carried_as_extension() -> None:
         "ACT@1.a.one",
         "ACT@1.b.two",
         "archimate-assignment",
-        specialization="responsibility-assignment",
+        specializations=("responsibility-assignment",),
     )
     connections = FakeConnections({"ACT@1.a.one": [conn]})
     mapper._relationships[("archimate-assignment", "responsibility-assignment")] = ExportRelationshipMapping(

@@ -213,7 +213,7 @@ class TestSummaries:
     def test_entity_and_connection_summaries(self) -> None:
         store = Store(
             entities={
-                "ENT@A": entity(artifact_id="ENT@A", name="Alpha", group="core", specialization="custom-spec"),
+                "ENT@A": entity(artifact_id="ENT@A", name="Alpha", group="core", specializations=("custom-spec",)),
                 "ENT@B": entity(artifact_id="ENT@B", name="Beta"),
             },
             connections=[connection(artifact_id="CON@ab", source="ENT@A", target="ENT@B")],

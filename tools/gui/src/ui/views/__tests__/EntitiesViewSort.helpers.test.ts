@@ -11,6 +11,7 @@ const row = (overrides: Partial<EntitySummary>): EntitySummary => ({
   domain: 'motivation',
   subdomain: 'requirement',
   path: '/x.md',
+  specializations: [],
   is_global: false,
   ...overrides,
 })

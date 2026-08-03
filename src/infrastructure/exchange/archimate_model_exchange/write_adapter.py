@@ -59,7 +59,8 @@ class ArtifactWriteExchangeAdapter:
             summary=None,
             properties=properties,
             notes=notes,
-            specialization=specialization,
+            # The exchange format names at most one; the write path takes the set.
+            specializations=[specialization] if specialization else None,
             artifact_id=None,
             version="0.1.0",
             status="draft",
@@ -88,7 +89,8 @@ class ArtifactWriteExchangeAdapter:
             name=name,
             properties=properties,
             notes=notes,
-            specialization=specialization,
+            # The exchange format names at most one; the write path takes the set.
+            specializations=[specialization] if specialization else None,
             dry_run=dry_run,
         )
         return _outcome(result)
@@ -122,7 +124,8 @@ class ArtifactWriteExchangeAdapter:
                 dry_run=dry_run,
                 src_multiplicity=src_multiplicity,
                 tgt_multiplicity=tgt_multiplicity,
-                specialization=specialization,
+                # The exchange format names at most one; the write path takes the set.
+            specializations=[specialization] if specialization else None,
                 extra_known_ids=extra_known_ids,
             )
         except ValueError as exc:

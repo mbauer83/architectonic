@@ -14,16 +14,15 @@ from src.domain.ontology_representation.property_value import encode as _encode_
 from src.domain.repository.connection_declaration import ConnectionDeclaration, format_connection_declaration
 
 
-def _specialization_frontmatter_value(
-    specialization: str | None, specializations: Sequence[str] | None
-) -> str | list[str] | None:
+def _specialization_frontmatter_value(specializations: Sequence[str] | None) -> str | list[str] | None:
     """The value to write for the ``specialization`` frontmatter key, or ``None`` to omit it.
 
     A single specialization is written as a SCALAR — so existing one-specialization files
-    stay byte-identical and no repo is churned — and several as a list (§15.2). The list, if
-    given, is authoritative; otherwise the scalar is used. Blanks and duplicates are dropped.
+    stay byte-identical and no repo is churned — and several as a list (§15.2). Blanks and
+    duplicates are dropped. The *key* keeps its singular name because 146 files use it; what
+    varies is the value's shape, which `applied_specialization_slugs` reads back.
     """
-    raw = list(specializations) if specializations else ([specialization] if specialization else [])
+    raw = list(specializations) if specializations else []
     seen: dict[str, None] = {}
     for item in raw:
         if item and item not in seen:
@@ -58,7 +57,6 @@ def format_entity_markdown(
     status: str,
     last_updated: str,
     keywords: list[str] | None = None,
-    specialization: str | None = None,
     specializations: Sequence[str] | None = None,
     summary: str | None,
     properties: dict[str, Any] | None,
@@ -84,7 +82,7 @@ def format_entity_markdown(
     }
     if keywords:
         frontmatter["keywords"] = keywords
-    applied = _specialization_frontmatter_value(specialization, specializations)
+    applied = _specialization_frontmatter_value(specializations)
     if applied is not None:
         frontmatter["specialization"] = applied
     if attribute_types:
@@ -186,7 +184,7 @@ def format_outgoing_markdown(
         # ``specialization`` is authoritative as its own key: the edit API sets and clears
         # it by name, so it overrides (or removes) whatever the carried block held. One is
         # written as a scalar (byte-identical to existing files), several as a list (§15.2).
-        applied = _specialization_frontmatter_value(None, _as_str_list(conn.get("specialization")))
+        applied = _specialization_frontmatter_value(_as_str_list(conn.get("specialization")))
         if applied is not None:
             metadata["specialization"] = applied
         else:

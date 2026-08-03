@@ -204,7 +204,7 @@ class TestBulkFieldPropagation:
                     "op": "create_entity",
                     "artifact_type": "requirement",
                     "name": "Constrained",
-                    "specialization": "constraint",
+                    "specializations": ["constraint"],
                 },
             ],
         )
@@ -216,7 +216,7 @@ class TestBulkFieldPropagation:
         results = _bulk(
             repo,
             [
-                {"op": "edit_entity", "artifact_id": eid, "specialization": "constraint"},
+                {"op": "edit_entity", "artifact_id": eid, "specializations": ["constraint"]},
             ],
         )
         assert results[0]["wrote"] is True, results[0]

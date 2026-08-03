@@ -39,6 +39,7 @@ const makeConn = (
 })
 
 const makeEntity = (id: string, alias: string, hostDiagramId?: string): DiagramContextEntity => ({
+  specializations: [],
   artifact_id: id,
   artifact_type: 'application-component',
   name: id,

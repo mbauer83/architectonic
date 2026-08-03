@@ -111,7 +111,6 @@ class EntityRecordFields(NullsOmitted):
     subdomain: str
     path: str
     keywords: list[str] = []
-    specialization: str | None = None
     specializations: list[str] = []
     content_snippet: str | None = None
     content_text: str | None = None
