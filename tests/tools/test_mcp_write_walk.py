@@ -31,21 +31,37 @@ from tools.mcp import conformance, write_walk
 from tools.quality.fixture_backend import fixture_backend
 from tools.quality.fixture_workspace import FixtureWorkspace
 
+#: Both write mounts, as (name, calls, register), so every property below is asserted of each.
+#:
+#: Parameterised rather than duplicated: `assurance-write` arrived with 22 tools of its own, and the
+#: three questions this file asks — is the register reasoned, is anything in both buckets, can every
+#: recipe build its arguments in declared order — are the same questions on either mount. A second copy
+#: of them is the copy that would stop being updated.
+_MOUNTS = (
+    (write_walk.MOUNT, write_walk.WRITE_CALLS, write_walk.WRITE_UNEXERCISED),
+    (write_walk.ASSURANCE_MOUNT, write_walk.ASSURANCE_WRITE_CALLS, write_walk.ASSURANCE_WRITE_UNEXERCISED),
+)
 
-def test_the_register_is_reasoned() -> None:
-    for tool, reason in write_walk.WRITE_UNEXERCISED.items():
+
+@pytest.mark.parametrize(("mount", "calls", "register"), _MOUNTS)
+def test_the_register_is_reasoned(mount: str, calls: object, register: dict[str, str]) -> None:
+    for tool, reason in register.items():
         # A one-line reason is a reason nobody can act on; these have to survive being read.
-        assert len(reason) > 80, (tool, reason)
-    assert len(write_walk.ASSURANCE_WRITE_MOUNT_REASON) > 80
+        assert len(reason) > 80, (mount, tool, reason)
 
 
-def test_no_tool_is_both_invoked_and_registered_as_unexercised() -> None:
-    invoked = {call.tool for call in write_walk.WRITE_CALLS}
-    overlap = invoked & set(write_walk.WRITE_UNEXERCISED)
-    assert overlap == set(), sorted(overlap)
+@pytest.mark.parametrize(("mount", "calls", "register"), _MOUNTS)
+def test_no_tool_is_both_invoked_and_registered_as_unexercised(
+    mount: str, calls: tuple[write_walk.WriteCall, ...], register: dict[str, str]
+) -> None:
+    overlap = {call.tool for call in calls} & set(register)
+    assert overlap == set(), (mount, sorted(overlap))
 
 
-def test_every_call_can_build_its_arguments_in_declared_order() -> None:
+@pytest.mark.parametrize(("mount", "calls", "register"), _MOUNTS)
+def test_every_call_can_build_its_arguments_in_declared_order(
+    mount: str, calls: tuple[write_walk.WriteCall, ...], register: dict[str, str]
+) -> None:
     """Declaration order *is* the walk's dependency order, and this is where breaking it is noticed.
 
     Each recipe addresses ids an earlier call captured. Get the order wrong and the walk reports "needs
@@ -53,14 +69,38 @@ def test_every_call_can_build_its_arguments_in_declared_order() -> None:
     seconds to surface. Replaying the recipes against placeholder ids asks the same question in
     milliseconds, using the walk's own mechanism rather than a second description of it.
     """
-    context = write_walk.WriteContext(workspace=_placeholder_workspace())
-    for call in write_walk.WRITE_CALLS:
+    context = write_walk.WriteContext(
+        workspace=_placeholder_workspace(), fmea_basis_digest="<basis-digest>"
+    )
+    for call in calls:
         try:
             call.arguments(context)
         except KeyError as missing:
-            pytest.fail(f"{call.tool} addresses {missing}, which no earlier call captures")
+            pytest.fail(f"{mount}/{call.tool} addresses {missing}, which no earlier call captures")
+        except LookupError as missing:
+            pytest.fail(f"{mount}/{call.tool} needs a fixture role nothing authors: {missing}")
         for capture in call.captures:
             context.created[capture.key] = f"<{capture.key}>"
+
+
+def test_the_two_mounts_do_not_share_a_tool_name() -> None:
+    """One name on two mounts would make "which mount covered it" unanswerable from the report.
+
+    The counts in `test_the_walk_runs_green_against_a_fixture_backend` are sums across mounts, so a
+    shared name would make a tool invoked on one mount look like coverage of the other.
+    """
+    repository = {call.tool for call in write_walk.WRITE_CALLS}
+    assurance = {call.tool for call in write_walk.ASSURANCE_WRITE_CALLS}
+    assert repository & assurance == set(), sorted(repository & assurance)
+
+
+def test_the_assurance_mount_no_longer_carries_an_excuse() -> None:
+    """The register said what it was waiting for; the fixture store is what it was waiting for.
+
+    Asserted by absence, because an excuse left beside a walked mount is how a register starts lying —
+    a reader would take `assurance-write` for still dark while 22 tools were being invoked every run.
+    """
+    assert not hasattr(write_walk, "ASSURANCE_WRITE_MOUNT_REASON")
 
 
 def _placeholder_workspace() -> FixtureWorkspace:
@@ -77,6 +117,15 @@ def _placeholder_workspace() -> FixtureWorkspace:
             "connected_entities": ["<source-entity>", "<target-entity>"],
             "unreferenced_entity": ["<unreferenced-entity>"],
             "diagram": ["<diagram>"],
+            "application_diagram": ["<diagram>"],
+            # The assurance roles the confidential mount's recipes address. Present here so the
+            # order check covers that mount too; `_AssuranceRoles` raises `LookupError` naming the
+            # module that authors them when one is missing, which the caller turns into a failure.
+            "assurance_bare_node": ["<assurance-bare-node>"],
+            "assurance_failure_mode": ["<assurance-failure-mode>"],
+            "assurance_edge_conn_type": ["<assurance-conn-type>"],
+            "assurance_security_anchor": ["<assurance-anchor-entity>"],
+            "assurance_analysis": ["<assurance-analysis>"],
         },
     )
 
@@ -94,8 +143,14 @@ def test_the_walk_runs_green_against_a_fixture_backend() -> None:
         report = anyio.run(_walk, backend.base_url, backend.workspace)
 
     assert report.failures == [], report.failures
-    assert report.called == len(write_walk.WRITE_CALLS), (report.called, len(write_walk.WRITE_CALLS))
-    # Complete against the served surface: nothing the mount lists is missing from both buckets. The
+
+    # Both mounts, in one run against one backend — so the counts are sums, and
+    # `test_the_two_mounts_do_not_share_a_tool_name` is what keeps a sum from double-counting.
+    expected_calls = len(write_walk.WRITE_CALLS) + len(write_walk.ASSURANCE_WRITE_CALLS)
+    assert report.called == expected_calls, (report.called, expected_calls)
+    assert sorted(report.mounts) == sorted((write_walk.MOUNT, write_walk.ASSURANCE_MOUNT))
+
+    # Complete against the served surface: nothing either mount lists is missing from both buckets. The
     # walk reports that as a failure, so an empty `failures` above already proves it — this asserts the
     # count so a mount that stopped listing tools altogether cannot pass by serving nothing.
     #
@@ -103,7 +158,9 @@ def test_the_walk_runs_green_against_a_fixture_backend() -> None:
     # because the two take different paths through `enterprise_git_ops` and covering only the default
     # would report the tool covered on half its contract.
     covered = {call.tool for call in write_walk.WRITE_CALLS}
-    assert report.listed == len(covered) + len(write_walk.WRITE_UNEXERCISED), (report.listed, len(covered))
+    covered |= {call.tool for call in write_walk.ASSURANCE_WRITE_CALLS}
+    registered = len(write_walk.WRITE_UNEXERCISED) + len(write_walk.ASSURANCE_WRITE_UNEXERCISED)
+    assert report.listed == len(covered) + registered, (report.listed, len(covered))
 
 
 async def _walk(url: str, workspace: object) -> conformance.Report:

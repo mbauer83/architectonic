@@ -36,9 +36,13 @@ if str(REPO_ROOT) not in sys.path:
 from tools.mcp._answers import decoded, refusal, rows_of, text_of  # noqa: E402
 from tools.quality.fixture_workspace import FixtureWorkspace  # noqa: E402
 
-#: The mount this module walks. `assurance-write`'s 22 tools are its own slice — see
-#: :data:`ASSURANCE_WRITE_MOUNT_REASON`.
+#: The repository write mount.
 MOUNT = "write"
+
+#: The confidential store's write mount. Walked against the fixture *store* the fixture workspace now
+#: builds — see `fixture_workspace._build_assurance_store`. Until that existed there was nowhere to
+#: put these 22 tools' writes except the analyst's real store, which is why they were dark.
+ASSURANCE_MOUNT = "assurance-write"
 
 #: How long one tool gets to answer. Generous — a write reindexes, and this runs on a developer
 #: machine under load — and **bounded**, which is the point: the first run of this walk hung
@@ -65,6 +69,13 @@ class WriteContext:
 
     workspace: FixtureWorkspace
     created: dict[str, str] = field(default_factory=dict)
+    #: The basis digest the FMEA matrix currently derives for the fixture's failure mode.
+    #:
+    #: Read from the *read* mount before this walk starts, never composed here. A judgement carries the
+    #: picture of the model it was made against, `record_factor_assessment` refuses a blank digest, and
+    #: a wrong one is worse than a refusal — the judgement would be pinned to a basis that never
+    #: existed, so nothing could ever retire it, which is the whole purpose of pinning it.
+    fmea_basis_digest: str = ""
 
     @property
     def fixture_entity(self) -> str:
@@ -360,22 +371,201 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
 #: beside it. All 25 tools on this mount are now invoked over the transport.
 WRITE_UNEXERCISED: Mapping[str, str] = {}
 
-#: The other write mount, and why it is not here. Walking it against this fixture would author analyst
-#: content into the **real** confidential store: the store path is resolved from the source tree, not
-#: from the served workspace, so a fixture backend sees `<repo>/.arch-assurance/store.db`. That is the
-#: precondition, and it is a fixture *store* rather than a flag.
-ASSURANCE_WRITE_MOUNT_REASON = (
-    "`assurance-write`'s 22 tools need the confidential store unlocked, and a fixture backend resolves "
-    "that store from the source tree rather than from the workspace it serves — so a walk here would "
-    "write into the analyst's real store. Needs a fixture store, and the three hazards that slice has "
-    "to clear are written out in `tools/quality/rest_write_walk.py`'s `UNWALKED['assurance/*']`: a "
-    "teardown that would delete unscoped key material, a capability sentinel that reads a different "
-    "store from the manifest, and a credential path with four key-loss incidents behind it."
+#: The BOM the walk ingests. Small on purpose: what is being exercised is the transport and the
+#: anchoring, not the parser, which `tests/assurance/test_sbom_parser.py` covers at length.
+_WALK_BOM: Mapping[str, Any] = {
+    "bomFormat": "CycloneDX",
+    "specVersion": "1.5",
+    "serialNumber": "urn:uuid:mcp-walk-0000-0000-0000-000000000002",
+    "version": 1,
+    "metadata": {"component": {"bom-ref": "root", "name": "walk-app", "version": "1.0"}},
+    "components": [
+        {"bom-ref": "one", "name": "jinja2", "version": "3.1.2", "purl": "pkg:pypi/jinja2@3.1.2"},
+    ],
+    "dependencies": [{"ref": "root", "dependsOn": ["one"]}],
+}
+
+
+def _node_id(payload: object) -> str | None:
+    if isinstance(payload, Mapping):
+        identifier = payload.get("node_id")
+        return identifier if isinstance(identifier, str) else None
+    return None
+
+
+def _keyed(key: str) -> Callable[[object], str | None]:
+    """Read one top-level string out of an answer. The assurance envelope names its own ids."""
+    def _read(payload: object) -> str | None:
+        if isinstance(payload, Mapping):
+            value = payload.get(key)
+            return value if isinstance(value, str) else None
+        return None
+    return _read
+
+
+#: Every tool the `assurance-write` mount lists, in an order where each has what it needs.
+#:
+#: The confidential counterpart of `WRITE_CALLS`, and ordered for the same reason: nothing can edit
+#: what it has not created, a delete needs something it is allowed to destroy, and the deletes come
+#: last so the things they destroy were useful first. Three calls are worth reading twice:
+#:
+#: * `assurance_set_fmea_factor` takes its basis digest from the context, which read it off the *read*
+#:   mount before this walk began. Inventing one would file a judgement against a basis that never
+#:   existed.
+#: * `assurance_model_this` is a two-repository write and "never atomic" by its own comment: it creates
+#:   an architecture entity and then binds it. So it writes into the fixture *repository* as well, and
+#:   it is placed after everything that counts entities there.
+#: * `assurance_assign_provenance` re-asserts the analysis the node already records. That is the
+#:   idempotent case the tool documents, and the only one reachable here: the tool exists to repair
+#:   nodes authored before provenance was mandatory, and the write path cannot produce one.
+ASSURANCE_WRITE_CALLS: tuple[WriteCall, ...] = (
+    # ── an analysis of its own, so nothing below edits the fixture's ──────────────────────────────
+    WriteCall(
+        "assurance_create_analysis",
+        lambda _c: {"name": "MCP Walk STPA", "method": "STPA"},
+        captures=(Capture("analysis", _keyed("analysis_id")),),
+    ),
+    WriteCall(
+        "assurance_update_analysis",
+        lambda c: {"analysis_id": c.created["analysis"], "name": "MCP Walk STPA (edited)"},
+    ),
+    # ── filing: a group, then the analysis into it ────────────────────────────────────────────────
+    WriteCall(
+        "assurance_create_group",
+        lambda _c: {"name": "MCP Walk Group", "description": "Authored over the transport."},
+        captures=(Capture("group", _keyed("group_id")),),
+    ),
+    WriteCall(
+        "assurance_file_analysis",
+        lambda c: {"analysis_id": c.created["analysis"], "group_id": c.created["group"]},
+    ),
+    # ── a node, edited, and drawn into the analysis ───────────────────────────────────────────────
+    WriteCall(
+        "assurance_create_node",
+        lambda c: {
+            "analysis_id": c.created["analysis"],
+            "node_type": "hazard",
+            "name": "MCP Walk Hazard",
+            "content_text": "Authored through the assurance write mount's own transport.",
+        },
+        captures=(Capture("node", _node_id),),
+    ),
+    WriteCall(
+        "assurance_edit_node",
+        lambda c: {"node_id": c.created["node"], "name": "MCP Walk Hazard (edited)"},
+    ),
+    WriteCall(
+        "assurance_assign_provenance",
+        lambda c: {"node_id": c.created["node"], "analysis_id": c.created["analysis"]},
+    ),
+    # ── an edge to a node the fixture authored, then removed again ────────────────────────────────
+    # The connection type is the fixture's, which took it from the ontology rather than naming one.
+    WriteCall(
+        "assurance_add_edge",
+        lambda c: {
+            "source_id": c.created["node"],
+            "target_id": c.workspace.assurance.bare_node,
+            "conn_type": c.workspace.assurance.edge_conn_type,
+        },
+        captures=(Capture("edge", _keyed("edge_id")),),
+    ),
+    WriteCall("assurance_delete_edge", lambda c: {"edge_id": c.created["edge"]}),
+    # ── membership: one method borrowing another's node, then giving it back ──────────────────────
+    WriteCall(
+        "assurance_add_analysis_member",
+        lambda c: {
+            "analysis_id": c.created["analysis"],
+            "node_id": c.workspace.assurance.bare_node,
+        },
+    ),
+    WriteCall(
+        "assurance_remove_analysis_member",
+        lambda c: {
+            "analysis_id": c.created["analysis"],
+            "node_id": c.workspace.assurance.bare_node,
+        },
+    ),
+    # ── the one-way reference into the architecture repository ────────────────────────────────────
+    WriteCall(
+        "assurance_register_arch_ref",
+        lambda c: {
+            "assurance_node_id": c.created["node"],
+            "arch_artifact_id": c.workspace.assurance.security_anchor,
+            "ref_type": "evidenced-by-artifact",
+        },
+    ),
+    # ── a judgement, pinned to the basis the read mount reported ──────────────────────────────────
+    WriteCall(
+        "assurance_set_fmea_factor",
+        lambda c: {
+            "node_id": c.workspace.assurance.failure_mode,
+            "factor": "detectability",
+            "value": "moderate",
+            "basis_digest": c.fmea_basis_digest,
+            "justification": "Recorded by the MCP write walk against the digest the matrix reported.",
+            "author": "mcp-write-walk",
+        },
+    ),
+    # ── security signals: ingested, then the snapshot removed ─────────────────────────────────────
+    WriteCall(
+        "assurance_ingest_security_signals",
+        lambda c: {
+            "anchor_entity_id": c.workspace.assurance.security_anchor,
+            "bom": dict(_WALK_BOM),
+            "request_id": "mcp-write-walk-1",
+            "source": "mcp-write-walk",
+        },
+        captures=(Capture("snapshot", _keyed("snapshot_id")),),
+    ),
+    WriteCall(
+        "assurance_delete_security_snapshot",
+        lambda c: {"snapshot_id": c.created["snapshot"]},
+    ),
+    # ── the reconciliation and preflight reads that live on a write mount ─────────────────────────
+    WriteCall(
+        "assurance_reconcile_aibom",
+        lambda _c: {
+            "discovered_components": [{"name": "jinja2", "version": "3.1.2"}],
+            "modeled_components": [],
+        },
+        mutates=False,
+    ),
+    WriteCall(
+        "assurance_promotion_preflight",
+        lambda c: {"node_ids": [c.created["node"]]},
+        mutates=False,
+    ),
+    # ── model-and-bind: writes an entity into the repository, then binds it ───────────────────────
+    WriteCall(
+        "assurance_model_this",
+        lambda c: {
+            "assurance_node_id": c.created["node"],
+            "suggested_arch_type": "application-component",
+            "suggested_name": "MCP Walk Bound Component",
+        },
+    ),
+    # ── a baseline over what the walk has built ───────────────────────────────────────────────────
+    WriteCall(
+        "assurance_seal_baseline",
+        lambda c: {"analysis_id": c.created["analysis"], "notes": "Sealed by the MCP write walk."},
+    ),
+    # ── the deletes, last, each destroying something this walk made ───────────────────────────────
+    WriteCall("assurance_delete_node", lambda c: {"node_id": c.created["node"]}),
+    WriteCall("assurance_delete_analysis", lambda c: {"analysis_id": c.created["analysis"]}),
+    WriteCall("assurance_delete_group", lambda c: {"group_id": c.created["group"]}),
 )
+
+#: Nothing on the assurance write mount is registered as unexercised. Kept as an empty mapping rather
+#: than removed, because the listing check asks every mount the same question and an absent registry
+#: would make "no exemptions" indistinguishable from "no check".
+ASSURANCE_WRITE_UNEXERCISED: Mapping[str, str] = {}
 
 
 async def walk(
-    session: Any, context: WriteContext, declared: Mapping[str, set[str]]
+    session: Any,
+    context: WriteContext,
+    declared: Mapping[str, set[str]],
+    calls: tuple[WriteCall, ...] = WRITE_CALLS,
 ) -> tuple[list[str], list[str]]:
     """Invoke every declared call in order. Returns (tools that answered as declared, failures).
 
@@ -383,11 +573,16 @@ async def walk(
     not have is reported as *this file* being stale rather than as a broken tool. The write mount
     rejects unknown parameters outright — `_reject_unknown_parameters`, deliberately — so without the
     distinction every stale recipe would read as a regression in the product.
+
+    ``calls`` is which mount's recipes to run. One engine for both write mounts rather than two: what
+    an ordered, stateful walk has to get right — naming a call before invoking it, telling a stale
+    recipe from a broken tool, refusing a mutation that reports a refusal — is the same work on either,
+    and the second copy of it is the one that would quietly stop doing half of that.
     """
     invoked: list[str] = []
     failures: list[str] = []
 
-    for call in WRITE_CALLS:
+    for call in calls:
         try:
             arguments = dict(call.arguments(context))
         except KeyError as missing:

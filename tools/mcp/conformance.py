@@ -22,8 +22,9 @@ from __future__ import annotations
 
 import argparse
 import sys
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass, field
+from datetime import timedelta
 from pathlib import Path
 from typing import Any
 
@@ -39,9 +40,9 @@ from tools.mcp._answers import text_of as _text_of  # noqa: E402
 DEFAULT_URL = "http://localhost:8000"
 
 #: Mounts this walk covers, and how. The read mounts are walked against whatever backend `--url`
-#: names, because a read cannot damage it. The `write` mount is walked only under `--fixture`, against
-#: a repository built to be destroyed — see `write_walk`. `assurance-write` is still dark, and
-#: `write_walk.ASSURANCE_WRITE_MOUNT_REASON` says what it is waiting for.
+#: names, because a read cannot damage it. Both write mounts are walked only under `--fixture`:
+#: `write` against a repository built to be destroyed, `assurance-write` against a confidential store
+#: built the same way — see `write_walk` and `fixture_workspace._build_assurance_store`.
 READ_MOUNTS = ("read", "assurance-read")
 WRITE_MOUNTS = ("write", "assurance-write")
 
@@ -276,22 +277,49 @@ async def _walk_reads(url: str, report: Report) -> None:
 
 
 async def walk_writes(url: str, workspace: Any, report: Report) -> None:
-    """Invoke the `write` mount's tools against the fixture backend serving ``workspace``.
+    """Invoke both write mounts' tools against the fixture backend serving ``workspace``.
 
-    Kept here rather than in `write_walk` so both halves share one listing check: the question "is
+    Kept here rather than in `write_walk` so every mount shares one listing check: the question "is
     every tool the mount lists either invoked or registered with a reason" is the same question, and
     asking it twice in two places is how the two answers drift.
+
+    The mounts are walked in sequence against one backend. `assurance-write` goes second because its
+    `assurance_model_this` writes an entity into the repository the first mount has been counting.
     """
+    digest = await _fmea_basis_digest(url, workspace)
+    for mount, calls, unexercised, context in (
+        (
+            write_walk.MOUNT,
+            write_walk.WRITE_CALLS,
+            write_walk.WRITE_UNEXERCISED,
+            write_walk.WriteContext(workspace=workspace),
+        ),
+        (
+            write_walk.ASSURANCE_MOUNT,
+            write_walk.ASSURANCE_WRITE_CALLS,
+            write_walk.ASSURANCE_WRITE_UNEXERCISED,
+            write_walk.WriteContext(workspace=workspace, fmea_basis_digest=digest),
+        ),
+    ):
+        await _walk_one_write_mount(url, report, mount, calls, unexercised, context)
+
+
+async def _walk_one_write_mount(
+    url: str,
+    report: Report,
+    mount: str,
+    calls: tuple[Any, ...],
+    unexercised: Any,
+    context: Any,
+) -> None:
+    """List one write mount, invoke its declared calls, and account for every tool it advertises."""
     from mcp import ClientSession
     from mcp.client.streamable_http import streamable_http_client
 
-    by_name = {call.tool: call for call in write_walk.WRITE_CALLS}
-    report.mounts.append(write_walk.MOUNT)
-    report.notes.append(
-        f"not invoked, registered with a reason: {len(write_walk.WRITE_UNEXERCISED)}"
-    )
-    report.notes.append(f"still dark: assurance-write — {write_walk.ASSURANCE_WRITE_MOUNT_REASON}")
-    async with streamable_http_client(f"{url}/mcp/{write_walk.MOUNT}") as (reader, writer, _):
+    by_name = {call.tool: call for call in calls}
+    report.mounts.append(mount)
+    report.notes.append(f"{mount}: not invoked, registered with a reason: {len(unexercised)}")
+    async with streamable_http_client(f"{url}/mcp/{mount}") as (reader, writer, _):
         async with ClientSession(reader, writer) as session:
             await session.initialize()
             tools = (await session.list_tools()).tools
@@ -300,32 +328,91 @@ async def walk_writes(url: str, workspace: Any, report: Report) -> None:
             uncovered = [
                 tool.name
                 for tool in tools
-                if tool.name not in by_name and tool.name not in write_walk.WRITE_UNEXERCISED
+                if tool.name not in by_name and tool.name not in unexercised
             ]
             if uncovered:
                 report.failures.append(
-                    f"{write_walk.MOUNT}: these tools are neither invoked nor registered as "
+                    f"{mount}: these tools are neither invoked nor registered as "
                     f"unexercised — add a call, or register one with a reason: {sorted(uncovered)}"
                 )
 
             declared = {
                 tool.name: set((tool.inputSchema or {}).get("properties") or {}) for tool in tools
             }
-            context = write_walk.WriteContext(workspace=workspace)
-            invoked, failures = await write_walk.walk(session, context, declared)
+            invoked, failures = await write_walk.walk(session, context, declared, calls)
             report.called += len(invoked)
-            report.failures.extend(f"{write_walk.MOUNT}/{failure}" for failure in failures)
+            report.failures.extend(f"{mount}/{failure}" for failure in failures)
 
-            stale = sorted(set(write_walk.WRITE_UNEXERCISED) & set(by_name))
+            stale = sorted(set(unexercised) & set(by_name))
             if stale:
                 report.failures.append(
-                    f"{write_walk.MOUNT}: registered as unexercised, but a call exists: {stale}"
+                    f"{mount}: registered as unexercised, but a call exists: {stale}"
                 )
             missing = sorted(set(by_name) - set(declared))
             if missing:
                 report.failures.append(
-                    f"{write_walk.MOUNT}: a call names a tool the mount does not list: {missing}"
+                    f"{mount}: a call names a tool the mount does not list: {missing}"
                 )
+
+
+async def _fmea_basis_digest(url: str, workspace: Any) -> str:
+    """Ask the read mount what basis the fixture's failure mode currently derives.
+
+    A read before a write, across two mounts, because that is the product's own workflow: a judgement
+    is pinned to the picture of the model it was made against, and the only honest source of that
+    picture is the matrix. Composing a digest here would file a judgement against a basis that never
+    existed, and `record_factor_assessment` would rightly refuse it — the refusal arriving inside a
+    200, which is the shape this whole exercise keeps finding.
+
+    Returns "" when the matrix cannot answer, so the write step fails naming `basis_digest` rather than
+    this function failing the whole walk before it starts.
+    """
+    from mcp import ClientSession
+    from mcp.client.streamable_http import streamable_http_client
+
+    from tools.mcp._answers import decoded, text_of
+
+    failure_mode = workspace.assurance.failure_mode
+    async with streamable_http_client(f"{url}/mcp/assurance-read") as (reader, writer, _):
+        async with ClientSession(reader, writer) as session:
+            await session.initialize()
+            result = await session.call_tool(
+                "assurance_fmea_matrix",
+                {"analysis_id": workspace.assurance.analysis},
+                read_timeout_seconds=timedelta(seconds=write_walk.CALL_TIMEOUT_SECONDS),
+            )
+    # YAML, not JSON: `decoded` says why, and it takes the text rather than the result object.
+    return _digest_for(decoded(text_of(result)), failure_mode)
+
+
+def _digest_for(payload: object, node_id: str) -> str:
+    """The `detectability` basis digest for one failure mode, from a matrix answer.
+
+    Searched for rather than indexed: the matrix is a grid whose shape is the analysis's, so the row
+    holding this node is wherever the model puts it, and a positional read would be an assertion about
+    content this walk does not own.
+    """
+    for cell in _cells(payload):
+        if str(cell.get("node_id") or "") != node_id:
+            continue
+        digests = cell.get("basis_digests")
+        if isinstance(digests, Mapping):
+            value = digests.get("detectability")
+            if isinstance(value, str) and value:
+                return value
+    return ""
+
+
+def _cells(payload: object) -> Iterator[Mapping[str, Any]]:
+    """Every mapping in a matrix answer that looks like a cell, however the grid is nested."""
+    if isinstance(payload, Mapping):
+        if "node_id" in payload and "basis_digests" in payload:
+            yield payload
+        for value in payload.values():
+            yield from _cells(value)
+    elif isinstance(payload, list):
+        for item in payload:
+            yield from _cells(item)
 
 
 def _print_report(report: Report) -> int:
