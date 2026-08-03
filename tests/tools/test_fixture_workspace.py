@@ -140,6 +140,115 @@ def test_a_second_build_into_one_root_is_refused_rather_than_duplicating(tmp_pat
         build_fixture_workspace(tmp_path)
 
 
+class TestTheConfidentialStore:
+    """The store is built by the product's CLI, inside the workspace, without touching the developer's.
+
+    Four key-loss incidents are on record, the last of which destroyed the live store on 2026-07-31 by
+    copying an unscoped secret onto a scoped account. So the assertions here are about *where* things
+    landed as much as about whether they work: a fixture store that works while writing its key to the
+    developer's vault would pass every walk and be the fifth incident.
+    """
+
+    def test_the_store_and_its_key_are_inside_the_workspace(self, workspace: FixtureWorkspace) -> None:
+        from tools.quality.fixture_workspace import assurance_db_path
+
+        store = assurance_db_path(workspace.root)
+        assert store.is_file(), store
+
+        # The key, in the fixture's own Fernet vault. Non-empty is the load-bearing half: an empty
+        # directory here means `_get_backend` chose something else and the key went somewhere this test
+        # cannot see, which is precisely the failure it exists to catch.
+        vault = list((workspace.root / "credentials").iterdir())
+        assert vault, "the credential directory is empty, so the key was written outside the fixture"
+
+    def test_its_settings_document_is_its_own_and_says_persistent(
+        self, workspace: FixtureWorkspace
+    ) -> None:
+        """The precondition every assurance walk step depends on, asserted at its source.
+
+        `activation_policy` is read from the settings document and from nowhere else, and its default is
+        `manual` — under which a newly started process opens nothing and every assurance route answers
+        423. CI sets this by mutating the repository's committed `config/settings.yaml`; a fixture must
+        not, so it ships its own document and points `ARCH_SETTINGS_PATH` at it.
+        """
+        import yaml
+
+        from tools.quality.fixture_workspace import assurance_settings_document
+
+        document = assurance_settings_document(workspace.root)
+        assert document.is_relative_to(workspace.root), document
+
+        settings = yaml.safe_load(document.read_text(encoding="utf-8"))
+        assert settings["storage"]["assurance"]["activation_policy"] == "persistent", settings
+        assert settings["storage"]["assurance"]["store_backend"] == "sqlcipher", settings
+
+    def test_it_declares_a_port_nothing_serves(self, workspace: FixtureWorkspace) -> None:
+        """Why the settings document carries a port at all, kept as a named claim.
+
+        `arch-assurance unlock` ends with a best-effort POST of `{"authorize": true}` to
+        `http://localhost:{backend_port()}/api/assurance/reload`, and `backend_port()` falls back to
+        8000 — the developer's backend. Building a fixture store would then authorize a foreign process
+        as a side effect. Anything but 8000 would do; port 1 is privileged, so "connection refused" is
+        guaranteed rather than merely likely.
+        """
+        import yaml
+
+        from tools.quality.fixture_workspace import assurance_settings_document
+
+        settings = yaml.safe_load(
+            assurance_settings_document(workspace.root).read_text(encoding="utf-8")
+        )
+        assert settings["backend"]["port"] != 8000, settings
+
+    def test_the_child_environment_removes_the_suites_forbid_flag(
+        self, workspace: FixtureWorkspace
+    ) -> None:
+        """The seam that lets any of this run under pytest, and the reason it is a child at all.
+
+        `tests/conftest.py` sets `ARCH_ASSURANCE_FORBID_REAL_CREDENTIAL_BACKEND` for the whole session
+        and documents it as never unset, because it has already been bypassed three times by writers it
+        could not see. `_get_backend` checks it before the master-password branch and *raises* — so
+        `init_store` called in this process fails, and clearing the flag process-wide would be the
+        fourth bypass. Removing it for a child that already has a redirected vault is neither.
+        """
+        import os
+
+        from src.infrastructure.assurance._credential_store import _FORBID_REAL_BACKEND_ENV
+        from tools.quality.fixture_workspace import assurance_child_env
+
+        assert os.environ.get(_FORBID_REAL_BACKEND_ENV), (
+            "the suite-wide forbid flag is unset, so this test proves nothing about removing it"
+        )
+
+        env = assurance_child_env(workspace.root)
+        assert _FORBID_REAL_BACKEND_ENV not in env, sorted(env)
+        assert env["ARCH_ASSURANCE_MASTER_PASSWORD"], env
+        assert Path(env["ARCH_ASSURANCE_CREDENTIALS_DIR"]).is_relative_to(workspace.root)
+
+    def test_every_assurance_seam_has_one_definition(self, workspace: FixtureWorkspace) -> None:
+        """The builder's environment and the served backend's are the same environment.
+
+        Not a style point. The activation gate the builder writes is found again only if the server
+        names the same credential *directory*, and a second spelling of it fails closed and silently:
+        the store would simply report itself locked, with nothing anywhere saying why. So the backend's
+        `_child_env` composes this function rather than restating its four variables.
+        """
+        from tools.quality.fixture_backend import _child_env
+        from tools.quality.fixture_workspace import assurance_child_env
+
+        shared = assurance_child_env(workspace.root)
+        served = _child_env(workspace)
+
+        for key in (
+            "ARCH_SETTINGS_PATH",
+            "ARCH_ASSURANCE_DB_PATH",
+            "ARCH_ASSURANCE_CREDENTIALS_DIR",
+            "ARCH_ASSURANCE_MASTER_PASSWORD",
+            "ARCH_BACKEND_STATE_DIR",
+        ):
+            assert served[key] == shared[key], key
+
+
 def _entity_text(workspace: FixtureWorkspace, identifier: str) -> str:
     matches = [p for p in workspace.engagement_root.rglob(f"{identifier}.md")]
     assert matches, f"no file for {identifier}"

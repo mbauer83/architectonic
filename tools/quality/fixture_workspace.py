@@ -44,6 +44,7 @@ from __future__ import annotations
 import argparse
 import os
 import sys
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -58,6 +59,21 @@ from src.infrastructure.workspace.engagement_repo_template import (  # noqa: E40
 
 #: The engagement whose repository the fixture is. Named so a stray backend pointed at it is obvious.
 ENGAGEMENT = "ENG-FIXTURE"
+
+#: The throwaway secret that opens the fixture's credential vault. Not a secret in any real sense: the
+#: vault it encrypts lives inside a temporary directory and is deleted with it. It exists so
+#: `_get_backend` takes its documented headless branch instead of reaching for an OS keychain.
+FIXTURE_MASTER_PASSWORD = "fixture-backend-throwaway"
+
+#: The port the fixture's settings document declares, chosen so that nothing serves it.
+#:
+#: `arch-assurance unlock` ends with a best-effort POST of `{"authorize": true}` to
+#: `http://localhost:{backend_port()}/api/assurance/reload`, and `backend_port()` falls back to
+#: **8000** — the developer's own backend. A fixture that let that fall through would silently
+#: authorize a foreign process while setting up its own store. Port 1 is privileged, so an ordinary
+#: process cannot be listening there: "connection refused" is guaranteed rather than merely likely,
+#: and the notification stays inside the fixture where there is nothing yet to notify.
+_UNSERVED_PORT = 1
 
 #: Every section the shipped `adr` schema requires. Written out rather than derived from
 #: `BASE_DOCUMENT_SCHEMAS`, so a schema that gains a required section fails generation loudly here
@@ -120,6 +136,134 @@ def _roots(root: Path) -> tuple[Path, Path]:
     engagement = root / "engagements" / ENGAGEMENT / "architecture-repository"
     enterprise = root / "enterprise-repository"
     return engagement, enterprise
+
+
+def state_dir(root: Path) -> Path:
+    """Where a backend serving this workspace registers itself.
+
+    Defined here rather than in `fixture_backend`, which is where it was first needed, because the
+    *store builder* needs the same answer: an `arch-assurance` child that resolved its state directory
+    from cwd would find the developer's `.arch/backend.pid` and address that process.
+    `fixture_backend.state_dir_for` delegates here, so there is one definition of it.
+    """
+    return root / ".arch"
+
+
+def assurance_settings_document(root: Path) -> Path:
+    """The fixture's own settings document — never the repository's committed `config/settings.yaml`.
+
+    `storage.assurance.activation_policy` is read from the settings document and from nowhere else,
+    and CI sets it by mutating the committed file. A fixture must not: that file is shared, and its
+    prose comments do not survive a rewrite.
+    """
+    return root / "config" / "settings.yaml"
+
+
+def assurance_db_path(root: Path) -> Path:
+    return root / ".arch-assurance" / "store.db"
+
+
+def assurance_child_env(root: Path, base: Mapping[str, str] | None = None) -> dict[str, str]:
+    """`base` (default `os.environ`) with every assurance seam pointed inside `root`.
+
+    One definition and two kinds of caller — the `arch-assurance` children that build the store, and
+    the backend child that serves it. They have to agree on all four: the credential *directory* is
+    what makes the activation gate the builder writes the same gate the server reads, and two
+    spellings of it would produce a store the server cannot open for a reason neither side reports.
+
+    The forbid flag is **removed rather than overridden**. `tests/conftest.py` sets
+    `ARCH_ASSURANCE_FORBID_REAL_CREDENTIAL_BACKEND` for the whole session and documents it as never
+    unset; `_get_backend` checks it *before* the master-password branch and raises, so a child that
+    inherited it would have no credential store at all rather than a throwaway one. Removing it here
+    weakens nothing: this is a child's environment, and what the flag protects is the *developer's*
+    keychain, which the two variables below have already moved out of reach.
+    """
+    from src.infrastructure.assurance._credential_store import _FORBID_REAL_BACKEND_ENV
+
+    credentials = root / "credentials"
+    credentials.mkdir(parents=True, exist_ok=True)
+    env = dict(os.environ if base is None else base)
+    env.pop(_FORBID_REAL_BACKEND_ENV, None)
+    env.update({
+        "ARCH_SETTINGS_PATH": str(assurance_settings_document(root)),
+        "ARCH_ASSURANCE_DB_PATH": str(assurance_db_path(root)),
+        "ARCH_ASSURANCE_CREDENTIALS_DIR": str(credentials),
+        "ARCH_ASSURANCE_MASTER_PASSWORD": FIXTURE_MASTER_PASSWORD,
+        "ARCH_BACKEND_STATE_DIR": str(state_dir(root)),
+    })
+    return env
+
+
+def _arch_assurance(root: Path, *args: str) -> str:
+    """One `arch-assurance` command against the fixture, in a child process, loud on failure.
+
+    **A child, not this process.** `init_store` writes a key, and `tests/conftest.py` forbids
+    selecting a real credential backend for the whole session — so calling it here raises under
+    pytest, and clearing that flag in a module this widely imported would be the fourth bypass of a
+    guard whose own comment counts the first three. A child gets the flag removed and a throwaway
+    vault instead, which is the same protection arrived at honestly.
+
+    **The product's own CLI**, rather than reaching into `lifecycle` and `_credential_accounts`. With
+    `ARCH_SETTINGS_PATH` and `--db-path` supplied it resolves the *fixture's* paths throughout, so
+    this is the adopter's real path rather than a re-implementation of it — and the settings document
+    ends up written by the writer that owns its schema.
+
+    Invoked as a module rather than by console-script name: `arch-assurance` is only on `PATH` inside
+    `uv run`, and a walk started any other way would fail on a missing executable rather than on
+    anything about the product.
+    """
+    import subprocess
+
+    result = subprocess.run(  # noqa: S603 - fixed argv, no shell
+        [sys.executable, "-m", "src.infrastructure.cli.arch_assurance", *args],
+        capture_output=True,
+        text=True,
+        check=False,
+        cwd=str(REPO_ROOT),
+        env=assurance_child_env(root),
+    )
+    if result.returncode != 0:
+        detail = result.stderr.strip() or result.stdout.strip()
+        raise RuntimeError(f"fixture: arch-assurance {' '.join(args)} failed: {detail}")
+    return result.stdout
+
+
+def _build_assurance_store(root: Path) -> None:
+    """Create the fixture's confidential assurance store and activate it for an unattended process.
+
+    Four steps, in this order, each of which the next one needs:
+
+    1. the settings document, so every child below resolves the fixture's configuration and not the
+       repository's — and so `unlock`'s notification cannot address the developer's backend
+       (`_UNSERVED_PORT`);
+    2. `init`, which creates the encrypted store and writes its key to the scoped account;
+    3. `use-backend … --activation-policy persistent`, because `init` writes the backends but leaves
+       the policy at its `manual` default, under which a newly started process opens nothing and every
+       assurance route answers **423**;
+    4. `unlock`, which writes the `setup-confirmed` activation gate. Still required under
+       `persistent`: that policy skips the *per-process* authorization check, and the gate is read
+       immediately afterwards — `store_factory` is fail-closed on an absent confirmation.
+
+    All of it before any backend starts. `_inject_capability_sentinels` runs at bootstrap, so a store
+    created after the server booted is a store the server's capability sentinels do not know about.
+    """
+    import yaml
+
+    settings = assurance_settings_document(root)
+    settings.parent.mkdir(parents=True, exist_ok=True)
+    document = yaml.dump({"backend": {"port": _UNSERVED_PORT}}, default_flow_style=False)
+    # `yaml.dump` returns a `str` when given no stream, but its stub says `str | bytes | None` — and
+    # writing an empty document here would fail *open*: `backend_port()` would go back to its 8000
+    # default, which is the developer's backend. Checked rather than coerced with `or ""`.
+    if not isinstance(document, str):
+        raise RuntimeError(f"fixture: yaml.dump produced {type(document).__name__}, not a document")
+    settings.write_text(document, encoding="utf-8")
+
+    db_path = assurance_db_path(root)
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    _arch_assurance(root, "--db-path", str(db_path), "init")
+    _arch_assurance(root, "use-backend", "sqlcipher", "--activation-policy", "persistent")
+    _arch_assurance(root, "--db-path", str(db_path), "unlock")
 
 
 def _git(repo: Path, *args: str) -> None:
@@ -312,6 +456,11 @@ def build_fixture_workspace(root: Path) -> FixtureWorkspace:
     # against — so a diagram known only by its specialised role would make that check fail on a
     # diagram the fixture itself authored.
     record("diagram", annotated[0])
+
+    # ── The confidential store, before git and before any backend ─────────────────────────────────
+    # Before git so its key and vault are not committed into the fixture's own history; before any
+    # backend because the capability sentinels are injected at bootstrap.
+    _build_assurance_store(root)
 
     # ── Git, last: the content has to exist before there is anything to commit ────────────────────
     _init_git(engagement, root / "remotes" / "engagement.git")

@@ -160,13 +160,55 @@ class TestItKeepsOutOfTheDevelopersBackendState:
         assert not credentials.is_relative_to(Path.home() / ".config"), credentials
         assert env["ARCH_ASSURANCE_MASTER_PASSWORD"], env
 
-        # And it does not add the forbid flag, which is the one combination that cannot work: the forbid
-        # check precedes the password branch in `_get_backend` and raises, so a child given both has no
-        # credential store at all. Asserted over what this module *adds* rather than over the child's
-        # whole environment, because the suite sets that flag for every test and inheriting it is not
-        # this module's decision.
-        added = {key for key in env if os.environ.get(key) != env[key]}
-        assert "ARCH_ASSURANCE_FORBID_REAL_CREDENTIAL_BACKEND" not in added, sorted(added)
+        # And the forbid flag is *absent*, which is the one combination that cannot work: the check
+        # precedes the password branch in `_get_backend` and raises, so a child carrying both has no
+        # credential store at all rather than a throwaway one.
+        #
+        # Absent, not merely un-added. This suite sets the flag for every test and children inherit the
+        # environment, so `assurance_child_env` now pops it — which is what lets the store builder run
+        # under pytest at all. Asserted against the parent actually having it set, or the interesting
+        # half of the claim would be vacuous.
+        assert os.environ.get("ARCH_ASSURANCE_FORBID_REAL_CREDENTIAL_BACKEND"), (
+            "the suite-wide forbid flag is unset, so this test proves nothing about removing it"
+        )
+        assert "ARCH_ASSURANCE_FORBID_REAL_CREDENTIAL_BACKEND" not in env, sorted(env)
+
+    def test_its_assurance_store_is_the_fixture_one_and_it_is_open(
+        self, backend: FixtureBackend
+    ) -> None:
+        """The store half of "served content is generated content", and it needs a discriminator.
+
+        `unlocked: true` alone would be satisfied by the *developer's* store, which is unlocked on this
+        machine — so the assertion that distinguishes them is the content. A freshly built fixture store
+        holds nothing; the dogfood store holds tens of nodes across several analyses. An empty store that
+        reports itself configured and unlocked is therefore the only answer that can only mean the
+        fixture's.
+
+        Both halves matter. Locked-but-fixture would fail every assurance walk step with a 423, and
+        unlocked-but-live would let one author into the analyst's evidence.
+        """
+        status = _get(backend, "/api/assurance/status")
+        assert status["configured"] is True, status
+        assert status["unlocked"] is True, status
+
+        stats = _get(backend, "/api/assurance/stats")
+        assert stats["node_count"] == 0, stats
+        assert stats["edge_count"] == 0, stats
+
+    def test_the_store_it_serves_is_not_the_developers(self, backend: FixtureBackend) -> None:
+        """Stated as a path claim as well, because the content claim above is only circumstantial.
+
+        The manifest resolves `assurance_db_path` from `ARCH_ASSURANCE_DB_PATH` with `env` provenance,
+        so what the child resolves is what the fixture set. Asserting it here keeps a future default
+        change from quietly moving the served store back into the source tree while the emptiness
+        assertion above still passed — which it would, on a store nobody had written to yet.
+        """
+        from tools.quality.fixture_backend import _child_env
+
+        served = Path(_child_env(backend.workspace)["ARCH_ASSURANCE_DB_PATH"])
+
+        assert served.is_relative_to(backend.workspace.root), served
+        assert not served.is_relative_to(REPO_ROOT), served
 
     def test_the_variable_it_passes_is_the_one_the_state_reader_obeys(
         self, backend: FixtureBackend, monkeypatch: pytest.MonkeyPatch

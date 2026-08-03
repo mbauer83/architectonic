@@ -54,6 +54,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+from tools.quality import fixture_workspace  # noqa: E402
 from tools.quality.fixture_workspace import FixtureWorkspace, build_fixture_workspace  # noqa: E402
 
 #: How long to wait for the process to answer. Generous: the first request builds the index, and this
@@ -139,8 +140,12 @@ def _stop(process: subprocess.Popen[bytes]) -> None:
 
 
 def state_dir_for(workspace: FixtureWorkspace) -> Path:
-    """Where the fixture backend registers itself. Inside its own workspace, never the developer's."""
-    return workspace.root / ".arch"
+    """Where the fixture backend registers itself. Inside its own workspace, never the developer's.
+
+    Delegates, because the store builder resolves the same directory for the same reason and the two
+    must agree — see `fixture_workspace.state_dir`.
+    """
+    return fixture_workspace.state_dir(workspace.root)
 
 
 def _child_env(workspace: FixtureWorkspace) -> dict[str, str]:
@@ -160,33 +165,19 @@ def _child_env(workspace: FixtureWorkspace) -> dict[str, str]:
     file with its own pid and port for the length of the walk, then deleted it on the way out.
 
     The seam was already there: `backend_state._state_dir` checks this variable before anything else.
+
+    The assurance seams — settings document, store path, credential directory, master password, and the
+    state directory above — come from `fixture_workspace.assurance_child_env`, which is also what the
+    `arch-assurance` children that *build* the store carry. Restating any of them here is how the
+    server ends up unable to open a store the builder created: the credential directory is hashed into
+    nothing, but the activation gate the builder writes is only found again if both sides name the same
+    vault, and a second spelling fails closed and silently.
     """
-    credentials = workspace.root / "credentials"
-    credentials.mkdir(parents=True, exist_ok=True)
-    return {
+    return fixture_workspace.assurance_child_env(workspace.root, {
         **os.environ,
         "ARCH_REPO_ROOT": str(workspace.engagement_root),
         "ARCH_ENTERPRISE_ROOT": str(workspace.enterprise_root),
-        "ARCH_BACKEND_STATE_DIR": str(state_dir_for(workspace)),
-        # A throwaway Fernet vault inside the workspace, rather than the developer's OS credential
-        # store. `tests/conftest.py` sets both of these for the whole suite and says why — "subprocesses
-        # inherit the env, and any test that deliberately replaces a child's env must set both
-        # variables" — so a fixture backend started *under pytest* was already hermetic. Started by hand
-        # it was not: neither variable is set, so `_get_backend` selected Windows DPAPI and the served
-        # `/api/assurance/status` read the developer's real credential accounts on every call.
-        #
-        # Harmless today, because nothing in the walks writes a credential and `_credential_accounts.read`
-        # no longer writes on the read path. Not harmless the moment there is a fixture *store*: that
-        # slice calls `init_store`, which writes a key, and `clear`, which deletes both the scoped and the
-        # unscoped account. With these two set, all of that lands in a directory the workspace owns.
-        #
-        # A master password rather than `ARCH_ASSURANCE_FORBID_REAL_CREDENTIAL_BACKEND`: the forbid check
-        # precedes the password branch in `_get_backend` and *raises*, so forbidding gives no credential
-        # store at all. The password path is the documented headless escape hatch, and it gives a real
-        # one that happens to be disposable.
-        "ARCH_ASSURANCE_CREDENTIALS_DIR": str(credentials),
-        "ARCH_ASSURANCE_MASTER_PASSWORD": "fixture-backend-throwaway",
-    }
+    })
 
 
 @contextlib.contextmanager
