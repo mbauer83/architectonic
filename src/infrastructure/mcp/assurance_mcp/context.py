@@ -39,8 +39,25 @@ def is_above_ceiling(tlp: str, ceiling: str) -> bool:
     return tlp_level(tlp) > tlp_level(ceiling)
 
 
-def _workspace_root() -> Path:
+def assurance_workspace_root() -> Path:
+    """The workspace the assurance bundle is keyed on, and which locates the non-SQLCipher backends.
+
+    Still a source-tree literal, and deliberately not switched to `manifest.workspace_root` in the same
+    breath as the store path was. It decides two things a store cannot be moved away from safely: where a
+    `private-git` backend's repository lives, and — through `_credential_scope_path` — the **hash the
+    credential account name is derived from**. Repointing it would rename the account holding an existing
+    key, which is the key-loss shape, so it is a migration rather than a fix.
+
+    Public, because the capability sentinel must resolve the *same* root the bundle does. It did agree by
+    coincidence — both derived a source tree — and the sentinel's move to the manifest would have broken
+    that for a deployment with both a deployment root and a private-git backend. One function is how they
+    agree on purpose instead.
+    """
     return Path(__file__).resolve().parents[4]
+
+
+def _workspace_root() -> Path:
+    return assurance_workspace_root()
 
 
 def _manifest():  # type: ignore[no-untyped-def]

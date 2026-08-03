@@ -84,6 +84,8 @@ def test_without_an_override_it_resolves_where_the_literal_used_to_point(
     db_path, workspace = _resolved()
 
     assert db_path == SOURCE_TREE_STORE, db_path
+    # From `assurance_workspace_root()`, which the bundle uses too — not from the manifest. See
+    # `test_the_capability_and_the_bundle_resolve_one_workspace_root`.
     assert workspace == REPO_ROOT, workspace
 
 
@@ -130,6 +132,44 @@ def test_a_store_that_is_not_there_leaves_the_capability_unavailable(
     accounts.write(accounts.DB_KEY, absent, "deadbeef")
 
     assert make_capability(absent, tmp_path / "deployment").enabled is False
+
+
+def test_the_capability_and_the_bundle_resolve_one_workspace_root() -> None:
+    """The regression this change nearly introduced, asserted so it cannot arrive later.
+
+    The store *path* is the manifest's — the factory opens exactly that file, so
+    `ARCH_ASSURANCE_DB_PATH` must move both. The *workspace root* is not: it is what the bundle is keyed
+    on, and what locates a `private-git` repository and the hash the credential account name is derived
+    from. Taking it from `manifest.workspace_root` was the obvious symmetry and would have been wrong: on
+    a deployment with both a deployment root and a private-git backend the manifest says
+    `<root>/workspace` while the bundle still uses the source tree, so the capability would have reported
+    on a repository nothing opens.
+
+    They agreed by coincidence before, both deriving a source tree. This asserts they agree on purpose.
+    """
+    from src.infrastructure.assurance.capability import capability_for_deployment
+    from src.infrastructure.mcp.assurance_mcp.context import assurance_workspace_root
+
+    assert capability_for_deployment().workspace_root == assurance_workspace_root()
+
+
+def test_a_deployment_root_does_not_move_the_workspace_out_from_under_the_bundle(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The specific configuration that would have diverged: a deployment root plus a moved store.
+
+    `manifest.workspace_root` becomes `<root>/workspace` here, and the store path moves with the
+    override — but the workspace the capability probes must stay the bundle's.
+    """
+    from src.infrastructure.assurance.capability import capability_for_deployment
+    from src.infrastructure.mcp.assurance_mcp.context import assurance_workspace_root
+
+    monkeypatch.setenv("ARCH_ASSURANCE_DB_PATH", str(tmp_path / "deploy" / "assurance.db"))
+
+    capability = capability_for_deployment()
+
+    assert capability.db_path == tmp_path / "deploy" / "assurance.db"
+    assert capability.workspace_root == assurance_workspace_root()
 
 
 def test_the_sqlcipher_store_filename_is_never_named_in_code_again() -> None:

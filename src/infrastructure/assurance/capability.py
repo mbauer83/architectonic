@@ -154,15 +154,20 @@ def capability_for_deployment() -> _ConfidentialStoreCapability:
     `db_path.parent.parent` round-trip. Two callers, one right and one wrong, and the round-trip made
     them agree on the wrong one.
 
-    The workspace root falls back to the store's grandparent when no selector named one, which is the
-    same answer the old literal gave for the default layout. So nothing moves for a deployment that has
-    moved nothing.
+    **The two arguments come from two places, and that is not an oversight.** The store path is the
+    manifest's, because the factory opens exactly that file and `ARCH_ASSURANCE_DB_PATH` must move both.
+    The workspace root is `assurance_workspace_root()`, because that is what the *bundle* is keyed on and
+    what locates a `private-git` repository and the credential account's scope hash — so the probe and the
+    thing it probes cannot disagree.
+
+    Taking the workspace from `manifest.workspace_root` instead was the obvious symmetry and would have
+    been a regression: on a deployment with both a deployment root and a private-git backend the manifest
+    says `<root>/workspace` while the bundle still uses the source tree, so the capability would report on
+    a repository nothing opens. They agreed by coincidence before — both derived a source tree — and one
+    shared function is how they agree on purpose. Moving that root is its own migration; see
+    `assurance_workspace_root`.
     """
     from src.infrastructure.deployment.layout import resolve_manifest  # noqa: PLC0415
+    from src.infrastructure.mcp.assurance_mcp.context import assurance_workspace_root  # noqa: PLC0415
 
-    manifest = resolve_manifest()
-    db_path = manifest.assurance_db_path.path
-    workspace = manifest.workspace_root
-    return make_capability(
-        db_path, workspace.path if workspace is not None else db_path.parent.parent
-    )
+    return make_capability(resolve_manifest().assurance_db_path.path, assurance_workspace_root())
