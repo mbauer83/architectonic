@@ -19,6 +19,7 @@ import TierFacet from '../components/TierFacet.vue'
 import { tierFromIsGlobal } from '../components/TierBadge.helpers'
 import EntitiesTreemap from '../components/EntitiesTreemap.vue'
 import ArchimateTypeGlyph from '../components/ArchimateTypeGlyph.vue'
+import SpecializationBadges from '../components/SpecializationBadges.vue'
 import EntityGroupNavTree from '../components/EntityGroupNavTree.vue'
 import ViewpointTablePage from '../components/ViewpointTablePage.vue'
 import DataTable from '../components/DataTable.vue'
@@ -448,11 +449,7 @@ const displayCount = computed(() => {
                     class="type-glyph"
                   />
                   <span class="mono">{{ entity.artifact_type }}</span>
-                  <span
-                    v-for="spec in entity.specializations"
-                    :key="spec"
-                    class="type-specialization"
-                  >«{{ spec }}»</span>
+                  <SpecializationBadges :specializations="entity.specializations" />
                 </span>
               </template>
 
@@ -554,7 +551,6 @@ const displayCount = computed(() => {
 .stamp { font-size: 12px; color: #6b7280; white-space: nowrap; }
 .type-cell { display: inline-flex; align-items: center; gap: 8px; }
 .type-glyph { color: #374151; fill: none; flex: 0 0 auto; }
-.type-specialization { font-size: 11px; font-style: italic; color: #6d28d9; }
 .mono, .conn-counts { font-family: monospace; }
 .mono { font-size: 12px; color: #374151; }
 .conn-counts { font-size: 12px; white-space: nowrap; }

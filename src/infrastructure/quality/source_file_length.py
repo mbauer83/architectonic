@@ -44,7 +44,11 @@ _FRONTEND_GENERATED_SUFFIX = ".generated.ts"
 # `export { entityDetailRoute }` pass-through its helpers module carried, which existed for one reason:
 # the view was exactly at its limit and could not take another import line.
 #
-# `EntitiesView.vue` (505) has the same pass-through for the same reason and **no panel left to lift**:
+# `EntitiesView.vue` went 505 → 502 when its specialization badge became `SpecializationBadges.vue`:
+# a concept may carry several specializations, the `v-for` that renders them needs five lines where the
+# old single-value `v-if` needed four, and this file had no room for a fifth. The badge and its one
+# style rule were self-contained, which is what made lifting them a real improvement rather than a
+# split for the sake of a number. It still has the same pass-through and **no panel left to lift**:
 # it already delegates to seven components — nav tree, treemap, table, tier facet, glyph, badge,
 # viewpoint page — and what remains is orchestration. Its seam is elsewhere and is named by its own
 # siblings: `useDiagramsListState` and `useDocumentsListState` exist, `useEntitiesListState` does not, and
@@ -70,7 +74,7 @@ SOURCE_FILE_BASELINE_LIMITS: dict[str, int] = {
     "tools/gui/src/ui/views/CreateDiagramView.vue": 494,
     "tools/gui/src/ui/views/DocumentCreateView.vue": 606,
     "tools/gui/src/ui/views/DocumentDetailView.vue": 432,
-    "tools/gui/src/ui/views/EntitiesView.vue": 505,
+    "tools/gui/src/ui/views/EntitiesView.vue": 502,
     "tools/gui/src/ui/views/EntityCreateView.vue": 490,
     "tools/gui/src/ui/views/GraphExploreView.vue": 457,
     "tools/gui/src/ui/views/GroupManagementView.vue": 618,
