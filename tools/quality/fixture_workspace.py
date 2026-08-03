@@ -42,6 +42,7 @@ Usage — the workspace is disposable, so point a backend at it rather than at t
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
 from collections.abc import Mapping
@@ -85,6 +86,78 @@ _ADR_BODY = (
 )
 
 
+@dataclass(frozen=True)
+class _AssuranceRoles:
+    """What the fixture authored into the confidential store, addressed by role.
+
+    Roles rather than positions, for the reason `application_diagram` records: `ids("node")[0]` was a
+    positional accident waiting for a second node type. Each name below says what the thing is *for*,
+    so a walk step declares the precondition it needs rather than an index into a list.
+    """
+
+    authored: dict[str, list[str]]
+
+    def _one(self, role: str) -> str:
+        ids = self.authored.get(role) or []
+        if not ids:
+            raise LookupError(
+                f"the fixture authored no {role!r}. Either the store was not built or its content "
+                "author was refused — see tools/quality/fixture_assurance_content.py"
+            )
+        return ids[0]
+
+    @property
+    def group(self) -> str:
+        return self._one("assurance_group")
+
+    @property
+    def filed_analysis(self) -> str:
+        """The analysis filed into `group` — what a group read has to be able to find."""
+        return self._one("assurance_filed_analysis")
+
+    @property
+    def analysis(self) -> str:
+        """The analysis filed nowhere, so "unfiled" is also a state the reads see."""
+        return self._one("assurance_analysis")
+
+    @property
+    def hazard_node(self) -> str:
+        """A node with every optional field present, and the one carrying the architecture ref."""
+        return self._one("assurance_hazard_node")
+
+    @property
+    def bare_node(self) -> str:
+        """A node with none of them, so the absent branch is read too."""
+        return self._one("assurance_bare_node")
+
+    @property
+    def failure_mode(self) -> str:
+        """The node an FMEA judgement is filed against; the only type that accepts one."""
+        return self._one("assurance_failure_mode")
+
+    @property
+    def edge(self) -> str:
+        return self._one("assurance_edge")
+
+    @property
+    def edge_conn_type(self) -> str:
+        """The connection type the ontology chose for that pair, not one this fixture named."""
+        return self._one("assurance_edge_conn_type")
+
+    @property
+    def security_anchor(self) -> str:
+        """The architecture entity the signals and the reference are attached to."""
+        return self._one("assurance_security_anchor")
+
+    @property
+    def vulnerability(self) -> str:
+        return self._one("assurance_vulnerability")
+
+    @property
+    def security_snapshot(self) -> str:
+        return self._one("assurance_security_snapshot")
+
+
 @dataclass
 class FixtureWorkspace:
     """What was built, and the ids a walk needs to address it."""
@@ -119,6 +192,16 @@ class FixtureWorkspace:
         wanting *this* diagram has to say so.
         """
         return self.authored["application_diagram"][0]
+
+    @property
+    def assurance(self) -> _AssuranceRoles:
+        """The confidential store's content, by role.
+
+        Grouped behind one accessor rather than spread across a dozen properties: the assurance
+        content is a second authority with its own identifiers, and a walk step that reaches for
+        `workspace.hazard_node` reads as though the repository held it.
+        """
+        return _AssuranceRoles(self.authored)
 
     @property
     def annotated_classifier(self) -> tuple[str, str, str]:
@@ -194,6 +277,46 @@ def assurance_child_env(root: Path, base: Mapping[str, str] | None = None) -> di
     return env
 
 
+def fixture_child_env(root: Path, engagement: Path, enterprise: Path) -> dict[str, str]:
+    """The complete environment for any child that must stay inside this fixture.
+
+    The repository roots on top of `assurance_child_env`'s four assurance seams and the state
+    directory. One definition for all three kinds of child — the `arch-assurance` CLI, the content
+    author, and the served backend — because they have to agree about every one of them: the store
+    they open, the vault holding its gate, the settings that decide whether it opens at all, and the
+    repository whose entities its references point at.
+    """
+    return assurance_child_env(root, {
+        **os.environ,
+        "ARCH_REPO_ROOT": str(engagement),
+        "ARCH_ENTERPRISE_ROOT": str(enterprise),
+    })
+
+
+def _python_child(root: Path, *args: str, what: str) -> str:
+    """One `python -m …` child inside the fixture, loud on failure, stdout returned.
+
+    Invoked as a module rather than by console-script name: `arch-assurance` is only on `PATH` inside
+    `uv run`, and a walk started any other way would fail on a missing executable rather than on
+    anything about the product.
+    """
+    import subprocess
+
+    engagement, enterprise = _roots(root)
+    result = subprocess.run(  # noqa: S603 - fixed argv, no shell
+        [sys.executable, "-m", *args],
+        capture_output=True,
+        text=True,
+        check=False,
+        cwd=str(REPO_ROOT),
+        env=fixture_child_env(root, engagement, enterprise),
+    )
+    if result.returncode != 0:
+        detail = result.stderr.strip() or result.stdout.strip()
+        raise RuntimeError(f"fixture: {what} failed: {detail}")
+    return result.stdout
+
+
 def _arch_assurance(root: Path, *args: str) -> str:
     """One `arch-assurance` command against the fixture, in a child process, loud on failure.
 
@@ -212,20 +335,10 @@ def _arch_assurance(root: Path, *args: str) -> str:
     `uv run`, and a walk started any other way would fail on a missing executable rather than on
     anything about the product.
     """
-    import subprocess
-
-    result = subprocess.run(  # noqa: S603 - fixed argv, no shell
-        [sys.executable, "-m", "src.infrastructure.cli.arch_assurance", *args],
-        capture_output=True,
-        text=True,
-        check=False,
-        cwd=str(REPO_ROOT),
-        env=assurance_child_env(root),
+    return _python_child(
+        root, "src.infrastructure.cli.arch_assurance", *args,
+        what=f"arch-assurance {' '.join(args)}",
     )
-    if result.returncode != 0:
-        detail = result.stderr.strip() or result.stdout.strip()
-        raise RuntimeError(f"fixture: arch-assurance {' '.join(args)} failed: {detail}")
-    return result.stdout
 
 
 def _build_assurance_store(root: Path) -> None:
@@ -264,6 +377,23 @@ def _build_assurance_store(root: Path) -> None:
     _arch_assurance(root, "--db-path", str(db_path), "init")
     _arch_assurance(root, "use-backend", "sqlcipher", "--activation-policy", "persistent")
     _arch_assurance(root, "--db-path", str(db_path), "unlock")
+
+
+def _author_assurance_content(root: Path, *, anchor: str) -> dict[str, list[str]]:
+    """The analyses, nodes, edge, reference, signals and judgement a read walk needs to read.
+
+    A child for the same reason the store's creation is one, and the ids come back as JSON because
+    the store decides them — the same shape as `_datatype_diagram`, which reads back the classifier id
+    the write tool minted rather than assuming the one it asked for.
+    """
+    stdout = _python_child(
+        root, "tools.quality.fixture_assurance_content", "--anchor", anchor,
+        what="authoring assurance content",
+    )
+    roles = json.loads(stdout)
+    if not isinstance(roles, dict) or not roles:
+        raise RuntimeError(f"fixture: the assurance content author reported nothing: {stdout!r}")
+    return {str(role): [str(i) for i in ids] for role, ids in roles.items()}
 
 
 def _git(repo: Path, *args: str) -> None:
@@ -457,10 +587,13 @@ def build_fixture_workspace(root: Path) -> FixtureWorkspace:
     # diagram the fixture itself authored.
     record("diagram", annotated[0])
 
-    # ── The confidential store, before git and before any backend ─────────────────────────────────
+    # ── The confidential store and its content, before git and before any backend ─────────────────
     # Before git so its key and vault are not committed into the fixture's own history; before any
     # backend because the capability sentinels are injected at bootstrap.
     _build_assurance_store(root)
+    # `populated` rather than any entity: the anchor has to be one the reads can join back to, and an
+    # entity carrying its optional fields is the one whose lens and security answers are non-empty.
+    authored.update(_author_assurance_content(root, anchor=populated))
 
     # ── Git, last: the content has to exist before there is anything to commit ────────────────────
     _init_git(engagement, root / "remotes" / "engagement.git")

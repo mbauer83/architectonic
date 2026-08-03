@@ -225,6 +225,56 @@ class TestTheConfidentialStore:
         assert env["ARCH_ASSURANCE_MASTER_PASSWORD"], env
         assert Path(env["ARCH_ASSURANCE_CREDENTIALS_DIR"]).is_relative_to(workspace.root)
 
+    def test_every_role_the_read_surface_needs_is_authored(self, workspace: FixtureWorkspace) -> None:
+        """The checklist, as roles rather than as a count.
+
+        21 of the 38 dark assurance operations are reads, and a read walk against an empty store proves
+        only that an empty store serves empty answers. Each name here is a precondition some read has:
+        the filed analysis for a group read, the bare node for the absent branch of every optional
+        field, the snapshot and the vulnerability for the eight security reads, the failure mode for the
+        matrix. A role that stops being authored fails here rather than as an empty list eight steps
+        into a walk.
+        """
+        roles = workspace.assurance
+        for name in (
+            "group", "filed_analysis", "analysis", "hazard_node", "bare_node", "failure_mode",
+            "edge", "edge_conn_type", "security_anchor", "vulnerability", "security_snapshot",
+        ):
+            assert getattr(roles, name), name
+
+    def test_the_filed_and_unfiled_analyses_are_different_analyses(
+        self, workspace: FixtureWorkspace
+    ) -> None:
+        """Filing and content are separate gestures in the store, so both states must exist.
+
+        One analysis serving as both would make "what is filed nowhere" and "what is in this group"
+        answerable by the same row, which is exactly the conflation the store's shape avoids.
+        """
+        assert workspace.assurance.filed_analysis != workspace.assurance.analysis
+
+    def test_the_edge_type_came_from_the_ontology(self, workspace: FixtureWorkspace) -> None:
+        """The fixture states no vocabulary of its own, and this is where that would break first.
+
+        `add_edge` refuses a pair the ontology does not permit, so a hard-coded connection type would
+        make the fixture fail on an ontology change with an illegal-pair refusal nobody expects. The
+        authored type is therefore whatever `legal_connection_types` answered for hazard→loss, and
+        asserting it is *a* legal type for that pair keeps the fixture honest without naming one.
+        """
+        from src.infrastructure.assurance.edge_legality import legal_connection_types
+
+        assert workspace.assurance.edge_conn_type in legal_connection_types("hazard", "loss")
+
+    def test_a_missing_role_says_what_to_look_at(self, workspace: FixtureWorkspace) -> None:
+        """The failure mode of this whole arrangement is an empty list read as an answer.
+
+        A walk step that asked for a role the content author never wrote would otherwise get an
+        `IndexError` naming nothing. The message names the module that authors it.
+        """
+        from tools.quality.fixture_workspace import _AssuranceRoles
+
+        with pytest.raises(LookupError, match="fixture_assurance_content"):
+            _AssuranceRoles({})._one("assurance_group")
+
     def test_every_assurance_seam_has_one_definition(self, workspace: FixtureWorkspace) -> None:
         """The builder's environment and the served backend's are the same environment.
 

@@ -179,10 +179,13 @@ class TestItKeepsOutOfTheDevelopersBackendState:
         """The store half of "served content is generated content", and it needs a discriminator.
 
         `unlocked: true` alone would be satisfied by the *developer's* store, which is unlocked on this
-        machine — so the assertion that distinguishes them is the content. A freshly built fixture store
-        holds nothing; the dogfood store holds tens of nodes across several analyses. An empty store that
-        reports itself configured and unlocked is therefore the only answer that can only mean the
-        fixture's.
+        machine — so what distinguishes them is the content, and the discriminator is equality rather
+        than a bound. The dogfood store holds tens of nodes across several analyses; this one holds
+        exactly the nodes the fixture authored, which no other store can.
+
+        An exact set is legitimate here for the reason `CLAUDE.md` gives: the test owns the content. The
+        rule against exact counts is about the *live* model, where authoring one more node is the
+        product working.
 
         Both halves matter. Locked-but-fixture would fail every assurance walk step with a 423, and
         unlocked-but-live would let one author into the analyst's evidence.
@@ -191,9 +194,16 @@ class TestItKeepsOutOfTheDevelopersBackendState:
         assert status["configured"] is True, status
         assert status["unlocked"] is True, status
 
-        stats = _get(backend, "/api/assurance/stats")
-        assert stats["node_count"] == 0, stats
-        assert stats["edge_count"] == 0, stats
+        authored = backend.workspace.authored
+        expected = {
+            authored[role][0]
+            for role in ("assurance_hazard_node", "assurance_bare_node", "assurance_failure_mode")
+        }
+        # `nodes`, not `items`: the assurance list contracts name their own collection, so the generic
+        # `_items` helper falls through to the envelope and iterating it yields keys.
+        payload = _get(backend, "/api/assurance/nodes")
+        served = {str(node["node_id"]) for node in payload["nodes"]}
+        assert served == expected, sorted(served ^ expected)
 
     def test_the_store_it_serves_is_not_the_developers(self, backend: FixtureBackend) -> None:
         """Stated as a path claim as well, because the content claim above is only circumstantial.
