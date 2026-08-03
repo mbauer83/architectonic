@@ -22,6 +22,11 @@ After every such fix: add a unit test verifying the delegation, and a regression
 
 ## Quality gates (every change)
 
+**This list is CI.** `tests/architecture/test_local_gates_match_ci.py` fails when
+`.github/workflows/ci.yml` runs a command this section does not name, so "green locally, red in CI"
+cannot be a surprise about *which* commands exist. It went unchecked once and CI caught two real
+defects — a coverage floor and an IPv4/IPv6 bind — after a release was tagged.
+
 Run one at a time, never concurrently, before committing:
 1. `uv run pytest --tb=short -q` — must be 0 failures, and 0 warnings: `filterwarnings` makes an
    unrecognised warning an error, with each exception narrowed to one message and a reason. Not
@@ -34,18 +39,37 @@ Run one at a time, never concurrently, before committing:
 3. `uv run zuban check` — must pass
 4. `uv run tools/openapi/generate_timeout_policy.py --check` — the frontend's committed timeout
    policy still matches the manifest
+5. `uv run tools/docs/generate_mcp_docs.py --check` — the generated MCP documentation still matches
+   the registered tools
+6. `uv run python tools/docs/check_doc_links.py` — documentation links, anchors and media references
+7. `uv run tools/ontology/generate_types.py`, then `git diff --exit-code -- tools/gui/src/domain/types.generated.ts`
+   — the committed frontend types are the ontology's current output
+8. `uv run python -m src.infrastructure.rendering.generate_static_includes engagements/ENG-ARCH-REPO/architecture-repository --check`
+   — the generated diagram include files still match the ontology
+9. `uv run python tools/licensing/check_licenses.py --ecosystem python --check`, the same with
+   `--ecosystem npm`, and `uv run python tools/licensing/generate_notices.py --check` — no denied,
+   unknown or unacknowledged licence, and `THIRD-PARTY-NOTICES.md` regenerates identically
+
+CI enforces the backend coverage ratchet over the *combined* shards (`coverage report`), which a
+single local run already satisfies because it covers everything at once.
 
 For any change touching the GUI, its API payloads, or model content the GUI renders, add from `tools/gui/`:
 
-5. `npm run typecheck`, `npm test`, `npm run build`
-6. `npm run contracts:check` — the committed `openapi.generated.ts` matches the backend, and the
-   hand-written effect schemas match it. Self-contained: it builds the application in-process, so it
-   needs no running backend and writes nothing. When it reports staleness, run
-   `npm run contracts:generate` and commit the result.
-7. `npm run test:e2e` — needs the backend running on `:8000`; pass `E2E_BASE_URL` if it is elsewhere
-8. `npm run lint` — read the output in full; never pipe it through `tail` or `grep`, which masks the
-   exit code. It takes ~10 minutes; run `npm run lint:fast` while iterating and the full one once at
-   the end.
+10. `npm run typecheck` and `npm run build`
+11. `npm run test:coverage` — **not** `npm test`. Both run the same 1600 tests; only this one applies
+    the per-directory thresholds in `vite.config.ts`, which is what CI runs. Running the bare form is
+    how a `src/domain/**` floor breach reached CI after the tag: six type-level `*.test-d.ts` contract
+    files counted as 0%-covered source and took the directory from ~90% to 71.9%.
+12. `npm run contracts:check` — the committed `openapi.generated.ts` matches the backend, and the
+    hand-written effect schemas match it. Self-contained: it builds the application in-process, so it
+    needs no running backend and writes nothing. When it reports staleness, run
+    `npm run contracts:generate` and commit the result.
+13. `npm run test:e2e` — run `npm run build` first: the default base URL is `http://localhost:8000`,
+    where `arch-backend` serves the built SPA, which is what CI drives and what ships. Pass
+    `E2E_BASE_URL=http://localhost:5173` to iterate against a Vite dev server instead.
+14. `npm run lint` — read the output in full; never pipe it through `tail` or `grep`, which masks the
+    exit code. It takes ~10 minutes; run `npm run lint:fast` while iterating and the full one once at
+    the end. CI passes `-- --concurrency auto`, which changes only how long it takes.
 
 The browser suite is the only one that exercises the real application, so leaving it to CI means UI and content regressions are discovered after the fact rather than before the commit.
 

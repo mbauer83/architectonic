@@ -202,8 +202,9 @@ export default async function preflight(config: FullConfig): Promise<void> {
       + 'Every test would have waited out its navigation timeout and told you nothing, so this run '
       + 'stops here instead.\n\n'
       + 'Start the stack, or point the run at one that is already up:\n'
-      + '  • built SPA served by the backend — E2E_BASE_URL=http://localhost:8000\n'
-      + '  • Vite dev server (proxies /api to the backend) — npm run dev, then :5173\n\n'
+      + '  • built SPA served by the backend (the default) — npm run build, then arch-backend\n'
+      + '  • Vite dev server, to iterate on a spec — npm run dev, then '
+      + 'E2E_BASE_URL=http://localhost:5173\n\n'
       + 'Figures are shot against the built SPA, which is why `npm run media` defaults to :8000: a '
       + 'screenshot has to show shipped code rather than whatever the dev server is holding.',
     )

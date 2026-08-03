@@ -84,11 +84,16 @@ beforeAll(async () => {
     configFile: false,
     root: projectRoot,
     logLevel: 'silent',
-    server: { proxy, port: 0, strictPort: false },
+    // `host` is pinned, and the URL below is built from what the server reports rather than from a
+    // literal. Vite's default host is `localhost`, which resolves to ::1 first on a GitHub runner and
+    // to 127.0.0.1 here — so this passed locally and answered ECONNREFUSED in CI, against a server
+    // that had started perfectly well on an address the test was not asking for. `port: 0` does not
+    // help: Vite treats it as unset and falls back to 5173, so the port has to be read back too.
+    server: { proxy, host: '127.0.0.1', port: 0, strictPort: false },
   })
   await vite.listen()
   const address = vite.httpServer?.address() as AddressInfo
-  baseUrl = `http://127.0.0.1:${address.port}`
+  baseUrl = `http://${address.address}:${address.port}`
 }, 60_000)
 
 afterAll(async () => {

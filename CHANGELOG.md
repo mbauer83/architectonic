@@ -3,6 +3,26 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [0.2.1] — 2026-08-04
+
+**[Full detail → `changelog-assets/0.2.1-detail.md`](changelog-assets/0.2.1-detail.md)**
+
+**Nothing the product serves has changed** — no API, no payload, no behaviour. `0.2.0` was tagged
+against a CI run that then went red; this release carries the fixes and closes the gap that let it
+happen.
+
+### Fixed
+
+- Three defects in tests and build configuration: a frontend coverage floor that was no longer
+  enforced, a dev-proxy test that bound one address and connected to another, and an index-close test
+  failed by connections other tests had leaked.
+
+### Quality
+
+- `AGENTS.md` now names every gate CI runs, and a fitness function fails when `ci.yml` gains one it
+  does not. Nine were missing — including `npm run test:coverage`, which is the only command that
+  applies the frontend coverage thresholds.
+
 ## [0.2.0] — 2026-08-03
 
 **[Full detail → `changelog-assets/0.2.0-detail.md`](changelog-assets/0.2.0-detail.md)** ·
@@ -101,5 +121,6 @@ routes — and the eleven defects above are the reason it exists.
 - Confidential assurance tier (STPA/CAST/GRC/FMEA/GSN) on an encrypted store with tamper-evident history
 - Viewpoint query engine with diagram/matrix/table representations
 
+[0.2.1]: https://github.com/mbauer83/architectonic/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/mbauer83/architectonic/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/mbauer83/architectonic/releases/tag/v0.1.0

@@ -41,8 +41,25 @@ def repo(tmp_path: Path) -> Path:
     return root
 
 
+def _drain_foreign_garbage() -> None:
+    """Collect what other tests left behind, before this file's filter is armed.
+
+    `gc.collect()` collects the whole process, and a connection some earlier test in the same worker
+    leaked is finalised on *this* call — arriving through `__del__` as an unraisable exception that
+    pytest attributes to whichever test is running. That is exactly what happened in CI: under
+    `pytest-split --splits 2` the shard's slice of tests differs from a local full run, five foreign
+    connections came due here, and the test failed for a leak it did not cause and cannot fix.
+
+    Draining first is the correct scoping rather than a way to hide the leak: what this file asserts is
+    that *the index it closes* is silent. The foreign leaks remain worth chasing, but the test that
+    finds them must be the one that owns them.
+    """
+    gc.collect()
+
+
 def test_a_closed_index_emits_no_unclosed_database_warning(repo: Path) -> None:
     """The regression, stated as the warning itself rather than as a proxy for it."""
+    _drain_foreign_garbage()
     with warnings.catch_warnings():
         warnings.simplefilter("error", ResourceWarning)
         index = ArtifactIndex(repo)
@@ -72,6 +89,7 @@ def test_close_is_idempotent(repo: Path) -> None:
 
 
 def test_the_index_is_a_context_manager(repo: Path) -> None:
+    _drain_foreign_garbage()
     with warnings.catch_warnings():
         warnings.simplefilter("error", ResourceWarning)
         with ArtifactIndex(repo) as index:

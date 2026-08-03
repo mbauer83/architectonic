@@ -100,7 +100,17 @@ export default defineConfig({
       // text for the CI log; lcov for the Codecov upload; json-summary for local glances.
       reporter: ['text-summary', 'lcov', 'json-summary'],
       include: ['src/**/*.ts', 'src/**/*.vue'],
-      exclude: ['src/**/*.test.ts', 'src/domain/types.generated.ts', 'src/main.ts'],
+      // `*.test-d.ts` alongside `*.test.ts`: a type-level contract test is a test. It is checked by
+      // `vitest --typecheck` and never executed, so counting it as source makes every one a 0%-covered
+      // file — the six added for the OpenAPI contracts took `src/domain/**` from ~90% to 71.9% and
+      // failed the floor with no production code having changed. Same shape as the nyc extension note
+      // above: two lists that must agree, one of which was written without the other in view.
+      exclude: [
+        'src/**/*.test.ts',
+        'src/**/*.test-d.ts',
+        'src/domain/types.generated.ts',
+        'src/main.ts',
+      ],
       // Gate ONLY the logic-heavy directories where unit tests are the right tool.
       // .vue views/components and composables are wiring covered by the Playwright
       // route-walk (see e2e job), so they are measured + reported but not gated here.
