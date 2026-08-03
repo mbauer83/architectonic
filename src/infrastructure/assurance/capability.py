@@ -21,8 +21,14 @@ logger = logging.getLogger(__name__)
 _SERVICE_NAME = "arch-assurance"
 
 
-def _store_available(workspace_root: Path) -> bool:
-    """Return True if the configured backend appears ready to unlock."""
+def _store_available(db_path: Path, workspace_root: Path) -> bool:
+    """Return True if the configured backend appears ready to unlock.
+
+    Two paths, because two backends locate themselves differently and neither is derivable from the
+    other: SQLCipher is a *file* the deployment manifest names, and private-git is a repository under the
+    workspace. Deriving one from the other is what this used to do, and it meant the manifest's
+    `ARCH_ASSURANCE_DB_PATH` could point the store somewhere the probe never looked.
+    """
     try:
         from src.config.storage_settings import storage_assurance_store_backend  # noqa: PLC0415
 
@@ -31,7 +37,7 @@ def _store_available(workspace_root: Path) -> bool:
         return False
 
     if backend == "sqlcipher":
-        return _sqlcipher_available(workspace_root)
+        return _sqlcipher_available(db_path)
     if backend == "pocketbase":
         return _pocketbase_available()
     if backend == "private-git":
@@ -39,14 +45,19 @@ def _store_available(workspace_root: Path) -> bool:
     return False
 
 
-def _sqlcipher_available(workspace_root: Path) -> bool:
+def _sqlcipher_available(db_path: Path) -> bool:
+    """The database the manifest names — not a filename re-derived from a workspace root.
+
+    It was `workspace_root / ".arch-assurance" / "store.db"`, which is the default *and* the reason a
+    deployment that moved its store had its capability probed at the old address. The credential account
+    is scoped to this path too, so getting it wrong asks the wrong question twice.
+    """
     try:
         # Use the credential-store abstraction (not raw keyring) so the same backend the
         # store was initialised with is consulted — e.g. the headless Fernet vault on CI,
         # where a raw keyring/SecretService probe would fail on a missing session D-Bus.
         from src.infrastructure.assurance import _credential_accounts as accounts  # noqa: PLC0415
 
-        db_path = workspace_root / ".arch-assurance" / "store.db"
         if not accounts.present(accounts.DB_KEY, db_path):
             return False
     except Exception:  # noqa: BLE001
@@ -85,26 +96,41 @@ class _ConfidentialStoreCapability:
     name = "confidential_store"
     requires: list[str] = []
 
-    def __init__(self, workspace_root: Path) -> None:
+    def __init__(self, db_path: Path, workspace_root: Path) -> None:
+        self._db_path = db_path
         self._workspace_root = workspace_root
         self._available: bool | None = None
 
     @property
+    def db_path(self) -> Path:
+        """The store this sentinel is about. Readable so a caller can log or assert what was resolved."""
+        return self._db_path
+
+    @property
+    def workspace_root(self) -> Path:
+        return self._workspace_root
+
+    @property
     def enabled(self) -> bool:
         if self._available is None:
-            self._available = _store_available(self._workspace_root)
+            self._available = _store_available(self._db_path, self._workspace_root)
             if not self._available:
                 logger.info(
                     "confidential_store: unavailable for configured backend at %s. "
                     "Run `arch-assurance init` to enable.",
-                    self._workspace_root,
+                    self._db_path,
                 )
         return self._available
 
 
 @lru_cache(maxsize=None)
-def make_capability(db_path: Path) -> _ConfidentialStoreCapability:
-    """Construct capability sentinel. db_path is interpreted as workspace root.
+def make_capability(db_path: Path, workspace_root: Path) -> _ConfidentialStoreCapability:
+    """Construct the capability sentinel for a *resolved* store location.
+
+    Both arguments come from the deployment manifest, and both are passed rather than derived. The
+    previous signature took only `db_path` and recovered a workspace root from it with
+    `db_path.parent.parent` — a round-trip that silently assumed the default layout, so a store moved by
+    `ARCH_ASSURANCE_DB_PATH` or a settings key was probed where it used to be.
 
     Cached per `db_path` for the process's lifetime: the underlying probe
     (`_store_available`) can shell out to a real credential backend (e.g. the WSL2 DPAPI
@@ -116,5 +142,27 @@ def make_capability(db_path: Path) -> _ConfidentialStoreCapability:
     the whole registry the same way for the long-running backend process; this brings ad
     hoc `build_module_registry()` callers (tests, one-off CLI probes) in line with that.
     """
-    workspace_root = db_path.parent.parent if db_path.name == "store.db" else db_path.parent
-    return _ConfidentialStoreCapability(workspace_root)
+    return _ConfidentialStoreCapability(db_path, workspace_root)
+
+
+def capability_for_deployment() -> _ConfidentialStoreCapability:
+    """The sentinel for wherever *this* deployment keeps its store, per the manifest.
+
+    One home, because both callers wanted the same thing and neither should be deriving it.
+    `app_bootstrap` computed a literal from the source tree; `signal_attribute_capability` already asked
+    `default_db_path()` — the manifest — and had its correct answer thrown away by `make_capability`'s
+    `db_path.parent.parent` round-trip. Two callers, one right and one wrong, and the round-trip made
+    them agree on the wrong one.
+
+    The workspace root falls back to the store's grandparent when no selector named one, which is the
+    same answer the old literal gave for the default layout. So nothing moves for a deployment that has
+    moved nothing.
+    """
+    from src.infrastructure.deployment.layout import resolve_manifest  # noqa: PLC0415
+
+    manifest = resolve_manifest()
+    db_path = manifest.assurance_db_path.path
+    workspace = manifest.workspace_root
+    return make_capability(
+        db_path, workspace.path if workspace is not None else db_path.parent.parent
+    )

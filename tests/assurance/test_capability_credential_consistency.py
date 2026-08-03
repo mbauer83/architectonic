@@ -5,6 +5,11 @@ D-Bus) raises and is swallowed as "key absent" — so the capability stayed unav
 after `arch-assurance init` stored the key via the credential store (e.g. the Fernet vault).
 The probe must consult `_credential_store` so it sees whatever backend the store was set up
 with. The autouse fixture installs an in-memory backend that is NOT a keyring.
+
+`_sqlcipher_available` takes the store *path* rather than a workspace root as of 2026-08-03: it used to
+re-derive `<root>/.arch-assurance/store.db`, which meant a deployment whose manifest moved the store had
+it probed at the old address. The account is scoped to the path too, so the wrong path asked the wrong
+question twice.
 """
 
 from __future__ import annotations
@@ -21,18 +26,19 @@ def test_sqlcipher_available_reads_via_credential_store(tmp_path: Path) -> None:
     accounts.write(accounts.DB_KEY, db_path, "the-db-key")
 
     # Key present but no store file yet.
-    assert capability._sqlcipher_available(tmp_path) is False
+    assert capability._sqlcipher_available(db_path) is False
 
-    (tmp_path / ".arch-assurance").mkdir()
-    (tmp_path / ".arch-assurance" / "store.db").write_bytes(b"\x00")
+    db_path.parent.mkdir()
+    db_path.write_bytes(b"\x00")
 
     # Key found via the credential store (not raw keyring) + store present -> available.
-    assert capability._sqlcipher_available(tmp_path) is True
+    assert capability._sqlcipher_available(db_path) is True
 
 
 def test_sqlcipher_unavailable_when_key_absent(tmp_path: Path) -> None:
-    (tmp_path / ".arch-assurance").mkdir()
-    (tmp_path / ".arch-assurance" / "store.db").write_bytes(b"\x00")
+    db_path = tmp_path / ".arch-assurance" / "store.db"
+    db_path.parent.mkdir()
+    db_path.write_bytes(b"\x00")
 
     # Store file present but no key in the credential store.
-    assert capability._sqlcipher_available(tmp_path) is False
+    assert capability._sqlcipher_available(db_path) is False

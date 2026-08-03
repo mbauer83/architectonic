@@ -135,7 +135,10 @@ class TestCompositionRoot:
         class _Disabled:
             enabled = False
 
-        monkeypatch.setattr(capability_module, "make_capability", lambda _path: _Disabled())
+        # `capability_for_deployment`, not `make_capability`: the composition root asks the one place
+        # that resolves the deployment's store from the manifest, rather than deriving a path and
+        # handing it over. Patching the constructor left this test intercepting nothing.
+        monkeypatch.setattr(capability_module, "capability_for_deployment", lambda: _Disabled())
         composed = composed_signal_attribute_capability()
         assert isinstance(composed, NullSignalAttributeCapability)
         batch = composed.fetch_metrics(["APP@1"], ["finding_total"])

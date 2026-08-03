@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 from functools import lru_cache
-from pathlib import Path
 from typing import Any
 
 from fastapi import Request
@@ -32,7 +31,7 @@ from src.domain.ontology_representation.ontology_protocol import OntologyModule
 from src.domain.ontology_representation.profile_registry import merge_profile_registries
 from src.domain.ontology_representation.specializations import SpecializationCatalog, merge_specialization_catalogs
 from src.domain.viewpoints.viewpoints import ViewpointCatalog
-from src.infrastructure.assurance.capability import make_capability
+from src.infrastructure.assurance.capability import capability_for_deployment
 from src.infrastructure.guidance_cache import load_guidance_overlay, load_workspace_guidance
 from src.infrastructure.rendering._svg_sprite_convert import browser_markup_to_plantuml_svg as _svg_convert
 from src.infrastructure.specialization_declarations import load_specialization_catalog_for_repos
@@ -110,18 +109,18 @@ _logger = logging.getLogger(__name__)
 
 _ALL_ONTOLOGY_MODULES = (_archimate_4_module, _sysml_v2_min_module, _assurance_module)
 
-_DEFAULT_ASSURANCE_DB = Path(__file__).resolve().parents[2] / ".arch-assurance" / "store.db"
-
-
 def _inject_capability_sentinels(registered_names: set[str]) -> None:
     """Add synthetic capability names before module deps are checked.
 
-    confidential_store: present when the keychain key + DB file are available.
+    confidential_store: present when the credentials and the store the *manifest* names are both there.
+    This asked a literal computed from the source tree until 2026-08-03, so the capability deciding
+    whether the assurance modules register at all was probed at a fixed address while every other
+    consumer asked the manifest. See `capability_for_deployment`.
     """
-    capability = make_capability(_DEFAULT_ASSURANCE_DB)
+    capability = capability_for_deployment()
     if capability.enabled:
         registered_names.add("confidential_store")
-        _logger.info("confidential_store capability available at %s", _DEFAULT_ASSURANCE_DB)
+        _logger.info("confidential_store capability available at %s", capability.db_path)
 
 
 def build_module_registry(*, complete_vocabulary: bool = False) -> ModuleRegistry:

@@ -102,9 +102,8 @@ def composed_signal_attribute_capability() -> "SignalAttributeCapability":
     capability is present in this deployment, otherwise the null capability.
     The decision is configuration-shaped (store file + key reachable), never
     the current lock state — availability is evaluated per call instead."""
-    from src.infrastructure.assurance.capability import make_capability  # noqa: PLC0415
-    from src.infrastructure.mcp.assurance_mcp.context import default_db_path  # noqa: PLC0415
+    from src.infrastructure.assurance.capability import capability_for_deployment  # noqa: PLC0415
 
-    if make_capability(default_db_path()).enabled:
+    if capability_for_deployment().enabled:
         return AssuranceSignalAttributeCapability()
     return NullSignalAttributeCapability()
