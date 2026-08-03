@@ -364,8 +364,11 @@ async def _fmea_basis_digest(url: str, workspace: Any) -> str:
     existed, and `record_factor_assessment` would rightly refuse it — the refusal arriving inside a
     200, which is the shape this whole exercise keeps finding.
 
-    Returns "" when the matrix cannot answer, so the write step fails naming `basis_digest` rather than
-    this function failing the whole walk before it starts.
+    Raises when the matrix cannot answer. The first version returned "" so the write step would fail
+    naming `basis_digest` instead — but the assurance mount refuses with a bare `{"error": …}`, a shape
+    `_answers.refusal` did not recognise at the time, so the refused write reported itself green. Both
+    halves are fixed; this one raises because the walk cannot ask its question without an answer here,
+    and a failure at the read says so where a failure at the write only implies it.
     """
     from mcp import ClientSession
     from mcp.client.streamable_http import streamable_http_client
@@ -382,31 +385,44 @@ async def _fmea_basis_digest(url: str, workspace: Any) -> str:
                 read_timeout_seconds=timedelta(seconds=write_walk.CALL_TIMEOUT_SECONDS),
             )
     # YAML, not JSON: `decoded` says why, and it takes the text rather than the result object.
-    return _digest_for(decoded(text_of(result)), failure_mode)
+    payload = decoded(text_of(result))
+    factor = write_walk.ASSURANCE_FMEA_FACTOR
+    digest = _digest_for(payload, failure_mode, factor)
+    if not digest:
+        raise RuntimeError(
+            f"the FMEA matrix reported no {factor!r} basis digest for {failure_mode}, so "
+            f"`assurance_set_fmea_factor` has nothing to pin its judgement to. Matrix answer: "
+            f"{str(payload)[:600]}"
+        )
+    return digest
 
 
-def _digest_for(payload: object, node_id: str) -> str:
-    """The `detectability` basis digest for one failure mode, from a matrix answer.
+def _digest_for(payload: object, node_id: str, factor: str) -> str:
+    """One factor's basis digest for one failure mode, from a matrix answer.
 
-    Searched for rather than indexed: the matrix is a grid whose shape is the analysis's, so the row
+    Searched for rather than indexed: the matrix is a grid whose shape is the analysis's, so the cell
     holding this node is wherever the model puts it, and a positional read would be an assertion about
     content this walk does not own.
+
+    The digest lives at `factors[<factor>].basis_digest`, per `fmea_cells.cell_payload` — *not* in a
+    top-level `basis_digests` map, which is how the `Cell` dataclass carries it internally. Reading the
+    internal shape found nothing, and the resulting empty digest was refused by the write.
     """
     for cell in _cells(payload):
         if str(cell.get("node_id") or "") != node_id:
             continue
-        digests = cell.get("basis_digests")
-        if isinstance(digests, Mapping):
-            value = digests.get("detectability")
-            if isinstance(value, str) and value:
-                return value
+        factors = cell.get("factors")
+        entry = factors.get(factor) if isinstance(factors, Mapping) else None
+        value = entry.get("basis_digest") if isinstance(entry, Mapping) else None
+        if isinstance(value, str) and value:
+            return value
     return ""
 
 
 def _cells(payload: object) -> Iterator[Mapping[str, Any]]:
     """Every mapping in a matrix answer that looks like a cell, however the grid is nested."""
     if isinstance(payload, Mapping):
-        if "node_id" in payload and "basis_digests" in payload:
+        if "node_id" in payload and "factors" in payload:
             yield payload
         for value in payload.values():
             yield from _cells(value)

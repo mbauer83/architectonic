@@ -122,6 +122,7 @@ def _placeholder_workspace() -> FixtureWorkspace:
             # order check covers that mount too; `_AssuranceRoles` raises `LookupError` naming the
             # module that authors them when one is missing, which the caller turns into a failure.
             "assurance_bare_node": ["<assurance-bare-node>"],
+            "assurance_bindable_node": ["<assurance-bindable-node>"],
             "assurance_failure_mode": ["<assurance-failure-mode>"],
             "assurance_edge_conn_type": ["<assurance-conn-type>"],
             "assurance_security_anchor": ["<assurance-anchor-entity>"],

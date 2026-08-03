@@ -39,14 +39,51 @@ def test_the_walk_covers_only_read_shaped_operations() -> None:
 
 
 def test_every_step_says_why_nothing_else_reaches_it() -> None:
-    """These five are dark because no *client* drives them, which is a claim about the product.
+    """Each step is dark for a reason, and the reason is a claim about the product worth reading.
 
-    So each carries the reason, the walk prints it, and a reader deciding whether to retire a route gets
-    the argument rather than a bare operation id. Length-checked because a one-word reason is one nobody
-    can act on — the same rule the other registers' reasons are held to.
+    Two kinds now, and the walk's docstring keeps them apart: five had no *client* at all, and
+    twenty-one had a client and no harness — the whole assurance read surface, which the GUI drives and
+    which nothing could exercise automatically until there was a store a fixture could unlock. A reader
+    deciding whether to retire a route needs the argument rather than a bare operation id.
+
+    Length-checked because a one-word reason is one nobody can act on — the same rule the other
+    registers' reasons are held to.
     """
     for step in READ_STEPS:
         assert len(step.because) > 30, (step.operation_id, step.because)
+
+
+def test_the_assurance_reads_address_the_fixtures_own_content() -> None:
+    """Every assurance read resolves its identifiers from a published fixture role, not a literal.
+
+    A path built from a hard-coded analysis or component id would answer 404 against a fresh fixture and
+    read as a broken route. Asserted by building every path against the roles a real fixture publishes:
+    a missing role raises `LookupError` naming the module that authors it, which is the message a reader
+    needs, and this test is where it arrives instead of thirty seconds into a walk.
+    """
+    from tools.quality.fixture_workspace import _AssuranceRoles
+
+    roles = {
+        "assurance_filed_analysis": ["<filed-analysis>"],
+        "assurance_analysis": ["<analysis>"],
+        "assurance_security_anchor": ["<anchor>"],
+        "assurance_security_component": ["<component>"],
+        "assurance_security_component_purl": ["<purl>"],
+        "assurance_vulnerability": ["<vulnerability>"],
+    }
+
+    class _Workspace:
+        assurance = _AssuranceRoles(roles)
+        application_diagram = "<diagram>"
+
+    class _Backend:
+        workspace = _Workspace()
+
+    for step in READ_STEPS:
+        if not step.operation_id.startswith("assurance_"):
+            continue
+        path = step.path(_Backend())  # type: ignore[arg-type]
+        assert path.startswith("/api/assurance/"), (step.operation_id, path)
 
 
 def test_no_step_is_also_walked_by_the_write_walks() -> None:

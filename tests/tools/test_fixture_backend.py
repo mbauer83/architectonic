@@ -205,6 +205,33 @@ class TestItKeepsOutOfTheDevelopersBackendState:
         served = {str(node["node_id"]) for node in payload["nodes"]}
         assert served == expected, sorted(served ^ expected)
 
+    def test_the_content_it_serves_is_populated_where_a_read_needs_content(
+        self, backend: FixtureBackend
+    ) -> None:
+        """The projections that answer 200 over nothing, asserted to answer over something.
+
+        Every one of these was green while empty, which is the failure mode this whole fixture is about
+        in miniature. Three separate causes, each found only by asking for the content rather than the
+        status:
+
+        * the FMEA matrix needs a `binds-to` arch ref from a *failure mode* to an element — the ref is
+          what makes the row and the node's guideword is the column. Without it: `rows: [], count: 0`,
+          and a judgement had no basis digest to pin itself to.
+        * the security findings need the advisory to be an OSV record whose `affected[].package` matches
+          a component. A record that matches nothing is recorded as *unmatched*, not refused.
+        * the risk register is the same projection as the matrix, so it was empty for the same reason.
+
+        Asserted as non-emptiness, not as counts: the fixture owns this content today, but what these
+        reads must never do again is answer cheerfully about nothing.
+        """
+        analysis = backend.workspace.assurance.analysis
+        matrix = _get(backend, f"/api/assurance/analyses/{analysis}/matrix")
+        assert matrix["rows"], matrix
+
+        anchor = backend.workspace.assurance.security_anchor
+        findings = _get(backend, f"/api/assurance/arch-artifacts/{anchor}/security-findings")
+        assert findings["findings"], findings
+
     def test_the_store_it_serves_is_not_the_developers(self, backend: FixtureBackend) -> None:
         """Stated as a path claim as well, because the content claim above is only circumstantial.
 

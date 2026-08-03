@@ -238,9 +238,24 @@ class TestTheConfidentialStore:
         roles = workspace.assurance
         for name in (
             "group", "filed_analysis", "analysis", "hazard_node", "bare_node", "failure_mode",
-            "edge", "edge_conn_type", "security_anchor", "vulnerability", "security_snapshot",
+            "bindable_node", "bound_node", "edge", "edge_conn_type", "security_anchor", "vulnerability",
+            "security_snapshot", "security_component", "security_component_purl",
         ):
             assert getattr(roles, name), name
+
+    def test_the_component_id_and_its_purl_are_different_identifiers(
+        self, workspace: FixtureWorkspace
+    ) -> None:
+        """Two names for one component, and using the wrong one is a 404 or a 422.
+
+        `SCM@…` addresses the resource; the purl keys a VEX assessment. The read route says why in its
+        own docstring — a purl identifies a package in a vocabulary another standard owns, and its
+        grammar carries `/`, `?` and `#` — and the walk needs both, so the fixture publishes both rather
+        than leaving a caller to convert one into the other.
+        """
+        roles = workspace.assurance
+        assert roles.security_component != roles.security_component_purl
+        assert roles.security_component_purl.startswith("pkg:")
 
     def test_the_filed_and_unfiled_analyses_are_different_analyses(
         self, workspace: FixtureWorkspace

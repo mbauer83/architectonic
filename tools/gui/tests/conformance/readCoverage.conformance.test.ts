@@ -34,6 +34,27 @@ const portMethods = (): readonly string[] =>
  * port declared `adminDeleteDiagram` with no way to create the diagram it deletes.
  *
  * What is left is not a request at all.
+ *
+ * **What this register does not cover, and cannot: the assurance surface.** `portMethods()` reads a
+ * `ModelRepository` instance, and the GUI's `/api/assurance/*` calls go through no port — they are
+ * `fetch` calls written directly in about thirty components and helpers, from `AssuranceStpaWizardView`
+ * and `FmeaMatrixPanel` to `SignalIngestPanel` and `VulnerabilityImpactView`. There is no
+ * `HttpAssuranceRepository` beside `HttpModelRepository`.
+ *
+ * So an empty register here means *every port method is driven*, and says nothing whatever about the
+ * assurance client. Worth stating plainly, because "UNEXERCISED: 0" reads as though the GUI were fully
+ * covered, and a handoff written against that reading planned a slice of work on a premise that was
+ * false. The 38 dark `/api/assurance/*` operations retired on 2026-08-03 were retired by
+ * `tools/quality/rest_write_walk.py` and `rest_read_walk.py` — at the *route* level. Five Playwright
+ * specs (`assurance-stpa-wizard`, `assurance-fmea-recording`, `assurance-browse-parity`,
+ * `assurance-graph-explore`, `security-posture-flow`) cover part of the client level. The rest of the
+ * assurance client is exercised by nothing, and no register can currently say so.
+ *
+ * Closing that means an assurance port and adapter with its schemas held against
+ * `openapi.generated.ts` — the same arrangement the model surface has, and by CLAUDE.md's
+ * architectural-discipline rule the principled fix rather than more specs bolted onto the outside. It
+ * is a ~30-file refactor of a different concern and is deliberately not bundled with the fixture store;
+ * this comment is the record that it is known rather than overlooked.
  */
 const UNEXERCISED: Readonly<Record<string, string>> = {
   // Not a request.

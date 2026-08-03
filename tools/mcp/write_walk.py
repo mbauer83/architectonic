@@ -371,6 +371,15 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
 #: beside it. All 25 tools on this mount are now invoked over the transport.
 WRITE_UNEXERCISED: Mapping[str, str] = {}
 
+#: Which FMEA factor the assurance walk judges, named once because the read and the write must agree.
+#:
+#: A basis digest is *per factor*, so a judgement filed against another factor's digest is refused —
+#: and the refusal arrives as a bare `{"error": …}`, which is a shape `_answers.refusal` had to learn.
+#: `detectability` because it is derived, so the matrix carries a digest for it whatever the analysis
+#: holds; `occurrence` has no derived value and its basis is whatever a rationale cited, which the
+#: fixture does not author.
+ASSURANCE_FMEA_FACTOR = "detectability"
+
 #: The BOM the walk ingests. Small on purpose: what is being exercised is the transport and the
 #: anchoring, not the parser, which `tests/assurance/test_sbom_parser.py` covers at length.
 _WALK_BOM: Mapping[str, Any] = {
@@ -499,7 +508,10 @@ ASSURANCE_WRITE_CALLS: tuple[WriteCall, ...] = (
         "assurance_set_fmea_factor",
         lambda c: {
             "node_id": c.workspace.assurance.failure_mode,
-            "factor": "detectability",
+            # The factor and the digest have to agree: a digest is per factor, so judging one factor
+            # against another's basis is a refusal. `conformance.FMEA_WALK_FACTOR` is the single name
+            # both the read and this write use.
+            "factor": ASSURANCE_FMEA_FACTOR,
             "value": "moderate",
             "basis_digest": c.fmea_basis_digest,
             "justification": "Recorded by the MCP write walk against the digest the matrix reported.",
@@ -537,12 +549,18 @@ ASSURANCE_WRITE_CALLS: tuple[WriteCall, ...] = (
     ),
     # ── model-and-bind: writes an entity into the repository, then binds it ───────────────────────
     WriteCall(
+        # The fixture's unbound-pending control-structure node, not the hazard this walk created: both
+        # transports refuse anything whose binding status is not `unbound-pending`, and a plain create
+        # leaves it `unset`. This mount always answers a *task spec* rather than binding — no
+        # architecture-write port here, by separation of duties — so what it exercises is the proposal
+        # path, and the REST route next door exercises the direct bind.
         "assurance_model_this",
         lambda c: {
-            "assurance_node_id": c.created["node"],
+            "assurance_node_id": c.workspace.assurance.bindable_node,
             "suggested_arch_type": "application-component",
             "suggested_name": "MCP Walk Bound Component",
         },
+        mutates=False,
     ),
     # ── a baseline over what the walk has built ───────────────────────────────────────────────────
     WriteCall(

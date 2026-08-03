@@ -152,48 +152,31 @@ from src.infrastructure.rest.route_policy import RouteRow
 #: reproduced by running anything. This one is a statement about what the **suites** exercise, which
 #: is the thing worth gating: re-taking it means running those two suites, not remembering what was
 #: poked at over five days.
-NEVER_REQUESTED_OPERATIONS: frozenset[str] = frozenset(
-    {
-        "assurance_add_participating_node",
-        "assurance_assign_node_provenance",
-        "assurance_create_group",
-        "assurance_delete_anchor_security_snapshots",
-        "assurance_delete_edge",
-        "assurance_delete_group",
-        "assurance_delete_security_snapshot",
-        "assurance_export_aibom",
-        "assurance_file_analysis",
-        "assurance_ingest_security_signals",
-        "assurance_list_aibom_roles",
-        "assurance_list_analysis_nodes",
-        "assurance_list_gsn_publications",
-        "assurance_list_participating_nodes",
-        "assurance_list_security_components",
-        "assurance_list_security_findings",
-        "assurance_list_vex_assessments",
-        "assurance_model_this",
-        "assurance_read_aibom_coverage",
-        "assurance_read_analysis",
-        "assurance_read_analysis_completeness",
-        "assurance_read_coverage",
-        "assurance_read_edge_catalog",
-        "assurance_read_gsn_draft",
-        "assurance_read_gsn_render",
-        "assurance_read_risk_register",
-        "assurance_read_security_component",
-        "assurance_read_security_stats",
-        "assurance_read_stats",
-        "assurance_read_vulnerability_impact",
-        "assurance_record_gsn_publication",
-        "assurance_record_vex_assessment",
-        "assurance_remove_participating_node",
-        "assurance_scan_aibom_candidates",
-        "assurance_seal_baseline",
-        "assurance_search_nodes",
-        "assurance_update_analysis",
-        "assurance_update_node",
-    }
-)
+#:
+#: ── Empty as of 2026-08-03 ────────────────────────────────────────────────────────────────────────
+#:
+#: The last 38 entries were the whole `/api/assurance/*` surface — 17 writes and 21 reads — and they
+#: were dark for one precondition rather than for 38 reasons: every one needs the confidential store
+#: unlocked, and the only unlocked store on this machine holds the analyst's real evidence. A walk
+#: could not have them without either writing into that evidence or reading it and asserting against
+#: it. `fixture_workspace` builds a disposable store now, so they are requested by
+#: `rest_write_walk.py` (17 steps) and `rest_read_walk.py` (21 steps) against a fixture backend.
+#:
+#: **Cut from the walk logs alone**, which is the whole 38: no dogfood log was consulted, so nothing
+#: here rests on what a developer happened to click. That matters because the two entries retired on
+#: 2026-08-02 *were* retired by a hand-run `curl`, and the note above says why that is not coverage.
+#: Provenance, not filename, is the test — `.arch/backend.log` is legitimate evidence when what filled
+#: it was the browser suite and the read conformance run, and is not when it was a diagnostic probe.
+#:
+#: The 38 did not come free, and what they cost is the argument for having done it. Covering them found
+#: a product defect — `anchor_reader_for` resolved the architecture model from `Path.cwd()`, so signal
+#: ingest refused every anchor in any deployment whose working directory was not the workspace, which
+#: both existing ingest suites hid by monkeypatching the resolution away. It also found two ways this
+#: harness was lying: `_answers.refusal` could not see the assurance mount's `{"error": …}` refusal
+#: shape, so a refused FMEA write reported itself green; and the FMEA matrix answered
+#: `rows: [], count: 0` for want of a `binds-to` reference, so a judgement had no basis digest to pin
+#: itself to while every read still answered 200. None of the three was visible to a status assertion.
+NEVER_REQUESTED_OPERATIONS: frozenset[str] = frozenset()
 
 #: The default log location. A deployment-local artefact, not a repository one.
 #:

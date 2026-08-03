@@ -3,8 +3,12 @@
 `NEVER_REQUESTED_OPERATIONS` records the operations no running server has ever answered 2xx for, and
 most of them were writes. They were dark for one reason: exercising them means authoring and destroying
 content, and the only backend available was serving the live self-model. The fixture removed that
-reason; this walk spends it, for the writes. Five *reads* are dark for the fixture's reason as well, and
-they deliberately stay out of here — see `Step`.
+reason; this walk spends it, for the writes. The *reads* that were dark for the same reason deliberately
+stay out of here — see `Step`, and `tools/quality/rest_read_walk.py`.
+
+The seventeen `/api/assurance/*` writes at the end had a second precondition on top of the first: a
+confidential store a walk may write into. `fixture_workspace` builds one now, so `UNWALKED` is empty and
+the whole served write surface is requested.
 
 **Ordered, stateful and destructive on purpose.** A write surface is not a set of independent calls —
 nothing can PATCH what it has not POSTed, and a DELETE has to be handed something it is allowed to
@@ -73,6 +77,11 @@ class Context:
         return self.backend.workspace.annotated_classifier
 
     @property
+    def assurance(self) -> Any:
+        """The fixture's confidential-store content, by role — see `fixture_workspace._AssuranceRoles`."""
+        return self.backend.workspace.assurance
+
+    @property
     def group_slug(self) -> str:
         """The walk's own group, under whatever slug it currently has.
 
@@ -123,6 +132,12 @@ class Step:
     expect: tuple[int, ...] = (200, 201)
     #: Read from the response and remembered under this key.
     captures: str | None = None
+    #: Which response field holds the id to capture.
+    #:
+    #: `artifact_id` for the repository surface, where every create receipt names the thing it made
+    #: that way. The assurance envelopes name their own — `group_id`, `snapshot_id` — so a fixed field
+    #: would have made a captured id silently `None` and failed the *next* step instead of this one.
+    captures_field: str = "artifact_id"
     #: Context values this step establishes because it *asked* for them — a rename knows the new slug
     #: because it supplied it, so reading it back out of the response would be ceremony around a fact
     #: the walk already holds. Recorded only once the step answered as declared.
@@ -133,28 +148,16 @@ class Step:
 
 #: Operations this walk does not request, each with its reason. Shrink-only, like every other register
 #: here. These are **preconditions this fixture does not build**, not oversights.
-UNWALKED: Mapping[str, str] = {
-    "assurance/*": (
-        "every `/api/assurance/*` write needs the confidential store unlocked, and the fixture "
-        "deliberately does not build one. Needs a fixture *store*, and that slice has three specific "
-        "hazards, measured 2026-08-03 rather than guessed:\n"
-        "  1. `_credential_accounts.clear` deletes the **unscoped** account as well as the scoped one, "
-        "by design — it is written for revocation. Both accounts exist on this machine, so a fixture "
-        "teardown calling it would destroy key material belonging to no fixture. A fixture store must "
-        "never call `clear`; orphaned scoped credentials naming dead temp paths are the harmless "
-        "alternative.\n"
-        "  2. `app_bootstrap._DEFAULT_ASSURANCE_DB` is `Path(__file__).parents[2]/.arch-assurance/"
-        "store.db` — the source tree, not the deployment manifest. So a fixture backend's *capability "
-        "sentinel* reads the live store's presence while the manifest (which honours "
-        "`ARCH_ASSURANCE_DB_PATH`) points elsewhere: the module registry would enable assurance "
-        "modules on one store's existence and serve another. That is the same off-by-one class as the "
-        "status route's, and it wants fixing first.\n"
-        "  3. `init_store` writes to the OS credential store, which on WSL2 spawns `powershell.exe` per "
-        "operation. Four key-loss incidents are on record here and the read path was implicated in one "
-        "of them. This is the only slice in the handoff where a mistake destroys content that cannot "
-        "be regenerated."
-    ),
-}
+#:
+#: **Empty as of 2026-08-03.** It held one entry, `assurance/*`, and its three recorded hazards are worth
+#: keeping the outcome of because two of the three turned out to be answerable rather than blocking.
+#: Nothing calls `_credential_accounts.clear`, so the unscoped-account hazard never arises; the
+#: capability sentinel had already been fixed to read the manifest, which honours
+#: `ARCH_ASSURANCE_DB_PATH`; and the credential path is redirected to a throwaway Fernet vault inside
+#: the workspace, so `init_store` never reaches the OS keychain that the four incidents are about. What
+#: the slice actually needed was a *child process*, because `tests/conftest.py` forbids selecting a real
+#: credential backend session-wide and `init_store` therefore raises in the walk's own process.
+UNWALKED: Mapping[str, str] = {}
 
 
 #: Operations the walk reaches and finds **broken**, pinned to the behaviour they currently have.
@@ -166,6 +169,23 @@ UNWALKED: Mapping[str, str] = {
 #: entry. Shrink-only, and it has been shrunk once already: `groups_delete_group` was pinned at 500 for
 #: exactly as long as it took to read the traceback.
 KNOWN_DEFECTS: Mapping[str, str] = {}
+
+
+#: The BOM the ingest step supplies. Its own, distinct from the fixture's and from the MCP walk's, so a
+#: snapshot this walk creates cannot be confused with one it did not — the ingest is idempotent on
+#: `request_id` plus payload digest, and two walks supplying the same bytes would replay rather than
+#: write.
+_WALK_BOM: Mapping[str, Any] = {
+    "bomFormat": "CycloneDX",
+    "specVersion": "1.5",
+    "serialNumber": "urn:uuid:rest-walk-0000-0000-0000-000000000003",
+    "version": 1,
+    "metadata": {"component": {"bom-ref": "root", "name": "rest-walk-app", "version": "1.0"}},
+    "components": [
+        {"bom-ref": "one", "name": "pyyaml", "version": "6.0.1", "purl": "pkg:pypi/pyyaml@6.0.1"},
+    ],
+    "dependencies": [{"ref": "root", "dependsOn": ["one"]}],
+}
 
 
 def _q(identifier: str) -> str:
@@ -404,6 +424,163 @@ STEPS: tuple[Step, ...] = (
         "sync_withdraw_enterprise", "POST", lambda _c: "/api/sync/enterprise/withdraw",
         lambda _c: {"confirm": True}, must_have_written=False,
     ),
+    # ── the confidential store's write surface ────────────────────────────────────────────────────
+    #
+    # Seventeen operations that were dark for one reason: every `/api/assurance/*` write needs the
+    # store unlocked, and until the fixture built one the only unlocked store on this machine held the
+    # analyst's evidence. They run against the fixture's disposable store and the content its author
+    # wrote there.
+    #
+    # These come last in the engagement run, and two of them are why the order matters:
+    # `assurance_model_this` writes an *entity* into the repository the steps above have been counting,
+    # and `assurance_delete_anchor_security_snapshots` removes everything attached to the anchor,
+    # including what the fixture ingested.
+    #
+    # None of them takes `dry_run`: the assurance surface has no preview, so there is no `wrote` flag
+    # to check and every step sets `must_have_written=False`.
+    #
+    # That is safe *here* and would not be on the MCP mount, which is worth knowing. This surface
+    # refuses with a status — a typed error envelope, 409 for a conflicting state, 422 for a bad field —
+    # so `expect=(200, 201)` is the refusal check, and it is what caught `assurance_model_this` being
+    # handed a node whose binding status was `unset`. The same operations invoked as MCP *tools* refuse
+    # inside a 200 with a bare `{"error": …}`, a third shape `_answers.refusal` did not recognise until
+    # this walk's 409 exposed a write the MCP walk had reported green.
+    Step(
+        "assurance_create_group", "POST", lambda _c: "/api/assurance/groups",
+        lambda _c: {"name": "REST Walk Group", "description": "Authored by the REST write walk."},
+        expect=(200, 201), captures="assurance_group", captures_field="group_id",
+        must_have_written=False,
+    ),
+    Step(
+        "assurance_file_analysis", "PUT",
+        lambda c: f"/api/assurance/analyses/{_q(c.assurance.analysis)}/group",
+        lambda c: {"group_id": c.created["assurance_group"]},
+        expect=(200, 204), must_have_written=False,
+    ),
+    Step(
+        "assurance_update_analysis", "PATCH",
+        lambda c: f"/api/assurance/analyses/{_q(c.assurance.analysis)}",
+        lambda _c: {"name": "Fixture FMEA (renamed by the REST write walk)"},
+        must_have_written=False,
+    ),
+    Step(
+        "assurance_update_node", "PATCH",
+        lambda c: f"/api/assurance/nodes/{_q(c.assurance.hazard_node)}",
+        lambda _c: {"content_text": "Edited by the REST write walk."},
+        must_have_written=False,
+    ),
+    Step(
+        # Re-asserting the analysis the node already records. That is the idempotent case the route
+        # documents and the only one reachable here: the operation exists to repair nodes authored
+        # before provenance was mandatory, and the write path cannot produce one.
+        "assurance_assign_node_provenance", "PUT",
+        lambda c: f"/api/assurance/nodes/{_q(c.assurance.hazard_node)}/provenance",
+        lambda c: {"analysis_id": c.assurance.filed_analysis},
+        expect=(200, 204), must_have_written=False,
+    ),
+    Step(
+        "assurance_add_participating_node", "PUT",
+        lambda c: (
+            f"/api/assurance/analyses/{_q(c.assurance.analysis)}"
+            f"/participating-nodes/{_q(c.assurance.hazard_node)}"
+        ),
+        expect=(200, 201, 204), must_have_written=False,
+    ),
+    Step(
+        "assurance_remove_participating_node", "DELETE",
+        lambda c: (
+            f"/api/assurance/analyses/{_q(c.assurance.analysis)}"
+            f"/participating-nodes/{_q(c.assurance.hazard_node)}"
+        ),
+        expect=(200, 204), must_have_written=False,
+    ),
+    Step(
+        # A VEX assessment before the walk ingests anything of its own, so it is about the component
+        # the fixture's snapshot holds. Its canonical spelling is the store's, read back at authoring
+        # time rather than reconstructed from the BOM here.
+        "assurance_record_vex_assessment", "POST",
+        lambda c: f"/api/assurance/arch-artifacts/{_q(c.assurance.security_anchor)}/vex-assessments",
+        lambda c: {
+            # The purl, not the `SCM@…` id: a VEX assessment is keyed by the package vocabulary's name
+            # for the component, which is a different identifier from the one that addresses the row.
+            "canonical_component_id": c.assurance.security_component_purl,
+            "canonical_vulnerability_id": c.assurance.vulnerability,
+            "vex_status": "under_investigation",
+            "justification": "Recorded by the REST write walk.",
+            "author": "rest-write-walk",
+        },
+        expect=(200, 201), must_have_written=False,
+    ),
+    Step(
+        "assurance_ingest_security_signals", "POST",
+        lambda c: (
+            f"/api/assurance/arch-artifacts/{_q(c.assurance.security_anchor)}/security-snapshots"
+        ),
+        lambda _c: {
+            "bom": dict(_WALK_BOM),
+            "request_id": "rest-write-walk-1",
+            "source": "rest-write-walk",
+        },
+        expect=(200, 201), captures="assurance_snapshot", captures_field="snapshot_id",
+        must_have_written=False,
+    ),
+    Step(
+        "assurance_record_gsn_publication", "POST",
+        lambda c: f"/api/assurance/analyses/{_q(c.assurance.filed_analysis)}/gsn/publications",
+        # A real repository diagram: the route reads it back through the model and answers 404 for one
+        # it cannot find, so the fixture's own diagram is the only id that works.
+        lambda c: {"diagram_id": c.fixture_diagram},
+        must_have_written=False,
+    ),
+    Step(
+        "assurance_seal_baseline", "POST", lambda _c: "/api/assurance/baselines",
+        lambda c: {
+            "analysis_id": c.assurance.filed_analysis,
+            "notes": "Sealed by the REST write walk.",
+        },
+        expect=(200, 201), must_have_written=False,
+    ),
+    Step(
+        "assurance_export_aibom", "POST", lambda _c: "/api/assurance/aibom/export",
+        lambda _c: {"notes": "Exported by the REST write walk."},
+        expect=(200, 201), must_have_written=False,
+    ),
+    Step(
+        "assurance_model_this", "POST", lambda _c: "/api/assurance/model-this",
+        # The binding path, not the separation-of-duties one: with a creator this writes an entity into
+        # the repository and *then* binds it — two repositories, never atomic, by the use case's own
+        # comment. Which is why it is here rather than among the steps that count entities.
+        lambda c: {
+            "assurance_node_id": c.assurance.bindable_node,
+            "suggested_arch_type": "application-component",
+            "suggested_name": "REST Walk Bound Component",
+        },
+        must_have_written=False,
+    ),
+    Step(
+        "assurance_delete_security_snapshot", "DELETE",
+        lambda c: f"/api/assurance/security-snapshots/{_q(c.created['assurance_snapshot'])}",
+        expect=(200, 204), must_have_written=False,
+    ),
+    Step(
+        # Everything still attached to the anchor, which after the delete above is what the fixture
+        # ingested. Last of the signal steps for that reason.
+        "assurance_delete_anchor_security_snapshots", "DELETE",
+        lambda c: (
+            f"/api/assurance/arch-artifacts/{_q(c.assurance.security_anchor)}/security-snapshots"
+        ),
+        expect=(200, 204), must_have_written=False,
+    ),
+    Step(
+        "assurance_delete_edge", "DELETE",
+        lambda c: f"/api/assurance/edges/{_q(c.assurance.edge)}",
+        expect=(200, 204), must_have_written=False,
+    ),
+    Step(
+        "assurance_delete_group", "DELETE",
+        lambda c: f"/api/assurance/groups/{_q(c.created['assurance_group'])}",
+        expect=(200, 204), must_have_written=False,
+    ),
 )
 
 
@@ -562,9 +739,11 @@ def walk(
         answered.append(step.operation_id)
         context.created.update(step.records)
         if step.captures is not None:
-            identifier = payload.get("artifact_id") if isinstance(payload, dict) else None
+            identifier = payload.get(step.captures_field) if isinstance(payload, dict) else None
             if not isinstance(identifier, str):
-                failures.append(f"{step.operation_id}: captured no artifact_id from {payload!r}")
+                failures.append(
+                    f"{step.operation_id}: captured no {step.captures_field} from {payload!r}"
+                )
                 continue
             context.created[step.captures] = identifier
 

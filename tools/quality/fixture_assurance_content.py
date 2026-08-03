@@ -67,13 +67,27 @@ _BOM: dict[str, Any] = {
 
 #: One advisory against the transitive component, so `vulnerability_impact` has a real path to walk
 #: (root → direct → indirect) rather than a single-hop one that cannot distinguish depth.
+#:
+#: **An OSV record, not a flat mapping.** `acquisition_from_records` matches a record to components
+#: through `affected[].package`, and a record it cannot match becomes an *unmatched record* rather than
+#: an error — so the first version of this, which carried a top-level `purl`, produced a snapshot with
+#: components and no findings. Every security read still answered 200, over nothing, and the only reason
+#: it surfaced at all is that `vulnerability_impact` answers 404 for an identifier the store never
+#: registered. That is the shape of trap this whole exercise is about: the *status* was right.
 _ADVISORY: dict[str, Any] = {
     "id": "CVE-2024-FIXTURE",
-    "purl": "pkg:pypi/urllib3@1.26.0",
-    "severity": "high",
-    "cvss_score": 7.5,
-    "description": "A fixture advisory. Not a real vulnerability in a real component.",
+    "affected": [{
+        "package": {"purl": "pkg:pypi/urllib3"},
+        "ranges": [{"type": "ECOSYSTEM", "events": [{"introduced": "0"}, {"fixed": "1.26.5"}]}],
+    }],
+    "severity": [{"type": "CVSS_V3", "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"}],
+    "summary": "A fixture advisory. Not a real vulnerability in a real component.",
 }
+
+#: The purl the advisory is *about*, versionless as OSV writes it. Kept beside the record rather than
+#: parsed out of it, because the component match is on package identity and the fixture needs to say
+#: which component it expects the finding to land on.
+_ADVISORY_PACKAGE_PURL = "pkg:pypi/urllib3"
 
 
 def _ok(result: object, what: str) -> dict[str, Any]:
@@ -160,12 +174,46 @@ def author(anchor: str) -> dict[str, list[str]]:
         "loss",
     )["node_id"])
 
+    # A failure mode with a *guideword*, because the guideword is the matrix column it lands in. Read
+    # from `FAILURE_GUIDEWORD_SLUGS` rather than named, for the reason the severity value is: the
+    # ordered set is the domain's and a copy here would be a second one.
     failure_mode = record("assurance_failure_mode", _ok(
         mutations.create_node(
             store, archive,
             node_type="failure-mode", name="Fixture Failure Mode", analysis_id=unfiled,
+            failure_type=_failure_guideword(),
         ),
         "failure mode",
+    )["node_id"])
+
+    # A node awaiting an architecture binding, which is what model-and-bind is *for*. Both the tool and
+    # the route refuse anything else: "model-and-bind only applies to nodes with
+    # binding_status='unbound-pending'". A control-structure-node because that is the type the
+    # control-structure notation draws with a `[?]` marker while it waits — so this is the subject the
+    # feature was built around rather than whichever node was nearest.
+    record("assurance_bindable_node", _ok(
+        mutations.create_node(
+            store, archive,
+            node_type="control-structure-node", name="Fixture Unbound Controller",
+            analysis_id=filed, binding_status="unbound-pending",
+        ),
+        "bindable control-structure node",
+    )["node_id"])
+
+    # A *second* control-structure node, already bound, because it is what puts a row in the FMEA
+    # matrix. `candidates` nominates an element only from a `binds-to` ref whose node is a
+    # control-structure node — the failure mode's own ref fills a *cell* in that row and cannot create
+    # one. So the matrix needs both refs, pointing at the same element, and this is the pair.
+    #
+    # Separate from `bindable_node` on purpose: that one exists to be handed to model-and-bind, which
+    # refuses anything not `unbound-pending`, and binding it here would take the walk's subject away.
+    controller = record("assurance_bound_node", _ok(
+        mutations.create_node(
+            store, archive,
+            node_type="control-structure-node", name="Fixture Bound Controller",
+            analysis_id=unfiled, binding_status="bound",
+        ),
+        "bound control-structure node",
     )["node_id"])
 
     # ── An edge, whose type the ontology chooses rather than this file ─────────────────────────────
@@ -191,6 +239,21 @@ def author(anchor: str) -> dict[str, list[str]]:
     # against the entity is what proves the surface works, and a dangling ref would pass the write and
     # prove nothing.
     record("assurance_arch_ref_entity", anchor)
+    # Two `binds-to` refs onto the *same* element, which together are what make an FMEA matrix cell
+    # exist. The controller's ref nominates the element as a row (`candidates` accepts only
+    # control-structure nodes); the failure mode's ref places it in that row, at the column its
+    # guideword names. Either one alone answers `rows: [], count: 0` — a cheerful 200 over nothing, and
+    # what made `assurance_set_fmea_factor` refuse for want of a basis digest that could not exist. The
+    # risk register is the same projection, so it was empty for the same reason.
+    for node_id, why in ((controller, "the controller, which nominates the row"),
+                         (failure_mode, "the failure mode, which fills the cell")):
+        _ok(
+            mutations.register_arch_ref(
+                store, archive,
+                assurance_node_id=node_id, arch_artifact_id=anchor, ref_type="binds-to",
+            ),
+            f"binds-to arch ref for {why}",
+        )
     _ok(
         mutations.register_arch_ref(
             store, archive,
@@ -201,8 +264,21 @@ def author(anchor: str) -> dict[str, list[str]]:
 
     # ── Security signals, so the AIBOM and vulnerability reads have a component to answer about ────
     record("assurance_security_anchor", anchor)
-    record("assurance_security_snapshot", _ingest_signals(ctx, anchor))
-    record("assurance_vulnerability", str(_ADVISORY["id"]))
+    snapshot = record("assurance_security_snapshot", _ingest_signals(ctx, anchor))
+    # The canonical id as the *store* registered it, not `_ADVISORY["id"]`. Vulnerability identifiers
+    # come in aliases — CVE, GHSA, OSV — that the store merges onto one canonical row, so the id an
+    # impact read is addressed by is the store's answer and not the one supplied. Reading it back is
+    # also what proves the advisory matched a component at all: an unmatched record is not an error,
+    # and this is where that silence stops.
+    record("assurance_vulnerability", _canonical_vulnerability(ctx, snapshot))
+    # Two identifiers for one component, and they are not interchangeable — which is the distinction
+    # `_signals_routes.security_component` exists to make. `SCM@…` is the id this system minted and is
+    # what *addresses* the resource; the purl identifies a package in a vocabulary another standard
+    # owns, and is what a VEX assessment is keyed by. Both are read back from the store rather than
+    # reconstructed from `_BOM`, which would be this file guessing at a normalisation the product owns.
+    component_id, purl = _snapshot_component(ctx, snapshot)
+    record("assurance_security_component", component_id)
+    record("assurance_security_component_purl", purl)
 
     # ── One FMEA judgement, pinned to the basis the model currently presents ───────────────────────
     record("assurance_fmea_factor", _record_fmea_factor(store, archive, failure_mode))
@@ -236,6 +312,70 @@ def _ingest_signals(ctx: Any, anchor: str) -> str:
             f"{type(result).__name__} {result!r}"
         )
     return snapshot
+
+
+def _failure_guideword() -> str:
+    """A guideword from the domain's own ordered set — the matrix column this failure mode lands in.
+
+    `FAILURE_GUIDEWORDS` is the matrix's column order and the order an analyst is walked through, so
+    taking the first is taking the one an analyst meets first, and naming a slug here would put a copy
+    of an ordered vocabulary beside the real one.
+    """
+    from src.domain.assurance.failure_modes import FAILURE_GUIDEWORD_SLUGS
+
+    if not FAILURE_GUIDEWORD_SLUGS:
+        raise RuntimeError("fixture assurance: the domain declares no failure guidewords")
+    return FAILURE_GUIDEWORD_SLUGS[0]
+
+
+def _canonical_vulnerability(ctx: Any, snapshot: str) -> str:
+    """The canonical vulnerability id the snapshot's findings carry.
+
+    Loud when there are no findings, which is the whole reason this function exists rather than a
+    literal. `acquisition_from_records` matches advisories to components through
+    `affected[].package`, and a record it cannot match is recorded as *unmatched* rather than refused —
+    so a malformed advisory produces a snapshot with components, no findings, and eight security reads
+    that all answer 200 over nothing. The status is right and the fixture is empty.
+    """
+    findings = ctx.snapshot_store.list_snapshot_findings(snapshot)
+    if not findings:
+        raise RuntimeError(
+            f"fixture assurance: snapshot {snapshot} holds no findings, so every security read would "
+            f"answer 200 over nothing. The advisory did not match a component — check that "
+            f"`_ADVISORY` is an OSV record whose affected[].package purl is "
+            f"{_ADVISORY_PACKAGE_PURL!r} and that a component carries that package."
+        )
+    for row in findings:
+        canonical = str(row.get("canonical_vulnerability_id") or "")
+        if canonical:
+            return canonical
+    raise RuntimeError(
+        f"fixture assurance: findings in {snapshot} carry no canonical vulnerability id: {findings}"
+    )
+
+
+def _snapshot_component(ctx: Any, snapshot: str) -> tuple[str, str]:
+    """The `SCM@…` id and the purl of the component the advisory is about, as the store holds them.
+
+    The component with the finding against it, so a VEX assessment recorded for it is about something
+    that actually has one — the pairing the VEX reads join on. Matched on purl rather than taken by
+    position, because which row comes back first is the store's business and not a fact to depend on.
+    """
+    components = ctx.snapshot_store.list_snapshot_components(snapshot)
+    if not components:
+        raise RuntimeError(f"fixture assurance: snapshot {snapshot} holds no components")
+    for row in components:
+        purl = str(row.get("purl") or "")
+        component_id = str(row.get("component_id") or "")
+        # The row's purl carries the version; the advisory's package identity does not. Matching on
+        # the prefix is the same identity comparison `_identity_of_purl` makes.
+        if purl.startswith(f"{_ADVISORY_PACKAGE_PURL}@") and component_id:
+            return component_id, purl
+    raise RuntimeError(
+        f"fixture assurance: no component in {snapshot} carries the advisory's package "
+        f"{_ADVISORY_PACKAGE_PURL!r}; the advisory would have nothing to be about. Components: "
+        f"{[(row.get('component_id'), row.get('purl')) for row in components]}"
+    )
 
 
 def _record_fmea_factor(store: Any, archive: Any, failure_mode: str) -> str:

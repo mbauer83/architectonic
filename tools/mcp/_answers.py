@@ -65,8 +65,15 @@ def refusal(payload: object) -> str | None:
     shapes are read because the write mount serves both: the artifact tools report ``wrote``, the
     viewpoint and sync tools report ``ok``.
 
-    Absence of either flag is not a refusal. Several tools on this mount are reads in write clothing
-    (`artifact_help`, `artifact_get_operation`) and answer neither.
+    Absence of any of them is not a refusal. Several tools on these mounts are reads in write clothing
+    (`artifact_help`, `artifact_get_operation`) and answer none.
+
+    **Three shapes, because the two mounts refuse differently.** The artifact tools report ``wrote``, the
+    viewpoint and sync tools report ``ok``, and the *assurance* tools report neither: a locked store, an
+    absent node or a rejected field comes back as a bare ``{"error": …, "message": …}``. Walking the
+    assurance mount with only the first two recognised meant its refusals read as coverage — which is
+    the exact failure this function is named after, and it was introduced by the commit that started
+    walking that mount. Found by the REST walk answering 409 for a write the MCP walk had reported green.
     """
     if not isinstance(payload, Mapping):
         return None
@@ -76,4 +83,7 @@ def refusal(payload: object) -> str | None:
         return f"wrote: false — {issues or payload.get('error') or payload}"
     if payload.get("ok") is False:
         return f"ok: false — {payload.get('error') or payload}"
+    error = payload.get("error")
+    if isinstance(error, str) and error:
+        return f"error: {error} — {payload.get('message') or payload}"
     return None

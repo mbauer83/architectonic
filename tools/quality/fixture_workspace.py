@@ -136,6 +136,27 @@ class _AssuranceRoles:
         return self._one("assurance_failure_mode")
 
     @property
+    def bound_node(self) -> str:
+        """A control-structure node already bound to an architecture element.
+
+        What nominates a row in the FMEA matrix: `fmea_rows.candidates` accepts an element only from a
+        `binds-to` reference whose node is a control-structure node. The failure mode's own reference
+        fills a cell in that row and cannot create one, so the matrix needs this node *and*
+        `failure_mode`, both referencing the same element.
+        """
+        return self._one("assurance_bound_node")
+
+    @property
+    def bindable_node(self) -> str:
+        """A control-structure node with `binding_status='unbound-pending'`.
+
+        The subject model-and-bind exists for, and the only state it accepts: both the tool and the
+        route refuse a node whose binding status is anything else, including the `unset` a plain create
+        leaves behind.
+        """
+        return self._one("assurance_bindable_node")
+
+    @property
     def edge(self) -> str:
         return self._one("assurance_edge")
 
@@ -156,6 +177,25 @@ class _AssuranceRoles:
     @property
     def security_snapshot(self) -> str:
         return self._one("assurance_security_snapshot")
+
+    @property
+    def security_component(self) -> str:
+        """The `SCM@…` id of the component the advisory is about — what *addresses* the resource.
+
+        Not its purl. A purl identifies a package in a vocabulary another standard owns, and the same
+        package arrives under different references from different feeds, so it filters the collection
+        and does not address the row — see `_signals_routes.security_component`.
+        """
+        return self._one("assurance_security_component")
+
+    @property
+    def security_component_purl(self) -> str:
+        """That same component's purl — what a VEX assessment is keyed by.
+
+        A VEX assessment's key is (anchor, canonical component, canonical vulnerability), so this and
+        `vulnerability` are a pair: an assessment naming a component with no finding is about nothing.
+        """
+        return self._one("assurance_security_component_purl")
 
 
 @dataclass
