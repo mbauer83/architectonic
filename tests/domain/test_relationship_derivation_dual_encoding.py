@@ -13,6 +13,14 @@ from tests.fixtures.viewpoints.derivation_rules_independent_encoding import COMP
 _FIXTURE = Path(__file__).parents[1] / "fixtures/viewpoints/derivation_rules_independent_encoding.py"
 
 
+def _claimed_intermediate_classes() -> frozenset[str]:
+    return frozenset(
+        str(row["intermediate_class"])
+        for row in COMPOSITION_RULES
+        if row.get("intermediate_class") is not None
+    )
+
+
 def _composition_row(row: Mapping[str, object]) -> dict[str, object]:
     return {
         "spec_ref": row["spec_ref"],
@@ -29,6 +37,12 @@ def _composition_row(row: Mapping[str, object]) -> dict[str, object]:
         "intermediate_artifact_type": row.get("intermediate_artifact_type"),
         "intermediate_class": row.get("intermediate_class"),
         "requires_same_connection_type": row.get("requires_same_connection_type", False),
+        # A class some rule claims by name is a class the generic rules do not compose across. The
+        # loader derives this rather than repeating it on thirty rows; this mirrors the derivation so
+        # the two encodings stay comparable without the fact being written twice in the data.
+        "excluded_intermediate_classes": frozenset()
+        if row.get("intermediate_class") is not None
+        else _claimed_intermediate_classes(),
         "requires_permitted_result": row.get("requires_permitted_result", False),
     }
 
@@ -41,6 +55,7 @@ def _restriction_row(row: Mapping[str, object]) -> dict[str, object]:
         "source_artifact_types": frozenset(),
         "source_artifact_types_excluded": frozenset(),
         "intermediate_artifact_types": frozenset(),
+        "intermediate_classes_excluded": frozenset(),
         "source_passive": None,
         "target_passive": None,
         "connection_artifact_types": frozenset(),

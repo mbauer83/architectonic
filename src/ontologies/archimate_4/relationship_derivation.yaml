@@ -59,5 +59,10 @@ restrictions:
   - {spec_ref: R12, source_passive: false, target_passive: true, allowed_connection_artifact_types: [archimate-access, archimate-assignment, archimate-association]}
   - {spec_ref: R13, source_passive: true, target_passive: true, allowed_connection_artifact_types: [archimate-realization, archimate-association]}
   - {spec_ref: R14, source_passive: true, target_passive: false, allowed_connection_artifact_types: [archimate-realization, archimate-influence, archimate-association]}
-  - {spec_ref: RJ1, intermediate_domain_must_match_endpoint: true, intermediate_domain_exception: true}
+  # `intermediate_classes_excluded: [junction]` because this clause presupposes an intermediate that HAS
+  # a domain to compare. A junction's derivation domain is `relationships` precisely because it stands for
+  # a relationship rather than an element, so it could never match an endpoint's domain — and this rule
+  # therefore disallowed every junction-mediated derivation, making a junction a dead end for impact
+  # analysis and reporting a requirement realized through an AND-junction as unrealized.
+  - {spec_ref: RJ1, intermediate_domain_must_match_endpoint: true, intermediate_domain_exception: true, intermediate_classes_excluded: [junction]}
   - {spec_ref: RJ2, source_domains: [implementation_migration], target_domains: [motivation, strategy], intermediate_artifact_types: [location, grouping], always_disallow: true}

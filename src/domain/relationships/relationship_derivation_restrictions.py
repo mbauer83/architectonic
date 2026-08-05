@@ -21,6 +21,11 @@ class DerivationRestriction:
     source_artifact_types: frozenset[str] = frozenset()
     source_artifact_types_excluded: frozenset[str] = frozenset()
     intermediate_artifact_types: frozenset[str] = frozenset()
+    intermediate_classes_excluded: frozenset[str] = frozenset()
+    """Intermediate classes this restriction does not speak about. `RJ1` names `junction` here: its
+    domain-matching clause presupposes an intermediate that *has* a domain, and a junction's derivation
+    domain is `relationships` precisely because it stands for a relationship rather than an element — so
+    the clause could never match one, and disallowed every junction-mediated derivation."""
     source_passive: bool | None = None
     target_passive: bool | None = None
     connection_artifact_types: frozenset[str] = frozenset()
@@ -48,6 +53,7 @@ def restriction_rules_from_mapping(raw: object) -> tuple[DerivationRestriction, 
                     source_artifact_types=_strings(item.get("source_artifact_types", ())),
                     source_artifact_types_excluded=_strings(item.get("source_artifact_types_excluded", ())),
                     intermediate_artifact_types=_strings(item.get("intermediate_artifact_types", ())),
+                    intermediate_classes_excluded=_strings(item.get("intermediate_classes_excluded", ())),
                     source_passive=_optional_bool(item.get("source_passive")),
                     target_passive=_optional_bool(item.get("target_passive")),
                     connection_artifact_types=_strings(item.get("connection_artifact_types", ())),
@@ -104,23 +110,18 @@ def _matches(
         return False
     if rule.intermediate_artifact_types and intermediate.artifact_type not in rule.intermediate_artifact_types:
         return False
+    if not rule.intermediate_classes_excluded.isdisjoint(intermediate.classes):
+        return False
     if rule.source_passive is not None and _is_passive(source) != rule.source_passive:
         return False
     if rule.target_passive is not None and _is_passive(target) != rule.target_passive:
         return False
     if rule.connection_artifact_types and connection.artifact_type not in rule.connection_artifact_types:
         return False
-    # The domain-matching clause presupposes an intermediate that *has* a domain to compare. A
-    # junction does not: it stands for the relationship itself, and its derivation domain is
-    # `relationships` precisely for that reason — which never equals an endpoint's domain, so the
-    # clause disallowed every junction-mediated derivation. That made a junction a dead end for
-    # impact analysis and reported a requirement realized through an AND-junction as unrealized,
-    # while the eligible-realizer set excludes junctions as helpers, so nothing could stand in.
-    if (
-        rule.intermediate_domain_must_match_endpoint
-        and "junction" not in intermediate.classes
-        and intermediate_domain not in {source_domain, target_domain}
-    ):
+    if rule.intermediate_domain_must_match_endpoint and intermediate_domain not in {
+        source_domain,
+        target_domain,
+    }:
         if not (
             rule.intermediate_domain_exception
             and source_domain == "implementation_migration"

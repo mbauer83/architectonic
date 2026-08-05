@@ -148,11 +148,7 @@ def _matches(
         return False
     if rule.intermediate_class is not None and rule.intermediate_class not in intermediate.classes:
         return False
-    # A junction is not an element a chain passes *through*: it stands for the relationship itself, so
-    # only a rule that declares junctions may compose across one. Without this, the ordinary chain rules
-    # apply to it — and `assignment` then `serving` across a junction would derive a serving that the
-    # model never stated, because a junction joins relationships of ONE type.
-    if "junction" in intermediate.classes and rule.intermediate_class != "junction":
+    if not rule.excluded_intermediate_classes.isdisjoint(intermediate.classes):
         return False
     return rule.intermediate_artifact_type is None or intermediate.artifact_type == rule.intermediate_artifact_type
 

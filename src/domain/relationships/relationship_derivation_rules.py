@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Literal, cast
 
@@ -43,6 +43,10 @@ class CompositionRule:
     """Match the intermediate by ontology *class* rather than artifact type — for a family whose
     members compose identically. `junction` is the case: `and-junction` and `or-junction` differ in
     what the combination means, never in how a relationship passes through."""
+    excluded_intermediate_classes: frozenset[str] = frozenset()
+    """Intermediate classes this rule does NOT compose across, computed at load (see
+    `_with_class_exclusivity`) rather than written per row: a class some rule claims by name is a class
+    the generic rules do not cover. Nothing in the evaluator names a class; the spec does."""
     requires_same_connection_type: bool = False
     """Both legs must carry the SAME relationship type. A junction joins relationships of one type, so
     a mismatch is a modelling error rather than a chain — deriving a weakest-of would launder it."""
@@ -94,7 +98,27 @@ def composition_rules_from_mapping(raw: object) -> tuple[CompositionRule, ...]:
             )
         except KeyError as exc:
             raise ValueError(f"relationship derivation rule misses {exc.args[0]!r}") from exc
-    return tuple(rules)
+    return _with_class_exclusivity(tuple(rules))
+
+
+def _with_class_exclusivity(rules: tuple[CompositionRule, ...]) -> tuple[CompositionRule, ...]:
+    """A class a rule claims by name is a class the generic rules must not compose across.
+
+    Derived from the data rather than written onto all thirty-odd generic rows — and rather than named
+    in the evaluator, which is what the first cut of junction derivation did (`if "junction" in
+    intermediate.classes`, with the ontology silent about it). The fact belongs to the spec, as
+    `intermediate_class: junction` on the junction rules; this states its consequence once.
+
+    Without the consequence, un-refusing junctions lets the ordinary chain rules at them: `assignment`
+    then `serving` across a junction composes into a serving the model never stated.
+    """
+    claimed = frozenset(rule.intermediate_class for rule in rules if rule.intermediate_class is not None)
+    if not claimed:
+        return rules
+    return tuple(
+        rule if rule.intermediate_class is not None else replace(rule, excluded_intermediate_classes=claimed)
+        for rule in rules
+    )
 
 
 def _optional_string(value: object) -> str | None:

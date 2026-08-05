@@ -73,6 +73,13 @@ def _oriented_pair(
     return _relation(first, source_id="a", target_id="b"), _relation(second, source_id="c", target_id="a")
 
 
+def _claimed_intermediate_classes() -> frozenset[str]:
+    """Intermediate classes the transcription claims by name — the loader derives the same set."""
+    return frozenset(
+        str(rule["intermediate_class"]) for rule in COMPOSITION_RULES if rule.get("intermediate_class") is not None
+    )
+
+
 def _expected_rule(
     first: _DirectRelation, second: _DirectRelation, join: str, intermediate: EntityTypeInfo
 ) -> Mapping[str, object] | None:
@@ -93,15 +100,15 @@ def _expected_rule(
             continue
         if rule.get("intermediate_artifact_type") not in {None, intermediate.artifact_type}:
             continue
-        # A junction stands for the relationship itself rather than being an element a chain passes
-        # through, so only a junction rule may compose across one — and a junction joins relationships
-        # of ONE type. This matcher is a second implementation of the same dispatch, which is what makes
-        # the comparison independent; it has to model both facts or it selects a rule the engine won't.
+        # A class some rule claims by name is a class the generic rules do not compose across, and a
+        # rule that claims one joins relationships of ONE type. This matcher is a second implementation
+        # of the same dispatch — that is what makes the comparison independent — so it derives the
+        # exclusivity from the transcription exactly as the loader derives it from the YAML, rather than
+        # naming any class here.
         intermediate_class = rule.get("intermediate_class")
-        is_junction = "junction" in intermediate.classes
         if intermediate_class is not None and intermediate_class not in intermediate.classes:
             continue
-        if is_junction and intermediate_class != "junction":
+        if intermediate_class is None and _claimed_intermediate_classes() & set(intermediate.classes):
             continue
         if rule.get("requires_same_connection_type", False) and (
             first.connection_type.artifact_type != second.connection_type.artifact_type

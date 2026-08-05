@@ -376,7 +376,13 @@ RESTRICTIONS = (
         "target_passive": False,
         "allowed_connection_artifact_types": ("archimate-realization", "archimate-influence", "archimate-association"),
     },
-    {"spec_ref": "RJ1", "intermediate_domain_must_match_endpoint": True, "intermediate_domain_exception": True},
+    {
+        "spec_ref": "RJ1",
+        "intermediate_domain_must_match_endpoint": True,
+        "intermediate_domain_exception": True,
+        # The clause presupposes an intermediate that HAS a domain; a junction stands for a relationship.
+        "intermediate_classes_excluded": ("junction",),
+    },
     {
         "spec_ref": "RJ2",
         "source_domains": ("implementation_migration",),
