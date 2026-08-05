@@ -18,6 +18,7 @@ group until an explicit `artifact_admin_reindex` forced a full rescan.
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 
@@ -127,9 +128,12 @@ def test_bulk_write_group_move_visible_without_explicit_reindex(repo: Path) -> N
     assert before == {"uncategorized": 1}
 
     result = artifact_bulk_write(
-        items=[{"op": "edit_entity", "artifact_id": eid, "group": "my-group"}], dry_run=False, repo_root=str(repo)
+        items=[{"op": "edit_entity", "artifact_id": eid, "group": "my-group"}],
+        dry_run=False,
+        repo_root=str(repo),
+        return_mode="full",
     )
-    assert result[0]["wrote"]
+    assert cast(list[dict[str, Any]], result["items"])[0]["wrote"]
 
     after = ctx.repo_cached(key).stats()["entities_by_group"]
     assert after == {"my-group": 1}

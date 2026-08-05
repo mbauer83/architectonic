@@ -25,6 +25,7 @@ from .common import (
 )
 from .diagram_refs import auto_sync_diagrams, collect_bulk_write_auto_sync_diagram_ids
 from .write_apply import apply_add_connections, apply_create_entities, apply_edits
+from .write_payload import BulkWriteReturnMode, build_write_payload, shape_payload
 
 
 def artifact_bulk_write(
@@ -34,13 +35,17 @@ def artifact_bulk_write(
     repo_root: str | None = None,
     idempotency_key: str | None = None,
     auto_sync_diagrams: bool = False,
-) -> list[dict[str, object]]:
+    return_mode: BulkWriteReturnMode = "summary",
+) -> dict[str, object]:
     operation, reused_result = operation_registry.begin(
         tool_name="artifact_bulk_write",
         idempotency_key=idempotency_key,
     )
-    if reused_result is not None:
-        return reused_result
+
+    # `return_mode` shapes the reply and nothing else, so a replayed batch is re-shaped rather than
+    # re-run: an idempotency key names one logical batch, not one level of detail.
+    if isinstance(reused_result, dict):
+        return shape_payload(reused_result, return_mode)
 
     live_root = resolve_root(repo_root)
     indexed = list(enumerate(items))
@@ -49,14 +54,20 @@ def artifact_bulk_write(
     edits = [(index, item) for index, item in indexed if item.get("op") in {"edit_entity", "edit_connection"}]
     unknown = [(index, item) for index, item in indexed if item.get("op") not in KNOWN_OPS]
     if unknown:
-        payload = _unknown_op_payload(
-            indexed=indexed,
-            unknown=unknown,
-            dry_run=dry_run,
+        payload = build_write_payload(
+            items=_unknown_op_items(
+                indexed=indexed,
+                unknown=unknown,
+                dry_run=dry_run,
+                operation_id=operation.operation_id,
+            ),
+            ref_map={},
             operation_id=operation.operation_id,
+            dry_run=dry_run,
+            committed=False,
         )
         operation_registry.complete(operation.operation_id, payload)
-        return payload
+        return shape_payload(payload, return_mode)
 
     staging_dir, staged_root = create_staging_repo(live_root)
     try:
@@ -72,12 +83,12 @@ def artifact_bulk_write(
             operation_id=operation.operation_id,
         )
         operation_registry.complete(operation.operation_id, payload)
-        return payload
+        return shape_payload(payload, return_mode)
     finally:
         staging_dir.cleanup()
 
 
-def _unknown_op_payload(
+def _unknown_op_items(
     *,
     indexed: list[tuple[int, dict[str, Any]]],
     unknown: list[tuple[int, dict[str, Any]]],
@@ -116,7 +127,7 @@ def _execute_staged(
     dry_run: bool,
     auto_sync_enabled: bool,
     operation_id: str,
-) -> list[dict[str, object]]:
+) -> dict[str, object]:
     operation_registry.set_phase(operation_id, "apply")
     from .common import temp_repo_callbacks
 
@@ -182,7 +193,7 @@ def _execute_staged(
             operation_id=operation_id,
         )
 
-    payload = [
+    applied = [
         normalize_staged_result(
             results[index],
             staged_root=staged_root,
@@ -192,9 +203,13 @@ def _execute_staged(
         )
         for index in range(len(indexed))
     ]
-    for item in payload:
-        item["operation_id"] = operation_id
-    return payload
+    return build_write_payload(
+        items=applied,
+        ref_map=ref_map,
+        operation_id=operation_id,
+        dry_run=dry_run,
+        committed=committed,
+    )
 
 
 def _sync_verify_and_commit(

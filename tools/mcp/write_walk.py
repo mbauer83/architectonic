@@ -136,12 +136,31 @@ def _first_row_artifact_id(payload: object) -> str | None:
     return _artifact_id(rows[0]) if rows else None
 
 
-def _first_row_operation_id(payload: object) -> str | None:
-    rows = rows_of(payload)
-    if not rows:
+def _batch_operation_id(payload: object) -> str | None:
+    """`artifact_bulk_write` states its operation once for the batch, not once per item."""
+    if not isinstance(payload, Mapping):
         return None
-    identifier = rows[0].get("operation_id")
+    identifier = payload.get("operation_id")
     return identifier if isinstance(identifier, str) else None
+
+
+def _ref_artifact_id(alias: str) -> Callable[[object], str | None]:
+    """The id a batch allocated to one `_ref` alias, read off the batch's own map.
+
+    Read from `refs` rather than from item position: that map is what the tool promises, and walking
+    the surface is the place to find out whether it is actually filled in.
+    """
+
+    def read(payload: object) -> str | None:
+        if not isinstance(payload, Mapping):
+            return None
+        refs = payload.get("refs")
+        if not isinstance(refs, Mapping):
+            return None
+        identifier = refs.get(alias)
+        return identifier if isinstance(identifier, str) else None
+
+    return read
 
 
 #: What to invoke each `write`-mount tool with, in the order the surface allows. Every tool the mount
@@ -292,15 +311,18 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
                     "op": "create_entity",
                     "artifact_type": "application-component",
                     "name": "MCP Walk Bulk Component",
+                    "_ref": "walk-bulk",
                 }
             ],
             "dry_run": False,
+            "return_mode": "full",
         },
         captures=(
-            Capture("bulk_operation", _first_row_operation_id),
+            Capture("bulk_operation", _batch_operation_id),
             # The artifact the batch made, so the batch delete below has something of its own making
-            # to remove rather than borrowing content another call depends on.
-            Capture("bulk_entity", _first_row_artifact_id),
+            # to remove rather than borrowing content another call depends on. Taken from the alias
+            # map, which makes the walk answer whether that map is populated on the real surface.
+            Capture("bulk_entity", _ref_artifact_id("walk-bulk")),
         ),
     ),
     WriteCall(

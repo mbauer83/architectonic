@@ -60,12 +60,20 @@ def _connect(repo: Path, src: str, tgt: str, conn_type: str) -> None:
 
 
 def _bulk(repo: Path, items, *, dry_run: bool = False, auto_sync_diagrams: bool = False):
-    return artifact_bulk_write(
+    """The per-item results, which is what the tests in this module assert against.
+
+    `return_mode="full"` is passed explicitly because the tool's default is the compact summary — it
+    omits items that applied cleanly, which is the point of it. The envelope itself (counts, the
+    alias-to-id map, what each mode carries) is covered in `test_bulk_write_return_modes.py`.
+    """
+    payload = artifact_bulk_write(
         items=items,
         dry_run=dry_run,
         repo_root=str(repo),
         auto_sync_diagrams=auto_sync_diagrams,
+        return_mode="full",
     )
+    return cast(list[dict[str, Any]], payload["items"])
 
 
 def _bulk_delete(repo: Path, items, *, dry_run: bool = False, auto_sync_diagrams: bool = False):
@@ -83,6 +91,7 @@ def _bulk_with_key(repo: Path, items, *, key: str, dry_run: bool = False):
         dry_run=dry_run,
         repo_root=str(repo),
         idempotency_key=key,
+        return_mode="full",
     )
 
 
@@ -910,21 +919,23 @@ Alice -> Bob
 
 class TestBulkOperationTracking:
     def test_bulk_write_result_is_queryable_by_operation_id(self, repo: Path) -> None:
-        results = _bulk(
-            repo,
-            [
-                {"op": "create_entity", "artifact_type": "requirement", "name": "Tracked"},
-            ],
+        payload = artifact_bulk_write(
+            items=[{"op": "create_entity", "artifact_type": "requirement", "name": "Tracked"}],
+            dry_run=False,
+            repo_root=str(repo),
         )
 
-        operation_id = cast(str, results[0]["operation_id"])
+        operation_id = cast(str, payload["operation_id"])
         operation = artifact_get_operation(operation_id=operation_id)
 
         assert operation["operation_id"] == operation_id
         assert operation["tool_name"] == "artifact_bulk_write"
         assert operation["status"] == "completed"
         assert operation["phase"] == "done"
-        assert cast(list[dict[str, Any]], operation["result"])[0]["operation_id"] == operation_id
+        # The registry keeps the batch complete, whatever the caller asked to be shown.
+        stored = cast(dict[str, Any], operation["result"])
+        assert stored["operation_id"] == operation_id
+        assert len(cast(list[dict[str, Any]], stored["items"])) == 1
 
     def test_bulk_write_idempotency_key_reuses_completed_result(self, repo: Path) -> None:
         key = "bulk-write-idempotent-1"

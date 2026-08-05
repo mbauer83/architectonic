@@ -3,6 +3,53 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [0.3.0] — unreleased
+
+**[Full detail → `changelog-assets/0.3.0-detail.md`](changelog-assets/0.3.0-detail.md)**
+
+Several workspaces can now run on one machine without reaching into each other. Every clone ships
+`backend.port: 8000`, and a socket answering there was taken for "the backend is already running" —
+so an MCP bridge in one checkout proxied a whole session's tool calls, reads and writes alike, into a
+different checkout's model, with every response well-formed.
+
+### Fixed
+
+- **A client reaches the backend serving its own workspace, or none.** Endpoints are chosen by what a
+  backend reports serving (`GET /api/backend-identity`), not by which port answers. A workspace whose
+  preferred port is held by another instance serves on a port derived from its own repository paths
+  and says so; a port that was *stated* (`--port`, `ARCH_BACKEND_PORT`, `backend.port`) is never moved
+  silently — the command fails and names the occupant.
+- **`arch-backend --status` and `--stop` stay inside their workspace.** A neighbour's backend on the
+  port this workspace would use was reported as running, and a stop request would have signalled it.
+- **`arch-write-cli` refuses to write** to a backend that does not serve the `--repo-root` it was
+  given, rather than trusting a recorded port another instance may have taken over.
+- **`arch-assurance unlock` authorizes only this workspace's backend.** It posts an authorization to
+  the running process, and addressed by port that reached a neighbour's backend — one workspace's
+  unlock ceremony granting access to another workspace's confidential store.
+- The GUI dev proxy and the browser suite follow `ARCH_BACKEND_PORT`, so developing against a second
+  workspace no longer renders the first one's model.
+
+### Added
+
+- `--workspace` / `ARCH_MCP_WORKSPACE` for the MCP bridges, for clients that cannot set a working
+  directory. A bridge with no backend of its own exits with the reason instead of attaching to one
+  that is not its.
+- **`assurance_guidance` teaches the five UCA guidewords the software applies**, and says why the
+  Handbook's second is split in two. It taught four while the matrix, the wizard and the attribute
+  enum had all moved to five, so an analyst following it under-enumerated. New topic
+  `stpa-loss-scenarios` covers the step that had no guidance at all, both Handbook scenario classes;
+  every STPA answer now states how its six step numbers map onto the Handbook's four.
+
+### Breaking — what you must change
+
+- **`artifact_bulk_write` answers with one object for the batch, not a list of items.** Read
+  `payload["items"]` where you read the list. The batch states `operation_id`, `counts`, `item_count`,
+  `failed_count`, `committed` and `refs` — every `_ref` alias against the id it was allocated — once
+  instead of repeating them per item. New `return_mode` defaults to `'summary'` (only items with a
+  warning or error), with `'full'` for every item in input order and `'ids'` for the alias map and
+  counts alone; pass `return_mode='full'` to keep the previous per-item detail. Correlating an alias
+  to its id no longer depends on input order surviving the documented auto-sort.
+
 ## [0.2.1] — 2026-08-04
 
 **[Full detail → `changelog-assets/0.2.1-detail.md`](changelog-assets/0.2.1-detail.md)**

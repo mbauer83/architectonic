@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -34,6 +34,7 @@ def test_manual_bulk_pipeline_profile(tmp_path: Path) -> None:
         write_result = artifact_bulk_write(
             repo_root=str(repo),
             dry_run=False,
+            return_mode="full",
             items=[
                 {
                     "op": "edit_entity",
@@ -61,7 +62,7 @@ def test_manual_bulk_pipeline_profile(tmp_path: Path) -> None:
     finally:
         operation_registry.set_phase = original_set_phase  # type: ignore[method-assign]
 
-    assert all(item.get("wrote") for item in write_result)
+    assert all(item.get("wrote") for item in cast(list[dict[str, Any]], write_result["items"]))
     assert all(item.get("wrote") for item in delete_result["results"])
     print(
         {
