@@ -48,12 +48,12 @@ different checkout's model, with every response well-formed.
   junction what it may not assert directly, and derivation now turns that into a relationship the
   ontology forbids. Two diagnostics, refused at the write boundary as well as reported by the verifier:
   **E128** when the legs of one intermediate disagree on a type, **E129** when the type is not permitted
-  between every upstream and every downstream participant. Both demands are read off `RJ3`
-  (`requires_same_connection_type`, `requires_permitted_result`) rather than restated, and it is
-  *certainty* that makes a rule an authoring constraint — a potential push-down like `PDR12` asserts
-  nothing, so a grouping aggregating a member that could not itself realize what the grouping realizes
-  stays a legitimate model. The write path's own weaker copy of the rule, which read only the junction's
-  file and so missed a mismatched leg declared in a participant's, is gone.
+  between every upstream and every downstream participant — both read off `RJ3` rather than restated,
+  and the write path's own weaker copy of the rule is gone.
+- **`entity_ids` on `artifact_edit_diagram` now sets what the diagram draws**, as it always has on create.
+  It rewrote `entity-ids-used` and left the body alone, so a removed entity stayed drawn, went on blocking
+  its own deletion, and the next `auto-sync` recorded it again. The body is regenerated from the stated
+  membership now, and the diagram kinds that own their picture another way refuse it, naming what does.
 - **A grouping's realization now reaches its members, as a visible inference.** A grouping that realizes
   a requirement is saying its members do — but the eligible-realizer set excludes groupings as structural
   helpers (rightly: a grouping realizes nothing), so the row found one ineligible realizer and reported a

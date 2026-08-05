@@ -223,6 +223,14 @@ def artifact_edit_diagram(
         out["deleted_diagram"] = result.deleted_diagram
         return out
 
+    if puml is None and (entity_ids is not None or connection_ids is not None):
+        # Membership stated without a body: the picture is regenerated from it, so a removal is a
+        # removal. Composed into this same edit, not written separately, so anything else the call
+        # carries still applies. A diagram whose body is not the generator's to rewrite is refused.
+        puml, entity_ids, connection_ids = artifact_write_ops.rendered_membership(
+            repo_root=root, store=repo_cached(key), verifier=verifier, artifact_id=artifact_id,
+            entity_ids=entity_ids, connection_ids=connection_ids)
+
     kwargs: dict[str, Any] = {
         k: v for k, v in (
             ("puml", puml), ("name", name), ("keywords", keywords),

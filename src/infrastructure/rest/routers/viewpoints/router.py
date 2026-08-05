@@ -37,6 +37,7 @@ from src.domain.viewpoints.viewpoints import PresentationSpec, TargetKind
 from src.infrastructure.assurance.signal_attribute_capability import (
     composed_signal_attribute_capability,
 )
+from src.infrastructure.rendering.diagram_selection import resolve_diagram_selection
 from src.infrastructure.rest.contracts.viewpoint_execution import (
     ViewpointDiagramRenderResponse,
     ViewpointExecutionResponse,
@@ -51,7 +52,6 @@ from src.infrastructure.rest.contracts.viewpoint_projection import (
 from src.infrastructure.rest.routers import _failures as failures
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers._openapi import READ_RESPONSES, TAG_VIEWPOINTS, media_response
-from src.infrastructure.rest.routers.diagrams._selection import resolve_diagram_selection
 from src.infrastructure.rest.routers.viewpoints._freshness import fresh_viewpoints_runtime_catalogs_dependency
 from src.infrastructure.rest.routers.viewpoints._request_parsing import parse_presentation, parse_query
 from src.infrastructure.rest.routers.viewpoints.signal_render import (

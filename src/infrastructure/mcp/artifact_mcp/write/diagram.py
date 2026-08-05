@@ -93,7 +93,10 @@ def artifact_create_diagram(
     if entity_ids and not puml:
         from src.infrastructure.mcp.artifact_mcp.context import expand_artifact_id  # noqa: PLC0415
         from src.infrastructure.rendering.diagram_builder import generate_archimate_puml_body  # noqa: PLC0415
-        from src.infrastructure.rest.routers.diagrams._selection import resolve_diagram_selection  # noqa: PLC0415
+        from src.infrastructure.rendering.diagram_selection import (  # noqa: PLC0415
+            connections_among,
+            resolve_diagram_selection,
+        )
 
         roots = resolve_repo_roots(
             repo_scope="engagement",
@@ -104,16 +107,10 @@ def artifact_create_diagram(
         key = roots_key(roots)
         repo = repo_cached(key)
         expanded_entity_ids = [expand_artifact_id(repo, eid) for eid in entity_ids]
-        entity_id_set = set(expanded_entity_ids)
-        auto_connection_ids = [
-            str(conn["artifact_id"])
-            for conn in repo.candidate_connections_for_entities(expanded_entity_ids)
-            if str(conn["source"]) in entity_id_set and str(conn["target"]) in entity_id_set
-        ]
         entities, connections, entity_ids_used, connection_ids_used = resolve_diagram_selection(
             repo,
             expanded_entity_ids,
-            auto_connection_ids,
+            connections_among(repo, expanded_entity_ids),
         )
         puml = generate_archimate_puml_body(
             name,

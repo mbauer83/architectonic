@@ -45,32 +45,9 @@ from ._sync_helpers import (
 from .boundary import assert_engagement_write_root
 from .coerce import as_optional_str_list
 from .diagram_edit import edit_diagram
-from .parse_existing import ParsedDiagram, parse_diagram_file
+from .diagram_membership import is_scope_bound, is_standalone
+from .parse_existing import parse_diagram_file
 from .types import SyncDiagramToModelResult
-
-
-def _is_scope_bound(parsed: ParsedDiagram) -> bool:
-    """True when the diagram is owned by a projector (has a scoped-by binding or _scope_entity_id)."""
-    for binding in parsed.bindings:
-        if (
-            binding.correspondence_kind == "scoped-by"
-            and binding.subject.kind == "diagram"
-            and binding.target.entity_id
-        ):
-            return True
-    diagram_entities = parsed.frontmatter.get("diagram-entities")
-    return isinstance(diagram_entities, dict) and bool(diagram_entities.get("_scope_entity_id"))
-
-
-def _is_standalone(parsed: ParsedDiagram) -> bool:
-    """True when the diagram has explicit diagram-entities but is not scope-bound.
-
-    Standalone diagrams store their full entity/connection set in frontmatter
-    (without a projector binding).  They must be re-rendered, not reconciled via
-    entity-ids-used, so deletion on empty inference is never correct for them.
-    """
-    de = parsed.frontmatter.get("diagram-entities")
-    return isinstance(de, dict) and not _is_scope_bound(parsed)
 
 
 def refresh_diagram(
@@ -95,7 +72,7 @@ def refresh_diagram(
 
     parsed = parse_diagram_file(diagram_path)
 
-    if _is_scope_bound(parsed) or _is_standalone(parsed):
+    if is_scope_bound(parsed) or is_standalone(parsed):
         # Both scope-bound and standalone diagrams are re-rendered from stored state.
         # Neither is ever deleted by a refresh — deletion requires an explicit call.
         write_result = edit_diagram(
@@ -233,7 +210,7 @@ def sync_diagram_to_model(
     parsed = parse_diagram_file(diagram_path)
     fm = parsed.frontmatter
 
-    if _is_scope_bound(parsed):
+    if is_scope_bound(parsed):
         raise ValueError(
             f"Diagram '{artifact_id}' is model-backed (scope-bound). "
             "Use refresh_diagram() — sync_diagram_to_model must not be called on projector-owned diagrams."

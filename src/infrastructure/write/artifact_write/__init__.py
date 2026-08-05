@@ -10,6 +10,7 @@ from .connection_edit import edit_connection, edit_connection_associations, remo
 from .diagram import create_diagram
 from .diagram_delete import delete_diagram
 from .diagram_edit import edit_diagram
+from .diagram_membership import rendered_membership
 from .diagram_sync import refresh_diagram, sync_diagram_to_model
 from .document import create_document, delete_document, edit_document
 from .entity import create_entity
@@ -35,6 +36,7 @@ __all__ = [
     "create_diagram",
     "edit_diagram",
     "set_diagram_edge_label",
+    "rendered_membership",
     "refresh_diagram",
     "sync_diagram_to_model",
     "delete_diagram",

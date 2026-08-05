@@ -11,6 +11,7 @@ from src.application.runtime_catalogs import RuntimeCatalogs
 from src.domain.diagrams.diagram_selection import DiagramSelectionError
 from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
 from src.infrastructure.artifact_index import shared_artifact_index
+from src.infrastructure.rendering.diagram_selection import resolve_diagram_selection
 from src.infrastructure.rest.contracts.diagrams import DiagramPreviewResponse
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers._failures import rejected_input
@@ -19,7 +20,6 @@ from src.infrastructure.rest.routers._openapi import (
     WRITE_RESPONSES,
     WriteResultResponse,
 )
-from src.infrastructure.rest.routers.diagrams._selection import resolve_diagram_selection
 from src.infrastructure.rest.routers.diagrams._write_bodies import (
     CreateDiagramGuiBody,
     DiagramPreviewBody,

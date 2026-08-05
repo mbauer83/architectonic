@@ -198,6 +198,28 @@ Agents get the same capability through the MCP write tools, plus two helpers:
   `when_not_to_use` guidance and accepted vocabulary, so an agent picks the right view before
   authoring.
 
+### Changing what a diagram draws
+
+On both `artifact_create_diagram` and `artifact_edit_diagram`, **`entity_ids` is the diagram's
+membership**: exactly those entities are drawn, and the generated body is rendered from them. So
+dropping an id from the list on an edit removes the element from the picture, along with any
+connection that loses an endpoint — there is no separate step, and no need to delete and recreate the
+diagram. `connection_ids` omitted means "whatever the model connects these members with"; pass it
+explicitly to narrow that.
+
+Three kinds of diagram own their picture differently, and for those the request is **refused** with
+the operation that does work, rather than changing the recorded references and leaving the body
+showing something else:
+
+| Diagram | Membership lives in | Change it with |
+| --- | --- | --- |
+| Model-backed (has a `scoped-by` binding) | the model, through the projector | the binding's target, then `puml="auto-sync"` |
+| Standalone (has `diagram-entities`) | `diagram-entities` | `diagram_entities=…` |
+| `manual-layout: true` | the author's body, kept verbatim by sync | `puml=…` in the same call, or `manual_layout=false` |
+
+Passing `puml` alongside `entity_ids` is a different request and behaves as it always has: the caller
+supplies the body, and the recorded references are reconciled against what it draws.
+
 See [Interfaces & MCP](interfaces-and-mcp.md) for the full tool surface.
 
 ---

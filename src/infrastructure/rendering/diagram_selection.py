@@ -1,21 +1,41 @@
+"""Which artifacts a diagram draws, given the ones its author named.
+
+A selection is not simply the list handed in. A junction stands for a relationship rather than an
+element, so a diagram that names every participant of one but not the junction itself would draw the
+participants unconnected; the junction and its legs are pulled in, transitively, and only when *all*
+of its other endpoints are already selected — a junction reaching outside the picture would draw a leg
+to nothing.
+
+It lived under ``rest/routers/diagrams/`` and had nothing to do with HTTP: the write path, the MCP
+tools and two other routers all needed it, and a write op reaching into a REST router for it would be
+the wrong dependency in the wrong direction. It sits beside the renderer it feeds, and asks it which
+types are junctions rather than looking that up a second way.
+"""
+
 from __future__ import annotations
 
-from functools import lru_cache
 from typing import Any
 
-from src.domain.modules.module_types import ElementClassName
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
-
-
-@lru_cache(maxsize=None)
-def _junction_types() -> frozenset[str]:
-    from src.infrastructure.app_bootstrap import get_module_registry  # noqa: PLC0415
-
-    return frozenset(get_module_registry().entity_types_with_class(ElementClassName("junction")))
+from src.infrastructure.rendering.diagram_builder import junction_type_names as _junction_types
 
 
 def _unique_ids(values: list[str]) -> list[str]:
     return list(dict.fromkeys(values))
+
+
+def connections_among(repo: Any, entity_ids: list[str]) -> list[str]:
+    """The model connections whose *both* endpoints are in *entity_ids*.
+
+    What a diagram of a set of entities draws without being told: a connection with one endpoint
+    outside the selection has nothing to attach to.
+    """
+    selected = set(entity_ids)
+    return [
+        str(conn["artifact_id"])
+        for conn in repo.candidate_connections_for_entities(entity_ids)
+        if str(conn["source"]) in selected and str(conn["target"]) in selected
+    ]
 
 
 def resolve_diagram_selection(

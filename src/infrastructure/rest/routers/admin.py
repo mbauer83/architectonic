@@ -318,7 +318,7 @@ def admin_create_diagram(body: AdminCreateDiagramBody, response: Response,
     from src.application.identifier_allocator import get_default_allocator
     from src.application.modeling.artifact_write import prefix_for_diagram_type
     from src.infrastructure.rendering.diagram_builder import generate_archimate_puml_body
-    from src.infrastructure.rest.routers.diagrams._selection import resolve_diagram_selection
+    from src.infrastructure.rendering.diagram_selection import resolve_diagram_selection
 
     # Import the core diagram writing helper that wraps format + write + render
     from src.infrastructure.write.artifact_write.admin_ops import _write_diagram_to_enterprise

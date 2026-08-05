@@ -38,7 +38,9 @@ def _registry():
 
 
 @lru_cache(maxsize=None)
-def _junction_types() -> frozenset[str]:
+def junction_type_names() -> frozenset[str]:
+    """The entity types the ontology classes as junctions. Shared with the selection rule, which
+    needs the same answer to decide whether an unselected endpoint may be pulled into a diagram."""
     return frozenset(_registry().entity_types_with_class(ElementClassName("junction")))
 
 
@@ -207,7 +209,7 @@ def _build_visual_nesting(
         structural_edges=structural_edges,
         neighbor_edges=neighbor_edges,
         junction_aliases={
-            alias for alias, entity in entity_by_alias.items() if entity.artifact_type in _junction_types()
+            alias for alias, entity in entity_by_alias.items() if entity.artifact_type in junction_type_names()
         },
     )
     for parent_alias, children in children_map.items():
