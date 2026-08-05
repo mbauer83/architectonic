@@ -15,10 +15,11 @@ from dataclasses import dataclass
 from src.application.viewpoints.trace_evaluator import evaluate_pattern
 from src.application.viewpoints.trace_index import TraceGraphIndex
 from src.application.viewpoints.trace_obligations import RowObligations, enumerate_row_obligations
-from src.domain.viewpoints.viewpoint_trace_pattern_validation import expand_branch_edges
+from src.domain.viewpoints.viewpoint_trace_pattern_validation import expand_branch_edges, resolve_rollup
 from src.domain.viewpoints.viewpoint_trace_patterns import (
     DiagnosticEdge,
     NamedBranchEdge,
+    RollupEdge,
     TracePattern,
     TracePatternSet,
 )
@@ -27,7 +28,9 @@ from src.domain.viewpoints.viewpoint_trace_result import AuthoritativePatternRes
 # Worst-first: a gap outranks a pass; not-applicable rows never reach the sort (filtered first).
 _VERDICT_RANK: dict[Verdict, int] = {"gap": 0, "pass": 1, "not_applicable": 2}
 
-_MemoKey = tuple[str, tuple[NamedBranchEdge, ...], tuple[DiagnosticEdge, ...]]
+#: The rollup is part of the key: it changes what enumeration walks, so two patterns that share
+#: branches but differ in rollup are two enumerations, not one.
+_MemoKey = tuple[str, tuple[NamedBranchEdge, ...], tuple[DiagnosticEdge, ...], RollupEdge | None]
 
 
 @dataclass(frozen=True)
@@ -54,6 +57,7 @@ class _PatternPlan:
     pattern: TracePattern
     branch_edges: tuple[NamedBranchEdge, ...]
     expected_types: tuple[str, ...]
+    rollup: RollupEdge | None
 
 
 def evaluate_trace_table(
@@ -85,6 +89,7 @@ def _plans(patterns: TracePatternSet) -> tuple[_PatternPlan, ...]:
             pattern=pattern,
             branch_edges=(edges := expand_branch_edges(pattern, patterns)),
             expected_types=tuple(named.edge.endpoint_type for named in edges),
+            rollup=resolve_rollup(pattern, patterns),
         )
         for pattern in patterns.patterns
     )
@@ -113,10 +118,12 @@ def _row(
 def _obligations(
     entity_id: str, entity_type: str, plan: _PatternPlan, index: TraceGraphIndex, memo: dict[_MemoKey, RowObligations]
 ) -> RowObligations:
-    key: _MemoKey = (entity_id, plan.branch_edges, plan.pattern.shortcuts)
+    key: _MemoKey = (entity_id, plan.branch_edges, plan.pattern.shortcuts, plan.rollup)
     cached = memo.get(key)
     if cached is None:
-        cached = enumerate_row_obligations(entity_id, entity_type, plan.branch_edges, plan.pattern.shortcuts, index)
+        cached = enumerate_row_obligations(
+            entity_id, entity_type, plan.branch_edges, plan.pattern.shortcuts, index, plan.rollup
+        )
         memo[key] = cached
     return cached
 

@@ -54,7 +54,7 @@ So evaluation enumerates *obligations*, some of which stand for absent nodes:
 | `requirement` | a real requirement to be realized | covered or uncovered |
 | `shortcut` | a requirement wired straight to the goal, skipping the outcome | always a gap, flagged |
 | `missing-requirement` | an outcome exists, but nothing refines it into requirements | always a gap |
-| `missing-outcome` | a goal with no outcomes and no shortcut at all | always a gap |
+| `missing-outcome` | a goal with no outcomes, no shortcut, and no constituents | always a gap |
 
 A requirement realizing two different outcomes produces **two** obligations, even though one
 realizer satisfies both — because the two branches are separately meaningful. Duplicate paths
@@ -62,6 +62,50 @@ to the *same* obligation collapse; distinct obligations never do.
 
 A row is a gap when any obligation is uncovered, or when any `missing-*` obligation exists.
 Zero expected branches is a gap, never a vacuous pass.
+
+&nbsp;
+
+## An aggregate goal is a rollup, not a row with its own obligation
+
+**An aggregate is not realized; its constituents are.** A goal that aggregates goals — an apex over
+strategic sub-goals — has no incoming realization of its own, and enumerating branches from it
+therefore found nothing at all. That was reported as `missing-outcome`, an always-a-gap obligation,
+so the correct decomposition was penalised and the only way to keep the view green was a direct
+realization edge onto the apex that the model did not otherwise want: a metric shaping the model
+rather than measuring it.
+
+The `motivation-coverage` viewpoint declares the whole-part edge it composes over:
+
+```yaml
+rollup:
+  kind: rollup-edge
+  connection: archimate-aggregation
+  direction: outgoing      # whole -> part, so constituents are the targets
+  endpoint:
+    type: goal             # peers only: the same type the pattern reports on
+```
+
+What that changes, and nothing else:
+
+- A goal with constituents **bears no `missing-outcome` obligation of its own**, and carries its
+  constituents' obligations instead. Under the same universal quantification, the row then passes
+  exactly when every constituent is covered — no new quantifier, and no second way to express one
+  chain.
+- **Union, not either/or.** A branch the aggregate *does* have is still its own to satisfy, so an
+  apex that is also realized directly must have that outcome refined into requirements *and* every
+  constituent covered. Keeping such an edge can no longer make a row greener — it can only add an
+  obligation — which is what stops the metric shaping the model again.
+- A propagated obligation **keeps the constituent it belongs to as its root**, so a gap report names
+  where the gap actually is instead of blaming the apex for it.
+- **A goal that aggregates nothing is unchanged**: still `missing-outcome` with no outcome. This is
+  why the rollup is not a branch — as a branch it would be universally quantified and make
+  aggregation mandatory for every goal, failing every leaf.
+- Nesting composes through every level; an aggregation cycle is reported as `cycle` rather than
+  followed, and only active peers of the declared type are descended.
+
+The rollup travels with `{ref: …}` branch expansion, so every pattern sharing the motivation branches
+(including the authoritative `overall_realization` leaf) composes the same way. Without that, one view
+would report a pass and a gap for the same row.
 
 &nbsp;
 

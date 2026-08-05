@@ -100,7 +100,39 @@ class DiagnosticEdge:
     kind: Literal["diagnostic-edge"] = "diagnostic-edge"
 
 
-EdgeDeclaration = StoredEdge | DiagnosticEdge
+@dataclass(frozen=True)
+class RollupEdge:
+    """The whole-part edge to same-type constituents, over which a row's verdict *composes*.
+
+    An aggregate is not realized; its constituents are. A goal realized through the goals it
+    aggregates has no incoming realization of its own, and enumerating branches from it therefore
+    found nothing — which the missing-outcome obligation reported as a gap. The correct structure was
+    penalised, and the only way to keep such a view green was a direct realization edge onto the apex
+    that the model does not otherwise want: a metric shaping the model rather than measuring it.
+
+    Declared rather than inferred, because *which* connection means whole-part differs by chain
+    (aggregation between goals here; composition elsewhere) and because a hidden traversal is not
+    reviewable. Not a branch: a branch is universally quantified over every row, which would make
+    aggregation mandatory for every goal and fail the leaves that aggregate nothing. What it does
+    instead is redirect enumeration — a row with constituents bears no missing-* obligation of its
+    own and carries its constituents' obligations, so the fixed universal quantification already
+    reads as "every constituent is covered" with no new quantifier.
+
+    ``endpoint_type`` must equal the row type it applies to: this composes a verdict between peers,
+    and a descent into a different type would be a second, undeclared chain.
+    """
+
+    connection: str
+    direction: EdgeDirection
+    endpoint_type: str
+    kind: Literal["rollup-edge"] = "rollup-edge"
+
+    def as_stored(self) -> StoredEdge:
+        """The same hop as a branch edge, for the one neighbour lookup both share."""
+        return StoredEdge(connection=self.connection, direction=self.direction, endpoint_type=self.endpoint_type)
+
+
+EdgeDeclaration = StoredEdge | DiagnosticEdge | RollupEdge
 
 
 # --- Leaf endpoint variants (discriminated by ``kind``) --------------------------------
@@ -193,13 +225,16 @@ Branches = InlineBranches | BranchesRef
 class TracePattern:
     """One coverage pattern of the closed ``branch-complete-realization`` kind. Branch
     quantification (universal over branches, existential at the leaf) is FIXED behavior of the
-    kind, not authorable — there are no step/alternative/quantifier keywords."""
+    kind, not authorable — there are no step/alternative/quantifier keywords.
+
+    ``rollup`` names the whole-part edge to same-type constituents (see :class:`RollupEdge`)."""
 
     name: str
     applies_to: tuple[str, ...]
     branches: Branches
     shortcuts: tuple[DiagnosticEdge, ...] = ()
     leaf: Leaf = NoneLeaf()
+    rollup: RollupEdge | None = None
     diagnostic: bool = False
     kind: TracePatternKind = "branch-complete-realization"
 

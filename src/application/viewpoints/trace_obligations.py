@@ -18,7 +18,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from src.application.viewpoints.trace_index import TraceGraphIndex
-from src.domain.viewpoints.viewpoint_trace_patterns import DiagnosticEdge, NamedBranchEdge, StoredEdge
+from src.domain.viewpoints.viewpoint_trace_patterns import (
+    DiagnosticEdge,
+    NamedBranchEdge,
+    RollupEdge,
+    StoredEdge,
+)
 from src.domain.viewpoints.viewpoint_trace_result import (
     MissingOutcomeObligation,
     MissingRequirementObligation,
@@ -53,11 +58,15 @@ def enumerate_row_obligations(
     branch_edges: tuple[NamedBranchEdge, ...],
     shortcuts: tuple[DiagnosticEdge, ...],
     index: TraceGraphIndex,
+    rollup: RollupEdge | None = None,
 ) -> RowObligations:
     """Enumerate the row's obligations. The applicable branch suffix is chosen by the row's
     position in the chain: a chain-root row (e.g. goal) walks all edges; a row whose type is an
     intermediate endpoint (e.g. outcome) walks the edges after it; a terminal-type row is its own
-    single obligation."""
+    single obligation.
+
+    With a ``rollup`` declared, a chain-root row that aggregates same-type constituents composes
+    from them instead of bearing a missing-* obligation of its own — see :class:`RollupEdge`."""
     edges = tuple(named.edge for named in branch_edges)
     endpoint_types = [edge.endpoint_type for edge in edges]
     shortcut_obligations, ambiguous = _shortcuts(entity_id, shortcuts, index)
@@ -68,7 +77,50 @@ def enumerate_row_obligations(
     if entity_type in endpoint_types:
         suffix = edges[endpoint_types.index(entity_type) + 1:]
         return _walk_from_intermediate(entity_id, suffix, index, shortcut_obligations, ambiguous)
+    if rollup is not None and rollup.endpoint_type == entity_type:
+        return _walk_with_rollup(entity_id, edges, rollup, index, shortcut_obligations, ambiguous)
     return _walk_from_root(entity_id, edges, index, shortcut_obligations, ambiguous)
+
+
+def _walk_with_rollup(
+    entity_id: str,
+    edges: tuple[StoredEdge, ...],
+    rollup: RollupEdge,
+    index: TraceGraphIndex,
+    shortcuts: tuple[ShortcutObligation, ...],
+    ambiguous: tuple[str, ...],
+    seen: frozenset[str] = frozenset(),
+) -> RowObligations:
+    """A chain-root row that may aggregate peers: its own branches, plus its constituents'.
+
+    Union rather than either/or. A constituent's obligations are what "all constituents are covered"
+    means under the fixed universal quantification, and a direct branch the aggregate *does* have is
+    still its own branch — so an aggregate that is also realized directly must satisfy both. Nothing
+    is retagged on the way up: an obligation keeps the constituent it belongs to as its root, so a
+    report names where the gap actually is rather than blaming the apex for it.
+    """
+    own = _walk_from_root(entity_id, edges, index, shortcuts, ambiguous)
+    constituents = tuple(c for c in _neighbors(entity_id, rollup.as_stored(), index) if c != entity_id)
+    if not constituents:
+        return own
+
+    revisited = any(c in seen for c in constituents)
+    descended = seen | {entity_id}
+    parts = [
+        _walk_with_rollup(constituent, edges, rollup, index, (), (), descended)
+        for constituent in constituents
+        if constituent not in seen
+    ]
+    return RowObligations(
+        terminals=own.terminals + tuple(t for part in parts for t in part.terminals),
+        # The aggregate's *own* missing-outcome is dropped: it is not realized, its constituents are.
+        # Theirs are kept, tagged to them, which is what makes the aggregate a gap when one is bare.
+        missing=tuple(m for m in own.missing if not isinstance(m, MissingOutcomeObligation))
+        + tuple(m for part in parts for m in part.missing),
+        shortcuts=own.shortcuts + tuple(s for part in parts for s in part.shortcuts),
+        ambiguous_link_ids=own.ambiguous_link_ids + tuple(a for part in parts for a in part.ambiguous_link_ids),
+        cycle=own.cycle or revisited or any(part.cycle for part in parts),
+    )
 
 
 def _shortcuts(

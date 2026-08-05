@@ -34,6 +34,14 @@ different checkout's model, with every response well-formed.
 - `--workspace` / `ARCH_MCP_WORKSPACE` for the MCP bridges, for clients that cannot set a working
   directory. A bridge with no backend of its own exits with the reason instead of attaching to one
   that is not its.
+- **A goal realized through the goals it aggregates is no longer a gap.** `motivation-coverage`
+  reported `missing-outcome` — an always-a-gap obligation — on any aggregate goal, because branch
+  enumeration walks direct stored edges and an aggregate has no realization of its own. The correct
+  decomposition was penalised, and the only way to keep such a view green was a direct realization
+  edge onto the apex: a metric shaping the model rather than measuring it. The viewpoint now declares
+  the whole-part edge it composes over (`rollup`), and an aggregate carries its constituents'
+  obligations instead of one of its own — so it passes exactly when every constituent is covered, and
+  a propagated gap names the constituent it belongs to rather than the apex.
 - **`assurance_guidance` teaches the five UCA guidewords the software applies**, and says why the
   Handbook's second is split in two. It taught four while the matrix, the wizard and the attribute
   enum had all moved to five, so an analyst following it under-enumerated. New topic

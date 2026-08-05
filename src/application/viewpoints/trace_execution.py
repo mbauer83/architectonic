@@ -60,13 +60,20 @@ def evaluate_declared_trace_table(
 
 
 def _referenced_connection_types(query: ExecutableViewpointQuery) -> frozenset[str]:
-    """Every connection type the patterns walk — branch/shortcut edges + derived leaves — so
-    the index builds adjacency over exactly those and nothing else."""
+    """Every connection type the patterns walk — branch/shortcut edges, rollup edges, and derived
+    leaves — so the index builds adjacency over exactly those and nothing else.
+
+    A traversal missing from this set is not an error anywhere: the index simply has no adjacency for
+    it, every lookup answers empty, and the construct that depends on it does nothing while every
+    test that supplies its own index keeps passing. The rollup arrived that way — declared, parsed,
+    validated, unit-tested, and inert against the real model."""
     connections: set[str] = set()
     for pattern in query.trace_patterns.patterns:
         if isinstance(pattern.branches, InlineBranches):
             connections.update(named.edge.connection for named in pattern.branches.edges)
         connections.update(edge.connection for edge in pattern.shortcuts)
+        if pattern.rollup is not None:
+            connections.add(pattern.rollup.connection)
         if isinstance(pattern.leaf, DerivedReachabilityLeaf):
             connections.add(pattern.leaf.connection)
     return frozenset(connections)

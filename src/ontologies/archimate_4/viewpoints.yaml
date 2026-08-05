@@ -1809,13 +1809,15 @@ viewpoints:
   representation_types:
   - archimate-layered
 - slug: motivation-coverage
-  version: 1
+  version: 2
   name: Motivation Coverage (branch-complete)
   description: 'Branch-complete realization over the motivation chain: a goal is covered only
     when EVERY modeled branch (goal -> outcome -> requirement) terminates in a requirement that
     something legitimately realizes. Reports full realization rather than existential
     reachability, so a goal whose second outcome has no requirement is an honest gap instead of
-    a false green. A direct requirement -influence-> goal is a shortcut branch (gap, flagged);
+    a false green. A goal that aggregates goals is a rollup: it bears no missing-outcome
+    obligation of its own and is covered exactly when every constituent is, because an aggregate
+    is not realized -- its constituents are. A direct requirement -influence-> goal is a shortcut branch (gap, flagged);
     a plain association is reported as ambiguous rather than asserted as realization. The
     behaviour/business/application columns are DIAGNOSTIC observations, never gaps — an
     application-only requirement passes overall. Complements requirements-coverage-gaps, which
@@ -1897,6 +1899,12 @@ viewpoints:
           direction: incoming
           endpoint:
             type: requirement
+      rollup:
+        kind: rollup-edge
+        connection: archimate-aggregation
+        direction: outgoing
+        endpoint:
+          type: goal
       shortcuts:
       - kind: diagnostic-edge
         connection: archimate-influence

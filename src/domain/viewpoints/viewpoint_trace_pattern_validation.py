@@ -24,6 +24,7 @@ from src.domain.viewpoints.viewpoint_trace_patterns import (
     EdgeDeclaration,
     InlineBranches,
     NamedBranchEdge,
+    RollupEdge,
     TracePattern,
     TracePatternError,
     TracePatternSet,
@@ -51,6 +52,34 @@ def expand_branch_edges(pattern: TracePattern, patterns: TracePatternSet) -> tup
         branches = target.branches
         depth += 1
     return branches.edges if isinstance(branches, InlineBranches) else ()
+
+
+def resolve_rollup(pattern: TracePattern, patterns: TracePatternSet) -> RollupEdge | None:
+    """The rollup edge in force for ``pattern``, following the same ``{ref}`` chain its branches do.
+
+    It travels with the branches because it is an *enumeration* input, like them, and unlike the leaf
+    or the shortcuts: every `{ref: motivation}` pattern enumerates the same obligations from the same
+    row and differs only at the leaf. A rollup that did not travel would leave the authoritative
+    leaf pattern still reporting the gap this construct exists to remove, on the same row that the
+    branch-completeness pattern had just passed — one view disagreeing with itself.
+    """
+    if pattern.rollup is not None:
+        return pattern.rollup
+    branches = pattern.branches
+    seen: tuple[str, ...] = (pattern.name,)
+    depth = 0
+    while isinstance(branches, BranchesRef) and depth < MAX_REF_EXPANSION_DEPTH:
+        if branches.ref in seen:
+            return None
+        target = patterns.by_name(branches.ref)
+        if target is None:
+            return None
+        if target.rollup is not None:
+            return target.rollup
+        seen += (branches.ref,)
+        branches = target.branches
+        depth += 1
+    return None
 
 
 def validate_trace_patterns(
@@ -96,7 +125,7 @@ def _validate_edge_budget(
         return [issue("error", exc.code, f"{path}/branches", str(exc))]
     if not check_ergonomics:
         return []
-    total = len(branch_edges) + len(pattern.shortcuts)
+    total = len(branch_edges) + len(pattern.shortcuts) + (1 if pattern.rollup is not None else 0)
     if total > MAX_EDGE_DECLARATIONS:
         return [issue("error", "trace-pattern-edge-count-exceeded", path,
                       f"a pattern declares at most {MAX_EDGE_DECLARATIONS} edges after ref expansion (got {total})")]
@@ -123,12 +152,30 @@ def validate_trace_pattern_types(
         edges: list[EdgeDeclaration] = list(pattern.shortcuts)
         if isinstance(pattern.branches, InlineBranches):
             edges.extend(named.edge for named in pattern.branches.edges)
+        if pattern.rollup is not None:
+            edges.append(pattern.rollup)
+            issues.extend(_check_rollup_peer_type(pattern, item))
         for edge in edges:
             issues.extend(_check_edge_types(edge, known_entity_types, known_connection_types, item))
         if isinstance(pattern.leaf, DerivedReachabilityLeaf) and pattern.leaf.connection not in known_connection_types:
             issues.append(issue("error", "unknown-connection-type", f"{item}/leaf",
                                 f"leaf references unknown connection type {pattern.leaf.connection!r}"))
     return issues
+
+
+def _check_rollup_peer_type(pattern: TracePattern, path: str) -> list[ViewpointValidationIssue]:
+    """A rollup composes a verdict between peers, so it must land on a type the pattern reports on.
+
+    A descent into another type would be a second chain expressed as a composition rule — silently,
+    and with no branch of its own to quantify over.
+    """
+    if pattern.rollup is None or pattern.rollup.endpoint_type in pattern.applies_to:
+        return []
+    return [
+        issue("error", "trace-pattern-rollup-not-a-peer", f"{path}/rollup",
+              f"rollup endpoint type {pattern.rollup.endpoint_type!r} is not one of this pattern's "
+              f"applies_to types {sorted(pattern.applies_to)}")
+    ]
 
 
 def _check_edge_types(

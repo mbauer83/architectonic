@@ -15,6 +15,7 @@ from src.domain.viewpoints.viewpoint_trace_patterns import (
     NamedBranchEdge,
     NoneLeaf,
     RegistryEndpoint,
+    RollupEdge,
     StoredEdge,
     TracePattern,
     TracePatternSet,
@@ -99,3 +100,93 @@ class TestTraceBridge:
         result = _run(_query(trace_patterns=TracePatternSet((_MOTIVATION, _OVERALL))))
         assert result.trace_table is not None
         assert result.trace_table.rows[0].verdict == "gap"
+
+
+#: The same chain with the whole-part edge the shipped `motivation-coverage` viewpoint declares.
+_MOTIVATION_WITH_ROLLUP = TracePattern(
+    name="motivation", applies_to=("goal", "outcome"),
+    branches=InlineBranches((
+        NamedBranchEdge("g2o", StoredEdge("archimate-realization", "incoming", "outcome")),
+        NamedBranchEdge("o2r", StoredEdge("archimate-realization", "incoming", "requirement")),
+    )),
+    rollup=RollupEdge("archimate-aggregation", "outgoing", "goal"),
+    leaf=NoneLeaf(),
+)
+
+
+def _aggregate_store() -> Store:
+    """An apex aggregating one covered goal and one bare one — the reported structure."""
+    entities = {
+        e.artifact_id: e
+        for e in (_e("GOL@apex"), _e("GOL@covered"), _e("GOL@bare"), _e("OUT@1"), _e("REQ@1"), _e("APP@1"))
+    }
+    connections = [
+        _rz("r1", "OUT@1", "GOL@covered"),
+        _rz("r2", "REQ@1", "OUT@1"),
+        # The leaf pattern needs a permitted realizer for the requirement, as `_store` gives it one.
+        _rz("r2a", "APP@1", "REQ@1"),
+        connection(artifact_id="a1", source="GOL@apex", target="GOL@covered",
+                   conn_type="archimate-aggregation"),
+        connection(artifact_id="a2", source="GOL@apex", target="GOL@bare",
+                   conn_type="archimate-aggregation"),
+    ]
+    return Store(entities=entities, connections=connections)
+
+
+def _run_against(store: Store, query: ExecutableViewpointQuery, **params: object):
+    definition = ViewpointDefinition(slug="cov", version=1, name="Coverage", query=query, presentation=None)
+    return evaluate_viewpoint(
+        ViewpointExecutionRequest(slug="cov", parameters=params or None),
+        catalog=ViewpointCatalog(entries=(definition,)), read_access=store, registries=_REGISTRIES, **_DEFAULTS,
+    )
+
+
+class TestRollupReachesTheIndex:
+    """The rollup has to survive the whole path — YAML, index adjacency, enumeration.
+
+    It did not, the first time: `_referenced_connection_types` built the index over branch, shortcut
+    and leaf connections only, so `archimate-aggregation` had no adjacency, every constituent lookup
+    answered empty, and the construct did nothing at all. Nothing failed — the unit tests each built
+    their own index with aggregation in it, and against the real model the apex passed for an
+    unrelated reason (a direct realization edge). These execute the real use case instead.
+    """
+
+    def test_an_aggregate_is_a_gap_when_a_constituent_is_bare(self) -> None:
+        result = _run_against(
+            _aggregate_store(), _query(trace_patterns=TracePatternSet((_MOTIVATION_WITH_ROLLUP, _OVERALL)))
+        )
+
+        assert result.trace_table is not None
+        verdicts = {row.entity_id: row.verdict for row in result.trace_table.rows}
+        assert verdicts["GOL@apex"] == "gap", "the bare constituent has to reach the apex"
+        assert verdicts["GOL@covered"] == "pass"
+
+    def test_an_aggregate_passes_once_every_constituent_is_covered(self) -> None:
+        store = _aggregate_store()
+        # Give the bare constituent its own outcome and requirement.
+        store.entities["OUT@2"] = _e("OUT@2")
+        store.entities["REQ@2"] = _e("REQ@2")
+        store.entities["APP@2"] = _e("APP@2")
+        store.connections.extend([
+            _rz("r3", "OUT@2", "GOL@bare"),
+            _rz("r4", "REQ@2", "OUT@2"),
+            _rz("r4a", "APP@2", "REQ@2"),
+        ])
+
+        result = _run_against(store, _query(trace_patterns=TracePatternSet((_MOTIVATION_WITH_ROLLUP, _OVERALL))))
+
+        assert result.trace_table is not None
+        verdicts = {row.entity_id: row.verdict for row in result.trace_table.rows}
+        assert verdicts["GOL@apex"] == "pass"
+
+    def test_without_the_rollup_the_same_apex_is_a_missing_outcome_gap(self) -> None:
+        """The control: the declaration is what changes the verdict, not the fixture."""
+        result = _run_against(
+            _aggregate_store(), _query(trace_patterns=TracePatternSet((_MOTIVATION, _OVERALL)))
+        )
+
+        assert result.trace_table is not None
+        apex = next(row for row in result.trace_table.rows if row.entity_id == "GOL@apex")
+        motivation = dict(apex.pattern_results)["motivation"]
+        assert apex.verdict == "gap"
+        assert [type(o).__name__ for o in motivation.failing_obligations] == ["MissingOutcomeObligation"]

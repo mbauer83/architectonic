@@ -31,15 +31,19 @@ from src.domain.viewpoints.viewpoint_trace_patterns import (
     NamedBranchEdge,
     NoneLeaf,
     RegistryEndpoint,
+    RollupEdge,
     StoredEdge,
     TracePattern,
     TracePatternError,
     TracePatternSet,
 )
 
-_PATTERN_KEYS = frozenset({"name", "kind", "applies_to", "branches", "shortcuts", "leaf", "diagnostic"})
+_PATTERN_KEYS = frozenset(
+    {"name", "kind", "applies_to", "branches", "shortcuts", "leaf", "rollup", "diagnostic"}
+)
 _STORED_EDGE_KEYS = frozenset({"kind", "connection", "direction", "endpoint"})
 _DIAGNOSTIC_EDGE_KEYS = frozenset({"kind", "connection", "direction", "endpoint", "status"})
+_ROLLUP_EDGE_KEYS = frozenset({"kind", "connection", "direction", "endpoint"})
 _DERIVED_LEAF_KEYS = frozenset({"kind", "connection", "traversal", "max_hops", "endpoint"})
 # Leaf endpoints target a realizer set (registry) or a layer (domain[+class]); the ``type``
 # key belongs to EDGE endpoints only (enforced inline in ``_endpoint_type``).
@@ -99,6 +103,7 @@ def _pattern(item: object, *, label: str) -> TracePattern:
         branches=_branches(_require(raw, "branches", label=scoped), label=scoped),
         shortcuts=shortcuts,
         leaf=_leaf(raw.get("leaf"), label=scoped),
+        rollup=_rollup(raw.get("rollup"), label=scoped),
         diagnostic=bool(raw.get("diagnostic", False)),
     )
 
@@ -150,6 +155,22 @@ def _stored_edge(value: object, *, label: str) -> StoredEdge:
         connection=str(_require(raw, "connection", label=label)),
         direction=_direction(_require(raw, "direction", label=label), label=label),
         endpoint_type=_endpoint_type(raw, label=label),
+    )
+
+
+def _rollup(value: object, *, label: str) -> RollupEdge | None:
+    """The optional whole-part edge a row's verdict composes over. Absent means no composition."""
+    if value is None:
+        return None
+    raw = _mapping(value, label=f"{label} rollup")
+    kind = str(raw.get("kind", "rollup-edge"))
+    if kind != "rollup-edge":
+        raise TracePatternError(ERR_UNKNOWN_VARIANT, f"{label} rollup: must be rollup-edge, got {kind!r}")
+    _check_keys(raw, _ROLLUP_EDGE_KEYS, label=f"{label} rollup")
+    return RollupEdge(
+        connection=str(_require(raw, "connection", label=f"{label} rollup")),
+        direction=_direction(_require(raw, "direction", label=f"{label} rollup"), label=f"{label} rollup"),
+        endpoint_type=_endpoint_type(raw, label=f"{label} rollup"),
     )
 
 
