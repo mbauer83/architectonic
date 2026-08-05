@@ -18,6 +18,38 @@ from .candidate_state import candidate_registry
 KNOWN_DELETE_OPS = frozenset({"delete_entity", "delete_connection", "delete_document", "delete_diagram"})
 KNOWN_OPS = frozenset({"create_entity", "add_connection", "edit_entity", "edit_connection"})
 
+#: The fields each op accepts, so an item carrying anything else is refused rather than performed
+#: differently. A field this table does not name is a caller error — a misspelling, or a field
+#: borrowed from a sibling tool — and ignoring it silently is how `edit_connection` with `mode:
+#: "remove"` (the field is `operation`) ran as an *update* and reported `wrote: true` for a removal
+#: that never happened. `_ref` is accepted everywhere: it is the caller's own alias for the item.
+KNOWN_ITEM_FIELDS: dict[str, frozenset[str]] = {
+    "create_entity": frozenset({
+        "op", "_ref", "artifact_type", "name", "summary", "properties", "attribute_types", "notes",
+        "keywords", "specializations", "artifact_id", "version", "status", "group",
+    }),
+    "add_connection": frozenset({
+        "op", "_ref", "source_entity", "target_entity", "connection_type", "description",
+        "src_multiplicity", "tgt_multiplicity", "specializations", "metadata", "version", "status",
+    }),
+    "edit_entity": frozenset({
+        "op", "_ref", "artifact_id", "name", "summary", "properties", "attribute_types", "notes",
+        "keywords", "specializations", "version", "status", "group",
+    }),
+    "edit_connection": frozenset({
+        "op", "_ref", "source_entity", "target_entity", "connection_type", "operation",
+        "description", "src_multiplicity", "tgt_multiplicity", "specializations", "metadata",
+    }),
+}
+
+
+def unknown_item_fields(item: dict) -> tuple[str, ...]:
+    """The fields *item* carries that its op does not accept, in the order they appear."""
+    accepted = KNOWN_ITEM_FIELDS.get(str(item.get("op", "")))
+    if accepted is None:
+        return ()
+    return tuple(str(key) for key in item if str(key) not in accepted)
+
 
 def resolve_ref(value: str, ref_map: dict[str, str]) -> str:
     if value.startswith("$ref:"):

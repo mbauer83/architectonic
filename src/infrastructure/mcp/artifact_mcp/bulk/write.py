@@ -18,10 +18,12 @@ from src.infrastructure.write.operation_registry import operation_registry
 
 from .candidate_state import candidate_registry, candidate_store
 from .common import (
+    KNOWN_ITEM_FIELDS,
     KNOWN_OPS,
     normalize_staged_result,
     resolve_root,
     stage_batch_verification,
+    unknown_item_fields,
 )
 from .diagram_refs import auto_sync_diagrams, collect_bulk_write_auto_sync_diagram_ids
 from .write_apply import apply_add_connections, apply_create_entities, apply_edits
@@ -52,7 +54,11 @@ def artifact_bulk_write(
     creates_ent = [(index, item) for index, item in indexed if item.get("op") == "create_entity"]
     creates_con = [(index, item) for index, item in indexed if item.get("op") == "add_connection"]
     edits = [(index, item) for index, item in indexed if item.get("op") in {"edit_entity", "edit_connection"}]
-    unknown = [(index, item) for index, item in indexed if item.get("op") not in KNOWN_OPS]
+    unknown = [
+        (index, item)
+        for index, item in indexed
+        if item.get("op") not in KNOWN_OPS or unknown_item_fields(item)
+    ]
     if unknown:
         payload = build_write_payload(
             items=_unknown_op_items(
@@ -97,9 +103,20 @@ def _unknown_op_items(
 ) -> list[dict[str, object]]:
     results: dict[int, dict[str, object]] = {}
     for index, item in unknown:
+        op = str(item.get("op", "unknown"))
+        stray = unknown_item_fields(item)
+        if op not in KNOWN_OPS:
+            error = f"Unknown op '{item.get('op')}'"
+        else:
+            accepted = ", ".join(sorted(KNOWN_ITEM_FIELDS[op]))
+            error = (
+                f"Unknown field(s) {', '.join(repr(field) for field in stray)} for op '{op}'. "
+                f"Accepted: {accepted}. A field this op does not accept is not ignored: it would "
+                f"make the item do something other than what it says."
+            )
         results[index] = {
             "op": item.get("op", "unknown"),
-            "error": f"Unknown op '{item.get('op')}'",
+            "error": error,
             "wrote": False,
             "dry_run": dry_run,
             "operation_id": operation_id,
