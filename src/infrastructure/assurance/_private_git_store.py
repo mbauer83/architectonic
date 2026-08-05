@@ -20,6 +20,7 @@ import logging
 from pathlib import Path
 
 from src.application.assurance.node_sorting import sorted_node_dicts
+from src.domain.assurance.arch_ref_identity import refs_to_retarget
 from src.domain.assurance.assurance_node_types import NODE_UPDATABLE
 from src.domain.assurance.node_search import rank_node_matches
 from src.domain.clock import utc_now_iso as _now_iso
@@ -275,6 +276,21 @@ class PrivateGitAssuranceStore(
         if ref:
             ref["resolved_at"] = _now_iso()
             self._write(path, ref)
+
+    def retarget_arch_refs(self, *, new_arch_artifact_id: str) -> int:
+        """Rewrite refs naming this artifact under an older slug. The id is in the filename too, so
+        each record moves rather than being edited in place."""
+        self._require_unlocked()
+        moved = 0
+        for ref in refs_to_retarget(self.list_arch_refs(), new_arch_artifact_id=new_arch_artifact_id):
+            node_id, ref_type = str(ref["assurance_node_id"]), str(ref["ref_type"])
+            old_path = self._repo / "refs" / _ref_filename(node_id, ref_type, str(ref["arch_artifact_id"]))
+            new_path = self._repo / "refs" / _ref_filename(node_id, ref_type, new_arch_artifact_id)
+            self._write(new_path, {**ref, "arch_artifact_id": new_arch_artifact_id})
+            if new_path != old_path:
+                old_path.unlink(missing_ok=True)
+            moved += 1
+        return moved
 
     def list_arch_refs(
         self,

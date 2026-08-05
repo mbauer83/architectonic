@@ -26,6 +26,12 @@ different checkout's model, with every response well-formed.
   carry one type and the derived endpoint pair required to be permitted, which is where "a junction may
   only carry a type admissible for every participant" applies. Contrast a grouping, whose members only
   *potentially* carry the whole's relationship (`PDR12`).
+- **A rename now reaches the confidential assurance store, when it is unlocked.** An assurance node's
+  reference to an architecture artifact holds its full id; a rename left that reference resolvable —
+  identity is the id's stem — but spelled with a name the artifact no longer has, in front of a reader
+  reviewing a safety argument. The rename announces itself and a registered follower retargets those
+  references, matching on the stem so an even older spelling heals too. The write path never reaches
+  into the closed tier: a locked or unconfigured store means no follower and no failure.
 - **A batch item carrying a field its operation does not accept is refused, not performed
   differently.** Removal is selected by `operation=remove`; an item passing `mode: "remove"` had that
   field ignored, ran as an update, and reported `wrote: true` for a removal that never happened. Every

@@ -6,6 +6,7 @@ from pathlib import Path
 
 from src.application.modeling.artifact_write import format_entity_markdown, slugify
 from src.application.profile_quarantine import assert_not_quarantined
+from src.application.rename_followers import ArtifactRenamed, announce_rename
 from src.application.verification.artifact_verifier import ArtifactRegistry, ArtifactVerifier
 from src.domain.modules.module_types import EntityTypeName
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
@@ -307,6 +308,13 @@ def edit_entity(
 
     total_rewrites = len(renamed_paths) + len(referrer_paths) + len(doc_link_paths)
     warnings.append(f"Renamed artifact-id to {effective_artifact_id} and updated {total_rewrites} outgoing file(s).")
+    # Announced after the rename is committed, never before: a tier that holds this id can then
+    # follow, and one that cannot — a locked confidential store, an unconfigured capability — leaves
+    # the rename alone. References there resolve by the id's stem, so they stay correct meanwhile and
+    # the next rename heals them.
+    warnings.extend(
+        announce_rename(ArtifactRenamed(old_artifact_id=artifact_id, new_artifact_id=effective_artifact_id))
+    )
     return _entity_result(
         wrote=True, path=target_entity_file, artifact_id=effective_artifact_id,
         content=None, warnings=warnings, verification=res,

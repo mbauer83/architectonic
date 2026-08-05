@@ -198,6 +198,17 @@ class ConfidentialAssuranceStore(Protocol):
         arch_artifact_id: str | None = None,
     ) -> list[dict[str, object]]: ...
 
+    def retarget_arch_refs(self, *, new_arch_artifact_id: str) -> int:
+        """Rewrite every reference naming this artifact under an older slug; return how many moved.
+
+        Renaming an architecture artifact leaves an assurance reference to it *resolvable* — identity
+        is the id's stem — but spelled with a name the artifact no longer has, in front of a reader
+        reviewing a safety argument. The store owns its own records, so it is the store that retargets
+        them; a caller reaching in to delete and re-register would lose `resolved_at` and could not be
+        atomic about it.
+        """
+        ...
+
     def search_nodes(
         self,
         query: str,

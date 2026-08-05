@@ -21,6 +21,7 @@ import logging
 from typing import Any
 
 from src.application.assurance.node_sorting import resolve_node_sort
+from src.domain.assurance.arch_ref_identity import refs_to_retarget
 from src.domain.assurance.assurance_node_types import NODE_UPDATABLE
 from src.domain.assurance.node_search import rank_node_matches
 from src.domain.clock import utc_now_iso
@@ -328,6 +329,18 @@ class PocketBaseAssuranceStore(
                     json={"resolved_at": utc_now_iso()},
                 ).raise_for_status()
                 return
+
+    def retarget_arch_refs(self, *, new_arch_artifact_id: str) -> int:
+        """Patch every ref naming this artifact under an older slug; `resolved_at` is left as it is."""
+        client = self._require_unlocked()
+        moved = 0
+        for ref in refs_to_retarget(self._raw_arch_refs(), new_arch_artifact_id=new_arch_artifact_id):
+            client.patch(
+                f"{self._ref_url()}/{str(ref['id'])}",
+                json={"arch_artifact_id": new_arch_artifact_id},
+            ).raise_for_status()
+            moved += 1
+        return moved
 
     def _raw_arch_refs(
         self,

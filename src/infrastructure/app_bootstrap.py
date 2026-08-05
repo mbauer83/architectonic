@@ -121,6 +121,10 @@ def _inject_capability_sentinels(registered_names: set[str]) -> None:
     if capability.enabled:
         registered_names.add("confidential_store")
         _logger.info("confidential_store capability available at %s", capability.db_path)
+        # Registered here, with the capability that makes the tier reachable at all: the architecture
+        # write path announces a rename and knows nothing about who follows it, and a deployment
+        # without a confidential store registers no follower rather than carrying a dormant one.
+        from src.infrastructure.assurance import arch_ref_rename_follower  # noqa: F401, PLC0415
 
 
 def build_module_registry(*, complete_vocabulary: bool = False) -> ModuleRegistry:

@@ -26,7 +26,7 @@ from src.application.assurance.node_sorting import resolve_node_sort
 from src.domain.assurance.assurance_node_types import NODE_UPDATABLE
 from src.infrastructure.assurance import _credential_accounts as accounts
 from src.infrastructure.assurance import _sqlcipher_analysis as _analysis
-from src.infrastructure.assurance._edge_records import as_arch_ref_records, as_edge_records
+from src.infrastructure.assurance._edge_records import as_edge_records
 from src.infrastructure.assurance._fmea_assessment_records import SqlFmeaAssessmentMixin
 from src.infrastructure.assurance._id_utils import make_edge_id, make_node_id
 from src.infrastructure.assurance._node_records import as_node_record, as_node_records
@@ -36,10 +36,12 @@ from src.infrastructure.assurance._sqlcipher_util import now_iso as _now_iso
 from src.infrastructure.assurance._sqlcipher_util import suppress_c_stderr as _suppress_c_stderr
 from src.infrastructure.assurance._sqlcipher_util import where as _where
 
+from ._sql_arch_refs import SqlArchRefMixin
+
 logger = logging.getLogger(__name__)
 
 
-class SQLCipherAssuranceStore(SqlFmeaAssessmentMixin):
+class SQLCipherAssuranceStore(SqlFmeaAssessmentMixin, SqlArchRefMixin):
     """Adapter implementing ConfidentialAssuranceStore using SQLCipher.
 
     Connection lifecycle (per-thread WAL connections, generation-based
@@ -338,50 +340,6 @@ class SQLCipherAssuranceStore(SqlFmeaAssessmentMixin):
         conn = self._require_unlocked()
         conn.execute("DELETE FROM assurance_edges WHERE edge_id = ?", (edge_id,))
         conn.commit()
-
-    # ── Architecture cross-references ──────────────────────────────────────────
-
-    def register_arch_ref(
-        self,
-        assurance_node_id: str,
-        arch_artifact_id: str,
-        ref_type: str,
-    ) -> None:
-        conn = self._require_unlocked()
-        conn.execute(
-            "INSERT OR REPLACE INTO arch_refs (assurance_node_id, arch_artifact_id, ref_type) "
-            "VALUES (?, ?, ?)",
-            (assurance_node_id, arch_artifact_id, ref_type),
-        )
-        conn.commit()
-
-    def mark_arch_ref_resolved(
-        self,
-        assurance_node_id: str,
-        arch_artifact_id: str,
-        ref_type: str,
-    ) -> None:
-        """Set resolved_at timestamp on an existing arch_ref row."""
-        conn = self._require_unlocked()
-        conn.execute(
-            "UPDATE arch_refs SET resolved_at = ? "
-            "WHERE assurance_node_id = ? AND arch_artifact_id = ? AND ref_type = ?",
-            (_now_iso(), assurance_node_id, arch_artifact_id, ref_type),
-        )
-        conn.commit()
-
-    def list_arch_refs(
-        self,
-        *,
-        assurance_node_id: str | None = None,
-        arch_artifact_id: str | None = None,
-    ) -> list[dict[str, object]]:
-        conn = self._require_unlocked()
-        where, params = _where(
-            {"assurance_node_id": assurance_node_id, "arch_artifact_id": arch_artifact_id}
-        )
-        rows = conn.execute(f"SELECT * FROM arch_refs {where}", params).fetchall()
-        return as_arch_ref_records(list(rows))
 
     def search_nodes(
         self,
