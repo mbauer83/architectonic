@@ -10,12 +10,12 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 from src.application.verification._verifier_rules_bindings import get_allowed_bindings
+from src.application.verification._verifier_rules_diagram_references import check_diagram_references_scoped
 from src.application.verification._verifier_rules_semantic import (
     _is_structure,
     _permitted,
     check_connection_semantics,
 )
-from src.application.verification.artifact_verifier_rules import check_diagram_references_scoped
 from src.application.verification.artifact_verifier_types import VerificationResult
 from src.domain.modules.catalogs import DiagramTypeCatalog
 

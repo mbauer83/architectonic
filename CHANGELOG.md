@@ -14,18 +14,18 @@ different checkout's model, with every response well-formed.
 
 ### Fixed
 
-- **Tracing analyses now see through AND/OR junctions.** Composition refused junction intermediates
-  outright, and the restriction set refused them again — `RJ1` requires an intermediate's domain to
-  match an endpoint's, and a junction's derivation domain is `relationships` precisely because it
-  stands for a relationship rather than an element, so it never matched. A junction was therefore a
-  dead end for every derived-relationship consumer: impact analysis stopped at it, and a requirement
-  realized through an AND-junction was reported **unrealized**, because the eligible-realizer set
-  rightly excludes junctions as structural helpers and nothing could stand in for the participants. A
-  junction *is* one relationship, split or joined, so it now passes the relationship through unchanged
-  and **certainly** — declared as ontology data (`RJ3`), not evaluator logic, with both legs required to
-  carry one type and the derived endpoint pair required to be permitted, which is where "a junction may
-  only carry a type admissible for every participant" applies. Contrast a grouping, whose members only
-  *potentially* carry the whole's relationship (`PDR12`).
+- **Tracing analyses now see through AND/OR junctions.** A junction was a dead end for every
+  derived-relationship consumer: impact analysis stopped at it, and a requirement realized through an
+  AND-junction was reported **unrealized**. A junction *is* one relationship, split or joined, so it now
+  passes the relationship through unchanged and **certainly** — declared as ontology data (`RJ3`), not
+  evaluator logic, with both legs required to carry one type and the derived endpoint pair required to
+  be permitted, which is where "a junction may only carry a type admissible for every participant"
+  applies. Contrast a grouping, whose members only *potentially* carry the whole's relationship
+  (`PDR12`).
+- **A diagram naming an entity or connection by a former slug is now reported (W305/W306).**
+  `artifact_verify` answered **0 warnings** over 16 stale references across 6 diagrams — identity is the
+  id's stem, so each one resolved, and the connection-file check (W121) never reached a diagram's
+  `entity-ids-used`. Both sides now read one rule, silent when a reference carries no slug at all.
 - **A rename now reaches the confidential assurance store, when it is unlocked.** An assurance node's
   reference to an architecture artifact holds its full id; a rename left that reference resolvable —
   identity is the id's stem — but spelled with a name the artifact no longer has, in front of a reader

@@ -15,6 +15,7 @@ from src.application.verification._verifier_contribution_runner import (
 )
 from src.application.verification._verifier_document import verify_document
 from src.application.verification._verifier_outgoing import verify_outgoing
+from src.application.verification._verifier_rules_diagram_references import check_diagram_references_scoped
 from src.application.verification._verifier_rules_edge_labels import check_edge_label_overrides
 from src.application.verification._verifier_rules_grf import check_global_artifact_reference
 from src.application.verification._verifier_rules_puml_completeness import check_puml_relation_rules
@@ -45,7 +46,6 @@ from src.application.verification.artifact_verifier_rules import (
     check_artifact_id_entity,
     check_artifact_type,
     check_diagram_artifact_type,
-    check_diagram_references_scoped,
     check_enum,
     check_matrix_markdown_shape,
     check_puml_structure,

@@ -12,6 +12,7 @@ Short form (no slug) is the stable identity key throughout the index.
 from __future__ import annotations
 
 import re
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 
 #: The rename-volatile slug tail. Defined once: anything that needs to recognise a slug
@@ -112,6 +113,52 @@ def slug_of(s: str) -> str | None:
     return s.rsplit(".", 1)[1]
 
 
+def canonical_ids_by_stem(
+    ids: Iterable[str], *, stem_of: Callable[[str], str] = stable_id
+) -> dict[str, set[str]]:
+    """Stem → every full id carrying it, for asking how an artifact is spelled *now*.
+
+    A set rather than a single value: the engagement and enterprise tiers can both hold an artifact
+    with the same stem, and picking one arbitrarily would report drift against a correct reference.
+    ``stem_of`` selects the identity grammar — ``stable_id`` for entities, ``stable_conn_id`` for
+    connections, whose stem joins two endpoint ids.
+    """
+    index: dict[str, set[str]] = {}
+    for artifact_id in ids:
+        index.setdefault(stem_of(artifact_id), set()).add(artifact_id)
+    return index
+
+
+def current_spelling_of(
+    reference: str,
+    canonical_ids: Mapping[str, set[str]],
+    *,
+    stem_of: Callable[[str], str] = stable_id,
+) -> str | None:
+    """The id *reference* would name if it were spelled currently — or None if there is nothing to say.
+
+    Identity is the stem, so a reference holding a former slug still resolves everywhere: this is
+    never a defect in resolution. It is worth reporting because the slug is the only part of an id a
+    reader understands, and one naming a title the artifact no longer has misleads in review.
+
+    None when the reference carries no slug at all: the stem alone is a legitimate spelling — it is
+    the form the index itself keys artifacts under — and it names no title, so it misleads nobody.
+    Only a slug that *was* a title and no longer is does that.
+
+    Also None when the reference is already current, when the stem is unknown, and when the stem is
+    ambiguous — with more than one candidate there is no single current spelling to name, and
+    guessing would report drift against a correct reference. Ambiguity across tiers is diagnosed on
+    its own by the resolver, not here.
+    """
+    if slug_of(reference) is None:
+        return None
+    candidates = canonical_ids.get(stem_of(reference), set())
+    if len(candidates) != 1:
+        return None
+    canonical = next(iter(candidates))
+    return None if canonical == reference else canonical
+
+
 def parse_entity_id(s: str) -> EntityId:
     """Parse and validate an entity artifact ID; raise MalformedArtifactIdError on failure."""
     m = _ENTITY_ID_RE.match(s)
@@ -175,11 +222,12 @@ def stable_conn_id(s: str) -> str:
         return s
 
 
-def parse_connection_id(s: str) -> ConnectionKey:
-    """Parse a connection ID of the form '{src}---{tgt}@@{type}'.
+def connection_id_as_written(s: str) -> tuple[str, str, str]:
+    """A connection ID split into ``(source, target, type)`` with each endpoint left as spelled.
 
-    Both endpoints are canonicalized to their short (stable) form so that
-    stale-slug and current-slug forms of the same connection compare equal.
+    The grammar lives here once. ``parse_connection_id`` collapses the endpoints to their stable
+    form, which is right for identity and wrong for anything asking how the reference *reads* —
+    and a second copy of the split is how the two answers drift apart.
     """
     at_at = s.find("@@")
     if at_at < 0:
@@ -193,8 +241,38 @@ def parse_connection_id(s: str) -> ConnectionKey:
     tgt = endpoints_part[triple_dash + 3 :]
     if not src or not tgt or not conn_type:
         raise MalformedArtifactIdError(f"Malformed connection ID (empty segment): {s!r}")
+    return src, tgt, conn_type
+
+
+def parse_connection_id(s: str) -> ConnectionKey:
+    """Parse a connection ID of the form '{src}---{tgt}@@{type}'.
+
+    Both endpoints are canonicalized to their short (stable) form so that
+    stale-slug and current-slug forms of the same connection compare equal.
+    """
+    src, tgt, conn_type = connection_id_as_written(s)
     return ConnectionKey(
         src_short=stable_id(src),
         type=conn_type,
         tgt_short=stable_id(tgt),
     )
+
+
+def current_connection_spelling(
+    reference: str, canonical_entity_ids: Mapping[str, set[str]]
+) -> str | None:
+    """*reference* rewritten with each endpoint's current slug — or None if there is nothing to say.
+
+    A connection is identified by its endpoints' stems and its type, which is the form the index
+    keys it under: there is no stored slugged spelling of a connection to compare against. What can
+    go stale is each endpoint's slug, and the entity index is what knows the current one. Reported
+    per entry rather than per endpoint, because what a reader has to rewrite is the whole entry.
+    """
+    try:
+        source, target, conn_type = connection_id_as_written(reference)
+    except MalformedArtifactIdError:
+        return None  # Malformed references are diagnosed where the reference is resolved.
+    current_source = current_spelling_of(source, canonical_entity_ids) or source
+    current_target = current_spelling_of(target, canonical_entity_ids) or target
+    rewritten = f"{current_source}---{current_target}@@{conn_type}"
+    return None if rewritten == reference else rewritten

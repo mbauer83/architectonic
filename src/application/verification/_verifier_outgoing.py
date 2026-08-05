@@ -23,7 +23,7 @@ from src.application.verification.artifact_verifier_types import (
     Severity,
     VerificationResult,
 )
-from src.domain.artifact_id import stable_id
+from src.domain.artifact_id import canonical_ids_by_stem, current_spelling_of, stable_id
 from src.domain.ontology_representation.specialization_values import applied_specialization_slugs
 from src.domain.ontology_representation.specializations import SpecializationCatalog
 from src.domain.repository.connection_declaration import (
@@ -114,21 +114,13 @@ def _check_target_slug_drift(
 ) -> None:
     """W121 — the target resolves, but names the entity by a slug it no longer has.
 
-    Identity is the ``PREFIX@epoch.random`` stem, so this reference is not broken and every
-    consumer resolves it: a warning, never an error. It is still worth reporting, because
-    the slug is the only part of the id a reader can understand, and one naming a former
-    title of the target is actively misleading in review — silence here is what let drift
-    accumulate unnoticed.
-
-    Silent when the stem is ambiguous: with more than one candidate there is no single
-    "current" slug to name, and guessing would report drift against a correct reference.
-    Ambiguity across tiers is diagnosed on its own by the resolver, not here.
+    A warning, never an error: identity is the stem, so nothing is broken and every consumer
+    resolves it. Reporting it is what keeps drift from accumulating unnoticed — see
+    ``current_spelling_of``, which owns when there is something to report and when guessing
+    would be worse than silence. The same rule reads a diagram's references (W305/W306).
     """
-    candidates = canonical_ids_by_short.get(stable_id(target_id), set())
-    if len(candidates) != 1:
-        return
-    canonical = next(iter(candidates))
-    if canonical == target_id:
+    canonical = current_spelling_of(target_id, canonical_ids_by_short)
+    if canonical is None:
         return
     result.issues.append(
         Issue(
@@ -225,13 +217,8 @@ def verify_outgoing(
         all_short_ids = {stable_id(e) for e in all_entity_ids}
         ent_short_ids = {stable_id(e) for e in ent_entity_ids}
         allowed_short_ids = ent_short_ids if scope == "enterprise" else all_short_ids
-        # Short id → every full id carrying it, so a resolving reference can be compared
-        # against the slug the target actually has (W121). A set, not a single value: the
-        # engagement and enterprise tiers can both hold an entity with the same stem, and
-        # picking one arbitrarily would report drift against a perfectly correct reference.
-        canonical_ids_by_short: dict[str, set[str]] = {}
-        for entity_id in all_entity_ids:
-            canonical_ids_by_short.setdefault(stable_id(entity_id), set()).add(entity_id)
+        # So a resolving reference can be compared against the slug the target actually has (W121).
+        canonical_ids_by_short = canonical_ids_by_stem(all_entity_ids)
     else:
         all_short_ids = ent_short_ids = allowed_short_ids = set()
         canonical_ids_by_short = {}

@@ -45,7 +45,7 @@ def get_allowed_bindings(
 
 
 # ---------------------------------------------------------------------------
-# Public entry point — called from check_diagram_references_scoped
+# Public entry point — called from check_diagram_references_scoped (_verifier_rules_diagram_references)
 # ---------------------------------------------------------------------------
 
 
