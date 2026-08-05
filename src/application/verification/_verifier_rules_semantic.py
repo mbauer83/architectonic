@@ -273,8 +273,11 @@ def check_connection_semantics(
                     )
 
         if specialization_catalog is not None and target_type is not None:
-            connection_specialization = str(decl.metadata.get("specialization") or "")
-            if connection_specialization:
+            # Read the same way as everywhere else: a scalar is the one-element case, a list is
+            # several (ArchiMate §15.2). `str()` of the raw value turned a list into "['a', 'b']",
+            # a slug no catalog declares — so a connection carrying two had *neither* checked, and
+            # the check that stayed silent was the one whose whole job is to narrow endpoints.
+            for connection_specialization in applied_specialization_slugs(decl.metadata.get("specialization")):
                 _check_connection_endpoint_restriction(
                     specialization_catalog,
                     slug=connection_specialization,

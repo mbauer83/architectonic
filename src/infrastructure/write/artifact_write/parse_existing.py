@@ -10,6 +10,7 @@ from pathlib import Path
 
 import yaml  # type: ignore[import-untyped]
 
+from src.domain.ontology_representation.specialization_values import applied_specialization_slugs
 from src.domain.repository.connection_declaration import ConnectionDeclaration, parse_connection_declarations
 
 
@@ -273,9 +274,14 @@ def _declaration_to_dict(decl: ConnectionDeclaration) -> dict[str, object]:
         conn["associated_entities"] = list(decl.associated_entities)
     if decl.metadata:
         conn["metadata"] = dict(decl.metadata)
-    specialization = decl.metadata.get("specialization")
-    if isinstance(specialization, str) and specialization:
-        conn["specialization"] = specialization
+    # Read whichever shape the file used — a scalar is the one-element case, a list is several
+    # (ArchiMate §15.2). Accepting only the scalar dropped a list on the way back out: the
+    # formatter treats this key as authoritative and *removes* the carried block's value when it
+    # is absent, so re-rendering the file for any other connection in it silently unspecialized
+    # the one carrying two.
+    applied = applied_specialization_slugs(decl.metadata.get("specialization"))
+    if applied:
+        conn["specialization"] = list(applied)
     return conn
 
 

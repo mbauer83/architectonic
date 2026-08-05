@@ -93,18 +93,28 @@ broaden it — checked at catalog-load time.
 
 ### Assigning a specialization
 
-An entity or connection carries **at most one** specialization slug at a time (an instance
-has exactly one parent type, so "one specialization" is the natural cardinality — the
-catalog itself stays plural, enumerating every *available* option per parent type).
+An entity or connection may carry **several** specialization slugs (ArchiMate §15.2) — a
+concept has one parent type but can be several kinds of it at once, and the attribute
+schemata of every applied specialization merge. The **key stays singular** and its *value*
+carries the shape: one slug is written as a scalar, so the many files holding one are
+byte-identical to what they were, and several as a list.
 
-- **Entities**: the `specialization: <slug>` frontmatter field, set via
-  `artifact_create_entity`/`artifact_edit_entity` (empty string clears it).
+- **Entities**: the `specialization:` frontmatter field, set via
+  `artifact_create_entity`/`artifact_edit_entity` (an empty list clears it).
 - **Connections**: a fenced YAML metadata block immediately under the connection's `### `
   heading in `.outgoing.md` — never the file's shared frontmatter, which covers every
-  connection in the file — carrying `specialization: <slug>` (and open to future
-  per-connection metadata). Set via `artifact_add_connection`/`artifact_edit_connection`.
+  connection in the file — carrying `specialization:` (and open to future per-connection
+  metadata). Set via `artifact_add_connection`/`artifact_edit_connection`.
 
-The verifier checks every assignment:
+Carrying several on one connection is also what keeps connection identity intact. A
+connection is identified by `(source, target, type)`, so two connections between the same
+endpoints with the same type — distinguished only by their specializations — are one
+connection, and the second reads as a duplicate (W120). One connection carrying both says
+what the model means without changing what a connection is.
+
+The verifier checks **every applied slug**, not just the first — each may narrow endpoints or
+relationships on its own, so checking one left the rest unenforced silently for as long as
+nothing carried two:
 
 | Code | Severity | Meaning |
 |---|---|---|
