@@ -1,20 +1,20 @@
 """Semantic triple validation for ArchiMate 4.0 connections.
 
-Checks that each (source_type, connection_type, target_type) triple in an
-outgoing file is permitted by the active ontology.  Emits E126 for illegal
-triples, W126 as realization-quality guidance, W127 when a multiplicity is
-set on a junction-attached connection end (junctions do not support
-multiplicities — this is a read-time complement to the write-time hard block
-in `artifact_write/connection.py::add_connection`, catching persisted data
-that predates that guard or entered through the edit path, which does not
-enforce it), W128 when a connection specialization's `restrict_endpoints`
-allow-list doesn't cover the actual (source_type, target_type) pair, and W129
-when a source/target entity's own specialization's `restrict_relationships`
-allow-list doesn't cover the actual (conn_type, source_type, target_type)
+Checks that each (source_type, connection_type, target_type) triple in an outgoing file is permitted
+by the active ontology. Emits E126 for illegal triples, W126 as realization-quality guidance, W128
+when a connection specialization's `restrict_endpoints` allow-list doesn't cover the actual
+(source_type, target_type) pair, and W129 when a source/target entity's own specialization's
+`restrict_relationships` allow-list doesn't cover the actual (conn_type, source_type, target_type)
 triple for the role that entity plays.
+
+The rules about a connection *end* that stands for a relationship — W127, E128 and E129 — live in
+`_verifier_rules_junction_ends.py`, and run from the same per-declaration loop because they need the
+same resolved endpoint types.
 """
 
 from __future__ import annotations
+
+from collections.abc import Callable
 
 from src.application.global_reference_endpoints import (
     GLOBAL_ARTIFACT_REFERENCE_TYPE,
@@ -22,18 +22,21 @@ from src.application.global_reference_endpoints import (
     EffectiveEndpoint,
     effective_endpoint,
 )
+from src.application.verification._verifier_rules_junction_ends import (
+    check_junction_multiplicity,
+    check_mediated_leg,
+)
 from src.application.verification.artifact_verifier_parsing import parse_frontmatter_from_path
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.application.verification.artifact_verifier_types import Issue, Severity, VerificationResult
 from src.domain.modules.catalogs import ConnectionSemantics, OntologyCatalog
-from src.domain.ontology_representation.specialization_values import (
-    applied_specialization_slugs,
-)
+from src.domain.ontology_representation.specialization_values import applied_specialization_slugs
 from src.domain.ontology_representation.specializations import (
     EndpointRestriction,
     RelationshipRestriction,
     SpecializationCatalog,
 )
+from src.domain.relationships.relationship_mediation import PassThroughMediation
 from src.domain.repository.connection_declaration import ConnectionDeclaration
 
 
@@ -99,29 +102,6 @@ _BEHAVIOR_TARGET = frozenset(["service"])
 
 def _is_structure(ontology_catalog: OntologyCatalog, source_type: str) -> bool:
     return any(source_type in ontology_catalog.entity_types_with_class(cls) for cls in _STRUCTURE_CLASSES)
-
-
-def _check_junction_multiplicity(
-    ontology_catalog: OntologyCatalog,
-    *,
-    entity_id: str,
-    entity_type: str,
-    multiplicity: str,
-    label: str,
-    result: VerificationResult,
-    loc: str,
-) -> None:
-    if not multiplicity or entity_type not in ontology_catalog.entity_types_with_class("junction"):
-        return
-    result.issues.append(
-        Issue(
-            Severity.WARNING,
-            "W127",
-            f"{label.capitalize()} multiplicity '{multiplicity}' is set on a junction connection-end "
-            f"('{entity_id}' is a junction); junctions do not support multiplicities.",
-            loc,
-        )
-    )
 
 
 def _endpoint_pair_allowed(restriction: EndpointRestriction, source_type: str, target_type: str) -> bool:
@@ -206,6 +186,7 @@ def check_connection_semantics(
     connections_catalog: ConnectionSemantics | None = None,
     ontology_catalog: OntologyCatalog | None = None,
     specialization_catalog: SpecializationCatalog | None = None,
+    mediation_of: Callable[[str | None], PassThroughMediation | None] = lambda _type: None,
 ) -> None:
     """Validate semantic triples; add E126/W126/W127/W128/W129 issues to result.
 
@@ -225,12 +206,21 @@ def check_connection_semantics(
     if source_type is None:
         return
     source_specializations = source_endpoint.specializations
+    resolved_types: dict[str, str | None] = {source_id: source_type}
+
+    def entity_type_of(entity_id: str) -> str | None:
+        """Endpoint type, resolved once per file — a junction's own file asks about the same
+        participants as many times as the junction has legs."""
+        if entity_id not in resolved_types:
+            resolved_types[entity_id] = _endpoint(registry, entity_id, read_specialization=False).entity_type
+        return resolved_types[entity_id]
 
     for decl in connections:
         conn_type, target_id = decl.conn_type, decl.target_id
         src_mult, tgt_mult = decl.src_multiplicity, decl.tgt_multiplicity
         target_endpoint = _endpoint(registry, target_id, read_specialization=specialization_catalog is not None)
         target_type = target_endpoint.entity_type
+        resolved_types[target_id] = target_type
 
         if (
             source_endpoint.is_global_reference
@@ -241,7 +231,7 @@ def check_connection_semantics(
             continue
 
         if ontology_catalog is not None:
-            _check_junction_multiplicity(
+            check_junction_multiplicity(
                 ontology_catalog,
                 entity_id=source_id,
                 entity_type=source_type,
@@ -251,7 +241,7 @@ def check_connection_semantics(
                 loc=loc,
             )
             if target_type is not None:
-                _check_junction_multiplicity(
+                check_junction_multiplicity(
                     ontology_catalog,
                     entity_id=target_id,
                     entity_type=target_type,
@@ -260,6 +250,27 @@ def check_connection_semantics(
                     result=result,
                     loc=loc,
                 )
+
+            for intermediate_id, near_id, intermediate_is_target in (
+                (target_id, source_id, True),
+                (source_id, target_id, False),
+            ):
+                intermediate_type = entity_type_of(intermediate_id)
+                mediation = mediation_of(intermediate_type)
+                if mediation is not None and connections_catalog is not None and intermediate_type is not None:
+                    check_mediated_leg(
+                        connections_catalog,
+                        registry,
+                        entity_type_of,
+                        mediation,
+                        intermediate_id=intermediate_id,
+                        intermediate_type=intermediate_type,
+                        near_id=near_id,
+                        conn_type=conn_type,
+                        intermediate_is_target=intermediate_is_target,
+                        result=result,
+                        loc=loc,
+                    )
 
         if specialization_catalog is not None and target_type is not None:
             connection_specialization = str(decl.metadata.get("specialization") or "")

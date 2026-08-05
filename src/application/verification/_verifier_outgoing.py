@@ -6,6 +6,7 @@ import re
 from pathlib import Path
 from typing import Literal
 
+from src.application.mediated_relationships import declared_mediations, mediation_for_type
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.application.verification._verifier_rules_schema import (
     check_connection_metadata_schema,
@@ -273,6 +274,7 @@ def verify_outgoing(
         )
 
     if registry is not None and source and parsed_connections:
+        mediations = declared_mediations(catalogs.module_catalog)
         check_connection_semantics(
             source,
             parsed_connections,
@@ -282,6 +284,9 @@ def verify_outgoing(
             connections_catalog=catalogs.connections,
             ontology_catalog=catalogs.ontology,
             specialization_catalog=catalogs.specializations,
+            mediation_of=lambda entity_type: mediation_for_type(
+                entity_type, catalogs.module_catalog, mediations
+            ),
         )
 
     if repo_root is not None:

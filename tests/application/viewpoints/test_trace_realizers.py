@@ -3,7 +3,7 @@ permitted to realize a requirement and excludes motivation refiners + structural
 
 from __future__ import annotations
 
-from src.application.viewpoints.trace_realizers import eligible_realizer_types
+from src.application.viewpoints.trace_realizers import eligible_realizer_types, structural_helper_types
 from src.infrastructure.app_bootstrap import get_module_registry
 
 
@@ -31,3 +31,27 @@ class TestEligibleRealizerSet:
         eligible = _eligible()
         assert eligible
         assert isinstance(eligible, frozenset)
+
+
+class TestStructuralHelpersComeFromTheRules:
+    """The exclusion is the ontology's statement, not this layer's list.
+
+    A rule that names a type or class as the intermediate it derives *through* is saying that type
+    stands for something else — which is exactly the reason it cannot be a realizer. Reading it back
+    keeps one fact in one place: `RJ3` names the junction class, `PDR12` names the grouping.
+    """
+
+    def test_the_declared_intermediates_are_recognised(self) -> None:
+        helpers = structural_helper_types(get_module_registry())
+
+        assert {"and-junction", "or-junction", "grouping"} <= helpers
+
+    def test_the_set_is_not_silently_empty(self) -> None:
+        """An empty set would exclude nothing and read as "no helpers exist" — the failure mode of a
+        derived value whose source moved."""
+        assert structural_helper_types(get_module_registry())
+
+    def test_an_ordinary_realizer_is_not_a_helper(self) -> None:
+        helpers = structural_helper_types(get_module_registry())
+
+        assert not ({"application-component", "business-process", "capability"} & helpers)

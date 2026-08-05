@@ -105,14 +105,19 @@ alias: {prefix}_{slug}
 
 
 def _outgoing_md(source_id: str, connection_type: str, target_id: str) -> str:
+    """The real outgoing-file shape: `source-entity` names the source, and `§connections` opens the
+    body. This said `artifact-id` and omitted the marker, so every connection it planted indexed with
+    an *empty* source — which no test noticed while the junction rule read the file itself instead of
+    asking the graph."""
     return f"""\
 ---
-artifact-id: {source_id}
-artifact-type: outgoing
+source-entity: {source_id}
 version: 0.1.0
 status: draft
 last-updated: '2026-01-01'
 ---
+
+<!-- §connections -->
 
 ### {connection_type} → {target_id}
 """
@@ -290,7 +295,9 @@ class TestJunctionHomogeneity:
         new_tgt = "REQ@1000000220.JuncTgt2.junc-tgt-two"
         _write(root / "model" / "motivation" / "requirement" / f"{new_tgt}.md", _entity_md(new_tgt, "Junc Tgt 2"))
         registry2, verifier2 = _build_deps(root)
-        with pytest.raises(ValueError, match="locked to connection type"):
+        # One junction carries one relationship type; the wording is the domain rule's, shared with
+        # the verifier's E128 so a refusal and a diagnosis cannot say different things.
+        with pytest.raises(ValueError, match="every leg carries the same type"):
             add_connection(
                 repo_root=root,
                 registry=registry2,

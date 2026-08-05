@@ -123,7 +123,21 @@ implementation, not independent conformance verification):
 | Exhaustive metamodel-wide composition sweep from every direct-relationship pair | `test_relationship_derivation_exhaustive.py` |
 | Encoding-independent semantic invariants (role/strength ordering, the direct-model boundary, the PDR12 grouping-does-not-block-derivation guard) | `test_relationship_derivation_invariants.py` |
 | Admissibility restrictions (R1–R14, RJ1–RJ2) | `test_relationship_derivation_restrictions.py` |
+| Derivation through a junction (RJ3, certain — a junction *is* one relationship, split or joined) | `test_derivation_through_junctions.py` |
 | The spec's own worked examples (B-3, B-9, B-11, B-12, B-17), executed against the real engine, not hand-traced | `test_relationship_derivation_worked_examples.py` |
+
+**A junction may only carry what its participants could hold directly.** The permitted-row table
+admits every junction-capable relationship type between an element and a junction, in both directions,
+and cannot do otherwise: which type is admissible depends on which other elements that junction
+instance joins, which is not a property of either type. Two authoring diagnostics close that gap —
+**E128** when the legs of one junction do not all carry the same relationship type, and **E129** when
+the type is not permitted between every upstream and every downstream participant (the *intersection*
+of what the participants permit, not the union). Both are refused at the write boundary as well as
+reported by the verifier, and both are read off `RJ3`'s own `requires_same_connection_type` and
+`requires_permitted_result` rather than restated — so what a *certain* pass-through rule requires of a
+derivation is exactly what authoring must satisfy. A *potential* rule such as `PDR12` states no fact
+and so constrains no author: a grouping may aggregate a member that could not itself realize what the
+grouping realizes.
 
 Association is deliberately excluded from further derivation composition (weakest dependency
 type, no directional semantics to propagate) — it can still be the outermost relationship a

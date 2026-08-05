@@ -26,6 +26,18 @@ different checkout's model, with every response well-formed.
   carry one type and the derived endpoint pair required to be permitted, which is where "a junction may
   only carry a type admissible for every participant" applies. Contrast a grouping, whose members only
   *potentially* carry the whole's relationship (`PDR12`).
+- **A junction may no longer carry a relationship its participants could not hold.** The type table
+  admits all eleven junction-capable types between an element and a junction and has to — which one is
+  admissible depends on what else that junction instance joins — so a model could assert through a
+  junction what it may not assert directly, and derivation now turns that into a relationship the
+  ontology forbids. Two diagnostics, refused at the write boundary as well as reported by the verifier:
+  **E128** when the legs of one intermediate disagree on a type, **E129** when the type is not permitted
+  between every upstream and every downstream participant. Both demands are read off `RJ3`
+  (`requires_same_connection_type`, `requires_permitted_result`) rather than restated, and it is
+  *certainty* that makes a rule an authoring constraint — a potential push-down like `PDR12` asserts
+  nothing, so a grouping aggregating a member that could not itself realize what the grouping realizes
+  stays a legitimate model. The write path's own weaker copy of the rule, which read only the junction's
+  file and so missed a mismatched leg declared in a participant's, is gone.
 - **A grouping's realization now reaches its members, as a visible inference.** A grouping that realizes
   a requirement is saying its members do — but the eligible-realizer set excludes groupings as structural
   helpers (rightly: a grouping realizes nothing), so the row found one ineligible realizer and reported a

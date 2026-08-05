@@ -1,4 +1,3 @@
-import re
 from collections.abc import Callable, Sequence
 from functools import lru_cache
 from pathlib import Path
@@ -13,6 +12,8 @@ from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.atomic_file import write_atomic
 
 from .boundary import assert_engagement_write_root, modification_stamp, normalize_specializations
+from .entity_frontmatter import entity_artifact_type
+from .mediated_leg_guard import refuse_inadmissible_leg
 from .types import WriteResult
 
 
@@ -21,9 +22,6 @@ def _junction_types() -> frozenset[str]:
     from src.infrastructure.app_bootstrap import get_module_registry  # noqa: PLC0415, process_runtime_catalogs
 
     return frozenset(get_module_registry().entity_types_with_class(ElementClassName("junction")))
-
-
-_CONN_TYPE_RE = re.compile(r"^### (\S+)", re.MULTILINE)
 
 
 def verification_to_conn_dict(path: Path, res) -> dict[str, object]:
@@ -35,61 +33,6 @@ def verification_to_conn_dict(path: Path, res) -> dict[str, object]:
             {"severity": i.severity, "code": i.code, "message": i.message, "location": i.location} for i in res.issues
         ],
     }
-
-
-def _entity_artifact_type(registry: ArtifactRegistry, entity_id: str) -> str | None:
-    """Read artifact-type from an entity's frontmatter without importing the full parser."""
-    import yaml as _yaml
-
-    path = registry.find_file_by_id(entity_id)
-    if path is None:
-        return None
-    try:
-        content = path.read_text(encoding="utf-8")
-        if not content.startswith("---"):
-            return None
-        end = content.find("\n---", 3)
-        if end == -1:
-            return None
-        fm: dict[str, object] = _yaml.safe_load(content[3:end].strip()) or {}
-        return str(fm.get("artifact-type", "")) or None
-    except Exception:
-        return None
-
-
-def _check_junction_homogeneity(
-    registry: ArtifactRegistry,
-    connection_type: str,
-    source_entity: str,
-    target_entity: str,
-) -> None:
-    """Enforce that all connections at a junction have the same relationship type.
-
-    Reads the junction's .outgoing.md file to determine the locked type (set by
-    the first connection added).  Checks both the source and target when either
-    is a junction.  Incoming connections to a junction (stored in other entities'
-    outgoing files) are not checked here — the write layer enforces homogeneity
-    whenever a connection involving a junction is written.
-    """
-    for entity_id in (source_entity, target_entity):
-        if _entity_artifact_type(registry, entity_id) not in _junction_types():
-            continue
-        junc_file = registry.find_file_by_id(entity_id)
-        if junc_file is None:
-            continue
-        out_file = junc_file.with_suffix(".outgoing.md")
-        if not out_file.exists():
-            continue
-        existing_types = {
-            m for m in _CONN_TYPE_RE.findall(out_file.read_text(encoding="utf-8")) if m != connection_type
-        }
-        if existing_types:
-            locked = sorted(existing_types)[0]
-            raise ValueError(
-                f"Junction '{entity_id}' is locked to connection type '{locked}' "
-                f"(determined by its first connection). All connections at a junction "
-                f"must be the same type. Cannot add '{connection_type}'."
-            )
 
 
 def _validate_inputs(
@@ -113,11 +56,11 @@ def _validate_inputs(
         raise ValueError(f"Source entity '{source_entity}' not found in model")
     if stable_id(target_entity) not in known_short_ids:
         raise ValueError(f"Target entity '{target_entity}' not found in model")
-    _check_junction_homogeneity(registry, connection_type, source_entity, target_entity)
 
     source_endpoint = effective_endpoint(registry, source_entity)
     target_endpoint = effective_endpoint(registry, target_entity)
     catalogs = build_runtime_catalogs(reg)
+    refuse_inadmissible_leg(registry, catalogs, connection_type, source_entity, target_entity)
     if source_endpoint.is_global_reference and not catalogs.connections.is_symmetric(connection_type):
         raise ValueError(GLOBAL_REFERENCE_SOURCE_ERROR)
     src_type = source_endpoint.entity_type
@@ -359,7 +302,7 @@ def add_connection(
 
     if src_multiplicity or tgt_multiplicity:
         for eid, label in ((source_entity, "source"), (target_entity, "target")):
-            if _entity_artifact_type(registry, eid) in _junction_types():
+            if entity_artifact_type(registry, eid) in _junction_types():
                 raise ValueError(
                     f"Multiplicities are not permitted at junction connection-ends "
                     f"(the {label} entity '{eid}' is a junction)."

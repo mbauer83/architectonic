@@ -235,8 +235,10 @@ def register(mcp: FastMCP) -> None:
             "outgoing, incoming, and symmetric connections transparently. "
             "Optional src_multiplicity / tgt_multiplicity annotate the source or target end "
             "of the connection (e.g. '1', '0..1', '1..*', '*'). "
-            "Junction endpoints: multiplicities prohibited; all connections at a junction "
-            "must share the same type (first connection locks it). "
+            "Junction endpoints: multiplicities prohibited; every leg of one junction must carry the "
+            "same relationship type, and that type must be permitted between every upstream and every "
+            "downstream participant — a junction may only carry what its participants could hold "
+            "directly. "
             "dry_run=true returns would-be content without writing. "
             "source_entity/target_entity: full (PREFIX@epoch.random.slug) or short (PREFIX@epoch.random) form."
         ),

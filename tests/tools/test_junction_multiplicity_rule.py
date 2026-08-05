@@ -18,6 +18,18 @@ from src.application.verification.artifact_verifier_types import VerificationRes
 from src.domain.repository.connection_declaration import ConnectionDeclaration
 
 
+class _FakeRegistry:
+    """The graph surface the junction rules need, answering "no other legs".
+
+    W127 judges one connection end on its own, but the admissibility rules (E128/E129) ask the
+    junction what else it joins — so a registry stand-in has to answer that question. `object()`
+    never could; it only got away with it while no rule here looked past the declaration.
+    """
+
+    def find_connections_for(self, entity_id: str, *, direction: str = "any", conn_type: str | None = None) -> list:
+        return []
+
+
 class _FakeOntologyCatalog:
     def __init__(self, junction_types: frozenset[str]) -> None:
         self._junction_types = junction_types
@@ -47,7 +59,7 @@ def test_w127_fires_when_source_is_a_junction_with_multiplicity(monkeypatch) -> 
     check_connection_semantics(
         "SRC@1.abc.j",
         [_decl("archimate-association", "TGT@1.abc.t", "1", "")],
-        registry=object(),
+        registry=_FakeRegistry(),
         result=result,
         loc="loc",
         ontology_catalog=_FakeOntologyCatalog(junction_types=frozenset({"junction"})),
@@ -66,7 +78,7 @@ def test_w127_fires_when_target_is_a_junction_with_multiplicity(monkeypatch) -> 
     check_connection_semantics(
         "SRC@1.abc.s",
         [_decl("archimate-association", "TGT@1.abc.j", "", "1")],
-        registry=object(),
+        registry=_FakeRegistry(),
         result=result,
         loc="loc",
         ontology_catalog=_FakeOntologyCatalog(junction_types=frozenset({"junction"})),
@@ -84,7 +96,7 @@ def test_no_w127_when_multiplicity_absent_even_on_a_junction(monkeypatch) -> Non
     check_connection_semantics(
         "SRC@1.abc.j",
         [_decl("archimate-association", "TGT@1.abc.t", "", "")],
-        registry=object(),
+        registry=_FakeRegistry(),
         result=result,
         loc="loc",
         ontology_catalog=_FakeOntologyCatalog(junction_types=frozenset({"junction"})),
@@ -100,7 +112,7 @@ def test_no_w127_when_multiplicity_set_but_not_a_junction(monkeypatch) -> None:
     check_connection_semantics(
         "SRC@1.abc.s",
         [_decl("archimate-association", "TGT@1.abc.t", "1", "1")],
-        registry=object(),
+        registry=_FakeRegistry(),
         result=result,
         loc="loc",
         ontology_catalog=_FakeOntologyCatalog(junction_types=frozenset({"junction"})),
@@ -116,7 +128,7 @@ def test_no_w127_when_ontology_catalog_not_injected(monkeypatch) -> None:
     check_connection_semantics(
         "SRC@1.abc.j",
         [_decl("archimate-association", "TGT@1.abc.t", "1", "")],
-        registry=object(),
+        registry=_FakeRegistry(),
         result=result,
         loc="loc",
         ontology_catalog=None,
