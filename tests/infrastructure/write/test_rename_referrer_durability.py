@@ -143,3 +143,82 @@ class TestDriftHealsRatherThanSticking:
         _connect(repo, source, target)
 
         assert plan_referrer_rewrites(repo_root=repo, new_artifact_id=target) == {}
+
+
+class TestTheRewriteKeepsWhatItDoesNotChange:
+    """A rewrite of the reference, not of the connection.
+
+    The only alternative available before this cascade existed was remove-and-re-add, which loses
+    everything the declaration carried but its endpoints — first of all the description, which is the
+    part a human wrote. A substitution of the id in place keeps it, and that is worth holding: a
+    "repair" that silently drops authored prose is worse than the drift it repairs.
+    """
+
+    def test_a_connection_description_survives_the_rename(self, repo: Path) -> None:
+        source = _entity(repo, "requirement", "Describing Source")
+        target = _entity(repo, "outcome", "Described Target")
+        _connect(repo, source, target)
+
+        _rename(repo, target, "Described Target Renamed")
+
+        assert "Realizes it." in _referrer_text(repo, source)
+
+    def test_the_other_connections_in_the_file_are_untouched(self, repo: Path) -> None:
+        source = _entity(repo, "requirement", "Multi Source")
+        renamed_target = _entity(repo, "outcome", "Moving Target")
+        stable_target = _entity(repo, "outcome", "Staying Target")
+        _connect(repo, source, renamed_target)
+        _connect(repo, source, stable_target)
+
+        _rename(repo, renamed_target, "Moved Target")
+
+        assert stable_target in _referrer_text(repo, source)
+
+
+class TestDiagramSourcesAreReferrersToo:
+    """A diagram names entities in `entity-ids-used` and inside composite connection ids.
+
+    Both resolve leniently, so a stale slug there is invisible at read time — and a diagram is the
+    surface a reader is most likely to be looking at when the name misleads them.
+    """
+
+    def test_a_diagram_naming_the_entity_is_rewritten(self, repo: Path) -> None:
+        target = _entity(repo, "outcome", "Diagrammed Target")
+        source = _entity(repo, "requirement", "Diagrammed Source")
+        _connect(repo, source, target)
+        diagram = mcp.artifact_create_diagram(
+            name="Rename Coverage View",
+            diagram_type="archimate-motivation",
+            entity_ids=[source, target],
+            dry_run=False,
+            repo_root=str(repo),
+        )
+        assert diagram["wrote"], diagram
+        diagram_path = Path(str(diagram["path"]))
+
+        # A name that is not an extension of the old one, so "the old id is gone" is checkable:
+        # renaming to "… Renamed" leaves the old id present as a prefix of the new one.
+        renamed = _rename(repo, target, "Second Subject")
+
+        text = diagram_path.read_text(encoding="utf-8")
+        assert renamed in text
+        assert target not in text
+
+
+class TestNothingLandsHalfway:
+    """The rename and its rewrites are one commit, so a refused rename leaves no trace of itself."""
+
+    def test_a_refused_rename_leaves_every_referrer_as_it_was(self, repo: Path) -> None:
+        source = _entity(repo, "requirement", "Atomic Source")
+        target = _entity(repo, "outcome", "Atomic Target")
+        _connect(repo, source, target)
+        occupant = _entity(repo, "outcome", "Taken Name")
+        before = _referrer_text(repo, source)
+
+        with pytest.raises(ValueError, match="already exists|slug"):
+            mcp.artifact_edit_entity(
+                artifact_id=target, name="Taken Name", dry_run=False, repo_root=str(repo),
+            )
+
+        assert _referrer_text(repo, source) == before
+        assert target in before and occupant not in before
