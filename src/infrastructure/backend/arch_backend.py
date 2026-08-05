@@ -7,7 +7,6 @@ import logging
 import os
 import subprocess
 import sys
-import time
 from collections.abc import Callable
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -29,8 +28,13 @@ from src.infrastructure.backend._startup_id_checks import (
     assert_no_duplicate_short_ids,
 )
 from src.infrastructure.backend.arch_backend_app import _build_app
-from src.infrastructure.backend.backend_probe import probe_backend, resolve_backend_port
+from src.infrastructure.backend.backend_probe import (
+    await_backend_startup,
+    probe_backend,
+    resolve_backend_port,
+)
 from src.infrastructure.backend.backend_state import (
+    _process_exists,
     backend_log_path,
     read_backend_state,
     remove_own_backend_state,
@@ -201,13 +205,18 @@ def _run_daemon(args: argparse.Namespace, resolved_port: int, argv: list[str] | 
         os.environ.update(credentials_to_env_overrides(creds))
     log_path = backend_log_path(Path.cwd())
     pid = _start_daemon(argv=argv, log_path=log_path, port=resolved_port)
-    deadline = time.monotonic() + 15.0
-    while time.monotonic() < deadline:
-        if probe_backend(resolved_port):
-            print(f"backend started on port {resolved_port} (pid {pid}); log: {log_path}")
-            return
-        time.sleep(0.25)
-    raise SystemExit(f"timed out waiting for backend on port {resolved_port}; see {log_path}")
+    verdict = await_backend_startup(
+        lambda: probe_backend(resolved_port),
+        lambda: _process_exists(pid),
+    )
+    if verdict == "serving":
+        print(f"backend started on port {resolved_port} (pid {pid}); log: {log_path}")
+        return
+    if verdict == "exited":
+        raise SystemExit(f"backend on port {resolved_port} exited during startup; see {log_path}")
+    raise SystemExit(
+        f"backend on port {resolved_port} is running (pid {pid}) but never answered; see {log_path}"
+    )
 
 
 def _start_daemon(*, argv: list[str] | None, log_path: Path, port: int | None = None) -> int:

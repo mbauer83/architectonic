@@ -9,7 +9,10 @@ import os
 import shutil
 import socket
 import sys
+import time
+from collections.abc import Callable
 from pathlib import Path
+from typing import Literal
 from urllib.error import URLError
 from urllib.request import Request, urlopen
 
@@ -175,3 +178,45 @@ def backend_start_command(*, port: int, project_dir: Path | None = None) -> list
         ]
 
     return [sys.executable, "-m", "src.infrastructure.backend.arch_backend", "--port", str(port)]
+
+
+#: How long to keep waiting for a starting backend that is still alive but not yet answering.
+#: A backstop against a process that hangs without exiting — deliberately not a prediction of
+#: startup time, which is what the fixed 15s deadline it replaced was, and got wrong.
+DAEMON_BACKSTOP_SECONDS = 600.0
+
+StartupVerdict = Literal["serving", "exited", "backstop"]
+
+
+def await_backend_startup(
+    is_serving: Callable[[], bool],
+    is_alive: Callable[[], bool],
+    *,
+    backstop_s: float = DAEMON_BACKSTOP_SECONDS,
+    poll_s: float = 0.25,
+    sleep: Callable[[float], None] = time.sleep,
+    now: Callable[[], float] = time.monotonic,
+) -> StartupVerdict:
+    """Wait for a starting backend, bounded by *the process*, not by a guess at how long it takes.
+
+    The index is built by scanning every model file on every boot, so startup time is a function of
+    the repository's size. A fixed deadline therefore encodes a corpus size, and reports a *false
+    failure* for any repository larger than whoever chose the number imagined: measured at roughly
+    1.1 ms per file, the 15 seconds this replaced ran out at about 13,600 files, while the backend
+    it declared failed went on to serve normally.
+
+    The process itself answers the question the deadline was guessing at. A child that is still
+    alive is still starting, and one that has exited has failed — which is also detected *at once*
+    rather than after the timeout, so a backend that dies on a bad config no longer costs a wait.
+    ``backstop_s`` catches only the remaining case, a process that neither serves nor exits.
+    """
+    deadline = now() + backstop_s
+    while now() < deadline:
+        if is_serving():
+            return "serving"
+        if not is_alive():
+            # Re-probe once: a backend that became ready and exited between the two checks would
+            # otherwise be reported as a failure on the strength of check order alone.
+            return "serving" if is_serving() else "exited"
+        sleep(poll_s)
+    return "backstop"
