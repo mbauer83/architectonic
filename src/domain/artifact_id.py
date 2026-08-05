@@ -222,6 +222,39 @@ def stable_conn_id(s: str) -> str:
         return s
 
 
+#: A well-formed id begins with its prefix and epoch, which is what tells the endpoint separator
+#: apart from a hyphen belonging to the id before it.
+_ID_START_RE = re.compile(r"[A-Z]{2,6}@\d")
+
+
+def _endpoint_split(endpoints_part: str) -> tuple[str, str] | None:
+    """Split ``{src}---{tgt}`` at the separator, not at the first three hyphens in a row.
+
+    The random key is drawn from ``letters + digits + "-_"``, so about one id in sixty-four ends in a
+    hyphen — and for those, ``find("---")`` matched that hyphen plus the first two of the separator.
+    The source came back a character short and the target with a leading ``-``, so the connection
+    could not be found from either end: the write walk's `admin_delete_connection` answered
+    "connection not found for source entity" for a connection that was right there, and did so on
+    about one run in sixty-four, which is what made it look like flakiness rather than a defect.
+
+    The separator is therefore the ``---`` an *id* follows, since no id may begin with a hyphen.
+    """
+    # Lookahead, so the candidates overlap: in ``----`` the separator is the *second* three, and a
+    # non-overlapping scan consumes the first three and never offers it.
+    for match in re.finditer("(?=---)", endpoints_part):
+        start = match.start()
+        if _ID_START_RE.match(endpoints_part, start + 3):
+            return endpoints_part[:start], endpoints_part[start + 3 :]
+    # Nothing that looks like an id follows any separator. Composite keys are also built over
+    # placeholders that are not artifact ids at all — a derivation path step, a test's ``A---B`` —
+    # and those have no hyphen-terminated-key ambiguity to resolve, so the plain split is right for
+    # them. Preferring the id-aware answer and falling back keeps both readable.
+    start = endpoints_part.find("---")
+    if start < 0:
+        return None
+    return endpoints_part[:start], endpoints_part[start + 3 :]
+
+
 def connection_id_as_written(s: str) -> tuple[str, str, str]:
     """A connection ID split into ``(source, target, type)`` with each endpoint left as spelled.
 
@@ -234,11 +267,10 @@ def connection_id_as_written(s: str) -> tuple[str, str, str]:
         raise MalformedArtifactIdError(f"Malformed connection ID (missing @@): {s!r}")
     endpoints_part = s[:at_at]
     conn_type = s[at_at + 2 :]
-    triple_dash = endpoints_part.find("---")
-    if triple_dash < 0:
+    split = _endpoint_split(endpoints_part)
+    if split is None:
         raise MalformedArtifactIdError(f"Malformed connection ID (missing ---): {s!r}")
-    src = endpoints_part[:triple_dash]
-    tgt = endpoints_part[triple_dash + 3 :]
+    src, tgt = split
     if not src or not tgt or not conn_type:
         raise MalformedArtifactIdError(f"Malformed connection ID (empty segment): {s!r}")
     return src, tgt, conn_type

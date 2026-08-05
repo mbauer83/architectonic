@@ -6,9 +6,11 @@ from src.domain.artifact_id import (
     ConnectionKey,
     EntityId,
     MalformedArtifactIdError,
+    connection_id_as_written,
     parse_connection_id,
     parse_entity_id,
     slug_of,
+    stable_conn_id,
     stable_id,
 )
 
@@ -208,3 +210,52 @@ class TestEntityIdEquality:
         b = parse_entity_id("REQ@1000.AAA.new-slug")
         assert a != b  # EntityId itself differs on slug
         assert a.short == b.short  # but .short is the same
+
+
+class TestARandomKeyEndingInAHyphen:
+    """The generator draws the random key from ``letters + digits + "-_"``, so about one id in
+    sixty-four ends in a hyphen — and the composite connection id joins two ids with ``---``.
+
+    Splitting on the *first* three hyphens in a row therefore took the key's own hyphen plus two of
+    the separator: the source came back a character short and the target with a leading ``-``, so the
+    connection could not be found from either end. `admin_delete_connection` in the REST write walk
+    answered "connection not found for source entity" for a connection that was right there, on
+    roughly one run in sixty-four — which is what made it look like a flaky test for months rather
+    than a defect. It was found by a run that finally failed and printed the id.
+    """
+
+    #: The composite from the failing run, with the source key `O_xvx-`.
+    COMPOSITE = "APP@1785971770.O_xvx----APP@1785971770.MWX6h1@@archimate-serving"
+
+    def test_the_source_keeps_its_trailing_hyphen(self) -> None:
+        source, _target, _type = connection_id_as_written(self.COMPOSITE)
+
+        assert source == "APP@1785971770.O_xvx-"
+
+    def test_the_target_does_not_gain_a_leading_hyphen(self) -> None:
+        _source, target, _type = connection_id_as_written(self.COMPOSITE)
+
+        assert target == "APP@1785971770.MWX6h1"
+
+    def test_the_stable_form_round_trips(self) -> None:
+        """`stable_conn_id` is the key every store files a connection under; a truncated source
+        endpoint makes the record unfindable from the entity that owns it."""
+        assert stable_conn_id(self.COMPOSITE) == (
+            "APP@1785971770.O_xvx----APP@1785971770.MWX6h1@@archimate-serving"
+        )
+
+    def test_a_hyphen_inside_the_key_is_still_not_a_separator(self) -> None:
+        source, target, _type = connection_id_as_written("APP@1.a-b-c---APP@2.cd@@archimate-serving")
+
+        assert (source, target) == ("APP@1.a-b-c", "APP@2.cd")
+
+    def test_a_slug_carrying_hyphens_still_splits_at_the_join(self) -> None:
+        source, target, _type = connection_id_as_written(
+            "REQ@1.Ab.some-slug---GOL@2.Cd.other-slug@@archimate-realization"
+        )
+
+        assert (source, target) == ("REQ@1.Ab.some-slug", "GOL@2.Cd.other-slug")
+
+    def test_something_with_no_separator_at_all_is_still_refused(self) -> None:
+        with pytest.raises(MalformedArtifactIdError):
+            connection_id_as_written("APP@1.ab@@archimate-serving")
