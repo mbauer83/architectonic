@@ -51,8 +51,6 @@ def compose(
     restrictions: tuple[DerivationRestriction, ...] = (),
 ) -> DerivedStep | None:
     """Derive one relationship from an oriented, joined pair."""
-    if "junction" in intermediate.classes:
-        return None
     for rule in rules:
         if not _matches(rule, first, second, intermediate):
             continue
@@ -143,6 +141,18 @@ def _matches(
     if rule.second_artifact_type is not None and second.connection_type.artifact_type != rule.second_artifact_type:
         return False
     if rule.second_artifact_types and second.connection_type.artifact_type not in rule.second_artifact_types:
+        return False
+    if rule.requires_same_connection_type and (
+        first.connection_type.artifact_type != second.connection_type.artifact_type
+    ):
+        return False
+    if rule.intermediate_class is not None and rule.intermediate_class not in intermediate.classes:
+        return False
+    # A junction is not an element a chain passes *through*: it stands for the relationship itself, so
+    # only a rule that declares junctions may compose across one. Without this, the ordinary chain rules
+    # apply to it — and `assignment` then `serving` across a junction would derive a serving that the
+    # model never stated, because a junction joins relationships of ONE type.
+    if "junction" in intermediate.classes and rule.intermediate_class != "junction":
         return False
     return rule.intermediate_artifact_type is None or intermediate.artifact_type == rule.intermediate_artifact_type
 

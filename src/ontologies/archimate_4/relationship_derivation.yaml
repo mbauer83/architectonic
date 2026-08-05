@@ -27,6 +27,19 @@ composition_rules:
   - {spec_ref: PDR9, certainty: potential, first_role: structural, second_role: dynamic, result: second, join: source-source, result_source: first-target, result_target: second-target}
   - {spec_ref: PDR10, certainty: potential, first_role: dynamic, second_role: dynamic, result: flow, first_artifact_type: archimate-flow, second_artifact_type: archimate-flow}
   - {spec_ref: PDR11, certainty: potential, first_role: dynamic, second_role: structural, result: triggering, join: target-target, result_source: first-source, result_target: second-source, first_artifact_type: archimate-triggering}
+  # A junction IS one relationship, split or joined — so a relationship passes through it unchanged and
+  # CERTAINLY, unlike a grouping's, whose members only potentially carry the whole's relationship
+  # (PDR12 below). `requires_same_connection_type` is the spec's "a junction joins relationships of one
+  # type": a mismatch is a modelling error, not a chain, and deriving a weakest-of would launder it into
+  # a fact. `requires_permitted_result` is where "a junction may only carry a type admissible for every
+  # participant" bites — the pair actually derived has to be permitted, or nothing is derived.
+  # One row per derivation role; the same-type requirement makes the roles necessarily equal, so these
+  # four are exhaustive. Matched by intermediate CLASS, since and-junction and or-junction differ in
+  # what the combination means, never in how a relationship passes through.
+  - {spec_ref: RJ3, certainty: certain, first_role: structural, second_role: structural, result: first, intermediate_class: junction, requires_same_connection_type: true, requires_permitted_result: true}
+  - {spec_ref: RJ3, certainty: certain, first_role: dependency, second_role: dependency, result: first, intermediate_class: junction, requires_same_connection_type: true, requires_permitted_result: true}
+  - {spec_ref: RJ3, certainty: certain, first_role: dynamic, second_role: dynamic, result: first, intermediate_class: junction, requires_same_connection_type: true, requires_permitted_result: true}
+  - {spec_ref: RJ3, certainty: certain, first_role: specialization, second_role: specialization, result: first, intermediate_class: junction, requires_same_connection_type: true, requires_permitted_result: true}
   - {spec_ref: PDR12, certainty: potential, first_role: structural, second_role: structural, result: second, join: source-source, result_source: first-target, result_target: second-target, first_artifact_type: archimate-aggregation, second_artifact_types: [archimate-realization, archimate-assignment], intermediate_artifact_type: grouping, requires_permitted_result: true}
 
 # Appendix-B admissibility restrictions. These are ontology data, interpreted by the

@@ -93,6 +93,20 @@ def _expected_rule(
             continue
         if rule.get("intermediate_artifact_type") not in {None, intermediate.artifact_type}:
             continue
+        # A junction stands for the relationship itself rather than being an element a chain passes
+        # through, so only a junction rule may compose across one — and a junction joins relationships
+        # of ONE type. This matcher is a second implementation of the same dispatch, which is what makes
+        # the comparison independent; it has to model both facts or it selects a rule the engine won't.
+        intermediate_class = rule.get("intermediate_class")
+        is_junction = "junction" in intermediate.classes
+        if intermediate_class is not None and intermediate_class not in intermediate.classes:
+            continue
+        if is_junction and intermediate_class != "junction":
+            continue
+        if rule.get("requires_same_connection_type", False) and (
+            first.connection_type.artifact_type != second.connection_type.artifact_type
+        ):
+            continue
         return cast(Mapping[str, object], rule)
     return None
 

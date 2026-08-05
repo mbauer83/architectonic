@@ -110,7 +110,17 @@ def _matches(
         return False
     if rule.connection_artifact_types and connection.artifact_type not in rule.connection_artifact_types:
         return False
-    if rule.intermediate_domain_must_match_endpoint and intermediate_domain not in {source_domain, target_domain}:
+    # The domain-matching clause presupposes an intermediate that *has* a domain to compare. A
+    # junction does not: it stands for the relationship itself, and its derivation domain is
+    # `relationships` precisely for that reason — which never equals an endpoint's domain, so the
+    # clause disallowed every junction-mediated derivation. That made a junction a dead end for
+    # impact analysis and reported a requirement realized through an AND-junction as unrealized,
+    # while the eligible-realizer set excludes junctions as helpers, so nothing could stand in.
+    if (
+        rule.intermediate_domain_must_match_endpoint
+        and "junction" not in intermediate.classes
+        and intermediate_domain not in {source_domain, target_domain}
+    ):
         if not (
             rule.intermediate_domain_exception
             and source_domain == "implementation_migration"

@@ -39,6 +39,13 @@ class CompositionRule:
     second_artifact_type: str | None = None
     second_artifact_types: tuple[str, ...] = ()
     intermediate_artifact_type: str | None = None
+    intermediate_class: str | None = None
+    """Match the intermediate by ontology *class* rather than artifact type — for a family whose
+    members compose identically. `junction` is the case: `and-junction` and `or-junction` differ in
+    what the combination means, never in how a relationship passes through."""
+    requires_same_connection_type: bool = False
+    """Both legs must carry the SAME relationship type. A junction joins relationships of one type, so
+    a mismatch is a modelling error rather than a chain — deriving a weakest-of would launder it."""
     requires_permitted_result: bool = False
 
 
@@ -78,6 +85,10 @@ def composition_rules_from_mapping(raw: object) -> tuple[CompositionRule, ...]:
                     second_artifact_type=_optional_string(item.get("second_artifact_type")),
                     second_artifact_types=_string_sequence(item.get("second_artifact_types", ())),
                     intermediate_artifact_type=_optional_string(item.get("intermediate_artifact_type")),
+                    intermediate_class=_optional_string(item.get("intermediate_class")),
+                    requires_same_connection_type=_optional_bool(
+                        item.get("requires_same_connection_type", False)
+                    ),
                     requires_permitted_result=_optional_bool(item.get("requires_permitted_result", False)),
                 )
             )

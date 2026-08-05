@@ -27,6 +27,8 @@ def _composition_row(row: Mapping[str, object]) -> dict[str, object]:
         "second_artifact_type": row.get("second_artifact_type"),
         "second_artifact_types": row.get("second_artifact_types", ()),
         "intermediate_artifact_type": row.get("intermediate_artifact_type"),
+        "intermediate_class": row.get("intermediate_class"),
+        "requires_same_connection_type": row.get("requires_same_connection_type", False),
         "requires_permitted_result": row.get("requires_permitted_result", False),
     }
 

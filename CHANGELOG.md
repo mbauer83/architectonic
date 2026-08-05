@@ -14,6 +14,18 @@ different checkout's model, with every response well-formed.
 
 ### Fixed
 
+- **Tracing analyses now see through AND/OR junctions.** Composition refused junction intermediates
+  outright, and the restriction set refused them again — `RJ1` requires an intermediate's domain to
+  match an endpoint's, and a junction's derivation domain is `relationships` precisely because it
+  stands for a relationship rather than an element, so it never matched. A junction was therefore a
+  dead end for every derived-relationship consumer: impact analysis stopped at it, and a requirement
+  realized through an AND-junction was reported **unrealized**, because the eligible-realizer set
+  rightly excludes junctions as structural helpers and nothing could stand in for the participants. A
+  junction *is* one relationship, split or joined, so it now passes the relationship through unchanged
+  and **certainly** — declared as ontology data (`RJ3`), not evaluator logic, with both legs required to
+  carry one type and the derived endpoint pair required to be permitted, which is where "a junction may
+  only carry a type admissible for every participant" applies. Contrast a grouping, whose members only
+  *potentially* carry the whole's relationship (`PDR12`).
 - **A client reaches the backend serving its own workspace, or none.** Endpoints are chosen by what a
   backend reports serving (`GET /api/backend-identity`), not by which port answers. A workspace whose
   preferred port is held by another instance serves on a port derived from its own repository paths
