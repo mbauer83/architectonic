@@ -78,6 +78,7 @@ def artifact_create_diagram(
     diagram_connections: list[dict[str, object]] | None = None,
     view_derivations: list[dict[str, object]] | None = None,
     bindings: list[dict[str, object]] | None = None,
+    authored_groupings: list[dict[str, object]] | None = None,
     version: str = "0.1.0",
     status: str = "draft",
     tlp: str | None = None,
@@ -120,6 +121,7 @@ def artifact_create_diagram(
             repo_root=roots[0],
             diagram_entities=diagram_entities,
             diagram_connections=diagram_connections,
+            authored_groupings=authored_groupings,
         )
 
     roots = resolve_repo_roots(
@@ -145,6 +147,7 @@ def artifact_create_diagram(
         diagram_connections=diagram_connections,
         view_derivations=view_derivations,
         bindings=bindings,
+        authored_groupings=authored_groupings,
         entity_ids_used=entity_ids_used,
         connection_ids_used=connection_ids_used,
         version=version,
@@ -204,6 +207,12 @@ def register(mcp: FastMCP) -> None:
             "diagram_entities={'occurrence': [{'id': '<occurrence-id>', 'backing_entity_id': '<model-entity-id>'}]}. "
             "The occurrence id distinguishes the diagram element; backing_entity_id preserves the single model "
             "identity. visual_role is optional metadata, not required for identity.\n"
+            "authored_groupings draws labelled boxes the model does not hold — the label carries meaning no "
+            "element type does: [{label, entity-ids: [...], groups: [ ...nested... ]}]. A member may name an "
+            "entity id or an occurrence id, so an entity drawn twice can sit in a different box each time; each "
+            "drawing belongs to one box, first declaration winning. The look is DERIVED from the members — one "
+            "domain gives that domain's look, several give the dashed ArchiMate grouping look — so omit "
+            "stereotype unless you mean to override it.\n"
             "direction='left_to_right' | 'top_to_bottom' (default). "
             "auto_include_stereotypes=true injects !include lines. "
             "connection_inference: 'none' | 'auto' (warn) | 'strict' (error) on unknown stereotypes.\n\n"

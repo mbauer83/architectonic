@@ -29,6 +29,7 @@ class CreateDiagramGuiBody(BaseModel):
     connection_ids: list[str]
     keywords: list[str] | None = None
     diagram_entities: dict[str, Any] | None = None
+    authored_groupings: list[dict[str, Any]] | None = None
     version: str = "0.1.0"
     status: str = "draft"
     tlp: str | None = None
@@ -42,6 +43,7 @@ class EditDiagramGuiBody(_Body):
     entity_ids: list[str]
     connection_ids: list[str]
     diagram_entities: dict[str, Any] | None = None
+    authored_groupings: list[dict[str, Any]] | None = None
     version: str | None = None
     status: str | None = None
     tlp: str | None = None

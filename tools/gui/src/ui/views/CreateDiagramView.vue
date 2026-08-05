@@ -12,12 +12,14 @@ import EntitySelectionList from '../components/EntitySelectionList.vue'
 import EntityPickerInput from '../components/EntityPickerInput.vue'
 import DiagramTypeSelect from '../components/DiagramTypeSelect.vue'
 import DiagramTypeConfigPanel from '../components/DiagramTypeConfigPanel.vue'
-import PreviewViewport from '../components/PreviewViewport.vue'
-import DerivedEntityChecklist from '../components/DerivedEntityChecklist.vue'
+import DiagramPreviewPane from '../components/DiagramPreviewPane.vue'
 import ArchimateOccurrenceControls from '../components/ArchimateOccurrenceControls.vue'
+import DiagramGroupingsEditor from '../components/DiagramGroupingsEditor.vue'
 import ViewpointSelect from '../components/ViewpointSelect.vue'
 import { findViewpointBySlug } from '../components/ViewpointSelect.helpers'
 import { isArchimateDiagramType } from '../lib/archimateOccurrences'
+import type { AuthoredGrouping } from '../../domain/authoredGrouping'
+import { withoutEmptyGroups } from '../../domain/authoredGrouping'
 import { loadViewpointSummaries } from '../lib/viewpointSummary'
 
 const svc = inject(modelServiceKey)!
@@ -73,6 +75,11 @@ const includedEntityIds = computed(() => new Set(includedEntities.value.map((e) 
 
 const allModelConns = ref<Map<string, EntityContextConnection>>(new Map())
 const includedConnIds = ref<Set<string>>(new Set())
+const authoredGroupings = ref<readonly AuthoredGrouping[]>([])
+// Only the entities the diagram actually draws can be placed in a box.
+const groupingCandidates = computed(() =>
+  includedEntities.value.map((entity) => ({ id: entity.artifact_id, label: entity.name })),
+)
 
 const selectionRows = computed(() =>
   includedEntities.value.map((entity) => ({
@@ -203,7 +210,6 @@ const previewBusy = ref(false)
 const previewError = ref<string | null>(null)
 const previewClean = ref(false)
 const previewIssues = ref<string[]>([])
-const showPuml = ref(false)
 
 const excludedEntityIds = computed(() => {
   const raw = diagramEntities.value._excluded_entity_ids
@@ -268,6 +274,7 @@ const doCreate = () => {
       entity_ids: mergedEntityIds(),
       connection_ids: [...includedConnIds.value],
       diagram_entities: diagramEntities.value,
+      authored_groupings: withoutEmptyGroups(authoredGroupings.value),
       viewpoint: selectedViewpoint ? { slug: selectedViewpoint.slug, version: selectedViewpoint.version } : null,
       dry_run: false,
     }),
@@ -387,6 +394,16 @@ watch(diagramType, () => {
         </div>
 
         <div
+          v-if="includedEntities.length"
+          class="form-row"
+        >
+          <DiagramGroupingsEditor
+            v-model="authoredGroupings"
+            :candidates="groupingCandidates"
+          />
+        </div>
+
+        <div
           v-if="createError"
           class="state-err"
         >
@@ -413,94 +430,16 @@ watch(diagramType, () => {
       </section>
 
       <section class="card preview-col">
-        <div
-          v-if="!preview && !previewBusy && !previewError"
-          class="preview-hint"
-        >
-          {{ uiConfig?.entity_search_filter !== false ? 'Select entities and connections, then click' : 'Configure the diagram, then click' }}
-          <strong>Preview</strong>.
-        </div>
-        <div
-          v-if="previewBusy"
-          class="state-msg"
-        >
-          Rendering…
-        </div>
-        <div
-          v-if="previewError"
-          class="state-err"
-        >
-          {{ previewError }}
-        </div>
-
-        <template v-if="preview">
-          <div
-            v-if="!previewClean"
-            class="state-err"
-          >
-            <strong>Verification issues found:</strong>
-            <ul style="margin-top: 4px; font-size: 12px; margin-bottom: 0; padding-left: 18px;">
-              <li
-                v-for="issue in previewIssues"
-                :key="issue"
-              >
-                {{ issue }}
-              </li>
-            </ul>
-          </div>
-          <div
-            v-else
-            class="state-msg"
-          >
-            Verification passed.
-          </div>
-          <PreviewViewport
-            v-if="preview.image"
-            :reset-signal="preview"
-          >
-            <img
-              :src="preview.image"
-              class="preview-img"
-              alt="Diagram preview"
-              draggable="false"
-            >
-          </PreviewViewport>
-          <div
-            v-else
-            class="state-msg"
-          >
-            No image could be rendered.
-            <ul
-              v-if="preview.warnings.length"
-              class="render-warnings"
-            >
-              <li
-                v-for="w in preview.warnings"
-                :key="w"
-              >
-                {{ w }}
-              </li>
-            </ul>
-          </div>
-          <!-- Derived entity checklist (model-backed C4) -->
-          <DerivedEntityChecklist
-            v-if="preview.derived_entities !== null && preview.derived_entities !== undefined"
-            :derived="preview.derived_entities"
-            :excluded-ids="excludedEntityIds"
-            @toggle="toggleExclusion"
-          />
-
-          <button
-            class="toggle-src"
-            @click="showPuml = !showPuml"
-          >
-            {{ showPuml ? 'Hide' : 'Show' }} PUML source
-          </button>
-          <pre
-            v-if="showPuml"
-            class="puml-src"
-          >{{ preview.puml }}</pre>
-        </template>
+        <DiagramPreviewPane
+          :preview="preview"
+          :preview-busy="previewBusy"
+          :preview-error="previewError"
+          :preview-clean="previewClean"
+          :preview-issues="previewIssues"
+          :excluded-entity-ids="excludedEntityIds"
+          :entity-search-filter="uiConfig?.entity_search_filter !== false"
+          @toggle-exclusion="toggleExclusion"
+        />
       </section>
     </div>
   </div>

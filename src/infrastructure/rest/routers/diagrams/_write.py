@@ -141,6 +141,7 @@ def create_diagram_gui(body: CreateDiagramGuiBody, response: Response,
         repo_root=repo_root,
         diagram_entities=de,
         diagram_connections=dc,
+        authored_groupings=body.authored_groupings,
     )
     try:
         result = s.authorized_write(
@@ -160,6 +161,7 @@ def create_diagram_gui(body: CreateDiagramGuiBody, response: Response,
             diagram_connections=dc,
             entity_ids_used=entity_ids_used,
             connection_ids_used=connection_ids_used,
+            authored_groupings=body.authored_groupings,
             version=body.version,
             status=body.status,
             last_updated=None,
@@ -200,6 +202,7 @@ def edit_diagram_gui(artifact_id: str, body: EditDiagramGuiBody,
         repo_root=repo_root,
         diagram_entities=de,
         diagram_connections=dc,
+        authored_groupings=body.authored_groupings,
     )
     from src.application.candidate_repository import committed_repository  # noqa: PLC0415
     try:
@@ -217,6 +220,7 @@ def edit_diagram_gui(artifact_id: str, body: EditDiagramGuiBody,
             diagram_connections=dc,
             entity_ids_used=entity_ids_used,
             connection_ids_used=connection_ids_used,
+            authored_groupings=body.authored_groupings,
             version=body.version,
             status=body.status,
             tlp=body.tlp,

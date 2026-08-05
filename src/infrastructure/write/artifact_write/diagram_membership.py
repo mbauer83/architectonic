@@ -95,6 +95,7 @@ class RenderedMembership(NamedTuple):
     puml: str
     entity_ids_used: list[str]
     connection_ids_used: list[str]
+    authored_groupings: list[dict[str, object]]
 
 
 def rendered_membership(
@@ -105,6 +106,7 @@ def rendered_membership(
     artifact_id: str,
     entity_ids: list[str] | None,
     connection_ids: list[str] | None,
+    authored_groupings: list[dict[str, object]] | None = None,
 ) -> RenderedMembership:
     """Resolve a stated membership into a body and the references that match it.
 
@@ -141,7 +143,10 @@ def rendered_membership(
 
     raw_edge_labels = fm.get("edge-labels")
     raw_groupings = fm.get("authored-groupings")
-    groupings = [g for g in raw_groupings if isinstance(g, dict)] if isinstance(raw_groupings, list) else []
+    stored = [g for g in raw_groupings if isinstance(g, dict)] if isinstance(raw_groupings, list) else []
+    # Supplied groupings replace the stored ones wholesale, as membership does: a caller listing the
+    # boxes it wants is stating them all, and merging would make a group impossible to delete.
+    groupings = stored if authored_groupings is None else authored_groupings
     return RenderedMembership(
         puml=generate_archimate_puml_body(
             str(fm.get("name", "")),
@@ -153,4 +158,5 @@ def rendered_membership(
         ),
         entity_ids_used=entity_ids_used,
         connection_ids_used=connection_ids_used,
+        authored_groupings=groupings,
     )

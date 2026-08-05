@@ -112,6 +112,7 @@ skinparam ranksep 80
 skinparam rectangle<<Grouping>> {
   BackgroundColor #FFFFFF
   BorderColor #9E9E9E
+  BorderStyle dashed
 }
 """
 

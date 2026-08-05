@@ -26,12 +26,11 @@ different checkout's model, with every response well-formed.
   `artifact_verify` answered **0 warnings** over 16 stale references across 6 diagrams — identity is the
   id's stem, so each one resolved, and the connection-file check (W121) never reached a diagram's
   `entity-ids-used`. Both sides now read one rule, silent when a reference carries no slug at all.
-- **A rename now reaches the confidential assurance store, when it is unlocked.** An assurance node's
-  reference to an architecture artifact holds its full id; a rename left that reference resolvable —
-  identity is the id's stem — but spelled with a name the artifact no longer has, in front of a reader
-  reviewing a safety argument. The rename announces itself and a registered follower retargets those
-  references, matching on the stem so an even older spelling heals too. The write path never reaches
-  into the closed tier: a locked or unconfigured store means no follower and no failure.
+- **A rename now reaches the confidential assurance store, when it is unlocked.** An assurance reference
+  held the artifact's full id, so a rename left it resolvable but spelled with a name the artifact no
+  longer has, in front of a reader reviewing a safety argument. A registered follower retargets them,
+  matching on the stem so an even older spelling heals; the write path never reaches into the closed
+  tier, and a locked or unconfigured store means no follower and no failure.
 - **A batch item carrying a field its operation does not accept is refused, not performed
   differently.** Removal is selected by `operation=remove`; an item passing `mode: "remove"` had that
   field ignored, ran as an update, and reported `wrote: true` for a removal that never happened. Every
@@ -79,20 +78,20 @@ different checkout's model, with every response well-formed.
 
 ### Added
 
+- **Diagrams can draw labelled boxes the model does not hold, and the boxes style themselves.**
+  `authored_groupings` reaches `artifact_create_diagram`, `artifact_edit_diagram`, the REST write routes
+  and a Groupings panel in the GUI; the key rendered before but was reachable only by hand-editing the
+  file. The look is **derived** — one domain gives that domain's look, several give the ArchiMate
+  grouping notation, now dashed. A member may name an **occurrence id**, so an entity drawn twice sits
+  in a different box each time, and boxes **nest**.
 - `--workspace` / `ARCH_MCP_WORKSPACE` for the MCP bridges, for clients that cannot set a working
   directory. A bridge with no backend of its own exits with the reason instead of attaching to one
   that is not its.
 - **A goal realized through the goals it aggregates is no longer a gap.** `motivation-coverage`
-  reported `missing-outcome` — an always-a-gap obligation — on any aggregate goal, because branch
-  enumeration walks direct stored edges and an aggregate has no realization of its own. The correct
-  decomposition was penalised, and the only way to keep such a view green was a direct realization
-  edge onto the apex: a metric shaping the model rather than measuring it. The viewpoint now declares
-  the whole-part edge it composes over (`rollup`), and an aggregate carries its constituents'
-  obligations instead of one of its own — so it passes exactly when every constituent is covered, and
-  a propagated gap names the constituent it belongs to rather than the apex. The rule holds at **every
-  level**: an aggregate requirement whose constituents are realized is realized, which ArchiMate's
-  derivation rules cannot supply because an aggregation and a realization that both point at the part
-  compose along no path.
+  reported `missing-outcome` on any aggregate goal, penalising the correct decomposition — and the only
+  way to keep such a view green was a direct realization edge onto the apex, a metric shaping the model
+  rather than measuring it. The viewpoint now declares the whole-part edge it composes over (`rollup`),
+  and an aggregate carries its constituents' obligations instead of one of its own, at every level.
 - **`assurance_guidance` teaches the five UCA guidewords the software applies**, and says why the
   Handbook's second is split in two. It taught four while the matrix, the wizard and the attribute
   enum had all moved to five, so an analyst following it under-enumerated. New topic

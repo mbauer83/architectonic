@@ -20,9 +20,11 @@ from src.infrastructure.mcp.artifact_mcp import (
     register_verify_tools,
     register_write_tools,
 )
-from src.infrastructure.mcp.artifact_mcp.edit_tools import (  # noqa: F401
+from src.infrastructure.mcp.artifact_mcp.delete_tools import (  # noqa: F401
     artifact_delete_diagram,
     artifact_delete_entity,
+)
+from src.infrastructure.mcp.artifact_mcp.edit_tools import (  # noqa: F401
     artifact_edit_connection,
     artifact_edit_connection_associations,
     artifact_edit_diagram,

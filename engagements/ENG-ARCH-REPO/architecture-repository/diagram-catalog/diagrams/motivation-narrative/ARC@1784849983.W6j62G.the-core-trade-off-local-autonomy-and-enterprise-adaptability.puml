@@ -22,36 +22,32 @@ entity-ids-used:
 - VAL@1784845184.pIkrDX.unity-of-effort
 - VAL@1784845185.tL9l4U.enterprise-adaptability
 connection-ids-used:
-- VAL@1784845185.tL9l4U---VAL@1784845186.hFq7vl@@archimate-influence
-- VAL@1784845185.2xkN4J---VAL@1784845186.hFq7vl@@archimate-influence
-- VAL@1784845184.pIkrDX---VAL@1784845185.tL9l4U@@archimate-influence
-- VAL@1784845184.pIkrDX---VAL@1784845185.2xkN4J@@archimate-influence
 - VAL@1784845185.fduAv----VAL@1784845184.pIkrDX@@archimate-influence
+- VAL@1784845184.pIkrDX---VAL@1784845185.2xkN4J@@archimate-influence
+- VAL@1784845184.pIkrDX---VAL@1784845185.fduAv-@@archimate-influence
+- VAL@1784845184.pIkrDX---VAL@1784845185.tL9l4U@@archimate-influence
 - VAL@1784845184.pIkrDX---VAL@1784845186.56mLXu@@archimate-influence
 - VAL@1784845185.fduAv----VAL@1784845185.-RyIvn@@archimate-influence
+- VAL@1784845185.2xkN4J---VAL@1784845186.hFq7vl@@archimate-influence
 - VAL@1784845185.fduAv----VAL@1784845186.56mLXu@@archimate-influence
-- VAL@1784845184.pIkrDX---VAL@1784845185.fduAv-@@archimate-influence
+- VAL@1784845185.tL9l4U---VAL@1784845186.hFq7vl@@archimate-influence
 authored-groupings:
 - label: What Is Ultimately at Stake
-  stereotype: MotivationGrouping
   entity-ids:
   - VAL@1784845186.hFq7vl.enterprise-viability
 - label: Enterprise / Product Worth
-  stereotype: MotivationGrouping
   entity-ids:
   - VAL@1784845185.tL9l4U.enterprise-adaptability
   - VAL@1784845185.2xkN4J.enterprise-efficiency-solution-fitness
 - label: The Integration Pull
-  stereotype: MotivationGrouping
   entity-ids:
   - VAL@1784845184.pIkrDX.unity-of-effort
 - label: "The Differentiation Pull \u2014 Team / Local Worth"
-  stereotype: MotivationGrouping
   entity-ids:
   - VAL@1784845185.-RyIvn.team-solution-fitness
   - VAL@1784845185.fduAv-.local-autonomy
   - VAL@1784845186.56mLXu.local-efficiency
-last-updated: '2026-07-29T13:29:45Z'
+last-updated: '2026-08-05T18:04:16Z'
 ---
 @startuml the-core-trade-off---differentiation-and-integration
 hide stereotype
@@ -111,14 +107,14 @@ VAL__RyIvn -[hidden]right- VAL_fduAv_
 VAL_fduAv_ -[hidden]right- VAL_56mLXu
 
 ' Connections
-VAL_tL9l4U .up.> VAL_hFq7vl : <color:#15803d><b>+</b></color>
-VAL_2xkN4J .up.> VAL_hFq7vl : <color:#15803d><b>+</b></color>
-VAL_pIkrDX .up.> VAL_tL9l4U : <color:#15803d><b>+</b></color>
-VAL_pIkrDX .up.> VAL_2xkN4J : <color:#15803d><b>+</b></color>
 VAL_fduAv_ .up.> VAL_pIkrDX : <color:#b91c1c><b>-</b></color> when uncoordinated
+VAL_pIkrDX .up.> VAL_2xkN4J : <color:#15803d><b>+</b></color>
+VAL_pIkrDX .down.> VAL_fduAv_ : (-) short-term | (+) medium- and long-term
+VAL_pIkrDX .up.> VAL_tL9l4U : <color:#15803d><b>+</b></color>
 VAL_pIkrDX .down.> VAL_56mLXu : (-) short-term | (+) medium- and long-term
 VAL_fduAv_ .left.> VAL__RyIvn : <color:#15803d><b>+</b></color>
+VAL_2xkN4J .up.> VAL_hFq7vl : <color:#15803d><b>+</b></color>
 VAL_fduAv_ .right.> VAL_56mLXu : <color:#15803d><b>+</b></color>
-VAL_pIkrDX .down.> VAL_fduAv_ : (-) short-term | (+) medium- and long-term
+VAL_tL9l4U .up.> VAL_hFq7vl : <color:#15803d><b>+</b></color>
 
 @enduml

@@ -111,14 +111,13 @@ class GenericPumlRenderer:
         )
         if authored_groupings:
             from src.infrastructure.rendering._authored_grouping_rendering import (  # noqa: PLC0415
+                claimed_aliases,
                 resolve_authored_members,
             )
 
-            authored_member_aliases = {
-                alias
-                for _group, members in resolve_authored_members(authored_groupings, render_entities)
-                for _record, alias in members
-            }
+            authored_member_aliases = claimed_aliases(
+                resolve_authored_members(authored_groupings, render_entities)
+            )
             # Declared membership in an authored group outranks modelled containment:
             # the relation stays in the model, but the picture keeps the user's box.
             nested_aliases -= authored_member_aliases
@@ -198,6 +197,10 @@ class GenericPumlRenderer:
                     nested_aliases=nested_aliases,
                     domain_entities=domain_entities,
                     render_entity=render_entity,
+                    # The vocabulary is the caller's: the grouping module names no domain, and this
+                    # is the same pair of lookups the computed per-domain boxes below are built from.
+                    domain_of=lambda entity: grouping_key(entity, _registry()),
+                    stereotype_of=lambda domain: grouping_stereotype(self._config, domain),
                     direction_hints=layout_direction_hints,
                     connected_pairs=connection_alias_pairs,
                 )

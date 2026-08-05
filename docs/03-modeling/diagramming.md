@@ -220,6 +220,41 @@ showing something else:
 Passing `puml` alongside `entity_ids` is a different request and behaves as it always has: the caller
 supplies the body, and the recorded references are reconciled against what it draws.
 
+### Grouping what a diagram draws
+
+A diagram can draw **labelled boxes the model does not hold**. The label is the point: a box called
+"Write Requests" says something no element type does, so a grouping is content, not layout. Pass
+`authored_groupings` to `artifact_create_diagram` or `artifact_edit_diagram`, or use the Groupings
+panel in the GUI's diagram authoring flow; the list replaces the diagram's boxes wholesale.
+
+```yaml
+authored-groupings:
+- label: Forces
+  entity-ids: [DRV@…, DRV@…]        # one domain  → that domain's look
+- label: Cross-cutting
+  entity-ids: [APP@…, DRV@…]        # several     → the dashed ArchiMate grouping look
+- label: Outer
+  entity-ids: [GOL@…]
+  groups:                            # boxes nest, to any depth
+  - label: Inner
+    entity-ids: [OUT@…]
+```
+
+Three things the declaration does not have to say:
+
+- **How it looks.** The look is derived from the members — all in one domain gives that domain's
+  background and border, members from several give the ArchiMate grouping notation (dashed, no
+  fill). A subgroup's members count towards its ancestors, because a box is one thing however deep
+  it goes. An explicit `stereotype` is still honoured for a deliberate exception; nothing in this
+  repository needs one.
+- **Which drawing it means.** A member may name an **occurrence id** as well as an entity id, so an
+  entity [drawn twice](#archimate-views) can sit in a different box each time. Each drawing belongs
+  to one box — the first declaration wins.
+- **That it is flat.** `groups` nests.
+
+Membership in a box beats modelled containment: the composition stays in the model, and the picture
+keeps the box you asked for.
+
 See [Interfaces & MCP](interfaces-and-mcp.md) for the full tool surface.
 
 ---

@@ -184,6 +184,7 @@ def artifact_edit_diagram(
     entity_ids: list[str] | None = None,
     connection_ids: list[str] | None = None,
     binding_id: str | None = None,
+    authored_groupings: list[dict[str, object]] | None = None,
     group: str | None = None,
     manual_layout: bool | None = None,
     dry_run: bool = True,
@@ -223,13 +224,15 @@ def artifact_edit_diagram(
         out["deleted_diagram"] = result.deleted_diagram
         return out
 
-    if puml is None and (entity_ids is not None or connection_ids is not None):
-        # Membership stated without a body: the picture is regenerated from it, so a removal is a
-        # removal. Composed into this same edit, not written separately, so anything else the call
-        # carries still applies. A diagram whose body is not the generator's to rewrite is refused.
-        puml, entity_ids, connection_ids = artifact_write_ops.rendered_membership(
+    states_membership = entity_ids is not None or connection_ids is not None or authored_groupings is not None
+    if puml is None and states_membership:
+        # Membership or grouping stated without a body: the picture is regenerated from it, so a
+        # removal is a removal and a box appears. Composed into this same edit rather than written
+        # separately, so anything else the call carries still applies. A diagram whose body is not
+        # the generator's to rewrite is refused.
+        puml, entity_ids, connection_ids, authored_groupings = artifact_write_ops.rendered_membership(
             repo_root=root, store=repo_cached(key), verifier=verifier, artifact_id=artifact_id,
-            entity_ids=entity_ids, connection_ids=connection_ids)
+            entity_ids=entity_ids, connection_ids=connection_ids, authored_groupings=authored_groupings)
 
     kwargs: dict[str, Any] = {
         k: v for k, v in (
@@ -239,6 +242,7 @@ def artifact_edit_diagram(
             ("version", version), ("status", status), ("tlp", tlp), ("group", group),
             ("viewpoint", viewpoint),
             ("entity_ids_used", entity_ids), ("connection_ids_used", connection_ids),
+            ("authored_groupings", authored_groupings),
             ("manual_layout", manual_layout),
         ) if v is not None
     }
@@ -290,50 +294,8 @@ def artifact_edit_connection_associations(
     return _finalize_authoritative_write(dry_run, result, mutation_context)
 
 
-def artifact_delete_entity(
-    *,
-    artifact_id: str,
-    dry_run: bool = True,
-    repo_root: str | None = None,
-) -> dict[str, object]:
-    root, registry, _verifier = _resolve(repo_root, need_registry=True)
-    registry = _require_registry(registry)
-    mutation_context, clear_repo_caches = authoritative_callbacks_for(root)
-    result = artifact_write_ops.delete_entity(
-        repo_root=root,
-        registry=registry,
-        clear_repo_caches=clear_repo_caches,
-        artifact_id=artifact_id,
-        dry_run=dry_run,
-    )
-    return _finalize_authoritative_write(dry_run, result, mutation_context)
-
-
-def artifact_delete_diagram(
-    *,
-    artifact_id: str,
-    dry_run: bool = True,
-    repo_root: str | None = None,
-) -> dict[str, object]:
-    roots = resolve_repo_roots(repo_scope="engagement", repo_root=repo_root, repo_preset=None, enterprise_root=None)
-    key = roots_key(roots)
-    root = roots[0]
-    from src.application.candidate_repository import committed_repository  # noqa: PLC0415
-    verifier = verifier_for(key, include_registry=False)
-    committed_repo = committed_repository(repo_cached(key))
-    mutation_context, clear_repo_caches = authoritative_callbacks_for(roots)
-    result = artifact_write_ops.delete_diagram(
-        repo_root=root,
-        clear_repo_caches=clear_repo_caches,
-        artifact_id=artifact_id,
-        dry_run=dry_run,
-        verifier=verifier,
-        committed_repo=committed_repo,
-    )
-    return _finalize_authoritative_write(dry_run, result, mutation_context)
-
-
 def register_edit_tools(mcp: FastMCP) -> None:
+    from src.infrastructure.mcp.artifact_mcp.delete_tools import register_delete_tools  # noqa: PLC0415
     from src.infrastructure.mcp.artifact_mcp.mutation_registration import register_mutation_tool  # noqa: PLC0415
 
     register_mutation_tool(
@@ -376,22 +338,4 @@ def register_edit_tools(mcp: FastMCP) -> None:
         structured_output=True,
     )
 
-    register_mutation_tool(
-        mcp,
-        artifact_delete_entity,
-        name="artifact_delete_entity",
-        title="Artifact Write: Delete Entity",
-        description=descriptions.DELETE_ENTITY_DESCRIPTION,
-        annotations=DESTRUCTIVE_LOCAL_WRITE,
-        structured_output=True,
-    )
-
-    register_mutation_tool(
-        mcp,
-        artifact_delete_diagram,
-        name="artifact_delete_diagram",
-        title="Artifact Write: Delete Diagram",
-        description=descriptions.DELETE_DIAGRAM_DESCRIPTION,
-        annotations=DESTRUCTIVE_LOCAL_WRITE,
-        structured_output=True,
-    )
+    register_delete_tools(mcp)

@@ -27,36 +27,35 @@ entity-ids-used:
 - FNC@1777399928.tRAV0x.commit-staged-repository
 - PRC@1777399926.gtgYvQ.execute-staged-write-transaction
 connection-ids-used:
-- FNC@1777399926.DrKMhV---FNC@1777399927.hbgFU3@@archimate-triggering
-- FNC@1777399927.hbgFU3---FNC@1777399927.g3H3mK@@archimate-triggering
-- FNC@1777399927.g3H3mK---FNC@1777399927.6PI0kV@@archimate-triggering
-- FNC@1777399927.6PI0kV---FNC@1777399928.tRAV0x@@archimate-triggering
-- FNC@1777399928.tRAV0x---EVT@1777399929.BKj6NZ@@archimate-triggering
-- FNC@1777399926.DrKMhV---DOB@1777399930.hExrX3@@archimate-access
-- FNC@1777399927.hbgFU3---DOB@1777399929.hhYsiw@@archimate-access
-- PRC@1777399926.gtgYvQ---FNC@1777399926.DrKMhV@@archimate-composition
-- PRC@1777399926.gtgYvQ---FNC@1777399927.hbgFU3@@archimate-composition
-- PRC@1777399926.gtgYvQ---FNC@1777399927.g3H3mK@@archimate-composition
-- PRC@1777399926.gtgYvQ---FNC@1777399927.6PI0kV@@archimate-composition
-- PRC@1777399926.gtgYvQ---FNC@1777399928.tRAV0x@@archimate-composition
 - APP@1777399924.5n_KQJ---PRC@1777399926.gtgYvQ@@archimate-assignment
-- APP@1777399925.WK_78v---PRC@1777399926.gtgYvQ@@archimate-assignment
 - APP@1777399925.HOOYAQ---PRC@1777399926.gtgYvQ@@archimate-assignment
+- APP@1777399925.WK_78v---PRC@1777399926.gtgYvQ@@archimate-assignment
 - APP@1777399926.PDJI8F---PRC@1777399926.gtgYvQ@@archimate-assignment
+- FNC@1777399927.hbgFU3---DOB@1777399929.hhYsiw@@archimate-access
+- FNC@1777399926.DrKMhV---DOB@1777399930.hExrX3@@archimate-access
+- FNC@1777399928.tRAV0x---EVT@1777399929.BKj6NZ@@archimate-triggering
+- PRC@1777399926.gtgYvQ---EVT@1777399929.BKj6NZ@@archimate-triggering
+- PRC@1777399926.gtgYvQ---FNC@1777399926.DrKMhV@@archimate-composition
+- FNC@1777399926.DrKMhV---FNC@1777399927.hbgFU3@@archimate-triggering
+- FNC@1777399927.g3H3mK---FNC@1777399927.6PI0kV@@archimate-triggering
+- PRC@1777399926.gtgYvQ---FNC@1777399927.6PI0kV@@archimate-composition
+- FNC@1777399927.6PI0kV---FNC@1777399928.tRAV0x@@archimate-triggering
+- FNC@1777399927.hbgFU3---FNC@1777399927.g3H3mK@@archimate-triggering
+- PRC@1777399926.gtgYvQ---FNC@1777399927.g3H3mK@@archimate-composition
+- PRC@1777399926.gtgYvQ---FNC@1777399927.hbgFU3@@archimate-composition
+- PRC@1777399926.gtgYvQ---FNC@1777399928.tRAV0x@@archimate-composition
 authored-groupings:
 - label: Performed By
-  stereotype: ApplicationGrouping
   entity-ids:
   - APP@1777399925.HOOYAQ.staged-write-transaction-manager
   - APP@1777399924.5n_KQJ.bulk-write-handler
   - APP@1777399925.WK_78v.bulk-delete-handler
   - APP@1777399926.PDJI8F.operation-registry
 - label: State
-  stereotype: ApplicationGrouping
   entity-ids:
   - DOB@1777399930.hExrX3.operation-record
   - DOB@1777399929.hhYsiw.staged-repository
-last-updated: '2026-07-29T13:29:52Z'
+last-updated: '2026-08-05T18:04:23Z'
 ---
 @startuml execute-staged-write-transaction
 hide stereotype
@@ -154,16 +153,17 @@ rectangle "Application" <<ApplicationGrouping>> as DOM_application {
 DOM_common -[hidden]down- DOM_application
 
 ' Connections
+APP_5n_KQJ --> PRC_gtgYvQ
+APP_HOOYAQ --> PRC_gtgYvQ
+APP_WK_78v --> PRC_gtgYvQ
+APP_PDJI8F --> PRC_gtgYvQ
+FNC_hbgFU3 --> DOB_hhYsiw
+FNC_DrKMhV --> DOB_hExrX3
+FNC_tRAV0x --> EVT_BKj6NZ
+PRC_gtgYvQ --> EVT_BKj6NZ
 FNC_DrKMhV --> FNC_hbgFU3
-FNC_hbgFU3 --> FNC_g3H3mK
 FNC_g3H3mK --> FNC_6PI0kV
 FNC_6PI0kV --> FNC_tRAV0x
-FNC_tRAV0x --> EVT_BKj6NZ
-FNC_DrKMhV --> DOB_hExrX3
-FNC_hbgFU3 --> DOB_hhYsiw
-APP_5n_KQJ --> PRC_gtgYvQ
-APP_WK_78v --> PRC_gtgYvQ
-APP_HOOYAQ --> PRC_gtgYvQ
-APP_PDJI8F --> PRC_gtgYvQ
+FNC_hbgFU3 --> FNC_g3H3mK
 
 @enduml

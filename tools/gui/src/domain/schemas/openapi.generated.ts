@@ -5236,6 +5236,10 @@ export interface components {
         };
         /** CreateDiagramGuiBody */
         CreateDiagramGuiBody: {
+            /** Authored Groupings */
+            authored_groupings?: {
+                [key: string]: unknown;
+            }[] | null;
             /** Connection Ids */
             connection_ids: string[];
             /** Diagram Entities */
@@ -6697,6 +6701,10 @@ export interface components {
         };
         /** EditDiagramGuiBody */
         EditDiagramGuiBody: {
+            /** Authored Groupings */
+            authored_groupings?: {
+                [key: string]: unknown;
+            }[] | null;
             /** Connection Ids */
             connection_ids: string[];
             /** Diagram Entities */
