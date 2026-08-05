@@ -118,6 +118,33 @@ would report a pass and a gap for the same row.
 
 &nbsp;
 
+## A container's realization reaches its members, potentially
+
+A **grouping** that realizes a requirement is saying its members do the realizing — the grouping itself
+realizes nothing, which is why the eligible-realizer set excludes it (along with junctions) as a
+structural helper. Before, that combination was self-defeating: the row found one realizer, the grouping,
+found it ineligible, and reported a correct model unrealized.
+
+The members are now substituted for the container, and the row records how it passed:
+
+| Evidence | Verdict | `diagnostic_code` |
+| --- | --- | --- |
+| something eligible realizes the requirement directly, or through a certain derived chain | pass | — |
+| only a grouping realizes it, and the grouping has eligible members | pass | `potential_realization` |
+| only a grouping realizes it, and it has no members | gap | — |
+
+`potential_realization` is not a problem — it is a statement about *evidence*, so a cycle or an ambiguous
+link outranks it. The distinction is the ontology's: a relationship of a whole only **potentially** holds
+of each part (`PDR12`), whereas an **AND/OR junction** *is* the relationship, split or joined, and passes
+it through **certainly** — so a requirement realized through a junction passes with no marker at all.
+
+Which container this applies to is read from the composition rules, not written into the traversal: the
+rule that declares "an aggregation from a grouping pushes a realization down to the member" is the same
+one the derivation engine uses. An ontology declaring a different container gets the same behaviour with
+no code change.
+
+&nbsp;
+
 ## Shortcuts and ambiguous links
 
 A requirement connected *directly* to a goal with an influence relationship is a **shortcut**:

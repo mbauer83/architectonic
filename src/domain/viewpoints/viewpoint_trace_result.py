@@ -16,7 +16,11 @@ from typing import Literal
 
 Verdict = Literal["pass", "gap", "not_applicable"]
 Observation = Literal["observed", "none_observed", "not_applicable"]
-DiagnosticCode = Literal["cycle", "budget_aborted", "ambiguous_link"]
+DiagnosticCode = Literal["cycle", "budget_aborted", "ambiguous_link", "potential_realization"]
+"""``potential_realization``: every eligible realizer of some terminal was reached by substituting a
+grouping for its members. The row passes — a grouping that realizes a requirement is saying its members
+do, which `PDR12` sanctions — but as an *inference*, not as something the model states. A junction
+carries no such code: a junction IS the relationship and passes it through certainly."""
 
 StatusCode = Literal[
     "ok", "shortcut", "incomplete_branch", "partial_branches",

@@ -78,10 +78,19 @@ def evaluate_pattern(
         )
     covered = tuple(t for t in obligations.terminals if _leaf_covers(index, t.requirement_id, pattern.leaf, eligible))
     satisfied_ids, _ = _capped(tuple(t.requirement_id for t in covered))
+    inferred = isinstance(pattern.leaf, DerivedReachabilityLeaf) and any(
+        index.realized_only_potentially(terminal.requirement_id, eligible) for terminal in covered
+    )
     if pattern.role == "diagnostic":
         observation = "observed" if covered else "none_observed"
         return DiagnosticPatternResult(observation=observation, last_satisfied_ids=tuple(satisfied_ids))  # type: ignore[arg-type]
-    return _authoritative(obligations, covered, expected_types, tuple(satisfied_ids))  # type: ignore[arg-type]
+    return _authoritative(
+        obligations,
+        covered,
+        expected_types,
+        tuple(satisfied_ids),  # type: ignore[arg-type]
+        inferred=inferred,
+    )
 
 
 def _authoritative(
@@ -89,6 +98,8 @@ def _authoritative(
     covered: tuple[TerminalObligation, ...],
     expected_types: tuple[str, ...],
     satisfied_ids: tuple[str, ...],
+    *,
+    inferred: bool = False,
 ) -> AuthoritativePatternResult:
     terminals, shortcuts, missing = obligations.terminals, obligations.shortcuts, obligations.missing
     uncovered = tuple(t for t in terminals if t not in set(covered))
@@ -105,14 +116,22 @@ def _authoritative(
         last_satisfied_ids=satisfied_ids,
         missing_expected=_missing_expected(missing, expected_types),
         shortcut=bool(shortcuts),
-        diagnostic_code=_diagnostic_code(obligations),
+        diagnostic_code=_diagnostic_code(obligations, inferred=inferred),
     )
 
 
-def _diagnostic_code(obligations: RowObligations) -> DiagnosticCode | None:
+def _diagnostic_code(obligations: RowObligations, *, inferred: bool = False) -> DiagnosticCode | None:
+    """The worst thing worth saying about how this verdict was reached.
+
+    `potential_realization` ranks last: it is not a problem, it is a statement about evidence — the row
+    passed because a grouping's members were substituted for it, which `PDR12` sanctions as potential.
+    A cycle or an ambiguous link is a defect in the model and outranks it.
+    """
     if obligations.cycle:
         return "cycle"
-    return "ambiguous_link" if obligations.ambiguous_link_ids else None
+    if obligations.ambiguous_link_ids:
+        return "ambiguous_link"
+    return "potential_realization" if inferred else None
 
 
 def _status(obligations: RowObligations, uncovered: tuple[TerminalObligation, ...]) -> StatusCode:

@@ -26,6 +26,14 @@ different checkout's model, with every response well-formed.
   carry one type and the derived endpoint pair required to be permitted, which is where "a junction may
   only carry a type admissible for every participant" applies. Contrast a grouping, whose members only
   *potentially* carry the whole's relationship (`PDR12`).
+- **A grouping's realization now reaches its members, as a visible inference.** A grouping that realizes
+  a requirement is saying its members do — but the eligible-realizer set excludes groupings as structural
+  helpers (rightly: a grouping realizes nothing), so the row found one ineligible realizer and reported a
+  correct model unrealized. Members are now substituted for the container and the row carries
+  `diagnostic_code: potential_realization`, because a relationship of a whole only *potentially* holds of
+  each part (`PDR12`) — unlike a junction, which passes a relationship through certainly and needs no
+  marker. An empty grouping still realizes nothing. Which container this applies to is read from the
+  composition rules rather than written into the traversal.
 - **A client reaches the backend serving its own workspace, or none.** Endpoints are chosen by what a
   backend reports serving (`GET /api/backend-identity`), not by which port answers. A workspace whose
   preferred port is held by another instance serves on a port derived from its own repository paths

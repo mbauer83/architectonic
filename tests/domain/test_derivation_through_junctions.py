@@ -91,13 +91,18 @@ def test_legs_of_different_types_do_not_compose() -> None:
     assert "APP@1" not in realizers
 
 
-def test_a_grouping_between_the_same_endpoints_is_not_certain() -> None:
-    """The contrast that makes the certainty distinction real, not decorative.
+def test_a_grouping_reaches_its_member_only_potentially() -> None:
+    """The contrast that makes the certainty distinction real rather than decorative.
 
-    A grouping's realization holds of its members only potentially (`PDR12`), and the leaf asks for
-    certain derivations — so a grouping does not silently pass a row the way a junction now does.
+    Both constructs let the leaf find an eligible realizer, so both pass — but a grouping's member is
+    reached by inference (`PDR12`, potential) and a junction's participant by pass-through (certain), and
+    the result has to be able to say which. Asserting the member's *absence* would be wrong now: it is
+    present, and what differs is the standing of the evidence.
     """
-    index = _index(
+    from src.application.viewpoints.trace_realizers import eligible_realizer_types
+
+    eligible = eligible_realizer_types(get_module_registry())
+    grouping = _index(
         [
             _e("GRP@1", "grouping", "common"),
             _e("APP@1", "application-component", "application"),
@@ -105,5 +110,8 @@ def test_a_grouping_between_the_same_endpoints_is_not_certain() -> None:
         ],
         [_c("GRP@1", "REQ@1", "archimate-realization"), _c("GRP@1", "APP@1", "archimate-aggregation")],
     )
+    junction = _junction_fixture("and-junction")
 
-    assert "APP@1" not in index.realizers_of("REQ@1")
+    assert "APP@1" in grouping.realizers_of("REQ@1")
+    assert grouping.realized_only_potentially("REQ@1", eligible) is True
+    assert junction.realized_only_potentially("REQ@1", eligible) is False

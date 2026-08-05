@@ -45,6 +45,14 @@ class TraceGraphIndex:
     classes_by_type: Mapping[str, frozenset[str]]
     enterprise_ids: frozenset[str]
     derived_realizers: Mapping[str, frozenset[str]]  # requirement id -> derived realizer source ids
+    potential_realizers: Mapping[str, frozenset[str]]
+    """Requirement id -> realizers reached only by *substituting a grouping for its members*.
+
+    A grouping realizes nothing itself — the eligible-realizer set excludes it as a structural helper —
+    but a grouping that realizes a requirement says its members do the realizing, and `PDR12` sanctions
+    exactly that as a POTENTIAL inference. Kept apart from `derived_realizers` because the distinction is
+    the point: a junction *is* the relationship and passes it through certainly, while a relationship of
+    a whole only potentially holds of each part. A row covered this way says so."""
     derived_truncated: bool
 
     def sources(self, target: str, conn_type: str) -> tuple[str, ...]:
@@ -57,9 +65,28 @@ class TraceGraphIndex:
 
     def realizers_of(self, requirement_id: str) -> frozenset[str]:
         """All elements realizing ``requirement_id`` via a direct or derived (≤hop-cap)
-        realization chain — the leaf denominator, tested by membership against a target set."""
+        realization chain — the leaf denominator, tested by membership against a target set.
+
+        Includes the members of a grouping that realizes the requirement. Whether that inference was
+        needed is answered by :meth:`realized_only_potentially`, so a reader can tell a statement from
+        an inference rather than the two being silently the same."""
         direct = self.incoming.get((requirement_id, REALIZATION_CONNECTION), ())
-        return frozenset(direct) | self.derived_realizers.get(requirement_id, frozenset())
+        return (
+            frozenset(direct)
+            | self.derived_realizers.get(requirement_id, frozenset())
+            | self.potential_realizers.get(requirement_id, frozenset())
+        )
+
+    def realized_only_potentially(self, requirement_id: str, eligible: frozenset[str]) -> bool:
+        """Whether every eligible realizer of this requirement came from a grouping substitution."""
+        stated = self.incoming.get((requirement_id, REALIZATION_CONNECTION), ())
+        certain = frozenset(stated) | self.derived_realizers.get(requirement_id, frozenset())
+        if any(self.type_of.get(realizer) in eligible for realizer in certain):
+            return False
+        return any(
+            self.type_of.get(realizer) in eligible
+            for realizer in self.potential_realizers.get(requirement_id, frozenset())
+        )
 
     def is_active(self, entity_id: str) -> bool:
         """A row/branch node participates unless deprecated or retired."""
@@ -105,6 +132,13 @@ def build_trace_graph_index(
     derived_realizers, truncated = _derived_realizer_closure(
         read_access, registries, requirement_ids=frozenset(requirement_ids), bounds=bounds
     )
+    potential_realizers = _container_member_realizers(
+        incoming=incoming,
+        outgoing=outgoing,
+        type_of=type_of,
+        requirement_ids=frozenset(requirement_ids),
+        pushdowns=_container_pushdowns(registries),
+    )
     return TraceGraphIndex(
         incoming={key: tuple(value) for key, value in incoming.items()},
         outgoing={key: tuple(value) for key, value in outgoing.items()},
@@ -115,8 +149,91 @@ def build_trace_graph_index(
         classes_by_type=classes_by_type,
         enterprise_ids=frozenset(read_access.enterprise_entity_ids()),
         derived_realizers=derived_realizers,
+        potential_realizers=potential_realizers,
         derived_truncated=truncated,
     )
+
+
+@dataclass(frozen=True)
+class _ContainerPushdown:
+    """A container type whose relationship the ontology pushes down to its members, and how.
+
+    Read from the composition rules rather than named here: `PDR12` already declares that an
+    `archimate-aggregation` from a `grouping`, joined at the source with a realization or assignment,
+    yields that relationship *from the member* — potentially. Hardcoding "grouping" and
+    "archimate-aggregation" in this traversal would be a second place for the same fact to be wrong,
+    and would not follow another ontology that declares a different container.
+    """
+
+    container_type: str
+    whole_part_connection: str
+    pushed_connections: frozenset[str]
+
+
+def _container_pushdowns(registries: ModuleCatalog) -> tuple[_ContainerPushdown, ...]:
+    """Every "a whole's relationship potentially holds of its parts" rule the ontologies declare."""
+    found: list[_ContainerPushdown] = []
+    for module in registries.all_ontologies().values():
+        for rule in module.derivation_rules:
+            if (
+                rule.certainty != "potential"
+                or rule.intermediate_artifact_type is None
+                or rule.first_artifact_type is None
+                or rule.join != "source-source"
+                or rule.result_source != "first-target"
+            ):
+                continue
+            found.append(
+                _ContainerPushdown(
+                    container_type=rule.intermediate_artifact_type,
+                    whole_part_connection=rule.first_artifact_type,
+                    pushed_connections=frozenset(rule.second_artifact_types),
+                )
+            )
+    return tuple(found)
+
+
+def _container_member_realizers(
+    *,
+    incoming: Mapping[tuple[str, str], list[str]],
+    outgoing: Mapping[tuple[str, str], list[str]],
+    type_of: Mapping[str, str],
+    requirement_ids: frozenset[str],
+    pushdowns: tuple[_ContainerPushdown, ...],
+) -> Mapping[str, frozenset[str]]:
+    """Members of a container that realizes a requirement — a potential inference, kept separate.
+
+    A grouping realizes nothing on its own account: `eligible_realizer_types` excludes it as a
+    structural helper, correctly. But a grouping that realizes a requirement is saying its members do,
+    and the ontology sanctions that — as *potential*, because a relationship of the whole need not hold
+    of every part. Without the substitution the row found a helper, found it ineligible, and reported a
+    correct model unrealized; counted as certain, an inference would read as a statement.
+
+    Nested containers are followed; a cycle cannot loop, because each container is visited once.
+    """
+    applicable = [p for p in pushdowns if REALIZATION_CONNECTION in p.pushed_connections]
+    if not applicable:
+        return {}
+    members: dict[str, set[str]] = defaultdict(set)
+    containers = {p.container_type: p.whole_part_connection for p in applicable}
+    for requirement_id in requirement_ids:
+        pending = [
+            realizer
+            for realizer in incoming.get((requirement_id, REALIZATION_CONNECTION), ())
+            if type_of.get(realizer, "") in containers
+        ]
+        seen: set[str] = set()
+        while pending:
+            container = pending.pop()
+            if container in seen:
+                continue
+            seen.add(container)
+            for member in outgoing.get((container, containers[type_of[container]]), ()):
+                if type_of.get(member, "") in containers:
+                    pending.append(member)
+                else:
+                    members[requirement_id].add(member)
+    return {key: frozenset(value) for key, value in members.items()}
 
 
 def _derived_realizer_closure(
