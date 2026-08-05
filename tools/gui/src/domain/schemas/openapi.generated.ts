@@ -3836,6 +3836,8 @@ export interface components {
             standards: string[];
             /** Step */
             step: string;
+            /** Step Numbering */
+            step_numbering?: string | null;
             /** Targeting Signals Are Not Factors */
             targeting_signals_are_not_factors?: string | null;
             /** Topic */

@@ -143,6 +143,12 @@ class AssuranceGuidanceResponse(Closed):
     why: str
     how: str
     standards: list[str]
+    step_numbering: str | None = None
+    """How this decomposition's step numbers map onto the source method's, on STPA topics only.
+
+    Present because the numbers visibly disagree with the Handbook's four: without the mapping, a
+    reader who knows the method reads "Step 6" as a miscount rather than as a finer split.
+    """
     if_you_already_know_fmea: str | None = None
     priority_never_overrides_a_constraint: str | None = None
     targeting_signals_are_not_factors: str | None = None

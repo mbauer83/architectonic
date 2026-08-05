@@ -9,7 +9,16 @@ specialist.
 
 ## STPA (System-Theoretic Process Analysis)
 
-A top-down safety analysis built on the STAMP model. The flow follows the entity graph:
+A top-down safety analysis built on the STAMP model. The flow follows the entity graph.
+
+**Six steps here, four in the Handbook.** Losses and hazards are separate steps (both are its Step 1),
+the control structure is its Step 2, UCAs its Step 3, loss scenarios its Step 4 — and constraints get a
+step of their own, which the Handbook derives inside the steps that produce them. Nothing is added or
+omitted; the steps are split so each has its own entry criteria and completeness check. Every step is
+also callable as method guidance (`assurance_guidance`, or `GET /api/assurance/guidance/{topic}`) under
+the slug `stpa-losses`, `stpa-hazards`, `stpa-control-structure`, `stpa-ucas`, `stpa-loss-scenarios`,
+`stpa-constraints`, and each answer repeats this mapping so a reader who knows the method does not read
+"Step 6" as a miscount.
 
 1. **Losses** — name the unacceptable, stakeholder-level outcomes. Everything traces back
    here.

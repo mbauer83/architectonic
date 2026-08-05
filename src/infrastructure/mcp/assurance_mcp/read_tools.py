@@ -228,7 +228,8 @@ def register_read_tools(server: FastMCP) -> None:
             "Return per-step STPA/CAST/GRC method guidance: what the step means, why it matters, "
             "and which standard applies. Always callable — does not require the store to be open. "
             "Topic examples: 'stpa-losses', 'stpa-hazards', 'stpa-control-structure', "
-            "'stpa-ucas', 'stpa-constraints', 'grc-risk', 'grc-obligations', 'cast-investigation'."
+            "'stpa-ucas', 'stpa-constraints', 'stpa-loss-scenarios', 'grc-risk', 'grc-obligations', "
+            "'cast-investigation'. An unknown topic answers with the full list of available topics."
         ),
     )
     def assurance_guidance(topic: str) -> dict[str, object]:
