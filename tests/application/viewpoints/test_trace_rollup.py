@@ -24,6 +24,7 @@ from src.domain.viewpoints.viewpoint_trace_patterns import (
 from src.domain.viewpoints.viewpoint_trace_result import (
     MissingOutcomeObligation,
     MissingRequirementObligation,
+    TerminalObligation,
 )
 from src.infrastructure.app_bootstrap import get_module_registry
 from tests.application.viewpoints._fixtures import Store, connection, entity
@@ -35,9 +36,9 @@ _BRANCHES = (
     NamedBranchEdge("goal_to_outcome", StoredEdge("archimate-realization", "incoming", "outcome")),
     NamedBranchEdge("outcome_to_requirement", StoredEdge("archimate-realization", "incoming", "requirement")),
 )
-#: As the shipped `motivation-coverage` viewpoint declares it: whole -> part, so the apex's
-#: constituents are the targets of its outgoing aggregation.
-_ROLLUP = RollupEdge("archimate-aggregation", "outgoing", "goal")
+#: As the shipped `motivation-coverage` viewpoint declares it: whole -> part, so a row's constituents
+#: are the targets of its outgoing aggregation. No endpoint type — it is the row's own type.
+_ROLLUP = RollupEdge("archimate-aggregation", "outgoing")
 
 _TYPE = {"GOL": "goal", "OUT": "outcome", "REQ": "requirement"}
 
@@ -65,8 +66,8 @@ def _index(entities, connections):
     )
 
 
-def _obligations(entity_id: str, index, *, rollup: RollupEdge | None = _ROLLUP):
-    return enumerate_row_obligations(entity_id, "goal", _BRANCHES, (), index, rollup)
+def _obligations(entity_id: str, index, *, rollup: RollupEdge | None = _ROLLUP, row_type: str = "goal"):
+    return enumerate_row_obligations(entity_id, row_type, _BRANCHES, (), index, rollup)
 
 
 def _covered_goal(suffix: str):
@@ -170,7 +171,7 @@ def test_an_aggregate_with_its_own_outcome_keeps_that_branch_too() -> None:
     assert {t.requirement_id for t in obligations.terminals} == {"REQ@a"}
 
 
-def test_only_peers_of_the_declared_type_are_descended() -> None:
+def test_only_peers_of_the_rows_own_type_are_descended() -> None:
     """An aggregated outcome is not a constituent goal — that would be a second, undeclared chain."""
     index = _index(
         [_e("GOL@apex"), _e("OUT@x")],
@@ -241,3 +242,55 @@ def test_a_diamond_is_counted_once_per_path_and_terminates() -> None:
 
     assert obligations.missing == ()
     assert {t.requirement_id for t in obligations.terminals} == {"REQ@a"}
+
+
+# ── The same rule at every other level of the chain ───────────────────────────
+
+
+def test_an_aggregate_requirement_carries_its_constituents_instead_of_itself() -> None:
+    """The defect one level down: an aggregate requirement is realized through its parts.
+
+    ArchiMate derivation cannot supply this — the aggregation and the realization both point *at* the
+    part, so they compose along no path — which is why the rollup has to hold here too.
+    """
+    index = _index(
+        [_e("REQ@whole"), _e("REQ@part")],
+        [_aggregates("REQ@whole", "REQ@part")],
+    )
+
+    obligations = _obligations("REQ@whole", index, row_type="requirement")
+
+    assert obligations.terminals == (TerminalObligation("REQ@part", "REQ@part"),)
+    assert TerminalObligation("REQ@whole", "REQ@whole") not in obligations.terminals
+
+
+def test_a_requirement_that_aggregates_nothing_is_still_its_own_obligation() -> None:
+    index = _index([_e("REQ@solo")], [])
+
+    obligations = _obligations("REQ@solo", index, row_type="requirement")
+
+    assert obligations.terminals == (TerminalObligation("REQ@solo", "REQ@solo"),)
+
+
+def test_an_aggregate_outcome_carries_its_constituents_instead_of_itself() -> None:
+    """The middle of the chain, for the same reason: the constituents answer for the whole."""
+    index = _index(
+        [_e("OUT@whole"), _e("OUT@part"), _e("REQ@a")],
+        [_aggregates("OUT@whole", "OUT@part"), _realizes("REQ@a", "OUT@part")],
+    )
+
+    obligations = _obligations("OUT@whole", index, row_type="outcome")
+
+    assert obligations.missing == (), "the whole no longer owes a requirement of its own"
+    assert obligations.terminals == (TerminalObligation("OUT@part", "REQ@a"),)
+
+
+def test_an_aggregate_outcome_is_a_gap_when_a_constituent_has_no_requirement() -> None:
+    index = _index(
+        [_e("OUT@whole"), _e("OUT@bare")],
+        [_aggregates("OUT@whole", "OUT@bare")],
+    )
+
+    obligations = _obligations("OUT@whole", index, row_type="outcome")
+
+    assert obligations.missing == (MissingRequirementObligation("OUT@bare", "OUT@bare"),)

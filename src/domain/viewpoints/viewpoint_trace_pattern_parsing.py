@@ -43,7 +43,7 @@ _PATTERN_KEYS = frozenset(
 )
 _STORED_EDGE_KEYS = frozenset({"kind", "connection", "direction", "endpoint"})
 _DIAGNOSTIC_EDGE_KEYS = frozenset({"kind", "connection", "direction", "endpoint", "status"})
-_ROLLUP_EDGE_KEYS = frozenset({"kind", "connection", "direction", "endpoint"})
+_ROLLUP_EDGE_KEYS = frozenset({"kind", "connection", "direction"})
 _DERIVED_LEAF_KEYS = frozenset({"kind", "connection", "traversal", "max_hops", "endpoint"})
 # Leaf endpoints target a realizer set (registry) or a layer (domain[+class]); the ``type``
 # key belongs to EDGE endpoints only (enforced inline in ``_endpoint_type``).
@@ -170,7 +170,6 @@ def _rollup(value: object, *, label: str) -> RollupEdge | None:
     return RollupEdge(
         connection=str(_require(raw, "connection", label=f"{label} rollup")),
         direction=_direction(_require(raw, "direction", label=f"{label} rollup"), label=f"{label} rollup"),
-        endpoint_type=_endpoint_type(raw, label=f"{label} rollup"),
     )
 
 

@@ -152,30 +152,15 @@ def validate_trace_pattern_types(
         edges: list[EdgeDeclaration] = list(pattern.shortcuts)
         if isinstance(pattern.branches, InlineBranches):
             edges.extend(named.edge for named in pattern.branches.edges)
-        if pattern.rollup is not None:
-            edges.append(pattern.rollup)
-            issues.extend(_check_rollup_peer_type(pattern, item))
+        if pattern.rollup is not None and pattern.rollup.connection not in known_connection_types:
+            issues.append(issue("error", "unknown-connection-type", f"{item}/rollup",
+                                f"rollup references unknown connection type {pattern.rollup.connection!r}"))
         for edge in edges:
             issues.extend(_check_edge_types(edge, known_entity_types, known_connection_types, item))
         if isinstance(pattern.leaf, DerivedReachabilityLeaf) and pattern.leaf.connection not in known_connection_types:
             issues.append(issue("error", "unknown-connection-type", f"{item}/leaf",
                                 f"leaf references unknown connection type {pattern.leaf.connection!r}"))
     return issues
-
-
-def _check_rollup_peer_type(pattern: TracePattern, path: str) -> list[ViewpointValidationIssue]:
-    """A rollup composes a verdict between peers, so it must land on a type the pattern reports on.
-
-    A descent into another type would be a second chain expressed as a composition rule — silently,
-    and with no branch of its own to quantify over.
-    """
-    if pattern.rollup is None or pattern.rollup.endpoint_type in pattern.applies_to:
-        return []
-    return [
-        issue("error", "trace-pattern-rollup-not-a-peer", f"{path}/rollup",
-              f"rollup endpoint type {pattern.rollup.endpoint_type!r} is not one of this pattern's "
-              f"applies_to types {sorted(pattern.applies_to)}")
-    ]
 
 
 def _check_edge_types(

@@ -41,7 +41,10 @@ different checkout's model, with every response well-formed.
   edge onto the apex: a metric shaping the model rather than measuring it. The viewpoint now declares
   the whole-part edge it composes over (`rollup`), and an aggregate carries its constituents'
   obligations instead of one of its own — so it passes exactly when every constituent is covered, and
-  a propagated gap names the constituent it belongs to rather than the apex.
+  a propagated gap names the constituent it belongs to rather than the apex. The rule holds at **every
+  level**: an aggregate requirement whose constituents are realized is realized, which ArchiMate's
+  derivation rules cannot supply because an aggregation and a realization that both point at the part
+  compose along no path.
 - **`assurance_guidance` teaches the five UCA guidewords the software applies**, and says why the
   Handbook's second is split in two. It taught four while the matrix, the wizard and the attribute
   enum had all moved to five, so an analyst following it under-enumerated. New topic

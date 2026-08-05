@@ -109,7 +109,7 @@ _MOTIVATION_WITH_ROLLUP = TracePattern(
         NamedBranchEdge("g2o", StoredEdge("archimate-realization", "incoming", "outcome")),
         NamedBranchEdge("o2r", StoredEdge("archimate-realization", "incoming", "requirement")),
     )),
-    rollup=RollupEdge("archimate-aggregation", "outgoing", "goal"),
+    rollup=RollupEdge("archimate-aggregation", "outgoing"),
     leaf=NoneLeaf(),
 )
 
@@ -190,3 +190,60 @@ class TestRollupReachesTheIndex:
         motivation = dict(apex.pattern_results)["motivation"]
         assert apex.verdict == "gap"
         assert [type(o).__name__ for o in motivation.failing_obligations] == ["MissingOutcomeObligation"]
+
+
+class TestRollupHoldsAtEveryLevel:
+    """`realization flows through aggregation at any level` — the leaf side of the same rule.
+
+    An aggregate requirement whose constituents are realized is realized. ArchiMate's derivation
+    rules cannot supply it (the aggregation and the realization both point at the part, composing
+    along no path), so before the rollup reached this level the row reported `partial_branches`
+    against a model that was correct.
+    """
+
+    def test_an_aggregate_requirement_passes_on_its_constituents_realizers(self) -> None:
+        store = Store(
+            entities={x.artifact_id: x for x in (_e("REQ@whole"), _e("REQ@part"), _e("APP@1"))},
+            connections=[
+                connection(artifact_id="agg", source="REQ@whole", target="REQ@part",
+                           conn_type="archimate-aggregation"),
+                _rz("rz", "APP@1", "REQ@part"),
+            ],
+        )
+        query = _query(
+            entity_criteria=EntityCriteriaGroup(
+                children=(AttributeCondition("type", "in", ValueRef(literal=["requirement"])),)
+            ),
+            trace_patterns=TracePatternSet((_MOTIVATION_WITH_ROLLUP, _OVERALL)),
+        )
+
+        result = _run_against(store, query)
+
+        assert result.trace_table is not None
+        verdicts = {row.entity_id: row.verdict for row in result.trace_table.rows}
+        assert verdicts["REQ@whole"] == "pass"
+        assert verdicts["REQ@part"] == "pass"
+
+    def test_an_aggregate_requirement_is_a_gap_when_a_constituent_has_no_realizer(self) -> None:
+        store = Store(
+            entities={x.artifact_id: x for x in (_e("REQ@whole"), _e("REQ@part"), _e("REQ@bare"), _e("APP@1"))},
+            connections=[
+                connection(artifact_id="agg1", source="REQ@whole", target="REQ@part",
+                           conn_type="archimate-aggregation"),
+                connection(artifact_id="agg2", source="REQ@whole", target="REQ@bare",
+                           conn_type="archimate-aggregation"),
+                _rz("rz", "APP@1", "REQ@part"),
+            ],
+        )
+        query = _query(
+            entity_criteria=EntityCriteriaGroup(
+                children=(AttributeCondition("type", "in", ValueRef(literal=["requirement"])),)
+            ),
+            trace_patterns=TracePatternSet((_MOTIVATION_WITH_ROLLUP, _OVERALL)),
+        )
+
+        result = _run_against(store, query)
+
+        assert result.trace_table is not None
+        verdicts = {row.entity_id: row.verdict for row in result.trace_table.rows}
+        assert verdicts["REQ@whole"] == "gap"

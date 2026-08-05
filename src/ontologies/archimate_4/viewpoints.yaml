@@ -1815,9 +1815,9 @@ viewpoints:
     when EVERY modeled branch (goal -> outcome -> requirement) terminates in a requirement that
     something legitimately realizes. Reports full realization rather than existential
     reachability, so a goal whose second outcome has no requirement is an honest gap instead of
-    a false green. A goal that aggregates goals is a rollup: it bears no missing-outcome
-    obligation of its own and is covered exactly when every constituent is, because an aggregate
-    is not realized -- its constituents are. A direct requirement -influence-> goal is a shortcut branch (gap, flagged);
+    a false green. An element that aggregates peers of its own type is a rollup at any level of the
+    chain: it drops the obligation that asks about itself and is covered exactly when every
+    constituent is, because an aggregate is not realized -- its constituents are. A direct requirement -influence-> goal is a shortcut branch (gap, flagged);
     a plain association is reported as ambiguous rather than asserted as realization. The
     behaviour/business/application columns are DIAGNOSTIC observations, never gaps — an
     application-only requirement passes overall. Complements requirements-coverage-gaps, which
@@ -1903,8 +1903,6 @@ viewpoints:
         kind: rollup-edge
         connection: archimate-aggregation
         direction: outgoing
-        endpoint:
-          type: goal
       shortcuts:
       - kind: diagnostic-edge
         connection: archimate-influence

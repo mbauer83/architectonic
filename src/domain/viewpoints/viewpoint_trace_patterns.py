@@ -102,7 +102,7 @@ class DiagnosticEdge:
 
 @dataclass(frozen=True)
 class RollupEdge:
-    """The whole-part edge to same-type constituents, over which a row's verdict *composes*.
+    """The whole-part edge to constituents *of the row's own type*, over which a verdict composes.
 
     An aggregate is not realized; its constituents are. A goal realized through the goals it
     aggregates has no incoming realization of its own, and enumerating branches from it therefore
@@ -110,29 +110,35 @@ class RollupEdge:
     penalised, and the only way to keep such a view green was a direct realization edge onto the apex
     that the model does not otherwise want: a metric shaping the model rather than measuring it.
 
-    Declared rather than inferred, because *which* connection means whole-part differs by chain
-    (aggregation between goals here; composition elsewhere) and because a hidden traversal is not
-    reviewable. Not a branch: a branch is universally quantified over every row, which would make
-    aggregation mandatory for every goal and fail the leaves that aggregate nothing. What it does
-    instead is redirect enumeration — a row with constituents bears no missing-* obligation of its
-    own and carries its constituents' obligations, so the fixed universal quantification already
-    reads as "every constituent is covered" with no new quantifier.
+    **It holds at every level of the chain, not only at its root.** An aggregate *requirement* whose
+    constituents are realized is realized, and reporting it as unrealized is the same defect one level
+    down — ArchiMate's derivation rules cannot supply it, because an aggregation and a realization that
+    both point *at* the part compose along no path. So the endpoint is not declared: it is the row's
+    own type, whatever the row is. That is what "peers" means, and encoding it structurally removes
+    both the repetition of declaring it per level and the validation that it was declared correctly.
 
-    ``endpoint_type`` must equal the row type it applies to: this composes a verdict between peers,
-    and a descent into a different type would be a second, undeclared chain.
+    Declared rather than inferred, because *which* connection means whole-part differs by chain
+    (aggregation here; composition elsewhere) and because a hidden traversal is not reviewable. Not a
+    branch: a branch is universally quantified over every row, which would make aggregation mandatory
+    for every goal and fail every leaf that aggregates nothing. What it does instead is redirect
+    enumeration — an aggregate drops the obligation that asks about *itself* and carries its
+    constituents' obligations — so the fixed universal quantification already reads as "every
+    constituent is covered", with no new quantifier and no second way to express one chain.
     """
 
     connection: str
     direction: EdgeDirection
-    endpoint_type: str
     kind: Literal["rollup-edge"] = "rollup-edge"
 
-    def as_stored(self) -> StoredEdge:
-        """The same hop as a branch edge, for the one neighbour lookup both share."""
-        return StoredEdge(connection=self.connection, direction=self.direction, endpoint_type=self.endpoint_type)
+    def as_stored(self, row_type: str) -> StoredEdge:
+        """The same hop as a branch edge, landing on the row's own type — the one lookup both share."""
+        return StoredEdge(connection=self.connection, direction=self.direction, endpoint_type=row_type)
 
 
-EdgeDeclaration = StoredEdge | DiagnosticEdge | RollupEdge
+#: Edge declarations that name an endpoint type, and so can be type-checked as a pair. A rollup is
+#: deliberately not one: its endpoint is the row's own type, which is why it needs no declaration and
+#: cannot be declared wrongly.
+EdgeDeclaration = StoredEdge | DiagnosticEdge
 
 
 # --- Leaf endpoint variants (discriminated by ``kind``) --------------------------------
