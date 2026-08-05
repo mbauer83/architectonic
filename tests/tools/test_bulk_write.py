@@ -16,7 +16,6 @@ from typing import Any, cast
 import pytest
 
 from src.application.verification.artifact_verifier import ArtifactRegistry, ArtifactVerifier
-from src.domain.artifact_id import stable_id
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.artifact_index.events import AuthoritativeIndexMutationCommitted, event_bus
 from src.infrastructure.mcp import mcp_artifact_server as mcp
@@ -830,32 +829,27 @@ Alice -> Bob
         assert not state_dir.exists() or not list(state_dir.rglob("*"))
 
     def test_bulk_write_auto_sync_updates_diagram_after_entity_rename(self, repo: Path) -> None:
+        """The diagram is authored by the tool, not hand-written.
+
+        A rename rewrites every diagram that names the entity — the same cascade that runs outside a
+        batch — so the diagram is verified as part of the batch. A hand-written body that is not a
+        valid ArchiMate diagram (no stereotype include, no element declarations, aliases resolving to
+        nothing) then fails on its own account, which reads as the rename being refused.
+        """
+        from src.infrastructure.mcp import mcp_artifact_server as mcp  # noqa: PLC0415
+
         src = _make(repo, "requirement", "RenameSrc")
         tgt = _make(repo, "outcome", "RenameTgt")
         _connect(repo, src, tgt, "archimate-realization")
-        diag_id = "bulk-write-rename-sync"
-        _write(
-            repo / "diagram-catalog" / "diagrams" / f"{diag_id}.puml",
-            f"""\
----
-artifact-id: {diag_id}
-artifact-type: diagram
-diagram-type: archimate-application
-name: "Bulk Write Rename Sync"
-entity-ids-used:
-  - {src}
-  - {tgt}
-connection-ids-used:
-  - {src}---{tgt}@@archimate-realization
-version: 0.1.0
-status: active
-last-updated: '2026-04-28'
----
-@startuml
-Alice -> Bob
-@enduml
-""",
+        created = mcp.artifact_create_diagram(
+            name="Bulk Write Rename Sync",
+            diagram_type="archimate-motivation",
+            entity_ids=[src, tgt],
+            dry_run=False,
+            repo_root=str(repo),
         )
+        assert created["wrote"], created
+        diagram_path = Path(str(created["path"]))
 
         results = _bulk(
             repo,
@@ -864,11 +858,10 @@ Alice -> Bob
         )
 
         new_src = str(results[0]["artifact_id"])
-        text = (repo / "diagram-catalog" / "diagrams" / f"{diag_id}.puml").read_text(encoding="utf-8")
-        assert results[0]["wrote"] is True
+        text = diagram_path.read_text(encoding="utf-8")
+        assert results[0]["wrote"] is True, results
         assert new_src in text
         assert src not in text
-        assert f"{stable_id(new_src)}---{stable_id(tgt)}@@archimate-realization" in text
 
     def test_bulk_write_auto_sync_updates_diagram_after_connection_remove(self, repo: Path) -> None:
         src = _make(repo, "requirement", "ConnRemoveSrc")

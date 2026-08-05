@@ -283,8 +283,16 @@ def edit_entity(
             rebuild_index=_rebuild_index_for_rename,
         )
         res = preview_res  # intent already verified pre-write; M4 is idempotent post-commit
-        # Referrers were committed inside the same transaction as the rename.
-        referrer_paths = []
+        # Every path the transaction wrote is reported, not only the four the index must re-read.
+        # `clear_repo_caches` is how an *enclosing* transaction learns which files to carry out of
+        # its staging repository: `artifact_bulk_write` builds its commit manifest from exactly the
+        # paths its operations report. Reporting only the entity and its sidecar — on the grounds
+        # that "referrers were committed inside the same transaction" — was true of the inner M4
+        # commit and false of the outer one, so a rename in a batch renamed the entity and left
+        # every referrer in the live repository naming the old slug, while the identical rename
+        # through the single-entity path was correct.
+        known = {entity_file, target_entity_file, old_sidecar, new_sidecar}
+        referrer_paths = [path for path in renamed_paths if path not in known]
 
     for path in referrer_paths:
         clear_repo_caches(path)

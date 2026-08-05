@@ -222,3 +222,89 @@ class TestNothingLandsHalfway:
 
         assert _referrer_text(repo, source) == before
         assert target in before and occupant not in before
+
+
+class TestABatchedRenameCascadesToo:
+    """The reported failure: a rename inside `artifact_bulk_write` left every referrer stale.
+
+    A batch writes into a copy-on-write staging tree that holds *only what has been written* — reads
+    of a named path fall through to the live repository, but a directory listing had nothing to fall
+    through to. So an operation that enumerates instead of naming its paths saw an empty repository:
+    "every outgoing file that references this entity" found none, and "every document linking to this
+    file" found none. The entity was renamed, the referrers were not, and nothing reported a problem
+    because a stale slug still resolves.
+
+    Enumeration now goes through the overlay (`staged_workspace.overlay_paths`), which lists the union
+    of staged and live entries, symlinks each listed entry in so it can be read, and honours the
+    deletions the transaction has already made.
+    """
+
+    def _batch(self, repo: Path, items: list[dict]) -> dict:
+        from src.infrastructure.mcp.artifact_mcp.bulk.write import artifact_bulk_write  # noqa: PLC0415
+
+        return artifact_bulk_write(items=items, dry_run=False, repo_root=str(repo))
+
+    def test_a_referrer_is_rewritten_by_a_batched_rename(self, repo: Path) -> None:
+        source = _entity(repo, "requirement", "Batch Source")
+        target = _entity(repo, "outcome", "First Subject")
+        _connect(repo, source, target)
+
+        result = self._batch(repo, [{"op": "edit_entity", "artifact_id": target, "name": "Second Subject"}])
+
+        assert result["committed"] is True, result
+        text = _referrer_text(repo, source)
+        assert "second-subject" in text
+        assert target not in text
+
+    def test_the_batched_rename_keeps_the_connection_description(self, repo: Path) -> None:
+        source = _entity(repo, "requirement", "Batch Describing Source")
+        target = _entity(repo, "outcome", "Third Subject")
+        _connect(repo, source, target)
+
+        self._batch(repo, [{"op": "edit_entity", "artifact_id": target, "name": "Fourth Subject"}])
+
+        assert "Realizes it." in _referrer_text(repo, source)
+
+    def test_a_document_link_is_rewritten_inside_a_staged_transaction(self, repo: Path) -> None:
+        """Documents link by *path*, so a rename moves the file out from under every link to it.
+
+        Driven at the rewrite's own seam under a staged workspace, which is what the overlay changed:
+        enumerating documents inside a transaction, and comparing link paths lexically rather than
+        through `Path.resolve()` — which followed the staging tree's symlink to the live file and so
+        matched nothing.
+        """
+        from src.infrastructure.write.artifact_write._entity_rename import (  # noqa: PLC0415
+            rewrite_document_links_for_moved_entity,
+        )
+        from src.infrastructure.write.artifact_write.batch_transaction import (  # noqa: PLC0415
+            create_staging_repo,
+        )
+
+        doc_dir = repo / "docs" / "adr"
+        doc_dir.mkdir(parents=True, exist_ok=True)
+        doc = doc_dir / "note.md"
+        doc.write_text("See [the outcome](../../model/motivation/outcome/OUT@1.Ab.old-name.md).\n", encoding="utf-8")
+        staging, staged_root = create_staging_repo(repo)
+        try:
+            changed = rewrite_document_links_for_moved_entity(
+                repo_root=staged_root,
+                old_path=staged_root / "model" / "motivation" / "outcome" / "OUT@1.Ab.old-name.md",
+                new_path=staged_root / "model" / "motivation" / "outcome" / "OUT@1.Ab.new-name.md",
+            )
+            staged_doc = staged_root / "docs" / "adr" / "note.md"
+            assert changed == [staged_doc]
+            assert "new-name" in staged_doc.read_text(encoding="utf-8")
+            assert "old-name" in doc.read_text(encoding="utf-8"), "the live document must not be touched"
+        finally:
+            staging.cleanup()
+
+    def test_several_referrers_survive_one_batch(self, repo: Path) -> None:
+        target = _entity(repo, "outcome", "Seventh Subject")
+        sources = [_entity(repo, "requirement", f"Batch Referrer {n}") for n in range(3)]
+        for source in sources:
+            _connect(repo, source, target)
+
+        self._batch(repo, [{"op": "edit_entity", "artifact_id": target, "name": "Eighth Subject"}])
+
+        for source in sources:
+            assert "eighth-subject" in _referrer_text(repo, source)

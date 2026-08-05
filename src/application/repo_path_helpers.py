@@ -312,12 +312,17 @@ def rewrite_doc_link(
 
     Returns the rewritten link or the original if it does not match
     target_old_path when resolved from doc_old_dir.
+
+    Paths are compared **lexically**, not through `Path.resolve()`. A markdown link is a lexical
+    relative path, and following symlinks conflates two different files whenever the repository is
+    reached through one: inside a batch transaction the staging tree symlinks live files in, so the
+    link resolved through the symlink landed on the live file while the moved-from path — deleted by
+    the rename — resolved to itself, the comparison failed, and no link in any document was rewritten.
     """
     import posixpath
 
     try:
-        resolved = (doc_old_dir / link_target).resolve()
-        if resolved != target_old_path.resolve():
+        if _lexical(doc_old_dir / link_target) != _lexical(target_old_path):
             return link_target
     except OSError:
         return link_target
@@ -325,10 +330,17 @@ def rewrite_doc_link(
     # Compute new relative path
     try:
         new_rel = posixpath.relpath(
-            target_new_path.resolve().as_posix(),
-            doc_new_dir.resolve().as_posix(),
+            _lexical(target_new_path).as_posix(),
+            _lexical(doc_new_dir).as_posix(),
         )
     except ValueError:
         return link_target
 
     return new_rel
+
+
+def _lexical(path: Path) -> Path:
+    """An absolute path with `.`/`..` collapsed textually, following no symlink."""
+    import os.path
+
+    return Path(os.path.normpath(path.absolute()))

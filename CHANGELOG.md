@@ -26,6 +26,16 @@ different checkout's model, with every response well-formed.
   carry one type and the derived endpoint pair required to be permitted, which is where "a junction may
   only carry a type admissible for every participant" applies. Contrast a grouping, whose members only
   *potentially* carry the whole's relationship (`PDR12`).
+- **A batch item carrying a field its operation does not accept is refused, not performed
+  differently.** Removal is selected by `operation=remove`; an item passing `mode: "remove"` had that
+  field ignored, ran as an update, and reported `wrote: true` for a removal that never happened. Every
+  op now declares its accepted fields, and a stray one fails that item with the list in the message.
+- **A rename inside `artifact_bulk_write` now rewrites the referring files, as a single-entity rename
+  always did.** A batch writes into a copy-on-write staging tree that holds only what has been written,
+  so a *listing* of it had nothing to fall through to: every operation that enumerates rather than
+  naming its paths saw an empty repository, and a batched rename left each referrer naming the old slug
+  — silently, because a stale slug still resolves. Enumeration now goes through the staging overlay,
+  which lists the union of staged and live entries.
 - **A junction may no longer carry a relationship its participants could not hold.** The type table
   admits all eleven junction-capable types between an element and a junction and has to — which one is
   admissible depends on what else that junction instance joins — so a model could assert through a

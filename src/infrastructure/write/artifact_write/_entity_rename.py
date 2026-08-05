@@ -15,6 +15,12 @@ from src.application.repo_path_helpers import (
 )
 from src.domain.artifact_id import full_ids_with_stem, stable_id
 from src.domain.repository.repo_layout import RENDERED
+from src.infrastructure.write.artifact_write.staged_workspace import live_root_for, overlay_paths
+
+
+def _document_sources(repo_root: Path) -> Iterator[Path]:
+    """Every document, listed through the overlay for the same reason the referrers are."""
+    return overlay_paths(docs_root(repo_root), ("*.md",))
 
 
 def rewrite_document_links_for_moved_entity(
@@ -28,10 +34,7 @@ def rewrite_document_links_for_moved_entity(
     /old/path.md)` link elsewhere in the docs tree.
     """
     changed: list[Path] = []
-    doc_root = docs_root(repo_root)
-    if not doc_root.exists():
-        return changed
-    for doc_path in doc_root.rglob("*.md"):
+    for doc_path in _document_sources(repo_root):
         text = doc_path.read_text(encoding="utf-8")
 
         def _replace(match: re.Match[str]) -> str:
@@ -145,17 +148,37 @@ def plan_referrer_rewrites(
 
 
 def _referrer_sources(repo_root: Path) -> Iterator[Path]:
-    """Every authored file that can name an entity by id: sidecars and diagram sources."""
-    for model_root in all_model_roots(repo_root):
-        yield from model_root.rglob("*.outgoing.md")
+    """Every authored file that can name an entity by id: sidecars and diagram sources.
+
+    Enumerated through `overlay_paths`, not `rglob`: inside a batch transaction the repository is a
+    copy-on-write staging tree that lists only what has already been written, so a raw glob found no
+    referrers at all and a batched rename left every one of them naming the old slug.
+    """
+    for model_root in _model_roots_for_enumeration(repo_root):
+        yield from overlay_paths(model_root, ("*.outgoing.md",))
     diagram_root = diagram_source_root(repo_root)
-    if not diagram_root.exists():
-        return
     rendered = (diagram_root.parent / RENDERED).resolve()
-    for suffix in ("*.puml", "*.md"):
-        for path in diagram_root.rglob(suffix):
-            if not path.resolve().is_relative_to(rendered):
-                yield path
+    for path in overlay_paths(diagram_root, ("*.puml", "*.md")):
+        if not path.resolve().is_relative_to(rendered):
+            yield path
+
+
+def _model_roots_for_enumeration(repo_root: Path) -> list[Path]:
+    """Model roots to walk, including ones the staging tree has not materialized yet.
+
+    `all_model_roots` returns existing directories only, which inside a staged transaction means
+    almost none of them — the same emptiness that hid the referrers.
+    """
+    roots = list(all_model_roots(repo_root))
+    live_root = live_root_for(repo_root)
+    if live_root is None:
+        return roots
+    known = {path.resolve() for path in roots}
+    for live_model_root in all_model_roots(live_root):
+        staged = repo_root / live_model_root.relative_to(live_root)
+        if staged.resolve() not in known:
+            roots.append(staged)
+    return roots
 
 
 def apply_referrer_rewrites(plan: dict[Path, str]) -> list[Path]:
