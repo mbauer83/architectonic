@@ -41,11 +41,55 @@ restarts a running backend. See [CLI & Backend](cli-and-backend.md).
 
 &nbsp;
 
+## Several workspaces on one machine
+
+Nothing needs configuring to run more than one workspace at a time — a second one takes its own
+port and its own clients reach it. What makes that work is that **a backend is identified by the
+repositories it serves, not by the port it is on**. Every client (the MCP bridges, `arch-backend
+--status`/`--stop`, `arch-write-cli`, the upgrade guard) asks the backend it finds
+`GET /api/backend-identity` and uses it only if it serves this workspace's engagement repository.
+
+Where a workspace's backend ends up:
+
+| Situation | What happens |
+| --- | --- |
+| The preferred port is free | The backend serves there — the usual `http://127.0.0.1:8000` |
+| Another workspace's backend holds it | This workspace starts on a port derived from its own repository paths (8100–8499), logs why, and prints the address |
+| A non-backend process holds it | The same relocation |
+| The port was **stated** — `--port`, `ARCH_BACKEND_PORT`, or `backend.port` in `arch-workspace.yaml` | No relocation: the command fails and names the occupant. A stated port is obeyed or refused, never moved under you |
+| Its own backend is already up (on any of those ports) | Reused, never started twice |
+
+Consequences worth knowing:
+
+- **`--status` and `--stop` stay inside their workspace.** A neighbour's backend on the port this
+  workspace would use is reported as `port 8000 is serving another workspace (…)` and is never
+  signalled.
+- **To pin an address**, set `backend.port` in that workspace's `arch-workspace.yaml`. That is also
+  what makes a bookmarked GUI URL stable regardless of start order.
+- **`arch-write-cli` refuses** to send a write to a backend that does not serve the `--repo-root` it
+  was given, even if one answers on the recorded port.
+- **`arch-assurance status` / `unlock` / `lock` address this workspace's backend only.** `unlock`
+  authorizes the running process to open the confidential store, so reaching a neighbour's backend
+  would mean one workspace's ceremony granting access in another. When no backend is running for this
+  workspace, the activation gate is still set and the next start applies it.
+- **MCP clients**: each workspace's `.mcp.json` starts the bridges in that workspace's directory, so
+  the working directory names the workspace. Where a client cannot set one, pass
+  `--workspace DIR` or set `ARCH_MCP_WORKSPACE`. A bridge that cannot reach a backend for its own
+  workspace exits with that reason rather than attaching to another one — see
+  [Interfaces & MCP](../03-modeling/interfaces-and-mcp.md).
+- **`ARCH_MCP_BACKEND_URL`** still wins outright, and is not identity-checked: a container reports
+  the paths it sees inside itself, which never match a host workspace. Naming a URL is the decision.
+
+&nbsp;
+
 ## `config/settings.yaml` — backend
 
 ```yaml
 backend:
-  port: 8000                  # TCP port (default 8000)
+  port: 8000                  # preferred TCP port (default 8000). The shipped default, so a
+                              # second workspace on the machine may take a derived port
+                              # instead — state it in arch-workspace.yaml to pin it. See
+                              # "Several workspaces on one machine" above
   log_path: .arch/backend.log # where a DETACHED backend writes; workspace-relative if
                               # not absolute. A foreground run (the container's, and any
                               # plain `arch-backend`) logs to stdout/stderr instead

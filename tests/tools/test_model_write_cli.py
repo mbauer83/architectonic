@@ -10,9 +10,14 @@ from src.infrastructure.write import artifact_write_cli
 
 @pytest.fixture()
 def live_backend(monkeypatch):
-    """Simulate a running backend: state resolves and probe succeeds."""
+    """Simulate a backend serving this repository: state resolves, it answers, and it says so.
+
+    The third part is not decoration: the CLI sends writes, so it confirms that the backend at the
+    recorded port serves the repository it was given rather than a neighbouring workspace's.
+    """
     monkeypatch.setattr(artifact_write_cli, "read_backend_state", lambda path: {"port": 8000})
     monkeypatch.setattr(artifact_write_cli, "probe_backend", lambda port: True)
+    monkeypatch.setattr(artifact_write_cli, "port_serves_workspace", lambda port, claim: True)
 
 
 class _FakeResp:
@@ -57,3 +62,22 @@ def test_cli_delete_diagram_dry_run(tmp_path: Path, capsys, live_backend, monkey
 
     assert rc == 0
     assert "Would delete diagram" in captured.out
+
+
+def test_cli_refuses_to_write_to_a_backend_serving_another_repository(
+    tmp_path: Path, capsys, monkeypatch
+) -> None:
+    """A recorded port outlives the backend that wrote it; the next occupant may be a neighbour's."""
+    monkeypatch.setattr(artifact_write_cli, "read_backend_state", lambda path: {"port": 8000})
+    monkeypatch.setattr(artifact_write_cli, "probe_backend", lambda port: True)
+    monkeypatch.setattr(artifact_write_cli, "port_serves_workspace", lambda port, claim: False)
+    sent: list[object] = []
+    monkeypatch.setattr(artifact_write_cli, "urlopen", lambda req, timeout=10.0: sent.append(req))
+
+    rc = artifact_write_cli.main(
+        ["--repo-root", str(tmp_path), "delete-entity", "REQ@1000000000.TestAa.delete-me"]
+    )
+
+    assert rc == 1
+    assert sent == [], "no write may be sent to a backend that does not serve this repository"
+    assert "does not serve" in capsys.readouterr().err

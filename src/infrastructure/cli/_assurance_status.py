@@ -22,12 +22,19 @@ _BACKEND_PROBE_TIMEOUT_S = 2.0
 
 
 def backend_holds_store_open() -> bool | None:
-    """Whether the running backend has the store open, or None when no backend answers."""
-    try:
-        from src.config.settings import backend_port  # noqa: PLC0415
+    """Whether *this workspace's* backend has the store open, or None when none answers.
 
+    The backend is located by what it serves, not by the configured port: the port may belong to
+    another workspace's backend, whose store is a different store and none of this one's business.
+    """
+    try:
+        from src.infrastructure.cli._workspace_backend import workspace_backend_url  # noqa: PLC0415
+
+        base_url = workspace_backend_url()
+        if base_url is None:
+            return None
         request = urllib.request.Request(
-            f"http://localhost:{backend_port()}/api/assurance/status",
+            f"{base_url}/api/assurance/status",
             headers={"Accept": "application/json"},
         )
         with urllib.request.urlopen(request, timeout=_BACKEND_PROBE_TIMEOUT_S) as response:  # noqa: S310

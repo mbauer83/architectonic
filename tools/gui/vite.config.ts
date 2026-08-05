@@ -4,7 +4,12 @@ import type { ProxyOptions } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import istanbul from 'vite-plugin-istanbul'
 
-const backendTarget = 'http://127.0.0.1:8000'
+// Where `npm run dev` proxies /api to. Not a constant, because a machine can run more than one
+// workspace and only the first of them gets port 8000: a second workspace's backend serves on a port
+// derived from its own repositories, and a dev server hardcoded to 8000 would develop the GUI against
+// the neighbouring workspace's model. `ARCH_BACKEND_PORT` is the same variable the backend and the
+// MCP bridges read, so one export covers the whole workspace.
+const backendTarget = `http://127.0.0.1:${process.env.ARCH_BACKEND_PORT ?? '8000'}`
 
 // The REST surface's timeout classification, generated from the route-policy manifest. Read as
 // data rather than imported as a module: this config and the app are two TypeScript programs, and a

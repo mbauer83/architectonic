@@ -109,3 +109,23 @@ def remove_backend_state(start: Path | None = None) -> None:
         path.unlink()
     except FileNotFoundError:
         return
+
+
+def remove_own_backend_state(start: Path | None = None) -> None:
+    """Drop the record only if it names *this* process.
+
+    A serving backend's record is the workspace's pointer to it, and any process running in the
+    workspace resolves the same path — so an unconditional delete on the way out lets a short-lived
+    one (a test driving the entry point, a wrapper that got as far as the teardown) orphan a live
+    backend. `--status` then has to fall back to identifying it by what it serves, and `--stop` had no
+    pointer at all. Exiting means "remove my record", never "remove whatever record is here".
+    """
+    state = read_backend_state(start)
+    if state is None:
+        return
+    if state["pid"] != os.getpid():
+        logger.info(
+            "Leaving backend state for pid %s in place: this process is %s", state["pid"], os.getpid()
+        )
+        return
+    remove_backend_state(start)

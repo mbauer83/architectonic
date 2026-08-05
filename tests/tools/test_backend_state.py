@@ -23,6 +23,7 @@ from src.infrastructure.backend.backend_state import (
     backend_state_path,
     read_backend_state,
     remove_backend_state,
+    remove_own_backend_state,
     write_backend_state,
 )
 
@@ -195,3 +196,38 @@ class TestRemoveBackendState:
     def test_silently_ignores_missing_file(self, tmp_path: Path, monkeypatch) -> None:
         monkeypatch.setenv("ARCH_BACKEND_STATE_DIR", str(tmp_path / ".arch"))
         remove_backend_state()  # should not raise
+
+
+class TestRemoveOwnBackendState:
+    """Only the process the record names may remove it.
+
+    A serving backend's record is the workspace's pointer to it, and every process in the workspace
+    resolves the same path. An unconditional delete on the way out let a short-lived one — a test
+    driving the entry point, a wrapper that got as far as the teardown — orphan a live backend:
+    `--status` had to fall back to identifying it by what it serves, and `--stop` had no pointer at all.
+    """
+
+    def test_removes_the_record_this_process_wrote(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.setenv("ARCH_BACKEND_STATE_DIR", str(tmp_path / ".arch"))
+        write_backend_state(port=8188)
+        path = backend_state_path()
+        assert path.exists()
+
+        remove_own_backend_state()
+
+        assert not path.exists()
+
+    def test_leaves_a_record_that_names_another_process(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.setenv("ARCH_BACKEND_STATE_DIR", str(tmp_path / ".arch"))
+        write_backend_state(port=8188, pid=os.getpid() + 1)
+        path = backend_state_path()
+
+        remove_own_backend_state()
+
+        assert path.exists(), "a live backend's pointer must survive another process's teardown"
+        assert json.loads(path.read_text(encoding="utf-8"))["port"] == 8188
+
+    def test_silently_ignores_a_missing_record(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.setenv("ARCH_BACKEND_STATE_DIR", str(tmp_path / ".arch"))
+
+        remove_own_backend_state()  # should not raise

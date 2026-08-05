@@ -149,23 +149,29 @@ def cmd_status(args: argparse.Namespace) -> int:
 
 
 def _notify_backend_reload(*, authorize: bool | None = None) -> None:
-    """Best-effort POST to the running backend to reload the assurance bundle.
+    """Best-effort POST to *this workspace's* backend to reload the assurance bundle.
 
     ``authorize`` carries the operator's intent to the running process: True where the command
     grants access, False where it revokes it, None to leave authorization untouched. Under the
     manual activation policy this is what makes the command take effect on the process that is
     already running rather than only on the next start.
+
+    Which process that is has to be decided by what it serves. Composed from the configured port,
+    this call authorized a neighbouring workspace's backend to open *its* confidential store — an
+    unlock ceremony in one workspace granting access in another.
     """
     import json  # noqa: PLC0415
     import urllib.request  # noqa: PLC0415
 
     try:
-        from src.config.settings import backend_port  # noqa: PLC0415
+        from src.infrastructure.cli._workspace_backend import workspace_backend_url  # noqa: PLC0415
 
-        port = backend_port()
+        base_url = workspace_backend_url()
+        if base_url is None:
+            return
         payload = json.dumps({} if authorize is None else {"authorize": authorize}).encode()
         req = urllib.request.Request(
-            f"http://localhost:{port}/api/assurance/reload",
+            f"{base_url}/api/assurance/reload",
             data=payload,
             method="POST",
             headers={"Content-Type": "application/json"},

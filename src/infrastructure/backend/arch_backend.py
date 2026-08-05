@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 import uvicorn
 
 from src.config.settings import backend_min_log_level
-from src.infrastructure.backend import backend_control, server_roots
+from src.infrastructure.backend import _lifecycle_cli, backend_control, server_roots
 from src.infrastructure.backend._lifecycle_cli import (
     _run_status,
     _run_stop,
@@ -33,7 +33,7 @@ from src.infrastructure.backend.backend_probe import probe_backend, resolve_back
 from src.infrastructure.backend.backend_state import (
     backend_log_path,
     read_backend_state,
-    remove_backend_state,
+    remove_own_backend_state,
     write_backend_state,
 )
 from src.infrastructure.backend.shutdown import DRAIN_SECONDS, shutdown_signal
@@ -63,18 +63,29 @@ def main(argv: list[str] | None = None) -> None:
     )
     resolved_port = resolve_backend_port(start=Path.cwd(), explicit_port=args.port)
 
+    # These pass the port the *command line* named — None unless `--port` was given — because the
+    # record, not the preferred port, is what says where this workspace's backend actually is.
     if args.status:
-        _run_status(resolved_port)
+        _run_status(args.port)
         return
     if args.stop:
-        _run_stop(args, resolved_port)
+        _run_stop(args, args.port)
         return
     if args.restart:
-        _stop_for_restart(resolved_port)
-    if args.daemon:
-        _run_daemon(args, resolved_port, argv)
+        _stop_for_restart(args.port)
+    # Two questions, in this order: is this workspace's *own* backend in a state that must be
+    # resolved by hand (suspended, wedged), and only then — where may a new one serve.
+    if not _guard_prestart(resolved_port, for_daemon=args.daemon, restart=args.restart):
         return
-    _run_foreground(args, parser, resolved_port)
+    # Through the module, not by imported name: one seam for a test that stubs the decision, whichever
+    # command reaches it (the note in `_lifecycle_cli` records what the name form once cost).
+    serving_port = _lifecycle_cli._serving_port(args)
+    if serving_port is None:
+        return
+    if args.daemon:
+        _run_daemon(args, serving_port, argv)
+        return
+    _run_foreground(args, parser, serving_port)
 
 
 # ── Argument parsing ──────────────────────────────────────────────────────────
@@ -160,11 +171,16 @@ def _guard_prestart(resolved_port: int, *, for_daemon: bool, restart: bool) -> b
                 f"arch-backend pid {status.get('pid')} is on port {resolved_port} but is not healthy; "
                 f"run 'arch-backend --stop'{suffix}"
             )
-    if status.get("reason") == "unmanaged_backend":
-        print(f"backend already responding on port {resolved_port} but is not managed by this workspace")
-        return False
-    if status.get("reason") == "port_in_use":
-        raise SystemExit(f"port {resolved_port} is already in use by another process")
+    # A port held by somebody else is no longer a reason not to start: this workspace's backend
+    # serves its own repositories wherever it can bind, and the endpoint plan has already chosen
+    # where. Aborting here is what made a second checkout unable to run at all.
+    if status.get("reason") in {"foreign_workspace", "unmanaged_backend", "port_in_use"}:
+        logger.info(
+            "Port %s is occupied by something that is not this workspace's backend (%s); "
+            "the endpoint plan decides where to serve",
+            resolved_port,
+            status.get("reason"),
+        )
     return True
 
 
@@ -179,14 +195,12 @@ def _get_git_credentials():  # type: ignore[no-untyped-def]
 
 
 def _run_daemon(args: argparse.Namespace, resolved_port: int, argv: list[str] | None) -> None:
-    if not _guard_prestart(resolved_port, for_daemon=True, restart=args.restart):
-        return
     creds = _get_git_credentials()
     if creds is not None:
         from src.infrastructure.git.git_auth import credentials_to_env_overrides
         os.environ.update(credentials_to_env_overrides(creds))
     log_path = backend_log_path(Path.cwd())
-    pid = _start_daemon(argv=argv, log_path=log_path)
+    pid = _start_daemon(argv=argv, log_path=log_path, port=resolved_port)
     deadline = time.monotonic() + 15.0
     while time.monotonic() < deadline:
         if probe_backend(resolved_port):
@@ -196,19 +210,36 @@ def _run_daemon(args: argparse.Namespace, resolved_port: int, argv: list[str] | 
     raise SystemExit(f"timed out waiting for backend on port {resolved_port}; see {log_path}")
 
 
-def _start_daemon(*, argv: list[str] | None, log_path: Path) -> int:
+def _start_daemon(*, argv: list[str] | None, log_path: Path, port: int | None = None) -> int:
     log_path.parent.mkdir(parents=True, exist_ok=True)
     with open(log_path, "ab") as log:
         proc = subprocess.Popen(
-            [sys.argv[0], *_daemon_argv(argv)],
+            [sys.argv[0], *_daemon_argv(argv, port=port)],
             stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT, start_new_session=True, cwd=str(Path.cwd()),
         )
     return int(proc.pid)
 
 
-def _daemon_argv(argv: list[str] | None) -> list[str]:
+def _daemon_argv(argv: list[str] | None, *, port: int | None = None) -> list[str]:
+    """The child's arguments: this run's, minus the flags that describe the parent's role.
+
+    The chosen port is passed on explicitly. The child would otherwise plan its endpoint again from
+    the same inputs and normally agree — but "normally" is not an invariant, and the parent is the
+    process that will report the address to the operator.
+    """
     raw = list(sys.argv[1:] if argv is None else argv)
-    return [arg for arg in raw if arg not in ("--daemon", "--restart", "--stop")]
+    kept = [arg for arg in raw if arg not in ("--daemon", "--restart", "--stop")]
+    if port is None:
+        return kept
+    return [*_without_port_argument(kept), "--port", str(port)]
+
+
+def _without_port_argument(argv: list[str]) -> list[str]:
+    remaining = list(argv)
+    while "--port" in remaining:
+        index = remaining.index("--port")
+        del remaining[index : index + 2]
+    return remaining
 
 
 
@@ -248,8 +279,6 @@ def _serve(app: "Callable[..., Any]", *, host: str, port: int) -> None:
 # ── Foreground server ─────────────────────────────────────────────────────────
 
 def _run_foreground(args: argparse.Namespace, parser: argparse.ArgumentParser, resolved_port: int) -> None:
-    if not _guard_prestart(resolved_port, for_daemon=False, restart=False):
-        return
     repo_root_path, enterprise_root_path = server_roots.resolve_server_roots(args.repo_root, args.enterprise_root)
     if repo_root_path is None:
         parser.error(
@@ -268,8 +297,10 @@ def _run_foreground(args: argparse.Namespace, parser: argparse.ArgumentParser, r
         logger.exception("arch-backend terminated during startup")
         raise
     finally:
-        logger.info("Removing backend state file")
-        remove_backend_state()
+        # Only ours: the record belongs to whichever process is serving, and a process that reached
+        # this teardown without being that one must not take a live backend's pointer with it.
+        logger.info("Removing this process's backend state file")
+        remove_own_backend_state()
 
 
 def _initialise_repo(

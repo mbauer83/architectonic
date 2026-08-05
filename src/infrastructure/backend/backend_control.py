@@ -1,20 +1,32 @@
-"""Backend lifecycle control: status, stop, and ensure-running."""
+"""Backend lifecycle control: what is running for *this* workspace, and stopping it.
+
+Every question here is asked about one workspace, so every answer is scoped to it. An arch-backend
+process on the machine is not this workspace's backend merely because it holds the port this
+workspace would use: two checkouts ship the same default, so `--status` reported a neighbour's
+backend as running and `--stop` would have signalled it. What a backend serves decides ownership;
+the port only decides where to look.
+
+Starting one lives in `backend_launch` — that is a different question ("which endpoint may this
+workspace use"), and it is answered by a plan.
+"""
 
 from __future__ import annotations
 
 import logging
 import os
 import signal
-import subprocess
 import time
 from pathlib import Path
 
+from src.infrastructure.backend.backend_endpoint import (
+    foreign_occupant,
+    instances_serving_workspace,
+    workspace_claim,
+)
 from src.infrastructure.backend.backend_probe import (
-    backend_start_command,
-    configured_backend_url,
+    backend_port_preference,
     port_in_use,
     probe_backend,
-    probe_backend_url,
     resolve_backend_port,
 )
 from src.infrastructure.backend.backend_process import (
@@ -46,63 +58,6 @@ def _wait_for_exit(pid: int, *, timeout_s: float, interval: float) -> bool:
     return False
 
 
-def ensure_backend_running(
-    *,
-    port: int | None = None,
-    start_if_missing: bool = True,
-    cwd: Path | None = None,
-    project_dir: Path | None = None,
-) -> int:
-    resolved_port = resolve_backend_port(start=cwd, explicit_port=port)
-    state = read_backend_state(cwd)
-    if state is not None:
-        if probe_backend(state["port"]):
-            logger.info("Reusing healthy backend on port %s", state["port"])
-            return state["port"]
-        if not _process_exists(state["pid"]):
-            logger.warning("Removing stale backend state for pid %s", state["pid"])
-            remove_backend_state(cwd)
-
-    external_url = configured_backend_url()
-    if external_url:
-        if probe_backend_url(external_url):
-            logger.info("Using externally configured backend at %s", external_url)
-            return resolved_port
-        raise RuntimeError(f"Configured external backend is not reachable: {external_url}")
-
-    if not start_if_missing:
-        raise RuntimeError("Unified backend is not running.")
-
-    if cwd is None:
-        cwd = Path.cwd()
-    log_path = backend_log_path(cwd)
-    log_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(log_path, "ab") as log:
-        command = backend_start_command(port=resolved_port, project_dir=project_dir)
-        logger.info("Starting backend with command: %s", " ".join(command))
-        subprocess.Popen(
-            command,
-            cwd=str(cwd),
-            stdout=log,
-            stderr=subprocess.STDOUT,
-            stdin=subprocess.DEVNULL,
-            start_new_session=True,
-        )
-
-    deadline = time.monotonic() + 15.0
-    while time.monotonic() < deadline:
-        state = read_backend_state(cwd)
-        effective_port = resolved_port
-        if state is not None:
-            effective_port = state["port"]
-        if probe_backend(effective_port):
-            logger.info("Backend became healthy on port %s", effective_port)
-            return effective_port
-        time.sleep(0.25)
-
-    raise RuntimeError(f"Timed out waiting for unified backend on port {resolved_port}. See {log_path}.")
-
-
 def _instance_status(instance: BackendInstance, port: int, log_path: object) -> dict[str, object]:
     """Build a status dict for an untracked arch-backend instance."""
     process_state = instance["process_state"]
@@ -130,11 +85,20 @@ def backend_status(*, cwd: Path | None = None, port: int | None = None) -> dict[
     resolved_port = resolve_backend_port(start=cwd, explicit_port=port)
     logger.info("Evaluating backend status for port %s (cwd=%s)", resolved_port, cwd or Path.cwd())
     log_path = backend_log_path(cwd)
+    claim = workspace_claim(cwd)
     state = read_backend_state(cwd)
     if state is None:
+        # "Is my backend running" comes before "what is on my preferred port". Our own backend may be
+        # on a derived port with no record naming it — relocated because a neighbour held the default,
+        # its record lost — and answering about the neighbour instead would report it as not running.
+        own = instances_serving_workspace(find_arch_backend_instances(), claim)
+        if len(own) == 1:
+            ours = own[0]
+            return _instance_status(ours, ours["ports"][0], log_path)
         instance = find_arch_backend_instance_for_port(resolved_port)
         if instance is not None:
-            return _instance_status(instance, resolved_port, log_path)
+            foreign = foreign_occupant(resolved_port, claim, pid=instance["pid"])
+            return foreign if foreign is not None else _instance_status(instance, resolved_port, log_path)
         if probe_backend(resolved_port):
             logger.warning(
                 "Port %s responds to backend probe but is not identified as arch-backend",
@@ -171,6 +135,12 @@ def backend_status(*, cwd: Path | None = None, port: int | None = None) -> dict[
         }
 
     healthy = probe_backend(port)
+    if healthy:
+        # A record can outlive the port it names: the workspace's own backend died without clearing
+        # it and a neighbour's took the socket. Answering "ok" then reports the neighbour.
+        foreign = foreign_occupant(port, claim, pid=pid)
+        if foreign is not None:
+            return {**foreign, "process_state": process_state, "log_path": str(log_path)}
     logger.info("Backend state file points to pid=%s port=%s healthy=%s", pid, port, healthy)
     return {
         "running": healthy,
@@ -183,6 +153,12 @@ def backend_status(*, cwd: Path | None = None, port: int | None = None) -> dict[
         "stderr": diagnostics["stderr"],
         "log_path": str(log_path),
     }
+
+
+def _commanded_elsewhere(recorded_port: int, *, cwd: Path | None, explicit_port: int | None) -> bool:
+    """Whether this invocation asked about a port other than the one this workspace recorded."""
+    preference = backend_port_preference(start=cwd, explicit_port=explicit_port)
+    return preference.authority == "command" and preference.port != recorded_port
 
 
 def _stop_pid(
@@ -259,15 +235,39 @@ def stop_backend(
 ) -> dict[str, object]:
     resolved_port = resolve_backend_port(start=cwd, explicit_port=port)
     logger.info("Stop request for backend on port %s (cwd=%s)", resolved_port, cwd or Path.cwd())
+    claim = workspace_claim(cwd)
     state = read_backend_state(cwd)
     if state is not None:
         pid = state["pid"]
         state_port = state["port"]
         logger.info("Existing backend state for stop request: %s", state)
-        if state_port == resolved_port or not _process_exists(pid):
+        # The record names this workspace's backend wherever it ended up, which need not be the
+        # preferred port: a workspace whose default was taken serves on a derived one. Only a port
+        # named on this command line overrides the record — comparing against the *resolved* port
+        # instead left `--stop` unable to stop a relocated backend at all.
+        if not _commanded_elsewhere(state_port, cwd=cwd, explicit_port=port) or not _process_exists(pid):
             return _stop_pid(pid, cwd=cwd, timeout_s=timeout_s, port=state_port)
 
     instances = find_arch_backend_instances()
+    own = instances_serving_workspace(instances, claim)
+    if len(own) == 1:
+        # Ours, on a port no record pointed at. It needs no confirmation prompt: the backend said it
+        # serves this workspace's repositories, which is the whole question a prompt would ask. This
+        # precedes the foreign check, or a neighbour on the preferred port hides our own from a stop.
+        ours = own[0]
+        own_port = ours["ports"][0]
+        logger.info("Stopping this workspace's backend pid=%s on port %s", ours["pid"], own_port)
+        return _stop_pid(ours["pid"], cwd=cwd, timeout_s=timeout_s, port=own_port)
+
+    foreign = foreign_occupant(resolved_port, claim)
+    if foreign is not None:
+        return {
+            "stopped": False,
+            "reason": "foreign_workspace",
+            "port": resolved_port,
+            "served_roots": foreign["served_roots"],
+        }
+
     matches = [
         instance
         for instance in instances
@@ -327,6 +327,16 @@ def stop_backend(
         instance = instances[0]
         ports = instance["ports"]
         other_port = ports[0] if ports else instance["declared_port"]
+        # The one backend on the machine may be a neighbour's. Reporting it as "yours, on another
+        # port" invites the operator to go and stop something that is not theirs.
+        elsewhere = foreign_occupant(other_port, claim) if isinstance(other_port, int) else None
+        if elsewhere is not None:
+            return {
+                "stopped": False,
+                "reason": "foreign_workspace",
+                "port": other_port,
+                "served_roots": elsewhere["served_roots"],
+            }
         logger.warning(
             "Only one arch-backend instance exists, but it is on port %s instead of requested port %s (pid=%s)",
             other_port,
@@ -344,6 +354,22 @@ def stop_backend(
     if state is None:
         logger.info("Stop request found no backend state and no matching arch-backend process")
         return {"stopped": False, "reason": "not_running"}
+
+    if _process_exists(state["pid"]):
+        # The record names a live process on a port this request did not ask about — which happens
+        # when `--port` names another one. Calling that record stale and deleting it would lose the
+        # only pointer to a running backend, on the strength of a question about somewhere else.
+        logger.info(
+            "Record names a live backend pid=%s on port %s; this request asked about port %s",
+            state["pid"], state["port"], resolved_port,
+        )
+        return {
+            "stopped": False,
+            "reason": "single_other_port",
+            "pid": state["pid"],
+            "port": state["port"],
+            "expected_port": resolved_port,
+        }
 
     remove_backend_state(cwd)
     return {"stopped": False, "reason": "stale_pid", "pid": state["pid"]}

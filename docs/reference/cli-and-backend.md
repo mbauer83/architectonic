@@ -51,6 +51,15 @@ uv run arch-backend --restart --daemon
 `backend.log_path`. `arch-backend &` also works and detaches stdin when it detects a
 background TTY job, but `--daemon` is the preferred operational form.
 
+Every one of these commands is scoped to **this workspace's** backend, identified by the
+repositories it serves rather than by the port it occupies. So a start whose preferred port is taken
+by another workspace's backend serves on a derived port and says so, `--status` reports such a
+neighbour as `port 8000 is serving another workspace (…)` instead of as running, and `--stop` never
+signals it. `--port` (like `ARCH_BACKEND_PORT` and `backend.port` in `arch-workspace.yaml`) is a
+statement rather than a preference: if that port is taken, the command fails and names the occupant
+instead of moving. See
+[Several workspaces on one machine](configuration.md#several-workspaces-on-one-machine).
+
 &nbsp;
 
 ## Repository maintenance

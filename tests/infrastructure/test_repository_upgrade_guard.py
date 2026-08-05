@@ -55,34 +55,16 @@ def test_conflicting_dirty_files_empty_when_no_overlap(tmp_path: Path) -> None:
     assert guard.conflicting_dirty_files(repo, frozenset({"touched.txt"})) == []
 
 
-def test_probe_backend_identity_none_on_bad_response(monkeypatch) -> None:
-    def fake_urlopen(*_args, **_kwargs):
-        raise OSError("connection refused")
+def test_the_guard_reads_identity_through_the_one_probe_the_lifecycle_uses() -> None:
+    """The probe itself is tested in `tests/tools/test_backend_multi_instance.py`.
 
-    monkeypatch.setattr(guard, "urlopen", fake_urlopen)
-    assert guard.probe_backend_identity("http://127.0.0.1:1") is None
+    It lives with the other backend probes because the endpoint planner asks the same question to
+    decide which backend a workspace may talk to; the guard reaching for a second implementation is
+    how the two answers would drift apart.
+    """
+    from src.infrastructure.backend import backend_probe  # noqa: PLC0415
 
-
-def test_probe_backend_identity_parses_valid_response(monkeypatch) -> None:
-    import json
-
-    class _Resp:
-        status = 200
-
-        def read(self):
-            return json.dumps({"repo_roots": ["/a", "/b"], "software_version": "1.2.3"}).encode()
-
-        def __enter__(self):
-            return self
-
-        def __exit__(self, *exc):
-            return False
-
-    monkeypatch.setattr(guard, "urlopen", lambda *a, **k: _Resp())
-    identity = guard.probe_backend_identity("http://127.0.0.1:1")
-    assert identity is not None
-    assert identity.repo_roots == ("/a", "/b")
-    assert identity.software_version == "1.2.3"
+    assert guard.probe_backend_identity is backend_probe.probe_backend_identity
 
 
 def test_check_backend_not_serving_no_block_when_backend_not_responding(tmp_path: Path) -> None:

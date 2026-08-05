@@ -2,21 +2,58 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
 import yaml
 
 from src.config import settings
+from src.domain.deployment.backend_endpoint import (
+    AttachToBackend,
+    BackendIdentity,
+    RefuseEndpoint,
+    StartBackendOn,
+)
 from src.domain.modules.module_registry import ModuleRegistry
 from src.infrastructure.app_bootstrap import module_registry_dependency, module_registry_from_app
 from src.infrastructure.backend import (
     _lifecycle_cli,
     arch_backend,
     backend_control,
+    backend_launch,
     backend_probe,
     backend_process,
     backend_state,
 )
 from src.infrastructure.backend.arch_backend_app import _build_app
 from src.infrastructure.mcp import arch_mcp_stdio, arch_mcp_stdio_assurance
+
+
+@pytest.fixture(autouse=True)
+def _port_level_lifecycle(monkeypatch, tmp_path: Path) -> None:
+    """This module describes port-level lifecycle; workspace identity has its own module.
+
+    Two isolations, both of which cost something before they were here.
+
+    **The state directory is redirected**, rather than the read/write/remove functions being stubbed
+    one at a time. `arch-backend`'s startup writes a record and its teardown removes it, and a test
+    driving the entry point does both against whatever `.arch/` the working directory resolves to —
+    so it overwrote a *live* backend's record with the test process's pid and then deleted it,
+    leaving the running backend with no pointer to it. Redirecting the directory puts the whole
+    class of accidents in a throwaway path, the way the credential store's guard does.
+
+    **No workspace claim is resolved**, or every status and stop assertion would depend on what else
+    is listening on the developer's machine: a claim makes the code ask port 8000 what it serves, and
+    on a machine running this project — the only kind that runs these tests — something answers.
+    Multi-instance behaviour is covered in `test_backend_multi_instance.py`, against stated claims.
+    """
+    monkeypatch.setenv("ARCH_BACKEND_STATE_DIR", str(tmp_path / ".arch"))
+    monkeypatch.setattr(backend_control, "workspace_claim", lambda start=None: None)
+    monkeypatch.setattr(
+        _lifecycle_cli,
+        "plan_workspace_endpoint",
+        lambda *, cwd=None, may_start=True, claim=None, preference=None: StartBackendOn(
+            port=preference.port if preference is not None else 8000
+        ),
+    )
 
 
 def test_arch_mcp_stdio_read_connects_to_read_path(monkeypatch) -> None:
@@ -28,7 +65,9 @@ def test_arch_mcp_stdio_read_connects_to_read_path(monkeypatch) -> None:
 
     monkeypatch.setattr(arch_mcp_stdio.anyio, "run", fake_anyio_run)
     monkeypatch.setattr(
-        arch_mcp_stdio, "ensure_backend_running", lambda port, start_if_missing, cwd=None, project_dir=None: port
+        arch_mcp_stdio,
+        "ensure_backend_running",
+        lambda port=None, start_if_missing=True, cwd=None, project_dir=None: 8123,
     )
     monkeypatch.setattr(arch_mcp_stdio, "configured_backend_url", lambda: None)
 
@@ -46,7 +85,9 @@ def test_arch_mcp_stdio_write_connects_to_write_path(monkeypatch) -> None:
 
     monkeypatch.setattr(arch_mcp_stdio.anyio, "run", fake_anyio_run)
     monkeypatch.setattr(
-        arch_mcp_stdio, "ensure_backend_running", lambda port, start_if_missing, cwd=None, project_dir=None: port
+        arch_mcp_stdio,
+        "ensure_backend_running",
+        lambda port=None, start_if_missing=True, cwd=None, project_dir=None: 8123,
     )
     monkeypatch.setattr(arch_mcp_stdio, "configured_backend_url", lambda: None)
 
@@ -66,19 +107,10 @@ def test_arch_mcp_stdio_uses_workspace_directory_for_autostart(monkeypatch, tmp_
     monkeypatch.setattr(arch_mcp_stdio, "_project_directory", lambda: project_dir)
     monkeypatch.chdir(workspace_dir)
 
-    def fake_resolve_backend_port(start=None, explicit_port=None):
-        calls["resolve_start"] = start
-        return 8123
-
-    monkeypatch.setattr(
-        arch_mcp_stdio,
-        "resolve_backend_port",
-        fake_resolve_backend_port,
-    )
     monkeypatch.setattr(
         arch_mcp_stdio,
         "ensure_backend_running",
-        lambda port, start_if_missing, cwd=None, project_dir=None: (
+        lambda port=None, start_if_missing=True, cwd=None, project_dir=None: (
             calls.setdefault("ensure_port", port),
             calls.setdefault("ensure_cwd", cwd),
             calls.setdefault("ensure_project_dir", project_dir),
@@ -89,8 +121,9 @@ def test_arch_mcp_stdio_uses_workspace_directory_for_autostart(monkeypatch, tmp_
 
     arch_mcp_stdio.main([])
 
-    assert calls["resolve_start"] == workspace_dir
-    assert calls["ensure_port"] == 8123
+    # The port is left unresolved on purpose: how a preferred port is chosen — and whether it may be
+    # yielded to another workspace — is the endpoint plan's decision, not the bridge's.
+    assert calls["ensure_port"] is None
     assert calls["ensure_cwd"] == workspace_dir
     assert calls["ensure_project_dir"] == project_dir
 
@@ -101,7 +134,9 @@ def test_assurance_bridge_read_connects_to_assurance_read_path(monkeypatch) -> N
 
     monkeypatch.setattr(arch_mcp_stdio.anyio, "run", lambda fn, url: urls.append(url))
     monkeypatch.setattr(
-        arch_mcp_stdio, "ensure_backend_running", lambda port, start_if_missing, cwd=None, project_dir=None: port
+        arch_mcp_stdio,
+        "ensure_backend_running",
+        lambda port=None, start_if_missing=True, cwd=None, project_dir=None: 8123,
     )
     monkeypatch.setattr(arch_mcp_stdio, "configured_backend_url", lambda: None)
 
@@ -116,7 +151,9 @@ def test_assurance_bridge_write_connects_to_assurance_write_path(monkeypatch) ->
 
     monkeypatch.setattr(arch_mcp_stdio.anyio, "run", lambda fn, url: urls.append(url))
     monkeypatch.setattr(
-        arch_mcp_stdio, "ensure_backend_running", lambda port, start_if_missing, cwd=None, project_dir=None: port
+        arch_mcp_stdio,
+        "ensure_backend_running",
+        lambda port=None, start_if_missing=True, cwd=None, project_dir=None: 8123,
     )
     monkeypatch.setattr(arch_mcp_stdio, "configured_backend_url", lambda: None)
 
@@ -125,29 +162,35 @@ def test_assurance_bridge_write_connects_to_assurance_write_path(monkeypatch) ->
     assert urls and urls[0].endswith("/mcp/assurance-write")
 
 
-def test_backend_state_path_falls_back_without_arch_init(tmp_path: Path) -> None:
+def test_backend_state_path_falls_back_without_arch_init(tmp_path: Path, monkeypatch) -> None:
+    # This one is *about* the no-override fallback, so it drops the module-wide redirection.
+    monkeypatch.delenv("ARCH_BACKEND_STATE_DIR", raising=False)
     path = backend_state.backend_state_path(tmp_path)
     assert path == tmp_path / ".arch" / "backend.pid"
 
 
-def test_ensure_backend_running_requires_explicit_external_backend(monkeypatch) -> None:
-    monkeypatch.setattr(backend_control, "read_backend_state", lambda start=None: None)
-    monkeypatch.setattr(backend_control, "configured_backend_url", lambda: None)
+def test_ensure_backend_running_requires_explicit_external_backend(monkeypatch, tmp_path: Path) -> None:
+    monkeypatch.setattr(backend_launch, "configured_backend_url", lambda: None)
+    monkeypatch.setattr(
+        backend_launch,
+        "plan_workspace_endpoint",
+        lambda **_kwargs: RefuseEndpoint(reason="The backend for this workspace is not running."),
+    )
 
     try:
-        backend_control.ensure_backend_running(port=8123, start_if_missing=False)
+        backend_launch.ensure_backend_running(port=8123, start_if_missing=False, cwd=tmp_path)
     except RuntimeError as exc:
         assert "not running" in str(exc)
     else:
         raise AssertionError("expected RuntimeError")
 
 
-def test_ensure_backend_running_uses_explicit_external_backend(monkeypatch) -> None:
-    monkeypatch.setattr(backend_control, "read_backend_state", lambda start=None: None)
-    monkeypatch.setattr(backend_control, "configured_backend_url", lambda: "http://127.0.0.1:8123")
-    monkeypatch.setattr(backend_control, "probe_backend_url", lambda url, timeout_s=1.0: url == "http://127.0.0.1:8123")
+def test_ensure_backend_running_uses_explicit_external_backend(monkeypatch, tmp_path: Path) -> None:
+    monkeypatch.setattr(backend_launch, "configured_backend_url", lambda: "http://127.0.0.1:8123")
+    monkeypatch.setattr(backend_launch, "probe_backend_url", lambda url, timeout_s=1.0: url == "http://127.0.0.1:8123")
+    monkeypatch.setattr(backend_launch, "probe_backend_identity", lambda url, timeout_s=1.0: None)
 
-    port = backend_control.ensure_backend_running(port=8000, start_if_missing=False)
+    port = backend_launch.ensure_backend_running(port=8000, start_if_missing=False, cwd=tmp_path)
 
     assert port == 8000
 
@@ -310,36 +353,39 @@ def test_ensure_backend_running_starts_backend_in_workspace_using_project_launch
     probe_ports: list[int] = []
     probe_results = iter([False, True])
 
-    monkeypatch.setattr(backend_control, "resolve_backend_port", lambda start=None, explicit_port=None: 8123)
-    monkeypatch.setattr(backend_control, "read_backend_state", lambda start=None: None)
-    monkeypatch.setattr(backend_control, "configured_backend_url", lambda: None)
+    monkeypatch.setattr(backend_launch, "configured_backend_url", lambda: None)
     monkeypatch.setattr(
-        backend_control,
+        backend_launch, "plan_workspace_endpoint", lambda **_kwargs: StartBackendOn(port=8123)
+    )
+    monkeypatch.setattr(
+        backend_launch,
         "backend_log_path",
         lambda start=None: workspace_dir / ".arch" / "backend.log",
     )
     monkeypatch.setattr(
-        backend_control,
+        backend_launch,
         "backend_start_command",
         lambda port, project_dir=None: popen_calls.setdefault("command", ["launcher", str(port), str(project_dir)]),
     )
-    monkeypatch.setattr(backend_control.time, "sleep", lambda seconds: None)
-    monkeypatch.setattr(backend_control.time, "monotonic", lambda: 0.0)
+    monkeypatch.setattr(backend_launch, "workspace_claim", lambda start=None: None)
+    monkeypatch.setattr(backend_launch, "read_backend_state", lambda start=None: None)
+    monkeypatch.setattr(backend_launch.time, "sleep", lambda seconds: None)
+    monkeypatch.setattr(backend_launch.time, "monotonic", lambda: 0.0)
 
     def fake_probe_backend(port, timeout_s=1.0):
         probe_ports.append(port)
         return next(probe_results)
 
-    monkeypatch.setattr(backend_control, "probe_backend", fake_probe_backend)
+    monkeypatch.setattr(backend_launch, "probe_backend", fake_probe_backend)
 
     class FakePopen:
         def __init__(self, command, cwd=None, **kwargs):
             popen_calls["spawned_command"] = command
             popen_calls["cwd"] = cwd
 
-    monkeypatch.setattr(backend_control.subprocess, "Popen", FakePopen)
+    monkeypatch.setattr(backend_launch.subprocess, "Popen", FakePopen)
 
-    port = backend_control.ensure_backend_running(port=8123, cwd=workspace_dir, project_dir=project_dir)
+    port = backend_launch.ensure_backend_running(port=8123, cwd=workspace_dir, project_dir=project_dir)
 
     assert port == 8123
     assert popen_calls["command"] == ["launcher", "8123", str(project_dir)]
@@ -500,7 +546,7 @@ def test_restart_daemon_cleans_up_leftover_unhealthy_process(monkeypatch, tmp_pa
 
     started_pids: list[int] = []
 
-    def fake_start_daemon(*, argv, log_path):
+    def fake_start_daemon(*, argv, log_path, port=None):
         started_pids.append(9999)
         return 9999
 
@@ -956,7 +1002,7 @@ def test_arch_backend_status_prints_running(monkeypatch, capsys) -> None:
     monkeypatch.setattr(
         backend_control,
         "backend_status",
-        lambda port=8000: {"running": True, "reason": "ok", "pid": 321, "port": port},
+        lambda port=None: {"running": True, "reason": "ok", "pid": 321, "port": port or 8000},
     )
 
     arch_backend.main(["--status"])
@@ -969,11 +1015,11 @@ def test_arch_backend_status_prints_stopped_backend(monkeypatch, capsys) -> None
     monkeypatch.setattr(
         backend_control,
         "backend_status",
-        lambda port=8000: {
+        lambda port=None: {
             "running": False,
             "reason": "stopped_backend",
             "pid": 321,
-            "port": port,
+            "port": port or 8000,
             "process_state": "T",
             "stdin": "/dev/pts/8",
             "stdout": "/tmp/backend.log",
@@ -1091,7 +1137,7 @@ def test_arch_backend_daemon_waits_for_probe(monkeypatch, tmp_path: Path, capsys
         lambda port=8000: {"running": False, "reason": "not_running", "port": port},
     )
     monkeypatch.setattr(arch_backend, "backend_log_path", lambda start=None: tmp_path / ".arch" / "backend.log")
-    monkeypatch.setattr(arch_backend, "_start_daemon", lambda argv, log_path: 4321)
+    monkeypatch.setattr(arch_backend, "_start_daemon", lambda argv, log_path, port=None: 4321)
     monkeypatch.setattr(arch_backend, "probe_backend", lambda port: True)
 
     arch_backend.main(["--daemon", "--port", "8123"])
@@ -1238,13 +1284,21 @@ def test_arch_backend_build_failure_does_not_write_backend_state(monkeypatch, tm
     assert wrote == []
 
 
-def test_arch_backend_refuses_to_start_when_port_used_by_other_process(monkeypatch) -> None:
+def test_arch_backend_reports_a_refused_endpoint_and_starts_nothing(monkeypatch) -> None:
+    """A port this workspace may not use ends the run with the plan's reason, not a bind error."""
     monkeypatch.setattr(arch_backend, "read_backend_state", lambda: None)
     monkeypatch.setattr(
         backend_control,
         "backend_status",
         lambda port=8000: {"running": False, "reason": "port_in_use", "port": port},
     )
+    monkeypatch.setattr(
+        _lifecycle_cli,
+        "plan_workspace_endpoint",
+        lambda **_kwargs: RefuseEndpoint(reason="port 8000 is already in use by another process"),
+    )
+    served: list[int] = []
+    monkeypatch.setattr(arch_backend, "_serve", lambda app, host, port: served.append(port))
 
     try:
         arch_backend.main([])
@@ -1252,6 +1306,54 @@ def test_arch_backend_refuses_to_start_when_port_used_by_other_process(monkeypat
         assert "already in use" in str(exc)
     else:
         raise AssertionError("expected SystemExit")
+    assert served == []
+
+
+def test_arch_backend_says_where_it_serves_when_the_preferred_port_was_taken(monkeypatch, capsys) -> None:
+    monkeypatch.setattr(arch_backend, "read_backend_state", lambda: None)
+    monkeypatch.setattr(
+        backend_control,
+        "backend_status",
+        lambda port=8000: {"running": False, "reason": "foreign_workspace", "port": port},
+    )
+    monkeypatch.setattr(
+        _lifecycle_cli,
+        "plan_workspace_endpoint",
+        lambda **_kwargs: StartBackendOn(port=8137, moved_from=8000, moved_because="foreign"),
+    )
+    monkeypatch.setattr(arch_backend, "_start_daemon", lambda argv, log_path, port=None: 4321)
+    monkeypatch.setattr(arch_backend, "_get_git_credentials", lambda: None)
+    monkeypatch.setattr(arch_backend, "backend_log_path", lambda start=None: Path("/tmp/backend.log"))
+    monkeypatch.setattr(arch_backend, "probe_backend", lambda port, timeout_s=1.0: True)
+
+    arch_backend.main(["--daemon"])
+
+    out = capsys.readouterr().out
+    assert "port 8000 is not available for this workspace (foreign)" in out
+    assert "backend started on port 8137" in out
+
+
+def test_arch_backend_reports_an_already_running_backend_with_what_it_serves(monkeypatch, capsys) -> None:
+    monkeypatch.setattr(arch_backend, "read_backend_state", lambda: None)
+    monkeypatch.setattr(
+        backend_control,
+        "backend_status",
+        lambda port=8000: {"running": False, "reason": "not_running", "port": port},
+    )
+    monkeypatch.setattr(
+        _lifecycle_cli,
+        "plan_workspace_endpoint",
+        lambda **_kwargs: AttachToBackend(
+            port=8137, identity=BackendIdentity(repo_roots=("/w/one/engagement",), software_version="9.9.9")
+        ),
+    )
+    served: list[int] = []
+    monkeypatch.setattr(arch_backend, "_serve", lambda app, host, port: served.append(port))
+
+    arch_backend.main([])
+
+    assert "backend already running on port 8137 (serving /w/one/engagement)" in capsys.readouterr().out
+    assert served == []
 
 
 # --- W3/W4: artifact_write_cli requires a running backend ---
@@ -1288,6 +1390,7 @@ def test_write_cli_routes_delete_entity_through_backend(monkeypatch, tmp_path: P
 
     monkeypatch.setattr(artifact_write_cli, "read_backend_state", lambda path: {"port": 8123})
     monkeypatch.setattr(artifact_write_cli, "probe_backend", lambda port: True)
+    monkeypatch.setattr(artifact_write_cli, "port_serves_workspace", lambda port, claim: True)
 
     requests_captured: list[dict[str, object]] = []
 

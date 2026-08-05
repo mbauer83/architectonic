@@ -28,7 +28,9 @@ export default defineConfig({
   workers: 1,
   reporter: process.env.CI ? [['github'], ['list']] : 'list',
   use: {
-    baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:8000',
+    // `ARCH_BACKEND_PORT` covers the case where this workspace's backend is not the one that got
+    // port 8000 — the same variable the backend, the bridges and the dev proxy read.
+    baseURL: process.env.E2E_BASE_URL ?? `http://localhost:${process.env.ARCH_BACKEND_PORT ?? '8000'}`,
     trace: 'on-first-retry',
     viewport: { width: 1440, height: 900 },
   },

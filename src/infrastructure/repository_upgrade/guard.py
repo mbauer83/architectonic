@@ -3,6 +3,11 @@ target repo. This is the one thing that must block — two writers touching the 
 so it fails closed whenever a responding backend's served roots can't be confirmed to
 exclude the target, including backends that predate the `/api/backend-identity` endpoint.
 
+What a backend serves is not this guard's concept: `BackendIdentity` and the probe that reads it
+live with the other backend probes, because the endpoint planner asks the same question to decide
+which backend a workspace may talk to at all. Two answers to "what does this backend serve" would
+be two things to keep true.
+
 Git status is deliberately *not* a gate here (see `arch_repair_upgrade`'s module docstring
 for why): `conflicting_dirty_files` exists only to power an informational note about which
 touched files already have uncommitted local edits, never to block `--commit`.
@@ -10,13 +15,21 @@ touched files already have uncommitted local edits, never to block `--commit`.
 
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass
 from pathlib import Path
-from urllib.error import URLError
-from urllib.request import Request, urlopen
 
+from src.domain.deployment.backend_endpoint import BackendIdentity
+from src.infrastructure.backend.backend_probe import probe_backend_identity
 from src.infrastructure.mutation_adapters.git import run_git
+
+__all__ = [
+    "BackendGuardResult",
+    "BackendIdentity",
+    "check_backend_not_serving",
+    "conflicting_dirty_files",
+    "dirty_worktree_files",
+    "probe_backend_identity",
+]
 
 
 def dirty_worktree_files(repo_root: Path) -> list[str]:
@@ -35,32 +48,6 @@ def conflicting_dirty_files(repo_root: Path, touched_locations: frozenset[str]) 
     the repo (the common case) is excluded entirely, not just tolerated.
     """
     return [f for f in dirty_worktree_files(repo_root) if f in touched_locations]
-
-
-@dataclass(frozen=True)
-class BackendIdentity:
-    repo_roots: tuple[str, ...]
-    software_version: str
-
-
-def probe_backend_identity(base_url: str, *, timeout_s: float = 1.0) -> BackendIdentity | None:
-    """Query `GET /api/backend-identity`. Returns None on any failure (down, older backend, bad response)."""
-    req = Request(
-        f"{base_url.rstrip('/')}/api/backend-identity",
-        headers={"Accept": "application/json"},
-    )
-    try:
-        with urlopen(req, timeout=timeout_s) as resp:  # noqa: S310
-            if not (200 <= resp.status < 300):
-                return None
-            payload = json.loads(resp.read().decode("utf-8"))
-    except (OSError, ValueError, URLError):
-        return None
-    roots = payload.get("repo_roots")
-    version = payload.get("software_version")
-    if not isinstance(roots, list) or not isinstance(version, str):
-        return None
-    return BackendIdentity(repo_roots=tuple(str(r) for r in roots), software_version=version)
 
 
 @dataclass(frozen=True)

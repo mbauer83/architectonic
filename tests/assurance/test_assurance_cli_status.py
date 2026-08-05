@@ -25,6 +25,9 @@ import pytest
 from src.config import storage_settings
 from src.infrastructure.cli import _assurance_commands as ac
 
+#: Captured before the autouse fixture below replaces the module attribute with a stub.
+_REAL_NOTIFY_BACKEND_RELOAD = ac._notify_backend_reload
+
 
 @pytest.fixture(autouse=True)
 def _force_sqlcipher_config(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -149,3 +152,95 @@ def test_lock_disables_auto_unlock(tmp_path, capsys) -> None:  # type: ignore[no
     assert "unlocked: false" in out
     assert "setup_confirmed: false" in out
     assert "locked_needs_activation" in out
+
+
+# ── Which backend an assurance command talks to ───────────────────────────────
+#
+# `unlock` posts `authorize: true`. Composed from the configured port, that reached whichever process
+# held it — so on a machine running two workspaces, one workspace's unlock ceremony authorized the
+# *other* workspace's backend to open its own confidential store. The endpoint has to be the backend
+# that reports serving this workspace's repositories, and nothing at all when none does.
+
+
+def test_an_assurance_command_talks_to_the_backend_serving_this_workspace(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
+    from src.domain.deployment.backend_endpoint import AttachToBackend
+    from src.infrastructure.cli import _workspace_backend
+
+    monkeypatch.setattr(_workspace_backend, "configured_backend_url", lambda: None)
+    monkeypatch.setattr(
+        _workspace_backend, "plan_workspace_endpoint", lambda **_kwargs: AttachToBackend(port=8188)
+    )
+
+    assert _workspace_backend.workspace_backend_url(cwd=tmp_path) == "http://127.0.0.1:8188"
+
+
+def test_no_backend_serving_this_workspace_means_no_url_at_all(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
+    """Not a fallback to the configured port: that port may be a neighbour's backend."""
+    from src.domain.deployment.backend_endpoint import RefuseEndpoint
+    from src.infrastructure.cli import _workspace_backend
+
+    monkeypatch.setattr(_workspace_backend, "configured_backend_url", lambda: None)
+    monkeypatch.setattr(
+        _workspace_backend,
+        "plan_workspace_endpoint",
+        lambda **_kwargs: RefuseEndpoint(reason="port 8000 is serving another workspace (/elsewhere)"),
+    )
+
+    assert _workspace_backend.workspace_backend_url(cwd=tmp_path) is None
+
+
+def test_an_externally_named_backend_is_used_as_given(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
+    from src.infrastructure.cli import _workspace_backend
+
+    monkeypatch.setattr(_workspace_backend, "configured_backend_url", lambda: "http://backend.internal:8000")
+
+    assert _workspace_backend.workspace_backend_url(cwd=tmp_path) == "http://backend.internal:8000"
+
+
+def test_unlock_authorizes_nothing_when_no_backend_serves_this_workspace(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The authorization POST is what makes this a confidentiality question, not a convenience one.
+
+    Driven through `_REAL_NOTIFY_BACKEND_RELOAD`, captured at import: the autouse fixture above
+    replaces the module attribute, so calling it by name here would exercise the stub.
+    """
+    import urllib.request
+
+    from src.infrastructure.cli import _workspace_backend
+
+    posted: list[str] = []
+    monkeypatch.setattr(_workspace_backend, "workspace_backend_url", lambda cwd=None: None)
+    monkeypatch.setattr(urllib.request, "urlopen", lambda *a, **k: posted.append("posted"))
+
+    _REAL_NOTIFY_BACKEND_RELOAD(authorize=True)
+
+    assert posted == []
+
+
+def test_unlock_authorizes_the_backend_serving_this_workspace(monkeypatch: pytest.MonkeyPatch) -> None:
+    import urllib.request
+
+    from src.infrastructure.cli import _workspace_backend
+
+    urls: list[str] = []
+    monkeypatch.setattr(_workspace_backend, "workspace_backend_url", lambda cwd=None: "http://127.0.0.1:8188")
+
+    class _Response:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_exc: object) -> bool:
+            return False
+
+    monkeypatch.setattr(
+        urllib.request, "urlopen", lambda req, timeout=3: urls.append(req.full_url) or _Response()
+    )
+
+    _REAL_NOTIFY_BACKEND_RELOAD(authorize=True)
+
+    assert urls == ["http://127.0.0.1:8188/api/assurance/reload"]

@@ -17,6 +17,16 @@ bolted onto a human-first tool.
 The MCP interface is split into two servers so an agent can be constrained by capability.
 Configure them in `.mcp.json` — see [Installation §5](../02-installation.md#5-configure-mcp-access-for-ai-agents).
 
+Each server is a thin stdio bridge to the backend **serving its own workspace**. The workspace is
+the directory the client starts the bridge in — which `.mcp.json` makes the project directory — or,
+for clients that cannot set one, `--workspace DIR` / `ARCH_MCP_WORKSPACE`. The bridge starts that
+workspace's backend if none is running and attaches to it only if it reports serving that
+workspace's engagement repository; otherwise it exits with the reason. This matters when more than
+one workspace runs on the machine: without the check, a bridge finding the default port occupied
+attaches to whichever backend answers, and every tool call lands in a *different* model while
+looking entirely normal. See
+[Several workspaces on one machine](../reference/configuration.md#several-workspaces-on-one-machine).
+
 ### `arch-repo-read` (query, navigate, verify)
 
 <!-- mcp-tools:begin arch-read -->

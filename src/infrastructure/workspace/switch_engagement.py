@@ -20,7 +20,8 @@ from src.config.workspace_paths import (
     configured_engagements,
     parse_workspace_config,
 )
-from src.infrastructure.backend.backend_control import backend_status, ensure_backend_running, stop_backend
+from src.infrastructure.backend.backend_control import backend_status, stop_backend
+from src.infrastructure.backend.backend_launch import ensure_backend_running
 from src.infrastructure.backend.backend_probe import resolve_backend_port
 from src.infrastructure.workspace.engagement_repo_template import create_engagement_repo
 from src.infrastructure.workspace.workspace_init import (

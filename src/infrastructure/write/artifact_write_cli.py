@@ -11,6 +11,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import Request, urlopen
 
+from src.infrastructure.backend.backend_endpoint import claim_for_roots, port_serves_workspace
 from src.infrastructure.backend.backend_probe import backend_url, probe_backend
 from src.infrastructure.backend.backend_state import read_backend_state
 from src.infrastructure.workspace.workspace_init import load_init_state
@@ -63,6 +64,28 @@ def _delete_request(port: int, args: argparse.Namespace) -> Request:
     )
 
 
+def _port_serving(repo_root: Path) -> int | None:
+    """The port of the backend serving *this* repository, or None if none does.
+
+    A recorded port outlives the backend that wrote it, and on a machine running more than one
+    workspace another backend may hold it by then. Sending a delete to whatever answers would mutate
+    a repository the operator never named, so liveness alone is not enough to act on.
+    """
+    state = read_backend_state(repo_root)
+    if state is None:
+        return None
+    port = state["port"]
+    if not probe_backend(port):
+        return None
+    if not port_serves_workspace(port, claim_for_roots(repo_root, None)):
+        print(
+            f"The backend on port {port} does not serve {repo_root}; refusing to send a write to it.",
+            file=sys.stderr,
+        )
+        return None
+    return port
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
@@ -71,16 +94,16 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("No --repo-root given and no arch-init state found.")
     repo_root = Path(args.repo_root)
 
-    state = read_backend_state(repo_root)
-    if state is None or not probe_backend(state["port"]):
+    port = _port_serving(repo_root)
+    if port is None:
         print(
-            "arch-write-cli requires arch-backend to be running. "
+            f"arch-write-cli requires the arch-backend serving {repo_root} to be running. "
             "Start it with: arch-backend --daemon",
             file=sys.stderr,
         )
         return 1
 
-    req = _delete_request(state["port"], args)
+    req = _delete_request(port, args)
     try:
         with urlopen(req, timeout=10.0) as resp:  # noqa: S310
             payload = resp.read().decode("utf-8")
