@@ -103,7 +103,10 @@ class AdminEditEntityBody(BaseModel):
 
     name: str | None = None
     summary: str | None = None
-    properties: dict[str, str] | None = None
+    #: A patch. A key mapped to null removes that attribute — the only way a patch can express
+    #: deletion, and what `artifact_edit_entity` accepts. Typed `str` here, an enterprise entity
+    #: could never have an attribute removed once the ontology stopped declaring it.
+    properties: dict[str, str | None] | None = None
     notes: str | None = None
     keywords: list[str] | None = None
     version: str | None = None

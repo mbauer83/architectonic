@@ -190,7 +190,6 @@ DEFAULT_SCHEMATA: dict[str, dict] = {
         "properties": {
             "Priority": {"type": "string", "enum": ["Must", "Should", "Could", "Won't", "Never"]},
             "Category": {"type": "string"},
-            "Children": {"type": "string"},
         },
         "additionalProperties": True,
     },

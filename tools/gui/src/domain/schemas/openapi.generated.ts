@@ -2937,7 +2937,7 @@ export interface components {
             notes?: string | null;
             /** Properties */
             properties?: {
-                [key: string]: string;
+                [key: string]: string | null;
             } | null;
             /** Status */
             status?: string | null;
