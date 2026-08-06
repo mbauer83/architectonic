@@ -1,5 +1,5 @@
 import type { Effect } from 'effect'
-import type { AuthoredGrouping } from '../domain/authoredGrouping'
+import type { DiagramComposition, DiagramWriteBody } from './diagramWriteBodies'
 import type { EnterpriseAdminRepository } from './EnterpriseAdminRepository'
 import type { RepoError } from './repositoryErrors'
 import type { SyncChangesResult } from '../domain/schemas-changes'
@@ -83,16 +83,7 @@ export interface ListParams {
 export type { RepoError }
 
 /** Outbound port: the application's view of the model backend. */
-/** What a diagram write states, on create and on replace alike — the same body, minus keywords. */
-export type DiagramWriteBody = {
-  diagram_type: string; name: string;
-  entity_ids: string[]; connection_ids: string[];
-  diagram_entities?: Record<string, unknown>;
-  authored_groupings?: readonly AuthoredGrouping[];
-  version?: string; status?: string;
-  viewpoint?: { slug: string; version: number; enforcement_override?: 'off' | 'warn' | 'ghost' } | null;
-  dry_run?: boolean;
-}
+export type { DiagramComposition, DiagramWriteBody }
 
 export interface ModelRepository extends EnterpriseAdminRepository {
   readonly getServerInfo: () => Effect.Effect<ServerInfo, RepoError>
@@ -208,11 +199,9 @@ export interface ModelRepository extends EnterpriseAdminRepository {
     limit?: number
     viewpoint?: string
   }) => Effect.Effect<DiagramEntityDiscovery, RepoError>
-  readonly previewDiagram: (body: {
-    diagram_type: string; name: string;
-    entity_ids: string[]; connection_ids: string[];
-    diagram_entities?: Record<string, unknown>;
-  }) => Effect.Effect<DiagramPreviewResult, RepoError>
+  /** The same composition the writes take, so the preview is of the diagram they would make. */
+  readonly previewDiagram: (body: DiagramComposition) =>
+    Effect.Effect<DiagramPreviewResult, RepoError>
   readonly createDiagram: (body: DiagramWriteBody & { keywords?: string[] }) =>
     Effect.Effect<WriteResult, RepoError>
   /** Whole-diagram replacement, so PUT: the body states what the diagram becomes, not a delta. */

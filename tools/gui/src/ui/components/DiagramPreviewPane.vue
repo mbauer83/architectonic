@@ -120,7 +120,8 @@ const showPuml = ref(false)
 
 <style scoped>
 .preview-hint { font-size: 13px; color: #9ca3af; }
-.preview-img { max-width: none; display: block; }
+/* Fit the whole diagram on open; the viewport's pan/zoom magnifies from there. */
+.preview-img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
 .render-warnings { margin: 6px 0 0 0; padding-left: 18px; font-size: 12px; color: #b45309; }
 .state-msg { font-size: 13px; color: #6b7280; margin-bottom: 10px; }
 .state-err { font-size: 13px; color: #b91c1c; margin-bottom: 10px; }

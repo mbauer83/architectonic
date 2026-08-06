@@ -6087,8 +6087,15 @@ export interface components {
                 [key: string]: unknown;
             };
         };
-        /** DiagramPreviewBody */
+        /**
+         * DiagramPreviewBody
+         * @description A composition, rendered but not written. It adds nothing, which is the point.
+         */
         DiagramPreviewBody: {
+            /** Authored Groupings */
+            authored_groupings?: {
+                [key: string]: unknown;
+            }[] | null;
             /** Connection Ids */
             connection_ids: string[];
             /** Diagram Entities */

@@ -18,8 +18,7 @@ import DiagramGroupingsEditor from '../components/DiagramGroupingsEditor.vue'
 import ViewpointSelect from '../components/ViewpointSelect.vue'
 import { findViewpointBySlug } from '../components/ViewpointSelect.helpers'
 import { isArchimateDiagramType } from '../lib/archimateOccurrences'
-import type { AuthoredGrouping } from '../../domain/authoredGrouping'
-import { withoutEmptyGroups } from '../../domain/authoredGrouping'
+import { useDiagramGroupings } from '../composables/useDiagramGroupings'
 import { loadViewpointSummaries } from '../lib/viewpointSummary'
 
 const svc = inject(modelServiceKey)!
@@ -75,11 +74,9 @@ const includedEntityIds = computed(() => new Set(includedEntities.value.map((e) 
 
 const allModelConns = ref<Map<string, EntityContextConnection>>(new Map())
 const includedConnIds = ref<Set<string>>(new Set())
-const authoredGroupings = ref<readonly AuthoredGrouping[]>([])
-// Only the entities the diagram actually draws can be placed in a box.
-const groupingCandidates = computed(() =>
-  includedEntities.value.map((entity) => ({ id: entity.artifact_id, label: entity.name })),
-)
+const {
+  groupings: authoredGroupings, candidates: groupingCandidates, forWrite: groupingsForWrite,
+} = useDiagramGroupings(includedEntities)
 
 const selectionRows = computed(() =>
   includedEntities.value.map((entity) => ({
@@ -242,6 +239,7 @@ const doPreview = () => {
       entity_ids: mergedEntityIds(),
       connection_ids: [...includedConnIds.value],
       diagram_entities: diagramEntities.value,
+      authored_groupings: groupingsForWrite(),
     }),
   )
     .then((r) => {
@@ -274,7 +272,7 @@ const doCreate = () => {
       entity_ids: mergedEntityIds(),
       connection_ids: [...includedConnIds.value],
       diagram_entities: diagramEntities.value,
-      authored_groupings: withoutEmptyGroups(authoredGroupings.value),
+      authored_groupings: groupingsForWrite(),
       viewpoint: selectedViewpoint ? { slug: selectedViewpoint.slug, version: selectedViewpoint.version } : null,
       dry_run: false,
     }),

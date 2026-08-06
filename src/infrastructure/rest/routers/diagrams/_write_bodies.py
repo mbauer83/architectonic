@@ -14,22 +14,33 @@ class _Body(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
-class DiagramPreviewBody(BaseModel):
+class DiagramComposition(BaseModel):
+    """What a diagram draws, declared once for every surface that renders one.
+
+    Preview, create and replace all render the *same* picture, so the fields describing it belong in
+    one place. They were declared three times, and the cost showed: `authored_groupings` reached
+    create and replace while preview kept its own copy of the field list, so a diagram's custom boxes
+    appeared in the written diagram and never in the preview of it. A preview missing a field is a
+    picture of a diagram the write will not make, which is worse than no preview at all.
+
+    Fields the *operation* decides — a version, a status, whether it is a dry run — stay on the body
+    that decides them. This carries only what ends up in the picture.
+    """
+
     diagram_type: str
     name: str
     entity_ids: list[str]
     connection_ids: list[str]
-    diagram_entities: dict[str, Any] | None = None
-
-
-class CreateDiagramGuiBody(BaseModel):
-    diagram_type: str
-    name: str
-    entity_ids: list[str]
-    connection_ids: list[str]
-    keywords: list[str] | None = None
     diagram_entities: dict[str, Any] | None = None
     authored_groupings: list[dict[str, Any]] | None = None
+
+
+class DiagramPreviewBody(DiagramComposition):
+    """A composition, rendered but not written. It adds nothing, which is the point."""
+
+
+class CreateDiagramGuiBody(DiagramComposition):
+    keywords: list[str] | None = None
     version: str = "0.1.0"
     status: str = "draft"
     tlp: str | None = None
@@ -37,13 +48,7 @@ class CreateDiagramGuiBody(BaseModel):
     dry_run: bool = True
 
 
-class EditDiagramGuiBody(_Body):
-    diagram_type: str
-    name: str
-    entity_ids: list[str]
-    connection_ids: list[str]
-    diagram_entities: dict[str, Any] | None = None
-    authored_groupings: list[dict[str, Any]] | None = None
+class EditDiagramGuiBody(DiagramComposition, _Body):
     version: str | None = None
     status: str | None = None
     tlp: str | None = None

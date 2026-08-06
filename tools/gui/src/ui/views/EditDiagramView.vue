@@ -23,8 +23,7 @@ import { useDiagramEditSelection } from '../composables/useDiagramEditSelection'
 import { useDiagramEditSvgOverlay } from '../composables/useDiagramEditSvgOverlay'
 import { sanitizeDiagramSvg } from '../lib/svgSanitize'
 import { loadViewpointSummaries } from '../lib/viewpointSummary'
-import type { AuthoredGrouping } from '../../domain/authoredGrouping'
-import { withoutEmptyGroups } from '../../domain/authoredGrouping'
+import { useDiagramGroupings } from '../composables/useDiagramGroupings'
 
 const svc = inject(modelServiceKey)!
 const addToast = inject(toastKey)!
@@ -175,16 +174,17 @@ watch(diagramId, load)
 
 // ── Preview / Save ────────────────────────────────────────────────────────────
 
-const authoredGroupings = ref<readonly AuthoredGrouping[]>([])
+const {
+  groupings: authoredGroupings, candidates: groupingCandidates, forWrite: groupingsForWrite,
+} = useDiagramGroupings(selection.effectiveEntitiesList)
+// Seeded from what the diagram already draws: an editor that never saw the existing boxes would
+// replace them on its next save.
 const groupingsLoaded = ref(false)
 watch(diagramDetail, (detail) => {
   if (!detail || groupingsLoaded.value) return
   authoredGroupings.value = detail.authored_groupings ?? []
   groupingsLoaded.value = true
 }, { immediate: true })
-const groupingCandidates = computed(() =>
-  selection.effectiveEntitiesList.value.map((e) => ({ id: e.artifact_id, label: e.name })),
-)
 
 const finalEntityIds = computed(() => {
   const base = [
@@ -203,6 +203,7 @@ const doPreview = () => {
     entity_ids: finalEntityIds.value,
     connection_ids: selection.finalConnIds.value,
     diagram_entities: typeEntityData.value,
+    authored_groupings: groupingsForWrite(),
   }))
 }
 
@@ -214,7 +215,7 @@ const doSave = async () => {
     entity_ids: finalEntityIds.value,
     connection_ids: selection.finalConnIds.value,
     diagram_entities: typeEntityData.value,
-    authored_groupings: withoutEmptyGroups(authoredGroupings.value),
+    authored_groupings: groupingsForWrite(),
     viewpoint: viewpointSlug.value
       ? { slug: viewpointSlug.value, version: viewpointPinnedVersion.value ?? currentDefinitionVersion.value ?? 1 }
       : null,

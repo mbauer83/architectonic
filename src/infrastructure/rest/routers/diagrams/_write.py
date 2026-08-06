@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
@@ -22,6 +24,7 @@ from src.infrastructure.rest.routers._openapi import (
 )
 from src.infrastructure.rest.routers.diagrams._write_bodies import (
     CreateDiagramGuiBody,
+    DiagramComposition,
     DiagramPreviewBody,
     EditDiagramGuiBody,
     PatchDiagramEntityMetadataBody,
@@ -75,18 +78,61 @@ def _extract_conn_bindings(
     return clean or None, bindings
 
 
+@dataclass(frozen=True)
+class _RenderedComposition:
+    """One composition, resolved and rendered — the same way for every surface that shows it."""
+
+    entities: list[Any]
+    connections: list[Any]
+    entity_ids_used: list[str]
+    connection_ids_used: list[str]
+    diagram_entities: dict[str, Any] | None
+    diagram_connections: list[dict[str, Any]] | None
+    conn_bindings: list[dict[str, Any]]
+    puml: str
+
+
+def _render_composition(body: DiagramComposition, *, repo: Any, repo_root: Path) -> _RenderedComposition:
+    """Resolve a composition and render it, once, for preview and for both writes.
+
+    The three surfaces used to assemble this themselves, and drifted twice over: preview never passed
+    `authored_groupings`, so custom boxes were invisible until the write; and preview rendered with
+    connection *bindings* still attached while the writes stripped them first, so the two were not
+    rendering the same input either. A preview is only worth having if it is the write's own picture.
+    """
+    from src.infrastructure.rendering.diagram_builder import generate_archimate_puml_body  # noqa: PLC0415
+
+    entities, connections, entity_ids_used, connection_ids_used = resolve_diagram_selection(
+        repo, body.entity_ids, body.connection_ids
+    )
+    de, dc = _split_diagram_entities(body.diagram_entities)
+    dc, conn_bindings = _extract_conn_bindings(dc)
+    puml = generate_archimate_puml_body(
+        body.name,
+        entities,
+        connections,
+        diagram_type=body.diagram_type,
+        repo_root=repo_root,
+        diagram_entities=de,
+        diagram_connections=dc,
+        authored_groupings=body.authored_groupings,
+    )
+    return _RenderedComposition(
+        entities=entities, connections=connections,
+        entity_ids_used=entity_ids_used, connection_ids_used=connection_ids_used,
+        diagram_entities=de, diagram_connections=dc, conn_bindings=conn_bindings, puml=puml,
+    )
+
+
 @router.post("/api/diagrams/preview", tags=[TAG_DIAGRAMS], summary="Preview a diagram write (dry-run)",
     response_model=DiagramPreviewResponse, responses=WRITE_RESPONSES)
 def preview_diagram(body: DiagramPreviewBody, catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency)) -> dict[str, Any]:  # noqa: E501
     repo_root = s.maybe_engagement_root()
     if repo_root is None:
         raise HTTPException(500, "Repository not initialized")
-    from src.infrastructure.rendering.diagram_builder import generate_archimate_puml_body, render_puml_preview
+    from src.infrastructure.rendering.diagram_builder import render_puml_preview
 
     repo = s.get_repo()
-    entities, connections, _, _ = resolve_diagram_selection(repo, body.entity_ids, body.connection_ids)
-    de, dc = _split_diagram_entities(body.diagram_entities)
-
     query = shared_artifact_index([repo_root])
 
     # A selection this diagram type cannot draw is a rejected input, not a broken server: a C4
@@ -95,17 +141,10 @@ def preview_diagram(body: DiagramPreviewBody, catalogs: RuntimeCatalogs = Depend
     # caller was told the server was broken and the only diagnostic stayed in the log. Config and
     # renderer faults still raise plain ValueError and still answer 500, which is honest for them.
     try:
-        puml = generate_archimate_puml_body(
-            body.name,
-            entities,
-            connections,
-            diagram_type=body.diagram_type,
-            repo_root=repo_root,
-            diagram_entities=de,
-            diagram_connections=dc,
-        )
+        composed = _render_composition(body, repo=repo, repo_root=repo_root)
     except DiagramSelectionError as exc:
         raise rejected_input(str(exc), field="diagram_entities") from exc
+    puml, de = composed.puml, composed.diagram_entities
     image, warnings = render_puml_preview(puml, repo_root, body.diagram_type)
 
     items = project_view_for_preview(catalogs.diagram_types.get_diagram_type(body.diagram_type), body.diagram_type, de or {}, query)  # noqa: E501
@@ -121,28 +160,14 @@ def create_diagram_gui(body: CreateDiagramGuiBody, response: Response,
 ) -> dict[str, Any]:
     from src.application.identifier_allocator import get_default_allocator
     from src.application.modeling.artifact_write import prefix_for_diagram_type
-    from src.infrastructure.rendering.diagram_builder import generate_archimate_puml_body
     from src.infrastructure.write.artifact_write.diagram import create_diagram
 
     repo = s.get_repo()
     repo_root, _, verifier = s.get_write_deps(catalogs)
-    entities, connections, entity_ids_used, connection_ids_used = resolve_diagram_selection(
-        repo,
-        body.entity_ids,
-        body.connection_ids,
-    )
-    de, dc = _split_diagram_entities(body.diagram_entities)
-    dc, conn_bindings = _extract_conn_bindings(dc)
-    puml = generate_archimate_puml_body(
-        body.name,
-        entities,
-        connections,
-        diagram_type=body.diagram_type,
-        repo_root=repo_root,
-        diagram_entities=de,
-        diagram_connections=dc,
-        authored_groupings=body.authored_groupings,
-    )
+    composed = _render_composition(body, repo=repo, repo_root=repo_root)
+    puml, de, dc = composed.puml, composed.diagram_entities, composed.diagram_connections
+    conn_bindings = composed.conn_bindings
+    entity_ids_used, connection_ids_used = composed.entity_ids_used, composed.connection_ids_used
     try:
         result = s.authorized_write(
             "diagrams_create_diagram", 
@@ -182,28 +207,14 @@ def create_diagram_gui(body: CreateDiagramGuiBody, response: Response,
 def edit_diagram_gui(artifact_id: str, body: EditDiagramGuiBody,
     catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
 ) -> dict[str, Any]:
-    from src.infrastructure.rendering.diagram_builder import generate_archimate_puml_body
     from src.infrastructure.write.artifact_write.diagram_edit import edit_diagram
 
     repo = s.get_repo()
     repo_root, _, verifier = s.get_write_deps(catalogs)
-    entities, connections, entity_ids_used, connection_ids_used = resolve_diagram_selection(
-        repo,
-        body.entity_ids,
-        body.connection_ids,
-    )
-    de, dc = _split_diagram_entities(body.diagram_entities)
-    dc, conn_bindings = _extract_conn_bindings(dc)
-    puml = generate_archimate_puml_body(
-        body.name,
-        entities,
-        connections,
-        diagram_type=body.diagram_type,
-        repo_root=repo_root,
-        diagram_entities=de,
-        diagram_connections=dc,
-        authored_groupings=body.authored_groupings,
-    )
+    composed = _render_composition(body, repo=repo, repo_root=repo_root)
+    puml, de, dc = composed.puml, composed.diagram_entities, composed.diagram_connections
+    conn_bindings = composed.conn_bindings
+    entity_ids_used, connection_ids_used = composed.entity_ids_used, composed.connection_ids_used
     from src.application.candidate_repository import committed_repository  # noqa: PLC0415
     try:
         result = s.authorized_write(
