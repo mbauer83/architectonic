@@ -11,14 +11,9 @@
  * - **a flat shape.** `groups` nests to any depth, and a member may name an occurrence id rather
  *   than an entity id, so an entity drawn twice can sit in a different box each time.
  */
-export interface AuthoredGrouping {
-  readonly label: string
-  /** Entity ids, or occurrence ids for a specific drawing of one. */
-  readonly 'entity-ids': readonly string[]
-  readonly groups?: readonly AuthoredGrouping[]
-  /** Honoured by the backend, never sent by this app: the look is derived from the members. */
-  readonly stereotype?: string
-}
+import type { AuthoredGroupingWire } from './schemas/diagrams'
+
+export type AuthoredGrouping = AuthoredGroupingWire
 
 /** Every id claimed by *groups*, at any depth — what the editor greys out as already placed. */
 export const claimedMemberIds = (groups: readonly AuthoredGrouping[]): ReadonlySet<string> => {

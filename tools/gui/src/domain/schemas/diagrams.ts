@@ -3,6 +3,27 @@ import { ViewpointApplicationSchema } from './viewpoints'
 import { EntityContextConnectionSchema } from './connections'
 import { EntityDisplayInfoSchema } from './entities'
 
+/**
+ * One labelled box a diagram draws that the model does not hold.
+ *
+ * Recursive, because boxes nest. `entity-ids` keeps its frontmatter spelling on the wire, so what is
+ * read is what is written back, and a member may name an entity or a single occurrence of one.
+ */
+export interface AuthoredGroupingWire {
+  readonly label: string
+  readonly 'entity-ids': readonly string[]
+  readonly groups?: readonly AuthoredGroupingWire[]
+  /** An override the backend still honours; the look is otherwise derived from the members. */
+  readonly stereotype?: string
+}
+
+export const AuthoredGroupingSchema: Schema.Schema<AuthoredGroupingWire> = Schema.Struct({
+  label: Schema.String,
+  'entity-ids': Schema.Array(Schema.String),
+  groups: Schema.optional(Schema.Array(Schema.suspend(() => AuthoredGroupingSchema))),
+  stereotype: Schema.optional(Schema.String),
+})
+
 export const DiagramDetailSchema = Schema.Struct({
   artifact_id: Schema.String,
   artifact_type: Schema.String,
@@ -22,6 +43,9 @@ export const DiagramDetailSchema = Schema.Struct({
   entity_ids_used: Schema.optional(Schema.Array(Schema.String)),
   connection_ids_used: Schema.optional(Schema.Array(Schema.String)),
   diagram_entities: Schema.optional(Schema.Record({ key: Schema.String, value: Schema.Unknown })),
+  /** The labelled boxes the diagram draws that the model does not hold. Read as well as written,
+   * because an editor that could author one without seeing the existing ones would replace them. */
+  authored_groupings: Schema.optional(Schema.Array(AuthoredGroupingSchema)),
   extra: Schema.optional(Schema.Record({ key: Schema.String, value: Schema.Unknown })),
   /** This diagram kind's own additions — a matrix's rendered body, and whatever a future kind
    * contributes. Absent for a kind that adds nothing. */

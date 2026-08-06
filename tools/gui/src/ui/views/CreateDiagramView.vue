@@ -393,13 +393,13 @@ watch(diagramType, () => {
           />
         </div>
 
-        <div
-          v-if="includedEntities.length"
-          class="form-row"
-        >
+        <div class="form-row">
           <DiagramGroupingsEditor
             v-model="authoredGroupings"
             :candidates="groupingCandidates"
+            :diagram-type="diagramType"
+            :viewpoint="viewpointSlug ?? undefined"
+            @add-entity="addEntity"
           />
         </div>
 

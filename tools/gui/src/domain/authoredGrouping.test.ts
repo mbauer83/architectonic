@@ -47,3 +47,14 @@ describe('what gets sent', () => {
     expect(sent[0]).not.toHaveProperty('stereotype')
   })
 })
+
+describe('a grouping with no members yet', () => {
+  it('survives editing, so a box can be named before it is filled', () => {
+    // The editor creates an empty box first; dropping it on every keystroke would make that
+    // impossible. Only the payload prunes.
+    const groups: AuthoredGrouping[] = [{ label: 'Forces', 'entity-ids': [] }]
+
+    expect(claimedMemberIds(groups).size).toBe(0)
+    expect(withoutEmptyGroups(groups)).toEqual([])
+  })
+})

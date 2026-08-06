@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from src.infrastructure.rest.contracts.connections import ConnectionSummary
 from src.infrastructure.rest.contracts.entities import (
@@ -269,6 +269,26 @@ class DiagramPreviewResponse(Closed):
     derived_entities: list[DerivedViewEntityResponse] | None
 
 
+class AuthoredGroupingResponse(NullsOmitted):
+    """One labelled box a diagram draws that the model does not hold.
+
+    Declared rather than served as a bare object: the write side takes these, so a client that can
+    author a grouping must be able to read the ones already there — and a read typed as "an object"
+    tells it nothing about what to send back. ``entity-ids`` keeps its frontmatter spelling on the
+    wire, so what is read and what is written are the same word.
+
+    A member may name an entity or a single *occurrence* of one, which is how an entity drawn twice
+    sits in a different box each time. ``stereotype`` is an override the backend still honours; the
+    look is otherwise derived from the members' domains.
+    """
+
+    label: str
+    entity_ids: list[str] = Field(alias="entity-ids")
+    #: Boxes nest to any depth.
+    groups: list["AuthoredGroupingResponse"] | None = None
+    stereotype: str | None = None
+
+
 class DiagramDetailResponse(NullsOmitted):
     """One diagram, read whole: the record, its source, and what the source declares.
 
@@ -302,6 +322,10 @@ class DiagramDetailResponse(NullsOmitted):
     #: The diagram-kind's own placement data, keyed by entity id. Absent when the diagram places
     #: nothing of its own — a hand-drawn ArchiMate view, say.
     diagram_entities: dict[str, Any] | None = None
+    #: The labelled boxes the diagram draws that the model does not hold. Declared rather than
+    #: left in ``extra`` because the write side takes them: a client that can author a grouping has
+    #: to be able to read the ones already there, or its next save replaces them with nothing.
+    authored_groupings: list[AuthoredGroupingResponse] | None = None
     #: Frontmatter this surface does not model, returned as written.
     extra: dict[str, Any] | None = None
     viewpoint: ViewpointApplicationResponse | None = None

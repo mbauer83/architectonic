@@ -13,6 +13,7 @@ import type { NotFoundError } from '../../domain'
 import DiagramEditHeader from '../components/DiagramEditHeader.vue'
 import DiagramEditViewpointBar from '../components/DiagramEditViewpointBar.vue'
 import DiagramEditSidebar from '../components/DiagramEditSidebar.vue'
+import DiagramGroupingsEditor from '../components/DiagramGroupingsEditor.vue'
 import DiagramPreviewPanel from '../components/DiagramPreviewPanel.vue'
 import { findViewpointBySlug } from '../components/ViewpointSelect.helpers'
 import { useQuery } from '../composables/useQuery'
@@ -22,6 +23,8 @@ import { useDiagramEditSelection } from '../composables/useDiagramEditSelection'
 import { useDiagramEditSvgOverlay } from '../composables/useDiagramEditSvgOverlay'
 import { sanitizeDiagramSvg } from '../lib/svgSanitize'
 import { loadViewpointSummaries } from '../lib/viewpointSummary'
+import type { AuthoredGrouping } from '../../domain/authoredGrouping'
+import { withoutEmptyGroups } from '../../domain/authoredGrouping'
 
 const svc = inject(modelServiceKey)!
 const addToast = inject(toastKey)!
@@ -172,6 +175,17 @@ watch(diagramId, load)
 
 // ── Preview / Save ────────────────────────────────────────────────────────────
 
+const authoredGroupings = ref<readonly AuthoredGrouping[]>([])
+const groupingsLoaded = ref(false)
+watch(diagramDetail, (detail) => {
+  if (!detail || groupingsLoaded.value) return
+  authoredGroupings.value = detail.authored_groupings ?? []
+  groupingsLoaded.value = true
+}, { immediate: true })
+const groupingCandidates = computed(() =>
+  selection.effectiveEntitiesList.value.map((e) => ({ id: e.artifact_id, label: e.name })),
+)
+
 const finalEntityIds = computed(() => {
   const base = [
     ...selection.includedEntities.value.filter((e) => !selection.toRemoveEntityIds.value.has(e.artifact_id)).map((e) => e.artifact_id),
@@ -200,6 +214,7 @@ const doSave = async () => {
     entity_ids: finalEntityIds.value,
     connection_ids: selection.finalConnIds.value,
     diagram_entities: typeEntityData.value,
+    authored_groupings: withoutEmptyGroups(authoredGroupings.value),
     viewpoint: viewpointSlug.value
       ? { slug: viewpointSlug.value, version: viewpointPinnedVersion.value ?? currentDefinitionVersion.value ?? 1 }
       : null,
@@ -323,6 +338,16 @@ const saveTitle = computed(() => !previewMutation.result.value ? 'Run Preview fi
         @preview="doPreview"
         @save="doSave"
       />
+
+      <div class="groupings-slot">
+        <DiagramGroupingsEditor
+          v-model="authoredGroupings"
+          :candidates="groupingCandidates"
+          :diagram-type="diagramType"
+          :viewpoint="viewpointSlug ?? undefined"
+          @add-entity="selection.addEntity($event)"
+        />
+      </div>
     </div>
 
     <DiagramPreviewPanel
@@ -334,6 +359,7 @@ const saveTitle = computed(() => !previewMutation.result.value ? 'Run Preview fi
 </template>
 
 <style scoped>
+.groupings-slot { margin-top: 14px; }
 .page { max-width: 100%; }
 .main-grid { display: grid; grid-template-columns: 1fr 50%; gap: 16px; align-items: start; }
 @media (max-width: 860px) { .main-grid { grid-template-columns: 1fr; } }

@@ -69,6 +69,9 @@ def _read_diagram_impl(id: str, catalogs: RuntimeCatalogs) -> dict[str, Any]:
             result["entity_ids_used"] = [str(x) for x in entity_ids_used]
         if isinstance(connection_ids_used, list):
             result["connection_ids_used"] = [str(x) for x in connection_ids_used]
+        authored_groupings = frontmatter.get("authored-groupings")
+        if isinstance(authored_groupings, list):
+            result["authored_groupings"] = [g for g in authored_groupings if isinstance(g, dict)]
         result["viewpoint"] = frontmatter.get("viewpoint")
         dt = catalogs.diagram_types.find_diagram_type(diag_rec.diagram_type)
         if dt:
