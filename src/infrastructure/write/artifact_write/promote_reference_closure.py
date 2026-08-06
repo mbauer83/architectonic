@@ -34,7 +34,12 @@ from src.application.verification._verifier_document import (
     document_section_spans,
     resolve_entity_links,
 )
-from src.domain.artifact_id import stable_conn_id, stable_id
+from src.domain.artifact_id import (
+    MalformedArtifactIdError,
+    connection_id_as_written,
+    stable_conn_id,
+    stable_id,
+)
 
 if TYPE_CHECKING:
     from src.application.artifacts.repository import ArtifactRepository
@@ -256,8 +261,10 @@ def _split_connection_id(cid: str) -> tuple[str, str] | None:
     """(source, target) from the canonical ``SRC---TGT@@type`` connection id form."""
     if "---" not in cid or "@@" not in cid:
         return None
-    source, rest = cid.split("---", 1)
-    target, _conn_type = rest.rsplit("@@", 1)
+    try:
+        source, target, _conn_type = connection_id_as_written(cid)
+    except MalformedArtifactIdError:
+        return None
     return (source.strip(), target.strip()) if source and target else None
 
 

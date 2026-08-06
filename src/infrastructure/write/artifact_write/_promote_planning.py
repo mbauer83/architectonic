@@ -11,7 +11,11 @@ from typing import Any
 
 from src.application.artifacts.query import ArtifactRepository
 from src.application.verification.artifact_verifier import ArtifactRegistry
-from src.domain.artifact_id import stable_id
+from src.domain.artifact_id import (
+    MalformedArtifactIdError,
+    connection_id_as_written,
+    stable_id,
+)
 from src.infrastructure.write.artifact_write.parse_existing import parse_entity_file
 
 
@@ -50,8 +54,10 @@ def _extract_id_suffix(artifact_id: str) -> str | None:
 
 def _parse_conn_full(cid: str) -> tuple[str, str, str] | None:
     if "---" in cid and "@@" in cid:
-        source, rest = cid.split("---", 1)
-        target, conn_type = rest.rsplit("@@", 1)
+        try:
+            source, target, conn_type = connection_id_as_written(cid)
+        except MalformedArtifactIdError:
+            return None
         if source and target and conn_type:
             return source.strip(), conn_type.strip(), target.strip()
     if " → " not in cid:

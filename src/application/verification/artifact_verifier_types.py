@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Final, Literal, TypeAlias
 
-from src.domain.artifact_id import RANDOM_KEY_PATTERN
+from src.domain.artifact_id import PREFIX_PATTERN, RANDOM_KEY_PATTERN
 
 
 class Severity:
@@ -84,7 +84,7 @@ def entity_id_from_path(path: Path) -> str:
 #: which is why it is its own pattern rather than a re-export. The random key is taken from the
 #: canonical module rather than restated: the two spellings of that charset disagreed for a release,
 #: and the copy that was right was this one.
-ENTITY_ID_RE = re.compile(rf"^[A-Z]{{2,6}}@\d+\.{RANDOM_KEY_PATTERN}\..+$")
+ENTITY_ID_RE = re.compile(rf"^{PREFIX_PATTERN}@\d+\.{RANDOM_KEY_PATTERN}\..+$")
 
 
 def connection_header_matches_shape(header: str) -> bool:

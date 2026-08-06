@@ -7,6 +7,7 @@ from src.domain.artifact_id import (
     EntityId,
     MalformedArtifactIdError,
     connection_id_as_written,
+    is_entity_id,
     parse_connection_id,
     parse_entity_id,
     slug_of,
@@ -259,3 +260,34 @@ class TestARandomKeyEndingInAHyphen:
     def test_something_with_no_separator_at_all_is_still_refused(self) -> None:
         with pytest.raises(MalformedArtifactIdError):
             connection_id_as_written("APP@1.ab@@archimate-serving")
+
+
+class TestTheKeyGrammarIsLengthAgnostic:
+    """Nothing may read a fixed key length, so minting can buy entropy without a migration.
+
+    The alphabet lost the hyphen — it made the ``---`` endpoint separator ambiguous — and the key
+    grew to keep the entropy. That trade is only safe while every grammar quantifies the key openly,
+    which is what these assert.
+    """
+
+    @pytest.mark.parametrize("length", [4, 6, 7, 12, 32])
+    def test_a_key_of_any_length_parses(self, length: int) -> None:
+        parsed = parse_entity_id(f"APP@1785971770.{'a' * length}.some-slug")
+
+        assert parsed.random == "a" * length
+
+    @pytest.mark.parametrize("length", [4, 7, 32])
+    def test_a_composite_over_keys_of_any_length_splits(self, length: int) -> None:
+        key = "a" * length
+        source, target, _type = connection_id_as_written(
+            f"APP@1.{key}---APP@2.{key}@@archimate-serving"
+        )
+
+        assert (source, target) == (f"APP@1.{key}", f"APP@2.{key}")
+
+    def test_the_minted_key_no_longer_carries_the_ambiguous_character(self) -> None:
+        """A hyphen in the key is still *accepted* — repositories hold such ids — but never minted."""
+        from src.application.modeling.artifact_write import _ID_ALPHABET
+
+        assert "-" not in _ID_ALPHABET
+        assert is_entity_id("APP@1785971770.O_xvx-.legacy-id"), "existing ids must still parse"

@@ -13,6 +13,7 @@ from src.application.verification.artifact_verifier_parsing import (
     parse_frontmatter_from_path,
 )
 from src.config.repo_paths import DIAGRAM_CATALOG, DIAGRAMS, RENDERED
+from src.domain.artifact_id import MalformedArtifactIdError, connection_id_as_written
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.write import artifact_write_ops
 from src.infrastructure.write.artifact_write._sync_helpers import LookupStore
@@ -35,12 +36,11 @@ def connection_ref_ids(source_entity: str, connection_type: str, target_entity: 
 
 def parse_connection_ref_id(connection_id: str) -> tuple[str, str, str] | None:
     if "---" in connection_id and "@@" in connection_id:
+        # See `connection_id_as_written`: splitting here would mis-place a hyphen-terminated key.
         try:
-            source, remainder = connection_id.split("---", 1)
-            target, connection_type = remainder.rsplit("@@", 1)
-        except ValueError:
+            return connection_id_as_written(connection_id)
+        except MalformedArtifactIdError:
             return None
-        return source, target, connection_type
     if " → " in connection_id:
         try:
             left, target = connection_id.split(" → ", 1)

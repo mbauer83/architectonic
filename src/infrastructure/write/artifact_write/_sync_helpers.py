@@ -10,6 +10,7 @@ from typing import Protocol
 
 from src.application.artifacts.parsing import extract_declared_puml_aliases, normalize_puml_alias
 from src.application.puml_relation_parsing import declared_relations
+from src.domain.artifact_id import MalformedArtifactIdError, connection_id_as_written
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 
@@ -88,12 +89,12 @@ def resolve_connections(
 
 def parse_connection_artifact_id(artifact_id: str) -> tuple[str, str, str] | None:
     if "---" in artifact_id and "@@" in artifact_id:
+        # Through the domain grammar, never by splitting here: a key may end in a hyphen, and the
+        # first three-in-a-row are then the key's own plus two of the separator.
         try:
-            source, remainder = artifact_id.split("---", 1)
-            target, conn_type = remainder.rsplit("@@", 1)
-        except ValueError:
+            return connection_id_as_written(artifact_id)
+        except MalformedArtifactIdError:
             return None
-        return source, target, conn_type
     if " → " in artifact_id:
         try:
             left, target = artifact_id.split(" → ", 1)

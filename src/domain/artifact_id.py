@@ -15,6 +15,11 @@ import re
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 
+#: The type prefix. Defined once for the same reason the slug and key patterns are: the endpoint
+#: separator is told apart from a hyphen inside an id by "an id starts here", and a second copy of
+#: what an id starts with is a second grammar to drift.
+PREFIX_PATTERN = r"[A-Z]{2,6}"
+
 #: The rename-volatile slug tail. Defined once: anything that needs to recognise a slug
 #: must use this rather than restate the charset, or the two grammars drift apart and the
 #: looser one silently matches text that is not part of an id.
@@ -39,7 +44,7 @@ SLUG_PATTERN = r"[A-Za-z0-9][A-Za-z0-9-]*"
 RANDOM_KEY_PATTERN = r"[A-Za-z0-9_-]+"
 
 _ENTITY_ID_RE = re.compile(
-    rf"^(?P<prefix>[A-Z]{{2,6}})@(?P<epoch>\d+)\.(?P<random>{RANDOM_KEY_PATTERN})"
+    rf"^(?P<prefix>{PREFIX_PATTERN})@(?P<epoch>\d+)\.(?P<random>{RANDOM_KEY_PATTERN})"
     rf"(?:\.(?P<slug>{SLUG_PATTERN}))?$"
 )
 
@@ -224,7 +229,7 @@ def stable_conn_id(s: str) -> str:
 
 #: A well-formed id begins with its prefix and epoch, which is what tells the endpoint separator
 #: apart from a hyphen belonging to the id before it.
-_ID_START_RE = re.compile(r"[A-Z]{2,6}@\d")
+_ID_START_RE = re.compile(rf"{PREFIX_PATTERN}@\d")
 
 
 def _endpoint_split(endpoints_part: str) -> tuple[str, str] | None:

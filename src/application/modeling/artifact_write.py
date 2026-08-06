@@ -44,7 +44,16 @@ __all__ = [
 # Deterministic helpers
 # ---------------------------------------------------------------------------
 
-_ID_ALPHABET = string.ascii_letters + string.digits + "-_"
+#: No hyphen, deliberately. A composite connection id joins two ids with ``---``, so a key ending
+#: in a hyphen made that separator ambiguous — and about one key in sixty-four did. The parser
+#: still accepts one, because repositories already hold them; nothing mints another.
+_ID_ALPHABET = string.ascii_letters + string.digits + "_"
+
+#: Seven, not six, because the alphabet lost a symbol. Six of sixty-four was ~36 bits; seven of
+#: sixty-three is ~41.8, so the change buys collision headroom rather than spending it. Nothing
+#: reads a fixed length — every id grammar in the codebase quantifies the key with ``+`` or
+#: ``{4,}`` — so this is the one number to change when more entropy is wanted.
+_RANDOM_LENGTH = 7
 
 
 def slugify(value: str) -> str:
@@ -54,7 +63,7 @@ def slugify(value: str) -> str:
     return s or "entity"
 
 
-def generate_entity_id(prefix: str, friendly_name: str, *, random_length: int = 6) -> str:
+def generate_entity_id(prefix: str, friendly_name: str, *, random_length: int = _RANDOM_LENGTH) -> str:
     """Generate an artifact-id in the new convention: TYPE@epoch.random.friendly-name"""
     epoch = epoch_seconds()
     random_part = "".join(secrets.choice(_ID_ALPHABET) for _ in range(random_length))
@@ -96,7 +105,7 @@ def prefix_for_diagram_type(diagram_type: str) -> str:
     return "DGM"
 
 
-def generate_diagram_id(diagram_type: str, friendly_name: str, *, random_length: int = 6) -> str:
+def generate_diagram_id(diagram_type: str, friendly_name: str, *, random_length: int = _RANDOM_LENGTH) -> str:
     """Generate a typed diagram artifact-id from diagram_type + friendly name."""
     return generate_entity_id(
         prefix_for_diagram_type(diagram_type),
