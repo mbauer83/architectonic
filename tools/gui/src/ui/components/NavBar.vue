@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { browseTarget } from './NavBar.helpers'
 import { computed, inject, onMounted, ref } from 'vue'
 import { Effect } from 'effect'
 import { modelServiceKey } from '../keys'
@@ -29,14 +30,7 @@ const router = useRouter()
 // the host path.
 const viewpointDriven = computed(() => Boolean(route.query.viewpoint))
 
-const browseTo = computed(() => {
-  const q: Record<string, string> = {}
-  const { domain, view, type } = route.query
-  if (domain) q.domain = domain as string
-  if (view) q.view = view as string
-  if (type) q.type = type as string
-  return Object.keys(q).length ? { path: '/entities', query: q } : '/entities'
-})
+const browseTo = computed(() => browseTarget(route.path, route.query))
 
 const searchQuery = ref('')
 type SearchDropdownHit = SearchHit | {
