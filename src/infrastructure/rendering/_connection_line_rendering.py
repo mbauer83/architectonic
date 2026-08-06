@@ -18,6 +18,7 @@ from src.infrastructure.rendering.archimate_relation_rendering import (
     format_influence_polarity,
     format_specializations_guillemet,
 )
+from src.infrastructure.rendering.diagram_connection_overlay import EndpointRouter
 
 
 def render_connection_lines(
@@ -34,6 +35,7 @@ def render_connection_lines(
     nesting_conn_types: frozenset[str],
     connection_info: Callable[[str], ConnectionTypeInfo | None],
     visible_label: Callable[[ConnectionRecord], str],
+    endpoint_aliases: EndpointRouter,
 ) -> list[str]:
     conn_lines: list[str] = []
     for conn in connections:
@@ -49,8 +51,9 @@ def render_connection_lines(
                 continue
             # Not nested visually (e.g. the member belongs to an authored group,
             # which wins) — the relation must still be EXPRESSED: draw its arrow.
-        src = alias_by_id.get(conn.source)
-        tgt = alias_by_id.get(conn.target)
+        # Which *drawing* of each endpoint this arrow attaches to — the base one unless the
+        # diagram named an occurrence, which is the only way a second drawing gets its own edges.
+        src, tgt = endpoint_aliases(conn)
         if not src or not tgt:
             continue
         direction: str | None = layout_direction_hints.get((src, tgt))

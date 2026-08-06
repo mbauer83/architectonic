@@ -30,6 +30,10 @@ from src.infrastructure.rendering.archimate_occurrences import occurrence_entiti
 from src.infrastructure.rendering.archimate_relation_rendering import (
     format_multiplicity_label,
 )
+from src.infrastructure.rendering.diagram_connection_overlay import (
+    endpoint_router,
+    occurrence_alias_by_id,
+)
 from src.infrastructure.rendering.generic_puml_layout import build_generic_visual_nesting
 from src.infrastructure.rendering.puml_safety import (
     configured_puml_size_warning_threshold,
@@ -72,7 +76,8 @@ class GenericPumlRenderer:
 
         entity_by_id = {entity.artifact_id: entity for entity in entities}
         render_entities = list(entities)
-        render_entities.extend(occurrence_entities(diagram_entities, entity_by_id))
+        occurrences = occurrence_entities(diagram_entities, entity_by_id)
+        render_entities.extend(occurrences)
 
         alias_by_id = {
             entity.artifact_id: normalize_puml_alias(entity.display_alias)
@@ -293,6 +298,11 @@ class GenericPumlRenderer:
             nesting_conn_types=self._nesting_conn_types(),
             connection_info=self._connection_info,
             visible_label=lambda conn: self.visible_connection_label(conn, diagram_connections),
+            endpoint_aliases=endpoint_router(
+                diagram_connections,
+                alias_by_id=alias_by_id,
+                alias_by_occurrence=occurrence_alias_by_id(occurrences),
+            ),
         )
         if conn_lines:
             lines.append("' Connections")

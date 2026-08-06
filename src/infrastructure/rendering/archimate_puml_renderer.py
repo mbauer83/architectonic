@@ -3,10 +3,10 @@ from __future__ import annotations
 from collections.abc import Mapping
 from pathlib import Path
 
-from src.domain.artifact_id import stable_conn_id
 from src.domain.ontology_representation.artifact_types import ConnectionRecord
 from src.domain.ontology_representation.ontology_protocol import DiagramRendererReferences
 from src.infrastructure.rendering.archimate_relation_rendering import format_multiplicity_label
+from src.infrastructure.rendering.diagram_connection_overlay import connection_overlay
 from src.infrastructure.rendering.generic_puml_renderer import GenericPumlRenderer
 
 
@@ -18,7 +18,7 @@ class ArchimatePumlRenderer(GenericPumlRenderer):
         conn: ConnectionRecord,
         diagram_connections: list[dict[str, object]] | None = None,
     ) -> str:
-        spec = _connection_annotation_spec(conn.artifact_id, diagram_connections)
+        spec = connection_overlay(conn.artifact_id, diagram_connections)
         if spec is None:
             base = super().visible_connection_label(conn, diagram_connections)
             # An influence's short description IS the arrow's meaning ("when
@@ -66,14 +66,3 @@ class ArchimatePumlRenderer(GenericPumlRenderer):
         return DiagramRendererReferences(connection_ids=tuple(connection_ids))
 
 
-def _connection_annotation_spec(
-    artifact_id: str,
-    diagram_connections: list[dict[str, object]] | None,
-) -> dict[str, object] | None:
-    for item in diagram_connections or []:
-        if not isinstance(item, dict):
-            continue
-        current = str(item.get("artifact_id") or item.get("connection_id") or "").strip()
-        if stable_conn_id(current) == stable_conn_id(artifact_id):
-            return item
-    return None

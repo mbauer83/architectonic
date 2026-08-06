@@ -656,3 +656,49 @@ rectangle "<$archimate_Process{scale=1.5}> Proc" <<Process>> as PROC_A
     assert "skinparam rectangle<<Process>>" in result
     assert "sprite $archimate_Process" in result
     assert "!include ../_archimate-glyphs.puml" not in result
+
+
+def test_a_connection_attaches_to_the_occurrence_the_diagram_names(tmp_path: Path) -> None:
+    """An occurrence with no edges of its own is a copy, not a second drawing.
+
+    Drawing an entity twice was already possible, but every arrow resolved through the entity-keyed
+    alias map, so both drawings shared one set of edges and the second could only ever sit there
+    unconnected. `diagram-connections` now says which drawing an arrow attaches to.
+    """
+    renderer = GenericPumlRenderer(_ARCHIMATE_CONFIG)
+    repo = _entity("BOB@1.a.repo", "business-object", "Repository", "BOB_REPO", domain="business")
+    process = _entity("PRC@1.a.promote", "process", "Promote", "PRC_PROMOTE", domain="business")
+    conn = _conn(process.artifact_id, repo.artifact_id, "archimate-access")
+
+    puml = renderer.render_body(
+        "Repository Occurrences",
+        [repo, process],
+        [conn],
+        "archimate-business",
+        tmp_path,
+        diagram_entities={"occurrence": [{"id": "repo-right", "backing_entity_id": repo.artifact_id}]},
+        diagram_connections=[{"artifact_id": conn.artifact_id, "target-occurrence": "repo-right"}],
+    )
+
+    conn_lines = [line for line in puml.splitlines() if "PRC_PROMOTE" in line and "BOB_REPO" in line]
+    assert conn_lines, "the arrow was dropped entirely"
+    assert all("BOB_REPO__2" in line for line in conn_lines), conn_lines
+
+
+def test_an_unknown_occurrence_still_draws_the_relation(tmp_path: Path) -> None:
+    """A stale overlay must not swallow an arrow: the relation is model truth, the routing is not."""
+    renderer = GenericPumlRenderer(_ARCHIMATE_CONFIG)
+    repo = _entity("BOB@1.a.repo", "business-object", "Repository", "BOB_REPO", domain="business")
+    process = _entity("PRC@1.a.promote", "process", "Promote", "PRC_PROMOTE", domain="business")
+    conn = _conn(process.artifact_id, repo.artifact_id, "archimate-access")
+
+    puml = renderer.render_body(
+        "Repository Occurrences",
+        [repo, process],
+        [conn],
+        "archimate-business",
+        tmp_path,
+        diagram_connections=[{"artifact_id": conn.artifact_id, "target-occurrence": "deleted-one"}],
+    )
+
+    assert any("PRC_PROMOTE" in line and "BOB_REPO" in line for line in puml.splitlines())
