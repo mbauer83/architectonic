@@ -75,9 +75,9 @@ class AssuranceArchRefRespellStep:
         uow: OperationalTargetUnitOfWork,
         findings: list[UpgradeFinding],
     ) -> list[AppliedFinding]:
+        respellings = self._respellings(view)
         outcomes: list[AppliedFinding] = []
         for finding in findings:
-            respellings = self._respellings(view)
             if not respellings:
                 outcomes.append(AppliedFinding(finding=finding, outcome="skipped", detail="already current"))
                 continue
