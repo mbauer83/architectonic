@@ -11,6 +11,10 @@
  * diagram does not draw is one the renderer silently ignores, so offering the choice would be
  * offering a way to get nothing.
  *
+ * The picker deliberately does NOT hide entities already placed elsewhere. The same entity belongs
+ * in two boxes often enough — and an entity drawn twice belongs in a different box per drawing — so
+ * hiding it removed the very choice this panel exists to offer.
+ *
  * The panel never asks how a box should look: the backend derives that from the members — one domain
  * gives that domain's look, several give the dashed ArchiMate grouping look — so a picker here would
  * be a way to contradict the members.
@@ -19,7 +23,6 @@ import { computed } from 'vue'
 import EntityPickerInput from './EntityPickerInput.vue'
 import type { EntityDisplayInfo } from '../../domain/schemas/entities'
 import type { AuthoredGrouping } from '../../domain/authoredGrouping'
-import { claimedMemberIds } from '../../domain/authoredGrouping'
 
 const props = defineProps<{
   /** The current boxes, outermost first. */
@@ -32,13 +35,18 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:modelValue': [readonly AuthoredGrouping[]]
-  /** A picked entity the diagram does not draw yet; the view adds it. */
-  'add-entity': [EntityDisplayInfo]
+  /**
+   * Put this entity in box *groupIndex*.
+   *
+   * Which drawing of it the box gets — the first one, or a new one because the diagram already
+   * draws it elsewhere — is a question about the diagram, which this panel does not own. So it
+   * reports what was asked for and the view decides, rather than being handed a callback to ask
+   * with and then announcing the answer back.
+   */
+  'add-member': [groupIndex: number, entity: EntityDisplayInfo]
 }>()
 
 const labelById = computed(() => new Map(props.candidates.map((c) => [c.id, c.label])))
-/** Claimed anywhere, so the picker cannot offer a member already placed in another box. */
-const claimed = computed(() => new Set(claimedMemberIds(props.modelValue)))
 
 const replace = (index: number, group: AuthoredGrouping): void => {
   emit('update:modelValue', props.modelValue.map((g, i) => (i === index ? group : g)))
@@ -57,10 +65,7 @@ const setLabel = (index: number, label: string): void => {
 }
 
 const addMember = (index: number, entity: EntityDisplayInfo): void => {
-  if (!labelById.value.has(entity.artifact_id)) emit('add-entity', entity)
-  const group = props.modelValue[index]
-  if (group['entity-ids'].includes(entity.artifact_id)) return
-  replace(index, { ...group, 'entity-ids': [...group['entity-ids'], entity.artifact_id] })
+  emit('add-member', index, entity)
 }
 
 const removeMember = (index: number, id: string): void => {
@@ -114,7 +119,6 @@ const removeMember = (index: number, id: string): void => {
       </div>
 
       <EntityPickerInput
-        :excluded-ids="claimed"
         :diagram-type="diagramType"
         :viewpoint="viewpoint"
         placeholder="Add entities to this grouping…"

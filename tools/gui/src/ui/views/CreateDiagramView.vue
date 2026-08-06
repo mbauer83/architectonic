@@ -13,11 +13,11 @@ import EntityPickerInput from '../components/EntityPickerInput.vue'
 import DiagramTypeSelect from '../components/DiagramTypeSelect.vue'
 import DiagramTypeConfigPanel from '../components/DiagramTypeConfigPanel.vue'
 import DiagramPreviewPane from '../components/DiagramPreviewPane.vue'
-import ArchimateOccurrenceControls from '../components/ArchimateOccurrenceControls.vue'
 import DiagramGroupingsEditor from '../components/DiagramGroupingsEditor.vue'
 import ViewpointSelect from '../components/ViewpointSelect.vue'
 import { findViewpointBySlug } from '../components/ViewpointSelect.helpers'
 import { isArchimateDiagramType } from '../lib/archimateOccurrences'
+import { useDiagramDrawings } from '../composables/useDiagramDrawings'
 import { useDiagramGroupings } from '../composables/useDiagramGroupings'
 import { loadViewpointSummaries } from '../lib/viewpointSummary'
 
@@ -74,11 +74,21 @@ const includedEntityIds = computed(() => new Set(includedEntities.value.map((e) 
 
 const allModelConns = ref<Map<string, EntityContextConnection>>(new Map())
 const includedConnIds = ref<Set<string>>(new Set())
+
+const drawings = useDiagramDrawings({
+  diagramEntities, write: setDiagramEntities, connections: allModelConns,
+  drawnEntityIds: includedEntityIds,
+})
+const {
+  addEntityOccurrence, removeEntityOccurrence, toggleConnectionAt,
+} = drawings
+
 const {
   groupings: authoredGroupings, candidates: groupingCandidates, forWrite: groupingsForWrite,
-} = useDiagramGroupings(includedEntities)
+  addMember, labelOfDrawing, membersOf, placeBeside,
+} = useDiagramGroupings(includedEntities, diagramEntities)
 
-const selectionRows = computed(() =>
+const baseRows = computed(() =>
   includedEntities.value.map((entity) => ({
     entity,
     newInclusion: highlightedEntityIds.value.has(entity.artifact_id),
@@ -87,6 +97,7 @@ const selectionRows = computed(() =>
     actionTitle: 'Remove entity from diagram',
   })),
 )
+const selectionRows = drawings.rowsFor(baseRows)
 
 const relatedEntitiesById = computed<Record<string, EntityDisplayInfo[]>>(() => {
   const related: Record<string, EntityDisplayInfo[]> = {}
@@ -141,7 +152,13 @@ const refreshDiscovery = async () => {
 }
 
 const addEntity = async (entity: EntityDisplayInfo) => {
-  if (includedEntityIds.value.has(entity.artifact_id)) return
+  if (includedEntityIds.value.has(entity.artifact_id)) {
+    // Picking one the diagram already draws asks for it to be drawn *again* — that is the only
+    // thing the choice could mean now the picker no longer hides it, and silently doing nothing
+    // was worse than the filtering it replaced.
+    addEntityOccurrence(entity)
+    return
+  }
   includedEntities.value.push(entity)
   highlightedEntityIds.value = new Set(highlightedEntityIds.value).add(entity.artifact_id)
   expandedRelatedEntityIds.value = new Set(expandedRelatedEntityIds.value)
@@ -154,6 +171,48 @@ const addEntity = async (entity: EntityDisplayInfo) => {
     }
   }
   includedConnIds.value = nextConnIds
+}
+
+/**
+ * Put an entity in a box, and connect it to what that box already holds.
+ *
+ * Which drawing the box gets: the diagram's first one if it does not draw the entity yet, and a new
+ * one if it does — a box never silently relocates a drawing placed elsewhere. Then the member is
+ * wired to the drawings *inside* the box rather than to whichever copy sits elsewhere, because a
+ * box should read as a unit.
+ */
+const onAddMember = async (groupIndex: number, entity: EntityDisplayInfo) => {
+  const { memberId, isNew } = drawings.drawingForBox(entity)
+  if (isNew) await addEntity(entity)
+  addMember(groupIndex, memberId)
+  await refreshDiscovery()
+  const inThisBox = new Set(membersOf(groupIndex))
+  for (const conn of allModelConns.value.values()) {
+    const otherId = conn.source === entity.artifact_id ? conn.target
+      : conn.target === entity.artifact_id ? conn.source : null
+    if (otherId === null) continue
+    const theirDrawing = drawings.drawingsOf(otherId).find(
+      (id) => inThisBox.has(id ?? otherId) && (id ?? otherId) !== memberId,
+    )
+    if (theirDrawing === undefined) continue
+    drawings.drawBetween(conn.artifact_id, entity.artifact_id, memberId === entity.artifact_id ? null : memberId, theirDrawing)
+    includedConnIds.value = new Set(includedConnIds.value).add(conn.artifact_id)
+  }
+}
+
+/**
+ * From a drawing's Related card the neighbour joins *that* drawing — its copy of the cluster, and
+ * its box. Reached from inside a box, landing outside it is not what the click offered.
+ */
+const addRelatedEntity = async (
+  entity: EntityDisplayInfo, viaEntityId: string, occurrenceId: string | null,
+) => {
+  await addEntity(entity)
+  placeBeside(occurrenceId ?? viaEntityId, entity.artifact_id)
+  if (!occurrenceId) return
+  for (const id of drawings.connectionsJoining(entity.artifact_id, viaEntityId)) {
+    drawings.drawOnlyAt(id, viaEntityId, occurrenceId)
+  }
 }
 
 const removeEntity = (artifactId: string) => {
@@ -173,6 +232,7 @@ const removeEntity = (artifactId: string) => {
     if (c && (c.source === artifactId || c.target === artifactId)) nextConnIds.delete(id)
   }
   includedConnIds.value = nextConnIds
+  drawings.forgetEntityDrawings(artifactId)
   void refreshDiscovery()
 }
 
@@ -183,17 +243,19 @@ const toggleConnections = (entityId: string) => {
   expandedConnectionEntityIds.value = next
 }
 
-const toggleRelated = (entityId: string) => {
+const toggleRelated = (key: string) => {
   const next = new Set(expandedRelatedEntityIds.value)
-  if (next.has(entityId)) next.delete(entityId)
-  else next.add(entityId)
+  if (next.has(key)) next.delete(key)
+  else next.add(key)
   expandedRelatedEntityIds.value = next
 }
 
-const toggleConnection = (id: string) => {
+const toggleConnection = (id: string, entityId: string, occurrenceId: string | null) => {
+  const outcome = toggleConnectionAt(id, entityId, occurrenceId, includedConnIds.value.has(id))
+  if (outcome === 'unchanged') return
   const next = new Set(includedConnIds.value)
-  if (next.has(id)) next.delete(id)
-  else next.add(id)
+  if (outcome === 'include') next.add(id)
+  else next.delete(id)
   includedConnIds.value = next
 }
 
@@ -347,23 +409,11 @@ watch(diagramType, () => {
         />
 
         <div
-          v-if="isArchimateDiagramType(diagramType) && includedEntities.length"
-          class="form-row"
-        >
-          <ArchimateOccurrenceControls
-            :diagram-entities="diagramEntities"
-            :entities="includedEntities"
-            @change="setDiagramEntities"
-          />
-        </div>
-
-        <div
           v-if="uiConfig?.entity_search_filter !== false"
           class="form-row"
         >
           <label class="lbl">Add Entities</label>
           <EntityPickerInput
-            :excluded-ids="includedEntityIds"
             :diagram-type="diagramType"
             :viewpoint="viewpointSlug ?? undefined"
             @select="addEntity"
@@ -383,10 +433,15 @@ watch(diagramType, () => {
             :related-entities-by-id="relatedEntitiesById"
             :expanded-connection-entity-ids="[...expandedConnectionEntityIds]"
             :expanded-related-entity-ids="[...expandedRelatedEntityIds]"
+            :diagram-entities="diagramEntities"
+            :occurrences-supported="isArchimateDiagramType(diagramType)"
+            :group-label-of="labelOfDrawing"
+            @add-occurrence="addEntityOccurrence"
+            @remove-occurrence="removeEntityOccurrence"
             @toggle-connections="toggleConnections"
             @toggle-related="toggleRelated"
             @toggle-connection="toggleConnection"
-            @add-related-entity="addEntity"
+            @add-related-entity="addRelatedEntity"
             @entity-action="removeEntity"
           />
         </div>
@@ -397,7 +452,7 @@ watch(diagramType, () => {
             :candidates="groupingCandidates"
             :diagram-type="diagramType"
             :viewpoint="viewpointSlug ?? undefined"
-            @add-entity="addEntity"
+            @add-member="onAddMember"
           />
         </div>
 

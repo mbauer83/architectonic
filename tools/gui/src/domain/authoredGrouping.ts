@@ -26,6 +26,49 @@ export const claimedMemberIds = (groups: readonly AuthoredGrouping[]): ReadonlyS
   return claimed
 }
 
+/**
+ * Drawing id → the label of the box holding it, innermost box winning.
+ *
+ * A drawing sits in at most one box, and the Included Entities list has to say which: without it
+ * you cannot tell the drawing that is inside a box from one that is loose beside it, which is
+ * exactly the state that reads as "nothing happened" when you place an entity in a group.
+ */
+export const groupLabelByMember = (
+  groups: readonly AuthoredGrouping[],
+): ReadonlyMap<string, string> => {
+  const labels = new Map<string, string>()
+  const walk = (group: AuthoredGrouping): void => {
+    for (const id of group['entity-ids']) labels.set(id, group.label)
+    for (const nested of group.groups ?? []) walk(nested)
+  }
+  for (const group of groups) walk(group)
+  return labels
+}
+
+/** The drawings one box holds directly, in the order it holds them. */
+export const membersOfGroup = (group: AuthoredGrouping | undefined): readonly string[] =>
+  group?.['entity-ids'] ?? []
+
+/**
+ * Put *memberId* in the box that holds *hostId*, at whatever depth that box sits.
+ *
+ * What "add this from inside the box" means: a neighbour pulled in from a drawing that lives in a
+ * box joins that box, or it lands loose outside the very grouping it was reached through. Returns
+ * the groups unchanged when the host is in no box — reaching a neighbour from a loose drawing
+ * places nothing.
+ */
+export const withMemberBeside = (
+  groups: readonly AuthoredGrouping[], hostId: string, memberId: string,
+): readonly AuthoredGrouping[] =>
+  groups.map((group) => {
+    const members = group['entity-ids']
+    if (members.includes(hostId)) {
+      return members.includes(memberId) ? group : { ...group, 'entity-ids': [...members, memberId] }
+    }
+    const nested = group.groups ? withMemberBeside(group.groups, hostId, memberId) : undefined
+    return nested === group.groups || nested === undefined ? group : { ...group, groups: [...nested] }
+  })
+
 /** Drop groups that would draw nothing, at any depth — an empty box is noise, not a statement. */
 export const withoutEmptyGroups = (
   groups: readonly AuthoredGrouping[],

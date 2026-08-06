@@ -22,6 +22,31 @@ export const occurrenceItems = (diagramEntities: Record<string, unknown>): Archi
   )
 }
 
+/**
+ * Identifies one *drawing* of an entity.
+ *
+ * Expansion state, and every other per-row concern, is per drawing rather than per entity: an
+ * entity drawn twice has two rows, and opening one must not open the other.
+ */
+export const drawingKey = (entityId: string, occurrenceId: string | null): string =>
+  `${entityId}::${occurrenceId ?? 'base'}`
+
+/** Every extra drawing of *entityId*, in the order the diagram declares them. */
+export const occurrencesOf = (
+  diagramEntities: Record<string, unknown>,
+  entityId: string,
+): ArchimateOccurrence[] =>
+  occurrenceItems(diagramEntities).filter((item) => item.backing_entity_id === entityId)
+
+/** "2nd", "3rd", … — how a drawing is named to the reader. The base drawing is unnamed. */
+export const occurrenceOrdinal = (index: number): string => {
+  const position = index + 2
+  const suffix = position % 10 === 1 && position % 100 !== 11 ? 'st'
+    : position % 10 === 2 && position % 100 !== 12 ? 'nd'
+      : position % 10 === 3 && position % 100 !== 13 ? 'rd' : 'th'
+  return `${position}${suffix}`
+}
+
 export const occurrenceCount = (
   diagramEntities: Record<string, unknown>,
   entityId: string,
@@ -45,19 +70,28 @@ const nextOccurrenceId = (
   return candidate
 }
 
+/** Draw *entity* once more, handing back the new drawing's id along with the diagram. */
+export const addOccurrenceFor = (
+  diagramEntities: Record<string, unknown>,
+  entity: OccurrenceEntity,
+): { diagramEntities: Record<string, unknown>, occurrenceId: string } => {
+  const occurrenceId = nextOccurrenceId(diagramEntities, entity)
+  return {
+    occurrenceId,
+    diagramEntities: {
+      ...diagramEntities,
+      occurrence: [
+        ...occurrenceItems(diagramEntities),
+        { id: occurrenceId, backing_entity_id: entity.artifact_id },
+      ],
+    },
+  }
+}
+
 export const addOccurrence = (
   diagramEntities: Record<string, unknown>,
   entity: OccurrenceEntity,
-): Record<string, unknown> => ({
-  ...diagramEntities,
-  occurrence: [
-    ...occurrenceItems(diagramEntities),
-    {
-      id: nextOccurrenceId(diagramEntities, entity),
-      backing_entity_id: entity.artifact_id,
-    },
-  ],
-})
+): Record<string, unknown> => addOccurrenceFor(diagramEntities, entity).diagramEntities
 
 export const removeOccurrence = (
   diagramEntities: Record<string, unknown>,

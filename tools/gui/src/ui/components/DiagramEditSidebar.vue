@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * Diagram-edit view's right sidebar: viewpoint selector, entity search, diagram-type
- * config panel, ArchiMate occurrence controls, the included-entities selection list, the
+ * config panel, the included-entities selection list (one row per drawing), the
  * pending-removal list, and the preview/save action pair (mirrored from the header — same
  * emitted events drive both). Almost entirely a layout/plumbing wrapper over
  * already-existing child components; owns no state of its own beyond what's passed in.
@@ -12,7 +12,6 @@ import type {
 import ArchimateTypeGlyph from './ArchimateTypeGlyph.vue'
 import EntityPickerInput from './EntityPickerInput.vue'
 import DiagramTypeConfigPanel from './DiagramTypeConfigPanel.vue'
-import ArchimateOccurrenceControls from './ArchimateOccurrenceControls.vue'
 import EntitySelectionList, { type EntityRow } from './EntitySelectionList.vue'
 import ViewpointSelect from './ViewpointSelect.vue'
 import { toGlyphKey } from '../lib/glyphKey'
@@ -34,6 +33,8 @@ defineProps<{
   relatedEntitiesById: Record<string, EntityDisplayInfo[]>
   expandedConnectionEntityIds: string[]
   expandedRelatedEntityIds: string[]
+  /** The box a drawing sits in — the list shows it beside the name. */
+  groupLabelOf?: (drawingId: string) => string | undefined
   toRemoveEntities: EntityDisplayInfo[]
   previewRunning: boolean
   previewDisabled: boolean
@@ -46,12 +47,14 @@ const emit = defineEmits<{
   'update:viewpointSlug': [value: string | null]
   'select-viewpoint': [viewpoint: ViewpointSummary | null]
   'add-entity': [entity: EntityDisplayInfo]
+  'add-related-entity': [entity: EntityDisplayInfo, viaEntityId: string, occurrenceId: string | null]
   'diagram-entities-change': [patch: Record<string, unknown>]
   'diagram-connections-change': [connections: DiagramConnection[]]
-  'occurrence-change': [next: Record<string, unknown>]
+  'add-occurrence': [entity: EntityDisplayInfo]
+  'remove-occurrence': [occurrenceId: string]
   'toggle-connections': [entityId: string]
   'toggle-related': [entityId: string]
-  'toggle-connection': [connId: string]
+  'toggle-connection': [connId: string, entityId: string, occurrenceId: string | null]
   'entity-action': [entityId: string]
   'restore-entity': [entityId: string]
   preview: []
@@ -76,7 +79,6 @@ const emit = defineEmits<{
       class="sb-search"
     >
       <EntityPickerInput
-        :excluded-ids="effectiveEntityIds"
         :diagram-type="diagramType"
         :viewpoint="viewpointSlug ?? undefined"
         @select="emit('add-entity', $event)"
@@ -95,17 +97,6 @@ const emit = defineEmits<{
       />
 
       <div
-        v-if="isArchimateDiagramType(diagramType) && effectiveEntitiesList.length"
-        class="sb-section sb-section--pad"
-      >
-        <ArchimateOccurrenceControls
-          :diagram-entities="typeEntityData"
-          :entities="effectiveEntitiesList"
-          @change="emit('occurrence-change', $event)"
-        />
-      </div>
-
-      <div
         v-if="uiConfig?.entity_search_filter !== false && effectiveEntitiesList.length"
         class="sb-section"
       >
@@ -121,11 +112,17 @@ const emit = defineEmits<{
             :related-entities-by-id="relatedEntitiesById"
             :expanded-connection-entity-ids="expandedConnectionEntityIds"
             :expanded-related-entity-ids="expandedRelatedEntityIds"
+            :diagram-entities="typeEntityData"
+            :occurrences-supported="isArchimateDiagramType(diagramType)"
+            :group-label-of="groupLabelOf"
             @toggle-connections="emit('toggle-connections', $event)"
             @toggle-related="emit('toggle-related', $event)"
-            @toggle-connection="emit('toggle-connection', $event)"
-            @add-related-entity="emit('add-entity', $event)"
+            @toggle-connection="(id, entityId, occurrenceId) => emit('toggle-connection', id, entityId, occurrenceId)"
+            @add-related-entity="(entity, viaEntityId, occurrenceId) =>
+              emit('add-related-entity', entity, viaEntityId, occurrenceId)"
             @entity-action="emit('entity-action', $event)"
+            @add-occurrence="emit('add-occurrence', $event)"
+            @remove-occurrence="emit('remove-occurrence', $event)"
           />
         </div>
       </div>

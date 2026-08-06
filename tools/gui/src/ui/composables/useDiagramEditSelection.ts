@@ -5,6 +5,7 @@ import type {
   DiagramConnection, DiagramContext, EntityContextConnection, EntityDisplayInfo, DiagramContextEntity,
 } from '../../domain'
 import { stableConnectionId } from '../../domain/artifactId'
+import { useDiagramDrawings } from './useDiagramDrawings'
 
 /**
  * Owns the diagram-edit view's whole entity/connection selection & neighbor-discovery
@@ -19,8 +20,12 @@ export function useDiagramEditSelection(options: {
   svc: ModelService
   diagramType: Ref<string | undefined>
   viewpointSlug: Ref<string | null>
+  /** The diagram's own data — which drawings it holds, and which of them owns each connection. */
+  typeEntityData: Ref<Record<string, unknown>>
+  /** How to write that back; the view owns it, because the write path reads it from there. */
+  mergeTypeEntityData: (patch: Record<string, unknown>) => void
 }) {
-  const { svc, diagramType, viewpointSlug } = options
+  const { svc, diagramType, viewpointSlug, typeEntityData, mergeTypeEntityData } = options
 
   // The looser list-row types, deliberately: the context read fills both with its own stricter
   // rows, and a diagram-type editor then replaces the connections with ones it built itself.
@@ -47,12 +52,52 @@ export function useDiagramEditSelection(options: {
     return s
   })
 
+  const drawings = useDiagramDrawings({
+    diagramEntities: typeEntityData, write: mergeTypeEntityData, connections: allModelConns,
+    drawnEntityIds: effectiveEntityIds,
+  })
+
   const effectiveEntitiesList = computed(() => [
     ...includedEntities.value.filter((e) => !toRemoveEntityIds.value.has(e.artifact_id)),
     ...entitiesToAdd.value,
   ])
 
-  const selectionRows = computed(() =>
+  /**
+   * Putting a drawing in the box another sits in.
+   *
+   * The boxes are authored beside this state and need the entity list this holds, so the one
+   * operation this needs from them arrives once both exist rather than as a constructor argument.
+   */
+  const placeBeside = ref<(hostId: string, memberId: string) => void>(() => {})
+  const useBoxPlacement = (place: (hostId: string, memberId: string) => void): void => {
+    placeBeside.value = place
+  }
+
+  /**
+   * Connect a drawing that just joined a box to the drawings already inside it.
+   *
+   * A box should read as a unit, so a new member attaches to what is *in* the box rather than to
+   * whichever copy of the same entity sits elsewhere on the picture.
+   */
+  const wireIntoGroup = (
+    entity: EntityDisplayInfo, memberId: string, membersOfBox: readonly string[],
+  ): void => {
+    const inThisBox = new Set(membersOfBox)
+    for (const conn of allModelConns.value.values()) {
+      const otherId = conn.source === entity.artifact_id ? conn.target
+        : conn.target === entity.artifact_id ? conn.source : null
+      if (otherId === null) continue
+      const theirDrawing = drawings.drawingsOf(otherId).find(
+        (id) => inThisBox.has(id ?? otherId) && (id ?? otherId) !== memberId,
+      )
+      if (theirDrawing === undefined) continue
+      const ours = memberId === entity.artifact_id ? null : memberId
+      drawings.drawBetween(conn.artifact_id, entity.artifact_id, ours, theirDrawing)
+      if (!isConnIncluded(conn.artifact_id)) toggleConn(conn.artifact_id)
+    }
+  }
+
+  const baseRows = computed(() =>
     effectiveEntitiesList.value.map((entity) => {
       const isNew = toAddEntityIds.value.has(entity.artifact_id)
       return {
@@ -63,6 +108,22 @@ export function useDiagramEditSelection(options: {
       }
     }),
   )
+  const selectionRows = drawings.rowsFor(baseRows)
+
+  /**
+   * The entity ids a write names: what survives removal, plus what is being added, plus whatever a
+   * diagram-type editor mapped into the diagram's own data itself.
+   */
+  const finalEntityIds = computed(() => {
+    const mapped = typeEntityData.value.entity_ids_mapped
+    return [...new Set([
+      ...includedEntities.value
+        .filter((e) => !toRemoveEntityIds.value.has(e.artifact_id))
+        .map((e) => e.artifact_id),
+      ...entitiesToAdd.value.map((e) => e.artifact_id),
+      ...(Array.isArray(mapped) ? mapped.filter((id): id is string => typeof id === 'string') : []),
+    ])]
+  })
 
   const toRemoveEntities = computed(() =>
     includedEntities.value.filter((e) => toRemoveEntityIds.value.has(e.artifact_id)),
@@ -107,8 +168,12 @@ export function useDiagramEditSelection(options: {
     return related
   })
 
-  const toggleConn = (connId: string): void => {
+  const toggleConn = (connId: string, entityId?: string, occurrenceId?: string | null): void => {
     const included = isConnIncluded(connId)
+    if (entityId) {
+      const outcome = drawings.toggleConnectionAt(connId, entityId, occurrenceId ?? null, included)
+      if (outcome === 'unchanged') return
+    }
     const inIncluded = includedConnIds.value.has(connId)
     const removeItems = included
       ? [...toRemoveConnIds.value, connId]
@@ -127,10 +192,10 @@ export function useDiagramEditSelection(options: {
     expandedConnectionEntityIds.value = next
   }
 
-  const toggleRelated = (entityId: string): void => {
+  const toggleRelated = (key: string): void => {
     const next = new Set(expandedRelatedEntityIds.value)
-    if (next.has(entityId)) next.delete(entityId)
-    else next.add(entityId)
+    if (next.has(key)) next.delete(key)
+    else next.add(key)
     expandedRelatedEntityIds.value = next
   }
 
@@ -170,11 +235,31 @@ export function useDiagramEditSelection(options: {
     void refreshDiscovery()
   }
 
-  const handleEntityAction = (entityId: string): void =>
-    toAddEntityIds.value.has(entityId) ? removeToAddEntity(entityId) : toggleEntityRemoval(entityId)
+  /** From a drawing's Related card the neighbour joins that copy of the cluster — and its box. */
+  const addRelatedEntity = async (
+    entity: EntityDisplayInfo, viaEntityId: string, occurrenceId: string | null,
+  ): Promise<void> => {
+    await addEntity(entity)
+    placeBeside.value(occurrenceId ?? viaEntityId, entity.artifact_id)
+    if (!occurrenceId) return
+    for (const id of drawings.connectionsJoining(entity.artifact_id, viaEntityId)) {
+      drawings.drawOnlyAt(id, viaEntityId, occurrenceId)
+    }
+  }
+
+  const handleEntityAction = (entityId: string): void => {
+    drawings.forgetEntityDrawings(entityId)
+    if (toAddEntityIds.value.has(entityId)) removeToAddEntity(entityId)
+    else toggleEntityRemoval(entityId)
+  }
 
   const addEntity = async (entity: EntityDisplayInfo): Promise<void> => {
-    if (includedEntityIds.value.has(entity.artifact_id) || toAddEntityIds.value.has(entity.artifact_id)) return
+    if (includedEntityIds.value.has(entity.artifact_id) || toAddEntityIds.value.has(entity.artifact_id)) {
+      // Picking one the diagram already draws asks for it to be drawn again — the only thing the
+      // choice can mean now the picker no longer hides it.
+      drawings.addEntityOccurrence(entity)
+      return
+    }
     entitiesToAdd.value = [...entitiesToAdd.value, entity]
     await refreshDiscovery()
     const next = new Set(selectedNewConnIds.value)
@@ -226,7 +311,12 @@ export function useDiagramEditSelection(options: {
     includedEntityIds, toAddEntityIds, effectiveEntityIds, effectiveEntitiesList,
     selectionRows, toRemoveEntities, isConnIncluded, finalConnIds, relatedEntitiesById,
     toggleConn, toggleConnections, toggleRelated, toggleEntityRemoval, removeToAddEntity,
-    handleEntityAction, refreshDiscovery, addEntity, reset, populateFromContext,
+    handleEntityAction, refreshDiscovery, addEntity, addRelatedEntity, reset, populateFromContext,
+    useBoxPlacement, wireIntoGroup, finalEntityIds,
+    addEntityOccurrence: drawings.addEntityOccurrence,
+    removeEntityOccurrence: drawings.removeEntityOccurrence,
+    drawEntityAgain: drawings.drawEntityAgain,
+    drawingForBox: drawings.drawingForBox,
   }
 }
 

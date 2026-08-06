@@ -5,7 +5,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { Effect, Exit } from 'effect'
 import { modelServiceKey, toastKey } from '../keys'
 import type {
-  DiagramContext, DiagramPreviewResult, WriteResult,
+  DiagramContext, DiagramPreviewResult, WriteResult, EntityDisplayInfo,
   DiagramTypeUiConfig, ViewpointSummary, DiagramViewpointProjection,
 } from '../../domain'
 import type { RepoError } from '../../ports/ModelRepository'
@@ -92,11 +92,6 @@ const mergeTypeEntityData = (patch: Record<string, unknown>) => {
   typeEntityPatch.value = { ...typeEntityPatch.value, ...patch }
   previewMutation.reset()
 }
-const setTypeEntityData = (next: Record<string, unknown>) => {
-  baseTypeEntityData.value = next
-  typeEntityPatch.value = {}
-  previewMutation.reset()
-}
 
 watch(diagramDetail, (d) => {
   if (d?.diagram_type === 'matrix') {
@@ -121,7 +116,9 @@ const onMouseDown = (e: MouseEvent) => {
 
 // ── Selection + SVG overlay ──────────────────────────────────────────────────
 
-const selection = useDiagramEditSelection({ svc, diagramType, viewpointSlug })
+const selection = useDiagramEditSelection({
+  svc, diagramType, viewpointSlug, typeEntityData, mergeTypeEntityData,
+})
 const svgContainer = useTemplateRef<HTMLElement>('svgContainer')
 useDiagramEditSvgOverlay({
   svgContainer,
@@ -176,24 +173,19 @@ watch(diagramId, load)
 
 const {
   groupings: authoredGroupings, candidates: groupingCandidates, forWrite: groupingsForWrite,
-} = useDiagramGroupings(selection.effectiveEntitiesList)
-// Seeded from what the diagram already draws: an editor that never saw the existing boxes would
-// replace them on its next save.
-const groupingsLoaded = ref(false)
-watch(diagramDetail, (detail) => {
-  if (!detail || groupingsLoaded.value) return
-  authoredGroupings.value = detail.authored_groupings ?? []
-  groupingsLoaded.value = true
-}, { immediate: true })
+  addMember, labelOfDrawing, membersOf, placeBeside, seedOnce,
+} = useDiagramGroupings(selection.effectiveEntitiesList, typeEntityData)
+selection.useBoxPlacement(placeBeside)
+seedOnce(diagramDetail)
 
-const finalEntityIds = computed(() => {
-  const base = [
-    ...selection.includedEntities.value.filter((e) => !selection.toRemoveEntityIds.value.has(e.artifact_id)).map((e) => e.artifact_id),
-    ...selection.entitiesToAdd.value.map((e) => e.artifact_id),
-  ]
-  const mapped = (typeEntityData.value.entity_ids_mapped as string[] | undefined) ?? []
-  return [...new Set([...base, ...mapped])]
-})
+/** Put an entity in a box: a new drawing if the diagram already draws it, then wire it to the box. */
+const onAddMember = async (index: number, entity: EntityDisplayInfo) => {
+  const { memberId, isNew } = selection.drawingForBox(entity)
+  if (isNew) await selection.addEntity(entity)
+  addMember(index, memberId)
+  selection.wireIntoGroup(entity, memberId, membersOf(index))
+}
+const finalEntityIds = selection.finalEntityIds
 
 const doPreview = () => {
   if (!diagramDetail.value) return
@@ -303,6 +295,7 @@ const saveTitle = computed(() => !previewMutation.result.value ? 'Run Preview fi
       </div>
 
       <DiagramEditSidebar
+        class="sidebar-col"
         :viewpoints="viewpoints"
         :viewpoint-slug="viewpointSlug"
         :ui-config="uiConfig"
@@ -318,6 +311,7 @@ const saveTitle = computed(() => !previewMutation.result.value ? 'Run Preview fi
         :related-entities-by-id="selection.relatedEntitiesById.value"
         :expanded-connection-entity-ids="[...selection.expandedConnectionEntityIds.value]"
         :expanded-related-entity-ids="[...selection.expandedRelatedEntityIds.value]"
+        :group-label-of="labelOfDrawing"
         :to-remove-entities="selection.toRemoveEntities.value"
         :preview-running="previewMutation.running.value"
         :preview-disabled="previewMutation.running.value || !diagramDetail"
@@ -327,15 +321,17 @@ const saveTitle = computed(() => !previewMutation.result.value ? 'Run Preview fi
         :save-error="saveError"
         @update:viewpoint-slug="viewpointSlug = $event"
         @select-viewpoint="onSelectViewpoint"
-        @add-entity="selection.addEntity($event)"
+        @add-entity="selection.addEntity"
+        @add-related-entity="selection.addRelatedEntity"
         @diagram-entities-change="mergeTypeEntityData"
         @diagram-connections-change="selection.diagramConnections.value = $event"
-        @occurrence-change="setTypeEntityData"
-        @toggle-connections="selection.toggleConnections($event)"
-        @toggle-related="selection.toggleRelated($event)"
-        @toggle-connection="selection.toggleConn($event)"
-        @entity-action="selection.handleEntityAction($event)"
-        @restore-entity="selection.toggleEntityRemoval($event)"
+        @add-occurrence="selection.addEntityOccurrence"
+        @remove-occurrence="selection.removeEntityOccurrence"
+        @toggle-connections="selection.toggleConnections"
+        @toggle-related="selection.toggleRelated"
+        @toggle-connection="selection.toggleConn"
+        @entity-action="selection.handleEntityAction"
+        @restore-entity="selection.toggleEntityRemoval"
         @preview="doPreview"
         @save="doSave"
       />
@@ -346,7 +342,7 @@ const saveTitle = computed(() => !previewMutation.result.value ? 'Run Preview fi
           :candidates="groupingCandidates"
           :diagram-type="diagramType"
           :viewpoint="viewpointSlug ?? undefined"
-          @add-entity="selection.addEntity($event)"
+          @add-member="onAddMember"
         />
       </div>
     </div>
@@ -360,7 +356,10 @@ const saveTitle = computed(() => !previewMutation.result.value ? 'Run Preview fi
 </template>
 
 <style scoped>
-.groupings-slot { margin-top: 14px; }
+/* The sidebar spans both rows, so the groupings sit directly under the diagram rather
+   than below a row stretched to the sidebar's full height. */
+.sidebar-col { grid-row: 1 / span 2; }
+.groupings-slot { margin-top: 10px; }
 .page { max-width: 100%; }
 .main-grid { display: grid; grid-template-columns: 1fr 50%; gap: 16px; align-items: start; }
 @media (max-width: 860px) { .main-grid { grid-template-columns: 1fr; } }

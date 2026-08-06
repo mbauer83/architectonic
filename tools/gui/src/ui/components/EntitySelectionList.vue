@@ -2,27 +2,33 @@
 import { computed } from 'vue'
 import type { EntityDisplayInfo, EntityContextConnection } from '../../domain'
 import ArchimateTypeGlyph from './ArchimateTypeGlyph.vue'
+import RelatedEntityPanel from './RelatedEntityPanel.vue'
 import { toGlyphKey } from '../lib/glyphKey'
+import { drawingKey } from '../lib/archimateOccurrences'
+import { connectionsByType, type ConnTypeGroup } from '../lib/rowConnections'
+
+const rowKey = (row: Pick<EntityRow, 'entity' | 'occurrenceId'>): string =>
+  drawingKey(row.entity.artifact_id, row.occurrenceId ?? null)
 
 export type EntityRowActionKind = 'remove' | 'mark-remove'
 
+/**
+ * One row is one *drawing* of an entity, not one entity.
+ *
+ * An entity drawn twice gets two rows, each owning its own connections — which is the only reason
+ * to draw it twice. `occurrenceId` is null for the base drawing, matching what the diagram means by
+ * saying nothing about a connection's routing.
+ */
 export interface EntityRow {
   entity: EntityDisplayInfo
   newInclusion?: boolean
   badgeText?: string
   actionKind?: EntityRowActionKind
   actionTitle?: string
-}
-
-interface ConnEntry {
-  conn: EntityContextConnection
-  direction: 'out' | 'in'
-  otherName: string
-}
-
-interface ConnTypeGroup {
-  included: ConnEntry[]
-  excluded: ConnEntry[]
+  /** Null for the entity's base drawing; an occurrence id for an additional one. */
+  occurrenceId?: string | null
+  /** Which drawing this is, for the reader: "2nd", "3rd". Absent on the base row. */
+  occurrenceOrdinal?: string
 }
 
 const props = defineProps<{
@@ -33,14 +39,24 @@ const props = defineProps<{
   relatedEntitiesById: Record<string, EntityDisplayInfo[]>
   expandedConnectionEntityIds: string[]
   expandedRelatedEntityIds: string[]
+  /** The diagram's own data, for reading which drawing owns each connection endpoint. */
+  diagramEntities?: Record<string, unknown>
+  /** Whether this diagram type can draw an entity more than once. */
+  occurrencesSupported?: boolean
+  /** The box a drawing sits in, if any — without it a boxed drawing reads as a loose one. */
+  groupLabelOf?: (drawingId: string) => string | undefined
 }>()
 
 const emit = defineEmits<{
-  toggleConnections: [entityId: string]
-  toggleRelated: [entityId: string]
-  toggleConnection: [connectionId: string]
-  addRelatedEntity: [entity: EntityDisplayInfo]
+  toggleConnections: [rowKey: string]
+  toggleRelated: [rowKey: string]
+  /** The connection, and the drawing the click came from — which endpoint it routes follows. */
+  toggleConnection: [connectionId: string, entityId: string, occurrenceId: string | null]
+  /** The neighbour, plus the drawing it should be connected to. */
+  addRelatedEntity: [entity: EntityDisplayInfo, viaEntityId: string, occurrenceId: string | null]
   entityAction: [entityId: string]
+  addOccurrence: [entity: EntityDisplayInfo]
+  removeOccurrence: [occurrenceId: string]
 }>()
 
 const entityNames = computed(() =>
@@ -52,30 +68,19 @@ const expandedConnectionIdSet = computed(() => new Set(props.expandedConnectionE
 const expandedRelatedIdSet = computed(() => new Set(props.expandedRelatedEntityIds))
 
 
-const getConnsByType = (entityId: string): Array<[string, ConnTypeGroup]> => {
-  if (!includedEntityIdSet.value.has(entityId)) return []
-  const byType = new Map<string, ConnTypeGroup>()
-  for (const conn of props.candidateConnections) {
-    const isOut = conn.source === entityId
-    const isIn = conn.target === entityId
-    if (!isOut && !isIn) continue
-    if (!includedEntityIdSet.value.has(conn.source) || !includedEntityIdSet.value.has(conn.target)) continue
-    const otherId = isOut ? conn.target : conn.source
-    const entry: ConnEntry = {
-      conn,
-      direction: isOut ? 'out' : 'in',
-      otherName: entityNames.value[otherId] ?? conn.source_name ?? conn.target_name ?? otherId,
-    }
-    if (!byType.has(conn.conn_type)) byType.set(conn.conn_type, { included: [], excluded: [] })
-    const bucket = byType.get(conn.conn_type)!
-    if (includedConnectionIdSet.value.has(conn.artifact_id)) bucket.included.push(entry)
-    else bucket.excluded.push(entry)
-  }
-  return [...byType.entries()]
-}
+const getConnsByType = (row: EntityRow): Array<[string, ConnTypeGroup]> =>
+  connectionsByType({
+    entityId: row.entity.artifact_id,
+    drawing: row.occurrenceId ?? null,
+    candidates: props.candidateConnections,
+    includedEntityIds: includedEntityIdSet.value,
+    includedConnectionIds: includedConnectionIdSet.value,
+    diagramEntities: props.diagramEntities ?? {},
+    nameOf: (id) => entityNames.value[id],
+  })
 
-const hasExcludedConnections = (entityId: string) =>
-  getConnsByType(entityId).some(([, group]) => group.excluded.length > 0)
+const hasExcludedConnections = (row: EntityRow) =>
+  getConnsByType(row).some(([, group]) => group.excluded.length > 0)
 
 const actionLabel = (row: EntityRow) => row.actionKind === 'mark-remove' ? '−' : '×'
 </script>
@@ -84,28 +89,29 @@ const actionLabel = (row: EntityRow) => row.actionKind === 'mark-remove' ? '−'
   <div class="entity-list">
     <div
       v-for="row in rows"
-      :key="row.entity.artifact_id"
+      :key="rowKey(row)"
       class="entity-block"
     >
       <div
         class="entity-row"
         :class="{
           'entity-row--new-inclusion': row.newInclusion,
-          'entity-row--has-excluded': hasExcludedConnections(row.entity.artifact_id),
+          'entity-row--has-excluded': hasExcludedConnections(row),
+          'entity-row--occurrence': !!row.occurrenceId,
         }"
       >
         <button
           class="toggle-btn"
-          :class="{ expanded: expandedConnectionIdSet.has(row.entity.artifact_id) }"
-          :title="expandedConnectionIdSet.has(row.entity.artifact_id) ? 'Hide connections' : 'Show connections'"
-          @click="emit('toggleConnections', row.entity.artifact_id)"
+          :class="{ expanded: expandedConnectionIdSet.has(rowKey(row)) }"
+          :title="expandedConnectionIdSet.has(rowKey(row)) ? 'Hide connections' : 'Show connections'"
+          @click="emit('toggleConnections', rowKey(row))"
         >
           ▶
         </button>
         <button
           class="row-main"
-          :title="expandedConnectionIdSet.has(row.entity.artifact_id) ? 'Hide connections' : 'Show connections'"
-          @click="emit('toggleConnections', row.entity.artifact_id)"
+          :title="expandedConnectionIdSet.has(rowKey(row)) ? 'Hide connections' : 'Show connections'"
+          @click="emit('toggleConnections', rowKey(row))"
         >
           <span
             class="dd-glyph"
@@ -116,7 +122,16 @@ const actionLabel = (row: EntityRow) => row.actionKind === 'mark-remove' ? '−'
               :size="14"
             />
           </span>
-          <span class="entity-name">{{ row.entity.name }}</span>
+          <!-- An occurrence row sits under the entity it copies, so repeating the name says
+               nothing; what the reader needs there is which copy it is and where it sits. -->
+          <span
+            class="entity-name"
+            :class="{ 'entity-name--occ': row.occurrenceId }"
+          >{{ row.occurrenceId ? `${row.occurrenceOrdinal} occurrence` : row.entity.name }}</span>
+          <span
+            v-if="groupLabelOf?.(row.occurrenceId ?? row.entity.artifact_id)"
+            class="entity-group"
+          >in: {{ groupLabelOf(row.occurrenceId ?? row.entity.artifact_id) }}</span>
           <span
             v-if="row.badgeText"
             class="entity-badge"
@@ -124,16 +139,33 @@ const actionLabel = (row: EntityRow) => row.actionKind === 'mark-remove' ? '−'
         </button>
         <button
           class="related-btn"
-          :class="{ expanded: expandedRelatedIdSet.has(row.entity.artifact_id) }"
+          :class="{ expanded: expandedRelatedIdSet.has(rowKey(row)) }"
           :disabled="!relatedEntitiesById[row.entity.artifact_id]?.length"
-          :title="relatedEntitiesById[row.entity.artifact_id]?.length ? 'Show related entities' : 'No related entities available'"
-          @click="emit('toggleRelated', row.entity.artifact_id)"
+          :title="relatedEntitiesById[row.entity.artifact_id]?.length
+            ? 'Show related entities' : 'No related entities available'"
+          @click="emit('toggleRelated', rowKey(row))"
         >
           Related
           <span class="related-count">{{ relatedEntitiesById[row.entity.artifact_id]?.length ?? 0 }}</span>
         </button>
         <button
-          v-if="row.actionKind"
+          v-if="occurrencesSupported && !row.occurrenceId"
+          class="occ-btn"
+          title="Draw this entity again, so it can carry different connections"
+          @click="emit('addOccurrence', row.entity)"
+        >
+          + occurrence
+        </button>
+        <button
+          v-if="row.occurrenceId"
+          class="row-action-btn"
+          title="Remove this occurrence; its connections return to the list"
+          @click="emit('removeOccurrence', row.occurrenceId)"
+        >
+          ×
+        </button>
+        <button
+          v-else-if="row.actionKind"
           class="row-action-btn"
           :title="row.actionTitle ?? ''"
           @click="emit('entityAction', row.entity.artifact_id)"
@@ -143,17 +175,19 @@ const actionLabel = (row: EntityRow) => row.actionKind === 'mark-remove' ? '−'
       </div>
 
       <div
-        v-if="expandedConnectionIdSet.has(row.entity.artifact_id)"
+        v-if="expandedConnectionIdSet.has(rowKey(row))"
         class="entity-panel"
       >
         <div
-          v-if="!getConnsByType(row.entity.artifact_id).length"
+          v-if="!getConnsByType(row).length"
           class="empty-msg"
         >
-          No connections to currently included entities.
+          {{ row.occurrenceId
+            ? 'No unclaimed connections — each is already drawn on another occurrence of this entity.'
+            : 'No connections to currently included entities.' }}
         </div>
         <div
-          v-for="[connType, group] in getConnsByType(row.entity.artifact_id)"
+          v-for="[connType, group] in getConnsByType(row)"
           :key="connType"
           class="conn-type-block"
         >
@@ -170,7 +204,9 @@ const actionLabel = (row: EntityRow) => row.actionKind === 'mark-remove' ? '−'
                 :key="entry.conn.artifact_id"
                 class="conn-entry conn-entry--included"
                 title="Exclude connection"
-                @click="emit('toggleConnection', entry.conn.artifact_id)"
+                @click="emit(
+                  'toggleConnection', entry.conn.artifact_id, row.entity.artifact_id, row.occurrenceId ?? null,
+                )"
               >
                 <span class="dir-arrow">{{ entry.direction === 'out' ? '→' : '←' }}</span>
                 <span class="other-name">{{ entry.otherName }}</span>
@@ -190,8 +226,10 @@ const actionLabel = (row: EntityRow) => row.actionKind === 'mark-remove' ? '−'
                 v-for="entry in group.excluded"
                 :key="entry.conn.artifact_id"
                 class="conn-entry conn-entry--excluded"
-                title="Include connection"
-                @click="emit('toggleConnection', entry.conn.artifact_id)"
+                :title="row.occurrenceId ? 'Draw this connection on this occurrence' : 'Include connection'"
+                @click="emit(
+                  'toggleConnection', entry.conn.artifact_id, row.entity.artifact_id, row.occurrenceId ?? null,
+                )"
               >
                 <span class="dir-arrow">{{ entry.direction === 'out' ? '→' : '←' }}</span>
                 <span class="other-name">{{ entry.otherName }}</span>
@@ -207,46 +245,12 @@ const actionLabel = (row: EntityRow) => row.actionKind === 'mark-remove' ? '−'
         </div>
       </div>
 
-      <div
-        v-if="expandedRelatedIdSet.has(row.entity.artifact_id)"
-        class="entity-panel entity-panel--related"
-      >
-        <div
-          v-if="!relatedEntitiesById[row.entity.artifact_id]?.length"
-          class="empty-msg"
-        >
-          No non-included first-degree related entities.
-        </div>
-        <div
-          v-else
-          class="related-list"
-        >
-          <div
-            v-for="entity in relatedEntitiesById[row.entity.artifact_id]"
-            :key="entity.artifact_id"
-            class="related-row"
-          >
-            <span
-              class="dd-glyph"
-              :title="entity.element_type || entity.artifact_type"
-            >
-              <ArchimateTypeGlyph
-                :type="toGlyphKey(entity.element_type || entity.artifact_type)"
-                :size="13"
-              />
-            </span>
-            <span class="related-name">{{ entity.name }}</span>
-            <span class="related-domain">{{ entity.domain }}</span>
-            <button
-              class="include-btn"
-              title="Include entity"
-              @click="emit('addRelatedEntity', entity)"
-            >
-              +
-            </button>
-          </div>
-        </div>
-      </div>
+      <RelatedEntityPanel
+        v-if="expandedRelatedIdSet.has(rowKey(row))"
+        :entities="relatedEntitiesById[row.entity.artifact_id] ?? []"
+        :occurrence="!!row.occurrenceId"
+        @include="emit('addRelatedEntity', $event, row.entity.artifact_id, row.occurrenceId ?? null)"
+      />
     </div>
   </div>
 </template>
@@ -272,7 +276,18 @@ const actionLabel = (row: EntityRow) => row.actionKind === 'mark-remove' ? '−'
 .entity-name,
 .related-name,
 .other-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.entity-group {
+  font-size: 10px; font-weight: 600; color: #0369a1; background: #e0f2fe;
+  border-radius: 999px; padding: 1px 7px; white-space: nowrap;
+}
+.entity-row--occurrence { margin-left: 18px; border-left: 2px solid #ddd6fe; }
+.occ-btn {
+  padding: 2px 8px; font-size: 11px; color: #6d28d9; background: #f5f3ff;
+  border: 1px solid #ddd6fe; border-radius: 5px; cursor: pointer; white-space: nowrap;
+}
+.occ-btn:hover { background: #ede9fe; }
 .entity-name { flex: 1; font-size: 13px; font-weight: 600; color: #1f2937; }
+.entity-name--occ { font-weight: 500; color: #6d28d9; }
 .entity-badge { font-size: 10px; font-weight: 700; color: #047857; background: #d1fae5; border-radius: 999px; padding: 2px 6px; text-transform: uppercase; letter-spacing: .04em; }
 .related-btn {
   display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 999px;
