@@ -7,106 +7,87 @@ All notable changes to this project are documented here. The format follows
 
 **[Full detail → `changelog-assets/0.3.0-detail.md`](changelog-assets/0.3.0-detail.md)**
 
-Several workspaces can now run on one machine without reaching into each other. Every clone ships
-`backend.port: 8000`, and a socket answering there was taken for "the backend is already running" —
-so an MCP bridge in one checkout proxied a whole session's tool calls, reads and writes alike, into a
-different checkout's model, with every response well-formed.
-
-### Fixed
-
-- **Tracing analyses now see through AND/OR junctions.** A junction was a dead end for every
-  derived-relationship consumer: impact analysis stopped at it, and a requirement realized through an
-  AND-junction was reported **unrealized**. A junction *is* one relationship, split or joined, so it now
-  passes the relationship through unchanged and **certainly** — declared as ontology data (`RJ3`), not
-  evaluator logic, with both legs required to carry one type and the derived endpoint pair required to
-  be permitted, which is where "a junction may only carry a type admissible for every participant"
-  applies. Contrast a grouping, whose members only *potentially* carry the whole's relationship
-  (`PDR12`).
-- **A diagram naming an entity or connection by a former slug is now reported (W305/W306).**
-  `artifact_verify` answered **0 warnings** over 16 stale references across 6 diagrams — identity is the
-  id's stem, so each one resolved, and the connection-file check (W121) never reached a diagram's
-  `entity-ids-used`. Both sides now read one rule, silent when a reference carries no slug at all.
-- **A rename now reaches the confidential assurance store, when it is unlocked.** An assurance reference
-  held the artifact's full id, so a rename left it resolvable but spelled with a name the artifact no
-  longer has, in front of a reader reviewing a safety argument. A registered follower retargets them,
-  matching on the stem so an even older spelling heals; the write path never reaches into the closed
-  tier, and a locked or unconfigured store means no follower and no failure.
-- **A batch item carrying a field its operation does not accept is refused, not performed
-  differently.** Removal is selected by `operation=remove`; an item passing `mode: "remove"` had that
-  field ignored, ran as an update, and reported `wrote: true` for a removal that never happened. Every
-  op now declares its accepted fields, and a stray one fails that item with the list in the message.
-- **A rename inside `artifact_bulk_write` now rewrites the referring files, as a single-entity rename
-  always did.** A batch writes into a copy-on-write staging tree that holds only what has been written,
-  so a *listing* of it had nothing to fall through to: every operation that enumerates rather than
-  naming its paths saw an empty repository, and a batched rename left each referrer naming the old slug
-  — silently, because a stale slug still resolves. Enumeration now goes through the staging overlay,
-  which lists the union of staged and live entries.
-- **A junction may no longer carry a relationship its participants could not hold.** The type table
-  admits all eleven junction-capable types between an element and a junction and has to — which one is
-  admissible depends on what else that junction instance joins — so a model could assert through a
-  junction what it may not assert directly, and derivation now turns that into a relationship the
-  ontology forbids. Two diagnostics, refused at the write boundary as well as reported by the verifier:
-  **E128** when the legs of one intermediate disagree on a type, **E129** when the type is not permitted
-  between every upstream and every downstream participant — both read off `RJ3` rather than restated,
-  and the write path's own weaker copy of the rule is gone.
-- **`entity_ids` on `artifact_edit_diagram` now sets what the diagram draws**, as it always has on create.
-  It rewrote `entity-ids-used` and left the body alone, so a removed entity stayed drawn, went on blocking
-  its own deletion, and the next `auto-sync` recorded it again. The body is regenerated from the stated
-  membership now, and the diagram kinds that own their picture another way refuse it, naming what does.
-- **A grouping's realization now reaches its members, as a visible inference.** A grouping that realizes
-  a requirement is saying its members do — but the eligible-realizer set excludes groupings as structural
-  helpers (rightly: a grouping realizes nothing), so the row found one ineligible realizer and reported a
-  correct model unrealized. Members are now substituted for the container and the row carries
-  `diagnostic_code: potential_realization`, because a relationship of a whole only *potentially* holds of
-  each part (`PDR12`) — unlike a junction, which passes a relationship through certainly and needs no
-  marker. An empty grouping still realizes nothing. Which container this applies to is read from the
-  composition rules rather than written into the traversal.
-- **A client reaches the backend serving its own workspace, or none.** Endpoints are chosen by what a
-  backend reports serving (`GET /api/backend-identity`), not by which port answers. A workspace whose
-  preferred port is held by another instance serves on a port derived from its own repository paths
-  and says so; a port that was *stated* (`--port`, `ARCH_BACKEND_PORT`, `backend.port`) is never moved
-  silently — the command fails and names the occupant.
-- **`arch-backend --status` and `--stop` stay inside their workspace.** A neighbour's backend on the
-  port this workspace would use was reported as running, and a stop request would have signalled it.
-- **`arch-write-cli` refuses to write** to a backend that does not serve the `--repo-root` it was
-  given, rather than trusting a recorded port another instance may have taken over.
-- **`arch-assurance unlock` authorizes only this workspace's backend.** It posts an authorization to
-  the running process, and addressed by port that reached a neighbour's backend — one workspace's
-  unlock ceremony granting access to another workspace's confidential store.
-- The GUI dev proxy and the browser suite follow `ARCH_BACKEND_PORT`, so developing against a second
-  workspace no longer renders the first one's model.
+Several workspaces can now run on one machine without reaching into each other. An entity can be
+drawn more than once on a diagram and connected differently in each place. And `arch-repair upgrade`
+repairs references that name an artifact by a name it no longer has.
 
 ### Added
 
+- **A diagram can draw an entity more than once and connect each drawing differently.** Each drawing
+  gets its own row in Included Entities, with its own connections and its own related-entity list. A
+  relation may be drawn once per pair of drawings, so a cluster duplicated to keep arrows untangled
+  reads as a complete unit in each copy. Existing diagrams are unaffected.
 - **Diagrams can draw labelled boxes the model does not hold, and the boxes style themselves.**
-  `authored_groupings` reaches `artifact_create_diagram`, `artifact_edit_diagram`, the REST write routes
-  and a Groupings panel in the GUI; the key rendered before but was reachable only by hand-editing the
-  file. The look is **derived** — one domain gives that domain's look, several give the ArchiMate
-  grouping notation, now dashed. A member may name an **occurrence id**, so an entity drawn twice sits
-  in a different box each time, and boxes **nest**.
+  `authored_groupings` reaches `artifact_create_diagram`, `artifact_edit_diagram`, the REST write
+  routes and a Groupings panel in the GUI; the key rendered before but was reachable only by
+  hand-editing the file. The look is derived from the members. A member may name an occurrence id, so
+  an entity drawn twice sits in a different box each time, and boxes nest.
+- **`arch-repair upgrade` respells references that name an artifact by a former slug** — in
+  repository files and in the confidential store's architecture references. Dry-run by default,
+  `--commit` to apply; both steps decline where a stem has two current spellings rather than guessing.
 - `--workspace` / `ARCH_MCP_WORKSPACE` for the MCP bridges, for clients that cannot set a working
   directory. A bridge with no backend of its own exits with the reason instead of attaching to one
   that is not its.
-- **A goal realized through the goals it aggregates is no longer a gap.** `motivation-coverage`
-  reported `missing-outcome` on any aggregate goal, penalising the correct decomposition — and the only
-  way to keep such a view green was a direct realization edge onto the apex, a metric shaping the model
-  rather than measuring it. The viewpoint now declares the whole-part edge it composes over (`rollup`),
-  and an aggregate carries its constituents' obligations instead of one of its own, at every level.
+- **A goal realized through the goals it aggregates is no longer a gap.** `motivation-coverage` now
+  declares the whole-part edge it composes over (`rollup`), so an aggregate carries its constituents'
+  obligations instead of one of its own, at every level.
 - **`assurance_guidance` teaches the five UCA guidewords the software applies**, and says why the
-  Handbook's second is split in two. It taught four while the matrix, the wizard and the attribute
-  enum had all moved to five, so an analyst following it under-enumerated. New topic
-  `stpa-loss-scenarios` covers the step that had no guidance at all, both Handbook scenario classes;
-  every STPA answer now states how its six step numbers map onto the Handbook's four.
+  Handbook's second is split in two. New topic `stpa-loss-scenarios` covers the step that had no
+  guidance at all. Every STPA answer states how its six step numbers map onto the Handbook's four.
+
+### Fixed
+
+- **`arch-backend --daemon --port` could fail to start**, because the daemon matched its own launcher
+  as an instance already serving that port. Startup now waits for the process to begin serving rather
+  than for a fixed number of seconds, so a large repository's first index build no longer times out.
+- **A preview now shows the diagram the write will save.** Authored groupings reached both writes and
+  never the preview, and the two rendered different input, so a box was invisible until saved.
+- **Connection ids are no longer minted with a character that breaks them.** A random key ending in
+  `-` made a composite id split in the wrong place, so that connection could not be found from either
+  end. Ids now mint from a hyphen-free alphabet, one character longer to keep the same entropy;
+  existing ids keep working, and nothing needs migrating.
+- **"Browse" no longer carries a diagram type into the entity browser as a filter.** Arriving from a
+  diagram page set the entity-type filter to a value no entity matches, showing an empty list.
+- **Tracing analyses now see through AND/OR junctions.** A junction was a dead end, so a requirement
+  realized through an AND-junction was reported unrealized. It now passes the relationship through
+  unchanged and certainly, declared as ontology data (`RJ3`) rather than evaluator logic.
+- **A junction may no longer carry a relationship its participants could not hold.** Two diagnostics,
+  refused at the write boundary as well as reported: **E128** when the legs of one intermediate
+  disagree on a type, **E129** when the type is not permitted between every participant.
+- **A diagram naming an entity or connection by a former slug is now reported (W305/W306).**
+  `artifact_verify` answered 0 warnings over 16 stale references across 6 diagrams, because identity
+  is the id's stem and each one resolved. Both sides now read one rule.
+- **A rename now reaches the confidential assurance store, when it is unlocked.** A registered
+  follower retargets the stored references, matching on the stem so an older spelling heals too. The
+  write path never reaches into the closed tier; a locked or unconfigured store means no failure.
+- **A batch item carrying a field its operation does not accept is refused, not performed
+  differently.** An item passing `mode: "remove"` had that field ignored, ran as an update, and
+  reported `wrote: true` for a removal that never happened. Every op declares its accepted fields.
+- **A rename inside `artifact_bulk_write` now rewrites the referring files**, as a single-entity
+  rename always did. Enumeration goes through the staging overlay, which lists staged and live
+  entries together; before, a batched rename left every referrer naming the old slug.
+- **`entity_ids` on `artifact_edit_diagram` now sets what the diagram draws**, as it always has on
+  create. A removed entity stayed drawn, blocked its own deletion, and was recorded again by the next
+  `auto-sync`. Diagram kinds that own their picture another way refuse it, naming what does.
+- **A grouping's realization now reaches its members, as a visible inference.** The row carries
+  `diagnostic_code: potential_realization`, because a relationship of a whole only potentially holds
+  of each part (`PDR12`). An empty grouping still realizes nothing.
+- **A client reaches the backend serving its own workspace, or none.** Endpoints are chosen by what a
+  backend reports serving (`GET /api/backend-identity`), not by which port answers.
+- **`arch-write-cli` refuses to write** to a backend that does not serve the `--repo-root` it was
+  given, rather than trusting a recorded port another instance may have taken over.
+- **`arch-assurance unlock` authorizes only this workspace's backend.** Addressed by port, it could
+  reach a neighbour's — one workspace's unlock ceremony granting access to another's store.
+- The GUI dev proxy and the browser suite follow `ARCH_BACKEND_PORT`, so developing against a second
+  workspace no longer renders the first one's model.
 
 ### Breaking — what you must change
 
 - **`artifact_bulk_write` answers with one object for the batch, not a list of items.** Read
-  `payload["items"]` where you read the list. The batch states `operation_id`, `counts`, `item_count`,
-  `failed_count`, `committed` and `refs` — every `_ref` alias against the id it was allocated — once
-  instead of repeating them per item. New `return_mode` defaults to `'summary'` (only items with a
-  warning or error), with `'full'` for every item in input order and `'ids'` for the alias map and
-  counts alone; pass `return_mode='full'` to keep the previous per-item detail. Correlating an alias
-  to its id no longer depends on input order surviving the documented auto-sort.
+  `payload["items"]` where you read the list. New `return_mode` defaults to `'summary'` (only items
+  with a warning or error); pass `return_mode='full'` to keep the previous per-item detail. The batch
+  states `operation_id`, `counts`, `item_count`, `failed_count`, `committed` and `refs` once instead
+  of repeating them per item, so correlating an alias to its id no longer depends on input order.
 
 ## [0.2.1] — 2026-08-04
 
