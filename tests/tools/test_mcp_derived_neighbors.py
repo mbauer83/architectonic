@@ -34,6 +34,7 @@ def _tool():
     return mcp.mcp_read._tool_manager._tools["artifact_query_find_neighbors"].fn
 
 
+@pytest.mark.verifies("REQ@1785945042.cbXjYz")
 def test_returns_derived_neighbor_witness_metadata(repo: Path) -> None:
     component = _entity(repo, "application-component", "Component")
     function = _entity(repo, "function", "Function")

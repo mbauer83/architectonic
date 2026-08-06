@@ -4,6 +4,8 @@ import json
 import tomllib
 from pathlib import Path
 
+import pytest
+
 from src.infrastructure.mcp.mcp_artifact_server import mcp_read, mcp_write
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -46,7 +48,13 @@ def test_checked_in_mcp_configs_use_supported_stdio_entrypoints() -> None:
     assert required_args <= vscode_args
 
 
+@pytest.mark.verifies("REQ@1785945042.cbXjYz")
 def test_read_server_tools_are_marked_read_only() -> None:
+    """The context an agent is served is authoritative; what it builds on it is not.
+
+    Every tool on the read bridge announces itself read-only and non-destructive, so nothing an
+    agent derives can become model content without going through the authoring surfaces.
+    """
     tools = {tool.name: tool for tool in mcp_read._tool_manager.list_tools()}  # type: ignore[attr-defined]
 
     for name, tool in tools.items():
