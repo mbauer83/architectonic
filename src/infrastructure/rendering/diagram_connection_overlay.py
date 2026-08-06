@@ -24,9 +24,9 @@ from src.application.artifacts.parsing import normalize_puml_alias
 from src.domain.artifact_id import stable_conn_id
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
 
-#: Resolves a connection to the pair of aliases its arrow runs between, or None for an endpoint the
-#: diagram does not draw (the caller drops the arrow).
-EndpointRouter = Callable[[ConnectionRecord], tuple[str | None, str | None]]
+#: Resolves a connection to the arrows it draws — one alias pair each. Empty when neither endpoint
+#: is drawn. Usually one pair; more when a duplicated cluster draws the same relation in each copy.
+EndpointRouter = Callable[[ConnectionRecord], list[tuple[str, str]]]
 
 SOURCE_OCCURRENCE_KEY = "source-occurrence"
 TARGET_OCCURRENCE_KEY = "target-occurrence"
@@ -36,14 +36,28 @@ def connection_overlay(
     artifact_id: str,
     diagram_connections: Sequence[Mapping[str, object]] | None,
 ) -> Mapping[str, object] | None:
-    """The diagram's entry for *artifact_id*, matched by stable id."""
-    for item in diagram_connections or []:
-        if not isinstance(item, Mapping):
-            continue
-        current = str(item.get("artifact_id") or item.get("connection_id") or "").strip()
-        if stable_conn_id(current) == stable_conn_id(artifact_id):
-            return item
-    return None
+    """The diagram's first entry for *artifact_id*, matched by stable id.
+
+    First, not only: a connection drawn in two places has an entry per drawing. The label opt-ins
+    are a property of the relation rather than of one arrow, so they are read from whichever entry
+    comes first; the routing keys are read per entry by `connection_overlays`.
+    """
+    entries = connection_overlays(artifact_id, diagram_connections)
+    return entries[0] if entries else None
+
+
+def connection_overlays(
+    artifact_id: str,
+    diagram_connections: Sequence[Mapping[str, object]] | None,
+) -> list[Mapping[str, object]]:
+    """Every entry for *artifact_id* — one per arrow the diagram draws for it."""
+    return [
+        item
+        for item in diagram_connections or []
+        if isinstance(item, Mapping)
+        and stable_conn_id(str(item.get("artifact_id") or item.get("connection_id") or "").strip())
+        == stable_conn_id(artifact_id)
+    ]
 
 
 def occurrence_alias_by_id(render_entities: Sequence[EntityRecord]) -> dict[str, str]:
@@ -70,22 +84,29 @@ def endpoint_router(
     alias_by_id: Mapping[str, str],
     alias_by_occurrence: Mapping[str, str],
 ) -> EndpointRouter:
-    """Resolve each connection's endpoints, honouring an occurrence the diagram named.
+    """Resolve the arrows a connection draws, honouring the occurrences the diagram named.
+
+    One entry means one arrow, which is every diagram that predates this. Several entries mean the
+    relation is drawn once per entry — what a duplicated cluster needs, so each copy reads as a
+    complete unit instead of one copy holding all the arrows.
 
     An occurrence id the diagram does not draw falls back to the base alias rather than dropping the
     arrow: losing a relation is a worse answer to a stale overlay than drawing it in the plain place.
+    Identical pairs collapse, so a diagram cannot stack two arrows in the same place.
     """
 
-    def route(conn: ConnectionRecord) -> tuple[str | None, str | None]:
-        base = (alias_by_id.get(conn.source), alias_by_id.get(conn.target))
-        overlay = connection_overlay(conn.artifact_id, diagram_connections)
-        if overlay is None:
-            return base
-        source_key = str(overlay.get(SOURCE_OCCURRENCE_KEY) or "").strip()
-        target_key = str(overlay.get(TARGET_OCCURRENCE_KEY) or "").strip()
-        return (
-            alias_by_occurrence.get(source_key) or base[0],
-            alias_by_occurrence.get(target_key) or base[1],
-        )
+    def route(conn: ConnectionRecord) -> list[tuple[str, str]]:
+        base_source = alias_by_id.get(conn.source)
+        base_target = alias_by_id.get(conn.target)
+        overlays = connection_overlays(conn.artifact_id, diagram_connections)
+        pairs: list[tuple[str, str]] = []
+        for overlay in overlays or [{}]:
+            source_key = str(overlay.get(SOURCE_OCCURRENCE_KEY) or "").strip()
+            target_key = str(overlay.get(TARGET_OCCURRENCE_KEY) or "").strip()
+            source = alias_by_occurrence.get(source_key) or base_source
+            target = alias_by_occurrence.get(target_key) or base_target
+            if source and target and (source, target) not in pairs:
+                pairs.append((source, target))
+        return pairs
 
     return route

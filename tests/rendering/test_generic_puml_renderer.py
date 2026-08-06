@@ -702,3 +702,58 @@ def test_an_unknown_occurrence_still_draws_the_relation(tmp_path: Path) -> None:
     )
 
     assert any("PRC_PROMOTE" in line and "BOB_REPO" in line for line in puml.splitlines())
+
+
+def test_a_duplicated_cluster_draws_its_internal_relation_in_each_copy(tmp_path: Path) -> None:
+    """Two entities drawn twice to keep arrows untangled must each read as a complete unit.
+
+    "One arrow per relation" is right while only one endpoint is duplicated — two arrows into the
+    same box is the same fact twice. It stops being right when both are: A1→B1 and A2→B2 are
+    different pairings, and forbidding them makes one copy a cluster and the other an orphan.
+    """
+    renderer = GenericPumlRenderer(_ARCHIMATE_CONFIG)
+    left = _entity("PRC@1.a.left", "process", "Left", "PRC_LEFT", domain="business")
+    right = _entity("BOB@1.a.right", "business-object", "Right", "BOB_RIGHT", domain="business")
+    conn = _conn(left.artifact_id, right.artifact_id, "archimate-access")
+
+    puml = renderer.render_body(
+        "Duplicated Cluster",
+        [left, right],
+        [conn],
+        "archimate-business",
+        tmp_path,
+        diagram_entities={
+            "occurrence": [
+                {"id": "left-2", "backing_entity_id": left.artifact_id},
+                {"id": "right-2", "backing_entity_id": right.artifact_id},
+            ]
+        },
+        diagram_connections=[
+            {"artifact_id": conn.artifact_id},
+            {"artifact_id": conn.artifact_id, "source-occurrence": "left-2", "target-occurrence": "right-2"},
+        ],
+    )
+
+    arrows = [line for line in puml.splitlines() if "PRC_LEFT" in line and "BOB_RIGHT" in line and "hidden" not in line]
+    assert any("PRC_LEFT " in line and "BOB_RIGHT" in line and "__2" not in line for line in arrows), arrows
+    assert any("PRC_LEFT__2" in line and "BOB_RIGHT__2" in line for line in arrows), arrows
+
+
+def test_two_entries_asking_for_the_same_pair_draw_one_arrow(tmp_path: Path) -> None:
+    """Stacking two identical arrows in one place says nothing and renders as a thicker line."""
+    renderer = GenericPumlRenderer(_ARCHIMATE_CONFIG)
+    left = _entity("PRC@1.a.left", "process", "Left", "PRC_LEFT", domain="business")
+    right = _entity("BOB@1.a.right", "business-object", "Right", "BOB_RIGHT", domain="business")
+    conn = _conn(left.artifact_id, right.artifact_id, "archimate-access")
+
+    puml = renderer.render_body(
+        "Duplicated Cluster",
+        [left, right],
+        [conn],
+        "archimate-business",
+        tmp_path,
+        diagram_connections=[{"artifact_id": conn.artifact_id}, {"artifact_id": conn.artifact_id}],
+    )
+
+    arrows = [line for line in puml.splitlines() if "PRC_LEFT" in line and "BOB_RIGHT" in line and "hidden" not in line]
+    assert len(arrows) == 1, arrows

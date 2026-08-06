@@ -51,61 +51,60 @@ def render_connection_lines(
                 continue
             # Not nested visually (e.g. the member belongs to an authored group,
             # which wins) — the relation must still be EXPRESSED: draw its arrow.
-        # Which *drawing* of each endpoint this arrow attaches to — the base one unless the
-        # diagram named an occurrence, which is the only way a second drawing gets its own edges.
-        src, tgt = endpoint_aliases(conn)
-        if not src or not tgt:
-            continue
-        direction: str | None = layout_direction_hints.get((src, tgt))
-        if single_domain:
-            src_group = group_index_by_alias.get(src)
-            tgt_group = group_index_by_alias.get(tgt)
-            if direction is None and src_group is not None and tgt_group is not None and src_group != tgt_group:
-                direction = "down" if src_group < tgt_group else "up"
-        else:
-            src_rank = domain_rank_by_alias.get(src)
-            tgt_rank = domain_rank_by_alias.get(tgt)
-            if direction is None and src_rank is not None and tgt_rank is not None and src_rank != tgt_rank:
-                # The ontology's layer order outranks the arrow's natural rank pull.
-                direction = "down" if src_rank < tgt_rank else "up"
-        resolved_specs = [
-            specialization_catalog.get("connection", conn.conn_type, slug) for slug in conn.specializations
-        ]
-        # Primary specialization drives notation (arrow line style, marker); the label
-        # below shows all of them (§15.2 comma-separated list).
-        conn_spec = next((info for info in resolved_specs if info is not None), None)
-        arrow = conn_info.puml_arrow if conn_info else "-->"
-        if is_derived_connection_id(conn.artifact_id):
-            certainty = conn.extra.get("certainty") if isinstance(conn.extra, Mapping) else None
-            arrow = insert_arrow_line_style(arrow, "dashed" if certainty == "certain" else "dotted")
-        elif conn_spec is not None and conn_spec.notation.line_style:
-            arrow = insert_arrow_line_style(arrow, conn_spec.notation.line_style)
-        if direction:
-            arrow = insert_arrow_direction(arrow, direction)
-        override = edge_labels.get(f"{src}:{tgt}") if edge_labels else None
-        if override is not None:
-            label = override
-        else:
-            visible = visible_label(conn)
-            polarity = format_influence_polarity(conn.conn_type, conn.attributes)
-            if polarity:
-                visible = f"{polarity} {visible}".strip()
-            if conn_spec is not None and conn_spec.notation.label_marker:
-                visible = f"{conn_spec.notation.label_marker} {visible}".strip()
-            show_stereo = conn_info.show_stereotype if conn_info is not None else True
-            if show_stereo:
-                label = f"<<{display_connection_label(conn.conn_type)}>>"
-                if visible:
-                    label = f"{label} {visible}"
+        # One arrow per drawing-pair the diagram asks for: the base pair unless it named
+        # occurrences, and more than one when a duplicated cluster draws the relation in each
+        # copy. The pairs are already deduplicated, so no two arrows land in the same place.
+        for src, tgt in endpoint_aliases(conn):
+            direction: str | None = layout_direction_hints.get((src, tgt))
+            if single_domain:
+                src_group = group_index_by_alias.get(src)
+                tgt_group = group_index_by_alias.get(tgt)
+                if direction is None and src_group is not None and tgt_group is not None and src_group != tgt_group:
+                    direction = "down" if src_group < tgt_group else "up"
             else:
-                label = visible
-            guillemet = format_specializations_guillemet(
-                [info.name for info in resolved_specs if info is not None]
-            )
-            if guillemet:
-                label = f"{label} {guillemet}".strip() if label else guillemet
-        if label:
-            conn_lines.append(f"{src} {arrow} {tgt} : {label}")
-        else:
-            conn_lines.append(f"{src} {arrow} {tgt}")
+                src_rank = domain_rank_by_alias.get(src)
+                tgt_rank = domain_rank_by_alias.get(tgt)
+                if direction is None and src_rank is not None and tgt_rank is not None and src_rank != tgt_rank:
+                    # The ontology's layer order outranks the arrow's natural rank pull.
+                    direction = "down" if src_rank < tgt_rank else "up"
+            resolved_specs = [
+                specialization_catalog.get("connection", conn.conn_type, slug) for slug in conn.specializations
+            ]
+            # Primary specialization drives notation (arrow line style, marker); the label
+            # below shows all of them (§15.2 comma-separated list).
+            conn_spec = next((info for info in resolved_specs if info is not None), None)
+            arrow = conn_info.puml_arrow if conn_info else "-->"
+            if is_derived_connection_id(conn.artifact_id):
+                certainty = conn.extra.get("certainty") if isinstance(conn.extra, Mapping) else None
+                arrow = insert_arrow_line_style(arrow, "dashed" if certainty == "certain" else "dotted")
+            elif conn_spec is not None and conn_spec.notation.line_style:
+                arrow = insert_arrow_line_style(arrow, conn_spec.notation.line_style)
+            if direction:
+                arrow = insert_arrow_direction(arrow, direction)
+            override = edge_labels.get(f"{src}:{tgt}") if edge_labels else None
+            if override is not None:
+                label = override
+            else:
+                visible = visible_label(conn)
+                polarity = format_influence_polarity(conn.conn_type, conn.attributes)
+                if polarity:
+                    visible = f"{polarity} {visible}".strip()
+                if conn_spec is not None and conn_spec.notation.label_marker:
+                    visible = f"{conn_spec.notation.label_marker} {visible}".strip()
+                show_stereo = conn_info.show_stereotype if conn_info is not None else True
+                if show_stereo:
+                    label = f"<<{display_connection_label(conn.conn_type)}>>"
+                    if visible:
+                        label = f"{label} {visible}"
+                else:
+                    label = visible
+                guillemet = format_specializations_guillemet(
+                    [info.name for info in resolved_specs if info is not None]
+                )
+                if guillemet:
+                    label = f"{label} {guillemet}".strip() if label else guillemet
+            if label:
+                conn_lines.append(f"{src} {arrow} {tgt} : {label}")
+            else:
+                conn_lines.append(f"{src} {arrow} {tgt}")
     return conn_lines
