@@ -92,6 +92,13 @@ class _DatabaseView:
         finally:
             conn.close()
 
+    def query_column(self, sql: str, parameters: tuple[object, ...] = ()) -> list[object]:
+        conn = self.connect()
+        try:
+            return [row[0] for row in conn.execute(sql, parameters).fetchall()]
+        finally:
+            conn.close()
+
 
 @dataclass(frozen=True)
 class DatabaseTargetHandle:

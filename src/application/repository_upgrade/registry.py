@@ -25,6 +25,7 @@ from src.application.repository_upgrade.steps.schema_file_scan import SchemaFile
 from src.application.repository_upgrade.steps.specialization_declaration_scan import (
     SpecializationDeclarationScanStep,
 )
+from src.application.repository_upgrade.steps.stale_slug_references import StaleSlugReferenceStep
 from src.application.repository_upgrade.steps.unrecognized_structure import UnrecognizedStructureScanStep
 from src.application.repository_upgrade.steps.viewpoint_application_scan import ViewpointApplicationScanStep
 from src.application.repository_upgrade.steps.viewpoint_declaration_scan import ViewpointDeclarationScanStep
@@ -44,8 +45,9 @@ from src.domain.repository.repository_upgrade import StepIdentity
 # re-stamp of a repo that had nothing else to migrate. "3" adds the full-UTC-datetime
 # `last-updated` stamp on top of "2" (named attribute profiles, multiple specializations,
 # connection metadata, AI-BOM default schemata). "4" adds ranked (`x-scale: ordinal`) attribute
-# enums, which change how an existing repo's severity-like values sort.
-FORMAT_CONTRACT_VERSION = "4"
+# enums, which change how an existing repo's severity-like values sort. "5" adds the reference
+# respelling a cascading rename now keeps current, which an older repo never had.
+FORMAT_CONTRACT_VERSION = "5"
 
 
 class StepRegistry:
@@ -83,6 +85,7 @@ def build_registry(selection_resolutions: Mapping[str, SelectionMode] | None = N
     registry.register(ConnectionMetadataScanStep())
     registry.register(ViewpointApplicationScanStep())
     registry.register(ModificationStampDatetimeStep())
+    registry.register(StaleSlugReferenceStep())
     return registry
 
 

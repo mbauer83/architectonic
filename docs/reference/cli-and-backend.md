@@ -263,6 +263,20 @@ any uncommitted edit — byte-for-byte untouched. The diagram-type-internal
 `cardinality_min`/`cardinality_max` participation config is a separate, unrelated concept
 and keeps its name.
 
+**References naming an artifact by a former slug (this release).** Renaming an artifact now
+rewrites every file that names it, and the confidential store's architecture references are
+retargeted alongside. A repository or assurance store written before that carries references
+spelled with titles their artifacts have since dropped. Nothing breaks — identity is the
+`PREFIX@epoch.random` stem, so such a reference resolves correctly — which is why use never
+repairs it: the cost falls on the reader, for whom the slug is the only interpretable part of
+an id. `arch-repair upgrade` respells them: step `d10-stale-slug-references` for repository
+content (sidecars, diagram sources, prose citations, and the endpoints inside composite
+connection ids), and `assurance-arch-ref-respell` for the store's `arch_refs`. Both key on the
+stem, so a reference holding some third, older slug is healed too, and both decline when a stem
+has two current spellings (engagement and enterprise can each hold one) rather than guessing.
+The store step needs a repository to ask, so a deployment-only run — one with no `--repo-root`
+or `--workspace` — migrates nothing there.
+
 &nbsp;
 
 ## Troubleshooting

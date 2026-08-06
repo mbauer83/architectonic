@@ -95,6 +95,31 @@ class TestSqliteFactory:
         )
         assert handle.view().query_scalar("SELECT count(*) FROM boms") == 0
 
+    def test_view_query_column_returns_every_row(self, tmp_path: Path) -> None:
+        """The scalar read answers one value; a step that migrates rows has to see them all.
+        Standing in for this with LIMIT/OFFSET scalars re-runs the query per row and cannot tell
+        an empty set from a NULL."""
+        db = tmp_path / "signals.db"
+        _legacy_db(db)
+        conn = sqlite3.connect(db)
+        conn.executemany("INSERT INTO boms (serial) VALUES (?)", [("one",), ("two",)])
+        conn.commit()
+        conn.close()
+        handle = DatabaseTargetHandle(
+            target=_target(str(db)), connect=sqlite_connection_factory(db), inspectable=True
+        )
+
+        assert sorted(handle.view().query_column("SELECT serial FROM boms")) == ["one", "two"]
+
+    def test_view_query_column_is_empty_for_no_rows(self, tmp_path: Path) -> None:
+        db = tmp_path / "signals.db"
+        _legacy_db(db)
+        handle = DatabaseTargetHandle(
+            target=_target(str(db)), connect=sqlite_connection_factory(db), inspectable=True
+        )
+
+        assert handle.view().query_column("SELECT serial FROM boms") == []
+
 
 class TestSqlcipherFactory:
     def test_wrong_key_fails_closed(self, tmp_path: Path) -> None:

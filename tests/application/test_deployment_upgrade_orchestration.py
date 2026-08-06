@@ -48,6 +48,9 @@ class _FakeView:
     def query_scalar(self, sql: str, parameters: tuple[object, ...] = ()) -> object | None:
         return None
 
+    def query_column(self, sql: str, parameters: tuple[object, ...] = ()) -> list[object]:
+        return []
+
 
 @dataclass
 class _FakeHandle:

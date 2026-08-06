@@ -45,6 +45,7 @@ from src.application.deployment_upgrade.ports import (
     OperationalStepRegistry,
     build_operational_registry,
 )
+from src.application.repository_upgrade.canonical_ids import canonical_index
 from src.application.repository_upgrade.registry import StepRegistry, build_registry
 from src.application.repository_upgrade.workspace import (
     RepoUpgradeTarget,
@@ -181,10 +182,6 @@ def main_upgrade(
     args = parser().parse_args(argv)
     if registry is None:
         registry = build_registry(parse_selection_resolutions(args.resolve_selection))
-    if operational_registry is None:
-        operational_registry = build_operational_registry(
-            guidance_hierarchies=guidance_hierarchies(build_module_registry())
-        )
 
     # Phase 1 — deployment identity + operational target discovery (with physical
     # dedup). A layout conflict is a hard error before any target is opened.
@@ -197,6 +194,15 @@ def main_upgrade(
     )
     version = software_version()
     targets = [RepoUpgradeTarget(FilesystemRepoUpgradeView(r), FilesystemRepoUpgradeWriter(r)) for r in roots]
+
+    if operational_registry is None:
+        # Built after the roots are known: the confidential store cannot look up how an
+        # architecture artifact is spelled now — it never reads the repository — so the join
+        # is made here, where both sides are already open, and handed to the step.
+        operational_registry = build_operational_registry(
+            guidance_hierarchies=guidance_hierarchies(build_module_registry()),
+            canonical_entity_ids=canonical_index([target.view for target in targets]),
+        )
 
     if not args.commit:
         # Dry-run is always exit 0 — findings, blockers, and uninspectable targets are

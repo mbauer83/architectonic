@@ -36,6 +36,16 @@ class OperationalTargetView(Protocol):
         Text-file targets raise `NotImplementedError`."""
         ...
 
+    def query_column(self, sql: str, parameters: tuple[object, ...] = ()) -> list[object]:
+        """Database targets: the first column of every row, through the same connection.
+
+        A step that migrates rows needs to see them. Reading a set of values one
+        `query_scalar` at a time with LIMIT/OFFSET is a different, worse API standing in for
+        the missing one — it re-runs the query per row and reports nothing for an empty set
+        that it can tell apart from a NULL. Text-file targets raise `NotImplementedError`.
+        """
+        ...
+
 
 class OperationalTargetUnitOfWork(Protocol):
     """The only mutation surface for one target — one atomic unit per target."""
@@ -113,7 +123,9 @@ class OperationalStepRegistry:
 
 
 def build_operational_registry(
-    *, guidance_hierarchies: Mapping[str, GuidanceHierarchy] | None = None
+    *,
+    guidance_hierarchies: Mapping[str, GuidanceHierarchy] | None = None,
+    canonical_entity_ids: Mapping[str, set[str]] | None = None,
 ) -> OperationalStepRegistry:
     """The full operational step catalog (composition-root style, like
     `build_registry` for repository steps).
@@ -121,7 +133,15 @@ def build_operational_registry(
     ``guidance_hierarchies`` (alias → declared guidance tree) is what lets the guidance-cache
     migration re-nest each entity type under the domain its module declares. Omitting it leaves
     that step able to detect an outdated cache but not rewrite it, so the caller that can resolve
-    the modules — the arch-repair CLI — passes them in."""
+    the modules — the arch-repair CLI — passes them in.
+
+    ``canonical_entity_ids`` (stem → current spellings) is the same arrangement for the store's
+    architecture references: the closed tier never reads the repository, so the CLI — which is
+    already opening those repo roots — is the only place that can say how an artifact is spelled
+    now. Omitted, that step migrates nothing rather than guessing."""
+    from src.application.deployment_upgrade.steps.assurance_arch_ref_respell import (  # noqa: PLC0415
+        AssuranceArchRefRespellStep,
+    )
     from src.application.deployment_upgrade.steps.assurance_relationship_reconciliation import (  # noqa: PLC0415
         AssuranceRelationshipReconciliationStep,
     )
@@ -135,6 +155,7 @@ def build_operational_registry(
 
     registry = OperationalStepRegistry()
     registry.register(AssuranceRelationshipReconciliationStep())
+    registry.register(AssuranceArchRefRespellStep(canonical_entity_ids))
     registry.register(GuidanceCacheFormatStep(guidance_hierarchies))
     registry.register(SignalsSnapshotSchemaStep())
     registry.register(PublicSqliteSignalsSchemaStep())

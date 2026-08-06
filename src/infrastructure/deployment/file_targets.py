@@ -59,6 +59,9 @@ class _TextTargetView:
     def query_scalar(self, sql: str, parameters: tuple[object, ...] = ()) -> object | None:
         raise NotImplementedError("text-file targets have no SQL surface")
 
+    def query_column(self, sql: str, parameters: tuple[object, ...] = ()) -> list[object]:
+        raise NotImplementedError("text-file targets have no SQL surface")
+
 
 @dataclass(frozen=True)
 class SettingsDocumentHandle:
