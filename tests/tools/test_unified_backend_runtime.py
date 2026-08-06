@@ -415,6 +415,47 @@ def test_matches_arch_backend_process_for_direct_binary() -> None:
     assert backend_process._matches_arch_backend_process(["arch-backend", "--port", "8000"]) is True
 
 
+class TestAnInvocationThatNeverServes:
+    """A launcher is not an instance, and mistaking one for the other stopped `--daemon` dead.
+
+    `arch-backend --daemon --port N` spawns a child and exits; it never listens. Its command line
+    nevertheless declares `--port N`, so the child it spawned scanned for a backend on N, skipped
+    *itself* — the scan already excluded its own pid — and matched **its own parent**. Nothing was
+    listening on N, because a launcher never listens, so the child classified its parent as an
+    unhealthy backend and refused to start, exiting before it logged a line.
+
+    That made `--daemon --port N` impossible while plain `--daemon` worked, since the parent then
+    declared no port to be matched on. What the operator saw was a backend that would not start and
+    a log with nothing in it.
+    """
+
+    @pytest.mark.parametrize("flag", ["--daemon", "--stop", "--status"])
+    def test_a_control_invocation_is_not_an_instance(self, flag: str) -> None:
+        assert backend_process._matches_arch_backend_process(
+            ["arch-backend", flag, "--port", "8188"]
+        ) is False
+
+    def test_the_daemon_launcher_is_not_matched_for_the_port_it_declares(self) -> None:
+        """The exact shape of the defect: parent and child differ only by the flag."""
+        parent = ["/p/.venv/bin/arch-backend", "--daemon", "--port", "8188"]
+        child = ["/p/.venv/bin/arch-backend", "--port", "8188"]
+
+        assert backend_process._matches_arch_backend_process(parent) is False
+        assert backend_process._matches_arch_backend_process(child) is True
+
+    def test_restart_without_daemon_still_counts_because_it_serves(self) -> None:
+        """`--restart` alone stops the old backend and then serves in the foreground; excluding it
+        would hide a running instance from every command that looks for one."""
+        assert backend_process._matches_arch_backend_process(
+            ["arch-backend", "--restart", "--port", "8188"]
+        ) is True
+
+    def test_restart_with_daemon_is_still_a_launcher(self) -> None:
+        assert backend_process._matches_arch_backend_process(
+            ["arch-backend", "--restart", "--daemon", "--port", "8188"]
+        ) is False
+
+
 def test_matches_arch_backend_process_for_module_invocation() -> None:
     assert (
         backend_process._matches_arch_backend_process(

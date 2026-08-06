@@ -61,13 +61,31 @@ def _parse_cli_port(argv: list[str]) -> int | None:
     return None
 
 
+#: Invocations that never serve. ``--daemon`` spawns a child and exits; ``--stop`` and ``--status``
+#: answer and return. A process running one of these is a *launcher or a question*, not an instance.
+#:
+#: ``--restart`` is deliberately absent: without ``--daemon`` it stops the old backend and then serves
+#: in the foreground, so excluding it would hide a real running instance. ``--restart --daemon``
+#: carries ``--daemon`` and is excluded by that.
+_NON_SERVING_FLAGS = frozenset({"--daemon", "--stop", "--status"})
+
+
 def _matches_arch_backend_process(argv: list[str]) -> bool:
     """Return True only when the process IS arch-backend, not when it merely launched one.
 
     ``uv run ... arch-backend ...`` is intentionally excluded: the process is ``uv``,
     not the backend itself.  Only Python or the arch-backend binary qualify.
+
+    A ``--daemon`` invocation is excluded for the same reason, and missing it was a defect with
+    teeth. The launcher's own command line declares ``--port N``, so the child it spawns scanned,
+    skipped *itself*, matched *its own parent*, found nothing listening on N yet — the parent never
+    listens — and refused to start against what it took for an unhealthy backend. `arch-backend
+    --daemon --port N` could therefore never start, while `--daemon` without an explicit port always
+    could, because then the parent declared no port to be matched on.
     """
     if not argv:
+        return False
+    if _NON_SERVING_FLAGS.intersection(argv):
         return False
     argv0 = pathlib.PurePath(argv[0]).name
     # Direct binary: arch-backend
