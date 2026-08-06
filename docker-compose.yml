@@ -27,24 +27,37 @@ services:
       # Repos are resolved from the mounted workspace config (git-backed sync).
       ARCH_WORKSPACE_CONFIG: /app/arch-workspace.yaml
       ARCH_BACKEND_STATE_DIR: /app/.arch
+      # SSH remotes (see .env.example): name the key, and the entrypoint composes
+      # GIT_SSH_COMMAND around it. Uncomment the key mount below to supply it.
+      ARCH_GIT_SSH_KEY: ${ARCH_GIT_SSH_KEY:-}
+      ARCH_GIT_SSH_PASSWORD: ${ARCH_GIT_SSH_PASSWORD:-}
+      # Escape hatch for a setup the composed flags do not fit; wins when set.
+      ARCH_GIT_SSH_COMMAND: ${ARCH_GIT_SSH_COMMAND:-}
     ports:
       # Direct access on the VPN. When fronting with the proxy profile you may
       # restrict this to the loopback (ARCH_APP_BIND=127.0.0.1) or firewall it.
+      # ARCH_APP_PORT changes the PUBLISHED (host-side) port only; inside the
+      # container the app always listens on :8000, which is why the healthcheck
+      # below hardcodes it — it probes from inside the container's namespace.
       - "${ARCH_APP_BIND:-0.0.0.0}:${ARCH_APP_PORT:-8000}:8000"
     volumes:
       # Workspace declaration (operator-provided). Read-only: arch-init only reads
       # it, so host ownership doesn't matter.
       - ${ARCH_WORKSPACE_FILE:-./arch-workspace.server.yaml}:/app/arch-workspace.yaml:ro
+      # SSH deploy key for git remotes (uncomment for ssh:// workspace URLs, and set
+      # ARCH_GIT_SSH_KEY=/home/arch/.ssh/id_ed25519 in .env). ./secrets is gitignored.
+      # - ${ARCH_SSH_KEY_FILE:-./secrets/id_ed25519}:/home/arch/.ssh/id_ed25519:ro
       # Backend settings are baked into the image (writable by the runtime user).
       # To fully override them declaratively, mount a settings.yaml that is
       # writable by the runtime uid (10001) and uncomment the next line:
       # - ${ARCH_SETTINGS_FILE:-./config/settings.server.yaml}:/app/config/settings.yaml
       # Writable state.
-      - arch-state:/app/.arch              # init-state, pid, logs
+      - arch-state:/app/.arch              # init-state, pid (logs go to stdout)
       - arch-data:/data                    # cloned engagement/enterprise repos
       - arch-assurance:/app/.arch-assurance # encrypted assurance store (sqlcipher)
       - arch-home:/home/arch               # credential vault ($HOME/.config/...)
     healthcheck:
+      # Container-internal probe: :8000 here is intentionally NOT ARCH_APP_PORT.
       test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
       interval: 15s
       timeout: 5s

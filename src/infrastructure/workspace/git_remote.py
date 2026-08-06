@@ -17,7 +17,9 @@ defect we are eliminating — treats a failure to establish tracking as fatal.
 
 from __future__ import annotations
 
+import os
 import subprocess
+from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
@@ -63,10 +65,23 @@ def classify_remote(url: str, branch: str, env: dict[str, str] | None = None) ->
     guessing "empty": guessing wrong fabricates an unrelated local history over a
     populated remote — the exact failure this module exists to prevent.
     """
-    result = run_git(["ls-remote", url], env=env)
-    if result.returncode != 0:
+    try:
+        result = run_git(["ls-remote", url], env=env)
+    except subprocess.TimeoutExpired:
         raise SystemExit(
-            f"ERROR: could not reach git remote {url!r}: {result.stderr.strip() or 'unknown error'}"
+            f"ERROR: probing git remote {url!r} timed out after 120s — the host did not "
+            "answer at all (different from an auth failure)."
+            "\nHINT: from inside the container, the SSH/HTTPS port is likely blocked or "
+            "routed through a proxy that drops it. Corporate networks often block SSH :22 — "
+            "test connectivity, or switch the workspace URL to HTTPS with "
+            "ARCH_GIT_HTTPS_TOKEN, which firewalls usually allow."
+        ) from None
+    if result.returncode != 0:
+        stderr = result.stderr.strip() or "unknown error"
+        raise SystemExit(
+            f"ERROR: could not reach git remote {url!r}: {stderr}"
+            + _remote_failure_hint(stderr, _effective_env(env))
+            + _credential_scheme_mismatch_hint(url, _effective_env(env))
         )
     refs = result.stdout.strip()
     if not refs:
@@ -74,6 +89,92 @@ def classify_remote(url: str, branch: str, env: dict[str, str] | None = None) ->
     target = f"refs/heads/{branch}"
     has_branch = any(line.split("\t")[-1] == target for line in refs.splitlines())
     return RemoteState.HAS_BRANCH if has_branch else RemoteState.OTHER_REFS
+
+
+#: The credential variables that only apply to an https:// remote.
+_HTTPS_CREDENTIAL_VARS = (
+    "ARCH_GIT_HTTPS_TOKEN",
+    "ARCH_GIT_HTTPS_TOKEN_FILE",
+    "ARCH_GIT_HTTPS_PASSWORD",
+)
+
+_DOCS = "docs/reference/docker-compose.md"
+
+#: stderr needles → the next step, for failures whose fix does not depend on the environment.
+_FAILURE_HINTS: tuple[tuple[tuple[str, ...], str], ...] = (
+    (
+        ("host key verification failed",),
+        "\nHINT: this SSH host is not trusted yet. Set ARCH_GIT_SSH_KEY to the mounted deploy "
+        f"key and the entrypoint pins the host key on first contact — see {_DOCS}, 'SSH remotes'. "
+        "Alternatively add the host to known_hosts (ssh-keyscan <host>).",
+    ),
+    (
+        ("permission denied", "publickey"),
+        "\nHINT: the SSH host is trusted but rejected the credential. Mount the correct private "
+        "key read-only, point ARCH_GIT_SSH_KEY at it, and set ARCH_GIT_SSH_PASSWORD if the key "
+        f"has a passphrase — see {_DOCS}, 'SSH remotes'.",
+    ),
+    (
+        ("could not resolve host",),
+        "\nHINT: DNS cannot resolve this host from inside the container. Check the URL for "
+        "typos or a leftover placeholder, and the container's network/proxy settings.",
+    ),
+)
+
+
+def _effective_env(env: dict[str, str] | None) -> Mapping[str, str]:
+    """What git actually saw: the caller's environment, or the process's when it passed none.
+
+    The hints below read this rather than ``os.environ`` directly. Reading the process
+    environment while git ran with another one is how a hint comes to contradict the command
+    it is explaining.
+    """
+    return os.environ if env is None else env
+
+
+def _credential_scheme_mismatch_hint(url: str, env: Mapping[str, str]) -> str:
+    """Configured-but-inapplicable credentials are the hardest miss to see: the token IS set,
+    so the operator looks everywhere except at the URL scheme."""
+    is_ssh = url.startswith(("git@", "ssh://"))
+    if is_ssh and any(env.get(name) for name in _HTTPS_CREDENTIAL_VARS) and not env.get("GIT_SSH_COMMAND"):
+        return (
+            "\nHINT: HTTPS credentials (ARCH_GIT_HTTPS_*) are configured, but this remote is SSH "
+            "— they only apply to https:// URLs. Either change the workspace file's 'url:' to the "
+            "HTTPS form of the same repository, or configure SSH (ARCH_GIT_SSH_KEY + key mount)."
+        )
+    return ""
+
+
+def _authentication_hint(env: Mapping[str, str]) -> str:
+    """Whether the credentials were supplied at all changes what to check next."""
+    if any(env.get(name) for name in _HTTPS_CREDENTIAL_VARS):
+        return (
+            "\nHINT: HTTPS credentials ARE configured and were supplied to git — the remote "
+            "rejected them. Check, in order: the token is not expired or revoked; it has read "
+            "scope for THIS repository's project or organization; the .env value has no "
+            "surrounding quotes or trailing whitespace. Verify it outside the product with:\n"
+            "  git ls-remote 'https://<user>:<token>@<host>/<path>' HEAD"
+        )
+    return (
+        "\nHINT: HTTPS authentication failed and no ARCH_GIT_HTTPS_* credential is set. Set "
+        "ARCH_GIT_HTTPS_TOKEN (or ARCH_GIT_HTTPS_USERNAME/ARCH_GIT_HTTPS_PASSWORD, or "
+        f"ARCH_GIT_HTTPS_TOKEN_FILE) in the deployment environment — see {_DOCS}."
+    )
+
+
+def _remote_failure_hint(stderr: str, env: Mapping[str, str]) -> str:
+    """An actionable next step for the failure classes operators actually hit.
+
+    The raw git error is kept verbatim by the caller; this names the documented fix so a
+    first-boot mistake does not present as an undiagnosable crash loop.
+    """
+    lowered = stderr.lower()
+    for needles, hint in _FAILURE_HINTS:
+        if all(needle in lowered for needle in needles):
+            return hint
+    if "authentication failed" in lowered or "invalid username or token" in lowered:
+        return _authentication_hint(env)
+    return ""
 
 
 def clone(url: str, branch: str, dest: Path, env: dict[str, str] | None = None) -> None:

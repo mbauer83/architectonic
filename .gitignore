@@ -19,6 +19,8 @@ tools/plantuml.jar
 .env
 .env.*
 !.env.example
+# Deploy keys for git remotes — the documented default mount path.
+secrets/
 
 # IDE / OS
 .DS_Store

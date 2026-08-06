@@ -61,7 +61,39 @@ if is_enabled "${ARCH_DEMO:-false}"; then
 fi
 
 # ── 1. Configuration + target locations (no store is opened here) ────────────
+# SSH remotes. The key path is what an operator knows; the flags are ours, so the
+# command is composed here rather than asked for. `accept-new` pins the host key on
+# first contact and still refuses a CHANGED one; `BatchMode` fails instead of
+# prompting a terminal nobody is watching. ARCH_GIT_SSH_COMMAND remains for a setup
+# these flags do not fit, and wins. Exporting only when non-empty keeps an unset
+# value from being handed to git as an empty command.
+if [ -n "${ARCH_GIT_SSH_COMMAND:-}" ]; then
+    export GIT_SSH_COMMAND="$ARCH_GIT_SSH_COMMAND"
+    log "Using GIT_SSH_COMMAND from ARCH_GIT_SSH_COMMAND"
+elif [ -n "${ARCH_GIT_SSH_KEY:-}" ]; then
+    if [ ! -r "$ARCH_GIT_SSH_KEY" ]; then
+        log "ERROR: ARCH_GIT_SSH_KEY=$ARCH_GIT_SSH_KEY is not readable in the container."
+        log "       Mount the deploy key read-only at that path — see docker-compose.yml."
+        exit 1
+    fi
+    export GIT_SSH_COMMAND="ssh -i $ARCH_GIT_SSH_KEY -o StrictHostKeyChecking=accept-new -o BatchMode=yes"
+    log "Using SSH deploy key $ARCH_GIT_SSH_KEY for git remotes"
+fi
+
 WORKSPACE_CONFIG="${ARCH_WORKSPACE_CONFIG:-/app/arch-workspace.yaml}"
+if [ -f "$WORKSPACE_CONFIG" ] && grep -q "your\.git\.host" "$WORKSPACE_CONFIG"; then
+    # Fail fast and SAY WHY: without this, arch-init dies on DNS for the template's
+    # fake host and the restart policy turns one config mistake into an error loop.
+    log "ERROR: $WORKSPACE_CONFIG still contains the shipped placeholder remote 'your.git.host'."
+    log "       This file is a template — it cannot be used as-is."
+    log "       Fix one of:"
+    log "         * edit the 'url:' lines in the mounted workspace file"
+    log "           (default: ./arch-workspace.server.yaml next to docker-compose.yml),"
+    log "         * point ARCH_WORKSPACE_FILE in .env at your own workspace file,"
+    log "         * or use the bundled local model instead of git remotes — see the"
+    log "           commented 'local:' variant inside that file."
+    exit 1
+fi
 if [ -f "$WORKSPACE_CONFIG" ]; then
     log "Resolving workspace from $WORKSPACE_CONFIG"
     init_args=""

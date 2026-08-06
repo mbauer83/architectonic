@@ -141,15 +141,30 @@ ARCH_GIT_HTTPS_PASSWORD=<personal-access-token>
 ARCH_GIT_SSH_PASSWORD=<key-passphrase>
 ```
 
-For SSH remotes, also mount the private key and tell git to use it, e.g. add to
-the `app` service:
+For SSH remotes, everything is configured from `.env` plus one uncomment:
 
-```yaml
-environment:
-  GIT_SSH_COMMAND: "ssh -i /home/arch/.ssh/id_ed25519 -o StrictHostKeyChecking=accept-new"
-volumes:
-  - ./secrets/id_ed25519:/home/arch/.ssh/id_ed25519:ro
+1. Put the deploy key at `./secrets/id_ed25519` (that directory is gitignored) and
+   uncomment the key mount in `docker-compose.yml`, under "SSH deploy key".
+2. In `.env`, name the key as the container sees it:
+
+```dotenv
+ARCH_GIT_SSH_KEY=/home/arch/.ssh/id_ed25519
+ARCH_GIT_SSH_PASSWORD=<key-passphrase, if any>
 ```
+
+The entrypoint builds the ssh command around that key with
+`StrictHostKeyChecking=accept-new` and `BatchMode=yes`: the first pins the host key
+on first contact and still refuses a *changed* one, without which a container with
+an empty `known_hosts` fails with "Host key verification failed"; the second makes
+ssh fail rather than wait on a prompt no container can answer.
+
+`ARCH_GIT_SSH_COMMAND` takes a full ssh command for a setup those flags do not fit,
+and wins when set. Plain `GIT_SSH_COMMAND` in `.env` does not reach the container —
+compose forwards only the variables it references.
+
+If the SSH port is blocked outright — the probe *times out* rather than failing —
+prefer an HTTPS remote with `ARCH_GIT_HTTPS_TOKEN`, which corporate networks
+usually allow.
 
 **Assurance** — when enabled with the SQLCipher store, the encryption key is
 managed in a headless Fernet vault keyed by a master password:
