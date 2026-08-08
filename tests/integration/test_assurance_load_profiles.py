@@ -87,7 +87,7 @@ def _run_load_profile(profile: _LoadProfile, db_path: Path) -> _LoadOutcome:
     from src.infrastructure.assurance._archive import SQLCipherAssuranceArchive
     from src.infrastructure.assurance._sqlcipher_store import SQLCipherAssuranceStore
     from src.infrastructure.assurance.lifecycle import init_store
-    from src.infrastructure.concurrency.single_writer_queue import SingleWriterQueue
+    from src.infrastructure.concurrency.serial_execution_queue import SerialExecutionQueue
 
     init_store(db_path)
     store = SQLCipherAssuranceStore(db_path)
@@ -95,7 +95,7 @@ def _run_load_profile(profile: _LoadProfile, db_path: Path) -> _LoadOutcome:
     archive = SQLCipherAssuranceArchive(store._thread_conn_or_none)  # noqa: SLF001
 
     outcome = _LoadOutcome(profile=profile)
-    queue = SingleWriterQueue("assurance-load-profile")
+    queue = SerialExecutionQueue("assurance-load-profile")
     start = threading.Barrier(profile.client_count + 1)
     names = itertools.count()
 

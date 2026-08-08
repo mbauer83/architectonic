@@ -1,4 +1,4 @@
-"""Unit tests for the shared SingleWriterQueue primitive."""
+"""Unit tests for the shared SerialExecutionQueue primitive."""
 
 from __future__ import annotations
 
@@ -6,11 +6,11 @@ import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 
-from src.infrastructure.concurrency.single_writer_queue import SingleWriterQueue
+from src.infrastructure.concurrency.serial_execution_queue import SerialExecutionQueue
 
 
 def test_runs_serially_max_in_flight_one() -> None:
-    q = SingleWriterQueue("test-queue")
+    q = SerialExecutionQueue("test-queue")
     try:
         observed_concurrent = []
         counter = {"active": 0}
@@ -46,7 +46,7 @@ def test_concurrent_first_submits_build_only_one_executor(monkeypatch) -> None:
     thread passes the check before the first assignment lands. With the fix the lock
     serialises them and only one executor is ever constructed; without it, one per thread.
     """
-    import src.infrastructure.concurrency.single_writer_queue as swq_module
+    import src.infrastructure.concurrency.serial_execution_queue as swq_module
 
     real_ctor = swq_module.ThreadPoolExecutor
     constructed: list[object] = []
@@ -61,7 +61,7 @@ def test_concurrent_first_submits_build_only_one_executor(monkeypatch) -> None:
 
     monkeypatch.setattr(swq_module, "ThreadPoolExecutor", _slow_ctor)
 
-    q = SingleWriterQueue("test-queue")
+    q = SerialExecutionQueue("test-queue")
     try:
         def _worker() -> None:
             aligned.wait()
@@ -80,7 +80,7 @@ def test_concurrent_first_submits_build_only_one_executor(monkeypatch) -> None:
 
 
 def test_run_sync_returns_result_and_propagates_errors() -> None:
-    q = SingleWriterQueue("test-queue")
+    q = SerialExecutionQueue("test-queue")
     try:
         assert q.run_sync(lambda x: x + 1, 41) == 42
 
@@ -98,7 +98,7 @@ def test_run_sync_returns_result_and_propagates_errors() -> None:
 
 
 def test_wait_until_idle_and_shutdown() -> None:
-    q = SingleWriterQueue("test-queue")
+    q = SerialExecutionQueue("test-queue")
     results: list[int] = []
     for i in range(5):
         q.submit(lambda n: results.append(n), i)

@@ -20,7 +20,7 @@ from src.application.mutation_authorization import (
     RepositoryWrite,
     SyncHealth,
 )
-from src.infrastructure.concurrency.single_writer_queue import SingleWriterQueue
+from src.infrastructure.concurrency.serial_execution_queue import SerialExecutionQueue
 from src.infrastructure.workspace.mutation_gate import WorkspaceMutationGate
 from src.infrastructure.write.authorized_mutation_executor import AuthorizedMutationExecutor
 from src.infrastructure.write.workspace_authorization import WorkspaceAuthorizationSnapshots
@@ -67,7 +67,7 @@ class _Harness:
         self.enterprise.mkdir(parents=True)
         self.provider = _MutableProvider(self.engagement, self.enterprise)
         self.gate = _CountingGate()
-        self.queue = SingleWriterQueue("test-authorized-executor")
+        self.queue = SerialExecutionQueue("test-authorized-executor")
         self.submissions: list[str] = []
         self.executor = AuthorizedMutationExecutor(
             self.provider, submitter=self._submit, gate=self.gate

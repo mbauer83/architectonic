@@ -9,7 +9,7 @@ the store's per-thread read connections.
 This is a *separate* instance from the model write queue
 (`mcp.artifact_mcp.write_queue`) so the two independent stores never falsely
 serialise against each other (PLAN decision D3). Both share the same underlying
-`SingleWriterQueue` mechanism.
+`SerialExecutionQueue` mechanism.
 
 Boundary helper: wrap the actual store/archive/connector write call in
 ``run_write(lambda: ...)`` inside each MCP tool / REST handler. Locked-state
@@ -21,11 +21,11 @@ from __future__ import annotations
 
 from typing import Any, Callable, TypeVar
 
-from src.infrastructure.concurrency.single_writer_queue import SingleWriterQueue
+from src.infrastructure.concurrency.serial_execution_queue import SerialExecutionQueue
 
 _T = TypeVar("_T")
 
-assurance_write_queue = SingleWriterQueue("assurance-write-queue")
+assurance_write_queue = SerialExecutionQueue("assurance-write-queue")
 
 
 def run_write(fn: Callable[..., _T], /, *args: Any, **kwargs: Any) -> _T:

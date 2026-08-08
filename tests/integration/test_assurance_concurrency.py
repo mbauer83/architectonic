@@ -107,10 +107,10 @@ def test_writes_serialize_through_queue_no_race(bundle) -> None:  # type: ignore
     audit-log append (SELECT MAX(seq)+1 → INSERT) is the canonical read-then-write
     race; serialised, it must produce a contiguous, collision-free sequence.
     """
-    from src.infrastructure.concurrency.single_writer_queue import SingleWriterQueue
+    from src.infrastructure.concurrency.serial_execution_queue import SerialExecutionQueue
 
     store, archive, _connector = bundle
-    queue = SingleWriterQueue("assurance-write-queue-test")
+    queue = SerialExecutionQueue("assurance-write-queue-test")
     errors: list[str] = []
 
     def _write(i: int) -> None:

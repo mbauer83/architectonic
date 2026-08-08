@@ -1,25 +1,25 @@
-"""Single-writer serialisation queue — one worker drains write operations serially.
+"""Serial execution queue — one worker, running submitted work one at a time.
 
-This is the reusable mechanism behind the project's "no concurrent writes"
-discipline. Concurrent write calls race on shared state (model `.md` files + the
-arch SQLite index; the assurance SQLCipher DB's audit-log ``seq``). A single-worker
-``ThreadPoolExecutor`` accepts every call immediately and returns its result as
-soon as it completes, but only **one** write runs at a time. Reads do not go
-through the queue — they run concurrently.
+The mechanism: a single-worker ``ThreadPoolExecutor`` accepts every call immediately and returns
+each result as soon as it completes, but only **one** runs at a time. It also takes work *off* the
+caller's thread, which is what an async caller needs from it — the event loop must not be occupied
+by work measured in seconds.
 
-Two independent stores use *separate instances* so they do not falsely serialise
-against each other (e.g. ``model-write-queue`` and ``assurance-write-queue``),
-while sharing this one battle-tested mechanism.
+Named for what it does rather than for the first domain that needed it. Two of them serialise
+writes, because concurrent writes race on shared state (model `.md` files plus the arch SQLite
+index; the assurance SQLCipher DB's audit-log ``seq``); a third runs verification passes, which
+race on nothing and use it for the dedicated worker and the lifecycle. Each domain holds its own
+instance, so none falsely serialises against another.
 
 Usage::
 
-    queue = SingleWriterQueue("assurance-write-queue")
+    queue = SerialExecutionQueue("assurance-write-queue")
     result = queue.run_sync(write_fn, *args, **kwargs)        # REST handlers
     result = await queue.submit_async(write_fn, *args, **kwargs)  # async callers
 
 The arch model-write-queue keeps its own GUI/operation-registry hooks layered on
 top of the same shape; this primitive provides the executor + in-flight accounting
-that any single-writer domain needs.
+that any serialised domain needs.
 """
 
 from __future__ import annotations
@@ -32,7 +32,7 @@ from typing import Any, Callable, TypeVar
 _T = TypeVar("_T")
 
 
-class SingleWriterQueue:
+class SerialExecutionQueue:
     """A serialised, single-worker execution queue with in-flight accounting."""
 
     def __init__(self, name: str) -> None:
@@ -50,7 +50,7 @@ class SingleWriterQueue:
         # Double-checked locking: the lazy (re)creation must be atomic, or concurrent
         # first-time submits each see ``None`` and each build a *separate* single-worker
         # executor — two live workers then run writes concurrently, defeating the whole
-        # single-writer guarantee. The unlocked fast path keeps the hot path lock-free.
+        # serialisation guarantee. The unlocked fast path keeps the hot path lock-free.
         executor = self._executor
         if executor is not None and not executor._shutdown:  # noqa: SLF001
             return executor
