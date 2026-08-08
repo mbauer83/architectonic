@@ -138,6 +138,14 @@ def commit_diagram_write(
     if moved and prev is not None:
         diagram_path.unlink()
         _relocate_rendered_outputs(diagram_path, repo_root)
+        # A document citing this diagram links by path; the move breaks the link and nothing
+        # else would say so.
+        from ._entity_rename import rewrite_document_links_for_moved_artifact  # noqa: PLC0415
+
+        for doc_path in rewrite_document_links_for_moved_artifact(
+            repo_root=repo_root, old_path=diagram_path, new_path=write_path
+        ):
+            warnings.append(f"Updated document link in {doc_path.name}")
         clear_repo_caches(diagram_path)
         warnings.append(f"Moved diagram to group '{group}': {write_path}")
 

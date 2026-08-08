@@ -22,7 +22,7 @@ from ._entity_rename import (
     apply_referrer_rewrites,
     plan_referrer_rewrites,
     rename_entity_via_m4,
-    rewrite_document_links_for_moved_entity,
+    rewrite_document_links_for_moved_artifact,
 )
 from .boundary import assert_engagement_write_root, modification_stamp
 from .entity import entity_path, verification_to_entity_dict
@@ -300,7 +300,7 @@ def edit_entity(
 
     # Document-body relative links link by path, not by id, so neither the M4 transaction
     # nor the referrer rewrites touch them.
-    doc_link_paths = rewrite_document_links_for_moved_entity(
+    doc_link_paths = rewrite_document_links_for_moved_artifact(
         repo_root=repo_root, old_path=entity_file, new_path=target_entity_file
     )
     for path in doc_link_paths:

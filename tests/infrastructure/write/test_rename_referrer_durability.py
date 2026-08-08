@@ -274,7 +274,7 @@ class TestABatchedRenameCascadesToo:
         matched nothing.
         """
         from src.infrastructure.write.artifact_write._entity_rename import (  # noqa: PLC0415
-            rewrite_document_links_for_moved_entity,
+            rewrite_document_links_for_moved_artifact,
         )
         from src.infrastructure.write.artifact_write.batch_transaction import (  # noqa: PLC0415
             create_staging_repo,
@@ -286,7 +286,7 @@ class TestABatchedRenameCascadesToo:
         doc.write_text("See [the outcome](../../model/motivation/outcome/OUT@1.Ab.old-name.md).\n", encoding="utf-8")
         staging, staged_root = create_staging_repo(repo)
         try:
-            changed = rewrite_document_links_for_moved_entity(
+            changed = rewrite_document_links_for_moved_artifact(
                 repo_root=staged_root,
                 old_path=staged_root / "model" / "motivation" / "outcome" / "OUT@1.Ab.old-name.md",
                 new_path=staged_root / "model" / "motivation" / "outcome" / "OUT@1.Ab.new-name.md",

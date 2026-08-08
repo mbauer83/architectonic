@@ -1,4 +1,4 @@
-"""Tests for rewrite_document_links_for_moved_entity and its wiring into
+"""Tests for rewrite_document_links_for_moved_artifact and its wiring into
 artifact_edit_entity's group-move / rename path.
 
 Regression coverage for a real bug found while grouping the self-model
@@ -16,7 +16,7 @@ from pathlib import Path
 import pytest
 
 from src.infrastructure.mcp import mcp_artifact_server as mcp
-from src.infrastructure.write.artifact_write._entity_rename import rewrite_document_links_for_moved_entity
+from src.infrastructure.write.artifact_write._entity_rename import rewrite_document_links_for_moved_artifact
 
 
 @pytest.fixture()
@@ -44,7 +44,7 @@ def test_rewrites_relative_link_pointing_at_moved_entity(repo: Path) -> None:
     doc = repo / "docs" / "standard" / "STD@1.a.y.md"
     _write(doc, "See [req](../../model/motivation/requirement/REQ@1.a.x.md) for details.\n")
 
-    changed = rewrite_document_links_for_moved_entity(repo_root=repo, old_path=old_path, new_path=new_path)
+    changed = rewrite_document_links_for_moved_artifact(repo_root=repo, old_path=old_path, new_path=new_path)
 
     assert changed == [doc]
     assert "../../projects/my-group/model/motivation/requirement/REQ@1.a.x.md" in doc.read_text()
@@ -60,7 +60,7 @@ def test_leaves_unrelated_links_untouched(repo: Path) -> None:
     )
     _write(doc, original)
 
-    changed = rewrite_document_links_for_moved_entity(repo_root=repo, old_path=old_path, new_path=new_path)
+    changed = rewrite_document_links_for_moved_artifact(repo_root=repo, old_path=old_path, new_path=new_path)
 
     assert changed == []
     assert doc.read_text() == original
@@ -69,7 +69,7 @@ def test_leaves_unrelated_links_untouched(repo: Path) -> None:
 def test_no_docs_root_is_a_noop(tmp_path: Path) -> None:
     repo = tmp_path / "engagements" / "ENG-T" / "architecture-repository"
     (repo / "model").mkdir(parents=True)
-    changed = rewrite_document_links_for_moved_entity(
+    changed = rewrite_document_links_for_moved_artifact(
         repo_root=repo,
         old_path=repo / "model" / "a.md",
         new_path=repo / "projects" / "g" / "model" / "a.md",

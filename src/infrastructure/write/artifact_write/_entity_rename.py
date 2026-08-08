@@ -23,15 +23,19 @@ def _document_sources(repo_root: Path) -> Iterator[Path]:
     return overlay_paths(docs_root(repo_root), ("*.md",))
 
 
-def rewrite_document_links_for_moved_entity(
+def rewrite_document_links_for_moved_artifact(
     *, repo_root: Path, old_path: Path, new_path: Path
 ) -> list[Path]:
-    """Rewrite markdown-body relative links that point at an entity's old path.
+    """Rewrite markdown-body relative links that point at an artifact's old path.
 
-    Best-effort cosmetic update, mirroring the referrer rewrites for
-    connection sidecars — entity moves (group re-home or rename) change the
-    file's location, but nothing else updates a hand-authored `[label](../..
-    /old/path.md)` link elsewhere in the docs tree.
+    Best-effort, mirroring the referrer rewrites for connection sidecars: a move — a rename or a
+    group re-home — changes the file's location, and nothing else updates a hand-authored
+    `[label](../../old/path.md)` link elsewhere in the docs tree.
+
+    Keyed on paths, not on ids or artifact kind, so it serves an entity, a diagram and a document
+    alike. It was called only for entities for a while, which is how renaming a diagram came to
+    break every document citing it, silently — a document link resolves or it does not, and nothing
+    reported that it no longer did.
     """
     changed: list[Path] = []
     for doc_path in _document_sources(repo_root):

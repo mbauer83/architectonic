@@ -315,6 +315,14 @@ def edit_document(
         )
         clear_repo_caches(path)
         warnings.append(f"Moved document to group '{group}': {target_path}")
+        # Another document may cite this one by path — the same breakage a moved entity causes.
+        from ._entity_rename import rewrite_document_links_for_moved_artifact  # noqa: PLC0415
+
+        for doc_path in rewrite_document_links_for_moved_artifact(
+            repo_root=repo_root, old_path=path, new_path=target_path
+        ):
+            clear_repo_caches(doc_path)
+            warnings.append(f"Updated document link in {doc_path.name}")
     else:
         write_atomic(target_path, content)
     clear_repo_caches(target_path)
