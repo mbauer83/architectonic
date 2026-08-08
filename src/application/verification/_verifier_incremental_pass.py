@@ -17,7 +17,6 @@ from pathlib import Path
 
 from src.application.verification._verifier_inventory import expand_impacted_paths
 from src.application.verification._verifier_serde import merge_results, results_from_state
-from src.application.verification._verifier_snapshot import RepositorySnapshot
 from src.application.verification.artifact_verifier_incremental import (
     STATE_SCHEMA_VERSION,
     IncrementalState,
@@ -29,6 +28,7 @@ from src.application.verification.artifact_verifier_types import (
     VerificationResult,
     VerifierRuntimeConfig,
 )
+from src.application.verification.evaluation import EvaluationContext
 from src.application.verification.verifier_ports import IncrementalStatePort
 
 
@@ -49,10 +49,10 @@ def run_incremental_pass(
     *,
     include_diagrams: bool,
     cfg: VerifierRuntimeConfig,
-    snapshot: RepositorySnapshot,
+    evaluation: EvaluationContext,
 ) -> tuple[str, list[VerificationResult]]:
     """Verify, reusing the stored pass where it is still trustworthy, and say which pass answered."""
-    inv = snapshot.inventory
+    inv = evaluation.acquired().inventory
     state_path = ctx.incremental.state_path(repo_path, include_diagrams=include_diagrams)
     prev = ctx.incremental.load(state_path)
     head = ctx.incremental.git_head(repo_path)
@@ -62,19 +62,27 @@ def run_incremental_pass(
         prev, include_diagrams=include_diagrams, engine_sig=engine_sig, has_registry=ctx.has_registry
     ):
         mode = "full"
-        results = ctx.verify_full(repo_path, include_diagrams=include_diagrams, snapshot=snapshot)
+        results = ctx.verify_full(repo_path, include_diagrams=include_diagrams, evaluation=evaluation)
     else:
         assert prev is not None
         mode, results = _from_stored_state(
-            ctx, prev, repo_path=repo_path, include_diagrams=include_diagrams, cfg=cfg, snapshot=snapshot
+            ctx,
+            prev,
+            repo_path=repo_path,
+            include_diagrams=include_diagrams,
+            cfg=cfg,
+            evaluation=evaluation,
         )
 
     # Documents live outside the incremental inventory, so the incremental modes must verify them
     # here — but every "full" result already includes them, and appending again reported each
     # document issue twice.
     if mode != "full":
-        results.extend(ctx.verify_documents(repo_path, snapshot=snapshot))
+        results.extend(ctx.verify_documents(repo_path, evaluation=evaluation))
 
+    # Governs `incremental-cached` too, which applies no rule and so passes no per-file check: it
+    # still saves, and a saved state is exactly what a cancelled pass must not leave behind.
+    evaluation.raise_if_cancelled()
     ctx.incremental.save(
         state_path,
         IncrementalState(
@@ -99,20 +107,20 @@ def _from_stored_state(
     repo_path: Path,
     include_diagrams: bool,
     cfg: VerifierRuntimeConfig,
-    snapshot: RepositorySnapshot,
+    evaluation: EvaluationContext,
 ) -> tuple[str, list[VerificationResult]]:
-    inv = snapshot.inventory
+    inv = evaluation.acquired().inventory
     changed, deleted = detect_changed_paths(inv, prev)
     if deleted:
-        return "full", ctx.verify_full(repo_path, include_diagrams=include_diagrams, snapshot=snapshot)
+        return "full", ctx.verify_full(repo_path, include_diagrams=include_diagrams, evaluation=evaluation)
     if not changed:
         cached = results_from_state(prev, inv)
         if cached is not None:
             return "incremental-cached", cached
-        return "full", ctx.verify_full(repo_path, include_diagrams=include_diagrams, snapshot=snapshot)
+        return "full", ctx.verify_full(repo_path, include_diagrams=include_diagrams, evaluation=evaluation)
     total = len(inv.ordered_paths)
     ratio = (len(changed) / total) if total > 0 else 1.0
     if ratio >= cfg.changed_ratio_threshold or len(changed) >= cfg.changed_count_threshold:
-        return "full", ctx.verify_full(repo_path, include_diagrams=include_diagrams, snapshot=snapshot)
-    subset = ctx.verify_subset(inv, expand_impacted_paths(inv, changed), snapshot=snapshot)
+        return "full", ctx.verify_full(repo_path, include_diagrams=include_diagrams, evaluation=evaluation)
+    subset = ctx.verify_subset(inv, expand_impacted_paths(inv, changed), evaluation=evaluation)
     return "incremental", merge_results(prev, inv, subset)

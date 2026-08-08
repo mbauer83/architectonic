@@ -2,12 +2,18 @@
 
 from __future__ import annotations
 
+import asyncio
 import time
 from pathlib import Path
 
 import pytest
 
 from src.infrastructure.mcp.artifact_mcp import verify_tools
+
+
+def _verify(**kwargs: object) -> dict:
+    """The tool is a coroutine now: it runs its pass on a worker so the event loop stays free."""
+    return asyncio.run(verify_tools.artifact_verify(**kwargs))  # type: ignore[arg-type]
 
 
 @pytest.fixture()
@@ -23,7 +29,7 @@ def repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 class TestAnUnconfirmedFullPassIsRefused:
     def test_the_refusal_names_the_reason_and_the_size(self, repo: Path) -> None:
-        out = verify_tools.artifact_verify(repo_root=str(repo), repo_scope="engagement")
+        out = _verify(repo_root=str(repo), repo_scope="engagement")
 
         assert out["results"] == []
         assert set(out["pass_mode"].values()) == {"full-required"}
@@ -34,12 +40,12 @@ class TestAnUnconfirmedFullPassIsRefused:
     def test_the_refusal_is_immediate(self, repo: Path) -> None:
         """The point of the control: an answer in milliseconds instead of a timeout."""
         started = time.monotonic()
-        verify_tools.artifact_verify(repo_root=str(repo), repo_scope="engagement")
+        _verify(repo_root=str(repo), repo_scope="engagement")
 
         assert time.monotonic() - started < 5.0
 
     def test_confirming_proceeds(self, repo: Path) -> None:
-        out = verify_tools.artifact_verify(
+        out = _verify(
             repo_root=str(repo), repo_scope="engagement", confirm_full_pass=True
         )
 
@@ -50,7 +56,7 @@ class TestAnUnconfirmedFullPassIsRefused:
         """CI and `arch-repair` cannot re-call, so the env override must still imply consent."""
         monkeypatch.setenv("ARCH_MODEL_VERIFY_MODE", "full")
 
-        out = verify_tools.artifact_verify(repo_root=str(repo), repo_scope="engagement")
+        out = _verify(repo_root=str(repo), repo_scope="engagement")
 
         assert "full_pass_required" not in out
         assert set(out["pass_mode"].values()) == {"full"}
@@ -60,14 +66,14 @@ class TestAnUnconfirmedFullPassIsRefused:
         target = repo / "model" / "nothing-here.md"
         target.write_text("---\nartifact-id: X\n---\n", encoding="utf-8")
 
-        out = verify_tools.artifact_verify(path=str(target), repo_root=str(repo), repo_scope="engagement")
+        out = _verify(path=str(target), repo_root=str(repo), repo_scope="engagement")
 
         assert "full_pass_required" not in out
 
     def test_a_reusable_cache_is_not_refused(self, repo: Path) -> None:
-        verify_tools.artifact_verify(repo_root=str(repo), repo_scope="engagement", confirm_full_pass=True)
+        _verify(repo_root=str(repo), repo_scope="engagement", confirm_full_pass=True)
 
-        out = verify_tools.artifact_verify(repo_root=str(repo), repo_scope="engagement")
+        out = _verify(repo_root=str(repo), repo_scope="engagement")
 
         assert "full_pass_required" not in out
         assert set(out["pass_mode"].values()) == {"incremental-cached"}

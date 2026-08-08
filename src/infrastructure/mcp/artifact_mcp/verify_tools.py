@@ -1,16 +1,24 @@
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any, Literal
 
 from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
 
+from src.application.verification.artifact_verifier import ArtifactVerifier
+from src.application.verification.artifact_verifier_types import VerificationResult
+from src.application.verification.evaluation import PassCancellation
 from src.config.repo_paths import DIAGRAM_CATALOG, DIAGRAMS, DOCS
 from src.infrastructure.mcp.artifact_mcp.context import RepoScope, resolve_repo_roots, roots_key, verifier_for
 from src.infrastructure.mcp.artifact_mcp.formatting import as_issue_dict, as_verification_result_dict
 from src.infrastructure.mcp.artifact_mcp.tool_annotations import READ_ONLY
+from src.infrastructure.verification.pass_runner import (
+    VerificationAlreadyRunning,
+    run_verification_pass,
+)
 from src.infrastructure.workspace.mutation_gate import get_workspace_gate
 
 
-def artifact_verify(
+async def artifact_verify(
     path: str | None = None,
     *,
     file_type: Literal["entity", "connection", "diagram", "document"] | None = None,
@@ -90,18 +98,26 @@ def artifact_verify(
     # Batch verify: every resolved root — the description promises repo_scope
     # "both", and answering for the engagement repo alone under that contract
     # silently under-reported enterprise-side errors.
-    results = []
-    pass_modes: dict[str, str] = {}
-    for root in roots:
-        # Exclusivity covers reading the tree, not judging it. Acquisition is ~0.2 s for this corpus
-        # where a full pass is minutes, so a write waits for the read, not for the verification.
-        with get_workspace_gate().reading():
-            snapshot = verifier.acquire(root, include_diagrams=include_diagrams)
-        mode, root_results = verifier.verify_all_reporting_pass_mode(
-            root, include_diagrams=include_diagrams, snapshot=snapshot
+    try:
+        pass_modes, results = await run_verification_pass(
+            key,
+            lambda cancellation: _verify_every_root(
+                verifier, roots, include_diagrams=include_diagrams, cancellation=cancellation
+            ),
         )
-        pass_modes[str(root)] = mode
-        results.extend(root_results)
+    except VerificationAlreadyRunning:
+        return {
+            "repo_roots": [str(r) for r in roots],
+            "repo_scope": repo_scope,
+            "include_diagrams": include_diagrams,
+            "pass_mode": {str(root): "already-running" for root in roots},
+            "message": (
+                "A verification pass over these roots is already running. It is refused rather than "
+                "queued: a second pass would wait minutes to report what the first is about to say. "
+                "Re-call once it has answered."
+            ),
+            "results": [],
+        }
     total = len(results)
     total_valid = sum(1 for r in results if r.valid)
     total_errors = sum(len(r.errors) for r in results)
@@ -145,15 +161,38 @@ def artifact_verify(
     }
 
 
+def _verify_every_root(
+    verifier: ArtifactVerifier,
+    roots: Sequence[Path],
+    *,
+    include_diagrams: bool,
+    cancellation: PassCancellation,
+) -> tuple[dict[str, str], list[VerificationResult]]:
+    """One pass per root, off the event loop. Runs on the verification worker."""
+    pass_modes: dict[str, str] = {}
+    results: list[VerificationResult] = []
+    for root in roots:
+        # Exclusivity covers reading the tree, not judging it. Acquisition is ~0.2 s for this corpus
+        # where a full pass is minutes, so a write waits for the read, not for the verification.
+        with get_workspace_gate().reading():
+            snapshot = verifier.acquire(root, include_diagrams=include_diagrams)
+        mode, root_results = verifier.verify_all_reporting_pass_mode(
+            root, include_diagrams=include_diagrams, snapshot=snapshot, cancellation=cancellation
+        )
+        pass_modes[str(root)] = mode
+        results.extend(root_results)
+    return pass_modes, results
+
+
 # Keep the original functions as thin aliases for direct callers / tests.
-def artifact_verify_file(
+async def artifact_verify_file(
     path: str,
     *,
     file_type: Literal["entity", "connection", "diagram", "document"] | None = None,
     repo_root: str | None = None,
     repo_scope: RepoScope = "both",
 ) -> dict[str, Any]:
-    return artifact_verify(
+    return await artifact_verify(
         path,
         file_type=file_type,
         repo_root=repo_root,
@@ -161,7 +200,7 @@ def artifact_verify_file(
     )
 
 
-def artifact_verify_all(
+async def artifact_verify_all(
     *,
     include_diagrams: bool = True,
     return_mode: Literal["summary", "full"] = "summary",
@@ -169,9 +208,10 @@ def artifact_verify_all(
     repo_root: str | None = None,
     repo_scope: RepoScope = "both",
 ) -> dict[str, Any]:
-    return artifact_verify(
+    return await artifact_verify(
         include_diagrams=include_diagrams,
         return_mode=return_mode,
+        confirm_full_pass=confirm_full_pass,
         repo_root=repo_root,
         repo_scope=repo_scope,
     )

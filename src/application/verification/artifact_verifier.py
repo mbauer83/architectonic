@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import functools
-from collections.abc import Callable
+from dataclasses import replace
 from pathlib import Path
 from typing import Literal
 
@@ -49,6 +49,11 @@ from src.application.verification.artifact_verifier_types import (
     VerificationResult,
     VerifierRuntimeConfig,
     entity_id_from_path,
+)
+from src.application.verification.evaluation import (
+    UNCONDITIONAL,
+    EvaluationContext,
+    PassCancellation,
 )
 from src.application.verification.verifier_ports import (
     FileInventoryPort,
@@ -220,7 +225,12 @@ class ArtifactVerifier:
         )
 
     def verify_all_reporting_pass_mode(
-        self, repo_path: Path, *, include_diagrams: bool = True, snapshot: RepositorySnapshot | None = None
+        self,
+        repo_path: Path,
+        *,
+        include_diagrams: bool = True,
+        snapshot: RepositorySnapshot | None = None,
+        cancellation: PassCancellation | None = None,
     ) -> tuple[str, list[VerificationResult]]:
         """Verify everything, and say which pass produced the answer.
 
@@ -233,14 +243,15 @@ class ArtifactVerifier:
         # Acquired once, here, and handed to every branch. The incremental path used to build the
         # inventory and then call the full path, which built it again — two sweeps of the filesystem,
         # with the *first* sweep's snapshots persisted against the *second* sweep's results.
-        snapshot = snapshot or self.acquire(repo_path, include_diagrams=include_diagrams)
+        evaluation = EvaluationContext(
+            snapshot=snapshot or self.acquire(repo_path, include_diagrams=include_diagrams),
+            cancellation=cancellation,
+        )
         if cfg.mode == "incremental":
             return self._verify_all_incremental(
-                repo_path, include_diagrams=include_diagrams, cfg=cfg, snapshot=snapshot
+                repo_path, include_diagrams=include_diagrams, cfg=cfg, evaluation=evaluation
             )
-        return "full", self._verify_all_full(
-            repo_path, include_diagrams=include_diagrams, snapshot=snapshot
-        )
+        return "full", self._verify_all_full(repo_path, include_diagrams=include_diagrams, evaluation=evaluation)
 
     def acquire(self, repo_path: Path, *, include_diagrams: bool = True) -> RepositorySnapshot:
         """Read the repository once, for a pass to evaluate against.
@@ -284,12 +295,13 @@ class ArtifactVerifier:
         return results
 
     def _verify_all_full(
-        self, repo_path: Path, *, include_diagrams: bool, snapshot: RepositorySnapshot | None = None
+        self, repo_path: Path, *, include_diagrams: bool, evaluation: EvaluationContext = UNCONDITIONAL
     ) -> list[VerificationResult]:
-        snapshot = snapshot or self.acquire(repo_path, include_diagrams=include_diagrams)
-        inv = snapshot.inventory
-        results = self._verify_inventory_subset(inv, set(inv.ordered_paths), snapshot=snapshot)
-        results.extend(self._verify_documents(repo_path, snapshot=snapshot))
+        if evaluation.snapshot is None:
+            evaluation = replace(evaluation, snapshot=self.acquire(repo_path, include_diagrams=include_diagrams))
+        inv = evaluation.acquired().inventory
+        results = self._verify_inventory_subset(inv, set(inv.ordered_paths), evaluation=evaluation)
+        results.extend(self._verify_documents(repo_path, evaluation=evaluation))
         repo_result = run_repository_contributions(
             candidate=self._candidate_repo, runtime_catalogs=self._catalogs, repo_path=repo_path
         )
@@ -303,7 +315,7 @@ class ArtifactVerifier:
         *,
         include_diagrams: bool,
         cfg: VerifierRuntimeConfig,
-        snapshot: RepositorySnapshot,
+        evaluation: EvaluationContext,
     ) -> tuple[str, list[VerificationResult]]:
         return run_incremental_pass(
             IncrementalPassContext(
@@ -316,17 +328,17 @@ class ArtifactVerifier:
             repo_path,
             include_diagrams=include_diagrams,
             cfg=cfg,
-            snapshot=snapshot,
+            evaluation=evaluation,
         )
 
     def _verify_documents(
-        self, repo_path: Path, *, snapshot: RepositorySnapshot | None = None
+        self, repo_path: Path, *, evaluation: EvaluationContext = UNCONDITIONAL
     ) -> list[VerificationResult]:
         docs = self._inventory.list_doc_files(repo_path)
-        return self._scheduler.run(functools.partial(self.verify_document_file, snapshot=snapshot), docs)
+        return self._scheduler.run(evaluation.per_file(self.verify_document_file), docs)
 
     def _verify_inventory_subset(
-        self, inv: FileInventory, relpaths: set[str], *, snapshot: RepositorySnapshot | None = None
+        self, inv: FileInventory, relpaths: set[str], *, evaluation: EvaluationContext = UNCONDITIONAL
     ) -> list[VerificationResult]:
         if self.registry is not None:
             _ = self.registry.entity_ids()
@@ -336,15 +348,12 @@ class ArtifactVerifier:
         diagram_files = [inv.rel_to_path[r] for r in inv.diagram_puml_relpaths if r in relpaths]
         matrix_files = [inv.rel_to_path[r] for r in inv.diagram_matrix_relpaths if r in relpaths]
 
-        def against_snapshot(verify: Callable[..., VerificationResult]) -> Callable[[Path], VerificationResult]:
-            return functools.partial(verify, snapshot=snapshot)
-
         out: list[VerificationResult] = []
-        out.extend(self._scheduler.run(against_snapshot(self.verify_entity_file), entity_files))
-        out.extend(self._scheduler.run(against_snapshot(self.verify_connection_file), connection_files))
+        out.extend(self._scheduler.run(evaluation.per_file(self.verify_entity_file), entity_files))
+        out.extend(self._scheduler.run(evaluation.per_file(self.verify_connection_file), connection_files))
 
         diagram_results = self._scheduler.run(
-            lambda path: self._verify_diagram_file(path, run_syntax_check=False, snapshot=snapshot),
+            evaluation.per_file(functools.partial(self._verify_diagram_file, run_syntax_check=False)),
             diagram_files,
             max_workers=4,
         )
@@ -353,7 +362,7 @@ class ArtifactVerifier:
             for d in diagram_results:
                 d.issues.extend(issues_by_path.get(d.path, []))
         out.extend(diagram_results)
-        out.extend(self._scheduler.run(against_snapshot(self.verify_matrix_diagram_file), matrix_files))
+        out.extend(self._scheduler.run(evaluation.per_file(self.verify_matrix_diagram_file), matrix_files))
 
         by_path = {r.path: r for r in out}
         return [

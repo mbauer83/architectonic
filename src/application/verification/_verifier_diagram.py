@@ -44,6 +44,7 @@ from src.application.verification.artifact_verifier_types import (
     VerificationResult,
 )
 from src.application.verification.verifier_ports import PumlSyntaxPort
+from src.application.viewpoints.registry_snapshot import RegistrySnapshot
 
 if TYPE_CHECKING:
     from src.application.verification._verifier_snapshot import RepositorySnapshot
@@ -56,8 +57,8 @@ class DiagramRuleContext:
 
     registry: ArtifactRegistry | None
     catalogs: RuntimeCatalogs
-    registry_snapshot: Any
-    candidate_repo: Any
+    registry_snapshot: RegistrySnapshot
+    candidate_repo: object
     puml_syntax: PumlSyntaxPort
     scope_for_path: Callable[[Path], RepoScope]
     repo_root_for_path: Callable[[Path], Path | None]
