@@ -28,7 +28,7 @@ def current_thread_holds_index_write() -> bool:
     the lock cannot diverge from what the lock knows.
     """
     ident = threading.get_ident()
-    return any(lock.writer_ident == ident for lock in list(_LIVE_LOCKS))
+    return any(lock.is_write_held_by(ident) for lock in list(_LIVE_LOCKS))
 
 
 class _RWLock:
@@ -41,11 +41,15 @@ class _RWLock:
         self._writer_ident: int | None = None
         _LIVE_LOCKS.add(self)
 
-    @property
-    def writer_ident(self) -> int | None:
-        """The thread currently holding WRITE, or None. Read without the condition deliberately:
-        an int assignment is atomic, and a caller asking "is it me?" cannot race with itself."""
-        return self._writer_ident
+    def is_write_held_by(self, ident: int) -> bool:
+        """Whether *ident* is the thread currently holding WRITE.
+
+        Answered under the same condition that sets it, so the answer cannot be read half-written.
+        The caller holds nothing when it asks — the check runs before any gate acquisition — so
+        taking the condition here orders against nothing.
+        """
+        with self._cond:
+            return self._writing and self._writer_ident == ident
 
     @contextmanager
     def reading(self) -> Iterator[None]:

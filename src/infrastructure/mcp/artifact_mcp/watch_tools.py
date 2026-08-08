@@ -99,10 +99,8 @@ def _watcher_loop(
                 changed_paths = suppress_redundant_refresh_paths(roots, changed_paths)
             force = periodic_refresh_s is not None and (now - last_periodic) >= periodic_refresh_s
             if changed_paths or force or must_full_refresh:
-                # No workspace gate: this enqueues a refresh *intent* — it mutates the refresh
-                # queue, not the workspace — and the queue serialises itself on its own condition.
-                # Taking exclusive WRITE here guarded work that never touches the resource the gate
-                # protects, while colliding with every long read.
+                # No workspace gate: this mutates the refresh queue, not the workspace, and the
+                # queue serialises itself.
                 if force or must_full_refresh or len(changed_paths) > 64:
                     enqueue_background_refresh(roots, full_refresh=True)
                 else:

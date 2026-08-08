@@ -16,6 +16,7 @@ from contextlib import contextmanager
 from typing import Iterator
 
 from src.application.mutation_authorization import GateBlock
+from src.infrastructure.artifact_index._rwlock import current_thread_holds_index_write
 
 #: What the gate can refuse for. The same alias the authorization policy uses, not a second copy:
 #: this module re-declared the identical two-value Literal under its own name, so adding a third
@@ -56,20 +57,31 @@ class WorkspaceMutationGate:
         self._block_reason: BlockReason | None = None
 
     @contextmanager
+    def _counted_as_waiting(self) -> Iterator[None]:
+        """Make this waiter visible to readers, which yield while any writer waits.
+
+        Only the bookkeeping is shared: each write path keeps its own wait condition, because
+        ``writing()`` must also abandon the wait when a block reason appears and
+        ``privileged_writing()`` must not. Caller holds ``self._cond``.
+        """
+        self._writers_waiting += 1
+        try:
+            yield
+        finally:
+            self._writers_waiting -= 1
+
+    @contextmanager
     def writing(self) -> Iterator[None]:
         """Acquire exclusive WRITE.  Raises ``GateRejected`` if blocked."""
         _check_lock_order()
         with self._cond:
             if self._block_reason is not None:
                 raise GateRejected(self._block_reason)
-            self._writers_waiting += 1
-            try:
+            with self._counted_as_waiting():
                 while self._writing or self._readers > 0:
                     self._cond.wait()
                     if self._block_reason is not None:
                         raise GateRejected(self._block_reason)
-            finally:
-                self._writers_waiting -= 1
             self._writing = True
         try:
             yield
@@ -130,12 +142,9 @@ class WorkspaceMutationGate:
         """
         _check_lock_order()
         with self._cond:
-            self._writers_waiting += 1
-            try:
+            with self._counted_as_waiting():
                 while self._writing or self._readers > 0:
                     self._cond.wait()
-            finally:
-                self._writers_waiting -= 1
             self._writing = True
         try:
             yield
@@ -179,10 +188,6 @@ def _check_lock_order() -> None:
     Guards every gate acquisition, not only ``writing()``: ``privileged_writing()`` is a write path
     too, and ``reading()`` became one that matters once verification began taking READ.
     """
-    from src.infrastructure.artifact_index._rwlock import (  # noqa: PLC0415
-        current_thread_holds_index_write,
-    )
-
     if current_thread_holds_index_write():
         raise AssertionError(
             "Lock order violation: the workspace gate was requested while this thread "
