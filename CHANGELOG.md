@@ -81,6 +81,15 @@ repairs references that name an artifact by a name it no longer has.
 - The GUI dev proxy and the browser suite follow `ARCH_BACKEND_PORT`, so developing against a second
   workspace no longer renders the first one's model.
 
+### Security
+
+- **Five advisories closed before release** — `cryptography` to 50.0.0, `nanoid` to 3.3.18,
+  `dompurify` to 3.4.13, and `js-yaml` to 3.15.1 and 4.3.1. Two arrived as dependency PRs; the
+  other three are transitive and had none, so `js-yaml` needed an override scoped to
+  `@redocly/openapi-core` rather than a global pin, which would have broken `nyc`'s 3.x
+  requirement. Both audit surfaces report clean, and the product's own supply-chain ingest was
+  re-run against live OSV data for the backend and the GUI — 114 and 384 components, no findings.
+
 ### Breaking — what you must change
 
 - **`artifact_bulk_write` answers with one object for the batch, not a list of items.** Read

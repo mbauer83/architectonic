@@ -100,7 +100,7 @@
     },
     {
       "name": "cryptography",
-      "version": "49.0.0",
+      "version": "50.0.0",
       "license": "Apache-2.0 OR BSD-3-Clause",
       "bucket": "allow"
     },

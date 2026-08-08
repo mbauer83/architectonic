@@ -69,7 +69,7 @@ What follows is a disclosure inventory, for two purposes: to say what a build as
 | charset-normalizer | 3.4.7 | MIT |
 | click | 8.4.2 | BSD-3-Clause |
 | colorama | 0.4.6 | BSD-3-Clause |
-| cryptography | 49.0.0 | Apache-2.0 OR BSD-3-Clause |
+| cryptography | 50.0.0 | Apache-2.0 OR BSD-3-Clause |
 | cvss | 3.6 | GNU Lesser General Public License v3 or later (LGPLv3+) |
 | defusedxml | 0.7.1 | Python Software Foundation License |
 | fastapi | 0.139.2 | MIT |
@@ -172,14 +172,14 @@ What follows is a disclosure inventory, for two purposes: to say what a build as
 | crelt | 1.0.7 | MIT |
 | csstype | 3.2.3 | MIT |
 | d3-hierarchy | 3.1.2 | ISC |
-| dompurify | 3.4.12 | (MPL-2.0 OR Apache-2.0) |
+| dompurify | 3.4.13 | (MPL-2.0 OR Apache-2.0) |
 | effect | 3.22.0 | MIT |
 | entities | 7.0.1 | BSD-2-Clause |
 | estree-walker | 2.0.2 | MIT |
 | fast-check | 3.23.2 | MIT |
 | magic-string | 0.30.21 | MIT |
 | marked | 18.0.7 | MIT |
-| nanoid | 3.3.16 | MIT |
+| nanoid | 3.3.18 | MIT |
 | picocolors | 1.1.1 | ISC |
 | postcss | 8.5.23 | MIT |
 | pure-rand | 6.1.0 | MIT |
