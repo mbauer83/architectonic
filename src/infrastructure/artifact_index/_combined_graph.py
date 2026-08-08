@@ -4,7 +4,12 @@ from typing import Literal
 
 from src.application.ports import ReadableArtifactStore
 from src.application.read_models import EntityContextConnection
-from src.domain.ontology_representation.artifact_types import ConnectionRecord, DiagramRecord, EntityRecord
+from src.domain.ontology_representation.artifact_types import (
+    ConnectionRecord,
+    DiagramRecord,
+    DocumentRecord,
+    EntityRecord,
+)
 
 from ._combined_support import dispatch_both, merge_sorted, sum_count_dicts, sum_tuple
 
@@ -82,6 +87,12 @@ class CombinedGraphMixin:
         left = self._engagement.grf_references_to_entity(artifact_id)
         right = self._enterprise.grf_references_to_entity(artifact_id)
         return merge_sorted(left, right, lambda r: r.artifact_id)
+
+    def documents_referencing_entity(self, artifact_id: str) -> list[DocumentRecord]:
+        left = self._engagement.documents_referencing_entity(artifact_id)
+        right = self._enterprise.documents_referencing_entity(artifact_id)
+        seen = {d.artifact_id for d in left}
+        return left + [d for d in right if d.artifact_id not in seen]
 
     def find_neighbors(
         self,

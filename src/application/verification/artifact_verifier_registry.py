@@ -5,7 +5,12 @@ from typing import Literal
 
 from src.application.ports import AmbiguousArtifactError, ResolvedArtifact, VerifierStorePort
 from src.domain.artifact_id import slug_of, stable_id
-from src.domain.ontology_representation.artifact_types import ConnectionRecord, DiagramRecord, EntityRecord
+from src.domain.ontology_representation.artifact_types import (
+    ConnectionRecord,
+    DiagramRecord,
+    DocumentRecord,
+    EntityRecord,
+)
 
 
 class ArtifactRegistry:
@@ -77,6 +82,9 @@ class ArtifactRegistry:
 
     def grf_references_to_entity(self, artifact_id: str) -> list[EntityRecord]:
         return self._store.grf_references_to_entity(artifact_id)
+
+    def documents_referencing_entity(self, artifact_id: str) -> list[DocumentRecord]:
+        return self._store.documents_referencing_entity(artifact_id)
 
     def scope_for_path(self, path: Path) -> Literal["enterprise", "engagement", "unknown"]:
         return self._store.scope_for_path(path)

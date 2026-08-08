@@ -53,6 +53,26 @@ def _format_dependency_tree(
     return "\n".join(lines)
 
 
+def _document_reference_warnings(registry: ArtifactRegistry, artifact_id: str) -> list[str]:
+    """Documents whose links to this entity will dangle once it is gone.
+
+    A warning, not a blocker. A document sits beside the model and references it one-way, so a link
+    left pointing at nothing does not make the model inconsistent — but nothing else would say it
+    happened either: a rename rewrites document links, a deletion cannot, and the verifier resolves
+    a document's links by skipping the ones that hit no file. Silence there is how a decision record
+    comes to cite an element nobody can find.
+    """
+    referencing = registry.documents_referencing_entity(artifact_id)
+    if not referencing:
+        return []
+    listed = ", ".join(sorted(f"{doc.artifact_id} ({doc.title})" for doc in referencing))
+    plural = "" if len(referencing) == 1 else "s"
+    return [
+        f"{len(referencing)} document{plural} link to this entity and will be left pointing at a "
+        f"file that no longer exists: {listed}. Update them, or the reference becomes unresolvable."
+    ]
+
+
 def _incoming_connection_blockers(registry: ArtifactRegistry, artifact_id: str) -> list[str]:
     """Connections from other entities that target *artifact_id*."""
     blockers: list[str] = []
@@ -136,7 +156,7 @@ def _delete_entity_core(
             f"{tree}"
         )
 
-    warnings: list[str] = []
+    warnings: list[str] = _document_reference_warnings(registry, artifact_id)
     if outgoing_path.exists():
         warnings.append(f"Will delete owned outgoing file: {outgoing_path.name}")
 

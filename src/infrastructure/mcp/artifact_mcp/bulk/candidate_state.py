@@ -236,6 +236,17 @@ class CandidateStore(CandidateListMixin):
             d for d in self._diagrams.values() if _diagram_refs(d, artifact_id)
         ]
 
+    def documents_referencing_entity(self, artifact_id: str) -> list[DocumentRecord]:
+        """Staged deletions hide a live document; a staged document is not staged here at all.
+
+        The batch surface does not create or edit documents, so what is staged can only remove one
+        from the answer, never add.
+        """
+        return [
+            d for d in self._live.documents_referencing_entity(artifact_id)
+            if d.artifact_id not in self._deleted_documents
+        ]
+
     def grf_references_to_entity(self, artifact_id: str) -> list[EntityRecord]:
         live = [
             e for e in self._live.grf_references_to_entity(artifact_id)
