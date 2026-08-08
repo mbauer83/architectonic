@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.application.verification._verifier_snapshot import RepositorySnapshot
+
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -191,11 +196,12 @@ def verify_document(  # noqa: C901
     *,
     registry: ArtifactRegistry | None,
     catalogs: RuntimeCatalogs,
+    snapshot: "RepositorySnapshot | None" = None,
 ) -> VerificationResult:
     """Verify a document file under docs/."""
     result = VerificationResult(path=path, file_type="document")
     loc = str(path)
-    content = read_file(path, result, loc)
+    content = read_file(path, result, loc, snapshot=snapshot)
     if content is None:
         return result
     fm = parse_frontmatter(content, result, loc)

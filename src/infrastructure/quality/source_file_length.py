@@ -56,8 +56,12 @@ _FRONTEND_GENERATED_SUFFIX = ".generated.ts"
 # handling inline instead. Extracting that composable is the change that lowers this entry, and it is a
 # focused pass on the most-used view rather than a tail-end tidy — recorded here so the next reader gets
 # the seam rather than the search for it.
+#
+# One entry is **gone**. `artifact_verifier.py` (403) was a facade that had kept two rule bodies for
+# itself while five others had modules of their own; entities and diagrams moved to `_verifier_entity.py`
+# and `_verifier_diagram.py` and it landed at 329, under the hard limit. The number followed the
+# decomposition — the file was over because it held rules a dispatcher should not hold.
 SOURCE_FILE_BASELINE_LIMITS: dict[str, int] = {
-    "src/application/verification/artifact_verifier.py": 403,
     "src/infrastructure/artifact_index/_sqlite_store.py": 391,
     "src/infrastructure/artifact_index/service.py": 543,
     "tools/gui/src/ui/components/ArtifactReferenceInput.vue": 619,

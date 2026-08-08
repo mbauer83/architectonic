@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import yaml
 
@@ -9,8 +12,25 @@ from src.application.verification.artifact_verifier_types import (
     VerificationResult,
 )
 
+if TYPE_CHECKING:
+    from src.application.verification._verifier_snapshot import RepositorySnapshot
 
-def read_file(path: Path, result: VerificationResult, loc: str) -> str | None:
+
+def read_file(
+    path: Path, result: VerificationResult, loc: str, *, snapshot: "RepositorySnapshot | None" = None
+) -> str | None:
+    """The file's content, from the pass's snapshot when there is one.
+
+    A whole-repository pass reads every file once, under exclusivity, and then evaluates rules from
+    that byte-image with no lock held — so a rule that reached back to the filesystem would observe a
+    state the rest of the pass did not, and the report would describe neither. `snapshot` is threaded
+    rather than stored because one verifier instance serves concurrent requests.
+
+    A path the snapshot does not hold falls back to disk: single-file verification passes no
+    snapshot at all, and a document outside the inventory is read the same way it always was.
+    """
+    if snapshot is not None and (content := snapshot.read(path)) is not None:
+        return content
     try:
         return path.read_text(encoding="utf-8")
     except OSError as exc:

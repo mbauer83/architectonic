@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.application.verification._verifier_snapshot import RepositorySnapshot
+
 import re
 from pathlib import Path
 from typing import Literal
@@ -196,11 +201,12 @@ def verify_outgoing(
     catalogs: RuntimeCatalogs,
     scope: Literal["enterprise", "engagement", "unknown"],
     repo_root: Path | None,
+    snapshot: "RepositorySnapshot | None" = None,
 ) -> VerificationResult:
     """Verify a .outgoing.md file."""
     result = VerificationResult(path=path, file_type="connection")
     loc = str(path)
-    content = read_file(path, result, loc)
+    content = read_file(path, result, loc, snapshot=snapshot)
     if content is None:
         return result
     fm = parse_frontmatter(content, result, loc)

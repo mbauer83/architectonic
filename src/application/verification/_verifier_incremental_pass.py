@@ -15,8 +15,9 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
-from src.application.verification._verifier_inventory import FileInventory, expand_impacted_paths
+from src.application.verification._verifier_inventory import expand_impacted_paths
 from src.application.verification._verifier_serde import merge_results, results_from_state
+from src.application.verification._verifier_snapshot import RepositorySnapshot
 from src.application.verification.artifact_verifier_incremental import (
     STATE_SCHEMA_VERSION,
     IncrementalState,
@@ -28,19 +29,18 @@ from src.application.verification.artifact_verifier_types import (
     VerificationResult,
     VerifierRuntimeConfig,
 )
-from src.application.verification.verifier_ports import FileInventoryPort, IncrementalStatePort
+from src.application.verification.verifier_ports import IncrementalStatePort
 
 
 @dataclass(frozen=True)
 class IncrementalPassContext:
     """What one incremental pass needs from the verifier that owns it."""
 
-    inventory: FileInventoryPort
     incremental: IncrementalStatePort
     has_registry: bool
     verify_full: Callable[..., list[VerificationResult]]
-    verify_subset: Callable[[FileInventory, set[str]], list[VerificationResult]]
-    verify_documents: Callable[[Path], list[VerificationResult]]
+    verify_subset: Callable[..., list[VerificationResult]]
+    verify_documents: Callable[..., list[VerificationResult]]
 
 
 def run_incremental_pass(
@@ -49,9 +49,10 @@ def run_incremental_pass(
     *,
     include_diagrams: bool,
     cfg: VerifierRuntimeConfig,
+    snapshot: RepositorySnapshot,
 ) -> tuple[str, list[VerificationResult]]:
     """Verify, reusing the stored pass where it is still trustworthy, and say which pass answered."""
-    inv = ctx.inventory.build(repo_path, include_diagrams=include_diagrams)
+    inv = snapshot.inventory
     state_path = ctx.incremental.state_path(repo_path, include_diagrams=include_diagrams)
     prev = ctx.incremental.load(state_path)
     head = ctx.incremental.git_head(repo_path)
@@ -61,18 +62,18 @@ def run_incremental_pass(
         prev, include_diagrams=include_diagrams, engine_sig=engine_sig, has_registry=ctx.has_registry
     ):
         mode = "full"
-        results = ctx.verify_full(repo_path, include_diagrams=include_diagrams)
+        results = ctx.verify_full(repo_path, include_diagrams=include_diagrams, snapshot=snapshot)
     else:
         assert prev is not None
         mode, results = _from_stored_state(
-            ctx, prev, inv, repo_path=repo_path, include_diagrams=include_diagrams, cfg=cfg
+            ctx, prev, repo_path=repo_path, include_diagrams=include_diagrams, cfg=cfg, snapshot=snapshot
         )
 
     # Documents live outside the incremental inventory, so the incremental modes must verify them
     # here — but every "full" result already includes them, and appending again reported each
     # document issue twice.
     if mode != "full":
-        results.extend(ctx.verify_documents(repo_path))
+        results.extend(ctx.verify_documents(repo_path, snapshot=snapshot))
 
     ctx.incremental.save(
         state_path,
@@ -94,22 +95,24 @@ def run_incremental_pass(
 def _from_stored_state(
     ctx: IncrementalPassContext,
     prev: IncrementalState,
-    inv: FileInventory,
     *,
     repo_path: Path,
     include_diagrams: bool,
     cfg: VerifierRuntimeConfig,
+    snapshot: RepositorySnapshot,
 ) -> tuple[str, list[VerificationResult]]:
+    inv = snapshot.inventory
     changed, deleted = detect_changed_paths(inv, prev)
     if deleted:
-        return "full", ctx.verify_full(repo_path, include_diagrams=include_diagrams)
+        return "full", ctx.verify_full(repo_path, include_diagrams=include_diagrams, snapshot=snapshot)
     if not changed:
         cached = results_from_state(prev, inv)
         if cached is not None:
             return "incremental-cached", cached
-        return "full", ctx.verify_full(repo_path, include_diagrams=include_diagrams)
+        return "full", ctx.verify_full(repo_path, include_diagrams=include_diagrams, snapshot=snapshot)
     total = len(inv.ordered_paths)
     ratio = (len(changed) / total) if total > 0 else 1.0
     if ratio >= cfg.changed_ratio_threshold or len(changed) >= cfg.changed_count_threshold:
-        return "full", ctx.verify_full(repo_path, include_diagrams=include_diagrams)
-    return "incremental", merge_results(prev, inv, ctx.verify_subset(inv, expand_impacted_paths(inv, changed)))
+        return "full", ctx.verify_full(repo_path, include_diagrams=include_diagrams, snapshot=snapshot)
+    subset = ctx.verify_subset(inv, expand_impacted_paths(inv, changed), snapshot=snapshot)
+    return "incremental", merge_results(prev, inv, subset)

@@ -7,6 +7,7 @@ from src.config.repo_paths import DIAGRAM_CATALOG, DIAGRAMS, DOCS
 from src.infrastructure.mcp.artifact_mcp.context import RepoScope, resolve_repo_roots, roots_key, verifier_for
 from src.infrastructure.mcp.artifact_mcp.formatting import as_issue_dict, as_verification_result_dict
 from src.infrastructure.mcp.artifact_mcp.tool_annotations import READ_ONLY
+from src.infrastructure.workspace.mutation_gate import get_workspace_gate
 
 
 def artifact_verify(
@@ -92,7 +93,13 @@ def artifact_verify(
     results = []
     pass_modes: dict[str, str] = {}
     for root in roots:
-        mode, root_results = verifier.verify_all_reporting_pass_mode(root, include_diagrams=include_diagrams)
+        # Exclusivity covers reading the tree, not judging it. Acquisition is ~0.2 s for this corpus
+        # where a full pass is minutes, so a write waits for the read, not for the verification.
+        with get_workspace_gate().reading():
+            snapshot = verifier.acquire(root, include_diagrams=include_diagrams)
+        mode, root_results = verifier.verify_all_reporting_pass_mode(
+            root, include_diagrams=include_diagrams, snapshot=snapshot
+        )
         pass_modes[str(root)] = mode
         results.extend(root_results)
     total = len(results)
