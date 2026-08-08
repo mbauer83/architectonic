@@ -82,11 +82,15 @@ class WorkspaceMutationGate:
     def reading(self) -> Iterator[None]:
         """Acquire shared READ.  Waits for an in-progress WRITE, and for any waiting one.
 
+        Order-checked like the write paths: a thread holding the index lock and then asking for the
+        gate is the inversion, whichever gate mode it asks for.
+
         Yielding to ``_writers_waiting`` is what makes a writer reachable at all. Waiting only on
         ``_writing`` let overlapping readers hold ``_readers > 0`` continuously, and the old release
         notified only when the count reached zero — so under sustained read load a writer was not
         merely treated unfairly, it was never woken.
         """
+        _check_lock_order()
         with self._cond:
             while self._writing or self._writers_waiting > 0:
                 self._cond.wait()
@@ -124,6 +128,7 @@ class WorkspaceMutationGate:
         For the sync publisher's M4 publish window only.  The block reason
         remains active so external mutators continue to receive ``GateRejected``.
         """
+        _check_lock_order()
         with self._cond:
             self._writers_waiting += 1
             try:
@@ -161,27 +166,29 @@ class WorkspaceMutationGate:
 # Lock-order enforcement
 # ---------------------------------------------------------------------------
 
-_tl = threading.local()
-
-
 def _check_lock_order() -> None:
-    """Assert that this thread does not already hold ArtifactIndex._lock.writing().
+    """Assert that this thread does not already hold an index write.
 
-    Called at the top of writing() to detect reversed lock acquisition.
-    ArtifactIndex._lock.writing() sets ``_tl.holding_index_write`` via the
-    import below.
+    The documented order is **gate → index**; taking the gate while holding the index lock is the
+    inversion that deadlocks. The answer comes from the locks themselves
+    (``current_thread_holds_index_write``) rather than from a thread-local mirror: a mirror is a
+    second copy of state the lock already owns, and it failed in two ways a single source cannot —
+    a missed clear poisoned a pooled worker for every later unrelated task, and ownership split
+    across threads read a clean flag and passed a genuine inversion.
+
+    Guards every gate acquisition, not only ``writing()``: ``privileged_writing()`` is a write path
+    too, and ``reading()`` became one that matters once verification began taking READ.
     """
-    if getattr(_tl, "holding_index_write", False):
+    from src.infrastructure.artifact_index._rwlock import (  # noqa: PLC0415
+        current_thread_holds_index_write,
+    )
+
+    if current_thread_holds_index_write():
         raise AssertionError(
-            "Lock order violation: gate.writing() called while this thread "
-            "already holds ArtifactIndex._lock.writing().  "
-            "Required order: gate → index."
+            "Lock order violation: the workspace gate was requested while this thread "
+            "already holds ArtifactIndex._lock.writing().  Required order is gate → index."
         )
 
-
-def _mark_index_write_held(held: bool) -> None:
-    """Called by ArtifactIndex._lock to record when this thread holds index WRITE."""
-    _tl.holding_index_write = held
 
 
 # ---------------------------------------------------------------------------
@@ -197,7 +204,10 @@ def get_workspace_gate() -> WorkspaceMutationGate:
 
 
 def _reset_for_test() -> None:
-    """Replace the singleton with a fresh gate.  Tests only."""
+    """Replace the singleton with a fresh gate.  Tests only.
+
+    Nothing else to reset: ownership lives in the index locks, so there is no mirror that could
+    survive a test and poison the next one.
+    """
     global _gate
     _gate = WorkspaceMutationGate()
-    _tl.holding_index_write = False

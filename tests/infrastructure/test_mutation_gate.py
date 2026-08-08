@@ -11,9 +11,7 @@ from src.infrastructure.rest.contracts.errors import ApiError, DenialDetails
 from src.infrastructure.workspace.mutation_gate import (
     GateRejected,
     WorkspaceMutationGate,
-    _mark_index_write_held,
     _reset_for_test,
-    _tl,
 )
 
 
@@ -220,21 +218,18 @@ class TestPrivilegedWriting:
 # ---------------------------------------------------------------------------
 
 class TestLockOrder:
-    def test_gate_writing_raises_when_holding_index_write(self):
-        gate = WorkspaceMutationGate()
-        _tl.holding_index_write = False
+    """Driven by a real index lock now, not by setting a flag the gate happened to read."""
 
-        _mark_index_write_held(True)
-        try:
-            with pytest.raises(AssertionError, match="Lock order violation"):
-                with gate.writing():
-                    pass
-        finally:
-            _mark_index_write_held(False)
+    def test_gate_writing_raises_when_holding_index_write(self):
+        from src.infrastructure.artifact_index._rwlock import _RWLock
+
+        gate = WorkspaceMutationGate()
+        with _RWLock().writing(), pytest.raises(AssertionError, match="Lock order violation"):
+            with gate.writing():
+                pass
 
     def test_gate_writing_ok_when_not_holding_index_write(self):
         gate = WorkspaceMutationGate()
-        _tl.holding_index_write = False
         executed = []
         with gate.writing():
             executed.append(True)
@@ -454,3 +449,90 @@ class TestAWaitingWriterIsReachable:
         for t in (t1, tw, tr):
             t.join(timeout=5)
         assert order == ["writer", "reader"], order
+
+
+class TestLockOwnershipIsAskedOfTheLock:
+    """The order detector reads the index locks, not a mirror of them.
+
+    A thread-local flag was a second copy of state the lock already owned. It failed in two ways a
+    single source cannot: a missed clear left a pooled worker raising spurious violations on every
+    later unrelated task, and a lock acquired on one thread while the gate was requested on another
+    read a clean flag and let a genuine inversion through undetected.
+    """
+
+    def test_same_thread_inversion_is_still_detected(self) -> None:
+        import pytest
+
+        from src.infrastructure.artifact_index._rwlock import _RWLock
+        from src.infrastructure.workspace.mutation_gate import WorkspaceMutationGate
+
+        lock, gate = _RWLock(), WorkspaceMutationGate()
+        with lock.writing(), pytest.raises(AssertionError, match="Lock order violation"):
+            with gate.writing():
+                pass
+
+    def test_the_read_path_is_guarded_too(self) -> None:
+        """Verification takes READ, so the inversion matters there as much as on a write."""
+        import pytest
+
+        from src.infrastructure.artifact_index._rwlock import _RWLock
+        from src.infrastructure.workspace.mutation_gate import WorkspaceMutationGate
+
+        lock, gate = _RWLock(), WorkspaceMutationGate()
+        with lock.writing(), pytest.raises(AssertionError, match="Lock order violation"):
+            with gate.reading():
+                pass
+
+    def test_the_privileged_write_path_is_guarded_too(self) -> None:
+        import pytest
+
+        from src.infrastructure.artifact_index._rwlock import _RWLock
+        from src.infrastructure.workspace.mutation_gate import WorkspaceMutationGate
+
+        lock, gate = _RWLock(), WorkspaceMutationGate()
+        with lock.writing(), pytest.raises(AssertionError, match="Lock order violation"):
+            with gate.privileged_writing():
+                pass
+
+    def test_a_lock_held_by_another_thread_is_not_this_thread_s_violation(self) -> None:
+        """The mirror could not tell these apart; ownership by thread ident can."""
+        import threading
+
+        from src.infrastructure.artifact_index._rwlock import _RWLock
+        from src.infrastructure.workspace.mutation_gate import WorkspaceMutationGate
+
+        lock, gate = _RWLock(), WorkspaceMutationGate()
+        held, release = threading.Event(), threading.Event()
+
+        def holder() -> None:
+            with lock.writing():
+                held.set()
+                release.wait(timeout=5)
+
+        t = threading.Thread(target=holder, daemon=True)
+        t.start()
+        assert held.wait(timeout=5)
+        try:
+            with gate.reading():  # another thread holds the index lock — not our inversion
+                pass
+        finally:
+            release.set()
+            t.join(timeout=5)
+
+    def test_releasing_the_index_lock_clears_ownership(self) -> None:
+        from src.infrastructure.artifact_index._rwlock import (
+            _RWLock,
+            current_thread_holds_index_write,
+        )
+
+        lock = _RWLock()
+        with lock.writing():
+            assert current_thread_holds_index_write()
+        assert not current_thread_holds_index_write()
+
+    def test_no_thread_local_mirror_remains(self) -> None:
+        """Asserted structurally: the defect class is gone, not merely unused."""
+        from src.infrastructure.workspace import mutation_gate
+
+        assert not hasattr(mutation_gate, "_tl")
+        assert not hasattr(mutation_gate, "_mark_index_write_held")
