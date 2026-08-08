@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Any, Literal
 
 from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
@@ -14,6 +15,7 @@ def artifact_verify(
     file_type: Literal["entity", "connection", "diagram", "document"] | None = None,
     include_diagrams: bool = True,
     return_mode: Literal["summary", "full"] = "summary",
+    confirm_full_pass: bool = False,
     repo_root: str | None = None,
     repo_scope: RepoScope = "both",
 ) -> dict[str, Any]:
@@ -28,8 +30,6 @@ def artifact_verify(
     verifier = verifier_for(key, include_registry=True)
 
     if path is not None:
-        from pathlib import Path
-
         p = Path(path).expanduser()
         if not p.is_absolute():
             p = engagement_root / p
@@ -56,6 +56,35 @@ def artifact_verify(
         out["repo_roots"] = [str(r) for r in roots]
         out["repo_scope"] = repo_scope
         return out
+
+    # A full pass re-verifies every file and takes minutes on a cold cache. Answering that with
+    # silence cost an operator a 30-minute client timeout and a backend that looked hung; answering
+    # it with the reason costs milliseconds. `ARCH_MODEL_VERIFY_MODE=full` is consent already, so
+    # `pending_full_pass_reason` returns None under it and CI is unaffected.
+    if not confirm_full_pass:
+        pending = {
+            str(root): reason
+            for root in roots
+            if (reason := verifier.pending_full_pass_reason(root, include_diagrams=include_diagrams))
+        }
+        if pending:
+            return {
+                "repo_roots": [str(r) for r in roots],
+                "repo_scope": repo_scope,
+                "include_diagrams": include_diagrams,
+                "pass_mode": {root: "full-required" for root in pending},
+                "full_pass_required": pending,
+                "files_to_verify": {
+                    root: verifier.count_verifiable_files(Path(root), include_diagrams=include_diagrams)
+                    for root in pending
+                },
+                "message": (
+                    "A full pass is required and was not confirmed. It re-verifies every file and "
+                    "takes minutes on a cold cache. Re-call with confirm_full_pass=true, or set "
+                    "ARCH_MODEL_VERIFY_MODE=full for callers that cannot confirm."
+                ),
+                "results": [],
+            }
 
     # Batch verify: every resolved root — the description promises repo_scope
     # "both", and answering for the engagement repo alone under that contract
@@ -129,6 +158,7 @@ def artifact_verify_all(
     *,
     include_diagrams: bool = True,
     return_mode: Literal["summary", "full"] = "summary",
+    confirm_full_pass: bool = False,
     repo_root: str | None = None,
     repo_scope: RepoScope = "both",
 ) -> dict[str, Any]:

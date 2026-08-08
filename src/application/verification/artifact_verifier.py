@@ -14,7 +14,16 @@ from src.application.verification._verifier_contribution_runner import (
     run_repository_contributions,
 )
 from src.application.verification._verifier_document import verify_document
+from src.application.verification._verifier_incremental_pass import (
+    IncrementalPassContext,
+    run_incremental_pass,
+)
+from src.application.verification._verifier_inventory import FileInventory, expand_impacted_paths
 from src.application.verification._verifier_outgoing import verify_outgoing
+from src.application.verification._verifier_pass_planning import (
+    count_verifiable_files,
+    pending_full_pass_reason,
+)
 from src.application.verification._verifier_rules_diagram_references import check_diagram_references_scoped
 from src.application.verification._verifier_rules_edge_labels import check_edge_label_overrides
 from src.application.verification._verifier_rules_grf import check_global_artifact_reference
@@ -26,15 +35,8 @@ from src.application.verification._verifier_rules_schema import (
 )
 from src.application.verification._verifier_rules_specialization import check_entity_specialization
 from src.application.verification._verifier_rules_viewpoint import check_viewpoint_for_diagram_type
-from src.application.verification._verifier_serde import merge_results, results_from_state
 from src.application.verification.artifact_verifier_incremental import (
-    STATE_SCHEMA_VERSION,
-    FileInventory,
-    detect_changed_paths,
-    expand_impacted_paths,
     load_runtime_config,
-    requires_full_pass,
-    serialize_result,
 )
 from src.application.verification.artifact_verifier_parsing import (
     parse_frontmatter,
@@ -56,7 +58,6 @@ from src.application.verification.artifact_verifier_types import (
     DIAGRAM_REQUIRED,
     ENTITY_REQUIRED,
     VALID_STATUSES,
-    IncrementalState,
     Issue,
     Severity,
     VerificationResult,
@@ -294,6 +295,19 @@ class ArtifactVerifier:
     def verify_all(self, repo_path: Path, *, include_diagrams: bool = True) -> list[VerificationResult]:
         return self.verify_all_reporting_pass_mode(repo_path, include_diagrams=include_diagrams)[1]
 
+    def pending_full_pass_reason(self, repo_path: Path, *, include_diagrams: bool = True) -> str | None:
+        return pending_full_pass_reason(
+            incremental=self._incremental,
+            has_registry=self.registry is not None,
+            repo_path=repo_path,
+            include_diagrams=include_diagrams,
+        )
+
+    def count_verifiable_files(self, repo_path: Path, *, include_diagrams: bool = True) -> int:
+        return count_verifiable_files(
+            inventory=self._inventory, repo_path=repo_path, include_diagrams=include_diagrams
+        )
+
     def verify_all_reporting_pass_mode(
         self, repo_path: Path, *, include_diagrams: bool = True
     ) -> tuple[str, list[VerificationResult]]:
@@ -351,70 +365,22 @@ class ArtifactVerifier:
         include_diagrams: bool,
         cfg: VerifierRuntimeConfig,
     ) -> tuple[str, list[VerificationResult]]:
-        inv = self._inventory.build(repo_path, include_diagrams=include_diagrams)
-        state_path = self._incremental.state_path(repo_path, include_diagrams=include_diagrams)
-        prev = self._incremental.load(state_path)
-        head = self._incremental.git_head(repo_path)
-        engine_sig = self._incremental.engine_signature()
-
-        if requires_full_pass(
-            prev, include_diagrams=include_diagrams, engine_sig=engine_sig,
-            has_registry=self.registry is not None,
-        ):
-            mode = "full"
-            results = self._verify_all_full(repo_path, include_diagrams=include_diagrams)
-        else:
-            assert prev is not None
-            mode, results = self._verify_from_incremental_state(
-                prev, inv, repo_path=repo_path, include_diagrams=include_diagrams, cfg=cfg
-            )
-
-        # Documents live outside the incremental inventory, so the incremental modes
-        # must verify them here — but every "full" result already includes them, and
-        # appending again reported each document issue twice.
-        if mode != "full":
-            doc_files = self._inventory.list_doc_files(repo_path)
-            results.extend(self._scheduler.run(self.verify_document_file, doc_files))
-
-        state = IncrementalState(
-            schema_version=STATE_SCHEMA_VERSION,
-            engine_signature=engine_sig,
+        return run_incremental_pass(
+            IncrementalPassContext(
+                inventory=self._inventory,
+                incremental=self._incremental,
+                has_registry=self.registry is not None,
+                verify_full=self._verify_all_full,
+                verify_subset=self._verify_inventory_subset,
+                verify_documents=self._verify_documents,
+            ),
+            repo_path,
             include_diagrams=include_diagrams,
-            git_head=head,
-            snapshots=inv.snapshots,
-            results={inv.path_to_rel[r.path]: serialize_result(r) for r in results if r.path in inv.path_to_rel},
-            include_registry=(self.registry is not None),
+            cfg=cfg,
         )
-        self._incremental.save(state_path, state)
 
-        if cfg.log_mode:
-            print(f"[ArtifactVerifier] mode={mode} include_diagrams={include_diagrams} files={len(results)}")
-        return mode, results
-
-    def _verify_from_incremental_state(
-        self,
-        prev: IncrementalState,
-        inv: FileInventory,
-        *,
-        repo_path: Path,
-        include_diagrams: bool,
-        cfg: VerifierRuntimeConfig,
-    ) -> tuple[str, list[VerificationResult]]:
-        changed, deleted = detect_changed_paths(inv, prev)
-        if deleted:
-            return "full", self._verify_all_full(repo_path, include_diagrams=include_diagrams)
-        if not changed:
-            cached = results_from_state(prev, inv)
-            if cached is not None:
-                return "incremental-cached", cached
-            return "full", self._verify_all_full(repo_path, include_diagrams=include_diagrams)
-        total = len(inv.ordered_paths)
-        ratio = (len(changed) / total) if total > 0 else 1.0
-        if ratio >= cfg.changed_ratio_threshold or len(changed) >= cfg.changed_count_threshold:
-            return "full", self._verify_all_full(repo_path, include_diagrams=include_diagrams)
-        impacted = expand_impacted_paths(inv, changed)
-        fresh = self._verify_inventory_subset(inv, impacted)
-        return "incremental", merge_results(prev, inv, fresh)
+    def _verify_documents(self, repo_path: Path) -> list[VerificationResult]:
+        return self._scheduler.run(self.verify_document_file, self._inventory.list_doc_files(repo_path))
 
     def _verify_inventory_subset(self, inv: FileInventory, relpaths: set[str]) -> list[VerificationResult]:
         if self.registry is not None:

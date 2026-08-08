@@ -224,7 +224,7 @@ def _preexisting_invalid_paths(
     if not invalid_neighbor_staged_results:
         return set()
 
-    from src.application.verification.artifact_verifier_incremental import inventory_files
+    from src.application.verification._verifier_inventory import inventory_files
 
     live_registry = ArtifactRegistry(shared_artifact_index([live_root]))
     # check_puml_syntax=False: avoid spawning any subprocess in this path.

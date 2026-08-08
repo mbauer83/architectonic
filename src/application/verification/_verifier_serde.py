@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from src.application.verification.artifact_verifier_incremental import FileInventory
+from src.application.verification._verifier_inventory import FileInventory
 from src.application.verification.artifact_verifier_types import (
     IncrementalState,
     Issue,

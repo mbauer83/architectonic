@@ -82,10 +82,9 @@ from pathlib import Path
 
 import pytest
 
+from src.application.verification._verifier_inventory import FileInventory, content_hash
 from src.application.verification.artifact_verifier_incremental import (
     STATE_SCHEMA_VERSION,
-    FileInventory,
-    content_hash,
     detect_changed_paths,
     load_incremental_state,
     requires_full_pass,

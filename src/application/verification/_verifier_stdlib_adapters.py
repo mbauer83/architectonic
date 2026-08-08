@@ -12,17 +12,16 @@ from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+from src.application.verification._verifier_inventory import FileInventory, inventory_files
 from src.application.verification.artifact_verifier_incremental import (
-    FileInventory,
-    inventory_files,
+    git_head as _git_head,
+)
+from src.application.verification.artifact_verifier_incremental import (
     load_incremental_state,
     load_runtime_config,
     save_incremental_state,
     state_file_path,
     verifier_engine_signature,
-)
-from src.application.verification.artifact_verifier_incremental import (
-    git_head as _git_head,
 )
 from src.application.verification.artifact_verifier_syntax import resolve_worker_count
 from src.application.verification.artifact_verifier_types import (

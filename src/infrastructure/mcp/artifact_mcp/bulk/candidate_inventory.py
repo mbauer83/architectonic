@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Literal
 
-from src.application.verification.artifact_verifier_incremental import FileInventory
+from src.application.verification._verifier_inventory import FileInventory
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.application.verification.artifact_verifier_types import entity_id_from_path
 from src.config.repo_paths import DIAGRAM_CATALOG, DIAGRAMS, DOCS

@@ -12,7 +12,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Protocol
 
-from src.application.verification.artifact_verifier_incremental import FileInventory
+from src.application.verification._verifier_inventory import FileInventory
 from src.application.verification.artifact_verifier_types import (
     IncrementalState,
     Issue,

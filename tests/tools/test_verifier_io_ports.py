@@ -12,8 +12,8 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
+from src.application.verification._verifier_inventory import FileInventory
 from src.application.verification.artifact_verifier import ArtifactVerifier
-from src.application.verification.artifact_verifier_incremental import FileInventory
 from src.application.verification.artifact_verifier_types import (
     IncrementalState,
     Issue,
