@@ -400,3 +400,50 @@ class TestCleanupBrokenRefs:
         report = cleanup_broken_refs(engagement_root, enterprise_root, dry_run=True)
         assert report.broken_grfs == []
         assert report.actions == []
+
+
+class TestAdminEditKeepsTheEntityIdentity:
+    """The address used to reach an entity is not the entity's identity.
+
+    Both the full `PREFIX@epoch.random.slug` and the short `PREFIX@epoch.random` resolve to the
+    same file. The admin edit wrote whichever one the caller used back into the frontmatter, so
+    reaching an entity by its short form produced an `artifact-id` with no slug — which fails its
+    own id pattern (E101). The edit then verified false and refused, for an entity that was fine
+    and an edit that was valid.
+    """
+
+    def _edit(self, enterprise_root: Path, addressed_as: str) -> object:
+        from src.application.verification.artifact_verifier import ArtifactVerifier
+        from src.application.verification.artifact_verifier_registry import ArtifactRegistry
+        from src.infrastructure.artifact_index import shared_artifact_index
+        from src.infrastructure.write.artifact_write.admin_ops import admin_edit_entity
+
+        full = "REQ@1786120500.QwErTy1.a-requirement-with-a-slug"
+        path = enterprise_root / "model" / "motivation" / "requirement" / f"{full}.md"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        _write(path, _entity_md(full, "requirement", "A Requirement With A Slug"))
+        registry = ArtifactRegistry(shared_artifact_index([enterprise_root]))
+        verifier = ArtifactVerifier(registry, catalogs=_catalogs())
+        return admin_edit_entity(
+            repo_root=enterprise_root,
+            registry=registry,
+            verifier=verifier,
+            clear_repo_caches=lambda _: None,
+            artifact_id=addressed_as,
+            name=None, summary=None, properties={"Priority": "Must"}, notes=None,
+            keywords=None, version=None, status=None, dry_run=False,
+        )
+
+    def test_addressing_by_short_id_keeps_the_full_id_in_the_file(self, enterprise_root: Path) -> None:
+        result = self._edit(enterprise_root, "REQ@1786120500.QwErTy1")
+
+        assert result.wrote, result.verification
+        written = Path(result.path).read_text(encoding="utf-8")
+        assert "artifact-id: REQ@1786120500.QwErTy1.a-requirement-with-a-slug" in written
+
+    def test_addressing_by_full_id_is_unchanged(self, enterprise_root: Path) -> None:
+        result = self._edit(enterprise_root, "REQ@1786120500.QwErTy1.a-requirement-with-a-slug")
+
+        assert result.wrote, result.verification
+        written = Path(result.path).read_text(encoding="utf-8")
+        assert "artifact-id: REQ@1786120500.QwErTy1.a-requirement-with-a-slug" in written

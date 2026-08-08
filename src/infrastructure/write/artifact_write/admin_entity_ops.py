@@ -98,6 +98,11 @@ def admin_edit_entity(
         raise ValueError(f"Entity '{artifact_id}' not found in model")
 
     parsed = parse_entity_file(entity_file)
+    # The address used to reach the file is not the file's identity. Both the full and the short
+    # form resolve, and writing the short one back produced an `artifact-id` with no slug, which
+    # fails its own id pattern (E101) — so the edit verified false and refused, for an entity that
+    # was fine. The file declares what it is.
+    artifact_id = str(parsed.frontmatter.get("artifact-id") or artifact_id)
     artifact_type = str(parsed.frontmatter.get("artifact-type", ""))
     from src.infrastructure.app_bootstrap import get_module_registry  # noqa: PLC0415
 
