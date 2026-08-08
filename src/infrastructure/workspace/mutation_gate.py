@@ -154,6 +154,23 @@ class WorkspaceMutationGate:
                 self._cond.notify_all()
 
     @property
+    def is_writing(self) -> bool:
+        """Whether a write is in progress right now.
+
+        Exists so that code nested *inside* a write can assert it really is — whole-repository
+        verification runs inside `gate.writing()` on the promote and cascade-delete paths, and that
+        nesting is the reason it must never acquire for itself. A test asserting "verification
+        completed" proves nothing on its own: it passes just as well if the nesting quietly goes
+        away, and then the deadlock it guards against is no longer being guarded.
+
+        A momentary answer, deliberately: it is a statement about the instant it was asked, useful
+        for an assertion or a diagnostic, and useless for deciding whether to acquire — which is what
+        `writing()` and `reading()` are for.
+        """
+        with self._cond:
+            return self._writing
+
+    @property
     def block_reason(self) -> BlockReason | None:
         with self._cond:
             return self._block_reason

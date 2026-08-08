@@ -63,11 +63,36 @@ def expand_artifact_id(registry_or_repo, artifact_id: str) -> str:
 def workspace_root() -> Path:
     # .../src/infrastructure/mcp/artifact_mcp/context.py ->
     # parents[0]=artifact_mcp, [1]=mcp, [2]=infrastructure, [3]=src, [4]=repo root
+    #
+    # Where the *code* lives, which is only the workspace by coincidence — a true one in a checkout
+    # a developer also models in, and in the container, where `arch-workspace.yaml` is mounted beside
+    # the code at /app. It is not the workspace when one installed copy serves another directory, so
+    # this is the fallback for a process with no served roots, never the first answer inside a
+    # backend. See `_served_repo_roots`.
     return Path(__file__).resolve().parents[4]
 
 
+def _served_repo_roots() -> tuple[Path, Path] | None:
+    """The roots this backend was told to serve, if it is a backend at all.
+
+    The authority, because it is the only source that answers *this process's* question. Resolving
+    from the code's own directory instead sent a second backend's tools — reads, writes and
+    deletes alike — into the first workspace's model, while `/api/backend-identity` truthfully
+    reported the roots it had been given. Nothing failed; the wrong repository simply answered.
+
+    Absent outside a backend (the stdio bridges proxy, so this is really "no REST state installed"),
+    where the code-relative workspace is the right fallback.
+    """
+    try:
+        from src.infrastructure.rest.routers import state as gui_state  # noqa: PLC0415
+    except Exception:  # noqa: BLE001
+        return None
+    roots = gui_state.configured_roots()
+    return (roots[0], roots[1]) if len(roots) >= 2 else None
+
+
 def _workspace_repo_roots() -> tuple[Path, Path] | None:
-    return resolve_workspace_repo_roots(workspace_root())
+    return _served_repo_roots() or resolve_workspace_repo_roots(workspace_root())
 
 
 def _configured_repo_root(*names: str) -> Path | None:
