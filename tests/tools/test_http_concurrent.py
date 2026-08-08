@@ -115,40 +115,61 @@ def _build_test_app(repo_root: Path) -> tuple[FastAPI, list[str]]:
     return app, entity_ids
 
 
+#: How many simultaneous readers to model — 16 open tabs, 12 context panes.
+_TABS = 16
+_CONTEXT_READS = 12
+
+#: How unevenly concurrent requests may finish before they are judged to be queueing.
+#:
+#: Wall-clock totals cannot answer this question, which is why two earlier forms of these tests could
+#: not fail for the reason they existed. The handlers are synchronous, so Starlette runs them in a
+#: threadpool and they *do* overlap — but the work is SQLite plus Python serialization, which holds
+#: the GIL, so 16 together measured 0.16 s against 0.036 s sequentially. Concurrency costs here
+#: rather than pays, and — the fatal part — a lock that serialized every reader would make the total
+#: *smaller*, so any upper bound on it passes precisely when the defect is present.
+#:
+#: What distinguishes the two is the spread. Queued readers finish one after another, so their
+#: individual latencies fan out towards N x the first. Overlapping readers all wait on the same
+#: contended resource and finish together, however slow that is. This bound is on the fan-out.
+_LATENCY_SPREAD = 4.0
+
+
+async def _concurrent_latencies(app: object, urls: list[str]) -> list[float]:
+    """Each request's own latency when all are issued at once, after warming the index."""
+    transport = httpx.ASGITransport(app=app)  # type: ignore[arg-type]
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        await client.get(urls[0])
+
+        async def timed(url: str) -> float:
+            started = time.perf_counter()
+            await client.get(url)
+            return time.perf_counter() - started
+
+        return list(await asyncio.gather(*[timed(url) for url in urls]))
+
+
 # ── Tests ─────────────────────────────────────────────────────────────────────
 
 
 @pytest.mark.verifies("REQ@1776637159.X5jYC0")
 def test_concurrent_tab_reads_are_not_serialized(tmp_path: Path) -> None:
-    """16 tabs hitting /api/entities simultaneously should finish in parallel, not
-    one after the other.  We assert wall-clock time < 4 × single-request baseline."""
+    """16 tabs hitting /api/entities at once must overlap rather than queue behind each other.
+
+    The comparison is against the *same* requests run one after another, measured in the same
+    process moments apart, rather than against a single-request baseline and an absolute ceiling.
+    Both halves of that older form were wrong: an absolute 0.5 s floor was larger than the
+    serialized time it was meant to catch — 16 × an 11 ms request is 176 ms, so a fully serialized
+    server passed — while the same floor failed the test on an ordinarily busy machine, at 512 ms.
+    A self-calibrating ratio cannot do either, because load moves both measurements together.
+    """
     repo_root = tmp_path / "engagements" / "ENG-HTTP" / "architecture-repository"
-    app, entity_ids = _build_test_app(repo_root)
+    app, _entity_ids = _build_test_app(repo_root)
 
-    async def _run() -> tuple[float, float]:
-        transport = httpx.ASGITransport(app=app)
-        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
-            # Warm-up: one request so the index is already loaded.
-            await client.get("/api/entities")
+    latencies = asyncio.run(_concurrent_latencies(app, ["/api/entities"] * _TABS))
 
-            # Single-request baseline.
-            t0 = time.perf_counter()
-            await client.get("/api/entities")
-            single = time.perf_counter() - t0
-
-            # 16 concurrent requests — simulate 16 open tabs.
-            t1 = time.perf_counter()
-            await asyncio.gather(*[client.get("/api/entities") for _ in range(16)])
-            wall = time.perf_counter() - t1
-
-        return single, wall
-
-    single, wall = asyncio.run(_run())
-
-    # With concurrent reads the total wall time should be close to a single
-    # request, not 16×.  Allow 4× headroom for CI variance.
-    assert wall < max(single * 4, 0.5), (
-        f"Concurrent reads appear serialized: 16 requests took {wall:.3f}s but single request took {single:.3f}s"
+    assert max(latencies) < min(latencies) * _LATENCY_SPREAD, (
+        f"Concurrent reads appear serialized: {_TABS} tabs finished between {min(latencies):.3f}s "
+        f"and {max(latencies):.3f}s, a fan-out consistent with queueing rather than overlapping."
     )
 
 
@@ -158,25 +179,12 @@ def test_entity_context_reads_are_not_serialized(tmp_path: Path) -> None:
     repo_root = tmp_path / "engagements" / "ENG-HTTP2" / "architecture-repository"
     app, entity_ids = _build_test_app(repo_root)
 
-    async def _run() -> tuple[float, float]:
-        transport = httpx.ASGITransport(app=app)
-        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
-            await client.get(f"/api/entities/{entity_ids[0]}/context")
+    urls = [f"/api/entities/{entity_ids[i % len(entity_ids)]}/context" for i in range(_CONTEXT_READS)]
+    latencies = asyncio.run(_concurrent_latencies(app, urls))
 
-            t0 = time.perf_counter()
-            await client.get(f"/api/entities/{entity_ids[0]}/context")
-            single = time.perf_counter() - t0
-
-            urls = [f"/api/entities/{entity_ids[i % len(entity_ids)]}/context" for i in range(12)]
-            t1 = time.perf_counter()
-            await asyncio.gather(*[client.get(u) for u in urls])
-            wall = time.perf_counter() - t1
-
-        return single, wall
-
-    single, wall = asyncio.run(_run())
-    assert wall < max(single * 4, 0.5), (
-        f"Entity-context reads appear serialized: 12 requests took {wall:.3f}s but single request took {single:.3f}s"
+    assert max(latencies) < min(latencies) * _LATENCY_SPREAD, (
+        f"Entity-context reads appear serialized: {_CONTEXT_READS} finished between "
+        f"{min(latencies):.3f}s and {max(latencies):.3f}s."
     )
 
 
