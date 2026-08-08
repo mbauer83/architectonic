@@ -367,3 +367,90 @@ def test_write_executor_rejects_multiple_workers(monkeypatch) -> None:
 
     with pytest.raises(AssertionError, match="single-worker"):
         write_queue._get_executor()
+
+
+class TestAWaitingWriterIsReachable:
+    """Overlapping readers used to make a writer unreachable, not merely slow.
+
+    ``reading()`` waited only on ``_writing``, and its release notified only when ``_readers``
+    reached zero. Under sustained overlapping reads the count never reached zero, so a waiting
+    writer was never woken — the starvation was unbounded, and nothing in the structure could even
+    express "a writer is waiting". ``_writers_waiting`` is that expression, and readers yield to it.
+    """
+
+    def test_a_writer_is_admitted_under_sustained_overlapping_reads(self) -> None:
+        import threading
+        import time
+
+        from src.infrastructure.workspace.mutation_gate import WorkspaceMutationGate
+
+        gate = WorkspaceMutationGate()
+        stop = threading.Event()
+        admitted = threading.Event()
+
+        def reader() -> None:
+            while not stop.is_set():
+                with gate.reading():
+                    time.sleep(0.005)
+
+        readers = [threading.Thread(target=reader, daemon=True) for _ in range(4)]
+        for r in readers:
+            r.start()
+        time.sleep(0.05)
+
+        def writer() -> None:
+            with gate.writing():
+                admitted.set()
+
+        w = threading.Thread(target=writer, daemon=True)
+        w.start()
+        try:
+            assert admitted.wait(timeout=5), "writer never woken under overlapping readers"
+        finally:
+            stop.set()
+            for r in readers:
+                r.join(timeout=2)
+            w.join(timeout=2)
+
+    def test_a_reader_arriving_behind_a_waiting_writer_waits(self) -> None:
+        """The other half: yielding must actually order the reader behind the writer."""
+        import threading
+        import time
+
+        from src.infrastructure.workspace.mutation_gate import WorkspaceMutationGate
+
+        gate = WorkspaceMutationGate()
+        order: list[str] = []
+        lock = threading.Lock()
+        first_reader_in = threading.Event()
+        release_first = threading.Event()
+
+        def first_reader() -> None:
+            with gate.reading():
+                first_reader_in.set()
+                release_first.wait(timeout=5)
+
+        def writer() -> None:
+            with gate.writing():
+                with lock:
+                    order.append("writer")
+
+        def late_reader() -> None:
+            with gate.reading():
+                with lock:
+                    order.append("reader")
+
+        t1 = threading.Thread(target=first_reader, daemon=True)
+        t1.start()
+        assert first_reader_in.wait(timeout=5)
+        tw = threading.Thread(target=writer, daemon=True)
+        tw.start()
+        time.sleep(0.05)  # let the writer register as waiting
+        tr = threading.Thread(target=late_reader, daemon=True)
+        tr.start()
+        time.sleep(0.05)
+        release_first.set()
+
+        for t in (t1, tw, tr):
+            t.join(timeout=5)
+        assert order == ["writer", "reader"], order

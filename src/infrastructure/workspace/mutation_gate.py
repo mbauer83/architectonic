@@ -52,6 +52,7 @@ class WorkspaceMutationGate:
         self._cond = threading.Condition(threading.Lock())
         self._readers: int = 0
         self._writing: bool = False
+        self._writers_waiting: int = 0
         self._block_reason: BlockReason | None = None
 
     @contextmanager
@@ -61,10 +62,14 @@ class WorkspaceMutationGate:
         with self._cond:
             if self._block_reason is not None:
                 raise GateRejected(self._block_reason)
-            while self._writing or self._readers > 0:
-                self._cond.wait()
-                if self._block_reason is not None:
-                    raise GateRejected(self._block_reason)
+            self._writers_waiting += 1
+            try:
+                while self._writing or self._readers > 0:
+                    self._cond.wait()
+                    if self._block_reason is not None:
+                        raise GateRejected(self._block_reason)
+            finally:
+                self._writers_waiting -= 1
             self._writing = True
         try:
             yield
@@ -75,9 +80,15 @@ class WorkspaceMutationGate:
 
     @contextmanager
     def reading(self) -> Iterator[None]:
-        """Acquire shared READ.  Waits for any in-progress WRITE to finish."""
+        """Acquire shared READ.  Waits for an in-progress WRITE, and for any waiting one.
+
+        Yielding to ``_writers_waiting`` is what makes a writer reachable at all. Waiting only on
+        ``_writing`` let overlapping readers hold ``_readers > 0`` continuously, and the old release
+        notified only when the count reached zero — so under sustained read load a writer was not
+        merely treated unfairly, it was never woken.
+        """
         with self._cond:
-            while self._writing:
+            while self._writing or self._writers_waiting > 0:
                 self._cond.wait()
             self._readers += 1
         try:
@@ -85,8 +96,7 @@ class WorkspaceMutationGate:
         finally:
             with self._cond:
                 self._readers -= 1
-                if self._readers == 0:
-                    self._cond.notify_all()
+                self._cond.notify_all()
 
     @contextmanager
     def blocking_writes(self, reason: BlockReason) -> Iterator[None]:
@@ -115,8 +125,12 @@ class WorkspaceMutationGate:
         remains active so external mutators continue to receive ``GateRejected``.
         """
         with self._cond:
-            while self._writing or self._readers > 0:
-                self._cond.wait()
+            self._writers_waiting += 1
+            try:
+                while self._writing or self._readers > 0:
+                    self._cond.wait()
+            finally:
+                self._writers_waiting -= 1
             self._writing = True
         try:
             yield
