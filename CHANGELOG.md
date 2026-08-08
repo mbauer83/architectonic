@@ -3,6 +3,36 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [0.3.1] — 2026-08-08
+
+**[Full detail → `changelog-assets/0.3.1-detail.md`](changelog-assets/0.3.1-detail.md)**
+
+**Nothing the product serves changed shape.** A cold verification no longer takes the backend with it.
+
+### Fixed
+
+- **A whole-repository verify no longer blocks every other request for its duration.** It held the
+  workspace gate for the whole pass and ran on the event loop; it now reads under exclusivity (192 ms
+  for 880 files) and evaluates outside it. Identity p95 during a pass went from 5.9x idle to 1.5x.
+- **Verification could deadlock a promote or a cascade-delete**, which verify while holding the
+  non-reentrant write gate. A full pass reached from the incremental path also swept the tree twice,
+  recording files as verified at contents they never held. A waiting writer was unreachable under
+  sustained reads, and lock ownership was mirrored in a thread-local that offloading invalidates.
+- **A second backend on one machine served its MCP tools from the *first* workspace's repository**,
+  while reporting its own roots on `/api/backend-identity`: the MCP layer resolved its default
+  repository from where the code lives, not from what the backend serves, so reads, writes and
+  deletes could land in a neighbour's model. Only multi-workspace deployments were affected.
+- **A diagram no longer draws a domain box for a domain an authored grouping emptied**, which a
+  grouping spanning several domains leaves behind for each domain it draws from.
+
+### Changed
+
+- **`artifact_verify` refuses an unconfirmed full pass** in milliseconds, naming which of four
+  conditions requires it and how many files it would read; pass `confirm_full_pass=true` or set
+  `ARCH_MODEL_VERIFY_MODE=full`. A concurrent pass is refused, not queued; a cancelled one leaves no
+  state. It **verifies one file at a time now** — the pool cost 4x the wall clock and 4.4x the CPU
+  for the same files; `ARCH_VERIFY_WORKERS` opts back in.
+
 ## [0.3.0] — 2026-08-08
 
 **[Full detail → `changelog-assets/0.3.0-detail.md`](changelog-assets/0.3.0-detail.md)**
@@ -42,36 +72,24 @@ repairs references that name an artifact by a name it no longer has.
   than for a fixed number of seconds, so a large repository's first index build no longer times out.
 - **A preview now shows the diagram the write will save.** Authored groupings reached both writes and
   never the preview, and the two rendered different input, so a box was invisible until saved.
-- **Connection ids are no longer minted with a character that breaks them.** A random key ending in
-  `-` made a composite id split in the wrong place, so that connection could not be found from either
-  end. Ids now mint from a hyphen-free alphabet, one character longer to keep the same entropy;
-  existing ids keep working, and nothing needs migrating.
-- **"Browse" no longer carries a diagram type into the entity browser as a filter.** Arriving from a
-  diagram page set the entity-type filter to a value no entity matches, showing an empty list.
-- **Tracing analyses now see through AND/OR junctions.** A junction was a dead end, so a requirement
-  realized through an AND-junction was reported unrealized. It now passes the relationship through
-  unchanged and certainly, declared as ontology data (`RJ3`) rather than evaluator logic.
-- **A junction may no longer carry a relationship its participants could not hold.** Two diagnostics,
-  refused at the write boundary as well as reported: **E128** when the legs of one intermediate
-  disagree on a type, **E129** when the type is not permitted between every participant.
-- **A diagram naming an entity or connection by a former slug is now reported (W305/W306).**
-  `artifact_verify` answered 0 warnings over 16 stale references across 6 diagrams, because identity
-  is the id's stem and each one resolved. Both sides now read one rule.
+- **Six further fixes**, each with its own section in the detail file: connection ids minted from a
+  hyphen-free alphabet, so a composite id no longer splits in the wrong place; AND/OR junctions no
+  longer a dead end for tracing (`RJ3`); a junction refused a relationship its participants could not
+  hold (**E128**/**E129**); a diagram naming an artifact by a former slug reported
+  (**W305**/**W306**); a batched rename rewriting its referring files, as a single-entity rename
+  always did; and `entity_ids` on `artifact_edit_diagram` setting what the diagram draws, as it
+  always has on create.
 - **A rename now reaches the confidential assurance store, when it is unlocked.** A registered
-  follower retargets the stored references, matching on the stem so an older spelling heals too. The
-  write path never reaches into the closed tier; a locked or unconfigured store means no failure.
+  follower retargets the stored references, matching on the stem so an older spelling heals too. A
+  locked or unconfigured store means no failure.
 - **A batch item carrying a field its operation does not accept is refused, not performed
   differently.** An item passing `mode: "remove"` had that field ignored, ran as an update, and
   reported `wrote: true` for a removal that never happened. Every op declares its accepted fields.
-- **A rename inside `artifact_bulk_write` now rewrites the referring files**, as a single-entity
-  rename always did. Enumeration goes through the staging overlay, which lists staged and live
-  entries together; before, a batched rename left every referrer naming the old slug.
-- **`entity_ids` on `artifact_edit_diagram` now sets what the diagram draws**, as it always has on
-  create. A removed entity stayed drawn, blocked its own deletion, and was recorded again by the next
-  `auto-sync`. Diagram kinds that own their picture another way refuse it, naming what does.
-- **A grouping's realization now reaches its members, as a visible inference.** The row carries
-  `diagnostic_code: potential_realization`, because a relationship of a whole only potentially holds
-  of each part (`PDR12`). An empty grouping still realizes nothing.
+- **"Browse" no longer carries a diagram type into the entity browser as a filter.** Arriving from a
+  diagram page set the entity-type filter to a value no entity matches, showing an empty list.
+- **A grouping's realization now reaches its members, as a visible inference** carrying
+  `diagnostic_code: potential_realization` — a relationship of a whole only potentially holds of each
+  part (`PDR12`). An empty grouping still realizes nothing.
 - **A client reaches the backend serving its own workspace, or none.** Endpoints are chosen by what a
   backend reports serving (`GET /api/backend-identity`), not by which port answers.
 - **`arch-write-cli` refuses to write** to a backend that does not serve the `--repo-root` it was
@@ -216,6 +234,8 @@ routes — and the eleven defects above are the reason it exists.
 - Confidential assurance tier (STPA/CAST/GRC/FMEA/GSN) on an encrypted store with tamper-evident history
 - Viewpoint query engine with diagram/matrix/table representations
 
+[0.3.1]: https://github.com/mbauer83/architectonic/compare/v0.3.0...v0.3.1
+[0.3.0]: https://github.com/mbauer83/architectonic/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/mbauer83/architectonic/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/mbauer83/architectonic/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/mbauer83/architectonic/releases/tag/v0.1.0
