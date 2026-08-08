@@ -76,9 +76,43 @@ def resolve_java_executable() -> str:
     return "java"
 
 
+#: How many files a pass verifies at once, by default.
+#:
+#: One. Not a fraction of the machine, and emphatically not ``cpu + 4``, which is the
+#: ``ThreadPoolExecutor`` default and is sized for work that *waits*. Rule evaluation never waits, and
+#: the pool was measured making the pass slower on every axis at once. Interleaved, repeated runs
+#: against the 880-file repository, wall clock and the backend's own CPU seconds:
+#:
+#: ===========  ==========  ==========  =====================================
+#: workers      wall        backend     identity p95 during the pass
+#: ===========  ==========  ==========  =====================================
+#: 1             73 s         92 s       11.6 ms  (1.5x its idle value)
+#: 2            161 s          —         14.7 ms
+#: 4            314 s        408 s       18.6 ms  (2.7x)
+#: 20           298 s        403 s       44.9 ms  (5.9x)
+#: ===========  ==========  ==========  =====================================
+#:
+#: Four threads spend **4.4x the CPU** of one for the same 880 files, so this is redundant work
+#: rather than scheduling overhead — a profile puts the pass in pure-Python YAML parsing (200,574
+#: documents) and path resolution (982,904 ``realpath`` calls), neither of which parallelises here.
+#: Until that is fixed, a pool buys nothing and costs the interactive surface: an operator watching
+#: the GUI during a cold verify sees every request take four times longer for a pass that itself
+#: takes four times longer.
+_DEFAULT_PASS_WORKERS = 1
+
+
 def resolve_worker_count() -> int:
-    cpu = os.cpu_count() or 1
-    return max(1, min(32, cpu + 4))
+    """How many files a pass verifies at once.
+
+    ``ARCH_VERIFY_WORKERS`` overrides it. Raising it is opting into the table above, which is the
+    honest description of what it does today; it exists so the number can be re-measured once the
+    per-file cost above comes down, without a release to change a constant.
+    """
+    override = os.environ.get("ARCH_VERIFY_WORKERS", "").strip()
+    if override.isdigit() and int(override) > 0:
+        return min(32, int(override))
+    return _DEFAULT_PASS_WORKERS
+
 
 
 def check_puml_syntax(path: Path, loc: str) -> list[Issue]:
