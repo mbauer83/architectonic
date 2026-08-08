@@ -345,3 +345,64 @@ class TestReachingItThroughTheTools:
         assert '"Outer"' in body
         assert '"Inner"' in body
         assert body.index('"Outer"') < body.index('"Inner"')
+
+
+class TestADomainLeftEmptyIsNotDrawn:
+    """A cross-domain grouping empties the domains it draws from, and empty boxes were still drawn.
+
+    Reported from a preview: a `vsd` grouping holding an outcome, a capability and a business
+    function rendered its three members correctly and then added `Strategy` and `Common` boxes with
+    nothing in them — plus a hidden edge anchoring the layout to each. The domain keys survive the
+    claim because claiming empties a domain's member list rather than removing the domain, and the
+    emission loop asked which domains exist rather than which have anything to show.
+
+    A cross-domain grouping makes this the normal case, not an edge case: every domain it draws from
+    is left empty unless something else in that domain stayed outside the group.
+    """
+
+    def _empty_boxes(self, body: str) -> list[str]:
+        lines = body.splitlines()
+        return [
+            line.strip()
+            for index, line in enumerate(lines)
+            if "Grouping>>" in line
+            and line.rstrip().endswith("{")
+            and index + 1 < len(lines)
+            and lines[index + 1].strip() == "}"
+        ]
+
+    def test_a_domain_whose_members_were_all_claimed_is_not_drawn(self, repo: Path) -> None:
+        goal = _make_entity(repo, "goal", "A Goal")
+        component = _make_entity(repo, "application-component", "A Component")
+        diagram_id = generate_diagram_id("archimate-layered", "Cross Domain")
+
+        created = mcp.artifact_create_diagram(
+            diagram_type="archimate-layered", name="Cross Domain", artifact_id=diagram_id,
+            entity_ids=[goal, component],
+            authored_groupings=[{"label": "Both Of Them", "entity-ids": [goal, component]}],
+            dry_run=False, repo_root=str(repo),
+        )
+
+        assert created["wrote"], created
+        body = _body(Path(str(created["path"])))
+        assert self._empty_boxes(body) == []
+        assert '"Both Of Them"' in body
+
+    def test_a_domain_keeping_a_member_is_still_drawn(self, repo: Path) -> None:
+        """The other half: dropping empty boxes must not drop populated ones."""
+        claimed = _make_entity(repo, "application-component", "Claimed Component")
+        left_out = _make_entity(repo, "goal", "Unclaimed Goal")
+        diagram_id = generate_diagram_id("archimate-layered", "Partly Grouped")
+
+        created = mcp.artifact_create_diagram(
+            diagram_type="archimate-layered", name="Partly Grouped", artifact_id=diagram_id,
+            entity_ids=[claimed, left_out],
+            authored_groupings=[{"label": "Just One", "entity-ids": [claimed]}],
+            dry_run=False, repo_root=str(repo),
+        )
+
+        assert created["wrote"], created
+        body = _body(Path(str(created["path"])))
+        assert self._empty_boxes(body) == []
+        assert "Unclaimed Goal" in body
+        assert "DOM_motivation" in body, "the domain still holding a member must keep its box"

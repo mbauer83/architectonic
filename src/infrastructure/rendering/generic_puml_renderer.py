@@ -243,7 +243,10 @@ class GenericPumlRenderer:
                     alias = normalize_puml_alias(entity.display_alias)
                     if alias:
                         domain_rank_by_alias[alias] = domain_rank
-            for domain in ordered_domain_keys:
+            # Only the domains with something left to show. Claiming empties a domain's list
+            # rather than removing the domain, so one an authored grouping emptied still has a key
+            # here — and drew an empty labelled box, which a cross-domain grouping makes routine.
+            for domain in (key for key in ordered_domain_keys if domain_entities[key]):
                 domain_alias = f"DOM_{re.sub(r'[^A-Za-z0-9_]', '_', domain)}"
                 lines.append(
                     f'rectangle "{domain.title()}" <<{grouping_stereotype(self._config, domain)}>> '
