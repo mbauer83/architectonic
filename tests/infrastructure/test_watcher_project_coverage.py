@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 import threading
-from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterator
 
 from src.infrastructure.mcp.artifact_mcp import watch_tools
 
@@ -38,10 +36,16 @@ def test_project_model_change_is_present_in_incremental_snapshot(tmp_path: Path)
     assert full_refresh is False
 
 
-def test_watcher_enqueues_project_change_while_holding_mutation_gate(
+def test_watcher_enqueues_a_project_change_without_taking_the_gate(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
+    """The enqueue is refresh-queue bookkeeping, not a workspace mutation.
+
+    This asserted the opposite until the acquisition was removed: the loop wrapped
+    ``enqueue_background_refresh`` in exclusive WRITE, which guarded work that never touches the
+    workspace while colliding with every long read.
+    """
     repo = tmp_path / "repo"
     project_file = repo / "projects" / "payments" / "model" / "motivation" / "goal" / "GOL@test.md"
     snapshots = iter(
@@ -51,34 +55,20 @@ def test_watcher_enqueues_project_change_while_holding_mutation_gate(
         ]
     )
     stop = threading.Event()
-    gate = _RecordingGate()
-    calls: list[tuple[list[Path], list[Path] | None, bool, bool]] = []
+    calls: list[tuple[list[Path], list[Path] | None, bool]] = []
 
     monkeypatch.setattr(watch_tools, "_roots_state_snapshot", lambda _roots: next(snapshots))
-    monkeypatch.setattr(watch_tools, "get_workspace_gate", lambda: gate)
     monkeypatch.setattr(watch_tools.time, "sleep", lambda _seconds: None)
     monkeypatch.setattr(
         watch_tools,
         "enqueue_background_refresh",
         lambda roots, *, changed_paths=None, full_refresh: (
-            calls.append((roots, changed_paths, full_refresh, gate.held)),
+            calls.append((roots, changed_paths, full_refresh)),
             stop.set(),
         ),
     )
 
     watch_tools._watcher_loop([repo], 2.0, stop)
 
-    assert calls == [([repo], [project_file], False, True)]
-
-
-class _RecordingGate:
-    def __init__(self) -> None:
-        self.held = False
-
-    @contextmanager
-    def writing(self) -> Iterator[None]:
-        self.held = True
-        try:
-            yield
-        finally:
-            self.held = False
+    assert calls == [([repo], [project_file], False)]
+    assert not hasattr(watch_tools, "get_workspace_gate"), "the loop must hold no gate reference"

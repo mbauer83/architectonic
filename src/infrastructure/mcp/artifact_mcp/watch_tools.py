@@ -12,7 +12,6 @@ from src.infrastructure.mcp.artifact_mcp.context import (
     enqueue_background_refresh,
     resolve_repo_roots,
 )
-from src.infrastructure.workspace.mutation_gate import get_workspace_gate
 
 # ---------------------------------------------------------------------------
 # Snapshotting
@@ -100,15 +99,18 @@ def _watcher_loop(
                 changed_paths = suppress_redundant_refresh_paths(roots, changed_paths)
             force = periodic_refresh_s is not None and (now - last_periodic) >= periodic_refresh_s
             if changed_paths or force or must_full_refresh:
-                with get_workspace_gate().writing():
-                    if force or must_full_refresh or len(changed_paths) > 64:
-                        enqueue_background_refresh(roots, full_refresh=True)
-                    else:
-                        enqueue_background_refresh(
-                            roots,
-                            changed_paths=changed_paths,
-                            full_refresh=False,
-                        )
+                # No workspace gate: this enqueues a refresh *intent* — it mutates the refresh
+                # queue, not the workspace — and the queue serialises itself on its own condition.
+                # Taking exclusive WRITE here guarded work that never touches the resource the gate
+                # protects, while colliding with every long read.
+                if force or must_full_refresh or len(changed_paths) > 64:
+                    enqueue_background_refresh(roots, full_refresh=True)
+                else:
+                    enqueue_background_refresh(
+                        roots,
+                        changed_paths=changed_paths,
+                        full_refresh=False,
+                    )
                 last_snapshot = snapshot
                 if force:
                     last_periodic = now
