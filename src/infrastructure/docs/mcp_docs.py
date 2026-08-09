@@ -11,8 +11,26 @@ from typing import Protocol, cast
 
 @dataclass(frozen=True)
 class ToolInfo:
+    """A tool as the documentation describes it: what it is called, what it does, and what it costs.
+
+    ``read_only`` and ``destructive`` come from the tool's own ``ToolAnnotations`` — the same hints
+    a host warns a user with. The published Access column used to be guessed from substrings of the
+    name instead, which meant the documentation and the served surface could disagree, and did:
+    ``artifact_edit_connection`` and ``artifact_promote_to_enterprise`` are both annotated
+    destructive and were both published as plain "Write".
+    """
+
     name: str
     description: str
+    read_only: bool
+    destructive: bool
+
+    @property
+    def access(self) -> str:
+        """The Access column, derived rather than guessed."""
+        if self.read_only:
+            return "Read-only"
+        return "Destructive" if self.destructive else "Write"
 
 
 @dataclass(frozen=True)
@@ -36,9 +54,17 @@ class GeneratedDocument:
         )
 
 
+class SafetyHints(Protocol):
+    """The subset of ``ToolAnnotations`` the published Access column is derived from."""
+
+    readOnlyHint: bool | None  # noqa: N815 - the wire name, fixed by the MCP specification
+    destructiveHint: bool | None  # noqa: N815 - as above
+
+
 class RegisteredTool(Protocol):
     name: str
     description: str | None
+    annotations: SafetyHints | None
 
 
 class ToolManager(Protocol):
@@ -161,7 +187,12 @@ _ASSURANCE_GROUPS: tuple[tuple[str, tuple[str, ...]], ...] = (
 def collect_tools(server: object) -> list[ToolInfo]:
     typed_server = cast(McpServer, server)
     return [
-        ToolInfo(name=tool.name, description=first_sentence(tool.description or ""))
+        ToolInfo(
+            name=tool.name,
+            description=first_sentence(tool.description or ""),
+            read_only=bool(tool.annotations and tool.annotations.readOnlyHint),
+            destructive=bool(tool.annotations and tool.annotations.destructiveHint),
+        )
         for tool in sorted(typed_server._tool_manager.list_tools(), key=lambda item: item.name)
     ]
 
@@ -227,28 +258,33 @@ def write_documents(documents: list[GeneratedDocument]) -> None:
 
 def render_arch_read_table(tools: list[ToolInfo]) -> str:
     rows = ["| Tool | Access | Purpose |", "|---|---|---|"]
-    rows.extend(f"| `{tool.name}` | Read-only | {escape_table(tool.description)} |" for tool in tools)
+    rows.extend(f"| `{tool.name}` | {tool.access} | {escape_table(tool.description)} |" for tool in tools)
     return "\n".join(rows)
 
 
 def render_arch_write_table(tools: list[ToolInfo]) -> str:
-    return render_grouped_table(tools, _ARCH_WRITE_GROUPS, default_access="Write")
+    return render_grouped_table(tools, _ARCH_WRITE_GROUPS)
 
 
 def render_assurance_read_table(tools: list[ToolInfo]) -> str:
-    return render_grouped_table(tools, _ASSURANCE_GROUPS, default_access="Read-only")
+    return render_grouped_table(tools, _ASSURANCE_GROUPS)
 
 
 def render_assurance_write_table(tools: list[ToolInfo]) -> str:
-    return render_grouped_table(tools, _ASSURANCE_GROUPS, default_access="Write")
+    return render_grouped_table(tools, _ASSURANCE_GROUPS)
 
 
 def render_grouped_table(
     tools: list[ToolInfo],
     groups: tuple[tuple[str, tuple[str, ...]], ...],
-    *,
-    default_access: str,
 ) -> str:
+    """The grouped table, with each row's access taken from the tool rather than from its mount.
+
+    There is no ``default_access`` any more. A mount-wide default was what made the substring
+    heuristic necessary — the write mounts serve reads (``artifact_help``, ``assurance_model_this``)
+    and destructive writes alongside additive ones, so one default per table was wrong for several
+    rows and a list of name fragments was the patch. The annotations say it per tool.
+    """
     by_name = {tool.name: tool for tool in tools}
     rows = ["| Capability | Tool | Access | Purpose |", "|---|---|---|---|"]
     covered: set[str] = set()
@@ -256,22 +292,15 @@ def render_grouped_table(
         for name in names:
             if name in by_name:
                 covered.add(name)
-                rows.append(render_grouped_row(group_name, by_name[name], access_for(name, default_access)))
+                rows.append(render_grouped_row(group_name, by_name[name]))
     for tool in tools:
         if tool.name not in covered:
-            rows.append(render_grouped_row("Other", tool, access_for(tool.name, default_access)))
+            rows.append(render_grouped_row("Other", tool))
     return "\n".join(rows)
 
 
-def render_grouped_row(group_name: str, tool: ToolInfo, access: str) -> str:
-    return f"| {group_name} | `{tool.name}` | {access} | {escape_table(tool.description)} |"
-
-
-def access_for(name: str, default_access: str) -> str:
-    destructive_terms = ("delete", "withdraw", "bulk_delete", "admin_reindex")
-    if any(term in name for term in destructive_terms):
-        return "Destructive"
-    return default_access
+def render_grouped_row(group_name: str, tool: ToolInfo) -> str:
+    return f"| {group_name} | `{tool.name}` | {tool.access} | {escape_table(tool.description)} |"
 
 
 def escape_table(value: str) -> str:

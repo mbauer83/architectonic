@@ -55,7 +55,7 @@ looking entirely normal. See
 | Entities | `artifact_edit_entity` | Write | Edit an existing entity. |
 | Entities | `artifact_delete_entity` | Destructive | Delete a single entity (and its own .outgoing.md file, if any). |
 | Connections | `artifact_add_connection` | Write | Add a connection to an entity's .outgoing.md file. |
-| Connections | `artifact_edit_connection` | Write | Edit or remove a connection in an .outgoing.md file. |
+| Connections | `artifact_edit_connection` | Destructive | Edit or remove a connection in an .outgoing.md file. |
 | Connections | `artifact_edit_connection_associations` | Write | Add or remove second-order association entity IDs from a connection. |
 | Diagrams | `artifact_create_diagram` | Write | Create a diagram. |
 | Diagrams | `artifact_edit_diagram` | Write | Edit an existing diagram. |
@@ -67,14 +67,14 @@ looking entirely normal. See
 | Bulk | `artifact_bulk_write` | Write | Batch entity creates, connection adds, and edits in one call. |
 | Bulk | `artifact_bulk_delete` | Destructive | Batch destructive operations with dependency-aware planning and final repository verification. |
 | Grouping | `artifact_group` | Write | Manage artifact group containers across all three grouping axes. |
-| Promotion & sync | `artifact_promote_to_enterprise` | Write | Promote an explicit selection of entities, connections, documents, and diagrams from the engagement repo to the enterprise repo (entity_ids, connection_ids, document_ids, diagram_ids; entity_id names the selection root). |
+| Promotion & sync | `artifact_promote_to_enterprise` | Destructive | Promote an explicit selection of entities, connections, documents, and diagrams from the engagement repo to the enterprise repo (entity_ids, connection_ids, document_ids, diagram_ids; entity_id names the selection root). |
 | Promotion & sync | `artifact_save_changes` | Write | Commit all accumulated architecture changes. |
 | Promotion & sync | `artifact_submit_for_review` | Write | Push the enterprise working branch to the remote for team review. |
 | Promotion & sync | `artifact_withdraw_changes` | Destructive | Permanently discard all pending enterprise changes (requires confirm=True). |
-| Guidance & ops | `artifact_authoring_guidance` | Write | Return authoring guidance before creating entities or diagrams. |
-| Guidance & ops | `artifact_help` | Write | Return the full catalog of artifact types, entity types (by domain), connection types (by language), and diagram types (with accepted domains). |
-| Guidance & ops | `artifact_get_operation` | Write | Return the latest recorded status, phase, timestamps, error, and final result for a prior bulk operation by operation_id. |
-| Guidance & ops | `artifact_admin_reindex` | Destructive | Rebuild the artifact index from disk. |
+| Guidance & ops | `artifact_authoring_guidance` | Read-only | Return authoring guidance before creating entities or diagrams. |
+| Guidance & ops | `artifact_help` | Read-only | Return the full catalog of artifact types, entity types (by domain), connection types (by language), and diagram types (with accepted domains). |
+| Guidance & ops | `artifact_get_operation` | Read-only | Return the latest recorded status, phase, timestamps, error, and final result for a prior bulk operation by operation_id. |
+| Guidance & ops | `artifact_admin_reindex` | Write | Rebuild the artifact index from disk. |
 | Other | `artifact_viewpoint` | Write | Create/edit/delete a ViewpointDefinition in the engagement repo's own catalog — the same validate/persist path a GUI builder's save flow uses. |
 <!-- mcp-tools:end arch-write -->
 
