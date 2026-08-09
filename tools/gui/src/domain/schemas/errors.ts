@@ -33,6 +33,9 @@ export const ERROR_CODES = [
   'provenance_required',
   'invalid_participation',
   'node_legacy_invalid',
+  // Shared with MCP so both surfaces use one refusal vocabulary. REST currently filters these
+  // reads before responding, but the backend's closed ErrorCode union still publishes the member.
+  'classification_ceiling_exceeded',
   // Assurance graph shape — each carries data the caller acts on differently.
   'duplicate_edge',
   'illegal_connection_type',
