@@ -40,6 +40,12 @@ _AGGREGATE_NOTE = (
 )
 
 
+def _registry():  # noqa: ANN202 — the registry's own type, resolved lazily like every other use
+    from src.infrastructure.app_bootstrap import get_module_registry  # noqa: PLC0415
+
+    return get_module_registry()
+
+
 def _service(repo_root: str | None) -> ScratchpadService:
     roots = resolve_repo_roots(
         repo_scope="engagement", repo_root=repo_root, repo_preset=None, enterprise_root=None
@@ -96,7 +102,10 @@ def register_scratchpad_read_tools(mcp: FastMCP) -> None:
         service = _service(repo_root)
         try:
             scratchpad = service.read(artifact_id)
-            return {"ok": True, "scratchpad": to_response(scratchpad, group=service.group_of(artifact_id))}
+            served = to_response(
+                scratchpad, group=service.group_of(artifact_id), registry=_registry()
+            )
+            return {"ok": True, "scratchpad": served}
         except ScratchpadNotFoundError as exc:
             return _failure(exc)
 
@@ -145,7 +154,7 @@ def scratchpad_create(
         )
     except (ScratchpadError, ScratchpadVersionConflictError) as exc:
         return _failure(exc)
-    return {"ok": True, "scratchpad": to_response(created, group=group)}
+    return {"ok": True, "scratchpad": to_response(created, group=group, registry=_registry())}
 
 
 def scratchpad_replace(
@@ -166,7 +175,7 @@ def scratchpad_replace(
         )
     except (ScratchpadError, ScratchpadNotFoundError, ScratchpadVersionConflictError) as exc:
         return _failure(exc)
-    return {"ok": True, "scratchpad": to_response(stored, group=target_group)}
+    return {"ok": True, "scratchpad": to_response(stored, group=target_group, registry=_registry())}
 
 
 def scratchpad_delete(*, artifact_id: str, repo_root: str | None = None) -> dict[str, Any]:
