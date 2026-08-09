@@ -7,20 +7,28 @@
  * It knows nothing about gestures: every interaction is an event the canvas interprets, so the
  * pan/zoom/drag state stays in one place and this stays a card.
  */
+import { computed } from 'vue'
 import type { Note } from '../../domain/schemas/scratchpads'
 
-defineProps<{
+const props = defineProps<{
   note: Note
   /** Canvas coordinates. The transform lives here so a move is one style write on one element. */
   at: { x: number; y: number }
   selected: boolean
-  /** The domain's colour, or nothing when the note has decided nothing — which is a real state. */
+  /** The domain's colour, or nothing when the note has decided nothing — which is a real state.
+   * It washes the whole card rather than edging it: "this is motivation work" is a decision about
+   * what the note *is*, and a 3-px stripe reads as a status flag rather than as a change of kind. */
   tint: string | undefined
   /** The entity type's glyph markup, from the table the entity list and picker already use. */
   glyph: string | null
   /** Outside the focused frame: faded back, still there, still linkable. */
   dimmed: boolean
 }>()
+
+/** The card's fill: the domain colour at low opacity, so the tint reads at a glance without the
+ * title having to compete with it. `#rrggbb` plus an alpha pair — every domain colour is a hex
+ * literal in `domains.ts`, which is the only form this has to accept. */
+const wash = computed(() => (props.tint ? `${props.tint}2e` : undefined))
 
 const emit = defineEmits<{
   (event: 'note-pointerdown', payload: PointerEvent): void
@@ -49,7 +57,11 @@ const emit = defineEmits<{
     :data-note-id="note.id"
     :data-area="note.area"
     :data-domain="note.domain ?? ''"
-    :style="{ transform: `translate(${at.x}px, ${at.y}px)`, borderLeftColor: tint }"
+    :style="{
+      transform: `translate(${at.x}px, ${at.y}px)`,
+      borderLeftColor: tint,
+      background: wash,
+    }"
     @pointerdown="emit('note-pointerdown', $event)"
     @keydown="emit('note-keydown', $event)"
   >
@@ -93,6 +105,12 @@ const emit = defineEmits<{
         v-else-if="note['element-type']"
         class="sp-type"
       >{{ note['element-type'] }}</span>
+      <!-- A note that has reached only its domain has decided something, and saying "untyped" would
+           report the one level it *has* answered as though it had answered none. -->
+      <span
+        v-else-if="note.domain"
+        class="sp-domain"
+      >{{ note.domain }}</span>
       <span
         v-else
         class="sp-untyped"
@@ -155,6 +173,7 @@ const emit = defineEmits<{
 }
 .sp-type { font-size: 10.5px; color: #7c3aed; font-weight: 600; }
 .sp-untyped { font-size: 10.5px; color: #9ca3af; }
+.sp-domain { font-size: 10.5px; color: #6b7280; font-weight: 600; }
 .sp-delete {
   border: none; background: none; color: #b0b0b8; font-size: 15px; line-height: 1;
   cursor: pointer; padding: 0 2px; border-radius: 3px;
