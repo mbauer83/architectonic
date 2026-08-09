@@ -3,6 +3,52 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [0.4.0] — Unreleased
+
+**[Full detail → `changelog-assets/0.4.0-detail.md`](changelog-assets/0.4.0-detail.md)**
+
+**Somewhere to think before anything is typed.** The typed model asks a contributor to name an
+element type before they have decided anything, and that question is the wall this removes.
+
+### Added
+
+- **A scratchpad tier.** Notes and links on one canvas with four labelled frames, no ontology
+  involved: a note needs only a title, and which frame it is in is where it sits. The canvas saves
+  at most once a second after editing settles, so the endpoint sees a save and never a drag.
+- **Refinement, one level at a time**, down the meta-ontology's own classification levels — which
+  `classification_levels` now lets a module declare rather than every consumer hard-code. Or bind a
+  note to an element the model already has, and it takes that element's type.
+- **A link carries its verdict.** A refusal at the level relationships are keyed on (**E126**) blocks
+  a lift; a specialization narrowing (**W128**/**W129**) warns. A refusal leads with *Reverse the
+  link* when the reverse is the permitted one.
+- **Lift, preflighted.** A selection becomes ordinary verified model content through the same write
+  path as any other authoring, into a model-project chosen **per frame**. The dialog says what would
+  be created, what is refused and why, what is already in the model, and which links reach outside
+  the selection; a refusal blocks the whole lift, because the write is one transaction. A lift never
+  writes back, so a second one creates only what is new. Documents are a destination too, and a lift
+  can draw a view of what it made.
+- **Nothing is permanent until it is lifted.** A note, a link or any refinement can be taken back on
+  every surface. Removal never retracts model content: deleting a realized note leaves the entity.
+- **`PATCH /api/scratchpads/{id}` and `scratchpad_edit` change a scratchpad by delta** — the same
+  write as `PUT`, at a payload proportional to the edit rather than to the canvas. A patch is a merge
+  patch: a key left out keeps its stored value, `null` clears it, an unknown id creates the row.
+- **Scratchpad notes are searchable**, and rank below model content, documents and diagrams — a note
+  is a half-formed thought and an entity is a commitment. A hit opens the canvas it sits on.
+- **Focus mode**, and a canvas operable without a pointer: the notes layer is a real multi-select
+  listbox, every gesture has a key, and what is selected is announced rather than only drawn.
+- **Seven MCP tools and seven REST operations, held equal by a parity test.** The scratchpad is the
+  lowest-barrier surface, so a human-only version would make the one place newcomers start the one
+  place an agent cannot help.
+
+### Fixed
+
+- **An ArchiMate box is no longer as wide as its widest unwrapped label.** All seven `archimate-*`
+  types emitted no `skinparam wrapWidth`; on one diagram 2545×798 became 1671×952. All 32 committed
+  diagrams were re-rendered and every one still lays out.
+- **Every diagram-owned type now says how to author one.** Guidance described the schema of
+  `diagram_entities` and said nothing about the authoring protocol, which had to be
+  reverse-engineered from an existing `.puml` — silently, since the diagram still rendered.
+
 ## [0.3.1] — 2026-08-08
 
 **[Full detail → `changelog-assets/0.3.1-detail.md`](changelog-assets/0.3.1-detail.md)**
@@ -206,26 +252,17 @@ migrated non-destructively; nothing else is.
 ### Fixed
 
 Eleven defects, every one reachable in ordinary use and invisible to the gates that existed when it
-shipped. Two are worth calling out because they affect deployments rather than the UI:
-
-- **Security-signal ingest refused every anchor unless the server ran from its workspace directory.**
-  `POST /api/assurance/arch-artifacts/{id}/security-snapshots` answered "no architecture entity exists"
-  for entities that did, in any deployment that configures `ARCH_REPO_ROOT` without a workspace config —
-  a mode the shipped container supports. Containers and service-managed installs are affected.
-- **A domain card on the Home page opened the last-browsed project** rather than the repository-wide
-  list its count was computed over, so the number and the destination disagreed.
-
-Of the remaining nine, the ones most likely to have affected you: a repository-authored viewpoint
-could not be applied to anything, a viewpoint with a binding made `GET /api/viewpoints` answer 500 for
-everyone, the FMEA matrix rendered blank for any analysis with no dismissals, and every assurance deep
-link resolved to an empty page. All nine are listed in the detail file.
+shipped; all eleven are listed in the detail file. The two that affect deployments rather than the
+UI: **security-signal ingest refused every anchor unless the server ran from its workspace
+directory** (any deployment configuring `ARCH_REPO_ROOT` without a workspace config — a mode the
+shipped container supports), and **a domain card on the Home page opened the last-browsed project**
+rather than the repository-wide list its count was computed over.
 
 ### Quality
 
 Every REST operation and every MCP write tool is now exercised over its own transport, against a
 disposable repository and a disposable confidential store, and the register that tracked
-never-requested operations is empty. That machinery is the reason to trust a release which renames 79
-routes — and the eleven defects above are the reason it exists.
+never-requested operations is empty — the reason to trust a release which renames 79 routes.
 
 ## [0.1.0] — 2026-07-29 — first public release
 - Typed, git-versioned architecture repository (ArchiMate 4) with GUI, REST, and MCP surfaces
@@ -234,6 +271,7 @@ routes — and the eleven defects above are the reason it exists.
 - Confidential assurance tier (STPA/CAST/GRC/FMEA/GSN) on an encrypted store with tamper-evident history
 - Viewpoint query engine with diagram/matrix/table representations
 
+[0.4.0]: https://github.com/mbauer83/architectonic/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/mbauer83/architectonic/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/mbauer83/architectonic/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/mbauer83/architectonic/compare/v0.2.0...v0.2.1

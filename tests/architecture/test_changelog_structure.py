@@ -35,10 +35,16 @@ _ASSETS = _ROOT / "changelog-assets"
 #: belongs in the arrangement, not in this set.
 _WITHOUT_DETAIL = frozenset({"0.1.0"})
 
-#: The main file is a summary. The bound is generous — it is not a style rule, it catches the summary
-#: growing back into the detail it replaced. It was 164 lines before the split, of which 130 were one
-#: release; a summary of three releases sits near 100.
-_SUMMARY_LINE_BUDGET = 200
+#: The main file is a summary, and the bound is **per release section**. It is not a style rule; it
+#: catches a section growing back into the detail it replaced. The file was 164 lines before the
+#: split, of which 130 were one release, so a section approaching that is the failure to catch.
+#:
+#: Per section rather than per file, because a whole-file budget measures how many releases have
+#: shipped as much as how long each one is: the previous 200-line cap was calibrated at three
+#: releases and became binding at six without any section having grown at all. A cap that tightens
+#: every release is one that eventually forces actionable migration text out of a shipped release's
+#: notes, which is the opposite of what this protects.
+_SECTION_LINE_BUDGET = 90
 
 
 def _changelog() -> str:
@@ -108,11 +114,17 @@ def test_every_release_section_links_its_detail_file() -> None:
     assert unlinked == [], f"release sections not linking their detail file: {unlinked}"
 
 
-def test_the_main_changelog_stays_a_summary() -> None:
-    counted = len([line for line in _changelog().splitlines() if line.strip()])
-    assert counted <= _SUMMARY_LINE_BUDGET, (
-        f"CHANGELOG.md is {counted} non-blank lines, past the {_SUMMARY_LINE_BUDGET}-line budget. Move "
-        "the per-item reasoning into the release's detail file and leave the summary and the action."
+def test_every_release_section_stays_a_summary() -> None:
+    sections = re.split(r"^## \[", _changelog(), flags=re.M)[1:]
+    over = []
+    for section in sections:
+        version = section[: section.index("]")]
+        counted = len([line for line in section.splitlines() if line.strip()])
+        if counted > _SECTION_LINE_BUDGET:
+            over.append(f"{version} ({counted} lines)")
+    assert over == [], (
+        f"release sections past the {_SECTION_LINE_BUDGET}-line budget: {over}. Move the per-item "
+        "reasoning into that release's detail file and leave the summary and the action."
     )
 
 
