@@ -6,6 +6,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from src.application.candidate_repository import CandidateRepository
+from src.application.repo_path_helpers import RENDERED_SUFFIXES, rendered_dir_for_diagram
 from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.application.verification.artifact_verifier_parsing import parse_frontmatter_from_path
 from src.config.repo_paths import DIAGRAM_CATALOG, DIAGRAMS, RENDERED
@@ -51,18 +52,20 @@ def _find_diagram_file(repo_root: Path, artifact_id: str) -> Path | None:
     return short_matches[0] if len(short_matches) == 1 else None
 
 
-def _rendered_paths(diagram_path: Path) -> list[Path]:
-    rendered_dir = diagram_path.parent.parent / RENDERED
+def _rendered_paths(diagram_path: Path, repo_root: Path) -> list[Path]:
+    """Every rendered output belonging to *diagram_path*.
+
+    The directory comes from ``rendered_dir_for_diagram`` rather than being derived
+    here: a diagram in a collection renders to ``rendered/<collection>/``, and the
+    sibling-of-the-source form this once computed only ever named the flat legacy
+    layout — so deleting a collection's diagram left its images behind.
+    """
+    rendered_dir = rendered_dir_for_diagram(diagram_path, repo_root)
     stem = diagram_path.stem
-    candidates = {stem}
+    # A pre-collection render is named for the slug alone; both spellings are claimed.
     parts = stem.split(".", 2)
-    if len(parts) >= 3:
-        candidates.add(parts[2])
-    paths: list[Path] = []
-    for name in candidates:
-        paths.append(rendered_dir / f"{name}.png")
-        paths.append(rendered_dir / f"{name}.svg")
-    return paths
+    names = {stem} | ({parts[2]} if len(parts) >= 3 else set())
+    return [rendered_dir / f"{name}{suffix}" for name in sorted(names) for suffix in RENDERED_SUFFIXES]
 
 
 def _delete_diagram_core(
@@ -82,7 +85,7 @@ def _delete_diagram_core(
     if diagram_path is None:
         raise ValueError(f"Diagram '{artifact_id}' not found in repo '{repo_root}'")
 
-    rendered = [path for path in _rendered_paths(diagram_path) if path.exists()]
+    rendered = [path for path in _rendered_paths(diagram_path, repo_root) if path.exists()]
     warnings = [f"Will delete rendered artifact: {path.name}" for path in rendered]
 
     # E334 pre-flight: block deletion if hosted classifiers are still referenced by other diagrams.

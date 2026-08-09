@@ -12,6 +12,7 @@ from pathlib import Path
 import pytest
 
 from src.application.modeling.artifact_write import generate_diagram_id
+from src.application.repo_path_helpers import RENDERED_SUFFIXES
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.domain.artifact_id import stable_id
 from src.infrastructure.artifact_index import shared_artifact_index
@@ -452,3 +453,44 @@ class TestDeleteDiagram:
         assert not diag_path.exists()
         assert not png.exists()
         assert not svg.exists()
+
+    def test_delete_diagram_in_a_collection_removes_that_collection_s_rendered_files(
+        self, repo: Path
+    ) -> None:
+        """Regression: the rendered directory was derived, not looked up.
+
+        Deletion computed ``<source>.parent.parent / rendered``, which names
+        ``diagram-catalog/rendered`` only in the flat legacy layout. A diagram inside a
+        collection renders to ``rendered/<collection>/``, so its images outlived it —
+        while the tool's own description promised to remove them.
+        """
+        name = "Collected Delete Diagram"
+        artifact_id = generate_diagram_id("activity", name)
+        created = mcp.artifact_create_diagram(
+            diagram_type="activity",
+            name=name,
+            puml=f"@startuml {artifact_id}\n\ntitle {name}\n\n:Step A;\n\n@enduml\n",
+            artifact_id=artifact_id,
+            group="landing-zone",
+            dry_run=False,
+            repo_root=str(repo),
+        )
+        assert created["wrote"], created
+        diag_path = Path(str(created["path"]))
+        assert diag_path.parent.name == "landing-zone", diag_path
+
+        rendered_dir = repo / "diagram-catalog" / "rendered" / "landing-zone"
+        rendered_dir.mkdir(parents=True, exist_ok=True)
+        outputs = [rendered_dir / f"{diag_path.stem}{suffix}" for suffix in RENDERED_SUFFIXES]
+        for path in outputs:
+            path.write_text("rendered", encoding="utf-8")
+
+        result = mcp.artifact_delete_diagram(
+            artifact_id=str(created["artifact_id"]),
+            dry_run=False,
+            repo_root=str(repo),
+        )
+
+        assert result["wrote"] is True, result
+        assert not diag_path.exists()
+        assert [path for path in outputs if path.exists()] == []

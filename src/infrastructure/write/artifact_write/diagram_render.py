@@ -74,6 +74,19 @@ def _render_diagram_entities_puml(
     )
 
 
+def discard_render_byproducts(rendered_dir: Path, temp_stem: str) -> None:
+    """Remove everything a render left in *rendered_dir* under the temp file's stem.
+
+    PlantUML names its output after the input file, so each render first lands as
+    ``<temp_stem>.<fmt>`` and is then renamed onto the diagram's own name. Anything
+    else it wrote under that stem — the ``.cmapx`` image map it emits unasked for any
+    diagram carrying a link — has no name to be renamed to and is nothing any reader
+    consumes, so it would otherwise accumulate in the catalog as untracked litter.
+    """
+    for stray in rendered_dir.glob(f"{temp_stem}.*"):
+        stray.unlink(missing_ok=True)
+
+
 def _is_error_render(stderr: str) -> bool:
     """True when PlantUML produced an error image instead of a diagram.
 
@@ -179,6 +192,7 @@ def _render_diagram_png(puml_path: Path, warnings: list[str]) -> Path | None:
         warnings.append(f"PlantUML render error: {exc}")
         return None
     finally:
+        discard_render_byproducts(rendered_dir, tmp_path.stem)
         try:
             tmp_path.unlink()
         except OSError:
@@ -267,6 +281,7 @@ def _render_diagram_svg(puml_path: Path, warnings: list[str]) -> Path | None:
         warnings.append(f"SVG render error: {exc}")
         return None
     finally:
+        discard_render_byproducts(rendered_dir, tmp_path.stem)
         try:
             tmp_path.unlink()
         except OSError:

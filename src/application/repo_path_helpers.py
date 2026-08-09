@@ -134,6 +134,11 @@ def rendered_dir_for_diagram(diagram_path: Path, repo_root: Path) -> Path:
     return rendered_root(repo_root) / parts[0]
 
 
+#: The rendered forms a diagram keeps on disk. Everything that removes or relocates a
+#: diagram's output reads this, so no caller has to restate the set and then miss one.
+RENDERED_SUFFIXES: tuple[str, ...] = (".png", ".svg")
+
+
 def rendered_path_for(diagram_path: Path, repo_root: Path, suffix: str = ".png") -> Path:
     """Full rendered output path for a diagram file.
 

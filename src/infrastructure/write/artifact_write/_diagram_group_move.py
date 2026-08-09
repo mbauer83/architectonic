@@ -11,6 +11,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from src.application.repo_path_helpers import (
+    RENDERED_SUFFIXES,
     diagram_source_confidential_root,
     diagram_source_root,
     rendered_path_for,
@@ -71,7 +72,7 @@ def _relocate_rendered_outputs(old_diagram_path: Path, repo_root: Path) -> None:
     after; this only clears the stale copies a group move would otherwise
     orphan under the old collection's rendered/ subdirectory.
     """
-    for suffix in (".png", ".svg"):
+    for suffix in RENDERED_SUFFIXES:
         stale = rendered_path_for(old_diagram_path, repo_root, suffix)
         if stale.exists():
             stale.unlink()

@@ -68,3 +68,34 @@ def test_error_image_discarded_and_previous_render_kept(tmp_path: Path, monkeypa
     assert previous.read_bytes() == b"GOOD-RENDER"
     leftovers = [p for p in rendered_dir.glob("*.png") if p != previous]
     assert not leftovers, leftovers
+
+
+def test_the_image_map_plantuml_writes_beside_a_linked_png_does_not_survive_the_render(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Regression: a diagram carrying links renders a ``.cmapx`` nobody renamed.
+
+    PlantUML names its outputs after the input file, so the render renames
+    ``<temp>.png`` onto the diagram's name — but for any diagram with a ``[[link]]``
+    it ALSO writes ``<temp>.cmapx``, which no reader consumes and no rename claimed.
+    Two of them were found untracked in the catalog after a routine re-render.
+    """
+    repo_root = tmp_path / "architecture-repository"
+    puml_path = _make_diagram(repo_root)
+    rendered_dir = repo_root / "diagram-catalog" / "rendered"
+    rendered_dir.mkdir(parents=True, exist_ok=True)
+
+    def _fake_run(cmd, **kwargs):  # noqa: ANN001, ANN003
+        tmp_stem = Path(cmd[-1]).stem
+        (rendered_dir / f"{tmp_stem}.png").write_bytes(b"PNG")
+        (rendered_dir / f"{tmp_stem}.cmapx").write_text("<map/>", encoding="utf-8")
+        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(diagram_render, "find_plantuml_jar", lambda: tmp_path / "plantuml.jar")
+    monkeypatch.setattr(diagram_render.subprocess, "run", _fake_run)
+
+    result = diagram_render._render_diagram_png(puml_path, [])
+
+    assert result == rendered_dir / f"{puml_path.stem}.png"
+    assert result.read_bytes() == b"PNG"
+    assert list(rendered_dir.glob("*.cmapx")) == []
