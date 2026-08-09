@@ -105,7 +105,22 @@ const friendlyName = (id: string) => {
             <span class="score">{{ h.score.toFixed(1) }}</span>
           </div>
           <div class="result-meta">
-            <span class="mono result-type">{{ h.artifact_type }}</span>
+            <!-- A note is a thought, not a commitment, and the list has to say so: it ranks below
+                 everything else here, and without a marker a reader would take it for model
+                 content that happens to sort last. The scratchpad is named because that is where
+                 the thought lives and where the link goes. -->
+            <span
+              v-if="h.record_type === 'scratchpad-note'"
+              class="note-chip"
+            >note on {{ h.scratchpad_name || 'a scratchpad' }}</span>
+            <span
+              v-if="h.artifact_type"
+              class="mono result-type"
+            >{{ h.artifact_type }}</span>
+            <span
+              v-else-if="h.record_type === 'scratchpad-note'"
+              class="untyped"
+            >untyped</span>
             <span
               v-if="h.is_global"
               class="global-chip"
@@ -178,4 +193,13 @@ const friendlyName = (id: string) => {
   border: 1px solid #fde68a; border-radius: 3px;
   padding: 0 5px; font-size: 10px; font-weight: 600;
 }
+/* Quieter than the enterprise chip on purpose: it marks a hit as *less* settled, and a loud badge
+   would draw the eye to the least committed thing on the page. */
+.note-chip {
+  display: inline-block;
+  background: #f3f4f6; color: #6b7280;
+  border: 1px solid #e5e7eb; border-radius: 3px;
+  padding: 0 5px; font-size: 10px; font-weight: 600;
+}
+.untyped { font-size: 12px; color: #9ca3af; }
 </style>

@@ -13,7 +13,7 @@ import { Schema } from 'effect'
  */
 export const SearchHitSchema = Schema.Struct({
   score: Schema.Number,
-  record_type: Schema.Literal('entity', 'connection', 'diagram', 'document'),
+  record_type: Schema.Literal('entity', 'connection', 'diagram', 'document', 'scratchpad-note'),
   artifact_id: Schema.String,
   status: Schema.String,
   path: Schema.String,
@@ -32,6 +32,10 @@ export const SearchHitSchema = Schema.Struct({
   diagram_type: Schema.optional(Schema.NullOr(Schema.String)),
   source: Schema.optional(Schema.NullOr(Schema.String)),
   target: Schema.optional(Schema.NullOr(Schema.String)),
+  // A scratchpad note's container. A note has no file and no page of its own — its `artifact_id` is
+  // `{scratchpad_id}#note/{note_id}` — so these are what says where the thought lives.
+  scratchpad_id: Schema.optional(Schema.NullOr(Schema.String)),
+  scratchpad_name: Schema.optional(Schema.NullOr(Schema.String)),
 })
 export type SearchHit = typeof SearchHitSchema.Type
 

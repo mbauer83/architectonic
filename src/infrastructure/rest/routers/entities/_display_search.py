@@ -96,6 +96,9 @@ def entity_display_search_impl(
         include_connections=False,
         include_diagrams=False,
         include_documents=False,
+        # A picker offers content to reference. A note is a thought someone has not committed to,
+        # so offering one as something to point at would be a category error.
+        include_scratchpad_notes=False,
     ).hits
     items: list[dict[str, Any]] = []
     for h in hits:

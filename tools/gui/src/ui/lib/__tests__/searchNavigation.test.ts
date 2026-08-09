@@ -1,4 +1,4 @@
-import { ROUTE_TEMPLATES, assuranceNodeDetailRoute, diagramDetailRoute, documentDetailRoute, entityDetailRoute } from '../../router/artifactRoutes'
+import { ROUTE_TEMPLATES, assuranceNodeDetailRoute, diagramDetailRoute, documentDetailRoute, entityDetailRoute, scratchpadDetailRoute } from '../../router/artifactRoutes'
 /**
  * Regression: a search hit must navigate to a route that actually exists.
  *
@@ -25,6 +25,7 @@ const router = createRouter({
     { path: ROUTE_TEMPLATES.documentDetail, component: stub },
     { path: '/assurance/browse', component: stub },
     { path: ROUTE_TEMPLATES.assuranceNodeDetail, component: stub },
+    { path: ROUTE_TEMPLATES.scratchpadDetail, component: stub },
     { path: '/:pathMatch(.*)*', name: 'not-found', component: stub },
   ],
 })
@@ -43,6 +44,21 @@ describe('searchHitRoute', () => {
   it('routes assurance nodes to the standalone node page', () => {
     expect(searchHitRoute({ record_type: 'assurance-node', artifact_id: 'N1' }))
       .toEqual(assuranceNodeDetailRoute('N1'))
+  })
+
+  it('routes a scratchpad note to the canvas it sits on, not to the note', () => {
+    // A note has no page: its `artifact_id` is `{scratchpad_id}#note/{note_id}`, and routing to
+    // that would open nothing. The useful answer is the canvas, where it can be read in context.
+    expect(searchHitRoute({
+      record_type: 'scratchpad-note',
+      artifact_id: 'SCR@1.aa.pad#note/n1',
+      scratchpad_id: 'SCR@1.aa.pad',
+    })).toEqual(scratchpadDetailRoute('SCR@1.aa.pad'))
+  })
+
+  it('routes a scratchpad note nowhere when the hit did not say which scratchpad', () => {
+    expect(searchHitRoute({ record_type: 'scratchpad-note', artifact_id: 'SCR@1.aa.pad#note/n1' }))
+      .toBeNull()
   })
 
   it.each(['connection', 'assurance-edge', 'mystery'])('returns null for non-navigable %s', (rt) => {

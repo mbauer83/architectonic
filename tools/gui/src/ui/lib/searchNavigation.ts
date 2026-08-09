@@ -1,5 +1,6 @@
 import {
   assuranceNodeDetailRoute, diagramDetailRoute, documentDetailRoute, entityDetailRoute,
+  scratchpadDetailRoute,
 } from '../router/artifactRoutes'
 import type { RouteLocationRaw } from 'vue-router'
 
@@ -7,6 +8,9 @@ import type { RouteLocationRaw } from 'vue-router'
 export interface NavigableHit {
   readonly record_type: string
   readonly artifact_id: string
+  /** A scratchpad note's container. A note has no page of its own — it is a card on a canvas — so
+   * this is the address it navigates to, and the note's own id would route nowhere. */
+  readonly scratchpad_id?: string | null
 }
 
 /**
@@ -25,6 +29,10 @@ export function searchHitRoute(hit: NavigableHit): RouteLocationRaw | null {
       return diagramDetailRoute(hit.artifact_id)
     case 'document':
       return documentDetailRoute(hit.artifact_id)
+    case 'scratchpad-note':
+      // The canvas the thought is on. A note is not a page: it is a card, and the useful answer to
+      // "where is this?" is the scratchpad it sits on, opened so the note can be read in context.
+      return hit.scratchpad_id ? scratchpadDetailRoute(hit.scratchpad_id) : null
     case 'assurance-node':
       // Standalone page: a search hit is a direct answer, not a browsing session. Still the legacy
       // spelling: the assurance route table is converted in its own slice, and pointing here at

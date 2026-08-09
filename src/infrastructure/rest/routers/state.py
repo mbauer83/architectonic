@@ -27,9 +27,7 @@ from src.application.runtime_catalogs import RuntimeCatalogs
 from src.domain.ontology_representation.artifact_types import (
     ConnectionRecord,
     DiagramRecord,
-    DocumentRecord,
     EntityRecord,
-    SearchHit,
 )
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.artifact_index import notify_paths_changed
@@ -199,44 +197,6 @@ def connection_to_dict(c: ConnectionRecord) -> dict[str, Any]:
     if via_gar:
         d["gar_artifact_id"] = c.target
     return d
-
-
-def search_hit_to_dict(h: SearchHit) -> dict[str, Any]:
-    """Serialize a search hit, mapping each record kind to its proper display fields.
-
-    Documents expose ``title``/``doc_type`` (not ``name``/``artifact_type``); diagrams
-    carry ``diagram_type``. Connections are not independently navigable and are excluded
-    from search upstream, but are serialized defensively here for completeness.
-    """
-    rec = h.record
-    base: dict[str, Any] = {
-        "score": h.score,
-        "record_type": h.record_type,
-        "artifact_id": rec.artifact_id,
-        "status": rec.status,
-        "path": str(rec.path),
-        "last_updated": rec.last_updated,
-    }
-    match rec:
-        case EntityRecord():
-            entity = {
-                **base,
-                "name": rec.name,
-                "artifact_type": rec.artifact_type,
-                "domain": rec.domain,
-                "subdomain": rec.subdomain,
-                "is_global": is_global(rec.path),
-            }
-            if rec.host_diagram_id is not None:
-                entity["host_diagram_id"] = rec.host_diagram_id
-                entity["diagram_internal"] = True
-            return entity
-        case DiagramRecord():
-            return {**base, "name": rec.name, "artifact_type": rec.artifact_type, "diagram_type": rec.diagram_type}
-        case DocumentRecord():
-            return {**base, "name": rec.title, "artifact_type": rec.doc_type}
-        case ConnectionRecord():
-            return {**base, "name": "", "artifact_type": rec.conn_type, "source": rec.source, "target": rec.target}
 
 
 def diagram_to_summary(d: DiagramRecord) -> dict[str, Any]:

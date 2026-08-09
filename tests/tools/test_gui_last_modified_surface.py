@@ -18,6 +18,7 @@ from src.application.artifacts.query import ArtifactRepository
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.rest.routers import state as gui_state
+from src.infrastructure.rest.routers._search_hits import search_hit_to_dict
 from tests.support.api_app import build_api_app
 
 _STAMPS = {
@@ -145,7 +146,7 @@ class TestFieldPresence:
 
     def test_search_hits_carry_the_stamp(self, repo_root: Path) -> None:
         result = gui_state.get_repo().search_artifacts("requirement", limit=10)
-        serialized = [gui_state.search_hit_to_dict(hit) for hit in result.hits]
+        serialized = [search_hit_to_dict(hit) for hit in result.hits]
         assert serialized
         assert all("last_updated" in hit for hit in serialized)
 

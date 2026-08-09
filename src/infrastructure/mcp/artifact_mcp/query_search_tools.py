@@ -1,9 +1,13 @@
 from dataclasses import asdict
-from typing import Literal
 
 from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
 
 from src.application.artifacts._search import ALL_SEARCHABLE_KINDS
+from src.domain.ontology_representation.artifact_types import (
+    RecordType,
+    ScratchpadNoteRecord,
+    SearchableKind,
+)
 from src.infrastructure.mcp.artifact_mcp.context import RepoScope, repo_cached, resolve_repo_roots, roots_key
 from src.infrastructure.mcp.tool_annotations import READ_ONLY
 
@@ -18,7 +22,7 @@ def _project(record: dict[str, object], fields: list[str] | None) -> dict[str, o
 
 
 def _included_kinds(
-    include_record_types: list[Literal["entities", "connections", "diagrams", "documents"]] | None,
+    include_record_types: list[SearchableKind] | None,
     *,
     default: tuple[str, ...],
 ) -> frozenset[str]:
@@ -37,6 +41,10 @@ def register_query_search_tools(mcp: FastMCP) -> None:
             "Search artifacts by text query (keyword-scored; may include semantic supplement if configured). "
             "Returns ranked hits as (score + summary record). "
             "\n\nFilters: limit, domain, artifact_type, include_record_types, prefer_record_type, strict_record_type. "
+            "Scratchpad notes are searched by default and always rank below model content, documents "
+            "and diagrams: a note is a half-formed thought, and its id is "
+            "`{scratchpad_id}#note/{note_id}` — read the scratchpad with scratchpad_read to see it "
+            "in context. "
             "Domain filter is case-insensitive; canonical lowercase values: "
             '"common", "motivation", "strategy", "business", "application", "technology", "implementation".'
             "\n\nRepo selection: repo_scope defaults to both (engagement + enterprise)."
@@ -50,8 +58,10 @@ def register_query_search_tools(mcp: FastMCP) -> None:
         limit: int = 10,
         domain: str | list[str] | None = None,
         artifact_type: str | list[str] | None = None,
-        include_record_types: list[Literal["entities", "connections", "diagrams", "documents"]] | None = None,
-        prefer_record_type: Literal["entity", "connection", "diagram", "document"] | None = None,
+        include_record_types: (
+            list[SearchableKind] | None
+        ) = None,
+        prefer_record_type: RecordType | None = None,
         strict_record_type: bool = False,
         fields: list[str] | None = None,
         repo_root: str | None = None,
@@ -67,7 +77,7 @@ def register_query_search_tools(mcp: FastMCP) -> None:
         repo = repo_cached(key)
         kinds = _included_kinds(
             include_record_types,
-            default=("entities", "diagrams", "documents"),
+            default=("entities", "diagrams", "documents", "scratchpad-notes"),
         )
 
         result = repo.search_artifacts(
@@ -79,6 +89,7 @@ def register_query_search_tools(mcp: FastMCP) -> None:
             include_connections="connections" in kinds,
             include_diagrams="diagrams" in kinds,
             include_documents="documents" in kinds,
+            include_scratchpad_notes="scratchpad-notes" in kinds,
             prefer_record_type=prefer_record_type,
             strict_record_type=strict_record_type,
         )
@@ -86,13 +97,26 @@ def register_query_search_tools(mcp: FastMCP) -> None:
         hits: list[dict[str, object]] = []
         for h in result.hits:
             aid = getattr(h.record, "artifact_id", "")
-            summary = repo.summarize_artifact(aid) if aid else None
             record = {
                 "score": h.score,
                 "record_type": h.record_type,
                 "artifact_id": aid,
             }
-            if summary is not None:
+            if isinstance(h.record, ScratchpadNoteRecord):
+                # A note has no artifact summary to fetch: it is not an artifact, it is part of one.
+                # The fields here are the same questions a summary answers — what is it called, what
+                # kind is it, where does it live — asked of a note, plus the scratchpad to read next.
+                record.update({
+                    "name": h.record.title,
+                    "artifact_type": h.record.element_type,
+                    "status": h.record.status,
+                    "path": str(h.record.path),
+                    "group": h.record.group,
+                    "scratchpad_id": h.record.scratchpad_id,
+                    "scratchpad_name": h.record.scratchpad_name,
+                    "area": h.record.area,
+                })
+            elif (summary := repo.summarize_artifact(aid) if aid else None) is not None:
                 summary_dict = asdict(summary)
                 summary_dict["path"] = str(summary.path)
                 record.update(summary_dict)

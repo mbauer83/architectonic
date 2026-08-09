@@ -93,6 +93,8 @@ def search_artifacts(
         include_connections=include_connections,
         include_diagrams=include_diagrams,
         include_documents=include_documents,
+        # See `_display_search`: this feeds a dropdown of things to reference, not a search.
+        include_scratchpad_notes=False,
         excluded_entity_types=hidden_diagram_entity_types(catalogs),
     )
     hits: list[dict[str, Any]] = []

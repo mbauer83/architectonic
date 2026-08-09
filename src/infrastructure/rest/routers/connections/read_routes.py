@@ -32,6 +32,7 @@ from src.infrastructure.rest.routers._openapi import (
     TAG_ENTITIES,
     TAG_TAXONOMY,
 )
+from src.infrastructure.rest.routers._search_hits import search_hit_to_dict
 from src.infrastructure.rest.routers.connections.neighbors import DerivationLimitError, derive_neighbor_response
 
 
@@ -102,7 +103,7 @@ def register_connection_read_routes(router: APIRouter) -> None:
         )
         visible_hits = filter_global_hits(result.hits, catalogs)
         hits = prioritize_global_hits(visible_hits)[:limit]
-        return {"query": result.query, "hits": [s.search_hit_to_dict(hit) for hit in hits]}
+        return {"query": result.query, "hits": [search_hit_to_dict(hit) for hit in hits]}
 
     @router.get("/api/relation-notations", tags=[TAG_CONNECTIONS],
         summary="How each relationship type is drawn", response_model=RelationNotationsResponse)

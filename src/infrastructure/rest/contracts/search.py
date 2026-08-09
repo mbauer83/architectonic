@@ -21,8 +21,10 @@ from src.infrastructure.rest.contracts.wire_shape import Closed
 
 #: The record kinds the keyword search can return. Connections are excluded upstream and serialised
 #: defensively, so the arm exists; assurance nodes are *not* here — they come from the display search
-#: and from the assurance surface's own search, at their own addresses.
-KeywordRecordType = Literal["entity", "connection", "diagram", "document"]
+#: and from the assurance surface's own search, at their own addresses. A scratchpad note is here and
+#: deliberately absent from ``DisplayRecordType``: a note is findable, but a picker offers model
+#: content, and offering a half-formed thought as something to reference would be a category error.
+KeywordRecordType = Literal["entity", "connection", "diagram", "document", "scratchpad-note"]
 
 
 class KeywordSearchHit(Closed):
@@ -37,6 +39,10 @@ class KeywordSearchHit(Closed):
     and ``subdomain`` by an entity, ``diagram_type`` by a diagram, ``source``/``target`` by a
     connection. ``host_diagram_id`` and ``diagram_internal`` appear together, only for a construct a
     diagram owns, and they are how a display surface tells one from a model entity.
+
+    A scratchpad note fills ``name`` with its title and ``artifact_type`` with the element type
+    someone chose for it — empty while nothing has been chosen, which is a legitimate state here and
+    nowhere else, because deciding late is the whole point of a scratchpad.
     """
 
     score: float
@@ -55,6 +61,11 @@ class KeywordSearchHit(Closed):
     diagram_type: str | None = None
     source: str | None = None
     target: str | None = None
+    #: A scratchpad note's container. A note has no file of its own — ``path`` is its scratchpad's
+    #: and ``artifact_id`` is ``{scratchpad_id}#note/{note_id}`` — so these are what a client needs
+    #: to say where a thought lives and to navigate to it.
+    scratchpad_id: str | None = None
+    scratchpad_name: str | None = None
 
 
 class KeywordSearchResponse(Closed):
