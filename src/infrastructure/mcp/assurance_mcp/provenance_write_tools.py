@@ -18,6 +18,7 @@ from src.application.assurance.provenance_assignment import (
 )
 from src.infrastructure.assurance.write_serialization import run_write
 from src.infrastructure.mcp.assurance_mcp.context import get_assurance_context
+from src.infrastructure.mcp.tool_annotations import IDEMPOTENT_LOCAL_WRITE
 
 
 def register_provenance_write_tools(server: FastMCP) -> None:
@@ -34,6 +35,7 @@ def register_provenance_write_tools(server: FastMCP) -> None:
             "record as having found. Automatic attribution is deliberately not offered: a guess "
             "recorded as provenance cannot afterwards be told apart from a real attribution."
         ),
+        annotations=IDEMPOTENT_LOCAL_WRITE,
     )
     def assurance_assign_provenance(node_id: str, analysis_id: str) -> dict[str, object]:
         result = run_write(lambda: assign_provenance(

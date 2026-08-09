@@ -24,7 +24,7 @@ from src.config.viewpoints_settings import (
 from src.domain.viewpoints.viewpoint_parsing import viewpoint_definition_from_mapping
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.mcp.artifact_mcp.context import repo_cached, resolve_repo_roots, roots_key
-from src.infrastructure.mcp.artifact_mcp.tool_annotations import LOCAL_WRITE
+from src.infrastructure.mcp.tool_annotations import LOCAL_WRITE
 from src.infrastructure.viewpoint_declarations import (
     load_effective_viewpoint_catalog,
     load_viewpoint_catalog_file,

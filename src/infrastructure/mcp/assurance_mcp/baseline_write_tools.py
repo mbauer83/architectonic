@@ -15,6 +15,7 @@ from src.application.assurance import mutations as mutations
 from src.infrastructure.assurance.write_serialization import run_write
 from src.infrastructure.mcp.assurance_mcp._write_envelopes import _envelope
 from src.infrastructure.mcp.assurance_mcp.context import get_assurance_context
+from src.infrastructure.mcp.tool_annotations import LOCAL_WRITE, READ_ONLY
 
 
 def register_baseline_write_tools(server: FastMCP) -> None:
@@ -28,6 +29,7 @@ def register_baseline_write_tools(server: FastMCP) -> None:
             "Required before CAST investigations (pins the 'as-existed' model state). "
             "Also satisfies EU AI Act Art. 18 technical-documentation retention."
         ),
+        annotations=LOCAL_WRITE,
     )
     def assurance_seal_baseline(
         notes: str = "",
@@ -45,6 +47,7 @@ def register_baseline_write_tools(server: FastMCP) -> None:
             "The architecture artifact ID must be a valid ID from the arch-repo-read store. "
             "Dangling refs (arch entity not found) are tolerated and marked as unresolved."
         ),
+        annotations=LOCAL_WRITE,
     )
     def assurance_register_arch_ref(
         assurance_node_id: str,
@@ -69,6 +72,7 @@ def register_baseline_write_tools(server: FastMCP) -> None:
             "the architecture repository — the GUI's create+bind path (POST /api/assurance/model-this) "
             "is the direct-bind alternative."
         ),
+        annotations=READ_ONLY,
     )
     def assurance_model_this(
         assurance_node_id: str,

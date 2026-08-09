@@ -4,7 +4,6 @@ from typing import Literal
 
 from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
 
-from src.infrastructure.mcp.artifact_mcp.tool_annotations import LOCAL_WRITE
 from src.infrastructure.mcp.artifact_mcp.write._common import (
     DiagramConnectionInferenceMode,
     _out,
@@ -16,6 +15,7 @@ from src.infrastructure.mcp.artifact_mcp.write._common import (
     roots_key,
     verifier_for,
 )
+from src.infrastructure.mcp.tool_annotations import LOCAL_WRITE
 
 
 def artifact_create_matrix(

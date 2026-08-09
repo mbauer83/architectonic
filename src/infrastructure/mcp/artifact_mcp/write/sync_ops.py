@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
 
-from src.infrastructure.mcp.artifact_mcp.tool_annotations import (
+from src.infrastructure.mcp.tool_annotations import (
     DESTRUCTIVE_OPEN_WORLD_WRITE,
     OPEN_WORLD_WRITE,
 )

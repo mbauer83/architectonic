@@ -25,6 +25,7 @@ from src.application.assurance.fmea_rows import matrix_rows
 from src.domain.assurance.fmea_factors import FactorAssessment
 from src.infrastructure.assurance.architecture_basis import current_architecture_basis
 from src.infrastructure.mcp.assurance_mcp.context import get_assurance_context
+from src.infrastructure.mcp.tool_annotations import READ_ONLY
 
 FAILURE_MODE = "failure-mode"
 
@@ -47,6 +48,7 @@ def register_fmea_read_tools(server: FastMCP) -> None:
             "about an element examined against one guideword out of five. Optional analysis_id "
             "scopes which failure modes are placed into the grid; the candidate set is not scoped."
         ),
+        annotations=READ_ONLY,
     )
     def assurance_fmea_matrix(analysis_id: str | None = None) -> dict[str, object]:
         if not ctx.is_available():

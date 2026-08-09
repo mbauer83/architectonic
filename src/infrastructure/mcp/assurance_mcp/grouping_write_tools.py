@@ -25,6 +25,7 @@ from src.application.assurance import grouping as grouping_uc
 from src.infrastructure.assurance.write_serialization import run_write
 from src.infrastructure.mcp.assurance_mcp._write_envelopes import _analysis_result
 from src.infrastructure.mcp.assurance_mcp.context import get_assurance_context
+from src.infrastructure.mcp.tool_annotations import DESTRUCTIVE_LOCAL_WRITE, LOCAL_WRITE
 
 
 def register_grouping_write_tools(server: FastMCP) -> None:
@@ -38,6 +39,7 @@ def register_grouping_write_tools(server: FastMCP) -> None:
             "that is what distinguishes it from the analyses it holds. Deleting a group never "
             "deletes its analyses."
         ),
+        annotations=LOCAL_WRITE,
     )
     def assurance_create_group(name: str, description: str = "") -> dict[str, object]:
         if not ctx.is_available():
@@ -53,6 +55,7 @@ def register_grouping_write_tools(server: FastMCP) -> None:
             "Delete a group. Its analyses survive, unfiled: filing and content are the same "
             "gesture in a UI and must never be the same gesture in the store."
         ),
+        annotations=DESTRUCTIVE_LOCAL_WRITE,
     )
     def assurance_delete_group(group_id: str) -> dict[str, object]:
         if not ctx.is_available():
@@ -69,6 +72,7 @@ def register_grouping_write_tools(server: FastMCP) -> None:
             "worth recording before anyone settles where it belongs, so unfiling is a normal "
             "operation rather than an error."
         ),
+        annotations=LOCAL_WRITE,
     )
     def assurance_file_analysis(
         analysis_id: str,
@@ -89,6 +93,7 @@ def register_grouping_write_tools(server: FastMCP) -> None:
             "against the control-structure nodes an STPA identified. Authorship is untouched and "
             "no copy is made. Idempotent."
         ),
+        annotations=LOCAL_WRITE,
     )
     def assurance_add_analysis_member(analysis_id: str, node_id: str) -> dict[str, object]:
         if not ctx.is_available():
@@ -104,6 +109,7 @@ def register_grouping_write_tools(server: FastMCP) -> None:
             "Stop a node participating in an analysis. The node survives, still owned by the "
             "analysis that authored it."
         ),
+        annotations=DESTRUCTIVE_LOCAL_WRITE,
     )
     def assurance_remove_analysis_member(analysis_id: str, node_id: str) -> dict[str, object]:
         if not ctx.is_available():

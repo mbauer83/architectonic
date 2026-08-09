@@ -17,8 +17,8 @@ from src.infrastructure.mcp.artifact_mcp.context import (
     roots_key,
     verifier_for,
 )
-from src.infrastructure.mcp.artifact_mcp.tool_annotations import DESTRUCTIVE_LOCAL_WRITE, LOCAL_WRITE
 from src.infrastructure.mcp.artifact_mcp.write._common import _out
+from src.infrastructure.mcp.tool_annotations import DESTRUCTIVE_LOCAL_WRITE, LOCAL_WRITE
 from src.infrastructure.write import artifact_write_ops
 
 PUML_AUTO_SYNC: Final[Literal["auto-sync"]] = "auto-sync"

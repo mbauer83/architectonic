@@ -7,7 +7,6 @@ from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
 if TYPE_CHECKING:
     from src.infrastructure.write.artifact_write._promote_viewpoints import ViewpointResolution
 
-from src.infrastructure.mcp.artifact_mcp.tool_annotations import DESTRUCTIVE_LOCAL_WRITE
 from src.infrastructure.mcp.artifact_mcp.write._common import (
     clear_caches_for_repo,
     registry_cached,
@@ -15,6 +14,7 @@ from src.infrastructure.mcp.artifact_mcp.write._common import (
     resolve_repo_roots,
     roots_key,
 )
+from src.infrastructure.mcp.tool_annotations import DESTRUCTIVE_LOCAL_WRITE
 
 
 def artifact_promote_to_enterprise(

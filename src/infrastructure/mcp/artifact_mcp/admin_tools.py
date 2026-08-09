@@ -8,7 +8,7 @@ from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
 from src.domain.artifact_id import parse_entity_id
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.mcp.artifact_mcp.context import resolve_repo_root, sync_refresh_for_roots
-from src.infrastructure.mcp.artifact_mcp.tool_annotations import LOCAL_WRITE
+from src.infrastructure.mcp.tool_annotations import LOCAL_WRITE
 
 ReindexScope = Literal["full", "entity"]
 

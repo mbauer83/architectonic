@@ -12,6 +12,7 @@ from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
 from src.infrastructure.assurance.write_serialization import run_write
 from src.infrastructure.mcp.assurance_mcp._write_envelopes import _analysis_result
 from src.infrastructure.mcp.assurance_mcp.context import get_assurance_context
+from src.infrastructure.mcp.tool_annotations import DESTRUCTIVE_LOCAL_WRITE, LOCAL_WRITE, READ_ONLY
 
 
 def register_analysis_write_tools(server: FastMCP) -> None:
@@ -29,6 +30,7 @@ def register_analysis_write_tools(server: FastMCP) -> None:
             "applies (typical for STPA/CAST/FMEA); leave empty for cross-system work (typical for "
             "GRC)."
         ),
+        annotations=LOCAL_WRITE,
     )
     def assurance_create_analysis(
         name: str,
@@ -54,6 +56,7 @@ def register_analysis_write_tools(server: FastMCP) -> None:
             "Update an analysis's name, status (draft/active/completed/archived), or tlp. "
             "method and architecture_anchor_id are immutable (they scope the whole aggregate)."
         ),
+        annotations=LOCAL_WRITE,
     )
     def assurance_update_analysis(
         analysis_id: str,
@@ -78,6 +81,7 @@ def register_analysis_write_tools(server: FastMCP) -> None:
             "member nodes — reassign or delete those nodes first. An empty/abandoned analysis "
             "deletes cleanly. The deletion is audited and not reversible."
         ),
+        annotations=DESTRUCTIVE_LOCAL_WRITE,
     )
     def assurance_delete_analysis(analysis_id: str) -> dict[str, object]:
         from src.application.assurance import analysis as analysis_uc  # noqa: PLC0415
@@ -97,6 +101,7 @@ def register_analysis_write_tools(server: FastMCP) -> None:
             "a responsible-for controller OR evidence. "
             "Returns a list of blocking issues and a promote_safe flag."
         ),
+        annotations=READ_ONLY,
     )
     def assurance_promotion_preflight(
         node_ids: list[str] | None = None,

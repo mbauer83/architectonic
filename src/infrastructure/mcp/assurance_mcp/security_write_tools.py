@@ -20,6 +20,7 @@ from typing import Any
 from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
 
 from src.infrastructure.mcp.assurance_mcp.context import get_assurance_context
+from src.infrastructure.mcp.tool_annotations import DESTRUCTIVE_LOCAL_WRITE, LOCAL_WRITE
 
 
 def register_security_write_tools(server: FastMCP) -> None:
@@ -42,6 +43,7 @@ def register_security_write_tools(server: FastMCP) -> None:
             "a typed conflict. Omit it and one is generated (every call then ingests anew). "
             "Requires the assurance store unlocked with co-located signals."
         ),
+        annotations=LOCAL_WRITE,
     )
     def assurance_ingest_security_signals(
         anchor_entity_id: str,
@@ -93,6 +95,7 @@ def register_security_write_tools(server: FastMCP) -> None:
             "and outlive any single scan. This is irreversible and audited. "
             "Requires the assurance store unlocked with co-located signals."
         ),
+        annotations=DESTRUCTIVE_LOCAL_WRITE,
     )
     def assurance_delete_security_snapshot(
         snapshot_id: str = "",
@@ -139,6 +142,7 @@ def register_security_write_tools(server: FastMCP) -> None:
             "discovered_components: list of component dicts from an external AI discovery tool. "
             "Each component needs at least 'name'; 'purl' is used as the identity key if present."
         ),
+        annotations=LOCAL_WRITE,
     )
     def assurance_reconcile_aibom(
         modeled_components: list[dict[str, object]],

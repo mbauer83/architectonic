@@ -18,6 +18,7 @@ from __future__ import annotations
 from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
 
 from src.infrastructure.mcp.assurance_mcp.context import get_assurance_context
+from src.infrastructure.mcp.tool_annotations import READ_ONLY
 
 
 def register_security_read_tools(server: FastMCP) -> None:
@@ -35,6 +36,7 @@ def register_security_read_tools(server: FastMCP) -> None:
             "architecture anchor (the current SBOM). Exposure-filtered by the TLP ceiling. "
             "Requires the assurance store to be unlocked."
         ),
+        annotations=READ_ONLY,
     )
     def assurance_list_bom_components(anchor_entity_id: str) -> dict[str, object]:
         from src.application.security_signals.signals_read import list_active_components  # noqa: PLC0415
@@ -60,6 +62,7 @@ def register_security_read_tools(server: FastMCP) -> None:
             "Optionally scope to one component by purl or component_id. Exposure-filtered; a "
             "finding is hidden when its component is. Requires the assurance store to be unlocked."
         ),
+        annotations=READ_ONLY,
     )
     def assurance_list_vulnerabilities(
         assessed_entity_id: str | None = None, purl: str | None = None, component_id: str | None = None,
@@ -101,6 +104,7 @@ def register_security_read_tools(server: FastMCP) -> None:
             "different from a known vulnerability that currently affects nothing. "
             "Requires the assurance store to be unlocked."
         ),
+        annotations=READ_ONLY,
     )
     def assurance_vulnerability_impact(identifier: str) -> dict[str, object]:
         from src.infrastructure.assurance.signal_impact import (  # noqa: PLC0415
@@ -127,6 +131,7 @@ def register_security_read_tools(server: FastMCP) -> None:
             "an out-of-band lookup, then drill in with assurance_list_vulnerabilities / "
             "assurance_security_metrics. Requires the assurance store to be unlocked."
         ),
+        annotations=READ_ONLY,
     )
     def assurance_security_stats() -> dict[str, object]:
         from src.application.security_signals.signals_read import signals_stats  # noqa: PLC0415
@@ -150,6 +155,7 @@ def register_security_read_tools(server: FastMCP) -> None:
             "availability/content states (no_active_snapshot / no_findings / "
             "visibility_limited / complete)."
         ),
+        annotations=READ_ONLY,
     )
     def assurance_security_metrics(anchor_entity_id: str) -> dict[str, object]:
         from dataclasses import asdict  # noqa: PLC0415
@@ -180,6 +186,7 @@ def register_security_read_tools(server: FastMCP) -> None:
             "Results are assistive, never authoritative — confirm before marking. "
             "Pass the output of arch-repo-read list/query tools as 'entities'."
         ),
+        annotations=READ_ONLY,
     )
     def assurance_scan_ai_candidates(
         entities: list[dict[str, object]],
@@ -210,6 +217,7 @@ def register_security_read_tools(server: FastMCP) -> None:
             "version, provider, hosted, external, arch_entity_id. "
             "The emitted BOM can be sealed into the archive via assurance_seal_baseline."
         ),
+        annotations=READ_ONLY,
     )
     def assurance_aibom_export(
         ai_components: list[dict[str, object]],

@@ -5,7 +5,6 @@ from typing import Literal
 from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
 
 from src.infrastructure.mcp.artifact_mcp.context import expand_artifact_id
-from src.infrastructure.mcp.artifact_mcp.tool_annotations import LOCAL_WRITE
 from src.infrastructure.mcp.artifact_mcp.write._common import (
     _out,
     artifact_write_ops,
@@ -16,6 +15,7 @@ from src.infrastructure.mcp.artifact_mcp.write._common import (
     roots_key,
     verifier_for,
 )
+from src.infrastructure.mcp.tool_annotations import LOCAL_WRITE
 
 
 def _add_connection_impl(

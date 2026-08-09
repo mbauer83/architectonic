@@ -26,6 +26,7 @@ from src.application.assurance.fmea_factors import (
 from src.domain.assurance.fmea_factors import FACTOR_SCALES, FMEA_FACTORS
 from src.infrastructure.assurance.write_serialization import run_write
 from src.infrastructure.mcp.assurance_mcp.context import get_assurance_context
+from src.infrastructure.mcp.tool_annotations import LOCAL_WRITE
 
 
 def _scale_help() -> str:
@@ -50,6 +51,7 @@ def register_fmea_write_tools(server: FastMCP) -> None:
             "stops applying and the derived value stands again, with this revision retained. "
             "There is no risk priority number: multiplying ordinals is not a quantity."
         ),
+        annotations=LOCAL_WRITE,
     )
     def assurance_set_fmea_factor(
         node_id: str,

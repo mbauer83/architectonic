@@ -30,6 +30,7 @@ from src.infrastructure.mcp.assurance_mcp.context import (
 from src.infrastructure.mcp.assurance_mcp.dashboard_tools import register_dashboard_tools
 from src.infrastructure.mcp.assurance_mcp.fmea_read_tools import register_fmea_read_tools
 from src.infrastructure.mcp.assurance_mcp.security_read_tools import register_security_read_tools
+from src.infrastructure.mcp.tool_annotations import READ_ONLY
 
 FAILURE_MODE_NODE_TYPE = "failure-mode"
 
@@ -46,6 +47,7 @@ def register_read_tools(server: FastMCP) -> None:
             "Return the current status of the confidential assurance store: whether it is "
             "configured, locked, or unlocked. Always callable — does not require the store to be open."
         ),
+        annotations=READ_ONLY,
     )
     def assurance_store_status() -> dict[str, object]:
         from src.infrastructure.mcp.assurance_mcp.context import default_db_path  # noqa: PLC0415
@@ -80,6 +82,7 @@ def register_read_tools(server: FastMCP) -> None:
             "Filter by node_type, status, concern_class, or tlp. "
             "sort: updated_at (default) | created_at | name | node_type; order: desc (default) | asc."
         ),
+        annotations=READ_ONLY,
     )
     def assurance_list_nodes(
         node_type: str | None = None,
@@ -120,6 +123,7 @@ def register_read_tools(server: FastMCP) -> None:
             "way an assertion applies. Plus the action priority, whether an occurrence is being "
             "asked for at all, and the single next action that would advance the row."
         ),
+        annotations=READ_ONLY,
     )
     def assurance_read_node(node_id: str) -> dict[str, object]:
         if not ctx.is_available():
@@ -158,6 +162,7 @@ def register_read_tools(server: FastMCP) -> None:
         description=(
             "List assurance connections. Filter by source_id, target_id, or conn_type."
         ),
+        annotations=READ_ONLY,
     )
     def assurance_list_edges(
         source_id: str | None = None,
@@ -172,6 +177,7 @@ def register_read_tools(server: FastMCP) -> None:
     @server.tool(
         name="assurance_stats",
         description="Return counts of assurance nodes and edges by type.",
+        annotations=READ_ONLY,
     )
     def assurance_stats() -> dict[str, object]:
         if not ctx.is_available():
@@ -187,6 +193,7 @@ def register_read_tools(server: FastMCP) -> None:
             "Returns errors (block sign-off) and warnings (informational). "
             "Also emits W501 modeling-gap findings for unbound-pending control-structure-nodes."
         ),
+        annotations=READ_ONLY,
     )
     def assurance_verify() -> dict[str, object]:
         if not ctx.is_available():
@@ -214,6 +221,7 @@ def register_read_tools(server: FastMCP) -> None:
             "AND ≥1 leads-to hazard; every loss-scenario explains ≥1 UCA or ≥1 hazard; every UCA and "
             "loss-scenario has ≥1 derives constraint. Returns gap counts and node IDs for each check."
         ),
+        annotations=READ_ONLY,
     )
     def assurance_stpa_complete() -> dict[str, object]:
         if not ctx.is_available():
@@ -231,6 +239,7 @@ def register_read_tools(server: FastMCP) -> None:
             "'stpa-ucas', 'stpa-constraints', 'stpa-loss-scenarios', 'grc-risk', 'grc-obligations', "
             "'cast-investigation'. An unknown topic answers with the full list of available topics."
         ),
+        annotations=READ_ONLY,
     )
     def assurance_guidance(topic: str) -> dict[str, object]:
         from src.application.assurance.guidance import lookup  # noqa: PLC0415
@@ -245,6 +254,7 @@ def register_read_tools(server: FastMCP) -> None:
             "Also checks: every incident has ≥1 investigates edge; every corrective-action "
             "has ≥1 derives edge to a constraint. Returns gap counts per check."
         ),
+        annotations=READ_ONLY,
     )
     def assurance_cast_complete() -> dict[str, object]:
         if not ctx.is_available():
@@ -261,6 +271,7 @@ def register_read_tools(server: FastMCP) -> None:
             "every risk has a treatment attribute; every risk has an accountable-for owner. "
             "Returns gap counts per check."
         ),
+        annotations=READ_ONLY,
     )
     def assurance_grc_complete() -> dict[str, object]:
         if not ctx.is_available():
@@ -276,6 +287,7 @@ def register_read_tools(server: FastMCP) -> None:
             "Filter by method (STPA/CAST/GRC) or status. Pass analysis_id to fetch one analysis. "
             "Above-ceiling analyses are omitted; an absent or above-ceiling id returns not_found."
         ),
+        annotations=READ_ONLY,
     )
     def assurance_list_analyses(
         method: str | None = None,

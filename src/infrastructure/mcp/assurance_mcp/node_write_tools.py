@@ -18,6 +18,7 @@ from src.infrastructure.assurance.edge_legality import legal_connection_types
 from src.infrastructure.assurance.write_serialization import run_write
 from src.infrastructure.mcp.assurance_mcp._write_envelopes import _envelope
 from src.infrastructure.mcp.assurance_mcp.context import get_assurance_context
+from src.infrastructure.mcp.tool_annotations import DESTRUCTIVE_LOCAL_WRITE, LOCAL_WRITE
 
 
 def register_node_write_tools(server: FastMCP) -> None:
@@ -38,6 +39,7 @@ def register_node_write_tools(server: FastMCP) -> None:
             "Returns the new node_id. All writes are audited; post-write verification findings "
             "are included in the response (writes are never blocked by the verifier)."
         ),
+        annotations=LOCAL_WRITE,
     )
     def assurance_create_node(
         analysis_id: str,
@@ -89,6 +91,7 @@ def register_node_write_tools(server: FastMCP) -> None:
             "Cross-module architecture references (binds-to, refines-requirement, "
             "evidenced-by-artifact, purl) go through assurance_register_arch_ref, never here."
         ),
+        annotations=LOCAL_WRITE,
     )
     def assurance_add_edge(
         source_id: str,
@@ -116,6 +119,7 @@ def register_node_write_tools(server: FastMCP) -> None:
             "it is immutable once recorded. Use assurance_assign_provenance to repair a node that "
             "has none."
         ),
+        annotations=LOCAL_WRITE,
     )
     def assurance_edit_node(
         node_id: str,
@@ -148,6 +152,7 @@ def register_node_write_tools(server: FastMCP) -> None:
             "Delete an assurance node and all its incoming/outgoing edges. "
             "This action is logged in the audit trail but is not reversible."
         ),
+        annotations=DESTRUCTIVE_LOCAL_WRITE,
     )
     def assurance_delete_node(node_id: str) -> dict[str, object]:
         result = run_write(lambda: mutations.delete_node(ctx.store, ctx.archive, node_id=node_id))
@@ -160,6 +165,7 @@ def register_node_write_tools(server: FastMCP) -> None:
             "Unlike assurance_delete_node, this removes only the edge (not its endpoints). "
             "The operation is logged in the audit trail and is not reversible."
         ),
+        annotations=DESTRUCTIVE_LOCAL_WRITE,
     )
     def assurance_delete_edge(edge_id: str) -> dict[str, object]:
         result = run_write(lambda: mutations.delete_edge(ctx.store, ctx.archive, edge_id=edge_id))
