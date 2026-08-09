@@ -11,6 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol
 
+from src.application.scratchpad.lift import LiftPlan, LiftReceipt, LiftTarget
 from src.domain.scratchpad import Scratchpad
 
 
@@ -78,4 +79,30 @@ class ScratchpadRepositoryPort(Protocol):
         ...
 
     def delete(self, artifact_id: str) -> None:
+        ...
+
+
+class LiftWriterPort(Protocol):
+    """The write path a lift goes through, and the group registry it resolves its target against.
+
+    Declared here because the application layer plans a lift and must not perform one: execution is
+    `artifact_bulk_write` — one operation, one refusal vocabulary, the same verified write path as
+    every other authoring — and that lives in infrastructure. There is deliberately no second route
+    into the model, which is the property ADR@1783406851 exists to protect.
+    """
+
+    def resolve_target(self, group: str) -> LiftTarget:
+        """What the named model-project is today: whether it exists, and what it declares.
+
+        Answering rather than refusing for an unknown group is deliberate — a lift may create one,
+        and the plan says so before anything is written.
+        """
+        ...
+
+    def execute(self, plan: LiftPlan, *, meta_ontology: str, dry_run: bool) -> LiftReceipt:
+        """Perform the plan as one transaction, creating the target project if it is new.
+
+        *meta_ontology* is the scratchpad's, carried so a project this lift creates declares the
+        vocabulary its content is in rather than inheriting whatever the repository defaults to.
+        """
         ...

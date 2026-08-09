@@ -15,12 +15,17 @@ import pytest
 from src.application.scratchpad.ports import ScratchpadVersionConflictError
 from src.application.scratchpad.service import DEFAULT_AREAS, ScratchpadService
 from src.domain.scratchpad import Point, ScratchpadError
+from src.infrastructure.scratchpad.bulk_write_lift import BulkWriteLiftWriter
 from src.infrastructure.scratchpad.yaml_repository import YamlScratchpadRepository
 
 
 @pytest.fixture
 def service(tmp_path: Path) -> ScratchpadService:
-    return ScratchpadService(YamlScratchpadRepository(tmp_path))
+    # The registry is only reached to build link verdicts for a lift, and nothing here lifts; the
+    # lift path has its own suite, where the writer is a recorder rather than a repository.
+    return ScratchpadService(
+        YamlScratchpadRepository(tmp_path), None, BulkWriteLiftWriter(tmp_path),  # type: ignore[arg-type]
+    )
 
 
 def _new(service: ScratchpadService, **overrides: object):

@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Any
 from src.application.scratchpad.ports import ScratchpadSummary
 
 if TYPE_CHECKING:
+    from src.application.scratchpad.lift import LiftPlan, LiftReceipt
     from src.domain.modules.module_registry import ModuleRegistry
 
 from src.domain.scratchpad import (
@@ -275,3 +276,51 @@ def _verdict_document(
         "narrowed-by": verdict.narrowed_by,
         "blocks": verdict.blocks or None,
     })
+
+
+def lift_to_document(
+    plan: "LiftPlan", receipt: "LiftReceipt", *, dry_run: bool
+) -> dict[str, Any]:
+    """A preflight and its execution as one document, in the same kebab-case vocabulary.
+
+    Here rather than in either adapter, for the reason the aggregate's mapping is here: both
+    surfaces answer a lift, and two copies of this field list would drift with nothing able to see
+    it until one of them lost a refusal.
+    """
+    return {
+        "target": {
+            "group": plan.target.group,
+            "meta-ontology": plan.target.meta_ontology,
+            "exists": plan.target.exists,
+        },
+        # Not `_drop_empty`, unlike the aggregate above: an *item* is a row in a report, and every
+        # field of it is declared on the wire with an empty default. Dropping the empties would
+        # leave the two surfaces disagreeing — FastAPI refills them from the response model, and MCP
+        # answers this dict directly — so an agent would see a shape the contract says is impossible.
+        "items": [
+            {
+                "kind": item.kind,
+                "id": item.id,
+                "outcome": item.outcome,
+                "label": item.label,
+                "artifact-type": item.artifact_type,
+                "artifact-id": item.artifact_id,
+                "code": item.code,
+                "reason": item.reason,
+                "warning": item.warning,
+            }
+            for item in plan.items
+        ],
+        "outside-selection": [
+            {"link-id": stranded.link_id, "note-id": stranded.note_id,
+             "note-title": stranded.note_title}
+            for stranded in plan.outside_selection
+        ],
+        "refusal": plan.refusal,
+        "blocks": plan.blocks,
+        "dry-run": dry_run,
+        "committed": receipt.committed,
+        "realized": dict(receipt.realized),
+        "errors": list(receipt.errors),
+        "operation-id": receipt.operation_id,
+    }

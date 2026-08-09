@@ -14,11 +14,30 @@ compares the two against this class.
 
 from __future__ import annotations
 
+from dataclasses import replace
+
+from src.application.scratchpad.lift import (
+    LiftPlan,
+    LiftReceipt,
+    plan_lift,
+    verdict_source,
+)
 from src.application.scratchpad.ports import (
+    LiftWriterPort,
     ScratchpadRepositoryPort,
     ScratchpadSummary,
 )
-from src.domain.scratchpad import Area, Layout, Rect, Scratchpad, scratchpad_from_parts
+from src.domain.modules.module_registry import ModuleRegistry
+from src.domain.scratchpad import (
+    Area,
+    Layout,
+    Link,
+    ModelRef,
+    Note,
+    Rect,
+    Scratchpad,
+    scratchpad_from_parts,
+)
 
 #: The four areas a new scratchpad is seeded with, and what each is for. Defaults rather than a
 #: fixed structure: a scratchpad may add, rename or remove areas, and the permitted-type sets that
@@ -38,8 +57,15 @@ _AREA_WIDTH, _AREA_HEIGHT, _AREA_GAP = 1200, 600, 40
 class ScratchpadService:
     """Aggregate operations. Holds no HTTP, no MCP, and no rendering concerns."""
 
-    def __init__(self, repository: ScratchpadRepositoryPort) -> None:
+    def __init__(
+        self,
+        repository: ScratchpadRepositoryPort,
+        registry: ModuleRegistry,
+        lift_writer: LiftWriterPort,
+    ) -> None:
         self._repository = repository
+        self._registry = registry
+        self._lift_writer = lift_writer
 
     # ── Reads ────────────────────────────────────────────────────────────────
 
@@ -100,6 +126,70 @@ class ScratchpadService:
         """Which collection this scratchpad sits in — needed to save an edit back into it."""
         return self._repository.group_of(artifact_id)
 
+    def lift(
+        self,
+        artifact_id: str,
+        *,
+        selection: list[str],
+        target_group: str,
+        expected_version: str,
+        dry_run: bool = True,
+    ) -> tuple[LiftPlan, LiftReceipt]:
+        """Preflight a lift, and perform it unless asked only to plan.
+
+        Planning and performing are one operation on one route, as the write tools already are: a
+        plan that cannot be executed by the same call is a plan someone has to trust twice, and the
+        second call would be made against a scratchpad that may have moved on.
+
+        A blocked plan performs nothing and says why. So does `dry_run`, which is the default —
+        every write on this surface plans unless told otherwise.
+        """
+        scratchpad = self._repository.load(artifact_id)
+        plan = plan_lift(
+            scratchpad,
+            selection=selection,
+            target=self._lift_writer.resolve_target(target_group),
+            verdict_of=verdict_source(self._registry, scratchpad),
+        )
+        if dry_run or plan.blocks or plan.is_empty:
+            return plan, LiftReceipt()
+
+        receipt = self._lift_writer.execute(
+            plan, meta_ontology=scratchpad.meta_ontology, dry_run=False
+        )
+        if receipt.committed:
+            # The *scratchpad* records what the lift created; the model is never written back to.
+            # This is the one edge a lift adds to the aggregate, and it is what makes a second lift
+            # skip rather than duplicate.
+            self._repository.save(
+                _realized(scratchpad, receipt.realized),
+                group=self._repository.group_of(artifact_id),
+                expected_version=expected_version,
+            )
+        return plan, receipt
+
+
+
+def _realized(scratchpad: Scratchpad, allocated: dict[str, str]) -> Scratchpad:
+    """The same scratchpad, with every note and link the lift created pointing at what it became.
+
+    `realized` rather than `bound`: the distinction is provenance, and it is what decides whether
+    untyping is free. A realized note may only be *forgotten*, because a model entity depends on
+    the type it was lifted with.
+    """
+    def realized_note(note: Note) -> Note:
+        created = allocated.get(note.id)
+        return replace(note, model_ref=ModelRef(created, "realized")) if created else note
+
+    def realized_link(link: Link) -> Link:
+        created = allocated.get(link.id)
+        return replace(link, model_ref=ModelRef(created, "realized")) if created else link
+
+    return replace(
+        scratchpad,
+        notes=tuple(realized_note(note) for note in scratchpad.notes),
+        links=tuple(realized_link(link) for link in scratchpad.links),
+    )
 
 
 def _area_rect(index: int) -> Rect:

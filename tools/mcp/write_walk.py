@@ -420,10 +420,28 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
             "version": c.created["scratchpad_version"],
             "scratchpad": {
                 "name": "MCP Walk Scratchpad, revised",
-                "notes": [{"id": "n1", "title": "A thought that has decided nothing"}],
-                "layout": {"notes": {"n1": [40, 60]}},
+                "notes": [
+                    {"id": "n1", "title": "A thought that has decided nothing"},
+                    # One note *is* decided, so the lift below has something to plan rather than
+                    # answering an empty preflight that would prove nothing.
+                    {"id": "n2", "title": "A thought that has", "destination": "element",
+                     "element-type": "goal"},
+                ],
+                "layout": {"notes": {"n1": [40, 60], "n2": [260, 60]}},
             },
         },
+        captures=(Capture("scratchpad_lifted_version", _scratchpad_field("version")),),
+    ),
+    WriteCall(
+        # A preflight: it reports what a lift would create and writes nothing, which is what the
+        # tool does by default and the whole reason the plan and the execution share one call.
+        "scratchpad_lift",
+        lambda c: {
+            "artifact_id": c.created["scratchpad"],
+            "selection": ["n1", "n2"],
+            "version": c.created["scratchpad_lifted_version"],
+        },
+        mutates=False,
     ),
     WriteCall(
         "scratchpad_delete",
