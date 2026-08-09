@@ -8398,7 +8398,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "element" | "document" | "connection" | "reference";
+            kind: "element" | "document" | "connection" | "reference" | "diagram";
             /** Label */
             label: string;
             /**
@@ -8432,6 +8432,11 @@ export interface components {
          *     lands in the root model, which is also where a note sitting in no frame goes.
          */
         LiftScratchpadBody: {
+            /**
+             * Draw
+             * @default false
+             */
+            draw: boolean;
             /**
              * Dry-Run
              * @default true

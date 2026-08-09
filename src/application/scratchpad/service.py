@@ -143,6 +143,7 @@ class ScratchpadService:
         selection: list[str],
         targets: dict[str, str],
         expected_version: str,
+        draw: bool = False,
         dry_run: bool = True,
     ) -> tuple[LiftPlan, LiftReceipt]:
         """Preflight a lift, and perform it unless asked only to plan.
@@ -166,6 +167,7 @@ class ScratchpadService:
                 area: self._lift_writer.resolve_target(group) for area, group in targets.items()
             },
             verdict_of=verdict_source(self._registry, scratchpad),
+            draw=draw,
         )
         if dry_run or plan.blocks or plan.is_empty:
             return plan, LiftReceipt()

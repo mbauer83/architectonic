@@ -138,7 +138,7 @@ export type ScratchpadList = typeof ScratchpadListSchema.Type
 
 /** One selected note or link, and what a lift would do with it. */
 export const LiftItemSchema = Schema.Struct({
-  kind: Schema.Literal('element', 'document', 'connection', 'reference'),
+  kind: Schema.Literal('element', 'document', 'connection', 'reference', 'diagram'),
   id: Schema.String,
   outcome: Schema.Literal('create', 'skip', 'refuse'),
   label: Schema.String,

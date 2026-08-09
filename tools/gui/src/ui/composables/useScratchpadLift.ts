@@ -36,6 +36,9 @@ export function useScratchpadLift(
   /** The frames the selection actually spans, so the dialog asks once per frame rather than once
    * per frame the scratchpad happens to have. */
   const frames = ref<{ id: string; label: string }[]>([])
+  /** Whether to draw a view of what was lifted. Off by default: the diagram is second-order, and a
+   * picture nobody asked for is a file nobody expected. */
+  const draw = ref(false)
   const error = ref('')
   /** Frozen when the dialog opens: the plan on screen describes these notes and no others. */
   const selection = ref<string[]>([])
@@ -59,6 +62,7 @@ export function useScratchpadLift(
       targets: Object.fromEntries(
         Object.entries(targets.value).map(([frame, slug]) => [frame, slug.trim()]),
       ),
+      draw: draw.value,
       'dry-run': dryRun,
     }))
     if (!Exit.isSuccess(exit)) {
@@ -105,6 +109,7 @@ export function useScratchpadLift(
     plan,
     targets,
     frames,
+    draw,
     setTarget,
     error,
     projects,

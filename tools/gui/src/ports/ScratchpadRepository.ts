@@ -38,6 +38,9 @@ export interface ScratchpadRepository {
       /** Frame id → the model-project its content lands in. One per frame, because the frames are
        * work archetypes and a canvas routinely holds work for more than one project. */
       targets?: Record<string, string>
+      /** Draw a view of what was lifted. Second-order: created after the content commits, since it
+       * can only name entities that exist, so a diagram that fails does not retract the lift. */
+      draw?: boolean
       'dry-run'?: boolean
     },
   ) => Effect.Effect<ScratchpadLift, RepoError>

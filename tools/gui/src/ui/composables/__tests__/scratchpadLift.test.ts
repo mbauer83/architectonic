@@ -62,7 +62,7 @@ describe('lifting from the canvas', () => {
 
     expect(lift.open.value).toBe(true)
     expect(calls).toEqual([
-      { version: '0.1.4', selection: ['n1'], targets: {}, 'dry-run': true },
+      { version: '0.1.4', selection: ['n1'], targets: {}, draw: false, 'dry-run': true },
     ])
   })
 
@@ -138,5 +138,19 @@ describe('choosing where each frame lands', () => {
 
     expect((calls[1] as { targets: Record<string, string> }).targets)
       .toEqual({ project: 'q3-expansion' })
+  })
+})
+
+describe('the view a lift may draw', () => {
+  it('is off unless asked for, because a picture nobody asked for is a file nobody expected', async () => {
+    const { service, calls } = serviceWith([plan(), plan({ committed: true })])
+    const lift = useScratchpadLift(service, { value: 'SCR@1.a.pad' } as never, scratchpad, () => {})
+
+    await lift.preflight(['n1'])
+    expect((calls[0] as { draw: boolean }).draw).toBe(false)
+
+    lift.draw.value = true
+    await lift.lift()
+    expect((calls[1] as { draw: boolean }).draw).toBe(true)
   })
 })

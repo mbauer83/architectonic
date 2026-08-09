@@ -338,10 +338,12 @@ const status = computed(() => {
         :projects="lift.projects.value"
         :frames="lift.frames.value"
         :targets="lift.targets.value"
+        :draw="lift.draw.value"
         :busy="lift.busy.value"
         :error="lift.error.value"
         :selection-size="lift.selectionSize.value"
         @set-target="lift.setTarget($event.frame, $event.slug)"
+        @update:draw="lift.draw.value = $event"
         @lift="lift.lift()"
         @close="lift.close()"
       />

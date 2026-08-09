@@ -145,7 +145,10 @@ const emit = defineEmits<{
   word-break: break-word; overflow: hidden; cursor: text;
 }
 .sp-title:focus { box-shadow: inset 0 -1px 0 #2563eb; }
-.sp-meta { display: flex; align-items: center; gap: 4px; justify-content: space-between; margin-top: 4px; flex: 0 0 auto; }
+.sp-meta {
+  display: flex; align-items: center; gap: 4px; justify-content: space-between;
+  margin-top: 4px; flex: 0 0 auto;
+}
 .sp-type { font-size: 10.5px; color: #7c3aed; font-weight: 600; }
 .sp-untyped { font-size: 10.5px; color: #9ca3af; }
 .sp-delete {

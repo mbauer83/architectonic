@@ -112,6 +112,9 @@ class LiftScratchpadBody(_ClosedBody):
     version: str
     selection: list[str]
     targets: dict[str, str] = Field(default_factory=dict)
+    #: Draw a view of what was lifted. Off by default and second-order: the diagram is created
+    #: after the content commits, because it can only name entities that exist.
+    draw: bool = False
     dry_run: bool = Field(default=True, alias="dry-run")
 
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
@@ -227,6 +230,7 @@ def lift_scratchpad(artifact_id: str, body: LiftScratchpadBody) -> dict[str, Any
             selection=body.selection,
             targets=body.targets,
             expected_version=body.version,
+            draw=body.draw,
             dry_run=body.dry_run,
         )
     except (ScratchpadError, ScratchpadNotFoundError, ScratchpadVersionConflictError) as exc:

@@ -475,3 +475,69 @@ class TestOneTargetPerFrame:
         )
 
         assert plan.blocks and "sysml-v2" in plan.refusal
+
+
+class TestTheViewALiftMayDraw:
+    """Optional and second-order: a picture of what was lifted, never a condition of lifting it."""
+
+    def _grouped(self):  # noqa: ANN202
+        from src.domain.scratchpad import Group, Layout, Point
+
+        return _pad(
+            notes=[_typed("n1", "Order service"), _typed("n2", "Billing"), _typed("n3", "Elsewhere")],
+            groups=[Group(id="g1", label="Order handling", members=("n1", "n2"))],
+            layout=Layout(notes={"n1": Point(0, 0), "n2": Point(200, 0), "n3": Point(400, 0)}),
+        )
+
+    def test_no_diagram_is_planned_unless_one_is_asked_for(self) -> None:
+        plan = plan_lift(
+            self._grouped(), selection=["n1", "n2"], targets={}, verdict_of=_always(PERMITTED),
+        )
+
+        assert not [item for item in plan.items if item.kind == "diagram"]
+        assert plan.groupings == ()
+
+    def test_the_groups_become_the_diagram_s_boxes_and_the_frames_become_nothing(self) -> None:
+        # An area is a region of the workspace, not an element of a picture; a group is a cluster
+        # someone drew because it meant something, which is what an authored grouping's label is for.
+        plan = plan_lift(
+            self._grouped(), selection=["n1", "n2", "n3"], targets={},
+            verdict_of=_always(PERMITTED), draw=True,
+        )
+
+        assert [grouping.label for grouping in plan.groupings] == ["Order handling"]
+        assert plan.groupings[0].members == ("$ref:n1", "$ref:n2")
+
+    def test_only_selected_members_of_a_group_are_drawn(self) -> None:
+        plan = plan_lift(
+            self._grouped(), selection=["n1"], targets={},
+            verdict_of=_always(PERMITTED), draw=True,
+        )
+
+        assert plan.groupings[0].members == ("$ref:n1",)
+
+    def test_the_diagram_names_every_element_the_lift_touched_including_the_skipped_ones(self) -> None:
+        bound = Note(
+            id="n4", title="Order management", destination="element", element_type="capability",
+            model_ref=ModelRef(artifact_id="ENT@9.x.order-management", kind="bound"),
+        )
+        pad = _pad(notes=[_typed("n1", "Order service"), bound])
+
+        plan = plan_lift(
+            pad, selection=["n1", "n4"], targets={}, verdict_of=_always(PERMITTED), draw=True,
+        )
+
+        drawn = next(item for item in plan.items if item.kind == "diagram")
+        # A bound note is skipped by the *write* and still belongs in the picture: the point of the
+        # view is what this thinking touched, not only what it created.
+        assert set(drawn.entity_refs) == {"$ref:n1", "ENT@9.x.order-management"}
+        assert drawn.artifact_type == "archimate-layered"
+
+    def test_a_selection_with_no_elements_draws_nothing(self) -> None:
+        pad = _pad(notes=[Note(id="d1", title="Vision", destination="document", document_type="vision")])
+
+        plan = plan_lift(
+            pad, selection=["d1"], targets={}, verdict_of=_always(PERMITTED), draw=True,
+        )
+
+        assert not [item for item in plan.items if item.kind == "diagram"]

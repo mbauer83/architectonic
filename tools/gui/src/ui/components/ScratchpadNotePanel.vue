@@ -74,7 +74,9 @@ const endName = (noteId: string): string =>
       class="verdict"
       :class="selectedLink.verdict?.kind"
     >
-      <span class="msg">{{ selectedLink.verdict?.message || 'Both ends need a type before this can be verified.' }}</span>
+      <span class="msg">{{
+        selectedLink.verdict?.message || 'Both ends need a type before this can be verified.'
+      }}</span>
     </p>
     <label class="field">
       <span>Relation</span>

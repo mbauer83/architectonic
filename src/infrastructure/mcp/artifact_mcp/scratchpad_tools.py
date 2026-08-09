@@ -150,7 +150,11 @@ _LIFT_DESCRIPTION = (
     "project. A frame with no entry lands in the root model. A project is created if it does not "
     "exist; one declaring a different meta-ontology is refused rather than coerced. "
     "`version` is the version you read the scratchpad at — a committed lift records what it "
-    "created on the notes, so it is a write against that version."
+    "created on the notes, so it is a write against that version.\n\n"
+    "`draw` adds a layered ArchiMate view of what was lifted, with each of the scratchpad's GROUPS "
+    "as a labelled box on it. Frames map to nothing — an area is a region of the workspace, not an "
+    "element of a picture. The diagram is drawn AFTER the content commits, since it can only name "
+    "entities that exist, so a diagram that fails does not retract the lift."
 )
 
 _DELETE_DESCRIPTION = (
@@ -210,6 +214,7 @@ def scratchpad_lift(
     selection: list[str],
     version: str,
     targets: dict[str, str] | None = None,
+    draw: bool = False,
     dry_run: bool = True,
     repo_root: str | None = None,
 ) -> dict[str, Any]:
@@ -219,6 +224,7 @@ def scratchpad_lift(
             selection=selection,
             targets=targets or {},
             expected_version=version,
+            draw=draw,
             dry_run=dry_run,
         )
     except (ScratchpadError, ScratchpadNotFoundError, ScratchpadVersionConflictError) as exc:

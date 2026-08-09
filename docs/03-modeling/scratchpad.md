@@ -203,6 +203,23 @@ project starts, and sending you away to make a group first would interrupt exact
 feature exists to serve. A target that declares a **different meta-ontology is refused, not
 coerced**: content cannot land in a project whose vocabulary never declared it.
 
+### A view of what was lifted
+
+The lift dialog offers to **draw a diagram** of what it produced — off by default, because a picture
+nobody asked for is a file nobody expected. It is a layered ArchiMate view naming every element the
+lift touched, including the bound ones it skipped: the point of the view is what this thinking
+touched, not only what it created.
+
+Each of the scratchpad's **groups** becomes a labelled box on it. **Frames become nothing** — an
+area is a region of the workspace rather than an element of a picture, and with four of them it is
+far too coarse to be a grouping on a diagram, whereas a group is a cluster someone drew *because* it
+meant something, which is exactly what an authored grouping's label is for.
+
+The diagram is drawn **after** the content commits, since it can only name entities that exist. That
+is the one thing a lift does out of band, and it is reported as such: a diagram that fails does not
+retract the lift, because what the lift wrote is correct model content whether or not anyone drew a
+picture of it.
+
 ### Documents, and the references they record
 
 A note may be destined for a **document** rather than an element — which is most of what portfolio
@@ -313,6 +330,5 @@ The invariants a write is refused for, each naming the id at fault:
 
 ## What is not here yet
 
-The canvas, binding, narrowing and lift are what ship today. Still to come, in order: **documents**
-as a destination; **groups** becoming authored groupings on a generated diagram; and **focus mode**
-with scratchpad notes in the search index, ranked below model content.
+The canvas, binding, narrowing, lift, documents and the optional view are what ship today. Still to
+come: **focus mode**, and scratchpad notes in the search index, ranked below model content.

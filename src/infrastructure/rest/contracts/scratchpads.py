@@ -154,7 +154,7 @@ class LiftTargetWire(NullsOmitted):
 class LiftItemWire(NullsOmitted):
     """One selected note or link, and what the lift would do with it."""
 
-    kind: Literal["element", "document", "connection", "reference"]
+    kind: Literal["element", "document", "connection", "reference", "diagram"]
     id: str
     outcome: Literal["create", "skip", "refuse"]
     label: str

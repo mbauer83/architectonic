@@ -21,6 +21,7 @@ const props = defineProps<{
   /** The frames this selection spans; each chooses its own project. */
   frames: readonly { id: string; label: string }[]
   targets: Readonly<Record<string, string>>
+  draw: boolean
   busy: boolean
   error: string
   selectionSize: number
@@ -28,6 +29,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (event: 'set-target', payload: { frame: string; slug: string }): void
+  (event: 'update:draw', value: boolean): void
   (event: 'lift'): void
   (event: 'close'): void
 }>()
@@ -125,6 +127,17 @@ const isNew = (slug: string): boolean => !!slug && !props.projects.includes(slug
                normal way a project starts, and leaving to make one would interrupt the moment. -->
           A frame left blank lands in the root model. A name that is not yet a project creates one.
         </p>
+        <label class="field draw">
+          <input
+            type="checkbox"
+            data-testid="lift-draw"
+            :checked="draw"
+            @change="emit('update:draw', ($event.target as HTMLInputElement).checked)"
+          >
+          <!-- Groups become the boxes; frames become nothing, because an area is a region of the
+               workspace rather than an element of a picture. -->
+          <span>Also draw a view of it, with each group as a labelled box</span>
+        </label>
       </template>
 
       <p
@@ -279,6 +292,9 @@ h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: #
 .field input { flex: 1; padding: 5px 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; }
 .note { margin: 0 0 10px; color: #6b7280; font-size: 11.5px; }
 .new { color: #2563eb; font-size: 11px; font-style: normal; }
+.field.draw { gap: 6px; margin: 0 0 10px; }
+.field.draw span { color: #374151; font-size: 12px; }
+.field.draw input { flex: 0 0 auto; }
 .groups { overflow-y: auto; flex: 1; }
 .groups section { margin-bottom: 12px; }
 ul { list-style: none; margin: 0; padding: 0; }
