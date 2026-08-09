@@ -2409,6 +2409,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/scratchpads/{artifact_id}/lift": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Lift a selection into model content
+         * @description Preflight and execute share one route, as the write tools already do.
+         *
+         *     The answer says what would be created, what is skipped because it is already in the model, what
+         *     is refused and why, and which links reach outside the selection. A refusal blocks the whole
+         *     lift: the write is one transaction, and half a lift is a state nobody asked for.
+         */
+        post: operations["scratchpads_lift_scratchpad"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/search": {
         parameters: {
             query?: never;
@@ -8339,6 +8363,96 @@ export interface components {
             permitted_operation: string;
         };
         /**
+         * LiftItemWire
+         * @description One selected note or link, and what the lift would do with it.
+         */
+        LiftItemWire: {
+            /**
+             * Artifact-Id
+             * @default
+             */
+            "artifact-id": string;
+            /**
+             * Artifact-Type
+             * @default
+             */
+            "artifact-type": string;
+            /**
+             * Code
+             * @default
+             */
+            code: string;
+            /** Id */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "element" | "connection";
+            /** Label */
+            label: string;
+            /**
+             * Outcome
+             * @enum {string}
+             */
+            outcome: "create" | "skip" | "refuse";
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+            /**
+             * Warning
+             * @default
+             */
+            warning: string;
+        };
+        /**
+         * LiftScratchpadBody
+         * @description What to lift, where to, and whether this is a rehearsal.
+         *
+         *     `dry_run` defaults to true like every other write on this surface. `target` names a
+         *     model-project slug, created if it does not exist; empty means the root model, for content that
+         *     belongs to no project.
+         */
+        LiftScratchpadBody: {
+            /**
+             * Dry-Run
+             * @default true
+             */
+            "dry-run": boolean;
+            /** Selection */
+            selection: string[];
+            /**
+             * Target
+             * @default
+             */
+            target: string;
+            /** Version */
+            version: string;
+        };
+        /**
+         * LiftTargetWire
+         * @description Where a lift lands. One target per lift, chosen at lift time rather than stored.
+         */
+        LiftTargetWire: {
+            /**
+             * Exists
+             * @default false
+             */
+            exists: boolean;
+            /**
+             * Group
+             * @default
+             */
+            group: string;
+            /**
+             * Meta-Ontology
+             * @default
+             */
+            "meta-ontology": string;
+        };
+        /**
          * LinkVerdictWire
          * @description What the meta-ontology says about a drawn link.
          *
@@ -8855,6 +8969,18 @@ export interface components {
             symmetric: string[];
             /** Target Type */
             target_type: string;
+        };
+        /**
+         * OutsideSelectionWire
+         * @description A link with one end in the selection and one end out — a decision, not an error.
+         */
+        OutsideSelectionWire: {
+            /** Link-Id */
+            "link-id": string;
+            /** Note-Id */
+            "note-id": string;
+            /** Note-Title */
+            "note-title": string;
         };
         /**
          * OwnEntityTypeGuidance
@@ -9780,6 +9906,52 @@ export interface components {
             excluded_entity_types?: string[];
             /** Unrestricted */
             unrestricted: boolean;
+        };
+        /**
+         * ScratchpadLiftResponse
+         * @description The preflight, and what the execution did if it ran.
+         *
+         *     One shape for both, because they are one operation: a plan that could only be executed by a
+         *     second call would be a plan made against a scratchpad that may have moved on. `committed` is
+         *     what distinguishes an answer that wrote from one that only reported.
+         */
+        ScratchpadLiftResponse: {
+            /**
+             * Blocks
+             * @default false
+             */
+            blocks: boolean;
+            /**
+             * Committed
+             * @default false
+             */
+            committed: boolean;
+            /**
+             * Dry-Run
+             * @default true
+             */
+            "dry-run": boolean;
+            /** Errors */
+            errors?: string[];
+            /** Items */
+            items?: components["schemas"]["LiftItemWire"][];
+            /**
+             * Operation-Id
+             * @default
+             */
+            "operation-id": string;
+            /** Outside-Selection */
+            "outside-selection"?: components["schemas"]["OutsideSelectionWire"][];
+            /** Realized */
+            realized?: {
+                [key: string]: string;
+            };
+            /**
+             * Refusal
+             * @default
+             */
+            refusal: string;
+            target: components["schemas"]["LiftTargetWire"];
         };
         /** ScratchpadListResponse */
         ScratchpadListResponse: {
@@ -19234,6 +19406,95 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation error (bad or ambiguous write) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write forbidden (e.g. admin mode not enabled, or mutation denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Artifact not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write temporarily rejected by the workspace gate (retryable) */
+            423: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    scratchpads_lift_scratchpad: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LiftScratchpadBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScratchpadLiftResponse"];
+                };
             };
             /** @description Validation error (bad or ambiguous write) */
             400: {

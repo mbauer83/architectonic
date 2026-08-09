@@ -128,3 +128,62 @@ class ScratchpadResponse(NullsOmitted):
     links: list[LinkWire] = Field(default_factory=list)
     groups: list[GroupWire] = Field(default_factory=list)
     layout: LayoutWire = Field(default_factory=LayoutWire)
+
+
+class LiftTargetWire(NullsOmitted):
+    """Where a lift lands. One target per lift, chosen at lift time rather than stored."""
+
+    group: str = ""
+    meta_ontology: str = Field(default="", alias="meta-ontology")
+    exists: bool = False
+
+
+class LiftItemWire(NullsOmitted):
+    """One selected note or link, and what the lift would do with it."""
+
+    kind: Literal["element", "connection"]
+    id: str
+    outcome: Literal["create", "skip", "refuse"]
+    label: str
+    artifact_type: str = Field(default="", alias="artifact-type")
+    #: What a skipped note already is, so the report names it rather than saying "already done".
+    artifact_id: str = Field(default="", alias="artifact-id")
+    code: str = ""
+    reason: str = ""
+    #: A narrowing (W128/W129). Reported and passed, because the relation exists.
+    warning: str = ""
+
+
+class OutsideSelectionWire(NullsOmitted):
+    """A link with one end in the selection and one end out — a decision, not an error."""
+
+    link_id: str = Field(alias="link-id")
+    note_id: str = Field(alias="note-id")
+    note_title: str = Field(alias="note-title")
+
+
+class ScratchpadLiftResponse(NullsOmitted):
+    """The preflight, and what the execution did if it ran.
+
+    One shape for both, because they are one operation: a plan that could only be executed by a
+    second call would be a plan made against a scratchpad that may have moved on. `committed` is
+    what distinguishes an answer that wrote from one that only reported.
+    """
+
+    target: LiftTargetWire
+    items: list[LiftItemWire] = Field(default_factory=list)
+    outside_selection: list[OutsideSelectionWire] = Field(
+        default_factory=list, alias="outside-selection"
+    )
+    #: Set when the lift itself is refused rather than any one item — an empty selection, an unknown
+    #: note, or a target whose meta-ontology is not this scratchpad's. Nothing is planned when set.
+    refusal: str = ""
+    #: Whether anything stops the lift. A refusal anywhere blocks all of it: the write is one
+    #: transaction, and half a lift is a state nobody asked for.
+    blocks: bool = False
+    dry_run: bool = Field(default=True, alias="dry-run")
+    committed: bool = False
+    #: note id / link id → the artifact the write allocated for it.
+    realized: dict[str, str] = Field(default_factory=dict)
+    errors: list[str] = Field(default_factory=list)
+    operation_id: str = Field(default="", alias="operation-id")

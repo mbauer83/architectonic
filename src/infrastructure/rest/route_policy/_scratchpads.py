@@ -48,4 +48,17 @@ SCRATCHPAD_ROWS: tuple[RouteRow, ...] = (
         "DELETE", "/api/scratchpads/{artifact_id}", "detail", "scratchpads_delete_scratchpad", BODYLESS,
         identity_parameters=_ID, mutation_domain="repository",
     ),
+    RouteRow(
+        # An `operation` row: the final segment names an act, not a stored thing. Preflight and
+        # execute share it, as the write tools already do — a plan that has to be trusted twice,
+        # once here and once on a second route, is a plan made against a scratchpad that may have
+        # moved on in between.
+        #
+        # `derived-graph`, not `default`: execution goes through `artifact_bulk_write`, which stages
+        # the batch and verifies the repository as a whole before committing. That is the same
+        # budget diagram rendering and viewpoint execution are given, and for the same reason.
+        "POST", "/api/scratchpads/{artifact_id}/lift", "operation", "scratchpads_lift_scratchpad",
+        TYPED, identity_parameters=_ID, mutation_domain="repository",
+        timeout_class="derived-graph",
+    ),
 )

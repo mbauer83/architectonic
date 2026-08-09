@@ -45,6 +45,7 @@ _ACTION_SEGMENTS: dict[str, frozenset[str]] = {
     "execute": frozenset({"POST"}),
     "execute-diagram": frozenset({"POST"}),
     "execute-projection": frozenset({"POST"}),
+    "lift": frozenset({"POST"}),
     "export": frozenset({"POST"}),
     "export-csv": frozenset({"POST"}),
     "export-render": frozenset({"POST"}),

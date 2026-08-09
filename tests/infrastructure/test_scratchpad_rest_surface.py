@@ -182,3 +182,80 @@ class TestDelete:
 
     def test_deleting_what_is_not_there_is_a_404(self, client: TestClient) -> None:
         assert client.delete("/api/scratchpads/SCR@9.z.nothing?dry_run=false").status_code == 404
+
+
+class TestLift:
+    """The preflight over HTTP. Execution is covered where the plan is decided, and by the write
+    path's own suite — what can only break here is the wiring: the route, the body model, the
+    operation id its manifest row names, and the shape a client is handed."""
+
+    def _typed_pad(self, client: TestClient) -> dict:
+        created = _create(client)
+        document = {key: value for key, value in created.items() if key != "group"}
+        document["notes"] = [
+            {"id": "n1", "title": "Grow into mid-market", "destination": "element",
+             "element-type": "goal"},
+            {"id": "n2", "title": "Still thinking"},
+        ]
+        response = client.put(
+            f"/api/scratchpads/{created['artifact-id']}",
+            json={"version": created["version"], "group": created["group"], "scratchpad": document},
+        )
+        assert response.status_code == 200, response.text
+        return response.json()
+
+    def _lift(self, client: TestClient, pad: dict, **body: object) -> dict:
+        response = client.post(
+            f"/api/scratchpads/{pad['artifact-id']}/lift",
+            json={"version": pad["version"], "selection": ["n1"], **body},
+        )
+        assert response.status_code == 200, response.text
+        return response.json()
+
+    def test_a_preflight_reports_what_would_be_created_without_writing(self, client: TestClient) -> None:
+        pad = self._typed_pad(client)
+
+        plan = self._lift(client, pad)
+
+        created = [item for item in plan["items"] if item["outcome"] == "create"]
+        assert [item["id"] for item in created] == ["n1"]
+        assert plan["dry-run"] is True and plan["committed"] is False
+        # The scratchpad is untouched: nothing was realized, so nothing was written back to it.
+        stored = client.get(f"/api/scratchpads/{pad['artifact-id']}").json()
+        assert all("model-ref" not in note for note in stored["notes"])
+
+    def test_an_undecided_note_in_the_selection_blocks_the_lift_and_says_why(self, client: TestClient) -> None:
+        pad = self._typed_pad(client)
+
+        plan = self._lift(client, pad, selection=["n1", "n2"])
+
+        refused = [item for item in plan["items"] if item["outcome"] == "refuse"]
+        assert plan["blocks"] is True
+        assert [item["id"] for item in refused] == ["n2"]
+
+    def test_an_empty_selection_is_refused_as_the_lift_rather_than_as_an_item(self, client: TestClient) -> None:
+        pad = self._typed_pad(client)
+
+        plan = self._lift(client, pad, selection=[])
+
+        assert plan["blocks"] is True
+        assert "Nothing is selected" in plan["refusal"]
+        assert plan["items"] == []
+
+    def test_lifting_a_scratchpad_that_is_not_there_is_a_404(self, client: TestClient) -> None:
+        response = client.post(
+            "/api/scratchpads/SCR@9.z.nothing/lift",
+            json={"version": "0.1.0", "selection": ["n1"]},
+        )
+
+        assert response.status_code == 404
+
+    def test_a_field_the_server_does_not_know_is_refused_rather_than_ignored(self, client: TestClient) -> None:
+        pad = self._typed_pad(client)
+
+        response = client.post(
+            f"/api/scratchpads/{pad['artifact-id']}/lift",
+            json={"version": pad["version"], "selection": ["n1"], "targt": "typo"},
+        )
+
+        assert response.status_code == 422

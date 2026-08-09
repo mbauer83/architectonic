@@ -5,6 +5,9 @@ link route: the root enforces the invariants, a partial update cannot be validat
 the whole thing anyway, and one shape removes the class of bug where two partial updates interleave
 into a state neither writer intended.
 
+The sixth is not a resource but an act — `POST .../lift` — which is why it is the one route whose
+final segment names a verb. Preflight and execute share it, as the write tools already do.
+
 The canvas is expected to batch and debounce **in the browser**, so this surface sees a save and
 never a drag. That is a property of the client, asserted there — but the shape here is what makes it
 possible: one idempotent replace carrying the version the writer read.
@@ -17,17 +20,27 @@ from typing import TYPE_CHECKING, Any
 from fastapi import APIRouter, HTTPException, Query, Response, status
 from pydantic import BaseModel, ConfigDict, Field
 
-from src.application.scratchpad.document import from_document, summary_to_document, to_response
+from src.application.scratchpad.document import (
+    from_document,
+    lift_to_document,
+    summary_to_document,
+    to_response,
+)
 from src.application.scratchpad.ports import ScratchpadNotFoundError, ScratchpadVersionConflictError
 from src.application.scratchpad.service import ScratchpadService
 from src.domain.scratchpad import ScratchpadError
-from src.infrastructure.rest.contracts.scratchpads import ScratchpadListResponse, ScratchpadResponse
+from src.infrastructure.rest.contracts.scratchpads import (
+    ScratchpadLiftResponse,
+    ScratchpadListResponse,
+    ScratchpadResponse,
+)
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers._openapi import (
     READ_RESPONSES,
     TAG_SCRATCHPADS,
     WRITE_RESPONSES,
 )
+from src.infrastructure.scratchpad.bulk_write_lift import BulkWriteLiftWriter
 from src.infrastructure.scratchpad.yaml_repository import YamlScratchpadRepository
 
 if TYPE_CHECKING:
@@ -47,7 +60,9 @@ def _service() -> ScratchpadService:
     repo_root = s.maybe_engagement_root()
     if repo_root is None:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Engagement repository is not initialised")
-    return ScratchpadService(YamlScratchpadRepository(repo_root))
+    return ScratchpadService(
+        YamlScratchpadRepository(repo_root), _registry(), BulkWriteLiftWriter(repo_root)
+    )
 
 
 class _ClosedBody(BaseModel):
@@ -81,6 +96,22 @@ class ReplaceScratchpadBody(_ClosedBody):
     version: str
     group: str
     scratchpad: dict[str, Any]
+
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+
+class LiftScratchpadBody(_ClosedBody):
+    """What to lift, where to, and whether this is a rehearsal.
+
+    `dry_run` defaults to true like every other write on this surface. `target` names a
+    model-project slug, created if it does not exist; empty means the root model, for content that
+    belongs to no project.
+    """
+
+    version: str
+    selection: list[str]
+    target: str = ""
+    dry_run: bool = Field(default=True, alias="dry-run")
 
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
@@ -171,6 +202,35 @@ def replace_scratchpad(artifact_id: str, body: ReplaceScratchpadBody) -> dict[st
     except (ScratchpadError, ScratchpadNotFoundError, ScratchpadVersionConflictError) as exc:
         raise _refuse(exc) from exc
     return to_response(stored, group=body.group, registry=_registry())
+
+
+@router.post(
+    "/api/scratchpads/{artifact_id}/lift", tags=[TAG_SCRATCHPADS],
+    summary="Lift a selection into model content",
+    response_model=ScratchpadLiftResponse, response_model_exclude_none=True,
+    responses={**WRITE_RESPONSES, **READ_RESPONSES},
+)
+def lift_scratchpad(artifact_id: str, body: LiftScratchpadBody) -> dict[str, Any]:
+    """Preflight and execute share one route, as the write tools already do.
+
+    The answer says what would be created, what is skipped because it is already in the model, what
+    is refused and why, and which links reach outside the selection. A refusal blocks the whole
+    lift: the write is one transaction, and half a lift is a state nobody asked for.
+    """
+    service = _service()
+    try:
+        plan, receipt = s.authorized_write(
+            "scratchpads_lift_scratchpad",
+            service.lift,
+            artifact_id,
+            selection=body.selection,
+            target_group=body.target,
+            expected_version=body.version,
+            dry_run=body.dry_run,
+        )
+    except (ScratchpadError, ScratchpadNotFoundError, ScratchpadVersionConflictError) as exc:
+        raise _refuse(exc) from exc
+    return lift_to_document(plan, receipt, dry_run=body.dry_run)
 
 
 @router.delete(

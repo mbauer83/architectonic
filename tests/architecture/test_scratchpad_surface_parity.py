@@ -32,7 +32,7 @@ _REST_ROUTER = _SRC / "infrastructure" / "rest" / "routers" / "scratchpads.py"
 
 #: The capability names, surface-independent. Both surfaces spell them the same way, so the
 #: comparison is over words rather than over a translation table nobody maintains.
-_CAPABILITIES = frozenset({"list", "read", "create", "replace", "delete"})
+_CAPABILITIES = frozenset({"list", "read", "create", "replace", "delete", "lift"})
 
 
 def _mcp_tool_names() -> frozenset[str]:
@@ -66,7 +66,7 @@ def test_every_scratchpad_write_goes_through_the_mutation_executor() -> None:
     without one, so this asserts the writes reach that refusal rather than dodging it."""
     from src.infrastructure.mcp.artifact_mcp.mutation_registration import MUTATION_TOOL_MANIFEST
 
-    writes = {f"scratchpad_{capability}" for capability in ("create", "replace", "delete")}
+    writes = {f"scratchpad_{capability}" for capability in ("create", "replace", "delete", "lift")}
     assert writes <= _mcp_tool_names(), sorted(writes - _mcp_tool_names())
     for name in writes:
         assert name in MUTATION_TOOL_MANIFEST, f"{name} mutates the repository with no manifest row"

@@ -61,6 +61,7 @@ _ENGAGEMENT_OPERATIONS: tuple[str, ...] = (
     "matrices_replace_matrix",
     "scratchpads_create_scratchpad",
     "scratchpads_delete_scratchpad",
+    "scratchpads_lift_scratchpad",
     "scratchpads_replace_scratchpad",
     "sync_save_engagement",
     "viewpoints_create_viewpoint",
