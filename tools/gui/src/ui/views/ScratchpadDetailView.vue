@@ -345,8 +345,12 @@ const status = computed(() => {
       >
         This scratchpad could not be loaded.
       </p>
+      <!-- Only while there is nothing to draw. As a bare `v-else` on the error branch this said
+           "Loading…" underneath a fully loaded canvas forever, which the media capture refused to
+           photograph — correctly, since a shot of a page still claiming to load is a shot of a
+           product that looks broken. -->
       <p
-        v-else
+        v-else-if="!document.current.value"
         class="state"
       >
         Loading…

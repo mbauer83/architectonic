@@ -1,1 +1,19 @@
-[]
+[
+  {
+    "test_name": "the scratchpad canvas, with a note at each stage of deciding",
+    "artifact_ids": [
+      "SCR@1786299627.Dnc28yf.q3-platform-thinking"
+    ],
+    "synthetic_augmentation": false,
+    "viewpoint_slug": null,
+    "parameters": {},
+    "viewport": {
+      "width": 1440,
+      "height": 900,
+      "device_scale_factor": 2
+    },
+    "capture_tool_version": "Playwright 1.62.0",
+    "output_path": "docs/media/scratchpad-hero.png",
+    "sha256": "a25d24f7911daf2509e73ed7be745045b7b9051fcf701036ad82ff8239cbbe70"
+  }
+]
