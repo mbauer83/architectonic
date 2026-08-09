@@ -1,0 +1,301 @@
+---
+artifact-id: ACT@1786234873.w_H9LsR.working-in-a-scratchpad-area
+artifact-type: diagram
+name: Working in a Scratchpad Area
+version: 0.1.0
+status: draft
+keywords:
+- scratchpad
+- authoring
+- refinement
+- lift
+diagram-type: activity
+entity-ids-used:
+- APP@1786225304.SpexYvB.scratchpad-service
+- FNC@1786225282.rtvv0vm.bind-a-scratchpad-note-to-model-content
+- FNC@1786225282.QVTnDC0.create-a-scratchpad-note
+- FNC@1786225282.Yy6Psyo.narrow-a-scratchpad-element-to-the-next-classification-level
+- FNC@1786225282.ejz7ByN.draw-a-scratchpad-link
+- FNC@1786225282.kAbWPi8.verify-a-scratchpad-link
+- FNC@1786225282.foobGD2.write-lifted-model-content
+diagram-entities:
+  swimlane:
+  - id: lane_you
+    label: You
+  - id: lane_sys
+    label: Architectonic
+  action:
+  - id: a_search
+    label: Search the area's permitted types for it
+  - id: a_bind
+    label: Create the note bound to that element; its type comes from the element
+  - id: a_title
+    label: Create the note from a title; it has no type yet
+  - id: a_narrow
+    label: Optionally narrow it one level down the meta-ontology's hierarchy
+  - id: a_draw
+    label: Drag a link between two notes
+  - id: a_verify
+    label: Check that pair against the meta-ontology
+  - id: a_remedy
+    label: Reverse the link, retype an end, or remove it
+  - id: a_select
+    label: Select notes and links; name the target project
+  - id: a_preflight
+    label: Report what would be created, skipped and refused
+  - id: a_write
+    label: Write it in one transaction, then record on each note what it became
+  decision:
+  - id: d_exists
+    label: Where does it come from?
+    condition: 'Adding a note: does the model already hold this?'
+    then_label: it exists
+    else_label: it is new
+  - id: d_keyed
+    label: Checkable yet?
+    condition: Have both ends reached the level relationships key on?
+    then_label: 'yes'
+    else_label: not yet
+  - id: d_ok
+    label: Permitted?
+    condition: Does the meta-ontology permit this pair?
+    then_label: permitted
+    else_label: refused
+  note:
+  - id: n_areas
+    text: A note is bound at creation only when the search found a fitting element
+      and you picked it. Otherwise the binding is made by lifting.
+    side: right
+  - id: n_order
+    text: Adding, refining, connecting and lifting are not phases. They happen in
+      whatever order the thinking takes, and a note may stay untyped indefinitely.
+    side: right
+  - id: n_quiet
+    text: Until both ends are typed there is nothing to check, so nothing is said.
+    side: right
+  - id: n_narrow
+    text: A specialization that narrows rather than forbids warns and lets you carry
+      on.
+    side: right
+  - id: n_keep
+    text: Lifting leaves the notes in place; what was lifted now carries a reference
+      to what it became.
+    side: right
+connections:
+- id: il1
+  conn_type: step-in-lane
+  source: d_exists
+  target: lane_you
+- id: il2
+  conn_type: step-in-lane
+  source: a_search
+  target: lane_you
+- id: il3
+  conn_type: step-in-lane
+  source: a_bind
+  target: lane_sys
+- id: il4
+  conn_type: step-in-lane
+  source: a_title
+  target: lane_you
+- id: il5
+  conn_type: step-in-lane
+  source: a_narrow
+  target: lane_you
+- id: il6
+  conn_type: step-in-lane
+  source: a_draw
+  target: lane_you
+- id: il7
+  conn_type: step-in-lane
+  source: d_keyed
+  target: lane_sys
+- id: il8
+  conn_type: step-in-lane
+  source: a_verify
+  target: lane_sys
+- id: il9
+  conn_type: step-in-lane
+  source: d_ok
+  target: lane_sys
+- id: il10
+  conn_type: step-in-lane
+  source: a_remedy
+  target: lane_you
+- id: il11
+  conn_type: step-in-lane
+  source: a_select
+  target: lane_you
+- id: il12
+  conn_type: step-in-lane
+  source: a_preflight
+  target: lane_sys
+- id: il13
+  conn_type: step-in-lane
+  source: a_write
+  target: lane_sys
+- id: t1
+  conn_type: step-then
+  source: d_exists
+  target: a_search
+- id: e1
+  conn_type: step-else
+  source: d_exists
+  target: a_title
+- id: f1
+  conn_type: step-flow
+  source: a_search
+  target: a_bind
+- id: f2
+  conn_type: step-flow
+  source: d_exists
+  target: a_narrow
+- id: f3
+  conn_type: step-flow
+  source: a_narrow
+  target: a_draw
+- id: f4
+  conn_type: step-flow
+  source: a_draw
+  target: d_keyed
+- id: t2
+  conn_type: step-then
+  source: d_keyed
+  target: a_verify
+- id: e2
+  conn_type: step-else
+  source: d_keyed
+  target: a_select
+- id: f5
+  conn_type: step-flow
+  source: a_verify
+  target: d_ok
+- id: t3
+  conn_type: step-then
+  source: d_ok
+  target: a_select
+- id: e3
+  conn_type: step-else
+  source: d_ok
+  target: a_remedy
+- id: f6
+  conn_type: step-flow
+  source: d_ok
+  target: a_preflight
+- id: f7
+  conn_type: step-flow
+  source: a_preflight
+  target: a_write
+- id: nn1
+  conn_type: step-note-of
+  source: n_areas
+  target: d_exists
+- id: nn2
+  conn_type: step-note-of
+  source: n_order
+  target: a_narrow
+- id: nn3
+  conn_type: step-note-of
+  source: n_quiet
+  target: d_keyed
+- id: nn4
+  conn_type: step-note-of
+  source: n_narrow
+  target: a_remedy
+- id: nn5
+  conn_type: step-note-of
+  source: n_keep
+  target: a_write
+bindings:
+- id: bind-lane_sys
+  subject:
+    kind: entity
+    id: lane_sys
+  correspondence_kind: represents
+  target:
+    entity_id: APP@1786225304.SpexYvB.scratchpad-service
+- id: bind-a_bind
+  subject:
+    kind: entity
+    id: a_bind
+  correspondence_kind: represents
+  target:
+    entity_id: FNC@1786225282.rtvv0vm.bind-a-scratchpad-note-to-model-content
+- id: bind-a_title
+  subject:
+    kind: entity
+    id: a_title
+  correspondence_kind: represents
+  target:
+    entity_id: FNC@1786225282.QVTnDC0.create-a-scratchpad-note
+- id: bind-a_narrow
+  subject:
+    kind: entity
+    id: a_narrow
+  correspondence_kind: represents
+  target:
+    entity_id: FNC@1786225282.Yy6Psyo.narrow-a-scratchpad-element-to-the-next-classification-level
+- id: bind-a_draw
+  subject:
+    kind: entity
+    id: a_draw
+  correspondence_kind: represents
+  target:
+    entity_id: FNC@1786225282.ejz7ByN.draw-a-scratchpad-link
+- id: bind-a_verify
+  subject:
+    kind: entity
+    id: a_verify
+  correspondence_kind: represents
+  target:
+    entity_id: FNC@1786225282.kAbWPi8.verify-a-scratchpad-link
+- id: bind-a_write
+  subject:
+    kind: entity
+    id: a_write
+  correspondence_kind: represents
+  target:
+    entity_id: FNC@1786225282.foobGD2.write-lifted-model-content
+last-updated: '2026-08-09T00:46:12Z'
+---
+@startuml working-in-a-scratchpad-area
+skinparam hyperlinkColor #252327
+skinparam hyperlinkUnderline false
+skinparam wrapWidth 180
+title Working in a Scratchpad Area
+
+|You|
+start
+
+note right: A note is bound at creation only when the search found a fitting element and you picked it. Otherwise the binding is made by lifting.
+if ([[arch://d_exists Adding a note: does the model already hold this??]]) then (it exists)
+:[[arch://a_search Search the area's permitted types for it]];
+|Architectonic|
+:[[arch://a_bind Create the note bound to that element; its type comes from the element]];
+else (it is new)
+|You|
+:[[arch://a_title Create the note from a title; it has no type yet]];
+endif
+:[[arch://a_narrow Optionally narrow it one level down the meta-ontology's hierarchy]];
+note right: Adding, refining, connecting and lifting are not phases. They happen in whatever order the thinking takes, and a note may stay untyped indefinitely.
+:[[arch://a_draw Drag a link between two notes]];
+|Architectonic|
+note right: Until both ends are typed there is nothing to check, so nothing is said.
+if ([[arch://d_keyed Have both ends reached the level relationships key on??]]) then (yes)
+:[[arch://a_verify Check that pair against the meta-ontology]];
+if ([[arch://d_ok Does the meta-ontology permit this pair??]]) then (permitted)
+|You|
+:[[arch://a_select Select notes and links; name the target project]];
+else (refused)
+:[[arch://a_remedy Reverse the link, retype an end, or remove it]];
+note right: A specialization that narrows rather than forbids warns and lets you carry on.
+endif
+|Architectonic|
+:[[arch://a_preflight Report what would be created, skipped and refused]];
+:[[arch://a_write Write it in one transaction, then record on each note what it became]];
+note right: Lifting leaves the notes in place; what was lifted now carries a reference to what it became.
+else (not yet)
+endif
+
+stop
+@enduml

@@ -1,0 +1,223 @@
+---
+artifact-id: ARC@1786231310.HEP_wga.the-scratchpad-end-to-end
+artifact-type: diagram
+name: The Scratchpad, End to End
+version: 0.1.0
+status: draft
+keywords:
+- scratchpad
+- layered view
+- traceability
+diagram-type: archimate-layered
+entity-ids-used:
+- APP@1786225304.HgIA072.scratchpad-canvas
+- APP@1786225304.SpexYvB.scratchpad-service
+- APP@1786225304._WMG8gv.scratchpad-lift-executor
+- ART@1786225252.a0ytoYP.scratchpad-file
+- BOB@1786225252.hZy_6l1.scratchpad
+- CAP@1786225304.x61V_Bh.progressive-formalization
+- DOB@1786225252.luoCiQt.scratchpad-content-record
+- GOL@1786223967.k6NMPYo.anyone-can-contribute-preliminary-structure-that-becomes-formal-architecture
+- OUT@1786223967.Bz8wwkG.preliminary-structure-progresses-into-verified-model-content
+- PRC@1786225282._6NSUkC.refine-a-scratchpad-element
+- PRC@1786225282.si8h9M1.lift-a-scratchpad-selection
+- REQ@1786223986.ElzukOP.hold-untyped-scratchpad-notes-and-links-on-a-spatial-canvas
+- REQ@1786223986.VV89psV.lift-a-scratchpad-selection-into-verified-model-content-in-one-transaction
+- SRV@1786225282.C8EOSEB.scratchpad-lift
+- SRV@1786225282.lzo5hQK.scratchpad-authoring
+connection-ids-used:
+- APP@1786225304._WMG8gv---APP@1786225304.SpexYvB@@archimate-serving
+- APP@1786225304.SpexYvB---PRC@1786225282._6NSUkC@@archimate-assignment
+- APP@1786225304.SpexYvB---REQ@1786223986.ElzukOP@@archimate-realization
+- APP@1786225304._WMG8gv---PRC@1786225282.si8h9M1@@archimate-assignment
+- APP@1786225304._WMG8gv---REQ@1786223986.VV89psV@@archimate-realization
+- ART@1786225252.a0ytoYP---DOB@1786225252.luoCiQt@@archimate-realization
+- DOB@1786225252.luoCiQt---BOB@1786225252.hZy_6l1@@archimate-realization
+- PRC@1786225282._6NSUkC---CAP@1786225304.x61V_Bh@@archimate-realization
+- PRC@1786225282.si8h9M1---CAP@1786225304.x61V_Bh@@archimate-realization
+- CAP@1786225304.x61V_Bh---OUT@1786223967.Bz8wwkG@@archimate-association
+- PRC@1786225282._6NSUkC---DOB@1786225252.luoCiQt@@archimate-access
+- PRC@1786225282.si8h9M1---DOB@1786225252.luoCiQt@@archimate-access
+- OUT@1786223967.Bz8wwkG---GOL@1786223967.k6NMPYo@@archimate-realization
+- REQ@1786223986.ElzukOP---OUT@1786223967.Bz8wwkG@@archimate-realization
+- REQ@1786223986.VV89psV---OUT@1786223967.Bz8wwkG@@archimate-realization
+- PRC@1786225282._6NSUkC---SRV@1786225282.lzo5hQK@@archimate-realization
+- PRC@1786225282.si8h9M1---SRV@1786225282.C8EOSEB@@archimate-realization
+last-updated: '2026-08-08T23:23:54Z'
+---
+@startuml the-scratchpad--end-to-end
+hide stereotype
+
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 12
+skinparam shadowing false
+skinparam roundcorner 4
+skinparam backgroundColor #FAFAFA
+
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 80
+!define Rel_Triggering(from, to, label) from --> to
+!define Rel_Realization(from, to, label) from ..|> to
+!define Rel_Realization_Up(from, to, label) from ..|> to
+!define Rel_Serving(from, to, label) from --> to
+!define Rel_Association(from, to, label) from -- to
+!define Rel_Association_Left(from, to, label) from -- to
+!define Rel_Association_Right(from, to, label) from -- to
+!define Rel_Access(from, to, label) from ..> to
+!define Rel_Influence(from, to, label) from ..> to
+skinparam rectangle<<ApplicationGrouping>> {
+  BackgroundColor #E8F8FF
+  BorderColor #0078A0
+}
+skinparam rectangle<<BusinessGrouping>> {
+  BackgroundColor #FFFDEC
+  BorderColor #B8860B
+}
+skinparam rectangle<<CommonGrouping>> {
+  BackgroundColor #EDE8E1
+  BorderColor #8C7E6A
+}
+skinparam rectangle<<MotivationGrouping>> {
+  BackgroundColor #F7EEF9
+  BorderColor #7B3F9A
+}
+skinparam rectangle<<StrategyGrouping>> {
+  BackgroundColor #FAF0D9
+  BorderColor #8B6914
+}
+skinparam rectangle<<TechnologyGrouping>> {
+  BackgroundColor #E8FFEE
+  BorderColor #2E7D32
+}
+skinparam rectangle<<application_component>> {
+  BackgroundColor #CCF2FF
+  BorderColor #0078A0
+}
+skinparam rectangle<<artifact>> {
+  BackgroundColor #CCFFCC
+  BorderColor #2E7D32
+}
+skinparam rectangle<<business_object>> {
+  BackgroundColor #FFFAC8
+  BorderColor #B8860B
+}
+skinparam rectangle<<capability>> {
+  BackgroundColor #F5DEB3
+  BorderColor #8B6914
+}
+skinparam rectangle<<data_object>> {
+  BackgroundColor #CCF2FF
+  BorderColor #0078A0
+}
+skinparam rectangle<<goal>> {
+  BackgroundColor #EDD6F0
+  BorderColor #7B3F9A
+}
+skinparam rectangle<<outcome>> {
+  BackgroundColor #EDD6F0
+  BorderColor #7B3F9A
+}
+skinparam rectangle<<process>> {
+  BackgroundColor #E0D8CC
+  BorderColor #8C7E6A
+}
+skinparam rectangle<<requirement>> {
+  BackgroundColor #EDD6F0
+  BorderColor #7B3F9A
+}
+skinparam rectangle<<service>> {
+  BackgroundColor #E0D8CC
+  BorderColor #8C7E6A
+}
+sprite $archimate_application_component <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M4 4.2h7.4v7.6H4z"  fill="#252327" stroke="none"/><path d="M2.30 4.95h1.70v1.30H2.30z" fill="#252327"/><path d="M2.30 7.35h1.70v1.30H2.30z" fill="#252327"/><path d="M2.30 9.75h1.70v1.30H2.30z" fill="#252327"/><path d="M11.40 4.95h1.40v1.30H11.40z" fill="#252327"/><path d="M11.40 7.35h1.40v1.30H11.40z" fill="#252327"/><path d="M11.40 9.75h1.40v1.30H11.40z" fill="#252327"/></svg>
+sprite $archimate_artifact <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M4 3.5h5.8l2.2 2.2v6.8H4z"  fill="#252327" stroke="none"/><path d="M9.15 3.50v2.20h1.30V3.50z" fill="#252327"/><path d="M9.80 5.05h2.20v1.30H9.80z" fill="#252327"/></svg>
+sprite $archimate_business_object <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.90 4.20h10.20v1.30H2.90z" fill="#252327"/><path d="M2.90 10.50h10.20v1.30H2.90z" fill="#252327"/><path d="M2.90 5.50v5.00h1.30V5.50z" fill="#252327"/><path d="M11.80 5.50v5.00h1.30V5.50z" fill="#252327"/><path d="M2.90 5.65h10.20v1.30H2.90z" fill="#252327"/></svg>
+sprite $archimate_capability <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3.10 11.25h9.80v1.30H3.10z" fill="#252327"/><path d="M4.00 8.80h1.90v3.10H4.00z" fill="#252327"/><path d="M6.80 6.80h1.90v5.10H6.80z" fill="#252327"/><path d="M9.60 4.70h1.90v7.20H9.60z" fill="#252327"/></svg>
+sprite $archimate_data_object <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3.00 3.80h10.00v1.30H3.00z" fill="#252327"/><path d="M3.00 10.90h10.00v1.30H3.00z" fill="#252327"/><path d="M3.00 5.10v5.80h1.30V5.10z" fill="#252327"/><path d="M11.70 5.10v5.80h1.30V5.10z" fill="#252327"/><path d="M3.00 4.95h10.00v1.30H3.00z" fill="#252327"/></svg>
+sprite $archimate_goal <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="4.8"  fill="none" stroke="#252327" stroke-width="1.3"/><circle cx="8" cy="8" r="2.9"  fill="none" stroke="#252327" stroke-width="1.3"/><circle cx="8" cy="8" r="1.3" fill="#252327" stroke="none"  stroke-width="1.3"/></svg>
+sprite $archimate_outcome <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="7.4" cy="8.6" r="4.3"  fill="none" stroke="#252327" stroke-width="1.3"/><circle cx="7.4" cy="8.6" r="2.2"  fill="none" stroke="#252327" stroke-width="1.3"/><path d="M10.18 6.93L9.42 5.87L12.52 3.67L13.28 4.73z" fill="#252327"/><path d="M10.20 7.25h2.50v1.30H10.20z" fill="#252327"/><circle cx="7.4" cy="8.6" r=".9" fill="#252327" stroke="none"  stroke-width="1.3"/></svg>
+sprite $archimate_process <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.6 4.1h6.3V2.8l4.5 5.2-4.5 5.2v-1.3H2.6z"  fill="#252327" stroke="none"/></svg>
+sprite $archimate_requirement <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M4.4 4.2h8L10.8 11.8h-8z"  fill="#252327" stroke="none"/></svg>
+sprite $archimate_service <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3.2 4.1h7.2a2.8 2.8 0 0 1 0 7.8H3.2a2.8 2.8 0 0 1 0-7.8z"  fill="#252327" stroke="none"/></svg>
+
+title The Scratchpad, End to End
+
+rectangle "Motivation" <<MotivationGrouping>> as DOM_motivation {
+  rectangle "<$archimate_goal{scale=1.2}> Anyone Can Contribute Preliminary Structure That Becomes Formal Architecture" <<goal>> as GOL_k6NMPYo
+
+  rectangle "<$archimate_outcome{scale=1.2}> Preliminary Structure Progresses Into Verified Model Content" <<outcome>> as OUT_Bz8wwkG
+
+  rectangle "Requirements" <<MotivationGrouping>> as GRPT_motivation_1 {
+    rectangle "<$archimate_requirement{scale=1.2}> Hold Untyped Scratchpad Notes and Links on a Spatial Canvas" <<requirement>> as REQ_ElzukOP
+    rectangle "<$archimate_requirement{scale=1.2}> Lift a Scratchpad Selection Into Verified Model Content in One Transaction" <<requirement>> as REQ_VV89psV
+  }
+  REQ_ElzukOP -[hidden]right- REQ_VV89psV
+
+}
+
+rectangle "Strategy" <<StrategyGrouping>> as DOM_strategy {
+  rectangle "<$archimate_capability{scale=1.2}> Progressive Formalization" <<capability>> as CAP_x61V_Bh
+
+}
+
+rectangle "Business" <<BusinessGrouping>> as DOM_business {
+  rectangle "<$archimate_business_object{scale=1.2}> Scratchpad" <<business_object>> as BOB_hZy_6l1
+
+}
+DOM_strategy -[hidden]down- DOM_business
+
+rectangle "Common" <<CommonGrouping>> as DOM_common {
+  rectangle "Services" <<CommonGrouping>> as GRPT_common_1 {
+    rectangle "<$archimate_service{scale=1.2}> Scratchpad Authoring\n«Application Service»" <<service>> as SRV_lzo5hQK
+    rectangle "<$archimate_service{scale=1.2}> Scratchpad Lift\n«Application Service»" <<service>> as SRV_C8EOSEB
+  }
+  SRV_lzo5hQK -[hidden]right- SRV_C8EOSEB
+
+  rectangle "Processes" <<CommonGrouping>> as GRPT_common_2 {
+    rectangle "<$archimate_process{scale=1.2}> Refine a Scratchpad Element\n«Application Process»" <<process>> as PRC__6NSUkC
+    rectangle "<$archimate_process{scale=1.2}> Lift a Scratchpad Selection\n«Application Process»" <<process>> as PRC_si8h9M1
+  }
+  PRC__6NSUkC -[hidden]right- PRC_si8h9M1
+
+}
+DOM_business -[hidden]down- DOM_common
+
+rectangle "Application" <<ApplicationGrouping>> as DOM_application {
+  rectangle "<$archimate_application_component{scale=1.2}> Scratchpad Lift Executor" <<application_component>> as APP__WMG8gv
+  rectangle "<$archimate_application_component{scale=1.2}> Scratchpad Service" <<application_component>> as APP_SpexYvB
+  APP__WMG8gv -[hidden]down- APP_SpexYvB
+
+  rectangle "<$archimate_application_component{scale=1.2}> Scratchpad Canvas" <<application_component>> as APP_HgIA072
+  APP_SpexYvB -[hidden]down- APP_HgIA072
+
+  rectangle "<$archimate_data_object{scale=1.2}> Scratchpad Content Record" <<data_object>> as DOB_luoCiQt
+  APP_HgIA072 -[hidden]down- DOB_luoCiQt
+
+}
+
+rectangle "Technology" <<TechnologyGrouping>> as DOM_technology {
+  rectangle "<$archimate_artifact{scale=1.2}> Scratchpad File" <<artifact>> as ART_a0ytoYP
+
+}
+
+' Connections
+APP__WMG8gv --> APP_SpexYvB
+APP_SpexYvB -up-> PRC__6NSUkC
+APP_SpexYvB .up.|> REQ_ElzukOP
+APP__WMG8gv -up-> PRC_si8h9M1
+APP__WMG8gv .up.|> REQ_VV89psV
+ART_a0ytoYP .up.|> DOB_luoCiQt
+DOB_luoCiQt .up.|> BOB_hZy_6l1
+PRC__6NSUkC .up.|> CAP_x61V_Bh
+PRC_si8h9M1 .up.|> CAP_x61V_Bh
+CAP_x61V_Bh -up- OUT_Bz8wwkG
+PRC__6NSUkC -down-> DOB_luoCiQt
+PRC_si8h9M1 -down-> DOB_luoCiQt
+OUT_Bz8wwkG ..|> GOL_k6NMPYo
+REQ_ElzukOP ..|> OUT_Bz8wwkG
+REQ_VV89psV ..|> OUT_Bz8wwkG
+PRC__6NSUkC ..|> SRV_lzo5hQK
+PRC_si8h9M1 ..|> SRV_C8EOSEB
+
+@enduml

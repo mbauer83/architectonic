@@ -1,0 +1,182 @@
+---
+artifact-id: ARC@1786231345.EBLKfJU.why-a-scratchpad
+artifact-type: diagram
+name: Why a Scratchpad
+version: 0.1.0
+status: draft
+keywords:
+- scratchpad
+- motivation
+- barrier to entry
+diagram-type: archimate-motivation
+entity-ids-used:
+- ASS@1786223444.T9CeYFw.fully-formal-modelling-excludes-preliminary-contributions
+- ASS@1786223458.ll5ivjY.alternatives-and-reasoning-are-discarded-before-they-reach-the-repository
+- DRV@1786223430.bkoYa2b.demand-for-low-barrier-participation-in-architecture-and-planning-work
+- DRV@1786223417.yX2Topy.informal-sketching-as-the-normal-start-of-architecture-and-planning-work
+- GOL@1786223967.k6NMPYo.anyone-can-contribute-preliminary-structure-that-becomes-formal-architecture
+- GRP@1786223907.Lm3DYU0.platform-users-across-all-roles
+- OUT@1786223967.1mPt4f9.considered-alternatives-survive-into-the-record
+- OUT@1786223967.Bz8wwkG.preliminary-structure-progresses-into-verified-model-content
+- PRI@1786223967.IQqhM8k.refusal-blocks-narrowing-warns
+- REQ@1786223986.ElzukOP.hold-untyped-scratchpad-notes-and-links-on-a-spatial-canvas
+- REQ@1786223986.IufRPnC.bind-a-scratchpad-note-to-model-content-that-already-exists
+- REQ@1786223986.VV89psV.lift-a-scratchpad-selection-into-verified-model-content-in-one-transaction
+- REQ@1786223986.cMuroZ9.verify-a-scratchpad-link-against-the-meta-ontology-when-both-ends-are-typed
+- REQ@1786223986.hB0yaDx.hold-alternatives-for-a-scratchpad-note-and-lift-only-the-active-one
+- REQ@1786223986.iMJm0xn.refine-a-scratchpad-note-along-the-meta-ontology-s-classification-hierarchy
+- REQ@1786230066.vVjYCpP.declare-a-meta-ontology-s-classification-levels-in-the-ontology-module
+connection-ids-used:
+- ASS@1786223444.T9CeYFw---DRV@1786223417.yX2Topy@@archimate-association
+- ASS@1786223444.T9CeYFw---DRV@1786223430.bkoYa2b@@archimate-association
+- ASS@1786223458.ll5ivjY---DRV@1786223417.yX2Topy@@archimate-association
+- DRV@1786223417.yX2Topy---GOL@1786223967.k6NMPYo@@archimate-influence
+- DRV@1786223430.bkoYa2b---GOL@1786223967.k6NMPYo@@archimate-influence
+- OUT@1786223967.1mPt4f9---GOL@1786223967.k6NMPYo@@archimate-realization
+- OUT@1786223967.Bz8wwkG---GOL@1786223967.k6NMPYo@@archimate-realization
+- GOL@1786223967.k6NMPYo---GRP@1786223907.Lm3DYU0@@archimate-association
+- REQ@1786223986.hB0yaDx---OUT@1786223967.1mPt4f9@@archimate-realization
+- REQ@1786223986.ElzukOP---OUT@1786223967.Bz8wwkG@@archimate-realization
+- REQ@1786223986.IufRPnC---OUT@1786223967.Bz8wwkG@@archimate-realization
+- REQ@1786223986.VV89psV---OUT@1786223967.Bz8wwkG@@archimate-realization
+- REQ@1786223986.cMuroZ9---OUT@1786223967.Bz8wwkG@@archimate-realization
+- REQ@1786223986.iMJm0xn---OUT@1786223967.Bz8wwkG@@archimate-realization
+- REQ@1786230066.vVjYCpP---OUT@1786223967.Bz8wwkG@@archimate-realization
+- PRI@1786223967.IQqhM8k---REQ@1786223986.VV89psV@@archimate-influence
+- PRI@1786223967.IQqhM8k---REQ@1786223986.cMuroZ9@@archimate-influence
+last-updated: '2026-08-09T00:21:59Z'
+---
+@startuml why-a-scratchpad
+hide stereotype
+
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 12
+skinparam shadowing false
+skinparam roundcorner 4
+skinparam backgroundColor #FAFAFA
+
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 80
+!define Rel_Triggering(from, to, label) from --> to
+!define Rel_Realization(from, to, label) from ..|> to
+!define Rel_Realization_Up(from, to, label) from ..|> to
+!define Rel_Serving(from, to, label) from --> to
+!define Rel_Association(from, to, label) from -- to
+!define Rel_Association_Left(from, to, label) from -- to
+!define Rel_Association_Right(from, to, label) from -- to
+!define Rel_Access(from, to, label) from ..> to
+!define Rel_Influence(from, to, label) from ..> to
+skinparam rectangle<<CommonGrouping>> {
+  BackgroundColor #EDE8E1
+  BorderColor #8C7E6A
+}
+skinparam rectangle<<MotivationGrouping>> {
+  BackgroundColor #F7EEF9
+  BorderColor #7B3F9A
+}
+skinparam rectangle<<assessment>> {
+  BackgroundColor #EDD6F0
+  BorderColor #7B3F9A
+}
+skinparam rectangle<<driver>> {
+  BackgroundColor #EDD6F0
+  BorderColor #7B3F9A
+}
+skinparam rectangle<<goal>> {
+  BackgroundColor #EDD6F0
+  BorderColor #7B3F9A
+}
+skinparam rectangle<<grouping>> {
+  BackgroundColor #E0D8CC
+  BorderColor #8C7E6A
+}
+skinparam rectangle<<outcome>> {
+  BackgroundColor #EDD6F0
+  BorderColor #7B3F9A
+}
+skinparam rectangle<<principle>> {
+  BackgroundColor #EDD6F0
+  BorderColor #7B3F9A
+}
+skinparam rectangle<<requirement>> {
+  BackgroundColor #EDD6F0
+  BorderColor #7B3F9A
+}
+sprite $archimate_assessment <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.5 3h11a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H6l-2 3 1-3H2.5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"  fill="#252327" stroke="none"/></svg>
+sprite $archimate_driver <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="4.6"  fill="none" stroke="#252327" stroke-width="1.3"/><circle cx="8" cy="8" r="1.7"  fill="none" stroke="#252327" stroke-width="1.3"/><path d="M7.35 2.30v3.00h1.30V2.30z" fill="#252327"/><path d="M7.35 10.70v3.00h1.30V10.70z" fill="#252327"/><path d="M2.30 7.35h3.00v1.30H2.30z" fill="#252327"/><path d="M10.70 7.35h3.00v1.30H10.70z" fill="#252327"/><path d="M3.54 4.46L4.46 3.54L6.56 5.64L5.64 6.56z" fill="#252327"/><path d="M9.44 10.36L10.36 9.44L12.46 11.54L11.54 12.46z" fill="#252327"/><path d="M11.54 3.54L12.46 4.46L10.36 6.56L9.44 5.64z" fill="#252327"/><path d="M5.64 9.44L6.56 10.36L4.46 12.46L3.54 11.54z" fill="#252327"/></svg>
+sprite $archimate_goal <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="4.8"  fill="none" stroke="#252327" stroke-width="1.3"/><circle cx="8" cy="8" r="2.9"  fill="none" stroke="#252327" stroke-width="1.3"/><circle cx="8" cy="8" r="1.3" fill="#252327" stroke="none"  stroke-width="1.3"/></svg>
+sprite $archimate_outcome <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="7.4" cy="8.6" r="4.3"  fill="none" stroke="#252327" stroke-width="1.3"/><circle cx="7.4" cy="8.6" r="2.2"  fill="none" stroke="#252327" stroke-width="1.3"/><path d="M10.18 6.93L9.42 5.87L12.52 3.67L13.28 4.73z" fill="#252327"/><path d="M10.20 7.25h2.50v1.30H10.20z" fill="#252327"/><circle cx="7.4" cy="8.6" r=".9" fill="#252327" stroke="none"  stroke-width="1.3"/></svg>
+sprite $archimate_principle <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3.40 2.90h9.20v1.30H3.40z" fill="#252327"/><path d="M3.40 11.80h9.20v1.30H3.40z" fill="#252327"/><path d="M3.40 4.20v7.60h1.30V4.20z" fill="#252327"/><path d="M11.30 4.20v7.60h1.30V4.20z" fill="#252327"/><path d="M7.35 5.30v4.30h1.30V5.30z" fill="#252327"/></svg>
+sprite $archimate_requirement <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M4.4 4.2h8L10.8 11.8h-8z"  fill="#252327" stroke="none"/></svg>
+
+title Why a Scratchpad
+
+rectangle "Motivation" <<MotivationGrouping>> as DOM_motivation {
+  rectangle "Assessments" <<MotivationGrouping>> as GRPT_motivation_1 {
+    rectangle "<$archimate_assessment{scale=1.2}> Fully Formal Modelling Excludes Preliminary Contributions" <<assessment>> as ASS_T9CeYFw
+    rectangle "<$archimate_assessment{scale=1.2}> Alternatives and Reasoning Are Discarded Before They Reach the Repository" <<assessment>> as ASS_ll5ivjY
+  }
+  ASS_T9CeYFw -[hidden]right- ASS_ll5ivjY
+
+  rectangle "<$archimate_principle{scale=1.2}> Refusal Blocks; Narrowing Warns" <<principle>> as PRI_IQqhM8k
+  GRPT_motivation_1 -[hidden]down- PRI_IQqhM8k
+
+  rectangle "Drivers" <<MotivationGrouping>> as GRPT_motivation_2 {
+    rectangle "<$archimate_driver{scale=1.2}> Demand for Low-Barrier Participation in Architecture and Planning Work" <<driver>> as DRV_bkoYa2b
+    rectangle "<$archimate_driver{scale=1.2}> Informal Sketching as the Normal Start of Architecture and Planning Work" <<driver>> as DRV_yX2Topy
+  }
+  DRV_bkoYa2b -[hidden]right- DRV_yX2Topy
+  PRI_IQqhM8k -[hidden]down- GRPT_motivation_2
+
+  rectangle "<$archimate_goal{scale=1.2}> Anyone Can Contribute Preliminary Structure That Becomes Formal Architecture" <<goal>> as GOL_k6NMPYo
+
+  rectangle "Outcomes" <<MotivationGrouping>> as GRPT_motivation_3 {
+    rectangle "<$archimate_outcome{scale=1.2}> Considered Alternatives Survive Into the Record" <<outcome>> as OUT_1mPt4f9
+    rectangle "<$archimate_outcome{scale=1.2}> Preliminary Structure Progresses Into Verified Model Content" <<outcome>> as OUT_Bz8wwkG
+  }
+  OUT_1mPt4f9 -[hidden]right- OUT_Bz8wwkG
+
+  rectangle "Requirements" <<MotivationGrouping>> as GRPT_motivation_4 {
+    rectangle "<$archimate_requirement{scale=1.2}> Hold Untyped Scratchpad Notes and Links on a Spatial Canvas" <<requirement>> as REQ_ElzukOP
+    rectangle "<$archimate_requirement{scale=1.2}> Bind a Scratchpad Note to Model Content That Already Exists" <<requirement>> as REQ_IufRPnC
+    rectangle "<$archimate_requirement{scale=1.2}> Lift a Scratchpad Selection Into Verified Model Content in One Transaction" <<requirement>> as REQ_VV89psV
+    rectangle "<$archimate_requirement{scale=1.2}> Verify a Scratchpad Link Against the Meta-Ontology When Both Ends Are Typed" <<requirement>> as REQ_cMuroZ9
+    rectangle "<$archimate_requirement{scale=1.2}> Hold Alternatives for a Scratchpad Note and Lift Only the Active One" <<requirement>> as REQ_hB0yaDx
+    rectangle "<$archimate_requirement{scale=1.2}> Refine a Scratchpad Note Along the Meta-Ontology's Classification Hierarchy" <<requirement>> as REQ_iMJm0xn
+    rectangle "<$archimate_requirement{scale=1.2}> Declare a Meta-Ontology's Classification Levels in the Ontology Module" <<requirement>> as REQ_vVjYCpP
+  }
+  REQ_ElzukOP -[hidden]right- REQ_IufRPnC
+  REQ_IufRPnC -[hidden]right- REQ_VV89psV
+  REQ_VV89psV -[hidden]right- REQ_cMuroZ9
+  REQ_hB0yaDx -[hidden]right- REQ_iMJm0xn
+  REQ_iMJm0xn -[hidden]right- REQ_vVjYCpP
+  REQ_ElzukOP -[hidden]down- REQ_hB0yaDx
+
+}
+
+rectangle "Common" <<CommonGrouping>> as DOM_common {
+  rectangle "Platform Users Across All Roles" <<grouping>> as GRP_Lm3DYU0
+
+}
+
+' Connections
+ASS_T9CeYFw -- DRV_yX2Topy
+ASS_T9CeYFw -- DRV_bkoYa2b
+ASS_ll5ivjY -- DRV_yX2Topy
+DRV_yX2Topy ..> GOL_k6NMPYo
+DRV_bkoYa2b ..> GOL_k6NMPYo
+OUT_1mPt4f9 ..|> GOL_k6NMPYo
+OUT_Bz8wwkG ..|> GOL_k6NMPYo
+GOL_k6NMPYo -down- GRP_Lm3DYU0
+REQ_hB0yaDx ..|> OUT_1mPt4f9
+REQ_ElzukOP ..|> OUT_Bz8wwkG
+REQ_IufRPnC ..|> OUT_Bz8wwkG
+REQ_VV89psV ..|> OUT_Bz8wwkG
+REQ_cMuroZ9 ..|> OUT_Bz8wwkG
+REQ_iMJm0xn ..|> OUT_Bz8wwkG
+REQ_vVjYCpP ..|> OUT_Bz8wwkG
+PRI_IQqhM8k ..> REQ_VV89psV
+PRI_IQqhM8k ..> REQ_cMuroZ9
+
+@enduml

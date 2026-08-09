@@ -1,0 +1,15 @@
+<map id="tmprgprmdf7_map" name="tmprgprmdf7_map">
+<area shape="rect" id="id1" href="arch://a_write" title="arch://a_write" alt="" coords="385,202,635,224"/>
+<area shape="rect" id="id2" href="arch://a_link" title="arch://a_link" alt="" coords="383,286,637,308"/>
+<area shape="rect" id="id3" href="arch://a_bind" title="arch://a_bind" alt="" coords="1906,524,2185,546"/>
+<area shape="rect" id="id4" href="arch://d_permitted" title="arch://d_permitted" alt="" coords="2118,739,2479,759"/>
+<area shape="rect" id="id5" href="arch://a_record" title="arch://a_record" alt="" coords="2126,1036,2472,1058"/>
+<area shape="rect" id="id6" href="arch://a_keep" title="arch://a_keep" alt="" coords="329,1120,691,1142"/>
+<area shape="rect" id="id7" href="arch://d_exists" title="arch://d_exists" alt="" coords="303,364,717,384"/>
+<area shape="rect" id="id8" href="arch://a_search" title="arch://a_search" alt="" coords="65,440,449,461"/>
+<area shape="rect" id="id9" href="arch://a_verify" title="arch://a_verify" alt="" coords="2104,661,2493,683"/>
+<area shape="rect" id="id10" href="arch://a_select" title="arch://a_select" alt="" coords="56,814,473,836"/>
+<area shape="rect" id="id11" href="arch://a_refuse" title="arch://a_refuse" alt="" coords="2324,814,2765,836"/>
+<area shape="rect" id="id12" href="arch://a_narrow" title="arch://a_narrow" alt="" coords="512,440,1014,461"/>
+<area shape="rect" id="id13" href="arch://a_lift" title="arch://a_lift" alt="" coords="1904,952,2693,974"/>
+</map>
