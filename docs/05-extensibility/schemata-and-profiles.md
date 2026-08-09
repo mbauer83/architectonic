@@ -122,6 +122,22 @@ that type is a verifier warning (orphaned attachment) rather than silently ignor
 
 &nbsp;
 
+## Which level a schema attaches at
+
+Attribute fragments attach to a **classification level**, not to a fixed rung. Each level a module
+declares says whether it `carries_attributes`, and the **deepest level reached** with that flag
+wins — which is why a specialization's profile narrows its type's rather than replacing it, and why
+that behaviour is a consequence of the ontology's own
+[classification levels](ontology-modules.md#classification-levels) rather than a rule written into
+the resolver.
+
+It is also what a [scratchpad](../03-modeling/scratchpad.md) note narrows through. A note that has
+reached only its domain has reached no level that carries attributes, so it has no schema to satisfy
+yet — which is exactly why it can exist before anyone has decided anything, and why the lift
+preflight can say whether it is complete enough to become an element.
+
+&nbsp;
+
 ## Failure semantics
 
 A conflict's blast radius decides how it fails:

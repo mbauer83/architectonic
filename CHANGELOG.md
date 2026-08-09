@@ -3,6 +3,48 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [Unreleased]
+
+**Somewhere to think before anything is typed.** The typed model asks a contributor to name an
+element type before they have decided anything, and that question is the wall this removes.
+
+### Added
+
+- **A scratchpad tier.** Notes and links on a canvas, with no ontology involved: a note needs only a
+  title. The canvas saves itself at most once a second after editing settles, so the endpoint sees a
+  save and never a drag, and undo holds whole documents so every kind of edit is reversible.
+- **Binding.** Right-click the canvas → *Add existing element…* puts an entity the model already has
+  onto the canvas as a bound note, at the point you clicked, scoped to the types that frame permits.
+  It takes its type from the entity, so a lift cannot mint a duplicate of it.
+- **Narrowing, one level at a time**, down the meta-ontology's own classification levels — which
+  `classification_levels` now lets a module declare rather than every consumer hard-code. A note
+  wears its domain as a colour and its type as that type's glyph.
+- **Two-tier link verification, served with each link.** A refusal at the level relationships are
+  keyed on (**E126**) blocks; a narrowing by a specialization (**W128/W129**) warns. Both fall out of
+  the ontology's declaration rather than a rule in the verifier, and a refusal leads with *Reverse
+  the link* when the reverse is the permitted one.
+- **Lift, preflighted.** A selection becomes ordinary verified model content through the same write
+  path as any other authoring. The dialog reports what would be created, what is refused and why,
+  what is already in the model, and which links reach outside the selection. A refusal blocks the
+  whole lift, because the write is one transaction. A target project is chosen **per frame** and
+  created if it is new; one declaring a different meta-ontology is refused rather than coerced.
+- **Documents as a destination**, with the reference rule: a link touching a document becomes a
+  one-way reference *from the document to the model*, recorded on the document, whichever way it was
+  drawn. `artifact_bulk_write` gained `create_document` so that stays inside one transaction.
+- **An optional view of what was lifted**, with each of the scratchpad's groups as a labelled box.
+  Frames map to nothing — an area is a region of the workspace, not an element of a picture.
+- **Focus mode**, and a canvas that works without a pointer: the notes layer is a real multi-select
+  listbox, every gesture has a key, and what is selected is announced rather than only drawn.
+- **Six MCP tools and six REST operations**, held equal by a parity test — the scratchpad is the
+  lowest-barrier surface, so a human-only version would make the one place newcomers start the one
+  place an agent cannot help.
+
+### Fixed
+
+- **An ArchiMate box is no longer as wide as its widest unwrapped label.** All seven `archimate-*`
+  types emitted no `skinparam wrapWidth`; on one diagram, 2545x798 became 1671x952. All 32 committed
+  ArchiMate diagrams were re-rendered and every one still lays out.
+
 ## [0.3.1] — 2026-08-08
 
 **[Full detail → `changelog-assets/0.3.1-detail.md`](changelog-assets/0.3.1-detail.md)**

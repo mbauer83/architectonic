@@ -103,6 +103,19 @@ in realized requirements. The self-model is a working model, not a brochure.
 <!-- media: docs/media/motivation-coverage-gaps.png — live model fallback with pinned scope and group -->
 ![Motivation coverage table showing passing and incomplete realization branches](media/motivation-coverage-gaps.png)
 
+**7a. And the tier that lets someone start before any of this.** Every entity above asked for a
+type before it could exist, which is the barrier the model itself names. The answer is the
+[scratchpad](03-modeling/scratchpad.md) — modelled here like anything else, in
+[*Why a scratchpad*](http://localhost:8000/diagrams/ARC%401786231345.EBLKfJU.why-a-scratchpad) and
+[*The scratchpad, end to end*](http://localhost:8000/diagrams/ARC%401786231310.HEP_wga.the-scratchpad-end-to-end),
+with the reasoning in
+[*The scratchpad: a preliminary tier that lifts into the model, never syncs with it*](http://localhost:8000/documents/ADR%401786233058.fWkHZrZ).
+
+It is worth pausing on what that means for this walk: the feature that removes the product's own
+barrier to entry was designed *in* the product — drivers, an assessment, requirements realizing
+outcomes, and a decision record that names the alternative it rejected. The model reports on the
+tier that exists so people can contribute to the model.
+
 &nbsp;
 
 ## Part 2 — The platform analyzing itself

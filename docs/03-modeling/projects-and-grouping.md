@@ -27,6 +27,27 @@ example to merge into an existing enterprise group deliberately. See
 
 &nbsp;
 
+## Scratchpads are free-standing, and a lift chooses per frame
+
+A [scratchpad](scratchpad.md) lives at `scratchpads/<slug>/`, and that slug is a **model-project
+slug reused as a directory name** — there is no fourth grouping axis and no scratchpad registry.
+Filing one somewhere is not the same as scoping it: a scratchpad is deliberately **not scoped to a
+model-project**. Portfolio and strategy work is cross-project by
+nature, and scoping a scratchpad to one project would make the most valuable material — the thinking
+that spans projects — the awkward case.
+
+Model content *is* scoped, so the scoping decision moves to the **lift**, and it is made **once per
+frame** rather than once per lift. The frames are work archetypes: vision and strategy work is
+cross-project, project work belongs to one project, enabling work is shared. A lift may name a
+project that does not exist yet and create it — *"this thinking has become a project"* is the normal
+way a project starts — carrying the scratchpad's meta-ontology, so a later lift can still detect a
+mismatch. A project declaring a different meta-ontology is refused rather than coerced.
+
+A lift spanning four projects is still one batch and one transaction, because a group is a property
+of each written item rather than of the write.
+
+&nbsp;
+
 ## Working with groups
 
 **Lifecycle** — through the `artifact_group` MCP tool or the REST `/api/groups` endpoints:

@@ -50,18 +50,34 @@ There is no save button; the canvas writes for you once editing settles. Notice 
 *not* asked: which of these is a goal, which a requirement, whether that link is a realization.
 Those are good questions, and they are easier to answer once the shape is in front of you.
 
-Keep this scratchpad open — the model you build next is the same thinking, decided.
+Keep this scratchpad open — what follows is the same thinking, decided.
 
-> **Coming next:** binding a note to something the model already has, narrowing a note down the
-> ontology's [classification levels](05-extensibility/ontology-modules.md#classification-levels),
-> and lifting a selection into verified model content in one transaction. Until those land, the
-> step below is how thinking becomes model content.
+Now do the three things that turn a sketch into model content, without leaving the canvas:
+
+4. **Bind what already exists.** Right-click the canvas → *Add existing element…* and search. What
+   you pick lands where you clicked as a **bound** note, holding a one-way reference to the entity.
+   It takes its type from that entity — the entity is the authority on what it is — so a lift will
+   not mint a duplicate of something you already have.
+5. **Narrow the rest.** Select a note and, in the panel, choose a **domain** (the card takes that
+   domain's colour) and then an **element type** (it gains that type's glyph). Nothing forces you
+   to: a note that stays undecided has done its job. Once both ends of a link are typed, the
+   ontology has an opinion and the panel shows it — including **Reverse the link** when you drew an
+   ordered triple the wrong way, which is the commonest slip there is.
+6. **Lift it.** Shift-click the notes you want, right-click → *Lift into the model…*. The dialog
+   shows what would be created, what is refused and why, what is already in the model, and which
+   links reach outside your selection. Choose a project per frame — a new name creates the project —
+   and confirm. What you get is ordinary, verified model content, written through the same path as
+   everything else.
+
+A lift is one-way. Your notes now record what they became, so lifting again creates only what is
+new, and the model is never written back to.
 
 &nbsp;
 
-## 3. Model the question — a goal, a requirement, and what realizes it
+## 3. Model the question directly — a goal, a requirement, and what realizes it
 
-Three entities and two connections are enough to make the question answerable. In the
+Step 2 got you there by sketching. This is the same three entities and two connections authored
+head-on, which is what you will reach for once the vocabulary is familiar. In the
 GUI, use the entity list's create action (or the guided modeling wizard at
 `/model/wizard`):
 
