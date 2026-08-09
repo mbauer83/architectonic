@@ -41,6 +41,10 @@ const scratchpad = (): Scratchpad => ({
   layout: {},
 })
 
+/** A canvas with nothing pending. The interesting case — a canvas with edits still in the browser —
+ * is its own test below. */
+const settled = (): Promise<void> => Promise.resolve()
+
 const serviceWith = (lifts: ScratchpadLift[]) => {
   const calls: unknown[] = []
   const service = {
@@ -56,7 +60,7 @@ const serviceWith = (lifts: ScratchpadLift[]) => {
 describe('lifting from the canvas', () => {
   it('plans the selection it was given, and never writes on the preflight', async () => {
     const { service, calls } = serviceWith([plan()])
-    const lift = useScratchpadLift(service, { value: 'SCR@1.a.pad' } as never, scratchpad, () => {})
+    const lift = useScratchpadLift(service, { value: 'SCR@1.a.pad' } as never, scratchpad, () => {}, settled)
 
     await lift.preflight(['n1'])
 
@@ -69,7 +73,7 @@ describe('lifting from the canvas', () => {
   it('reads an empty selection as everything, rather than sending one the server refuses', async () => {
     // The server refuses an empty selection deliberately: a mis-click must not lift a whole canvas.
     const { service, calls } = serviceWith([plan()])
-    const lift = useScratchpadLift(service, { value: 'SCR@1.a.pad' } as never, scratchpad, () => {})
+    const lift = useScratchpadLift(service, { value: 'SCR@1.a.pad' } as never, scratchpad, () => {}, settled)
 
     await lift.preflight([])
 
@@ -79,7 +83,7 @@ describe('lifting from the canvas', () => {
 
   it('executes the selection it planned, not whatever is selected by then', async () => {
     const { service, calls } = serviceWith([plan(), plan({ committed: true, 'dry-run': false })])
-    const lift = useScratchpadLift(service, { value: 'SCR@1.a.pad' } as never, scratchpad, () => {})
+    const lift = useScratchpadLift(service, { value: 'SCR@1.a.pad' } as never, scratchpad, () => {}, settled)
 
     await lift.preflight(['n1'])
     await lift.lift()
@@ -92,7 +96,7 @@ describe('lifting from the canvas', () => {
   it('tells the view to reload once something was committed', async () => {
     const committed = vi.fn()
     const { service } = serviceWith([plan(), plan({ committed: true })])
-    const lift = useScratchpadLift(service, { value: 'SCR@1.a.pad' } as never, scratchpad, committed)
+    const lift = useScratchpadLift(service, { value: 'SCR@1.a.pad' } as never, scratchpad, committed, settled)
 
     await lift.preflight(['n1'])
     expect(committed).not.toHaveBeenCalled()
@@ -103,13 +107,55 @@ describe('lifting from the canvas', () => {
 
   it('closing forgets the plan, so the next open cannot show the last one', async () => {
     const { service } = serviceWith([plan()])
-    const lift = useScratchpadLift(service, { value: 'SCR@1.a.pad' } as never, scratchpad, () => {})
+    const lift = useScratchpadLift(service, { value: 'SCR@1.a.pad' } as never, scratchpad, () => {}, settled)
 
     await lift.preflight(['n1'])
     lift.close()
 
     expect(lift.open.value).toBe(false)
     expect(lift.plan.value).toBeNull()
+  })
+})
+
+describe('a canvas that has not been written yet', () => {
+  /** The defect the browser suite found: two notes written and lifted straight away were planned
+   * against the stored scratchpad, which did not have them, and the dialog reported a refusal about
+   * notes the person was looking at. */
+  it('is saved before the plan is asked for, and asks with the version the save answered with', async () => {
+    let stored: Scratchpad = { ...scratchpad(), version: '0.1.4', notes: [] }
+    const flushes: number[] = []
+    const settle = (): Promise<void> => {
+      flushes.push(1)
+      // What a save does: the notes reach the server and it answers with a new version.
+      stored = { ...scratchpad(), version: '0.1.5' }
+      return Promise.resolve()
+    }
+    const { service, calls } = serviceWith([plan()])
+    const lift = useScratchpadLift(
+      service, { value: 'SCR@1.a.pad' } as never, () => stored, () => {}, settle,
+    )
+
+    await lift.preflight(['n1'])
+
+    expect(flushes).toHaveLength(1)
+    expect(calls[0]).toMatchObject({ version: '0.1.5', selection: ['n1'] })
+  })
+
+  it('is saved again before the lift itself, not only before the preflight', async () => {
+    const flushes: string[] = []
+    const { service } = serviceWith([plan(), plan({ committed: true, 'dry-run': false })])
+    const lift = useScratchpadLift(
+      service,
+      { value: 'SCR@1.a.pad' } as never,
+      scratchpad,
+      () => {},
+      () => { flushes.push('flush'); return Promise.resolve() },
+    )
+
+    await lift.preflight(['n1'])
+    await lift.lift()
+
+    expect(flushes).toHaveLength(2)
   })
 })
 
@@ -128,7 +174,7 @@ describe('choosing where each frame lands', () => {
       ],
     })
     const { service, calls } = serviceWith([plan()])
-    const lift = useScratchpadLift(service, { value: 'SCR@1.a.pad' } as never, framed, () => {})
+    const lift = useScratchpadLift(service, { value: 'SCR@1.a.pad' } as never, framed, () => {}, settled)
 
     await lift.preflight([])
     expect(lift.frames.value.map((frame) => frame.id)).toEqual(['project', 'strategy'])
@@ -144,7 +190,7 @@ describe('choosing where each frame lands', () => {
 describe('the view a lift may draw', () => {
   it('is off unless asked for, because a picture nobody asked for is a file nobody expected', async () => {
     const { service, calls } = serviceWith([plan(), plan({ committed: true })])
-    const lift = useScratchpadLift(service, { value: 'SCR@1.a.pad' } as never, scratchpad, () => {})
+    const lift = useScratchpadLift(service, { value: 'SCR@1.a.pad' } as never, scratchpad, () => {}, settled)
 
     await lift.preflight(['n1'])
     expect((calls[0] as { draw: boolean }).draw).toBe(false)

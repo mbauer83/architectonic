@@ -218,7 +218,9 @@ const refine = (next: (current: Scratchpad) => Scratchpad): void => {
 /** A committed lift rewrites the notes it realized, so the canvas reloads rather than guessing.
  * Reloading also drops the undo history, which is correct: what a lift created is not undoable
  * from here, and offering an undo that only rolls back the *notes* would be a lie. */
-const lift = useScratchpadLift(svc, artifactId, () => document.current.value, () => { load() })
+const lift = useScratchpadLift(
+  svc, artifactId, () => document.current.value, () => { load() }, () => saver.flush(),
+)
 
 const onLiftRequest = (): void => {
   menu.value = null

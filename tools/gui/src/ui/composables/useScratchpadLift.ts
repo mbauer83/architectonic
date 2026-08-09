@@ -22,12 +22,20 @@ import type { RepoError } from '../../ports/repositoryErrors'
  * A target is chosen **per frame**, not per lift: the frames are work archetypes, so a canvas
  * routinely holds strategy work for one project and delivery work for another, and forcing one
  * destination would turn the ordinary act into four lifts with the selection rebuilt each time.
+ *
+ * `settle` is what makes the plan describe the canvas on screen. A lift is planned by the *server*,
+ * against the *stored* scratchpad, while the canvas writes on an idle timer — so a person who
+ * writes two notes and lifts them straight away asks about notes that only exist in their browser,
+ * and is told "the selection names notes this scratchpad does not have". That refusal is about
+ * nothing, and the browser suite found it. Every request here waits for the canvas to be at rest
+ * first, which is a property of the sequence rather than of either call.
  */
 export function useScratchpadLift(
   svc: ModelService,
   artifactId: Ref<string>,
   currentScratchpad: () => Scratchpad | null,
   onCommitted: (lifted: Scratchpad) => void,
+  settle: () => Promise<void>,
 ) {
   const open = ref(false)
   const plan = ref<ScratchpadLift | null>(null)
@@ -53,6 +61,9 @@ export function useScratchpadLift(
   )
 
   const run = async (dryRun: boolean): Promise<void> => {
+    // The canvas first, then the question. Read after the flush, never before: a save answers with
+    // the new version, and asking with the old one is refused as stale.
+    await settle()
     const current = currentScratchpad()
     if (!current) return
     error.value = ''
