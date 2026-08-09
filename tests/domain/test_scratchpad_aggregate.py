@@ -66,7 +66,7 @@ class TestLinksJoinNotesOfThisScratchpad:
     def test_deleting_a_realized_note_leaves_the_model_alone(self) -> None:
         """Invariant 6: what a lift put into the model is not the scratchpad's to retract."""
         pad = _pad(notes=[Note(
-            id="n1", title="A", destination="element",
+            id="n1", title="A", destination="element", element_type="capability",
             model_ref=ModelRef(artifact_id="CAP@1.a.thing", kind="realized"),
         )])
 
@@ -220,3 +220,174 @@ class TestMutationsReturnAValidatedAggregate:
             pad.without_note("ghost")
         with pytest.raises(ScratchpadError, match="no link 'ghost'"):
             pad.without_link("ghost")
+
+
+class TestBinding:
+    """Binding is what makes a scratchpad useful against a repository that is not empty.
+
+    With 500-odd entities already in this one, the common move is thinking about work that touches
+    things that exist — and without binding, a lift would mint a duplicate with nothing to stop it.
+    """
+
+    def _pad_with_note(self) -> Scratchpad:
+        return _pad(notes=[Note(id="n1", title="Self-serve onboarding")])
+
+    def test_binding_takes_the_type_from_the_entity(self) -> None:
+        """The entity is the authority on what it is; the note is only borrowing."""
+        bound = self._pad_with_note().bound(
+            "n1", artifact_id="CAP@1.a.onboarding", element_type="capability"
+        )
+
+        note = bound.note("n1")
+        assert note.destination == "element"
+        assert note.element_type == "capability"
+        assert note.model_ref == ModelRef(artifact_id="CAP@1.a.onboarding", kind="bound")
+
+    def test_unbinding_is_free_and_returns_the_note_to_undecided(self) -> None:
+        bound = self._pad_with_note().bound("n1", artifact_id="CAP@1.a.x", element_type="capability")
+
+        after = bound.unbound("n1")
+
+        assert after.note("n1").model_ref is None
+        assert after.note("n1").element_type is None
+        assert after.note("n1").destination == "undecided"
+        # The title survives: it was the note's own, not the entity's.
+        assert after.note("n1").title == "Self-serve onboarding"
+
+    def test_a_realized_note_is_forgotten_rather_than_unbound(self) -> None:
+        """Different acts with different consequences — unbinding would misdescribe what happened."""
+        pad = _pad(notes=[Note(
+            id="n1", title="A", destination="element", element_type="capability",
+            model_ref=ModelRef(artifact_id="CAP@1.a.thing", kind="realized"),
+        )])
+
+        with pytest.raises(ScratchpadError, match="realized .* not bound"):
+            pad.unbound("n1")
+
+    def test_a_realized_note_may_not_be_re_bound_elsewhere(self) -> None:
+        pad = _pad(notes=[Note(
+            id="n1", title="A", destination="element", element_type="capability",
+            model_ref=ModelRef(artifact_id="CAP@1.a.thing", kind="realized"),
+        )])
+
+        with pytest.raises(ScratchpadError, match="forget the realization"):
+            pad.bound("n1", artifact_id="CAP@1.b.other", element_type="capability")
+
+    def test_unbinding_something_that_is_not_bound_says_so(self) -> None:
+        with pytest.raises(ScratchpadError, match="not bound to anything"):
+            self._pad_with_note().unbound("n1")
+
+    def test_one_entity_is_bound_once_per_scratchpad(self) -> None:
+        """Twice would render the same element twice and lift as one — a duplicate the canvas
+        cannot resolve. Two *scratchpads* binding it is fine, and expected."""
+        pad = _pad(notes=[Note(id="n1", title="A"), Note(id="n2", title="B")])
+        once = pad.bound("n1", artifact_id="CAP@1.a.x", element_type="capability")
+
+        with pytest.raises(ScratchpadError, match="bind it once per scratchpad"):
+            once.bound("n2", artifact_id="CAP@1.a.x", element_type="capability")
+
+    def test_a_model_reference_without_a_type_is_refused(self) -> None:
+        with pytest.raises(ScratchpadError, match="no element type"):
+            _pad(notes=[Note(
+                id="n1", title="A", destination="element",
+                model_ref=ModelRef(artifact_id="CAP@1.a.x", kind="bound"),
+            )])
+
+    def test_a_model_reference_on_a_note_that_is_not_an_element_is_refused(self) -> None:
+        with pytest.raises(ScratchpadError, match="its destination is 'undecided'"):
+            _pad(notes=[Note(
+                id="n1", title="A", element_type="capability",
+                model_ref=ModelRef(artifact_id="CAP@1.a.x", kind="bound"),
+            )])
+
+
+class TestTypingAndUndoingIt:
+    """Invariant 4 froze the meta-ontology while anything is typed, which is only livable if
+    typing can be undone. It can — and each of the three ways out means something different."""
+
+    def _typed(self) -> Scratchpad:
+        return _pad(notes=[Note(id="n1", title="A")]).typed("n1", element_type="requirement")
+
+    def test_typing_narrows_a_note_to_an_element(self) -> None:
+        note = self._typed().note("n1")
+
+        assert (note.destination, note.element_type) == ("element", "requirement")
+
+    def test_typing_may_go_one_level_further(self) -> None:
+        pad = _pad(notes=[Note(id="n1", title="A")]).typed(
+            "n1", element_type="requirement", specialization="regulatory"
+        )
+
+        assert pad.note("n1").specialization == "regulatory"
+
+    def test_untyping_is_free_while_nothing_downstream_exists(self) -> None:
+        after = self._typed().untyped("n1")
+
+        assert after.note("n1").destination == "undecided"
+        assert after.note("n1").element_type is None
+
+    def test_untyping_reverts_every_link_touching_the_note(self) -> None:
+        """A typed link with an untyped end is a claim the aggregate can no longer support."""
+        pad = _pad(
+            notes=[Note(id="n1", title="A"), Note(id="n2", title="B")],
+            links=[Link(id="l1", source="n1", target="n2", connection_type="archimate-realization")],
+        ).typed("n1", element_type="requirement")
+
+        after = pad.untyped("n1")
+
+        assert after.links[0].connection_type is None
+
+    def test_a_bound_note_is_unbound_rather_than_untyped(self) -> None:
+        pad = _pad(notes=[Note(id="n1", title="A")]).bound(
+            "n1", artifact_id="CAP@1.a.x", element_type="capability"
+        )
+
+        with pytest.raises(ScratchpadError, match="unbind it before untyping"):
+            pad.untyped("n1")
+
+    def test_a_realized_note_is_forgotten_rather_than_untyped(self) -> None:
+        pad = _pad(notes=[Note(
+            id="n1", title="A", destination="element", element_type="capability",
+            model_ref=ModelRef(artifact_id="CAP@1.a.x", kind="realized"),
+        )])
+
+        with pytest.raises(ScratchpadError, match="forget the realization before untyping"):
+            pad.untyped("n1")
+
+    def test_forgetting_drops_the_reference_and_leaves_the_entity_alone(self) -> None:
+        """Invariant 6: the scratchpad may not retract model content, so the only thing a note can
+        do about a lift it no longer claims is stop claiming it."""
+        pad = _pad(notes=[Note(
+            id="n1", title="A", destination="element", element_type="capability",
+            model_ref=ModelRef(artifact_id="CAP@1.a.x", kind="realized"),
+        )])
+
+        after = pad.forgotten("n1")
+
+        assert after.note("n1").model_ref is None
+        # The type survives, because the entity it describes still exists.
+        assert after.note("n1").element_type == "capability"
+
+    def test_forgetting_something_that_was_never_realized_says_so(self) -> None:
+        with pytest.raises(ScratchpadError, match="not realized"):
+            self._typed().forgotten("n1")
+
+    def test_a_note_tied_to_the_model_may_not_be_retyped(self) -> None:
+        pad = _pad(notes=[Note(id="n1", title="A")]).bound(
+            "n1", artifact_id="CAP@1.a.x", element_type="capability"
+        )
+
+        with pytest.raises(ScratchpadError, match="unbind it first"):
+            pad.typed("n1", element_type="goal")
+
+    def test_the_route_out_of_a_frozen_meta_ontology_is_reachable(self) -> None:
+        """Blunt, but always available — which is what invariant 4 needed to not be a trap."""
+        pad = (
+            _pad(notes=[Note(id="n1", title="A"), Note(id="n2", title="B")])
+            .typed("n1", element_type="requirement")
+            .bound("n2", artifact_id="CAP@1.a.x", element_type="capability")
+        )
+
+        freed = pad.untyped("n1").unbound("n2")
+
+        assert freed.with_meta_ontology("sysml-v2-min").meta_ontology == "sysml-v2-min"
