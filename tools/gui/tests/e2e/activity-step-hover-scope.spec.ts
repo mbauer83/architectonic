@@ -26,7 +26,10 @@ test('hovering one run of a wrapped step label highlights the whole step', async
   await expect(svg).toBeVisible({ timeout: 20000 })
 
   // Any step whose label wrapped: the interesting case is precisely a >1-element group.
-  const stepId = await page.evaluate(() => {
+  // Polled, not sampled: `data-entity-id` is stamped by the viewer a tick and a frame after the
+  // SVG becomes visible, so a single `evaluate` reads whichever frame it happened to land on —
+  // which passes this spec alone and fails it under the load of the full suite.
+  const findWidestGroup = () => page.evaluate(() => {
     const counts = new Map<string, number>()
     for (const el of Array.from(document.querySelectorAll('.svg-wrap [data-entity-id]'))) {
       const id = el.getAttribute('data-entity-id') ?? ''
@@ -37,7 +40,13 @@ test('hovering one run of a wrapped step label highlights the whole step', async
     for (const [id, n] of counts) if (n > most) { best = id; most = n }
     return most > 1 ? best : ''
   })
-  expect(stepId, 'no step maps to more than one SVG element — the defect cannot show here').not.toBe('')
+  await expect
+    .poll(findWidestGroup, {
+      timeout: 20_000,
+      message: 'no step maps to more than one SVG element — the defect cannot show here',
+    })
+    .not.toBe('')
+  const stepId = await findWidestGroup()
 
   const parts = page.locator(`.svg-wrap [data-entity-id="${stepId}"]`)
   const total = await parts.count()
