@@ -1,9 +1,13 @@
 """Scratchpad REST endpoints.
 
-Five operations over one resource, and the resource is the aggregate. There is no note route and no
-link route: the root enforces the invariants, a partial update cannot be validated without loading
-the whole thing anyway, and one shape removes the class of bug where two partial updates interleave
-into a state neither writer intended.
+Six operations over one resource, and the resource is the aggregate. There is no note route and no
+link route: the root enforces the invariants, and a partial update cannot be validated without
+loading the whole thing anyway.
+
+Two of the six are the same write at different addresses. `PUT` replaces the aggregate whole, which
+suits a canvas holding the document in memory; `PATCH` says what changed, which suits everyone who
+does not — an agent removing one note otherwise had to read a hundred and send them all back. Both
+load, apply, validate and save through one path, so neither has a refusal the other lacks.
 
 The sixth is not a resource but an act — `POST .../lift` — which is why it is the one route whose
 final segment names a verb. Preflight and execute share it, as the write tools already do.
@@ -26,6 +30,7 @@ from src.application.scratchpad.document import (
     summary_to_document,
     to_response,
 )
+from src.application.scratchpad.edit import ScratchpadEdit
 from src.application.scratchpad.ports import ScratchpadNotFoundError, ScratchpadVersionConflictError
 from src.application.scratchpad.service import ScratchpadService
 from src.domain.scratchpad import ScratchpadError
@@ -96,6 +101,24 @@ class ReplaceScratchpadBody(_ClosedBody):
     version: str
     group: str
     scratchpad: dict[str, Any]
+
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+
+class EditScratchpadBody(_ClosedBody):
+    """What changed, rather than what the document now is.
+
+    The same write as `PUT`, at a payload proportional to the edit rather than to the canvas. Each
+    collection takes ids to remove and merge patches to apply — a key left out of a patch keeps its
+    stored value, a key set to `null` clears it, and a patch whose `id` is unknown creates the row.
+    That is the one place this and `PUT` differ, and they differ because under `PUT` the document
+    sent is the whole truth, so omission there means removal.
+    """
+
+    version: str
+    remove: dict[str, list[str]] = Field(default_factory=dict)
+    upsert: dict[str, list[dict[str, Any]]] = Field(default_factory=dict)
+    layout: dict[str, dict[str, list[float] | None]] = Field(default_factory=dict)
 
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
@@ -193,6 +216,14 @@ def create_scratchpad(body: CreateScratchpadBody, response: Response) -> dict[st
     responses={**WRITE_RESPONSES, **READ_RESPONSES},
 )
 def replace_scratchpad(artifact_id: str, body: ReplaceScratchpadBody) -> dict[str, Any]:
+    """The whole aggregate, at the version it was read at. A mismatch is 409, never an overwrite.
+
+    Removal is omission — the only way to undo anything here, and so worth saying at the only write
+    on the surface. Leave a note out to delete it (its links go with it), leave a link out to rub it
+    out, and omit `element-type`, `domain`, `document-type` or `connection-type` — the key, not an
+    empty string — to un-refine. Removal never retracts model content: deleting a `realized` note
+    leaves the entity the lift created, and dropping `model-ref` is how a note stops claiming one.
+    """
     service = _service()
     try:
         incoming = from_document(body.scratchpad, artifact_id=artifact_id)
@@ -206,6 +237,34 @@ def replace_scratchpad(artifact_id: str, body: ReplaceScratchpadBody) -> dict[st
     except (ScratchpadError, ScratchpadNotFoundError, ScratchpadVersionConflictError) as exc:
         raise _refuse(exc) from exc
     return to_response(stored, group=body.group, registry=_registry())
+
+
+@router.patch(
+    "/api/scratchpads/{artifact_id}", tags=[TAG_SCRATCHPADS], summary="Edit a scratchpad by delta",
+    response_model=ScratchpadResponse, response_model_exclude_none=True,
+    responses={**WRITE_RESPONSES, **READ_RESPONSES},
+)
+def edit_scratchpad(artifact_id: str, body: EditScratchpadBody) -> dict[str, Any]:
+    """The same write as `PUT`, at a payload proportional to the edit rather than to the canvas.
+
+    `remove` names ids per collection; `upsert` carries merge patches identified by `id` — a key
+    left out keeps its stored value, `null` clears it, and an unknown id creates the row. Removing
+    a note takes its links, its group memberships and its placement with it, exactly as it does
+    everywhere else, because this routes through the same aggregate method rather than restating
+    the cascade. Model content is never retracted: deleting a realized note leaves its entity.
+    """
+    service = _service()
+    try:
+        stored = s.authorized_write(
+            "scratchpads_edit_scratchpad",
+            service.edit,
+            artifact_id,
+            edit=ScratchpadEdit(remove=body.remove, upsert=body.upsert, layout=body.layout),
+            expected_version=body.version,
+        )
+    except (ScratchpadError, ScratchpadNotFoundError, ScratchpadVersionConflictError) as exc:
+        raise _refuse(exc) from exc
+    return to_response(stored, group=service.group_of(artifact_id), registry=_registry())
 
 
 @router.post(

@@ -2392,7 +2392,16 @@ export interface paths {
         };
         /** Read a scratchpad whole */
         get: operations["scratchpads_read_scratchpad"];
-        /** Replace a scratchpad whole */
+        /**
+         * Replace a scratchpad whole
+         * @description The whole aggregate, at the version it was read at. A mismatch is 409, never an overwrite.
+         *
+         *     Removal is omission — the only way to undo anything here, and so worth saying at the only write
+         *     on the surface. Leave a note out to delete it (its links go with it), leave a link out to rub it
+         *     out, and omit `element-type`, `domain`, `document-type` or `connection-type` — the key, not an
+         *     empty string — to un-refine. Removal never retracts model content: deleting a `realized` note
+         *     leaves the entity the lift created, and dropping `model-ref` is how a note stops claiming one.
+         */
         put: operations["scratchpads_replace_scratchpad"];
         post?: never;
         /**
@@ -2406,7 +2415,17 @@ export interface paths {
         delete: operations["scratchpads_delete_scratchpad"];
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Edit a scratchpad by delta
+         * @description The same write as `PUT`, at a payload proportional to the edit rather than to the canvas.
+         *
+         *     `remove` names ids per collection; `upsert` carries merge patches identified by `id` — a key
+         *     left out keeps its stored value, `null` clears it, and an unknown id creates the row. Removing
+         *     a note takes its links, its group memberships and its placement with it, exactly as it does
+         *     everywhere else, because this routes through the same aggregate method rather than restating
+         *     the cascade. Model content is never retracted: deleting a realized note leaves its entity.
+         */
+        patch: operations["scratchpads_edit_scratchpad"];
         trace?: never;
     };
     "/api/scratchpads/{artifact_id}/lift": {
@@ -6999,6 +7018,36 @@ export interface components {
             uca_type?: string | null;
         };
         /**
+         * EditScratchpadBody
+         * @description What changed, rather than what the document now is.
+         *
+         *     The same write as `PUT`, at a payload proportional to the edit rather than to the canvas. Each
+         *     collection takes ids to remove and merge patches to apply — a key left out of a patch keeps its
+         *     stored value, a key set to `null` clears it, and a patch whose `id` is unknown creates the row.
+         *     That is the one place this and `PUT` differ, and they differ because under `PUT` the document
+         *     sent is the whole truth, so omission there means removal.
+         */
+        EditScratchpadBody: {
+            /** Layout */
+            layout?: {
+                [key: string]: {
+                    [key: string]: number[] | null;
+                };
+            };
+            /** Remove */
+            remove?: {
+                [key: string]: string[];
+            };
+            /** Upsert */
+            upsert?: {
+                [key: string]: {
+                    [key: string]: unknown;
+                }[];
+            };
+            /** Version */
+            version: string;
+        };
+        /**
          * EngagementSaveResponse
          * @description A commit on the engagement repository, optionally pushed.
          *
@@ -8293,6 +8342,10 @@ export interface components {
          *     and ``subdomain`` by an entity, ``diagram_type`` by a diagram, ``source``/``target`` by a
          *     connection. ``host_diagram_id`` and ``diagram_internal`` appear together, only for a construct a
          *     diagram owns, and they are how a display surface tells one from a model entity.
+         *
+         *     A scratchpad note fills ``name`` with its title and ``artifact_type`` with the element type
+         *     someone chose for it — empty while nothing has been chosen, which is a legitimate state here and
+         *     nowhere else, because deciding late is the whole point of a scratchpad.
          */
         KeywordSearchHit: {
             /** Artifact Id */
@@ -8319,9 +8372,13 @@ export interface components {
              * Record Type
              * @enum {string}
              */
-            record_type: "entity" | "connection" | "diagram" | "document";
+            record_type: "entity" | "connection" | "diagram" | "document" | "scratchpad-note";
             /** Score */
             score: number;
+            /** Scratchpad Id */
+            scratchpad_id?: string | null;
+            /** Scratchpad Name */
+            scratchpad_name?: string | null;
             /** Source */
             source?: string | null;
             /** Status */
@@ -19429,6 +19486,95 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation error (bad or ambiguous write) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write forbidden (e.g. admin mode not enabled, or mutation denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Artifact not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write temporarily rejected by the workspace gate (retryable) */
+            423: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    scratchpads_edit_scratchpad: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EditScratchpadBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScratchpadResponse"];
+                };
             };
             /** @description Validation error (bad or ambiguous write) */
             400: {

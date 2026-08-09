@@ -114,6 +114,88 @@ class TestEveryEditIsAWholeAggregateReplace:
         assert after.area_of("n1") == "portfolio"
 
 
+class TestRemovalIsOmission:
+    """Nothing on a scratchpad is permanent until it is lifted.
+
+    There is no delete operation for a note, a link or a refinement on any surface — a replace that
+    leaves them out is the delete, and that has to be true rather than merely intended, because it
+    is the *only* way any of the three interfaces can take something back.
+    """
+
+    def _pad_with_two_linked_notes(self, service: ScratchpadService):
+        from src.domain.scratchpad import Link, Note
+
+        created = _new(service)
+        both = created.with_note(Note(id="n1", title="One"), at=Point(40, 60)).with_note(
+            Note(id="n2", title="Two"), at=Point(200, 60)
+        )
+        return service.replace(
+            both.with_link(Link(id="l1", source="n1", target="n2")),
+            group=service.group_of(created.artifact_id),
+            expected_version=created.version,
+        )
+
+    def _replace(self, service: ScratchpadService, stored, **changes: object):
+        from dataclasses import replace as dataclass_replace
+
+        return service.replace(
+            dataclass_replace(stored, **changes),  # type: ignore[arg-type]
+            group=service.group_of(stored.artifact_id),
+            expected_version=stored.version,
+        )
+
+    def test_a_link_is_removed_by_leaving_it_out_and_both_notes_stay(
+        self, service: ScratchpadService
+    ) -> None:
+        stored = self._pad_with_two_linked_notes(service)
+
+        after = self._replace(service, stored, links=())
+
+        assert after.links == ()
+        assert {note.id for note in after.notes} == {"n1", "n2"}
+
+    def test_a_note_is_removed_by_leaving_it_out_and_takes_its_links(
+        self, service: ScratchpadService
+    ) -> None:
+        stored = self._pad_with_two_linked_notes(service)
+
+        after = self._replace(
+            service, stored, notes=tuple(n for n in stored.notes if n.id != "n1"), links=()
+        )
+
+        assert {note.id for note in after.notes} == {"n2"}
+        assert after.links == ()
+
+    def test_a_refinement_is_removed_by_leaving_the_field_unset(
+        self, service: ScratchpadService
+    ) -> None:
+        from dataclasses import replace as dataclass_replace
+
+        stored = self._pad_with_two_linked_notes(service)
+        typed = self._replace(
+            service,
+            stored,
+            notes=tuple(
+                dataclass_replace(n, destination="element", element_type="outcome")
+                if n.id == "n1" else n
+                for n in stored.notes
+            ),
+        )
+
+        after = self._replace(
+            service,
+            typed,
+            notes=tuple(
+                dataclass_replace(n, destination="undecided", element_type=None)
+                if n.id == "n1" else n
+                for n in typed.notes
+            ),
+        )
+
+        assert after.note("n1").element_type is None
+        assert after.note("n1").destination == "undecided"
+
+
 class TestReplaceIsWholeAndVersioned:
     def test_a_write_against_a_stale_version_is_refused(self, service: ScratchpadService) -> None:
         from src.domain.scratchpad import Note

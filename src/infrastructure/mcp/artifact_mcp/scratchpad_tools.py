@@ -1,14 +1,13 @@
-"""Scratchpad MCP tools — the same five capabilities the REST surface serves.
+"""Scratchpad MCP tools — the same seven capabilities the REST surface serves.
 
-**Six, matching REST exactly**, because parity here is a property of this feature rather than of
-the platform: the scratchpad is the lowest-barrier surface, so a human-only version would make the
-one place newcomers start the one place agents cannot help. Both surfaces are thin adapters over
-`ScratchpadService`, neither reaches past it, and
-`tests/architecture/test_scratchpad_surface_parity.py` holds the two sets equal.
+Parity here is a property of this feature rather than of the platform: the scratchpad is the
+lowest-barrier surface, so a human-only version would make the one place newcomers start the one
+place agents cannot help. Both surfaces are thin adapters over `ScratchpadService`, neither reaches
+past it, and `tests/architecture/test_scratchpad_surface_parity.py` holds the two sets equal.
 
-Both also work the same way: read the aggregate, change it, write it back whole. An agent has no
-canvas, but it has the document — so there is no per-note tool, and therefore no capability an
-agent has that a person does not, or the reverse.
+There is still no per-note tool: the resource is the aggregate on both surfaces. What there is, is
+one write in two shapes — `replace` sends the document, `edit` sends what changed — because sending
+a hundred notes back to remove one is a cost a canvas does not pay and an agent does.
 """
 
 from __future__ import annotations
@@ -24,6 +23,7 @@ from src.application.scratchpad.document import (
     summary_to_document,
     to_response,
 )
+from src.application.scratchpad.edit import ScratchpadEdit
 from src.application.scratchpad.ports import ScratchpadNotFoundError, ScratchpadVersionConflictError
 from src.application.scratchpad.service import ScratchpadService
 from src.domain.scratchpad import ScratchpadError
@@ -39,10 +39,11 @@ from src.infrastructure.scratchpad.yaml_repository import YamlScratchpadReposito
 #: Said once and attached to every tool, because the shape is the whole contract here and an agent
 #: that learns it from one tool should not have to rediscover it from the next.
 _AGGREGATE_NOTE = (
-    "\n\nA scratchpad is read and written WHOLE — there is no per-note or per-link operation, on "
-    "this surface or on REST. To change one thing: read it, edit the returned document, and pass "
-    "it back to scratchpad_replace with the `version` you read. A stale version is refused rather "
-    "than overwriting, because a scratchpad is a document someone else may have open."
+    "\n\nThe resource is the whole scratchpad — there is no per-note or per-link operation, here or "
+    "on REST. To change one thing use scratchpad_edit, which takes a delta; to write a document you "
+    "already hold whole use scratchpad_replace. Both carry the `version` you read, and a stale one "
+    "is refused rather than overwriting, because a scratchpad is a document someone else may have "
+    "open."
 )
 
 
@@ -129,10 +130,28 @@ _REPLACE_DESCRIPTION = (
     "Replace a scratchpad whole. `scratchpad` is the document `scratchpad_read` returned, edited; "
     "`version` is the version you read it at. A mismatch is refused with `version_conflict` — "
     "reload and re-apply rather than retrying, or you will overwrite whatever moved.\n\n"
+    "REMOVAL IS OMISSION: drop a note to delete it (its links go with it), drop a link to rub it "
+    "out, and omit `element-type`, `domain`, `document-type` or `connection-type` — the key, not "
+    "an empty string — to un-refine. Removal never retracts model content: deleting a `realized` "
+    "note leaves the entity the lift created, and dropping `model-ref` is how a note stops "
+    "claiming one.\n\n"
     "Invariants the aggregate enforces: every note has a title; a link's endpoints are notes of "
     "this scratchpad and not the same note; a group's members lie in one area and a note belongs "
     "to at most one group; the meta-ontology may not change while any note is typed. A violation "
     "is refused with the id at fault named."
+)
+
+_EDIT_DESCRIPTION = (
+    "Change a scratchpad by saying what changed, instead of sending the whole document back. Same "
+    "write as scratchpad_replace, same invariants, same `version` and the same 409 on a stale one.\n\n"
+    "`remove` is {collection: [id, ...]}, `upsert` is {collection: [patch, ...]}, over the "
+    "collections `areas`, `notes`, `groups`, `links`. A patch is a MERGE PATCH identified by its "
+    "`id`: a key you leave out keeps its stored value, a key set to null clears it, and an id the "
+    "scratchpad does not have creates the row. `layout` is {collection: {id: [x, y] or [x, y, w, h], "
+    "or null to unplace}}.\n\n"
+    "Removing a note takes its links, its group memberships and its placement with it. Nothing here "
+    "retracts model content: deleting a `realized` note leaves the entity the lift created, and "
+    "clearing `model-ref` is how a note stops claiming one."
 )
 
 _LIFT_DESCRIPTION = (
@@ -208,6 +227,28 @@ def scratchpad_replace(
     return {"ok": True, "scratchpad": to_response(stored, group=target_group, registry=_registry())}
 
 
+def scratchpad_edit(
+    *,
+    artifact_id: str,
+    version: str,
+    remove: dict[str, list[str]] | None = None,
+    upsert: dict[str, list[dict[str, Any]]] | None = None,
+    layout: dict[str, dict[str, list[float] | None]] | None = None,
+    repo_root: str | None = None,
+) -> dict[str, Any]:
+    service = _service(repo_root)
+    try:
+        stored = service.edit(
+            artifact_id,
+            edit=ScratchpadEdit(remove=remove or {}, upsert=upsert or {}, layout=layout or {}),
+            expected_version=version,
+        )
+        group = service.group_of(artifact_id)
+    except (ScratchpadError, ScratchpadNotFoundError, ScratchpadVersionConflictError) as exc:
+        return _failure(exc)
+    return {"ok": True, "scratchpad": to_response(stored, group=group, registry=_registry())}
+
+
 def scratchpad_lift(
     *,
     artifact_id: str,
@@ -271,6 +312,19 @@ def register_scratchpad_write_tools(mcp: FastMCP) -> None:
         # Destructive, not merely a write: the aggregate is replaced whole, so a document that
         # omits a note deletes it. MCP reserves `destructiveHint=False` for additive updates, and
         # a host warning about this one is warning about the right thing.
+        annotations=DESTRUCTIVE_LOCAL_WRITE,
+        structured_output=True,
+    )
+
+    register_mutation_tool(
+        mcp,
+        scratchpad_edit,
+        name="scratchpad_edit",
+        title="Scratchpad: Edit",
+        description=_EDIT_DESCRIPTION,
+        # Destructive: `remove` deletes, and removing a note takes its links with it. The delta
+        # shape makes that visible rather than implicit, but it is the same act `replace` performs
+        # by omission, so it carries the same warning.
         annotations=DESTRUCTIVE_LOCAL_WRITE,
         structured_output=True,
     )

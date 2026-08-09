@@ -400,7 +400,7 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
         lambda _c: {"confirm": True},
         mutates=False,
     ),
-    # ── scratchpads: create → replace → delete, the whole loop an agent has ──────────────────────
+    # ── scratchpads: create → replace → edit → lift → delete, the whole loop an agent has ───────
     #
     # Replace carries the version the create answered with, because that is the contract: a stale
     # token is refused rather than overwriting. Taking it from the response rather than assuming
@@ -430,6 +430,19 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
                 "layout": {"notes": {"n1": [40, 60], "n2": [260, 60]}},
             },
         },
+        captures=(Capture("scratchpad_replaced_version", _scratchpad_field("version")),),
+    ),
+    WriteCall(
+        # The delta shape, which is how an agent changes one thing without sending the canvas back.
+        # It removes the undecided note and gives the decided one a body — a removal and a merge
+        # patch in one call, which is the pair the whole operation exists for.
+        "scratchpad_edit",
+        lambda c: {
+            "artifact_id": c.created["scratchpad"],
+            "version": c.created["scratchpad_replaced_version"],
+            "remove": {"notes": ["n1"]},
+            "upsert": {"notes": [{"id": "n2", "body": "Decided enough to lift."}]},
+        },
         captures=(Capture("scratchpad_lifted_version", _scratchpad_field("version")),),
     ),
     WriteCall(
@@ -438,7 +451,7 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
         "scratchpad_lift",
         lambda c: {
             "artifact_id": c.created["scratchpad"],
-            "selection": ["n1", "n2"],
+            "selection": ["n2"],
             "version": c.created["scratchpad_lifted_version"],
         },
         mutates=False,

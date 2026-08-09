@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 
+from src.application.scratchpad.edit import ScratchpadEdit, apply_edit
 from src.application.scratchpad.lift import (
     LiftPlan,
     LiftReceipt,
@@ -128,6 +129,23 @@ class ScratchpadService:
         """
         scratchpad.validate()
         return self._repository.save(scratchpad, group=group, expected_version=expected_version)
+
+    def edit(
+        self, artifact_id: str, *, edit: ScratchpadEdit, expected_version: str
+    ) -> Scratchpad:
+        """The same write as `replace`, addressed by what changed.
+
+        Added because `replace` puts the cost of the smallest edit on the size of the canvas: an
+        agent removing one note had to read the whole document and send it all back. This is not a
+        second door into storage — the delta becomes an aggregate and takes the identical path, so
+        the invariants, the refusals and the version token are the same code, not the same intent.
+        """
+        stored = self._repository.load(artifact_id)
+        return self.replace(
+            apply_edit(stored, edit),
+            group=self._repository.group_of(artifact_id),
+            expected_version=expected_version,
+        )
 
     def delete(self, artifact_id: str) -> None:
         self._repository.delete(artifact_id)

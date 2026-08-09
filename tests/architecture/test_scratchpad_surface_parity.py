@@ -32,7 +32,7 @@ _REST_ROUTER = _SRC / "infrastructure" / "rest" / "routers" / "scratchpads.py"
 
 #: The capability names, surface-independent. Both surfaces spell them the same way, so the
 #: comparison is over words rather than over a translation table nobody maintains.
-_CAPABILITIES = frozenset({"list", "read", "create", "replace", "delete", "lift"})
+_CAPABILITIES = frozenset({"list", "read", "create", "replace", "edit", "delete", "lift"})
 
 
 def _mcp_tool_names() -> frozenset[str]:
