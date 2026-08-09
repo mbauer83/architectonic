@@ -37,6 +37,7 @@ def _pad(**overrides: object):
         "areas": [Area(id="strategy", label="Vision & strategy", permitted_element_types=("goal", "driver"))],
         "notes": [
             Note(id="n2", title="Self-serve onboarding", destination="element",
+                 element_type="capability",
                  model_ref=ModelRef(artifact_id="CAP@1.a.onboarding", kind="bound")),
             Note(id="n1", title="Grow into mid-market"),
         ],

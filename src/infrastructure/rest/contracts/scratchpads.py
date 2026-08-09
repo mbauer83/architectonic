@@ -42,12 +42,35 @@ class NoteWire(NullsOmitted):
     area: str
 
 
+class LinkVerdictWire(NullsOmitted):
+    """What the meta-ontology says about a drawn link.
+
+    Served with the link rather than behind its own endpoint: the two-tier split is a property of
+    the ontology's declared classification levels, and deciding it a second time in a client would
+    put it in two places. `blocks` distinguishes a refusal, which stops a lift, from a narrowing,
+    which warns.
+    """
+
+    kind: Literal["unverified", "reference", "permitted", "narrowed", "refused"]
+    code: str = ""
+    message: str = ""
+    #: Connection types the ontology permits for this pair — offered as "did you mean one of these".
+    alternatives: list[str] = Field(default_factory=list)
+    #: Leads the remedies: dragging an ordered triple the wrong way is the commonest slip there is.
+    reverse_permitted: bool | None = Field(default=None, alias="reverse-permitted")
+    narrowed_by: str | None = Field(default=None, alias="narrowed-by")
+    blocks: bool | None = None
+
+
 class LinkWire(NullsOmitted):
     id: str
     source: str
     target: str
     connection_type: str | None = Field(default=None, alias="connection-type")
     model_ref: ModelRefWire | None = Field(default=None, alias="model-ref")
+    #: Present on a read; absent from the stored file, because a verdict is derived from an
+    #: ontology that may change under a stored scratchpad.
+    verdict: LinkVerdictWire | None = None
 
 
 class AreaWire(NullsOmitted):

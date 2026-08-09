@@ -12,11 +12,16 @@ conveniences added by the REST layer that the file has no business storing.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from src.application.scratchpad.ports import ScratchpadSummary
+
+if TYPE_CHECKING:
+    from src.domain.modules.module_registry import ModuleRegistry
+
 from src.domain.scratchpad import (
     Area,
+    Endpoint,
     Group,
     Layout,
     Link,
@@ -206,15 +211,67 @@ def summary_to_document(summary: ScratchpadSummary) -> dict[str, Any]:
     }
 
 
-def to_response(scratchpad: Scratchpad, *, group: str) -> dict[str, Any]:
-    """The served shape: the document, plus the two things a reader needs and a file must not store.
+def to_response(
+    scratchpad: Scratchpad, *, group: str, registry: "ModuleRegistry"
+) -> dict[str, Any]:
+    """The served shape: the document, plus what a reader needs and a file must not store.
 
     `group` is where the file sits, which the file cannot know about itself. `area` is derived from
-    geometry — served because otherwise every client re-implements point-in-rect over the layout
-    block, and derives it slightly differently.
+    geometry, and a link's `verdict` from the meta-ontology — both served because otherwise every
+    client re-implements them, and derives them slightly differently.
+
+    **The verdict travels with the link rather than behind its own endpoint.** Phase C planned for
+    the canvas to call `/api/ontology/pairs` and decide for itself; that predates the two-tier
+    verdict being a domain concept, and re-deciding it in the client would put the E126-versus-W128
+    split in two places — the one thing `classification_levels` exists to prevent. It would also be
+    blind to specialization narrowing, which is not a property of a type *pair*. Serving it here
+    adds no route, no per-link request, and no second implementation.
+
+    Only the *served* shape carries verdicts. The file must not: a verdict is derived from an
+    ontology that may change under a stored scratchpad, so persisting one would record an answer as
+    though it were content. That is why `to_document` exists beside this and takes no registry,
+    rather than this taking an optional one and meaning two things.
     """
     document = to_document(scratchpad)
     document["group"] = group
     for note in document.get("notes", []):
         note["area"] = scratchpad.area_of(str(note["id"]))
+    endpoints = {note.id: _endpoint(note) for note in scratchpad.notes}
+    for link in document.get("links", []):
+        link["verdict"] = _verdict_document(scratchpad, link, endpoints, registry)
     return document
+
+
+def _endpoint(note: Note) -> Endpoint:
+    return Endpoint(
+        destination=note.destination,
+        element_type=note.element_type,
+        specialization=note.specialization,
+        document_type=note.document_type,
+    )
+
+
+def _verdict_document(
+    scratchpad: Scratchpad,
+    link: dict[str, Any],
+    endpoints: dict[str, Endpoint],
+    registry: "ModuleRegistry",
+) -> dict[str, Any]:
+    from src.application.scratchpad.verification import verdict_for  # noqa: PLC0415
+
+    verdict = verdict_for(
+        registry,
+        meta_ontology=scratchpad.meta_ontology,
+        source=endpoints.get(str(link["source"]), Endpoint()),
+        target=endpoints.get(str(link["target"]), Endpoint()),
+        connection_type=link.get("connection-type"),
+    )
+    return _drop_empty({
+        "kind": verdict.kind,
+        "code": verdict.code,
+        "message": verdict.message,
+        "alternatives": list(verdict.alternatives),
+        "reverse-permitted": verdict.reverse_permitted or None,
+        "narrowed-by": verdict.narrowed_by,
+        "blocks": verdict.blocks or None,
+    })

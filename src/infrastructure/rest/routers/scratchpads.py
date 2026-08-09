@@ -12,7 +12,7 @@ possible: one idempotent replace carrying the version the writer read.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from fastapi import APIRouter, HTTPException, Query, Response, status
 from pydantic import BaseModel, ConfigDict, Field
@@ -30,7 +30,17 @@ from src.infrastructure.rest.routers._openapi import (
 )
 from src.infrastructure.scratchpad.yaml_repository import YamlScratchpadRepository
 
+if TYPE_CHECKING:
+    from src.domain.modules.module_registry import ModuleRegistry
+
 router = APIRouter()
+
+
+def _registry() -> "ModuleRegistry":
+    """The module registry, so a served link can carry its verdict. One lookup per response."""
+    from src.infrastructure.app_bootstrap import get_module_registry  # noqa: PLC0415
+
+    return get_module_registry()
 
 
 def _service() -> ScratchpadService:
@@ -110,7 +120,7 @@ def read_scratchpad(artifact_id: str) -> dict[str, Any]:
     service = _service()
     try:
         scratchpad = service.read(artifact_id)
-        return to_response(scratchpad, group=service.group_of(artifact_id))
+        return to_response(scratchpad, group=service.group_of(artifact_id), registry=_registry())
     except ScratchpadNotFoundError as exc:
         raise _refuse(exc) from exc
 
@@ -139,7 +149,7 @@ def create_scratchpad(body: CreateScratchpadBody, response: Response) -> dict[st
     except (ScratchpadError, ScratchpadVersionConflictError) as exc:
         raise _refuse(exc) from exc
     response.headers["Location"] = f"/api/scratchpads/{created.artifact_id}"
-    return to_response(created, group=body.group)
+    return to_response(created, group=body.group, registry=_registry())
 
 
 @router.put(
@@ -160,18 +170,36 @@ def replace_scratchpad(artifact_id: str, body: ReplaceScratchpadBody) -> dict[st
         )
     except (ScratchpadError, ScratchpadNotFoundError, ScratchpadVersionConflictError) as exc:
         raise _refuse(exc) from exc
-    return to_response(stored, group=body.group)
+    return to_response(stored, group=body.group, registry=_registry())
 
 
 @router.delete(
     "/api/scratchpads/{artifact_id}", tags=[TAG_SCRATCHPADS], summary="Delete a scratchpad",
-    responses={**WRITE_RESPONSES, **READ_RESPONSES},
+    response_model=None, responses={**WRITE_RESPONSES, **READ_RESPONSES},
     status_code=status.HTTP_204_NO_CONTENT,
 )
-def delete_scratchpad(artifact_id: str) -> Response:
+def delete_scratchpad(
+    artifact_id: str, response: Response, dry_run: bool = True,
+) -> dict[str, Any] | None:
+    """Plans unless told otherwise, like every other write on this surface.
+
+    Model content the scratchpad lifted or bound is never touched — what a scratchpad put into the
+    model is not the scratchpad's to retract — so the plan reports what the deletion removes rather
+    than a cascade it might trigger.
+    """
     service = _service()
     try:
-        s.authorized_write("scratchpads_delete_scratchpad", service.delete, artifact_id)
+        scratchpad = service.read(artifact_id)
     except ScratchpadNotFoundError as exc:
         raise _refuse(exc) from exc
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    if dry_run:
+        # A committed removal has nothing to report; a plan has one, which needs a status that
+        # permits a body.
+        response.status_code = status.HTTP_200_OK
+        return {
+            "would_delete": scratchpad.artifact_id,
+            "notes": len(scratchpad.notes),
+            "links": len(scratchpad.links),
+        }
+    s.authorized_write("scratchpads_delete_scratchpad", service.delete, artifact_id)
+    return None

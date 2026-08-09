@@ -163,11 +163,22 @@ class TestDelete:
     def test_a_delete_removes_it_and_answers_no_content(self, client: TestClient) -> None:
         created = _create(client)
 
-        response = client.delete(f"/api/scratchpads/{created['artifact-id']}")
+        response = client.delete(f"/api/scratchpads/{created['artifact-id']}?dry_run=false")
 
         assert response.status_code == 204
         assert response.content == b""
         assert client.get(f"/api/scratchpads/{created['artifact-id']}").status_code == 404
 
+    def test_it_plans_unless_told_otherwise(self, client: TestClient) -> None:
+        """Every write on this surface plans by default; a delete that committed on a bare call is
+        how a cleanup routine removes something nobody asked it to."""
+        created = _create(client)
+
+        planned = client.delete(f"/api/scratchpads/{created['artifact-id']}")
+
+        assert planned.status_code == 200
+        assert planned.json()["would_delete"] == created["artifact-id"]
+        assert client.get(f"/api/scratchpads/{created['artifact-id']}").status_code == 200
+
     def test_deleting_what_is_not_there_is_a_404(self, client: TestClient) -> None:
-        assert client.delete("/api/scratchpads/SCR@9.z.nothing").status_code == 404
+        assert client.delete("/api/scratchpads/SCR@9.z.nothing?dry_run=false").status_code == 404
