@@ -30,6 +30,18 @@ const props = defineProps<{
  * literal in `domains.ts`, which is the only form this has to accept. */
 const wash = computed(() => (props.tint ? `${props.tint}2e` : undefined))
 
+/** The title fills the card, so it is also the only sensible place to grab a note by.
+ *
+ * A blanket `pointerdown.stop` here made a square note undraggable in practice — the ~20 px footer
+ * was the whole handle, and the browser suite caught it as a drag that recorded no write at all.
+ * So the press propagates and starts a drag, and because nothing calls `preventDefault`, a press
+ * that does not move still lands the caret. Once the title *is* being edited it stops again:
+ * there, a drag belongs to text selection.
+ */
+const onTitlePointerDown = (event: PointerEvent): void => {
+  if (window.document.activeElement === event.currentTarget) event.stopPropagation()
+}
+
 const emit = defineEmits<{
   (event: 'note-pointerdown', payload: PointerEvent): void
   (event: 'note-keydown', payload: KeyboardEvent): void
@@ -74,7 +86,7 @@ const emit = defineEmits<{
       tabindex="-1"
       :aria-label="`Title of ${note.title}`"
       :data-note-title="note.id"
-      @pointerdown.stop
+      @pointerdown="onTitlePointerDown"
       @blur="emit('title-blur', $event)"
       @keydown="emit('title-keydown', $event)"
     >
