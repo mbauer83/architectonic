@@ -214,7 +214,10 @@ def register_scratchpad_write_tools(mcp: FastMCP) -> None:
         name="scratchpad_replace",
         title="Scratchpad: Replace",
         description=_REPLACE_DESCRIPTION,
-        annotations=LOCAL_WRITE,
+        # Destructive, not merely a write: the aggregate is replaced whole, so a document that
+        # omits a note deletes it. MCP reserves `destructiveHint=False` for additive updates, and
+        # a host warning about this one is warning about the right thing.
+        annotations=DESTRUCTIVE_LOCAL_WRITE,
         structured_output=True,
     )
 
