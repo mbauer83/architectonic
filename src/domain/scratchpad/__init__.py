@@ -13,7 +13,6 @@ from src.domain.scratchpad.scratchpad import (
     Note,
     Scratchpad,
     ScratchpadError,
-    ordered_ids,
     scratchpad_from_parts,
 )
 
@@ -32,7 +31,6 @@ __all__ = [
     "Rect",
     "Scratchpad",
     "ScratchpadError",
-    "ordered_ids",
     "scratchpad_from_parts",
     "snap",
     "snap_point",

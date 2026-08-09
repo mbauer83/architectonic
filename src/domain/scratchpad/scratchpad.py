@@ -20,7 +20,7 @@ the person moving it can see.
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field, replace
 from typing import Literal
 
@@ -69,11 +69,6 @@ class Note:
     document_type: str | None = None
     model_ref: ModelRef | None = None
     attributes: Mapping[str, object] = field(default_factory=dict)
-
-    @property
-    def is_anchored(self) -> bool:
-        """Whether model content depends on this note's type, making untyping unsafe."""
-        return self.model_ref is not None
 
 
 @dataclass(frozen=True, slots=True)
@@ -158,9 +153,6 @@ class Scratchpad:
 
     def area(self, area_id: str) -> Area | None:
         return next((area for area in self.areas if area.id == area_id), None)
-
-    def links_touching(self, note_id: str) -> tuple[Link, ...]:
-        return tuple(link for link in self.links if note_id in (link.source, link.target))
 
     def area_of(self, note_id: str) -> str:
         """Which frame contains this note — derived from geometry, never stored.
@@ -333,7 +325,3 @@ def scratchpad_from_parts(
     scratchpad.validate()
     return scratchpad
 
-
-def ordered_ids(items: Sequence[Note] | Sequence[Link] | Sequence[Area] | Sequence[Group]) -> tuple[str, ...]:
-    """Ids in stable sorted order — what serialisation writes, so re-saving never reorders."""
-    return tuple(sorted(item.id for item in items))

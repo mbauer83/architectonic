@@ -43,6 +43,7 @@ from src.infrastructure.rest.route_policy._entities import (
 from src.infrastructure.rest.route_policy._platform import ADMIN_ROWS, PROMOTION_ROWS, SYNC_ROWS
 from src.infrastructure.rest.route_policy._response_contracts import UNTYPED_RESPONSE_OPERATIONS
 from src.infrastructure.rest.route_policy._retired import RETIRED_ROUTES
+from src.infrastructure.rest.route_policy._scratchpads import SCRATCHPAD_ROWS
 from src.infrastructure.rest.route_policy._types import (
     BODYLESS,
     MEDIA,
@@ -67,6 +68,7 @@ ROUTE_POLICY: tuple[RouteRow, ...] = (
     *DIAGRAM_ROWS,
     *MATRIX_ROWS,
     *DIAGRAM_TYPE_ROWS,
+    *SCRATCHPAD_ROWS,
     *DOCUMENT_ROWS,
     *GROUP_ROWS,
     *VIEWPOINT_ROWS,

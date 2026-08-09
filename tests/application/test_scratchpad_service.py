@@ -54,15 +54,29 @@ class TestCreate:
             _new(service)
 
 
-class TestTheAgentPathAndTheCanvasPathAgree:
-    def test_a_note_added_one_at_a_time_lands_where_the_canvas_would_put_it(
-        self, service: ScratchpadService
-    ) -> None:
+class TestEveryEditIsAWholeAggregateReplace:
+    """There is no per-item write, on either surface.
+
+    A read-modify-replace is what the canvas does and what an agent does, so neither has a path
+    into storage the other lacks — which is what makes the parity requirement a property of the
+    design rather than something to police tool by tool.
+    """
+
+    def _with_note(self, service: ScratchpadService, created, note_id: str, at: Point | None = None):
+        from src.domain.scratchpad import Note
+
+        return service.replace(
+            created.with_note(Note(id=note_id, title=f"Note {note_id}"), at=at),
+            group=service.group_of(created.artifact_id),
+            expected_version=created.version,
+        )
+
+    def test_a_note_added_this_way_lands_where_it_was_put(self, service: ScratchpadService) -> None:
         created = _new(service)
 
-        after = service.add_note(created.artifact_id, note_id="n1", title="Grow into mid-market", at=Point(40, 60))
+        after = self._with_note(service, created, "n1", at=Point(40, 60))
 
-        assert after.note("n1").title == "Grow into mid-market"
+        assert after.note("n1").title == "Note n1"
         assert after.layout.notes["n1"] == Point(40, 60)
         assert after.area_of("n1") == "strategy"
 
@@ -71,68 +85,37 @@ class TestTheAgentPathAndTheCanvasPathAgree:
         scratchpad to a default collection. The port declares `group_of` for exactly this."""
         created = _new(service, group="platform-core")
 
-        service.add_note(created.artifact_id, note_id="n1", title="A")
+        self._with_note(service, created, "n1")
 
         assert service.list_scratchpads()[0].group == "platform-core"
 
-    def test_each_convenience_write_moves_the_version_on(self, service: ScratchpadService) -> None:
+    def test_each_write_moves_the_version_on(self, service: ScratchpadService) -> None:
         created = _new(service)
 
-        after = service.add_note(created.artifact_id, note_id="n1", title="A")
+        after = self._with_note(service, created, "n1")
 
         assert after.version != created.version
 
-    def test_adding_a_note_that_exists_is_refused_rather_than_silently_replacing(
-        self, service: ScratchpadService
-    ) -> None:
-        created = _new(service)
-        service.add_note(created.artifact_id, note_id="n1", title="A")
-
-        with pytest.raises(ScratchpadError, match="already exists"):
-            service.add_note(created.artifact_id, note_id="n1", title="B")
-
     def test_moving_a_note_changes_which_area_it_is_in(self, service: ScratchpadService) -> None:
         created = _new(service)
-        service.add_note(created.artifact_id, note_id="n1", title="A", at=Point(40, 60))
-        portfolio_rect = service.read(created.artifact_id).layout.areas["portfolio"]
+        with_note = self._with_note(service, created, "n1", at=Point(40, 60))
+        portfolio = with_note.layout.areas["portfolio"]
 
-        after = service.move_note(
-            created.artifact_id, note_id="n1", to=Point(portfolio_rect.x + 40, portfolio_rect.y + 40)
+        after = service.replace(
+            with_note.moved("n1", Point(portfolio.x + 40, portfolio.y + 40)),
+            group="strategy-and-value", expected_version=with_note.version,
         )
 
         assert after.area_of("n1") == "portfolio"
 
-    def test_a_link_needs_both_its_notes(self, service: ScratchpadService) -> None:
-        created = _new(service)
-        service.add_note(created.artifact_id, note_id="n1", title="A")
-
-        with pytest.raises(ScratchpadError, match="not a note in this scratchpad"):
-            service.add_link(created.artifact_id, link_id="l1", source="n1", target="ghost")
-
-    def test_removing_a_note_removes_its_links(self, service: ScratchpadService) -> None:
-        created = _new(service)
-        service.add_note(created.artifact_id, note_id="n1", title="A")
-        service.add_note(created.artifact_id, note_id="n2", title="B")
-        service.add_link(created.artifact_id, link_id="l1", source="n1", target="n2")
-
-        after = service.remove_note(created.artifact_id, note_id="n1")
-
-        assert after.links == ()
-
-    def test_renaming_keeps_everything_else_about_the_note(self, service: ScratchpadService) -> None:
-        created = _new(service)
-        service.add_note(created.artifact_id, note_id="n1", title="A", at=Point(40, 60), body="why")
-
-        after = service.rename_note(created.artifact_id, note_id="n1", title="A, sharpened")
-
-        assert after.note("n1").body == "why"
-        assert after.layout.notes["n1"] == Point(40, 60)
-
 
 class TestReplaceIsWholeAndVersioned:
     def test_a_write_against_a_stale_version_is_refused(self, service: ScratchpadService) -> None:
+        from src.domain.scratchpad import Note
+
         created = _new(service)
-        service.add_note(created.artifact_id, note_id="n1", title="A")
+        service.replace(created.with_note(Note(id="n1", title="A")),
+                        group="strategy-and-value", expected_version=created.version)
 
         with pytest.raises(ScratchpadVersionConflictError):
             service.replace(created, group="strategy-and-value", expected_version=created.version)
@@ -152,8 +135,11 @@ class TestReplaceIsWholeAndVersioned:
 
 class TestListAndDelete:
     def test_listing_summarises_without_the_notes(self, service: ScratchpadService) -> None:
+        from src.domain.scratchpad import Note
+
         created = _new(service)
-        service.add_note(created.artifact_id, note_id="n1", title="A")
+        service.replace(created.with_note(Note(id="n1", title="A")),
+                        group="strategy-and-value", expected_version=created.version)
 
         summary = service.list_scratchpads()[0]
 

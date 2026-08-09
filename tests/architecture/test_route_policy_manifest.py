@@ -46,7 +46,7 @@ def _operations(*, mutation_domain: str, under_assurance: bool | None = None) ->
 
 _TAGS = frozenset({
     "admin", "assurance", "connections", "diagrams", "documents", "entities", "events",
-    "groups", "matrices", "promotion", "sync", "taxonomy", "viewpoints",
+    "groups", "matrices", "promotion", "scratchpads", "sync", "taxonomy", "viewpoints",
 })
 
 _OPERATION_ID_RE = re.compile(r"^(?P<tag>[a-z]+)_(?P<verb>[a-z]+)_(?P<resource>[a-z0-9_]+)$")

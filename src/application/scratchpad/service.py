@@ -14,23 +14,11 @@ compares the two against this class.
 
 from __future__ import annotations
 
-from dataclasses import replace
-
 from src.application.scratchpad.ports import (
     ScratchpadRepositoryPort,
     ScratchpadSummary,
 )
-from src.domain.scratchpad import (
-    Area,
-    Layout,
-    Link,
-    Note,
-    Point,
-    Rect,
-    Scratchpad,
-    ScratchpadError,
-    scratchpad_from_parts,
-)
+from src.domain.scratchpad import Area, Layout, Rect, Scratchpad, scratchpad_from_parts
 
 #: The four areas a new scratchpad is seeded with, and what each is for. Defaults rather than a
 #: fixed structure: a scratchpad may add, rename or remove areas, and the permitted-type sets that
@@ -108,55 +96,10 @@ class ScratchpadService:
     def delete(self, artifact_id: str) -> None:
         self._repository.delete(artifact_id)
 
-    # ── Convenience the canvas does NOT use, and the agent surface does ───────
-    #
-    # The canvas mutates its in-memory aggregate and saves whole (that is what keeps it to one
-    # write a second). An agent has no canvas, so it needs to say "add this note" without
-    # reconstructing the document — these compose to the same `replace`, so neither surface has a
-    # path into storage the other lacks.
-
-    def add_note(
-        self, artifact_id: str, *, note_id: str, title: str, at: Point | None = None, body: str = ""
-    ) -> Scratchpad:
-        current = self._repository.load(artifact_id)
-        if current.note(note_id) is not None:
-            raise ScratchpadError(f"note {note_id!r} already exists in {artifact_id!r}")
-        updated = current.with_note(Note(id=note_id, title=title, body=body), at=at)
-        return self.replace(updated, group=self._group_of(artifact_id), expected_version=current.version)
-
-    def move_note(self, artifact_id: str, *, note_id: str, to: Point) -> Scratchpad:
-        current = self._repository.load(artifact_id)
-        updated = current.moved(note_id, to)
-        return self.replace(updated, group=self._group_of(artifact_id), expected_version=current.version)
-
-    def remove_note(self, artifact_id: str, *, note_id: str) -> Scratchpad:
-        current = self._repository.load(artifact_id)
-        updated = current.without_note(note_id)
-        return self.replace(updated, group=self._group_of(artifact_id), expected_version=current.version)
-
-    def add_link(self, artifact_id: str, *, link_id: str, source: str, target: str) -> Scratchpad:
-        current = self._repository.load(artifact_id)
-        if any(link.id == link_id for link in current.links):
-            raise ScratchpadError(f"link {link_id!r} already exists in {artifact_id!r}")
-        updated = current.with_link(Link(id=link_id, source=source, target=target))
-        return self.replace(updated, group=self._group_of(artifact_id), expected_version=current.version)
-
-    def remove_link(self, artifact_id: str, *, link_id: str) -> Scratchpad:
-        current = self._repository.load(artifact_id)
-        updated = current.without_link(link_id)
-        return self.replace(updated, group=self._group_of(artifact_id), expected_version=current.version)
-
-    def rename_note(self, artifact_id: str, *, note_id: str, title: str) -> Scratchpad:
-        current = self._repository.load(artifact_id)
-        note = current.note(note_id)
-        if note is None:
-            raise ScratchpadError(f"no note {note_id!r} in {artifact_id!r}")
-        updated = current.with_note(replace(note, title=title))
-        return self.replace(updated, group=self._group_of(artifact_id), expected_version=current.version)
-
-    def _group_of(self, artifact_id: str) -> str:
-        """The collection an edit must save back into — asked of the port, which declares it."""
+    def group_of(self, artifact_id: str) -> str:
+        """Which collection this scratchpad sits in — needed to save an edit back into it."""
         return self._repository.group_of(artifact_id)
+
 
 
 def _area_rect(index: int) -> Rect:

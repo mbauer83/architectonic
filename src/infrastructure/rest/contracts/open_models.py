@@ -127,6 +127,13 @@ OPEN_RESPONSE_FIELDS: dict[str, OpenReason] = {
     # attribute may hold.
     "EntityItemSummaryResponse.column_values": AUTHORED,
     "ProjectedOccurrenceResponse.column_values": AUTHORED,
+    # A scratchpad and its notes carry custom structured attributes through the same JSON-schema'd
+    # mechanism an entity's do, so the keys are the author's and the value types come from whichever
+    # schema the attribute was declared under. Declaring a shape here would be this package deciding
+    # what a half-formed thought may say about itself — in the one surface built for the thought that
+    # has not been decided yet.
+    "ScratchpadResponse.attributes": AUTHORED,
+    "NoteWire.attributes": AUTHORED,
 
     # ── A diagram-type module owns the shape ──────────────────────────────────
     # `EntityDetailResponse.display_blocks` was here. The module owns the *keys* — which display

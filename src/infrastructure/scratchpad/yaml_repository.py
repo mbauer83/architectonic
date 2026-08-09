@@ -23,6 +23,7 @@ from typing import Any
 
 import yaml
 
+from src.application.scratchpad.document import from_document, to_document
 from src.application.scratchpad.ports import (
     ScratchpadNotFoundError,
     ScratchpadSummary,
@@ -30,18 +31,7 @@ from src.application.scratchpad.ports import (
 )
 from src.domain.artifact_id import stable_id
 from src.domain.repository.repo_layout import SCRATCHPADS
-from src.domain.scratchpad import (
-    Area,
-    Group,
-    Layout,
-    Link,
-    ModelRef,
-    Note,
-    Point,
-    Rect,
-    Scratchpad,
-    scratchpad_from_parts,
-)
+from src.domain.scratchpad import Scratchpad
 
 #: The file suffix. Two dots so the kind is readable in a directory listing and a glob for
 #: scratchpads cannot also match a stray `.yaml` someone dropped beside them.
@@ -106,7 +96,7 @@ class YamlScratchpadRepository:
         path = self._path_for(artifact_id)
         if path is None:
             raise ScratchpadNotFoundError(f"no scratchpad {artifact_id!r} under {self._root}")
-        return deserialize(_read_yaml(path))
+        return from_document(_read_yaml(path))
 
     def group_of(self, artifact_id: str) -> str:
         path = self._path_for(artifact_id)
@@ -142,160 +132,13 @@ class YamlScratchpadRepository:
         path.unlink()
 
 
-# ── Serialisation ────────────────────────────────────────────────────────────
-
-
 def _read_yaml(path: Path) -> dict[str, Any]:
     loaded = yaml.safe_load(path.read_text(encoding="utf-8"))
     return loaded if isinstance(loaded, dict) else {}
 
 
-def _drop_empty(mapping: dict[str, Any]) -> dict[str, Any]:
-    """Omit what carries no information. A file full of `null`s reads as a file full of decisions."""
-    return {key: value for key, value in mapping.items() if value not in (None, "", (), [], {})}
-
-
-def _note_dict(note: Note) -> dict[str, Any]:
-    return _drop_empty({
-        "id": note.id,
-        "title": note.title,
-        "body": note.body,
-        "destination": note.destination if note.destination != "undecided" else "",
-        "element-type": note.element_type,
-        "specialization": note.specialization,
-        "document-type": note.document_type,
-        "model-ref": _drop_empty({"artifact-id": note.model_ref.artifact_id, "kind": note.model_ref.kind})
-                     if note.model_ref else None,
-        "attributes": dict(note.attributes),
-    })
-
-
-def _link_dict(link: Link) -> dict[str, Any]:
-    return _drop_empty({
-        "id": link.id,
-        "source": link.source,
-        "target": link.target,
-        "connection-type": link.connection_type,
-        "model-ref": _drop_empty({"artifact-id": link.model_ref.artifact_id, "kind": link.model_ref.kind})
-                     if link.model_ref else None,
-    })
-
-
 def serialize(scratchpad: Scratchpad) -> str:
-    document = _drop_empty({
-        "artifact-id": scratchpad.artifact_id,
-        "artifact-type": "scratchpad",
-        "name": scratchpad.name,
-        "description": scratchpad.description,
-        "version": scratchpad.version,
-        "status": scratchpad.status,
-        "meta-ontology": scratchpad.meta_ontology,
-        "attributes": dict(scratchpad.attributes),
-        "areas": [
-            _drop_empty({
-                "id": area.id,
-                "label": area.label,
-                "permits": _drop_empty({
-                    "elements": list(area.permitted_element_types),
-                    "documents": list(area.permitted_document_types),
-                }),
-            })
-            for area in sorted(scratchpad.areas, key=lambda item: item.id)
-        ],
-        "notes": [_note_dict(note) for note in sorted(scratchpad.notes, key=lambda item: item.id)],
-        "groups": [
-            _drop_empty({"id": group.id, "label": group.label, "members": sorted(group.members)})
-            for group in sorted(scratchpad.groups, key=lambda item: item.id)
-        ],
-        "links": [_link_dict(link) for link in sorted(scratchpad.links, key=lambda item: item.id)],
-    })
-    # Layout last and separate: a content change and a movement then land in different parts of the
-    # file, which is the whole reason the aggregate keeps them apart.
-    layout = _drop_empty({
-        "areas": {key: [rect.x, rect.y, rect.width, rect.height]
-                  for key, rect in sorted(scratchpad.layout.areas.items())},
-        "notes": {key: [point.x, point.y] for key, point in sorted(scratchpad.layout.notes.items())},
-        "groups": {key: [rect.x, rect.y, rect.width, rect.height]
-                   for key, rect in sorted(scratchpad.layout.groups.items())},
-    })
-    if layout:
-        document["layout"] = layout
-    return str(yaml.safe_dump(document, sort_keys=False, allow_unicode=True, width=100))
-
-
-def _model_ref(raw: object) -> ModelRef | None:
-    if not isinstance(raw, dict) or not raw.get("artifact-id"):
-        return None
-    kind = str(raw.get("kind") or "bound")
-    return ModelRef(artifact_id=str(raw["artifact-id"]), kind="realized" if kind == "realized" else "bound")
-
-
-def deserialize(raw: dict[str, Any]) -> Scratchpad:
-    def rows(key: str) -> list[dict[str, Any]]:
-        value = raw.get(key)
-        return [row for row in value if isinstance(row, dict)] if isinstance(value, list) else []
-
-    raw_layout = raw.get("layout")
-    layout_raw: dict[str, Any] = raw_layout if isinstance(raw_layout, dict) else {}
-
-    def rects(key: str) -> dict[str, Rect]:
-        block = layout_raw.get(key)
-        return {str(k): Rect(*(float(n) for n in v)) for k, v in block.items()} if isinstance(block, dict) else {}
-
-    points_block = layout_raw.get("notes")
-    points = (
-        {str(k): Point(float(v[0]), float(v[1])) for k, v in points_block.items()}
-        if isinstance(points_block, dict) else {}
-    )
-
-    return scratchpad_from_parts(
-        artifact_id=str(raw.get("artifact-id") or ""),
-        name=str(raw.get("name") or ""),
-        description=str(raw.get("description") or ""),
-        version=str(raw.get("version") or "0.1.0"),
-        status=str(raw.get("status") or "draft"),
-        meta_ontology=str(raw.get("meta-ontology") or "archimate-4"),
-        attributes=dict(raw.get("attributes") or {}),
-        areas=[
-            Area(
-                id=str(row.get("id") or ""),
-                label=str(row.get("label") or ""),
-                permitted_element_types=tuple(str(v) for v in (row.get("permits") or {}).get("elements") or ()),
-                permitted_document_types=tuple(str(v) for v in (row.get("permits") or {}).get("documents") or ()),
-            )
-            for row in rows("areas")
-        ],
-        notes=[
-            Note(
-                id=str(row.get("id") or ""),
-                title=str(row.get("title") or ""),
-                body=str(row.get("body") or ""),
-                destination=str(row.get("destination") or "undecided"),  # type: ignore[arg-type]
-                element_type=row.get("element-type"),
-                specialization=row.get("specialization"),
-                document_type=row.get("document-type"),
-                model_ref=_model_ref(row.get("model-ref")),
-                attributes=dict(row.get("attributes") or {}),
-            )
-            for row in rows("notes")
-        ],
-        links=[
-            Link(
-                id=str(row.get("id") or ""),
-                source=str(row.get("source") or ""),
-                target=str(row.get("target") or ""),
-                connection_type=row.get("connection-type"),
-                model_ref=_model_ref(row.get("model-ref")),
-            )
-            for row in rows("links")
-        ],
-        groups=[
-            Group(
-                id=str(row.get("id") or ""),
-                label=str(row.get("label") or ""),
-                members=tuple(str(v) for v in row.get("members") or ()),
-            )
-            for row in rows("groups")
-        ],
-        layout=Layout(areas=rects("areas"), notes=points, groups=rects("groups")),
-    )
+    """The document, as YAML. The document shape itself is `application.scratchpad.document` —
+    the REST payload speaks the same vocabulary deliberately, and writing that mapping twice would
+    make the sameness a coincidence maintained by hand."""
+    return str(yaml.safe_dump(to_document(scratchpad), sort_keys=False, allow_unicode=True, width=100))
