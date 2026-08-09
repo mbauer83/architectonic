@@ -46,7 +46,7 @@ connection-ids-used:
 - RES@1784482454.JnWnY1---COA@1784483697.FI0Xbj@@archimate-assignment
 - COA@1784483697.FI0Xbj---OUT@1712870400.LrpdG0@@archimate-influence
 - COA@1784483697.FI0Xbj---OUT@1780655839.Vhhne7@@archimate-realization
-last-updated: '2026-07-29T13:30:23Z'
+last-updated: '2026-08-09T01:16:12Z'
 ---
 @startuml strategy-overview
 hide stereotype
@@ -154,27 +154,26 @@ rectangle "Strategy" <<StrategyGrouping>> as DOM_strategy {
   VS_VZ_P2h -[hidden]right- VS_fK25Bo
   VS_fK25Bo -[hidden]right- VS_klQ_6_
   VS_klQ_6_ -[hidden]right- VS_vEQEgh
-  GRPT_strategy_3 -[hidden]down- GRPT_strategy_4
 
 }
 
 ' Connections
-RES_JnWnY1 --> CAP_pLMHKe
-RES_dz41en --> CAP_pLMHKe
-CAP_pLMHKe ..|> COA_FI0Xbj
-CAP_pLMHKe --> VS_klQ_6_
-COA_F9mwVZ --> CAP_db4AQh
-RES_H7YRYJ --> CAP_db4AQh
-CAP_db4AQh --> VS_VZ_P2h
-RES_dz41en --> CAP_FMvdNM
-CAP_FMvdNM --> VS_vEQEgh
-RES_0mpHI_ --> CAP_Eb_x83
-RES_H7YRYJ --> CAP_Eb_x83
-CAP_Eb_x83 ..|> COA_FI0Xbj
-CAP_Eb_x83 --> VS_fK25Bo
-CAP_0kQIHh --> VS_VZ_P2h
-COA_jckOJG --> VS_klQ_6_
-RES_JnWnY1 --> COA_FI0Xbj
+RES_JnWnY1 -up-> CAP_pLMHKe
+RES_dz41en -up-> CAP_pLMHKe
+CAP_pLMHKe .up.|> COA_FI0Xbj
+CAP_pLMHKe -down-> VS_klQ_6_
+COA_F9mwVZ -down-> CAP_db4AQh
+RES_H7YRYJ -up-> CAP_db4AQh
+CAP_db4AQh -down-> VS_VZ_P2h
+RES_dz41en -up-> CAP_FMvdNM
+CAP_FMvdNM -down-> VS_vEQEgh
+RES_0mpHI_ -up-> CAP_Eb_x83
+RES_H7YRYJ -up-> CAP_Eb_x83
+CAP_Eb_x83 .up.|> COA_FI0Xbj
+CAP_Eb_x83 -down-> VS_fK25Bo
+CAP_0kQIHh -down-> VS_VZ_P2h
+COA_jckOJG -down-> VS_klQ_6_
+RES_JnWnY1 -up-> COA_FI0Xbj
 COA_FI0Xbj .up.> OUT_LrpdG0
 COA_FI0Xbj .up.|> OUT_Vhhne7
 

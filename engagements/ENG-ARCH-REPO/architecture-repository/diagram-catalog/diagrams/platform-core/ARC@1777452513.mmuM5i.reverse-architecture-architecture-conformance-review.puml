@@ -27,13 +27,13 @@ connection-ids-used:
 - SRV@1712870400.Qr8St8---PRC@1776635649.vlE-5j@@archimate-serving
 - FNC@1777390456.ns4pWw---FNC@1777390458.tFTeOT@@archimate-triggering
 - FNC@1777390458.tFTeOT---FNC@1777390459.omV6nu@@archimate-triggering
+- PRC@1777293168.CYgU64---FNC@1777390465.SXt2mM@@archimate-composition
 - PRC@1777293168.CYgU64---FNC@1777390462.erPw5B@@archimate-composition
 - PRC@1777293168.CYgU64---FNC@1777390463.oRz6Qe@@archimate-composition
-- PRC@1777293168.CYgU64---FNC@1777390465.SXt2mM@@archimate-composition
 - PRC@1776635649.vlE-5j---FNC@1777390456.ns4pWw@@archimate-composition
-- PRC@1776635649.vlE-5j---FNC@1777390458.tFTeOT@@archimate-composition
 - PRC@1776635649.vlE-5j---FNC@1777390459.omV6nu@@archimate-composition
-last-updated: '2026-07-29T13:29:55Z'
+- PRC@1776635649.vlE-5j---FNC@1777390458.tFTeOT@@archimate-composition
+last-updated: '2026-08-09T01:15:33Z'
 ---
 @startuml reverse-architecture---architecture-conformance-review
 hide stereotype

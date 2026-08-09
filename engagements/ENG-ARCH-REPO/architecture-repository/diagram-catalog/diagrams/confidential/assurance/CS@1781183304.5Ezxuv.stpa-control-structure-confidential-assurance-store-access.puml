@@ -38,7 +38,7 @@ diagram-entities:
   - source_id: csn-cred
     target_id: csn-backend
     conn_type: feedback
-last-updated: '2026-07-05'
+last-updated: '2026-08-09T01:15:02Z'
 ---
 @startuml STPA_Control_Structure_Confidential_Assurance_Store_Access
 title STPA Control Structure — Confidential Assurance Store Access

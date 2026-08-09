@@ -32,6 +32,7 @@ entity-ids-used:
 - GRP@1780819145.rW_2nX.assurance-module
 - APP@1781976554.AeU7V3.identifier-allocation-service
 - APP@1783872532.OZbaBh.repository-upgrade-framework
+- SRV@1712870400.e5MCiF.configuration-service
 connection-ids-used:
 - ACT@1712870400.Nn7Oo7.architect---APP@1776149382.lmO0mp.gui-authoring-tool@@archimate-association
 - ACT@1712870400.OLWiNc.devops-engineer---APP@1712870400.kjC6ex.cli-tool@@archimate-association
@@ -79,6 +80,7 @@ connection-ids-used:
 - ROL@1780656241.yswDMB---APP@1780783710.iu_kKL@@archimate-association
 - APP@1783872532.OZbaBh---DOB@1780656431.ApaPcg@@archimate-access
 - APP@1783872532.OZbaBh---DOB@1780656431.p04R7k@@archimate-access
+- FNC@1780656241.3xVBUQ---SRV@1712870400.e5MCiF@@archimate-association
 diagram-entities: {}
 bindings:
 - id: bind-scope
@@ -87,7 +89,7 @@ bindings:
   correspondence_kind: scoped-by
   target:
     entity_id: APP@1780783671.hkrdtm.architecture-management-platform
-last-updated: '2026-07-29T13:30:09Z'
+last-updated: '2026-08-09T01:15:52Z'
 ---
 @startuml amp---containers
 !include <C4/C4_Component>
@@ -132,6 +134,7 @@ System_Ext(APP_OZbaBh, "Repository Upgrade Framework")
 Person_Ext(ROL_udXPfB, "AI Agent")
 Person_Ext(ROL_abNYhO, "Risk & Compliance Officer")
 Person_Ext(ROL_yswDMB, "Safety / Security Analyst")
+System_Ext(SRV_e5MCiF, "Configuration Service")
 
 ACT_Nn7Oo7 -[hidden]right- ACT_OLWiNc
 ACT_OLWiNc -[hidden]right- ACT_Pp8Qq8
@@ -146,6 +149,7 @@ APP_v6AXNw -[hidden]right- APP_Je9pmw
 APP_Je9pmw -[hidden]right- APP_JqIBPJ
 APP_JqIBPJ -[hidden]right- APP_AeU7V3
 APP_AeU7V3 -[hidden]right- APP_OZbaBh
+APP_OZbaBh -[hidden]right- SRV_e5MCiF
 
 
 ACT_Nn7Oo7 --> APP_lmO0mp : uses

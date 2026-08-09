@@ -293,7 +293,6 @@ class GenericPumlRenderer:
             alias_by_id=alias_by_id,
             children_map=children_map,
             layout_direction_hints=layout_direction_hints,
-            single_domain=single_domain,
             group_index_by_alias=group_index_by_alias,
             domain_rank_by_alias=domain_rank_by_alias,
             specialization_catalog=specialization_catalog,

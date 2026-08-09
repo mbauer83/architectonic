@@ -261,7 +261,7 @@ bindings:
   correspondence_kind: represents
   target:
     entity_id: DOB@1777239887.V-MgY1.yaml-artifact-frontmatter
-last-updated: '2026-07-29T13:29:33Z'
+last-updated: '2026-08-09T01:15:05Z'
 ---
 @startuml Artifact Persistence Model
 title Artifact Persistence Model

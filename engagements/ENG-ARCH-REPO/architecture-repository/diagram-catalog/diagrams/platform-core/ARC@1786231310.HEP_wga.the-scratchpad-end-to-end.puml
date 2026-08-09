@@ -43,7 +43,7 @@ connection-ids-used:
 - REQ@1786223986.VV89psV---OUT@1786223967.Bz8wwkG@@archimate-realization
 - PRC@1786225282._6NSUkC---SRV@1786225282.lzo5hQK@@archimate-realization
 - PRC@1786225282.si8h9M1---SRV@1786225282.C8EOSEB@@archimate-realization
-last-updated: '2026-08-08T23:23:54Z'
+last-updated: '2026-08-09T01:15:46Z'
 ---
 @startuml the-scratchpad--end-to-end
 hide stereotype
@@ -214,10 +214,10 @@ PRC_si8h9M1 .up.|> CAP_x61V_Bh
 CAP_x61V_Bh -up- OUT_Bz8wwkG
 PRC__6NSUkC -down-> DOB_luoCiQt
 PRC_si8h9M1 -down-> DOB_luoCiQt
-OUT_Bz8wwkG ..|> GOL_k6NMPYo
-REQ_ElzukOP ..|> OUT_Bz8wwkG
-REQ_VV89psV ..|> OUT_Bz8wwkG
-PRC__6NSUkC ..|> SRV_lzo5hQK
-PRC_si8h9M1 ..|> SRV_C8EOSEB
+OUT_Bz8wwkG .up.|> GOL_k6NMPYo
+REQ_ElzukOP .up.|> OUT_Bz8wwkG
+REQ_VV89psV .up.|> OUT_Bz8wwkG
+PRC__6NSUkC .up.|> SRV_lzo5hQK
+PRC_si8h9M1 .up.|> SRV_C8EOSEB
 
 @enduml

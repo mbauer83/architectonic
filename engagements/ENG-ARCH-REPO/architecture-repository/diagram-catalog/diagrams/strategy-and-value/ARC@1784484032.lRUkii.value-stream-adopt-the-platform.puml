@@ -34,7 +34,7 @@ connection-ids-used:
 - VS@1784483003.klQ_6----VS@1784483097.CBbqVO@@archimate-composition
 - VS@1784483003.klQ_6----VS@1784483084.Io9UQd@@archimate-composition
 - VS@1784483003.klQ_6----VS@1784483104.lVJLuL@@archimate-composition
-last-updated: '2026-07-29T13:30:34Z'
+last-updated: '2026-08-09T01:16:22Z'
 ---
 @startuml value-stream--adopt-the-platform
 hide stereotype
@@ -115,13 +115,13 @@ rectangle "Strategy" <<StrategyGrouping>> as DOM_strategy {
 }
 
 ' Connections
-CAP_pLMHKe --> VS_klQ_6_
+CAP_pLMHKe -down-> VS_klQ_6_
 CAP_pLMHKe --> VS_Az7GVi
 CAP_pLMHKe --> VS_lVJLuL
 CAP_db4AQh --> VS_CBbqVO
 CAP_db4AQh --> VS_lVJLuL
 STK_KNwgP7 -down- VS_klQ_6_
-VAL_bisnF2 -- STK_KNwgP7
+VAL_bisnF2 -down- STK_KNwgP7
 VS_klQ_6_ -up- VAL_bisnF2
 VS_Io9UQd ..> VS_Az7GVi
 VS_Az7GVi ..> VS_CBbqVO

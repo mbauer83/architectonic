@@ -22,14 +22,14 @@ entity-ids-used:
 connection-ids-used:
 - APP@1781705596.n8Pikk---REQ@1781704600.TbcGSB@@archimate-realization
 - APP@1781705596.n8Pikk---FNC@1781705395.halAQt@@archimate-association
-- APP@1712870400.yNhgdh---APP@1781705596.n8Pikk@@archimate-composition
 - APP@1712870400.ca3vm7---FNC@1781705395.halAQt@@archimate-assignment
+- APP@1712870400.yNhgdh---APP@1781705596.n8Pikk@@archimate-composition
 connections:
 - connection_id: APP@1712870400.yNhgdh.module-catalog---APP@1781705596.n8Pikk.datatype-diagram-type-module@@archimate-aggregation
 - connection_id: APP@1781705596.n8Pikk.datatype-diagram-type-module---REQ@1781704600.TbcGSB.datatype-uml-class-diagram-authoring@@archimate-realization
 - connection_id: APP@1781705596.n8Pikk.datatype-diagram-type-module---FNC@1781705395.halAQt.validate-datatype-data-object-relationship-consistency@@archimate-association
 - connection_id: APP@1712870400.ca3vm7.model-verifier---FNC@1781705395.halAQt.validate-datatype-data-object-relationship-consistency@@archimate-assignment
-last-updated: '2026-07-29T13:29:30Z'
+last-updated: '2026-08-09T01:15:03Z'
 ---
 @startuml datatype-diagram-type---application-view
 hide stereotype

@@ -27,17 +27,17 @@ connection-ids-used:
 - JNO@1777467627.chqH1_---FNC@1777390448.yuFXVJ@@archimate-triggering
 - JNO@1777467627.chqH1_---FNC@1777390449.uzJGYp@@archimate-triggering
 - JNO@1777467627.chqH1_---FNC@1777409722.saMRQ0@@archimate-triggering
+- FNC@1777390444.lLdx12---FNC@1777390448.yuFXVJ@@archimate-triggering
+- FNC@1777390444.lLdx12---FNC@1777409722.rkx32U@@archimate-triggering
+- PRC@1776635640.U4aAdh---FNC@1777409722.ErTqVT@@archimate-composition
+- PRC@1776635640.U4aAdh---FNC@1777472861.HgWMdN@@archimate-composition
 - PRC@1776635640.U4aAdh---FNC@1777390445.NGjUCa@@archimate-aggregation
 - PRC@1776635640.U4aAdh---FNC@1777390444.lLdx12@@archimate-aggregation
 - PRC@1776635640.U4aAdh---FNC@1777409722.rkx32U@@archimate-aggregation
 - PRC@1776635640.U4aAdh---FNC@1777409722.saMRQ0@@archimate-aggregation
 - PRC@1776635640.U4aAdh---FNC@1777390449.uzJGYp@@archimate-aggregation
 - PRC@1776635640.U4aAdh---FNC@1777390448.yuFXVJ@@archimate-aggregation
-- FNC@1777390444.lLdx12---FNC@1777390448.yuFXVJ@@archimate-triggering
-- FNC@1777390444.lLdx12---FNC@1777409722.rkx32U@@archimate-triggering
-- PRC@1776635640.U4aAdh---FNC@1777409722.ErTqVT@@archimate-composition
-- PRC@1776635640.U4aAdh---FNC@1777472861.HgWMdN@@archimate-composition
-last-updated: '2026-07-29T13:29:59Z'
+last-updated: '2026-08-09T01:15:38Z'
 ---
 @startuml architecture-modelling---planning
 hide stereotype

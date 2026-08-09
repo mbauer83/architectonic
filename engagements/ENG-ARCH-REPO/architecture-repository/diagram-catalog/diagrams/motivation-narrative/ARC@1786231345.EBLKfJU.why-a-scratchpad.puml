@@ -44,7 +44,7 @@ connection-ids-used:
 - REQ@1786230066.vVjYCpP---OUT@1786223967.Bz8wwkG@@archimate-realization
 - PRI@1786223967.IQqhM8k---REQ@1786223986.VV89psV@@archimate-influence
 - PRI@1786223967.IQqhM8k---REQ@1786223986.cMuroZ9@@archimate-influence
-last-updated: '2026-08-09T00:21:59Z'
+last-updated: '2026-08-09T01:15:21Z'
 ---
 @startuml why-a-scratchpad
 hide stereotype
@@ -120,14 +120,12 @@ rectangle "Motivation" <<MotivationGrouping>> as DOM_motivation {
   ASS_T9CeYFw -[hidden]right- ASS_ll5ivjY
 
   rectangle "<$archimate_principle{scale=1.2}> Refusal Blocks; Narrowing Warns" <<principle>> as PRI_IQqhM8k
-  GRPT_motivation_1 -[hidden]down- PRI_IQqhM8k
 
   rectangle "Drivers" <<MotivationGrouping>> as GRPT_motivation_2 {
     rectangle "<$archimate_driver{scale=1.2}> Demand for Low-Barrier Participation in Architecture and Planning Work" <<driver>> as DRV_bkoYa2b
     rectangle "<$archimate_driver{scale=1.2}> Informal Sketching as the Normal Start of Architecture and Planning Work" <<driver>> as DRV_yX2Topy
   }
   DRV_bkoYa2b -[hidden]right- DRV_yX2Topy
-  PRI_IQqhM8k -[hidden]down- GRPT_motivation_2
 
   rectangle "<$archimate_goal{scale=1.2}> Anyone Can Contribute Preliminary Structure That Becomes Formal Architecture" <<goal>> as GOL_k6NMPYo
 
@@ -161,22 +159,22 @@ rectangle "Common" <<CommonGrouping>> as DOM_common {
 }
 
 ' Connections
-ASS_T9CeYFw -- DRV_yX2Topy
-ASS_T9CeYFw -- DRV_bkoYa2b
-ASS_ll5ivjY -- DRV_yX2Topy
-DRV_yX2Topy ..> GOL_k6NMPYo
-DRV_bkoYa2b ..> GOL_k6NMPYo
-OUT_1mPt4f9 ..|> GOL_k6NMPYo
-OUT_Bz8wwkG ..|> GOL_k6NMPYo
+ASS_T9CeYFw -down- DRV_yX2Topy
+ASS_T9CeYFw -down- DRV_bkoYa2b
+ASS_ll5ivjY -down- DRV_yX2Topy
+DRV_yX2Topy .down.> GOL_k6NMPYo
+DRV_bkoYa2b .down.> GOL_k6NMPYo
+OUT_1mPt4f9 .up.|> GOL_k6NMPYo
+OUT_Bz8wwkG .up.|> GOL_k6NMPYo
 GOL_k6NMPYo -down- GRP_Lm3DYU0
-REQ_hB0yaDx ..|> OUT_1mPt4f9
-REQ_ElzukOP ..|> OUT_Bz8wwkG
-REQ_IufRPnC ..|> OUT_Bz8wwkG
-REQ_VV89psV ..|> OUT_Bz8wwkG
-REQ_cMuroZ9 ..|> OUT_Bz8wwkG
-REQ_iMJm0xn ..|> OUT_Bz8wwkG
-REQ_vVjYCpP ..|> OUT_Bz8wwkG
-PRI_IQqhM8k ..> REQ_VV89psV
-PRI_IQqhM8k ..> REQ_cMuroZ9
+REQ_hB0yaDx .up.|> OUT_1mPt4f9
+REQ_ElzukOP .up.|> OUT_Bz8wwkG
+REQ_IufRPnC .up.|> OUT_Bz8wwkG
+REQ_VV89psV .up.|> OUT_Bz8wwkG
+REQ_cMuroZ9 .up.|> OUT_Bz8wwkG
+REQ_iMJm0xn .up.|> OUT_Bz8wwkG
+REQ_vVjYCpP .up.|> OUT_Bz8wwkG
+PRI_IQqhM8k .down.> REQ_VV89psV
+PRI_IQqhM8k .down.> REQ_cMuroZ9
 
 @enduml

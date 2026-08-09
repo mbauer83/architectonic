@@ -306,6 +306,42 @@ def test_archimate_renderer_can_opt_in_multiplicity_for_annotated_connections(tm
     assert "OUT_A .up.|> GOL_A : 1 -> 0..* | Required path" in puml
 
 
+def test_realization_still_ranks_upward_when_the_diagram_spans_two_domains(tmp_path: Path) -> None:
+    """Regression: the type-layer rank was consulted only on single-domain diagrams.
+
+    A motivation view that also shows one common-domain element fell to the domain rank
+    alone, which cannot separate two motivation elements — so every realization was
+    emitted bare and GraphViz ranked the realizer ABOVE what it realizes, standing the
+    motivation layer on its head (goal beneath its own outcomes).
+    """
+    renderer = GenericPumlRenderer(_ARCHIMATE_CONFIG)
+    goal = _entity("GOL@1.a.goal", "goal", "Goal A", "GOL_A", subdomain="goals")
+    outcome = _entity("OUT@1.a.outcome", "outcome", "Outcome A", "OUT_A", subdomain="outcomes")
+    requirement = _entity(
+        "REQ@1.a.requirement", "requirement", "Requirement A", "REQ_A", subdomain="requirements"
+    )
+    grouping = _entity(
+        "GRP@1.a.grouping", "grouping", "Everyone", "GRP_A", domain="common", subdomain="grouping"
+    )
+
+    puml = renderer.render_body(
+        "Why a Scratchpad",
+        [goal, outcome, requirement, grouping],
+        [
+            _conn(outcome.artifact_id, goal.artifact_id, "archimate-realization"),
+            _conn(requirement.artifact_id, outcome.artifact_id, "archimate-realization"),
+            _conn(goal.artifact_id, grouping.artifact_id, "archimate-association"),
+        ],
+        "archimate-motivation",
+        tmp_path,
+    )
+
+    assert "OUT_A .up.|> GOL_A" in puml
+    assert "REQ_A .up.|> OUT_A" in puml
+    # The cross-domain association still follows the coarser rank, which separates it first.
+    assert "GOL_A -down- GRP_A" in puml
+
+
 def test_archimate_connections_use_ontology_arrow_styles_not_macros(tmp_path: Path) -> None:
     """ArchiMate connections must render with the type-specific puml_arrow from the ontology.
 

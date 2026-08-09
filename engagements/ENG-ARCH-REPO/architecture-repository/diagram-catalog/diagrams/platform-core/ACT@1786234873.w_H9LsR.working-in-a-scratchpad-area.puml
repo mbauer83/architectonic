@@ -256,7 +256,7 @@ bindings:
   correspondence_kind: represents
   target:
     entity_id: FNC@1786225282.foobGD2.write-lifted-model-content
-last-updated: '2026-08-09T00:46:12Z'
+last-updated: '2026-08-09T01:15:23Z'
 ---
 @startuml working-in-a-scratchpad-area
 skinparam hyperlinkColor #252327

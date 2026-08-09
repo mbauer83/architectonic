@@ -25,9 +25,9 @@ entity-ids-used:
 - FNC@1776637537.YD31f3.enqueue-write-commands
 - FNC@1776633702.b3mOTJ.build-connection-graph
 - FNC@1777390446.dxb6ru.index-repository
+- FNC@1776633708.n_JYA2.alias-resolution
 - PRC@1777399926.gtgYvQ.execute-staged-write-transaction
 - PRC@1777409610.wqtZ0P.coordinate-repository-state
-- FNC@1776633708.n_JYA2.alias-resolution
 connection-ids-used:
 - FNC@1777390460.3ZsfnT---APP@1776149382.lmO0mp@@archimate-association
 - FNC@1777390446.dxb6ru---EVT@1776633084.b6XB2D@@archimate-triggering
@@ -39,25 +39,27 @@ connection-ids-used:
 - PRC@1777399926.gtgYvQ---EVT@1777399929.BKj6NZ@@archimate-triggering
 - EVT@1777399929.BKj6NZ---FNC@1777390446.dxb6ru@@archimate-triggering
 - EVT@1777399929.m-E9P1---FNC@1776637537.YD31f3@@archimate-triggering
-- FNC@1777390446.dxb6ru---FNC@1776633702.b3mOTJ@@archimate-composition
-- FNC@1777390446.dxb6ru---FNC@1776633702.b3mOTJ@@archimate-triggering
-- FNC@1777390446.dxb6ru---FNC@1776633708.n_JYA2@@archimate-composition
-- PRC@1777409610.wqtZ0P---FNC@1776637537.YD31f3@@archimate-composition
 - FNC@1776637537.YD31f3---PRC@1777399926.gtgYvQ@@archimate-triggering
-- PRC@1777409610.wqtZ0P---FNC@1777390446.dxb6ru@@archimate-composition
 - PRC@1777409610.wqtZ0P---FNC@1777390460.3ZsfnT@@archimate-composition
+- PRC@1777409610.wqtZ0P---FNC@1776637537.YD31f3@@archimate-composition
+- PRC@1777409610.wqtZ0P---FNC@1777390446.dxb6ru@@archimate-composition
+- FNC@1777390446.dxb6ru---FNC@1776633702.b3mOTJ@@archimate-composition
+- FNC@1777390446.dxb6ru---FNC@1776633708.n_JYA2@@archimate-composition
 - PRC@1777409610.wqtZ0P---PRC@1777399926.gtgYvQ@@archimate-aggregation
+- FNC@1777390446.dxb6ru---FNC@1776633702.b3mOTJ@@archimate-triggering
 authored-groupings:
 - label: Write Requests
+  stereotype: ''
   entity-ids:
   - EVT@1777390505.tTktu8.artifact-write-requested
   - EVT@1777399928.diAYsj.bulk-write-requested
   - EVT@1777399929.m-E9P1.bulk-delete-requested
 - label: Change Events
+  stereotype: ''
   entity-ids:
   - EVT@1777390504.hDF1Qz.artifacts-promoted
   - EVT@1777390507.UCrh3V.architecture-repository-change-detected
-last-updated: '2026-08-05T18:04:20Z'
+last-updated: '2026-08-09T01:15:28Z'
 ---
 @startuml from-write-to-consistent-state
 hide stereotype
@@ -164,7 +166,7 @@ EVT_diAYsj --> FNC_YD31f3
 PRC_gtgYvQ --> EVT_BKj6NZ
 EVT_BKj6NZ --> FNC_dxb6ru
 EVT_m_E9P1 --> FNC_YD31f3
-FNC_dxb6ru --> FNC_b3mOTJ
 FNC_YD31f3 --> PRC_gtgYvQ
+FNC_dxb6ru --> FNC_b3mOTJ
 
 @enduml

@@ -35,27 +35,29 @@ connection-ids-used:
 - FNC@1777399926.DrKMhV---DOB@1777399930.hExrX3@@archimate-access
 - FNC@1777399928.tRAV0x---EVT@1777399929.BKj6NZ@@archimate-triggering
 - PRC@1777399926.gtgYvQ---EVT@1777399929.BKj6NZ@@archimate-triggering
-- PRC@1777399926.gtgYvQ---FNC@1777399926.DrKMhV@@archimate-composition
 - FNC@1777399926.DrKMhV---FNC@1777399927.hbgFU3@@archimate-triggering
 - FNC@1777399927.g3H3mK---FNC@1777399927.6PI0kV@@archimate-triggering
-- PRC@1777399926.gtgYvQ---FNC@1777399927.6PI0kV@@archimate-composition
 - FNC@1777399927.6PI0kV---FNC@1777399928.tRAV0x@@archimate-triggering
 - FNC@1777399927.hbgFU3---FNC@1777399927.g3H3mK@@archimate-triggering
+- PRC@1777399926.gtgYvQ---FNC@1777399927.6PI0kV@@archimate-composition
+- PRC@1777399926.gtgYvQ---FNC@1777399926.DrKMhV@@archimate-composition
 - PRC@1777399926.gtgYvQ---FNC@1777399927.g3H3mK@@archimate-composition
 - PRC@1777399926.gtgYvQ---FNC@1777399927.hbgFU3@@archimate-composition
 - PRC@1777399926.gtgYvQ---FNC@1777399928.tRAV0x@@archimate-composition
 authored-groupings:
 - label: Performed By
+  stereotype: ''
   entity-ids:
   - APP@1777399925.HOOYAQ.staged-write-transaction-manager
   - APP@1777399924.5n_KQJ.bulk-write-handler
   - APP@1777399925.WK_78v.bulk-delete-handler
   - APP@1777399926.PDJI8F.operation-registry
 - label: State
+  stereotype: ''
   entity-ids:
   - DOB@1777399930.hExrX3.operation-record
   - DOB@1777399929.hhYsiw.staged-repository
-last-updated: '2026-08-05T18:04:23Z'
+last-updated: '2026-08-09T01:15:31Z'
 ---
 @startuml execute-staged-write-transaction
 hide stereotype
@@ -147,10 +149,6 @@ rectangle "Common" <<CommonGrouping>> as DOM_common {
   rectangle "<$archimate_event{scale=1.2}> Staged Repository Committed\n«Application Event»" <<event>> as EVT_BKj6NZ
 
 }
-
-rectangle "Application" <<ApplicationGrouping>> as DOM_application {
-}
-DOM_common -[hidden]down- DOM_application
 
 ' Connections
 APP_5n_KQJ --> PRC_gtgYvQ

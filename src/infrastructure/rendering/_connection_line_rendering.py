@@ -21,13 +21,28 @@ from src.infrastructure.rendering.archimate_relation_rendering import (
 from src.infrastructure.rendering.diagram_connection_overlay import EndpointRouter
 
 
+def rank_direction(src: str, tgt: str, *rank_maps: Mapping[str, int]) -> str | None:
+    """The direction hint the first rank map that separates *src* from *tgt* asks for.
+
+    Ranks are consulted coarsest-first — domain layer, then the type layer inside it — so
+    a relation that crosses domains follows the ontology's layer order and one that stays
+    within a domain follows the reading order the canvas already computed for it. Either
+    way the declared order outranks the arrow's natural rank pull, which is what makes a
+    realization drawn ``requirement ..|> outcome`` still render with the outcome above.
+    """
+    for ranks in rank_maps:
+        src_rank, tgt_rank = ranks.get(src), ranks.get(tgt)
+        if src_rank is not None and tgt_rank is not None and src_rank != tgt_rank:
+            return "down" if src_rank < tgt_rank else "up"
+    return None
+
+
 def render_connection_lines(
     connections: Sequence[ConnectionRecord],
     *,
     alias_by_id: Mapping[str, str],
     children_map: Mapping[str, list[EntityRecord]],
     layout_direction_hints: Mapping[tuple[str, str], str],
-    single_domain: bool,
     group_index_by_alias: Mapping[str, int],
     domain_rank_by_alias: Mapping[str, int],
     specialization_catalog: SpecializationCatalog,
@@ -55,18 +70,9 @@ def render_connection_lines(
         # occurrences, and more than one when a duplicated cluster draws the relation in each
         # copy. The pairs are already deduplicated, so no two arrows land in the same place.
         for src, tgt in endpoint_aliases(conn):
-            direction: str | None = layout_direction_hints.get((src, tgt))
-            if single_domain:
-                src_group = group_index_by_alias.get(src)
-                tgt_group = group_index_by_alias.get(tgt)
-                if direction is None and src_group is not None and tgt_group is not None and src_group != tgt_group:
-                    direction = "down" if src_group < tgt_group else "up"
-            else:
-                src_rank = domain_rank_by_alias.get(src)
-                tgt_rank = domain_rank_by_alias.get(tgt)
-                if direction is None and src_rank is not None and tgt_rank is not None and src_rank != tgt_rank:
-                    # The ontology's layer order outranks the arrow's natural rank pull.
-                    direction = "down" if src_rank < tgt_rank else "up"
+            direction: str | None = layout_direction_hints.get((src, tgt)) or rank_direction(
+                src, tgt, domain_rank_by_alias, group_index_by_alias
+            )
             resolved_specs = [
                 specialization_catalog.get("connection", conn.conn_type, slug) for slug in conn.specializations
             ]

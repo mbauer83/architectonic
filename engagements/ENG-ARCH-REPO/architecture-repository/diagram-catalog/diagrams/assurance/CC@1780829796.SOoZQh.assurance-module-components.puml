@@ -28,6 +28,7 @@ entity-ids-used:
 - APP@1783872532.OZbaBh.repository-upgrade-framework
 - DOB@1784532438.IU4RE4.security-signal-snapshot
 - DOB@1784532443.6ruT_G.security-posture-metrics
+- SRV@1712870400.e5MCiF.configuration-service
 connection-ids-used:
 - APP@1780656430.m-U5S1.assurance-mcp-endpoint-adapter---DOB@1780656431.ApaPcg.assurance-knowledge-base@@archimate-access
 - APP@1780656431.E0fzqZ.confidential-assurance-store---DOB@1780656431.ApaPcg.assurance-knowledge-base@@archimate-access
@@ -51,6 +52,8 @@ connection-ids-used:
 - FNC@1784532421.PILDZV---APP@1776149382.lmO0mp@@archimate-association
 - FNC@1784532421.PILDZV---DOB@1784532438.IU4RE4@@archimate-access
 - FNC@1784532421.PILDZV---DOB@1784532443.6ruT_G@@archimate-access
+- APP@1780656431.E0fzqZ---APP@1780656431.GnsLC8@@archimate-serving
+- FNC@1780656241.3xVBUQ---SRV@1712870400.e5MCiF@@archimate-association
 diagram-entities: {}
 bindings:
 - id: bind-scope
@@ -59,7 +62,7 @@ bindings:
   correspondence_kind: scoped-by
   target:
     entity_id: GRP@1780819145.rW_2nX.assurance-module
-last-updated: '2026-07-29T13:29:27Z'
+last-updated: '2026-08-09T01:14:57Z'
 ---
 @startuml assurance-module---components
 !include <C4/C4_Component>
@@ -99,6 +102,7 @@ System_Ext(APP_OZbaBh, "Repository Upgrade Framework")
 System_Ext(DOB_H_xFye, "Assurance Audit Log")
 System_Ext(DOB_IU4RE4, "Security Signal Snapshot")
 System_Ext(DOB_6ruT_G, "Security Posture Metrics")
+System_Ext(SRV_e5MCiF, "Configuration Service")
 
 GRP_rW_2nX -[hidden]right- APP_lmO0mp
 APP_lmO0mp -[hidden]right- APP_m_U5S1
@@ -110,9 +114,11 @@ APP_KqDjXG -[hidden]right- APP_OZbaBh
 APP_OZbaBh -[hidden]right- DOB_H_xFye
 DOB_H_xFye -[hidden]right- DOB_IU4RE4
 DOB_IU4RE4 -[hidden]right- DOB_6ruT_G
+DOB_6ruT_G -[hidden]right- SRV_e5MCiF
 
 
 APP_m_U5S1 --> DOB_ApaPcg : accesses
+APP_GnsLC8 --> APP_E0fzqZ : uses
 APP_E0fzqZ --> DOB_ApaPcg : accesses
 APP_GnsLC8 --> DOB_H_xFye : accesses
 APP_XFD85E --> DOB_ApaPcg : accesses

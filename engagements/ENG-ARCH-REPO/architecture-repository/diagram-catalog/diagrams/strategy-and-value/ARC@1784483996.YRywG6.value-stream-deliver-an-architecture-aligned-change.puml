@@ -46,14 +46,14 @@ connection-ids-used:
 - VS@1784483014.xrSjjJ---VS@1784483016.C4pV9I@@archimate-flow
 - VS@1784483016.C4pV9I---VS@1784483024.z1Yg0V@@archimate-flow
 - VS@1784483024.z1Yg0V---VS@1784483026.nf-e3Y@@archimate-flow
+- CAP@1784482403.pLMHKe---VS@1784482984.VZ-P2h@@archimate-serving
+- CAP@1784482422.FMvdNM---VS@1784482984.VZ-P2h@@archimate-serving
 - VS@1784482984.VZ-P2h---VS@1784483016.C4pV9I@@archimate-composition
 - VS@1784482984.VZ-P2h---VS@1784483005._fm4gq@@archimate-composition
 - VS@1784482984.VZ-P2h---VS@1784483026.nf-e3Y@@archimate-composition
 - VS@1784482984.VZ-P2h---VS@1784483014.xrSjjJ@@archimate-composition
 - VS@1784482984.VZ-P2h---VS@1784483024.z1Yg0V@@archimate-composition
-- CAP@1784482403.pLMHKe---VS@1784482984.VZ-P2h@@archimate-serving
-- CAP@1784482422.FMvdNM---VS@1784482984.VZ-P2h@@archimate-serving
-last-updated: '2026-07-29T14:08:36Z'
+last-updated: '2026-08-09T01:16:15Z'
 ---
 @startuml value-stream--deliver-an-architecture-aligned-change
 hide stereotype
@@ -158,23 +158,23 @@ rectangle "Strategy" <<StrategyGrouping>> as DOM_strategy {
 CAP_pLMHKe --> VS__fm4gq
 CAP_pLMHKe --> VS_xrSjjJ
 CAP_pLMHKe --> VS_nf_e3Y
-CAP_db4AQh --> VS_VZ_P2h
+CAP_db4AQh -down-> VS_VZ_P2h
 CAP_db4AQh --> VS__fm4gq
 CAP_db4AQh --> VS_xrSjjJ
 CAP_db4AQh --> VS_C4pV9I
 CAP_FMvdNM --> VS_nf_e3Y
-CAP_0kQIHh --> VS_VZ_P2h
+CAP_0kQIHh -down-> VS_VZ_P2h
 CAP_0kQIHh --> VS_z1Yg0V
 STK_K9xTq2 -down- VS_VZ_P2h
-VAL_LK3Cht -- STK_K9xTq2
+VAL_LK3Cht -down- STK_K9xTq2
 STK_aB3dE1 -down- VS_VZ_P2h
-VAL_LK3Cht -- STK_aB3dE1
+VAL_LK3Cht -down- STK_aB3dE1
 VS_VZ_P2h -up- VAL_LK3Cht
 VS__fm4gq ..> VS_xrSjjJ
 VS_xrSjjJ ..> VS_C4pV9I
 VS_C4pV9I ..> VS_z1Yg0V
 VS_z1Yg0V ..> VS_nf_e3Y
-CAP_pLMHKe --> VS_VZ_P2h
-CAP_FMvdNM --> VS_VZ_P2h
+CAP_pLMHKe -down-> VS_VZ_P2h
+CAP_FMvdNM -down-> VS_VZ_P2h
 
 @enduml

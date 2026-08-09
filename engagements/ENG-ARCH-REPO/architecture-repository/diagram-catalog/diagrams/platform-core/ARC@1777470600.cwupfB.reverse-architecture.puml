@@ -36,15 +36,15 @@ connection-ids-used:
 - JNO@1777467627.chqH1_---FNC@1777390449.uzJGYp@@archimate-triggering
 - JNO@1777467627.chqH1_---FNC@1777409722.saMRQ0@@archimate-triggering
 - PRC@1777293168.CYgU64---FNC@1777390445.NGjUCa@@archimate-aggregation
+- PRC@1777293168.CYgU64---FNC@1777390465.SXt2mM@@archimate-composition
+- PRC@1777293168.CYgU64---FNC@1777390462.erPw5B@@archimate-composition
 - PRC@1777293168.CYgU64---FNC@1777390444.lLdx12@@archimate-aggregation
+- PRC@1777293168.CYgU64---FNC@1777390463.oRz6Qe@@archimate-composition
 - PRC@1777293168.CYgU64---FNC@1777409722.rkx32U@@archimate-aggregation
 - PRC@1777293168.CYgU64---FNC@1777409722.saMRQ0@@archimate-aggregation
 - PRC@1777293168.CYgU64---FNC@1777390449.uzJGYp@@archimate-aggregation
 - PRC@1777293168.CYgU64---FNC@1777390448.yuFXVJ@@archimate-aggregation
-- PRC@1777293168.CYgU64---FNC@1777390462.erPw5B@@archimate-composition
-- PRC@1777293168.CYgU64---FNC@1777390463.oRz6Qe@@archimate-composition
-- PRC@1777293168.CYgU64---FNC@1777390465.SXt2mM@@archimate-composition
-last-updated: '2026-07-29T13:29:57Z'
+last-updated: '2026-08-09T01:15:36Z'
 ---
 @startuml reverse-architecture
 hide stereotype

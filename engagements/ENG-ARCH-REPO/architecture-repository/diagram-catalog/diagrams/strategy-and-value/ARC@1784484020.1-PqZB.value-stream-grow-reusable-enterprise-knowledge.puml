@@ -42,7 +42,7 @@ connection-ids-used:
 - VS@1784482994.vEQEgh---VS@1784483082.-JarbD@@archimate-composition
 - VS@1784482994.vEQEgh---VS@1784483061.qCeB0R@@archimate-composition
 - VS@1784482994.vEQEgh---VS@1784483073.shr_q3@@archimate-composition
-last-updated: '2026-07-29T13:30:31Z'
+last-updated: '2026-08-09T01:16:20Z'
 ---
 @startuml value-stream--grow-reusable-enterprise-knowledge
 hide stereotype
@@ -134,15 +134,15 @@ rectangle "Strategy" <<StrategyGrouping>> as DOM_strategy {
 CAP_pLMHKe --> VS_qCeB0R
 CAP_pLMHKe --> VS__JarbD
 CAP_db4AQh --> VS_qCeB0R
-CAP_FMvdNM --> VS_vEQEgh
+CAP_FMvdNM -down-> VS_vEQEgh
 CAP_FMvdNM --> VS_CCdGX1
 CAP_FMvdNM --> VS_shr_q3
 CAP_FMvdNM --> VS__JarbD
 CAP_0kQIHh --> VS_CCdGX1
 STK_Rr9Ss9 -down- VS_vEQEgh
-VAL_RNfrKW -- STK_Rr9Ss9
+VAL_RNfrKW -down- STK_Rr9Ss9
 STK_aB3dE1 -down- VS_vEQEgh
-VAL_RNfrKW -- STK_aB3dE1
+VAL_RNfrKW -down- STK_aB3dE1
 VS_vEQEgh -up- VAL_RNfrKW
 VS_qCeB0R ..> VS_CCdGX1
 VS_CCdGX1 ..> VS_shr_q3

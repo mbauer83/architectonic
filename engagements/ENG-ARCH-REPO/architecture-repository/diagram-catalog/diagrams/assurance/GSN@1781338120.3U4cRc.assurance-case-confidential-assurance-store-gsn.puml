@@ -86,7 +86,7 @@ diagram-entities:
   - source_id: g13
     target_id: sn3
     conn_type: supported-by
-last-updated: '2026-07-05'
+last-updated: '2026-08-09T01:15:00Z'
 ---
 @startuml Assurance_Case_Confidential_Assurance_Store_GSN
 title Assurance Case — Confidential Assurance Store (GSN)

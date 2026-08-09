@@ -46,7 +46,7 @@ connection-ids-used:
 - APP@1780656431.e2zPs6---FNC@1780656241.0hyhf0@@archimate-assignment
 - APP@1780656431.E0fzqZ---FNC@1780656241.3xVBUQ@@archimate-assignment
 - APP@1780656431.E0fzqZ---APP@1780656431.GnsLC8@@archimate-serving
-last-updated: '2026-07-29T14:19:34Z'
+last-updated: '2026-08-09T01:14:52Z'
 ---
 @startuml assurance-application-architecture
 hide stereotype
@@ -144,16 +144,16 @@ rectangle "Application" <<ApplicationGrouping>> as DOM_application {
 }
 
 ' Connections
-APP_m_U5S1 --> DOB_ApaPcg
-APP_E0fzqZ --> DOB_ApaPcg
-APP_XFD85E --> DOB_ApaPcg
+APP_m_U5S1 -down-> DOB_ApaPcg
+APP_E0fzqZ -down-> DOB_ApaPcg
+APP_XFD85E -down-> DOB_ApaPcg
 FNC_elLBp7 -down-> DOB_NtsoOS
-FNC_snlj8X ..|> SRV_ooK3YN
-FNC_0hyhf0 ..|> SRV_ooK3YN
-FNC_3xVBUQ ..|> SRV_ooK3YN
-FNC_9JjZ3X ..|> SRV_ooK3YN
-FNC_n_UPxk ..|> SRV_ooK3YN
-FNC_z9Ac33 ..|> SRV_ooK3YN
+FNC_snlj8X .up.|> SRV_ooK3YN
+FNC_0hyhf0 .up.|> SRV_ooK3YN
+FNC_3xVBUQ .up.|> SRV_ooK3YN
+FNC_9JjZ3X .up.|> SRV_ooK3YN
+FNC_n_UPxk .up.|> SRV_ooK3YN
+FNC_z9Ac33 .up.|> SRV_ooK3YN
 APP_XFD85E -up-> FNC_n_UPxk
 APP_XFD85E -up-> FNC_9JjZ3X
 APP_m_U5S1 -up-> FNC_9JjZ3X

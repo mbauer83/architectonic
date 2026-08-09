@@ -52,9 +52,11 @@ class _CanvasEmitter:
         self._box_counter = 0
         self.group_index = 0
 
-    def _chain_wrapped_unit(self, member_aliases: list[str], box_alias: str | None) -> None:
+    def _chain_wrapped_unit(
+        self, member_aliases: list[str], box_alias: str | None, *, anchored: bool = True
+    ) -> None:
         handle = box_alias if box_alias else (member_aliases[-1] if member_aliases else None)
-        if self._prev_anchor and handle and not self._units_connected(member_aliases):
+        if anchored and self._prev_anchor and handle and not self._units_connected(member_aliases):
             self.lines.append(f"{self._indent}{self._prev_anchor} -[hidden]down- {handle}")
         if handle:
             self._prev_anchor = handle
@@ -68,7 +70,21 @@ class _CanvasEmitter:
             for curr in members
         )
 
-    def chain(self, ordered: list[str], *, axis: str = "down", handle: str | None = None) -> None:
+    def _ranked_by_any_arrow(self, members: list[str]) -> bool:
+        """Does a real arrow already tie *members* to something outside this unit?
+
+        Only meaningful where each unit occupies its own group index — then every such
+        arrow carries a layer-rank direction hint, so a hidden anchor would repeat a
+        constraint the arrow already states. Repeating it is not free: a hidden anchor
+        crossing a box boundary is what makes GraphViz's solver fail outright on some
+        shapes, and inverting the structural relations made this diagram one of them.
+        """
+        member_set = set(members)
+        return any(pair & member_set and pair - member_set for pair in self._connected_pairs)
+
+    def chain(
+        self, ordered: list[str], *, axis: str = "down", handle: str | None = None, anchored: bool = True
+    ) -> None:
         """Chain *ordered* along *axis*; anchor the UNIT to the previous one via its
         handle (the box alias when boxed). Hidden edges touching a box crash GraphViz
         shape-dependently, so the anchor is emitted ONLY between units no real arrow
@@ -77,7 +93,7 @@ class _CanvasEmitter:
             self.lines.append(f"{self._indent}{ordered[idx]} -[hidden]{axis}- {ordered[idx + 1]}")
         unit_head = handle if handle is not None else (ordered[0] if ordered else None)
         unit_tail = handle if handle is not None else (ordered[-1] if ordered else None)
-        if self._prev_anchor and unit_head and not self._units_connected(ordered):
+        if anchored and self._prev_anchor and unit_head and not self._units_connected(ordered):
             self.lines.append(f"{self._indent}{self._prev_anchor} -[hidden]down- {unit_head}")
         if unit_tail:
             self._prev_anchor = unit_tail
@@ -112,10 +128,25 @@ class _CanvasEmitter:
             self._emit_type_box(label, grouped, member_axis=member_axis, box_singletons=box_singletons)
 
     def emit_type_layer(self, label: str, grouped: list[EntityRecord], *, box_singletons: bool) -> None:
-        self._emit_type_box(label, grouped, member_axis="right", box_singletons=box_singletons)
+        """One band of the layered view. Each band ranks on its own group index, so the
+        arrows leaving it are direction-hinted and an anchor would only repeat them."""
+        aliases = [alias for entity in grouped if (alias := normalize_puml_alias(entity.display_alias))]
+        self._emit_type_box(
+            label,
+            grouped,
+            member_axis="right",
+            box_singletons=box_singletons,
+            anchored=not self._ranked_by_any_arrow(aliases),
+        )
 
     def _emit_type_box(
-        self, label: str, grouped: list[EntityRecord], *, member_axis: str, box_singletons: bool
+        self,
+        label: str,
+        grouped: list[EntityRecord],
+        *,
+        member_axis: str,
+        box_singletons: bool,
+        anchored: bool = True,
     ) -> None:
         boxed = len(grouped) > 1 or box_singletons
         box_alias: str | None = None
@@ -142,9 +173,9 @@ class _CanvasEmitter:
                     member_aliases, main_axis=member_axis, cross_axis=cross, indent=self._indent
                 )
             )
-            self._chain_wrapped_unit(member_aliases, box_alias)
+            self._chain_wrapped_unit(member_aliases, box_alias, anchored=anchored)
         else:
-            self.chain(member_aliases, axis=member_axis, handle=box_alias)
+            self.chain(member_aliases, axis=member_axis, handle=box_alias, anchored=anchored)
 
 
 def render_component_canvas(

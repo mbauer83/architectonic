@@ -129,7 +129,7 @@ connections:
   conn_type: seq-to
   source: m9
   target: author
-last-updated: '2026-07-27T19:09:23Z'
+last-updated: '2026-08-09T01:16:03Z'
 ---
 @startuml from-a-write-to-a-consistent--broadcast-state
 title From a Write to a Consistent, Broadcast State

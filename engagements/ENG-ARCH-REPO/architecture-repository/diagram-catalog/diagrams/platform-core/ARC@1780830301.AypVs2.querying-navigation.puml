@@ -18,7 +18,7 @@ connection-ids-used:
 - FNC@1777390444.lLdx12---FNC@1776633080.BdEMPx@@archimate-triggering
 - FNC@1777390444.lLdx12---FNC@1776633704.bFY40B@@archimate-triggering
 - FNC@1777390444.lLdx12---FNC@1776633706.3jpc7O@@archimate-triggering
-last-updated: '2026-07-29T13:30:04Z'
+last-updated: '2026-08-09T01:15:42Z'
 ---
 @startuml querying---navigation
 hide stereotype

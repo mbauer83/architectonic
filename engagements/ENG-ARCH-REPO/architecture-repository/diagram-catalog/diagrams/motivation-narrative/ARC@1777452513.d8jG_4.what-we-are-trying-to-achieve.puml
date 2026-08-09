@@ -72,7 +72,7 @@ authored-groupings:
   stereotype: MotivationGrouping
   entity-ids:
   - GOL@1780655839.AoatzG.provide-first-class-assurance-integrated-with-the-architecture-model
-last-updated: '2026-07-29T13:29:38Z'
+last-updated: '2026-08-09T01:15:10Z'
 ---
 @startuml
 hide stereotype

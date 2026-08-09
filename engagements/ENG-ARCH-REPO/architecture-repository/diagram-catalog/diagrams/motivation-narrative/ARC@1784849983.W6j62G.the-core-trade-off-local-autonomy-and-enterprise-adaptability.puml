@@ -33,21 +33,25 @@ connection-ids-used:
 - VAL@1784845185.tL9l4U---VAL@1784845186.hFq7vl@@archimate-influence
 authored-groupings:
 - label: What Is Ultimately at Stake
+  stereotype: ''
   entity-ids:
   - VAL@1784845186.hFq7vl.enterprise-viability
 - label: Enterprise / Product Worth
+  stereotype: ''
   entity-ids:
   - VAL@1784845185.tL9l4U.enterprise-adaptability
   - VAL@1784845185.2xkN4J.enterprise-efficiency-solution-fitness
 - label: The Integration Pull
+  stereotype: ''
   entity-ids:
   - VAL@1784845184.pIkrDX.unity-of-effort
 - label: "The Differentiation Pull \u2014 Team / Local Worth"
+  stereotype: ''
   entity-ids:
   - VAL@1784845185.-RyIvn.team-solution-fitness
   - VAL@1784845185.fduAv-.local-autonomy
   - VAL@1784845186.56mLXu.local-efficiency
-last-updated: '2026-08-05T18:04:16Z'
+last-updated: '2026-08-09T01:15:16Z'
 ---
 @startuml the-core-trade-off---differentiation-and-integration
 hide stereotype
