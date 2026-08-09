@@ -12,11 +12,20 @@ from src.domain.ontology_representation.artifact_types import (
     DiagramRecord,
     DocumentRecord,
     EntityRecord,
+    ScratchpadNoteRecord,
 )
 
 from ._diagram_fts import diagram_fts_row
 from ._mem_store import _MemStore
 from ._read_pool import ReadConnectionPool
+from ._sqlite_rows import (
+    connection_row,
+    diagram_row,
+    document_row,
+    entity_row,
+    note_fts_row,
+    note_row,
+)
 from ._sqlite_schema import FTS_SQL, SCHEMA_SQL
 
 _INS_ENTITY = (
@@ -38,6 +47,10 @@ _INS_DOCUMENT = (
     "INSERT INTO documents (artifact_id,doc_type,title,status,path,scope,"
     "keywords_json,sections_json,content_text,extra_json,group_name) VALUES (?,?,?,?,?,?,?,?,?,?,?)"
 )
+_INS_NOTE = (
+    "INSERT INTO scratchpad_notes (artifact_id,scratchpad_id,scratchpad_name,note_id,title,body,"
+    "element_type,domain,area,status,path,scope,group_name) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)"
+)
 _INS_EDGE = (
     "INSERT INTO entity_context_edges "
     "(entity_id,connection_id,direction_bucket,other_entity_id,conn_type,"
@@ -55,6 +68,11 @@ _INS_EFTS = (
 _INS_CFTS = "INSERT INTO connections_fts (artifact_id,source,target,conn_type,content_text) VALUES (?,?,?,?,?)"
 _INS_DFTS = "INSERT INTO diagrams_fts (artifact_id,name,diagram_type,artifact_type,member_names) VALUES (?,?,?,?,?)"
 _INS_DOCFTS = "INSERT INTO documents_fts (artifact_id,title,doc_type,keywords,content_text) VALUES (?,?,?,?,?)"
+_INS_NOTEFTS = (
+    "INSERT INTO scratchpad_notes_fts "
+    "(artifact_id,scratchpad_id,title,body,element_type,domain,scratchpad_name)"
+    " VALUES (?,?,?,?,?,?,?)"
+)
 _INS_ATTR_TYPE_REF = (
     "INSERT INTO attribute_type_refs (diagram_id,classifier_local_id,attr_name,type_id) VALUES (?,?,?,?)"
 )
@@ -116,7 +134,7 @@ class _SqliteStore:
         self._mem.index_entity(rec)
         with self._conn:
             self._conn.execute("DELETE FROM entities WHERE artifact_id=?", (rec.artifact_id,))
-            self._conn.execute(_INS_ENTITY, self._entity_row(rec))
+            self._conn.execute(_INS_ENTITY, entity_row(rec, self._scope))
             if self._fts_enabled:
                 self._conn.execute("DELETE FROM entities_fts WHERE artifact_id=?", (rec.artifact_id,))
                 self._conn.execute(
@@ -152,7 +170,7 @@ class _SqliteStore:
         rec = self._mem.put_connection(rec)
         with self._conn:
             self._conn.execute("DELETE FROM connections WHERE artifact_id=?", (rec.artifact_id,))
-            self._conn.execute(_INS_CONNECTION, self._connection_row(rec))
+            self._conn.execute(_INS_CONNECTION, connection_row(rec, self._scope))
             if self._fts_enabled:
                 self._conn.execute("DELETE FROM connections_fts WHERE artifact_id=?", (rec.artifact_id,))
                 self._conn.execute(
@@ -178,7 +196,7 @@ class _SqliteStore:
         self._mem.index_diagram(rec)
         with self._conn:
             self._conn.execute("DELETE FROM diagrams WHERE artifact_id=?", (rec.artifact_id,))
-            self._conn.execute(_INS_DIAGRAM, self._diagram_row(rec))
+            self._conn.execute(_INS_DIAGRAM, diagram_row(rec, self._scope))
             if self._fts_enabled:
                 self._conn.execute("DELETE FROM diagrams_fts WHERE artifact_id=?", (rec.artifact_id,))
                 self._conn.execute(_INS_DFTS, diagram_fts_row(rec, self._mem))
@@ -197,7 +215,7 @@ class _SqliteStore:
         self._mem.document_by_path[rec.path.resolve()] = rec.artifact_id
         with self._conn:
             self._conn.execute("DELETE FROM documents WHERE artifact_id=?", (rec.artifact_id,))
-            self._conn.execute(_INS_DOCUMENT, self._document_row(rec))
+            self._conn.execute(_INS_DOCUMENT, document_row(rec, self._scope))
             if self._fts_enabled:
                 self._conn.execute("DELETE FROM documents_fts WHERE artifact_id=?", (rec.artifact_id,))
                 self._conn.execute(
@@ -220,6 +238,33 @@ class _SqliteStore:
             if self._fts_enabled:
                 self._conn.execute("DELETE FROM documents_fts WHERE artifact_id=?", (artifact_id,))
 
+    def replace_scratchpad_notes(self, scratchpad_id: str, notes: list[ScratchpadNoteRecord]) -> None:
+        """Re-index one scratchpad's notes, whole.
+
+        Note-grained upsert would be the wrong seam: a scratchpad is loaded, saved and versioned
+        whole, and a note that vanished from the file has no event of its own to be deleted by. So
+        the unit of change here is the file, exactly as it is everywhere else in this feature.
+        """
+        self.delete_scratchpad_notes(scratchpad_id)
+        self._mem.scratchpad_notes.update({rec.artifact_id: rec for rec in notes})
+        if notes:
+            self._mem.notes_by_scratchpad[scratchpad_id] = {rec.artifact_id for rec in notes}
+        with self._conn:
+            self._conn.executemany(_INS_NOTE, [note_row(rec, self._scope) for rec in notes])
+            if self._fts_enabled:
+                self._conn.executemany(_INS_NOTEFTS, [note_fts_row(rec) for rec in notes])
+
+    def delete_scratchpad_notes(self, scratchpad_id: str) -> None:
+        addresses = self._mem.notes_by_scratchpad.pop(scratchpad_id, set())
+        for address in addresses:
+            self._mem.scratchpad_notes.pop(address, None)
+        with self._conn:
+            if self._fts_enabled:
+                self._conn.execute(
+                    "DELETE FROM scratchpad_notes_fts WHERE scratchpad_id=?", (scratchpad_id,)
+                )
+            self._conn.execute("DELETE FROM scratchpad_notes WHERE scratchpad_id=?", (scratchpad_id,))
+
     def upsert_attribute_type_refs(self, diagram_id: str, refs: list[tuple[str, str, str]]) -> None:
         self._mem.attribute_type_refs[diagram_id] = refs
         with self._conn:
@@ -241,18 +286,27 @@ class _SqliteStore:
                 "connections",
                 "diagrams",
                 "documents",
+                "scratchpad_notes",
                 "entity_context_edges",
                 "entity_context_stats",
                 "attribute_type_refs",
             ):
                 self._conn.execute(f"DELETE FROM {t}")  # noqa: S608
             if self._fts_enabled:
-                for t in ("entities_fts", "connections_fts", "diagrams_fts", "documents_fts"):
+                for t in (
+                    "entities_fts", "connections_fts", "diagrams_fts", "documents_fts",
+                    "scratchpad_notes_fts",
+                ):
                     self._conn.execute(f"DELETE FROM {t}")  # noqa: S608
-            self._conn.executemany(_INS_ENTITY, [self._entity_row(r) for r in self._mem.entities.values()])
-            self._conn.executemany(_INS_CONNECTION, [self._connection_row(r) for r in self._mem.connections.values()])
-            self._conn.executemany(_INS_DIAGRAM, [self._diagram_row(r) for r in self._mem.diagrams.values()])
-            self._conn.executemany(_INS_DOCUMENT, [self._document_row(r) for r in self._mem.documents.values()])
+            self._conn.executemany(_INS_ENTITY, [entity_row(r, self._scope) for r in self._mem.entities.values()])
+            self._conn.executemany(
+                _INS_CONNECTION, [connection_row(r, self._scope) for r in self._mem.connections.values()]
+            )
+            self._conn.executemany(_INS_DIAGRAM, [diagram_row(r, self._scope) for r in self._mem.diagrams.values()])
+            self._conn.executemany(_INS_DOCUMENT, [document_row(r, self._scope) for r in self._mem.documents.values()])
+            self._conn.executemany(
+                _INS_NOTE, [note_row(r, self._scope) for r in self._mem.scratchpad_notes.values()]
+            )
             attr_ref_rows = [
                 (diagram_id, clf_id, attr_name, type_id)
                 for diagram_id, refs in self._mem.attribute_type_refs.items()
@@ -292,6 +346,9 @@ class _SqliteStore:
                         for r in self._mem.documents.values()
                     ],
                 )
+                self._conn.executemany(
+                    _INS_NOTEFTS, [note_fts_row(r) for r in self._mem.scratchpad_notes.values()]
+                )
         self.rebuild_context_projection()
 
     # ── Projection maintenance ────────────────────────────────────────────────
@@ -330,77 +387,6 @@ class _SqliteStore:
                 "FROM entity_context_edges WHERE entity_id=? GROUP BY entity_id",
                 (entity_id,),
             )
-
-    # ── Row builders ─────────────────────────────────────────────────────────
-
-    def _entity_row(self, r: EntityRecord) -> tuple[object, ...]:
-        return (
-            r.artifact_id,
-            r.artifact_type,
-            r.name,
-            r.version,
-            r.status,
-            r.domain,
-            r.subdomain,
-            str(r.path),
-            self._scope(r.path),
-            json.dumps(list(r.keywords)),
-            json.dumps(r.extra, sort_keys=True),
-            r.content_text,
-            json.dumps(r.display_blocks, sort_keys=True),
-            r.display_label,
-            r.display_alias,
-            r.host_diagram_id,
-            r.group,
-        )
-
-    def _connection_row(self, r: ConnectionRecord) -> tuple[str, ...]:
-        return (
-            r.artifact_id,
-            r.source,
-            r.target,
-            r.conn_type,
-            r.version,
-            r.status,
-            str(r.path),
-            self._scope(r.path),
-            json.dumps(r.extra, sort_keys=True),
-            r.content_text,
-            json.dumps(list(r.associated_entities)),
-            r.src_multiplicity,
-            r.tgt_multiplicity,
-            json.dumps(list(r.specializations)),
-            r.group,
-        )
-
-    def _diagram_row(self, r: DiagramRecord) -> tuple[str, ...]:
-        return (
-            r.artifact_id,
-            r.artifact_type,
-            r.name,
-            r.diagram_type,
-            r.version,
-            r.status,
-            str(r.path),
-            self._scope(r.path),
-            json.dumps(r.extra, sort_keys=True),
-            r.group,
-        )
-
-    def _document_row(self, r: DocumentRecord) -> tuple[str, ...]:
-        return (
-            r.artifact_id,
-            r.doc_type,
-            r.title,
-            r.status,
-            str(r.path),
-            self._scope(r.path),
-            json.dumps(list(r.keywords)),
-            json.dumps(list(r.sections)),
-            r.content_text,
-            json.dumps(r.extra, sort_keys=True),
-            r.group,
-        )
 
     def _context_rows(self, rec: ConnectionRecord) -> list[tuple[str, ...]]:
         src = self._mem.entities.get(rec.source)

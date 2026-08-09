@@ -30,12 +30,12 @@ from src.application.scratchpad.ports import (
     ScratchpadVersionConflictError,
 )
 from src.domain.artifact_id import stable_id
-from src.domain.repository.repo_layout import SCRATCHPADS
+from src.domain.repository.repo_layout import SCRATCHPAD_SUFFIX, SCRATCHPADS
 from src.domain.scratchpad import Scratchpad
 
-#: The file suffix. Two dots so the kind is readable in a directory listing and a glob for
-#: scratchpads cannot also match a stray `.yaml` someone dropped beside them.
-SUFFIX = ".scratchpad.yaml"
+#: The file suffix, re-exported from the layout module so this repository and the index scan for
+#: the same thing. Every caller already asks this module for it.
+SUFFIX = SCRATCHPAD_SUFFIX
 
 _UNCATEGORIZED = "uncategorized"
 

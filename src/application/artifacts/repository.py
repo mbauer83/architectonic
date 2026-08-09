@@ -22,12 +22,16 @@ from src.domain.ontology_representation.artifact_types import (
     DiagramRecord,
     DocumentRecord,
     EntityRecord,
+    RecordType,
     RepoMount,
+    ScratchpadNoteRecord,
     SearchResult,
     SemanticSearchProvider,
 )
 
-_RecordType = Literal["entity", "connection", "diagram", "document"]
+#: The one vocabulary, re-aliased for this module's signatures. It used to be spelled out here as a
+#: fourth copy of the same Literal, which is exactly how a fifth kind goes missing in one place.
+_RecordType = RecordType
 
 
 class ArtifactRepository:
@@ -110,6 +114,20 @@ class ArtifactRepository:
         group: str | None = None,
     ) -> list[DocumentRecord]:
         return self._store.list_documents(doc_type=doc_type, status=status, group=group)
+
+    def get_scratchpad_note(self, artifact_id: str) -> ScratchpadNoteRecord | None:
+        return self._store.get_scratchpad_note(artifact_id)
+
+    def list_scratchpad_notes(
+        self,
+        *,
+        scratchpad_id: str | None = None,
+        status: str | None = None,
+        group: str | None = None,
+    ) -> list[ScratchpadNoteRecord]:
+        return self._store.list_scratchpad_notes(
+            scratchpad_id=scratchpad_id, status=status, group=group
+        )
 
     def list_entities(
         self,
@@ -265,6 +283,7 @@ class ArtifactRepository:
         include_connections: bool = True,
         include_diagrams: bool = True,
         include_documents: bool = True,
+        include_scratchpad_notes: bool = True,
         prefer_record_type: _RecordType | None = None,
         strict_record_type: bool = False,
         excluded_entity_types: frozenset[str] = frozenset(),
@@ -280,6 +299,7 @@ class ArtifactRepository:
             include_connections=include_connections,
             include_diagrams=include_diagrams,
             include_documents=include_documents,
+            include_scratchpad_notes=include_scratchpad_notes,
             prefer_record_type=prefer_record_type,
             strict_record_type=strict_record_type,
             excluded_entity_types=self._excluded_entity_types | excluded_entity_types,

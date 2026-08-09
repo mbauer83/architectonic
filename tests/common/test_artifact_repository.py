@@ -29,6 +29,7 @@ from src.domain.ontology_representation.artifact_types import (
     DocumentRecord,
     EntityRecord,
     RepoMount,
+    ScratchpadNoteRecord,
     SemanticSearchProvider,
     summary_from_connection,
     summary_from_diagram,
@@ -313,6 +314,18 @@ class FakeStore:
         kinds: frozenset[str] = ALL_SEARCHABLE_KINDS,
         excluded_entity_types: frozenset[str] = frozenset(),
     ) -> list[tuple[str, str, float]]:
+        return []
+
+    def get_scratchpad_note(self, artifact_id: str) -> ScratchpadNoteRecord | None:
+        return None
+
+    def list_scratchpad_notes(
+        self,
+        *,
+        scratchpad_id: str | None = None,
+        status: str | None = None,
+        group: str | None = None,
+    ) -> list[ScratchpadNoteRecord]:
         return []
 
     # Scope

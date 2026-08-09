@@ -10,6 +10,7 @@ from src.domain.ontology_representation.artifact_types import (
     DiagramRecord,
     DocumentRecord,
     EntityRecord,
+    ScratchpadNoteRecord,
 )
 
 from ._combined_support import dispatch_both, first_not_none, merge_search_rows, merge_sorted
@@ -75,6 +76,27 @@ class CombinedSearchMixin:
     ) -> list[DocumentRecord]:
         left = self._engagement.list_documents(doc_type=doc_type, status=status, group=group)
         right = self._enterprise.list_documents(doc_type=doc_type, status=status, group=group)
+        return merge_sorted(left, right, lambda r: r.artifact_id)
+
+    def get_scratchpad_note(self, artifact_id: str) -> ScratchpadNoteRecord | None:
+        return first_not_none(
+            self._engagement.get_scratchpad_note(artifact_id),
+            lambda: self._enterprise.get_scratchpad_note(artifact_id),
+        )
+
+    def list_scratchpad_notes(
+        self,
+        *,
+        scratchpad_id: str | None = None,
+        status: str | None = None,
+        group: str | None = None,
+    ) -> list[ScratchpadNoteRecord]:
+        left = self._engagement.list_scratchpad_notes(
+            scratchpad_id=scratchpad_id, status=status, group=group
+        )
+        right = self._enterprise.list_scratchpad_notes(
+            scratchpad_id=scratchpad_id, status=status, group=group
+        )
         return merge_sorted(left, right, lambda r: r.artifact_id)
 
     def list_artifacts(

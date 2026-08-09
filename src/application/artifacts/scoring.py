@@ -6,6 +6,7 @@ from src.domain.ontology_representation.artifact_types import (
     DiagramRecord,
     DocumentRecord,
     EntityRecord,
+    ScratchpadNoteRecord,
 )
 from src.domain.search_terms import expand_tokens
 
@@ -83,4 +84,25 @@ def score_document(rec: DocumentRecord, query_lc: str, tokens: list[str]) -> flo
     score += token_match_score(rec.doc_type, query_lc, expanded, 2.0)
     score += token_match_score(" ".join(rec.keywords), query_lc, expanded, 1.5)
     score += content_score(rec.content_text, expanded, 1.0)
+    return score
+
+
+def score_scratchpad_note(rec: ScratchpadNoteRecord, query_lc: str, tokens: list[str]) -> float:
+    """Deliberately the lowest weights of any kind, and the shape says why.
+
+    A note is a half-formed thought; an entity is a commitment. So a note's title carries the weight
+    a document's *doc type* does rather than the weight of its title, its body counts half what a
+    document's content does, and its address is not matched at all — a note id is minted from a
+    clock and matching one would only ever be an accident.
+
+    This alone does not keep notes below model content: bm25 and the token-match supplement are on
+    incomparable scales, so the guarantee lives in `_rank_balanced`, which draws the subordinate
+    kinds last. The weights are what keeps a note from dominating *other notes* on a stray word.
+    """
+    expanded = expand_tokens(tokens)
+    score = 0.0
+    score += token_match_score(rec.title, query_lc, expanded, 2.0)
+    score += token_match_score(rec.element_type, query_lc, expanded, 1.0)
+    score += token_match_score(rec.domain, query_lc, expanded, 1.0)
+    score += content_score(rec.body, expanded, 0.5)
     return score

@@ -29,6 +29,7 @@ from src.domain.ontology_representation.artifact_types import (
     DocumentRecord,
     EntityRecord,
     RepoMount,
+    ScratchpadNoteRecord,
     summary_from_connection,
     summary_from_diagram,
     summary_from_document,
@@ -42,11 +43,13 @@ from ._mem_store import _MemStore
 from ._reverse_reference_queries import _EntityIds, _ReverseReferenceQueries
 from ._rwlock import _RWLock
 from ._scope_registry import _ScopeRegistry
+from ._scratchpad_note_queries import _ScratchpadNoteQueries
 from ._service_incremental import (
     _apply_entity_record,
     _apply_outgoing_records,
     apply_diagram_change,
     apply_document_change,
+    apply_scratchpad_change,
     classify_path_change,
 )
 from ._service_scan import scan_mount
@@ -55,7 +58,7 @@ from .bootstrap import normalize_mounts, service_key
 from .types import EntityContextConnection, EntityContextReadModel
 from .versioning import ReadModelVersion, build_read_model_etag
 
-_T = TypeVar("_T", EntityRecord, ConnectionRecord, DiagramRecord, DocumentRecord)
+_T = TypeVar("_T", EntityRecord, ConnectionRecord, DiagramRecord, DocumentRecord, ScratchpadNoteRecord)
 
 _CHANGE_APPLIERS = {
     "outgoing": lambda service, path, data: _apply_outgoing_records(path, data, service._mem, service._db),
@@ -66,10 +69,13 @@ _CHANGE_APPLIERS = {
         attr_type_ref_fn=service._attr_type_ref_extractor,
     ),
     "document": lambda service, path, data: apply_document_change(path, service._mem, service._db, parsed=data),
+    "scratchpad": lambda service, path, data: apply_scratchpad_change(
+        path, service._mem, service._db, parsed=data
+    ),
 }
 
 
-class ArtifactIndex(_ReverseReferenceQueries):
+class ArtifactIndex(_ReverseReferenceQueries, _ScratchpadNoteQueries):
     def __init__(self, repo_root: Path | list[Path] | list[RepoMount]) -> None:
         mounts = normalize_mounts(repo_root)
         self.repo_mounts: list[RepoMount] = mounts

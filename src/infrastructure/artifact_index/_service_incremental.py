@@ -17,7 +17,14 @@ from src.application.artifacts.parsing import (
     parse_entity,
     parse_outgoing_file,
 )
-from src.application.repo_path_helpers import all_model_roots, group_fn_diagram, group_fn_document, group_fn_entity
+from src.application.repo_path_helpers import (
+    all_model_roots,
+    group_fn_diagram,
+    group_fn_document,
+    group_fn_entity,
+    group_fn_scratchpad,
+)
+from src.application.scratchpad.indexing import parse_scratchpad_notes
 from src.config.repo_paths import DOCS, MODEL
 from src.domain.ontology_representation.artifact_types import (
     ConnectionRecord,
@@ -25,7 +32,9 @@ from src.domain.ontology_representation.artifact_types import (
     DocumentRecord,
     EntityRecord,
     RepoMount,
+    ScratchpadNoteRecord,
 )
+from src.domain.repository.repo_layout import SCRATCHPAD_SUFFIX, SCRATCHPADS
 
 from ._mem_store import _MemStore
 from ._service_scan import _AttrTypeRefFn
@@ -77,6 +86,17 @@ def is_document_path(path: Path, mounts: list[RepoMount]) -> bool:
     return rel.startswith(f"{DOCS}/") and path.suffix == ".md"
 
 
+def is_scratchpad_path(path: Path, mounts: list[RepoMount]) -> bool:
+    mount = mount_for_path(path, mounts)
+    if mount is None:
+        return False
+    try:
+        rel = path.resolve().relative_to(mount.root.resolve()).as_posix()
+    except ValueError:
+        return False
+    return rel.startswith(f"{SCRATCHPADS}/") and path.name.endswith(SCRATCHPAD_SUFFIX)
+
+
 # ── Incremental updates ───────────────────────────────────────────────────────
 
 # Each change type has two phases:
@@ -125,6 +145,14 @@ def parse_document_for_path(path: Path, mounts: list[RepoMount]) -> DocumentReco
     return replace(doc, group=group_fn_document(path, mount.root)) if mount is not None else doc
 
 
+def parse_scratchpad_for_path(path: Path, mounts: list[RepoMount]) -> list[ScratchpadNoteRecord]:
+    """Every note the file holds now — empty when it was deleted, which is what removes its rows."""
+    mount = mount_for_path(path, mounts)
+    if not path.exists() or mount is None:
+        return []
+    return parse_scratchpad_notes(path, group=group_fn_scratchpad(path, mount.root))
+
+
 def classify_path_change(
     path: Path, mounts: list[RepoMount], *, domain_names: frozenset[str]
 ) -> tuple[str, Path, object] | None:
@@ -135,6 +163,8 @@ def classify_path_change(
         return ("diagram", path, parse_diagram_for_path(path, mounts))
     if is_document_path(path, mounts):
         return ("document", path, parse_document_for_path(path, mounts))
+    if is_scratchpad_path(path, mounts):
+        return ("scratchpad", path, parse_scratchpad_for_path(path, mounts))
     if path.suffix == ".md":
         return ("entity", path, parse_entity_for_path(path, mounts, domain_names=domain_names))
     return None
@@ -225,6 +255,23 @@ def _delete_diagram_connections(diagram_id: str, mem: _MemStore, db: _SqliteStor
     for aid in owned:
         db.delete_connection(aid)
 
+
+
+def apply_scratchpad_change(
+    path: Path,
+    mem: _MemStore,
+    db: _SqliteStore,
+    *,
+    parsed: list[ScratchpadNoteRecord],
+) -> None:
+    """Re-index one scratchpad's notes, whole.
+
+    The scratchpad id comes from the notes when there are any and from the path when there are
+    none — a file emptied of notes, or deleted, still has to take its old rows with it, and the
+    filename carries the id because that is what the repository names it by.
+    """
+    scratchpad_id = parsed[0].scratchpad_id if parsed else path.name[: -len(SCRATCHPAD_SUFFIX)]
+    db.replace_scratchpad_notes(scratchpad_id, parsed)
 
 
 def apply_document_change(

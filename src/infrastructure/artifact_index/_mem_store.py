@@ -10,6 +10,7 @@ from src.domain.ontology_representation.artifact_types import (
     DiagramRecord,
     DocumentRecord,
     EntityRecord,
+    ScratchpadNoteRecord,
 )
 
 
@@ -19,6 +20,11 @@ class _MemStore:
     connections: dict[str, ConnectionRecord] = field(default_factory=dict)
     diagrams: dict[str, DiagramRecord] = field(default_factory=dict)
     documents: dict[str, DocumentRecord] = field(default_factory=dict)
+    scratchpad_notes: dict[str, ScratchpadNoteRecord] = field(default_factory=dict)
+    """note address → the note. Keyed by `{scratchpad_id}#note/{note_id}`; a note id is unique
+    only within its own scratchpad."""
+    notes_by_scratchpad: dict[str, set[str]] = field(default_factory=dict)
+    """scratchpad artifact_id → the addresses of its notes, so re-indexing one file is O(K)."""
     entity_by_path: dict[Path, str] = field(default_factory=dict)
     connections_by_path: dict[Path, set[str]] = field(default_factory=dict)
     connections_by_entity: dict[str, set[str]] = field(default_factory=dict)
@@ -85,12 +91,21 @@ class _MemStore:
     def document(self, artifact_id: str) -> DocumentRecord | None:
         return self.documents.get(self.canonical_id(artifact_id))
 
+    def scratchpad_note(self, artifact_id: str) -> ScratchpadNoteRecord | None:
+        """A note by its composed address. Not canonicalized: `canonical_id` reads the *last* dot
+        of an id to find its stable stem, and a note address ends in a minted local id with no
+        slug, so there is nothing to reconcile and a stale-slug scratchpad id is not a form
+        anything produces."""
+        return self.scratchpad_notes.get(artifact_id)
+
     def clear(self) -> None:
         for attr in (
             "entities",
             "connections",
             "diagrams",
             "documents",
+            "scratchpad_notes",
+            "notes_by_scratchpad",
             "entity_by_path",
             "connections_by_path",
             "connections_by_entity",
@@ -112,7 +127,10 @@ class _MemStore:
         no caller has to remember that a freshly scanned set of records may still name
         entities by a slug they no longer carry.
         """
-        for attr in ("entities", "connections", "diagrams", "documents", "identity_candidates", "attribute_type_refs"):
+        for attr in (
+            "entities", "connections", "diagrams", "documents", "scratchpad_notes",
+            "identity_candidates", "attribute_type_refs",
+        ):
             getattr(self, attr).clear()
             getattr(self, attr).update(getattr(other, attr))
         self.canonicalize_connection_endpoints()
@@ -189,6 +207,10 @@ class _MemStore:
             for ref_id in _diagram_reference_ids(r):
                 self.diagrams_by_reference.setdefault(ref_id, set()).add(r.artifact_id)
         self.document_by_path = {r.path.resolve(): r.artifact_id for r in self.documents.values()}
+        notes_by_pad: dict[str, set[str]] = {}
+        for r in self.scratchpad_notes.values():
+            notes_by_pad.setdefault(r.scratchpad_id, set()).add(r.artifact_id)
+        self.notes_by_scratchpad = notes_by_pad
         by_path: dict[Path, set[str]] = {}
         by_entity: dict[str, set[str]] = {}
         by_diagram: dict[str, set[str]] = {}

@@ -17,7 +17,12 @@ from src.application._diagram_entity_extraction import (
 from src.application._diagram_entity_extraction import (
     extract_diagram_entities as _extract_diagram_entities,
 )
-from src.application.artifacts.parsing import parse_diagram, parse_document, parse_entity, parse_outgoing_file
+from src.application.artifacts.parsing import (
+    parse_diagram,
+    parse_document,
+    parse_entity,
+    parse_outgoing_file,
+)
 from src.application.ports import Candidate
 from src.application.repo_path_helpers import (
     all_model_roots,
@@ -26,7 +31,10 @@ from src.application.repo_path_helpers import (
     group_fn_diagram,
     group_fn_document,
     group_fn_entity,
+    group_fn_scratchpad,
+    scratchpads_root,
 )
+from src.application.scratchpad.indexing import parse_scratchpad_notes
 from src.config.repo_paths import RENDERED
 from src.domain.artifact_id import stable_id
 from src.domain.ontology_representation.artifact_types import (
@@ -37,6 +45,7 @@ from src.domain.ontology_representation.artifact_types import (
     EntityRecord,
     RepoMount,
 )
+from src.domain.repository.repo_layout import SCRATCHPAD_SUFFIX
 
 from ._mem_store import _MemStore
 
@@ -139,6 +148,22 @@ def _scan_document_records(repo_root: Path, mem: _MemStore) -> None:
             _insert_mounted(replace(doc, group=grp), "document", repo_root, mem.documents)
 
 
+def _scan_scratchpad_records(repo_root: Path, mem: _MemStore) -> None:
+    """Index every note on every scratchpad under this mount.
+
+    Not routed through `_insert_mounted`: that guards against two files claiming one artifact id,
+    and a note's address is composed from its scratchpad's, so the id it would guard is already
+    guarded one level up. Two scratchpads sharing an id is a duplicate *scratchpad*, which the
+    scratchpad repository refuses at the point it can say so.
+    """
+    root = scratchpads_root(repo_root)
+    if not root.exists():
+        return
+    for path in sorted(root.rglob(f"*{SCRATCHPAD_SUFFIX}")):
+        for note in parse_scratchpad_notes(path, group=group_fn_scratchpad(path, repo_root)):
+            mem.scratchpad_notes[note.artifact_id] = note
+
+
 def scan_mount(
     mount: RepoMount,
     mem: _MemStore,
@@ -150,3 +175,4 @@ def scan_mount(
     _scan_model_records(mount, mem, domain_names=domain_names)
     _scan_diagram_records(mount.root, mem, workspace_types=workspace_types, attr_type_ref_fn=attr_type_ref_fn)
     _scan_document_records(mount.root, mem)
+    _scan_scratchpad_records(mount.root, mem)

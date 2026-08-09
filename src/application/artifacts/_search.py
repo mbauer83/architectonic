@@ -10,6 +10,7 @@ from src.application.artifacts.scoring import (
     score_diagram,
     score_document,
     score_entity,
+    score_scratchpad_note,
     tokenize,
 )
 from src.application.ports import ReadableArtifactStore
@@ -17,11 +18,13 @@ from src.domain.ontology_representation.artifact_types import (
     ALL_SEARCHABLE_KINDS,
     KIND_TO_RECORD_TYPE,
     RECORD_TYPE_TO_KIND,
+    SUBORDINATE_RECORD_TYPES,
     ConnectionRecord,
     DiagramRecord,
     DocumentRecord,
     EntityRecord,
     RecordType,
+    ScratchpadNoteRecord,
     SearchableKind,
     SearchHit,
     SearchResult,
@@ -53,11 +56,16 @@ def search_artifacts(
     include_connections: bool = True,
     include_diagrams: bool = True,
     include_documents: bool = True,
+    include_scratchpad_notes: bool = True,
     prefer_record_type: RecordType | None = None,
     strict_record_type: bool = False,
     excluded_entity_types: frozenset[str] = frozenset(),
 ) -> SearchResult:
-    """Backward-compatible wrapper: maps old boolean flags to included_kinds."""
+    """One flag per kind, as the REST query parameters have — mapped to the kind set ``search`` wants.
+
+    Notes are in by default because "indexed and findable" was the decision; the one caller that
+    must not see them is the *picker*, which offers content to reference and turns them off by name.
+    """
     kinds: set[str] = set()
     if include_entities:
         kinds.add("entities")
@@ -67,6 +75,8 @@ def search_artifacts(
         kinds.add("diagrams")
     if include_documents:
         kinds.add("documents")
+    if include_scratchpad_notes:
+        kinds.add("scratchpad-notes")
     # strict_record_type: restrict search to just the preferred kind.
     if strict_record_type and prefer_record_type is not None:
         kind = RECORD_TYPE_TO_KIND.get(prefer_record_type)
@@ -132,7 +142,9 @@ def search(
     fts_kinds_with_hits: set[str] = set()
 
     for artifact_id, record_type, score in fts_hits:
-        artifact: EntityRecord | ConnectionRecord | DiagramRecord | DocumentRecord | None
+        artifact: (
+            EntityRecord | ConnectionRecord | DiagramRecord | DocumentRecord | ScratchpadNoteRecord | None
+        )
         match record_type:
             case "entity":
                 artifact = store.get_entity(artifact_id)
@@ -148,6 +160,10 @@ def search(
                     continue
             case "diagram":
                 artifact = store.get_diagram(artifact_id)
+                if artifact is None:
+                    continue
+            case "scratchpad-note":
+                artifact = store.get_scratchpad_note(artifact_id)
                 if artifact is None:
                     continue
             case _:
@@ -172,6 +188,8 @@ def search(
                 scored = _search_diagrams(store, query_lc, tokens)
             case "documents":
                 scored = _search_documents(store, query_lc, tokens)
+            case "scratchpad-notes":
+                scored = _search_scratchpad_notes(store, query_lc, tokens)
             case _:
                 scored = []
         for h in scored:
@@ -196,6 +214,18 @@ def _rank_balanced(hits: list[SearchHit], limit: int, prefer_rt: str | None) -> 
     kinds (diagrams, documents) out of the result window entirely. Instead, rank within
     each kind by its own score, then round-robin across kinds — ordering the kinds by
     their strongest hit (``prefer_rt`` first) — so every matching kind stays visible.
+
+    ``SUBORDINATE_RECORD_TYPES`` do not take part in the round-robin at all: they fill whatever
+    slots are left once every other kind has had its turn. A scratchpad note is a half-formed
+    thought and an entity is a commitment, and "never outranks model content, documents or
+    diagrams" was the condition notes were allowed into the index under — a round-robin honours it
+    only against the *first* hit of each other kind, and would still put a note above the second
+    entity. A preference cannot lift them either.
+
+    It is enforced here rather than by weights because the two scales cannot be compared: bm25 and
+    the token-match supplement say nothing about each other, so only the draw order can promise it.
+    The cost is real and accepted — a query whose window is filled by model content will not show a
+    note even if the note matched it exactly.
     """
     by_kind: dict[str, list[SearchHit]] = {}
     for h in hits:
@@ -203,17 +233,26 @@ def _rank_balanced(hits: list[SearchHit], limit: int, prefer_rt: str | None) -> 
     for group in by_kind.values():
         group.sort(key=lambda h: h.score, reverse=True)
     order = sorted(by_kind, key=lambda rt: by_kind[rt][0].score, reverse=True)
-    if prefer_rt in by_kind:
+    if prefer_rt in by_kind and prefer_rt not in SUBORDINATE_RECORD_TYPES:
         order = [prefer_rt, *(rt for rt in order if rt != prefer_rt)]
     ranked: list[SearchHit] = []
     rank = 0
     while len(ranked) < limit:
-        drawn = [by_kind[rt][rank] for rt in order if rank < len(by_kind[rt])]
+        drawn = [
+            by_kind[rt][rank]
+            for rt in order
+            if rt not in SUBORDINATE_RECORD_TYPES and rank < len(by_kind[rt])
+        ]
         if not drawn:
             break
         ranked.extend(drawn)
         rank += 1
-    return ranked[:limit]
+    subordinate = sorted(
+        (h for rt in order if rt in SUBORDINATE_RECORD_TYPES for h in by_kind[rt]),
+        key=lambda h: h.score,
+        reverse=True,
+    )
+    return (ranked + subordinate)[:limit] if len(ranked) < limit else ranked[:limit]
 
 
 def _search_entities(
@@ -252,4 +291,12 @@ def _search_documents(store: ReadableArtifactStore, query_lc: str, tokens: list[
         SearchHit(score=s, record_type="document", record=r)
         for r in store.list_documents()
         if (s := score_document(r, query_lc, tokens)) > 0
+    ]
+
+
+def _search_scratchpad_notes(store: ReadableArtifactStore, query_lc: str, tokens: list[str]) -> list[SearchHit]:
+    return [
+        SearchHit(score=s, record_type="scratchpad-note", record=r)
+        for r in store.list_scratchpad_notes()
+        if (s := score_scratchpad_note(r, query_lc, tokens)) > 0
     ]

@@ -20,6 +20,11 @@ from .types import (
 # Columns: artifact_id(UNINDEXED), name, artifact_type, domain, subdomain, keywords, content_text, display_label
 _ENT_WEIGHTS = "0, 15.0, 1.0, 1.0, 1.0, 4.0, 0.5, 4.0"
 
+# A note's title matters most, but only about as much as an entity's *keywords* do — the ranking
+# guarantee is in `_rank_balanced`, and these weights only order notes against one another.
+# Columns: artifact_id(UNINDEXED), title, body, element_type, domain, scratchpad_name
+_NOTE_WEIGHTS = "0, 4.0, 0.5, 1.0, 1.0, 0.5"
+
 
 def _entity_exclusion_filter(excluded_entity_types: frozenset[str]) -> tuple[str, tuple[str, ...]]:
     """Prepared NOT IN filter, applied before the per-kind LIMIT so hidden entity
@@ -53,6 +58,8 @@ def search_fts(
         ("connections", "connection", "connections_fts", "-bm25(connections_fts)", "", ()),
         ("diagrams", "diagram", "diagrams_fts", "-bm25(diagrams_fts)", "", ()),
         ("documents", "document", "documents_fts", "-bm25(documents_fts)", "", ()),
+        ("scratchpad-notes", "scratchpad-note", "scratchpad_notes_fts",
+         f"-bm25(scratchpad_notes_fts, {_NOTE_WEIGHTS})", "", ()),
     ]
     subqueries: list[str] = []
     params: list[str] = []

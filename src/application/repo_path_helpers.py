@@ -25,7 +25,14 @@ from collections.abc import Callable
 from pathlib import Path
 
 from src.domain.repository.groups import UNCATEGORIZED
-from src.domain.repository.repo_layout import DIAGRAM_CATALOG, DIAGRAMS, DOCS, MODEL, RENDERED
+from src.domain.repository.repo_layout import (
+    DIAGRAM_CATALOG,
+    DIAGRAMS,
+    DOCS,
+    MODEL,
+    RENDERED,
+    SCRATCHPADS,
+)
 
 _PROJECTS = "projects"
 
@@ -106,6 +113,28 @@ def rendered_root(repo_root: Path) -> Path:
 def docs_root(repo_root: Path) -> Path:
     """Document root: <repo>/docs/"""
     return repo_root / DOCS
+
+
+def scratchpads_root(repo_root: Path) -> Path:
+    """Scratchpad root: <repo>/scratchpads/"""
+    return repo_root / SCRATCHPADS
+
+
+def group_fn_scratchpad(scratchpad_path: Path, repo_root: Path) -> str:
+    """Derive the collection slug from a scratchpad path.
+
+    scratchpads/<file>                 → "uncategorized"
+    scratchpads/<collection>/<file>    → collection
+
+    One level, unlike documents and diagrams: a scratchpad is free-standing, so the only directory
+    it can sit under is the collection it belongs to.
+    """
+    root = scratchpads_root(repo_root)
+    try:
+        rel = scratchpad_path.resolve().relative_to(root.resolve())
+    except ValueError:
+        return UNCATEGORIZED
+    return rel.parts[0] if len(rel.parts) > 1 else UNCATEGORIZED
 
 
 # ---------------------------------------------------------------------------

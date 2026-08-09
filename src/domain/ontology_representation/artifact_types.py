@@ -181,25 +181,72 @@ STANDARD_DOCUMENT_FIELDS = frozenset(
 )
 
 
+#: How a note's address is composed from the scratchpad's and the note's own id. The same shape a
+#: diagram already uses for the constructs it owns (`{diagram_id}#swimlane/sw-1`), because the
+#: question is the same one: a searchable unit that has no file of its own.
+NOTE_ADDRESS_INFIX = "#note/"
+
+
+def scratchpad_note_id(scratchpad_id: str, note_id: str) -> str:
+    """The address a note is findable at. Local ids are unique within their scratchpad only."""
+    return f"{scratchpad_id}{NOTE_ADDRESS_INFIX}{note_id}"
+
+
+@dataclass(frozen=True)
+class ScratchpadNoteRecord:
+    """One note on a scratchpad, as the index sees it.
+
+    The only searchable unit whose text lives *inside* another artifact's file: a scratchpad is
+    loaded, saved and versioned whole, but what someone searches for is a thought, and a thought is
+    a note. So the note is the record and the scratchpad is its container — `path` is the
+    scratchpad's file, and `artifact_id` is composed rather than stored.
+
+    A note is deliberately *thinner* than an entity. It has no version of its own, no keywords, and
+    a type only if someone has decided one — which is the whole point of the feature, and the reason
+    `score_scratchpad_note` weighs it below everything a person committed to.
+    """
+
+    artifact_id: str
+    scratchpad_id: str
+    scratchpad_name: str
+    note_id: str
+    title: str
+    body: str
+    #: Empty until decided. A note that has reached only its domain has still decided something.
+    element_type: str
+    domain: str
+    area: str
+    status: str
+    path: Path
+    group: str = "uncategorized"
+    last_updated: str | None = None
+
+    def __str__(self) -> str:
+        return f"[{self.artifact_id}] {self.title}  (note on {self.scratchpad_name})"
+
+
 # ── The searchable-kind vocabulary, in one place ─────────────────────────────
 # Two spellings of the same list, and they have to agree: `RecordType` is the discriminator on an
 # individual hit, `SearchableKind` the member of the include-set that gates which kinds participate.
 # Both were previously restated in `application/artifacts/_search.py`, in `artifacts/repository.py`,
 # on `SearchHit` below and in the REST contract — four copies of one vocabulary, which is how a fifth
 # kind becomes a hunt rather than an edit.
-RecordType: TypeAlias = Literal["entity", "connection", "diagram", "document"]
-SearchableKind: TypeAlias = Literal["entities", "connections", "diagrams", "documents"]
+RecordType: TypeAlias = Literal["entity", "connection", "diagram", "document", "scratchpad-note"]
+SearchableKind: TypeAlias = Literal[
+    "entities", "connections", "diagrams", "documents", "scratchpad-notes"
+]
 
 #: Kind → the record type its hits carry. The plural is what a caller asks for; the singular is what
 #: it gets back. Typed `str` → `str` rather than Literal → Literal because every caller looks a
 #: *runtime* value up in it — an FTS row's `record_type` column, a request's `include_` flag — and a
-#: narrower key type only moves the cast to the call site.
+#: narrower key type only moves the narrowing to the call site.
 KIND_TO_RECORD_TYPE: Mapping[str, str] = MappingProxyType(
     {
         "entities": "entity",
         "connections": "connection",
         "diagrams": "diagram",
         "documents": "document",
+        "scratchpad-notes": "scratchpad-note",
     }
 )
 RECORD_TYPE_TO_KIND: Mapping[str, str] = MappingProxyType(
@@ -207,12 +254,17 @@ RECORD_TYPE_TO_KIND: Mapping[str, str] = MappingProxyType(
 )
 ALL_SEARCHABLE_KINDS: frozenset[str] = frozenset(KIND_TO_RECORD_TYPE)
 
+#: Kinds that must never outrank the others, whatever they score. A note is a half-formed thought
+#: and an entity is a commitment, so a scratchpad can never push model content down a result list —
+#: the condition the feature was allowed into the index under.
+SUBORDINATE_RECORD_TYPES: frozenset[str] = frozenset({"scratchpad-note"})
+
 
 @dataclass
 class SearchHit:
     score: float
     record_type: RecordType
-    record: EntityRecord | ConnectionRecord | DiagramRecord | DocumentRecord
+    record: EntityRecord | ConnectionRecord | DiagramRecord | DocumentRecord | ScratchpadNoteRecord
 
     def __str__(self) -> str:
         return f"  score={self.score:.3f}  {self.record}"
