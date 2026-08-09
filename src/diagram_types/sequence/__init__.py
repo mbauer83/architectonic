@@ -10,6 +10,7 @@ from src.diagram_types.sequence.renderer import SequencePumlRenderer
 from src.domain.diagrams.diagram_entities_schema import derive_diagram_entities_schema
 from src.domain.diagrams.diagram_ontology_loader import DiagramOntology, load_diagram_ontology
 from src.domain.diagrams.diagram_ontology_merge import merge_ontology_into_diagram_only_types
+from src.domain.diagrams.diagram_type_config import puml_notes_from_config
 from src.domain.modules.bridges import BridgeDeclaration
 from src.domain.modules.module_types import ConnectionTypeName, DiagramTypeName, EntityTypeName, FreeOntology
 from src.domain.ontology_representation.ontology_protocol import (
@@ -85,6 +86,7 @@ class _SequenceDiagramType(DiagramTypeBase):
             when_not_to_use=str(g.get("when_not_to_use") or ""),
             diagram_entities_schema=derive_diagram_entities_schema(own_types),
             own_entity_types=own_types,
+            puml_notes=puml_notes_from_config(self._config),
             allowed_bindings=ab if not ab.is_empty() else None,
         )
 

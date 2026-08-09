@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import html
 import re
+import textwrap
 from collections import defaultdict
 from dataclasses import dataclass
 
@@ -81,9 +82,27 @@ class PlacedNode:
     height: float
 
 
+#: Character advance used to size a node from the longest line of its text.
+_CHAR_ADVANCE_PX = 7.4
+
+#: Characters per line a GSN label is broken at. Declared here, beside the sizing that depends on
+#: it, and imported by the PUML generator so the two notations cannot disagree about how wide a
+#: node is. A solution is a circle, so its text has to fit a diameter rather than a width.
+LABEL_WRAP_COLUMNS = 38
+SOLUTION_WRAP_COLUMNS = 20
+
+
 def _unescape_label(value: str) -> tuple[str, ...]:
     text = value.replace("\\n", "\n").replace('\\"', '"').replace("\\\\", "\\")
-    return tuple(text.splitlines()) or ("",)
+    # Authored breaks are kept and each run wrapped within them. `_node_size` widens a node to fit
+    # its longest line with nothing else bounding it, so a hand-authored label that arrives on one
+    # line — the generator always pre-breaks its own — would otherwise stretch its whole rank.
+    lines = tuple(
+        wrapped
+        for line in (text.splitlines() or [""])
+        for wrapped in (textwrap.wrap(line, width=LABEL_WRAP_COLUMNS) or [""])
+    )
+    return lines or ("",)
 
 
 def _parse(puml_body: str) -> tuple[list[GsnNode], list[GsnEdge]]:
@@ -122,7 +141,7 @@ def _legacy_type(shape: str, label: str) -> str:
 
 def _node_size(node: GsnNode) -> tuple[float, float]:
     longest = max((len(line) for line in node.lines), default=1)
-    text_width = longest * 7.4
+    text_width = longest * _CHAR_ADVANCE_PX
     text_height = max(1, len(node.lines)) * 18
     if node.node_type == "solution":
         diameter = max(94.0, text_width + 30, text_height + 34)

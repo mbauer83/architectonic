@@ -65,6 +65,36 @@ class _GsnDiagramType(DiagramTypeBase):
                 "Do not use for bowtie threat models (use bowtie instead) or STPA control structures "
                 "(use control-structure instead). GSN is for structured argumentation, not causal modelling."
             ),
+            puml_notes=(
+                "The payload is two flat arrays under `diagram_entities`: `nodes` and `edges`. A node"
+                " is {node_id, name, gsn_type}, where gsn_type is one of goal, strategy, solution,"
+                " context, assumption, justification, undeveloped; anything else is drawn as a goal.",
+                "An edge is {source_id, target_id, conn_type} — note `source_id`/`target_id`, not the"
+                " `source`/`target` the other diagram types use. conn_type is `supported-by` or"
+                " `in-context-of`; anything else is drawn as supported-by rather than refused.",
+                "Direction is parent → child: a goal is the SOURCE of the supported-by edge reaching"
+                " the strategy or solution beneath it. Drawing it the other way inverts the argument"
+                " and still renders, because the depth of every node is computed from these edges.",
+                "`in-context-of` is what moves a node to the side rather than below: a context,"
+                " assumption or justification reached that way sits beside the node it qualifies, at"
+                " the same rank. Attaching one with supported-by instead puts it in the argument"
+                " chain, claiming it is evidence.",
+                "A claim that is deliberately not argued further gets an `undeveloped` node beneath"
+                " it — the diamond — rather than being left as a leaf, which reads as an oversight.",
+                "Labels are wrapped for you at a fixed column (narrower for a solution, which is a"
+                " circle), so a long claim costs height rather than width. Node names still read"
+                " best as one stated claim.",
+                "Minimal example — one goal, one strategy, one solution, one context:\n"
+                "  diagram_entities: {nodes: [\n"
+                "      {node_id: g1, name: 'The store is confidential', gsn_type: goal},\n"
+                "      {node_id: s1, name: 'Argue over each access path', gsn_type: strategy},\n"
+                "      {node_id: sn1, name: 'Penetration test report', gsn_type: solution},\n"
+                "      {node_id: c1, name: 'Store at rest', gsn_type: context}],\n"
+                "    edges: [\n"
+                "      {source_id: g1, target_id: s1, conn_type: supported-by},\n"
+                "      {source_id: s1, target_id: sn1, conn_type: supported-by},\n"
+                "      {source_id: g1, target_id: c1, conn_type: in-context-of}]}",
+            ),
         )
 
 

@@ -206,6 +206,28 @@ class DiagramTypeWriteGuidance:
     allowed_bindings: AllowedBindingsSpec | None = None
 
 
+def puml_notes_from_config(config: Mapping[str, Any]) -> tuple[str, ...]:
+    """The ``guidance.puml_notes:`` list of one diagram type's configuration.
+
+    The authoring *protocol* — which connection types wire what to what, which of them are
+    mandatory, what an omission does — is the part of a diagram type an author cannot read off
+    the schema, and for every type but ArchiMate it was undocumented: it had to be
+    reverse-engineered from an existing `.puml`, i.e. after authoring one. It lives beside
+    `when_to_use` because it is guidance, not behaviour, and because a type whose other guidance
+    is in configuration should not keep this one piece in code.
+
+    Entries that are not strings are dropped rather than raising: guidance that is malformed is
+    still guidance nobody is blocked by.
+    """
+    guidance = config.get("guidance")
+    if not isinstance(guidance, Mapping):
+        return ()
+    notes = guidance.get("puml_notes")
+    if not isinstance(notes, list):
+        return ()
+    return tuple(str(note) for note in notes if isinstance(note, str))
+
+
 @dataclass(frozen=True)
 class DiagramRendererReferences:
     """Model artifact references discovered by a renderer from diagram-owned data."""

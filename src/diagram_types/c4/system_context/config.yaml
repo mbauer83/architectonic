@@ -15,6 +15,41 @@ guidance:
     ArchiMate layer semantics across multiple domains, or when you need a behavioral flow such as
     a UML activity diagram.
 
+  puml_notes:
+    - >-
+      Two modes, decided by one key. With `_scope_entity_id` set, the diagram is *model-backed*:
+      the items and the relations between them are derived from the ArchiMate graph around that
+      entity, and `diagram_entities` beyond the scope key is ignored — trim the result with
+      `_included_entity_ids` or `_excluded_entity_ids` (never both; pass whichever set is smaller).
+      Without it, the diagram is *standalone* and shows exactly what `diagram_entities` and
+      `diagram_connections` declare.
+    - >-
+      Standalone relations go in `diagram_connections` as {id, source, target, label?}, where
+      source and target are the **local `id`s** of items in `diagram_entities` — not entity ids,
+      and not the aliases in the rendered PUML. A connection naming an id no item declares is
+      dropped without drawing anything and without a warning, so a mistyped id reads as a missing
+      arrow.
+    - >-
+      Exactly one item is the scope. Mark it with `scope: true`; with no marker the FIRST
+      software-system in the array wins, so a diagram declaring two of them scopes itself to
+      whichever happened to be authored first.
+    - >-
+      `external: true` draws an item in the external style — the mark for something you do not own
+      or do not control. It is the only distinction this level makes between the systems around the
+      one in scope, so leaving it off says the peer is yours.
+    - >-
+      Shape follows, in order: an explicit `shape`, then an inference from `technology` (a
+      database or queue gets its own shape), then the item type's default. Naming the technology
+      is usually enough and keeps the two consistent.
+    - |-
+      Minimal standalone example:
+        diagram_entities: {software-system: [{id: sys, label: "Our System", scope: true},
+            {id: crm, label: "Billing CRM", external: true}],
+          person: [{id: admin, label: Administrator}]}
+        diagram_connections: [
+          {id: r1, source: admin, target: sys, label: administers},
+          {id: r2, source: sys, target: crm, label: "bills through"}]
+
 ui:
   label: C4 System Context
   description: C4 level 1. Shows one software system in scope plus surrounding people and systems.

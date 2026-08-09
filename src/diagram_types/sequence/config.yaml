@@ -15,6 +15,37 @@ guidance:
   when_not_to_use: >-
     Do not use for static structure or process modeling — prefer ArchiMate or
     activity diagrams for those.
+  puml_notes:
+    - >-
+      Lifelines, messages, groupings and notes go in `diagram_entities`; which lifelines a message
+      runs between goes in `diagram_connections`, as objects of the form
+      {id, conn_type, source, target} — the same shape the file persists.
+    - >-
+      Every message needs exactly two connections, and its own id is the *source* of both:
+      `seq-from` to the sending lifeline and `seq-to` to the receiving one. A message missing
+      either is skipped silently — it is not drawn and nothing says so.
+    - >-
+      Order is array order, not connection order: lifelines read left to right in the order of the
+      `lifeline` array, messages top to bottom in the order of the `message` array. Reordering the
+      diagram means reordering those arrays.
+    - >-
+      A `grouping` (alt/opt/loop/par/break/critical/group) spans messages by id, not by nesting:
+      each operand names `start_message_id` and `end_message_id`, and the span must be contiguous
+      in the message array. alt and par take one operand per branch — the first operand's guard is
+      the `if`, the rest are `else if`; the other kinds take exactly one.
+    - >-
+      A `note` names the lifelines it sits against in `lifeline_ids` — exactly one for
+      left_of/right_of, one or more for over — and `after_message_id` places it in the sequence;
+      omitting that appends it at the end.
+    - |-
+      Minimal example — one call and its reply:
+        diagram_entities: {lifeline: [{id: caller, participant_type: actor}, {id: api}],
+          message: [{id: m1, label: create}, {id: m2, label: created, arrow: reply}]}
+        diagram_connections: [
+          {id: c1, conn_type: seq-from, source: m1, target: caller},
+          {id: c2, conn_type: seq-to, source: m1, target: api},
+          {id: c3, conn_type: seq-from, source: m2, target: api},
+          {id: c4, conn_type: seq-to, source: m2, target: caller}]
 ui:
   label: Sequence Diagram
   description: UML sequence diagram with lifelines and messages.

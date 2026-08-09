@@ -28,6 +28,7 @@ import re
 from collections.abc import Container, Mapping, Sequence
 
 from src.diagram_types._assurance_puml_alias import safe_alias
+from src.infrastructure.rendering.puml_label_wrapping import label_wrap_skinparams
 
 THREAT = "threat"
 BARRIER_LEFT = "barrier_left"
@@ -179,7 +180,9 @@ def render(
 ) -> str:
     """Render a bowtie as PlantUML, left to right through the top event."""
     opening = f"@startuml {safe_alias(title)}" if title else "@startuml"
-    lines: list[str] = [opening, "left to right direction", ""]
+    # Threat, barrier and consequence names are sentences; unbounded they push the two wings of
+    # the bowtie so far apart the shape it is named for stops being visible.
+    lines: list[str] = [opening, "left to right direction", *label_wrap_skinparams({}), ""]
 
     mitigating = mitigating_barrier_ids(edges)
     ordered = _ordered(nodes, mitigating)

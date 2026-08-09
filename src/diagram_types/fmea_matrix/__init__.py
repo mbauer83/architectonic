@@ -132,6 +132,24 @@ class _FmeaMatrixDiagramType(DiagramTypeBase):
                 "the causal chain either — a bowtie or the graph explorer shows that, and this grid "
                 "deliberately omits every relation that does not place something in a cell."
             ),
+            puml_notes=(
+                "There is no PUML body and no `diagram_entities` to author. The grid is PROJECTED"
+                " from the confidential assurance store: fill it with the assurance write tools —"
+                " `assurance_create_node` for failure modes, hazards, losses and constraints,"
+                " `assurance_add_edge` for the relations below, and `assurance_set_fmea_factor` for"
+                " severity, occurrence and detectability.",
+                "A row is an architecture element crossed with a failure guideword; the columns are"
+                " the effect, the cause, the prevention and detection controls, the three factors,"
+                " and the Action Priority derived from them. Only four relations place anything:"
+                " `leads-to`, `detects`, `derives` and `explains`. Every other relation a failure"
+                " mode has belongs to the causal chain and is omitted on purpose.",
+                "Action Priority is derived from the three factors, never authored: set the factors"
+                " and the column follows. A row whose factors are unset shows the gap rather than a"
+                " default, which is the point of the grid.",
+                "Nothing renders to disk — the diagram is served from the store to the frontend"
+                " grid, and the renderer raises rather than returning an empty body, so the"
+                " confidential content cannot reach the file-backed catalog through this path.",
+            ),
         )
 
 

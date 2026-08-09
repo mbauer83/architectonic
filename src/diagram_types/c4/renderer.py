@@ -15,6 +15,7 @@ from typing import Any
 from src.diagram_types.c4._resolve import _ResolvedItem, resolve_c4_state
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
 from src.domain.ontology_representation.ontology_protocol import DiagramRendererReferences
+from src.infrastructure.rendering.puml_label_wrapping import label_wrap_skinparams
 from src.infrastructure.rendering.puml_safety import (
     configured_puml_size_warning_threshold,
     warn_when_puml_exceeds_threshold,
@@ -95,8 +96,7 @@ class C4PumlRenderer:
             "skinparam shadowing false",
             "skinparam linetype ortho",
             "skinparam defaultTextAlignment center",
-            "skinparam wrapWidth 240",
-            "skinparam maxMessageSize 240",
+            *label_wrap_skinparams(self._config),
             "",
             f"title {name}",
             "",

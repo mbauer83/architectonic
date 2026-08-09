@@ -261,11 +261,13 @@ bindings:
   correspondence_kind: represents
   target:
     entity_id: DOB@1777239887.V-MgY1.yaml-artifact-frontmatter
-last-updated: '2026-08-09T01:15:05Z'
+last-updated: '2026-08-09T08:27:47Z'
 ---
 @startuml Artifact Persistence Model
 title Artifact Persistence Model
 skinparam linetype ortho
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
 
 abstract class "Artifact" as _CLF_1782085920_ShZ_Qq_artifact {
   + artifact_id : String {id}

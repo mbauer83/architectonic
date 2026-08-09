@@ -256,12 +256,13 @@ bindings:
   correspondence_kind: represents
   target:
     entity_id: FNC@1786225282.foobGD2.write-lifted-model-content
-last-updated: '2026-08-09T01:15:23Z'
+last-updated: '2026-08-09T08:28:06Z'
 ---
 @startuml working-in-a-scratchpad-area
 skinparam hyperlinkColor #252327
 skinparam hyperlinkUnderline false
 skinparam wrapWidth 180
+skinparam maxMessageSize 180
 title Working in a Scratchpad Area
 
 |You|

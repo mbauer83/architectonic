@@ -2,8 +2,9 @@ name: activity
 includes: []
 grouping: {}
 layout:
-  # Points at which a step label wraps. Keeps lanes narrow enough that several fit a page;
-  # 0 disables wrapping. See renderer._wrap_width.
+  # Points at which a step label wraps. Narrower than the shared default because a swimlane's
+  # width is paid for by every lane beside it; 0 disables wrapping.
+  # See infrastructure.rendering.puml_label_wrapping.
   wrap_width: 180
 element_classes:
   step:
@@ -20,6 +21,37 @@ guidance:
     across parallel tracks (swimlanes). Suitable for business workflows, system interaction flows, or operational procedures.
   when_not_to_use: >-
     Do not use for static structure or high-level process modeling - prefer archimate for these cases.
+  puml_notes:
+    - >-
+      Steps and lanes go in `diagram_entities`; the flow between them goes in `diagram_connections`,
+      as objects of the form {id, conn_type, source, target} — the same shape the file persists.
+      Declaring steps without connections yields a diagram of one step and a warning per orphan.
+    - >-
+      Every step needs a `step-in-lane` connection naming its swimlane, including decisions and
+      forks. A step without one is emitted with a WARNING comment and lands in whichever lane was
+      last active.
+    - >-
+      A decision needs three edges, not two: `step-then` to the first step of the true branch,
+      `step-else` to the first step of the false branch, and a `step-flow` to the step the branches
+      merge back into. Omitting the third leaves the branches dangling.
+    - >-
+      Notes attach with `step-note-of`, whose *source* is the note and whose *target* is the step it
+      annotates.
+    - >-
+      Long step labels widen their whole swimlane, so prefer short imperative labels and put the
+      nuance in a note. `layout.wrap_width` bounds this, but wrapping every label is not a
+      substitute for writing short ones.
+    - |-
+      Minimal example — two lanes, one decision:
+        diagram_entities: {swimlane: [{id: you}, {id: system}],
+          action: [{id: a1, label: Ask}, {id: a2, label: Answer}],
+          decision: [{id: d1, condition: Known?, then_label: yes, else_label: no}]}
+        diagram_connections: [
+          {id: l1, conn_type: step-in-lane, source: a1, target: you},
+          {id: l2, conn_type: step-in-lane, source: d1, target: you},
+          {id: l3, conn_type: step-in-lane, source: a2, target: system},
+          {id: f1, conn_type: step-flow, source: a1, target: d1},
+          {id: t1, conn_type: step-then, source: d1, target: a2}]
 ui:
   label: Activity Diagram
   description: UML activity diagram with swimlanes.

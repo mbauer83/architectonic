@@ -46,7 +46,7 @@ connection-ids-used:
 - APP@1780656431.e2zPs6---FNC@1780656241.0hyhf0@@archimate-assignment
 - APP@1780656431.E0fzqZ---FNC@1780656241.3xVBUQ@@archimate-assignment
 - APP@1780656431.E0fzqZ---APP@1780656431.GnsLC8@@archimate-serving
-last-updated: '2026-08-09T01:14:52Z'
+last-updated: '2026-08-09T08:27:34Z'
 ---
 @startuml assurance-application-architecture
 hide stereotype

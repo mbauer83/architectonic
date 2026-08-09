@@ -27,6 +27,7 @@ from typing import Any
 
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
 from src.domain.ontology_representation.ontology_protocol import DiagramRendererReferences
+from src.infrastructure.rendering.puml_label_wrapping import label_wrap_skinparams
 from src.infrastructure.rendering.puml_safety import (
     configured_puml_size_warning_threshold,
     warn_when_puml_exceeds_threshold,
@@ -88,7 +89,7 @@ class ActivityPumlRenderer:
             # activity renders as a landscape strip nobody can read. Wrapping trades width for
             # height, which a page has more of. Measured on a two-lane, thirteen-step diagram:
             # 2247x804 unwrapped against 1304x965 at 180 — 42% narrower.
-            f"skinparam wrapWidth {_wrap_width(self._config)}",
+            *label_wrap_skinparams(self._config),
             f"title {_puml_text(name)}",
             "",
         ]
@@ -374,20 +375,6 @@ def _emit_step_note(step_id: str, notes_index: dict[str, dict[str, Any]], lines:
         lines.append("end note")
     else:
         lines.append(f"note {side}: {_puml_text(text)}")
-
-
-#: Label width, in points, above which PlantUML wraps a step's text onto another line.
-#:
-#: Chosen so a sentence-long step stays readable while a lane stays narrow enough that several fit a
-#: page. `layout.wrap_width` in `config.yaml` overrides it; 0 disables wrapping entirely, which is
-#: what a diagram of very short labels may prefer.
-_DEFAULT_WRAP_WIDTH = 180
-
-
-def _wrap_width(config: Mapping[str, Any]) -> int:
-    layout = config.get("layout")
-    configured = layout.get("wrap_width") if isinstance(layout, Mapping) else None
-    return configured if isinstance(configured, int) and configured >= 0 else _DEFAULT_WRAP_WIDTH
 
 
 def _read_lanes(kd: Mapping[str, object]) -> list[dict[str, Any]]:

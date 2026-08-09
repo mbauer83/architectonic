@@ -53,7 +53,7 @@ connection-ids-used:
 - VS@1784482984.VZ-P2h---VS@1784483026.nf-e3Y@@archimate-composition
 - VS@1784482984.VZ-P2h---VS@1784483014.xrSjjJ@@archimate-composition
 - VS@1784482984.VZ-P2h---VS@1784483024.z1Yg0V@@archimate-composition
-last-updated: '2026-08-09T01:16:15Z'
+last-updated: '2026-08-09T08:28:58Z'
 ---
 @startuml value-stream--deliver-an-architecture-aligned-change
 hide stereotype

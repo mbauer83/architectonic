@@ -20,6 +20,7 @@ from typing import Any
 
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
 from src.domain.ontology_representation.ontology_protocol import DiagramRendererReferences
+from src.infrastructure.rendering.puml_label_wrapping import label_wrap_skinparams
 
 _PARTICIPANT_KEYWORD: dict[str, str] = {
     "participant": "participant",
@@ -78,7 +79,12 @@ class SequencePumlRenderer:
         to_map = _build_single(kcs, "seq-to")
         msg_id_to_idx = {str(m["id"]): i for i, m in enumerate(messages)}
 
-        lines: list[str] = [f"@startuml {diagram_name}", f"title {_puml_text(name)}", ""]
+        lines: list[str] = [
+            f"@startuml {diagram_name}",
+            *label_wrap_skinparams(self._config),
+            f"title {_puml_text(name)}",
+            "",
+        ]
 
         for ll in lifelines:
             ll_id = str(ll.get("id") or "")

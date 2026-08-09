@@ -114,6 +114,26 @@ class _BowtieDiagramType(DiagramTypeBase):
                 "or for GSN argument structures (use gsn instead). "
                 "This diagram type is assurance-only and renders into the confidential store context."
             ),
+            puml_notes=(
+                "The payload is two flat arrays under `diagram_entities`: `nodes` and `edges`"
+                " (`diagram_connections` is appended to the latter). A node is"
+                " {node_id, name, node_type?, role?}; an edge is {source_id, target_id, conn_type}"
+                " — `source_id`/`target_id`, not `source`/`target`.",
+                "Where a node lands is its ROLE, and an authored `role` always wins: threat,"
+                " barrier_left, top_event, barrier_right, consequence — left to right, in that order."
+                " State it when authoring a diagram directly; the derivation below exists for content"
+                " projected out of the assurance store.",
+                "Derived roles come from `node_type`: unsafe-control-action and loss-scenario are"
+                " threats, hazard is the top event, loss is a consequence, and assurance-constraint is"
+                " a PREVENTIVE barrier — unless it is the source of a `mitigates` edge, which moves it"
+                " to the consequence side. That one edge is the only thing distinguishing the two"
+                " barrier columns, so a mitigating barrier without it renders on the wrong side.",
+                "A node whose role is neither authored nor derivable is kept and drawn last, unstyled."
+                " That is deliberate: an unplaced node in a bowtie is a modelling gap worth seeing,"
+                " not something to drop quietly.",
+                "One top event. The shape is named for a single hazard with pathways in and out;"
+                " several top events render as several centres and stop reading as a bowtie.",
+            ),
         )
 
 

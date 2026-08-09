@@ -26,6 +26,7 @@ from typing import Any
 
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
 from src.domain.ontology_representation.ontology_protocol import DiagramRendererReferences
+from src.infrastructure.rendering.puml_label_wrapping import label_wrap_skinparams
 
 _ALIAS_RE = re.compile(r"[^A-Za-z0-9_]")
 _NEWLINE_RE = re.compile(r"\r?\n|\r")
@@ -238,6 +239,7 @@ class DatatypePumlRenderer:
         lines: list[str] = [
             f"@startuml {_safe_text(name)}",
             "skinparam linetype ortho",
+            *label_wrap_skinparams(self._config),
             "",
         ]
         for c in classifiers:

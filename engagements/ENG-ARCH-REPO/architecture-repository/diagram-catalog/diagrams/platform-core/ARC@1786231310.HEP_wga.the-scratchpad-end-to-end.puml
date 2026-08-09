@@ -43,7 +43,7 @@ connection-ids-used:
 - REQ@1786223986.VV89psV---OUT@1786223967.Bz8wwkG@@archimate-realization
 - PRC@1786225282._6NSUkC---SRV@1786225282.lzo5hQK@@archimate-realization
 - PRC@1786225282.si8h9M1---SRV@1786225282.C8EOSEB@@archimate-realization
-last-updated: '2026-08-09T01:15:46Z'
+last-updated: '2026-08-09T08:28:29Z'
 ---
 @startuml the-scratchpad--end-to-end
 hide stereotype

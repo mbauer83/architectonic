@@ -54,7 +54,7 @@ diagram-entities:
   - source_id: br1
     target_id: c1
     label: detect
-last-updated: '2026-08-09T01:15:01Z'
+last-updated: '2026-08-09T08:27:43Z'
 ---
 @startuml Bowtie_Plaintext_Disclosure_of_the_Assurance_Store
 title Bowtie — Plaintext Disclosure of the Assurance Store

@@ -29,7 +29,7 @@ connections:
 - connection_id: APP@1781705596.n8Pikk.datatype-diagram-type-module---REQ@1781704600.TbcGSB.datatype-uml-class-diagram-authoring@@archimate-realization
 - connection_id: APP@1781705596.n8Pikk.datatype-diagram-type-module---FNC@1781705395.halAQt.validate-datatype-data-object-relationship-consistency@@archimate-association
 - connection_id: APP@1712870400.ca3vm7.model-verifier---FNC@1781705395.halAQt.validate-datatype-data-object-relationship-consistency@@archimate-assignment
-last-updated: '2026-08-09T01:15:03Z'
+last-updated: '2026-08-09T08:27:45Z'
 ---
 @startuml datatype-diagram-type---application-view
 hide stereotype

@@ -44,7 +44,7 @@ connection-ids-used:
 - PRC@1777293168.CYgU64---FNC@1777409722.saMRQ0@@archimate-aggregation
 - PRC@1777293168.CYgU64---FNC@1777390449.uzJGYp@@archimate-aggregation
 - PRC@1777293168.CYgU64---FNC@1777390448.yuFXVJ@@archimate-aggregation
-last-updated: '2026-08-09T01:15:36Z'
+last-updated: '2026-08-09T08:28:18Z'
 ---
 @startuml reverse-architecture
 hide stereotype

@@ -84,12 +84,13 @@ connections:
   conn_type: step-else
   source: d1
   target: a6
-last-updated: '2026-08-09T01:16:05Z'
+last-updated: '2026-08-09T08:28:49Z'
 ---
 @startuml promote-engagement-work-to-the-enterprise-repository
 skinparam hyperlinkColor #252327
 skinparam hyperlinkUnderline false
 skinparam wrapWidth 180
+skinparam maxMessageSize 180
 title Promote Engagement Work to the Enterprise Repository
 
 |Author / AI Agent|

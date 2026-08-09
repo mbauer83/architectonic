@@ -49,14 +49,18 @@ class TestLabelsDoNotWidenTheCanvasWithoutBound:
         assert re.search(r"^skinparam wrapWidth \d+$", body, flags=re.M), body[:400]
 
     def test_the_bound_is_configurable_and_zero_disables_it(self) -> None:
-        from src.diagram_types.activity.renderer import _wrap_width
+        from src.infrastructure.rendering.puml_label_wrapping import configured_label_wrap_width
 
-        assert _wrap_width({}) == 180
-        assert _wrap_width({"layout": {"wrap_width": 240}}) == 240
-        assert _wrap_width({"layout": {"wrap_width": 0}}) == 0
+        assert configured_label_wrap_width({}) == 240
+        assert configured_label_wrap_width({"layout": {"wrap_width": 180}}) == 180
+        assert configured_label_wrap_width({"layout": {"wrap_width": 0}}) == 0
         # Nonsense falls back rather than emitting a negative skinparam.
-        assert _wrap_width({"layout": {"wrap_width": -5}}) == 180
-        assert _wrap_width({"layout": {"wrap_width": "wide"}}) == 180
+        assert configured_label_wrap_width({"layout": {"wrap_width": -5}}) == 240
+        assert configured_label_wrap_width({"layout": {"wrap_width": "wide"}}) == 240
+
+    def test_activity_keeps_its_own_narrower_bound(self) -> None:
+        """A lane's width is paid for by every lane beside it, so activity wraps sooner."""
+        assert "skinparam wrapWidth 180" in _render_minimal(["Short"])
 
 
 class TestTheGuidanceSaysHowToWireAFlow:

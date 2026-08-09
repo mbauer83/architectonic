@@ -36,6 +36,7 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 
 from src.diagram_types._assurance_puml_alias import safe_alias
+from src.infrastructure.rendering.puml_label_wrapping import label_wrap_skinparams
 
 _NON_ALIAS_CHARS = re.compile(r"[^A-Za-z0-9_]")
 _REPEATED_UNDERSCORE = re.compile(r"_+")
@@ -264,6 +265,9 @@ def partition_for_drawing(
 # ── The renderer ──────────────────────────────────────────────────────────────
 
 _SKINPARAMS: tuple[str, ...] = (
+    # A controller's box is as wide as its unwrapped name, and an STPA controller's name is a
+    # phrase, not a word — the picture grew sideways until nothing but the boxes fit.
+    *label_wrap_skinparams({}),
     "skinparam rectangle {",
     "  BackgroundColor #EBF5FB",
     "  BorderColor #2E86C1",

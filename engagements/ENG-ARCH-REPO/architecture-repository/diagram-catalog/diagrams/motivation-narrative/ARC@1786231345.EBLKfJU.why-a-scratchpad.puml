@@ -44,7 +44,7 @@ connection-ids-used:
 - REQ@1786230066.vVjYCpP---OUT@1786223967.Bz8wwkG@@archimate-realization
 - PRI@1786223967.IQqhM8k---REQ@1786223986.VV89psV@@archimate-influence
 - PRI@1786223967.IQqhM8k---REQ@1786223986.cMuroZ9@@archimate-influence
-last-updated: '2026-08-09T01:15:21Z'
+last-updated: '2026-08-09T08:28:03Z'
 ---
 @startuml why-a-scratchpad
 hide stereotype

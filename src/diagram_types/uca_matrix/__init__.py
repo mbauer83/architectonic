@@ -122,6 +122,21 @@ class _UcaMatrixDiagramType(DiagramTypeBase):
                 "Do not use for PlantUML rendering pipelines. This diagram type has no PUML "
                 "body; any attempt to call render_body raises ValueError by design."
             ),
+            puml_notes=(
+                "There is no PUML body and no `diagram_entities` to author. The grid is PROJECTED"
+                " from the confidential assurance store, so it is filled by creating the analysis"
+                " content through the assurance write tools — `assurance_create_node` for the"
+                " control actions and the unsafe control actions enumerated against them,"
+                " `assurance_add_edge` for the `concerns` edges — not by writing the diagram.",
+                "A row is a control action; a column is a UCA guideword; a cell is the unsafe"
+                " control action that `concerns` that action under that guideword. Only `concerns`"
+                " edges place anything: a UCA's other relations — to its controller, to the hazards"
+                " it leads to — belong to the causal chain and are deliberately not shown here.",
+                "Nothing renders to disk. The diagram is served from the store to the frontend grid,"
+                " which is what keeps confidential content out of the file-backed catalog; a"
+                " rendered PNG or SVG of this type would breach that boundary, which is why the"
+                " renderer raises rather than returning an empty body.",
+            ),
         )
 
 

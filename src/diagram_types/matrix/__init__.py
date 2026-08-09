@@ -88,6 +88,22 @@ class _MatrixDiagramType(DiagramTypeBase):
                 "matters. Matrices work best for homogeneous relationship sets, not mixed-type graphs."
             ),
             accepted_domains=("all",),
+            puml_notes=(
+                "There is no PUML body. A matrix is a markdown table, authored with"
+                " `artifact_create_matrix(name=…, matrix_markdown=…)` and edited with"
+                " `artifact_edit_diagram`, which accepts only name/keywords/version/status/tlp/group"
+                " here and preserves the table. Passing `puml` to either is refused, and calling the"
+                " renderer raises — so a matrix authored like the other diagram types fails at the"
+                " tool boundary rather than rendering wrongly.",
+                "`matrix_markdown` is an ordinary GitHub-flavoured table: the first row names the"
+                " columns, the first column names the rows, and each cell holds whatever the matrix"
+                " asserts about that pair — a role letter (CRUD, RACI), a mark, or a short phrase.",
+                "Entity ids written into cells or headers are linked back to the model by default"
+                " (`infer_entity_ids`, `auto_link_entity_ids`), which is what makes a matrix"
+                " traceable rather than a picture of a table. Naming the entities by id rather than"
+                " by prose is therefore the difference between a matrix that participates in the"
+                " model and one that only looks like it does.",
+            ),
         )
 
 

@@ -14,6 +14,42 @@ guidance:
     component or deployment views (use ArchiMate or C4), or for documenting operations
     and methods (this diagram is structure-only). Do not model infrastructure entities
     or services here.
+  puml_notes:
+    - >-
+      Classifiers and generalization sets go in `diagram_entities`; every relation between them
+      goes in `diagram_connections`, as objects of the form
+      {id, conn_type, source, target, src_multiplicity?, tgt_multiplicity?, label?} — the same
+      shape the file persists. A connection whose conn_type is outside the dt-* vocabulary is
+      dropped without drawing anything.
+    - >-
+      The five relations and which end they read from: `dt-association` (plain line),
+      `dt-aggregation` and `dt-composition` run **whole → part**, with the diamond drawn at the
+      source; `dt-generalization` runs **child → parent**, with the hollow triangle at the target;
+      `dt-dependency` runs user → used. Reversing a composition is the easiest mistake here and
+      renders as a valid diagram saying the opposite thing.
+    - >-
+      An attribute's `type` is a discriminated union, never a bare string —
+      {kind: primitive, name: "String"} or {kind: classifier, id: "CLF@…"}. Call
+      artifact_query_datatype_types for the ids in scope. Each attribute also carries a stable
+      `id` minted once and never displayed, so `name` stays freely renamable.
+    - >-
+      A sum type is not a classifier_kind: it is a classifier with is_abstract true whose cases
+      point at it with `dt-generalization`, and those generalizations each name the same
+      `generalization_set`. The set's {is_covering, is_disjoint} render as a constraint note on
+      the parent; a set no generalization references renders nothing.
+    - |-
+      Minimal example — one abstract parent, two cases:
+        diagram_entities: {classifier: [
+            {id: shape, classifier_kind: class, is_abstract: true},
+            {id: circle, classifier_kind: class,
+             attributes: [{id: a1, name: radius, type: {kind: primitive, name: Number}}]},
+            {id: square, classifier_kind: class}],
+          generalization_set: [{id: gs1, is_covering: true, is_disjoint: true}]}
+        diagram_connections: [
+          {id: g1, conn_type: dt-generalization, source: circle, target: shape,
+           generalization_set: gs1},
+          {id: g2, conn_type: dt-generalization, source: square, target: shape,
+           generalization_set: gs1}]
 
 ui:
   label: Datatype Diagram

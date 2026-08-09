@@ -129,9 +129,11 @@ connections:
   conn_type: seq-to
   source: m9
   target: author
-last-updated: '2026-08-09T01:16:03Z'
+last-updated: '2026-08-09T08:28:47Z'
 ---
 @startuml from-a-write-to-a-consistent--broadcast-state
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
 title From a Write to a Consistent, Broadcast State
 
 actor "Author or AI Agent" as author

@@ -57,7 +57,7 @@ authored-groupings:
   entity-ids:
   - DOB@1777399930.hExrX3.operation-record
   - DOB@1777399929.hhYsiw.staged-repository
-last-updated: '2026-08-09T01:15:31Z'
+last-updated: '2026-08-09T08:28:13Z'
 ---
 @startuml execute-staged-write-transaction
 hide stereotype

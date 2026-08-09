@@ -9,7 +9,11 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
-from src.diagram_types.gsn.svg_renderer import render_gsn_svg
+from src.diagram_types.gsn.svg_renderer import (
+    LABEL_WRAP_COLUMNS,
+    SOLUTION_WRAP_COLUMNS,
+    render_gsn_svg,
+)
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
 
 _NOTATION = (Path(__file__).parent / "notation.puml").read_text(encoding="utf-8").strip()
@@ -43,7 +47,7 @@ def _items(value: object) -> list[dict[str, Any]]:
     return [item for item in decoded if isinstance(item, dict)]
 
 
-def _quoted_label(label: str, *, wrap: int = 38) -> str:
+def _quoted_label(label: str, *, wrap: int = LABEL_WRAP_COLUMNS) -> str:
     normalized = " ".join(label.split())
     wrapped = textwrap.wrap(normalized, width=wrap, break_long_words=False) or [""]
     escaped = "\\n".join(line.replace("\\", "\\\\").replace('"', '\\"') for line in wrapped)
@@ -55,7 +59,7 @@ def _node_line(node: Mapping[str, Any]) -> str:
     node_type = str(node.get("gsn_type") or "goal")
     procedure, prefix = _NODE_PROCEDURE.get(node_type, _DEFAULT_NODE_PROCEDURE)
     name = str(node.get("name", node_id))
-    wrap = 20 if node_type == "solution" else 38
+    wrap = SOLUTION_WRAP_COLUMNS if node_type == "solution" else LABEL_WRAP_COLUMNS
     return f"${procedure}({_safe_alias(node_id)}, {_quoted_label(prefix + name, wrap=wrap)})"
 
 

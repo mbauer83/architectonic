@@ -28,7 +28,7 @@ connection-ids-used:
 - FNC@1784853344.qgicoe---REQ@1783870981.mdH8Uv@@archimate-realization
 - DOB@1783870961.y7M3wz---DOB@1784853343.CY3B-f@@archimate-composition
 - DOB@1783870961.y7M3wz---DOB@1784853344.zQzA5_@@archimate-composition
-last-updated: '2026-08-09T01:15:44Z'
+last-updated: '2026-08-09T08:28:27Z'
 ---
 @startuml viewpoint-execution---saved-and-ephemeral-paths
 hide stereotype

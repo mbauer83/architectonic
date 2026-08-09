@@ -39,7 +39,7 @@ authored-groupings:
   entity-ids:
   - GOL@1784845186.L4Ceuf.preserve-local-autonomy
   - GOL@1784845186.7RZp1S.enable-coherent-traceable-enterprise-action
-last-updated: '2026-08-09T01:15:19Z'
+last-updated: '2026-08-09T08:28:01Z'
 ---
 @startuml the-double-bind---and-the-response
 hide stereotype

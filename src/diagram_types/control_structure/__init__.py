@@ -122,6 +122,32 @@ class _ControlStructureDiagramType(DiagramTypeBase):
                 "Do not use for general component architecture or deployment topology. "
                 "This diagram type is assurance-only and renders into the confidential store context."
             ),
+            puml_notes=(
+                "The payload is two flat arrays under `diagram_entities`: `nodes` and `edges`"
+                " (`diagram_connections` is appended to the latter). A node is"
+                " {node_id, name, node_type, binding_status?, role?}, and node_type is either"
+                " `control-structure-node` — a controller or a controlled process — or"
+                " `control-action`. A node of any other type is not drawn.",
+                "An edge is {source_id, target_id, conn_type} — `source_id`/`target_id`, not"
+                " `source`/`target`. The loop is spelled out with four names:"
+                " control-structure-node --issues--> control-action --acts-on--> control-structure-node,"
+                " `acts-through` for an action routed via an actuator, and `feedback` between two"
+                " control-structure nodes.",
+                "The relation names carry the meaning; direction alone does not. Other relations also"
+                " point at a control action (a UCA `concerns` one) and none of them is part of the"
+                " loop, so an edge named anything else is drawn as a plain arrow and takes no part in"
+                " collapsing the action onto it.",
+                "A control action is drawn as the labelled ARROW between its endpoints wherever the"
+                " loop allows, and as a box only where collapsing it would hide something. Authoring"
+                " it as a box on purpose is therefore not available — express it through its"
+                " `issues`/`acts-on` pair and let the renderer decide.",
+                "Feedback is authored the way it flows, from the sensing node back to the controller,"
+                " and renders dotted so the two halves of the loop read differently. Reversing it"
+                " inverts the loop and still renders.",
+                "`binding_status` is the modelling-gap signal, not decoration: `unbound-pending`"
+                " marks the node yellow with a `[?]`, `out-of-scope` greys it with a `[~]`, and"
+                " `bound` (the default) leaves the surface's own fill in place.",
+            ),
         )
 
 
