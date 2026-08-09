@@ -156,7 +156,7 @@ def register(mcp: FastMCP) -> None:
             "Set dry_run=false to write the file. "
             "artifact_id: full (PREFIX@epoch.random.slug) or short (PREFIX@epoch.random) form."
         ),
-        annotations=LOCAL_WRITE,
+        annotations=DESTRUCTIVE_LOCAL_WRITE,
         structured_output=True,
     )
 

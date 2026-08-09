@@ -113,7 +113,7 @@ def register_node_write_tools(server: FastMCP) -> None:
             "it is immutable once recorded. Use assurance_assign_provenance to repair a node that "
             "has none."
         ),
-        annotations=LOCAL_WRITE,
+        annotations=DESTRUCTIVE_LOCAL_WRITE,
     )
     def assurance_edit_node(
         node_id: str,

@@ -90,6 +90,25 @@ def test_every_tool_on_every_mount_declares_all_four_safety_hints(mount: str, se
             assert isinstance(value, bool), f"{mount}/{name}.{hint} is {value!r}, not a bool"
 
 
+@pytest.mark.parametrize(("mount", "server"), ALL_MOUNTS, ids=[name for name, _ in ALL_MOUNTS])
+def test_every_tool_on_every_mount_serves_an_object_input_schema(
+    mount: str, server: Any
+) -> None:
+    """FastMCP derives JSON Schema from each Python signature and serves it as ``inputSchema``.
+
+    The schema belongs to the protocol surface, not to a JavaScript-specific zod/joi/yup call at
+    each registration site. Assert the object a client receives so a framework or registration
+    change cannot silently leave a tool unvalidated.
+    """
+    tools = _served_tools(server)
+    assert tools, f"{mount} served no tools, which would make every assertion below vacuous"
+
+    for name, tool in tools.items():
+        schema = tool.inputSchema
+        assert isinstance(schema, dict), f"{mount}/{name}.inputSchema is not an object"
+        assert schema.get("type") == "object", f"{mount}/{name}.inputSchema: {schema}"
+
+
 @pytest.mark.verifies("REQ@1785945042.cbXjYz")
 @pytest.mark.parametrize(("mount", "server"), READ_MOUNTS, ids=[name for name, _ in READ_MOUNTS])
 def test_read_server_tools_are_marked_read_only(mount: str, server: Any) -> None:
@@ -127,28 +146,47 @@ def test_write_server_catalog_and_guidance_are_read_only_yaml_tools() -> None:
             assert tool.fn_metadata.output_schema is None, name
 
 
-def test_write_server_mutation_tool_annotations_match_expected_intent() -> None:
-    tools = {tool.name: tool for tool in mcp_write._tool_manager.list_tools()}  # type: ignore[attr-defined]
+def test_architecture_write_mount_annotations_match_expected_intent() -> None:
+    tools = _served_tools(mcp_write)
 
     expected = {
         "artifact_create_entity": (False, False, False, False),
+        "artifact_edit_entity": (False, True, False, False),
+        "artifact_delete_entity": (False, True, False, False),
         "artifact_add_connection": (False, False, False, False),
-        "artifact_create_matrix": (False, False, False, False),
-        "artifact_create_diagram": (False, False, False, False),
-        "artifact_create_document": (False, False, False, False),
-        "artifact_edit_document": (False, False, False, False),
-        "artifact_edit_entity": (False, False, False, False),
         "artifact_edit_connection": (False, True, False, False),
-        "artifact_edit_diagram": (False, False, False, False),
-        "artifact_edit_connection_associations": (False, False, False, False),
-        "artifact_bulk_write": (False, False, False, False),
+        "artifact_edit_connection_associations": (False, True, False, False),
+        "artifact_create_diagram": (False, False, False, False),
+        "artifact_edit_diagram": (False, True, False, False),
+        "artifact_delete_diagram": (False, True, False, False),
+        # create_matrix is also its content-upsert operation when artifact_id already exists.
+        "artifact_create_matrix": (False, True, False, False),
+        "artifact_create_document": (False, False, False, False),
+        "artifact_edit_document": (False, True, False, False),
+        "artifact_delete_document": (False, True, False, False),
+        # The batch accepts edit_entity and edit_connection(operation=update|remove) items.
+        "artifact_bulk_write": (False, True, False, False),
         "artifact_bulk_delete": (False, True, False, False),
+        # One lifecycle tool spans create through archive/delete, so its broadest effect wins.
+        "artifact_group": (False, True, False, False),
         "artifact_promote_to_enterprise": (False, True, False, False),
         "artifact_save_changes": (False, False, False, True),
         "artifact_submit_for_review": (False, False, False, True),
-        # destructive AND open-world: withdraw deletes the REMOTE review branch.
         "artifact_withdraw_changes": (False, True, False, True),
+        "artifact_authoring_guidance": (True, False, True, False),
+        "artifact_help": (True, False, True, False),
+        "artifact_get_operation": (True, False, True, False),
+        # Rebuilds a derived index by deleting and recreating rows. Model content is untouched,
+        # but MCP defines destructiveHint=false as *only* additive updates.
+        "artifact_admin_reindex": (False, True, False, False),
+        # One lifecycle tool spans create through edit/delete.
+        "artifact_viewpoint": (False, True, False, False),
     }
+
+    assert set(expected) == set(tools), (
+        "the architecture write mount and this table have diverged; "
+        f"unlisted: {sorted(set(tools) - set(expected))}, stale: {sorted(set(expected) - set(tools))}"
+    )
 
     for name, (read_only, destructive, idempotent, open_world) in expected.items():
         tool = tools[name]
@@ -174,19 +212,18 @@ def test_assurance_write_mount_annotations_match_expected_intent() -> None:
         # Additive graph and lifecycle writes.
         "assurance_create_node": (False, False, False, False),
         "assurance_add_edge": (False, False, False, False),
-        # edit_node cannot retype a node — node_type is not among its updatable fields — so it is
-        # additive in the sense artifact_edit_entity is, not replacing like artifact_edit_connection.
-        "assurance_edit_node": (False, False, False, False),
+        "assurance_edit_node": (False, True, False, False),
         "assurance_seal_baseline": (False, False, False, False),
         "assurance_register_arch_ref": (False, False, False, False),
         "assurance_create_analysis": (False, False, False, False),
-        "assurance_update_analysis": (False, False, False, False),
+        "assurance_update_analysis": (False, True, False, False),
         "assurance_set_fmea_factor": (False, False, False, False),
         "assurance_create_group": (False, False, False, False),
-        "assurance_file_analysis": (False, False, False, False),
+        "assurance_file_analysis": (False, True, False, False),
         "assurance_add_analysis_member": (False, False, False, False),
-        "assurance_ingest_security_signals": (False, False, False, False),
-        "assurance_reconcile_aibom": (False, False, False, False),
+        # Activating an ingest supersedes the anchor's previously active snapshot.
+        "assurance_ingest_security_signals": (False, True, False, False),
+        "assurance_reconcile_aibom": (True, False, True, False),
         # Set-once by construction: re-asserting the same analysis changes nothing, which is the
         # one write on this mount a caller may safely repeat after a dropped response.
         "assurance_assign_provenance": (False, False, True, False),

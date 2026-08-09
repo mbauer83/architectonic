@@ -72,7 +72,7 @@ def register_grouping_write_tools(server: FastMCP) -> None:
             "worth recording before anyone settles where it belongs, so unfiling is a normal "
             "operation rather than an error."
         ),
-        annotations=LOCAL_WRITE,
+        annotations=DESTRUCTIVE_LOCAL_WRITE,
     )
     def assurance_file_analysis(
         analysis_id: str,

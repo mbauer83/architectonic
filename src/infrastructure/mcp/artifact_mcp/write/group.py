@@ -7,7 +7,7 @@ from typing import Literal
 from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
 
 from src.infrastructure.mcp.artifact_mcp.write._common import resolve_repo_roots
-from src.infrastructure.mcp.tool_annotations import LOCAL_WRITE
+from src.infrastructure.mcp.tool_annotations import DESTRUCTIVE_LOCAL_WRITE
 
 
 def artifact_group(
@@ -92,6 +92,6 @@ def register(mcp: FastMCP) -> None:
             "confirm: echo the target slug back for destructive/non-empty ops. "
             "dry_run: for model-project delete — True (default) returns impact report, False applies."
         ),
-        annotations=LOCAL_WRITE,
+        annotations=DESTRUCTIVE_LOCAL_WRITE,
         structured_output=True,
     )

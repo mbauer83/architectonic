@@ -52,21 +52,21 @@ looking entirely normal. See
 | Capability | Tool | Access | Purpose |
 |---|---|---|---|
 | Entities | `artifact_create_entity` | Write | Create a model entity file. |
-| Entities | `artifact_edit_entity` | Write | Edit an existing entity. |
+| Entities | `artifact_edit_entity` | Destructive | Edit an existing entity. |
 | Entities | `artifact_delete_entity` | Destructive | Delete a single entity (and its own .outgoing.md file, if any). |
 | Connections | `artifact_add_connection` | Write | Add a connection to an entity's .outgoing.md file. |
 | Connections | `artifact_edit_connection` | Destructive | Edit or remove a connection in an .outgoing.md file. |
-| Connections | `artifact_edit_connection_associations` | Write | Add or remove second-order association entity IDs from a connection. |
+| Connections | `artifact_edit_connection_associations` | Destructive | Add or remove second-order association entity IDs from a connection. |
 | Diagrams | `artifact_create_diagram` | Write | Create a diagram. |
-| Diagrams | `artifact_edit_diagram` | Write | Edit an existing diagram. |
+| Diagrams | `artifact_edit_diagram` | Destructive | Edit an existing diagram. |
 | Diagrams | `artifact_delete_diagram` | Destructive | Delete a single diagram, including its rendered PNG/SVG output. |
-| Diagrams | `artifact_create_matrix` | Write | Create a markdown connection-matrix diagram. |
+| Diagrams | `artifact_create_matrix` | Destructive | Create a markdown connection-matrix diagram. |
 | Documents | `artifact_create_document` | Write | Create a new architecture document (e.g. ADR, RFC). |
-| Documents | `artifact_edit_document` | Write | Edit an existing architecture document's frontmatter or body. |
+| Documents | `artifact_edit_document` | Destructive | Edit an existing architecture document's frontmatter or body. |
 | Documents | `artifact_delete_document` | Destructive | Delete a single architecture document. |
-| Bulk | `artifact_bulk_write` | Write | Batch entity creates, connection adds, and edits in one call. |
+| Bulk | `artifact_bulk_write` | Destructive | Batch entity creates, connection adds, and edits in one call. |
 | Bulk | `artifact_bulk_delete` | Destructive | Batch destructive operations with dependency-aware planning and final repository verification. |
-| Grouping | `artifact_group` | Write | Manage artifact group containers across all three grouping axes. |
+| Grouping | `artifact_group` | Destructive | Manage artifact group containers across all three grouping axes. |
 | Promotion & sync | `artifact_promote_to_enterprise` | Destructive | Promote an explicit selection of entities, connections, documents, and diagrams from the engagement repo to the enterprise repo (entity_ids, connection_ids, document_ids, diagram_ids; entity_id names the selection root). |
 | Promotion & sync | `artifact_save_changes` | Write | Commit all accumulated architecture changes. |
 | Promotion & sync | `artifact_submit_for_review` | Write | Push the enterprise working branch to the remote for team review. |
@@ -74,8 +74,8 @@ looking entirely normal. See
 | Guidance & ops | `artifact_authoring_guidance` | Read-only | Return authoring guidance before creating entities or diagrams. |
 | Guidance & ops | `artifact_help` | Read-only | Return the full catalog of artifact types, entity types (by domain), connection types (by language), and diagram types (with accepted domains). |
 | Guidance & ops | `artifact_get_operation` | Read-only | Return the latest recorded status, phase, timestamps, error, and final result for a prior bulk operation by operation_id. |
-| Guidance & ops | `artifact_admin_reindex` | Write | Rebuild the artifact index from disk. |
-| Other | `artifact_viewpoint` | Write | Create/edit/delete a ViewpointDefinition in the engagement repo's own catalog — the same validate/persist path a GUI builder's save flow uses. |
+| Guidance & ops | `artifact_admin_reindex` | Destructive | Rebuild the artifact index from disk. |
+| Other | `artifact_viewpoint` | Destructive | Create/edit/delete a ViewpointDefinition in the engagement repo's own catalog — the same validate/persist path a GUI builder's save flow uses. |
 <!-- mcp-tools:end arch-write -->
 
 The tool count is kept small with clear descriptions on purpose — fewer, well-described

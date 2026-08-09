@@ -103,18 +103,18 @@ judgement whose basis has since moved is marked stale rather than left silently 
 | Capability | Tool | Access | Purpose |
 |---|---|---|---|
 | Method authoring | `assurance_create_analysis` | Write | Create an assurance analysis — the aggregate root for a unit of assurance work; every node is created within one analysis. |
-| Method authoring | `assurance_update_analysis` | Write | Update an analysis's name, status (draft/active/completed/archived), or tlp. |
+| Method authoring | `assurance_update_analysis` | Destructive | Update an analysis's name, status (draft/active/completed/archived), or tlp. |
 | Method authoring | `assurance_delete_analysis` | Destructive | Delete an assurance analysis. |
 | Method authoring | `assurance_create_node` | Write | Create an assurance entity (loss, hazard, control-structure-node, control-action, unsafe-control-action, loss-scenario, assurance-constraint, failure-mode, evidence, risk, incident, corrective-action, obligation). |
-| Method authoring | `assurance_edit_node` | Write | Update attributes of an existing assurance node. |
+| Method authoring | `assurance_edit_node` | Destructive | Update attributes of an existing assurance node. |
 | Method authoring | `assurance_delete_node` | Destructive | Delete an assurance node and all its incoming/outgoing edges. |
 | Method authoring | `assurance_add_edge` | Write | Add a typed assurance connection between two nodes. |
 | Method authoring | `assurance_delete_edge` | Destructive | Delete a single assurance edge by its edge_id. |
 | Method authoring | `assurance_seal_baseline` | Write | Seal a signed baseline of the current assurance analysis state. |
 | Completeness & coverage | `assurance_promotion_preflight` | Read-only | Pre-check safety/security assurance-constraints before promoting findings to a wider audience tier. |
 | Failure modes | `assurance_set_fmea_factor` | Write | Record a human judgement of one failure-mode factor, as a new immutable revision. |
-| Supply chain / AIBOM | `assurance_reconcile_aibom` | Write | Diff a modeled AI-BOM (from the architecture model) against a discovered one (from a runtime discovery tool or an imported BOM file). |
-| Security signals | `assurance_ingest_security_signals` | Write | Ingest security signals for one architecture anchor: submit a CycloneDX BOM document (and, optionally, the OSV advisory records for its components) as a single ingest, producing a new ACTIVE signal snapshot that supersedes the anchor's previous one. |
+| Supply chain / AIBOM | `assurance_reconcile_aibom` | Read-only | Diff a modeled AI-BOM (from the architecture model) against a discovered one (from a runtime discovery tool or an imported BOM file). |
+| Security signals | `assurance_ingest_security_signals` | Destructive | Ingest security signals for one architecture anchor: submit a CycloneDX BOM document (and, optionally, the OSV advisory records for its components) as a single ingest, producing a new ACTIVE signal snapshot that supersedes the anchor's previous one. |
 | Security signals | `assurance_register_arch_ref` | Write | Record an assurance→architecture cross-reference. |
 | Security signals | `assurance_model_this` | Read-only | Propose an architecture entity to bind an unbound-pending control-structure-node. |
 | Other | `assurance_add_analysis_member` | Write | Draw an existing node into an analysis that did not author it, so one method can reason over another's work without copying it — an FMEA enumerating failure modes against the control-structure nodes an STPA identified. |
@@ -122,7 +122,7 @@ judgement whose basis has since moved is marked stale rather than left silently 
 | Other | `assurance_create_group` | Write | Create a group that files assurance analyses. |
 | Other | `assurance_delete_group` | Destructive | Delete a group. |
 | Other | `assurance_delete_security_snapshot` | Destructive | Delete security-signal snapshots. |
-| Other | `assurance_file_analysis` | Write | File an analysis into a group, or pass group_id=null to unfile it. |
+| Other | `assurance_file_analysis` | Destructive | File an analysis into a group, or pass group_id=null to unfile it. |
 | Other | `assurance_remove_analysis_member` | Destructive | Stop a node participating in an analysis. |
 <!-- mcp-tools:end assurance-write -->
 

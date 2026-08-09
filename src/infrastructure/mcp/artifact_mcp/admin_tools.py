@@ -8,7 +8,7 @@ from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
 from src.domain.artifact_id import parse_entity_id
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.mcp.artifact_mcp.context import resolve_repo_root, sync_refresh_for_roots
-from src.infrastructure.mcp.tool_annotations import LOCAL_WRITE
+from src.infrastructure.mcp.tool_annotations import DESTRUCTIVE_LOCAL_WRITE
 
 ReindexScope = Literal["full", "entity"]
 
@@ -76,6 +76,6 @@ def register_admin_tools(mcp: FastMCP) -> None:
             "Rebuild the artifact index from disk. scope='full' refreshes the repository; "
             "scope='entity' reconciles one stable short ID after an out-of-band rename."
         ),
-        annotations=LOCAL_WRITE,
+        annotations=DESTRUCTIVE_LOCAL_WRITE,
         structured_output=True,
     )

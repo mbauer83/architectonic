@@ -56,7 +56,7 @@ def register_analysis_write_tools(server: FastMCP) -> None:
             "Update an analysis's name, status (draft/active/completed/archived), or tlp. "
             "method and architecture_anchor_id are immutable (they scope the whole aggregate)."
         ),
-        annotations=LOCAL_WRITE,
+        annotations=DESTRUCTIVE_LOCAL_WRITE,
     )
     def assurance_update_analysis(
         analysis_id: str,
