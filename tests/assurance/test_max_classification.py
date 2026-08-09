@@ -124,10 +124,17 @@ class TestWithheldResponse:
         with patch("src.config.storage_settings.storage_assurance_max_classification", return_value="TLP:AMBER"):
             resp = ctx.withheld_response("NODE@123", "TLP:RED")
 
-        assert resp["error"] == "classification_ceiling_exceeded"
-        assert resp["node_id"] == "NODE@123"
-        assert resp["tlp"] == "TLP:RED"
-        assert "max_classification" in resp
+        # The shared in-band shape: the code names the refusal, and the classification data a
+        # caller acts on rides under `details` rather than spread across sibling keys.
+        error = resp["error"]
+        assert isinstance(error, dict)
+        assert error["code"] == "classification_ceiling_exceeded"
+        assert error["path"] == "node_id"
+        assert error["details"] == {
+            "node_id": "NODE@123",
+            "tlp": "TLP:RED",
+            "ceiling": "TLP:AMBER",
+        }
 
     def test_withheld_response_includes_hint(self) -> None:
         from unittest.mock import patch
@@ -138,7 +145,11 @@ class TestWithheldResponse:
         with patch("src.config.storage_settings.storage_assurance_max_classification", return_value="TLP:GREEN"):
             resp = ctx.withheld_response("NODE@456", "TLP:AMBER")
 
-        assert "max_classification" in str(resp["message"])
+        error = resp["error"]
+        assert isinstance(error, dict)
+        # The ceiling is named in the sentence, so a reader is told what to change, not just that
+        # they were refused.
+        assert "TLP:GREEN" in str(error["message"])
 
 
 # ── SC-5: ArtifactStorePort return type smoke ─────────────────────────────────

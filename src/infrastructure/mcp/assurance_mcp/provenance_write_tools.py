@@ -17,6 +17,7 @@ from src.application.assurance.provenance_assignment import (
     assign_provenance,
 )
 from src.infrastructure.assurance.write_serialization import run_write
+from src.infrastructure.mcp.assurance_mcp import _refusals
 from src.infrastructure.mcp.assurance_mcp.context import get_assurance_context
 from src.infrastructure.mcp.tool_annotations import IDEMPOTENT_LOCAL_WRITE
 
@@ -41,22 +42,15 @@ def register_provenance_write_tools(server: FastMCP) -> None:
         result = run_write(lambda: assign_provenance(
             ctx.store, ctx.archive, node_id=node_id, analysis_id=analysis_id,
         ))
-        if isinstance(result, ProvenanceLocked):
-            return {"error": "assurance_store_locked"}
-        if isinstance(result, ProvenanceNodeNotFound):
-            return {"error": "not_found", "node_id": result.node_id}
-        if isinstance(result, ProvenanceAnalysisNotFound):
-            return {"error": "not_found", "analysis_id": result.analysis_id}
-        if isinstance(result, ProvenanceImmutable):
-            return {
-                "error": "provenance_immutable",
-                "node_id": result.node_id,
-                "current_analysis_id": result.current_analysis_id,
-                "message": (
-                    "This node already records which analysis produced it. Provenance is "
-                    "immutable; participation is how another analysis draws on its work."
-                ),
-            }
+        match result:
+            case ProvenanceLocked():
+                return ctx.locked_response()
+            case ProvenanceNodeNotFound():
+                return _refusals.not_found(result.node_id)
+            case ProvenanceAnalysisNotFound():
+                return _refusals.not_found(result.analysis_id, path="analysis_id")
+            case ProvenanceImmutable():
+                return _refusals.provenance_immutable(result.node_id, result.current_analysis_id)
         return {
             "node_id": result.node_id,
             "analysis_id": result.analysis_id,

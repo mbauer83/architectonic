@@ -6,16 +6,22 @@ checked only for an exception reads a refusal as coverage. Every gate this relea
 that happened.
 
 It happened again to the harness itself, which is why this file exists. `refusal` knew two shapes and
-the assurance mount uses a third: the artifact tools report ``wrote``, the viewpoint and sync tools
-report ``ok``, and the assurance tools report neither — a locked store, an absent node or a rejected
-field comes back as a bare ``{"error": …, "message": …}``. So the commit that started walking
+the assurance mount used a third: the artifact tools report ``wrote``, the viewpoint and sync tools
+report ``ok``, and the assurance tools reported neither — a locked store, an absent node or a rejected
+field came back as a bare ``{"error": "not_found", "node_id": …}``. So the commit that started walking
 `assurance-write` reported 22 tools green while one of them was refusing, and the only reason it
 surfaced is that the REST route for the same operation answers 409 and the REST walk noticed.
 
-Nothing pinned the fix, so it could have regressed to silence at any time — the failure mode of a
+The third shape is now gone rather than recognised: every mount answers an error as
+``{"error": {"code", "path", "message"}}``, built by `mcp.execution_failure`. That is the better fix
+— a harness that has to know which mount it is talking to before it can tell a refusal from a
+success is one flag away from this bug every time a mount is added. What remains is two *flags*
+inside a success (``wrote`` and ``ok``, which are not errors) and one error shape.
+
+Nothing pinned any of it, so it could have regressed to silence at any time — the failure mode of a
 detector being that it detects nothing and says so cheerfully. These are the shapes, held one by one,
 plus the negative cases that must *not* read as refusals: several tools on these mounts are reads in
-write clothing and answer none of the three flags.
+write clothing and answer none of them.
 """
 
 from __future__ import annotations
@@ -41,15 +47,28 @@ from tools.mcp._answers import refusal
             "the viewpoint and sync tools' shape",
         ),
         (
-            {"error": "invalid_factor_assessment", "errors": [{"field": "basis_digest"}]},
-            "the assurance mount's shape, which this function did not recognise until 2026-08-03",
+            {
+                "error": {
+                    "code": "validation_error",
+                    "path": "factor",
+                    "message": "basis_digest: stale",
+                    "details": {"field_errors": [{"field": "basis_digest", "message": "stale"}]},
+                }
+            },
+            "a rejected field, which the assurance mount used to spell invalid_factor_assessment",
         ),
         (
-            {"error": "assurance_store_locked"},
+            {
+                "error": {
+                    "code": "assurance_store_locked",
+                    "path": "store",
+                    "message": "not unlocked",
+                }
+            },
             "a locked store, which is how every assurance tool answers when the store is not open",
         ),
         (
-            {"error": "not_found", "node_id": "HAZ@1"},
+            {"error": {"code": "not_found", "path": "node_id", "message": "no node HAZ@1"}},
             "an absent node, the other refusal an assurance write makes most often",
         ),
     ],
@@ -74,12 +93,16 @@ def test_a_refusal_is_recognised_whatever_shape_it_wears(
             "model-and-bind's task spec: an answer, not an error, on a path that writes nothing",
         ),
         (
-            {"error": ""},
-            "an empty error string is not an error; a truthiness check is what keeps this true",
+            {"error": {}},
+            "an error object with no code is not a refusal; presence alone never decided this",
         ),
         (
             {"error": None},
             "nor is an absent one, which several tools include as a null field",
+        ),
+        (
+            {"results": [{"op": "create", "error": "already exists"}]},
+            "a per-item error inside an artifact bulk answer — the batch's business, not the call's",
         ),
         ("a string, not a mapping", "anything that is not a mapping cannot carry a flag"),
         (None, "and neither can nothing"),
@@ -89,7 +112,8 @@ def test_a_success_is_not_read_as_a_refusal(payload: object, because: str) -> No
     """The other direction, and the one that would make the walk cry wolf.
 
     A detector that flagged successes would be switched off within a day, which is the same end state
-    as one that flags nothing — so both directions are held. The `{"error": ""}` and `{"error": None}`
-    cases are the specific reason the assurance branch tests truthiness rather than presence.
+    as one that flags nothing — so both directions are held. The `{"error": {}}` case is why the
+    branch checks for a `code` rather than for the key: an object is not a refusal until it says
+    which one.
     """
     assert refusal(payload) is None, because

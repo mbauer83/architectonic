@@ -45,6 +45,13 @@ ErrorCode: TypeAlias = Literal[
     "provenance_required",
     "invalid_participation",
     "node_legacy_invalid",
+    # A read withheld because the node is classified above the session's TLP ceiling. Distinct from
+    # `classification_not_publishable`, which refuses to *publish* an argument outside the store:
+    # this one refuses to show a node to a session, and a client acts on it differently — the first
+    # is fixed by changing what is published, the second by opening a session cleared for the tier.
+    # Only the MCP surface emits it today; REST filters above-ceiling nodes before they reach a
+    # response, so it declares no details DTO.
+    "classification_ceiling_exceeded",
     # assurance graph shape — each carries data a caller acts on differently, which is why they are
     # members rather than instances of `conflict`
     "duplicate_edge",
@@ -302,6 +309,10 @@ ERROR_DETAIL_TYPES: dict[str, type[_Details] | None] = {
     "provenance_required": None,
     "invalid_participation": InvalidParticipationDetails,
     "node_legacy_invalid": LegacyInvalidDetails,
+    # MCP-only today: REST filters above-ceiling nodes out before a response is built, so it has
+    # nothing to declare here. The code is a member so both surfaces spell the refusal one way if
+    # REST ever needs to name it.
+    "classification_ceiling_exceeded": None,
     "duplicate_edge": DuplicateEdgeDetails,
     "illegal_connection_type": IllegalConnectionTypeDetails,
     "not_a_failure_mode": NotAFailureModeDetails,

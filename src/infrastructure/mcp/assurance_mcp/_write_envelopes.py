@@ -4,27 +4,33 @@ One translator rather than a chain per tool: a new outcome then reaches every to
 instead of falling through to the success branch in whichever tool was missed. Kept apart from the
 tool registrations because it is a different job — the tools say what can be done, this says how a
 result is reported — and because the registration module is at its length limit.
+
+That promise was not kept while the parameters were typed ``Any`` and the branches were an
+``isinstance`` chain: ``MutationEntityInUse`` had been a member of ``MutationResult`` and handled by
+the REST adapter for some time, and this function never mentioned it, so deleting a node another
+analysis referenced fell through to the success branch and raised ``AttributeError`` looking for a
+payload the refusal does not have. Typing the parameter with the union and matching on it makes the
+next missing case a type error instead of a crash in front of a caller.
 """
 
 from __future__ import annotations
 
-from typing import Any
-
+from src.application.assurance import analysis as analysis_uc
 from src.application.assurance import mutations as mutations
-from src.application.assurance.legacy_invalid import LegacyInvalidNode
+from src.infrastructure.mcp.assurance_mcp import _refusals
+from src.infrastructure.mcp.assurance_mcp.context import AssuranceContext
 
+#: Outcomes any assurance mutation can produce, plus the two only edge creation can.
+AssuranceMutationResult = mutations.EdgeMutationResult
 
-def _legacy_invalid(node_id: str, permitted_operation: str) -> dict[str, object]:
-    """The refusal for a node awaiting provenance repair, in the MCP envelope.
-
-    Names the permitted operation, because an agent told only "refused" will retry the same call.
-    """
-    return {
-        "error": "node_legacy_invalid",
-        "node_id": node_id,
-        "permitted_operation": permitted_operation,
-        "message": LegacyInvalidNode(node_id=node_id).message,
-    }
+#: Outcomes the analysis-aggregate use cases produce.
+AnalysisResult = (
+    analysis_uc.AnalysisOk
+    | analysis_uc.AnalysisLocked
+    | analysis_uc.AnalysisNotFound
+    | analysis_uc.AnalysisInvalid
+    | analysis_uc.AnalysisLegacyInvalid
+)
 
 
 def _ok(result: mutations.MutationOk) -> dict[str, object]:
@@ -34,66 +40,46 @@ def _ok(result: mutations.MutationOk) -> dict[str, object]:
     return out
 
 
-def _envelope(result: Any, ctx: Any) -> dict[str, object]:
+def _envelope(result: AssuranceMutationResult, ctx: AssuranceContext) -> dict[str, object]:
     """Translate any mutation outcome into the MCP response envelope.
 
     One translator rather than a chain per tool: a new outcome then reaches every tool at
     once, instead of falling through to the success branch in whichever tool was missed.
     """
-    if isinstance(result, mutations.MutationLocked):
-        return ctx.locked_response()
-    if isinstance(result, mutations.MutationNotFound):
-        return ctx.not_found_response(result.artifact_id)
-    if isinstance(result, mutations.MutationLegacyInvalid):
-        return _legacy_invalid(result.node_id, result.permitted_operation)
-    if isinstance(result, mutations.MutationRejected):
-        return {
-            "error": "invalid_value",
-            "field": result.field,
-            "value": result.value,
-            "message": result.message,
-        }
-    if isinstance(result, mutations.MutationDuplicateEdge):
-        return {
-            "error": "duplicate_edge",
-            "edge_id": result.edge_id,
-            "source_id": result.source_id,
-            "target_id": result.target_id,
-            "conn_type": result.conn_type,
-            "message": (
-                f"'{result.conn_type}' from {result.source_id} to {result.target_id} already "
-                f"exists as {result.edge_id}. A second copy would state the same thing twice and "
-                "be counted twice by anything that traverses it."
-            ),
-        }
-    if isinstance(result, mutations.MutationIllegalPair):
-        return {
-            "error": "illegal_connection_type",
-            "source_type": result.source_type,
-            "target_type": result.target_type,
-            "conn_type": result.conn_type,
-            "legal_types": list(result.legal_types),
-            "message": (
-                f"'{result.conn_type}' is not a permitted edge type from "
-                f"{result.source_type} to {result.target_type}. "
-                + (f"Legal types for this pair: {', '.join(result.legal_types)}."
-                   if result.legal_types else "No edge type is legal for this pair.")
-            ),
-        }
-    return _ok(result)
+    match result:
+        case mutations.MutationLocked():
+            return ctx.locked_response()
+        case mutations.MutationNotFound():
+            return ctx.not_found_response(result.artifact_id)
+        case mutations.MutationLegacyInvalid():
+            return _refusals.legacy_invalid(result.node_id, result.permitted_operation)
+        case mutations.MutationRejected():
+            return _refusals.rejected_field(result.field, result.message)
+        case mutations.MutationEntityInUse():
+            return _refusals.entity_in_use(result.node_id, list(result.referencing_analysis_ids))
+        case mutations.MutationDuplicateEdge():
+            return _refusals.duplicate_edge(
+                result.edge_id, result.source_id, result.target_id, result.conn_type
+            )
+        case mutations.MutationIllegalPair():
+            return _refusals.illegal_connection_type(
+                result.source_type, result.target_type, result.conn_type, list(result.legal_types)
+            )
+        case mutations.MutationOk():
+            return _ok(result)
 
 
-def _analysis_result(result: Any, ctx: Any) -> dict[str, object]:
-    from src.application.assurance import analysis as analysis_uc  # noqa: PLC0415
-
-    if isinstance(result, analysis_uc.AnalysisLocked):
-        return ctx.locked_response()
-    if isinstance(result, analysis_uc.AnalysisNotFound):
-        return ctx.not_found_response(result.analysis_id)
-    if isinstance(result, analysis_uc.AnalysisInvalid):
-        return {"error": result.error, "message": result.message}
-    if isinstance(result, analysis_uc.AnalysisLegacyInvalid):
-        return _legacy_invalid(result.node_id, result.permitted_operation)
-    return result.payload
-
-
+def _analysis_result(result: AnalysisResult, ctx: AssuranceContext) -> dict[str, object]:
+    match result:
+        case analysis_uc.AnalysisLocked():
+            return ctx.locked_response()
+        case analysis_uc.AnalysisNotFound():
+            return _refusals.not_found(result.analysis_id, path="analysis_id")
+        case analysis_uc.AnalysisLegacyInvalid():
+            return _refusals.legacy_invalid(result.node_id, result.permitted_operation)
+        case analysis_uc.AnalysisInvalid():
+            return _refusals.aggregate_invariant(
+                result.error, result.message, subject=result.subject, count=result.count
+            )
+        case analysis_uc.AnalysisOk():
+            return result.payload

@@ -13,6 +13,7 @@ from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
 
 from src.application.assurance import mutations as mutations
 from src.infrastructure.assurance.write_serialization import run_write
+from src.infrastructure.mcp.assurance_mcp import _refusals
 from src.infrastructure.mcp.assurance_mcp._write_envelopes import _envelope
 from src.infrastructure.mcp.assurance_mcp.context import get_assurance_context
 from src.infrastructure.mcp.tool_annotations import LOCAL_WRITE, READ_ONLY
@@ -98,11 +99,9 @@ def register_baseline_write_tools(server: FastMCP) -> None:
         if isinstance(result, model_bind.BindLocked):
             return ctx.locked_response()
         if isinstance(result, model_bind.BindInvalid):
-            return {
-                "error": result.error,
-                "assurance_node_id": assurance_node_id,
-                "message": result.message,
-            }
+            # `result.error` was put on the wire verbatim, which published two words the closed
+            # vocabulary never declared. The shared table names both.
+            return _refusals.bind_invalid(result.error, result.message)
         if isinstance(result, model_bind.TaskRequired):
             return result.spec
         return {  # defensive: Bound never occurs with arch_creator=None

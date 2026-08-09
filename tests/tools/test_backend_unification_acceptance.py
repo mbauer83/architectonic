@@ -17,13 +17,15 @@ from tests.support.route_introspection import openapi_paths
 
 
 def test_assurance_locked_response_has_structured_error_key() -> None:
-    """locked_response() always returns a dict with 'error' key, never raises."""
+    """locked_response() always returns the shared in-band error shape, never raises."""
     ctx = AssuranceContext()
     result = ctx.locked_response()
 
     assert isinstance(result, dict)
-    assert result.get("error") == "assurance_store_locked"
-    assert "message" in result
+    error = result["error"]
+    assert isinstance(error, dict)
+    assert error["code"] == "assurance_store_locked"
+    assert error["message"]
 
 
 def test_assurance_list_nodes_tool_returns_locked_when_store_unavailable(monkeypatch) -> None:

@@ -16,6 +16,7 @@ from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
 from src.application.assurance import mutations as mutations
 from src.infrastructure.assurance.edge_legality import legal_connection_types
 from src.infrastructure.assurance.write_serialization import run_write
+from src.infrastructure.mcp.assurance_mcp import _refusals
 from src.infrastructure.mcp.assurance_mcp._write_envelopes import _envelope
 from src.infrastructure.mcp.assurance_mcp.context import get_assurance_context
 from src.infrastructure.mcp.tool_annotations import DESTRUCTIVE_LOCAL_WRITE, LOCAL_WRITE
@@ -58,14 +59,7 @@ def register_node_write_tools(server: FastMCP) -> None:
         attributes: dict[str, object] | None = None,
     ) -> dict[str, object]:
         if ctx.store.get_analysis(analysis_id) is None:
-            return {
-                "error": "not_found",
-                "analysis_id": analysis_id,
-                "message": (
-                    f"No analysis {analysis_id!r} exists. A node is produced by an analysis, so "
-                    "one that names none cannot be created."
-                ),
-            }
+            return _refusals.not_found(analysis_id, path="analysis_id")
         result = run_write(lambda: mutations.create_node(
             ctx.store, ctx.archive,
             node_type=node_type, name=name, status=status, tlp=tlp,

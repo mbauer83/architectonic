@@ -149,29 +149,20 @@ class AssuranceContext:
         return self.store.is_unlocked()
 
     def locked_response(self) -> dict[str, object]:
-        return {
-            "error": "assurance_store_locked",
-            "message": (
-                "The confidential assurance store is not unlocked. "
-                "Run `arch-assurance unlock` to enable assurance tools."
-            ),
-        }
+        """The refusal every assurance tool can answer, in the shape every MCP refusal uses."""
+        from src.infrastructure.mcp.assurance_mcp import _refusals  # noqa: PLC0415
+
+        return _refusals.store_locked()
 
     def not_found_response(self, node_id: str) -> dict[str, object]:
-        return {"error": "not_found", "node_id": node_id}
+        from src.infrastructure.mcp.assurance_mcp import _refusals  # noqa: PLC0415
+
+        return _refusals.not_found(node_id)
 
     def withheld_response(self, node_id: str, tlp: str) -> dict[str, object]:
-        return {
-            "error": "classification_ceiling_exceeded",
-            "node_id": node_id,
-            "tlp": tlp,
-            "max_classification": self.max_classification,
-            "message": (
-                f"Node {node_id} (TLP:{tlp}) exceeds the configured "
-                f"max_classification ({self.max_classification}). "
-                "Raise the ceiling in storage.assurance.max_classification to access it."
-            ),
-        }
+        from src.infrastructure.mcp.assurance_mcp import _refusals  # noqa: PLC0415
+
+        return _refusals.classification_ceiling_exceeded(node_id, tlp, self.max_classification)
 
 
 _CTX = AssuranceContext()
