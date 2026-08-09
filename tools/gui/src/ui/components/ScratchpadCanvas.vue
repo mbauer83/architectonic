@@ -29,7 +29,10 @@ const emit = defineEmits<{
   (event: 'delete-note', payload: { id: string }): void
   (event: 'link-notes', payload: { source: string; target: string }): void
   (event: 'select', payload: { id: string | null }): void
-  (event: 'bind-request', payload: { areaId: string }): void
+  (event: 'menu-request', payload: {
+    at: { x: number; y: number }
+    screen: { x: number; y: number }
+  }): void
   (event: 'unbind-note', payload: { id: string }): void
 }>()
 
@@ -83,7 +86,7 @@ const linkMidpoint = (link: Link): { x: number; y: number } => {
 const {
   layerTransform, linkingFrom, pointer, resetView,
   onNotePointerDown, onHandlePointerDown, onBackgroundPointerDown,
-  onPointerMove, onPointerUp, onBackgroundDoubleClick, onWheel,
+  onPointerMove, onPointerUp, onBackgroundDoubleClick, onContextMenu, onWheel,
 } = useScratchpadGestures(
   viewport,
   positionOf,
@@ -93,6 +96,7 @@ const {
     onMoveNote: (id, x, y) => emit('move-note', { id, x, y }),
     onCreateNote: (x, y) => emit('create-note', { x, y }),
     onLinkNotes: (source, target) => emit('link-notes', { source, target }),
+    onOpenMenu: (at, screen) => emit('menu-request', { at, screen }),
   },
 )
 
@@ -127,6 +131,7 @@ defineExpose({ resetView })
     @pointerup="onPointerUp"
     @pointerleave="onPointerUp"
     @dblclick="onBackgroundDoubleClick"
+    @contextmenu="onContextMenu"
     @wheel="onWheel"
   >
     <!-- Frames and links share the note layer's transform, so nothing drifts on pan or zoom. -->
@@ -182,30 +187,6 @@ defineExpose({ resetView })
              L${pointer.x},${pointer.y}`"
       />
     </svg>
-
-    <!-- One per frame, in the HTML layer because the SVG underlay takes no pointer events.
-         Reaching for what already exists is the more common move than inventing something, so
-         the affordance sits on the frame rather than behind a menu. -->
-    <div
-      class="sp-layer sp-frame-actions"
-      :style="{ transform: layerTransform }"
-    >
-      <button
-        v-for="area in areas"
-        :key="`add-${area.id}`"
-        type="button"
-        class="sp-add-existing"
-        :data-add-existing="area.id"
-        :title="`Add an element that already exists to ${area.label}`"
-        :style="{
-          transform: `translate(${rectOf(area.id).x + rectOf(area.id).w - 150}px, ${rectOf(area.id).y + 12}px)`,
-        }"
-        @pointerdown.stop
-        @click.stop="emit('bind-request', { areaId: area.id })"
-      >
-        + Add existing
-      </button>
-    </div>
 
     <div
       class="sp-layer"
@@ -313,13 +294,6 @@ defineExpose({ resetView })
 .sp-note.selected { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37,99,235,.18); }
 .sp-note.typed { border-left: 3px solid #7c3aed; }
 .sp-note.bound { border-left: 3px solid #059669; }
-.sp-frame-actions { pointer-events: none; }
-.sp-add-existing {
-  position: absolute; top: 0; left: 0; pointer-events: auto; width: 130px;
-  padding: 4px 8px; border: 1px dashed #c7c7cf; border-radius: 6px; background: #fff;
-  font-size: 11.5px; color: #6b7280; cursor: pointer;
-}
-.sp-add-existing:hover { border-color: #2563eb; color: #2563eb; border-style: solid; }
 .sp-bound {
   border: none; background: none; padding: 0; cursor: pointer;
   color: #059669; font-size: 10.5px; font-weight: 600;

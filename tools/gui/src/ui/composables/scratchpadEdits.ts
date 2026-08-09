@@ -57,6 +57,28 @@ export function withNote(scratchpad: Scratchpad, note: Note): Scratchpad {
   return { ...scratchpad, notes: [...others, note] }
 }
 
+/** Which frame a point falls in — the **smallest** containing one, tie-broken on id.
+ *
+ * The one rule here that mirrors a *derivation* rather than a refusal, and it is asked before the
+ * note exists: the canvas menu offers what an area permits, which cannot wait for the server to
+ * answer `area` on the next read. `Scratchpad.area_of` in the domain is authoritative and decides
+ * it exactly this way — smallest by geometry, never by declaration order, because the file is
+ * written in stable id order and a note would otherwise change frames merely by being saved.
+ */
+export function areaAtPoint(scratchpad: Scratchpad, x: number, y: number): string {
+  const rects = scratchpad.layout?.areas ?? {}
+  const containing = (scratchpad.areas ?? [])
+    .flatMap((area) => {
+      const rect = rects[area.id]
+      const inside = !!rect
+        && x >= rect[0] && x <= rect[0] + rect[2]
+        && y >= rect[1] && y <= rect[1] + rect[3]
+      return inside ? [{ id: area.id, size: rect[2] * rect[3] }] : []
+    })
+    .sort((a, b) => (a.size - b.size) || a.id.localeCompare(b.id))
+  return containing[0]?.id ?? 'unfiled'
+}
+
 /** Tie a note to an entity that already exists.
  *
  * The type comes from the entity, not from the note — the entity is the authority on what it is,

@@ -149,6 +149,38 @@ test('a note dropped inside a frame belongs to that area', async ({ page }) => {
   await expect(page.locator('.sp-note').first()).toHaveAttribute('data-area', /strategy|unfiled/)
 })
 
+test('right-clicking the canvas offers a note, or an element the model already has', async ({ page }) => {
+  await newScratchpad(page, 'E2E menu')
+  const canvas = page.locator(CANVAS)
+
+  // Right-click is "act here". Nothing is added until something in the menu is chosen.
+  await canvas.click({ button: 'right', position: { x: 240, y: 180 } })
+  await expect(page.getByTestId('canvas-menu')).toBeVisible()
+  await expect(page.locator('.sp-note')).toHaveCount(0)
+
+  await page.getByTestId('menu-new-note').click()
+  await expect(page.getByTestId('canvas-menu')).toBeHidden()
+  await expect(page.locator('.sp-note')).toHaveCount(1)
+
+  // The second entry opens the search in place rather than in a panel elsewhere.
+  await canvas.click({ button: 'right', position: { x: 520, y: 320 } })
+  await page.getByTestId('menu-add-existing').click()
+  const search = page.getByTestId('menu-search').locator('input').first()
+  await expect(search).toBeVisible()
+
+  // Whatever this repository holds: the assertion is that a pick binds, not what it binds to.
+  await search.fill('a')
+  const firstHit = page.locator('[data-testid="canvas-menu"] li[data-result]').first()
+  await expect(firstHit).toBeVisible({ timeout: 15000 })
+  await firstHit.click()
+
+  await expect(page.getByTestId('canvas-menu')).toBeHidden()
+  await expect(page.locator('.sp-note')).toHaveCount(2)
+  // A bound note carries the model reference the picker chose, and offers to release it.
+  await expect(page.locator('.sp-note.bound')).toHaveCount(1)
+  await expect(page.locator('.sp-note .sp-bound')).toBeVisible()
+})
+
 test('a scratchpad appears in the list with its note count', async ({ page }) => {
   await newScratchpad(page, 'E2E listed')
   await addNote(page, 200, 160, 'One note')

@@ -34,6 +34,8 @@ containing the note wins.
 ## Working on the canvas
 
 - **Double-click** empty canvas to create a note. It opens with the caret in its title.
+- **Right-click** empty canvas for the rest of what can go there — a note, or an element the model
+  already has. Whatever you choose lands at the point you clicked.
 - **Drag** a note to move it. **Drag its right-hand handle** onto another note to link them.
 - **Enter** commits a title, **Escape** abandons the edit.
 - **Ctrl/Cmd+Z** undoes, **Ctrl/Cmd+Shift+Z** redoes. The history holds whole documents, so every
@@ -47,9 +49,15 @@ picture has been committed to.
 
 ## Reaching for what already exists
 
-Each frame carries an **+ Add existing** button. It opens the same entity picker the rest of the
-application uses, and what you choose lands in that frame as a **bound** note — one that holds a
-one-way reference to model content that is already there.
+**Right-click the canvas → Add existing element…** opens the same entity picker the rest of the
+application uses, in place, and what you choose lands *at that point* as a **bound** note — one
+that holds a one-way reference to model content that is already there.
+
+The gesture is anchored to a point rather than to a frame on purpose. Area membership here is
+spatial, so where you click is the decision; an affordance attached to the frame would have to
+invent a placement rule, and would cost one control per frame for one capability. The search is
+scoped to the element types that frame permits, so the permitted set does double duty — it filters
+the type picker when narrowing, and scopes the search when pulling something in.
 
 Binding is the move that makes a scratchpad useful against a repository that is not empty. Most
 thinking touches things that exist — *this project realizes the capability we already have* — and

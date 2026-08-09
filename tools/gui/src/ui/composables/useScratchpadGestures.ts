@@ -15,6 +15,10 @@ export interface CanvasGestureIntents {
   readonly onMoveNote: (id: string, x: number, y: number) => void
   readonly onCreateNote: (x: number, y: number) => void
   readonly onLinkNotes: (source: string, target: string) => void
+  /** Where to put something, in canvas coordinates, and where to draw the menu asking what —
+   * in viewport pixels, because the menu is rendered outside the transformed layer so it does
+   * not shrink with the zoom. */
+  readonly onOpenMenu: (at: { x: number; y: number }, screen: { x: number; y: number }) => void
 }
 
 export function useScratchpadGestures(
@@ -102,6 +106,24 @@ export function useScratchpadGestures(
     intents.onCreateNote(at.x - noteSize.width / 2, at.y - noteSize.height / 2)
   }
 
+  /** Right-click is "act here". The point is the gesture: area membership on a scratchpad is
+   * spatial, so whatever the menu adds belongs where the menu was opened — which is also why the
+   * per-frame button this replaces had to invent a placement rule and this does not. */
+  const onContextMenu = (event: MouseEvent): void => {
+    event.preventDefault()
+    const bounds = viewport.value?.getBoundingClientRect()
+    // Kept inside the viewport, which clips its overflow: a menu opened near the right or bottom
+    // edge would otherwise be half a menu. The box is the widest state — the search — because a
+    // menu that fits when it opens and is clipped when it widens is worse than one that never moves.
+    const menuBox = { width: 400, height: 220 }
+    const width = bounds?.width ?? menuBox.width
+    const height = bounds?.height ?? menuBox.height
+    intents.onOpenMenu(toCanvas(event.clientX, event.clientY), {
+      x: Math.max(0, Math.min(event.clientX - (bounds?.left ?? 0), width - menuBox.width)),
+      y: Math.max(0, Math.min(event.clientY - (bounds?.top ?? 0), height - menuBox.height)),
+    })
+  }
+
   const onWheel = (event: WheelEvent): void => {
     event.preventDefault()
     const factor = event.deltaY < 0 ? 1.1 : 1 / 1.1
@@ -122,6 +144,6 @@ export function useScratchpadGestures(
   return {
     layerTransform, linkingFrom, pointer, resetView,
     onNotePointerDown, onHandlePointerDown, onBackgroundPointerDown,
-    onPointerMove, onPointerUp, onBackgroundDoubleClick, onWheel,
+    onPointerMove, onPointerUp, onBackgroundDoubleClick, onContextMenu, onWheel,
   }
 }

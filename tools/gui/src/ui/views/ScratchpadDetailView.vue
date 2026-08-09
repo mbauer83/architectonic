@@ -15,10 +15,11 @@ import { modelServiceKey } from '../keys'
 import { useMutation } from '../composables/useMutation'
 import { useQuery } from '../composables/useQuery'
 import { useDebouncedScratchpadSave } from '../composables/useDebouncedScratchpadSave'
-import EntityPickerInput from '../components/EntityPickerInput.vue'
+import ScratchpadCanvasMenu from '../components/ScratchpadCanvasMenu.vue'
 import ScratchpadNotePanel from '../components/ScratchpadNotePanel.vue'
 import { useScratchpadDocument } from '../composables/useScratchpadDocument'
 import {
+  areaAtPoint,
   toReplacePayload,
   withBinding,
   withLink,
@@ -89,9 +90,10 @@ const onCreateNote = ({ x, y }: { x: number; y: number }): void => {
   const current = document.current.value
   if (!current) return
   const id = mintId('n')
-  const blank = { id, title: 'New note', area: 'unfiled', body: '', destination: 'undecided' } as const
+  const blank = { id, title: 'New note', area: areaAtPoint(current, x, y), body: '', destination: 'undecided' } as const
   edit(withNoteAt(withNote(current, blank), id, x, y))
   selectedId.value = id
+  menu.value = null
   // Focus the title so a new note opens ready to be written, which is the whole gesture.
   requestAnimationFrame(() => {
     const field = window.document.querySelector<HTMLElement>(`[data-note-title="${id}"]`)
@@ -118,30 +120,39 @@ const onDeleteNote = ({ id }: { id: string }): void => {
   if (selectedId.value === id) selectedId.value = null
 }
 
-/** The frame whose search bar is open, if any. Binding is per-frame because the frame is what
- * decides which area the element lands in — and, from slice 3, which types are offered. */
-const bindingInto = ref<string | null>(null)
+/** Where the canvas menu was opened, in both coordinate systems: the canvas point decides where
+ * whatever is added lands, the viewport point decides where the menu is drawn. */
+const menu = ref<{ at: { x: number; y: number }; screen: { x: number; y: number } } | null>(null)
 
-const onBindRequest = ({ areaId }: { areaId: string }): void => { bindingInto.value = areaId }
+const onMenuRequest = (payload: NonNullable<typeof menu.value>): void => { menu.value = payload }
 
-/** Place the bound note inside the frame it was requested from, offset so successive picks do not
- * stack on one another. */
+/** The frame under the menu, and what it permits. A click outside every frame is `unfiled`, which
+ * is a legitimate place to be and narrows nothing. */
+const menuArea = computed(() => {
+  const current = document.current.value
+  if (!current || !menu.value) return null
+  const areaId = areaAtPoint(current, menu.value.at.x, menu.value.at.y)
+  return (current.areas ?? []).find((area) => area.id === areaId) ?? null
+})
+
+/** The bound note lands exactly where the menu was opened. That is the whole reason the gesture
+ * moved onto the canvas: area membership is spatial, so the point of insertion is the decision. */
 const onBindEntity = (entity: EntityDisplayInfo): void => {
   const current = document.current.value
-  const areaId = bindingInto.value
-  if (!current || !areaId) return
-  const rect = current.layout?.areas?.[areaId] ?? [0, 0, 0, 0]
-  const alreadyThere = (current.notes ?? []).filter((note) => note.area === areaId).length
+  const at = menu.value?.at
+  if (!current || !at) return
   const id = mintId('n')
   const placed = withNoteAt(
-    withNote(current, { id, title: entity.name, area: areaId, body: '', destination: 'undecided' }),
+    withNote(current, {
+      id, title: entity.name, area: areaAtPoint(current, at.x, at.y), body: '', destination: 'undecided',
+    }),
     id,
-    rect[0] + 40 + (alreadyThere % 5) * 200,
-    rect[1] + 60 + Math.floor(alreadyThere / 5) * 90,
+    at.x,
+    at.y,
   )
   edit(withBinding(placed, id, entity))
   selectedId.value = id
-  bindingInto.value = null
+  menu.value = null
 }
 
 const onUnbindNote = ({ id }: { id: string }): void => {
@@ -230,8 +241,9 @@ const status = computed(() => {
     </header>
 
     <p class="hint">
-      Double-click the canvas to add a note. Drag a note's right-hand handle onto another to link
-      them. Nothing needs a type — that comes later, if it comes at all.
+      Double-click the canvas to add a note, or right-click to add one the model already has.
+      Drag a note's right-hand handle onto another to link them. Nothing needs a type — that comes
+      later, if it comes at all.
     </p>
 
     <div class="canvas-frame">
@@ -244,8 +256,8 @@ const status = computed(() => {
         @rename-note="onRenameNote"
         @delete-note="onDeleteNote"
         @link-notes="onLinkNotes"
-        @select="selectedId = $event.id"
-        @bind-request="onBindRequest"
+        @select="selectedId = $event.id; menu = null"
+        @menu-request="onMenuRequest"
         @unbind-note="onUnbindNote"
       />
       <ScratchpadNotePanel
@@ -257,32 +269,16 @@ const status = computed(() => {
         @reverse-link="refine((c) => withReversedLink(c, $event.id))"
         @type-link="refine((c) => withLinkType(c, $event.id, $event.connectionType))"
       />
-      <!-- Fixed scale, deliberately: inside the transformed layer the field would shrink with the
-           zoom, and this is the one place on the canvas that has to be readable while typing. -->
-      <div
-        v-if="bindingInto"
-        class="bind-panel"
-        data-testid="bind-panel"
-      >
-        <header>
-          <span>Add an element that already exists</span>
-          <button
-            type="button"
-            data-testid="bind-cancel"
-            @click="bindingInto = null"
-          >
-            ×
-          </button>
-        </header>
-        <EntityPickerInput
-          placeholder="Search the model by name or id…"
-          widenable-to="none"
-          close-on-select
-          @select="onBindEntity"
-        />
-      </div>
+      <ScratchpadCanvasMenu
+        :at="menu?.screen ?? null"
+        :area-label="menuArea?.label ?? ''"
+        :permitted-types="menuArea?.['permitted-element-types'] ?? []"
+        @new-note="menu && onCreateNote(menu.at)"
+        @add-existing="onBindEntity"
+        @close="menu = null"
+      />
       <p
-        v-else-if="loadQuery.error.value"
+        v-if="loadQuery.error.value"
         class="err"
       >
         This scratchpad could not be loaded.
@@ -314,20 +310,8 @@ const status = computed(() => {
 .state { font-size: 12px; color: #6b7280; min-width: 96px; text-align: right; }
 .state.err, .err { color: #dc2626; }
 .hint { margin: 10px 0; font-size: 12.5px; color: #6b7280; }
-.canvas-frame { position: relative; }
-.bind-panel {
-  position: absolute; top: 14px; right: 14px; width: 380px; z-index: 5;
-  background: #fff; border: 1px solid #d1d5db; border-radius: 8px; padding: 10px;
-  box-shadow: 0 6px 20px rgba(0,0,0,.10);
-}
-.bind-panel header {
-  display: flex; align-items: center; justify-content: space-between;
-  font-size: 12px; color: #6b7280; margin-bottom: 8px;
-}
-.bind-panel header button {
-  border: none; background: none; font-size: 16px; line-height: 1; cursor: pointer; color: #9ca3af;
-}
 .canvas-frame {
+  position: relative;
   border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;
   height: clamp(420px, 74vh, 940px); background: #fafafa;
 }

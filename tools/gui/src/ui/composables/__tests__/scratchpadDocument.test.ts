@@ -16,6 +16,7 @@ import {
   withLinkType,
   withNote,
   withNoteAt,
+  areaAtPoint,
   withReversedLink,
   withType,
   withoutBinding,
@@ -268,5 +269,20 @@ describe('refining a note down the ontology', () => {
 
     expect(withLinkType(two, 'l1', 'archimate-serving').links?.[0]['connection-type'])
       .toBe('archimate-serving')
+  })
+
+  it('files a point in the smallest containing frame, and outside every frame in none', () => {
+    // Mirrors `Scratchpad.area_of`: smallest wins, so dropping into a small frame lying on a large
+    // one means the small one — and declaration order is never the tie-break, because the file is
+    // written in stable id order and a note would otherwise move frames by being saved.
+    const nested: Scratchpad = {
+      ...base,
+      areas: [...(base.areas ?? []), { id: 'inner', label: 'Inner' }],
+      layout: { ...base.layout, areas: { strategy: [0, 0, 1200, 600], inner: [100, 100, 300, 200] } },
+    }
+
+    expect(areaAtPoint(nested, 200, 150)).toBe('inner')
+    expect(areaAtPoint(nested, 900, 500)).toBe('strategy')
+    expect(areaAtPoint(nested, 5000, 5000)).toBe('unfiled')
   })
 })
