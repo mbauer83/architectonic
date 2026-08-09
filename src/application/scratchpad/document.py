@@ -75,6 +75,7 @@ def to_document(scratchpad: Scratchpad) -> dict[str, Any]:
                 "id": area.id,
                 "label": area.label,
                 "permits": _drop_empty({
+                    "domains": list(area.permitted_domains),
                     "elements": list(area.permitted_element_types),
                     "documents": list(area.permitted_document_types),
                 }),
@@ -87,6 +88,7 @@ def to_document(scratchpad: Scratchpad) -> dict[str, Any]:
                 "title": note.title,
                 "body": note.body,
                 "destination": note.destination if note.destination != "undecided" else "",
+                "domain": note.domain,
                 "element-type": note.element_type,
                 "specialization": note.specialization,
                 "document-type": note.document_type,
@@ -155,6 +157,7 @@ def from_document(raw: dict[str, Any], *, artifact_id: str | None = None) -> Scr
             Area(
                 id=str(row.get("id") or ""),
                 label=str(row.get("label") or ""),
+                permitted_domains=tuple(str(v) for v in (row.get("permits") or {}).get("domains") or ()),
                 permitted_element_types=tuple(str(v) for v in (row.get("permits") or {}).get("elements") or ()),
                 permitted_document_types=tuple(str(v) for v in (row.get("permits") or {}).get("documents") or ()),
             )
@@ -166,6 +169,10 @@ def from_document(raw: dict[str, Any], *, artifact_id: str | None = None) -> Scr
                 title=str(row.get("title") or ""),
                 body=str(row.get("body") or ""),
                 destination=str(row.get("destination") or "undecided"),  # type: ignore[arg-type]
+                # Ignored when a type is present, because the type implies it and the served value
+                # is derived from it — storing both would let the file disagree with the ontology
+                # the moment a type moved domain, and the round trip would carry the stale one back.
+                domain=None if row.get("element-type") else row.get("domain"),
                 element_type=row.get("element-type"),
                 specialization=row.get("specialization"),
                 document_type=row.get("document-type"),
@@ -233,14 +240,51 @@ def to_response(
     though it were content. That is why `to_document` exists beside this and takes no registry,
     rather than this taking an optional one and meaning two things.
     """
+    from src.application.scratchpad.verification import types_in_domains  # noqa: PLC0415
+
     document = to_document(scratchpad)
     document["group"] = group
+    for area, row in zip(
+        sorted(scratchpad.areas, key=lambda item: item.id), document.get("areas", []), strict=False
+    ):
+        # The file says what a frame *declares*; the wire says what that currently resolves to. The
+        # nested `permits` block is the file's vocabulary and has no business on the wire, where a
+        # client would then have two places to look for one answer.
+        row.pop("permits", None)
+        # Derived, like a note's area: a frame declares the *domains* it holds, and the types that
+        # follow from them are whatever the ontology currently declares. A frame that names types
+        # outright keeps them; one that narrows nothing serves nothing, which reads as "anything".
+        derived = area.permitted_element_types or types_in_domains(
+            registry, scratchpad.meta_ontology, area.permitted_domains
+        )
+        if area.permitted_domains:
+            row["permitted-domains"] = list(area.permitted_domains)
+        if derived:
+            row["permitted-element-types"] = list(derived)
+        if area.permitted_document_types:
+            row["permitted-document-types"] = list(area.permitted_document_types)
     for note in document.get("notes", []):
         note["area"] = scratchpad.area_of(str(note["id"]))
+    domains = _domains_by_type(registry, scratchpad.meta_ontology)
+    stored = {note.id: note for note in scratchpad.notes}
+    for row in document.get("notes", []):
+        # Derived when a type is chosen, because the type implies it: two places to read the domain
+        # from is two answers waiting to disagree, and the type is the more specific decision.
+        note = stored.get(str(row["id"]))
+        derived = domains.get(note.element_type or "") if note is not None else None
+        if derived:
+            row["domain"] = derived
     endpoints = {note.id: _endpoint(note) for note in scratchpad.notes}
     for link in document.get("links", []):
         link["verdict"] = _verdict_document(scratchpad, link, endpoints, registry)
     return document
+
+
+def _domains_by_type(registry: "ModuleRegistry", meta_ontology: str) -> dict[str, str]:
+    """Entity type → the domain it belongs to, for the scratchpad's own meta-ontology."""
+    from src.application.scratchpad.verification import ontology_domains  # noqa: PLC0415
+
+    return ontology_domains(registry, meta_ontology)
 
 
 def _endpoint(note: Note) -> Endpoint:
@@ -288,11 +332,10 @@ def lift_to_document(
     it until one of them lost a refusal.
     """
     return {
-        "target": {
-            "group": plan.target.group,
-            "meta-ontology": plan.target.meta_ontology,
-            "exists": plan.target.exists,
-        },
+        "targets": [
+            {"group": target.group, "meta-ontology": target.meta_ontology, "exists": target.exists}
+            for target in plan.targets
+        ],
         # Not `_drop_empty`, unlike the aggregate above: an *item* is a row in a report, and every
         # field of it is declared on the wire with an empty default. Dropping the empties would
         # leave the two surfaces disagreeing — FastAPI refills them from the response model, and MCP
@@ -308,6 +351,7 @@ def lift_to_document(
                 "code": item.code,
                 "reason": item.reason,
                 "warning": item.warning,
+                "target": item.target,
             }
             for item in plan.items
         ],

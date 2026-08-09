@@ -145,8 +145,10 @@ _LIFT_DESCRIPTION = (
     "updated: re-lifting would be bidirectional sync between a sketch and a governed model, and "
     "would clobber whatever was edited there since. A second lift therefore creates only what is "
     "new, which is usually the links between notes lifted before.\n\n"
-    "`target` names one model-project slug, created if it does not exist; empty means the root "
-    "model. A target declaring a different meta-ontology is refused rather than coerced. "
+    "`targets` maps a FRAME's id to the model-project its content lands in — one target per frame, "
+    "because the frames are work archetypes and a canvas routinely holds work for more than one "
+    "project. A frame with no entry lands in the root model. A project is created if it does not "
+    "exist; one declaring a different meta-ontology is refused rather than coerced. "
     "`version` is the version you read the scratchpad at — a committed lift records what it "
     "created on the notes, so it is a write against that version."
 )
@@ -207,7 +209,7 @@ def scratchpad_lift(
     artifact_id: str,
     selection: list[str],
     version: str,
-    target: str = "",
+    targets: dict[str, str] | None = None,
     dry_run: bool = True,
     repo_root: str | None = None,
 ) -> dict[str, Any]:
@@ -215,7 +217,7 @@ def scratchpad_lift(
         plan, receipt = _service(repo_root).lift(
             artifact_id,
             selection=selection,
-            target_group=target,
+            targets=targets or {},
             expected_version=version,
             dry_run=dry_run,
         )

@@ -50,10 +50,14 @@ class BulkWriteLiftWriter:
         creates = plan.of("create")
         if not creates:
             return LiftReceipt()
-        if not dry_run and plan.target.group and not plan.target.exists:
-            self._create_project(plan.target.group, meta_ontology)
+        if not dry_run:
+            for target in plan.targets:
+                if target.group and not target.exists:
+                    self._create_project(target.group, meta_ontology)
 
-        items = [_batch_item(item, plan.target) for item in creates]
+        # A reference is written *into* its document rather than beside it, so it contributes no
+        # batch item of its own — `_with_references` already folded it into the document's refs.
+        items = [_batch_item(item) for item in creates if item.kind != "reference"]
         answer = artifact_bulk_write(
             items=items,
             dry_run=dry_run,
@@ -81,21 +85,40 @@ class BulkWriteLiftWriter:
         )
 
 
-def _batch_item(item: LiftItem, target: LiftTarget) -> dict[str, Any]:
-    """One plan item as one batch item. The plan already decided everything this reads."""
+def _batch_item(item: LiftItem) -> dict[str, Any]:
+    """One plan item as one batch item. The plan already decided everything this reads, including
+    which project the item lands in — that is the frame's target, resolved during planning."""
     if item.kind == "element":
         create: dict[str, Any] = {
             "op": "create_entity",
             "_ref": item.id,
             "artifact_type": item.artifact_type,
             "name": item.label,
-            "group": target.group,
+            "group": item.target,
         }
         if item.summary:
             create["summary"] = item.summary
         if item.specializations:
             create["specializations"] = list(item.specializations)
         return create
+    if item.kind == "document":
+        document: dict[str, Any] = {
+            "op": "create_document",
+            "_ref": item.id,
+            "doc_type": item.artifact_type,
+            "title": item.label,
+            # A document collection of the same name as the project, so one target names both — the
+            # alternative is asking twice for one decision a person has already made.
+            "group": item.target,
+        }
+        if item.summary:
+            document["body"] = item.summary
+        if item.entity_refs:
+            # One way, and recorded here: `entity_refs` becomes a `References` section of relative
+            # links in the document. Nothing is written to the entity, which is what keeps a
+            # document a commentary on the model rather than a second place the model is defined.
+            document["entity_refs"] = list(item.entity_refs)
+        return document
     return {
         "op": "add_connection",
         "_ref": item.id,
@@ -116,7 +139,8 @@ def _receipt(answer: dict[str, object], creates: tuple[LiftItem, ...]) -> LiftRe
     results = [row for row in rows if isinstance(row, dict)] if isinstance(rows, list) else []
     realized: dict[str, str] = {}
     errors: list[str] = []
-    for item, row in zip(creates, results, strict=False):
+    written = [item for item in creates if item.kind != "reference"]
+    for item, row in zip(written, results, strict=False):
         error = row.get("error")
         if error:
             errors.append(f"{item.label}: {error}")

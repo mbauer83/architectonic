@@ -32,6 +32,10 @@ class NoteWire(NullsOmitted):
     title: str
     body: str = ""
     destination: Literal["undecided", "element", "document", "none"] = "undecided"
+    #: The first classification level. Chosen before a type, and **derived from the type** once one
+    #: is — the type is the more specific decision, and two places to read it from is two answers
+    #: waiting to disagree.
+    domain: str | None = None
     element_type: str | None = Field(default=None, alias="element-type")
     specialization: str | None = None
     document_type: str | None = Field(default=None, alias="document-type")
@@ -74,8 +78,17 @@ class LinkWire(NullsOmitted):
 
 
 class AreaWire(NullsOmitted):
+    """A labelled frame, and what it narrows to.
+
+    `permitted-element-types` is **derived**: a frame declares the *domains* it holds — motivation
+    and strategy for Vision & strategy, none at all for the three that reach across the model — and
+    the types follow from whatever the ontology currently declares. Served rather than resolved by
+    each client, for the same reason a note's `area` is.
+    """
+
     id: str
     label: str
+    permitted_domains: list[str] = Field(default_factory=list, alias="permitted-domains")
     permitted_element_types: list[str] = Field(default_factory=list, alias="permitted-element-types")
     permitted_document_types: list[str] = Field(default_factory=list, alias="permitted-document-types")
 
@@ -131,7 +144,7 @@ class ScratchpadResponse(NullsOmitted):
 
 
 class LiftTargetWire(NullsOmitted):
-    """Where a lift lands. One target per lift, chosen at lift time rather than stored."""
+    """One project a lift lands in — one per frame, chosen at lift time rather than stored."""
 
     group: str = ""
     meta_ontology: str = Field(default="", alias="meta-ontology")
@@ -141,7 +154,7 @@ class LiftTargetWire(NullsOmitted):
 class LiftItemWire(NullsOmitted):
     """One selected note or link, and what the lift would do with it."""
 
-    kind: Literal["element", "connection"]
+    kind: Literal["element", "document", "connection", "reference"]
     id: str
     outcome: Literal["create", "skip", "refuse"]
     label: str
@@ -152,6 +165,8 @@ class LiftItemWire(NullsOmitted):
     reason: str = ""
     #: A narrowing (W128/W129). Reported and passed, because the relation exists.
     warning: str = ""
+    #: The project this lands in — the target of the frame the note sits in.
+    target: str = ""
 
 
 class OutsideSelectionWire(NullsOmitted):
@@ -170,7 +185,7 @@ class ScratchpadLiftResponse(NullsOmitted):
     what distinguishes an answer that wrote from one that only reported.
     """
 
-    target: LiftTargetWire
+    targets: list[LiftTargetWire] = Field(default_factory=list)
     items: list[LiftItemWire] = Field(default_factory=list)
     outside_selection: list[OutsideSelectionWire] = Field(
         default_factory=list, alias="outside-selection"

@@ -76,6 +76,39 @@ def _by_alias(modules: Mapping[str, OntologyModule], meta_ontology: str) -> Onto
     return None
 
 
+def ontology_domains(registry: ModuleRegistry, meta_ontology: str) -> dict[str, str]:
+    """Entity type → its domain, read off `hierarchy[0]` rather than from a table beside it."""
+    module = _module_for(registry, meta_ontology)
+    if module is None:
+        return {}
+    return {
+        str(name): str(info.hierarchy[0])
+        for name, info in module.entity_types.items()
+        if info.hierarchy
+    }
+
+
+def types_in_domains(
+    registry: ModuleRegistry, meta_ontology: str, domains: Sequence[str]
+) -> tuple[str, ...]:
+    """Every entity type whose domain is one of *domains*, in the ontology's own order.
+
+    A frame narrows by naming domains, and this is where that declaration becomes the list a picker
+    and a search are scoped to. Derived on every read rather than frozen into the file, so a frame
+    keeps offering what the ontology currently has — which is the whole reason the declaration names
+    a domain instead of a list of types.
+    """
+    module = _module_for(registry, meta_ontology)
+    if module is None or not domains:
+        return ()
+    wanted = {str(domain) for domain in domains}
+    return tuple(
+        str(name)
+        for name, info in module.entity_types.items()
+        if info.hierarchy and str(info.hierarchy[0]) in wanted
+    )
+
+
 def typing_options(registry: ModuleRegistry, meta_ontology: str) -> tuple[TypingOptions, ...]:
     """What a note may be narrowed to, level by level, in the order the ontology declares.
 

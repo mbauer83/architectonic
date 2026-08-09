@@ -26,9 +26,28 @@ def validated_notes(notes: tuple[Note, ...]) -> set[str]:
         if note.id in seen:
             raise ScratchpadError(f"duplicate note id {note.id!r}")
         seen.add(note.id)
+        _validate_destination(note)
         if note.model_ref is not None:
             _validate_model_ref(note, bound_entities)
     return seen
+
+
+def _validate_destination(note: Note) -> None:
+    """A note goes to an element or to a document, and carries only the type that destination needs.
+
+    Both at once is not a note that has decided two things — it is a note whose *lift* has no single
+    answer, since one would create an entity and the other a document from the same title.
+    """
+    if note.destination == "document" and note.element_type:
+        raise ScratchpadError(
+            f"note {note.id!r} is destined for a document but carries the element type "
+            f"{note.element_type!r}; a note has one destination"
+        )
+    if note.document_type and note.destination != "document":
+        raise ScratchpadError(
+            f"note {note.id!r} carries the document type {note.document_type!r} but its destination "
+            f"is {note.destination!r}"
+        )
 
 
 def _validate_model_ref(note: Note, bound_entities: dict[str, str]) -> None:

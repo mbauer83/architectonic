@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from src.application.verification.artifact_verifier import ArtifactRegistry, ArtifactVerifier
+from src.domain.repository.groups import UNCATEGORIZED
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.mcp.artifact_mcp.context import expand_artifact_id
 from src.infrastructure.mcp.artifact_mcp.write._common import _out
@@ -236,3 +237,76 @@ def _apply_single_edit(
         tgt_multiplicity=item["tgt_multiplicity"] if "tgt_multiplicity" in item else _CONN_UNSET,
         dry_run=False,
     )
+
+
+def apply_create_documents(
+    creates_doc: list[tuple[int, dict[str, Any]]],
+    *,
+    ref_map: dict[str, str],
+    results: dict[int, dict[str, object]],
+    clear_repo_caches: Callable[[Path], None],
+    staged_root: Path,
+    dry_run: bool,
+    operation_id: str,
+    skipped: bool,
+    current_registry: Callable[[], ArtifactRegistry],
+) -> bool:
+    """Documents, created after the entities so a reference can point at one of them.
+
+    `entity_refs` is what makes a document a *commentary* on the model: each entry — an id, or the
+    `$ref:` alias of an entity this same batch created — is resolved to the file it names and
+    rendered as a relative markdown link in a `References` section. The reference runs document →
+    model and is recorded on the document, so no entity is edited to say it is referred to.
+    """
+    for index, item in creates_doc:
+        ref = item.get("_ref")
+        if skipped:
+            results[index] = skipped_result("create_document", dry_run=dry_run, operation_id=operation_id)
+            continue
+        try:
+            references = _reference_paths(item.get("entity_refs"), ref_map, current_registry)
+            result = artifact_write_ops.create_document(
+                repo_root=staged_root,
+                verifier=build_artifact_verifier(None, catalogs=process_runtime_catalogs()),
+                clear_repo_caches=clear_repo_caches,
+                doc_type=item["doc_type"],
+                title=item["title"],
+                body=item.get("body"),
+                keywords=item.get("keywords"),
+                extra_frontmatter=None,
+                artifact_id=item.get("artifact_id"),
+                version=item.get("version", "0.1.0"),
+                status=item.get("status", "draft"),
+                last_updated=None,
+                dry_run=False,
+                group=item.get("group") or UNCATEGORIZED,
+                references=references,
+            )
+            out = strip_content(_out(result, dry_run=False))
+            out["op"] = "create_document"
+            results[index] = out
+            if ref:
+                ref_map[ref] = str(out["artifact_id"])
+            skipped = skipped or not result.wrote
+        except Exception as exc:  # noqa: BLE001
+            results[index] = error_result("create_document", exc, dry_run=dry_run, operation_id=operation_id)
+            skipped = True
+    return skipped
+
+
+def _reference_paths(
+    raw: object, ref_map: dict[str, str], current_registry: Callable[[], ArtifactRegistry]
+) -> list[Path]:
+    """The files the given ids name. An id that resolves to nothing is dropped rather than fatal —
+    a reference to something absent is a dangling link, which the verifier already reports, and it
+    must not take the whole batch down with it."""
+    if not isinstance(raw, list) or not raw:
+        return []
+    registry = current_registry()
+    paths: list[Path] = []
+    for value in raw:
+        artifact_id = resolve_ref(str(value), ref_map)
+        record = registry.get_entity(artifact_id)
+        if record is not None:
+            paths.append(Path(record.path))
+    return paths

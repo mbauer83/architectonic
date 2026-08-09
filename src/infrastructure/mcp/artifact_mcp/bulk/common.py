@@ -16,7 +16,9 @@ from .candidate_inventory import CandidateInventoryPort
 from .candidate_state import candidate_registry
 
 KNOWN_DELETE_OPS = frozenset({"delete_entity", "delete_connection", "delete_document", "delete_diagram"})
-KNOWN_OPS = frozenset({"create_entity", "add_connection", "edit_entity", "edit_connection"})
+KNOWN_OPS = frozenset({
+    "create_entity", "create_document", "add_connection", "edit_entity", "edit_connection",
+})
 
 #: The fields each op accepts, so an item carrying anything else is refused rather than performed
 #: differently. A field this table does not name is a caller error — a misspelling, or a field
@@ -27,6 +29,14 @@ KNOWN_ITEM_FIELDS: dict[str, frozenset[str]] = {
     "create_entity": frozenset({
         "op", "_ref", "artifact_type", "name", "summary", "properties", "attribute_types", "notes",
         "keywords", "specializations", "artifact_id", "version", "status", "group",
+    }),
+    "create_document": frozenset({
+        "op", "_ref", "doc_type", "title", "body", "keywords", "artifact_id", "version", "status",
+        "group",
+        # Model artifacts this document points at, by id or by `$ref:` alias. Rendered as a
+        # `References` section of relative links — the reference runs document → model, one way, and
+        # is recorded on the document, so no entity is edited to say it is referred to.
+        "entity_refs",
     }),
     "add_connection": frozenset({
         "op", "_ref", "source_entity", "target_entity", "connection_type", "description",

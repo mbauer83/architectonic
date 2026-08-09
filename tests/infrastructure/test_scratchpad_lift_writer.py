@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from src.application.scratchpad.lift import LiftItem, LiftTarget
+from src.application.scratchpad.lift import LiftItem
 from src.infrastructure.scratchpad.bulk_write_lift import (
     BulkWriteLiftWriter,
     _batch_item,
@@ -21,7 +21,7 @@ from src.infrastructure.scratchpad.bulk_write_lift import (
 def _element(note_id: str = "n1", **overrides: object) -> LiftItem:
     fields: dict[str, object] = {
         "kind": "element", "id": note_id, "outcome": "create", "label": "Grow into mid-market",
-        "artifact_type": "goal",
+        "artifact_type": "goal", "target": "q3-expansion",
     }
     return LiftItem(**{**fields, **overrides})  # type: ignore[arg-type]
 
@@ -37,7 +37,7 @@ def _connection(**overrides: object) -> LiftItem:
 
 class TestOnePlanItemAsOneBatchItem:
     def test_an_element_carries_its_type_name_and_target_project(self) -> None:
-        item = _batch_item(_element(), LiftTarget(group="q3-expansion"))
+        item = _batch_item(_element())
 
         assert item["op"] == "create_entity"
         assert item["artifact_type"] == "goal"
@@ -47,21 +47,19 @@ class TestOnePlanItemAsOneBatchItem:
         assert item["_ref"] == "n1"
 
     def test_an_empty_body_and_no_specialization_are_omitted_rather_than_sent_empty(self) -> None:
-        item = _batch_item(_element(), LiftTarget())
+        item = _batch_item(_element(target=""))
 
         assert "summary" not in item
         assert "specializations" not in item
 
     def test_a_body_becomes_the_summary_and_a_specialization_is_carried(self) -> None:
-        item = _batch_item(
-            _element(summary="Why we are here", specializations=("strategic-goal",)), LiftTarget(),
-        )
+        item = _batch_item(_element(summary="Why we are here", specializations=("strategic-goal",)))
 
         assert item["summary"] == "Why we are here"
         assert item["specializations"] == ["strategic-goal"]
 
     def test_a_connection_addresses_ends_exactly_as_the_plan_resolved_them(self) -> None:
-        item = _batch_item(_connection(), LiftTarget())
+        item = _batch_item(_connection())
 
         assert item["op"] == "add_connection"
         assert item["source_entity"] == "$ref:n1"
@@ -110,3 +108,27 @@ class TestResolvingTheTarget:
 
         assert target.group == "q3-expansion"
         assert not target.exists
+
+
+class TestADocumentAndTheReferencesItRecords:
+    def test_a_document_carries_its_type_title_and_collection(self) -> None:
+        item = _batch_item(LiftItem(
+            kind="document", id="d1", outcome="create", label="Q3 vision",
+            artifact_type="vision", target="q3-expansion", summary="Where this is going",
+        ))
+
+        assert item["op"] == "create_document"
+        assert item["doc_type"] == "vision"
+        assert item["title"] == "Q3 vision"
+        # One target names both the model-project and the document collection: asking twice for one
+        # decision a person has already made is how two answers start to disagree.
+        assert item["group"] == "q3-expansion"
+        assert item["body"] == "Where this is going"
+
+    def test_its_references_travel_with_it_rather_than_as_a_second_write(self) -> None:
+        item = _batch_item(LiftItem(
+            kind="document", id="d1", outcome="create", label="Q3 vision",
+            artifact_type="vision", entity_refs=("$ref:n1", "ENT@9.x.order"),
+        ))
+
+        assert item["entity_refs"] == ["$ref:n1", "ENT@9.x.order"]

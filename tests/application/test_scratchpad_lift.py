@@ -41,7 +41,7 @@ class TestTheLiftItself:
     def test_an_empty_selection_is_a_mis_click_rather_than_a_request_to_lift_nothing(self) -> None:
         plan = plan_lift(
             _pad(notes=[_typed("n1", "Grow")]),
-            selection=[], target=LiftTarget(), verdict_of=_always(PERMITTED),
+            selection=[], targets={}, verdict_of=_always(PERMITTED),
         )
 
         assert plan.blocks
@@ -51,7 +51,7 @@ class TestTheLiftItself:
     def test_a_selection_naming_a_note_this_scratchpad_lacks_is_refused(self) -> None:
         plan = plan_lift(
             _pad(notes=[_typed("n1", "Grow")]),
-            selection=["n1", "ghost"], target=LiftTarget(), verdict_of=_always(PERMITTED),
+            selection=["n1", "ghost"], targets={}, verdict_of=_always(PERMITTED),
         )
 
         assert plan.blocks
@@ -61,7 +61,7 @@ class TestTheLiftItself:
         plan = plan_lift(
             _pad(notes=[_typed("n1", "Grow")], meta_ontology="archimate-4"),
             selection=["n1"],
-            target=LiftTarget(group="control-systems", meta_ontology="sysml-v2", exists=True),
+            targets={"unfiled": LiftTarget(group="control-systems", meta_ontology="sysml-v2", exists=True)},
             verdict_of=_always(PERMITTED),
         )
 
@@ -73,12 +73,13 @@ class TestTheLiftItself:
         plan = plan_lift(
             _pad(notes=[_typed("n1", "Grow")]),
             selection=["n1"],
-            target=LiftTarget(group="q3-expansion", exists=False),
+            targets={"unfiled": LiftTarget(group="q3-expansion", exists=False)},
             verdict_of=_always(PERMITTED),
         )
 
         assert not plan.blocks
-        assert plan.target.group == "q3-expansion" and not plan.target.exists
+        assert [target.group for target in plan.targets] == ["q3-expansion"]
+        assert not plan.targets[0].exists
 
 
 class TestWhatBecomesOfANote:
@@ -89,7 +90,7 @@ class TestWhatBecomesOfANote:
         )
 
         plan = plan_lift(
-            _pad(notes=[note]), selection=["n1"], target=LiftTarget(),
+            _pad(notes=[note]), selection=["n1"], targets={},
             verdict_of=_always(PERMITTED),
         )
 
@@ -105,7 +106,7 @@ class TestWhatBecomesOfANote:
         )
 
         plan = plan_lift(
-            _pad(notes=[bound]), selection=["n1"], target=LiftTarget(),
+            _pad(notes=[bound]), selection=["n1"], targets={},
             verdict_of=_always(PERMITTED),
         )
 
@@ -120,7 +121,7 @@ class TestWhatBecomesOfANote:
         )
 
         plan = plan_lift(
-            _pad(notes=[realized]), selection=["n1"], target=LiftTarget(),
+            _pad(notes=[realized]), selection=["n1"], targets={},
             verdict_of=_always(PERMITTED),
         )
 
@@ -130,20 +131,30 @@ class TestWhatBecomesOfANote:
     def test_an_undecided_note_is_refused_and_told_what_it_needs(self) -> None:
         plan = plan_lift(
             _pad(notes=[Note(id="n1", title="Still thinking")]),
-            selection=["n1"], target=LiftTarget(), verdict_of=_always(PERMITTED),
+            selection=["n1"], targets={}, verdict_of=_always(PERMITTED),
         )
 
         assert plan.blocks
         assert "undecided" in plan.of("refuse")[0].reason
 
-    def test_a_note_destined_for_a_document_is_refused_rather_than_silently_dropped(self) -> None:
+    def test_a_note_destined_for_a_document_becomes_one(self) -> None:
         plan = plan_lift(
             _pad(notes=[Note(id="n1", title="Vision", destination="document", document_type="vision")]),
-            selection=["n1"], target=LiftTarget(), verdict_of=_always(PERMITTED),
+            selection=["n1"], targets={}, verdict_of=_always(PERMITTED),
+        )
+
+        created = plan.of("create")[0]
+        assert created.kind == "document" and created.artifact_type == "vision"
+        assert not plan.blocks
+
+    def test_a_document_note_with_no_document_type_chosen_is_refused(self) -> None:
+        plan = plan_lift(
+            _pad(notes=[Note(id="n1", title="Vision", destination="document")]),
+            selection=["n1"], targets={}, verdict_of=_always(PERMITTED),
         )
 
         assert plan.blocks
-        assert "document" in plan.of("refuse")[0].reason
+        assert "no document type" in plan.of("refuse")[0].reason
 
 
 class TestWhatBecomesOfALink:
@@ -156,7 +167,7 @@ class TestWhatBecomesOfALink:
     def test_a_typed_permitted_link_between_two_created_notes_addresses_both_by_alias(self) -> None:
         plan = plan_lift(
             self._two_notes_and_a_link(connection_type="archimate-realization"),
-            selection=["n1", "n2"], target=LiftTarget(), verdict_of=_always(PERMITTED),
+            selection=["n1", "n2"], targets={}, verdict_of=_always(PERMITTED),
         )
 
         connection = next(item for item in plan.of("create") if item.kind == "connection")
@@ -176,7 +187,7 @@ class TestWhatBecomesOfALink:
         )
 
         plan = plan_lift(
-            pad, selection=["n1", "n2"], target=LiftTarget(), verdict_of=_always(PERMITTED),
+            pad, selection=["n1", "n2"], targets={}, verdict_of=_always(PERMITTED),
         )
 
         connection = next(item for item in plan.of("create") if item.kind == "connection")
@@ -185,7 +196,7 @@ class TestWhatBecomesOfALink:
     def test_an_untyped_link_is_refused(self) -> None:
         plan = plan_lift(
             self._two_notes_and_a_link(),
-            selection=["n1", "n2"], target=LiftTarget(), verdict_of=_always(PERMITTED),
+            selection=["n1", "n2"], targets={}, verdict_of=_always(PERMITTED),
         )
 
         assert plan.blocks
@@ -194,7 +205,7 @@ class TestWhatBecomesOfALink:
     def test_a_refused_triple_blocks_the_whole_lift_and_carries_its_code(self) -> None:
         plan = plan_lift(
             self._two_notes_and_a_link(connection_type="archimate-serving"),
-            selection=["n1", "n2"], target=LiftTarget(), verdict_of=_always(REFUSED),
+            selection=["n1", "n2"], targets={}, verdict_of=_always(REFUSED),
         )
 
         refused = next(item for item in plan.of("refuse") if item.kind == "connection")
@@ -204,7 +215,7 @@ class TestWhatBecomesOfALink:
     def test_a_narrowing_warns_and_passes_because_the_relation_exists(self) -> None:
         plan = plan_lift(
             self._two_notes_and_a_link(connection_type="archimate-realization"),
-            selection=["n1", "n2"], target=LiftTarget(), verdict_of=_always(NARROWED),
+            selection=["n1", "n2"], targets={}, verdict_of=_always(NARROWED),
         )
 
         assert not plan.blocks
@@ -216,7 +227,7 @@ class TestWhatBecomesOfALink:
                 connection_type="archimate-realization",
                 model_ref=ModelRef(artifact_id="CON@7.z.realizes", kind="realized"),
             ),
-            selection=["n1", "n2"], target=LiftTarget(), verdict_of=_always(PERMITTED),
+            selection=["n1", "n2"], targets={}, verdict_of=_always(PERMITTED),
         )
 
         skipped = next(item for item in plan.of("skip") if item.kind == "connection")
@@ -230,7 +241,7 @@ class TestLinksThatReachOutside:
             links=[Link(id="l1", source="n1", target="n2", connection_type="archimate-serving")],
         )
 
-        plan = plan_lift(pad, selection=["n1"], target=LiftTarget(), verdict_of=_always(PERMITTED))
+        plan = plan_lift(pad, selection=["n1"], targets={}, verdict_of=_always(PERMITTED))
 
         # Not a refusal: it is a decision, made by extending the selection or accepting the loss.
         assert not plan.blocks
@@ -244,7 +255,7 @@ class TestLinksThatReachOutside:
             links=[Link(id="l1", source="n2", target="n3", connection_type="archimate-serving")],
         )
 
-        plan = plan_lift(pad, selection=["n1"], target=LiftTarget(), verdict_of=_always(PERMITTED))
+        plan = plan_lift(pad, selection=["n1"], targets={}, verdict_of=_always(PERMITTED))
 
         assert plan.outside_selection == ()
 
@@ -300,7 +311,7 @@ class TestPerformingALift:
         service, repository = _service(self._pad_with_one_liftable_note(), writer)
 
         plan, receipt = service.lift(
-            "SCR@1.a.pad", selection=["n1"], target_group="", expected_version="0.1.0",
+            "SCR@1.a.pad", selection=["n1"], targets={}, expected_version="0.1.0",
         )
 
         assert plan.of("create")
@@ -312,7 +323,7 @@ class TestPerformingALift:
         service, _ = _service(_pad(notes=[Note(id="n1", title="Undecided")]), writer)
 
         plan, _ = service.lift(
-            "SCR@1.a.pad", selection=["n1"], target_group="", expected_version="0.1.0",
+            "SCR@1.a.pad", selection=["n1"], targets={}, expected_version="0.1.0",
             dry_run=False,
         )
 
@@ -324,7 +335,7 @@ class TestPerformingALift:
         service, repository = _service(self._pad_with_one_liftable_note(), writer)
 
         _plan, receipt = service.lift(
-            "SCR@1.a.pad", selection=["n1"], target_group="q3", expected_version="0.1.4",
+            "SCR@1.a.pad", selection=["n1"], targets={"unfiled": "q3"}, expected_version="0.1.4",
             dry_run=False,
         )
 
@@ -343,9 +354,124 @@ class TestPerformingALift:
         service, _ = _service(_pad(notes=[bound]), writer)
 
         plan, _ = service.lift(
-            "SCR@1.a.pad", selection=["n1"], target_group="", expected_version="0.1.0",
+            "SCR@1.a.pad", selection=["n1"], targets={}, expected_version="0.1.0",
             dry_run=False,
         )
 
         assert plan.is_empty and not plan.blocks
         assert writer.executed == []
+
+
+class TestDocumentsAndTheReferencesTheyRecord:
+    """A document is the other destination, and the only one whose links are not connections."""
+
+    def _document_and_element(self, **link_fields: object):  # noqa: ANN202
+        return _pad(
+            notes=[
+                Note(id="d1", title="Q3 vision", destination="document", document_type="vision"),
+                _typed("n1", "Order management"),
+            ],
+            links=[Link(id="l1", source="n1", target="d1", **link_fields)],  # type: ignore[arg-type]
+        )
+
+    def test_a_link_touching_a_document_becomes_a_reference_not_a_connection(self) -> None:
+        plan = plan_lift(
+            self._document_and_element(), selection=["d1", "n1"], targets={},
+            verdict_of=_always(PERMITTED),
+        )
+
+        reference = next(item for item in plan.items if item.kind == "reference")
+        assert reference.outcome == "create"
+        assert "one-way" in reference.reason
+
+    def test_the_reference_runs_document_to_model_whichever_way_it_was_drawn(self) -> None:
+        # The link above was drawn element → document; the reference is recorded the other way, and
+        # the direction drawn is deliberately not preserved. A reference the *model* held would make
+        # the model depend on a commentary about it.
+        plan = plan_lift(
+            self._document_and_element(), selection=["d1", "n1"], targets={},
+            verdict_of=_always(PERMITTED),
+        )
+
+        reference = next(item for item in plan.items if item.kind == "reference")
+        assert reference.source_ref == "$ref:d1"
+        assert reference.target_ref == "$ref:n1"
+
+    def test_it_is_folded_into_the_document_it_is_recorded_on(self) -> None:
+        # A reference is not an artifact: it is written as part of the document, so it cannot
+        # outlive a failed document create and needs no second transaction to stay consistent.
+        plan = plan_lift(
+            self._document_and_element(), selection=["d1", "n1"], targets={},
+            verdict_of=_always(PERMITTED),
+        )
+
+        document = next(item for item in plan.items if item.kind == "document")
+        assert document.entity_refs == ("$ref:n1",)
+
+    def test_two_documents_produce_nothing_because_they_relate_in_prose(self) -> None:
+        pad = _pad(
+            notes=[
+                Note(id="d1", title="Vision", destination="document", document_type="vision"),
+                Note(id="d2", title="Outline", destination="document", document_type="vision"),
+            ],
+            links=[Link(id="l1", source="d1", target="d2")],
+        )
+
+        plan = plan_lift(pad, selection=["d1", "d2"], targets={}, verdict_of=_always(PERMITTED))
+
+        assert next(item for item in plan.items if item.kind == "reference").outcome == "skip"
+        assert not plan.blocks
+
+
+class TestOneTargetPerFrame:
+    """The frames are work archetypes, so a canvas routinely holds work for more than one project."""
+
+    def _two_frames(self):  # noqa: ANN202
+        from src.domain.scratchpad import Area, Layout, Point, Rect
+
+        return _pad(
+            areas=[Area(id="strategy", label="Vision & strategy"), Area(id="project", label="Project")],
+            notes=[_typed("n1", "Grow"), _typed("n2", "Order service")],
+            layout=Layout(
+                areas={"strategy": Rect(0, 0, 400, 200), "project": Rect(0, 300, 400, 200)},
+                notes={"n1": Point(40, 40), "n2": Point(40, 340)},
+            ),
+        )
+
+    def test_each_frame_sends_its_notes_to_its_own_project(self) -> None:
+        plan = plan_lift(
+            self._two_frames(),
+            selection=["n1", "n2"],
+            targets={
+                "strategy": LiftTarget(group="enterprise-strategy", exists=True),
+                "project": LiftTarget(group="q3-expansion", exists=False),
+            },
+            verdict_of=_always(PERMITTED),
+        )
+
+        landing = {item.id: item.target for item in plan.of("create")}
+        assert landing == {"n1": "enterprise-strategy", "n2": "q3-expansion"}
+        assert [target.group for target in plan.targets] == ["enterprise-strategy", "q3-expansion"]
+
+    def test_a_frame_with_no_target_named_lands_in_the_root_model(self) -> None:
+        plan = plan_lift(
+            self._two_frames(),
+            selection=["n1", "n2"],
+            targets={"project": LiftTarget(group="q3-expansion")},
+            verdict_of=_always(PERMITTED),
+        )
+
+        assert {item.id: item.target for item in plan.of("create")} == {"n1": "", "n2": "q3-expansion"}
+
+    def test_a_mismatch_on_any_one_target_refuses_the_lift(self) -> None:
+        plan = plan_lift(
+            self._two_frames(),
+            selection=["n1", "n2"],
+            targets={
+                "strategy": LiftTarget(group="fine"),
+                "project": LiftTarget(group="control-systems", meta_ontology="sysml-v2", exists=True),
+            },
+            verdict_of=_always(PERMITTED),
+        )
+
+        assert plan.blocks and "sysml-v2" in plan.refusal

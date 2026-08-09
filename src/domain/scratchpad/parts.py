@@ -50,6 +50,11 @@ class Note:
     title: str
     body: str = ""
     destination: Destination = "undecided"
+    #: The first rung of the meta-ontology's classification ladder, chosen before a type is. Stored
+    #: because it is a decision in its own right — "this is motivation work" is worth recording and
+    #: worth showing — and because it is what a colour on the canvas is derived from. Once a type is
+    #: chosen the type implies it, and the served value is derived from the type instead.
+    domain: str | None = None
     element_type: str | None = None
     specialization: str | None = None
     document_type: str | None = None
@@ -75,10 +80,18 @@ class Link:
 
 @dataclass(frozen=True, slots=True)
 class Area:
-    """A labelled frame on the canvas. Its geometry is what makes it a container."""
+    """A labelled frame on the canvas. Its geometry is what makes it a container.
+
+    A frame narrows what may go in it by naming **domains** rather than types. A domain is
+    `hierarchy[0]`, which every ontology module already declares, so "Vision & strategy holds
+    motivation and strategy work" keeps meaning that when the ontology gains a type — where a frozen
+    list of type names would quietly stop offering the new one. `permitted_element_types` remains for
+    a frame that wants to be narrower still, and an empty pair means the frame narrows nothing.
+    """
 
     id: str
     label: str
+    permitted_domains: tuple[str, ...] = ()
     permitted_element_types: tuple[str, ...] = ()
     permitted_document_types: tuple[str, ...] = ()
 

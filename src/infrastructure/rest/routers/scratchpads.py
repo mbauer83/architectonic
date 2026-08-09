@@ -103,14 +103,15 @@ class ReplaceScratchpadBody(_ClosedBody):
 class LiftScratchpadBody(_ClosedBody):
     """What to lift, where to, and whether this is a rehearsal.
 
-    `dry_run` defaults to true like every other write on this surface. `target` names a
-    model-project slug, created if it does not exist; empty means the root model, for content that
-    belongs to no project.
+    `dry_run` defaults to true like every other write on this surface. `targets` maps a frame's id
+    to the model-project its content lands in — one per frame, because the frames are work
+    archetypes and a canvas routinely holds work for more than one project. A frame with no entry
+    lands in the root model, which is also where a note sitting in no frame goes.
     """
 
     version: str
     selection: list[str]
-    target: str = ""
+    targets: dict[str, str] = Field(default_factory=dict)
     dry_run: bool = Field(default=True, alias="dry-run")
 
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
@@ -224,7 +225,7 @@ def lift_scratchpad(artifact_id: str, body: LiftScratchpadBody) -> dict[str, Any
             service.lift,
             artifact_id,
             selection=body.selection,
-            target_group=body.target,
+            targets=body.targets,
             expected_version=body.version,
             dry_run=body.dry_run,
         )

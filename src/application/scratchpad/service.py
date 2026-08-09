@@ -39,14 +39,21 @@ from src.domain.scratchpad import (
     scratchpad_from_parts,
 )
 
-#: The four areas a new scratchpad is seeded with, and what each is for. Defaults rather than a
-#: fixed structure: a scratchpad may add, rename or remove areas, and the permitted-type sets that
-#: turn these into a narrowing arrive with typing (slice 3).
-DEFAULT_AREAS: tuple[tuple[str, str], ...] = (
-    ("strategy", "Vision & strategy"),
-    ("portfolio", "Portfolio"),
-    ("project", "Project"),
-    ("enabling", "Enabling"),
+#: The four areas a new scratchpad is seeded with, what each is for, and which domains it holds.
+#:
+#: The frames are **work archetypes**, not layers, which is why only the first narrows: vision and
+#: strategy work is motivation and strategy by definition, while portfolio, project and enabling
+#: work each reach across the whole model — a project produces application components and business
+#: processes as readily as requirements. Narrowing those would be inventing a rule the work does not
+#: have.
+#:
+#: Defaults rather than a fixed structure: a scratchpad may add, rename or remove areas, and may
+#: widen or narrow any of them.
+DEFAULT_AREAS: tuple[tuple[str, str, tuple[str, ...]], ...] = (
+    ("strategy", "Vision & strategy", ("motivation", "strategy")),
+    ("portfolio", "Portfolio", ()),
+    ("project", "Project", ()),
+    ("enabling", "Enabling", ()),
 )
 
 #: Where the seeded frames sit. Stacked rather than tiled, because a cross-area link is the content
@@ -95,9 +102,12 @@ class ScratchpadService:
         areas are the vocabulary the feature is designed around. `seed_areas=False` exists for the
         caller who wants their own — an agent restoring an export, most obviously.
         """
-        areas = [Area(id=area_id, label=label) for area_id, label in DEFAULT_AREAS] if seed_areas else []
+        areas = [
+            Area(id=area_id, label=label, permitted_domains=domains)
+            for area_id, label, domains in DEFAULT_AREAS
+        ] if seed_areas else []
         layout = Layout(areas={
-            area_id: _area_rect(index) for index, (area_id, _) in enumerate(DEFAULT_AREAS)
+            area_id: _area_rect(index) for index, (area_id, *_rest) in enumerate(DEFAULT_AREAS)
         }) if seed_areas else Layout()
         scratchpad = scratchpad_from_parts(
             artifact_id=artifact_id,
@@ -131,11 +141,15 @@ class ScratchpadService:
         artifact_id: str,
         *,
         selection: list[str],
-        target_group: str,
+        targets: dict[str, str],
         expected_version: str,
         dry_run: bool = True,
     ) -> tuple[LiftPlan, LiftReceipt]:
         """Preflight a lift, and perform it unless asked only to plan.
+
+        *targets* maps a frame's id to the project its content lands in — one target per frame,
+        because the frames are work archetypes and a canvas routinely holds work for more than one
+        project. A frame with no entry lands in the root model.
 
         Planning and performing are one operation on one route, as the write tools already are: a
         plan that cannot be executed by the same call is a plan someone has to trust twice, and the
@@ -148,7 +162,9 @@ class ScratchpadService:
         plan = plan_lift(
             scratchpad,
             selection=selection,
-            target=self._lift_writer.resolve_target(target_group),
+            targets={
+                area: self._lift_writer.resolve_target(group) for area, group in targets.items()
+            },
             verdict_of=verdict_source(self._registry, scratchpad),
         )
         if dry_run or plan.blocks or plan.is_empty:

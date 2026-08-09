@@ -255,7 +255,7 @@ class TestLift:
 
         response = client.post(
             f"/api/scratchpads/{pad['artifact-id']}/lift",
-            json={"version": pad["version"], "selection": ["n1"], "targt": "typo"},
+            json={"version": pad["version"], "selection": ["n1"], "targts": {}},
         )
 
         assert response.status_code == 422

@@ -26,7 +26,12 @@ from .common import (
     unknown_item_fields,
 )
 from .diagram_refs import auto_sync_diagrams, collect_bulk_write_auto_sync_diagram_ids
-from .write_apply import apply_add_connections, apply_create_entities, apply_edits
+from .write_apply import (
+    apply_add_connections,
+    apply_create_documents,
+    apply_create_entities,
+    apply_edits,
+)
 from .write_payload import BulkWriteReturnMode, build_write_payload, shape_payload
 
 
@@ -52,6 +57,9 @@ def artifact_bulk_write(
     live_root = resolve_root(repo_root)
     indexed = list(enumerate(items))
     creates_ent = [(index, item) for index, item in indexed if item.get("op") == "create_entity"]
+    # After the entities and before the connections: a document may reference an entity this same
+    # batch creates, and resolving that reference needs the entity to exist in the staging tree.
+    creates_doc = [(index, item) for index, item in indexed if item.get("op") == "create_document"]
     creates_con = [(index, item) for index, item in indexed if item.get("op") == "add_connection"]
     edits = [(index, item) for index, item in indexed if item.get("op") in {"edit_entity", "edit_connection"}]
     unknown = [
@@ -80,6 +88,7 @@ def artifact_bulk_write(
         payload = _execute_staged(
             indexed=indexed,
             creates_ent=creates_ent,
+            creates_doc=creates_doc,
             creates_con=creates_con,
             edits=edits,
             staged_root=staged_root,
@@ -137,6 +146,7 @@ def _execute_staged(
     *,
     indexed: list[tuple[int, dict[str, Any]]],
     creates_ent: list[tuple[int, dict[str, Any]]],
+    creates_doc: list[tuple[int, dict[str, Any]]],
     creates_con: list[tuple[int, dict[str, Any]]],
     edits: list[tuple[int, dict[str, Any]]],
     staged_root: Path,
@@ -160,6 +170,21 @@ def _execute_staged(
             staged_root=staged_root,
             dry_run=dry_run,
             operation_id=operation_id,
+        )
+        skipped = apply_create_documents(
+            creates_doc,
+            ref_map=ref_map,
+            results=results,
+            clear_repo_caches=clear_repo_caches,
+            staged_root=staged_root,
+            dry_run=dry_run,
+            operation_id=operation_id,
+            skipped=skipped,
+            current_registry=lambda: candidate_registry(
+                live_root=live_root,
+                staged_root=staged_root,
+                touched_paths=changed_paths,
+            ),
         )
         skipped = apply_add_connections(
             creates_con,

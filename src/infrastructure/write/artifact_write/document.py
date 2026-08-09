@@ -87,6 +87,34 @@ def _document_write_allowed(res) -> bool:
     return res.valid and not res.issues
 
 
+#: The heading a one-way reference is recorded under. One name, so `references_to_entity` finds the
+#: links and a reader finds the section — a document that referenced the model from wherever the
+#: prose happened to mention it would be a document nobody could audit.
+REFERENCES_HEADING = "References"
+
+
+def render_references(document_path: Path, entity_paths: list[Path]) -> str:
+    """A `## References` section of relative markdown links, or nothing when there are none.
+
+    Relative to the document, because that is how a reference is *read*: `references_to_entity`
+    resolves `document.parent / href`, and the same link works in any markdown viewer without the
+    repository being served from anywhere in particular.
+
+    References run **document → model, one way** (ADR@1783406789). The model is not edited to record
+    that a document mentions it, which is what keeps a document a commentary on the model rather
+    than a second place the model is defined.
+    """
+    if not entity_paths:
+        return ""
+    import os  # noqa: PLC0415 — one relpath, not worth a module-level import for every caller
+
+    rows = [
+        f"- [{path.stem}]({os.path.relpath(path, document_path.parent).replace(os.sep, '/')})"
+        for path in sorted(entity_paths)
+    ]
+    return f"\n\n## {REFERENCES_HEADING}\n\n" + "\n".join(rows) + "\n"
+
+
 def create_document(
     *,
     repo_root: Path,
@@ -103,7 +131,14 @@ def create_document(
     last_updated: str | None,
     dry_run: bool,
     group: str = UNCATEGORIZED,
+    references: list[Path] | None = None,
 ) -> WriteResult:
+    """*references* are model files this document points at, rendered as a `References` section.
+
+    Data rather than a mode: an empty list and `None` mean the same thing, and the section is simply
+    absent. It is the writer's job because the hrefs are relative to the document's own path, which
+    only this function knows before the file exists.
+    """
     assert_engagement_write_root(repo_root)
 
     schema = get_document_schema(repo_root, doc_type)
@@ -154,6 +189,7 @@ def create_document(
         )
 
     actual_body = body or _build_placeholder_body(sections, section_templates)
+    actual_body = actual_body.rstrip() + render_references(path, references or [])
     content = _format_document_markdown(
         artifact_id=doc_id,
         doc_type=doc_type,

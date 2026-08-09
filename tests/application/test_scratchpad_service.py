@@ -40,7 +40,7 @@ class TestCreate:
         """An empty canvas answers none of 'what goes where'."""
         created = _new(service)
 
-        assert {area.id for area in created.areas} == {area_id for area_id, _ in DEFAULT_AREAS}
+        assert {area.id for area in created.areas} == {area_id for area_id, *_ in DEFAULT_AREAS}
 
     def test_the_seeded_frames_are_placed_so_they_do_not_overlap(self, service: ScratchpadService) -> None:
         """Overlapping frames would make every seeded note's area depend on declaration order."""
