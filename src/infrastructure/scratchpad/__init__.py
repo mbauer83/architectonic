@@ -1,0 +1,1 @@
+"""Scratchpad infrastructure: YAML persistence."""

@@ -104,17 +104,36 @@ class TestAreaMembershipIsSpatial:
     def test_a_note_with_no_position_at_all_is_unfiled(self) -> None:
         assert _pad(notes=[Note(id="n1", title="A")]).area_of("n1") == UNFILED
 
-    def test_overlapping_frames_resolve_to_the_one_on_top(self) -> None:
+    def test_overlapping_frames_resolve_to_the_smallest_containing_one(self) -> None:
+        """What a person means by dropping a note into a small frame sitting on a large one."""
         pad = _pad(
-            areas=[Area(id="under", label="Under"), Area(id="over", label="Over")],
+            areas=[Area(id="big", label="Big"), Area(id="small", label="Small")],
             notes=[Note(id="n1", title="A")],
             layout=Layout(
-                areas={"under": Rect(0, 0, 500, 500), "over": Rect(100, 100, 300, 300)},
+                areas={"big": Rect(0, 0, 500, 500), "small": Rect(100, 100, 300, 300)},
                 notes={"n1": Point(150, 150)},
             ),
         )
 
-        assert pad.area_of("n1") == "over"
+        assert pad.area_of("n1") == "small"
+
+    def test_containment_does_not_depend_on_the_order_areas_happen_to_be_in(self) -> None:
+        """Regression: it read z-order off declaration order, and the file is written in stable id
+        order — so saving a scratchpad could silently move a note into a different frame."""
+        layout = Layout(
+            areas={"big": Rect(0, 0, 500, 500), "small": Rect(100, 100, 300, 300)},
+            notes={"n1": Point(150, 150)},
+        )
+        one_way = _pad(
+            areas=[Area(id="big", label="Big"), Area(id="small", label="Small")],
+            notes=[Note(id="n1", title="A")], layout=layout,
+        )
+        other_way = _pad(
+            areas=[Area(id="small", label="Small"), Area(id="big", label="Big")],
+            notes=[Note(id="n1", title="A")], layout=layout,
+        )
+
+        assert one_way.area_of("n1") == other_way.area_of("n1") == "small"
 
 
 class TestGroups:

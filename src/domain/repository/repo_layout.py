@@ -13,3 +13,4 @@ DIAGRAMS = "diagrams"  # subdirectory within DIAGRAM_CATALOG/
 RENDERED = "rendered"  # subdirectory within DIAGRAMS/ — excluded from indexing
 ARCH_REPO = ".arch-repo"
 ARCH_DOC_SCHEMATA = "documents"  # subdirectory within ARCH_REPO/ — document type JSON schemas
+SCRATCHPADS = "scratchpads"  # SCRATCHPADS/<group-slug>/SCR@….scratchpad.yaml — free-standing

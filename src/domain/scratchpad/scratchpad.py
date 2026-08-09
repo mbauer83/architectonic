@@ -165,16 +165,23 @@ class Scratchpad:
     def area_of(self, note_id: str) -> str:
         """Which frame contains this note — derived from geometry, never stored.
 
-        Frames may overlap; the LAST one declared wins, which is the one drawn on top. Reading
-        z-order off declaration order keeps a second ordering field from existing to disagree with
-        it, and matches what a user sees when they drop a note onto a stack of frames.
+        Frames may overlap, and the **smallest** containing one wins. That is what a person means
+        when they drop a note into a small frame sitting on a large one, and — unlike "the last
+        declared", which this first did — it depends on nothing but the geometry. Declaration order
+        cannot be the tie-breaker here: the file is written in stable id order so that a no-op save
+        produces no diff, so an aggregate's area order does not survive a round trip, and a note
+        would change frames merely by being saved. Equal areas tie-break on id, for the same
+        reason: it is the one ordering both the file and the aggregate agree on.
         """
         position = self.layout.notes.get(note_id)
         if position is None:
             return UNFILED
-        containing = [area.id for area in self.areas
-                      if (rect := self.layout.areas.get(area.id)) is not None and rect.contains(position)]
-        return containing[-1] if containing else UNFILED
+        containing = [
+            (rect.width * rect.height, area.id)
+            for area in self.areas
+            if (rect := self.layout.areas.get(area.id)) is not None and rect.contains(position)
+        ]
+        return min(containing)[1] if containing else UNFILED
 
     def notes_in(self, area_id: str) -> tuple[Note, ...]:
         return tuple(note for note in self.notes if self.area_of(note.id) == area_id)
