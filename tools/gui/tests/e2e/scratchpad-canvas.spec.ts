@@ -181,6 +181,27 @@ test('right-clicking the canvas offers a note, or an element the model already h
   await expect(page.locator('.sp-note .sp-bound')).toBeVisible()
 })
 
+test('lift preflights before it writes, and refuses to lift what is undecided', async ({ page }) => {
+  await newScratchpad(page, 'E2E lift')
+  const canvas = page.locator(CANVAS)
+
+  await addNote(page, 240, 160, 'Grow into mid-market')
+  await addNote(page, 520, 160, 'Not decided yet')
+
+  // Nothing is typed, so the whole scratchpad is unliftable — and the dialog says which notes and
+  // why rather than failing at the write.
+  await canvas.click({ button: 'right', position: { x: 800, y: 420 } })
+  await page.getByTestId('menu-lift').click()
+  await expect(page.getByTestId('lift-dialog')).toBeVisible({ timeout: 15000 })
+  await expect(page.getByTestId('lift-refused')).toBeVisible()
+  await expect(page.getByTestId('lift-confirm')).toBeDisabled()
+
+  // Nothing was written: a preflight is a report.
+  await expect(page.locator('.sp-note.bound')).toHaveCount(0)
+  await page.getByTestId('lift-close').click()
+  await expect(page.getByTestId('lift-dialog')).toBeHidden()
+})
+
 test('a scratchpad appears in the list with its note count', async ({ page }) => {
   await newScratchpad(page, 'E2E listed')
   await addNote(page, 200, 160, 'One note')

@@ -1,6 +1,7 @@
 import type { Effect } from 'effect'
 import type { DiagramComposition, DiagramWriteBody } from './diagramWriteBodies'
 import type { EnterpriseAdminRepository } from './EnterpriseAdminRepository'
+import type { ScratchpadRepository } from './ScratchpadRepository'
 import type { RepoError } from './repositoryErrors'
 import type { SyncChangesResult } from '../domain/schemas-changes'
 import type {
@@ -59,7 +60,6 @@ import type {
   ViewpointExecutionResult,
   ViewpointDiagramResult,
 } from '../domain'
-import type { Scratchpad, ScratchpadList } from '../domain/schemas/scratchpads'
 import type { NotFoundError } from '../domain'
 import type { MarkdownError } from '../application/MarkdownService'
 
@@ -86,7 +86,7 @@ export type { RepoError }
 /** Outbound port: the application's view of the model backend. */
 export type { DiagramComposition, DiagramWriteBody }
 
-export interface ModelRepository extends EnterpriseAdminRepository {
+export interface ModelRepository extends EnterpriseAdminRepository, ScratchpadRepository {
   readonly getServerInfo: () => Effect.Effect<ServerInfo, RepoError>
   readonly listModules: () => Effect.Effect<readonly ModuleSummary[], RepoError>
   readonly getStats: () => Effect.Effect<Stats, RepoError>
@@ -348,22 +348,5 @@ export interface ModelRepository extends EnterpriseAdminRepository {
   readonly unarchiveGroup: (kind: string, slug: string) => Effect.Effect<Record<string, unknown>, RepoError>
   readonly deleteGroup: (kind: string, slug: string, confirm?: string) => Effect.Effect<Record<string, unknown>, RepoError>
   readonly updateGroup: (kind: string, slug: string, body: { name?: string; description?: string; meta_ontology?: string; type_filter?: string[] | null }) => Effect.Effect<Record<string, unknown>, RepoError>
-  // ── Scratchpads ───────────────────────────────────────────────────────────────
-  // Five, over one resource: the aggregate. No per-note method, because the canvas holds the whole
-  // document in memory and saves it whole — which is what lets it debounce to one write a second
-  // instead of one per drag.
-  readonly listScratchpads: (
-    params?: { group?: string; status?: string },
-  ) => Effect.Effect<ScratchpadList, RepoError>
-  readonly getScratchpad: (id: string) => Effect.Effect<Scratchpad, RepoError>
-  readonly createScratchpad: (
-    body: { name: string; group: string; description?: string },
-  ) => Effect.Effect<Scratchpad, RepoError>
-  // `version` is the one the client read. A mismatch is a 409 the caller resolves by reloading —
-  // never an overwrite, since a scratchpad is a document someone else may have open.
-  readonly replaceScratchpad: (
-    id: string,
-    body: { version: string; group: string; scratchpad: Record<string, unknown> },
-  ) => Effect.Effect<Scratchpad, RepoError>
-  readonly deleteScratchpad: (id: string) => Effect.Effect<void, RepoError>
+
 }

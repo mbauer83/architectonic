@@ -25,11 +25,14 @@ const props = defineProps<{
   areaLabel: string
   /** The element types that frame permits. Empty means the frame narrows nothing. */
   permittedTypes: readonly string[]
+  /** How many notes are selected. Lift acts on the selection, or on everything when none is. */
+  selectionSize: number
 }>()
 
 const emit = defineEmits<{
   (event: 'new-note'): void
   (event: 'add-existing', entity: EntityDisplayInfo): void
+  (event: 'lift'): void
   (event: 'close'): void
 }>()
 
@@ -50,6 +53,16 @@ const scope = computed(() => (props.permittedTypes.length ? [...props.permittedT
 const heading = computed(() =>
   props.areaLabel ? `Add to ${props.areaLabel}` : 'Add here',
 )
+
+/** Arrow keys walk the entries, because a `menu` that only answered Tab would be a menu in name.
+ * The menu itself holds focus until an entry is reached, so the first press lands on the first. */
+const move = (step: number): void => {
+  const entries = [...(root.value?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? [])]
+  if (!entries.length) return
+  const here = entries.indexOf(window.document.activeElement as HTMLElement)
+  const next = here < 0 ? (step > 0 ? 0 : entries.length - 1) : (here + step + entries.length) % entries.length
+  entries[next]?.focus()
+}
 </script>
 
 <template>
@@ -57,11 +70,15 @@ const heading = computed(() =>
     v-if="at"
     ref="root"
     class="menu"
+    role="menu"
     tabindex="-1"
+    aria-label="Add to the canvas"
     data-testid="canvas-menu"
     :class="{ wide: searching }"
     :style="{ left: `${at.x}px`, top: `${at.y}px` }"
     @keydown.esc.stop="emit('close')"
+    @keydown.down.prevent="move(1)"
+    @keydown.up.prevent="move(-1)"
     @pointerdown.stop
     @contextmenu.prevent.stop
   >
@@ -73,6 +90,7 @@ const heading = computed(() =>
       <button
         type="button"
         class="entry"
+        role="menuitem"
         data-testid="menu-new-note"
         @click="emit('new-note')"
       >
@@ -82,11 +100,26 @@ const heading = computed(() =>
       <button
         type="button"
         class="entry"
+        role="menuitem"
         data-testid="menu-add-existing"
         @click="searching = true"
       >
         Add existing element…
         <span class="hint">bind what the model already has</span>
+      </button>
+      <!-- Here rather than on a toolbar: lift acts on a selection made on the canvas, so the act
+           belongs beside the thing it acts on. -->
+      <button
+        type="button"
+        class="entry"
+        role="menuitem"
+        data-testid="menu-lift"
+        @click="emit('lift')"
+      >
+        Lift into the model…
+        <span class="hint">{{
+          selectionSize ? `${selectionSize} selected` : 'everything on this scratchpad'
+        }}</span>
       </button>
     </template>
 

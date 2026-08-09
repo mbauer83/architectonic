@@ -1,12 +1,16 @@
 import type { ModelRepository } from '../../ports/ModelRepository'
-import { ScratchpadListSchema, ScratchpadSchema } from '../../domain/schemas/scratchpads'
+import {
+  ScratchpadLiftSchema,
+  ScratchpadListSchema,
+  ScratchpadSchema,
+} from '../../domain/schemas/scratchpads'
 import { encodeIdentitySegment } from '../../domain/identitySegments'
 import { buildUrl, deleteNoContent, fetchJson, postJson, putJson } from './httpTransport'
 
 /**
  * The scratchpad half of the HTTP adapter.
  *
- * Five methods, matching the five routes and the five MCP tools. There is no `addNote` and no
+ * Six methods, matching the six routes and the six MCP tools. There is no `addNote` and no
  * `moveNote`: the resource is the aggregate, so the canvas mutates its own copy and saves the whole
  * thing. That is also what lets the canvas debounce — a per-note endpoint would put one request on
  * the wire per drag, which is the traffic shape the write path is least able to absorb.
@@ -21,7 +25,12 @@ const scratchpadUrl = (id: string): string =>
 
 type ScratchpadMethods = Pick<
   ModelRepository,
-  'listScratchpads' | 'getScratchpad' | 'createScratchpad' | 'replaceScratchpad' | 'deleteScratchpad'
+  | 'listScratchpads'
+  | 'getScratchpad'
+  | 'createScratchpad'
+  | 'replaceScratchpad'
+  | 'deleteScratchpad'
+  | 'liftScratchpad'
 >
 
 export const scratchpadMethods = (): ScratchpadMethods => ({
@@ -33,4 +42,8 @@ export const scratchpadMethods = (): ScratchpadMethods => ({
   // `dry_run=false` because every write on this surface plans by default: a bare delete answers a
   // plan with 200, which reads as success and removes nothing.
   deleteScratchpad: (id) => deleteNoContent(`${scratchpadUrl(id)}?dry_run=false`),
+  // The caller decides whether this is a rehearsal, so `dry-run` is passed through rather than
+  // defaulted here: the dialog shows a plan first and executes the same call with it false.
+  liftScratchpad: (id, body) =>
+    postJson(`${scratchpadUrl(id)}/lift`, body, ScratchpadLiftSchema),
 })

@@ -15,7 +15,9 @@ import { modelServiceKey } from '../keys'
 import { useMutation } from '../composables/useMutation'
 import { useQuery } from '../composables/useQuery'
 import { useDebouncedScratchpadSave } from '../composables/useDebouncedScratchpadSave'
+import { useScratchpadLift } from '../composables/useScratchpadLift'
 import ScratchpadCanvasMenu from '../components/ScratchpadCanvasMenu.vue'
+import ScratchpadLiftDialog from '../components/ScratchpadLiftDialog.vue'
 import ScratchpadNotePanel from '../components/ScratchpadNotePanel.vue'
 import { useScratchpadDocument } from '../composables/useScratchpadDocument'
 import {
@@ -46,7 +48,9 @@ const artifactId = computed(() => String(route.params.artifactId ?? ''))
 const document = useScratchpadDocument()
 const loadQuery = useQuery<Scratchpad, RepoError | NotFoundError | MarkdownError>()
 const saveMutation = useMutation<Scratchpad, RepoError>()
-const selectedId = ref<string | null>(null)
+/** One selection, not two. The note panel edits it when exactly one note is in it, which is what
+ * a person means by "the selected note"; a lift acts on all of it. */
+const selected = ref<string[]>([])
 
 /** Ids are minted client-side and are scratchpad-local, which is exactly why they can be: a note id
  * means nothing outside its scratchpad, so no global namespace has to accept it and no round trip
@@ -92,14 +96,18 @@ const onCreateNote = ({ x, y }: { x: number; y: number }): void => {
   const id = mintId('n')
   const blank = { id, title: 'New note', area: areaAtPoint(current, x, y), body: '', destination: 'undecided' } as const
   edit(withNoteAt(withNote(current, blank), id, x, y))
-  selectedId.value = id
+  selected.value = [id]
   menu.value = null
   // Focus the title so a new note opens ready to be written, which is the whole gesture.
-  requestAnimationFrame(() => {
-    const field = window.document.querySelector<HTMLElement>(`[data-note-title="${id}"]`)
-    field?.focus()
-    if (field) window.getSelection()?.selectAllChildren(field)
-  })
+  requestAnimationFrame(() => editTitle({ id }))
+}
+
+/** Put the caret in a note's title. Reached by a click, by `Enter`/`F2` on a focused note, and by
+ * creating one — all three mean the same thing, so they go through one function. */
+const editTitle = ({ id }: { id: string }): void => {
+  const field = window.document.querySelector<HTMLElement>(`[data-note-title="${id}"]`)
+  field?.focus()
+  if (field) window.getSelection()?.selectAllChildren(field)
 }
 
 const onMoveNote = ({ id, x, y }: { id: string; x: number; y: number }): void => {
@@ -117,7 +125,7 @@ const onDeleteNote = ({ id }: { id: string }): void => {
   const current = document.current.value
   if (!current) return
   edit(withoutNote(current, id))
-  if (selectedId.value === id) selectedId.value = null
+  selected.value = selected.value.filter((candidate) => candidate !== id)
 }
 
 /** Where the canvas menu was opened, in both coordinate systems: the canvas point decides where
@@ -151,7 +159,7 @@ const onBindEntity = (entity: EntityDisplayInfo): void => {
     at.y,
   )
   edit(withBinding(placed, id, entity))
-  selectedId.value = id
+  selected.value = [id]
   menu.value = null
 }
 
@@ -166,14 +174,35 @@ const onLinkNotes = ({ source, target }: { source: string; target: string }): vo
 }
 
 const selectedNote = computed(() =>
-  (document.current.value?.notes ?? []).find((note) => note.id === selectedId.value) ?? null,
+  selected.value.length === 1
+    ? (document.current.value?.notes ?? []).find((note) => note.id === selected.value[0]) ?? null
+    : null,
 )
+
+const onSelect = ({ id, additive }: { id: string | null; additive: boolean }): void => {
+  menu.value = null
+  if (id === null) { selected.value = [] ; return }
+  if (!additive) { selected.value = [id] ; return }
+  selected.value = selected.value.includes(id)
+    ? selected.value.filter((candidate) => candidate !== id)
+    : [...selected.value, id]
+}
 
 /** Every refinement is the same shape: take the current document, produce the next, commit it.
  * The aggregate refuses anything these get wrong, and the canvas shows the refusal. */
 const refine = (next: (current: Scratchpad) => Scratchpad): void => {
   const current = document.current.value
   if (current) edit(next(current))
+}
+
+/** A committed lift rewrites the notes it realized, so the canvas reloads rather than guessing.
+ * Reloading also drops the undo history, which is correct: what a lift created is not undoable
+ * from here, and offering an undo that only rolls back the *notes* would be a lie. */
+const lift = useScratchpadLift(svc, artifactId, () => document.current.value, () => { load() })
+
+const onLiftRequest = (): void => {
+  menu.value = null
+  void lift.preflight(selected.value)
 }
 
 const undo = (): void => { document.undo(); saver.schedule() }
@@ -250,13 +279,14 @@ const status = computed(() => {
       <ScratchpadCanvas
         v-if="document.current.value"
         :scratchpad="document.current.value"
-        :selected-id="selectedId"
+        :selected-ids="selected"
         @create-note="onCreateNote"
         @move-note="onMoveNote"
         @rename-note="onRenameNote"
         @delete-note="onDeleteNote"
         @link-notes="onLinkNotes"
-        @select="selectedId = $event.id; menu = null"
+        @select="onSelect"
+        @edit-title="editTitle"
         @menu-request="onMenuRequest"
         @unbind-note="onUnbindNote"
       />
@@ -273,9 +303,23 @@ const status = computed(() => {
         :at="menu?.screen ?? null"
         :area-label="menuArea?.label ?? ''"
         :permitted-types="menuArea?.['permitted-element-types'] ?? []"
+        :selection-size="selected.length"
         @new-note="menu && onCreateNote(menu.at)"
         @add-existing="onBindEntity"
+        @lift="onLiftRequest"
         @close="menu = null"
+      />
+      <ScratchpadLiftDialog
+        :open="lift.open.value"
+        :plan="lift.plan.value"
+        :projects="lift.projects.value"
+        :target="lift.target.value"
+        :busy="lift.busy.value"
+        :error="lift.error.value"
+        :selection-size="lift.selectionSize.value"
+        @update:target="lift.target.value = $event"
+        @lift="lift.lift()"
+        @close="lift.close()"
       />
       <p
         v-if="loadQuery.error.value"

@@ -3,11 +3,13 @@ import type { Immutable, SchemaType } from './contractOracle'
 import type { components } from './openapi.generated'
 import type {
   AreaSchema,
+  LiftItemSchema,
   LinkVerdictSchema,
   LayoutSchema,
   LinkSchema,
   NoteGroupSchema,
   NoteSchema,
+  ScratchpadLiftSchema,
   ScratchpadListSchema,
   ScratchpadSchema,
   ScratchpadSummarySchema,
@@ -79,6 +81,22 @@ describe('the scratchpad list', () => {
   it('decodes the collection envelope', () => {
     expectTypeOf<SchemaType<typeof ScratchpadListSchema>>().toEqualTypeOf<
       Immutable<components['schemas']['ScratchpadListResponse']>
+    >()
+  })
+})
+
+describe('the lift preflight', () => {
+  it('decodes the plan and the receipt, which are one answer', () => {
+    // The dialog is a report of consequences, so a field the decoder drops is a consequence nobody
+    // is shown: a refusal that never renders reads as a lift that will simply work.
+    expectTypeOf<SchemaType<typeof ScratchpadLiftSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['ScratchpadLiftResponse']>
+    >()
+  })
+
+  it('decodes each item, including the outcome that decides how it renders', () => {
+    expectTypeOf<SchemaType<typeof LiftItemSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['LiftItemWire']>
     >()
   })
 })

@@ -19,20 +19,27 @@
  */
 import { computed, ref } from 'vue'
 import { useScratchpadGestures } from '../composables/useScratchpadGestures'
+import { linkMidpoint, linkPath } from '../composables/scratchpadLinkGeometry'
+import {
+  menuAnchorFor,
+  noteKeydown,
+  selectionAnnouncement,
+} from '../composables/useScratchpadKeyboard'
 import type { Area, Link, Note, Scratchpad } from '../../domain/schemas/scratchpads'
 
-const props = defineProps<{ scratchpad: Scratchpad; selectedId: string | null }>()
+const props = defineProps<{ scratchpad: Scratchpad; selectedIds: readonly string[] }>()
 const emit = defineEmits<{
   (event: 'create-note', payload: { x: number; y: number }): void
   (event: 'move-note', payload: { id: string; x: number; y: number }): void
   (event: 'rename-note', payload: { id: string; title: string }): void
   (event: 'delete-note', payload: { id: string }): void
   (event: 'link-notes', payload: { source: string; target: string }): void
-  (event: 'select', payload: { id: string | null }): void
+  (event: 'select', payload: { id: string | null; additive: boolean }): void
   (event: 'menu-request', payload: {
     at: { x: number; y: number }
     screen: { x: number; y: number }
   }): void
+  (event: 'edit-title', payload: { id: string }): void
   (event: 'unbind-note', payload: { id: string }): void
 }>()
 
@@ -54,34 +61,11 @@ const rectOf = (id: string): { x: number; y: number; w: number; h: number } => {
   return { x: rect?.[0] ?? 0, y: rect?.[1] ?? 0, w: rect?.[2] ?? 0, h: rect?.[3] ?? 0 }
 }
 
-/** A cubic Bézier between two notes' centres.
- *
- * Curved rather than straight, deliberately: a straight line reads as a decided relation, and every
- * link here is provisional until it is typed. The control points run horizontally so the curve
- * leaves and enters along the axis a reader scans. */
-const linkPath = (link: Link): string => {
-  const from = positionOf(link.source)
-  const to = positionOf(link.target)
-  const x1 = from.x + NOTE_WIDTH / 2
-  const y1 = from.y + NOTE_HEIGHT / 2
-  const x2 = to.x + NOTE_WIDTH / 2
-  const y2 = to.y + NOTE_HEIGHT / 2
-  const bend = Math.max(40, Math.abs(x2 - x1) * 0.4)
-  return `M${x1},${y1} C${x1 + bend},${y1} ${x2 - bend},${y2} ${x2},${y2}`
-}
+const NOTE_BOX = { width: NOTE_WIDTH, height: NOTE_HEIGHT }
+const pathOf = (link: Link): string => linkPath(positionOf(link.source), positionOf(link.target), NOTE_BOX)
+const midpointOf = (link: Link) => linkMidpoint(positionOf(link.source), positionOf(link.target), NOTE_BOX)
 
 const refusedLinks = computed(() => links.value.filter((link) => link.verdict?.kind === 'refused'))
-
-/** The midpoint of a link's curve, near enough for a marker: the Bézier's control points are
- * horizontal, so the curve passes close to the straight-line midpoint. */
-const linkMidpoint = (link: Link): { x: number; y: number } => {
-  const from = positionOf(link.source)
-  const to = positionOf(link.target)
-  return {
-    x: (from.x + to.x) / 2 + NOTE_WIDTH / 2,
-    y: (from.y + to.y) / 2 + NOTE_HEIGHT / 2 - 6,
-  }
-}
 
 const {
   layerTransform, linkingFrom, pointer, resetView,
@@ -90,9 +74,9 @@ const {
 } = useScratchpadGestures(
   viewport,
   positionOf,
-  { width: NOTE_WIDTH, height: NOTE_HEIGHT },
+  NOTE_BOX,
   {
-    onSelect: (id) => emit('select', { id }),
+    onSelect: (id, additive) => emit('select', { id, additive }),
     onMoveNote: (id, x, y) => emit('move-note', { id, x, y }),
     onCreateNote: (x, y) => emit('create-note', { x, y }),
     onLinkNotes: (source, target) => emit('link-notes', { source, target }),
@@ -118,6 +102,21 @@ const onTitleKeydown = (event: KeyboardEvent, note: Note): void => {
   }
 }
 
+/** Every pointer gesture, spelled as a key. The note is a `listbox` option, so `Space` toggling and
+ * `Enter` entering it is the convention a screen-reader user already has. */
+const onNoteKeydown = (event: KeyboardEvent, noteId: string): void => noteKeydown(event, noteId, {
+  onToggle: (id, additive) => emit('select', { id, additive }),
+  onEditTitle: (id) => emit('edit-title', { id }),
+  onDelete: (id) => emit('delete-note', { id }),
+  onMenu: (id) => emit('menu-request', {
+    at: positionOf(id),
+    screen: menuAnchorFor(viewport.value, id),
+  }),
+  onClearSelection: () => emit('select', { id: null, additive: false }),
+})
+
+const announcement = computed(() => selectionAnnouncement(props.selectedIds.length))
+
 defineExpose({ resetView })
 </script>
 
@@ -134,6 +133,13 @@ defineExpose({ resetView })
     @contextmenu="onContextMenu"
     @wheel="onWheel"
   >
+    <p
+      class="sp-live"
+      aria-live="polite"
+      data-testid="selection-announcement"
+    >
+      {{ announcement }}
+    </p>
     <!-- Frames and links share the note layer's transform, so nothing drifts on pan or zoom. -->
     <svg
       class="sp-underlay"
@@ -168,7 +174,7 @@ defineExpose({ resetView })
         :class="[link.verdict?.kind ?? 'unverified', { typed: !!link['connection-type'] }]"
         :data-link-id="link.id"
         :data-verdict="link.verdict?.kind ?? 'unverified'"
-        :d="linkPath(link)"
+        :d="pathOf(link)"
       />
       <!-- A refusal is the one verdict that must be visible without hovering: it is the only one
            that stops a lift. -->
@@ -176,8 +182,8 @@ defineExpose({ resetView })
         v-for="link in refusedLinks"
         :key="`x-${link.id}`"
         class="sp-link-flag"
-        :x="linkMidpoint(link).x"
-        :y="linkMidpoint(link).y"
+        :x="midpointOf(link).x"
+        :y="midpointOf(link).y"
         text-anchor="middle"
       >✕</text>
       <path
@@ -188,19 +194,32 @@ defineExpose({ resetView })
       />
     </svg>
 
+    <!-- A real multi-select listbox rather than a div with a blue border: selection is the state a
+         lift acts on, so it has to be announced rather than only drawn. -->
     <div
       class="sp-layer"
+      role="listbox"
+      aria-multiselectable="true"
+      aria-label="Notes on this scratchpad"
       :style="{ transform: layerTransform }"
     >
       <article
         v-for="note in notes"
         :key="note.id"
         class="sp-note"
-        :class="{ selected: note.id === selectedId, typed: !!note['element-type'], bound: !!note['model-ref'] }"
+        role="option"
+        tabindex="0"
+        :aria-selected="selectedIds.includes(note.id)"
+        :class="{
+          selected: selectedIds.includes(note.id),
+          typed: !!note['element-type'],
+          bound: !!note['model-ref'],
+        }"
         :data-note-id="note.id"
         :data-area="note.area"
         :style="{ transform: `translate(${positionOf(note.id).x}px, ${positionOf(note.id).y}px)` }"
         @pointerdown="onNotePointerDown($event, note.id)"
+        @keydown="onNoteKeydown($event, note.id)"
       >
         <!-- `contenteditable` rather than a positioned <input>: real text editing, IME and
              spellcheck come free, which is the whole argument for HTML notes. -->
@@ -208,6 +227,8 @@ defineExpose({ resetView })
           class="sp-title"
           contenteditable="plaintext-only"
           spellcheck="true"
+          tabindex="-1"
+          :aria-label="`Title of ${note.title}`"
           :data-note-title="note.id"
           @pointerdown.stop
           @blur="onTitleBlur($event, note)"
@@ -270,6 +291,13 @@ defineExpose({ resetView })
   position: absolute; top: 0; left: 0; transform-origin: 0 0; will-change: transform;
 }
 .sp-underlay { overflow: visible; width: 100%; height: 100%; pointer-events: none; }
+/* Announced, never drawn: the visible state is the border, and repeating it in the corner would be
+   noise for everyone who can see it. */
+.sp-live {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+}
+.sp-note:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
 .sp-area { fill: #ffffff; stroke: #e2e2e6; stroke-width: 1.5; }
 .sp-area-label { font: 600 13px system-ui, sans-serif; fill: #8b8b93; letter-spacing: .02em; }
 .sp-link { fill: none; stroke: #c3c6cc; stroke-width: 1.5; stroke-dasharray: 5 4; }

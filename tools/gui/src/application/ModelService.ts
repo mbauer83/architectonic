@@ -153,4 +153,6 @@ export const makeModelService = (repo: ModelRepository) =>
     replaceScratchpad: (id: string, body: Parameters<ModelRepository['replaceScratchpad']>[1]) =>
       repo.replaceScratchpad(id, body),
     deleteScratchpad: (id: string) => repo.deleteScratchpad(id),
+    liftScratchpad: (id: string, body: Parameters<ModelRepository['liftScratchpad']>[1]) =>
+      repo.liftScratchpad(id, body),
   }) as const

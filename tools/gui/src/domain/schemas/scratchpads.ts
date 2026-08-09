@@ -128,3 +128,51 @@ export const ScratchpadListSchema = Schema.Struct({
   scratchpads: Schema.Array(ScratchpadSummarySchema),
 })
 export type ScratchpadList = typeof ScratchpadListSchema.Type
+
+/** One selected note or link, and what a lift would do with it. */
+export const LiftItemSchema = Schema.Struct({
+  kind: Schema.Literal('element', 'connection'),
+  id: Schema.String,
+  outcome: Schema.Literal('create', 'skip', 'refuse'),
+  label: Schema.String,
+  'artifact-type': Schema.String,
+  /** What a skipped note already is, so the dialog names it rather than saying "already done". */
+  'artifact-id': Schema.String,
+  code: Schema.String,
+  reason: Schema.String,
+  /** A narrowing (W128/W129): reported and passed, because the relation exists. */
+  warning: Schema.String,
+})
+export type LiftItem = typeof LiftItemSchema.Type
+
+/** A link with one end in the selection and one end out — a decision, not an error. */
+export const OutsideSelectionSchema = Schema.Struct({
+  'link-id': Schema.String,
+  'note-id': Schema.String,
+  'note-title': Schema.String,
+})
+
+/** The preflight, and what the execution did if it ran.
+ *
+ * One shape for both, because they are one operation: a plan that could only be executed by a
+ * second call would be a plan made against a scratchpad that may have moved on.
+ */
+export const LiftTargetSchema = Schema.Struct({
+  group: Schema.String,
+  'meta-ontology': Schema.String,
+  exists: Schema.Boolean,
+})
+
+export const ScratchpadLiftSchema = Schema.Struct({
+  target: LiftTargetSchema,
+  items: Schema.optional(Schema.Array(LiftItemSchema)),
+  'outside-selection': Schema.optional(Schema.Array(OutsideSelectionSchema)),
+  refusal: Schema.String,
+  blocks: Schema.Boolean,
+  'dry-run': Schema.Boolean,
+  committed: Schema.Boolean,
+  realized: Schema.optional(Schema.Record({ key: Schema.String, value: Schema.String })),
+  errors: Schema.optional(Schema.Array(Schema.String)),
+  'operation-id': Schema.String,
+})
+export type ScratchpadLift = typeof ScratchpadLiftSchema.Type

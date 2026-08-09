@@ -1,4 +1,5 @@
 import { computed, ref, type Ref } from 'vue'
+import { isAdditive } from './useScratchpadKeyboard'
 
 /**
  * Pan, zoom, drag, and the link-drawing gesture.
@@ -11,7 +12,10 @@ import { computed, ref, type Ref } from 'vue'
  */
 
 export interface CanvasGestureIntents {
-  readonly onSelect: (id: string | null) => void
+  /** `additive` is a shift-click (or ctrl / cmd — see `isAdditive`): it adds to the selection
+   * rather than replacing it, which is what makes a lift's selection expressible without a marquee
+   * competing with the pan gesture the background drag already owns. */
+  readonly onSelect: (id: string | null, additive: boolean) => void
   readonly onMoveNote: (id: string, x: number, y: number) => void
   readonly onCreateNote: (x: number, y: number) => void
   readonly onLinkNotes: (source: string, target: string) => void
@@ -51,7 +55,7 @@ export function useScratchpadGestures(
 
   const onNotePointerDown = (event: PointerEvent, noteId: string): void => {
     event.stopPropagation()
-    intents.onSelect(noteId)
+    intents.onSelect(noteId, isAdditive(event))
     const at = toCanvas(event.clientX, event.clientY)
     const position = positionOf(noteId)
     dragging.value = { id: noteId, offsetX: at.x - position.x, offsetY: at.y - position.y }
@@ -65,7 +69,7 @@ export function useScratchpadGestures(
   }
 
   const onBackgroundPointerDown = (event: PointerEvent): void => {
-    intents.onSelect(null)
+    intents.onSelect(null, false)
     panning.value = { x: event.clientX - pan.value.x, y: event.clientY - pan.value.y }
   }
 
