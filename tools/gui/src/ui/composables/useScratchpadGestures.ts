@@ -45,6 +45,29 @@ export function useScratchpadGestures(
     () => `translate(${pan.value.x}px, ${pan.value.y}px) scale(${zoom.value})`,
   )
 
+  /** A gesture owns the pointer until it ends.
+   *
+   * Without this a drag died the moment the cursor crossed the note panel — an absolutely
+   * positioned *sibling* of the viewport, not a child of it. The pointer left `.sp-viewport`,
+   * `pointerleave` ended the gesture, and a note being dragged toward the top-left of its own
+   * canvas simply stopped following the cursor. The browser suite recorded it as a drag that wrote
+   * nothing at all, which is what it was.
+   *
+   * Capturing routes every later pointer event to the viewport whatever is drawn on top of it, so
+   * a gesture now ends when the button comes up and at no other time — including when it comes up
+   * outside the window, which `pointerleave` also could not see.
+   */
+  const capture = (event: PointerEvent): void => {
+    // A synthetic PointerEvent names no live pointer and capture throws for it. Capture is what
+    // keeps a gesture alive across an overlay, not what starts it, so failing to take it must
+    // leave the gesture working rather than refuse it.
+    try { viewport.value?.setPointerCapture(event.pointerId) } catch { /* no such active pointer */ }
+  }
+
+  const release = (event: PointerEvent): void => {
+    try { viewport.value?.releasePointerCapture(event.pointerId) } catch { /* never captured */ }
+  }
+
   const toCanvas = (clientX: number, clientY: number): { x: number; y: number } => {
     const bounds = viewport.value?.getBoundingClientRect()
     return {
@@ -59,6 +82,7 @@ export function useScratchpadGestures(
     const at = toCanvas(event.clientX, event.clientY)
     const position = positionOf(noteId)
     dragging.value = { id: noteId, offsetX: at.x - position.x, offsetY: at.y - position.y }
+    capture(event)
   }
 
   const onHandlePointerDown = (event: PointerEvent, noteId: string): void => {
@@ -66,11 +90,13 @@ export function useScratchpadGestures(
     event.preventDefault()
     linkingFrom.value = noteId
     pointer.value = toCanvas(event.clientX, event.clientY)
+    capture(event)
   }
 
   const onBackgroundPointerDown = (event: PointerEvent): void => {
     intents.onSelect(null, false)
     panning.value = { x: event.clientX - pan.value.x, y: event.clientY - pan.value.y }
+    capture(event)
   }
 
   const onPointerMove = (event: PointerEvent): void => {
@@ -92,8 +118,12 @@ export function useScratchpadGestures(
 
   const onPointerUp = (event: PointerEvent): void => {
     if (linkingFrom.value) {
-      const target = (event.target as HTMLElement | null)?.closest<HTMLElement>('[data-note-id]')
-      const targetId = target?.dataset.noteId
+      // What is under the cursor, not what the event was dispatched to: while the pointer is
+      // captured every event targets the viewport, so reading `event.target` would find the canvas
+      // and never the note the link was dropped on. Hit-testing the point is also the more honest
+      // question — a drop lands where the cursor is.
+      const under = window.document.elementFromPoint(event.clientX, event.clientY)
+      const targetId = under?.closest<HTMLElement>('[data-note-id]')?.dataset.noteId
       if (targetId && targetId !== linkingFrom.value) {
         intents.onLinkNotes(linkingFrom.value, targetId)
       }
@@ -101,6 +131,7 @@ export function useScratchpadGestures(
     }
     dragging.value = null
     panning.value = null
+    release(event)
   }
 
   /** Double-click rather than long-press: long-press is the touch equivalent, and making it the

@@ -175,6 +175,10 @@ defineExpose({ resetView })
 </script>
 
 <template>
+  <!-- `pointercancel`, never `pointerleave`. Leaving the viewport is not the end of a gesture: the
+       note panel overlays the canvas's top-left corner as a sibling of it, so ending on leave meant
+       a drag toward that corner died halfway across. The pointer is captured for the length of a
+       gesture, so the only ways out are the button coming up and the system taking it away. -->
   <div
     ref="viewport"
     class="sp-viewport"
@@ -182,7 +186,7 @@ defineExpose({ resetView })
     @pointerdown="onBackgroundPointerDown"
     @pointermove="onPointerMove"
     @pointerup="onPointerUp"
-    @pointerleave="onPointerUp"
+    @pointercancel="onPointerUp"
     @dblclick="onBackgroundDoubleClick"
     @contextmenu="onContextMenu"
     @wheel="onWheel"
