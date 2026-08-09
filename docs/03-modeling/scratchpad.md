@@ -24,6 +24,13 @@ what a lift put into the model is the model's, and a second lift creates only wh
 | **Area** | A labelled frame on the canvas. A new scratchpad is seeded with four: Vision & strategy, Portfolio, Project, Enabling. |
 | **Group** | A named cluster of notes inside one area — what becomes an authored grouping when a diagram is generated. |
 
+The four frames are **work archetypes**, not layers. Only the first narrows what may go in it —
+vision and strategy work is motivation and strategy by definition — while portfolio, project and
+enabling work each reach across the whole model: a project produces application components and
+business processes as readily as requirements, and narrowing those would invent a rule the work does
+not have. A frame declares the **domains** it holds rather than a list of types, so the declaration
+keeps meaning the same thing when the ontology gains one.
+
 **Which area a note is in is decided by where it sits**, not by a field. Dragging a note into the
 Portfolio frame *makes* it portfolio work; a note in no frame is `unfiled`, which is a legitimate
 place to be, because thinking often starts in the margin. Where frames overlap, the smallest one
@@ -61,8 +68,20 @@ what is selected rather than leaving it to a border — and every gesture has a 
 | **Menu key** / **Shift+F10** | open the canvas menu, anchored at that note |
 | **Escape** | clear the selection |
 
-Links render **dashed until they are typed**, so the canvas shows at a glance how much of the
-picture has been committed to.
+Links render **dashed until they are typed**; once typed, they are drawn the way the ontology says
+they are. `connections.yaml`'s `notation:` block is the single authority for arrow shape — line
+style and the decoration at each end — and the canvas reads it rather than deciding for itself, so
+a composition looks like a composition here, in the graph explorer, and on a rendered diagram.
+
+**Click a link** to select and refine it. Its panel offers exactly the relations the ontology
+permits for the pair as drawn, rather than the whole vocabulary, and leads with **Reverse the link**
+when the reverse is the permitted one.
+
+A note wears what it has decided: narrowing it to a **domain** colours the card, and choosing a
+**type** adds that type's glyph — the same two mechanisms the entity list and the picker use, so a
+note and the element it becomes look like the same thing on both sides of a lift. A note's **body**
+becomes the entity's summary when it is lifted, which is why it is worth writing on the note rather
+than afterwards.
 
 &nbsp;
 
@@ -163,17 +182,42 @@ execution runs rather than a client's guess at it:
 **A refusal blocks the whole lift.** The write is one transaction — everything or nothing — and half
 a lift is a state nobody asked for and nobody can name.
 
-### Where it lands
+### Where it lands — one target per frame
 
-A lift names **one target**: an existing model-project, a **new one created as part of the lift**, or
-the root model for content that belongs to no project. One target per lift rather than per note,
-because a lift is a coherent set by definition; two destinations means two lifts, which is honest
-and rarely needed.
+The dialog asks once per frame the selection spans: an existing model-project, a **new one created
+as part of the lift**, or blank for the root model. Per frame rather than per lift, because the
+frames are work archetypes — vision and strategy work is cross-project by nature, project work
+belongs to one project, enabling work is shared — so a canvas routinely holds work for more than one
+of them, and one destination would turn the ordinary act into four lifts with the selection rebuilt
+by hand each time. It costs nothing structurally: a lift spanning four projects is still one batch
+and one transaction.
+
+Per *note* would be the other extreme and is deliberately refused: the preflight would become a form
+rather than a report, and the frame is already the grouping you can see.
+
+A link crossing frames produces a connection whose ends sit in different projects, which the model
+already supports — a connection lives with its source entity.
 
 Creating the project here is deliberate — *"this thinking has become a project"* is the normal way a
 project starts, and sending you away to make a group first would interrupt exactly the moment the
 feature exists to serve. A target that declares a **different meta-ontology is refused, not
 coerced**: content cannot land in a project whose vocabulary never declared it.
+
+### Documents, and the references they record
+
+A note may be destined for a **document** rather than an element — which is most of what portfolio
+work actually produces: budgets, timelines, project outlines and lifecycle notes are prose and
+figures, not ArchiMate elements. A note has one destination; choosing a document type drops the
+element type rather than leaving both set.
+
+A link touching a document is **not a connection**. No relation runs to a document, so it becomes a
+one-way **reference from the document to the model**, recorded on the document as a relative link in
+its `References` section. The direction you drew does not matter and is deliberately not preserved:
+a reference held by the *model* would make the model depend on a commentary about it.
+
+The reference is written *as part of* the document rather than beside it, so it cannot outlive a
+failed document create and needs no second transaction to stay consistent. Two document notes linked
+together produce nothing — documents relate to each other in prose, not in the model.
 
 ### A second lift creates only what is new
 
