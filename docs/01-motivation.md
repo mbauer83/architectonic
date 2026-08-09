@@ -210,6 +210,29 @@ and the promotion workflow described below.
 
 &nbsp;
 
+## The barrier to entry, and what it costs
+
+Explicit architecture only pays if people contribute to it, and the typed model asks a
+contributor to name a type before they have decided anything. That question is small for
+someone fluent in the ontology and prohibitive for everyone else — which means the
+contributions least likely to survive are the early, uncertain, exploratory ones, exactly
+where a shared model would help most. Two things are lost with them: the people who never
+start, and the *reasoning* — the alternatives considered and rejected — which is discarded
+long before anything reaches the repository.
+
+So the model gained a **[preliminary tier](03-modeling/scratchpad.md)**. A scratchpad holds
+notes and the links between them on a canvas, with no types and no ontology; a note needs
+only a title. Structure is added later, one level at a time down the meta-ontology's own
+[classification hierarchy](05-extensibility/ontology-modules.md#classification-levels), and
+only when something is ready does a **lift** turn it into ordinary, verified model content
+through the same write path as any other authoring.
+
+The tier is deliberately one-way. A scratchpad never writes back to the model, because
+bidirectional sync between a sketch and a governed model would silently overwrite decisions
+made since — and the point of the sketch is that it is *not* yet a commitment.
+
+&nbsp;
+
 ## Guiding principles
 
 Six principles constrain how the system is built.

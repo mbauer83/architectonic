@@ -27,6 +27,41 @@ the type is the contract, and FastAPI generates the schema from it. Models decla
 fields worth documenting and allow additional properties, so a response is documented
 without its payload ever being filtered.
 
+## Scratchpads
+
+Five operations over one resource, and **the resource is the aggregate** — there is no note route
+and no link route. The root enforces the invariants, a partial update cannot be validated without
+loading the whole scratchpad anyway, and one shape removes the class of bug where two partial
+updates interleave into a state neither writer intended.
+
+| Operation | Route |
+|---|---|
+| List | `GET /api/scratchpads` — filters: `group`, `status` |
+| Read | `GET /api/scratchpads/{artifact_id}` — the whole aggregate |
+| Create | `POST /api/scratchpads` — `{name, group, description?, meta-ontology?, seed-areas?}`; the four frames are seeded unless declined |
+| Replace | `PUT /api/scratchpads/{artifact_id}` — `{version, group, scratchpad}` |
+| Delete | `DELETE /api/scratchpads/{artifact_id}` — plans unless `dry_run=false`, like every write here |
+
+`PUT` carries the **`version` the client read**. A mismatch is a **409** the client resolves by
+reloading, never an overwrite: a scratchpad is a document two people may have open. A violated
+invariant is a **400** naming the offending id.
+
+The two GETs are deliberately **not** conditional reads. The only validator this surface has is the
+model generation, and a scratchpad changes independently of the index — so an ETag keyed on it would
+answer `304` to a client whose scratchpad had been saved since, and a stale `304` is invisible.
+
+A response carries three fields the stored file does not: `group` (which collection it sits in),
+each note's `area` (derived from the geometry), and each link's `verdict` — what the scratchpad's
+meta-ontology says about the drawn relation, one of `unverified · reference · permitted · narrowed ·
+refused` with its code, alternatives and whether the reverse is permitted. All three are ignored on
+a write: they are the server's to decide, and a verdict in particular is derived from an ontology
+that may change under a stored scratchpad, so storing one would record an answer as content.
+
+There is deliberately **no verification endpoint**. The two-tier split — E126 at the level the
+ontology keys relationships on, W128/W129 at a level that only narrows them — is a consequence of
+the module's declared [classification levels](../05-extensibility/ontology-modules.md#classification-levels),
+and deciding it a second time in a client would put it in two places.
+
 ## Modification stamps and ordering
 
 Every browsable artifact carries **`last_updated`**, the UTC instant it was last written

@@ -30,7 +30,36 @@ active, and restarts the backend against it. The GUI now shows an empty engageme
 
 &nbsp;
 
-## 2. Model the question — a goal, a requirement, and what realizes it
+## 2. Sketch it first, before naming a type
+
+The typed path below asks you to pick an element type as its first move. If you already know
+which types you want, skip to step 3. If you do not — which is the ordinary case at the start of
+a piece of work — start on a **[scratchpad](03-modeling/scratchpad.md)** instead, where nothing
+needs a type at all.
+
+From the GUI's **Scratchpads** entry, name one and open it. Then:
+
+1. **Double-click** the canvas and type a thought — *"Customers can rely on order status being
+   current"*. A title is all a note needs.
+2. Add a second — *"Order status updates propagate within one minute"* — and a third for the part
+   of your system that would do it.
+3. **Drag a note's right-hand handle** onto another to link them. The links render dashed,
+   because nothing here has been committed to yet.
+
+There is no save button; the canvas writes for you once editing settles. Notice what you were
+*not* asked: which of these is a goal, which a requirement, whether that link is a realization.
+Those are good questions, and they are easier to answer once the shape is in front of you.
+
+Keep this scratchpad open — the model you build next is the same thinking, decided.
+
+> **Coming next:** binding a note to something the model already has, narrowing a note down the
+> ontology's [classification levels](05-extensibility/ontology-modules.md#classification-levels),
+> and lifting a selection into verified model content in one transaction. Until those land, the
+> step below is how thinking becomes model content.
+
+&nbsp;
+
+## 3. Model the question — a goal, a requirement, and what realizes it
 
 Three entities and two connections are enough to make the question answerable. In the
 GUI, use the entity list's create action (or the guided modeling wizard at
@@ -53,7 +82,7 @@ later.
 
 &nbsp;
 
-## 3. The same authoring, as an agent
+## 4. The same authoring, as an agent
 
 Everything you just clicked is equally available to an AI agent through the
 `arch-repo-write` MCP server — this is the same model, through typed tools:
@@ -73,7 +102,7 @@ an agent to extend your model; the verifier holds it to the same rules it holds 
 
 &nbsp;
 
-## 4. Ask the model your question
+## 5. Ask the model your question
 
 Now make the model answer. Open **Viewpoints** and execute **Requirements Coverage
 (gaps)** — the shipped viewpoint that badges every requirement by whether *anything*
@@ -89,7 +118,7 @@ Two more ways to ask, worth trying with the same tiny model:
 
 &nbsp;
 
-## 5. Save it
+## 6. Save it
 
 Open the **Changes** menu in the top bar and save — your model is a git commit in your
 engagement repository, diffable and reviewable like any other code.

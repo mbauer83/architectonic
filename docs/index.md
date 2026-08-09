@@ -40,6 +40,7 @@ New here? Start with the [Quickstart in the README](../README.md#quickstart), th
 ## Section 3 — Architecture Modeling
 
 - [Overview](03-modeling/index.md)
+- [Scratchpad](03-modeling/scratchpad.md)
 - [Projects & grouping](03-modeling/projects-and-grouping.md)
 - [Views & exploration](03-modeling/views-and-exploration.md)
 - [Diagramming](03-modeling/diagramming.md)

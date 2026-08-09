@@ -107,6 +107,43 @@ presents the application capabilities over a specific transport.
 
 &nbsp;
 
+## Scratchpad Aggregate
+
+**What it is:** The preliminary tier: a canvas of untyped **notes**, the **links** drawn
+between them, the labelled **areas** (frames) they sit in, and the **groups** clustering
+them. The scratchpad is the aggregate root — notes, links, areas and groups have no life
+outside one, which is what lets a note be created from nothing but a title: its id is
+unique within its scratchpad and meaningless outside, so no global namespace has to accept
+it.
+
+**Key types:**
+- `src/domain/scratchpad/scratchpad.py` — `Scratchpad` (root), `Note`, `Link`, `Area`,
+  `Group`, `Layout`, `ModelRef`; every invariant is enforced here and nowhere else.
+- `src/domain/scratchpad/geometry.py` — `Point`, `Rect`, and the 5-px grid every stored
+  coordinate is snapped to.
+- `src/application/scratchpad/document.py` — the single mapping between the aggregate and
+  its document form, shared by the YAML file and the REST payload.
+- `src/application/scratchpad/service.py` — `ScratchpadService`, the one door both the REST
+  router and the MCP tools go through.
+
+**Vocabulary:**
+- **area membership** is *spatial and derived* — the frame containing a note decides which
+  area it is in; a note in no frame is `unfiled`, which is legitimate.
+- **binding** holds a `model_ref` to content that already exists (type read from the
+  entity); **realization** holds one created by a lift (type chosen on the note, then
+  frozen). One field with a flag, because the difference is provenance.
+- **lifting** turns a selection into ordinary model content through the same verified write
+  path as any other authoring. It is one-way: a scratchpad never writes back, and a second
+  lift skips what is already realized.
+
+**Distinguished from:** a **document** (prose with prescribed sections) and a **diagram**
+(a picture of model content). A scratchpad is a graph with geometry whose contents are not
+model content until lifted.
+
+---
+
+&nbsp;
+
 ## Verification Policy
 
 **What it is:** The set of rules that `ArtifactVerifier` enforces, expressed as

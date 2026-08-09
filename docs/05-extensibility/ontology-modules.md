@@ -50,11 +50,62 @@ whole element class.
   by `tests/domain/test_protocol_compliance.py` on every run.
 - **Domain registration** — each new `hierarchy[0]` domain needs a color/label entry in
   `tools/gui/src/ui/lib/domains.ts` so its chip renders correctly.
+- **Coherent classification levels** — if a module declares `classification_levels`, exactly one
+  level keys relationships, no level above it narrows them, and at least one carries attributes.
 
 Adding a module is five steps: create the package, define `entities.yaml`, optionally define
 `connections.yaml`, implement the `module` object, and register it in
 `src/infrastructure/app_bootstrap.py`. A scaffold helper generates the package skeleton so
 you start from a working module.
+
+&nbsp;
+
+## Classification levels
+
+An element is classified through a chain — its **domain**, its **entity type**, and optionally a
+**specialization**. The chain has always been expressible: `hierarchy` in `entities.yaml` declares
+the domain segments, and `specializations.yaml` declares the rest. What `classification_levels`
+adds is the *characterisation* of each rung, so a consumer can ask what a level is called, whether
+it is required, and what it governs — rather than hard-coding the answers.
+
+```yaml
+classification_levels:
+  - id: domain
+    label: Domain
+    from: hierarchy          # the segments entities.yaml already declares
+    required: true
+  - id: entity_type
+    label: Entity type
+    from: type
+    required: true
+    keys_relationships: true # permitted_relationships are keyed here
+    carries_attributes: true
+  - id: specialization
+    label: Specialization
+    from: specializations
+    narrows_relationships: true  # restrict_relationships / restrict_endpoints
+    carries_attributes: true     # narrows the parent level's schema
+```
+
+`from:` points at data the module already declares, so the block restates nothing.
+
+**The block is optional.** A module that omits it gets exactly this shape as the derived default,
+which is the behaviour every consumer previously assumed — so `sysml_v2_min` and `assurance` declare
+nothing and are right not to.
+
+One declaration answers five questions that were previously answered in five places:
+
+| Question | Answered by |
+|---|---|
+| Which pickers does refinement offer, in what order? | the level list |
+| When should a drawn relation be verified? | both ends reached the level with `keys_relationships` |
+| Is a violation a refusal or a warning? | `keys_relationships` → **E126**, blocks · `narrows_relationships` → **W128/W129**, warns |
+| Which attribute schema applies? | the deepest level reached with `carries_attributes` |
+| May this element be lifted yet? | every `required: true` level reached |
+
+The third row is the one that makes this more than convenient: the two-tier verification — a
+type-level refusal against a specialization-level narrowing — becomes a *consequence* of the
+declaration rather than a special case inside the verifier.
 
 &nbsp;
 

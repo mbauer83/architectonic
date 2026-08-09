@@ -94,6 +94,7 @@ More on the audience in [Who it serves](docs/01-motivation.md#who-it-serves).
 
 | | Capability | Details |
 |---|---|---|
+| ✏️ | **A scratchpad tier** | Somewhere to think before anything is typed: notes and links on a canvas, no ontology involved. What survives is lifted into verified model content — one-way, never synced back |
 | 🗺️ | **A typed architecture graph** | Entities and connections across motivation → strategy → business → application → technology, geared toward the ArchiMate 4.0 standard | 
 | 🔍 | **Browse and explore** | List, treemap, full-text search, and interactive graph navigation — *what connects to this, and how far to that?* |
 | 📐 | **Diagram families** | ArchiMate views, C4 (model-backed), UML activity, sequence & class (datatype), and relationship matrices |

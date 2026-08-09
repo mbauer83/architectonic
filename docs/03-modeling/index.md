@@ -16,6 +16,7 @@ GUI, the REST API, the CLI, and the MCP tools.
 
 | Page | What it covers |
 |---|---|
+| [Scratchpad](scratchpad.md) | Somewhere to think before anything is typed — notes and links on a canvas, lifted into the model when they are ready |
 | [Projects & grouping](projects-and-grouping.md) | The three independent grouping axes and the group lifecycle |
 | [Views & exploration](views-and-exploration.md) | List view, treemap, grid, full-text search, and graph navigation |
 | [Diagramming](diagramming.md) | ArchiMate, matrix, activity, sequence, C4, and datatype (UML class) diagram families |
