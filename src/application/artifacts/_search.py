@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Literal, cast
+from typing import cast
 
 from src.application._search_eligibility import EntityEligibility, semantic_entity_hits
 from src.application.artifacts.scoring import (
@@ -14,30 +14,29 @@ from src.application.artifacts.scoring import (
 )
 from src.application.ports import ReadableArtifactStore
 from src.domain.ontology_representation.artifact_types import (
+    ALL_SEARCHABLE_KINDS,
+    KIND_TO_RECORD_TYPE,
+    RECORD_TYPE_TO_KIND,
     ConnectionRecord,
     DiagramRecord,
     DocumentRecord,
     EntityRecord,
+    RecordType,
+    SearchableKind,
     SearchHit,
     SearchResult,
     SemanticSearchProvider,
 )
 
-# ── Canonical record-type vocabulary (shared with list_artifacts) ────────────
-# Singular form: discriminator value on individual hit records.
-RecordType = Literal["entity", "connection", "diagram", "document"]
-# Plural form: member of an include-set that gates which kinds participate.
-SearchableKind = Literal["entities", "connections", "diagrams", "documents"]
-
-ALL_SEARCHABLE_KINDS: frozenset[str] = frozenset({"entities", "connections", "diagrams", "documents"})
-
-_KIND_TO_RECORD_TYPE: dict[str, str] = {
-    "entities": "entity",
-    "connections": "connection",
-    "diagrams": "diagram",
-    "documents": "document",
-}
-_RECORD_TYPE_TO_KIND: dict[str, str] = {v: k for k, v in _KIND_TO_RECORD_TYPE.items()}
+# The vocabulary itself lives beside `SearchHit` in the domain, where the record types are declared;
+# these names stay importable from here because every caller already reaches for them here.
+__all__ = [
+    "ALL_SEARCHABLE_KINDS",
+    "RecordType",
+    "SearchableKind",
+    "search",
+    "search_artifacts",
+]
 
 _RecordType = RecordType  # internal alias for cast()
 
@@ -70,10 +69,10 @@ def search_artifacts(
         kinds.add("documents")
     # strict_record_type: restrict search to just the preferred kind.
     if strict_record_type and prefer_record_type is not None:
-        kind = _RECORD_TYPE_TO_KIND.get(prefer_record_type)
+        kind = RECORD_TYPE_TO_KIND.get(prefer_record_type)
         if kind:
             kinds = {kind}
-    prefer_kind = _RECORD_TYPE_TO_KIND.get(prefer_record_type) if prefer_record_type else None
+    prefer_kind = RECORD_TYPE_TO_KIND.get(prefer_record_type) if prefer_record_type else None
     domains = domain if isinstance(domain, list) else ([domain] if domain else None)
     entity_types = artifact_type if isinstance(artifact_type, list) else ([artifact_type] if artifact_type else None)
     return search(
@@ -124,10 +123,7 @@ def search(
     fts_hits = store.search_fts(
         query,
         limit=per_kind_limit,
-        include_entities="entities" in kinds,
-        include_connections="connections" in kinds,
-        include_diagrams="diagrams" in kinds,
-        include_documents="documents" in kinds,
+        kinds=frozenset(kinds),
         excluded_entity_types=excluded_entity_types,
     )
 
@@ -160,7 +156,7 @@ def search(
         if key in seen:
             continue
         seen.add(key)
-        fts_kinds_with_hits.add(_RECORD_TYPE_TO_KIND.get(record_type, ""))
+        fts_kinds_with_hits.add(RECORD_TYPE_TO_KIND.get(record_type, ""))
         hits.append(SearchHit(score=score, record_type=cast(_RecordType, record_type), record=artifact))
 
     # Supplement scored path for any included kind that got zero FTS hits.
@@ -188,7 +184,7 @@ def search(
     if "entities" in kinds:
         hits.extend(semantic_entity_hits(store, semantic, query, eligibility=eligibility, seen=seen))
 
-    prefer_rt = _KIND_TO_RECORD_TYPE.get(prefer_kind) if prefer_kind else None
+    prefer_rt = KIND_TO_RECORD_TYPE.get(prefer_kind) if prefer_kind else None
     return SearchResult(query=query, hits=_rank_balanced(hits, limit, prefer_rt))
 
 

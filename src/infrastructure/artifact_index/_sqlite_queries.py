@@ -35,10 +35,7 @@ def search_fts(
     query: str,
     *,
     limit: int,
-    include_entities: bool = True,
-    include_connections: bool = True,
-    include_diagrams: bool = True,
-    include_documents: bool = True,
+    kinds: frozenset[str],
     excluded_entity_types: frozenset[str] = frozenset(),
     fts_enabled: bool,
 ) -> list[tuple[str, str, float]]:
@@ -50,17 +47,17 @@ def search_fts(
     entity_filter_sql, entity_filter_params = _entity_exclusion_filter(excluded_entity_types)
     # Per-kind subqueries each get their own ORDER BY + LIMIT so that a dominant
     # kind (e.g. hundreds of entity hits) cannot crowd out minority kinds.
-    kind_rows: list[tuple[bool, str, str, str, str, tuple[str, ...]]] = [
-        (include_entities, "entity", "entities_fts", f"-bm25(entities_fts, {_ENT_WEIGHTS})",
+    kind_rows: list[tuple[str, str, str, str, str, tuple[str, ...]]] = [
+        ("entities", "entity", "entities_fts", f"-bm25(entities_fts, {_ENT_WEIGHTS})",
          entity_filter_sql, entity_filter_params),
-        (include_connections, "connection", "connections_fts", "-bm25(connections_fts)", "", ()),
-        (include_diagrams, "diagram", "diagrams_fts", "-bm25(diagrams_fts)", "", ()),
-        (include_documents, "document", "documents_fts", "-bm25(documents_fts)", "", ()),
+        ("connections", "connection", "connections_fts", "-bm25(connections_fts)", "", ()),
+        ("diagrams", "diagram", "diagrams_fts", "-bm25(diagrams_fts)", "", ()),
+        ("documents", "document", "documents_fts", "-bm25(documents_fts)", "", ()),
     ]
     subqueries: list[str] = []
     params: list[str] = []
-    for included, record_type, table, score_expr, filter_sql, filter_params in kind_rows:
-        if not included:
+    for kind, record_type, table, score_expr, filter_sql, filter_params in kind_rows:
+        if kind not in kinds:
             continue
         subqueries.append(
             f"SELECT artifact_id, '{record_type}' AS record_type, {score_expr} AS score "

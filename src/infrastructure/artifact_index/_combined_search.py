@@ -4,6 +4,7 @@ from typing import Literal
 
 from src.application.ports import ReadableArtifactStore
 from src.domain.ontology_representation.artifact_types import (
+    ALL_SEARCHABLE_KINDS,
     ArtifactSummary,
     ConnectionRecord,
     DiagramRecord,
@@ -112,20 +113,14 @@ class CombinedSearchMixin:
         query: str,
         *,
         limit: int,
-        include_entities: bool = True,
-        include_connections: bool = True,
-        include_diagrams: bool = True,
-        include_documents: bool = True,
+        kinds: frozenset[str] = ALL_SEARCHABLE_KINDS,
         excluded_entity_types: frozenset[str] = frozenset(),
     ) -> list[tuple[str, str, float]]:
         def call(store: ReadableArtifactStore) -> list[tuple[str, str, float]]:
             return store.search_fts(
                 query,
                 limit=limit,
-                include_entities=include_entities,
-                include_connections=include_connections,
-                include_diagrams=include_diagrams,
-                include_documents=include_documents,
+                kinds=kinds,
                 excluded_entity_types=excluded_entity_types,
             )
 

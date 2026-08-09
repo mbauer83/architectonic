@@ -85,6 +85,6 @@ def test_combined_search_keeps_limit_per_record_type(tmp_path: Path) -> None:
     combined = combined_artifact_index(engagement, enterprise)
     combined.refresh()
 
-    rows = combined.search_fts("Alpha", limit=1, include_connections=False, include_diagrams=False)
+    rows = combined.search_fts("Alpha", limit=1, kinds=frozenset({"entities", "documents"}))
     assert [row[1] for row in rows].count("entity") == 1
     assert [row[1] for row in rows].count("document") == 1

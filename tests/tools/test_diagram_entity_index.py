@@ -269,13 +269,7 @@ def test_fts_search_finds_diagram_entity_by_name(tmp_path: Path) -> None:
     root = _build_repo(tmp_path / "repo")
     idx = shared_artifact_index(root)
     idx.refresh()
-    hits = idx.search_fts(
-        "Customer",
-        limit=10,
-        include_connections=False,
-        include_diagrams=False,
-        include_documents=False,
-    )
+    hits = idx.search_fts("Customer", limit=10, kinds=frozenset({"entities"}))
     artifact_ids = [h[0] for h in hits]
     assert f"{_DIAGRAM_ID}#swimlane/sw-1" in artifact_ids
 

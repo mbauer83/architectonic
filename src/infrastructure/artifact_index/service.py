@@ -22,6 +22,7 @@ from src.application.artifacts._query_helpers import (
 from src.application.ports import Candidate
 from src.config.workspace_paths import infer_repo_scope
 from src.domain.ontology_representation.artifact_types import (
+    ALL_SEARCHABLE_KINDS,
     ArtifactSummary,
     ConnectionRecord,
     DiagramRecord,
@@ -472,20 +473,14 @@ class ArtifactIndex(_ReverseReferenceQueries):
         query: str,
         *,
         limit: int,
-        include_entities: bool = True,
-        include_connections: bool = True,
-        include_diagrams: bool = True,
-        include_documents: bool = True,
+        kinds: frozenset[str] = ALL_SEARCHABLE_KINDS,
         excluded_entity_types: frozenset[str] = frozenset(),
     ) -> list[tuple[str, str, float]]:
         self._ensure_loaded()
         with self._lock.reading(), self._db.reader() as conn:
             return _q.search_fts(
                 conn, query, limit=limit,
-                include_entities=include_entities,
-                include_connections=include_connections,
-                include_diagrams=include_diagrams,
-                include_documents=include_documents,
+                kinds=kinds,
                 excluded_entity_types=excluded_entity_types,
                 fts_enabled=self._db.fts_enabled,
             )

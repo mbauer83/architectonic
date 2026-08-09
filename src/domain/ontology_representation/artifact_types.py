@@ -1,6 +1,7 @@
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
+from types import MappingProxyType
 from typing import Literal, Protocol, TypeAlias, runtime_checkable
 
 from src.domain.repository.repo_scope import MountScope, infer_repo_scope
@@ -180,10 +181,37 @@ STANDARD_DOCUMENT_FIELDS = frozenset(
 )
 
 
+# ── The searchable-kind vocabulary, in one place ─────────────────────────────
+# Two spellings of the same list, and they have to agree: `RecordType` is the discriminator on an
+# individual hit, `SearchableKind` the member of the include-set that gates which kinds participate.
+# Both were previously restated in `application/artifacts/_search.py`, in `artifacts/repository.py`,
+# on `SearchHit` below and in the REST contract — four copies of one vocabulary, which is how a fifth
+# kind becomes a hunt rather than an edit.
+RecordType: TypeAlias = Literal["entity", "connection", "diagram", "document"]
+SearchableKind: TypeAlias = Literal["entities", "connections", "diagrams", "documents"]
+
+#: Kind → the record type its hits carry. The plural is what a caller asks for; the singular is what
+#: it gets back. Typed `str` → `str` rather than Literal → Literal because every caller looks a
+#: *runtime* value up in it — an FTS row's `record_type` column, a request's `include_` flag — and a
+#: narrower key type only moves the cast to the call site.
+KIND_TO_RECORD_TYPE: Mapping[str, str] = MappingProxyType(
+    {
+        "entities": "entity",
+        "connections": "connection",
+        "diagrams": "diagram",
+        "documents": "document",
+    }
+)
+RECORD_TYPE_TO_KIND: Mapping[str, str] = MappingProxyType(
+    {record_type: kind for kind, record_type in KIND_TO_RECORD_TYPE.items()}
+)
+ALL_SEARCHABLE_KINDS: frozenset[str] = frozenset(KIND_TO_RECORD_TYPE)
+
+
 @dataclass
 class SearchHit:
     score: float
-    record_type: Literal["entity", "connection", "diagram", "document"]
+    record_type: RecordType
     record: EntityRecord | ConnectionRecord | DiagramRecord | DocumentRecord
 
     def __str__(self) -> str:

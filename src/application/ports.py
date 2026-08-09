@@ -6,6 +6,7 @@ from typing import Callable, Literal, Protocol
 
 from src.application.read_models import EntityContextConnection, EntityContextReadModel, ReadModelVersion
 from src.domain.ontology_representation.artifact_types import (
+    ALL_SEARCHABLE_KINDS,
     ArtifactSummary,
     ConnectionRecord,
     DiagramRecord,
@@ -124,10 +125,7 @@ class ArtifactSearch(Protocol):
         query: str,
         *,
         limit: int,
-        include_entities: bool = True,
-        include_connections: bool = True,
-        include_diagrams: bool = True,
-        include_documents: bool = True,
+        kinds: frozenset[str] = ALL_SEARCHABLE_KINDS,
         excluded_entity_types: frozenset[str] = frozenset(),
     ) -> list[tuple[str, str, float]]: ...
 
