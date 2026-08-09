@@ -27,6 +27,10 @@
         "run",
         "arch-mcp-stdio-assurance-write"
       ]
+    },
+    "m8ven-tool-check": {
+      "type": "http",
+      "url": "https://m8ven.ai/api/mcp/tool-check"
     }
   }
 }

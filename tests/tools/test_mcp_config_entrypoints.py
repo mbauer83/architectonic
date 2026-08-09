@@ -45,6 +45,21 @@ def test_project_scripts_do_not_expose_legacy_arch_model_stdio_aliases() -> None
     assert "arch-model-write" not in scripts
 
 
+def _stdio_entrypoints(servers: dict[str, Any]) -> set[tuple[str, ...]]:
+    """The launch argv of every server this repo starts as a subprocess.
+
+    Keyed on ``args`` rather than on every entry, because a config may also name a *remote*
+    server — one reached over HTTP, with a URL and no command to run. This test is about
+    entrypoints: a remote server has none, so it has nothing here to be unsupported.
+    """
+    return {tuple(server["args"]) for server in servers.values() if "args" in server}
+
+
+def _remote_servers(servers: dict[str, Any]) -> dict[str, str]:
+    """Name → URL for every server reached over the network rather than launched."""
+    return {name: server["url"] for name, server in servers.items() if "url" in server}
+
+
 def test_checked_in_mcp_configs_use_supported_stdio_entrypoints() -> None:
     # Every checked-in stdio entrypoint must be a supported console script. The two
     # architecture servers are always present; the assurance servers are optional
@@ -61,13 +76,30 @@ def test_checked_in_mcp_configs_use_supported_stdio_entrypoints() -> None:
     claude_config = _load_json(".mcp.json")
     vscode_config = _load_json(".vscode/mcp.json")
 
-    claude_args = {tuple(server["args"]) for server in claude_config["mcpServers"].values()}
-    vscode_args = {tuple(server["args"]) for server in vscode_config["servers"].values()}
+    claude_args = _stdio_entrypoints(claude_config["mcpServers"])
+    vscode_args = _stdio_entrypoints(vscode_config["servers"])
 
     assert claude_args <= supported_args, f"unsupported entrypoint in .mcp.json: {claude_args - supported_args}"
     assert vscode_args <= supported_args, f"unsupported entrypoint in .vscode/mcp.json: {vscode_args - supported_args}"
     assert required_args <= claude_args
     assert required_args <= vscode_args
+
+
+def test_the_two_editor_configs_agree_on_every_remote_server() -> None:
+    """A remote server is a third party reading tool definitions, so both configs name the same one.
+
+    The stdio servers are this repository's own processes; a remote one is somebody else's, reached
+    over the network. Holding the two files to the same set means a URL cannot be added for one
+    editor and quietly missed by the other — which is how a developer ends up talking to a service
+    their colleague's checkout does not use, with no diff explaining it.
+    """
+    claude_remote = _remote_servers(_load_json(".mcp.json")["mcpServers"])
+    vscode_remote = _remote_servers(_load_json(".vscode/mcp.json")["servers"])
+
+    assert claude_remote == vscode_remote
+
+    for name, url in claude_remote.items():
+        assert url.startswith("https://"), f"{name} is reached over plaintext: {url}"
 
 
 @pytest.mark.parametrize(("mount", "server"), ALL_MOUNTS, ids=[name for name, _ in ALL_MOUNTS])
