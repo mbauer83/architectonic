@@ -20,6 +20,8 @@ import {
   withReversedLink,
   withType,
   withoutBinding,
+  withoutLink,
+  withoutLinkType,
   withoutNote,
   withoutRealization,
   withoutType,
@@ -130,6 +132,29 @@ describe('the edits themselves', () => {
 
     expect(after.links).toEqual([])
     expect(after.layout?.notes?.n1).toBeUndefined()
+  })
+
+  it('rubs out a link, leaving both notes where they are', () => {
+    // Deciding two things are not related after all is thinking. Before this the only way to
+    // remove a link was to delete a note it touched, which removed the thought as well.
+    const withTwo = withLink(withNote(base, note('n2', 'Second')), 'l1', 'n1', 'n2')
+
+    const after = withoutLink(withTwo, 'l1')
+
+    expect(after.links).toEqual([])
+    expect(after.notes).toHaveLength(2)
+  })
+
+  it('takes a relation off a link without removing the link', () => {
+    const withTwo = withNote(base, note('n2', 'Second'))
+    const typed = withLinkType(withLink(withTwo, 'l1', 'n1', 'n2'), 'l1', 'archimate-realization')
+
+    const after = withoutLinkType(typed, 'l1')
+
+    // Removed, never emptied: the wire shape is optional-key, so `''` would have been written to
+    // the file as a relation with no name rather than as no relation.
+    expect(after.links?.[0]).not.toHaveProperty('connection-type')
+    expect(after.links).toHaveLength(1)
   })
 
   it('refuses a duplicate link and a self-link, in either direction', () => {

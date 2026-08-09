@@ -34,6 +34,8 @@ const emit = defineEmits<{
   (event: 'forget-note', payload: { id: string }): void
   (event: 'reverse-link', payload: { id: string }): void
   (event: 'type-link', payload: { id: string; connectionType: string }): void
+  (event: 'untype-link', payload: { id: string }): void
+  (event: 'delete-link', payload: { id: string }): void
 }>()
 
 const { selectedDomains, domainOptions, availableEntityTypes } = useEntityFilters()
@@ -59,6 +61,16 @@ const notable = computed(() => links.value.filter((link) => (link.verdict?.kind 
 /** A link is named by its ends, which is how a person recognises it — an id would say nothing. */
 const endName = (noteId: string): string =>
   props.notes.find((candidate) => candidate.id === noteId)?.title ?? noteId
+
+/** "Undecided" is a *removal*, not a type named by the empty string. The select had emitted
+ * `type-link` with `''`, which set the key rather than dropping it — and the wire shape is
+ * optional-key, so that is a relation with no name rather than no relation. */
+const onLinkType = (connectionType: string): void => {
+  const id = props.selectedLink?.id
+  if (!id) return
+  if (connectionType) emit('type-link', { id, connectionType })
+  else emit('untype-link', { id })
+}
 </script>
 
 <template>
@@ -83,9 +95,7 @@ const endName = (noteId: string): string =>
       <select
         :value="selectedLink['connection-type'] ?? ''"
         data-testid="link-type"
-        @change="emit('type-link', {
-          id: selectedLink!.id, connectionType: ($event.target as HTMLSelectElement).value,
-        })"
+        @change="onLinkType(($event.target as HTMLSelectElement).value)"
       >
         <option value="">
           Undecided
@@ -109,6 +119,17 @@ const endName = (noteId: string): string =>
       @click="emit('reverse-link', { id: selectedLink!.id })"
     >
       Reverse the link
+    </button>
+    <!-- Deciding two things are not related after all is thinking, not damage. Nothing here
+         reaches the model: a link already realized into a connection leaves that connection
+         alone, exactly as forgetting a realization leaves its entity alone. -->
+    <button
+      type="button"
+      class="danger"
+      data-testid="link-delete"
+      @click="emit('delete-link', { id: selectedLink!.id })"
+    >
+      Delete this link
     </button>
   </aside>
 
@@ -282,6 +303,15 @@ const endName = (noteId: string): string =>
   font-size: 11px; cursor: pointer; color: #374151;
 }
 .verdict button.primary { border-color: #2563eb; color: #2563eb; font-weight: 600; }
+/* The link panel's own actions sit directly in the panel rather than inside a verdict row, and
+   had no rule at all — "Reverse the link" was rendering as a bare browser button. */
+.panel > button {
+  padding: 4px 10px; margin-right: 6px; border: 1px solid #d1d5db; border-radius: 5px;
+  background: #fff; font-size: 11.5px; cursor: pointer; color: #374151;
+}
+.panel > button.primary { border-color: #2563eb; color: #2563eb; font-weight: 600; }
+.panel > button.danger { border-color: #fca5a5; color: #b91c1c; }
+.panel > button.danger:hover { background: #fee2e2; }
 .field { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
 .field span { color: #6b7280; }
 .field select { flex: 1; padding: 4px 6px; border: 1px solid #d1d5db; border-radius: 5px; font-size: 12px; }

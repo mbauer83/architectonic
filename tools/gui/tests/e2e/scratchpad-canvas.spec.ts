@@ -186,6 +186,39 @@ test('right-clicking the canvas offers a note, or an element the model already h
   await expect(page.locator('.sp-note .sp-bound')).toBeVisible()
 })
 
+test('a link can be rubbed out without taking either note with it', async ({ page }) => {
+  // Nothing on a scratchpad is permanent until it is lifted, and deciding two things are *not*
+  // related is part of thinking. Until this existed the only way to remove a link was to delete a
+  // note it touched, which removed the thought as well.
+  await newScratchpad(page, 'E2E unlink')
+  await addNote(page, PANEL_CLEARANCE, 160, 'One end')
+  await addNote(page, PANEL_CLEARANCE + 340, 320, 'Other end')
+
+  const source = page.locator('.sp-note', { hasText: 'One end' })
+  const target = page.locator('.sp-note', { hasText: 'Other end' })
+  await source.hover()
+  await source.locator('.sp-handle').hover()
+  await page.mouse.down()
+  await target.hover()
+  await page.mouse.up()
+  await expect(page.locator('.sp-link:not(.drawing)')).toHaveCount(1)
+
+  // Select the link in its own right, then remove it.
+  await page.locator('[data-link-hit]').first().click({ force: true })
+  await expect(page.getByTestId('link-panel')).toBeVisible()
+  await page.getByTestId('link-delete').click()
+
+  await expect(page.locator('.sp-link:not(.drawing)')).toHaveCount(0)
+  await expect(page.locator('.sp-note')).toHaveCount(2)
+
+  // And it stays gone: the removal is a save, not a redraw.
+  await expect(page.getByTestId('save-state')).toHaveText('Saved', { timeout: 15000 })
+  await page.reload()
+  await expect(page.locator(CANVAS)).toBeVisible({ timeout: 15000 })
+  await expect(page.locator('.sp-link:not(.drawing)')).toHaveCount(0)
+  await expect(page.locator('.sp-note')).toHaveCount(2)
+})
+
 test('lift preflights before it writes, and refuses to lift what is undecided', async ({ page }) => {
   await newScratchpad(page, 'E2E lift')
   const canvas = page.locator(CANVAS)

@@ -36,6 +36,8 @@ import {
   withReversedLink,
   withType,
   withoutBinding,
+  withoutLink,
+  withoutLinkType,
   withoutNote,
   withoutRealization,
   withoutType,
@@ -134,6 +136,15 @@ const onRenameNote = ({ id, title }: { id: string; title: string }): void => {
   const current = document.current.value
   const note = current?.notes?.find((candidate) => candidate.id === id)
   if (current && note) edit(withNote(current, { ...note, title }))
+}
+
+/** Rub out a link. The selection has to go with it, or the panel would keep editing a link the
+ * document no longer has — the same reason deleting a note drops it from the selection. */
+const onDeleteLink = ({ id }: { id: string }): void => {
+  const current = document.current.value
+  if (!current) return
+  edit(withoutLink(current, id))
+  if (selectedLinkId.value === id) selectedLinkId.value = null
 }
 
 const onDeleteNote = ({ id }: { id: string }): void => {
@@ -239,6 +250,14 @@ const onKeydown = (event: KeyboardEvent): void => {
     focusedAreaId.value = null
     return
   }
+  // A selected link has no focusable element of its own — it is an SVG path — so its Delete key
+  // is handled here rather than in `noteKeydown`. Without it, the keyboard could draw a link and
+  // never remove one, and the canvas is meant to be operable without a pointer.
+  if ((event.key === 'Delete' || event.key === 'Backspace') && selectedLinkId.value) {
+    event.preventDefault()
+    onDeleteLink({ id: selectedLinkId.value })
+    return
+  }
   if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'z') return
   event.preventDefault()
   if (event.shiftKey) redo()
@@ -311,6 +330,8 @@ const status = computed(() => {
         @forget-note="refine((c) => withoutRealization(c, $event.id))"
         @reverse-link="refine((c) => withReversedLink(c, $event.id))"
         @type-link="refine((c) => withLinkType(c, $event.id, $event.connectionType))"
+        @untype-link="refine((c) => withoutLinkType(c, $event.id))"
+        @delete-link="onDeleteLink($event)"
       />
       <ScratchpadCanvasMenu
         :at="menu?.screen ?? null"

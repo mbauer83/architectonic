@@ -215,6 +215,36 @@ export function withLinkType(scratchpad: Scratchpad, linkId: string, connectionT
   }
 }
 
+/** Take a link's relation away, leaving the link drawn.
+ *
+ * The counterpart of `withoutType` for a note, and it was missing: choosing "Undecided" set the
+ * type to the empty string instead, which is not "not set" — the wire shape is optional-key, so a
+ * removal is expressed by dropping the key, and an empty one would have been written to the file
+ * as a relation with no name. The verdict goes with it: it answered a question no longer asked.
+ */
+export function withoutLinkType(scratchpad: Scratchpad, linkId: string): Scratchpad {
+  return {
+    ...scratchpad,
+    links: (scratchpad.links ?? []).map((link) =>
+      link.id === linkId ? without(link, 'connection-type', 'verdict') : link,
+    ),
+  }
+}
+
+/** Rub out a link, leaving both notes where they are.
+ *
+ * A scratchpad is for thinking, and thinking includes deciding that two things are not related
+ * after all. Nothing here reaches the model: a link that was *realized* into a connection is not
+ * retracted by this — the scratchpad never takes model content back, exactly as `withoutRealization`
+ * does not delete the entity it stops claiming.
+ */
+export function withoutLink(scratchpad: Scratchpad, linkId: string): Scratchpad {
+  return {
+    ...scratchpad,
+    links: (scratchpad.links ?? []).filter((link) => link.id !== linkId),
+  }
+}
+
 export function withoutNote(scratchpad: Scratchpad, noteId: string): Scratchpad {
   const layout: Layout = scratchpad.layout ?? {}
   const notePositions = without(layout.notes ?? {}, noteId)
