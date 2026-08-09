@@ -41,6 +41,11 @@ async function newScratchpad(page: import('@playwright/test').Page, name: string
   return id
 }
 
+/** Where the note panel sits: absolute at the canvas's top-left, 300 px wide. A note under it
+ * resolves but never becomes hoverable, so every position below clears it — which is a property of
+ * the test, not a rule about where notes may go. */
+const PANEL_CLEARANCE = 380
+
 /** Double-click the canvas at an offset from its top-left corner, creating a note there. */
 async function addNote(page: import('@playwright/test').Page, x: number, y: number, title: string) {
   const canvas = page.locator(CANVAS)
@@ -56,8 +61,8 @@ async function addNote(page: import('@playwright/test').Page, x: number, y: numb
 test('a scratchpad holds untyped notes and links, and survives a reload', async ({ page }) => {
   await newScratchpad(page, 'E2E thinking')
 
-  await addNote(page, 200, 160, 'Grow into mid-market')
-  await addNote(page, 520, 300, 'Self-serve onboarding')
+  await addNote(page, PANEL_CLEARANCE, 160, 'Grow into mid-market')
+  await addNote(page, PANEL_CLEARANCE + 340, 320, 'Self-serve onboarding')
 
   await expect(page.locator('.sp-note')).toHaveCount(2)
   // Nothing has a type, and the canvas says so rather than demanding one.
@@ -86,7 +91,7 @@ test('a scratchpad holds untyped notes and links, and survives a reload', async 
 
 test('the canvas writes once when a burst of edits settles, not once per gesture', async ({ page }) => {
   await newScratchpad(page, 'E2E write rate')
-  await addNote(page, 200, 160, 'Dragged about')
+  await addNote(page, PANEL_CLEARANCE, 160, 'Dragged about')
   await expect(page.getByTestId('save-state')).toHaveText('Saved', { timeout: 15000 })
 
   const writes: string[] = []
@@ -185,8 +190,8 @@ test('lift preflights before it writes, and refuses to lift what is undecided', 
   await newScratchpad(page, 'E2E lift')
   const canvas = page.locator(CANVAS)
 
-  await addNote(page, 240, 160, 'Grow into mid-market')
-  await addNote(page, 520, 160, 'Not decided yet')
+  await addNote(page, PANEL_CLEARANCE, 160, 'Grow into mid-market')
+  await addNote(page, PANEL_CLEARANCE + 340, 160, 'Not decided yet')
 
   // Nothing is typed, so the whole scratchpad is unliftable — and the dialog says which notes and
   // why rather than failing at the write.
