@@ -25,7 +25,7 @@ connection-ids-used:
 - RES@1784482462.dz41en---CAP@1784482422.FMvdNM@@archimate-assignment
 - RES@1784482471.0mpHI----CAP@1784482433.Eb_x83@@archimate-assignment
 - RES@1784482482.H7YRYJ---CAP@1784482433.Eb_x83@@archimate-assignment
-last-updated: '2026-08-09T08:29:08Z'
+last-updated: '2026-08-09T17:57:27Z'
 ---
 @startuml capability-map
 hide stereotype
@@ -62,8 +62,10 @@ skinparam rectangle<<resource>> {
 }
 sprite $archimate_capability <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3.10 11.25h9.80v1.30H3.10z" fill="#252327"/><path d="M4.00 8.80h1.90v3.10H4.00z" fill="#252327"/><path d="M6.80 6.80h1.90v5.10H6.80z" fill="#252327"/><path d="M9.60 4.70h1.90v7.20H9.60z" fill="#252327"/></svg>
 sprite $archimate_resource <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3 4h10v8H3z"  fill="#252327" stroke="none"/><path d="M3.00 5.85h10.00v1.30H3.00z" fill="#252327"/><path d="M5.35 4.00v8.00h1.30V4.00z" fill="#252327"/></svg>
-
+skinparam wrapWidth 240
 top to bottom direction
+
+skinparam maxMessageSize 240
 
 title Capability Map
 

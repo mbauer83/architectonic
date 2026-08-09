@@ -44,7 +44,7 @@ connection-ids-used:
 - VS@1784482992.fK25Bo---VS@1784483036.S4ZTiY@@archimate-composition
 - VS@1784482992.fK25Bo---VS@1784483034.eqoIe2@@archimate-composition
 - VS@1784482992.fK25Bo---VS@1784483059.hRUzQe@@archimate-composition
-last-updated: '2026-08-09T08:29:01Z'
+last-updated: '2026-08-09T17:57:19Z'
 ---
 @startuml value-stream--assure-a-system-release
 hide stereotype
@@ -95,6 +95,8 @@ sprite $archimate_capability <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 
 sprite $archimate_stakeholder <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3.1 4.1h7.3L13 8l-2.6 3.9H3.1L5.6 8z"  fill="#252327" stroke="none"/></svg>
 sprite $archimate_value <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><ellipse cx="8" cy="8" rx="6.5" ry="4"  fill="none" stroke="#252327" stroke-width="1.3"/></svg>
 sprite $archimate_value_stream <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.5 5h7l2.5 3-2.5 3h-7l2-3z"  fill="#252327" stroke="none"/></svg>
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
 
 title Value Stream: Assure a System Release
 

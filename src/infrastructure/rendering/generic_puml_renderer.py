@@ -35,6 +35,7 @@ from src.infrastructure.rendering.diagram_connection_overlay import (
     occurrence_alias_by_id,
 )
 from src.infrastructure.rendering.generic_puml_layout import build_generic_visual_nesting
+from src.infrastructure.rendering.puml_label_wrapping import label_wrap_skinparams
 from src.infrastructure.rendering.puml_safety import (
     configured_puml_size_warning_threshold,
     warn_when_puml_exceeds_threshold,
@@ -72,6 +73,11 @@ class GenericPumlRenderer:
         lines: list[str] = [f"@startuml {diagram_name}"]
         for include in self._includes():
             lines.append(f"!include ../{include}")
+        # An ArchiMate box is otherwise as wide as its widest unwrapped label — the same defect
+        # every other diagram-owned type had, in the type that draws most of the repository.
+        # Measured on `why-a-scratchpad`: 2545x798 unbounded against 1671x952 here, 34% narrower.
+        # `layout.wrap_width: 0` opts a type out, as everywhere else.
+        lines.extend(label_wrap_skinparams(self._config))
         lines.extend(["", f"title {name}", ""])
 
         entity_by_id = {entity.artifact_id: entity for entity in entities}

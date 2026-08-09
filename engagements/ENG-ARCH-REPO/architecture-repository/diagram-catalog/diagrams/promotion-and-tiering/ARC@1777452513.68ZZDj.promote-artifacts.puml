@@ -46,7 +46,7 @@ connection-ids-used:
 - PRC@1712870400.0Rz5Ex---FNC@1777390496.Z2rrfP@@archimate-composition
 - PRC@1712870400.0Rz5Ex---FNC@1777390497.ndMgDn@@archimate-composition
 - PRC@1712870400.0Rz5Ex---FNC@1777390501.wahMSm@@archimate-composition
-last-updated: '2026-08-09T08:28:51Z'
+last-updated: '2026-08-09T17:56:25Z'
 ---
 @startuml promote-artifacts
 hide stereotype
@@ -89,8 +89,10 @@ sprite $archimate_event <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 
 sprite $archimate_function <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.9 11.7V5.4L8 3.1l5.1 2.3v6.3L8 9.2z"  fill="#252327" stroke="none"/></svg>
 sprite $archimate_process <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.6 4.1h6.3V2.8l4.5 5.2-4.5 5.2v-1.3H2.6z"  fill="#252327" stroke="none"/></svg>
 sprite $archimate_service <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3.2 4.1h7.2a2.8 2.8 0 0 1 0 7.8H3.2a2.8 2.8 0 0 1 0-7.8z"  fill="#252327" stroke="none"/></svg>
-
+skinparam wrapWidth 240
 top to bottom direction
+
+skinparam maxMessageSize 240
 
 title Promote Artifacts
 

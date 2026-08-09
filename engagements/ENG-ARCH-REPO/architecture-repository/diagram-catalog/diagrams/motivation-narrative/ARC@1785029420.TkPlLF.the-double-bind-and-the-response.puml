@@ -39,7 +39,7 @@ authored-groupings:
   entity-ids:
   - GOL@1784845186.L4Ceuf.preserve-local-autonomy
   - GOL@1784845186.7RZp1S.enable-coherent-traceable-enterprise-action
-last-updated: '2026-08-09T08:28:01Z'
+last-updated: '2026-08-09T17:57:36Z'
 ---
 @startuml the-double-bind---and-the-response
 hide stereotype
@@ -76,8 +76,10 @@ skinparam rectangle<<goal>> {
 }
 sprite $archimate_assessment <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.5 3h11a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H6l-2 3 1-3H2.5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"  fill="#252327" stroke="none"/></svg>
 sprite $archimate_goal <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="4.8"  fill="none" stroke="#252327" stroke-width="1.3"/><circle cx="8" cy="8" r="2.9"  fill="none" stroke="#252327" stroke-width="1.3"/><circle cx="8" cy="8" r="1.3" fill="#252327" stroke="none"  stroke-width="1.3"/></svg>
-
+skinparam wrapWidth 240
 top to bottom direction
+
+skinparam maxMessageSize 240
 
 title The Double Bind — and the Response
 

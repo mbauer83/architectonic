@@ -51,7 +51,7 @@ authored-groupings:
   - VAL@1784845185.-RyIvn.team-solution-fitness
   - VAL@1784845185.fduAv-.local-autonomy
   - VAL@1784845186.56mLXu.local-efficiency
-last-updated: '2026-08-09T08:27:59Z'
+last-updated: '2026-08-09T17:57:32Z'
 ---
 @startuml the-core-trade-off---differentiation-and-integration
 hide stereotype
@@ -83,8 +83,10 @@ skinparam rectangle<<value>> {
   BorderColor #7B3F9A
 }
 sprite $archimate_value <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><ellipse cx="8" cy="8" rx="6.5" ry="4"  fill="none" stroke="#252327" stroke-width="1.3"/></svg>
-
+skinparam wrapWidth 240
 top to bottom direction
+
+skinparam maxMessageSize 240
 
 title The Core Trade-off — Differentiation and Integration
 

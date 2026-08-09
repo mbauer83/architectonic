@@ -29,7 +29,7 @@ connections:
 - connection_id: APP@1781705596.n8Pikk.datatype-diagram-type-module---REQ@1781704600.TbcGSB.datatype-uml-class-diagram-authoring@@archimate-realization
 - connection_id: APP@1781705596.n8Pikk.datatype-diagram-type-module---FNC@1781705395.halAQt.validate-datatype-data-object-relationship-consistency@@archimate-association
 - connection_id: APP@1712870400.ca3vm7.model-verifier---FNC@1781705395.halAQt.validate-datatype-data-object-relationship-consistency@@archimate-assignment
-last-updated: '2026-08-09T08:27:45Z'
+last-updated: '2026-08-09T17:57:09Z'
 ---
 @startuml datatype-diagram-type---application-view
 hide stereotype
@@ -79,6 +79,8 @@ skinparam rectangle<<requirement>> {
 sprite $archimate_application_component <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M4 4.2h7.4v7.6H4z"  fill="#252327" stroke="none"/><path d="M2.30 4.95h1.70v1.30H2.30z" fill="#252327"/><path d="M2.30 7.35h1.70v1.30H2.30z" fill="#252327"/><path d="M2.30 9.75h1.70v1.30H2.30z" fill="#252327"/><path d="M11.40 4.95h1.40v1.30H11.40z" fill="#252327"/><path d="M11.40 7.35h1.40v1.30H11.40z" fill="#252327"/><path d="M11.40 9.75h1.40v1.30H11.40z" fill="#252327"/></svg>
 sprite $archimate_function <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.9 11.7V5.4L8 3.1l5.1 2.3v6.3L8 9.2z"  fill="#252327" stroke="none"/></svg>
 sprite $archimate_requirement <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M4.4 4.2h8L10.8 11.8h-8z"  fill="#252327" stroke="none"/></svg>
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
 
 title Datatype Diagram Type — Application View
 

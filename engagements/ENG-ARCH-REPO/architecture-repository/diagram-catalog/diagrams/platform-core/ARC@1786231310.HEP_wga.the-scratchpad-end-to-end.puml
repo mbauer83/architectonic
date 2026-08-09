@@ -43,7 +43,7 @@ connection-ids-used:
 - REQ@1786223986.VV89psV---OUT@1786223967.Bz8wwkG@@archimate-realization
 - PRC@1786225282._6NSUkC---SRV@1786225282.lzo5hQK@@archimate-realization
 - PRC@1786225282.si8h9M1---SRV@1786225282.C8EOSEB@@archimate-realization
-last-updated: '2026-08-09T08:28:29Z'
+last-updated: '2026-08-09T17:57:38Z'
 ---
 @startuml the-scratchpad--end-to-end
 hide stereotype
@@ -140,6 +140,8 @@ sprite $archimate_outcome <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1
 sprite $archimate_process <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.6 4.1h6.3V2.8l4.5 5.2-4.5 5.2v-1.3H2.6z"  fill="#252327" stroke="none"/></svg>
 sprite $archimate_requirement <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M4.4 4.2h8L10.8 11.8h-8z"  fill="#252327" stroke="none"/></svg>
 sprite $archimate_service <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3.2 4.1h7.2a2.8 2.8 0 0 1 0 7.8H3.2a2.8 2.8 0 0 1 0-7.8z"  fill="#252327" stroke="none"/></svg>
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
 
 title The Scratchpad, End to End
 

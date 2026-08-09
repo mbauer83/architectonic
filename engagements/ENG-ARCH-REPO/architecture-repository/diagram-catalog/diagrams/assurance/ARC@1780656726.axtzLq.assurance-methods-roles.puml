@@ -42,7 +42,7 @@ connection-ids-used:
 - PRC@1780656241.bWETd2---SRV@1780656241.ooK3YN@@archimate-realization
 - ROL@1780656241.yswDMB---PRC@1780656241.lXql_n@@archimate-assignment
 - PRC@1780656241.lXql_n---SRV@1780656241.ooK3YN@@archimate-realization
-last-updated: '2026-08-09T08:27:31Z'
+last-updated: '2026-08-09T17:56:59Z'
 ---
 @startuml assurance-methods---roles
 

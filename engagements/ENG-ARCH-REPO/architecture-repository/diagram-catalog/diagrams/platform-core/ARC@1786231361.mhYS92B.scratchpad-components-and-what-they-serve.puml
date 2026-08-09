@@ -35,7 +35,7 @@ connection-ids-used:
 - APP@1777293133.OYEmP1---APP@1786225304.q6wT1kq@@archimate-composition
 - APP@1777293133.OYEmP1---APP@1712870400.yNhgdh@@archimate-composition
 - APP@1776149382.lmO0mp---APP@1786225304.HgIA072@@archimate-composition
-last-updated: '2026-08-09T08:28:32Z'
+last-updated: '2026-08-09T17:57:44Z'
 ---
 @startuml scratchpad---components-and-what-they-serve
 hide stereotype
@@ -72,8 +72,10 @@ skinparam rectangle<<data_object>> {
 }
 sprite $archimate_application_component <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M4 4.2h7.4v7.6H4z"  fill="#252327" stroke="none"/><path d="M2.30 4.95h1.70v1.30H2.30z" fill="#252327"/><path d="M2.30 7.35h1.70v1.30H2.30z" fill="#252327"/><path d="M2.30 9.75h1.70v1.30H2.30z" fill="#252327"/><path d="M11.40 4.95h1.40v1.30H11.40z" fill="#252327"/><path d="M11.40 7.35h1.40v1.30H11.40z" fill="#252327"/><path d="M11.40 9.75h1.40v1.30H11.40z" fill="#252327"/></svg>
 sprite $archimate_data_object <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3.00 3.80h10.00v1.30H3.00z" fill="#252327"/><path d="M3.00 10.90h10.00v1.30H3.00z" fill="#252327"/><path d="M3.00 5.10v5.80h1.30V5.10z" fill="#252327"/><path d="M11.70 5.10v5.80h1.30V5.10z" fill="#252327"/><path d="M3.00 4.95h10.00v1.30H3.00z" fill="#252327"/></svg>
-
+skinparam wrapWidth 240
 top to bottom direction
+
+skinparam maxMessageSize 240
 
 title Scratchpad — Components and What They Serve
 

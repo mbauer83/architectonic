@@ -46,7 +46,7 @@ connection-ids-used:
 - RES@1784482454.JnWnY1---COA@1784483697.FI0Xbj@@archimate-assignment
 - COA@1784483697.FI0Xbj---OUT@1712870400.LrpdG0@@archimate-influence
 - COA@1784483697.FI0Xbj---OUT@1780655839.Vhhne7@@archimate-realization
-last-updated: '2026-08-09T08:28:56Z'
+last-updated: '2026-08-09T17:57:14Z'
 ---
 @startuml strategy-overview
 hide stereotype
@@ -102,6 +102,8 @@ sprite $archimate_course_of_action <svg xmlns="http://www.w3.org/2000/svg" viewB
 sprite $archimate_outcome <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="7.4" cy="8.6" r="4.3"  fill="none" stroke="#252327" stroke-width="1.3"/><circle cx="7.4" cy="8.6" r="2.2"  fill="none" stroke="#252327" stroke-width="1.3"/><path d="M10.18 6.93L9.42 5.87L12.52 3.67L13.28 4.73z" fill="#252327"/><path d="M10.20 7.25h2.50v1.30H10.20z" fill="#252327"/><circle cx="7.4" cy="8.6" r=".9" fill="#252327" stroke="none"  stroke-width="1.3"/></svg>
 sprite $archimate_resource <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3 4h10v8H3z"  fill="#252327" stroke="none"/><path d="M3.00 5.85h10.00v1.30H3.00z" fill="#252327"/><path d="M5.35 4.00v8.00h1.30V4.00z" fill="#252327"/></svg>
 sprite $archimate_value_stream <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.5 5h7l2.5 3-2.5 3h-7l2-3z"  fill="#252327" stroke="none"/></svg>
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
 
 title Strategy Overview
 

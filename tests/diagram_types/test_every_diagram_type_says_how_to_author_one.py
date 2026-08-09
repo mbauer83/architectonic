@@ -35,15 +35,11 @@ _NO_PUML_BODY = frozenset({"matrix", "uca-matrix", "fmea-matrix"})
 #: `gsn.svg_renderer`, asserted in `tests/assurance/test_gsn_diagram.py` rather than as a skinparam.
 _NATIVE_SVG = frozenset({"gsn"})
 
-#: The ArchiMate types have the same omission and are deferred, not exempt — backlog **B8**.
-#: Measured on `why-a-scratchpad`: 2545x798 unbounded against 1671x952 at wrapWidth 240, 34%
-#: narrower, laying out cleanly. It is held back only because bounding it re-renders roughly thirty
-#: committed diagrams, and this set has already been shown to fail GraphViz layout under a change of
-#: this kind — so it is an owner's call about blast radius, not a gap nobody noticed.
-_WIDTH_BOUND_DEFERRED = frozenset({
-    "archimate-motivation", "archimate-business", "archimate-application", "archimate-technology",
-    "archimate-strategy", "archimate-implementation", "archimate-layered",
-})
+#: Empty, and shrink-only. It held the seven `archimate-*` types while **B8** was deferred — the
+#: measurement that closed it is recorded on `generic_puml_renderer.render_body`, where the bound is
+#: now emitted like every other type's. Nothing may be added here: a type that cannot bound its
+#: labels is a type whose widest label sets the width of the picture.
+_WIDTH_BOUND_DEFERRED: frozenset[str] = frozenset()
 
 
 def _type_names() -> list[str]:

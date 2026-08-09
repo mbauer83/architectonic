@@ -28,7 +28,7 @@ connection-ids-used:
 - FNC@1784853344.qgicoe---REQ@1783870981.mdH8Uv@@archimate-realization
 - DOB@1783870961.y7M3wz---DOB@1784853343.CY3B-f@@archimate-composition
 - DOB@1783870961.y7M3wz---DOB@1784853344.zQzA5_@@archimate-composition
-last-updated: '2026-08-09T08:28:27Z'
+last-updated: '2026-08-09T17:57:34Z'
 ---
 @startuml viewpoint-execution---saved-and-ephemeral-paths
 hide stereotype
@@ -83,6 +83,8 @@ sprite $archimate_application_component <svg xmlns="http://www.w3.org/2000/svg" 
 sprite $archimate_data_object <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3.00 3.80h10.00v1.30H3.00z" fill="#252327"/><path d="M3.00 10.90h10.00v1.30H3.00z" fill="#252327"/><path d="M3.00 5.10v5.80h1.30V5.10z" fill="#252327"/><path d="M11.70 5.10v5.80h1.30V5.10z" fill="#252327"/><path d="M3.00 4.95h10.00v1.30H3.00z" fill="#252327"/></svg>
 sprite $archimate_function <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.9 11.7V5.4L8 3.1l5.1 2.3v6.3L8 9.2z"  fill="#252327" stroke="none"/></svg>
 sprite $archimate_requirement <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M4.4 4.2h8L10.8 11.8h-8z"  fill="#252327" stroke="none"/></svg>
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
 
 title Viewpoint Execution — Saved and Ephemeral Paths
 

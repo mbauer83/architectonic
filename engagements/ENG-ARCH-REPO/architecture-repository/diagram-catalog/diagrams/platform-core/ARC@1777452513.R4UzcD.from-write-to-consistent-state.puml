@@ -59,7 +59,7 @@ authored-groupings:
   entity-ids:
   - EVT@1777390504.hDF1Qz.artifacts-promoted
   - EVT@1777390507.UCrh3V.architecture-repository-change-detected
-last-updated: '2026-08-09T08:28:11Z'
+last-updated: '2026-08-09T17:56:33Z'
 ---
 @startuml from-write-to-consistent-state
 hide stereotype
@@ -110,6 +110,8 @@ sprite $archimate_application_component <svg xmlns="http://www.w3.org/2000/svg" 
 sprite $archimate_event <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3.1 4h5.6a3.8 3.8 0 0 1 0 8H3.1l2.1-4z"  fill="#252327" stroke="none"/></svg>
 sprite $archimate_function <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.9 11.7V5.4L8 3.1l5.1 2.3v6.3L8 9.2z"  fill="#252327" stroke="none"/></svg>
 sprite $archimate_process <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.6 4.1h6.3V2.8l4.5 5.2-4.5 5.2v-1.3H2.6z"  fill="#252327" stroke="none"/></svg>
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
 
 title From Write to Consistent State
 

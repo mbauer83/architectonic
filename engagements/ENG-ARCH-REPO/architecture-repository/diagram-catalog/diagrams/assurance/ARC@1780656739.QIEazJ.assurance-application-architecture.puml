@@ -46,7 +46,7 @@ connection-ids-used:
 - APP@1780656431.e2zPs6---FNC@1780656241.0hyhf0@@archimate-assignment
 - APP@1780656431.E0fzqZ---FNC@1780656241.3xVBUQ@@archimate-assignment
 - APP@1780656431.E0fzqZ---APP@1780656431.GnsLC8@@archimate-serving
-last-updated: '2026-08-09T08:27:34Z'
+last-updated: '2026-08-09T17:57:01Z'
 ---
 @startuml assurance-application-architecture
 hide stereotype
@@ -97,6 +97,8 @@ sprite $archimate_application_component <svg xmlns="http://www.w3.org/2000/svg" 
 sprite $archimate_data_object <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3.00 3.80h10.00v1.30H3.00z" fill="#252327"/><path d="M3.00 10.90h10.00v1.30H3.00z" fill="#252327"/><path d="M3.00 5.10v5.80h1.30V5.10z" fill="#252327"/><path d="M11.70 5.10v5.80h1.30V5.10z" fill="#252327"/><path d="M3.00 4.95h10.00v1.30H3.00z" fill="#252327"/></svg>
 sprite $archimate_function <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.9 11.7V5.4L8 3.1l5.1 2.3v6.3L8 9.2z"  fill="#252327" stroke="none"/></svg>
 sprite $archimate_service <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3.2 4.1h7.2a2.8 2.8 0 0 1 0 7.8H3.2a2.8 2.8 0 0 1 0-7.8z"  fill="#252327" stroke="none"/></svg>
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
 
 title Assurance Application Architecture
 
