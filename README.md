@@ -90,6 +90,15 @@ More on the audience in [Who it serves](docs/01-motivation.md#who-it-serves).
 
 &nbsp;
 
+**Start before you know what anything is.** A scratchpad holds notes and the links between them with
+no ontology involved — then narrows them a level at a time, and lifts what survives into ordinary,
+verified model content. Here one note has decided nothing, one has reached its domain, one is typed,
+and one is bound to an element the model already had:
+
+![A scratchpad: an untyped note, one narrowed to a domain, one typed, and one bound to an existing element](docs/media/scratchpad-hero.png)
+
+&nbsp;
+
 ## What you get
 
 | | Capability | Details |

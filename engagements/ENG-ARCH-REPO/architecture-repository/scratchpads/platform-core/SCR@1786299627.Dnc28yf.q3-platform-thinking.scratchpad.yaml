@@ -1,0 +1,84 @@
+artifact-id: SCR@1786299627.Dnc28yf.q3-platform-thinking
+artifact-type: scratchpad
+name: Q3 platform thinking
+description: 'The committed fixture the README hero shot is taken from: an untyped note, one narrowed
+  to a domain, one typed, and one bound to an entity that already exists.'
+version: 0.1.3
+status: draft
+meta-ontology: archimate-4
+areas:
+- id: enabling
+  label: Enabling
+- id: portfolio
+  label: Portfolio
+- id: project
+  label: Project
+- id: strategy
+  label: Vision & strategy
+notes:
+- id: n1
+  title: Contributors stall at the first type picker
+  body: Heard three times this quarter.
+- id: n2
+  title: Lower the barrier to a first contribution
+  body: The outcome we would be aiming at, if this is real.
+  destination: element
+  domain: motivation
+- id: n3
+  title: Sketch before naming a type
+  body: A preliminary tier, lifted when it is ready.
+  destination: element
+  element-type: requirement
+- id: n4
+  title: AI-Assisted and Agentic Development
+  destination: element
+  element-type: driver
+  model-ref:
+    artifact-id: DRV@1776628131.GR9prv
+    kind: bound
+links:
+- id: l1
+  source: n1
+  target: n2
+- id: l2
+  source: n3
+  target: n2
+  connection-type: archimate-realization
+- id: l3
+  source: n4
+  target: n1
+layout:
+  areas:
+    enabling:
+    - 0
+    - 1920
+    - 1200
+    - 600
+    portfolio:
+    - 0
+    - 640
+    - 1200
+    - 600
+    project:
+    - 0
+    - 1280
+    - 1200
+    - 600
+    strategy:
+    - 0
+    - 0
+    - 1200
+    - 600
+  notes:
+    n1:
+    - 80
+    - 120
+    n2:
+    - 560
+    - 120
+    n3:
+    - 560
+    - 340
+    n4:
+    - 80
+    - 340
