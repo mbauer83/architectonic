@@ -145,4 +145,12 @@ export const makeModelService = (repo: ModelRepository) =>
     deleteGroup: (kind: string, slug: string, confirm?: string) => repo.deleteGroup(kind, slug, confirm),
     updateGroup: (kind: string, slug: string, body: Parameters<ModelRepository['updateGroup']>[2]) =>
       repo.updateGroup(kind, slug, body),
+    listScratchpads: (params?: Parameters<ModelRepository['listScratchpads']>[0]) =>
+      repo.listScratchpads(params),
+    getScratchpad: (id: string) => repo.getScratchpad(id),
+    createScratchpad: (body: Parameters<ModelRepository['createScratchpad']>[0]) =>
+      repo.createScratchpad(body),
+    replaceScratchpad: (id: string, body: Parameters<ModelRepository['replaceScratchpad']>[1]) =>
+      repo.replaceScratchpad(id, body),
+    deleteScratchpad: (id: string) => repo.deleteScratchpad(id),
   }) as const

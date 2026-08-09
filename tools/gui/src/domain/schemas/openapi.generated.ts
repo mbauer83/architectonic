@@ -2365,6 +2365,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/scratchpads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List scratchpads */
+        get: operations["scratchpads_list_scratchpads"];
+        put?: never;
+        /** Create a scratchpad */
+        post: operations["scratchpads_create_scratchpad"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/scratchpads/{artifact_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read a scratchpad whole */
+        get: operations["scratchpads_read_scratchpad"];
+        /** Replace a scratchpad whole */
+        put: operations["scratchpads_replace_scratchpad"];
+        post?: never;
+        /**
+         * Delete a scratchpad
+         * @description Plans unless told otherwise, like every other write on this surface.
+         *
+         *     Model content the scratchpad lifted or bound is never touched — what a scratchpad put into the
+         *     model is not the scratchpad's to retract — so the plan reports what the deletion removes rather
+         *     than a cascade it might trigger.
+         */
+        delete: operations["scratchpads_delete_scratchpad"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/search": {
         parameters: {
             query?: never;
@@ -3306,6 +3350,17 @@ export interface components {
             nodes: components["schemas"]["AssuranceNodeRecord"][];
             /** Visibility Limited */
             visibility_limited?: boolean | null;
+        };
+        /** AreaWire */
+        AreaWire: {
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+            /** Permitted-Document-Types */
+            "permitted-document-types"?: string[];
+            /** Permitted-Element-Types */
+            "permitted-element-types"?: string[];
         };
         /**
          * AssessedEntity
@@ -5484,6 +5539,33 @@ export interface components {
             tlp: string;
             /** Uca Type */
             uca_type?: string | null;
+        };
+        /**
+         * CreateScratchpadBody
+         * @description A create names the group, because a scratchpad has to live somewhere on disk — and only
+         *     that. The four areas are seeded, so a caller who has decided nothing still gets a usable
+         *     canvas.
+         */
+        CreateScratchpadBody: {
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Group */
+            group: string;
+            /**
+             * Meta-Ontology
+             * @default archimate-4
+             */
+            "meta-ontology": string;
+            /** Name */
+            name: string;
+            /**
+             * Seed-Areas
+             * @default true
+             */
+            "seed-areas": boolean;
         };
         /**
          * CriteriaCatalogResponse
@@ -7770,6 +7852,15 @@ export interface components {
             /** Warnings */
             warnings?: string[];
         };
+        /** GroupWire */
+        GroupWire: {
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+            /** Members */
+            members?: string[];
+        };
         /**
          * GsnDiagramEdge
          * @description One edge of the drawable graph, in the GSN relation vocabulary.
@@ -8217,6 +8308,24 @@ export interface components {
             query: string;
         };
         /**
+         * LayoutWire
+         * @description Geometry, apart from content. Rects are `[x, y, w, h]`, points `[x, y]`.
+         */
+        LayoutWire: {
+            /** Areas */
+            areas?: {
+                [key: string]: number[];
+            };
+            /** Groups */
+            groups?: {
+                [key: string]: number[];
+            };
+            /** Notes */
+            notes?: {
+                [key: string]: number[];
+            };
+        };
+        /**
          * LegacyInvalidDetails
          * @description ``node_legacy_invalid``: the node predates mandatory provenance and is repair-only.
          */
@@ -8228,6 +8337,53 @@ export interface components {
              * @default assign_provenance
              */
             permitted_operation: string;
+        };
+        /**
+         * LinkVerdictWire
+         * @description What the meta-ontology says about a drawn link.
+         *
+         *     Served with the link rather than behind its own endpoint: the two-tier split is a property of
+         *     the ontology's declared classification levels, and deciding it a second time in a client would
+         *     put it in two places. `blocks` distinguishes a refusal, which stops a lift, from a narrowing,
+         *     which warns.
+         */
+        LinkVerdictWire: {
+            /** Alternatives */
+            alternatives?: string[];
+            /** Blocks */
+            blocks?: boolean;
+            /**
+             * Code
+             * @default
+             */
+            code: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "unverified" | "reference" | "permitted" | "narrowed" | "refused";
+            /**
+             * Message
+             * @default
+             */
+            message: string;
+            /** Narrowed-By */
+            "narrowed-by"?: string;
+            /** Reverse-Permitted */
+            "reverse-permitted"?: boolean;
+        };
+        /** LinkWire */
+        LinkWire: {
+            /** Connection-Type */
+            "connection-type"?: string;
+            /** Id */
+            id: string;
+            "model-ref"?: components["schemas"]["ModelRefWire"];
+            /** Source */
+            source: string;
+            /** Target */
+            target: string;
+            verdict?: components["schemas"]["LinkVerdictWire"];
         };
         /**
          * LoadedModuleListResponse
@@ -8438,6 +8594,19 @@ export interface components {
             /** Root Id */
             root_id: string;
         };
+        /**
+         * ModelRefWire
+         * @description A one-way reference into the model. `kind` records how the note came by it.
+         */
+        ModelRefWire: {
+            /** Artifact-Id */
+            "artifact-id": string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "realized" | "bound";
+        };
         /** ModelThisBody */
         ModelThisBody: {
             /** Assurance Node Id */
@@ -8603,6 +8772,40 @@ export interface components {
             capability: string;
             /** Remedy */
             remedy: string;
+        };
+        /**
+         * NoteWire
+         * @description A note. Only `id` and `title` are ever required — that is the feature.
+         */
+        NoteWire: {
+            /** Area */
+            area: string;
+            /** Attributes */
+            attributes?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Body
+             * @default
+             */
+            body: string;
+            /**
+             * Destination
+             * @default undecided
+             * @enum {string}
+             */
+            destination: "undecided" | "element" | "document" | "none";
+            /** Document-Type */
+            "document-type"?: string;
+            /** Element-Type */
+            "element-type"?: string;
+            /** Id */
+            id: string;
+            "model-ref"?: components["schemas"]["ModelRefWire"];
+            /** Specialization */
+            specialization?: string;
+            /** Title */
+            title: string;
         };
         /**
          * OntologyClassificationResponse
@@ -9437,6 +9640,24 @@ export interface components {
             new_slug?: string | null;
         };
         /**
+         * ReplaceScratchpadBody
+         * @description The whole aggregate plus the version it was read at.
+         *
+         *     `version` is required rather than optional: an optional concurrency token is one every client
+         *     eventually omits, and the first time two people have the same scratchpad open, one of them
+         *     silently loses an afternoon.
+         */
+        ReplaceScratchpadBody: {
+            /** Group */
+            group: string;
+            /** Scratchpad */
+            scratchpad: {
+                [key: string]: unknown;
+            };
+            /** Version */
+            version: string;
+        };
+        /**
          * RepositoryStatsResponse
          * @description How much of each kind the served repository holds, and how it distributes.
          *
@@ -9559,6 +9780,78 @@ export interface components {
             excluded_entity_types?: string[];
             /** Unrestricted */
             unrestricted: boolean;
+        };
+        /** ScratchpadListResponse */
+        ScratchpadListResponse: {
+            /** Scratchpads */
+            scratchpads: components["schemas"]["ScratchpadSummaryWire"][];
+        };
+        /**
+         * ScratchpadResponse
+         * @description The whole aggregate. There is no partial read, because there is no partial write.
+         */
+        ScratchpadResponse: {
+            /** Areas */
+            areas?: components["schemas"]["AreaWire"][];
+            /** Artifact-Id */
+            "artifact-id": string;
+            /**
+             * Artifact-Type
+             * @default scratchpad
+             * @constant
+             */
+            "artifact-type": "scratchpad";
+            /** Attributes */
+            attributes?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Group */
+            group: string;
+            /** Groups */
+            groups?: components["schemas"]["GroupWire"][];
+            layout?: components["schemas"]["LayoutWire"];
+            /** Links */
+            links?: components["schemas"]["LinkWire"][];
+            /** Meta-Ontology */
+            "meta-ontology": string;
+            /** Name */
+            name: string;
+            /** Notes */
+            notes?: components["schemas"]["NoteWire"][];
+            /** Status */
+            status: string;
+            /** Version */
+            version: string;
+        };
+        /**
+         * ScratchpadSummaryWire
+         * @description What a list returns: enough to choose one, never the notes.
+         */
+        ScratchpadSummaryWire: {
+            /** Artifact-Id */
+            "artifact-id": string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Group */
+            group: string;
+            /** Meta-Ontology */
+            "meta-ontology": string;
+            /** Name */
+            name: string;
+            /** Note-Count */
+            "note-count": number;
+            /** Status */
+            status: string;
+            /** Version */
+            version: string;
         };
         /** SealBaselineBody */
         SealBaselineBody: {
@@ -18645,6 +18938,350 @@ export interface operations {
             };
             /** @description Request validation failed */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    scratchpads_list_scratchpads: {
+        parameters: {
+            query?: {
+                /** @description Restrict to one collection */
+                group?: string | null;
+                /** @description Restrict to one status */
+                status?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScratchpadListResponse"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    scratchpads_create_scratchpad: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateScratchpadBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScratchpadResponse"];
+                };
+            };
+            /** @description Validation error (bad or ambiguous write) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write forbidden (e.g. admin mode not enabled, or mutation denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write temporarily rejected by the workspace gate (retryable) */
+            423: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    scratchpads_read_scratchpad: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScratchpadResponse"];
+                };
+            };
+            /** @description Artifact not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    scratchpads_replace_scratchpad: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplaceScratchpadBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScratchpadResponse"];
+                };
+            };
+            /** @description Validation error (bad or ambiguous write) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write forbidden (e.g. admin mode not enabled, or mutation denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Artifact not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write temporarily rejected by the workspace gate (retryable) */
+            423: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    scratchpads_delete_scratchpad: {
+        parameters: {
+            query?: {
+                dry_run?: boolean;
+            };
+            header?: never;
+            path: {
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation error (bad or ambiguous write) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write forbidden (e.g. admin mode not enabled, or mutation denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Artifact not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write temporarily rejected by the workspace gate (retryable) */
+            423: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -71,6 +71,8 @@ export const ROUTE_TEMPLATES = {
   documentCreate: '/documents/new',
   documentGroups: '/documents/groups',
   documentDetail: '/documents/:artifactId',
+  scratchpadList: '/scratchpads',
+  scratchpadDetail: '/scratchpads/:artifactId',
   diagramList: '/diagrams',
   diagramCreate: '/diagrams/new',
   diagramGroups: '/diagrams/groups',
@@ -119,6 +121,8 @@ export const documentDetailRoute = (artifactId: string): string => `/documents/$
 export const diagramListRoute = (): string => ROUTE_TEMPLATES.diagramList
 export const diagramCreateRoute = (): string => ROUTE_TEMPLATES.diagramCreate
 export const diagramDetailRoute = (artifactId: string): string => `/diagrams/${seg(artifactId)}`
+export const scratchpadListRoute = (): string => ROUTE_TEMPLATES.scratchpadList
+export const scratchpadDetailRoute = (artifactId: string): string => `/scratchpads/${seg(artifactId)}`
 export const diagramEditRoute = (artifactId: string): string => `/diagrams/${seg(artifactId)}/edit`
 
 export const matrixCreateRoute = (): string => ROUTE_TEMPLATES.matrixCreate

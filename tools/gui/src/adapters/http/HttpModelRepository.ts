@@ -52,6 +52,7 @@ import { encodeIdentitySegment } from '../../domain/identitySegments'
 import { parseMarkdown } from '../../application/MarkdownService'
 import { enterpriseAdminMethods } from './HttpEnterpriseAdminRepository'
 import { viewpointMethods } from './HttpViewpointRepository'
+import { scratchpadMethods } from './HttpScratchpadRepository'
 import { workspaceMethods } from './HttpWorkspaceRepository'
 
 // Timeout budgets are no longer set here. Viewpoint execution and the other derived-graph
@@ -391,5 +392,6 @@ export const makeHttpModelRepository = (): ModelRepository => ({
   executePromotion: (body) =>
     postJson(buildUrl('/promote/execute'), body, PromotionResultSchema),
 
+  ...scratchpadMethods(),
   ...workspaceMethods(),
 })

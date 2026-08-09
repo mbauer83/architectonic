@@ -37,6 +37,8 @@ export const modelRoutes: RouteRecordRaw[] = [
   // The same surface unanchored: a viewpoint's whole population rather than one entity's
   // neighbourhood. No identity, so nothing to put in the path.
   { path: ROUTE_TEMPLATES.graphExplore, component: GraphExploreView },
+  { path: ROUTE_TEMPLATES.scratchpadList, component: () => import('../views/ScratchpadsView.vue') },
+  { path: ROUTE_TEMPLATES.scratchpadDetail, component: () => import('../views/ScratchpadDetailView.vue') },
   { path: ROUTE_TEMPLATES.documentList, component: () => import('../views/DocumentsView.vue') },
   { path: ROUTE_TEMPLATES.documentCreate, component: () => import('../views/DocumentCreateView.vue') },
   {

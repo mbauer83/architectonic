@@ -123,6 +123,9 @@ onMounted(async () => {
       >
         Browse
       </RouterLink>
+      <RouterLink to="/scratchpads">
+        Scratchpads
+      </RouterLink>
       <RouterLink to="/documents">
         Documents
       </RouterLink>
