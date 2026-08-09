@@ -16,6 +16,36 @@
 # & migration outermost. Not strictly one-dimensional, but the reading order is.
 domain_order: [motivation, strategy, business, common, application, technology, implementation]
 
+# The levels this ontology classifies an element through, and what each governs. It restates
+# nothing: `from:` names data declared elsewhere in this file (`hierarchy`, the type key) or in
+# `specializations.yaml`. What it adds is the characterisation no consumer could previously ask for
+# — which level relationships are keyed on, which merely narrows them, which carry attributes, and
+# which must be reached before an element is complete.
+#
+# The keying level is what makes the two-tier verification a consequence rather than a special case:
+# a pair the *entity type* forbids is E126 and blocks, while one a *specialization* forbids is
+# W128/W129 and warns, because a specialization may only narrow what its parent permits.
+#
+# Omitting this block is legitimate and gives the derived default, which is exactly this shape —
+# see `domain.ontology_representation.classification_levels`.
+classification_levels:
+  - id: domain
+    label: Domain
+    from: hierarchy
+    required: true
+  - id: entity_type
+    label: Entity type
+    from: type
+    required: true
+    keys_relationships: true
+    carries_attributes: true
+  - id: specialization
+    label: Specialization
+    from: specializations
+    required: false
+    narrows_relationships: true
+    carries_attributes: true
+
 element_classes:
   motivation-element:
     description: ArchiMate motivation layer element

@@ -13,6 +13,11 @@ import yaml  # type: ignore[import-untyped]
 from src.domain.guidance.guidance import GuidanceOverlay
 from src.domain.modules.module_types import ConnectionTypeName, ElementClassName, EntityTypeName
 from src.domain.ontology_representation.behavioral_elements import BehavioralElementDeclaration
+from src.domain.ontology_representation.classification_levels import (
+    DERIVED_DEFAULT_LEVELS,
+    ClassificationLevel,
+    classification_levels_from_config,
+)
 from src.domain.ontology_representation.ontology_types import ConnectionTypeInfo, ElementClassInfo, EntityTypeInfo
 from src.domain.ontology_representation.profile_registry import ProfileRegistry
 from src.domain.ontology_representation.specializations import (
@@ -76,7 +81,9 @@ class _ArchiMate4Module:
         derivation_restrictions: tuple[DerivationRestriction, ...] = (),
         svg_converter: Callable[[str], str] | None = None,
         domain_order: tuple[str, ...] = (),
+        classification_levels: tuple[ClassificationLevel, ...] = DERIVED_DEFAULT_LEVELS,
     ) -> None:
+        self._classification_levels = classification_levels
         self._declared_domain_order = domain_order
         self._entity_types = entity_types
         self._connection_types = connection_types
@@ -139,6 +146,16 @@ class _ArchiMate4Module:
     @property
     def behavioral_elements(self) -> BehavioralElementDeclaration:
         return self._behavioral_elements
+
+    @property
+    def classification_levels(self) -> tuple[ClassificationLevel, ...]:
+        """The levels this ontology classifies an element through, declared in `entities.yaml`.
+
+        Declared rather than derived, so the two-tier verification the scratchpad needs — refusal at
+        the level relationships are keyed on, a warning at the level that only narrows them — is a
+        consequence of what the ontology says about itself rather than a rule in each consumer.
+        """
+        return self._classification_levels
 
     @property
     def specialization_catalog(self) -> SpecializationCatalog:
@@ -273,4 +290,5 @@ def load_archimate_4_module(
         derivation_restrictions=derivation_restrictions,
         svg_converter=svg_converter,
         domain_order=tuple(str(d) for d in entity_data.get("domain_order", ())),
+        classification_levels=classification_levels_from_config(entity_data, module="archimate-4-0"),
     )
