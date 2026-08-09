@@ -93,6 +93,12 @@ entity_types:
     create_when: ""
     never_create_when: ""
 
+  principle:
+    prefix: PRI
+    hierarchy: [motivation]
+    classes: [motivation-element]
+    create_when: ""
+    never_create_when: ""
   goal:
     prefix: GOL
     hierarchy: [motivation]
@@ -107,12 +113,6 @@ entity_types:
     create_when: ""
     never_create_when: ""
 
-  principle:
-    prefix: PRI
-    hierarchy: [motivation]
-    classes: [motivation-element]
-    create_when: ""
-    never_create_when: ""
 
   requirement:
     prefix: REQ

@@ -254,7 +254,12 @@ def test_note_on_action_follows_action_line() -> None:
     assert action_pos < note_pos
 
 
-def test_note_on_decision_precedes_then_branch() -> None:
+def test_note_on_decision_precedes_the_if() -> None:
+    """A decision's note is emitted BEFORE its `if`, not between the `if` and the then-branch.
+
+    Emitted inside the then-branch, PlantUML renders the note once per lane the branch touches, so a
+    note on a decision appeared twice in a two-lane diagram while a note on an action appeared once.
+    Measured on a minimal case: inside-branch 2, floating-inside-branch 2, before-the-if 1."""
     puml = _render(
         diagram_entities={
             "decision": [_D1_VALID],
@@ -266,7 +271,7 @@ def test_note_on_decision_precedes_then_branch() -> None:
     if_pos = puml.index("if ([[arch://d1 Valid?]])")
     note_pos = puml.index("note left: Check validity")
     proceed_pos = puml.index(":[[arch://a1 Proceed]];")
-    assert if_pos < note_pos < proceed_pos
+    assert note_pos < if_pos < proceed_pos
 
 
 def test_note_on_fork_follows_fork_keyword() -> None:

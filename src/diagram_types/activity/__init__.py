@@ -85,6 +85,34 @@ class _ActivityDiagramType(DiagramTypeBase):
             when_not_to_use=str(g.get("when_not_to_use") or ""),
             diagram_entities_schema=derive_diagram_entities_schema(own_types),
             own_entity_types=own_types,
+            puml_notes=(
+                "Steps and lanes go in `diagram_entities`; the flow between them goes in"
+                " `diagram_connections`, as objects of the form"
+                " {id, conn_type, source, target} — the same shape the file persists. Declaring"
+                " steps without connections yields a diagram of one step and a warning per orphan.",
+                "Every step needs a `step-in-lane` connection naming its swimlane, including"
+                " decisions and forks. A step without one is emitted with a WARNING comment and"
+                " lands in whichever lane was last active.",
+                "A decision needs three edges, not two: `step-then` to the first step of the true"
+                " branch, `step-else` to the first step of the false branch, and a `step-flow` to"
+                " the step the branches merge back into. Omitting the third leaves the branches"
+                " dangling.",
+                "Notes attach with `step-note-of`, whose *source* is the note and whose *target* is"
+                " the step it annotates.",
+                "Long step labels widen their whole swimlane, so prefer short imperative labels and"
+                " put the nuance in a note. `layout.wrap_width` bounds this, but wrapping every"
+                " label is not a substitute for writing short ones.",
+                "Minimal example — two lanes, one decision:\n"
+                "  diagram_entities: {swimlane: [{id: you}, {id: system}],\n"
+                "    action: [{id: a1, label: Ask}, {id: a2, label: Answer}],\n"
+                "    decision: [{id: d1, condition: Known?, then_label: yes, else_label: no}]}\n"
+                "  diagram_connections: [\n"
+                "    {id: l1, conn_type: step-in-lane, source: a1, target: you},\n"
+                "    {id: l2, conn_type: step-in-lane, source: d1, target: you},\n"
+                "    {id: l3, conn_type: step-in-lane, source: a2, target: system},\n"
+                "    {id: f1, conn_type: step-flow, source: a1, target: d1},\n"
+                "    {id: t1, conn_type: step-then, source: d1, target: a2}]",
+            ),
             allowed_bindings=ab if not ab.is_empty() else None,
         )
 

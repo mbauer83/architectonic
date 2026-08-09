@@ -1,7 +1,10 @@
 name: activity
 includes: []
 grouping: {}
-layout: {}
+layout:
+  # Points at which a step label wraps. Keeps lanes narrow enough that several fit a page;
+  # 0 disables wrapping. See renderer._wrap_width.
+  wrap_width: 180
 element_classes:
   step:
     description: An entity type that can appear in a step sequence array

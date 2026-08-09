@@ -83,6 +83,12 @@ class ActivityPumlRenderer:
             # style hyperlinks as plain text so the anchor is invisible, not blue/underlined.
             "skinparam hyperlinkColor #252327",
             "skinparam hyperlinkUnderline false",
+            # A swimlane is exactly as wide as its widest unwrapped label, so without this a diagram
+            # grows sideways with every added lane and every sentence-long step, and a three-lane
+            # activity renders as a landscape strip nobody can read. Wrapping trades width for
+            # height, which a page has more of. Measured on a two-lane, thirteen-step diagram:
+            # 2247x804 unwrapped against 1304x965 at 180 — 42% narrower.
+            f"skinparam wrapWidth {_wrap_width(self._config)}",
             f"title {_puml_text(name)}",
             "",
         ]
@@ -289,8 +295,12 @@ def _emit_step(step: dict[str, Any], step_id: str, ctx: _Ctx, lines: list[str], 
         condition = _puml_text(str(step.get("condition") or "?"))
         then_label = _puml_text(str(step.get("then_label") or "yes"))
         else_label = _puml_text(str(step.get("else_label") or "no"))
-        lines.append(f"if ({sentinel_wrapped(step, f'{condition}?')}{user_link_suffix(step)}) then ({then_label})")
+        # Before the `if`, never inside the then-branch. A note emitted after `then (...)` sits in a
+        # branch, and a branch that switches lane renders the note once per lane — so a note on a
+        # decision appeared twice while a note on an action appeared once. Measured on a minimal
+        # two-lane diagram: inside-branch 2, floating-inside-branch 2, before-the-if 1.
         _emit_step_note(step_id, notes_index, lines)
+        lines.append(f"if ({sentinel_wrapped(step, f'{condition}?')}{user_link_suffix(step)}) then ({then_label})")
         then_first = then_target.get(step_id)
         if then_first:
             _emit_from(then_first, ctx, lines, visited)
@@ -364,6 +374,20 @@ def _emit_step_note(step_id: str, notes_index: dict[str, dict[str, Any]], lines:
         lines.append("end note")
     else:
         lines.append(f"note {side}: {_puml_text(text)}")
+
+
+#: Label width, in points, above which PlantUML wraps a step's text onto another line.
+#:
+#: Chosen so a sentence-long step stays readable while a lane stays narrow enough that several fit a
+#: page. `layout.wrap_width` in `config.yaml` overrides it; 0 disables wrapping entirely, which is
+#: what a diagram of very short labels may prefer.
+_DEFAULT_WRAP_WIDTH = 180
+
+
+def _wrap_width(config: Mapping[str, Any]) -> int:
+    layout = config.get("layout")
+    configured = layout.get("wrap_width") if isinstance(layout, Mapping) else None
+    return configured if isinstance(configured, int) and configured >= 0 else _DEFAULT_WRAP_WIDTH
 
 
 def _read_lanes(kd: Mapping[str, object]) -> list[dict[str, Any]]:
