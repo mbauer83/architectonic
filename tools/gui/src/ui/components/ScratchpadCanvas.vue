@@ -17,7 +17,7 @@
  * belong to the view — so the canvas can be driven by a test with a plain object, and the save
  * policy is not buried in a mouse handler.
  */
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useScratchpadGestures } from '../composables/useScratchpadGestures'
 import { linkMidpoint, linkPath } from '../composables/scratchpadLinkGeometry'
 import { getDomainColor } from '../lib/domains'
@@ -37,6 +37,8 @@ const props = defineProps<{
   scratchpad: Scratchpad
   selectedIds: readonly string[]
   selectedLinkId: string | null
+  /** The frame being worked in, or null. Everything outside it is dimmed, never hidden. */
+  focusedAreaId: string | null
   /** Connection type → how the ontology says it is drawn. Empty until it has been fetched, which
    * is one request per canvas rather than one per link. */
   notations: ReadonlyMap<string, RelationNotation>
@@ -84,7 +86,7 @@ const midpointOf = (link: Link) => linkMidpoint(positionOf(link.source), positio
 const refusedLinks = computed(() => links.value.filter((link) => link.verdict?.kind === 'refused'))
 
 const {
-  layerTransform, linkingFrom, pointer, resetView,
+  layerTransform, linkingFrom, pointer, resetView, fitTo,
   onNotePointerDown, onHandlePointerDown, onBackgroundPointerDown,
   onPointerMove, onPointerUp, onBackgroundDoubleClick, onContextMenu, onWheel,
 } = useScratchpadGestures(
@@ -156,6 +158,19 @@ const markerUrl = (link: Link, end: 'source' | 'target'): string | undefined => 
   return marker && marker !== 'none' ? `url(#${edgeMarkerId(marker, end)})` : undefined
 }
 
+/** Focus is a viewport move, not a filter: the frame is fitted and the rest fades back. Nothing
+ * leaves the document, because the cross-area links are the content worth having — which is why
+ * this is one canvas rather than four tabs. */
+watch(() => props.focusedAreaId, (areaId) => {
+  if (!areaId) { resetView(); return }
+  const rect = rectOf(areaId)
+  if (rect.w && rect.h) fitTo(rect)
+})
+
+/** Whether a note or frame is outside the focus. Nothing is outside when nothing is focused. */
+const outside = (areaId: string): boolean =>
+  !!props.focusedAreaId && areaId !== props.focusedAreaId
+
 defineExpose({ resetView })
 </script>
 
@@ -191,6 +206,7 @@ defineExpose({ resetView })
       >
         <rect
           class="sp-area"
+          :class="{ dimmed: outside(area.id) }"
           :data-area-id="area.id"
           :x="rectOf(area.id).x"
           :y="rectOf(area.id).y"
@@ -200,6 +216,7 @@ defineExpose({ resetView })
         />
         <text
           class="sp-area-label"
+          :class="{ dimmed: outside(area.id) }"
           :x="rectOf(area.id).x + 16"
           :y="rectOf(area.id).y + 26"
         >
@@ -269,6 +286,7 @@ defineExpose({ resetView })
         :at="positionOf(note.id)"
         :selected="selectedIds.includes(note.id)"
         :tint="domainTint(note)"
+        :dimmed="outside(note.area)"
         :glyph="glyphOf(note)"
         @note-pointerdown="onNotePointerDown($event, note.id)"
         @note-keydown="onNoteKeydown($event, note.id)"
@@ -300,6 +318,9 @@ defineExpose({ resetView })
 }
 .sp-note:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
 .sp-area { fill: #ffffff; stroke: #e2e2e6; stroke-width: 1.5; }
+/* Faded, not hidden: a link leaving the focused frame still has a visible other end, which is the
+   whole reason focus is a viewport move rather than a filter. */
+.sp-area.dimmed, .sp-area-label.dimmed { opacity: .35; }
 .sp-area-label { font: 600 13px system-ui, sans-serif; fill: #8b8b93; letter-spacing: .02em; }
 .sp-link { fill: none; stroke: #c3c6cc; stroke-width: 1.5; stroke-dasharray: 5 4; }
 .sp-link-hit { fill: none; stroke: transparent; stroke-width: 14px; pointer-events: stroke; cursor: pointer; }

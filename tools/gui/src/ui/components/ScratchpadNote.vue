@@ -18,6 +18,8 @@ defineProps<{
   tint: string | undefined
   /** The entity type's glyph markup, from the table the entity list and picker already use. */
   glyph: string | null
+  /** Outside the focused frame: faded back, still there, still linkable. */
+  dimmed: boolean
 }>()
 
 const emit = defineEmits<{
@@ -127,6 +129,8 @@ const emit = defineEmits<{
   transition: box-shadow .12s ease, border-color .12s ease;
 }
 .sp-note:hover { box-shadow: 0 2px 6px rgba(0,0,0,.10); }
+.sp-note.dimmed { opacity: .3; }
+.sp-note.dimmed:hover, .sp-note.dimmed:focus-within { opacity: .75; }
 .sp-note.selected { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37,99,235,.18); }
 /* The domain is the tint; the border simply becomes visible once anything has been decided. A
    note that has decided nothing wears nothing, which is the state the feature exists to allow. */

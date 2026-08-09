@@ -145,8 +145,33 @@ export function useScratchpadGestures(
 
   const resetView = (): void => { pan.value = { x: 0, y: 0 }; zoom.value = 1 }
 
+  /** Bring one rectangle into view, centred, with a little room around it.
+   *
+   * Focus mode's whole gesture: a frame is a region of the workspace, so focusing one is a matter
+   * of where the viewport is rather than of hiding anything from the document. Nothing is removed —
+   * the cross-area links are the content worth having, and a mode that hid them would defeat the
+   * reason the canvas is one surface rather than four tabs.
+   */
+  const fitTo = (rect: { x: number; y: number; w: number; h: number }): void => {
+    const bounds = viewport.value?.getBoundingClientRect()
+    if (!bounds || !rect.w || !rect.h) return
+    const margin = 40
+    const next = Math.min(
+      3,
+      Math.max(0.2, Math.min(
+        (bounds.width - margin * 2) / rect.w,
+        (bounds.height - margin * 2) / rect.h,
+      )),
+    )
+    zoom.value = next
+    pan.value = {
+      x: bounds.width / 2 - (rect.x + rect.w / 2) * next,
+      y: bounds.height / 2 - (rect.y + rect.h / 2) * next,
+    }
+  }
+
   return {
-    layerTransform, linkingFrom, pointer, resetView,
+    layerTransform, linkingFrom, pointer, resetView, fitTo,
     onNotePointerDown, onHandlePointerDown, onBackgroundPointerDown,
     onPointerMove, onPointerUp, onBackgroundDoubleClick, onContextMenu, onWheel,
   }

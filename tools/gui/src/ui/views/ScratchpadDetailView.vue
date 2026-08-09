@@ -18,6 +18,7 @@ import { useDebouncedScratchpadSave } from '../composables/useDebouncedScratchpa
 import { useScratchpadLift } from '../composables/useScratchpadLift'
 import { fetchRelationNotations, type RelationNotation } from '../lib/relationNotations'
 import ScratchpadCanvasMenu from '../components/ScratchpadCanvasMenu.vue'
+import ScratchpadHeader from '../components/ScratchpadHeader.vue'
 import ScratchpadLiftDialog from '../components/ScratchpadLiftDialog.vue'
 import ScratchpadNotePanel from '../components/ScratchpadNotePanel.vue'
 import { useScratchpadDocument } from '../composables/useScratchpadDocument'
@@ -57,6 +58,10 @@ const saveMutation = useMutation<Scratchpad, RepoError>()
 const selected = ref<string[]>([])
 /** A link may be selected instead, so it can be refined without going through a note. */
 const selectedLinkId = ref<string | null>(null)
+
+/** The frame being worked in. Focus fits the view to it and fades the rest back; nothing leaves
+ * the document, because the links that cross frames are the content worth having. */
+const focusedAreaId = ref<string | null>(null)
 
 /** One request per canvas, not one per link: how the ontology says each relation is drawn. */
 const notations = ref<ReadonlyMap<string, RelationNotation>>(new Map())
@@ -226,6 +231,12 @@ const redo = (): void => { document.redo(); saver.schedule() }
 const onKeydown = (event: KeyboardEvent): void => {
   // Not while a title is being edited: there, Ctrl+Z belongs to the text field.
   if ((event.target as HTMLElement | null)?.isContentEditable) return
+  // Escape leaves focus before it clears a selection: the mode is the more surprising state to be
+  // stuck in, and a person pressing Escape means "get me out of this" either way.
+  if (event.key === 'Escape' && focusedAreaId.value) {
+    focusedAreaId.value = null
+    return
+  }
   if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'z') return
   event.preventDefault()
   if (event.shiftKey) redo()
@@ -245,44 +256,20 @@ const status = computed(() => {
 
 <template>
   <section class="page">
-    <header class="bar">
-      <div>
-        <h1
-          class="title"
-          data-testid="scratchpad-name"
-        >
-          {{ document.current.value?.name ?? '…' }}
-        </h1>
-        <p class="sub">
-          <span class="mono">{{ artifactId }}</span>
-          <span class="dot">·</span>{{ noteCount }} note{{ noteCount === 1 ? '' : 's' }}
-          <span class="dot">·</span><span class="mono">{{ document.current.value?.group }}</span>
-        </p>
-      </div>
-      <div class="actions">
-        <button
-          type="button"
-          :disabled="!document.canUndo.value"
-          data-testid="undo"
-          @click="undo"
-        >
-          Undo
-        </button>
-        <button
-          type="button"
-          :disabled="!document.canRedo.value"
-          data-testid="redo"
-          @click="redo"
-        >
-          Redo
-        </button>
-        <span
-          class="state"
-          :class="{ err: !!saver.saveError.value }"
-          data-testid="save-state"
-        >{{ status }}</span>
-      </div>
-    </header>
+    <ScratchpadHeader
+      :name="document.current.value?.name ?? '…'"
+      :artifact-id="artifactId"
+      :group="document.current.value?.group ?? ''"
+      :note-count="noteCount"
+      :can-undo="document.canUndo.value"
+      :can-redo="document.canRedo.value"
+      :focused="!!focusedAreaId"
+      :status="status"
+      :failed="!!saver.saveError.value"
+      @undo="undo"
+      @redo="redo"
+      @leave-focus="focusedAreaId = null"
+    />
 
     <p class="hint">
       Double-click the canvas to add a note, or right-click to add one the model already has.
@@ -296,6 +283,7 @@ const status = computed(() => {
         :scratchpad="document.current.value"
         :selected-ids="selected"
         :selected-link-id="selectedLinkId"
+        :focused-area-id="focusedAreaId"
         :notations="notations"
         @create-note="onCreateNote"
         @move-note="onMoveNote"
@@ -327,6 +315,10 @@ const status = computed(() => {
         :area-label="menuArea?.label ?? ''"
         :permitted-types="menuArea?.['permitted-element-types'] ?? []"
         :selection-size="selected.length"
+        :focused="focusedAreaId === menuArea?.id"
+        :can-focus="!!menuArea"
+        @focus-area="focusedAreaId = focusedAreaId === menuArea?.id ? null : (menuArea?.id ?? null);
+                     menu = null"
         @new-note="menu && onCreateNote(menu.at)"
         @add-existing="onBindEntity"
         @lift="onLiftRequest"
@@ -365,20 +357,7 @@ const status = computed(() => {
 
 <style scoped>
 .page { max-width: 100%; }
-.bar { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
-.title { font-size: 20px; margin: 0 0 2px; }
-.sub { margin: 0; font-size: 12px; color: #6b7280; }
-.mono { font-family: ui-monospace, monospace; }
-.dot { margin: 0 6px; color: #d1d5db; }
-.actions { display: flex; align-items: center; gap: 8px; }
-.actions button {
-  padding: 5px 12px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff;
-  font-size: 13px; cursor: pointer; color: #374151;
-}
-.actions button:disabled { opacity: .45; cursor: default; }
-.actions button:not(:disabled):hover { background: #f9fafb; }
-.state { font-size: 12px; color: #6b7280; min-width: 96px; text-align: right; }
-.state.err, .err { color: #dc2626; }
+.err { color: #dc2626; }
 .hint { margin: 10px 0; font-size: 12.5px; color: #6b7280; }
 .canvas-frame {
   position: relative;

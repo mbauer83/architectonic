@@ -52,6 +52,16 @@ containing the note wins.
   kind of edit is reversible — creating, titling, moving, linking, deleting.
 - **Scroll** to zoom about the pointer; drag the background to pan.
 
+### Focusing one frame
+
+**Right-click a frame → Focus** fits the view to it and fades everything else back. **Escape**, or
+the button in the header, leaves it.
+
+Focus is a *viewport move*, not a filter: nothing leaves the document, and a link crossing out of the
+focused frame still has a visible other end. That is deliberate — cross-area links are the content
+worth having, and hiding them is precisely what four tabs would have done, which is why this is one
+canvas.
+
 ### Without a pointer
 
 A canvas is the easiest surface in a product to build mouse-only and the least excusable one to
@@ -330,5 +340,7 @@ The invariants a write is refused for, each naming the id at fault:
 
 ## What is not here yet
 
-The canvas, binding, narrowing, lift, documents and the optional view are what ship today. Still to
-come: **focus mode**, and scratchpad notes in the search index, ranked below model content.
+Everything above ships today. The one piece still to come is **search**: notes are meant to be
+indexed and findable but ranked below model content, documents and diagrams — a note is a
+half-formed thought and an entity is a commitment. The ranking rule is small; what it needs first is
+a record type in the artifact index, which is a schema change rather than a scoring function.

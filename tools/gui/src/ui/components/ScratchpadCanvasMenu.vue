@@ -27,12 +27,16 @@ const props = defineProps<{
   permittedTypes: readonly string[]
   /** How many notes are selected. Lift acts on the selection, or on everything when none is. */
   selectionSize: number
+  /** Whether this frame is the focused one, and whether there is a frame here to focus at all. */
+  focused: boolean
+  canFocus: boolean
 }>()
 
 const emit = defineEmits<{
   (event: 'new-note'): void
   (event: 'add-existing', entity: EntityDisplayInfo): void
   (event: 'lift'): void
+  (event: 'focus-area'): void
   (event: 'close'): void
 }>()
 
@@ -106,6 +110,19 @@ const move = (step: number): void => {
       >
         Add existing element…
         <span class="hint">bind what the model already has</span>
+      </button>
+      <button
+        v-if="canFocus"
+        type="button"
+        class="entry"
+        role="menuitem"
+        data-testid="menu-focus"
+        @click="emit('focus-area')"
+      >
+        {{ focused ? 'Leave focus' : `Focus ${areaLabel}` }}
+        <span class="hint">{{
+          focused ? 'show the whole canvas again' : 'fit the view to it; the rest fades back'
+        }}</span>
       </button>
       <!-- Here rather than on a toolbar: lift acts on a selection made on the canvas, so the act
            belongs beside the thing it acts on. -->
