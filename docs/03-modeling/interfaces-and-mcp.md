@@ -44,6 +44,8 @@ looking entirely normal. See
 | `artifact_query_stats` | Read-only | Return model statistics: total entity/connection/diagram counts and breakdowns by domain, connection type, and group. |
 | `artifact_query_viewpoint` | Read-only | action='list': browse the effective merged viewpoint catalog — slug/version/name/purpose/content/stakeholders/concerns, a scope summary, a plain-language query_summary so you see what a viewpoint means, not just that it exists, and whether it is pinned (engagement-repo-local quick access). |
 | `artifact_verify` | Read-only | Verify one file or all model files. |
+| `scratchpad_list` | Read-only | List scratchpads with their metadata — id, name, status, version, collection and note count, never the notes themselves. |
+| `scratchpad_read` | Read-only | Read one scratchpad whole: its areas (the labelled frames), notes, links, groups and the layout block holding every coordinate. |
 <!-- mcp-tools:end arch-read -->
 
 ### `arch-repo-write` (author, edit, promote)
@@ -64,6 +66,9 @@ looking entirely normal. See
 | Documents | `artifact_create_document` | Write | Create a new architecture document (e.g. ADR, RFC). |
 | Documents | `artifact_edit_document` | Destructive | Edit an existing architecture document's frontmatter or body. |
 | Documents | `artifact_delete_document` | Destructive | Delete a single architecture document. |
+| Scratchpads | `scratchpad_create` | Write | Create a scratchpad in `group` (the collection it lives in on disk). |
+| Scratchpads | `scratchpad_replace` | Write | Replace a scratchpad whole. |
+| Scratchpads | `scratchpad_delete` | Destructive | Delete a scratchpad and everything on it. |
 | Bulk | `artifact_bulk_write` | Destructive | Batch entity creates, connection adds, and edits in one call. |
 | Bulk | `artifact_bulk_delete` | Destructive | Batch destructive operations with dependency-aware planning and final repository verification. |
 | Grouping | `artifact_group` | Destructive | Manage artifact group containers across all three grouping axes. |

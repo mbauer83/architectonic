@@ -31,6 +31,10 @@ from src.infrastructure.mcp.artifact_mcp.edit_tools import (  # noqa: F401
     artifact_edit_entity,
 )
 from src.infrastructure.mcp.artifact_mcp.name_normalization import install_call_tool_normalizer
+from src.infrastructure.mcp.artifact_mcp.scratchpad_tools import (
+    register_scratchpad_read_tools,
+    register_scratchpad_write_tools,
+)
 from src.infrastructure.mcp.artifact_mcp.verify_tools import (  # noqa: F401
     artifact_verify,
     artifact_verify_all,
@@ -85,6 +89,7 @@ mcp_read = FastMCP(
 
 register_query_tools(mcp_read)
 register_verify_tools(mcp_read)
+register_scratchpad_read_tools(mcp_read)
 install_call_tool_normalizer(mcp_read)
 
 
@@ -102,6 +107,7 @@ mcp_write = FastMCP(
 
 register_write_tools(mcp_write)
 register_edit_tools(mcp_write)
+register_scratchpad_write_tools(mcp_write)
 
 _sync_ops.register(mcp_write)
 # Same dispatch treatment as the read server: incoming tool-name normalization,

@@ -124,6 +124,26 @@ class WriteCall:
     mutates: bool = True
 
 
+def _scratchpad_field(key: str) -> Callable[[object], str | None]:
+    """Read one field out of a scratchpad tool's answer.
+
+    The scratchpad tools nest the aggregate under `scratchpad` rather than answering a flat
+    `artifact_id`, because the whole document is the return value — so the walk needs to say which
+    field it wants rather than assume the shape every other tool happens to share.
+    """
+
+    def read(payload: object) -> str | None:
+        if not isinstance(payload, Mapping):
+            return None
+        scratchpad = payload.get("scratchpad")
+        if not isinstance(scratchpad, Mapping):
+            return None
+        value = scratchpad.get(key)
+        return value if isinstance(value, str) else None
+
+    return read
+
+
 def _artifact_id(payload: object) -> str | None:
     if isinstance(payload, Mapping):
         identifier = payload.get("artifact_id")
@@ -379,6 +399,35 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
         "artifact_withdraw_changes",
         lambda _c: {"confirm": True},
         mutates=False,
+    ),
+    # ── scratchpads: create → replace → delete, the whole loop an agent has ──────────────────────
+    #
+    # Replace carries the version the create answered with, because that is the contract: a stale
+    # token is refused rather than overwriting. Taking it from the response rather than assuming
+    # `0.1.1` is what makes this exercise the concurrency check instead of stepping around it.
+    WriteCall(
+        "scratchpad_create",
+        lambda _c: {"name": "MCP Walk Scratchpad", "group": "platform-core"},
+        captures=(
+            Capture("scratchpad", _scratchpad_field("artifact-id")),
+            Capture("scratchpad_version", _scratchpad_field("version")),
+        ),
+    ),
+    WriteCall(
+        "scratchpad_replace",
+        lambda c: {
+            "artifact_id": c.created["scratchpad"],
+            "version": c.created["scratchpad_version"],
+            "scratchpad": {
+                "name": "MCP Walk Scratchpad, revised",
+                "notes": [{"id": "n1", "title": "A thought that has decided nothing"}],
+                "layout": {"notes": {"n1": [40, 60]}},
+            },
+        },
+    ),
+    WriteCall(
+        "scratchpad_delete",
+        lambda c: {"artifact_id": c.created["scratchpad"]},
     ),
     # ── last, because it rebuilds the index everything above just changed ────────────────────────
     WriteCall("artifact_admin_reindex", mutates=False),

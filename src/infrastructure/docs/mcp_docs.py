@@ -83,7 +83,7 @@ _MARKER_RE = re.compile(
     r"(?P<end><!-- mcp-tools:end (?P=name) -->)",
     re.DOTALL,
 )
-_README_TOOL_RE = re.compile(r"`((?:artifact|assurance)_[a-z0-9_]+)`")
+_README_TOOL_RE = re.compile(r"`((?:artifact|assurance|scratchpad)_[a-z0-9_]+)`")
 
 _ARCH_WRITE_GROUPS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("Entities", ("artifact_create_entity", "artifact_edit_entity", "artifact_delete_entity")),
@@ -96,6 +96,7 @@ _ARCH_WRITE_GROUPS: tuple[tuple[str, tuple[str, ...]], ...] = (
         ("artifact_create_diagram", "artifact_edit_diagram", "artifact_delete_diagram", "artifact_create_matrix"),
     ),
     ("Documents", ("artifact_create_document", "artifact_edit_document", "artifact_delete_document")),
+    ("Scratchpads", ("scratchpad_create", "scratchpad_replace", "scratchpad_delete")),
     ("Bulk", ("artifact_bulk_write", "artifact_bulk_delete")),
     ("Grouping", ("artifact_group",)),
     (

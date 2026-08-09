@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from src.application.scratchpad.ports import ScratchpadSummary
 from src.domain.scratchpad import (
     Area,
     Group,
@@ -187,6 +188,22 @@ def from_document(raw: dict[str, Any], *, artifact_id: str | None = None) -> Scr
         ],
         layout=Layout(areas=rects("areas"), notes=points, groups=rects("groups")),
     )
+
+
+def summary_to_document(summary: ScratchpadSummary) -> dict[str, Any]:
+    """One list row. Both surfaces render the same keys, so they render them from here — the
+    alternative is two copies of a field list, and the one nobody edits is the one that goes stale.
+    """
+    return {
+        "artifact-id": summary.artifact_id,
+        "name": summary.name,
+        "description": summary.description,
+        "status": summary.status,
+        "version": summary.version,
+        "group": summary.group,
+        "meta-ontology": summary.meta_ontology,
+        "note-count": summary.note_count,
+    }
 
 
 def to_response(scratchpad: Scratchpad, *, group: str) -> dict[str, Any]:

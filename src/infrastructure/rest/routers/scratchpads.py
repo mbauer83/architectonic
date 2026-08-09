@@ -17,7 +17,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Query, Response, status
 from pydantic import BaseModel, ConfigDict, Field
 
-from src.application.scratchpad.document import from_document, to_response
+from src.application.scratchpad.document import from_document, summary_to_document, to_response
 from src.application.scratchpad.ports import ScratchpadNotFoundError, ScratchpadVersionConflictError
 from src.application.scratchpad.service import ScratchpadService
 from src.domain.scratchpad import ScratchpadError
@@ -98,21 +98,7 @@ def list_scratchpads(
     status_filter: str | None = Query(default=None, alias="status", description="Restrict to one status"),
 ) -> dict[str, Any]:
     summaries = _service().list_scratchpads(group=group, status=status_filter)
-    return {
-        "scratchpads": [
-            {
-                "artifact-id": summary.artifact_id,
-                "name": summary.name,
-                "description": summary.description,
-                "status": summary.status,
-                "version": summary.version,
-                "group": summary.group,
-                "meta-ontology": summary.meta_ontology,
-                "note-count": summary.note_count,
-            }
-            for summary in summaries
-        ]
-    }
+    return {"scratchpads": [summary_to_document(summary) for summary in summaries]}
 
 
 @router.get(
