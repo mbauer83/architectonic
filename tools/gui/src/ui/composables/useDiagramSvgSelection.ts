@@ -49,6 +49,7 @@ export function useDiagramSvgSelection(options: {
   const svgContainer = ref<HTMLElement | null>(null)
   const svgNodeElems = ref(new Map<string, Element[]>())
   const prevHighlighted = ref<Element[]>([])
+  let hoveredElems: Element[] = []
   const selectedConnectionGroup = ref<SVGGElement | null>(null)
   let interactivityController: AbortController | null = null
   let attachRun = 0
@@ -97,6 +98,19 @@ export function useDiagramSvgSelection(options: {
     for (const el of els) el.classList.add('svg-selected')
     prevHighlighted.value = els
   })
+
+  /**
+   * Hover highlights the whole mapped group, exactly as selection does — not the one element
+   * the pointer happens to be over. An artifact rarely maps to a single element: PlantUML emits
+   * one `<a>` per text run, so a wrapped step label arrives as several anchors, and an activity
+   * step also maps its own shape. A CSS `:hover` can only ever light up the run under the
+   * pointer, which read as the label breaking apart on hover.
+   */
+  const setHovered = (artifactId: string | null) => {
+    for (const el of hoveredElems) el.classList.remove('svg-hovered')
+    hoveredElems = artifactId ? svgNodeElems.value.get(artifactId) ?? [] : []
+    for (const el of hoveredElems) el.classList.add('svg-hovered')
+  }
 
   const clearConnection = () => {
     selectedConnectionGroup.value?.classList.remove('svg-conn-selected')
@@ -227,6 +241,7 @@ export function useDiagramSvgSelection(options: {
     const { signal } = interactivityController
     svgNodeElems.value.clear()
     prevHighlighted.value = []
+    hoveredElems = []
     await nextTick()
     await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
     if (runId !== attachRun || signal.aborted) return
@@ -253,6 +268,8 @@ export function useDiagramSvgSelection(options: {
         if (!(g instanceof SVGElement)) continue
         g.setAttribute('data-entity-id', artifactId)
         g.addEventListener('click', (ev) => { ev.stopPropagation(); ev.preventDefault(); selectEntity(artifactId) }, { signal })
+        g.addEventListener('mouseenter', () => setHovered(artifactId), { signal })
+        g.addEventListener('mouseleave', () => setHovered(null), { signal })
         if (g instanceof SVGGElement) attachNodeSubParts(g, artifactId, signal)
         else if (g instanceof SVGAElement) neutralizeSentinelLink(g)
       }

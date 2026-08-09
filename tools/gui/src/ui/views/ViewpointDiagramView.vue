@@ -345,11 +345,16 @@ onMounted(() => { if (props.adHoc || slug.value) void load() })
 .svg-wrap { display: inline-block; padding: 12px; }
 .svg-wrap :deep(svg) { display: block; max-width: none; }
 .svg-wrap :deep([data-entity-id]) { cursor: pointer; }
-.svg-wrap :deep([data-entity-id]:hover) > :not(title) { opacity: 0.85; }
-.svg-wrap :deep([data-entity-id]:hover) polygon,
-.svg-wrap :deep([data-entity-id]:hover) rect,
-.svg-wrap :deep([data-entity-id]:hover) polyline,
-.svg-wrap :deep([data-entity-id]:hover) ellipse { stroke: #2563eb !important; stroke-width: 2 !important; }
+/* Group-scoped: the viewer sets `.svg-hovered` on every element the artifact maps to, because
+   `:hover` can only reach the one text run under the pointer. See `useDiagramSvgSelection`. */
+.svg-wrap :deep(.svg-hovered) > :not(title) { opacity: 0.85; }
+.svg-wrap :deep(.svg-hovered) polygon,
+.svg-wrap :deep(.svg-hovered) rect,
+.svg-wrap :deep(.svg-hovered) polyline,
+.svg-wrap :deep(.svg-hovered) ellipse { stroke: #2563eb !important; stroke-width: 2 !important; }
+.svg-wrap :deep(a.svg-hovered) text { fill: #2563eb !important; }
+.svg-wrap :deep(rect.svg-hovered),
+.svg-wrap :deep(polygon.svg-hovered) { stroke: #2563eb !important; stroke-width: 2 !important; }
 .svg-wrap :deep(.svg-selected) polygon,
 .svg-wrap :deep(.svg-selected) rect,
 .svg-wrap :deep(.svg-selected) polyline,

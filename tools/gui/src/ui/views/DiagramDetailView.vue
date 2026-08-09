@@ -286,23 +286,26 @@ const executeDelete = () => {
 .err-txt { color: #dc2626; }
 .svg-wrap :deep(svg) { display: block; max-width: none; }
 .svg-wrap :deep([data-entity-id]) { cursor: pointer; }
-.svg-wrap :deep([data-entity-id]:hover) > :not(title) { opacity: 0.85; }
-.svg-wrap :deep([data-entity-id]:hover) polygon,
-.svg-wrap :deep([data-entity-id]:hover) rect,
-.svg-wrap :deep([data-entity-id]:hover) polyline,
-.svg-wrap :deep([data-entity-id]:hover) ellipse { stroke: #2563eb !important; stroke-width: 2 !important; }
+/* `.svg-hovered` is set by the viewer on EVERY element the artifact maps to, not by `:hover`
+   on the one under the pointer: a wrapped label arrives as one <a> per text run, so a CSS
+   hover lit up a single word of a step. See `useDiagramSvgSelection`. */
+.svg-wrap :deep(.svg-hovered) > :not(title) { opacity: 0.85; }
+.svg-wrap :deep(.svg-hovered) polygon,
+.svg-wrap :deep(.svg-hovered) rect,
+.svg-wrap :deep(.svg-hovered) polyline,
+.svg-wrap :deep(.svg-hovered) ellipse { stroke: #2563eb !important; stroke-width: 2 !important; }
 .svg-wrap :deep(.svg-selected) polygon,
 .svg-wrap :deep(.svg-selected) rect,
 .svg-wrap :deep(.svg-selected) polyline,
 .svg-wrap :deep(.svg-selected) ellipse { stroke: #2563eb !important; stroke-width: 2.5 !important; }
 /* Sentinel-link representatives (activity diagrams) wrap only a <text> node, with no
    polygon/rect/polyline/ellipse child for the rules above to match. */
-.svg-wrap :deep(a[data-entity-id]:hover) text { fill: #2563eb !important; }
+.svg-wrap :deep(a.svg-hovered) text { fill: #2563eb !important; }
 .svg-wrap :deep(a.svg-selected) text { fill: #2563eb !important; font-weight: 700; }
 /* Bare-shape representatives (an activity step's own rect/polygon) — the descendant rules
    above can't match the element itself. */
-.svg-wrap :deep(rect[data-entity-id]:hover),
-.svg-wrap :deep(polygon[data-entity-id]:hover) { stroke: #2563eb !important; stroke-width: 2 !important; }
+.svg-wrap :deep(rect.svg-hovered),
+.svg-wrap :deep(polygon.svg-hovered) { stroke: #2563eb !important; stroke-width: 2 !important; }
 .svg-wrap :deep(rect.svg-selected),
 .svg-wrap :deep(polygon.svg-selected) { stroke: #2563eb !important; stroke-width: 2.5 !important; }
 .svg-wrap :deep([data-subpart]) { cursor: pointer; }
