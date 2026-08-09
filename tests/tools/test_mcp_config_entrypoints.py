@@ -185,6 +185,8 @@ def test_architecture_write_mount_annotations_match_expected_intent() -> None:
         # The aggregate is replaced whole, so a document that omits a note deletes it.
         "scratchpad_replace": (False, True, False, False),
         "scratchpad_delete": (False, True, False, False),
+        # Additive: a lift creates, and skips anything already in the model.
+        "scratchpad_lift": (False, False, False, False),
     }
 
     assert set(expected) == set(tools), (

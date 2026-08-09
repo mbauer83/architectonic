@@ -1,6 +1,6 @@
 """Scratchpad MCP tools — the same five capabilities the REST surface serves.
 
-**Five, matching REST exactly**, because parity here is a property of this feature rather than of
+**Six, matching REST exactly**, because parity here is a property of this feature rather than of
 the platform: the scratchpad is the lowest-barrier surface, so a human-only version would make the
 one place newcomers start the one place agents cannot help. Both surfaces are thin adapters over
 `ScratchpadService`, neither reaches past it, and
@@ -18,7 +18,12 @@ from typing import Any
 from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
 
 from src.application.modeling.artifact_write import generate_entity_id
-from src.application.scratchpad.document import from_document, summary_to_document, to_response
+from src.application.scratchpad.document import (
+    from_document,
+    lift_to_document,
+    summary_to_document,
+    to_response,
+)
 from src.application.scratchpad.ports import ScratchpadNotFoundError, ScratchpadVersionConflictError
 from src.application.scratchpad.service import ScratchpadService
 from src.domain.scratchpad import ScratchpadError
@@ -28,6 +33,7 @@ from src.infrastructure.mcp.tool_annotations import (
     LOCAL_WRITE,
     READ_ONLY,
 )
+from src.infrastructure.scratchpad.bulk_write_lift import BulkWriteLiftWriter
 from src.infrastructure.scratchpad.yaml_repository import YamlScratchpadRepository
 
 #: Said once and attached to every tool, because the shape is the whole contract here and an agent
@@ -50,7 +56,9 @@ def _service(repo_root: str | None) -> ScratchpadService:
     roots = resolve_repo_roots(
         repo_scope="engagement", repo_root=repo_root, repo_preset=None, enterprise_root=None
     )
-    return ScratchpadService(YamlScratchpadRepository(roots[0]))
+    return ScratchpadService(
+        YamlScratchpadRepository(roots[0]), _registry(), BulkWriteLiftWriter(roots[0])
+    )
 
 
 def _failure(exc: Exception) -> dict[str, Any]:
@@ -127,6 +135,22 @@ _REPLACE_DESCRIPTION = (
     "is refused with the id at fault named."
 )
 
+_LIFT_DESCRIPTION = (
+    "Lift a selection of notes — and the links among them — into ordinary model content, through "
+    "the same verified write path as any other authoring. Plans unless `dry_run` is false.\n\n"
+    "The answer reports four things per selection: what would be CREATED, what is SKIPPED because "
+    "it already carries a model reference, what is REFUSED and why, and which links reach a note "
+    "OUTSIDE the selection. A refusal blocks the whole lift — the write is one transaction.\n\n"
+    "A lift NEVER writes back to the model. A note already bound or realized is skipped, never "
+    "updated: re-lifting would be bidirectional sync between a sketch and a governed model, and "
+    "would clobber whatever was edited there since. A second lift therefore creates only what is "
+    "new, which is usually the links between notes lifted before.\n\n"
+    "`target` names one model-project slug, created if it does not exist; empty means the root "
+    "model. A target declaring a different meta-ontology is refused rather than coerced. "
+    "`version` is the version you read the scratchpad at — a committed lift records what it "
+    "created on the notes, so it is a write against that version."
+)
+
 _DELETE_DESCRIPTION = (
     "Delete a scratchpad and everything on it. Model content it lifted or bound is NOT touched: "
     "what a scratchpad put into the model is not the scratchpad's to retract."
@@ -178,6 +202,28 @@ def scratchpad_replace(
     return {"ok": True, "scratchpad": to_response(stored, group=target_group, registry=_registry())}
 
 
+def scratchpad_lift(
+    *,
+    artifact_id: str,
+    selection: list[str],
+    version: str,
+    target: str = "",
+    dry_run: bool = True,
+    repo_root: str | None = None,
+) -> dict[str, Any]:
+    try:
+        plan, receipt = _service(repo_root).lift(
+            artifact_id,
+            selection=selection,
+            target_group=target,
+            expected_version=version,
+            dry_run=dry_run,
+        )
+    except (ScratchpadError, ScratchpadNotFoundError, ScratchpadVersionConflictError) as exc:
+        return _failure(exc)
+    return {"ok": True, "lift": lift_to_document(plan, receipt, dry_run=dry_run)}
+
+
 def scratchpad_delete(*, artifact_id: str, repo_root: str | None = None) -> dict[str, Any]:
     try:
         _service(repo_root).delete(artifact_id)
@@ -218,6 +264,19 @@ def register_scratchpad_write_tools(mcp: FastMCP) -> None:
         # omits a note deletes it. MCP reserves `destructiveHint=False` for additive updates, and
         # a host warning about this one is warning about the right thing.
         annotations=DESTRUCTIVE_LOCAL_WRITE,
+        structured_output=True,
+    )
+
+    register_mutation_tool(
+        mcp,
+        scratchpad_lift,
+        name="scratchpad_lift",
+        title="Scratchpad: Lift",
+        description=_LIFT_DESCRIPTION,
+        # Additive by construction: a lift creates, and skips anything that already exists. The
+        # scratchpad's own notes gain a realization reference, which is a record of what happened
+        # rather than a replacement of anything.
+        annotations=LOCAL_WRITE,
         structured_output=True,
     )
 
