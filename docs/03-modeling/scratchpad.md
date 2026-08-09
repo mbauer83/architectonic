@@ -38,9 +38,28 @@ containing the note wins.
   already has. Whatever you choose lands at the point you clicked.
 - **Drag** a note to move it. **Drag its right-hand handle** onto another note to link them.
 - **Enter** commits a title, **Escape** abandons the edit.
+- **Shift-click** a note to add it to the selection, or remove it — which is how a lift's selection
+  is built. **Ctrl-click** does the same on Windows and Linux, **Cmd-click** on macOS, where
+  Ctrl-click is the context-menu gesture and cannot mean two things at once.
 - **Ctrl/Cmd+Z** undoes, **Ctrl/Cmd+Shift+Z** redoes. The history holds whole documents, so every
   kind of edit is reversible — creating, titling, moving, linking, deleting.
 - **Scroll** to zoom about the pointer; drag the background to pan.
+
+### Without a pointer
+
+A canvas is the easiest surface in a product to build mouse-only and the least excusable one to
+leave that way: this is the tier a newcomer is told to start on, so *start here* cannot mean *start
+here if you can drag*. The notes layer is a real multi-select **listbox** — a screen reader announces
+what is selected rather than leaving it to a border — and every gesture has a key:
+
+| Key | On a focused note |
+|---|---|
+| **Tab** | move between notes |
+| **Space** | add to the selection, or take it out |
+| **Enter** / **F2** | put the caret in the title; **Escape** leaves it |
+| **Delete** | delete the note (undoable, like every other edit) |
+| **Menu key** / **Shift+F10** | open the canvas menu, anchored at that note |
+| **Escape** | clear the selection |
 
 Links render **dashed until they are typed**, so the canvas shows at a glance how much of the
 picture has been committed to.
@@ -124,6 +143,52 @@ last-write-wins would discard an afternoon of the other one's work silently.
 
 &nbsp;
 
+## Lifting into the model
+
+**Right-click the canvas → Lift into the model…** turns a selection of notes — and the links among
+them — into ordinary, verified model content, through the same write path as any other authoring.
+Shift-click notes to build a selection; with none selected, the lift offers the whole scratchpad.
+
+Nothing is written until you say so. The dialog shows the **preflight**, and it is the same plan the
+execution runs rather than a client's guess at it:
+
+| Group | What it means |
+|---|---|
+| **Will be created** | Each typed note becomes an entity; each typed, permitted link becomes a connection. |
+| **Refused** | A note with no type, or a link the ontology declares no relation for (**E126**). |
+| **Already in the model** | A bound or realized note, named by the artifact it already is. |
+| **Warnings** | A narrowing (**W128/W129**). The relation exists, so the lift proceeds. |
+| **Links reaching outside the selection** | One end in, one end out. Extend the selection, or accept that the link is not realized. |
+
+**A refusal blocks the whole lift.** The write is one transaction — everything or nothing — and half
+a lift is a state nobody asked for and nobody can name.
+
+### Where it lands
+
+A lift names **one target**: an existing model-project, a **new one created as part of the lift**, or
+the root model for content that belongs to no project. One target per lift rather than per note,
+because a lift is a coherent set by definition; two destinations means two lifts, which is honest
+and rarely needed.
+
+Creating the project here is deliberate — *"this thinking has become a project"* is the normal way a
+project starts, and sending you away to make a group first would interrupt exactly the moment the
+feature exists to serve. A target that declares a **different meta-ontology is refused, not
+coerced**: content cannot land in a project whose vocabulary never declared it.
+
+### A second lift creates only what is new
+
+A lift is one-way and it is not a sync. A note that already carries a model reference is **skipped
+and reported, never updated** — what a scratchpad put into the model is not the scratchpad's to
+rewrite, and re-lifting would silently clobber whatever was edited there since.
+
+What a second lift *does* create is the **links between notes lifted before**, which is the useful
+repeat case: three elements lifted last week, a fourth relation drawn between two of them today.
+
+A committed lift records what each note became, so the canvas can show it and the next lift can skip
+it. Dropping that record is **forget** — the entity stays exactly where it is.
+
+&nbsp;
+
 ## On disk
 
 One YAML document per scratchpad, in the collection it belongs to:
@@ -173,7 +238,7 @@ layout:                       # every coordinate, and nothing else
 
 ## Reaching one from an agent
 
-Every capability is reachable by **MCP and by REST alike** — five of each, over one service. That is
+Every capability is reachable by **MCP and by REST alike** — six of each, over one service. That is
 a deliberate property of this feature rather than of the platform: the scratchpad is the
 lowest-barrier surface, so a human-only version would make the one place newcomers start the one
 place an agent cannot help.
@@ -185,6 +250,7 @@ place an agent cannot help.
 | Create | `scratchpad_create` | `POST /api/scratchpads` |
 | Replace | `scratchpad_replace` | `PUT /api/scratchpads/{artifact_id}` |
 | Delete | `scratchpad_delete` | `DELETE /api/scratchpads/{artifact_id}` |
+| Lift | `scratchpad_lift` | `POST /api/scratchpads/{artifact_id}/lift` |
 
 **A scratchpad is read and written whole.** There is no per-note operation on either surface: the
 aggregate enforces its own invariants, a partial update cannot be validated without loading all of
@@ -203,7 +269,6 @@ The invariants a write is refused for, each naming the id at fault:
 
 ## What is not here yet
 
-The canvas, binding and narrowing are what ship today. Still to come, in order: **lift** into
-entities and connections, preflighted; **documents** as a destination; **groups** becoming authored
-groupings on a generated diagram; and **focus mode** with scratchpad notes in the search index,
-ranked below model content.
+The canvas, binding, narrowing and lift are what ship today. Still to come, in order: **documents**
+as a destination; **groups** becoming authored groupings on a generated diagram; and **focus mode**
+with scratchpad notes in the search index, ranked below model content.
