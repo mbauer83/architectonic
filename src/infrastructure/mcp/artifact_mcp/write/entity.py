@@ -3,7 +3,6 @@
 from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
 
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
-from src.infrastructure.mcp.artifact_mcp.tool_annotations import LOCAL_WRITE, READ_ONLY
 from src.infrastructure.mcp.artifact_mcp.write._common import (
     _out,
     artifact_write_ops,
@@ -12,6 +11,7 @@ from src.infrastructure.mcp.artifact_mcp.write._common import (
     roots_key,
     verifier_for,
 )
+from src.infrastructure.mcp.tool_annotations import LOCAL_WRITE, READ_ONLY
 
 
 def artifact_help() -> dict[str, object]:

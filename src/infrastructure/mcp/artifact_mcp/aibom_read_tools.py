@@ -13,7 +13,7 @@ from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
 
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.mcp.artifact_mcp.context import repo_cached, resolve_repo_roots, roots_key
-from src.infrastructure.mcp.artifact_mcp.tool_annotations import READ_ONLY
+from src.infrastructure.mcp.tool_annotations import READ_ONLY
 
 
 def register_aibom_read_tools(mcp: FastMCP) -> None:

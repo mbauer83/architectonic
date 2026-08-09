@@ -132,9 +132,11 @@ operation means editing the row, and a handler that names an operation id the ma
 declare fails its request rather than only a test.
 
 A rename moves its decorator, its manifest row, its `authorized_write` key, its cache-eligibility
-template and its client/proxy timeout rule **in the same commit**. The migration ledger in
-`route_policy/_pending.py` records what is still served at its old address and what is not served
-yet; both shrink to empty, and nothing may be added to either.
+template and its client/proxy timeout rule **in the same commit**. `route_policy/_retired.py` records
+every address that was retired and the canonical operation that replaced it. It was called
+`_pending.py` while it also carried the two migration ledgers — what was still served at its old
+address, and what was not served yet. Both reached empty and were removed: an allowlist that must
+stay empty is not a fact, it is a conditional in every consumer.
 
 ## Test assertions against live model content
 

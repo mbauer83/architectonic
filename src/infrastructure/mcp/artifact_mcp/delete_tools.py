@@ -20,7 +20,7 @@ from src.infrastructure.mcp.artifact_mcp.edit_tools import (
     _require_registry,
     _resolve,
 )
-from src.infrastructure.mcp.artifact_mcp.tool_annotations import DESTRUCTIVE_LOCAL_WRITE
+from src.infrastructure.mcp.tool_annotations import DESTRUCTIVE_LOCAL_WRITE
 from src.infrastructure.write import artifact_write_ops
 
 

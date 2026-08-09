@@ -4,9 +4,8 @@ from __future__ import annotations
 
 from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
 
-from src.infrastructure.mcp.artifact_mcp.tool_annotations import (
+from src.infrastructure.mcp.tool_annotations import (
     DESTRUCTIVE_LOCAL_WRITE,
-    LOCAL_WRITE,
     READ_ONLY,
 )
 
@@ -49,7 +48,7 @@ def register(mcp: FastMCP) -> None:
             "dry_run=true previews without writing. "
             "Accepts both full (PREFIX@epoch.random.slug) and short (PREFIX@epoch.random) artifact IDs."
         ),
-        annotations=LOCAL_WRITE,
+        annotations=DESTRUCTIVE_LOCAL_WRITE,
         structured_output=True,
     )
 

@@ -25,7 +25,10 @@ from src.application.assurance.fmea_factors import (
 )
 from src.domain.assurance.fmea_factors import FACTOR_SCALES, FMEA_FACTORS
 from src.infrastructure.assurance.write_serialization import run_write
+from src.infrastructure.mcp.assurance_mcp import _refusals
 from src.infrastructure.mcp.assurance_mcp.context import get_assurance_context
+from src.infrastructure.mcp.refusal_details import FieldRejection
+from src.infrastructure.mcp.tool_annotations import LOCAL_WRITE
 
 
 def _scale_help() -> str:
@@ -50,6 +53,7 @@ def register_fmea_write_tools(server: FastMCP) -> None:
             "stops applying and the derived value stands again, with this revision retained. "
             "There is no risk priority number: multiplying ordinals is not a quantity."
         ),
+        annotations=LOCAL_WRITE,
     )
     def assurance_set_fmea_factor(
         node_id: str,
@@ -78,17 +82,14 @@ def _envelope(result: Any, ctx: Any) -> dict[str, object]:
     if isinstance(result, FactorStoreLocked):
         return ctx.locked_response()
     if isinstance(result, FactorNodeNotFound):
-        return {
-            "error": "not_a_failure_mode",
-            "node_id": result.node_id,
-            "message": "no failure mode with this id — a factor rates a failure mode, "
-                       "and rating any other node type would record a judgement about nothing",
-        }
+        return _refusals.not_a_failure_mode(result.node_id)
     if isinstance(result, FactorInvalid):
-        return {
-            "error": "invalid_factor_assessment",
-            "errors": [{"field": e.field, "message": e.message} for e in result.errors],
-        }
+        # `invalid_factor_assessment` was a word only this surface knew. These are field
+        # rejections, which the shared vocabulary already names.
+        return _refusals.rejected_fields(
+            [FieldRejection(field=e.field, message=e.message) for e in result.errors],
+            path="factor",
+        )
     assert isinstance(result, FactorRecorded)
     return {
         "node_id": result.node_id,

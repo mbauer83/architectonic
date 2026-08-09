@@ -18,10 +18,11 @@ and is kept because it is what an MCP client has to locate the offending input w
 
 from __future__ import annotations
 
-from typing import TypedDict
+from typing import NotRequired, TypedDict
 
 from src.application.viewpoints.parameter_binding import ViewpointParameterError
 from src.domain.viewpoints.viewpoint_binding_evaluation import BindingCardinalityError
+from src.infrastructure.mcp.refusal_details import RefusalDetails
 from src.infrastructure.rest.contracts.errors import ErrorCode
 
 
@@ -31,15 +32,38 @@ class InBandError(TypedDict):
     Constructed as a ``TypedDict`` and returned inside a ``dict[str, object]`` — the tools' own
     return type, which is invariant. The declaration still does its work where it matters: the code
     and the two strings are checked at the point each constructor builds one.
+
+    ``details`` is absent unless the code declares one, mirroring REST's ``ERROR_DETAIL_TYPES``,
+    where a code with nothing structured to add carries ``None`` rather than an empty object.
     """
 
     code: ErrorCode
     path: str
     message: str
+    details: NotRequired[RefusalDetails]
+
+
+def failure(
+    code: ErrorCode,
+    path: str,
+    message: str,
+    details: RefusalDetails | None = None,
+) -> dict[str, object]:
+    """Build the one answer shape every MCP refusal uses.
+
+    Public because the assurance refusals are constructed in their own module — the vocabulary is
+    shared, the list of refusals is not, and putting all of both here would make one file carry two
+    surfaces' worth of reasons. Every refusal on every mount funnels through this function, which is
+    what lets ``test_mcp_error_vocabulary`` check the shape once rather than per call site.
+    """
+    error = InBandError(code=code, path=path, message=message)
+    if details is not None:
+        error["details"] = details
+    return {"error": error}
 
 
 def _error(code: ErrorCode, path: str, message: str) -> dict[str, object]:
-    return {"error": InBandError(code=code, path=path, message=message)}
+    return failure(code, path, message)
 
 
 def rejected_parameter(exc: ViewpointParameterError) -> dict[str, object]:

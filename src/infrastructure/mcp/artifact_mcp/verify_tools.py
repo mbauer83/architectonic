@@ -10,7 +10,7 @@ from src.application.verification.evaluation import PassCancellation
 from src.config.repo_paths import DIAGRAM_CATALOG, DIAGRAMS, DOCS
 from src.infrastructure.mcp.artifact_mcp.context import RepoScope, resolve_repo_roots, roots_key, verifier_for
 from src.infrastructure.mcp.artifact_mcp.formatting import as_issue_dict, as_verification_result_dict
-from src.infrastructure.mcp.artifact_mcp.tool_annotations import READ_ONLY
+from src.infrastructure.mcp.tool_annotations import READ_ONLY
 from src.infrastructure.verification.pass_runner import (
     VerificationAlreadyRunning,
     run_verification_pass,

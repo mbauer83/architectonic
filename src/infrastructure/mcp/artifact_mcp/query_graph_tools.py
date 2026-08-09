@@ -22,7 +22,7 @@ from src.infrastructure.mcp.artifact_mcp.context import (
     resolve_repo_roots,
     roots_key,
 )
-from src.infrastructure.mcp.artifact_mcp.tool_annotations import READ_ONLY
+from src.infrastructure.mcp.tool_annotations import READ_ONLY
 
 
 def _allowed_bindings_for(diagram_type: str | None):  # type: ignore[return]

@@ -23,7 +23,7 @@ from src.application.security_signals.command import (
     IngestValidationError,
 )
 from src.infrastructure.assurance.signal_ingest import ingest_outcome_payload
-from src.infrastructure.mcp.assurance_mcp import security_write_tools
+from src.infrastructure.mcp.assurance_mcp import _refusals, security_write_tools
 from src.infrastructure.mcp.assurance_mcp.security_write_tools import (
     register_security_write_tools,
 )
@@ -85,7 +85,9 @@ class _StubContext:
         return True
 
     def locked_response(self) -> dict[str, object]:
-        return {"error": "assurance_store_locked"}
+        # The real one, rather than a flat stand-in: a stub that models a shape production no
+        # longer answers lets the assertion below pass against something nothing returns.
+        return _refusals.store_locked()
 
 
 def _ingest_tool(ctx: _StubContext, monkeypatch: pytest.MonkeyPatch):  # type: ignore[no-untyped-def]
@@ -170,7 +172,7 @@ class TestCapabilityGate:
         )
         ingest = _ingest_tool(_StubContext(snapshot_store), monkeypatch)
 
-        assert ingest("APP@1", _BOM) == {"error": "assurance_store_locked"}
+        assert ingest("APP@1", _BOM) == _refusals.store_locked()
         assert snapshot_store.get_active_snapshot("APP@1") is None  # type: ignore[attr-defined]
 
     def test_non_transactional_configuration_is_a_typed_denial(
@@ -185,8 +187,12 @@ class TestCapabilityGate:
 
         result = ingest("APP@1", _BOM)
 
-        assert result["error"] == "signal_mutation_denied"
-        assert result["reason_code"] == "archive_has_no_atomic_boundary"
+        error = result["error"]
+        assert isinstance(error, dict)
+        assert error["code"] == "signal_mutation_denied"
+        # The reason code is what a caller branches on to tell "fix the configuration" from
+        # "unlock the store", so it stays machine-readable under details rather than only in prose.
+        assert error["details"] == {"reason_code": "archive_has_no_atomic_boundary"}
         assert snapshot_store.get_active_snapshot("APP@1") is None  # type: ignore[attr-defined]
 
 

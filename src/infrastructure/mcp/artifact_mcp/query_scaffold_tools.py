@@ -8,7 +8,7 @@ from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
 
 from src.infrastructure.mcp.artifact_mcp._diagram_scaffold import build_diagram_scaffold
 from src.infrastructure.mcp.artifact_mcp.context import RepoScope
-from src.infrastructure.mcp.artifact_mcp.tool_annotations import READ_ONLY
+from src.infrastructure.mcp.tool_annotations import READ_ONLY
 
 
 def artifact_diagram_scaffold(

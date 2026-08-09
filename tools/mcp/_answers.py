@@ -68,12 +68,17 @@ def refusal(payload: object) -> str | None:
     Absence of any of them is not a refusal. Several tools on these mounts are reads in write clothing
     (`artifact_help`, `artifact_get_operation`) and answer none.
 
-    **Three shapes, because the two mounts refuse differently.** The artifact tools report ``wrote``, the
-    viewpoint and sync tools report ``ok``, and the *assurance* tools report neither: a locked store, an
-    absent node or a rejected field comes back as a bare ``{"error": …, "message": …}``. Walking the
-    assurance mount with only the first two recognised meant its refusals read as coverage — which is
-    the exact failure this function is named after, and it was introduced by the commit that started
-    walking that mount. Found by the REST walk answering 409 for a write the MCP walk had reported green.
+    **Two flags and one error shape.** ``wrote`` and ``ok`` are *flags inside a success*: the call
+    returned an answer and the answer says the write did not happen. They stay separate because they
+    are not errors — the artifact tools report ``wrote``, the viewpoint and sync tools report ``ok``.
+
+    The third branch is an error answer, and there is now one shape of it across all four mounts:
+    ``{"error": {"code", "path", "message"}}``, built by ``mcp.execution_failure``. The assurance
+    tools used to answer flat instead — a bare ``{"error": "not_found", "node_id": …}`` — so this
+    function had to recognise a third shape, and for a while did not, which meant its refusals were
+    counted as coverage. That is the exact failure this function is named after. It was found by the
+    REST walk answering 409 for a write the MCP walk had reported green, and the shapes were
+    unified so no walk has to know which mount it is talking to.
     """
     if not isinstance(payload, Mapping):
         return None
@@ -84,6 +89,9 @@ def refusal(payload: object) -> str | None:
     if payload.get("ok") is False:
         return f"ok: false — {payload.get('error') or payload}"
     error = payload.get("error")
-    if isinstance(error, str) and error:
-        return f"error: {error} — {payload.get('message') or payload}"
+    if isinstance(error, Mapping) and error.get("code"):
+        return f"error: {error['code']} — {error.get('message') or payload}"
+    # A bare string under `error` is not an MCP refusal any more. The artifact bulk tools still put
+    # one on each *item* of a batch result, and those are read through the enclosing answer, so
+    # nothing here should treat one as the call's own refusal.
     return None

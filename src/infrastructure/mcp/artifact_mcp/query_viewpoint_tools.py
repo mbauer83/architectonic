@@ -44,7 +44,7 @@ from src.infrastructure.mcp.artifact_mcp.context import (
     resolve_repo_roots,
     roots_key,
 )
-from src.infrastructure.mcp.artifact_mcp.tool_annotations import READ_ONLY
+from src.infrastructure.mcp.tool_annotations import READ_ONLY
 from src.infrastructure.viewpoint_declarations import load_effective_viewpoint_catalog
 from src.infrastructure.write.artifact_write.viewpoint_type_guidance import summarize_scope
 

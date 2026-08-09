@@ -4,7 +4,6 @@ from typing import Literal
 
 from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
 
-from src.infrastructure.mcp.artifact_mcp.tool_annotations import LOCAL_WRITE
 from src.infrastructure.mcp.artifact_mcp.write._common import (
     DiagramConnectionInferenceMode,
     _out,
@@ -16,6 +15,7 @@ from src.infrastructure.mcp.artifact_mcp.write._common import (
     roots_key,
     verifier_for,
 )
+from src.infrastructure.mcp.tool_annotations import DESTRUCTIVE_LOCAL_WRITE, LOCAL_WRITE
 
 
 def artifact_create_matrix(
@@ -183,7 +183,7 @@ def register(mcp: FastMCP) -> None:
             "table, use artifact_edit_diagram instead. "
             "artifact_id: full (PREFIX@epoch.random.slug) or short (PREFIX@epoch.random) form."
         ),
-        annotations=LOCAL_WRITE,
+        annotations=DESTRUCTIVE_LOCAL_WRITE,
         structured_output=True,
     )
 

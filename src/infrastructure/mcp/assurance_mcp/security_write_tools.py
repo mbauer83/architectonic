@@ -19,7 +19,12 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
 
+from src.infrastructure.mcp.assurance_mcp import _refusals
 from src.infrastructure.mcp.assurance_mcp.context import get_assurance_context
+from src.infrastructure.mcp.tool_annotations import (
+    DESTRUCTIVE_LOCAL_WRITE,
+    READ_ONLY,
+)
 
 
 def register_security_write_tools(server: FastMCP) -> None:
@@ -42,6 +47,7 @@ def register_security_write_tools(server: FastMCP) -> None:
             "a typed conflict. Omit it and one is generated (every call then ingests anew). "
             "Requires the assurance store unlocked with co-located signals."
         ),
+        annotations=DESTRUCTIVE_LOCAL_WRITE,
     )
     def assurance_ingest_security_signals(
         anchor_entity_id: str,
@@ -63,11 +69,7 @@ def register_security_write_tools(server: FastMCP) -> None:
         if isinstance(capability, SignalMutationDenied):
             if capability.reason_code == "store_locked":
                 return ctx.locked_response()
-            return {
-                "error": "signal_mutation_denied",
-                "reason_code": capability.reason_code,
-                "message": capability.message,
-            }
+            return _refusals.signal_mutation_denied(capability.reason_code, capability.message)
         snapshot_store = ctx.snapshot_store
         if snapshot_store is None:  # unreachable once the capability allowed the write
             return ctx.locked_response()
@@ -93,6 +95,7 @@ def register_security_write_tools(server: FastMCP) -> None:
             "and outlive any single scan. This is irreversible and audited. "
             "Requires the assurance store unlocked with co-located signals."
         ),
+        annotations=DESTRUCTIVE_LOCAL_WRITE,
     )
     def assurance_delete_security_snapshot(
         snapshot_id: str = "",
@@ -108,19 +111,14 @@ def register_security_write_tools(server: FastMCP) -> None:
         )
 
         if bool(snapshot_id) == bool(anchor_entity_id):
-            return {
-                "error": "invalid_request",
-                "message": "Pass exactly one of snapshot_id or anchor_entity_id.",
-            }
+            return _refusals.rejected_field(
+                "snapshot_id", "Pass exactly one of snapshot_id or anchor_entity_id."
+            )
         capability = current_signal_mutation_capability(unlocked=ctx.is_available())
         if isinstance(capability, SignalMutationDenied):
             if capability.reason_code == "store_locked":
                 return ctx.locked_response()
-            return {
-                "error": "signal_mutation_denied",
-                "reason_code": capability.reason_code,
-                "message": capability.message,
-            }
+            return _refusals.signal_mutation_denied(capability.reason_code, capability.message)
         snapshot_store = ctx.snapshot_store
         if snapshot_store is None:  # unreachable once the capability allowed the write
             return ctx.locked_response()
@@ -139,6 +137,7 @@ def register_security_write_tools(server: FastMCP) -> None:
             "discovered_components: list of component dicts from an external AI discovery tool. "
             "Each component needs at least 'name'; 'purl' is used as the identity key if present."
         ),
+        annotations=READ_ONLY,
     )
     def assurance_reconcile_aibom(
         modeled_components: list[dict[str, object]],

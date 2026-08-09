@@ -14,6 +14,7 @@ from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
 from src.application.assurance.exposure import AssuranceExposurePolicy
 from src.application.assurance.queries import coverage_gaps, risk_register
 from src.infrastructure.mcp.assurance_mcp.context import get_assurance_context
+from src.infrastructure.mcp.tool_annotations import READ_ONLY
 
 
 def register_dashboard_tools(server: FastMCP) -> None:
@@ -26,6 +27,7 @@ def register_dashboard_tools(server: FastMCP) -> None:
             "linked hazards/loss-scenarios (via assesses), and treating constraints (via treated-by). "
             "Useful for the GRC risk register view (US8)."
         ),
+        annotations=READ_ONLY,
     )
     def assurance_risk_register() -> dict[str, object]:
         if not ctx.is_available():
@@ -45,6 +47,7 @@ def register_dashboard_tools(server: FastMCP) -> None:
             "unbound-pending CSNs, and orphan corrective-actions. "
             "Use this dashboard to identify where analysis is incomplete."
         ),
+        annotations=READ_ONLY,
     )
     def assurance_coverage() -> dict[str, object]:
         if not ctx.is_available():
@@ -64,6 +67,7 @@ def register_dashboard_tools(server: FastMCP) -> None:
             "strategies (constraint-derivation argument per hazard), solutions (evidence artifacts), "
             "and gaps (constraints without evidence, hazards without constraints)."
         ),
+        annotations=READ_ONLY,
     )
     def assurance_draft_gsn(analysis_id: str | None = None) -> dict[str, object]:
         if not ctx.is_available():
@@ -81,6 +85,7 @@ def register_dashboard_tools(server: FastMCP) -> None:
             "every loss has ≥1 hazard via leads-to. "
             "Returns structured result with passed/checks/summary, same pattern as assurance_stpa_complete."
         ),
+        annotations=READ_ONLY,
     )
     def assurance_case_completeness(analysis_id: str | None = None) -> dict[str, object]:
         if not ctx.is_available():

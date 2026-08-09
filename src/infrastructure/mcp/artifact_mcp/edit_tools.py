@@ -17,8 +17,8 @@ from src.infrastructure.mcp.artifact_mcp.context import (
     roots_key,
     verifier_for,
 )
-from src.infrastructure.mcp.artifact_mcp.tool_annotations import DESTRUCTIVE_LOCAL_WRITE, LOCAL_WRITE
 from src.infrastructure.mcp.artifact_mcp.write._common import _out
+from src.infrastructure.mcp.tool_annotations import DESTRUCTIVE_LOCAL_WRITE
 from src.infrastructure.write import artifact_write_ops
 
 PUML_AUTO_SYNC: Final[Literal["auto-sync"]] = "auto-sync"
@@ -304,7 +304,7 @@ def register_edit_tools(mcp: FastMCP) -> None:
         name="artifact_edit_entity",
         title="Artifact Write: Edit Entity",
         description=descriptions.EDIT_ENTITY_DESCRIPTION,
-        annotations=LOCAL_WRITE,
+        annotations=DESTRUCTIVE_LOCAL_WRITE,
         structured_output=True,
     )
 
@@ -324,7 +324,7 @@ def register_edit_tools(mcp: FastMCP) -> None:
         name="artifact_edit_diagram",
         title="Artifact Write: Edit Diagram",
         description=descriptions.EDIT_DIAGRAM_DESCRIPTION,
-        annotations=LOCAL_WRITE,
+        annotations=DESTRUCTIVE_LOCAL_WRITE,
         structured_output=True,
     )
 
@@ -334,7 +334,7 @@ def register_edit_tools(mcp: FastMCP) -> None:
         name="artifact_edit_connection_associations",
         title="Artifact Write: Edit Connection Associations",
         description=descriptions.EDIT_CONNECTION_ASSOCIATIONS_DESCRIPTION,
-        annotations=LOCAL_WRITE,
+        annotations=DESTRUCTIVE_LOCAL_WRITE,
         structured_output=True,
     )
 

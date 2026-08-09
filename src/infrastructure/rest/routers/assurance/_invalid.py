@@ -11,40 +11,39 @@ that, and only the first is about shape:
   authored nodes is ``409 analysis_not_empty`` (it is a state conflict, not a malformed request), and
   a missing group is ``404``. A 400 for either tells the caller to fix a request that was correct.
 
-So the translation lives here, once, as a table — and ``tests/assurance/test_analysis_invalid_mapping.py``
-extracts every code the use cases can construct and fails if one is missing from it. A sixth code
-added to an application module cannot quietly inherit a generic 400.
+So the translation lives in ``rest.contracts.assurance_invalid_codes``, once, as a table — and
+``tests/assurance/test_analysis_invalid_mapping.py`` extracts every code the use cases can construct
+and fails if one is missing from it. A sixth code added to an application module cannot quietly
+inherit a generic 400.
+
+The table moved out of this module when the MCP surface adopted the shared refusal vocabulary and
+needed the same answer: the string→code translation is not an HTTP fact, and a copy of it over there
+would have been a second vocabulary. This module keeps what *is* an HTTP fact — turning the mapped
+code and status into an ``ApiError``.
 """
 
 from __future__ import annotations
 
 from src.application.assurance.analysis import AnalysisInvalid
 from src.application.assurance.model_bind import BindInvalid
+from src.infrastructure.rest.contracts.assurance_invalid_codes import (
+    BIND_INVALID_MAPPING as _BIND_MAPPING,
+)
+from src.infrastructure.rest.contracts.assurance_invalid_codes import (
+    BIND_REJECTED_FIELD as _BIND_FIELD,
+)
+from src.infrastructure.rest.contracts.assurance_invalid_codes import (
+    INVALID_MAPPING as _MAPPING,
+)
+from src.infrastructure.rest.contracts.assurance_invalid_codes import (
+    REJECTED_FIELD as _REJECTED_FIELD,
+)
 from src.infrastructure.rest.contracts.errors import (
     AnalysisNotEmptyDetails,
     ApiError,
-    ErrorCode,
     FieldError,
     ValidationErrorDetails,
 )
-
-#: Which field each rejected-value code is about, so the envelope can carry a path a client
-#: highlights rather than prose it has to parse.
-_REJECTED_FIELD: dict[str, str] = {
-    "missing_name": "name",
-    "invalid_method": "method",
-    "invalid_status": "status",
-}
-
-#: The status and code each application-level invalid maps to. Exhaustive over what the use cases
-#: construct; the accompanying test is what keeps it that way.
-_MAPPING: dict[str, tuple[int, ErrorCode]] = {
-    "missing_name": (422, "validation_error"),
-    "invalid_method": (422, "validation_error"),
-    "invalid_status": (422, "validation_error"),
-    "group_not_found": (404, "not_found"),
-    "analysis_not_empty": (409, "analysis_not_empty"),
-}
 
 
 def invalid_as_api_error(result: AnalysisInvalid) -> ApiError:
@@ -81,18 +80,6 @@ def invalid_as_api_error(result: AnalysisInvalid) -> ApiError:
             ),
         )
     return ApiError(status_code, code, result.message)
-
-
-#: The bind use case's own invalids. Neither needs a new vocabulary member: one is a state conflict and
-#: the other a rejected value, which the closed union already names.
-_BIND_MAPPING: dict[str, tuple[int, ErrorCode]] = {
-    # The node is not in the state this operation applies to — nothing the caller sent is wrong.
-    "invalid_binding_status": (409, "conflict"),
-    # A type name the ontology does not know: a rejected value, so it carries its field.
-    "unknown_arch_type": (422, "validation_error"),
-}
-
-_BIND_FIELD: dict[str, str] = {"unknown_arch_type": "suggested_arch_type"}
 
 
 def bind_invalid_as_api_error(result: BindInvalid) -> ApiError:
