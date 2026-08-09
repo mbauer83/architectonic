@@ -32,9 +32,9 @@ from src.application.verification.artifact_verifier_types import Issue, Severity
 from src.domain.modules.catalogs import ConnectionSemantics, OntologyCatalog
 from src.domain.ontology_representation.specialization_values import applied_specialization_slugs
 from src.domain.ontology_representation.specializations import (
-    EndpointRestriction,
-    RelationshipRestriction,
     SpecializationCatalog,
+    endpoint_restriction_allows,
+    relationship_restriction_allows,
 )
 from src.domain.relationships.relationship_mediation import PassThroughMediation
 from src.domain.repository.connection_declaration import ConnectionDeclaration
@@ -104,12 +104,6 @@ def _is_structure(ontology_catalog: OntologyCatalog, source_type: str) -> bool:
     return any(source_type in ontology_catalog.entity_types_with_class(cls) for cls in _STRUCTURE_CLASSES)
 
 
-def _endpoint_pair_allowed(restriction: EndpointRestriction, source_type: str, target_type: str) -> bool:
-    src_ok = not restriction.source_types or source_type in restriction.source_types
-    tgt_ok = not restriction.target_types or target_type in restriction.target_types
-    return src_ok and tgt_ok
-
-
 def _check_connection_endpoint_restriction(
     catalog: SpecializationCatalog,
     *,
@@ -123,7 +117,7 @@ def _check_connection_endpoint_restriction(
     info = catalog.get("connection", conn_type, slug)
     if info is None or not info.restrict_endpoints:
         return
-    if not any(_endpoint_pair_allowed(r, source_type, target_type) for r in info.restrict_endpoints):
+    if not any(endpoint_restriction_allows(r, source_type, target_type) for r in info.restrict_endpoints):
         result.issues.append(
             Issue(
                 Severity.WARNING,
@@ -133,16 +127,6 @@ def _check_connection_endpoint_restriction(
                 loc,
             )
         )
-
-
-def _relationship_triple_allowed(
-    restriction: RelationshipRestriction, conn_type: str, source_type: str, target_type: str
-) -> bool:
-    if restriction.connection_type != conn_type:
-        return False
-    src_ok = restriction.source_type is None or restriction.source_type == source_type
-    tgt_ok = restriction.target_type is None or restriction.target_type == target_type
-    return src_ok and tgt_ok
 
 
 def _check_entity_relationship_restriction(
@@ -162,7 +146,7 @@ def _check_entity_relationship_restriction(
     if info is None or not info.restrict_relationships:
         return
     allowed = any(
-        _relationship_triple_allowed(r, conn_type, source_type, target_type) for r in info.restrict_relationships
+        relationship_restriction_allows(r, conn_type, source_type, target_type) for r in info.restrict_relationships
     )
     if not allowed:
         result.issues.append(

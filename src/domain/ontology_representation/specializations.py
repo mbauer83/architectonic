@@ -64,6 +64,46 @@ class SpecializationInfo:
         return (self.module_alias, self.concept_kind, self.parent_type, self.slug)
 
 
+def relationship_restriction_allows(
+    restriction: RelationshipRestriction, conn_type: str, source_type: str, target_type: str
+) -> bool:
+    """Whether one declared allow-list entry admits this triple. `None` means "any"."""
+    if restriction.connection_type != conn_type:
+        return False
+    src_ok = restriction.source_type is None or restriction.source_type == source_type
+    tgt_ok = restriction.target_type is None or restriction.target_type == target_type
+    return src_ok and tgt_ok
+
+
+def endpoint_restriction_allows(
+    restriction: EndpointRestriction, source_type: str, target_type: str
+) -> bool:
+    """Whether one declared endpoint pair admits this one. An empty set means "any"."""
+    src_ok = not restriction.source_types or source_type in restriction.source_types
+    tgt_ok = not restriction.target_types or target_type in restriction.target_types
+    return src_ok and tgt_ok
+
+
+def specialization_narrows(
+    info: SpecializationInfo, *, conn_type: str, source_type: str, target_type: str
+) -> bool:
+    """Whether *info* restricts this triple out of existence.
+
+    A specialization may only *narrow* what its parent permits, so this is the W128/W129 tier: the
+    relation exists and this specialization says it does not apply here. Declaring no restriction
+    at all narrows nothing — an allow-list is only a restriction once it has an entry.
+    """
+    if info.restrict_relationships and not any(
+        relationship_restriction_allows(entry, conn_type, source_type, target_type)
+        for entry in info.restrict_relationships
+    ):
+        return True
+    return bool(info.restrict_endpoints) and not any(
+        endpoint_restriction_allows(entry, source_type, target_type)
+        for entry in info.restrict_endpoints
+    )
+
+
 @dataclass(frozen=True)
 class SpecializationCatalog:
     """Immutable lookup for entity and connection specializations."""
