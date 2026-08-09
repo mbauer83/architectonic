@@ -29,6 +29,9 @@ export const NoteSchema = Schema.Struct({
   title: Schema.String,
   body: Schema.String,
   destination: DestinationSchema,
+  /** The first classification level. Chosen before a type, and derived from the type once one is —
+   * which is what the canvas colours a note by, at either level. */
+  domain: Schema.optional(Schema.String),
   'element-type': Schema.optional(Schema.String),
   specialization: Schema.optional(Schema.String),
   'document-type': Schema.optional(Schema.String),
@@ -74,6 +77,10 @@ export type Link = typeof LinkSchema.Type
 export const AreaSchema = Schema.Struct({
   id: Schema.String,
   label: Schema.String,
+  /** What the frame declares it holds. `permitted-element-types` is *derived* from these by the
+   * server against the current ontology, which is why a frame names a domain rather than a list of
+   * types: the declaration keeps meaning the same thing when the ontology gains one. */
+  'permitted-domains': Schema.optional(Schema.Array(Schema.String)),
   'permitted-element-types': Schema.optional(Schema.Array(Schema.String)),
   'permitted-document-types': Schema.optional(Schema.Array(Schema.String)),
 })
@@ -131,7 +138,7 @@ export type ScratchpadList = typeof ScratchpadListSchema.Type
 
 /** One selected note or link, and what a lift would do with it. */
 export const LiftItemSchema = Schema.Struct({
-  kind: Schema.Literal('element', 'connection'),
+  kind: Schema.Literal('element', 'document', 'connection', 'reference'),
   id: Schema.String,
   outcome: Schema.Literal('create', 'skip', 'refuse'),
   label: Schema.String,
@@ -142,6 +149,8 @@ export const LiftItemSchema = Schema.Struct({
   reason: Schema.String,
   /** A narrowing (W128/W129): reported and passed, because the relation exists. */
   warning: Schema.String,
+  /** The project this lands in — the target of the frame the note sits in. */
+  target: Schema.String,
 })
 export type LiftItem = typeof LiftItemSchema.Type
 
@@ -164,7 +173,9 @@ export const LiftTargetSchema = Schema.Struct({
 })
 
 export const ScratchpadLiftSchema = Schema.Struct({
-  target: LiftTargetSchema,
+  /** One per frame that has something in it: the frames are work archetypes, so a canvas routinely
+   * holds work for more than one project. */
+  targets: Schema.optional(Schema.Array(LiftTargetSchema)),
   items: Schema.optional(Schema.Array(LiftItemSchema)),
   'outside-selection': Schema.optional(Schema.Array(OutsideSelectionSchema)),
   refusal: Schema.String,

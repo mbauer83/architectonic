@@ -11,7 +11,7 @@ import type {
 import type { StyleValue } from '../../domain/schemas/viewpoints'
 import { resolveStyleColor, styleTokenString, tokenShape, tokenIconLetter, tokenEdgeEmphasis } from '../lib/viewpointStyleTokens'
 import { archimateGlyphMarkup } from '../lib/glyphKey'
-import type { EdgeEndMarker, EdgeVisual, NodeVisual } from '../components/GraphCanvas.helpers'
+import type { EdgeVisual, NodeVisual } from '../components/GraphCanvas.helpers'
 import { presentationFromMapping } from '../../domain/viewpointPresentationSerialization'
 import { type ExecutionRoute, executionRouteFor } from './ViewpointsManagementView.helpers'
 import { DOMAIN_NAMES } from '../../domain/types.generated'
@@ -185,26 +185,12 @@ export const distanceLegend = (depths: readonly number[]): readonly DistanceLege
   }))
 }
 
-/**
- * How one relationship type is drawn, as served by `/api/relation-notations`.
- *
- * Mirrors the ontology's own `notation:` declaration — the shapes are structural, so this type
- * names no relationship and the generic canvas can consume it unchanged. The architecture
- * surface owns the *lookup* (connection type → notation); the canvas owns the drawing.
- */
-export interface RelationNotation {
-  line: 'solid' | 'dashed' | 'dotted'
-  source: EdgeEndMarker
-  target: EdgeEndMarker
-}
+// The notation lookup moved to `ui/lib/relationNotations` once the scratchpad canvas became its
+// second consumer. Re-exported so this view's own imports read as they did.
+import type { RelationNotation } from '../lib/relationNotations'
 
-/** Fetch every relationship type's notation. One request per surface, not per edge. */
-export const fetchRelationNotations = async (): Promise<ReadonlyMap<string, RelationNotation>> => {
-  const response = await fetch('/api/relation-notations')
-  if (!response.ok) return new Map()
-  const body = await response.json() as { notations?: Record<string, RelationNotation> }
-  return new Map(Object.entries(body.notations ?? {}))
-}
+export type { RelationNotation } from '../lib/relationNotations'
+export { fetchRelationNotations } from '../lib/relationNotations'
 
 /** Provenance dash patterns: derived edges are visually distinct from modeled ones by
  * construction, and certain vs potential derivations differ in dash density. The edge

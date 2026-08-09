@@ -16,6 +16,7 @@ import { useMutation } from '../composables/useMutation'
 import { useQuery } from '../composables/useQuery'
 import { useDebouncedScratchpadSave } from '../composables/useDebouncedScratchpadSave'
 import { useScratchpadLift } from '../composables/useScratchpadLift'
+import { fetchRelationNotations, type RelationNotation } from '../lib/relationNotations'
 import ScratchpadCanvasMenu from '../components/ScratchpadCanvasMenu.vue'
 import ScratchpadLiftDialog from '../components/ScratchpadLiftDialog.vue'
 import ScratchpadNotePanel from '../components/ScratchpadNotePanel.vue'
@@ -24,6 +25,9 @@ import {
   areaAtPoint,
   toReplacePayload,
   withBinding,
+  withBody,
+  withDocumentType,
+  withDomain,
   withLink,
   withLinkType,
   withNote,
@@ -51,6 +55,12 @@ const saveMutation = useMutation<Scratchpad, RepoError>()
 /** One selection, not two. The note panel edits it when exactly one note is in it, which is what
  * a person means by "the selected note"; a lift acts on all of it. */
 const selected = ref<string[]>([])
+/** A link may be selected instead, so it can be refined without going through a note. */
+const selectedLinkId = ref<string | null>(null)
+
+/** One request per canvas, not one per link: how the ontology says each relation is drawn. */
+const notations = ref<ReadonlyMap<string, RelationNotation>>(new Map())
+void fetchRelationNotations().then((found) => { notations.value = found })
 
 /** Ids are minted client-side and are scratchpad-local, which is exactly why they can be: a note id
  * means nothing outside its scratchpad, so no global namespace has to accept it and no round trip
@@ -179,8 +189,13 @@ const selectedNote = computed(() =>
     : null,
 )
 
+const selectedLink = computed(() =>
+  (document.current.value?.links ?? []).find((link) => link.id === selectedLinkId.value) ?? null,
+)
+
 const onSelect = ({ id, additive }: { id: string | null; additive: boolean }): void => {
   menu.value = null
+  selectedLinkId.value = null
   if (id === null) { selected.value = [] ; return }
   if (!additive) { selected.value = [id] ; return }
   selected.value = selected.value.includes(id)
@@ -280,20 +295,28 @@ const status = computed(() => {
         v-if="document.current.value"
         :scratchpad="document.current.value"
         :selected-ids="selected"
+        :selected-link-id="selectedLinkId"
+        :notations="notations"
         @create-note="onCreateNote"
         @move-note="onMoveNote"
         @rename-note="onRenameNote"
         @delete-note="onDeleteNote"
         @link-notes="onLinkNotes"
         @select="onSelect"
+        @select-link="selectedLinkId = $event.id; selected = []"
         @edit-title="editTitle"
         @menu-request="onMenuRequest"
         @unbind-note="onUnbindNote"
       />
       <ScratchpadNotePanel
         :note="selectedNote"
+        :selected-link="selectedLink"
+        :notes="document.current.value?.notes ?? []"
         :links="document.current.value?.links ?? []"
         @type-note="refine((c) => withType(c, $event.id, $event.elementType))"
+        @domain-note="refine((c) => withDomain(c, $event.id, $event.domain))"
+        @body-note="refine((c) => withBody(c, $event.id, $event.body))"
+        @document-note="refine((c) => withDocumentType(c, $event.id, $event.documentType))"
         @untype-note="refine((c) => withoutBinding(withoutType(c, $event.id), $event.id))"
         @forget-note="refine((c) => withoutRealization(c, $event.id))"
         @reverse-link="refine((c) => withReversedLink(c, $event.id))"
@@ -313,11 +336,12 @@ const status = computed(() => {
         :open="lift.open.value"
         :plan="lift.plan.value"
         :projects="lift.projects.value"
-        :target="lift.target.value"
+        :frames="lift.frames.value"
+        :targets="lift.targets.value"
         :busy="lift.busy.value"
         :error="lift.error.value"
         :selection-size="lift.selectionSize.value"
-        @update:target="lift.target.value = $event"
+        @set-target="lift.setTarget($event.frame, $event.slug)"
         @lift="lift.lift()"
         @close="lift.close()"
       />

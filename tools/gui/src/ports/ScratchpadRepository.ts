@@ -32,6 +32,13 @@ export interface ScratchpadRepository {
   // be re-fetched to be executed would be a plan made against a scratchpad that may have moved on.
   readonly liftScratchpad: (
     id: string,
-    body: { version: string; selection: string[]; target?: string; 'dry-run'?: boolean },
+    body: {
+      version: string
+      selection: string[]
+      /** Frame id → the model-project its content lands in. One per frame, because the frames are
+       * work archetypes and a canvas routinely holds work for more than one project. */
+      targets?: Record<string, string>
+      'dry-run'?: boolean
+    },
   ) => Effect.Effect<ScratchpadLift, RepoError>
 }

@@ -13,7 +13,7 @@ import type { Scratchpad, ScratchpadLift } from '../../../domain/schemas/scratch
 import { useScratchpadLift } from '../useScratchpadLift'
 
 const plan = (overrides: Partial<ScratchpadLift> = {}): ScratchpadLift => ({
-  target: { group: '', 'meta-ontology': '', exists: false },
+  targets: [],
   items: [],
   refusal: '',
   blocks: false,
@@ -62,7 +62,7 @@ describe('lifting from the canvas', () => {
 
     expect(lift.open.value).toBe(true)
     expect(calls).toEqual([
-      { version: '0.1.4', selection: ['n1'], target: '', 'dry-run': true },
+      { version: '0.1.4', selection: ['n1'], targets: {}, 'dry-run': true },
     ])
   })
 
@@ -110,5 +110,33 @@ describe('lifting from the canvas', () => {
 
     expect(lift.open.value).toBe(false)
     expect(lift.plan.value).toBeNull()
+  })
+})
+
+describe('choosing where each frame lands', () => {
+  it('asks once per frame the selection spans, not once per frame the scratchpad has', async () => {
+    const framed = (): Scratchpad => ({
+      ...scratchpad(),
+      areas: [
+        { id: 'strategy', label: 'Vision & strategy' },
+        { id: 'project', label: 'Project' },
+        { id: 'enabling', label: 'Enabling' },
+      ],
+      notes: [
+        { id: 'n1', title: 'One', body: '', destination: 'undecided', area: 'strategy' },
+        { id: 'n2', title: 'Two', body: '', destination: 'undecided', area: 'project' },
+      ],
+    })
+    const { service, calls } = serviceWith([plan()])
+    const lift = useScratchpadLift(service, { value: 'SCR@1.a.pad' } as never, framed, () => {})
+
+    await lift.preflight([])
+    expect(lift.frames.value.map((frame) => frame.id)).toEqual(['project', 'strategy'])
+
+    lift.setTarget('project', 'q3-expansion')
+    await lift.lift()
+
+    expect((calls[1] as { targets: Record<string, string> }).targets)
+      .toEqual({ project: 'q3-expansion' })
   })
 })

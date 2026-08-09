@@ -3375,7 +3375,15 @@ export interface components {
             /** Visibility Limited */
             visibility_limited?: boolean | null;
         };
-        /** AreaWire */
+        /**
+         * AreaWire
+         * @description A labelled frame, and what it narrows to.
+         *
+         *     `permitted-element-types` is **derived**: a frame declares the *domains* it holds — motivation
+         *     and strategy for Vision & strategy, none at all for the three that reach across the model — and
+         *     the types follow from whatever the ontology currently declares. Served rather than resolved by
+         *     each client, for the same reason a note's `area` is.
+         */
         AreaWire: {
             /** Id */
             id: string;
@@ -3383,6 +3391,8 @@ export interface components {
             label: string;
             /** Permitted-Document-Types */
             "permitted-document-types"?: string[];
+            /** Permitted-Domains */
+            "permitted-domains"?: string[];
             /** Permitted-Element-Types */
             "permitted-element-types"?: string[];
         };
@@ -8388,7 +8398,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "element" | "connection";
+            kind: "element" | "document" | "connection" | "reference";
             /** Label */
             label: string;
             /**
@@ -8402,6 +8412,11 @@ export interface components {
              */
             reason: string;
             /**
+             * Target
+             * @default
+             */
+            target: string;
+            /**
              * Warning
              * @default
              */
@@ -8411,9 +8426,10 @@ export interface components {
          * LiftScratchpadBody
          * @description What to lift, where to, and whether this is a rehearsal.
          *
-         *     `dry_run` defaults to true like every other write on this surface. `target` names a
-         *     model-project slug, created if it does not exist; empty means the root model, for content that
-         *     belongs to no project.
+         *     `dry_run` defaults to true like every other write on this surface. `targets` maps a frame's id
+         *     to the model-project its content lands in — one per frame, because the frames are work
+         *     archetypes and a canvas routinely holds work for more than one project. A frame with no entry
+         *     lands in the root model, which is also where a note sitting in no frame goes.
          */
         LiftScratchpadBody: {
             /**
@@ -8423,17 +8439,16 @@ export interface components {
             "dry-run": boolean;
             /** Selection */
             selection: string[];
-            /**
-             * Target
-             * @default
-             */
-            target: string;
+            /** Targets */
+            targets?: {
+                [key: string]: string;
+            };
             /** Version */
             version: string;
         };
         /**
          * LiftTargetWire
-         * @description Where a lift lands. One target per lift, chosen at lift time rather than stored.
+         * @description One project a lift lands in — one per frame, chosen at lift time rather than stored.
          */
         LiftTargetWire: {
             /**
@@ -8911,6 +8926,8 @@ export interface components {
             destination: "undecided" | "element" | "document" | "none";
             /** Document-Type */
             "document-type"?: string;
+            /** Domain */
+            domain?: string;
             /** Element-Type */
             "element-type"?: string;
             /** Id */
@@ -9951,7 +9968,8 @@ export interface components {
              * @default
              */
             refusal: string;
-            target: components["schemas"]["LiftTargetWire"];
+            /** Targets */
+            targets?: components["schemas"]["LiftTargetWire"][];
         };
         /** ScratchpadListResponse */
         ScratchpadListResponse: {

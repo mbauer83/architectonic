@@ -20,6 +20,12 @@
 import { computed, ref } from 'vue'
 import { useScratchpadGestures } from '../composables/useScratchpadGestures'
 import { linkMidpoint, linkPath } from '../composables/scratchpadLinkGeometry'
+import { getDomainColor } from '../lib/domains'
+import ScratchpadLinkMarkers from './ScratchpadLinkMarkers.vue'
+import ScratchpadNote from './ScratchpadNote.vue'
+import { edgeMarkerId } from './edgeMarkers'
+import { notationDash, type RelationNotation } from '../lib/relationNotations'
+import { archimateGlyphMarkup } from '../lib/glyphKey'
 import {
   menuAnchorFor,
   noteKeydown,
@@ -27,7 +33,14 @@ import {
 } from '../composables/useScratchpadKeyboard'
 import type { Area, Link, Note, Scratchpad } from '../../domain/schemas/scratchpads'
 
-const props = defineProps<{ scratchpad: Scratchpad; selectedIds: readonly string[] }>()
+const props = defineProps<{
+  scratchpad: Scratchpad
+  selectedIds: readonly string[]
+  selectedLinkId: string | null
+  /** Connection type → how the ontology says it is drawn. Empty until it has been fetched, which
+   * is one request per canvas rather than one per link. */
+  notations: ReadonlyMap<string, RelationNotation>
+}>()
 const emit = defineEmits<{
   (event: 'create-note', payload: { x: number; y: number }): void
   (event: 'move-note', payload: { id: string; x: number; y: number }): void
@@ -35,6 +48,7 @@ const emit = defineEmits<{
   (event: 'delete-note', payload: { id: string }): void
   (event: 'link-notes', payload: { source: string; target: string }): void
   (event: 'select', payload: { id: string | null; additive: boolean }): void
+  (event: 'select-link', payload: { id: string | null }): void
   (event: 'menu-request', payload: {
     at: { x: number; y: number }
     screen: { x: number; y: number }
@@ -43,8 +57,10 @@ const emit = defineEmits<{
   (event: 'unbind-note', payload: { id: string }): void
 }>()
 
-const NOTE_WIDTH = 180
-const NOTE_HEIGHT = 64
+// Roughly square, so the title has room to be the note rather than a caption on one: a thought is
+// what a scratchpad holds, and a wide strip makes it look like a row in a list.
+const NOTE_WIDTH = 132
+const NOTE_HEIGHT = 120
 
 const viewport = ref<HTMLElement | null>(null)
 
@@ -117,6 +133,29 @@ const onNoteKeydown = (event: KeyboardEvent, noteId: string): void => noteKeydow
 
 const announcement = computed(() => selectionAnnouncement(props.selectedIds.length))
 
+/** A note wears its domain, and its type's glyph.
+ *
+ * Both are read from the meta-ontology rather than invented here: the colours are keyed by the
+ * generated `DOMAIN_NAMES`, and the glyph by the entity type the ontology declares — the same two
+ * mechanisms the entity list and the picker already use, so a note and the element it becomes look
+ * like the same thing before and after a lift.
+ */
+const domainTint = (note: Note): string | undefined =>
+  note.domain ? getDomainColor(note.domain) : undefined
+const glyphOf = (note: Note): string | null => archimateGlyphMarkup(note['element-type'])
+
+/** How the ontology says this link is drawn. A link with no type has no notation and stays dashed
+ * and headless, which is the honest picture of a relation nobody has named yet. */
+const notationOf = (link: Link): RelationNotation | undefined => {
+  const type = link['connection-type']
+  return type ? props.notations.get(type) : undefined
+}
+const dashOf = (link: Link): string | undefined => notationDash(notationOf(link)?.line)
+const markerUrl = (link: Link, end: 'source' | 'target'): string | undefined => {
+  const marker = notationOf(link)?.[end]
+  return marker && marker !== 'none' ? `url(#${edgeMarkerId(marker, end)})` : undefined
+}
+
 defineExpose({ resetView })
 </script>
 
@@ -167,15 +206,35 @@ defineExpose({ resetView })
           {{ area.label }}
         </text>
       </g>
-      <path
+      <!-- The ontology's own `notation:` declaration, served by /api/relation-notations and drawn
+           from the same shapes the graph explorer uses. -->
+      <ScratchpadLinkMarkers />
+      <g
         v-for="link in links"
         :key="link.id"
-        class="sp-link"
-        :class="[link.verdict?.kind ?? 'unverified', { typed: !!link['connection-type'] }]"
-        :data-link-id="link.id"
-        :data-verdict="link.verdict?.kind ?? 'unverified'"
-        :d="pathOf(link)"
-      />
+      >
+        <!-- A fat invisible stroke under the visible one: a 1.5-px curve is not something anyone
+             can reliably click, and a link has to be selectable to be refinable. -->
+        <path
+          class="sp-link-hit"
+          :data-link-hit="link.id"
+          :d="pathOf(link)"
+          @pointerdown.stop="emit('select-link', { id: link.id })"
+        />
+        <path
+          class="sp-link"
+          :class="[link.verdict?.kind ?? 'unverified', {
+            typed: !!link['connection-type'],
+            selected: link.id === selectedLinkId,
+          }]"
+          :data-link-id="link.id"
+          :data-verdict="link.verdict?.kind ?? 'unverified'"
+          :d="pathOf(link)"
+          :stroke-dasharray="dashOf(link)"
+          :marker-start="markerUrl(link, 'source')"
+          :marker-end="markerUrl(link, 'target')"
+        />
+      </g>
       <!-- A refusal is the one verdict that must be visible without hovering: it is the only one
            that stops a lift. -->
       <text
@@ -203,80 +262,22 @@ defineExpose({ resetView })
       aria-label="Notes on this scratchpad"
       :style="{ transform: layerTransform }"
     >
-      <article
+      <ScratchpadNote
         v-for="note in notes"
         :key="note.id"
-        class="sp-note"
-        role="option"
-        tabindex="0"
-        :aria-selected="selectedIds.includes(note.id)"
-        :class="{
-          selected: selectedIds.includes(note.id),
-          typed: !!note['element-type'],
-          bound: !!note['model-ref'],
-        }"
-        :data-note-id="note.id"
-        :data-area="note.area"
-        :style="{ transform: `translate(${positionOf(note.id).x}px, ${positionOf(note.id).y}px)` }"
-        @pointerdown="onNotePointerDown($event, note.id)"
-        @keydown="onNoteKeydown($event, note.id)"
-      >
-        <!-- `contenteditable` rather than a positioned <input>: real text editing, IME and
-             spellcheck come free, which is the whole argument for HTML notes. -->
-        <div
-          class="sp-title"
-          contenteditable="plaintext-only"
-          spellcheck="true"
-          tabindex="-1"
-          :aria-label="`Title of ${note.title}`"
-          :data-note-title="note.id"
-          @pointerdown.stop
-          @blur="onTitleBlur($event, note)"
-          @keydown="onTitleKeydown($event, note)"
-        >
-          {{ note.title }}
-        </div>
-        <footer class="sp-meta">
-          <button
-            v-if="note['model-ref']?.kind === 'bound'"
-            type="button"
-            class="sp-type sp-bound"
-            :data-unbind-note="note.id"
-            :title="`Bound to ${note['model-ref']['artifact-id']} — click to release`"
-            @pointerdown.stop
-            @click.stop="emit('unbind-note', { id: note.id })"
-          >
-            ⛓ {{ note['element-type'] }}
-          </button>
-          <span
-            v-else-if="note['element-type']"
-            class="sp-type"
-          >{{ note['element-type'] }}</span>
-          <span
-            v-else
-            class="sp-untyped"
-          >untyped</span>
-          <button
-            class="sp-delete"
-            type="button"
-            title="Delete note"
-            :data-delete-note="note.id"
-            @pointerdown.stop
-            @click.stop="emit('delete-note', { id: note.id })"
-          >
-            ×
-          </button>
-        </footer>
-        <!-- Drag from here to draw a link. A dedicated handle keeps note-drag and link-draw
-             unambiguous, which a modifier key does not. -->
-        <button
-          class="sp-handle"
-          type="button"
-          title="Draw a link"
-          :data-link-handle="note.id"
-          @pointerdown="onHandlePointerDown($event, note.id)"
-        />
-      </article>
+        :note="note"
+        :at="positionOf(note.id)"
+        :selected="selectedIds.includes(note.id)"
+        :tint="domainTint(note)"
+        :glyph="glyphOf(note)"
+        @note-pointerdown="onNotePointerDown($event, note.id)"
+        @note-keydown="onNoteKeydown($event, note.id)"
+        @title-blur="onTitleBlur($event, note)"
+        @title-keydown="onTitleKeydown($event, note)"
+        @handle-pointerdown="onHandlePointerDown($event, note.id)"
+        @unbind="emit('unbind-note', { id: note.id })"
+        @delete="emit('delete-note', { id: note.id })"
+      />
     </div>
   </div>
 </template>
@@ -301,7 +302,10 @@ defineExpose({ resetView })
 .sp-area { fill: #ffffff; stroke: #e2e2e6; stroke-width: 1.5; }
 .sp-area-label { font: 600 13px system-ui, sans-serif; fill: #8b8b93; letter-spacing: .02em; }
 .sp-link { fill: none; stroke: #c3c6cc; stroke-width: 1.5; stroke-dasharray: 5 4; }
-/* Solid once typed: the canvas should show at a glance how much of the picture is committed to. */
+.sp-link-hit { fill: none; stroke: transparent; stroke-width: 14px; pointer-events: stroke; cursor: pointer; }
+.sp-link.selected { stroke: #2563eb; stroke-width: 2.5; }
+/* Solid once typed — unless the ontology says otherwise, in which case its own `notation:` line
+   style wins through `stroke-dasharray` on the element. */
 .sp-link.typed { stroke: #6b7280; stroke-dasharray: none; }
 /* The verdict, at a glance. Permitted is settled and quiet; narrowed warns without blocking;
    refused is the only one that stops a lift, so it is the only one that shouts. */
@@ -312,40 +316,5 @@ defineExpose({ resetView })
 .sp-link-flag { font: 700 13px system-ui, sans-serif; fill: #dc2626; }
 .sp-link.drawing { stroke: #2563eb; stroke-dasharray: 4 3; }
 
-.sp-note {
-  position: absolute; top: 0; left: 0; width: 180px; box-sizing: border-box;
-  padding: 8px 10px 6px; background: #fff; border: 1px solid #dcdce1; border-radius: 8px;
-  box-shadow: 0 1px 2px rgba(0,0,0,.06); cursor: default;
-  transition: box-shadow .12s ease, border-color .12s ease;
-}
-.sp-note:hover { box-shadow: 0 2px 6px rgba(0,0,0,.10); }
-.sp-note.selected { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37,99,235,.18); }
-.sp-note.typed { border-left: 3px solid #7c3aed; }
-.sp-note.bound { border-left: 3px solid #059669; }
-.sp-bound {
-  border: none; background: none; padding: 0; cursor: pointer;
-  color: #059669; font-size: 10.5px; font-weight: 600;
-}
-.sp-bound:hover { text-decoration: line-through; }
-.sp-title {
-  font-size: 12.5px; line-height: 1.35; color: #1f2328; outline: none;
-  min-height: 1.35em; word-break: break-word; cursor: text;
-}
-.sp-title:focus { box-shadow: inset 0 -1px 0 #2563eb; }
-.sp-meta { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; }
-.sp-type { font-size: 10.5px; color: #7c3aed; font-weight: 600; }
-.sp-untyped { font-size: 10.5px; color: #9ca3af; }
-.sp-delete {
-  border: none; background: none; color: #b0b0b8; font-size: 15px; line-height: 1;
-  cursor: pointer; padding: 0 2px; border-radius: 3px;
-}
-.sp-delete:hover { color: #dc2626; background: #fee2e2; }
-.sp-handle {
-  position: absolute; right: -6px; top: 50%; transform: translateY(-50%);
-  width: 12px; height: 12px; border-radius: 50%; border: 2px solid #fff;
-  background: #9ca3af; cursor: crosshair; padding: 0; opacity: 0;
-  transition: opacity .12s ease;
-}
-.sp-note:hover .sp-handle, .sp-note.selected .sp-handle { opacity: 1; }
-.sp-handle:hover { background: #2563eb; }
+
 </style>

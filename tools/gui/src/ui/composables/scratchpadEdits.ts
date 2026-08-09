@@ -111,8 +111,33 @@ export function withoutBinding(scratchpad: Scratchpad, noteId: string): Scratchp
   if (!note || note['model-ref']?.kind !== 'bound') return scratchpad
   return withNote(
     scratchpad,
-    without({ ...note, destination: 'undecided' as const }, 'element-type', 'specialization', 'model-ref'),
+    without(
+      { ...note, destination: 'undecided' as const },
+      'domain', 'element-type', 'specialization', 'model-ref',
+    ),
   )
+}
+
+/** Narrow a note to a domain — the first rung, before any type is chosen.
+ *
+ * Choosing a domain drops a type that was already set: narrowing runs one level at a time, and
+ * re-answering the coarser question re-opens the finer one rather than leaving a type the new
+ * domain may not contain.
+ */
+export function withDomain(scratchpad: Scratchpad, noteId: string, domain: string): Scratchpad {
+  const note = (scratchpad.notes ?? []).find((candidate) => candidate.id === noteId)
+  if (!note || note['model-ref']) return scratchpad
+  return withNote(scratchpad, {
+    ...without(note, 'element-type', 'specialization', 'document-type'),
+    destination: 'element',
+    domain,
+  })
+}
+
+/** Give a note the body that becomes the entity's summary when it is lifted. */
+export function withBody(scratchpad: Scratchpad, noteId: string, body: string): Scratchpad {
+  const note = (scratchpad.notes ?? []).find((candidate) => candidate.id === noteId)
+  return note ? withNote(scratchpad, { ...note, body }) : scratchpad
 }
 
 /** Narrow a note to an element type. Refused server-side on a note tied to the model, so the
@@ -123,6 +148,25 @@ export function withType(scratchpad: Scratchpad, noteId: string, elementType: st
   return withNote(scratchpad, { ...note, destination: 'element', 'element-type': elementType })
 }
 
+/** Send a note to a document instead of an element.
+ *
+ * The other destination, and the one most of portfolio work actually produces: which projects
+ * exist, what they cost and when they land is prose and figures rather than ArchiMate elements.
+ * Mutually exclusive with an element type, which the aggregate enforces and this mirrors by
+ * dropping it rather than leaving both set.
+ */
+export function withDocumentType(
+  scratchpad: Scratchpad, noteId: string, documentType: string,
+): Scratchpad {
+  const note = (scratchpad.notes ?? []).find((candidate) => candidate.id === noteId)
+  if (!note || note['model-ref']) return scratchpad
+  return withNote(scratchpad, {
+    ...without(note, 'element-type', 'specialization'),
+    destination: 'document',
+    'document-type': documentType,
+  })
+}
+
 /** Take a note's type away.
  *
  * Every link touching it loses its connection type too: a typed link with an untyped end is a
@@ -130,7 +174,10 @@ export function withType(scratchpad: Scratchpad, noteId: string, elementType: st
 export function withoutType(scratchpad: Scratchpad, noteId: string): Scratchpad {
   const note = (scratchpad.notes ?? []).find((candidate) => candidate.id === noteId)
   if (!note || note['model-ref']) return scratchpad
-  const untyped = without({ ...note, destination: 'undecided' as const }, 'element-type', 'specialization')
+  const untyped = without(
+    { ...note, destination: 'undecided' as const },
+    'domain', 'element-type', 'specialization', 'document-type',
+  )
   return {
     ...withNote(scratchpad, untyped),
     links: (scratchpad.links ?? []).map((link) =>

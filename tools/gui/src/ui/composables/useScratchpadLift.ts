@@ -18,6 +18,10 @@ import type { RepoError } from '../../ports/repositoryErrors'
  * An empty selection means "everything on this scratchpad", resolved here rather than sent as one:
  * the server refuses an empty selection deliberately, because a mis-click must not lift a whole
  * canvas by accident.
+ *
+ * A target is chosen **per frame**, not per lift: the frames are work archetypes, so a canvas
+ * routinely holds strategy work for one project and delivery work for another, and forcing one
+ * destination would turn the ordinary act into four lifts with the selection rebuilt each time.
  */
 export function useScratchpadLift(
   svc: ModelService,
@@ -27,7 +31,11 @@ export function useScratchpadLift(
 ) {
   const open = ref(false)
   const plan = ref<ScratchpadLift | null>(null)
-  const target = ref('')
+  /** Frame id → project slug, for the frames this selection touches. Empty means the root model. */
+  const targets = ref<Record<string, string>>({})
+  /** The frames the selection actually spans, so the dialog asks once per frame rather than once
+   * per frame the scratchpad happens to have. */
+  const frames = ref<{ id: string; label: string }[]>([])
   const error = ref('')
   /** Frozen when the dialog opens: the plan on screen describes these notes and no others. */
   const selection = ref<string[]>([])
@@ -48,7 +56,9 @@ export function useScratchpadLift(
     const exit = await liftMutation.run(svc.liftScratchpad(artifactId.value, {
       version: current.version,
       selection: [...selection.value],
-      target: target.value.trim(),
+      targets: Object.fromEntries(
+        Object.entries(targets.value).map(([frame, slug]) => [frame, slug.trim()]),
+      ),
       'dry-run': dryRun,
     }))
     if (!Exit.isSuccess(exit)) {
@@ -65,6 +75,15 @@ export function useScratchpadLift(
     selection.value = selected.length
       ? [...selected]
       : (current?.notes ?? []).map((note) => note.id)
+    const spanned = new Set(
+      (current?.notes ?? [])
+        .filter((note) => selection.value.includes(note.id))
+        .map((note) => note.area),
+    )
+    frames.value = [...spanned].sort().map((id) => ({
+      id,
+      label: (current?.areas ?? []).find((area) => area.id === id)?.label ?? id,
+    }))
     plan.value = null
     open.value = true
     groupsQuery.run(svc.listGroups('model-project'))
@@ -77,10 +96,16 @@ export function useScratchpadLift(
     error.value = ''
   }
 
+  const setTarget = (frame: string, slug: string): void => {
+    targets.value = { ...targets.value, [frame]: slug }
+  }
+
   return {
     open,
     plan,
-    target,
+    targets,
+    frames,
+    setTarget,
     error,
     projects,
     selectionSize: computed(() => selection.value.length),

@@ -286,3 +286,27 @@ describe('refining a note down the ontology', () => {
     expect(areaAtPoint(nested, 5000, 5000)).toBe('unfiled')
   })
 })
+
+describe('where a link meets a note', () => {
+  const BOX = { width: 132, height: 120 }
+
+  it('leaves by the side the other note lies on, not from the centre', async () => {
+    const { anchor } = await import('../scratchpadLinkGeometry')
+
+    // Directly to the right: out of the right-hand side, at its middle.
+    expect(anchor({ x: 0, y: 0 }, { x: 400, y: 0 }, BOX)).toEqual({ x: 132, y: 60 })
+    // Directly below: out of the bottom, at its middle.
+    expect(anchor({ x: 0, y: 0 }, { x: 0, y: 400 }, BOX)).toEqual({ x: 66, y: 120 })
+    // Above and slightly right: the dominant axis decides, so it is still the top.
+    expect(anchor({ x: 0, y: 400 }, { x: 40, y: 0 }, BOX)).toEqual({ x: 66, y: 400 })
+  })
+
+  it('draws a curve that starts and ends on those sides', async () => {
+    const { linkPath } = await import('../scratchpadLinkGeometry')
+
+    // Centre-to-centre put the arrowhead under the note it pointed at, which is where the
+    // ontology's notation is least useful.
+    expect(linkPath({ x: 0, y: 0 }, { x: 400, y: 0 }, BOX)).toMatch(/^M132,60 C/)
+    expect(linkPath({ x: 0, y: 0 }, { x: 400, y: 0 }, BOX)).toMatch(/400,60$/)
+  })
+})

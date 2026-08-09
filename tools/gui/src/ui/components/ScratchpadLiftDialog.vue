@@ -18,14 +18,16 @@ const props = defineProps<{
   plan: ScratchpadLift | null
   /** Model-project slugs already in the repository, offered before a new one is typed. */
   projects: readonly string[]
-  target: string
+  /** The frames this selection spans; each chooses its own project. */
+  frames: readonly { id: string; label: string }[]
+  targets: Readonly<Record<string, string>>
   busy: boolean
   error: string
   selectionSize: number
 }>()
 
 const emit = defineEmits<{
-  (event: 'update:target', value: string): void
+  (event: 'set-target', payload: { frame: string; slug: string }): void
   (event: 'lift'): void
   (event: 'close'): void
 }>()
@@ -49,7 +51,7 @@ const outside = computed(() => props.plan?.['outside-selection'] ?? [])
 
 const blocked = computed(() => props.plan?.blocks === true)
 const committed = computed(() => props.plan?.committed === true)
-const newProject = computed(() => !!props.target && !props.projects.includes(props.target))
+const isNew = (slug: string): boolean => !!slug && !props.projects.includes(slug)
 </script>
 
 <template>
@@ -88,29 +90,40 @@ const newProject = computed(() => !!props.target && !props.projects.includes(pro
       </p>
 
       <template v-else>
-        <label class="field">
-          <span>Into</span>
+        <!-- One row per frame the selection spans. The frames are work archetypes, so this is
+             where the ordinary case — strategy work and delivery work on one canvas — stops being
+             two lifts with the selection rebuilt by hand in between. -->
+        <label
+          v-for="frame in frames"
+          :key="frame.id"
+          class="field"
+        >
+          <span>{{ frame.label }}</span>
           <input
             list="lift-projects"
-            data-testid="lift-target"
+            :data-lift-target="frame.id"
             placeholder="the root model"
-            :value="target"
-            @input="emit('update:target', ($event.target as HTMLInputElement).value)"
+            :value="targets[frame.id] ?? ''"
+            @input="emit('set-target', {
+              frame: frame.id, slug: ($event.target as HTMLInputElement).value,
+            })"
           >
-          <datalist id="lift-projects">
-            <option
-              v-for="slug in projects"
-              :key="slug"
-              :value="slug"
-            />
-          </datalist>
+          <em
+            v-if="isNew(targets[frame.id] ?? '')"
+            class="new"
+          >new project</em>
         </label>
+        <datalist id="lift-projects">
+          <option
+            v-for="slug in projects"
+            :key="slug"
+            :value="slug"
+          />
+        </datalist>
         <p class="note">
-          <!-- Creating the project here is deliberate: "this thinking has become a project" is the
+          <!-- Creating a project here is deliberate: "this thinking has become a project" is the
                normal way a project starts, and leaving to make one would interrupt the moment. -->
-          <span v-if="newProject">A new project <code>{{ target }}</code> will be created for it.</span>
-          <span v-else-if="!target">Content that belongs to no project goes to the root model.</span>
-          <span v-else>An existing project.</span>
+          A frame left blank lands in the root model. A name that is not yet a project creates one.
         </p>
       </template>
 
@@ -265,6 +278,7 @@ h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: #
 .field span { color: #6b7280; }
 .field input { flex: 1; padding: 5px 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; }
 .note { margin: 0 0 10px; color: #6b7280; font-size: 11.5px; }
+.new { color: #2563eb; font-size: 11px; font-style: normal; }
 .groups { overflow-y: auto; flex: 1; }
 .groups section { margin-bottom: 12px; }
 ul { list-style: none; margin: 0; padding: 0; }
