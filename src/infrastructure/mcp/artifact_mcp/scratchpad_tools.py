@@ -18,7 +18,7 @@ from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
 
 from src.application.modeling.artifact_write import generate_entity_id
 from src.application.scratchpad.document import (
-    from_document,
+    from_request_document,
     lift_to_document,
     summary_to_document,
     to_response,
@@ -128,6 +128,15 @@ _CREATE_DESCRIPTION = (
     "anything has been decided." + _AGGREGATE_NOTE
 )
 
+#: Said on both write tools, because it is where the value is supplied. The name invites "which
+#: project does this land in", which is what `targets` answers — and that misreading, stored, made a
+#: scratchpad unreadable in 0.4.0.
+_DESTINATION_NOTE = (
+    "\n\nA note's `destination` is what it BECOMES — one of `undecided`, `element`, `document`, "
+    "`none`. It is not where it lands: the model-project a lift writes into is `targets` on "
+    "scratchpad_lift, one per frame. Any other value is refused."
+)
+
 _REPLACE_DESCRIPTION = (
     "Replace a scratchpad whole. `scratchpad` is the document `scratchpad_read` returned, edited; "
     "`version` is the version you read it at. A mismatch is refused with `version_conflict` — "
@@ -140,7 +149,7 @@ _REPLACE_DESCRIPTION = (
     "Invariants the aggregate enforces: every note has a title; a link's endpoints are notes of "
     "this scratchpad and not the same note; a group's members lie in one area and a note belongs "
     "to at most one group; the meta-ontology may not change while any note is typed. A violation "
-    "is refused with the id at fault named."
+    "is refused with the id at fault named." + _DESTINATION_NOTE
 )
 
 _EDIT_DESCRIPTION = (
@@ -153,7 +162,7 @@ _EDIT_DESCRIPTION = (
     "or null to unplace}}.\n\n"
     "Removing a note takes its links, its group memberships and its placement with it. Nothing here "
     "retracts model content: deleting a `realized` note leaves the entity the lift created, and "
-    "clearing `model-ref` is how a note stops claiming one."
+    "clearing `model-ref` is how a note stops claiming one." + _DESTINATION_NOTE
 )
 
 _LIFT_DESCRIPTION = (
@@ -220,7 +229,7 @@ def scratchpad_replace(
     try:
         target_group = group or service.group_of(artifact_id)
         stored = service.replace(
-            from_document(scratchpad, artifact_id=artifact_id),
+            from_request_document(scratchpad, artifact_id=artifact_id),
             group=target_group,
             expected_version=version,
         )

@@ -18,6 +18,7 @@ from src.infrastructure.mcp.artifact_mcp.scratchpad_tools import (
     register_scratchpad_read_tools,
     scratchpad_create,
     scratchpad_delete,
+    scratchpad_edit,
     scratchpad_lift,
     scratchpad_replace,
 )
@@ -47,6 +48,7 @@ def tools(tmp_path: Path) -> dict[str, Any]:
     registry["scratchpad_replace"] = scratchpad_replace
     registry["scratchpad_delete"] = scratchpad_delete
     registry["scratchpad_lift"] = scratchpad_lift
+    registry["scratchpad_edit"] = scratchpad_edit
     registry["_repo_root"] = str(repo_root)
     return registry
 
@@ -241,3 +243,64 @@ class TestLiftingFromAnAgent:
         )
 
         assert answer == {"ok": False, "error": "not_found", "message": answer["message"]}
+
+
+class TestTheDestinationEnumOnThisSurfaceToo:
+    """The agent surface is where the bad value came from, and the one that must still read it.
+
+    `destination` reads as "which model-project this lands in". It is not that — it is what the note
+    *becomes* — and an agent that guessed wrong had its guess stored, because MCP had no wire model
+    to reject it and the domain took its own `Literal` on trust.
+    """
+
+    def test_an_invented_destination_comes_back_as_a_refusal_the_agent_can_branch_on(
+        self, tools: dict[str, Any]
+    ) -> None:
+        created = _create(tools)
+
+        refused = tools["scratchpad_edit"](
+            artifact_id=created["artifact-id"],
+            version=created["version"],
+            upsert={"notes": [{"id": "n1", "title": "A thought", "destination": "up2parts-autocam"}]},
+            repo_root=tools["_repo_root"],
+        )
+
+        assert refused["ok"] is False, refused
+        # Data, not an exception — and it says what to use instead, since the field's name is what
+        # caused the confusion in the first place.
+        assert "targets" in str(refused)
+        assert "undecided" in str(refused)
+
+    def test_a_file_that_already_holds_one_is_still_readable_here(
+        self, tools: dict[str, Any]
+    ) -> None:
+        """This surface is the recovery path. Validating the read against the wire contract would
+        have been the obvious "make both surfaces agree" move and exactly the wrong one: it is the
+        only read that still works when a file is damaged, and it is how the offending note is
+        found at all."""
+        created = _create(tools)
+        tools["scratchpad_edit"](
+            artifact_id=created["artifact-id"],
+            version=created["version"],
+            upsert={"notes": [{"id": "n1", "title": "A thought", "destination": "element"}]},
+            repo_root=tools["_repo_root"],
+        )
+        stored = next(Path(tools["_repo_root"]).rglob("*.scratchpad.yaml"))
+        stored.write_text(
+            stored.read_text(encoding="utf-8").replace(
+                "destination: element", "destination: up2parts-autocam"
+            ),
+            encoding="utf-8",
+        )
+
+        read = tools["scratchpad_read"](
+            artifact_id=created["artifact-id"], repo_root=tools["_repo_root"]
+        )
+
+        assert read["ok"], read
+        note = next(row for row in read["scratchpad"]["notes"] if row["id"] == "n1")
+        # Absent *is* `undecided` on this surface — `to_document` drops the default so an untyped
+        # note looks untyped, while REST's response model fills it back in. The property under test
+        # is that the damaged value is gone and the document reads, not which of the two shapes it
+        # arrives in.
+        assert note.get("destination", "undecided") == "undecided"

@@ -28,7 +28,11 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
-from src.application.scratchpad.document import from_document, to_document
+from src.application.scratchpad.document import (
+    from_document,
+    refuse_unknown_destinations,
+    to_document,
+)
 from src.domain.scratchpad import Scratchpad, ScratchpadError
 
 #: The collections a scratchpad document holds, each a list of rows carrying an `id`. Named once so
@@ -70,6 +74,13 @@ class ScratchpadEdit:
             raise ScratchpadError(
                 f"layout names {unknown_layout}; only {list(_PLACED)} carry geometry"
             )
+        # The caller's own rows, deliberately — not the merged document, which also carries stored
+        # ones. A scratchpad written by the older code may hold a destination this refuses, and
+        # refusing it here would make the one edit that repairs it impossible.
+        # The caller's own rows, deliberately — not the merged document, which also carries stored
+        # ones. A scratchpad written by the older code may hold a destination this refuses, and
+        # refusing it here would make the one edit that repairs it impossible.
+        refuse_unknown_destinations(self.upsert.get("notes", ()))
         if not self.touches_anything():
             raise ScratchpadError("this edit changes nothing; say what to remove, upsert or place")
 

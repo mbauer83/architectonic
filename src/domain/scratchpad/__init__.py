@@ -10,6 +10,7 @@ from src.domain.scratchpad.link_verdict import (
     verify_link,
 )
 from src.domain.scratchpad.parts import (
+    DESTINATIONS,
     UNFILED,
     Area,
     Destination,
@@ -29,6 +30,7 @@ __all__ = [
     "UNFILED",
     "Area",
     "Endpoint",
+    "DESTINATIONS",
     "Destination",
     "Group",
     "Layout",

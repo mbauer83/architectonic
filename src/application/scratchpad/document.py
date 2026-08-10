@@ -12,6 +12,7 @@ conveniences added by the REST layer that the file has no business storing.
 
 from __future__ import annotations
 
+from collections.abc import Iterable, Mapping
 from typing import TYPE_CHECKING, Any
 
 from src.application.scratchpad.ports import ScratchpadSummary
@@ -21,7 +22,9 @@ if TYPE_CHECKING:
     from src.domain.modules.module_registry import ModuleRegistry
 
 from src.domain.scratchpad import (
+    DESTINATIONS,
     Area,
+    Destination,
     Endpoint,
     Group,
     Layout,
@@ -32,6 +35,7 @@ from src.domain.scratchpad import (
     Point,
     Rect,
     Scratchpad,
+    ScratchpadError,
     scratchpad_from_parts,
 )
 
@@ -53,6 +57,78 @@ def _ref(raw: object) -> ModelRef | None:
         return None
     kind: ModelRefKind = "realized" if str(raw.get("kind")) == "realized" else "bound"
     return ModelRef(artifact_id=str(raw["artifact-id"]), kind=kind)
+
+
+def _destination(raw: object) -> Destination:
+    """An unrecognised destination reads as `undecided`, the weakest claim — as `_ref` does above.
+
+    This is the **storage** boundary, so it heals rather than refuses. A file that already holds a
+    bad value was written by code that let it through, and refusing it here would leave the document
+    unreadable for good instead of merely wrong in one field: the read is the only way to see the
+    offending note, and without it a canvas cannot even be edited back into shape.
+
+    Requests are a different matter and are refused, by `refuse_unknown_destinations` below. Two
+    boundaries, two rules, because the caller of one can fix their input and the caller of the other
+    cannot.
+
+    Until 0.4.1 this was `str(row.get("destination") or "undecided")` under a
+    `# type: ignore[arg-type]`: `Literal` is not checked at runtime, `str` laundered any value into
+    the field, and the suppression silenced the one checker that would have said so. The value then
+    reached a pydantic `Literal` in the response contract, which is where it finally failed — 500 on
+    every read of that scratchpad, permanently, with no way to find the note from the GUI.
+    """
+    match str(raw or "undecided"):
+        case "element":
+            return "element"
+        case "document":
+            return "document"
+        case "none":
+            return "none"
+        case _:
+            return "undecided"
+
+
+def refuse_unknown_destinations(rows: Iterable[Mapping[str, object]]) -> None:
+    """The **request** boundary: a destination the caller invented is refused, naming the four.
+
+    Applied to what a caller sent rather than to the merged document, which is the distinction that
+    matters: a merged document carries stored rows too, and refusing those would make a scratchpad
+    that already holds a bad value uneditable — i.e. it would defend the brick instead of the
+    caller.
+
+    The message names `targets` because the field's name is what caused this. `destination` reads as
+    "which project this lands in"; it is what the note *becomes*, and the project a lift writes into
+    is `targets` on `scratchpad_lift`, chosen per frame.
+    """
+    for row in rows:
+        value = row.get("destination")
+        if value is None or str(value) in DESTINATIONS:
+            continue
+        raise ScratchpadError(
+            f"note {str(row.get('id') or '')!r} gives destination {str(value)!r}, which is not one "
+            f"of {', '.join(DESTINATIONS)}. `destination` is what the note becomes; the model "
+            "project it is lifted into is `targets` on scratchpad_lift, one per frame."
+        )
+
+
+def _note_rows(document: Mapping[str, object]) -> list[Mapping[str, object]]:
+    rows = document.get("notes")
+    return [row for row in rows if isinstance(row, Mapping)] if isinstance(rows, list) else []
+
+
+def from_request_document(document: Mapping[str, Any], *, artifact_id: str) -> Scratchpad:
+    """A whole document a *caller* sent: refused where `from_document` would heal.
+
+    The two entry points exist so that neither caller has to remember which rule applies to them.
+    `from_document` is the storage parser and forgives, because the alternative is a file nobody can
+    read; this one is the request parser and refuses, because its caller can fix the input and is
+    better served by a sentence than by a silent substitution.
+
+    Naming them apart rather than giving one function a `strict=` flag: the two behaviours are not
+    two modes of one operation, they are what the same document means arriving from two places.
+    """
+    refuse_unknown_destinations(_note_rows(document))
+    return from_document(document, artifact_id=artifact_id)
 
 
 def to_document(scratchpad: Scratchpad) -> dict[str, Any]:
@@ -124,7 +200,7 @@ def to_document(scratchpad: Scratchpad) -> dict[str, Any]:
     return document
 
 
-def from_document(raw: dict[str, Any], *, artifact_id: str | None = None) -> Scratchpad:
+def from_document(raw: Mapping[str, Any], *, artifact_id: str | None = None) -> Scratchpad:
     """Rebuild and validate. `artifact_id` overrides the document's, so an address in a URL wins
     over one a client put in a body — the two disagreeing is a client bug, not a rename."""
 
@@ -168,7 +244,7 @@ def from_document(raw: dict[str, Any], *, artifact_id: str | None = None) -> Scr
                 id=str(row.get("id") or ""),
                 title=str(row.get("title") or ""),
                 body=str(row.get("body") or ""),
-                destination=str(row.get("destination") or "undecided"),  # type: ignore[arg-type]
+                destination=_destination(row.get("destination")),
                 # Ignored when a type is present, because the type implies it and the served value
                 # is derived from it — storing both would let the file disagree with the ontology
                 # the moment a type moved domain, and the round trip would carry the stale one back.

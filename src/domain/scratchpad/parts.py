@@ -10,11 +10,16 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field
-from typing import Literal
+from typing import Literal, get_args
 
 from src.domain.scratchpad.geometry import Point, Rect, snap_point, snap_rect
 
 Destination = Literal["undecided", "element", "document", "none"]
+
+#: The same four, as data. `Literal` is a promise to the type checker and nothing at runtime, so the
+#: parse boundary and the invariant both need the members in a form they can test against — and one
+#: definition derived from the type is what stops the list and the type drifting apart.
+DESTINATIONS: tuple[str, ...] = get_args(Destination)
 
 #: How a note came to hold a reference into the model. Never inferred — see `Scratchpad.invariants`.
 ModelRefKind = Literal["realized", "bound"]

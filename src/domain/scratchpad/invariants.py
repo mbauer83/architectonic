@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from src.domain.scratchpad.parts import Area, Group, Link, Note, ScratchpadError
+from src.domain.scratchpad.parts import DESTINATIONS, Area, Group, Link, Note, ScratchpadError
 
 
 def validated_notes(notes: tuple[Note, ...]) -> set[str]:
@@ -37,7 +37,22 @@ def _validate_destination(note: Note) -> None:
 
     Both at once is not a note that has decided two things — it is a note whose *lift* has no single
     answer, since one would create an entity and the other a document from the same title.
+
+    The membership check comes first, and it is the one this function was missing: it validated
+    *combinations* of destination and type while taking for granted that the destination was one of
+    the four. `Destination` is a `Literal`, which Python does not enforce at runtime, so that was an
+    assumption rather than a fact — and a value that broke it reached the response contract, where
+    the same enum *is* enforced, and turned every read of that scratchpad into a 500.
+
+    An aggregate that cannot be serialised is not a valid aggregate, so this belongs here: the root
+    is the boundary of coherence, and the wire contract should only ever be restating what the
+    domain already guarantees.
     """
+    if note.destination not in DESTINATIONS:
+        raise ScratchpadError(
+            f"note {note.id!r} has destination {note.destination!r}, which is not one of "
+            f"{', '.join(DESTINATIONS)}"
+        )
     if note.destination == "document" and note.element_type:
         raise ScratchpadError(
             f"note {note.id!r} is destined for a document but carries the element type "

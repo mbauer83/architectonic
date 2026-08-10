@@ -25,7 +25,7 @@ from fastapi import APIRouter, HTTPException, Query, Response, status
 from pydantic import BaseModel, ConfigDict, Field
 
 from src.application.scratchpad.document import (
-    from_document,
+    from_request_document,
     lift_to_document,
     summary_to_document,
     to_response,
@@ -233,7 +233,7 @@ def replace_scratchpad(artifact_id: str, body: ReplaceScratchpadBody) -> dict[st
     """
     service = _service()
     try:
-        incoming = from_document(body.scratchpad, artifact_id=artifact_id)
+        incoming = from_request_document(body.scratchpad, artifact_id=artifact_id)
         stored = s.authorized_write(
             "scratchpads_replace_scratchpad",
             service.replace,
