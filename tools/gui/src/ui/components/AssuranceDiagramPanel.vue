@@ -9,6 +9,8 @@ import DOMPurify from 'dompurify'
 import { computed, onMounted, ref, watch } from 'vue'
 import WithheldNotice from './WithheldNotice.vue'
 import { useFittedPanZoom } from '../composables/useFittedPanZoom'
+import { useFullscreen } from '../composables/useFullscreen'
+import DiagramViewportControls from './DiagramViewportControls.vue'
 import { useAssuranceSvgInteractions } from '../composables/useAssuranceSvgInteractions'
 import {
   buildUcaMatrixRows,
@@ -50,6 +52,10 @@ const showPuml = ref(false)
 const svgContainer = ref<HTMLElement | null>(null)
 const containerRef = ref<HTMLElement | null>(null)
 const panZoom = useFittedPanZoom(containerRef, svgContainer)
+const fullscreen = useFullscreen(containerRef)
+// Entering or leaving fullscreen is a framing request: re-fit even when the view has been
+// transformed, since the whole point of the gesture is to see the diagram against the new space.
+watch(fullscreen.isFullscreen, () => { void panZoom.fitDiagramToViewport() })
 
 const matrixRows = computed(() => buildUcaMatrixRows(nodes.value, edges.value))
 // Only for this panel's own no-SVG fallback list, which names an edge's endpoints inline.
@@ -153,7 +159,10 @@ onMounted(load)
           @mousedown="panZoom.onMouseDown"
           @dblclick="panZoom.resetView"
         >
-          <div :style="panZoom.canvasStyle.value">
+          <div
+            class="pan-canvas"
+            :style="panZoom.canvasStyle.value"
+          >
             <!-- eslint-disable-next-line vue/no-v-html -->
             <div
               ref="svgContainer"
@@ -161,17 +170,14 @@ onMounted(load)
               v-html="sanitizedSvg"
             />
           </div>
-          <button
-            v-if="panZoom.isTransformed.value"
-            class="reset-btn"
-            title="Reset view"
-            @click.stop="panZoom.resetView"
-          >
-            ⊙ Reset
-          </button>
-          <div class="zoom-hint">
-            Scroll to zoom · Drag to pan · Click node/edge to inspect · Double-click to reset
-          </div>
+          <DiagramViewportControls
+            :is-transformed="panZoom.isTransformed.value"
+            :is-fullscreen="fullscreen.isFullscreen.value"
+            :can-fullscreen="fullscreen.isSupported"
+            hint="Scroll to zoom · Drag to pan · Click node/edge to inspect · Double-click to reset"
+            @reset="panZoom.resetView"
+            @toggle-fullscreen="fullscreen.toggle"
+          />
         </div>
         <div
           v-else-if="diagramType === 'uca-matrix'"
@@ -300,6 +306,12 @@ onMounted(load)
   cursor: grab; user-select: none;
 }
 .img-container:active { cursor: grabbing; }
+/* Fullscreen overrides the clamped height, and the browser paints black behind
+   anything the element does not cover. */
+.img-container:fullscreen {
+  width: 100vw; height: 100vh; max-height: none;
+  border: none; border-radius: 0; background: #f8fafc;
+}
 .svg-wrap :deep(svg) { display: block; max-width: none; }
 .svg-wrap :deep([data-assurance-node-id]),
 .svg-wrap :deep([data-assurance-edge-id]) { cursor: pointer; }
@@ -318,17 +330,6 @@ onMounted(load)
 .svg-wrap :deep(.svg-assurance-selected) line,
 .svg-wrap :deep(.svg-assurance-selected) polyline { stroke: #2563eb !important; stroke-width: 2.5 !important; }
 .svg-wrap :deep(.svg-assurance-selected) text { font-weight: 700; }
-.reset-btn {
-  position: absolute; top: 8px; right: 8px; padding: 4px 10px;
-  background: rgba(255, 255, 255, .92); border: 1px solid #d1d5db;
-  border-radius: 5px; font-size: 12px; cursor: pointer; color: #374151;
-}
-.reset-btn:hover { background: white; }
-.zoom-hint {
-  position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%);
-  font-size: 11px; color: #9ca3af; background: rgba(255, 255, 255, .8);
-  padding: 2px 8px; border-radius: 4px; pointer-events: none; white-space: nowrap;
-}
 .uca-matrix-wrap { overflow-x: auto; }
 .uca-matrix { width: 100%; border-collapse: collapse; font-size: 12px; }
 .uca-matrix th, .uca-matrix td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; vertical-align: top; min-width: 130px; }

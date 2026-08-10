@@ -15,6 +15,8 @@ import { useViewpointExecution } from '../composables/useViewpointExecution'
 import { useViewpointParameterPrompt } from '../composables/useViewpointParameterPrompt'
 import { executionTitleFor } from './ViewpointsManagementView.helpers'
 import { useFittedPanZoom } from '../composables/useFittedPanZoom'
+import { useFullscreen } from '../composables/useFullscreen'
+import DiagramViewportControls from '../components/DiagramViewportControls.vue'
 import { useDiagramSvgSelection, type DiagramSvgSelectionDetail } from '../composables/useDiagramSvgSelection'
 import { useWitnessChain, type WitnessChainDisplay } from '../composables/useWitnessChain'
 import DiagramSplitLayout from '../components/DiagramSplitLayout.vue'
@@ -114,6 +116,10 @@ watch(() => selection.selectedConnection.value, (conn) => {
 
 const containerRef = ref<HTMLElement | null>(null)
 const panZoom = useFittedPanZoom(containerRef, svgContainer)
+const fullscreen = useFullscreen(containerRef)
+// Entering or leaving fullscreen is a framing request: re-fit even when the view has been
+// transformed, since the whole point of the gesture is to see the diagram against the new space.
+watch(fullscreen.isFullscreen, () => { void panZoom.fitDiagramToViewport() })
 
 watch(svgHtml, (svg) => { if (svg) void panZoom.fitDiagramToViewport() })
 
@@ -261,24 +267,24 @@ onMounted(() => { if (props.adHoc || slug.value) void load() })
           @mousedown="panZoom.onMouseDown"
           @dblclick="panZoom.resetView"
         >
-          <div :style="panZoom.canvasStyle.value">
+          <div
+            class="pan-canvas"
+            :style="panZoom.canvasStyle.value"
+          >
             <div
               ref="svgContainer"
               class="svg-wrap"
               v-html="svgHtml"
             />
           </div>
-          <button
-            v-if="panZoom.isTransformed.value"
-            class="reset-btn"
-            title="Reset view"
-            @click.stop="panZoom.resetView"
-          >
-            ⊙ Reset
-          </button>
-          <div class="zoom-hint">
-            Scroll to zoom · Drag to pan · Click entity to inspect · Double-click to reset
-          </div>
+          <DiagramViewportControls
+            :is-transformed="panZoom.isTransformed.value"
+            :is-fullscreen="fullscreen.isFullscreen.value"
+            :can-fullscreen="fullscreen.isSupported"
+            hint="Scroll to zoom · Drag to pan · Click entity to inspect · Double-click to reset"
+            @reset="panZoom.resetView"
+            @toggle-fullscreen="fullscreen.toggle"
+          />
         </div>
       </template>
 
@@ -342,6 +348,12 @@ onMounted(() => { if (props.adHoc || slug.value) void load() })
 }
 @media (max-width: 800px) { .img-container { height: clamp(360px, 68vh, 820px); } }
 .img-container:active { cursor: grabbing; }
+/* Fullscreen overrides the clamped height, and the browser paints black behind
+   anything the element does not cover. */
+.img-container:fullscreen {
+  width: 100vw; height: 100vh; max-height: none;
+  border: none; border-radius: 0; background: #f8fafc;
+}
 .svg-wrap { display: inline-block; padding: 12px; }
 .svg-wrap :deep(svg) { display: block; max-width: none; }
 .svg-wrap :deep([data-entity-id]) { cursor: pointer; }
@@ -368,7 +380,4 @@ onMounted(() => { if (props.adHoc || slug.value) void load() })
 .svg-wrap :deep(.svg-conn-selected) polygon,
 .svg-wrap :deep(.svg-conn-selected) line,
 .svg-wrap :deep(.svg-conn-selected) polyline { stroke: #2563eb !important; stroke-width: 2.5 !important; }
-.reset-btn { position: absolute; top: 8px; right: 8px; padding: 4px 10px; background: rgba(255,255,255,.92); border: 1px solid #d1d5db; border-radius: 5px; font-size: 12px; cursor: pointer; color: #374151; }
-.reset-btn:hover { background: white; }
-.zoom-hint { position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); font-size: 11px; color: #9ca3af; background: rgba(255,255,255,.8); padding: 2px 8px; border-radius: 4px; pointer-events: none; white-space: nowrap; }
 </style>
