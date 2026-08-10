@@ -191,7 +191,14 @@ class ArtifactIndex(_ReverseReferenceQueries, _ScratchpadNoteQueries):
         with self._lock.writing():
             for kind, path, data in parsed:
                 _CHANGE_APPLIERS[kind](self, path, data)
-            self._bump_generation()
+            # The generation is the *model's* read-model validator, and a scratchpad is not model
+            # content: it is not listed by `list_artifacts`, it ranks below everything in search, and
+            # its own routes are `no-cache` precisely because it changes independently of the model.
+            # A canvas saves about once a second while someone is thinking, so bumping here would
+            # invalidate every model ETag in the product at that rate, for a change no model reader
+            # can observe.
+            if any(kind != "scratchpad" for kind, _path, _data in parsed):
+                self._bump_generation()
         return self.read_model_version()
 
     def read_model_version(self) -> ReadModelVersion:

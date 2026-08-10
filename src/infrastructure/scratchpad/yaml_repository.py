@@ -121,6 +121,7 @@ class YamlScratchpadRepository:
         # answer to two ids the moment either is edited.
         if existing is not None and existing != target:
             existing.unlink(missing_ok=True)
+        _reindex(target, existing)
         return stored
 
     def delete(self, artifact_id: str) -> None:
@@ -128,6 +129,28 @@ class YamlScratchpadRepository:
         if path is None:
             raise ScratchpadNotFoundError(f"no scratchpad {artifact_id!r} under {self._root}")
         path.unlink()
+        _reindex(path)
+
+
+def _reindex(*paths: Path | None) -> None:
+    """Tell every live index that this file moved, so its notes are findable *now*.
+
+    Here rather than in the REST router or the MCP tool because this is the one place that knows
+    which file was written, and a notification each surface has to remember is one a surface
+    eventually forgets — which is exactly what happened: the loader and the incremental applier both
+    existed, and nothing called them, so a note written on the canvas was searchable only after the
+    next full refresh.
+
+    Broadcast rather than applied to one index: MCP write tools resolve a narrower, engagement-only
+    index over the same files than the REST layer's combined one, and both have to see the change.
+    A scratchpad change deliberately does **not** move the model's read-model generation — see
+    `ArtifactIndex.apply_file_changes`.
+    """
+    from src.infrastructure.artifact_index import notify_paths_changed  # noqa: PLC0415
+
+    changed = [path for path in paths if path is not None]
+    if changed:
+        notify_paths_changed(changed)
 
 
 def _read_yaml(path: Path) -> dict[str, Any]:

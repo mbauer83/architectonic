@@ -14,6 +14,7 @@ import pytest
 
 from src.application.artifacts.query import ArtifactRepository
 from src.domain.ontology_representation.artifact_types import ScratchpadNoteRecord
+from src.domain.scratchpad import Note
 from src.infrastructure.artifact_index import shared_artifact_index
 
 _PAD_ID = "SCR@1786299627.Dnc28yf.q3-thinking"
@@ -157,6 +158,47 @@ def test_editing_a_scratchpad_reindexes_only_that_scratchpad(repo_root: Path) ->
     renamed = repo.get_scratchpad_note(f"{_PAD_ID}#note/n1")
     assert isinstance(renamed, ScratchpadNoteRecord)
     assert renamed.title == "Renamed entirely"
+
+
+def test_saving_through_the_repository_makes_a_note_findable_without_a_refresh(repo_root: Path) -> None:
+    """The wiring, not the mechanism — and the distinction is the whole point of this test.
+
+    Every other case here calls `apply_file_changes` itself, so they assert that the applier works
+    and say nothing about whether anything *calls* it. Nothing did: the loader and the incremental
+    applier both shipped, no write path notified the index, and a note written on the canvas was
+    searchable only after the next full refresh. Which is to say the feature's headline claim —
+    notes are findable — was false through the only door a person uses.
+    """
+    from src.infrastructure.scratchpad.yaml_repository import YamlScratchpadRepository
+
+    index = shared_artifact_index(repo_root)
+    index.refresh()
+    repository = YamlScratchpadRepository(repo_root)
+
+    stored = repository.load(_PAD_ID)
+    repository.save(
+        stored.with_note(Note(id="n3", title="Iguanodon arrived late")),
+        group=repository.group_of(_PAD_ID),
+        expected_version=stored.version,
+    )
+
+    found = ArtifactRepository(index).search_artifacts("Iguanodon", limit=10).hits
+    assert [hit.record.artifact_id for hit in found] == [f"{_PAD_ID}#note/n3"]
+
+
+def test_a_scratchpad_write_does_not_move_the_model_read_model_version(repo_root: Path) -> None:
+    """A canvas saves about once a second while someone is thinking, and a note is not model
+    content — it is not listed by `list_artifacts` and it ranks below everything in search. Bumping
+    the generation would invalidate every model ETag in the product at that rate, for a change no
+    model reader can observe."""
+    index = shared_artifact_index(repo_root)
+    index.refresh()
+    before = index.read_model_version()
+    path = repo_root / "scratchpads" / "platform-core" / f"{_PAD_ID}.scratchpad.yaml"
+
+    index.apply_file_changes([path])
+
+    assert index.read_model_version().generation == before.generation
 
 
 def test_deleting_a_scratchpad_takes_its_notes_with_it(repo_root: Path) -> None:
