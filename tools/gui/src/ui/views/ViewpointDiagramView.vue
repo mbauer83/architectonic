@@ -18,7 +18,7 @@ import { useFittedPanZoom } from '../composables/useFittedPanZoom'
 import { useFullscreen } from '../composables/useFullscreen'
 import DiagramViewportControls from '../components/DiagramViewportControls.vue'
 import { useDiagramSvgSelection, type DiagramSvgSelectionDetail } from '../composables/useDiagramSvgSelection'
-import { useWitnessChain, type WitnessChainDisplay } from '../composables/useWitnessChain'
+import { useSelectedConnectionWitnessChain } from '../composables/useSelectedConnectionWitnessChain'
 import DiagramSplitLayout from '../components/DiagramSplitLayout.vue'
 import DiagramEntitySidebar from '../components/DiagramEntitySidebar.vue'
 import DiagramSidebarDock from '../components/DiagramSidebarDock.vue'
@@ -99,21 +99,7 @@ const selection = useDiagramSvgSelection({
 })
 const { svgContainer } = selection
 
-// ── Witness chain for a selected derived connection — a real modeled connection has no
-// composed chain to show, so this stays null for everything but a derived edge. ────────
-const witnessChain = useWitnessChain(svc)
-const witnessChainDisplay = computed<WitnessChainDisplay | null>(() => {
-  const conn = selection.selectedConnection.value
-  if (!conn?.certainty) return null
-  return { loading: witnessChain.loading.value, segments: witnessChain.segments.value, broken: witnessChain.broken.value }
-})
-watch(() => selection.selectedConnection.value, (conn) => {
-  if (conn?.certainty && conn.via_connection_ids?.length) {
-    void witnessChain.load(conn.source, conn.target, conn.via_connection_ids)
-  } else {
-    witnessChain.clear()
-  }
-})
+const { display: witnessChainDisplay } = useSelectedConnectionWitnessChain(svc, selection.selectedConnection)
 
 const containerRef = ref<HTMLElement | null>(null)
 const panZoom = useFittedPanZoom(containerRef, svgContainer)
