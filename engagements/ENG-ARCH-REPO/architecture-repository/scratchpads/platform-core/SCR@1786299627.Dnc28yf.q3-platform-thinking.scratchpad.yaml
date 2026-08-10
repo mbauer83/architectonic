@@ -1,9 +1,9 @@
 artifact-id: SCR@1786299627.Dnc28yf.q3-platform-thinking
 artifact-type: scratchpad
 name: Q3 platform thinking
-description: 'The committed fixture the README hero shot is taken from: an untyped note, one narrowed
-  to a domain, one typed, and one bound to an entity that already exists.'
-version: 0.1.3
+description: 'A worked example of the scratchpad tier, committed so the repository ships one: an untyped
+  note, one narrowed to a domain, one typed, and one bound to an entity that already exists.'
+version: 0.1.4
 status: draft
 meta-ontology: archimate-4
 areas:
