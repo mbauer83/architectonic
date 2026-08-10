@@ -109,6 +109,54 @@ def test_every_tool_on_every_mount_serves_an_object_input_schema(
         assert schema.get("type") == "object", f"{mount}/{name}.inputSchema: {schema}"
 
 
+def test_only_the_genuinely_nullary_tools_serve_an_empty_input_schema() -> None:
+    """A tool with no parameters answers one question only, and each of these has a reason.
+
+    ``{"type": "object", "properties": {}}`` is a valid schema and a poor contract: it tells a caller
+    the tool takes nothing, so if the tool *does* have something to be scoped or previewed by, the
+    schema is a promise the product cannot keep. Eleven tools served one; an external MCP index
+    flagged them as untyped, and taking that seriously rather than explaining it away found four real
+    missing parameters that already existed one layer down (`analysis_id` on three completeness
+    profiles, then on three aggregate reads) and one genuinely dangerous omission
+    (`artifact_submit_for_review`, a push to a shared remote with no preview).
+
+    This is a register, not an allowlist that must stay empty — four tools are nullary and should be.
+    It is held in **both** directions: a new empty schema fails until someone writes down why, and an
+    entry whose tool has since grown parameters fails too, so a stale exception cannot sit here
+    waving the next one through.
+    """
+    nullary_by_design = {
+        # Reports whether the store exists, is unlocked, and under which ceiling. There is nothing
+        # to scope: the answer is about the store's availability, not its contents.
+        "assurance_store_status": "the store's own availability — no contents to scope",
+        # The whole type catalogue, and the discovery call a first-time agent makes before it knows
+        # any type name to filter by. Filtering is `artifact_authoring_guidance(filter=[...])`.
+        "artifact_help": "the unfiltered catalogue; filtering is artifact_authoring_guidance",
+        # Its answer *is* the store-wide roster: it enumerates which architecture entities carry an
+        # active signal snapshot, so a caller needs no out-of-band lookup. Scoping it to one entity
+        # would defeat the read; that question is `assurance_security_metrics(anchor_entity_id=…)`.
+        "assurance_security_stats": "its answer is the roster of assessed entities",
+        # `verify_store` is defined over the whole store, and several of its checks are inherently
+        # cross-analysis — an edge whose endpoints resolve is the first one. Scoping the run would
+        # report an in-scope edge to an out-of-scope node as dangling, which is a wrong answer rather
+        # than a narrower one. A `return_mode` would shape output rather than scope it.
+        "assurance_verify": "verification is defined over the whole store; its checks span analyses",
+    }
+
+    served_empty = {
+        name
+        for _mount, server in ALL_MOUNTS
+        for name, tool in _served_tools(server).items()
+        if not (tool.inputSchema.get("properties") or {})
+    }
+
+    assert served_empty == set(nullary_by_design), (
+        "the empty-input-schema register and the served surface have diverged. "
+        f"unregistered (add a parameter, or a reason here): {sorted(served_empty - set(nullary_by_design))}, "
+        f"stale (now takes parameters — drop the entry): {sorted(set(nullary_by_design) - served_empty)}"
+    )
+
+
 @pytest.mark.verifies("REQ@1785945042.cbXjYz")
 @pytest.mark.parametrize(("mount", "server"), READ_MOUNTS, ids=[name for name, _ in READ_MOUNTS])
 def test_read_server_tools_are_marked_read_only(mount: str, server: Any) -> None:
