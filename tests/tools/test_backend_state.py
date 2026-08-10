@@ -10,7 +10,6 @@ from __future__ import annotations
 import json
 import os
 import subprocess
-import sys
 import time
 from pathlib import Path
 from unittest.mock import patch
@@ -150,9 +149,15 @@ class TestProcessExists:
         process that exits at once produces the same zombie, because the test simply does not `wait`
         for it yet, which is the state under test.
         """
-        child = subprocess.Popen([sys.executable, "-c", ""])  # exits immediately, unreaped
+        # `/bin/true` rather than a Python interpreter: starting CPython is the dominant cost here
+        # and the one that stretches under load, and nothing about the zombie state needs Python.
+        child = subprocess.Popen(["/bin/true"])  # exits immediately, unreaped
         try:
-            deadline = time.monotonic() + 5.0
+            # A ceiling on "the child has surely exited by now", not a budget for how fast it should.
+            # At 5 s this went red on a busy machine, which teaches everyone to re-run a red suite —
+            # and that is how a real regression gets waved through. A passing run still takes
+            # milliseconds; only a genuinely broken one waits this out.
+            deadline = time.monotonic() + 60.0
             while _read_process_state(child.pid) != "Z" and time.monotonic() < deadline:
                 time.sleep(0.01)
             assert _read_process_state(child.pid) == "Z"

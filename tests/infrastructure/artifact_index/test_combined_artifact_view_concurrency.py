@@ -3,14 +3,20 @@ read path: every one of the eleven SQLite-backed ArtifactStorePort methods must 
 both canonical instances concurrently — except `read_entity_context`, which is a fallback (only
 one side is ever actually queried) and must therefore short-circuit instead.
 
-Each canned store sleeps `_DELAY` seconds before returning; if a method dispatches
-sequentially instead of concurrently, wall time roughly doubles from `_DELAY` to `2 * _DELAY`
-— comfortably outside `_SEQUENTIAL_THRESHOLD` below.
+Concurrency is asserted by **rendezvous, not by the clock**. Each canned store waits at a
+`threading.Barrier(2)`: if both sides are in flight at once the barrier releases immediately, and if
+they are dispatched one after the other the first waits alone until the barrier breaks. Either way
+the verdict is the same on an idle machine and a loaded one.
+
+It used to time two 0.15 s sleeps and demand the pair finish inside 0.24 s, which measures the
+machine as much as the dispatch — under load a genuinely concurrent pair failed. A test that goes red
+because something else is busy teaches everyone to re-run it, which is how a real regression gets
+waved through.
 """
 
 from __future__ import annotations
 
-import time
+import threading
 from typing import Any, cast
 
 import pytest
@@ -19,19 +25,27 @@ from src.application.ports import ReadableArtifactStore
 from src.infrastructure.artifact_index import _combined_support as support
 from src.infrastructure.artifact_index.combined_index import CombinedArtifactView
 
-_DELAY = 0.15
-_SEQUENTIAL_THRESHOLD = _DELAY * 1.6
+#: How long a party waits for the other to arrive before declaring the dispatch sequential. Generous
+#: on purpose: it is a deadlock ceiling, not a performance budget, so a slow machine only makes a
+#: *passing* test take the same short time and a *failing* one take longer to say so.
+_RENDEZVOUS_TIMEOUT = 10.0
 
 
 class _SlowStore:
-    """Test double: every relevant method sleeps `delay` seconds, then returns `value`."""
+    """Test double: every relevant method waits for the other side, then returns `value`.
 
-    def __init__(self, delay: float, value: Any) -> None:
-        self._delay = delay
+    Sharing one barrier between the two stores is what makes the assertion binary. Concurrent
+    dispatch means both parties reach `wait()` and it releases at once; sequential dispatch means the
+    first blocks and nothing else ever arrives, so the barrier breaks on timeout and the call raises.
+    """
+
+    def __init__(self, barrier: threading.Barrier | None, value: Any) -> None:
+        self._barrier = barrier
         self._value = value
 
     def _respond(self) -> Any:
-        time.sleep(self._delay)
+        if self._barrier is not None:
+            self._barrier.wait()
         return self._value
 
     def read_entity_context(self, artifact_id: str) -> Any:
@@ -95,30 +109,28 @@ _CONCURRENT_METHODS: list[tuple[str, tuple[Any, ...], dict[str, Any], Any]] = [
 def test_sqlite_backed_methods_dispatch_concurrently(
     method_name: str, args: tuple[Any, ...], kwargs: dict[str, Any], value: Any
 ) -> None:
-    engagement = cast(ReadableArtifactStore, _SlowStore(_DELAY, value))
-    enterprise = cast(ReadableArtifactStore, _SlowStore(_DELAY, value))
+    barrier = threading.Barrier(2, timeout=_RENDEZVOUS_TIMEOUT)
+    engagement = cast(ReadableArtifactStore, _SlowStore(barrier, value))
+    enterprise = cast(ReadableArtifactStore, _SlowStore(barrier, value))
     combined = CombinedArtifactView(engagement, enterprise)
 
-    start = time.monotonic()
-    getattr(combined, method_name)(*args, **kwargs)
-    elapsed = time.monotonic() - start
-
-    assert elapsed < _SEQUENTIAL_THRESHOLD, (
-        f"{method_name} took {elapsed:.3f}s for two {_DELAY}s calls — looks sequential, not concurrent"
-    )
+    try:
+        getattr(combined, method_name)(*args, **kwargs)
+    except threading.BrokenBarrierError as broken:  # pragma: no cover — only on a real regression
+        raise AssertionError(
+            f"{method_name} never had both stores in flight at once: one side waited "
+            f"{_RENDEZVOUS_TIMEOUT}s and the other never arrived, so it dispatches sequentially"
+        ) from broken
 
 
 def test_read_entity_context_short_circuits_without_touching_the_enterprise_side() -> None:
-    engagement = cast(ReadableArtifactStore, _SlowStore(_DELAY, {"artifact_id": "E@1.a.a"}))
-    enterprise = cast(ReadableArtifactStore, _RaisingStore(_DELAY, None))
+    # No barrier: this path must resolve from one side alone, and `_RaisingStore` is what proves the
+    # other is never reached — a stronger statement than any elapsed time could make.
+    engagement = cast(ReadableArtifactStore, _SlowStore(None, {"artifact_id": "E@1.a.a"}))
+    enterprise = cast(ReadableArtifactStore, _RaisingStore(None, None))
     combined = CombinedArtifactView(engagement, enterprise)
 
-    start = time.monotonic()
-    result = combined.read_entity_context("E@1.a.a")
-    elapsed = time.monotonic() - start
-
-    assert result == {"artifact_id": "E@1.a.a"}
-    assert elapsed < _SEQUENTIAL_THRESHOLD
+    assert combined.read_entity_context("E@1.a.a") == {"artifact_id": "E@1.a.a"}
 
 
 def test_dispatch_both_routes_through_the_shared_module_level_executor(monkeypatch: pytest.MonkeyPatch) -> None:

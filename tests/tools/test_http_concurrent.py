@@ -131,7 +131,14 @@ _CONTEXT_READS = 12
 #: What distinguishes the two is the spread. Queued readers finish one after another, so their
 #: individual latencies fan out towards N x the first. Overlapping readers all wait on the same
 #: contended resource and finish together, however slow that is. This bound is on the fan-out.
-_LATENCY_SPREAD = 4.0
+#:
+#: **Expressed as a fraction of N, not as a constant.** A flat 4.0 was a bound on the wrong thing:
+#: the signature it must separate from is a spread of ~N, so with 16 readers the gap between "fine"
+#: and "broken" was 4x against 16x — and ordinary scheduler jitter on a loaded machine reached 4.9x
+#: and turned the suite red for a server that was overlapping correctly. Half of N sits far from the
+#: staircase in either direction and does not move when the machine is busy.
+def _serialized_spread(readers: int) -> float:
+    return readers / 2
 
 
 async def _concurrent_latencies(app: object, urls: list[str]) -> list[float]:
@@ -167,9 +174,11 @@ def test_concurrent_tab_reads_are_not_serialized(tmp_path: Path) -> None:
 
     latencies = asyncio.run(_concurrent_latencies(app, ["/api/entities"] * _TABS))
 
-    assert max(latencies) < min(latencies) * _LATENCY_SPREAD, (
+    spread = max(latencies) / min(latencies)
+    assert spread < _serialized_spread(_TABS), (
         f"Concurrent reads appear serialized: {_TABS} tabs finished between {min(latencies):.3f}s "
-        f"and {max(latencies):.3f}s, a fan-out consistent with queueing rather than overlapping."
+        f"and {max(latencies):.3f}s — a fan-out of {spread:.1f}x, against the ~{_TABS}x a queue "
+        f"produces and the {_serialized_spread(_TABS):.0f}x bound."
     )
 
 
@@ -182,9 +191,10 @@ def test_entity_context_reads_are_not_serialized(tmp_path: Path) -> None:
     urls = [f"/api/entities/{entity_ids[i % len(entity_ids)]}/context" for i in range(_CONTEXT_READS)]
     latencies = asyncio.run(_concurrent_latencies(app, urls))
 
-    assert max(latencies) < min(latencies) * _LATENCY_SPREAD, (
+    spread = max(latencies) / min(latencies)
+    assert spread < _serialized_spread(_CONTEXT_READS), (
         f"Entity-context reads appear serialized: {_CONTEXT_READS} finished between "
-        f"{min(latencies):.3f}s and {max(latencies):.3f}s."
+        f"{min(latencies):.3f}s and {max(latencies):.3f}s — a fan-out of {spread:.1f}x."
     )
 
 

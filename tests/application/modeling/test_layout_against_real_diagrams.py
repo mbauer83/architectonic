@@ -117,16 +117,6 @@ class TestNoStoredDiagramIsDisturbed:
         """
         assert ensure_puml_layout(body) == body, name
 
-    def test_a_rebuild_only_ever_touches_the_generated_block(self, name: str, body: str) -> None:
-        if AUTO_MARKER not in body:
-            pytest.skip("nothing generated here to recompute")
-        directive = re.compile(r"^\s*(top to bottom|left to right)\s+direction\s*$")
-
-        relaid = rebuild_puml_layout(body)
-
-        assert [line for line in _stripped(relaid) if not directive.match(line)] == \
-               [line for line in _stripped(body) if not directive.match(line)], name
-
     def test_rebuild_is_idempotent_whatever_the_body(self, name: str, body: str) -> None:
         """Applies to every diagram: a second pass must be a fixed point."""
         once = rebuild_puml_layout(body)
@@ -138,6 +128,21 @@ class TestNoStoredDiagramIsDisturbed:
 @pytest.mark.skipif(not GENERATED, reason="no generated diagrams in this checkout")
 @pytest.mark.parametrize("name,body", GENERATED, ids=[n for n, _ in GENERATED])
 class TestEveryGeneratedDiagram:
+    def test_a_rebuild_only_ever_touches_the_generated_block(self, name: str, body: str) -> None:
+        """Moved here from the whole-corpus class, where it skipped 41 times out of 43.
+
+        A diagram with no generated block has nothing to recompute, so the skip was honest — and
+        41 of them buried the fact that only two diagrams exercise this at all. Parametrized over
+        `GENERATED` the count is stated rather than hidden, and a corpus that loses its last
+        generated block fails the `skipif` above instead of quietly asserting nothing.
+        """
+        directive = re.compile(r"^\s*(top to bottom|left to right)\s+direction\s*$")
+
+        relaid = rebuild_puml_layout(body)
+
+        assert [line for line in _stripped(relaid) if not directive.match(line)] == \
+               [line for line in _stripped(body) if not directive.match(line)], name
+
     def test_no_grouping_ends_up_with_a_backward_sequencing_edge(self, name: str, body: str) -> None:
         """The defect itself: an arrow that has to double back across its own grouping."""
         optimized = _reoptimized(body)
