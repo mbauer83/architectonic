@@ -5,7 +5,7 @@ import { usePanZoom } from '../composables/usePanZoom'
 const props = defineProps<{ resetSignal?: unknown }>()
 
 const viewport = useTemplateRef<HTMLElement>('viewport')
-const { canvasStyle, isTransformed, resetView, startDrag } = usePanZoom(
+const { canvasStyle, isTransformed, resetView, onMouseDown } = usePanZoom(
   viewport,
   toRef(props, 'resetSignal'),
 )
@@ -17,7 +17,7 @@ defineExpose({ resetView })
   <div
     ref="viewport"
     class="preview-viewport"
-    @mousedown="startDrag"
+    @mousedown="onMouseDown"
     @dblclick="resetView"
   >
     <div

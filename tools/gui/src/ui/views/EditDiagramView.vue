@@ -108,11 +108,7 @@ const saveError = computed(() => {
 // ── Pan / Zoom ────────────────────────────────────────────────────────────────
 
 const viewport = useTemplateRef<HTMLElement>('viewport')
-const { canvasStyle, isTransformed, resetView, startDrag } = usePanZoom(viewport)
-const onMouseDown = (e: MouseEvent) => {
-  if ((e.target as HTMLElement).closest('[data-entity-id],[data-conn-id],button,a,input,label')) return
-  startDrag(e)
-}
+const { canvasStyle, isTransformed, resetView, onMouseDown } = usePanZoom(viewport)
 
 // ── Selection + SVG overlay ──────────────────────────────────────────────────
 

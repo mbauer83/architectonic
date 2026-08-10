@@ -1,15 +1,17 @@
 import { computed, nextTick, onUnmounted, ref, watch, type Ref } from 'vue'
+import { usePanGesture } from './usePanGesture'
+import { useWheelZoom } from './useWheelZoom'
 
 /**
- * Pan/zoom/fit-to-viewport for a rendered SVG inside `containerRef`, with `svgContainer`
- * pointing at the wrapper the SVG itself is mounted into (so `fitDiagramToViewport` can
- * measure its content bbox/viewBox). Wheel-to-zoom (cursor-anchored), drag-to-pan, and a
- * ResizeObserver that keeps re-fitting until the user has manually transformed the view.
+ * Fit-to-viewport framing for a rendered SVG inside `containerRef`, with `svgContainer` pointing at
+ * the wrapper the SVG itself is mounted into (so `fitDiagramToViewport` can measure its content
+ * bbox/viewBox), plus a ResizeObserver that keeps re-fitting until the reader has moved the view
+ * themselves. The two gestures — `usePanGesture`, `useWheelZoom` — are shared with `usePanZoom`.
  *
- * Distinct from the simpler `usePanZoom` (fixed scale=1/translate=0 reset, no viewport
- * measurement) `PreviewViewport.vue` already uses — that composable's callers don't need
- * fit-to-content, so this stays a separate, purpose-built composable rather than growing
- * that one a second, more complex mode.
+ * What remains distinct from that simpler composable is only the framing: it resets to
+ * scale=1/translate=0 and measures nothing, which is all `PreviewViewport.vue` needs. Keeping the
+ * two apart is what stops fit-to-content becoming a second mode of one composable, switched by a
+ * flag — the gestures they genuinely share now live in one place instead.
  */
 export function useFittedPanZoom(containerRef: Ref<HTMLElement | null>, svgContainer: Ref<HTMLElement | null>) {
   const scale = ref(1)
@@ -19,8 +21,8 @@ export function useFittedPanZoom(containerRef: Ref<HTMLElement | null>, svgConta
   const fitTx = ref(0)
   const fitTy = ref(0)
   let resizeObserver: ResizeObserver | null = null
-  let dragging = false
-  let drag = { x: 0, y: 0, tx: 0, ty: 0 }
+  const { onMouseDown } = usePanGesture(tx, ty)
+  useWheelZoom(containerRef, { scale, tx, ty })
 
   const canvasStyle = computed(() => ({
     transform: `translate(${tx.value}px, ${ty.value}px) scale(${scale.value})`,
@@ -84,43 +86,13 @@ export function useFittedPanZoom(containerRef: Ref<HTMLElement | null>, svgConta
     ty.value = fitTy.value
   }
 
-  const onWheel = (e: WheelEvent) => {
-    e.preventDefault()
-    const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15
-    const ns = Math.min(8, Math.max(0.2, scale.value * factor))
-    const r = ns / scale.value
-    const rect = containerRef.value!.getBoundingClientRect()
-    tx.value = (e.clientX - rect.left) * (1 - r) + tx.value * r
-    ty.value = (e.clientY - rect.top) * (1 - r) + ty.value * r
-    scale.value = ns
-  }
-
-  const onMouseMove = (e: MouseEvent) => {
-    if (!dragging) return
-    tx.value = drag.tx + (e.clientX - drag.x)
-    ty.value = drag.ty + (e.clientY - drag.y)
-  }
-  const onMouseUp = () => {
-    dragging = false
-    window.removeEventListener('mousemove', onMouseMove)
-    window.removeEventListener('mouseup', onMouseUp)
-  }
-  const onMouseDown = (e: MouseEvent) => {
-    if ((e.target as HTMLElement).closest('[data-entity-id], [data-conn-id], button, a')) return
-    dragging = true
-    drag = { x: e.clientX, y: e.clientY, tx: tx.value, ty: ty.value }
-    window.addEventListener('mousemove', onMouseMove)
-    window.addEventListener('mouseup', onMouseUp)
-  }
   const resetView = () => {
     scale.value = fitScale.value
     tx.value = fitTx.value
     ty.value = fitTy.value
   }
 
-  watch(containerRef, (el, prev) => {
-    prev?.removeEventListener('wheel', onWheel)
-    el?.addEventListener('wheel', onWheel, { passive: false })
+  watch(containerRef, (el) => {
     resizeObserver?.disconnect()
     resizeObserver = null
     if (!el) return
@@ -130,12 +102,7 @@ export function useFittedPanZoom(containerRef: Ref<HTMLElement | null>, svgConta
     resizeObserver.observe(el)
   })
 
-  onUnmounted(() => {
-    resizeObserver?.disconnect()
-    containerRef.value?.removeEventListener('wheel', onWheel)
-    window.removeEventListener('mousemove', onMouseMove)
-    window.removeEventListener('mouseup', onMouseUp)
-  })
+  onUnmounted(() => resizeObserver?.disconnect())
 
   return { scale, tx, ty, canvasStyle, isTransformed, onMouseDown, resetView, fitDiagramToViewport }
 }
