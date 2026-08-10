@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from typing import NamedTuple
 
 from src.application.assurance.ports import (
     AssuranceArchive,
@@ -76,6 +77,32 @@ def default_db_path() -> Path:
 def default_signals_db_path() -> Path:
     """Return the deployment-resolved signals DB path (env/settings override or default)."""
     return _manifest().signals_db_path.path
+
+
+#: How the ``analysis_id`` served by :meth:`AssuranceContext.exposed_graph` is described to callers.
+#: It lives beside the method that implements the scoping rather than in either tool module, because
+#: the sentence and the behaviour are one thing: change what scoping does and the description to
+#: change is the adjacent one. Its three readers (``assurance_stats`` in ``read_tools``,
+#: ``assurance_coverage`` and ``assurance_risk_register`` in ``dashboard_tools``) span two modules,
+#: so no tool module could own it without one importing the other for a string.
+#: The completeness profiles say it in their own words — ``read_tools._SCOPED_TO_ONE_ANALYSIS`` —
+#: because their reason is specific to a profile being defined per unit of work.
+ANALYSIS_SCOPE_HINT = (
+    " Pass `analysis_id` to ask this of one analysis rather than the whole store: a store holding"
+    " several otherwise answers with a total belonging to none of them in particular."
+)
+
+
+class ExposedGraph(NamedTuple):
+    """The nodes and edges one session may see, as a pair that cannot be read the wrong way round.
+
+    Two same-typed lists returned positionally are two lists a caller can swap silently, and every
+    consumer here passes them straight on as ``(nodes, edges)``. Naming the fields makes the swap a
+    type error while still unpacking as a tuple at the call sites that only want to forward them.
+    """
+
+    nodes: list[dict[str, object]]
+    edges: list[dict[str, object]]
 
 
 class AssuranceContext:
@@ -147,6 +174,33 @@ class AssuranceContext:
 
     def is_available(self) -> bool:
         return self.store.is_unlocked()
+
+    def exposed_graph(self, *, analysis_id: str | None = None) -> ExposedGraph:
+        """The store's nodes and edges as this session may see them — optionally one analysis' worth.
+
+        Three whole-store dashboard reads (``assurance_stats``, ``assurance_coverage``,
+        ``assurance_risk_register``) each assembled this themselves, in the same four lines. Nothing
+        held the copies equal, and none of them offered the ``analysis_id`` the store has taken all
+        along — so an agent could ask for a risk register or a coverage gap list of the whole store
+        and never of the analysis those registers are read per.
+
+        **Scoping is by node, and the edges follow.** ``analysis_id`` narrows the nodes, and the edge
+        filter keeps only edges whose *both* endpoints survived, so an edge leaving the analysis is
+        excluded without a second filter — the same mechanism that already hides an edge into a
+        node withheld by the classification ceiling. There is no ``analysis_id`` on ``list_edges``
+        and there should not be: an edge belongs to an analysis by way of its endpoints.
+
+        The withheld count is dropped deliberately. These three reads are aggregates, and reporting
+        "3 withheld" beside a total is how a count of what the ceiling hides leaks out of it.
+        """
+        from src.application.assurance.exposure import AssuranceExposurePolicy  # noqa: PLC0415
+
+        # `True` rather than `is_available()`: every caller has already gated on it, and asking the
+        # store again would be a second unlock round-trip to learn what it just answered.
+        policy = AssuranceExposurePolicy(self.max_classification, True)
+        nodes, _withheld = policy.filter_nodes(self.store.list_nodes(analysis_id=analysis_id))
+        node_ids = frozenset(str(node["node_id"]) for node in nodes)
+        return ExposedGraph(nodes, policy.filter_edges(self.store.list_edges(), node_ids))
 
     def locked_response(self) -> dict[str, object]:
         """The refusal every assurance tool can answer, in the shape every MCP refusal uses."""

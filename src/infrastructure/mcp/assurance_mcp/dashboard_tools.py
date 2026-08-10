@@ -11,9 +11,8 @@ from __future__ import annotations
 
 from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
 
-from src.application.assurance.exposure import AssuranceExposurePolicy
 from src.application.assurance.queries import coverage_gaps, risk_register
-from src.infrastructure.mcp.assurance_mcp.context import get_assurance_context
+from src.infrastructure.mcp.assurance_mcp.context import ANALYSIS_SCOPE_HINT, get_assurance_context
 from src.infrastructure.mcp.tool_annotations import READ_ONLY
 
 
@@ -26,17 +25,15 @@ def register_dashboard_tools(server: FastMCP) -> None:
             "Return a tabular view of all risk entities with their treatment, owner status, "
             "linked hazards/loss-scenarios (via assesses), and treating constraints (via treated-by). "
             "Useful for the GRC risk register view (US8)."
+            + ANALYSIS_SCOPE_HINT
         ),
         annotations=READ_ONLY,
     )
-    def assurance_risk_register() -> dict[str, object]:
+    def assurance_risk_register(analysis_id: str | None = None) -> dict[str, object]:
         if not ctx.is_available():
             return ctx.locked_response()
-        policy = AssuranceExposurePolicy(ctx.max_classification, True)
-        visible, _ = policy.filter_nodes(ctx.store.list_nodes())
-        visible_ids = frozenset(str(n["node_id"]) for n in visible)
-        visible_edges = policy.filter_edges(ctx.store.list_edges(), visible_ids)
-        return risk_register(visible, visible_edges)
+        nodes, edges = ctx.exposed_graph(analysis_id=analysis_id)
+        return risk_register(nodes, edges)
 
     @server.tool(
         name="assurance_coverage",
@@ -46,17 +43,15 @@ def register_dashboard_tools(server: FastMCP) -> None:
             "obligations without constraints, risks without treatment, "
             "unbound-pending CSNs, and orphan corrective-actions. "
             "Use this dashboard to identify where analysis is incomplete."
+            + ANALYSIS_SCOPE_HINT
         ),
         annotations=READ_ONLY,
     )
-    def assurance_coverage() -> dict[str, object]:
+    def assurance_coverage(analysis_id: str | None = None) -> dict[str, object]:
         if not ctx.is_available():
             return ctx.locked_response()
-        policy = AssuranceExposurePolicy(ctx.max_classification, True)
-        visible, _ = policy.filter_nodes(ctx.store.list_nodes())
-        visible_ids = frozenset(str(n["node_id"]) for n in visible)
-        visible_edges = policy.filter_edges(ctx.store.list_edges(), visible_ids)
-        return coverage_gaps(visible, visible_edges)
+        nodes, edges = ctx.exposed_graph(analysis_id=analysis_id)
+        return coverage_gaps(nodes, edges)
 
     @server.tool(
         name="assurance_draft_gsn",

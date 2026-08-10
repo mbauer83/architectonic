@@ -24,6 +24,7 @@ from src.application.assurance.exposure import AssuranceExposurePolicy
 from src.application.assurance.node_sorting import MOST_RECENTLY_UPDATED_FIRST
 from src.infrastructure.assurance.architecture_basis import current_architecture_basis
 from src.infrastructure.mcp.assurance_mcp.context import (
+    ANALYSIS_SCOPE_HINT,
     _exposure_log,
     get_assurance_context,
 )
@@ -185,15 +186,18 @@ def register_read_tools(server: FastMCP) -> None:
 
     @server.tool(
         name="assurance_stats",
-        description="Return counts of assurance nodes and edges by type.",
+        description=("Return counts of assurance nodes and edges by type." + ANALYSIS_SCOPE_HINT),
         annotations=READ_ONLY,
     )
-    def assurance_stats() -> dict[str, object]:
+    def assurance_stats(analysis_id: str | None = None) -> dict[str, object]:
         if not ctx.is_available():
             return ctx.locked_response()
         policy = AssuranceExposurePolicy(ctx.max_classification, True)
-        visible, _ = policy.filter_nodes(ctx.store.list_nodes())
-        return policy.redact_stats(visible, ctx.store.list_edges())
+        nodes, edges = ctx.exposed_graph(analysis_id=analysis_id)
+        # `redact_stats` narrows the edges it is given to the visible node set itself. Handing it the
+        # already-narrowed set is not a double filter with a second meaning: it is the same filter
+        # against the same node ids, so it is a no-op — and it saves a second `list_edges()`.
+        return policy.redact_stats(nodes, edges)
 
     @server.tool(
         name="assurance_verify",
