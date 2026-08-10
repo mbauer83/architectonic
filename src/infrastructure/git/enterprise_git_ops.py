@@ -236,6 +236,24 @@ def release_worktree_checkpoint(repo: Path, *, head: str, checkpoint: str) -> No
         raise RuntimeError(f"Failed to release promotion checkpoint: {stderr}")
 
 
+def submission_preflight(enterprise_root: Path) -> str:
+    """The branch :func:`push_enterprise_branch` would publish, without publishing it.
+
+    Exists so a caller can preview a submission — the push reaches a *shared remote*, so
+    "what would this do" has to be answerable without doing it. It raises the same errors, with the
+    same messages, that the push itself would, which is the point: the checks live here and the push
+    calls this, so a preview cannot claim a submission the live call would refuse. Restating the
+    conditions at the preview's own call site would let the two drift, and it would drift silently —
+    the preview would keep answering "ready" after a new precondition was added to the push.
+    """
+    branch = current_branch(enterprise_root)
+    if not branch:
+        raise RuntimeError("Enterprise repo is in detached HEAD state")
+    if has_uncommitted_changes(enterprise_root):
+        raise ValueError("Enterprise repository has unsaved changes. Save your work before submitting for review.")
+    return branch
+
+
 def push_enterprise_branch(enterprise_root: Path) -> str:
     """Push the working branch to origin and transition the state to PENDING.
 
@@ -245,11 +263,7 @@ def push_enterprise_branch(enterprise_root: Path) -> str:
     are unsaved changes, RuntimeError if the push fails.
     """
     state = enterprise_sync_state.load(enterprise_root)
-    branch = current_branch(enterprise_root)
-    if not branch:
-        raise RuntimeError("Enterprise repo is in detached HEAD state")
-    if has_uncommitted_changes(enterprise_root):
-        raise ValueError("Enterprise repository has unsaved changes. Save your work before submitting for review.")
+    branch = submission_preflight(enterprise_root)
     rc, _, stderr = _run(enterprise_root, "push", "-u", "origin", branch, timeout=_PUSH_TIMEOUT)
     if rc != 0:
         raise RuntimeError(f"Failed to push enterprise branch '{branch}': {stderr}")

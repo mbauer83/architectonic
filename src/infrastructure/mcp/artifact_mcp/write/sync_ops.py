@@ -87,8 +87,11 @@ def artifact_save_changes(
         return {"ok": False, "error": str(exc)}
 
 
-def artifact_submit_for_review() -> dict[str, object]:
+def artifact_submit_for_review(*, dry_run: bool = True) -> dict[str, object]:
     """Push the enterprise working branch so it can be reviewed and merged by the team.
+
+    dry_run=true (the DEFAULT) reports the branch that would be pushed and pushes nothing.
+    Pass dry_run=false to actually submit.
 
     After submitting, create a pull request from the returned branch name in
     your version-control hosting platform (GitHub, GitLab, etc.).
@@ -107,6 +110,8 @@ def artifact_submit_for_review() -> dict[str, object]:
     if state.is_pending():
         return {
             "ok": True,
+            "dry_run": dry_run,
+            "pushed": False,
             "already_submitted": True,
             "branch": state.branch,
             "pushed_at": state.pushed_at,
@@ -121,9 +126,23 @@ def artifact_submit_for_review() -> dict[str, object]:
         }
 
     try:
+        if dry_run:
+            branch = enterprise_git_ops.submission_preflight(ent_root)
+            return {
+                "ok": True,
+                "dry_run": True,
+                "pushed": False,
+                "branch": branch,
+                "message": (
+                    f"Would push enterprise branch '{branch}' to the remote for team review. "
+                    "Nothing was pushed. Call again with dry_run=false to submit."
+                ),
+            }
         branch = enterprise_git_ops.push_enterprise_branch(ent_root)
         return {
             "ok": True,
+            "dry_run": False,
+            "pushed": True,
             "branch": branch,
             "message": (
                 f"Enterprise changes pushed to branch '{branch}'. "
@@ -197,6 +216,8 @@ def register(mcp: FastMCP) -> None:
         title="Submit Enterprise Changes for Review",
         description=(
             "Push the enterprise working branch to the remote for team review. "
+            "dry_run=true is the DEFAULT and pushes nothing: it reports the branch that would be "
+            "pushed, having run the same checks the real submission runs. Pass dry_run=false to submit. "
             "Returns the branch name; create a pull request from it in your "
             "version-control platform. The system auto-detects when it is merged."
         ),

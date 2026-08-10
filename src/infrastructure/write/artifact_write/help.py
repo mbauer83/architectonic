@@ -50,7 +50,10 @@ def write_help() -> dict[str, object]:
             "entity_id_format": "TYPE@epoch.random.friendly-name (auto-generated)",
             "puml_alias_format": "TYPE_random (e.g. DRV_Qw7Er1)",
             "statuses": ["draft", "active", "deprecated"],
-            "dry_run": "All create/edit tools default to dry_run=true for safe preview",
+            "dry_run": (
+                "All create/edit tools default to dry_run=true for safe preview, as does "
+                "artifact_submit_for_review — it pushes to a shared remote, so previewing it matters most"
+            ),
             "connection_inference": {
                 "none": "No connections inferred from PUML. Only explicitly linked connections are recorded.",
                 "auto": (
