@@ -92,10 +92,11 @@ More on the audience in [Who it serves](docs/01-motivation.md#who-it-serves).
 
 **Start before you know what anything is.** A scratchpad holds notes and the links between them with
 no ontology involved — then narrows them a level at a time, and lifts what survives into ordinary,
-verified model content. Here one note has decided nothing, one has reached its domain, one is typed,
-and one is bound to an element the model already had:
+verified model content. Most of these have decided nothing. Some have reached a domain, some a type;
+two are bound to elements the model already had, and one — `✓ goal` — has been lifted and is in the
+model now. The links crossing between the frames are why this is one canvas rather than four tabs:
 
-![A scratchpad: an untyped note, one narrowed to a domain, one typed, and one bound to an existing element](docs/media/scratchpad-hero.png)
+![A scratchpad mid-thought: sixteen notes across two frames, most undecided, some narrowed to a domain or a type, two bound to existing elements and one already lifted into the model](docs/media/scratchpad-hero.png)
 
 &nbsp;
 

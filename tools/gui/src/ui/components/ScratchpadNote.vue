@@ -64,7 +64,8 @@ const emit = defineEmits<{
     :class="{
       selected: selected,
       typed: !!note['element-type'],
-      bound: !!note['model-ref'],
+      bound: note['model-ref']?.kind === 'bound',
+      realized: note['model-ref']?.kind === 'realized',
     }"
     :data-note-id="note.id"
     :data-area="note.area"
@@ -113,6 +114,15 @@ const emit = defineEmits<{
       >
         ⛓ {{ note['element-type'] }}
       </button>
+      <!-- Realized is not the same fact as typed, and read only the type chip they looked
+           identical — the one state that says "this is in the model now" was the one the card did
+           not show. It is not a button: a binding is released from here, a realization is *forgotten*
+           from the panel, which is a different act with a different consequence. -->
+      <span
+        v-else-if="note['model-ref']?.kind === 'realized'"
+        class="sp-type sp-realized"
+        :title="`Realized as ${note['model-ref']['artifact-id']}`"
+      >✓ {{ note['element-type'] }}</span>
       <span
         v-else-if="note['element-type']"
         class="sp-type"
@@ -165,13 +175,14 @@ const emit = defineEmits<{
 /* The domain is the tint; the border simply becomes visible once anything has been decided. A
    note that has decided nothing wears nothing, which is the state the feature exists to allow. */
 .sp-note.typed, .sp-note[data-domain]:not([data-domain='']) { border-left: 3px solid #7c3aed; }
-.sp-note.bound { border-left: 3px solid #059669; }
+.sp-note.bound, .sp-note.realized { border-left: 3px solid #059669; }
 .sp-glyph { width: 13px; height: 13px; flex: 0 0 auto; color: #6b7280; }
 .sp-bound {
   border: none; background: none; padding: 0; cursor: pointer;
   color: #059669; font-size: 10.5px; font-weight: 600;
 }
 .sp-bound:hover { text-decoration: line-through; }
+.sp-realized { color: #059669; }
 /* The title *is* the note: it takes the whole card and the metadata sits under it, rather than the
    other way round. A thought is what this holds. */
 .sp-title {
