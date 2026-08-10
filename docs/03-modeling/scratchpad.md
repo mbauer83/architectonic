@@ -262,7 +262,9 @@ it. Dropping that record is **forget** — the entity stays exactly where it is.
 
 ## On disk
 
-One YAML document per scratchpad, in the collection it belongs to:
+One YAML document per scratchpad, in the folder it is filed under — `uncategorized` unless you say
+otherwise, because a scratchpad is free-standing and a lift picks its target model-project per
+*frame*:
 
 ```
 scratchpads/<group-slug>/SCR@<epoch>.<key>.<slug>.scratchpad.yaml
@@ -309,7 +311,7 @@ layout:                       # every coordinate, and nothing else
 
 ## Reaching one from an agent
 
-Every capability is reachable by **MCP and by REST alike** — six of each, over one service. That is
+Every capability is reachable by **MCP and by REST alike** — seven of each, over one service. That is
 a deliberate property of this feature rather than of the platform: the scratchpad is the
 lowest-barrier surface, so a human-only version would make the one place newcomers start the one
 place an agent cannot help.
@@ -320,14 +322,39 @@ place an agent cannot help.
 | Read | `scratchpad_read` | `GET /api/scratchpads/{artifact_id}` |
 | Create | `scratchpad_create` | `POST /api/scratchpads` |
 | Replace | `scratchpad_replace` | `PUT /api/scratchpads/{artifact_id}` |
+| Edit | `scratchpad_edit` | `PATCH /api/scratchpads/{artifact_id}` |
 | Delete | `scratchpad_delete` | `DELETE /api/scratchpads/{artifact_id}` |
 | Lift | `scratchpad_lift` | `POST /api/scratchpads/{artifact_id}/lift` |
 
-**A scratchpad is read and written whole.** There is no per-note operation on either surface: the
-aggregate enforces its own invariants, a partial update cannot be validated without loading all of
-it anyway, and one shape removes the class of bug where two partial updates interleave into a state
-neither writer intended. To change one thing: read it, edit the returned document, and pass it back
-with the `version` you read.
+**The resource is the whole scratchpad**, on both surfaces: there is no note route and no link
+route, because the aggregate enforces its own invariants and a partial update cannot be validated
+without loading all of it anyway.
+
+What there is, is **one write in two shapes**. `PUT` replaces the aggregate whole, which suits a
+canvas holding the document in memory and saving one coherent state. `PATCH` says what changed,
+which suits everyone who does not — sending a hundred notes back to remove one is a cost a browser
+does not pay and an agent does. Both load, apply, validate and save through one path, so neither has
+a refusal the other lacks, and both carry the `version` you read.
+
+```jsonc
+// PATCH — remove a link, take a type off a note, and move it, in one call
+{ "version": "0.1.7",
+  "remove": { "links": ["l1"] },
+  "upsert": { "notes": [{ "id": "n2", "element-type": null }] },
+  "layout": { "notes": { "n2": [40, 60] } } }
+```
+
+A patch is a **merge patch**: a key you leave out keeps its stored value, a key set to `null` clears
+it, and an id the scratchpad does not have creates the row. That is the one place the two writes
+differ, and they differ on purpose — under `PUT` the document you send is the whole truth, so
+omission there *is* removal.
+
+**Nothing on a scratchpad is permanent until it is lifted.** Leave a note out (or name it in
+`remove`) to delete it, and its links, group memberships and placement go with it; do the same to a
+link to rub it out, leaving both notes; drop `element-type`, `domain`, `document-type` or
+`connection-type` to un-refine. What removal never does is retract model content — deleting a
+`realized` note leaves the entity the lift created, and dropping `model-ref` is how a note stops
+claiming one without pretending the lift never happened.
 
 The invariants a write is refused for, each naming the id at fault:
 
@@ -338,9 +365,23 @@ The invariants a write is refused for, each naming the id at fault:
 
 &nbsp;
 
+## Finding a note again
+
+Notes are **indexed and findable, and never outrank model content, documents or diagrams** — a note
+is a half-formed thought and an entity is a commitment. A note is addressed
+`{scratchpad_id}#note/{note_id}`, the shape a diagram already uses for the constructs it owns, and a
+search hit opens the canvas it sits on, because a note is a card rather than a page.
+
+The guarantee is in the draw order, not in the weights: per-table bm25 and the token-match
+supplement are on scales that say nothing about each other, so ranking notes last is the only way to
+promise it. The cost is accepted — a query whose result window is filled by model content will not
+show a note even if the note matched it exactly. A *picker* never offers notes at all: it offers
+content to reference, and a thought nobody has committed to is not that.
+
+&nbsp;
+
 ## What is not here yet
 
-Everything above ships today. The one piece still to come is **search**: notes are meant to be
-indexed and findable but ranked below model content, documents and diagrams — a note is a
-half-formed thought and an entity is a commitment. The ranking rule is small; what it needs first is
-a record type in the artifact index, which is a schema change rather than a scoring function.
+**Alternatives per note** — a collapsed stack of variants, exactly one active, only the active one
+lifting. Designed and deliberately deferred until typing and lift were solid. Scratchpads are also
+**engagement-tier only**: no promotion, no enterprise scratchpads, revisited only if asked for.

@@ -66,7 +66,7 @@ looking entirely normal. See
 | Documents | `artifact_create_document` | Write | Create a new architecture document (e.g. ADR, RFC). |
 | Documents | `artifact_edit_document` | Destructive | Edit an existing architecture document's frontmatter or body. |
 | Documents | `artifact_delete_document` | Destructive | Delete a single architecture document. |
-| Scratchpads | `scratchpad_create` | Write | Create a scratchpad in `group` (the collection it lives in on disk). |
+| Scratchpads | `scratchpad_create` | Write | Create a scratchpad. |
 | Scratchpads | `scratchpad_replace` | Destructive | Replace a scratchpad whole. |
 | Scratchpads | `scratchpad_delete` | Destructive | Delete a scratchpad and everything on it. |
 | Bulk | `artifact_bulk_write` | Destructive | Batch entity creates, connection adds, and edits in one call. |
