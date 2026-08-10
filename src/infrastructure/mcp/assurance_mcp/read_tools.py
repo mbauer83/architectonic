@@ -32,6 +32,15 @@ from src.infrastructure.mcp.assurance_mcp.fmea_read_tools import register_fmea_r
 from src.infrastructure.mcp.assurance_mcp.security_read_tools import register_security_read_tools
 from src.infrastructure.mcp.tool_annotations import READ_ONLY
 
+#: Said the same way on all three completeness profiles, because it is the same decision. The
+#: application layer has taken `analysis_id` throughout; only the tool surface was dropping it, so an
+#: agent could ask "is this analysis complete?" of the store and never of the analysis.
+_SCOPED_TO_ONE_ANALYSIS = (
+    " Pass `analysis_id` to check one analysis rather than the whole store: a completeness profile is"
+    " defined per unit of work, so a store holding several answers with gaps belonging to none of"
+    " them."
+)
+
 FAILURE_MODE_NODE_TYPE = "failure-mode"
 
 
@@ -220,15 +229,16 @@ def register_read_tools(server: FastMCP) -> None:
             "Checks: every hazard has ≥1 leads-to loss; every UCA has ≥1 concerns control-action "
             "AND ≥1 leads-to hazard; every loss-scenario explains ≥1 UCA or ≥1 hazard; every UCA and "
             "loss-scenario has ≥1 derives constraint. Returns gap counts and node IDs for each check."
+            + _SCOPED_TO_ONE_ANALYSIS
         ),
         annotations=READ_ONLY,
     )
-    def assurance_stpa_complete() -> dict[str, object]:
+    def assurance_stpa_complete(analysis_id: str | None = None) -> dict[str, object]:
         if not ctx.is_available():
             return ctx.locked_response()
         from src.application.verification.stpa_complete import run_stpa_complete  # noqa: PLC0415
 
-        return run_stpa_complete(ctx.store)
+        return run_stpa_complete(ctx.store, analysis_id=analysis_id)
 
     @server.tool(
         name="assurance_guidance",
@@ -253,15 +263,16 @@ def register_read_tools(server: FastMCP) -> None:
             "Fails if any incident exists without a sealed analysis_baseline. "
             "Also checks: every incident has ≥1 investigates edge; every corrective-action "
             "has ≥1 derives edge to a constraint. Returns gap counts per check."
+            + _SCOPED_TO_ONE_ANALYSIS
         ),
         annotations=READ_ONLY,
     )
-    def assurance_cast_complete() -> dict[str, object]:
+    def assurance_cast_complete(analysis_id: str | None = None) -> dict[str, object]:
         if not ctx.is_available():
             return ctx.locked_response()
         from src.application.verification.cast_complete import run_cast_complete  # noqa: PLC0415
 
-        return run_cast_complete(ctx.store, ctx.archive)
+        return run_cast_complete(ctx.store, ctx.archive, analysis_id=analysis_id)
 
     @server.tool(
         name="assurance_grc_complete",
@@ -270,15 +281,16 @@ def register_read_tools(server: FastMCP) -> None:
             "Checks: every obligation has ≥1 complies-with constraint; "
             "every risk has a treatment attribute; every risk has an accountable-for owner. "
             "Returns gap counts per check."
+            + _SCOPED_TO_ONE_ANALYSIS
         ),
         annotations=READ_ONLY,
     )
-    def assurance_grc_complete() -> dict[str, object]:
+    def assurance_grc_complete(analysis_id: str | None = None) -> dict[str, object]:
         if not ctx.is_available():
             return ctx.locked_response()
         from src.application.verification.grc_complete import run_grc_complete  # noqa: PLC0415
 
-        return run_grc_complete(ctx.store)
+        return run_grc_complete(ctx.store, analysis_id=analysis_id)
 
     @server.tool(
         name="assurance_list_analyses",
