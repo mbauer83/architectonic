@@ -51,9 +51,16 @@ def list_active_findings(
     """Visible findings of the anchor's active snapshot (optionally scoped to one component
     by ``component_id`` or ``purl``), each enriched with its component name/purl. A
     finding is withheld when its component is hidden, so the two stay consistent."""
-    snapshot_id = _active_snapshot_id(anchor_entity_id, snapshot_store)
-    if snapshot_id is None:
+    snapshot = snapshot_store.get_active_snapshot(anchor_entity_id)
+    if snapshot is None:
         return [], 0
+    snapshot_id = str(snapshot["snapshot_id"])
+    # The anchor **as stored**, not as asked for. The store canonicalises an entity id to
+    # `PREFIX@epoch.random`, so a caller passing the full slugged form used to get it echoed back
+    # while `list_all_active_findings` — which passes the stored ids it just read — reported the
+    # canonical one. One field, two values, depending on which read you called: joining the two
+    # result sets on `assessed_entity_id` matched nothing.
+    assessed_entity_id = str(snapshot["anchor_entity_id"])
     visible_components, _ = policy.filter_security_records(snapshot_store.list_snapshot_components(snapshot_id))
     component_by_id = {str(c["component_id"]): c for c in visible_components}
     visible_findings, withheld = policy.filter_security_records(snapshot_store.list_snapshot_findings(snapshot_id))
@@ -70,7 +77,7 @@ def list_active_findings(
             continue
         out.append({
             **dict(finding),
-            "assessed_entity_id": anchor_entity_id,
+            "assessed_entity_id": assessed_entity_id,
             "component_name": component.get("name"),
             "component_purl": component.get("purl"),
             "component_directness": component.get("directness"),
