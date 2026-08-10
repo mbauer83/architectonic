@@ -19,7 +19,11 @@ test('a large viewpoint diagram renders inside a bounded, resizable viewport wit
   await expect(page.getByText(/entities:\s*\d+/i)).toBeVisible({ timeout: 15000 })
 
   const container = page.locator('.img-container')
-  await expect(container).toBeVisible()
+  // The count arrives as soon as the query resolves; the *picture* is a PlantUML render of 233
+  // entities and 444 connections, which the page itself says "can take a while". The default 5 s
+  // was a budget for the wrong operation — it held only while the machine was idle, so this failed
+  // in a full suite run and passed alone.
+  await expect(container).toBeVisible({ timeout: 30_000 })
   const containerBox = await container.boundingBox()
   expect(containerBox).not.toBeNull()
   // The container is clamped to a sane viewport height, never the diagram's native size.
@@ -37,7 +41,7 @@ test('a large viewpoint diagram renders inside a bounded, resizable viewport wit
 test('a diagram-representation viewpoint with only a small population still shows a usable, bounded viewport', async ({ page }) => {
   await page.goto('/viewpoints/application-structure/diagram')
   await expect(page.getByText(/entities:\s*\d+/i)).toBeVisible({ timeout: 15000 })
-  await expect(page.locator('.img-container')).toBeVisible()
+  await expect(page.locator('.img-container')).toBeVisible({ timeout: 30_000 })
   await expect(page.locator('.sb-title', { hasText: 'Entities' })).toBeVisible()
 })
 
