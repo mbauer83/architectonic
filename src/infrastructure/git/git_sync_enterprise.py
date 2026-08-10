@@ -65,6 +65,27 @@ async def sync_enterprise(sync: GitSyncManager, root: Path) -> None:
         await ent_pending(sync, root, state)
     if handled_cleanly and outcome.completed:
         await sync._clear_sync_health(root)
+    elif _persisted_reason(root) == "fetch_failed":
+        # The fetch above just succeeded, so a persisted `fetch_failed` is reporting something that
+        # is no longer true — and it is the one reason this poll can disprove on its own.
+        #
+        # Clearing only on `completed` is right for the reasons *reconcile* records, since those are
+        # claims about a state this poll did not manage to ground. It is wrong for this one: a poll
+        # whose fetch succeeds but whose reconcile stops short (a detached HEAD, an unreadable ref)
+        # left one transient network stall visible across every later healthy poll, with nothing in
+        # the record to say the network had recovered hours earlier.
+        await sync._clear_sync_health(root)
+
+
+def _persisted_reason(root: Path) -> str | None:
+    """The health reason on disk *now* — deliberately re-read rather than taken from the outcome.
+
+    `ReconcileOutcome.health` is a snapshot of the state as reconcile found it, and reconcile may
+    have recorded a different reason since (`diverged`, say). Deciding from the stale copy would
+    clear a block this poll had just legitimately raised.
+    """
+    health = enterprise_sync_state.load(root).health
+    return health.reason if health is not None else None
 
 
 def _outcome(
