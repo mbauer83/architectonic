@@ -3,6 +3,49 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [0.5.0] — 2026-08-10
+
+**[Full detail → `changelog-assets/0.5.0-detail.md`](changelog-assets/0.5.0-detail.md)**
+
+Supersedes 0.4.0. No GitHub release exists for 0.4.0 and none should.
+
+### Changed
+
+- **BREAKING — `artifact_submit_for_review` takes `dry_run`, defaulting to `true`.** The bare call now
+  reports the branch it would push and pushes nothing. **Pass `dry_run=false` to submit.**
+- **Deselecting a diagram entity: clicking the same entity no longer clears the selection.** Click away
+  from any entity, connection or sub-part to clear. Applies to every diagram view. Panning unaffected.
+- `destination` is imported from the domain by every contract that declares it. The file reader heals
+  an unrecognised value to `undecided`; the request boundaries reject one, against the caller's own
+  rows only.
+
+### Added
+
+- Fullscreen diagram views keep their sidebar: it moves inside the fullscreen element and animates in
+  on selection, out on deselection. Honours `prefers-reduced-motion`. Entering fullscreen no longer
+  remounts it.
+- `analysis_id` on `assurance_stats`, `assurance_coverage`, `assurance_risk_register`,
+  `assurance_stpa_complete`, `assurance_cast_complete` and `assurance_grc_complete`. Omit it for the
+  whole store. Scoping is by node; edges follow their endpoints.
+- Typed request contracts for the scratchpad delta body, the whole-document body, and the MCP write
+  tools' parameters.
+
+### Fixed
+
+- A scratchpad holding an unrecognised `destination` is readable again.
+- Four diagram types were not exercised in CI; their suite is no longer parametrized over
+  environment capabilities.
+- `assurance_scan_ai_candidates` now reads `artifact_id` / `artifact_type` / `summary` as well as
+  `entity_id` / `entity_type` / `description`, so arch-repo-read output yields identified candidates.
+- A `src/domain/**` coverage floor and an IPv4/IPv6 bind mismatch.
+
+### Notes for maintainers
+
+- MCP tool returns remain `dict[str, object]` with an open `outputSchema`.
+- Four tools take no parameters by design, recorded in a two-way register: `assurance_store_status`,
+  `artifact_help`, `assurance_security_stats`, `assurance_verify`.
+- MCP tools named literally in tests: 69 → 86.
+
 ## [0.4.0] — 2026-08-10
 
 **[Full detail → `changelog-assets/0.4.0-detail.md`](changelog-assets/0.4.0-detail.md)**
