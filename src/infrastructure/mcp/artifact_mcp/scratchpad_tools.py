@@ -14,7 +14,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
+from mcp.server.fastmcp import FastMCP
+from pydantic import BaseModel, ValidationError  # type: ignore[import-not-found]
 
 from src.application.modeling.artifact_write import generate_entity_id
 from src.application.scratchpad.document import (
@@ -33,6 +34,12 @@ from src.infrastructure.mcp.tool_annotations import (
     DESTRUCTIVE_LOCAL_WRITE,
     LOCAL_WRITE,
     READ_ONLY,
+)
+from src.infrastructure.rest.contracts.scratchpad_requests import (
+    LayoutPatchWire,
+    RemovePatchWire,
+    ScratchpadDocumentWire,
+    UpsertPatchWire,
 )
 from src.infrastructure.scratchpad.bulk_write_lift import BulkWriteLiftWriter
 from src.infrastructure.scratchpad.yaml_repository import YamlScratchpadRepository
@@ -63,6 +70,26 @@ def _service(repo_root: str | None) -> ScratchpadService:
     )
 
 
+def _shaped[T: BaseModel](model: type[T], sent: object) -> T:
+    """The typed body, whether the caller handed over a model or the JSON object behind one.
+
+    The annotation is what puts `destination`'s four values into the tool's published schema, so an
+    agent reads them instead of discovering them by being refused. Validating here as well is not
+    belt-and-braces: FastMCP builds the model when it invokes a tool, but these functions are plain
+    callables that the write queue — and every test — calls directly, and a contract that only holds
+    on one of its two entry paths is not a contract.
+
+    `sent` is deliberately `object`: the parameters are annotated as the models, which is what the
+    published schema is built from, and this only has to cope with the fact that a direct caller may
+    hand over the mapping instead. Widening the *parameter* to a union would have put
+    `anyOf[model, object]` in the schema and given the enum back to guesswork.
+
+    A violation surfaces through `_failure` as ordinary data, because this surface answers refusals
+    with something an agent can branch on rather than an exception it cannot see.
+    """
+    return model.model_validate(sent if sent is not None else {})
+
+
 def _failure(exc: Exception) -> dict[str, Any]:
     """A refusal an agent can act on: the domain's own sentence, plus what kind of problem it is.
 
@@ -72,6 +99,7 @@ def _failure(exc: Exception) -> dict[str, Any]:
     kind = (
         "not_found" if isinstance(exc, ScratchpadNotFoundError)
         else "version_conflict" if isinstance(exc, ScratchpadVersionConflictError)
+        else "invalid_request" if isinstance(exc, ValidationError)
         else "refused"
     )
     return {"ok": False, "error": kind, "message": str(exc)}
@@ -220,7 +248,7 @@ def scratchpad_create(
 def scratchpad_replace(
     *,
     artifact_id: str,
-    scratchpad: dict[str, Any],
+    scratchpad: ScratchpadDocumentWire,
     version: str,
     group: str | None = None,
     repo_root: str | None = None,
@@ -229,11 +257,15 @@ def scratchpad_replace(
     try:
         target_group = group or service.group_of(artifact_id)
         stored = service.replace(
-            from_request_document(scratchpad, artifact_id=artifact_id),
+            from_request_document(
+                _shaped(ScratchpadDocumentWire, scratchpad).as_document(), artifact_id=artifact_id
+            ),
             group=target_group,
             expected_version=version,
         )
-    except (ScratchpadError, ScratchpadNotFoundError, ScratchpadVersionConflictError) as exc:
+    except (
+        ScratchpadError, ScratchpadNotFoundError, ScratchpadVersionConflictError, ValidationError
+    ) as exc:
         return _failure(exc)
     return {"ok": True, "scratchpad": to_response(stored, group=target_group, registry=_registry())}
 
@@ -242,20 +274,26 @@ def scratchpad_edit(
     *,
     artifact_id: str,
     version: str,
-    remove: dict[str, list[str]] | None = None,
-    upsert: dict[str, list[dict[str, Any]]] | None = None,
-    layout: dict[str, dict[str, list[float] | None]] | None = None,
+    remove: RemovePatchWire | None = None,
+    upsert: UpsertPatchWire | None = None,
+    layout: LayoutPatchWire | None = None,
     repo_root: str | None = None,
 ) -> dict[str, Any]:
     service = _service(repo_root)
     try:
         stored = service.edit(
             artifact_id,
-            edit=ScratchpadEdit(remove=remove or {}, upsert=upsert or {}, layout=layout or {}),
+            edit=ScratchpadEdit(
+                remove=_shaped(RemovePatchWire, remove).as_delta(),
+                upsert=_shaped(UpsertPatchWire, upsert).as_delta(),
+                layout=_shaped(LayoutPatchWire, layout).as_delta(),
+            ),
             expected_version=version,
         )
         group = service.group_of(artifact_id)
-    except (ScratchpadError, ScratchpadNotFoundError, ScratchpadVersionConflictError) as exc:
+    except (
+        ScratchpadError, ScratchpadNotFoundError, ScratchpadVersionConflictError, ValidationError
+    ) as exc:
         return _failure(exc)
     return {"ok": True, "scratchpad": to_response(stored, group=group, registry=_registry())}
 

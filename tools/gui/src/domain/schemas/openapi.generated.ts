@@ -3405,6 +3405,26 @@ export interface components {
                 [key: string]: string[];
             } | null;
         };
+        /** AreaRequestWire */
+        AreaRequestWire: {
+            /** Id */
+            id: string;
+            /**
+             * Label
+             * @default
+             */
+            label: string;
+            /** Permits */
+            permits?: {
+                [key: string]: string[];
+            };
+            /** Permitted-Document-Types */
+            "permitted-document-types"?: string[];
+            /** Permitted-Domains */
+            "permitted-domains"?: string[];
+            /** Permitted-Element-Types */
+            "permitted-element-types"?: string[];
+        };
         /**
          * AreaWire
          * @description A labelled frame, and what it narrows to.
@@ -7950,6 +7970,18 @@ export interface components {
             /** Members */
             members?: string[] | null;
         };
+        /** GroupRequestWire */
+        GroupRequestWire: {
+            /** Id */
+            id: string;
+            /**
+             * Label
+             * @default
+             */
+            label: string;
+            /** Members */
+            members?: string[];
+        };
         /** GroupWire */
         GroupWire: {
             /** Id */
@@ -8580,6 +8612,22 @@ export interface components {
                 [key: string]: unknown;
             } | null;
         };
+        /** LinkRequestWire */
+        LinkRequestWire: {
+            /** Connection-Type */
+            "connection-type"?: string | null;
+            /** Id */
+            id: string;
+            "model-ref"?: components["schemas"]["ModelRefPatchWire"] | null;
+            /** Source */
+            source: string;
+            /** Target */
+            target: string;
+            /** Verdict */
+            verdict?: {
+                [key: string]: unknown;
+            } | null;
+        };
         /**
          * LinkVerdictWire
          * @description What the meta-ontology says about a drawn link.
@@ -9058,6 +9106,43 @@ export interface components {
             specialization?: string | null;
             /** Title */
             title?: string | null;
+        };
+        /**
+         * NoteRequestWire
+         * @description A note as a caller writes one. `title` is required here and optional in a *patch*: a whole
+         *     document says what every note is, while a patch says only what changed.
+         */
+        NoteRequestWire: {
+            /** Area */
+            area?: string | null;
+            /** Attributes */
+            attributes?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Body
+             * @default
+             */
+            body: string;
+            /**
+             * Destination
+             * @default undecided
+             * @enum {string}
+             */
+            destination: "undecided" | "element" | "document" | "none";
+            /** Document-Type */
+            "document-type"?: string | null;
+            /** Domain */
+            domain?: string | null;
+            /** Element-Type */
+            "element-type"?: string | null;
+            /** Id */
+            id: string;
+            "model-ref"?: components["schemas"]["ModelRefPatchWire"] | null;
+            /** Specialization */
+            specialization?: string | null;
+            /** Title */
+            title: string;
         };
         /**
          * NoteWire
@@ -9964,10 +10049,7 @@ export interface components {
         ReplaceScratchpadBody: {
             /** Group */
             group: string;
-            /** Scratchpad */
-            scratchpad: {
-                [key: string]: unknown;
-            };
+            scratchpad: components["schemas"]["ScratchpadDocumentWire"];
             /** Version */
             version: string;
         };
@@ -10094,6 +10176,57 @@ export interface components {
             excluded_entity_types?: string[];
             /** Unrestricted */
             unrestricted: boolean;
+        };
+        /**
+         * ScratchpadDocumentWire
+         * @description A whole scratchpad as a caller sends it, for `PUT` and for `scratchpad_replace`.
+         *
+         *     Not `ScratchpadResponse`. The two describe the same document from opposite directions and differ
+         *     where that matters: a served note always carries `area` and a served link always carries a
+         *     `verdict`, both derived, and neither is something a writer must supply. Sharing one model would
+         *     have forced a caller to send back values it does not own.
+         *
+         *     What it *does* accept is everything a read returns, because the documented loop is "read it, edit
+         *     it, hand it back". The derived keys are declared so they are accepted and dropped, rather than
+         *     rejected by a closed model or, worse, quietly stored as a second answer to a question the
+         *     geometry and the ontology already settle.
+         */
+        ScratchpadDocumentWire: {
+            /** Areas */
+            areas?: components["schemas"]["AreaRequestWire"][];
+            /** Artifact-Id */
+            "artifact-id"?: string | null;
+            /** Artifact-Type */
+            "artifact-type"?: string | null;
+            /** Attributes */
+            attributes?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Group */
+            group?: string | null;
+            /** Groups */
+            groups?: components["schemas"]["GroupRequestWire"][];
+            layout?: components["schemas"]["LayoutPatchWire"];
+            /** Links */
+            links?: components["schemas"]["LinkRequestWire"][];
+            /** Meta-Ontology */
+            "meta-ontology"?: string | null;
+            /**
+             * Name
+             * @default
+             */
+            name: string;
+            /** Notes */
+            notes?: components["schemas"]["NoteRequestWire"][];
+            /** Status */
+            status?: string | null;
+            /** Version */
+            version?: string | null;
         };
         /**
          * ScratchpadLiftResponse

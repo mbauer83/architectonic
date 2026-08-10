@@ -39,6 +39,14 @@ class ModelRefPatchWire(Closed):
     kind: ModelRefKind
 
 
+class _Row(Closed):
+    """A row a caller sends, identified by its `id`."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    id: str
+
+
 class _Patch(Closed):
     """A merge patch over one row.
 
@@ -168,3 +176,91 @@ class LayoutPatchWire(Closed):
             )
             if placements
         }
+
+
+class NoteRequestWire(_Row):
+    """A note as a caller writes one. `title` is required here and optional in a *patch*: a whole
+    document says what every note is, while a patch says only what changed."""
+
+    title: str
+    body: str = ""
+    destination: Destination = "undecided"
+    domain: str | None = None
+    element_type: str | None = Field(default=None, alias="element-type")
+    specialization: str | None = None
+    document_type: str | None = Field(default=None, alias="document-type")
+    model_ref: ModelRefPatchWire | None = Field(default=None, alias="model-ref")
+    attributes: dict[str, object] = Field(default_factory=dict)
+    #: Derived from geometry and served on every read, so a caller handing back what it was given
+    #: sends it. Accepted and ignored — the layout is the one answer to where a note sits.
+    area: str | None = None
+
+
+class AreaRequestWire(_Row):
+    label: str = ""
+    permits: dict[str, list[str]] = Field(default_factory=dict)
+    #: The served spelling of the same thing. A frame declares domains; the element and document
+    #: types are derived from the ontology, so they are read back and dropped rather than stored.
+    permitted_domains: list[str] = Field(default_factory=list, alias="permitted-domains")
+    permitted_element_types: list[str] = Field(default_factory=list, alias="permitted-element-types")
+    permitted_document_types: list[str] = Field(default_factory=list, alias="permitted-document-types")
+
+
+class GroupRequestWire(_Row):
+    label: str = ""
+    members: list[str] = Field(default_factory=list)
+
+
+class LinkRequestWire(_Row):
+    source: str
+    target: str
+    connection_type: str | None = Field(default=None, alias="connection-type")
+    model_ref: ModelRefPatchWire | None = Field(default=None, alias="model-ref")
+    #: Recomputed from the ontology on every read and never stored; accepted so a caller may hand
+    #: back the document it was given.
+    verdict: dict[str, object] | None = None
+
+
+class ScratchpadDocumentWire(Closed):
+    """A whole scratchpad as a caller sends it, for `PUT` and for `scratchpad_replace`.
+
+    Not `ScratchpadResponse`. The two describe the same document from opposite directions and differ
+    where that matters: a served note always carries `area` and a served link always carries a
+    `verdict`, both derived, and neither is something a writer must supply. Sharing one model would
+    have forced a caller to send back values it does not own.
+
+    What it *does* accept is everything a read returns, because the documented loop is "read it, edit
+    it, hand it back". The derived keys are declared so they are accepted and dropped, rather than
+    rejected by a closed model or, worse, quietly stored as a second answer to a question the
+    geometry and the ontology already settle.
+    """
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    #: Ignored in favour of the address in the URL: the two disagreeing is a client bug, not a
+    #: rename, and `from_document` already resolves it that way.
+    artifact_id: str | None = Field(default=None, alias="artifact-id")
+    artifact_type: str | None = Field(default=None, alias="artifact-type")
+    name: str = ""
+    description: str = ""
+    #: The concurrency token travels beside the document, not inside it; read back and ignored here.
+    version: str | None = None
+    status: str | None = None
+    #: Which collection it sits in. `PUT` takes this as its own field, so a document carrying one is
+    #: echoing what it read.
+    group: str | None = None
+    meta_ontology: str | None = Field(default=None, alias="meta-ontology")
+    attributes: dict[str, object] = Field(default_factory=dict)
+    areas: list[AreaRequestWire] = Field(default_factory=list)
+    notes: list[NoteRequestWire] = Field(default_factory=list)
+    links: list[LinkRequestWire] = Field(default_factory=list)
+    groups: list[GroupRequestWire] = Field(default_factory=list)
+    layout: LayoutPatchWire = Field(default_factory=LayoutPatchWire)
+
+    def as_document(self) -> dict[str, object]:
+        """The document vocabulary `from_document` reads — kebab-case, derived keys dropped.
+
+        `exclude_none` rather than `exclude_unset`: unlike a patch, a whole document has no "leave
+        this alone", so a null and an omission mean the same thing and both mean absent.
+        """
+        return self.model_dump(by_alias=True, exclude_none=True)

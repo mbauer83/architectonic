@@ -266,10 +266,25 @@ class TestTheDestinationEnumOnThisSurfaceToo:
         )
 
         assert refused["ok"] is False, refused
-        # Data, not an exception — and it says what to use instead, since the field's name is what
-        # caused the confusion in the first place.
-        assert "targets" in str(refused)
-        assert "undecided" in str(refused)
+        # Data, not an exception: this surface answers a refusal with something an agent can branch
+        # on. The body is typed now, so the refusal addresses the offending field and lists what it
+        # accepts, rather than describing the problem in prose.
+        assert refused["error"] == "invalid_request", refused
+        assert "notes.0.destination" in refused["message"]
+        assert "undecided" in refused["message"] and "element" in refused["message"]
+
+    def test_the_tool_says_which_field_a_lift_target_belongs_in(self) -> None:
+        """Where the `targets` pointer lives now: in the description an agent reads *before* it
+        calls, rather than in a message it only sees after guessing wrong. The name is the whole
+        problem — `destination` reads as "which project this lands in"."""
+        from src.infrastructure.mcp.artifact_mcp.scratchpad_tools import (
+            _EDIT_DESCRIPTION,
+            _REPLACE_DESCRIPTION,
+        )
+
+        for description in (_EDIT_DESCRIPTION, _REPLACE_DESCRIPTION):
+            assert "targets" in description
+            assert "scratchpad_lift" in description
 
     def test_a_file_that_already_holds_one_is_still_readable_here(
         self, tools: dict[str, Any]

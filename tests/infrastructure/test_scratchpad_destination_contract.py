@@ -134,7 +134,9 @@ class TestACallerIsRefused:
             json={"version": created["version"], "group": "platform-core", "scratchpad": document},
         )
 
-        assert response.status_code == 400, response.text
+        assert response.status_code == 422, response.text
+        errors = response.json()["detail"]["details"]["field_errors"]
+        assert [error["field"] for error in errors] == ["body.scratchpad.notes.0.destination"], errors
         assert _stored_file(repo_root).read_bytes() != b"", "the file must still be there"
         assert client.get(f"/api/scratchpads/{artifact_id}").status_code == 200
 

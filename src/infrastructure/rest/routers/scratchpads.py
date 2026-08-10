@@ -38,6 +38,7 @@ from src.domain.scratchpad import ScratchpadError
 from src.infrastructure.rest.contracts.scratchpad_requests import (
     LayoutPatchWire,
     RemovePatchWire,
+    ScratchpadDocumentWire,
     UpsertPatchWire,
 )
 from src.infrastructure.rest.contracts.scratchpads import (
@@ -112,7 +113,7 @@ class ReplaceScratchpadBody(_ClosedBody):
 
     version: str
     group: str
-    scratchpad: dict[str, Any]
+    scratchpad: ScratchpadDocumentWire
 
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
@@ -238,7 +239,7 @@ def replace_scratchpad(artifact_id: str, body: ReplaceScratchpadBody) -> dict[st
     """
     service = _service()
     try:
-        incoming = from_request_document(body.scratchpad, artifact_id=artifact_id)
+        incoming = from_request_document(body.scratchpad.as_document(), artifact_id=artifact_id)
         stored = s.authorized_write(
             "scratchpads_replace_scratchpad",
             service.replace,
