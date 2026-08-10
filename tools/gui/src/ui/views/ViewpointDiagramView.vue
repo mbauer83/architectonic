@@ -21,6 +21,7 @@ import { useDiagramSvgSelection, type DiagramSvgSelectionDetail } from '../compo
 import { useWitnessChain, type WitnessChainDisplay } from '../composables/useWitnessChain'
 import DiagramSplitLayout from '../components/DiagramSplitLayout.vue'
 import DiagramEntitySidebar from '../components/DiagramEntitySidebar.vue'
+import DiagramSidebarDock from '../components/DiagramSidebarDock.vue'
 import ViewpointExecutionDiagnostics from '../components/ViewpointExecutionDiagnostics.vue'
 import ViewpointExecutionError from '../components/ViewpointExecutionError.vue'
 import ViewpointParameterPrompt from '../components/ViewpointParameterPrompt.vue'
@@ -289,22 +290,28 @@ onMounted(() => { if (props.adHoc || slug.value) void load() })
       </template>
 
       <template #sidebar>
-        <DiagramEntitySidebar
-          :entities="diagramEntities"
-          :viewer-extension="selection.viewerExtension.value"
-          :selected-id="selection.selectedId.value"
-          :selected-connection="selection.selectedConnection.value"
-          :selected-sub-part="selection.selectedSubPart.value"
-          :entity-query="selection.entityQuery"
-          :edge-label-input="selection.edgeLabelInput.value"
-          :edge-label-error="selection.edgeLabelMutation.errorMessage.value"
-          :witness-chain="witnessChainDisplay"
-          @select-entity="selection.selectEntity($event)"
-          @clear-connection="selection.clearConnection()"
-          @clear-sub-part="selection.clearSubPart()"
-          @update:edge-label-input="selection.edgeLabelInput.value = $event"
-          @save-edge-label="selection.saveEdgeLabel()"
-        />
+        <DiagramSidebarDock
+          :fullscreen-host="containerRef"
+          :is-fullscreen="fullscreen.isFullscreen.value"
+          :has-selection="selection.hasSelection.value"
+        >
+          <DiagramEntitySidebar
+            :entities="diagramEntities"
+            :viewer-extension="selection.viewerExtension.value"
+            :selected-id="selection.selectedId.value"
+            :selected-connection="selection.selectedConnection.value"
+            :selected-sub-part="selection.selectedSubPart.value"
+            :entity-query="selection.entityQuery"
+            :edge-label-input="selection.edgeLabelInput.value"
+            :edge-label-error="selection.edgeLabelMutation.errorMessage.value"
+            :witness-chain="witnessChainDisplay"
+            @select-entity="selection.selectEntity($event)"
+            @clear-connection="selection.clearConnection()"
+            @clear-sub-part="selection.clearSubPart()"
+            @update:edge-label-input="selection.edgeLabelInput.value = $event"
+            @save-edge-label="selection.saveEdgeLabel()"
+          />
+        </DiagramSidebarDock>
       </template>
     </DiagramSplitLayout>
     <div

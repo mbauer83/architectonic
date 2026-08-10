@@ -144,13 +144,23 @@ export function useDiagramSvgSelection(options: {
   const selectEntity = (id: string) => {
     clearConnection()
     clearSubPart()
-    if (selectedId.value === id) {
-      selectedId.value = null
-      entityQuery.reset()
-      return
-    }
+    // Selecting what is already selected is a no-op, not a deselect. Clicking a shape twice is
+    // something a reader does while reading it — to bring the panel back into focus, or because the
+    // first click landed on a label rather than the body — and taking the panel away in answer to
+    // that is a surprise. Deselection is `clearSelection`, reached by clicking away from everything.
+    if (selectedId.value === id) return
     selectedId.value = id
     entityQuery.run(svc.getEntity(id))
+  }
+
+  /** Nothing selected at all — the answer to a click that landed on no selectable thing. */
+  const clearSelection = () => {
+    clearConnection()
+    clearSubPart()
+    if (selectedId.value !== null) {
+      selectedId.value = null
+      entityQuery.reset()
+    }
   }
 
   // Metadata edits from the sidebar (a classifier's descriptive fields, or one attribute's
@@ -248,6 +258,22 @@ export function useDiagramSvgSelection(options: {
     const svgEl = svgContainer.value?.querySelector('svg')
     if (!svgEl || !diagramEntities.value.length) return
 
+    // Clicking away from every selectable thing deselects. Asked of the event's own ancestry rather
+    // than of whether some handler called `stopPropagation` first: the selectable elements are the
+    // ones this composable marks, so `closest` states the rule directly and stays true if a future
+    // handler forgets to stop the event. A *drag* never arrives here — `usePanGesture` swallows the
+    // click that follows a pan in the capture phase, which is the same reason an entity's own
+    // handler is not fired by panning across it.
+    svgEl.addEventListener(
+      'click',
+      (ev) => {
+        const target = ev.target
+        if (target instanceof Element && target.closest('[data-entity-id], [data-conn-id], [data-subpart]')) return
+        clearSelection()
+      },
+      { signal },
+    )
+
     // Renderer-specific SVG↔artifact matching lives behind the viewer-extension contract; this
     // composable only consumes the resulting maps, never the diagram type's SVG conventions
     // directly.
@@ -320,12 +346,24 @@ export function useDiagramSvgSelection(options: {
 
   watch([svgHtml, diagramEntities, diagramConnections], () => { void attachInteractivity() }, { flush: 'post' })
 
+  /**
+   * Whether the reader has anything selected at all — an entity, a connection, or a sub-part.
+   *
+   * Derived here rather than at each view, because the three refs it reads are this composable's
+   * state and a view spelling the disjunction itself would go stale the day a fourth kind of
+   * selection is added: it would keep answering "nothing selected" while something was.
+   */
+  const hasSelection = computed(
+    () => selectedId.value !== null || selectedConnection.value !== null || selectedSubPart.value !== null,
+  )
+
   return {
     viewerExtension,
     svgContainer,
     selectedId,
     selectedConnection,
     selectedSubPart,
+    hasSelection,
     selectedEntityRecord,
     selectionToken,
     entityQuery,
@@ -334,6 +372,7 @@ export function useDiagramSvgSelection(options: {
     selectEntity,
     clearConnection,
     clearSubPart,
+    clearSelection,
     saveEdgeLabel,
     metadataMutation,
     patchEntityMetadata,

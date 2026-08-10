@@ -19,6 +19,7 @@ import DiagramSplitLayout from '../components/DiagramSplitLayout.vue'
 import DiagramDetailHeader from '../components/DiagramDetailHeader.vue'
 import DiagramC4Navigation from '../components/DiagramC4Navigation.vue'
 import DiagramEntitySidebar from '../components/DiagramEntitySidebar.vue'
+import DiagramSidebarDock from '../components/DiagramSidebarDock.vue'
 import DiagramSyncPanel from '../components/DiagramSyncPanel.vue'
 import DiagramDeletePanel from '../components/DiagramDeletePanel.vue'
 import DiagramMatrixView from '../components/DiagramMatrixView.vue'
@@ -213,28 +214,34 @@ const executeDelete = () => {
         </template>
 
         <template #sidebar>
-          <DiagramEntitySidebar
-            :entities="diagramEntities"
-            :viewer-extension="selection.viewerExtension.value"
-            :selected-id="selection.selectedId.value"
-            :selected-connection="selection.selectedConnection.value"
-            :selected-sub-part="selection.selectedSubPart.value"
-            :selected-entity-record="selection.selectedEntityRecord.value"
-            :editable-metadata-by-type="editableMetadataByType"
-            :selection-token="selection.selectionToken.value"
-            :entity-query="selection.entityQuery"
-            :edge-label-input="selection.edgeLabelInput.value"
-            :edge-label-error="selection.edgeLabelMutation.errorMessage.value"
-            :metadata-error="selection.metadataMutation.errorMessage.value"
-            @select-entity="selection.selectEntity($event)"
-            @clear-connection="selection.clearConnection()"
-            @clear-sub-part="selection.clearSubPart()"
-            @update:edge-label-input="selection.edgeLabelInput.value = $event"
-            @save-edge-label="selection.saveEdgeLabel()"
-            @sub-part-save="selection.patchEntityMetadata($event)"
-            @entity-meta-save="selection.patchEntityMetadata($event)"
-            @entity-edited="load"
-          />
+          <DiagramSidebarDock
+            :fullscreen-host="containerRef"
+            :is-fullscreen="fullscreen.isFullscreen.value"
+            :has-selection="selection.hasSelection.value"
+          >
+            <DiagramEntitySidebar
+              :entities="diagramEntities"
+              :viewer-extension="selection.viewerExtension.value"
+              :selected-id="selection.selectedId.value"
+              :selected-connection="selection.selectedConnection.value"
+              :selected-sub-part="selection.selectedSubPart.value"
+              :selected-entity-record="selection.selectedEntityRecord.value"
+              :editable-metadata-by-type="editableMetadataByType"
+              :selection-token="selection.selectionToken.value"
+              :entity-query="selection.entityQuery"
+              :edge-label-input="selection.edgeLabelInput.value"
+              :edge-label-error="selection.edgeLabelMutation.errorMessage.value"
+              :metadata-error="selection.metadataMutation.errorMessage.value"
+              @select-entity="selection.selectEntity($event)"
+              @clear-connection="selection.clearConnection()"
+              @clear-sub-part="selection.clearSubPart()"
+              @update:edge-label-input="selection.edgeLabelInput.value = $event"
+              @save-edge-label="selection.saveEdgeLabel()"
+              @sub-part-save="selection.patchEntityMetadata($event)"
+              @entity-meta-save="selection.patchEntityMetadata($event)"
+              @entity-edited="load"
+            />
+          </DiagramSidebarDock>
         </template>
       </DiagramSplitLayout>
 

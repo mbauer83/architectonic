@@ -26,3 +26,45 @@
 .status--draft { background: #f3f4f6; color: #6b7280; }
 .status--active { background: #dcfce7; color: #166534; }
 .status--deprecated { background: #fee2e2; color: #991b1b; }
+
+/* The diagram sidebar while the canvas owns the screen — see `DiagramSidebarDock.vue`.
+   Global rather than scoped for two reasons: the positioning context is the *host* element
+   (`.img-container`, which is already `position: relative`), and a scoped style in the dock could
+   not reach the slotted sidebar's own root. Keyed on `:fullscreen` so nothing here applies to the
+   docked layout, whose sticky grid column is left exactly as it was. */
+.img-container:fullscreen > .sidebar {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 2;
+  width: min(380px, 40vw);
+  height: 100%;
+  margin: 0;
+  overflow-y: auto;
+  border-radius: 0;
+  box-shadow: -8px 0 24px rgb(15 23 42 / 12%);
+}
+
+/* Flies in from the right on selection and back out on deselection. `transform` and `opacity` only,
+   so the browser can composite it without laying the diagram out again on every frame. */
+.sidebar-fly-enter-active,
+.sidebar-fly-leave-active {
+  transition: transform 0.22s ease, opacity 0.22s ease;
+}
+.sidebar-fly-enter-from,
+.sidebar-fly-leave-to {
+  transform: translateX(100%);
+  opacity: 0;
+}
+
+/* A reader who asked for less motion gets the same reveal without the travel. */
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-fly-enter-active,
+  .sidebar-fly-leave-active {
+    transition: opacity 0.12s ease;
+  }
+  .sidebar-fly-enter-from,
+  .sidebar-fly-leave-to {
+    transform: none;
+  }
+}
