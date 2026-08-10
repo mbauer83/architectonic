@@ -56,17 +56,25 @@ def _already_ai_marked(ent: dict[str, object]) -> bool:
 def scan_candidates(entities: list[dict[str, object]]) -> list[dict[str, object]]:
     """Score architecture entity dicts for AI-BOM relevance.
 
-    Input entity dicts must have at least 'name' and optionally 'entity_id',
-    'entity_type', 'domain', and 'description'.
+    Input entity dicts need only 'name'. Identity and type are read under either the repository's
+    served vocabulary (``artifact_id`` / ``artifact_type``) or this module's older one
+    (``entity_id``/``id``, ``entity_type``/``type``), and the prose under ``summary``,
+    ``description`` or ``content``.
+
+    Reading both is not indulgence: ``assurance_scan_ai_candidates`` tells its caller to "pass the
+    output of arch-repo-read list/query tools as 'entities'", and those tools serve ``artifact_id``,
+    ``artifact_type`` and ``summary``. Under the older names alone, following that instruction
+    produced candidates with an empty ``entity_id`` and no type bonus — a ranked list naming nothing
+    the caller could then mark, which is the one thing the answer is for.
 
     Returns candidates with score > 0, sorted descending by score.
     """
     results: list[dict[str, object]] = []
     for ent in entities:
         name = str(ent.get("name") or "")
-        desc = str(ent.get("description") or ent.get("content") or "")
-        entity_type = str(ent.get("entity_type") or ent.get("type") or "")
-        entity_id = str(ent.get("entity_id") or ent.get("id") or "")
+        desc = str(ent.get("summary") or ent.get("description") or ent.get("content") or "")
+        entity_type = str(ent.get("artifact_type") or ent.get("entity_type") or ent.get("type") or "")
+        entity_id = str(ent.get("artifact_id") or ent.get("entity_id") or ent.get("id") or "")
 
         score = 0
         reasons: list[str] = []
