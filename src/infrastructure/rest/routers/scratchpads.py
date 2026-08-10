@@ -25,16 +25,21 @@ from fastapi import APIRouter, HTTPException, Query, Response, status
 from pydantic import BaseModel, ConfigDict, Field
 
 from src.application.scratchpad.document import (
-    from_request_document,
     lift_to_document,
     summary_to_document,
     to_response,
 )
 from src.application.scratchpad.edit import ScratchpadEdit
 from src.application.scratchpad.ports import ScratchpadNotFoundError, ScratchpadVersionConflictError
+from src.application.scratchpad.requests import from_request_document
 from src.application.scratchpad.service import ScratchpadService
 from src.domain.repository.groups import UNCATEGORIZED
 from src.domain.scratchpad import ScratchpadError
+from src.infrastructure.rest.contracts.scratchpad_requests import (
+    LayoutPatchWire,
+    RemovePatchWire,
+    UpsertPatchWire,
+)
 from src.infrastructure.rest.contracts.scratchpads import (
     ScratchpadLiftResponse,
     ScratchpadListResponse,
@@ -123,9 +128,9 @@ class EditScratchpadBody(_ClosedBody):
     """
 
     version: str
-    remove: dict[str, list[str]] = Field(default_factory=dict)
-    upsert: dict[str, list[dict[str, Any]]] = Field(default_factory=dict)
-    layout: dict[str, dict[str, list[float] | None]] = Field(default_factory=dict)
+    remove: RemovePatchWire = Field(default_factory=RemovePatchWire)
+    upsert: UpsertPatchWire = Field(default_factory=UpsertPatchWire)
+    layout: LayoutPatchWire = Field(default_factory=LayoutPatchWire)
 
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
@@ -266,7 +271,11 @@ def edit_scratchpad(artifact_id: str, body: EditScratchpadBody) -> dict[str, Any
             "scratchpads_edit_scratchpad",
             service.edit,
             artifact_id,
-            edit=ScratchpadEdit(remove=body.remove, upsert=body.upsert, layout=body.layout),
+            edit=ScratchpadEdit(
+                remove=body.remove.as_delta(),
+                upsert=body.upsert.as_delta(),
+                layout=body.layout.as_delta(),
+            ),
             expected_version=body.version,
         )
     except (ScratchpadError, ScratchpadNotFoundError, ScratchpadVersionConflictError) as exc:

@@ -28,11 +28,8 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
-from src.application.scratchpad.document import (
-    from_document,
-    refuse_unknown_destinations,
-    to_document,
-)
+from src.application.scratchpad.document import from_document, to_document
+from src.application.scratchpad.requests import refuse_unknown_destinations
 from src.domain.scratchpad import Scratchpad, ScratchpadError
 
 #: The collections a scratchpad document holds, each a list of rows carrying an `id`. Named once so

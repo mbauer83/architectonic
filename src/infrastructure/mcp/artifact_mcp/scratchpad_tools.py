@@ -18,13 +18,13 @@ from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
 
 from src.application.modeling.artifact_write import generate_entity_id
 from src.application.scratchpad.document import (
-    from_request_document,
     lift_to_document,
     summary_to_document,
     to_response,
 )
 from src.application.scratchpad.edit import ScratchpadEdit
 from src.application.scratchpad.ports import ScratchpadNotFoundError, ScratchpadVersionConflictError
+from src.application.scratchpad.requests import from_request_document
 from src.application.scratchpad.service import ScratchpadService
 from src.domain.repository.groups import UNCATEGORIZED
 from src.domain.scratchpad import ScratchpadError

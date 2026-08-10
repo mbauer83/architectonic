@@ -29,6 +29,35 @@ ModelRefKind = Literal["realized", "bound"]
 UNFILED = "unfiled"
 
 
+def parse_destination(raw: object) -> Destination:
+    """An unrecognised destination reads as `undecided`, the weakest claim.
+
+    Beside the type rather than at the call site, because it *is* the type's runtime half: `Literal`
+    is checked by nothing at runtime, so a stored value only becomes a `Destination` by passing
+    through here.
+
+    Coercion rather than refusal, because the caller of this is the parser reading a file. A file
+    already holding a bad value was written by code that let it through, and refusing it on load
+    would leave the document unreadable for good instead of wrong in one field — the read being the
+    only route back to a canvas that has one. What a *request* means is a different question, and
+    `refuse_unknown_destinations` answers it.
+
+    Until 0.4.1 this was `str(row.get("destination") or "undecided")` under a
+    `# type: ignore[arg-type]`, which laundered any value into the field and silenced the one checker
+    that would have said so. It then reached a pydantic `Literal` in the response contract, which is
+    where it finally failed: 500 on every read of that scratchpad, permanently.
+    """
+    match str(raw or "undecided"):
+        case "element":
+            return "element"
+        case "document":
+            return "document"
+        case "none":
+            return "none"
+        case _:
+            return "undecided"
+
+
 class ScratchpadError(ValueError):
     """A write the aggregate refuses. Carries the vocabulary the caller reports verbatim."""
 

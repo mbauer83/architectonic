@@ -78,13 +78,25 @@ class TestACallerIsRefused:
             },
         )
 
-        assert response.status_code == 400, response.text
-        # The message is what an agent acts on, so it names the legal values and the field that was
-        # actually wanted — the confusion that produced this was `destination` vs `targets`.
-        detail = response.json()["detail"] if "detail" in response.json() else response.text
-        assert _ILLEGAL in str(detail)
-        assert "undecided" in str(detail) and "element" in str(detail)
-        assert "targets" in str(detail)
+        # 422 rather than 400: the body is typed, so the request contract rejects it before a
+        # handler runs. That is the stronger answer — it addresses the offending field by path
+        # instead of describing it in prose, and the four values are in the served OpenAPI document
+        # where a client can see them without provoking an error first.
+        assert response.status_code == 422, response.text
+        errors = response.json()["detail"]["details"]["field_errors"]
+        assert [error["field"] for error in errors] == ["body.upsert.notes.0.destination"], errors
+        assert "undecided" in errors[0]["message"] and "element" in errors[0]["message"]
+
+    def test_the_enum_reaches_the_served_openapi_document(self, client: TestClient) -> None:
+        """A client should be able to read the four values rather than discover them by being
+        refused. The contract restated them inline until 0.4.1; it now takes `Destination` from the
+        domain, so the schema and the invariant cannot drift apart."""
+        schemas = client.get("/openapi.json").json()["components"]["schemas"]
+        note_patch = schemas["NotePatchWire"]["properties"]["destination"]
+
+        rendered = str(note_patch)
+        for value in ("undecided", "element", "document", "none"):
+            assert value in rendered, note_patch
 
     def test_the_refused_write_changed_nothing_at_all(
         self, client: TestClient, repo_root: Path

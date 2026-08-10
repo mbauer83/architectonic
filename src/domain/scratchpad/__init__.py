@@ -21,6 +21,7 @@ from src.domain.scratchpad.parts import (
     ModelRefKind,
     Note,
     ScratchpadError,
+    parse_destination,
 )
 from src.domain.scratchpad.scratchpad import Scratchpad, scratchpad_from_parts
 
@@ -38,6 +39,7 @@ __all__ = [
     "LinkVerdict",
     "ModelRef",
     "ModelRefKind",
+    "parse_destination",
     "Note",
     "Point",
     "Rect",

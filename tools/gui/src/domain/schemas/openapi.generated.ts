@@ -3394,6 +3394,17 @@ export interface components {
             /** Visibility Limited */
             visibility_limited?: boolean | null;
         };
+        /** AreaPatchWire */
+        AreaPatchWire: {
+            /** Id */
+            id: string;
+            /** Label */
+            label?: string | null;
+            /** Permits */
+            permits?: {
+                [key: string]: string[];
+            } | null;
+        };
         /**
          * AreaWire
          * @description A labelled frame, and what it narrows to.
@@ -7036,22 +7047,9 @@ export interface components {
          *     sent is the whole truth, so omission there means removal.
          */
         EditScratchpadBody: {
-            /** Layout */
-            layout?: {
-                [key: string]: {
-                    [key: string]: number[] | null;
-                };
-            };
-            /** Remove */
-            remove?: {
-                [key: string]: string[];
-            };
-            /** Upsert */
-            upsert?: {
-                [key: string]: {
-                    [key: string]: unknown;
-                }[];
-            };
+            layout?: components["schemas"]["LayoutPatchWire"];
+            remove?: components["schemas"]["RemovePatchWire"];
+            upsert?: components["schemas"]["UpsertPatchWire"];
             /** Version */
             version: string;
         };
@@ -7943,6 +7941,15 @@ export interface components {
             /** Warnings */
             warnings?: string[];
         };
+        /** GroupPatchWire */
+        GroupPatchWire: {
+            /** Id */
+            id: string;
+            /** Label */
+            label?: string | null;
+            /** Members */
+            members?: string[] | null;
+        };
         /** GroupWire */
         GroupWire: {
             /** Id */
@@ -8407,6 +8414,26 @@ export interface components {
             query: string;
         };
         /**
+         * LayoutPatchWire
+         * @description Where things sit: `[x, y]` for a note, `[x, y, w, h]` for a frame, `null` to unplace.
+         *
+         *     Links are absent because a link has no geometry of its own — it is drawn between two notes.
+         */
+        LayoutPatchWire: {
+            /** Areas */
+            areas?: {
+                [key: string]: number[] | null;
+            };
+            /** Groups */
+            groups?: {
+                [key: string]: number[] | null;
+            };
+            /** Notes */
+            notes?: {
+                [key: string]: number[] | null;
+            };
+        };
+        /**
          * LayoutWire
          * @description Geometry, apart from content. Rects are `[x, y, w, h]`, points `[x, y]`.
          */
@@ -8536,6 +8563,22 @@ export interface components {
              * @default
              */
             "meta-ontology": string;
+        };
+        /** LinkPatchWire */
+        LinkPatchWire: {
+            /** Connection-Type */
+            "connection-type"?: string | null;
+            /** Id */
+            id: string;
+            "model-ref"?: components["schemas"]["ModelRefPatchWire"] | null;
+            /** Source */
+            source?: string | null;
+            /** Target */
+            target?: string | null;
+            /** Verdict */
+            verdict?: {
+                [key: string]: unknown;
+            } | null;
         };
         /**
          * LinkVerdictWire
@@ -8794,6 +8837,24 @@ export interface components {
             root_id: string;
         };
         /**
+         * ModelRefPatchWire
+         * @description A reference into the model, as a caller sends one.
+         *
+         *     Deliberately not the response `ModelRefWire`, which derives from `NullsOmitted`: that base
+         *     publishes "this schema omits nulls", a claim about *serialisation* that is untrue of a body,
+         *     where an explicit null is a legitimate value meaning "clear this". `test_no_marked_dto_is_also_a
+         *     _request_body` exists to catch exactly the reuse this started out as.
+         */
+        ModelRefPatchWire: {
+            /** Artifact-Id */
+            "artifact-id": string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "realized" | "bound";
+        };
+        /**
          * ModelRefWire
          * @description A one-way reference into the model. `kind` records how the note came by it.
          */
@@ -8971,6 +9032,32 @@ export interface components {
             capability: string;
             /** Remedy */
             remedy: string;
+        };
+        /** NotePatchWire */
+        NotePatchWire: {
+            /** Area */
+            area?: string | null;
+            /** Attributes */
+            attributes?: {
+                [key: string]: unknown;
+            } | null;
+            /** Body */
+            body?: string | null;
+            /** Destination */
+            destination?: ("undecided" | "element" | "document" | "none") | null;
+            /** Document-Type */
+            "document-type"?: string | null;
+            /** Domain */
+            domain?: string | null;
+            /** Element-Type */
+            "element-type"?: string | null;
+            /** Id */
+            id: string;
+            "model-ref"?: components["schemas"]["ModelRefPatchWire"] | null;
+            /** Specialization */
+            specialization?: string | null;
+            /** Title */
+            title?: string | null;
         };
         /**
          * NoteWire
@@ -9844,6 +9931,20 @@ export interface components {
             notations: {
                 [key: string]: components["schemas"]["RelationNotation"];
             };
+        };
+        /**
+         * RemovePatchWire
+         * @description The ids to remove, per collection — the same closed set, for the same reason.
+         */
+        RemovePatchWire: {
+            /** Areas */
+            areas?: string[];
+            /** Groups */
+            groups?: string[];
+            /** Links */
+            links?: string[];
+            /** Notes */
+            notes?: string[];
         };
         /** RenameGroupBody */
         RenameGroupBody: {
@@ -10988,6 +11089,25 @@ export interface components {
             name?: string | null;
             /** Type Filter */
             type_filter?: string[] | null;
+        };
+        /**
+         * UpsertPatchWire
+         * @description The patches to apply, per collection.
+         *
+         *     A model rather than `dict[str, list[dict[str, Any]]]`: the four collections are a closed set, so
+         *     naming them here is what makes an unknown one a 422 with the field named, and what puts the
+         *     note vocabulary — `destination` above all — into the served OpenAPI document instead of leaving
+         *     it as an opaque object every client has to guess at.
+         */
+        UpsertPatchWire: {
+            /** Areas */
+            areas?: components["schemas"]["AreaPatchWire"][];
+            /** Groups */
+            groups?: components["schemas"]["GroupPatchWire"][];
+            /** Links */
+            links?: components["schemas"]["LinkPatchWire"][];
+            /** Notes */
+            notes?: components["schemas"]["NotePatchWire"][];
         };
         /**
          * ValidationErrorDetails

@@ -15,6 +15,7 @@ from typing import Literal
 
 from pydantic import Field
 
+from src.domain.scratchpad import Destination
 from src.infrastructure.rest.contracts.wire_nulls import NullsOmitted
 
 
@@ -31,7 +32,7 @@ class NoteWire(NullsOmitted):
     id: str
     title: str
     body: str = ""
-    destination: Literal["undecided", "element", "document", "none"] = "undecided"
+    destination: Destination = "undecided"
     #: The first classification level. Chosen before a type, and **derived from the type** once one
     #: is — the type is the more specific decision, and two places to read it from is two answers
     #: waiting to disagree.
