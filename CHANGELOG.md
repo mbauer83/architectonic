@@ -39,9 +39,26 @@ element type before they have decided anything, and that question is the wall th
 - **Seven MCP tools and seven REST operations, held equal by a parity test.** The scratchpad is the
   lowest-barrier surface, so a human-only version would make the one place newcomers start the one
   place an agent cannot help.
+- **A diagram can fill the screen**, from a control beside Reset, and Esc gives the page back. The
+  view is re-framed against the space it gains and the space it loses.
 
 ### Fixed
 
+- **A diagram can be dragged by the boxes on it.** Panning was declined outright wherever the press
+  landed on something selectable, so a dense view could only be moved by its auto-created grouping
+  boxes. Travel now separates the two gestures: a press that stays put selects, a press that moves
+  pans and does not also select what it started on.
+- **A C4 element is selectable again, and its drill-down badges are back.** The write path strips
+  `entity_id` from every item because the `bindings` block is what disk holds; nothing put it back
+  for the three readers that need it, and every test built its fixtures with the shorthand present
+  — describing a shape no persisted diagram has ever had.
+- **A render that fails is reported as a failure.** A PlantUML crash was returned as
+  `valid: true` with the stack trace filed under warnings; it is now an **E350** error. The hidden
+  ordering chains that caused the crash are dropped above 24 boxed members, and `puml="auto-sync"`
+  refuses an edit that carries anything else rather than silently discarding it.
+- **A network stall stops being reported after the network returns.** A failed fetch was cleared
+  only by a poll that reached a fully grounded state, so one timeout stayed visible across every
+  later healthy poll.
 - **An ArchiMate box is no longer as wide as its widest unwrapped label.** All seven `archimate-*`
   types emitted no `skinparam wrapWidth`; on one diagram 2545×798 became 1671×952. All 32 committed
   diagrams were re-rendered and every one still lays out.
