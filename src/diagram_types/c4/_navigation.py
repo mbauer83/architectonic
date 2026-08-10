@@ -4,12 +4,43 @@ from __future__ import annotations
 
 from typing import Any
 
+from src.domain.diagrams.bindings import diagram_scope_entity_id, element_entity_ids
+
+#: Registered C4 types and their depth. `c4-system-landscape` is deliberately absent: it is not a
+#: registered diagram type, and a level for a type nothing can create made this module look like it
+#: knew about a fourth altitude it has never seen.
 _C4_LEVELS: dict[str, int] = {
-    "c4-system-landscape": 0,
     "c4-system-context": 1,
     "c4-container": 2,
     "c4-component": 3,
 }
+
+
+def scope_element_id(diagram_entities: dict[str, Any]) -> str:
+    """The diagram-local id of the item marked ``scope: true``.
+
+    `scope` survives persistence; `entity_id` does not. So the scope is found in two steps now —
+    which element is the scope, then what that element is bound to.
+    """
+    for key, items in diagram_entities.items():
+        if key.startswith("_") or not isinstance(items, list):
+            continue
+        for item in items:
+            if isinstance(item, dict) and item.get("scope") and item.get("id"):
+                return str(item["id"])
+    return ""
+
+
+def element_ids(diagram_entities: dict[str, Any]) -> list[str]:
+    """Every diagram-local element id, in declaration order."""
+    found: list[str] = []
+    for key, items in diagram_entities.items():
+        if key.startswith("_") or not isinstance(items, list):
+            continue
+        for item in items:
+            if isinstance(item, dict) and item.get("id"):
+                found.append(str(item["id"]))
+    return found
 
 
 def scope_entity_id(diagram_entities: dict[str, Any]) -> str:
@@ -36,30 +67,6 @@ def item_entity_ids(diagram_entities: dict[str, Any]) -> set[str]:
     return result
 
 
-def _scope_from_bindings(bindings: Any) -> str:
-    """Resolve the diagram-level ``scoped-by`` binding's target entity id.
-
-    Model-backed C4 diagrams keep ``diagram-entities`` empty and record their scope as a
-    diagram-level ``scoped-by`` binding, so navigation must read the scope from there rather
-    than from the (empty) diagram-entities.
-    """
-    if not isinstance(bindings, list):
-        return ""
-    for b in bindings:
-        if not isinstance(b, dict):
-            continue
-        subject = b.get("subject")
-        if (
-            isinstance(subject, dict)
-            and subject.get("kind") == "diagram"
-            and b.get("correspondence_kind") == "scoped-by"
-        ):
-            target = b.get("target")
-            if isinstance(target, dict) and target.get("entity_id"):
-                return str(target["entity_id"])
-    return ""
-
-
 def _extra(record: Any) -> dict[str, Any]:
     extra = getattr(record, "extra", None)
     return extra if isinstance(extra, dict) else {}
@@ -70,16 +77,46 @@ def _diagram_entities_of(record: Any) -> dict[str, Any]:
     return de if isinstance(de, dict) else {}
 
 
+def resolve_scope_entity_id(diagram_entities: dict[str, Any], bindings: Any) -> str:
+    """The entity a C4 diagram is scoped to, from whichever of the three shapes it was written in.
+
+    Shared by navigation and by the read envelope's `_scope_entity_id` back-fill, because answering
+    it differently in two places is how one of them came to answer `""` for every diagram the write
+    path produces.
+    """
+    shorthand = scope_entity_id(diagram_entities)
+    if shorthand:
+        return shorthand
+    element = scope_element_id(diagram_entities)
+    if element:
+        bound = element_entity_ids(bindings).get(element, "")
+        if bound:
+            return bound
+    return diagram_scope_entity_id(bindings)
+
+
 def _scope_of(record: Any) -> str:
-    """Diagram scope from diagram-entities (standalone) or the scoped-by binding (model-backed)."""
-    return scope_entity_id(_diagram_entities_of(record)) or _scope_from_bindings(_extra(record).get("bindings"))
+    """The entity this diagram is scoped to, however it was written.
+
+    Three shapes, and the *persisted* one is the third — which is why this had to change. A standalone
+    C4 diagram is authored with `entity_id` on the scope item, and the write path strips it into an
+    element-level `represents` binding; a model-backed one carries a diagram-level `scoped-by`
+    binding. Reading only the first two answered `""` for every diagram the product actually writes.
+    """
+    return resolve_scope_entity_id(_diagram_entities_of(record), _extra(record).get("bindings"))
 
 
 def _items_of(record: Any) -> set[str]:
-    """Entity ids appearing in a diagram — from diagram-entities or, for model-backed diagrams, entity-ids-used."""
-    ids = item_entity_ids(_diagram_entities_of(record))
+    """Entity ids appearing in a diagram, from whichever of the three shapes it was written in."""
+    entities = _diagram_entities_of(record)
+    ids = item_entity_ids(entities)
     if ids:
         return ids
+    bound = element_entity_ids(_extra(record).get("bindings"))
+    if bound:
+        from_elements = {bound[element] for element in element_ids(entities) if element in bound}
+        if from_elements:
+            return from_elements
     used = _extra(record).get("entity-ids-used")
     return {str(x) for x in used} if isinstance(used, list) else set()
 

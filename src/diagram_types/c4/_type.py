@@ -161,26 +161,57 @@ class _C4DiagramType(DiagramTypeBase):
     def resolve_diagram_entities(
         self, parsed_source: dict[str, Any], diagram_entities: dict[str, Any]
     ) -> dict[str, Any] | None:
-        """Inject _scope_entity_id from a 'scoped-by' binding when diagram-entities is empty.
+        """Re-hydrate what the persist path stripped, so a reader sees what the author wrote.
 
-        Model-backed C4 diagrams store the scope in a binding, not diagram-entities.
-        The frontend's C4DiagramEditor needs _scope_entity_id in diagram_entities to
-        activate model-backed mode. This merges it in from the binding so the edit view
-        receives a complete diagram_entities payload.
+        `strip_diagram_shorthand` removes `entity_id` from every item and `_scope_entity_id` from the
+        top level, because the top-level `bindings:` block is canonical *on disk*. Nothing put them
+        back on the way out, so every consumer downstream of the read envelope saw items with no
+        model correspondence at all: element selection matched nothing, drill-down badges never
+        appeared, and the editor's scope detection (`r.scope && r.entity_id`) silently failed.
+
+        Serving them back is the smallest correct fix, and it is this hook's existing job — it
+        already did exactly this for `_scope_entity_id`. Disk keeps one canonical form; the wire
+        carries the convenience fields every reader was already written against.
 
         A declared-field override rather than a module extra, which is why it is this hook: the read
         envelope declares ``diagram_entities``, and filling it in is not the same act as adding a key
         of one's own.
         """
-        from src.diagram_types.c4._navigation import _scope_from_bindings  # noqa: PLC0415
+        from src.diagram_types.c4._navigation import resolve_scope_entity_id  # noqa: PLC0415
+        from src.domain.diagrams.bindings import element_entity_ids  # noqa: PLC0415
 
-        if diagram_entities.get("_scope_entity_id"):
-            return None
         frontmatter: dict[str, Any] = parsed_source.get("frontmatter") or {}
-        scope_id = _scope_from_bindings(frontmatter.get("bindings"))
+        bindings = frontmatter.get("bindings")
+        bound = element_entity_ids(bindings)
+
+        rehydrated: dict[str, Any] = {}
+        changed = False
+        for key, value in diagram_entities.items():
+            if key.startswith("_") or not isinstance(value, list):
+                rehydrated[key] = value
+                continue
+            items: list[Any] = []
+            for item in value:
+                entity_id = bound.get(str(item.get("id") or "")) if isinstance(item, dict) else None
+                if entity_id and not item.get("entity_id"):
+                    items.append({**item, "entity_id": entity_id})
+                    changed = True
+                else:
+                    items.append(item)
+            rehydrated[key] = items
+
+        # Both shapes: a standalone diagram's scope item is bound element-level, a model-backed one
+        # carries a diagram-level `scoped-by`. Reading only the second left the editor's scope
+        # detection blind for everything authored the standalone way.
+        scope_id = str(diagram_entities.get("_scope_entity_id") or "") or resolve_scope_entity_id(
+            diagram_entities, bindings
+        )
+        if scope_id and scope_id != diagram_entities.get("_scope_entity_id"):
+            rehydrated["_scope_entity_id"] = scope_id
+            changed = True
         # Merged into what the caller assembled rather than rebuilt from the frontmatter: the
         # caller's value carries the diagram's local `_connections`, and rebuilding dropped them.
-        return {**diagram_entities, "_scope_entity_id": scope_id} if scope_id else None
+        return rehydrated if changed else None
 
     def build_context_extras(
         self,
