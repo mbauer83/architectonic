@@ -7,7 +7,7 @@ and _verifier_outgoing.py.
 
 from __future__ import annotations
 
-from hypothesis import given
+from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 from src.domain.repository.connection_declaration import (
@@ -111,6 +111,12 @@ class TestRoundTrip:
     test for both known kinds of section content, not a separate test file per kind.
     """
 
+    # `too_slow` is a health check on the *machine*, not on the grammar: it fires when Hypothesis
+    # generates fewer inputs per second than it likes, which on a box running sixteen xdist workers
+    # it periodically does. It went red here with one draw at 0.874 s among four at ~0.02 s — a
+    # scheduling hiccup, not a pathological strategy. The property this test exists for is that
+    # formatting and parsing invert each other, and that is unaffected by how fast the draws arrive.
+    @settings(suppress_health_check=[HealthCheck.too_slow])
     @given(
         st.lists(
             st.builds(
