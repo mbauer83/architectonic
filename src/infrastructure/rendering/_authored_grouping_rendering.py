@@ -120,6 +120,7 @@ def render_authored_groupings(
         direction_hints=direction_hints,
         connected_pairs=connected_pairs,
     )
+    emitter.order_members = _member_count(resolved_groups) <= _HIDDEN_CHAIN_MEMBER_BUDGET
     lines = emitter.emit(resolved_groups, indent="")
     taken_aliases = claimed_aliases(resolved_groups)
     for domain in list(domain_entities):
@@ -131,6 +132,23 @@ def render_authored_groupings(
     return lines
 
 
+#: Above this many boxed members, the hidden ordering chains are dropped.
+#:
+#: They are a *cosmetic* hint — they line members up inside their box — and at scale they stop being
+#: free: a 35-node view across 7 boxes made GraphViz throw `IllegalStateException` from
+#: `DotStringFactory.solve`, and PlantUML answered by writing a page of stack trace where the picture
+#: should be. Bisected against the repo's own `plantuml.jar`: removing only the `-[hidden]` lines
+#: renders the same view in ~2 s. The clusters are fine and `linetype ortho` is not the trigger.
+#:
+#: A threshold rather than removing them outright because below it they are what makes a small boxed
+#: view read in a sensible order, and small boxed views are the common case.
+_HIDDEN_CHAIN_MEMBER_BUDGET = 24
+
+
+def _member_count(groups: list[ResolvedGroup]) -> int:
+    return sum(len(group.members) + _member_count(group.subgroups) for group in groups)
+
+
 @dataclass
 class _GroupEmitter:
     """Emits a group tree, allocating one alias per box and ranking siblings at each level."""
@@ -140,6 +158,8 @@ class _GroupEmitter:
     stereotype_of: Callable[[str], str]
     direction_hints: dict[tuple[str, str], str] | None
     connected_pairs: frozenset[frozenset[str]]
+    #: Set once from the whole tree, so a nested `emit` cannot re-decide it per level.
+    order_members: bool = True
     _counter: int = 0
     _rank_by_alias: dict[str, int] = field(default_factory=dict)
 
@@ -173,7 +193,7 @@ class _GroupEmitter:
                 for prev in previous_members
                 for curr in member_aliases
             )
-            if previous_alias and not connected:
+            if previous_alias and not connected and self.order_members:
                 lines.append(f"{indent}{previous_alias} -[hidden]down- {group_alias}")
             previous_alias, previous_members = group_alias, member_aliases
             lines.append("")
@@ -181,6 +201,8 @@ class _GroupEmitter:
         return lines
 
     def _chain(self, member_aliases: list[str], *, indent: str) -> list[str]:
+        if not self.order_members:
+            return []
         if len(member_aliases) > 4:
             return wrapped_grid_lines(member_aliases, main_axis="right", cross_axis="down", indent=indent)
         return [

@@ -87,6 +87,20 @@ def discard_render_byproducts(rendered_dir: Path, temp_stem: str) -> None:
         stray.unlink(missing_ok=True)
 
 
+#: A render that failed hard, as distinct from one that was skipped or never attempted. Callers that
+#: assemble a write result turn these into `E350` issues, because a caller cannot otherwise tell
+#: "rendered" from "wrote a stack trace to disk" — the whole failure was reported as a warning while
+#: `verification.valid` stayed `true`.
+RENDER_FAILURES: str = "render_failures"
+
+
+def _fail(warnings: list[str], failures: list[str] | None, message: str) -> None:
+    """Record a hard render failure in both channels: prose for a person, a fact for a caller."""
+    warnings.append(message)
+    if failures is not None:
+        failures.append(message)
+
+
 def _is_error_render(stderr: str) -> bool:
     """True when PlantUML produced an error image instead of a diagram.
 
@@ -97,7 +111,9 @@ def _is_error_render(stderr: str) -> bool:
     return "Exception" in stderr
 
 
-def _render_diagram_png(puml_path: Path, warnings: list[str]) -> Path | None:
+def _render_diagram_png(
+    puml_path: Path, warnings: list[str], failures: list[str] | None = None
+) -> Path | None:
     """Render a PUML file to PNG using PlantUML. Returns the PNG path or None."""
     repo_root = repo_root_for_diagram_path(puml_path) or puml_path.parent.parent.parent
     rendered_dir = rendered_dir_for_diagram(puml_path, repo_root)
@@ -173,14 +189,16 @@ def _render_diagram_png(puml_path: Path, warnings: list[str]) -> Path | None:
             env=env,
         )
         if result.returncode != 0:
-            warnings.append(f"PlantUML render failed: {result.stderr[:200]}")
+            _fail(warnings, failures, f"PlantUML render failed: {result.stderr[:200]}")
             return None
 
         rendered = rendered_dir / f"{tmp_path.stem}.png"
         if _is_error_render(result.stderr):
             rendered.unlink(missing_ok=True)
-            warnings.append(
-                f"PlantUML produced an error image (layout failure), previous render kept: {result.stderr[:200]}"
+            _fail(
+                warnings,
+                failures,
+                f"PlantUML produced an error image (layout failure), previous render kept: {result.stderr[:200]}",
             )
             return None
         if rendered.exists():
@@ -199,7 +217,9 @@ def _render_diagram_png(puml_path: Path, warnings: list[str]) -> Path | None:
             pass
 
 
-def _render_diagram_svg(puml_path: Path, warnings: list[str]) -> Path | None:
+def _render_diagram_svg(
+    puml_path: Path, warnings: list[str], failures: list[str] | None = None
+) -> Path | None:
     """Render a PUML file to SVG using PlantUML. Returns the SVG path or None."""
     repo_root = repo_root_for_diagram_path(puml_path) or puml_path.parent.parent.parent
     rendered_dir = rendered_dir_for_diagram(puml_path, repo_root)
@@ -261,14 +281,16 @@ def _render_diagram_svg(puml_path: Path, warnings: list[str]) -> Path | None:
             env=env,
         )
         if result.returncode != 0:
-            warnings.append(f"SVG render failed: {result.stderr[:200]}")
+            _fail(warnings, failures, f"SVG render failed: {result.stderr[:200]}")
             return None
 
         rendered = rendered_dir / f"{tmp_path.stem}.svg"
         if _is_error_render(result.stderr):
             rendered.unlink(missing_ok=True)
-            warnings.append(
-                f"PlantUML produced an error image (layout failure), previous render kept: {result.stderr[:200]}"
+            _fail(
+                warnings,
+                failures,
+                f"PlantUML produced an error image (layout failure), previous render kept: {result.stderr[:200]}",
             )
             return None
         if rendered.exists():

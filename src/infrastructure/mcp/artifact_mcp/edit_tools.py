@@ -209,6 +209,29 @@ def artifact_edit_diagram(
     committed_repo = committed_repository(repo_cached(key))
 
     if puml == PUML_AUTO_SYNC:
+        # `auto-sync` regenerates the body from what is already stored, so it can carry no other
+        # edit — and it used to accept them silently and drop them. `authored_groupings=[]` with
+        # `puml="auto-sync"` answered `wrote: true` while the regenerated body still held every box
+        # it was asked to remove, which is the worst available answer: a refusal is actionable and a
+        # false success is not. Refused rather than applied-then-refreshed for the same reason a
+        # batch item carrying a field its operation does not accept is refused, not performed
+        # differently.
+        ignored = sorted(
+            name for name, value in (
+                ("name", name), ("keywords", keywords), ("diagram_entities", diagram_entities),
+                ("diagram_connections", diagram_connections), ("view_derivations", view_derivations),
+                ("bindings", bindings), ("version", version), ("status", status), ("tlp", tlp),
+                ("viewpoint", viewpoint), ("edge_labels", edge_labels),
+                ("authored_groupings", authored_groupings), ("group", group),
+                ("manual_layout", manual_layout),
+            ) if value is not None
+        )
+        if ignored:
+            raise ValueError(
+                f"puml='auto-sync' regenerates the body from the stored diagram and applies nothing "
+                f"else, but {ignored} were supplied and would have been ignored. Make the edit in one "
+                f"call and re-sync in a second."
+            )
         store = repo_cached(key)
         result = artifact_write_ops.refresh_diagram(
             repo_root=root,

@@ -12,7 +12,7 @@ from src.application.modeling.artifact_write_layout import ensure_puml_layout
 from src.application.repo_path_helpers import diagram_source_confidential_root, diagram_source_root
 from src.application.verification._issue_serialization import as_issue_dict
 from src.application.verification.artifact_verifier import ArtifactVerifier
-from src.application.verification.artifact_verifier_types import ENTITY_ID_RE
+from src.application.verification.artifact_verifier_types import ENTITY_ID_RE, Issue, Severity
 from src.domain.diagrams.bindings import Binding
 from src.domain.repository.groups import UNCATEGORIZED
 
@@ -348,11 +348,22 @@ def create_diagram(
             verification=_verification_to_dict(path, res),
         )
 
-    # Render PNG + SVG after successful write
-    png_path = _render_diagram_png(path, warnings)
+    # Render PNG + SVG after successful write. A failure here is reported as an *issue*, not only
+    # as a warning: the file was written and is valid, but its picture is the artifact people
+    # actually look at, and a layout crash used to come back as `verification.valid: true` with a
+    # Java stack trace buried in `warnings`. A caller — or a CI step — could not tell a rendered
+    # diagram from one that wrote a stack trace to disk.
+    render_failures: list[str] = []
+    png_path = _render_diagram_png(path, warnings, render_failures)
     if png_path:
         warnings.append(f"Rendered PNG: {png_path}")
-    _render_diagram_svg(path, warnings)
+    _render_diagram_svg(path, warnings, render_failures)
+    res.issues.extend(
+        # E350 is the existing "PlantUML error" code the syntax verifier already emits; a layout
+        # crash is the same class of fact, so it reuses it rather than minting a second vocabulary.
+        Issue(Severity.ERROR, "E350", failure, str(path))
+        for failure in render_failures
+    )
 
     clear_repo_caches(path)
 
