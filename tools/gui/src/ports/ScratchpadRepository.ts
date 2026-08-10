@@ -17,8 +17,10 @@ export interface ScratchpadRepository {
     params?: { group?: string; status?: string },
   ) => Effect.Effect<ScratchpadList, RepoError>
   readonly getScratchpad: (id: string) => Effect.Effect<Scratchpad, RepoError>
+  /** `group` is the folder it sits in and is the server's to default: a scratchpad is
+   * free-standing, and a lift chooses its target model-project per *frame*. */
   readonly createScratchpad: (
-    body: { name: string; group: string; description?: string },
+    body: { name: string; group?: string; description?: string },
   ) => Effect.Effect<Scratchpad, RepoError>
   // `version` is the one the client read. A mismatch is a 409 the caller resolves by reloading —
   // never an overwrite, since a scratchpad is a document someone else may have open.

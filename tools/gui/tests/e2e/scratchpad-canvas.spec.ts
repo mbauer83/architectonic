@@ -30,10 +30,9 @@ test.afterAll(async ({ request }) => {
 /** Create a scratchpad through the UI and land on its canvas. */
 async function newScratchpad(page: import('@playwright/test').Page, name: string): Promise<string> {
   await page.goto('/scratchpads')
+  // A name and nothing else. The form used to demand a model-project to file the scratchpad
+  // under, which is the one question a lift answers per *frame* and much later.
   await page.getByTestId('new-scratchpad-name').fill(`${name} ${RUN}`)
-  // Whichever collection this workspace has; the test asserts behaviour, not the group vocabulary.
-  const group = page.getByTestId('new-scratchpad-group')
-  await group.selectOption({ index: 1 })
   await page.getByRole('button', { name: 'New scratchpad' }).click()
   await expect(page.locator(CANVAS)).toBeVisible({ timeout: 15000 })
   const id = decodeURIComponent(page.url().split('/scratchpads/')[1])

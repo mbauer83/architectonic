@@ -5595,9 +5595,14 @@ export interface components {
         };
         /**
          * CreateScratchpadBody
-         * @description A create names the group, because a scratchpad has to live somewhere on disk — and only
-         *     that. The four areas are seeded, so a caller who has decided nothing still gets a usable
-         *     canvas.
+         * @description A create needs a name, and nothing else.
+         *
+         *     `group` is a folder and defaults, because a scratchpad is free-standing. It was required and
+         *     drawn from the model-project axis, which asked for the one answer the feature is designed not to
+         *     need: a lift chooses its target **per frame**, so a canvas holding strategy work for one project
+         *     and delivery work for another had to be filed under one of them before anything was written.
+         *
+         *     The four areas are seeded, so a caller who has decided nothing still gets a usable canvas.
          */
         CreateScratchpadBody: {
             /**
@@ -5605,7 +5610,10 @@ export interface components {
              * @default
              */
             description: string;
-            /** Group */
+            /**
+             * Group
+             * @default uncategorized
+             */
             group: string;
             /**
              * Meta-Ontology

@@ -2,10 +2,14 @@
 /**
  * The scratchpads, and the way to start one.
  *
- * Creating is a name and a collection, and nothing else — a scratchpad exists because the typed
- * path asks for decisions before anything has been decided, so its own entry form must not ask for
- * any either. The four frames are seeded server-side, so a new scratchpad opens usable rather than
- * blank.
+ * Creating is a name, and nothing else — a scratchpad exists because the typed path asks for
+ * decisions before anything has been decided, so its own entry form must not ask for any either.
+ * The four frames are seeded server-side, so a new scratchpad opens usable rather than blank.
+ *
+ * It used to ask for a **model-project** to file the scratchpad under, which was the one question
+ * the feature exists to postpone: a lift chooses its target per *frame*, so a canvas holding
+ * strategy work for one project and delivery work for another had to be filed under one of them
+ * before a word of it was written. The folder is now the server's default.
  */
 import { computed, inject, onMounted, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
@@ -14,7 +18,6 @@ import { modelServiceKey } from '../keys'
 import { useMutation } from '../composables/useMutation'
 import { useQuery } from '../composables/useQuery'
 import { scratchpadDetailRoute } from '../router/artifactRoutes'
-import type { GroupList } from '../../domain/schemas'
 import type { Scratchpad, ScratchpadList } from '../../domain/schemas/scratchpads'
 import type { RepoError } from '../../ports/repositoryErrors'
 
@@ -22,29 +25,22 @@ const svc = inject(modelServiceKey)!
 const router = useRouter()
 
 const listQuery = useQuery<ScratchpadList, RepoError>()
-const groupsQuery = useQuery<GroupList, RepoError>()
 const createMutation = useMutation<Scratchpad, RepoError>()
 
 const newName = ref('')
-const newGroup = ref('')
 
 const scratchpads = computed(() => listQuery.data.value?.scratchpads ?? [])
-// A scratchpad is filed in a model-project collection, the same axis its lifted content lands in.
-const groupOptions = computed(() =>
-  (groupsQuery.data.value?.['model-projects'] ?? []).filter((group) => !group.archived),
-)
-const canCreate = computed(() => newName.value.trim().length > 0 && newGroup.value.length > 0)
+const canCreate = computed(() => newName.value.trim().length > 0)
 
 const load = (): void => {
   listQuery.run(svc.listScratchpads())
-  groupsQuery.run(svc.listGroups('model-project'))
 }
 onMounted(load)
 
 const create = async (): Promise<void> => {
   if (!canCreate.value) return
   const exit = await createMutation.run(
-    svc.createScratchpad({ name: newName.value.trim(), group: newGroup.value }),
+    svc.createScratchpad({ name: newName.value.trim() }),
   )
   if (Exit.isSuccess(exit)) {
     newName.value = ''
@@ -75,25 +71,6 @@ const create = async (): Promise<void> => {
         data-testid="new-scratchpad-name"
         aria-label="Scratchpad name"
       >
-      <select
-        v-model="newGroup"
-        data-testid="new-scratchpad-group"
-        aria-label="Collection"
-      >
-        <option
-          value=""
-          disabled
-        >
-          Collection…
-        </option>
-        <option
-          v-for="group in groupOptions"
-          :key="group.slug"
-          :value="group.slug"
-        >
-          {{ group.name }}
-        </option>
-      </select>
       <button
         type="submit"
         :disabled="!canCreate || createMutation.running.value"

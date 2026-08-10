@@ -33,6 +33,7 @@ from src.application.scratchpad.document import (
 from src.application.scratchpad.edit import ScratchpadEdit
 from src.application.scratchpad.ports import ScratchpadNotFoundError, ScratchpadVersionConflictError
 from src.application.scratchpad.service import ScratchpadService
+from src.domain.repository.groups import UNCATEGORIZED
 from src.domain.scratchpad import ScratchpadError
 from src.infrastructure.rest.contracts.scratchpads import (
     ScratchpadLiftResponse,
@@ -77,12 +78,18 @@ class _ClosedBody(BaseModel):
 
 
 class CreateScratchpadBody(_ClosedBody):
-    """A create names the group, because a scratchpad has to live somewhere on disk — and only
-    that. The four areas are seeded, so a caller who has decided nothing still gets a usable
-    canvas."""
+    """A create needs a name, and nothing else.
+
+    `group` is a folder and defaults, because a scratchpad is free-standing. It was required and
+    drawn from the model-project axis, which asked for the one answer the feature is designed not to
+    need: a lift chooses its target **per frame**, so a canvas holding strategy work for one project
+    and delivery work for another had to be filed under one of them before anything was written.
+
+    The four areas are seeded, so a caller who has decided nothing still gets a usable canvas.
+    """
 
     name: str
-    group: str
+    group: str = UNCATEGORIZED
     description: str = ""
     meta_ontology: str = Field(default="archimate-4", alias="meta-ontology")
     seed_areas: bool = Field(default=True, alias="seed-areas")

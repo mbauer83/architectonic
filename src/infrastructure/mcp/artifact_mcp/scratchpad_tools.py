@@ -26,6 +26,7 @@ from src.application.scratchpad.document import (
 from src.application.scratchpad.edit import ScratchpadEdit
 from src.application.scratchpad.ports import ScratchpadNotFoundError, ScratchpadVersionConflictError
 from src.application.scratchpad.service import ScratchpadService
+from src.domain.repository.groups import UNCATEGORIZED
 from src.domain.scratchpad import ScratchpadError
 from src.infrastructure.mcp.artifact_mcp.context import resolve_repo_roots
 from src.infrastructure.mcp.tool_annotations import (
@@ -120,10 +121,11 @@ def register_scratchpad_read_tools(mcp: FastMCP) -> None:
 
 
 _CREATE_DESCRIPTION = (
-    "Create a scratchpad in `group` (the collection it lives in on disk). Seeded with four "
-    "labelled frames — Vision & strategy, Portfolio, Project, Enabling — unless `seed_areas` is "
-    "false. Nothing needs to be typed: a scratchpad exists to hold thinking before anything has "
-    "been decided." + _AGGREGATE_NOTE
+    "Create a scratchpad. Only `name` is needed — `group` is the folder it sits in and defaults, "
+    "because a scratchpad is free-standing and a lift chooses its target model-project PER FRAME. "
+    "Seeded with four labelled frames — Vision & strategy, Portfolio, Project, Enabling — unless "
+    "`seed_areas` is false. Nothing needs to be typed: a scratchpad exists to hold thinking before "
+    "anything has been decided." + _AGGREGATE_NOTE
 )
 
 _REPLACE_DESCRIPTION = (
@@ -185,7 +187,7 @@ _DELETE_DESCRIPTION = (
 def scratchpad_create(
     *,
     name: str,
-    group: str,
+    group: str = UNCATEGORIZED,
     description: str = "",
     meta_ontology: str = "archimate-4",
     seed_areas: bool = True,

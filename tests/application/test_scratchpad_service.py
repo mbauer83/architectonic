@@ -52,6 +52,16 @@ class TestCreate:
     def test_seeding_can_be_declined(self, service: ScratchpadService) -> None:
         assert _new(service, seed_areas=False).areas == ()
 
+    def test_a_create_needs_only_a_name(self, service: ScratchpadService) -> None:
+        """The collection was required and drawn from the model-project axis, which asked for the
+        one answer a scratchpad is designed not to need: a lift chooses its target per *frame*, so a
+        canvas holding strategy work for one project and delivery work for another had to be filed
+        under one of them before a word of it was written."""
+        created = service.create(artifact_id="SCR@1.a.unfiled", name="Just thinking")
+
+        assert service.group_of(created.artifact_id) == "uncategorized"
+        assert [summary.group for summary in service.list_scratchpads()] == ["uncategorized"]
+
     def test_creating_over_an_existing_id_is_refused(self, service: ScratchpadService) -> None:
         _new(service)
 

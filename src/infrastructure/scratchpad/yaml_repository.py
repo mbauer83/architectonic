@@ -30,15 +30,13 @@ from src.application.scratchpad.ports import (
     ScratchpadVersionConflictError,
 )
 from src.domain.artifact_id import stable_id
+from src.domain.repository.groups import UNCATEGORIZED as _UNCATEGORIZED
 from src.domain.repository.repo_layout import SCRATCHPAD_SUFFIX, SCRATCHPADS
 from src.domain.scratchpad import Scratchpad
 
 #: The file suffix, re-exported from the layout module so this repository and the index scan for
 #: the same thing. Every caller already asks this module for it.
 SUFFIX = SCRATCHPAD_SUFFIX
-
-_UNCATEGORIZED = "uncategorized"
-
 
 def _bump(version: str) -> str:
     """Next patch version. The version is a concurrency token first and a version second, so it

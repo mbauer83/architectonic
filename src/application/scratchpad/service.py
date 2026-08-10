@@ -29,6 +29,7 @@ from src.application.scratchpad.ports import (
     ScratchpadSummary,
 )
 from src.domain.modules.module_registry import ModuleRegistry
+from src.domain.repository.groups import UNCATEGORIZED
 from src.domain.scratchpad import (
     Area,
     Layout,
@@ -92,7 +93,7 @@ class ScratchpadService:
         *,
         artifact_id: str,
         name: str,
-        group: str,
+        group: str = UNCATEGORIZED,
         description: str = "",
         meta_ontology: str = "archimate-4",
         seed_areas: bool = True,
@@ -102,6 +103,12 @@ class ScratchpadService:
         Seeded by default because an empty canvas answers none of "what goes where", and the four
         areas are the vocabulary the feature is designed around. `seed_areas=False` exists for the
         caller who wants their own — an agent restoring an export, most obviously.
+
+        `group` is a **folder**, and it defaults, because a scratchpad is free-standing. It used to
+        be required and drawn from the model-project axis, which asked at the worst possible moment
+        for the one answer a scratchpad is designed not to need: a lift chooses a target *per frame*,
+        so the thinking that spans projects — the material worth having — had to be filed under one
+        of them before a word of it was written.
         """
         areas = [
             Area(id=area_id, label=label, permitted_domains=domains)
