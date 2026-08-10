@@ -12,7 +12,7 @@
  */
 import { describe, expect, it } from 'vitest'
 
-import { c4ItemAlias } from '../graphvizElementMapping'
+import { c4ItemAlias } from '../c4ElementMapping'
 
 describe('the alias the C4 renderer emits', () => {
   it('matches real rendered output for each item type', () => {

@@ -34,12 +34,15 @@ const mapNodes = (
   svgRoot: SVGSVGElement,
   entities: ReadonlyArray<DiagramContextEntity>,
   diagramEntities?: Record<string, unknown>,
+  supplementaryAliases?: ReadonlyMap<string, string>,
 ): { nodes: Map<string, Element[]>; svgNodeIdToAlias: Map<string, string> } => {
   const nodes = new Map<string, Element[]>()
   const svgNodeIdToAlias = new Map<string, string>()
   const aliasToId = buildAliasToId(entities)
   addOccurrenceAliases(aliasToId, entities, diagramEntities)
-  addC4ItemAliases(aliasToId, diagramEntities)
+  // Alias→artifact pairs a diagram type computed for itself. Deliberately opaque here: the
+  // generic matcher is told *that* there are more aliases, never what kind of thing they name.
+  for (const [alias, artifactId] of supplementaryAliases ?? []) aliasToId.set(alias, artifactId)
   if (!aliasToId.size) return { nodes, svgNodeIdToAlias }
 
   for (const g of Array.from(svgRoot.querySelectorAll<SVGGElement>('g'))) {
@@ -67,50 +70,6 @@ const addOccurrenceAliases = (
     const index = (counts.get(entity.artifact_id) ?? 1) + 1
     counts.set(entity.artifact_id, index)
     aliasToId.set(`${base}__${index}`, entity.artifact_id)
-  }
-}
-
-/** The alias the C4 renderer emits for an item — mirrors `_alias_for` in `_c4_types.py:52`.
- *
- * `index` is the item's position **within its own type array**, not a global counter, which is why
- * this counts per key rather than across the payload: a real render carries `P_planner_0`,
- * `P_cnc_1`, `P_tadmin_2` alongside `SS_platform_0`, `SS_auth0_1` — two independent 0-based
- * sequences.
- */
-export const c4ItemAlias = (itemType: string, localId: string, index: number): string => {
-  const normalized = localId.replace(/[^A-Za-z0-9_]/g, '_')
-  const prefix = itemType.replace(/-/g, '_').split('_').map((part) => part.slice(0, 1).toUpperCase()).join('') || 'C'
-  return `${prefix}_${normalized}_${index}`
-}
-
-/** Bridge the C4 renderer's local-id aliases to the entities they are bound to.
- *
- * Without this the map holds only `display_alias` — the *model* alias, `APP_iVvOytl` — while the SVG
- * carries `data-qualified-name="SS_platform_0"`, so nothing matched: `nodes` stayed empty, selection
- * did nothing, and `useDiagramSvgSelection` returned early above the badge-injection loop, so the
- * drill-down badges never appeared either.
- *
- * A supplementary alias map beside `addOccurrenceAliases` rather than a C4 viewer extension of its
- * own: `resolveNodeAlias` already reads `data-qualified-name`, so the traversal was never the
- * problem — only the keys were. Extending the shared mapper is also what this repo's own rule asks
- * for over duplicating the resolver.
- */
-const addC4ItemAliases = (
-  aliasToId: Map<string, string>,
-  diagramEntities?: Record<string, unknown>,
-): void => {
-  if (!diagramEntities) return
-  for (const [itemType, value] of Object.entries(diagramEntities)) {
-    if (itemType.startsWith('_') || !Array.isArray(value)) continue
-    value.forEach((raw, index) => {
-      if (!raw || typeof raw !== 'object') return
-      const item = raw as Record<string, unknown>
-      const localId = typeof item.id === 'string' ? item.id : ''
-      const entityId = typeof item.entity_id === 'string' ? item.entity_id : ''
-      if (!localId || !entityId) return
-      const explicit = typeof item.alias === 'string' && item.alias ? item.alias.replace(/-/g, '_') : ''
-      aliasToId.set(explicit || c4ItemAlias(itemType, localId, index), entityId)
-    })
   }
 }
 
@@ -163,8 +122,20 @@ const mapEdges = (
  * alias twice, which none currently do — the one-to-many shape is forward-compatible, not yet
  * exercised by ArchiMate occurrence aliases such as `APP_A__2`.
  */
-export function graphvizMapElements(svgRoot: SVGSVGElement, ctx: DiagramMapContext): DiagramElementMap {
-  const { nodes, svgNodeIdToAlias } = mapNodes(svgRoot, ctx.entities, ctx.diagramEntities)
+/**
+ * The default matcher, and the base a diagram type composes with.
+ *
+ * `supplementaryAliases` is how a type whose renderer emits aliases of its own joins in without
+ * this module learning its vocabulary: it hands over finished `alias → artifact_id` pairs and
+ * keeps the naming rule in `ui/diagram-types/<type>/`. C4 is the first caller — its renderer
+ * builds aliases from each item's *local* id, which no model `display_alias` can match.
+ */
+export function graphvizMapElements(
+  svgRoot: SVGSVGElement,
+  ctx: DiagramMapContext,
+  supplementaryAliases?: ReadonlyMap<string, string>,
+): DiagramElementMap {
+  const { nodes, svgNodeIdToAlias } = mapNodes(svgRoot, ctx.entities, ctx.diagramEntities, supplementaryAliases)
   const edges = mapEdges(svgRoot, ctx.connections, svgNodeIdToAlias)
   return { nodes, edges }
 }
