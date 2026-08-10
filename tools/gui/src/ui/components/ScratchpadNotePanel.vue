@@ -162,7 +162,7 @@ const onLinkType = (connectionType: string): void => {
 
     <template v-else>
       <p class="hint">
-        Nothing here needs a type. Narrow it when you know, one level at a time.
+        Choose a domain, then a type, when you know them. Both are optional.
       </p>
       <label class="field">
         <span>Domain</span>

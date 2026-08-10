@@ -294,8 +294,8 @@ const status = computed(() => {
 
     <p class="hint">
       Double-click the canvas to add a note, or right-click to add one the model already has.
-      Drag a note's right-hand handle onto another to link them. Nothing needs a type — that comes
-      later, if it comes at all.
+      Drag a note's right-hand handle onto another to link them. Refine into an actual model and
+      documents as needed.
     </p>
 
     <div class="canvas-frame">

@@ -54,8 +54,8 @@ const create = async (): Promise<void> => {
     <header>
       <h1>Scratchpads</h1>
       <p class="lead">
-        Somewhere to think before anything is decided. Write notes, draw links between them, and
-        keep whatever does not become model content.
+        Sketch work before refining it. Write notes, link them, and lift what is ready into the
+        model.
       </p>
     </header>
 

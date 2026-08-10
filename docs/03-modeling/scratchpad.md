@@ -1,13 +1,12 @@
 # Scratchpad
 
-A scratchpad is somewhere to think **before anything is decided**. Notes with titles, links
-between them, arranged on a canvas — no element types, no ontology, no naming a kind of thing
-before you know what it is.
+**Sketch work before refining it.** A scratchpad holds notes and the links between them on a canvas.
+A note needs a title and nothing else: no element type, no domain, no ontology.
 
-That last point is the reason it exists. Creating model content asks for a type first, and for a
-newcomer — or for anyone at the start of a piece of work — that question arrives before there is an
-answer to it. The scratchpad removes the question, and then lets the thinking that survives become
-ordinary, verified model content through a **lift**.
+That is the reason it exists. Creating model content asks for a type first, and at the start of a
+piece of work that question arrives before there is an answer to it. Refine a note when you know
+more — a domain, then a type — and turn what is ready into ordinary, verified model content with a
+**lift**.
 
 Nothing on a scratchpad is model content until it is lifted. And a scratchpad **never writes back**:
 what a lift put into the model is the model's, and a second lift creates only what is new. See the

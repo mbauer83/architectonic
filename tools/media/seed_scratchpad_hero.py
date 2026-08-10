@@ -89,7 +89,7 @@ def call(base: str, method: str, path: str, body: object | None = None) -> dict:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--base", default="http://localhost:8377")
-    parser.add_argument("--name", default="Onboarding, before we name anything")
+    parser.add_argument("--name", default="Onboarding rework")
     arguments = parser.parse_args()
     base = arguments.base.rstrip("/")
 
@@ -99,7 +99,9 @@ def main() -> None:
             "artifact_type": artifact_type, "name": name, "dry_run": False,
             "summary": "Seeded so the scratchpad has something real to bind to.",
         })
-        created[name] = answer["artifact-id"]
+        # `artifact_id`, not `artifact-id`: the entity write answers in snake_case while the
+        # scratchpad routes answer in the document's kebab-case. Two vocabularies, one client.
+        created[name] = answer["artifact_id"]
 
     scratchpad = call(base, "POST", "/api/scratchpads", {"name": arguments.name})
     identifier = urllib.parse.quote(scratchpad["artifact-id"], safe="")

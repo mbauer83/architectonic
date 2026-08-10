@@ -22,6 +22,13 @@ edit in a browser, while AI agents edit through MCP tools — with safety, secur
 
 [Quickstart](#quickstart) · [Documentation](docs/index.md) · [Why it exists](docs/01-motivation.md) · [Assurance](docs/04-assurance/index.md)
 
+Sketch work before refining it.
+
+<!-- media: docs/media/scratchpad-hero.png — seeded demo workspace, 1440×945 @2x; see tools/media/seed_scratchpad_hero.py -->
+![A scratchpad: notes and links on a canvas, some narrowed to a domain or a type, some bound to existing model elements](docs/media/scratchpad-hero.png)
+
+Then refine it into a verified model.
+
 <!-- media: docs/media/hero-overview.png — deterministic capture, 1440×900 @2x -->
 ![The architecture repository GUI showing the engagement overview](docs/media/hero-overview.png)
 
@@ -87,16 +94,6 @@ repository to answer your questions.
   and live-cursor co-editing as the primary collaboration model.
 
 More on the audience in [Who it serves](docs/01-motivation.md#who-it-serves).
-
-&nbsp;
-
-**Start before you know what anything is.** A scratchpad holds notes and the links between them with
-no ontology involved — then narrows them a level at a time, and lifts what survives into ordinary,
-verified model content. Most of these have decided nothing. Some have reached a domain, some a type;
-two are bound to elements the model already had, and one — `✓ goal` — has been lifted and is in the
-model now. The links crossing between the frames are why this is one canvas rather than four tabs:
-
-![A scratchpad mid-thought: sixteen notes across two frames, most undecided, some narrowed to a domain or a type, two bound to existing elements and one already lifted into the model](docs/media/scratchpad-hero.png)
 
 &nbsp;
 

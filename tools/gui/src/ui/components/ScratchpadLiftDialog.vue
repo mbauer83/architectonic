@@ -125,7 +125,7 @@ const isNew = (slug: string): boolean => !!slug && !props.projects.includes(slug
         <p class="note">
           <!-- Creating a project here is deliberate: "this thinking has become a project" is the
                normal way a project starts, and leaving to make one would interrupt the moment. -->
-          A frame left blank lands in the root model. A name that is not yet a project creates one.
+          A frame left blank lands in the root model. A new name creates that project.
         </p>
         <label class="field draw">
           <input
@@ -225,7 +225,8 @@ const isNew = (slug: string): boolean => !!slug && !props.projects.includes(slug
         >
           <h3>Links reaching outside the selection ({{ outside.length }})</h3>
           <p class="why">
-            These are not realized. Add the note at the other end to the selection, or accept it.
+            These are not lifted. Add the note at the other end to the selection, or continue
+            without them.
           </p>
           <ul>
             <li
@@ -250,7 +251,7 @@ const isNew = (slug: string): boolean => !!slug && !props.projects.includes(slug
         <span
           v-if="blocked"
           class="why"
-        >A refusal stops the whole lift — the write is one transaction.</span>
+        >A refusal stops the whole lift.</span>
         <button
           type="button"
           @click="emit('close')"
