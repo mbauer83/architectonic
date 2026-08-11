@@ -35,6 +35,12 @@ Nothing here changes an API, a contract, or observable behaviour.
 - `_DEFAULT_PASS_WORKERS` stays 1, for a re-measured reason. The 63 s pass its justification cited is
   now 0.19 s: single acquisition removed the re-reading (200,574 YAML documents → 1,472; 982,904
   `realpath` calls → 3,392), so there is no pass left to divide.
+- **Coverage measures what it gates.** `.vue` files leave the unit-coverage population — v8 measures a
+  component's compiled render function while the E2E flag measures its source through istanbul, and the
+  two disagree about line numbers. Frontend coverage reads 53.0% → 68.3% once they stop double-counting,
+  and `src/ui/components` and `src/ui/views` turn out to be at 95.8% and 92.1% rather than 18.7%. Every
+  frontend directory now carries a floor, and the backend ratchet moves 74 → 85.
+- `tools/gui/package-lock.json` records the current version; it had read `0.3.0` since that release.
 
 ## [0.5.0] — 2026-08-10
 

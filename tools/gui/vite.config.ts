@@ -104,7 +104,12 @@ export default defineConfig({
       provider: 'v8',
       // text for the CI log; lcov for the Codecov upload; json-summary for local glances.
       reporter: ['text-summary', 'lcov', 'json-summary'],
-      include: ['src/**/*.ts', 'src/**/*.vue'],
+      // `.ts` only. SFCs belong to the E2E flag: v8 measures a `.vue` file's *compiled render function*
+      // and source-maps it onto template lines, while the instrumented E2E build measures the same
+      // component through istanbul over its source. The two attribute one component to different line
+      // numbers, so including `.vue` here adds ~5,900 lines that only v8 reports — and reports as
+      // uncovered, since unit tests are not the instrument for template wiring.
+      include: ['src/**/*.ts'],
       // `*.test-d.ts` alongside `*.test.ts`: a type-level contract test is a test. It is checked by
       // `vitest --typecheck` and never executed, so counting it as source makes every one a 0%-covered
       // file — the six added for the OpenAPI contracts took `src/domain/**` from ~90% to 71.9% and
@@ -116,14 +121,23 @@ export default defineConfig({
         'src/domain/types.generated.ts',
         'src/main.ts',
       ],
-      // Gate ONLY the logic-heavy directories where unit tests are the right tool.
-      // .vue views/components and composables are wiring covered by the Playwright
-      // route-walk (see e2e job), so they are measured + reported but not gated here.
-      // Thresholds are seeded just below current coverage as a regression floor and
-      // are meant to ratchet upward over time (cf. the backend fail_under ratchet).
+      // Regression floors, every directory gated, each seeded ~4 points below measured coverage and
+      // meant to ratchet upward (cf. the backend fail_under ratchet). Headroom rather than the exact
+      // figure, so an unlucky run is not a red build.
+      //
+      // `src/adapters` and `src/application` are low by fact, not ambition: ~390 lines of HTTP
+      // repository classes whose pure logic is tested while the fetch-bound methods need a transport
+      // fake. Gated anyway, so the tests that exist cannot quietly go away.
       thresholds: {
-        'src/domain/**': { statements: 90, lines: 90, functions: 80, branches: 80 },
-        'src/ui/lib/**': { statements: 33, lines: 35, functions: 20, branches: 18 },
+        'src/domain/**': { statements: 86, lines: 89, functions: 82, branches: 77 },
+        'src/ui/lib/**': { statements: 83, lines: 85, functions: 80, branches: 75 },
+        'src/ui/components/**': { statements: 90, lines: 91, functions: 89, branches: 84 },
+        'src/ui/views/**': { statements: 86, lines: 88, functions: 87, branches: 77 },
+        'src/ui/composables/**': { statements: 29, lines: 31, functions: 28, branches: 19 },
+        'src/ui/diagram-types/**': { statements: 39, lines: 43, functions: 34, branches: 37 },
+        'src/ui/router/**': { statements: 55, lines: 56, functions: 29, branches: 95 },
+        'src/adapters/**': { statements: 3, lines: 3, functions: 2, branches: 1 },
+        'src/application/**': { statements: 2, lines: 2, functions: 2, branches: 0 },
       },
     },
   },

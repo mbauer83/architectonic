@@ -138,14 +138,15 @@ omit = [
 show_missing = true
 skip_covered = true
 precision = 1
-# Coverage bases (measured 2026-06): 78.6% statement/line · 75.7% combined · 66% branch.
-# The canonical, reported figure is statement/line coverage (~79%) — this is also what
-# Codecov shows by default. Because branch=true above, coverage.py's headline
-# `percent_covered` (and therefore `fail_under`) is the branch-INCLUSIVE combined metric
-# (~76%), not the line figure — do not compare a line-basis target against it.
+# Coverage bases (measured 2026-08-11): 90.2% statement/line · 87.8% combined · 66% branch.
+# Because branch=true above, coverage.py's headline `percent_covered` (and therefore
+# `fail_under`) is the branch-INCLUSIVE combined metric, not the line figure — do not compare
+# a line-basis target against it. Codecov reports a third number again (86.2%), counting a
+# partially-branched line as uncovered where the line metric counts it covered.
 # `fail_under` is a ratchet for explicit `--cov` runs only; it never blocks the default
-# (no-coverage) quality-gate run. Raise it as coverage improves.
-fail_under = 74
+# (no-coverage) quality-gate run. Raise it as coverage improves, keeping a couple of points of
+# headroom so an unlucky run is not a red build.
+fail_under = 85
 # Only lines that genuinely cannot be exercised by tests. Each pattern below was
 # checked against src/: TYPE_CHECKING blocks (30, import-only), abstract method
 # bodies (6), __main__ entry guards (16), and bare `...` Protocol/stub bodies.
