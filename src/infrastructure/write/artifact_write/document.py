@@ -9,6 +9,7 @@ from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.config.repo_paths import DOCS
 from src.domain.artifact_id import stable_id
 from src.domain.repository.groups import UNCATEGORIZED
+from src.domain.yaml_documents import parse_yaml
 from src.infrastructure.atomic_file import write_atomic
 
 from ._artifact_deduplication import extract_friendly_slug, get_repository, validate_document_unique
@@ -247,7 +248,7 @@ def _split_document_frontmatter(raw: str, path: Path) -> tuple[dict[str, object]
     end = raw.find("\n---", 3)
     if end == -1:
         raise ValueError(f"Document at {path} has malformed YAML frontmatter")
-    fm: dict[str, object] = yaml.safe_load(raw[3:end].strip()) or {}
+    fm: dict[str, object] = parse_yaml(raw[3:end].strip()) or {}
     return fm, raw[end + 4 :].lstrip("\n")
 
 

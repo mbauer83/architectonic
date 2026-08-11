@@ -8,10 +8,9 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-import yaml  # type: ignore[import-untyped]
-
 from src.domain.ontology_representation.specialization_values import applied_specialization_slugs
 from src.domain.repository.connection_declaration import ConnectionDeclaration, parse_connection_declarations
+from src.domain.yaml_documents import parse_yaml
 
 
 @dataclass
@@ -143,7 +142,7 @@ def _parse_frontmatter(text: str) -> dict[str, object]:
     m = re.match(r"^---\n(.*?\n)---\n", text, re.DOTALL)
     if not m:
         return {}
-    return yaml.safe_load(m.group(1)) or {}
+    return parse_yaml(m.group(1)) or {}
 
 
 def _frontmatter_end_pos(text: str) -> int:

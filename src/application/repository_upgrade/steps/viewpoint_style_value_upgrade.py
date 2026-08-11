@@ -24,6 +24,7 @@ from src.domain.viewpoints.viewpoint_parsing import viewpoint_catalog_from_mappi
 from src.domain.viewpoints.viewpoint_serialization import viewpoint_catalog_to_mapping
 from src.domain.viewpoints.viewpoint_style_normalization import normalize_definition_style_values
 from src.domain.viewpoints.viewpoints import ViewpointCatalog
+from src.domain.yaml_documents import parse_yaml
 
 _PATH = ".arch-repo/viewpoints.yaml"
 
@@ -33,7 +34,7 @@ def _parsed_catalog(view: RepoUpgradeView) -> ViewpointCatalog | None:
     if content is None:
         return None
     try:
-        loaded: Any = yaml.safe_load(content) or {}
+        loaded: Any = parse_yaml(content) or {}
         if not isinstance(loaded, dict):
             return None
         return viewpoint_catalog_from_mapping(loaded)

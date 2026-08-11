@@ -17,8 +17,6 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any, Literal, cast
 
-import yaml  # type: ignore[import-untyped]
-
 from src.domain.assurance.aibom_roles import DerivationRoleBindings, role_bindings_from_mapping
 from src.domain.guidance.guidance import ConceptKind, GuidanceOverlay, resolved_type_guidance
 from src.domain.modules.module_types import ConnectionTypeName, EntityTypeName
@@ -37,6 +35,7 @@ from src.domain.relationships.permitted_relationships import (
     PermittedRelationship,
     PermittedRelationshipSet,
 )
+from src.domain.yaml_documents import parse_yaml
 
 META_ONTOLOGY_ALIAS = "archimate-4"
 
@@ -47,7 +46,7 @@ def load_module_specializations(package_dir: Path, module_alias: str) -> Special
     path = package_dir / "specializations.yaml"
     if not path.exists():
         return SpecializationCatalog.empty()
-    loaded: Any = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    loaded: Any = parse_yaml(path.read_text(encoding="utf-8")) or {}
     if not isinstance(loaded, dict):
         raise ValueError(f"Invalid specialization declarations in {path}: top-level YAML value must be a mapping")
     return specialization_catalog_from_mapping(loaded, module_alias=module_alias)
@@ -57,14 +56,14 @@ def load_module_profiles(package_dir: Path) -> ProfileRegistry:
     path = package_dir / "profiles.yaml"
     if not path.exists():
         return ProfileRegistry.empty()
-    return profile_registry_from_mapping(yaml.safe_load(path.read_text(encoding="utf-8")), label=str(path))
+    return profile_registry_from_mapping(parse_yaml(path.read_text(encoding="utf-8")), label=str(path))
 
 
 def load_module_aibom_roles(package_dir: Path) -> DerivationRoleBindings:
     path = package_dir / "aibom_roles.yaml"
     if not path.exists():
         return DerivationRoleBindings.empty()
-    return role_bindings_from_mapping(yaml.safe_load(path.read_text(encoding="utf-8")), label=str(path))
+    return role_bindings_from_mapping(parse_yaml(path.read_text(encoding="utf-8")), label=str(path))
 
 
 def _type_guidance(

@@ -12,6 +12,7 @@ from pathlib import Path
 import yaml
 
 from src.domain.repository.repo_layout import ARCH_REPO
+from src.domain.yaml_documents import parse_yaml
 
 _PINS_FILE = "viewpoint-pins.yaml"
 
@@ -43,7 +44,7 @@ def load_pinned_slugs(repo_root: Path, *, known_slugs: frozenset[str]) -> Pinned
     path = _pins_path(repo_root)
     if not path.exists():
         return PinnedSlugs(slugs=(), pruned=())
-    loaded = yaml.safe_load(path.read_text(encoding="utf-8"))
+    loaded = parse_yaml(path.read_text(encoding="utf-8"))
     raw = loaded if isinstance(loaded, list) else []
     ordered = _deduplicated(tuple(str(item) for item in raw))
     kept = tuple(slug for slug in ordered if slug in known_slugs)

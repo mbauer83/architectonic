@@ -24,6 +24,8 @@ from pathlib import Path
 
 import yaml  # type: ignore[import-untyped]
 
+from src.domain.yaml_documents import parse_yaml
+
 # ---------------------------------------------------------------------------
 # Frontmatter helpers
 # ---------------------------------------------------------------------------
@@ -35,7 +37,7 @@ def _parse_fm(text: str) -> dict[str, object]:
     m = _FM_RE.match(text)
     if not m:
         return {}
-    return yaml.safe_load(m.group(1)) or {}
+    return parse_yaml(m.group(1)) or {}
 
 
 def _replace_fm(text: str, fm: dict[str, object]) -> str:

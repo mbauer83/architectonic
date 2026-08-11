@@ -11,6 +11,8 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
+from src.domain.yaml_documents import parse_yaml
+
 
 def text_of(result: Any) -> str:
     """The tool's answer as text. MCP wraps content in a list of typed blocks."""
@@ -34,9 +36,8 @@ def decoded(text: str) -> object:
     recording, because "the answer is not JSON" is exactly the sort of confident false positive that
     makes a new gate get switched off.
     """
-    import yaml
 
-    return yaml.safe_load(text)
+    return parse_yaml(text)
 
 
 def rows_of(payload: object) -> list[Mapping[str, Any]]:

@@ -13,8 +13,6 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
-import yaml  # type: ignore[import-untyped]
-
 from src.diagram_types._assurance_analysis_scope import analysis_methods_from
 from src.diagram_types._base import DiagramTypeBase
 from src.domain.assurance.uca_guidewords import UCA_GUIDEWORD_SLUGS
@@ -27,6 +25,7 @@ from src.domain.ontology_representation.ontology_protocol import (
 )
 from src.domain.ontology_representation.ontology_types import ConnectionTypeInfo, EntityTypeInfo
 from src.domain.relationships.permitted_relationships import PermittedRelationshipSet
+from src.domain.yaml_documents import parse_yaml
 
 _EMPTY_ENTITY_TYPES: dict[EntityTypeName, EntityTypeInfo] = {}
 _EMPTY_CONNECTION_TYPES: dict[ConnectionTypeName, ConnectionTypeInfo] = {}
@@ -143,7 +142,7 @@ class _UcaMatrixDiagramType(DiagramTypeBase):
 def _load_config(package_dir: Path) -> dict[str, Any]:
     config_path = package_dir / "config.yaml"
     with config_path.open(encoding="utf-8") as handle:
-        return yaml.safe_load(handle) or {}
+        return parse_yaml(handle) or {}
 
 
 module: DiagramTypeModule = _UcaMatrixDiagramType(_load_config(Path(__file__).parent))

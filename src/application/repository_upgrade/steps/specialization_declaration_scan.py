@@ -10,11 +10,10 @@ from __future__ import annotations
 
 from typing import Any
 
-import yaml  # type: ignore[import-untyped]
-
 from src.application.repository_upgrade.ports import RepoUpgradeView, RepoUpgradeWriter
 from src.domain.ontology_representation.specializations import specialization_catalog_from_mapping
 from src.domain.repository.repository_upgrade import AppliedFinding, ScannedSurface, UpgradeFinding
+from src.domain.yaml_documents import parse_yaml
 
 _PATH = ".arch-repo/specializations.yaml"
 
@@ -30,7 +29,7 @@ class SpecializationDeclarationScanStep:
         if content is None:
             return []
         try:
-            loaded: Any = yaml.safe_load(content) or {}
+            loaded: Any = parse_yaml(content) or {}
             if not isinstance(loaded, dict):
                 raise ValueError("top-level YAML value must be a mapping")
             specialization_catalog_from_mapping(loaded, module_alias="arch-repair-upgrade-scan")

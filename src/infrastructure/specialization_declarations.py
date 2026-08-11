@@ -11,6 +11,7 @@ from src.domain.ontology_representation.specializations import (
     SpecializationCatalog,
     specialization_catalog_from_mapping,
 )
+from src.domain.yaml_documents import parse_yaml
 
 SPECIALIZATIONS_FILENAME = "specializations.yaml"
 
@@ -24,7 +25,7 @@ def load_specialization_catalog_file(repo_root: Path, module_alias: str) -> Spec
     if not path.exists():
         return SpecializationCatalog.empty()
     try:
-        loaded: Any = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        loaded: Any = parse_yaml(path.read_text(encoding="utf-8")) or {}
     except yaml.YAMLError as exc:
         raise ValueError(f"Invalid specialization declarations in {path}: {exc}") from exc
     if not isinstance(loaded, dict):

@@ -10,6 +10,7 @@ from pathlib import Path
 import yaml  # type: ignore[import-untyped]
 
 from src.domain.repository.operational_upgrade import UpgradeTarget
+from src.domain.yaml_documents import parse_yaml
 from src.infrastructure.atomic_file import write_atomic
 
 
@@ -107,7 +108,7 @@ def guidance_cache_version(root: Path) -> int | None:
     versions: list[int] = []
     for doc in sorted(root.glob("*.guidance.yaml")):
         try:
-            data: object = yaml.safe_load(doc.read_text(encoding="utf-8")) or {}
+            data: object = parse_yaml(doc.read_text(encoding="utf-8")) or {}
             version = data.get("guidance_format") if isinstance(data, dict) else None
         except yaml.YAMLError:
             return None

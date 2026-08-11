@@ -15,14 +15,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import yaml  # type: ignore[import-untyped]
-
 from src.domain.guidance.guidance import (
     GuidanceOverlay,
     WorkspaceGuidance,
     guidance_overlay_from_mapping,
     workspace_guidance_from_mapping,
 )
+from src.domain.yaml_documents import parse_yaml
 
 _CONFIG_DIR = Path.home() / ".config" / "arch-repo"
 GUIDANCE_CACHE_DIRNAME = "guidance-cache"
@@ -42,7 +41,7 @@ def load_guidance_overlay(module_alias: str) -> GuidanceOverlay:
     cache_file = guidance_cache_root() / f"{module_alias}.guidance.yaml"
     if not cache_file.is_file():
         return GuidanceOverlay()
-    data = yaml.safe_load(cache_file.read_text(encoding="utf-8"))
+    data = parse_yaml(cache_file.read_text(encoding="utf-8"))
     if not isinstance(data, dict):
         return GuidanceOverlay()
     return guidance_overlay_from_mapping(data)
@@ -58,7 +57,7 @@ def load_workspace_guidance() -> WorkspaceGuidance:
     cache_file = guidance_cache_root() / "workspace.guidance.yaml"
     if not cache_file.is_file():
         return WorkspaceGuidance()
-    data = yaml.safe_load(cache_file.read_text(encoding="utf-8"))
+    data = parse_yaml(cache_file.read_text(encoding="utf-8"))
     if not isinstance(data, dict):
         return WorkspaceGuidance()
     return workspace_guidance_from_mapping(data)

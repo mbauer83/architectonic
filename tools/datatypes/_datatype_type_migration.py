@@ -13,6 +13,7 @@ import yaml  # type: ignore[import-untyped]
 from src.application.identifier_allocator import IdentifierAllocator, get_default_allocator
 from src.domain.ontology_representation.artifact_types import RepoMount, infer_engagement_label
 from src.domain.repository.repo_scope import MountScope, infer_repo_scope
+from src.domain.yaml_documents import parse_yaml
 
 _FM_RE = re.compile(r"^---\n(.*?\n)---\n", re.DOTALL)
 _ID_RE = re.compile(r"^CLF@[0-9]+\.[A-Za-z0-9_-]+\..+$")
@@ -54,7 +55,7 @@ def _parse(path: Path) -> tuple[dict[str, object], str]:
     match = _FM_RE.match(text)
     if match is None:
         return {}, text
-    loaded: object = yaml.safe_load(match.group(1)) or {}
+    loaded: object = parse_yaml(match.group(1)) or {}
     return loaded if isinstance(loaded, dict) else {}, text[match.end():]
 
 

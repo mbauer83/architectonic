@@ -20,8 +20,6 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Literal
 
-import yaml
-
 from src.application.exchange.concept_mapping import (
     ElementMapping,
     ExportElementMapping,
@@ -30,6 +28,7 @@ from src.application.exchange.concept_mapping import (
     UnmappableArchimateTypeError,
     UnmappableConceptError,
 )
+from src.domain.yaml_documents import parse_yaml
 
 _MAPPING_PATH = Path(__file__).parent / "exchange_mapping.yaml"
 _LAYER_NEUTRAL_TYPES = frozenset({"role", "collaboration", "service", "process", "function", "event"})
@@ -39,7 +38,7 @@ _ReverseMap = dict[tuple[str, "str | None"], str]
 
 
 def _load() -> tuple[dict[str, dict[str, str]], dict[str, dict[str, str]]]:
-    data = yaml.safe_load(_MAPPING_PATH.read_text(encoding="utf-8"))
+    data = parse_yaml(_MAPPING_PATH.read_text(encoding="utf-8"))
     return data["elements"], data["relationships"]
 
 
@@ -64,7 +63,7 @@ class DeclarativeConceptMapper:
         if mapping_path is None:
             self._elements, self._relationships = _load()
         else:
-            data = yaml.safe_load(mapping_path.read_text(encoding="utf-8"))
+            data = parse_yaml(mapping_path.read_text(encoding="utf-8"))
             self._elements, self._relationships = data["elements"], data["relationships"]
         self._elements_reverse = _build_reverse(self._elements)
         self._relationships_reverse = _build_reverse(self._relationships)

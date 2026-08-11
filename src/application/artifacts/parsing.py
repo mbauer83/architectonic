@@ -22,6 +22,7 @@ from src.domain.ontology_representation.artifact_types import (
 from src.domain.ontology_representation.property_value import decode_lenient, get_adhoc_type
 from src.domain.ontology_representation.specialization_values import applied_specialization_slugs
 from src.domain.repository.connection_declaration import parse_connection_declarations
+from src.domain.yaml_documents import parse_yaml
 
 
 def extract_yaml_block(content: str) -> dict | None:
@@ -31,7 +32,7 @@ def extract_yaml_block(content: str) -> dict | None:
     if end == -1:
         return None
     try:
-        return yaml.safe_load(content[3:end].strip()) or {}
+        return parse_yaml(content[3:end].strip()) or {}
     except yaml.YAMLError:
         return None
 

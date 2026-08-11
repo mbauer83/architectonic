@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from src.domain.yaml_documents import parse_yaml
 from src.infrastructure.mutation_adapters import run_git
 
 _FM_RE = re.compile(r"^---\n(.*?)^---\n", re.MULTILINE | re.DOTALL)
@@ -48,7 +49,6 @@ def read_connection_targets(path: Path) -> list[str]:
 
 def read_diagram_frontmatter(path: Path) -> dict | None:
     try:
-        import yaml  # noqa: PLC0415
         text = path.read_text(encoding="utf-8")
     except OSError:
         return None
@@ -56,7 +56,7 @@ def read_diagram_frontmatter(path: Path) -> dict | None:
     if not m:
         return None
     try:
-        return yaml.safe_load(m.group(1)) or {}
+        return parse_yaml(m.group(1)) or {}
     except Exception:  # noqa: BLE001
         return None
 

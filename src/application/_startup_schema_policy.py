@@ -13,9 +13,9 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import jsonschema
-import yaml
 
 from src.application.artifacts.schema import list_schema_files
+from src.domain.yaml_documents import parse_yaml
 
 if TYPE_CHECKING:
     from src.application.artifacts.repository import ArtifactRepository
@@ -49,7 +49,7 @@ def load_repo_config(repo_root: Path) -> dict[str, Any]:
     if not config_path.is_file():
         return {}
     with open(config_path, encoding="utf-8") as fh:
-        data = yaml.safe_load(fh)
+        data = parse_yaml(fh)
     return data if isinstance(data, dict) else {}
 
 

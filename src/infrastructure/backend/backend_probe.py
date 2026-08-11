@@ -18,6 +18,7 @@ from urllib.request import Request, urlopen
 
 from src.config.settings import backend_port as global_backend_port
 from src.domain.deployment.backend_endpoint import BackendIdentity, PortPreference
+from src.domain.yaml_documents import parse_yaml
 
 logger = logging.getLogger(__name__)
 
@@ -27,14 +28,13 @@ ENV_BACKEND_PORT = "ARCH_BACKEND_PORT"
 
 def load_workspace_config(start: Path | None = None) -> dict | None:
     """Load arch-workspace.yaml from *start* or any parent directory. Returns None if not found."""
-    import yaml
 
     search = start or Path.cwd()
     for candidate in [search, *search.parents]:
         cfg = candidate / "arch-workspace.yaml"
         if cfg.exists():
             try:
-                data = yaml.safe_load(cfg.read_text(encoding="utf-8"))
+                data = parse_yaml(cfg.read_text(encoding="utf-8"))
                 return data if isinstance(data, dict) else None
             except Exception:  # noqa: BLE001
                 return None

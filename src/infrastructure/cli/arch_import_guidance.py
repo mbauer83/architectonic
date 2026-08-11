@@ -22,6 +22,7 @@ import yaml  # type: ignore[import-untyped]
 from src.config.settings import guidance_default_source
 from src.domain.clock import utc_now_iso
 from src.domain.guidance.guidance import GUIDANCE_FORMAT
+from src.domain.yaml_documents import parse_yaml
 from src.infrastructure.app_bootstrap import build_module_registry
 from src.infrastructure.guidance_cache import guidance_cache_root
 from src.infrastructure.guidance_import import (
@@ -45,7 +46,7 @@ def run_import(
 ) -> list[GuidanceImportSummary]:
     raw_bytes = fetch_source(source, allow_http=allow_http)
     sha256 = hashlib.sha256(raw_bytes).hexdigest()
-    data = validate_schema(yaml.safe_load(raw_bytes))
+    data = validate_schema(parse_yaml(raw_bytes))
     aliases = select_aliases(data, module)
 
     registry = build_module_registry()

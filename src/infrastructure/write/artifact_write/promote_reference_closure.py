@@ -25,8 +25,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
-import yaml  # type: ignore[import-untyped]
-
 from src.application.artifacts.document_schema import get_document_schema
 from src.application.verification._verifier_document import (
     ResolvedEntityLink,
@@ -40,6 +38,7 @@ from src.domain.artifact_id import (
     stable_conn_id,
     stable_id,
 )
+from src.domain.yaml_documents import parse_yaml
 
 if TYPE_CHECKING:
     from src.application.artifacts.repository import ArtifactRepository
@@ -239,7 +238,7 @@ def _diagram_frontmatter(path: Path) -> dict:
     match = _FRONTMATTER_RE.match(path.read_text(encoding="utf-8"))
     if match is None:
         return {}
-    loaded = yaml.safe_load(match.group(1))
+    loaded = parse_yaml(match.group(1))
     return loaded if isinstance(loaded, dict) else {}
 
 

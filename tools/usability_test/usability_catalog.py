@@ -13,7 +13,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-import yaml  # type: ignore[import-untyped]
+from src.domain.yaml_documents import parse_yaml
 
 USABILITY_DIR = Path(__file__).resolve().parent
 REPO_ROOT = USABILITY_DIR.parents[1]
@@ -43,7 +43,7 @@ EVALUATOR_ONLY_FIELDS: frozenset[str] = frozenset({
 
 
 def _load_yaml(path: Path) -> dict[str, Any]:
-    loaded: Any = yaml.safe_load(path.read_text(encoding="utf-8"))
+    loaded: Any = parse_yaml(path.read_text(encoding="utf-8"))
     if not isinstance(loaded, dict):
         raise ValueError(f"{path} does not contain a YAML mapping")
     return loaded

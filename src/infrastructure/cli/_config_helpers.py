@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from src.domain.yaml_documents import parse_yaml
+
 
 def _workspace_root() -> Path:
     return Path(__file__).resolve().parents[3]
@@ -30,7 +32,7 @@ def write_storage_config(
     config_path = settings_document_path()
     data: dict[str, object]
     if config_path.exists():
-        data = yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}
+        data = parse_yaml(config_path.read_text(encoding="utf-8")) or {}
     else:
         data = {}
     before = copy.deepcopy(data)

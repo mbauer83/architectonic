@@ -20,6 +20,7 @@ from src.config.workspace_paths import (
     configured_engagements,
     parse_workspace_config,
 )
+from src.domain.yaml_documents import parse_yaml
 from src.infrastructure.backend.backend_control import backend_status, stop_backend
 from src.infrastructure.backend.backend_launch import ensure_backend_running
 from src.infrastructure.backend.backend_probe import resolve_backend_port
@@ -37,7 +38,7 @@ def _project_directory() -> Path:
 
 def _load_raw_config(path: Path) -> dict:
     with open(path, encoding="utf-8") as fh:
-        data = yaml.safe_load(fh)
+        data = parse_yaml(fh)
     if not isinstance(data, dict):
         raise SystemExit(f"ERROR: {path} must be a YAML mapping")
     return data

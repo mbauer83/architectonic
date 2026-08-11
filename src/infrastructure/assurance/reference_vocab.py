@@ -14,7 +14,7 @@ import logging
 from functools import lru_cache
 from pathlib import Path
 
-import yaml  # type: ignore[import-untyped]
+from src.domain.yaml_documents import parse_yaml
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ _BUNDLED_VOCAB_DIR = Path(__file__).parent.parent.parent / "ontologies" / "assur
 def _load_vocab(path: Path) -> dict[str, object]:
     try:
         with open(path) as fh:
-            data = yaml.safe_load(fh)
+            data = parse_yaml(fh)
         return dict(data) if isinstance(data, dict) else {}
     except OSError:
         logger.debug("Vocab file not found: %s", path)

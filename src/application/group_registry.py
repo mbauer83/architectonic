@@ -15,6 +15,7 @@ import yaml
 from src.domain.clock import epoch_seconds
 from src.domain.repository.groups import UNCATEGORIZED, GroupAxis, GroupEntry, GroupRegistry
 from src.domain.repository.repo_layout import ARCH_REPO
+from src.domain.yaml_documents import parse_yaml
 
 _GROUPS_FILE = "groups.yaml"
 
@@ -134,7 +135,7 @@ def load_group_registry(repo_root: Path, *, engagement_label: str = "") -> Group
     raw: dict[str, object] = {}
     if groups_path.exists():
         text = groups_path.read_text(encoding="utf-8")
-        loaded = yaml.safe_load(text)
+        loaded = parse_yaml(text)
         if isinstance(loaded, dict):
             raw = loaded
             _validate(raw)

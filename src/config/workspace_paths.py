@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Literal
 
-import yaml
+from src.domain.yaml_documents import parse_yaml
 
 CONFIG_FILENAME = "arch-workspace.yaml"
 STATE_DIR = ".arch"
@@ -76,7 +76,7 @@ def find_workspace_config(start: Path) -> Path | None:
 
 def parse_workspace_config(path: Path) -> dict:
     with open(path, encoding="utf-8") as fh:
-        data = yaml.safe_load(fh)
+        data = parse_yaml(fh)
     if not isinstance(data, dict):
         raise SystemExit(f"ERROR: {path} must be a YAML mapping")
 
@@ -122,7 +122,7 @@ def load_workspace_state(start: Path | None = None) -> dict | None:
         candidate = current / STATE_DIR / STATE_FILENAME
         if candidate.is_file():
             with open(candidate, encoding="utf-8") as fh:
-                return yaml.safe_load(fh)
+                return parse_yaml(fh)
         parent = current.parent
         if parent == current:
             return None

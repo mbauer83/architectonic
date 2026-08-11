@@ -12,8 +12,6 @@ import os
 from collections.abc import Mapping
 from pathlib import Path
 
-import yaml  # type: ignore[import-untyped]
-
 from src.domain.deployment.layout import (
     CliSelectors,
     DeploymentManifest,
@@ -25,6 +23,7 @@ from src.domain.deployment.layout_resolution import (
     resolve_deployment_layout,
     select_settings_document,
 )
+from src.domain.yaml_documents import parse_yaml
 
 
 def source_tree_root() -> Path:
@@ -49,7 +48,7 @@ def load_settings_values(document: Path) -> SettingsValues:
     """Parse the layout-relevant values out of one settings document."""
     if not document.exists():
         return SettingsValues()
-    data_raw: object = yaml.safe_load(document.read_text(encoding="utf-8")) or {}
+    data_raw: object = parse_yaml(document.read_text(encoding="utf-8")) or {}
     data: Mapping[str, object] = data_raw if isinstance(data_raw, dict) else {}
     deployment = _section(data, "deployment")
     archive_section = _section(deployment, "archive")

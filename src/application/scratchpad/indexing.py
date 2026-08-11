@@ -17,6 +17,7 @@ from src.domain.ontology_representation.artifact_types import (
     ScratchpadNoteRecord,
     scratchpad_note_id,
 )
+from src.domain.yaml_documents import parse_yaml
 
 
 def parse_scratchpad_notes(path: Path, *, group: str) -> list[ScratchpadNoteRecord]:
@@ -31,7 +32,7 @@ def parse_scratchpad_notes(path: Path, *, group: str) -> list[ScratchpadNoteReco
     geometry, which nothing outside the aggregate is entitled to recompute.
     """
     try:
-        loaded = yaml.safe_load(path.read_text(encoding="utf-8"))
+        loaded = parse_yaml(path.read_text(encoding="utf-8"))
     except (OSError, yaml.YAMLError):
         return []
     if not isinstance(loaded, dict):

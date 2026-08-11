@@ -10,6 +10,7 @@ from typing import Any, Callable
 import yaml  # type: ignore[import-untyped]
 
 from src.config.repo_paths import DOCS, MODEL
+from src.domain.yaml_documents import parse_yaml
 
 TargetResolver = Callable[[str], str | None]
 
@@ -219,7 +220,7 @@ def rewrite_viewpoint_pin(path: Path, new_version: int) -> None:
     match = re.match(r"^---\n(.*?\n)---\n", text, re.DOTALL)
     if not match:
         return
-    frontmatter: dict[str, Any] = yaml.safe_load(match.group(1)) or {}
+    frontmatter: dict[str, Any] = parse_yaml(match.group(1)) or {}
     viewpoint = frontmatter.get("viewpoint")
     if not isinstance(viewpoint, dict):
         return

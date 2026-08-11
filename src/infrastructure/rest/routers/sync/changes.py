@@ -13,9 +13,8 @@ import re
 import subprocess
 from pathlib import Path
 
-import yaml
-
 from src.config.repo_paths import DIAGRAM_CATALOG, DOCS, MODEL
+from src.domain.yaml_documents import parse_yaml
 
 _FM_RE = re.compile(r"^---\n(.*?)\n---\s*\n?", re.DOTALL)
 
@@ -120,7 +119,7 @@ def _parse_fm(text: str) -> dict:
     if not fm_text:
         return {}
     try:
-        return yaml.safe_load(fm_text) or {}
+        return parse_yaml(fm_text) or {}
     except Exception:
         return {}
 

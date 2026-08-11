@@ -3,10 +3,9 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-import yaml  # type: ignore[import-untyped]
-
 from src.domain.deployment.layout import ENV_SETTINGS_PATH
 from src.domain.viewpoints.viewpoints import EnforcementSetting
+from src.domain.yaml_documents import parse_yaml
 
 _CONFIG_DIR = Path(__file__).resolve().parent.parent.parent / "config"
 
@@ -101,7 +100,7 @@ def load_settings() -> dict:
     path = settings_document_path()
     if not path.exists():
         return _DEFAULTS.copy()
-    data: dict[str, object] = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    data: dict[str, object] = parse_yaml(path.read_text(encoding="utf-8")) or {}
     backend_raw = data.get("backend")
     diagrams_raw = data.get("diagrams")
     repo_init_raw = data.get("repo_init")

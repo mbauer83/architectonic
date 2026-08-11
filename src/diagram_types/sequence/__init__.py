@@ -3,8 +3,6 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-import yaml  # type: ignore[import-untyped]
-
 from src.diagram_types._base import DiagramTypeBase
 from src.diagram_types.sequence.renderer import SequencePumlRenderer
 from src.domain.diagrams.diagram_entities_schema import derive_diagram_entities_schema
@@ -22,6 +20,7 @@ from src.domain.ontology_representation.ontology_protocol import (
 )
 from src.domain.ontology_representation.ontology_types import ConnectionTypeInfo, ElementClassInfo, EntityTypeInfo
 from src.domain.relationships.permitted_relationships import PermittedRelationshipSet
+from src.domain.yaml_documents import parse_yaml
 
 _OWN_ENTITY_TYPES: dict[EntityTypeName, EntityTypeInfo] = {}
 
@@ -29,7 +28,7 @@ _OWN_ENTITY_TYPES: dict[EntityTypeName, EntityTypeInfo] = {}
 def _load_config(package_dir: Path) -> dict[str, Any]:
     config_path = package_dir / "config.yaml"
     with config_path.open(encoding="utf-8") as handle:
-        return yaml.safe_load(handle) or {}
+        return parse_yaml(handle) or {}
 
 
 class _SequenceDiagramType(DiagramTypeBase):

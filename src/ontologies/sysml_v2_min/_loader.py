@@ -6,8 +6,6 @@ import re
 from pathlib import Path
 from typing import Any, Literal, cast
 
-import yaml  # type: ignore[import-untyped]
-
 from src.domain.guidance.guidance import ConceptKind, GuidanceOverlay, resolved_type_guidance
 from src.domain.modules.module_types import ConnectionTypeName, ElementClassName, EntityTypeName
 from src.domain.ontology_representation.behavioral_elements import BehavioralElementDeclaration
@@ -24,6 +22,7 @@ from src.domain.relationships.relationship_derivation_rules import (
     load_composition_rules,
     load_derivation_restrictions,
 )
+from src.domain.yaml_documents import parse_yaml
 
 DISPLAY_SECTION_ID = "sysml"
 
@@ -128,7 +127,7 @@ class _SysmlV2MinModule:
         text = re.sub(r"^```(?:yaml)?\n", "", section_content.strip(), count=1)
         text = re.sub(r"\n```$", "", text, count=1)
         try:
-            loaded: Any = yaml.safe_load(text) or {}
+            loaded: Any = parse_yaml(text) or {}
         except Exception:  # noqa: BLE001
             return None
         return loaded if isinstance(loaded, dict) else None
@@ -253,9 +252,9 @@ def _build_permitted_relationships(
 
 def load_sysml_module(package_dir: Path, *, guidance: GuidanceOverlay | None = None) -> _SysmlV2MinModule:
     with open(package_dir / "entities.yaml") as fh:
-        entity_data = yaml.safe_load(fh)
+        entity_data = parse_yaml(fh)
     with open(package_dir / "connections.yaml") as fh:
-        conn_data = yaml.safe_load(fh)
+        conn_data = parse_yaml(fh)
 
     entity_types = _load_entity_types(entity_data, guidance)
     connection_types = _load_connection_types(conn_data, guidance)

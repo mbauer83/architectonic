@@ -17,6 +17,7 @@ from src.domain.ontology_representation.profile_registry import (
     ProfileRegistryError,
     profile_registry_from_mapping,
 )
+from src.domain.yaml_documents import parse_yaml
 
 REPO_PROFILE_REGISTRY_PATH = ".arch-repo/profiles.yaml"
 
@@ -29,7 +30,7 @@ def load_repo_profile_registry(repo_root: Path) -> ProfileRegistry:
         return ProfileRegistry.empty()
     label = str(path)
     try:
-        raw = yaml.safe_load(path.read_text(encoding="utf-8"))
+        raw = parse_yaml(path.read_text(encoding="utf-8"))
     except (OSError, yaml.YAMLError) as exc:
         raise ProfileRegistryError(f"cannot read profile registry: {exc}", label=label) from exc
     if raw is None:

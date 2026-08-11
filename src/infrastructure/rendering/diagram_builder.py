@@ -20,6 +20,7 @@ from src.application.artifacts.parsing import normalize_puml_alias
 from src.config.repo_paths import DIAGRAM_CATALOG
 from src.domain.modules.module_types import ConnectionTypeName, ElementClassName
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
+from src.domain.yaml_documents import parse_yaml
 from src.infrastructure.diagram_type_registry import get_diagram_type
 from src.infrastructure.rendering._diagram_layout import (
     build_visual_nesting,
@@ -109,12 +110,11 @@ def _parse_archimate_block(raw: str) -> dict:
     ``display_blocks["archimate"]`` is stored as ``'```yaml\\n...\\n```'`` — the
     fences must be removed before calling ``yaml.safe_load``.
     """
-    import yaml as _yaml
 
     text = re.sub(r"^```(?:yaml)?\n", "", raw.strip(), count=1)
     text = re.sub(r"\n```$", "", text, count=1)
     try:
-        return _yaml.safe_load(text) or {}
+        return parse_yaml(text) or {}
     except Exception:
         return {}
 

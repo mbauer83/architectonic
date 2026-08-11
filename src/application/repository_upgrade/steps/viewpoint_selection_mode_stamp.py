@@ -26,6 +26,7 @@ from src.domain.viewpoints.viewpoint_scope_query import classify_selection_layer
 from src.domain.viewpoints.viewpoint_serialization import viewpoint_catalog_to_mapping
 from src.domain.viewpoints.viewpoint_summary import render_query_summary
 from src.domain.viewpoints.viewpoints import ViewpointCatalog, ViewpointDefinition
+from src.domain.yaml_documents import parse_yaml
 
 _PATH = ".arch-repo/viewpoints.yaml"
 
@@ -37,7 +38,7 @@ def _parsed_catalog(view: RepoUpgradeView) -> ViewpointCatalog | None:
     if content is None:
         return None
     try:
-        loaded: object = yaml.safe_load(content) or {}
+        loaded: object = parse_yaml(content) or {}
         if not isinstance(loaded, Mapping):
             return None
         return viewpoint_catalog_from_mapping(loaded)

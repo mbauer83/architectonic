@@ -19,6 +19,8 @@ from typing import Any
 
 import yaml  # type: ignore[import-untyped]
 
+from src.domain.yaml_documents import parse_yaml
+
 _HEADER_RE = re.compile(
     r"^(?P<conn_type>[a-z][a-z0-9-]+)"
     r"(?:\s+\[(?P<src_mult>[^\]]+)\])?"
@@ -77,7 +79,7 @@ def _parse_metadata_fence(section_text: str) -> _MetadataFenceOutcome:
     if not m:
         return _MetadataFenceOutcome(present=False, data={}, remainder=section_text)
     try:
-        data = yaml.safe_load(m.group(1))
+        data = parse_yaml(m.group(1))
     except yaml.YAMLError:
         return _MetadataFenceOutcome(present=True, data={}, remainder=section_text, malformed=True)
     if not isinstance(data, dict):

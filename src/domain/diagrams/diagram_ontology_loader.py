@@ -7,8 +7,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-import yaml  # type: ignore[import-untyped]
-
 from src.domain.diagrams.allowed_bindings import AllowedBindingsSpec, allowed_bindings_from_config
 from src.domain.modules.bridges import BridgeDeclaration, bridges_from_config
 from src.domain.modules.module_types import ConnectionTypeName, EntityTypeName
@@ -19,6 +17,7 @@ from src.domain.ontology_representation.ontology_types import (
     mapping_spec_from_config,
 )
 from src.domain.relationships.permitted_relationships import PermittedRelationshipSet, permitted_connections_from_config
+from src.domain.yaml_documents import parse_yaml
 
 
 @dataclass(frozen=True)
@@ -36,7 +35,7 @@ class DiagramOntology:
 
 def load_diagram_ontology(path: Path) -> DiagramOntology:
     with path.open(encoding="utf-8") as fh:
-        raw: dict[str, Any] = yaml.safe_load(fh) or {}
+        raw: dict[str, Any] = parse_yaml(fh) or {}
 
     raw_entity_types: dict[str, Any] = raw.get("entity_types") or {}
     entity_types = _parse_entity_types(raw_entity_types)

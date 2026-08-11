@@ -23,6 +23,7 @@ import yaml  # type: ignore[import-untyped]
 
 from src.application.repository_upgrade.ports import RepoUpgradeView, RepoUpgradeWriter
 from src.domain.repository.repository_upgrade import AppliedFinding, ScannedSurface, UpgradeFinding
+from src.domain.yaml_documents import parse_yaml
 
 _PATH = ".arch-repo/groups.yaml"
 _LEGACY_VALUE = "archimate-next"
@@ -56,7 +57,7 @@ class GroupMetaOntologyRenameStep:
         if content is None:
             return []
         try:
-            loaded: Any = yaml.safe_load(content)
+            loaded: Any = parse_yaml(content)
         except yaml.YAMLError:
             # A groups.yaml that doesn't parse is a different concern (surfaced by the
             # backend's own group-registry validation); this rename step stays silent on it.

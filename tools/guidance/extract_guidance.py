@@ -24,6 +24,7 @@ from typing import Any
 import yaml  # type: ignore[import-untyped]
 
 from src.domain.guidance.guidance import GUIDANCE_FORMAT, GuidanceKey, guidance_overlay_from_mapping
+from src.domain.yaml_documents import parse_yaml
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _ENTITIES_PATH = _REPO_ROOT / "src" / "ontologies" / "archimate_4" / "entities.yaml"
@@ -127,7 +128,7 @@ def main(argv: list[str] | None = None) -> None:
         _assert_not_clobbering(args.out, force=args.force)
 
     source_text = _ENTITIES_PATH.read_text(encoding="utf-8")
-    entity_data = yaml.safe_load(source_text)
+    entity_data = parse_yaml(source_text)
     entity_types: dict[str, Any] = entity_data.get("entity_types") or {}
 
     extracted = _extract(entity_types)

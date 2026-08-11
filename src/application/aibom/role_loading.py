@@ -19,6 +19,7 @@ from src.domain.assurance.aibom_roles import (
     merge_role_bindings,
     role_bindings_from_mapping,
 )
+from src.domain.yaml_documents import parse_yaml
 
 REPO_AIBOM_ROLES_PATH = ".arch-repo/aibom-roles.yaml"
 
@@ -31,7 +32,7 @@ def resolve_aibom_role_bindings(repo_root: Path, shipped: DerivationRoleBindings
         return shipped
     label = str(path)
     try:
-        raw = yaml.safe_load(path.read_text(encoding="utf-8"))
+        raw = parse_yaml(path.read_text(encoding="utf-8"))
     except (OSError, yaml.YAMLError) as exc:
         raise DerivationRoleError(f"{label}: cannot read AIBOM role bindings: {exc}") from exc
     if raw is None:

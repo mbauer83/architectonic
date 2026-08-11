@@ -12,6 +12,7 @@ import yaml
 
 from src.application.verification.artifact_verifier import ArtifactRegistry
 from src.config.repo_paths import DIAGRAM_CATALOG, DIAGRAMS
+from src.domain.yaml_documents import parse_yaml
 
 _ENTITY_ID_PATTERN = re.compile(r"\b([A-Z]{2,6}@\d+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)*)\b")
 
@@ -32,7 +33,7 @@ def _read_frontmatter(path: Path) -> dict[str, object]:
     if end == -1:
         return {}
     try:
-        parsed = yaml.safe_load(content[4:end])
+        parsed = parse_yaml(content[4:end])
     except yaml.YAMLError:
         return {}
     return parsed if isinstance(parsed, dict) else {}

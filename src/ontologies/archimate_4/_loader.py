@@ -8,8 +8,6 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any, Literal, cast
 
-import yaml  # type: ignore[import-untyped]
-
 from src.domain.guidance.guidance import GuidanceOverlay
 from src.domain.modules.module_types import ConnectionTypeName, ElementClassName, EntityTypeName
 from src.domain.ontology_representation.behavioral_elements import BehavioralElementDeclaration
@@ -32,6 +30,7 @@ from src.domain.relationships.relationship_derivation_rules import (
     load_composition_rules,
     load_derivation_restrictions,
 )
+from src.domain.yaml_documents import parse_yaml
 from src.ontologies.archimate_4._yaml_data import META_ONTOLOGY_ALIAS as META_ONTOLOGY_ALIAS
 from src.ontologies.archimate_4._yaml_data import (
     build_permitted_relationships,
@@ -200,7 +199,7 @@ class _ArchiMate4Module:
         text = re.sub(r"^```(?:yaml)?\n", "", section_content.strip(), count=1)
         text = re.sub(r"\n```$", "", text, count=1)
         try:
-            loaded: Any = yaml.safe_load(text) or {}
+            loaded: Any = parse_yaml(text) or {}
         except Exception:  # noqa: BLE001
             return None
         return loaded if isinstance(loaded, dict) else None
@@ -254,9 +253,9 @@ def load_archimate_4_module(
     specializations: SpecializationCatalog | None = None,
 ) -> _ArchiMate4Module:
     with open(package_dir / "entities.yaml") as fh:
-        entity_data = yaml.safe_load(fh)
+        entity_data = parse_yaml(fh)
     with open(package_dir / "connections.yaml") as fh:
-        conn_data = yaml.safe_load(fh)
+        conn_data = parse_yaml(fh)
 
     entity_types = load_entity_types(entity_data, guidance)
     connection_types = load_connection_types(conn_data, guidance)

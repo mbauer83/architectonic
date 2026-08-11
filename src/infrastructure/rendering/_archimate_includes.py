@@ -6,14 +6,15 @@ import re
 from pathlib import Path
 from typing import Any
 
+from src.domain.yaml_documents import parse_yaml
+
 
 def parse_archimate_display_block(raw: str) -> dict[str, Any]:
-    import yaml as _yaml
 
     text = re.sub(r"^```(?:yaml)?\n", "", raw.strip(), count=1)
     text = re.sub(r"\n```$", "", text, count=1)
     try:
-        loaded: Any = _yaml.safe_load(text) or {}
+        loaded: Any = parse_yaml(text) or {}
     except Exception:  # noqa: BLE001
         return {}
     return loaded if isinstance(loaded, dict) else {}

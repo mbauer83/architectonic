@@ -34,6 +34,7 @@ from src.domain.guidance.guidance_hierarchy import GuidanceHierarchy
 from src.domain.guidance.guidance_hierarchy_source import ENTITY_TYPE_LEVEL, META_ONTOLOGY_LEVEL
 from src.domain.repository.operational_upgrade import TargetKind
 from src.domain.repository.repository_upgrade import AppliedFinding, UpgradeFinding
+from src.domain.yaml_documents import parse_yaml
 
 _FORMAT_RE = re.compile(r"^guidance_format:[ \t]*(\d+)[ \t]*$", re.MULTILINE)
 _OUTDATED_PREFIX = "guidance-format-outdated:"
@@ -140,7 +141,7 @@ class GuidanceCacheFormatStep:
         """The document restructured into the current format, or None when it cannot be — a
         migration that would drop or misfile guidance must not run at all."""
         try:
-            document = yaml.safe_load(content)
+            document = parse_yaml(content)
         except yaml.YAMLError:
             return None
         if not isinstance(document, dict):

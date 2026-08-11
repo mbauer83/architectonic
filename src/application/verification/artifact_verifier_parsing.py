@@ -11,6 +11,7 @@ from src.application.verification.artifact_verifier_types import (
     Severity,
     VerificationResult,
 )
+from src.domain.yaml_documents import parse_yaml
 
 if TYPE_CHECKING:
     from src.application.verification._verifier_snapshot import RepositorySnapshot
@@ -52,7 +53,7 @@ def extract_yaml_block(content: str) -> dict | None:
     end = content.find("\n---", 3)
     if end == -1:
         return None
-    return yaml.safe_load(content[3:end].strip()) or {}
+    return parse_yaml(content[3:end].strip()) or {}
 
 
 def parse_frontmatter(content: str, result: VerificationResult, loc: str) -> dict | None:
@@ -69,7 +70,7 @@ def parse_frontmatter(content: str, result: VerificationResult, loc: str) -> dic
 
     yaml_block = content[3:end].strip()
     try:
-        fm = yaml.safe_load(yaml_block)
+        fm = parse_yaml(yaml_block)
     except yaml.YAMLError as exc:
         result.issues.append(Issue(Severity.ERROR, "E013", f"Frontmatter YAML parse error: {exc}", loc))
         return None

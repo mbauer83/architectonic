@@ -20,6 +20,7 @@ from src.domain.repository.repository_upgrade import AppliedFinding, ScannedSurf
 from src.domain.viewpoints.viewpoint_parsing import viewpoint_catalog_from_mapping
 from src.domain.viewpoints.viewpoint_serialization import viewpoint_catalog_to_mapping
 from src.domain.viewpoints.viewpoints import ViewpointCatalog
+from src.domain.yaml_documents import parse_yaml
 
 _PATH = ".arch-repo/viewpoints.yaml"
 
@@ -41,7 +42,7 @@ def _parsed(view: RepoUpgradeView) -> tuple[Mapping[str, object], ViewpointCatal
     if content is None:
         return None
     try:
-        loaded: object = yaml.safe_load(content) or {}
+        loaded: object = parse_yaml(content) or {}
         if not isinstance(loaded, Mapping):
             return None
         return loaded, viewpoint_catalog_from_mapping(loaded)

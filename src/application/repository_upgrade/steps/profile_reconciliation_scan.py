@@ -39,6 +39,7 @@ from src.domain.ontology_representation.specializations import (
     specialization_catalog_from_mapping,
 )
 from src.domain.repository.repository_upgrade import AppliedFinding, ScannedSurface, UpgradeFinding
+from src.domain.yaml_documents import parse_yaml
 
 _SPECIALIZATIONS = ".arch-repo/specializations.yaml"
 
@@ -113,7 +114,7 @@ def _repo_specializations(view: RepoUpgradeView) -> SpecializationCatalog | None
     if text is None:
         return None
     try:
-        loaded: object = yaml.safe_load(text) or {}
+        loaded: object = parse_yaml(text) or {}
     except yaml.YAMLError:
         return None  # a malformed specializations file is the specialization scan's finding, not ours
     if not isinstance(loaded, dict):

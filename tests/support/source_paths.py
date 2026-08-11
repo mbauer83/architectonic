@@ -22,6 +22,10 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 
 SRC = REPO_ROOT / "src"
 
+#: The developer scripts. Not `src`, and checks that hold a rule for the whole codebase have to say so
+#: explicitly or silently exempt them — which is how `tools/` came to be outside several of them.
+TOOLS = REPO_ROOT / "tools"
+
 #: The REST routers package — the handlers, their decorators and their authorization calls.
 REST_ROUTERS = SRC / "infrastructure" / "rest" / "routers"
 

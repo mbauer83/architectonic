@@ -33,6 +33,7 @@ from src.domain.artifact_id import stable_id
 from src.domain.repository.groups import UNCATEGORIZED as _UNCATEGORIZED
 from src.domain.repository.repo_layout import SCRATCHPAD_SUFFIX, SCRATCHPADS
 from src.domain.scratchpad import Scratchpad
+from src.domain.yaml_documents import parse_yaml
 
 #: The file suffix, re-exported from the layout module so this repository and the index scan for
 #: the same thing. Every caller already asks this module for it.
@@ -154,7 +155,7 @@ def _reindex(*paths: Path | None) -> None:
 
 
 def _read_yaml(path: Path) -> dict[str, Any]:
-    loaded = yaml.safe_load(path.read_text(encoding="utf-8"))
+    loaded = parse_yaml(path.read_text(encoding="utf-8"))
     return loaded if isinstance(loaded, dict) else {}
 
 

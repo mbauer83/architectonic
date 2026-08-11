@@ -12,7 +12,6 @@ if TYPE_CHECKING:
     from src.domain.viewpoints.view_derivations import DerivationSelection
     from src.domain.viewpoints.view_projection import ViewProjectionResult
 
-import yaml  # type: ignore[import-untyped]
 
 # Import engine module to trigger strategy registration as a side effect.
 import src.diagram_types.c4._projection  # noqa: F401
@@ -35,6 +34,7 @@ from src.domain.ontology_representation.ontology_protocol import (
 from src.domain.ontology_representation.ontology_types import ConnectionTypeInfo, ElementClassInfo, EntityTypeInfo
 from src.domain.relationships.permitted_mappings import concept_scope_for_diagram_only_types
 from src.domain.relationships.permitted_relationships import PermittedRelationshipSet
+from src.domain.yaml_documents import parse_yaml
 
 _EMPTY_ENTITY_TYPES: dict[EntityTypeName, EntityTypeInfo] = {}
 
@@ -60,7 +60,7 @@ def _registry():
 def _load_config(package_dir: Path) -> dict[str, Any]:
     config_path = package_dir / "config.yaml"
     with config_path.open(encoding="utf-8") as handle:
-        return yaml.safe_load(handle) or {}
+        return parse_yaml(handle) or {}
 
 
 class _C4DiagramType(DiagramTypeBase):

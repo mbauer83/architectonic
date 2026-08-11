@@ -22,6 +22,7 @@ import yaml  # type: ignore[import-untyped]
 from src.domain.viewpoints.viewpoint_parsing import viewpoint_catalog_from_mapping
 from src.domain.viewpoints.viewpoint_serialization import viewpoint_catalog_to_mapping
 from src.domain.viewpoints.viewpoints import ViewpointCatalog
+from src.domain.yaml_documents import parse_yaml
 
 if TYPE_CHECKING:
     from src.application.runtime_catalogs import RuntimeCatalogs
@@ -37,7 +38,7 @@ def _load_viewpoint_catalog(path: Path) -> ViewpointCatalog:
     if not path.exists():
         return ViewpointCatalog.empty()
     try:
-        loaded: Any = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        loaded: Any = parse_yaml(path.read_text(encoding="utf-8")) or {}
     except yaml.YAMLError as exc:
         raise ValueError(f"Invalid viewpoint declarations in {path}: {exc}") from exc
     if not isinstance(loaded, dict):
