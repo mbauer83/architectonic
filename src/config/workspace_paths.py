@@ -22,7 +22,18 @@ def _validate_repo_spec(spec: object, *, label: str) -> dict:
         raise SystemExit(f"ERROR: {label} must specify exactly one of 'local' or 'git'")
     if has_git and not isinstance(spec.get("git"), dict):
         raise SystemExit(f"ERROR: {label}.git must be a YAML mapping")
+    if has_local and not _is_named_path(spec.get("local")):
+        # `local` reaches `Path()` in `configured_repo_path`, which answers a non-string with a raw
+        # TypeError traceback where every other mistake in this file gets a named `ERROR:` line. The
+        # blank string is refused for the opposite reason: `Path("")` is `.`, so it resolves to the
+        # workspace root and the whole workspace is silently treated as the repository.
+        raise SystemExit(f"ERROR: {label}.local must be a non-empty string")
     return spec
+
+
+def _is_named_path(value: object) -> bool:
+    """Whether `value` names a path — the precondition `configured_repo_path` relies on."""
+    return isinstance(value, str) and bool(value.strip())
 
 
 def configured_engagements(config: dict) -> dict[str, dict]:
@@ -119,6 +130,12 @@ def load_workspace_state(start: Path | None = None) -> dict | None:
 
 
 def configured_repo_path(spec: dict, workspace_root: Path) -> Path:
+    """The repository root a validated repo spec names.
+
+    Expects a spec that has been through `_validate_repo_spec`, which every path into this module
+    goes through — so `local` is known to name a path and is not re-checked here. Restating that
+    check would put one rule in two places, where the copies drift and the weaker one fails open.
+    """
     if "local" in spec:
         local = Path(spec["local"])
         return (local if local.is_absolute() else workspace_root / local).resolve()
