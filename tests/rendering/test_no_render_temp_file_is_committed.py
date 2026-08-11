@@ -20,11 +20,16 @@ import re
 import subprocess
 from pathlib import Path
 
+from src.infrastructure.rendering.puml_runtime import _TEMP_PREFIX, _TEMP_SUFFIX
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
-#: What `tempfile.NamedTemporaryFile(suffix=".puml")` produces: `tmp` plus eight random characters.
-#: Matched rather than exact-named because the suffix is random by construction.
-_RENDER_TEMP = re.compile(r"(^|/)tmp[A-Za-z0-9_]{6,10}\.puml$")
+#: Derived from the renderer's own naming convention rather than restated, so this gate and the sweep
+#: in `discard_abandoned_render_temp_files` cannot disagree about what a scratch file looks like. The
+#: random middle is `NamedTemporaryFile`'s, hence a pattern rather than a name.
+_RENDER_TEMP = re.compile(
+    rf"(^|/){re.escape(_TEMP_PREFIX)}[A-Za-z0-9_]{{6,10}}{re.escape(_TEMP_SUFFIX)}$"
+)
 
 
 def _tracked_puml_files() -> list[str]:
@@ -55,12 +60,12 @@ def test_no_render_temp_file_is_tracked() -> None:
 def test_the_pattern_matches_what_the_renderer_actually_writes() -> None:
     """The guard is only worth having if it recognises the real name shape.
 
-    Asserted against a name `tempfile` produced rather than one invented here, so the pattern cannot
-    drift away from the thing it is meant to catch.
+    Asserted against a name `tempfile` produced with the renderer's own prefix and suffix rather than
+    one invented here, so the pattern cannot drift away from the thing it is meant to catch.
     """
     import tempfile
 
-    with tempfile.NamedTemporaryFile(suffix=".puml") as handle:
+    with tempfile.NamedTemporaryFile(prefix=_TEMP_PREFIX, suffix=_TEMP_SUFFIX) as handle:
         assert _RENDER_TEMP.search(Path(handle.name).name), handle.name
 
     # And it must not match a real diagram whose name merely begins with "tmp".
