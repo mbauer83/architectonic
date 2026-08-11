@@ -92,21 +92,30 @@ def resolve_java_executable() -> str:
 #: 20           298 s        403 s       44.9 ms  (5.9x)
 #: ===========  ==========  ==========  =====================================
 #:
-#: Four threads spend **4.4x the CPU** of one for the same 880 files, so this is redundant work
-#: rather than scheduling overhead — a profile puts the pass in pure-Python YAML parsing (200,574
-#: documents) and path resolution (982,904 ``realpath`` calls), neither of which parallelises here.
-#: Until that is fixed, a pool buys nothing and costs the interactive surface: an operator watching
-#: the GUI during a cold verify sees every request take four times longer for a pass that itself
-#: takes four times longer.
+#: Four threads spent **4.4x the CPU** of one for the same 880 files — redundant work rather than
+#: scheduling overhead. A profile put that pass in pure-Python YAML parsing (200,574 documents) and
+#: path resolution (982,904 ``realpath`` calls), neither of which parallelises here.
+#:
+#: **Re-measured 2026-08-11, and the costs above are gone.** Same repository, same settings, PlantUML
+#: syntax skipped: a full pass over 965 files parses **1,472** YAML documents and makes **3,392**
+#: ``realpath`` calls, and takes **0.19 s**. Single acquisition (``acquire_snapshot``) removed the
+#: re-reading, and `domain.yaml_documents.parse_yaml` moved the remaining parse onto libyaml.
+#:
+#: So the table records a real measurement of a state this code is no longer in, and it is kept
+#: because it is what the default was chosen from. **The default stays 1 for a new reason:** there is
+#: no longer a pass worth splitting. Sharing 0.19 s across threads cannot repay a pool, and the
+#: interactive cost of trying is unchanged. Re-measure before changing this, not from either number
+#: above.
 _DEFAULT_PASS_WORKERS = 1
 
 
 def resolve_worker_count() -> int:
     """How many files a pass verifies at once.
 
-    ``ARCH_VERIFY_WORKERS`` overrides it. Raising it is opting into the table above, which is the
-    honest description of what it does today; it exists so the number can be re-measured once the
-    per-file cost above comes down, without a release to change a constant.
+    ``ARCH_VERIFY_WORKERS`` overrides it, so the number can be re-measured without a release to change
+    a constant. The per-file cost the table above describes has since come down by two orders of
+    magnitude, which removed the reason to raise this rather than supplying one: a 0.19 s pass has
+    nothing left to divide.
     """
     override = os.environ.get("ARCH_VERIFY_WORKERS", "").strip()
     if override.isdigit() and int(override) > 0:
