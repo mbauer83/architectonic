@@ -265,11 +265,14 @@ def test_reads_resume_promptly_after_index_refresh(tmp_path: Path) -> None:
         f"Reads appear to serialize after refresh: max read time={max_read:.3f}s, "
         f"refresh held lock for {REFRESH_HOLD_S}s, single read baseline={baseline_read:.3f}s"
     )
-    # The spread between fastest and slowest reader should be small
-    # (they were all released at the same time).
-    spread = max(results) - min(results)
-    assert spread < max(0.3, baseline_read * 3), (
-        f"Large spread among readers ({spread:.3f}s) suggests they ran one-at-a-time "
-        f"rather than concurrently after the refresh completed "
-        f"(single read baseline={baseline_read:.3f}s)"
-    )
+    # Deliberately NOT asserted: that the readers' durations resemble each other. Six threads
+    # released at the same instant are not promised similar durations — these reads are in-process
+    # ASGI calls, so they are largely CPU-bound Python and the GIL serialises that work whatever the
+    # lock does. The scheduler may starve one thread for the length of several reads without anything
+    # being wrong, and it does so on a 4-vCPU runner under coverage tracing where it does not on a
+    # 20-core desktop. A spread bound therefore fails on the machine rather than on the system, which
+    # is the property this file twice tried to fix.
+    #
+    # The bound above is the claim: no reader waited materially longer than the refresh held the
+    # write lock, so reads queued on the lock and resumed when it was released. Whether they then
+    # interleaved is a question about CPython's scheduler, not about this index's locking.
