@@ -3,6 +3,39 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [0.5.1] — 2026-08-11
+
+**[Full detail → `changelog-assets/0.5.1-detail.md`](changelog-assets/0.5.1-detail.md)**
+
+Nothing here changes an API, a contract, or observable behaviour.
+
+### Fixed
+
+- **A malformed `local:` in `arch-workspace.yaml` is refused by name instead of crashing.** A bare
+  `local:` key, a list or a mapping raised an unhandled `TypeError` at startup; it now reports
+  `ERROR: <label>.local must be a non-empty string`, as every other mistake in that file already did.
+  An empty string is refused too — `Path("")` resolves to the workspace root.
+- **`assurance_list_vulnerabilities` reports one `assessed_entity_id` per entity.** The entity-scoped
+  read echoed the caller's argument while the unscoped read reported the stored canonical id, so
+  joining the two result sets on that field matched nothing. Both now report the stored id.
+- **A killed render no longer leaves a `tmp*.puml` in the diagram catalog.** Cleanup ran in a `finally`,
+  which a SIGKILL or OOM kill skips; each render now discards scratch files older than 300 s first.
+
+### Changed
+
+- **One loader parses all YAML** (`domain.yaml_documents.parse_yaml`), using `libyaml` where the
+  install has it and falling back to the pure-Python loader where it does not. 77 call sites chose the
+  slow loader independently. Measured: 9.5× on this repository's YAML corpus, 2.73× on a full
+  verification pass (516 ms → 189 ms); 0 of 1,514 stored documents parse differently.
+- **One definition of the frontmatter block** (`domain.repository.frontmatter`), replacing fourteen that
+  disagreed — the verifier and the document write path held the two loosest, so a file could be
+  verified under one delimitation and rewritten under another. The surviving reading is the most
+  tolerant of the fourteen: CRLF, trailing whitespace on either fence, and a closing fence that may end
+  the file. Measured: across 975 files the old readings disagree on zero, and all agree with the new one.
+- `_DEFAULT_PASS_WORKERS` stays 1, for a re-measured reason. The 63 s pass its justification cited is
+  now 0.19 s: single acquisition removed the re-reading (200,574 YAML documents → 1,472; 982,904
+  `realpath` calls → 3,392), so there is no pass left to divide.
+
 ## [0.5.0] — 2026-08-10
 
 **[Full detail → `changelog-assets/0.5.0-detail.md`](changelog-assets/0.5.0-detail.md)**
