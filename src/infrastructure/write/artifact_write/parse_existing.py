@@ -10,7 +10,7 @@ from pathlib import Path
 
 from src.domain.ontology_representation.specialization_values import applied_specialization_slugs
 from src.domain.repository.connection_declaration import ConnectionDeclaration, parse_connection_declarations
-from src.domain.yaml_documents import parse_yaml
+from src.domain.repository.frontmatter import Frontmatter, parse_frontmatter, read_frontmatter
 
 
 @dataclass
@@ -138,17 +138,14 @@ def parse_matrix_file(path: Path) -> ParsedMatrix:
 
 
 def _parse_frontmatter(text: str) -> dict[str, object]:
-    """Extract YAML frontmatter from between --- markers."""
-    m = re.match(r"^---\n(.*?\n)---\n", text, re.DOTALL)
-    if not m:
-        return {}
-    return parse_yaml(m.group(1)) or {}
+    """The frontmatter as a mapping, empty when there is none."""
+    return parse_frontmatter(text)
 
 
 def _frontmatter_end_pos(text: str) -> int:
-    """Return the character position right after the closing --- of frontmatter."""
-    m = re.match(r"^---\n.*?\n---\n", text, re.DOTALL)
-    return m.end() if m else 0
+    """The character position right after the closing --- of frontmatter, or 0 when there is none."""
+    reading = read_frontmatter(text)
+    return reading.end if isinstance(reading, Frontmatter) else 0
 
 
 def _extract_between(text: str, start_marker: str, end_marker: str) -> str:

@@ -7,7 +7,7 @@ mediated-leg guard among them — so the read happens the same way for all of th
 from __future__ import annotations
 
 from src.application.verification.artifact_verifier import ArtifactRegistry
-from src.domain.yaml_documents import parse_yaml
+from src.domain.repository.frontmatter import parse_frontmatter
 
 
 def entity_artifact_type(registry: ArtifactRegistry, entity_id: str) -> str | None:
@@ -17,13 +17,7 @@ def entity_artifact_type(registry: ArtifactRegistry, entity_id: str) -> str | No
     if path is None:
         return None
     try:
-        content = path.read_text(encoding="utf-8")
-        if not content.startswith("---"):
-            return None
-        end = content.find("\n---", 3)
-        if end == -1:
-            return None
-        fm: dict[str, object] = parse_yaml(content[3:end].strip()) or {}
+        fm = parse_frontmatter(path.read_text(encoding="utf-8"))
         return str(fm.get("artifact-type", "")) or None
     except Exception:
         return None

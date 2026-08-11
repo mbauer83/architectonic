@@ -9,14 +9,12 @@ Used exclusively by the GUI save-dialog; not exposed via MCP.
 
 from __future__ import annotations
 
-import re
 import subprocess
 from pathlib import Path
 
 from src.config.repo_paths import DIAGRAM_CATALOG, DOCS, MODEL
+from src.domain.repository.frontmatter import Frontmatter, read_frontmatter
 from src.domain.yaml_documents import parse_yaml
-
-_FM_RE = re.compile(r"^---\n(.*?)\n---\s*\n?", re.DOTALL)
 
 
 def list_changes(repo_root: Path) -> list[dict]:
@@ -110,8 +108,8 @@ def _classify(rel: str) -> str | None:
 
 
 def _split_fm(text: str) -> tuple[str, str]:
-    m = _FM_RE.match(text)
-    return (m.group(1), text[m.end() :].strip()) if m else ("", text.strip())
+    reading = read_frontmatter(text)
+    return (reading.text, reading.body.strip()) if isinstance(reading, Frontmatter) else ("", text.strip())
 
 
 def _parse_fm(text: str) -> dict:

@@ -7,9 +7,10 @@ import warnings
 from collections.abc import Mapping
 from typing import Any
 
+from src.domain.repository.frontmatter import body_after_frontmatter
+
 DEFAULT_PUML_SIZE_WARNING_THRESHOLD = 8_000
 
-_LEADING_FRONTMATTER_RE = re.compile(r"\A---[ \t]*\r?\n.*?\r?\n---[ \t]*(?:\r?\n|$)", re.DOTALL)
 _STARTUML_NAME_RE = re.compile(r"@startuml[^\n]*")
 
 # ── User-submitted PUML safety (untrusted-input hardening) ──────────────────────
@@ -101,9 +102,13 @@ def assert_user_puml_safe(puml_body: str) -> None:
 
 
 def strip_leading_puml_frontmatter(puml_body: str) -> str:
-    """Remove an optional YAML frontmatter block from the start of a PUML body."""
+    """Remove an optional YAML frontmatter block from the start of a PUML body.
 
-    return _LEADING_FRONTMATTER_RE.sub("", puml_body, count=1)
+    The delimitation this module used to define — CRLF-tolerant, trailing whitespace on both fences,
+    closing fence may end the file — is now `domain.repository.frontmatter`'s, for every reader in the
+    codebase rather than for PUML alone. It was the most careful of the fourteen and became the only one.
+    """
+    return body_after_frontmatter(puml_body)
 
 
 def strip_startuml_name(puml_body: str) -> str:

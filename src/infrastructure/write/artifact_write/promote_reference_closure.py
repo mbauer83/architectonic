@@ -20,7 +20,6 @@ only resolutions are promote-alongside or drop-from-set.
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
@@ -38,7 +37,7 @@ from src.domain.artifact_id import (
     stable_conn_id,
     stable_id,
 )
-from src.domain.yaml_documents import parse_yaml
+from src.domain.repository.frontmatter import parse_frontmatter
 
 if TYPE_CHECKING:
     from src.application.artifacts.repository import ArtifactRepository
@@ -52,9 +51,6 @@ DependencyKind = Literal[
     "diagram_connection",
     "diagram_binding_target",
 ]
-
-_FRONTMATTER_RE = re.compile(r"^---\n(.*?\n)---\n", re.DOTALL)
-
 
 @dataclass(frozen=True)
 class MissingDependency:
@@ -235,11 +231,7 @@ def _missing_for_required_terms(
 
 
 def _diagram_frontmatter(path: Path) -> dict:
-    match = _FRONTMATTER_RE.match(path.read_text(encoding="utf-8"))
-    if match is None:
-        return {}
-    loaded = parse_yaml(match.group(1))
-    return loaded if isinstance(loaded, dict) else {}
+    return parse_frontmatter(path.read_text(encoding="utf-8"))
 
 
 def _hosted_element_ids(fm: dict) -> set[str]:

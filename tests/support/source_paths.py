@@ -15,6 +15,7 @@ naming it here would put a constant between a test and the single thing it is ab
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from pathlib import Path
 
 #: The repository root: two levels above ``tests/support``.
@@ -31,3 +32,22 @@ REST_ROUTERS = SRC / "infrastructure" / "rest" / "routers"
 
 #: The write boundary: every path that creates or edits an artifact.
 ARTIFACT_WRITE = SRC / "infrastructure" / "write" / "artifact_write"
+
+#: Directories under a search root that hold vendored, generated or cached files rather than code this
+#: repository authors. A walk that forgets `__pycache__` reads compiled bytecode and fails on the decode.
+_NOT_AUTHORED_HERE = frozenset({"node_modules", "__pycache__", ".venv"})
+
+
+def python_sources(*roots: Path) -> Iterator[Path]:
+    """Every Python file this repository authors under `roots`, sorted.
+
+    A rule that holds for the whole codebase needs the same walk each time it is asserted, and the walks
+    had started to differ in which directories they skipped — which decides whether the check reads a
+    `.pyc` and dies, or silently covers less than it claims.
+    """
+    yield from sorted(
+        path
+        for root in roots
+        for path in root.rglob("*.py")
+        if _NOT_AUTHORED_HERE.isdisjoint(path.parts)
+    )

@@ -21,10 +21,10 @@ from src.application.verification.artifact_verifier_types import (
     Severity,
     VerificationResult,
 )
+from src.domain.repository.frontmatter import body_after_frontmatter
 from src.domain.repository.repo_layout import ARCH_REPO, DOCS, MODEL
 
 _WINDOWS_ABS_PATH_RE = re.compile(r"^[A-Za-z]:[/\\]")
-_FRONTMATTER_RE = re.compile(r"^---\n.*?\n---\n", re.DOTALL)
 _SECTION_HEADING_RE = re.compile(r"^##\s+(.+)$", re.MULTILINE)
 
 
@@ -55,7 +55,7 @@ def _doc_repo_root(path: Path, registry: ArtifactRegistry | None) -> Path | None
 
 def document_body(content: str) -> str:
     """Document content with the YAML frontmatter block removed."""
-    return _FRONTMATTER_RE.sub("", content, count=1)
+    return body_after_frontmatter(content)
 
 
 def document_section_spans(body: str) -> dict[str, str]:

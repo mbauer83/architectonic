@@ -5,10 +5,10 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from src.domain.repository.frontmatter import Frontmatter, read_frontmatter
 from src.domain.yaml_documents import parse_yaml
 from src.infrastructure.mutation_adapters import run_git
 
-_FM_RE = re.compile(r"^---\n(.*?)^---\n", re.MULTILINE | re.DOTALL)
 _ID_RE = re.compile(r"^artifact-id:\s*(.+?)\s*$", re.MULTILINE)
 _NAME_RE = re.compile(r"^name:\s*(.+?)\s*$", re.MULTILINE)
 _SRC_RE = re.compile(r"^source-entity:\s*(.+?)\s*$", re.MULTILINE)
@@ -21,10 +21,10 @@ def read_frontmatter_id_name(path: Path) -> tuple[str, str] | None:
         text = path.read_text(encoding="utf-8")
     except OSError:
         return None
-    m = _FM_RE.match(text)
-    if not m:
+    reading = read_frontmatter(text)
+    if not isinstance(reading, Frontmatter):
         return None
-    fm_text = m.group(1)
+    fm_text = reading.text
     id_m = _ID_RE.search(fm_text)
     name_m = _NAME_RE.search(fm_text)
     return (id_m.group(1), name_m.group(1) if name_m else path.stem) if id_m else None
@@ -52,11 +52,11 @@ def read_diagram_frontmatter(path: Path) -> dict | None:
         text = path.read_text(encoding="utf-8")
     except OSError:
         return None
-    m = _FM_RE.match(text)
-    if not m:
+    reading = read_frontmatter(text)
+    if not isinstance(reading, Frontmatter):
         return None
     try:
-        return parse_yaml(m.group(1)) or {}
+        return parse_yaml(reading.text) or {}
     except Exception:  # noqa: BLE001
         return None
 

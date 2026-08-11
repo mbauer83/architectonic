@@ -23,7 +23,7 @@ import ast
 from collections.abc import Iterable
 from pathlib import Path
 
-from tests.support.source_paths import REPO_ROOT, SRC, TOOLS
+from tests.support.source_paths import REPO_ROOT, SRC, TOOLS, python_sources
 
 #: The module that owns the choice. Relative to the repository root, so a move is a visible edit here.
 _OWNER = Path("src/domain/yaml_documents.py")
@@ -36,17 +36,8 @@ _LOAD_FUNCTIONS = frozenset({"safe_load", "safe_load_all", "load", "load_all", "
 _LOADER_CLASSES = frozenset({"SafeLoader", "CSafeLoader", "Loader", "CLoader", "FullLoader", "UnsafeLoader"})
 
 
-#: Directories that hold vendored or generated code, not code this repository authors.
-_NOT_OURS = frozenset({"node_modules", "__pycache__", ".venv"})
-
-
 def _python_files() -> list[Path]:
-    return sorted(
-        path
-        for root in (SRC, TOOLS)
-        for path in root.rglob("*.py")
-        if _NOT_OURS.isdisjoint(path.parts)
-    )
+    return list(python_sources(SRC, TOOLS))
 
 
 def _yaml_names_used(path: Path) -> list[str]:

@@ -11,6 +11,7 @@ from src.application.verification.artifact_verifier_types import (
     Severity,
     VerificationResult,
 )
+from src.domain.repository.frontmatter import Frontmatter, FrontmatterProblem, opens_with_frontmatter, read_frontmatter
 from src.domain.yaml_documents import parse_yaml
 
 if TYPE_CHECKING:
@@ -48,27 +49,29 @@ def parse_frontmatter_from_path(path: Path) -> dict | None:
 
 
 def extract_yaml_block(content: str) -> dict | None:
-    if not content.startswith("---"):
-        return None
-    end = content.find("\n---", 3)
-    if end == -1:
-        return None
-    return parse_yaml(content[3:end].strip()) or {}
+    match read_frontmatter(content):
+        case Frontmatter(text=text):
+            return parse_yaml(text) or {}
+        case _:
+            return None
+
+
+#: Which diagnostic each missing fence is. A table rather than two branches, so the pair stays visibly
+#: exhaustive against `FrontmatterProblem` instead of being spread through the control flow.
+_MISSING_FENCE_ISSUE: dict[FrontmatterProblem, tuple[str, str]] = {
+    FrontmatterProblem.NO_OPENING_FENCE: ("E011", "File does not begin with YAML frontmatter (--- block)"),
+    FrontmatterProblem.NO_CLOSING_FENCE: ("E012", "Frontmatter opening --- has no closing ---"),
+}
 
 
 def parse_frontmatter(content: str, result: VerificationResult, loc: str) -> dict | None:
-    if not content.startswith("---"):
-        result.issues.append(
-            Issue(Severity.ERROR, "E011", "File does not begin with YAML frontmatter (--- block)", loc)
-        )
+    reading = read_frontmatter(content)
+    if isinstance(reading, FrontmatterProblem):
+        code, message = _MISSING_FENCE_ISSUE[reading]
+        result.issues.append(Issue(Severity.ERROR, code, message, loc))
         return None
 
-    end = content.find("\n---", 3)
-    if end == -1:
-        result.issues.append(Issue(Severity.ERROR, "E012", "Frontmatter opening --- has no closing ---", loc))
-        return None
-
-    yaml_block = content[3:end].strip()
+    yaml_block = reading.text
     try:
         fm = parse_yaml(yaml_block)
     except yaml.YAMLError as exc:
@@ -88,7 +91,7 @@ def parse_puml_frontmatter(content: str, result: VerificationResult, loc: str) -
     Supports standard ``---`` delimited YAML frontmatter before ``@startuml``.
     """
     # Standard YAML frontmatter (--- ... ---)
-    if content.startswith("---"):
+    if opens_with_frontmatter(content):
         return parse_frontmatter(content, result, loc)
 
     result.issues.append(
@@ -104,7 +107,7 @@ def parse_puml_frontmatter(content: str, result: VerificationResult, loc: str) -
 
 def extract_puml_frontmatter_best_effort(content: str) -> dict | None:
     """Best-effort extraction of YAML frontmatter from a PUML file."""
-    if content.startswith("---"):
+    if opens_with_frontmatter(content):
         return extract_yaml_block(content)
     return None
 

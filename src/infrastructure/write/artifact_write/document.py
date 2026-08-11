@@ -8,6 +8,7 @@ from src.application.identifier_allocator import get_default_allocator
 from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.config.repo_paths import DOCS
 from src.domain.artifact_id import stable_id
+from src.domain.repository.frontmatter import Frontmatter, FrontmatterProblem, read_frontmatter
 from src.domain.repository.groups import UNCATEGORIZED
 from src.domain.yaml_documents import parse_yaml
 from src.infrastructure.atomic_file import write_atomic
@@ -243,13 +244,14 @@ _MANAGED_DOC_FM_KEYS = frozenset(
 
 def _split_document_frontmatter(raw: str, path: Path) -> tuple[dict[str, object], str]:
     """Split a document's raw text into its parsed frontmatter mapping and body."""
-    if not raw.startswith("---"):
+    reading = read_frontmatter(raw)
+    if reading is FrontmatterProblem.NO_OPENING_FENCE:
         raise ValueError(f"Document at {path} has no YAML frontmatter")
-    end = raw.find("\n---", 3)
-    if end == -1:
+    if not isinstance(reading, Frontmatter):
         raise ValueError(f"Document at {path} has malformed YAML frontmatter")
-    fm: dict[str, object] = parse_yaml(raw[3:end].strip()) or {}
-    return fm, raw[end + 4 :].lstrip("\n")
+    parsed = parse_yaml(reading.text)
+    fm: dict[str, object] = parsed if isinstance(parsed, dict) else {}
+    return fm, reading.body.lstrip("\n")
 
 
 def _resolve_document_path(docs_root: Path, artifact_id: str) -> Path | None:

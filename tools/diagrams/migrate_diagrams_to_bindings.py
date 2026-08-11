@@ -18,31 +18,25 @@ The ENG-ARCH-REPO self-model is always included when discovered from the workspa
 from __future__ import annotations
 
 import argparse
-import re
 import sys
 from pathlib import Path
 
 import yaml  # type: ignore[import-untyped]
 
-from src.domain.yaml_documents import parse_yaml
+from src.domain.repository.frontmatter import body_after_frontmatter, parse_frontmatter
 
 # ---------------------------------------------------------------------------
 # Frontmatter helpers
 # ---------------------------------------------------------------------------
 
-_FM_RE = re.compile(r"^---\n(.*?\n)---\n", re.DOTALL)
 
 
 def _parse_fm(text: str) -> dict[str, object]:
-    m = _FM_RE.match(text)
-    if not m:
-        return {}
-    return parse_yaml(m.group(1)) or {}
+    return parse_frontmatter(text)
 
 
 def _replace_fm(text: str, fm: dict[str, object]) -> str:
-    m = _FM_RE.match(text)
-    body = text[m.end() :] if m else text
+    body = body_after_frontmatter(text)
     yaml_text = yaml.safe_dump(fm, sort_keys=False).strip()
     return f"---\n{yaml_text}\n---\n{body}"
 

@@ -10,6 +10,7 @@ from typing import Any, Callable
 import yaml  # type: ignore[import-untyped]
 
 from src.config.repo_paths import DOCS, MODEL
+from src.domain.repository.frontmatter import Frontmatter, read_frontmatter, replace_frontmatter_text
 from src.domain.yaml_documents import parse_yaml
 
 TargetResolver = Callable[[str], str | None]
@@ -217,10 +218,10 @@ def rewrite_viewpoint_pin(path: Path, new_version: int) -> None:
     *new_version* in place (an explicit promotion-time re-pin, D14) — every other
     frontmatter field and the body are preserved verbatim."""
     text = path.read_text(encoding="utf-8")
-    match = re.match(r"^---\n(.*?\n)---\n", text, re.DOTALL)
-    if not match:
+    reading = read_frontmatter(text)
+    if not isinstance(reading, Frontmatter):
         return
-    frontmatter: dict[str, Any] = parse_yaml(match.group(1)) or {}
+    frontmatter: dict[str, Any] = parse_yaml(reading.text) or {}
     viewpoint = frontmatter.get("viewpoint")
     if not isinstance(viewpoint, dict):
         return
@@ -228,7 +229,9 @@ def rewrite_viewpoint_pin(path: Path, new_version: int) -> None:
     dumped = yaml.safe_dump(frontmatter, sort_keys=False)
     if not isinstance(dumped, str):
         raise TypeError("yaml.safe_dump returned non-string output")
-    path.write_text(f"---\n{dumped.strip()}\n---\n{text[match.end():]}", encoding="utf-8")
+    # Replaces the YAML region and leaves both fences as authored, so a file's line endings and any
+    # trailing fence whitespace survive a re-pin that is only supposed to change one field.
+    path.write_text(replace_frontmatter_text(text, dumped.strip()), encoding="utf-8")
 
 
 def rollback(copied: list[Path], backups: list[tuple[Path, bytes | None]]) -> None:

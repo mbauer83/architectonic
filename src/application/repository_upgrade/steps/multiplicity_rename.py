@@ -22,13 +22,18 @@ import re
 from src.application.artifacts.parsing import extract_yaml_block
 from src.application.repository_upgrade.ports import RepoUpgradeView, RepoUpgradeWriter
 from src.application.repository_upgrade.steps._frontmatter_scan import list_frontmatter_candidate_files
+from src.domain.repository.frontmatter import (
+    Frontmatter,
+    opens_with_frontmatter,
+    read_frontmatter,
+    replace_frontmatter_text,
+)
 from src.domain.repository.repository_upgrade import AppliedFinding, ScannedSurface, UpgradeFinding
 
 _LEGACY_KEY = "include_cardinality"
 _CURRENT_KEY = "include_multiplicity"
 _CONNECTIONS_KEY = "connections"
 
-_FRONTMATTER_BLOCK_RE = re.compile(r"^(---\n)(.*?)(\n---\n)", re.DOTALL)
 _LEGACY_KEY_TOKEN_RE = re.compile(rf"(?<![\w-]){_LEGACY_KEY}(?=\s*:)")
 
 
@@ -49,7 +54,7 @@ class MultiplicityRenameStep:
         findings: list[UpgradeFinding] = []
         for rel in list_frontmatter_candidate_files(view):
             content = view.read_text(rel)
-            if content is None or not content.startswith("---"):
+            if content is None or not opens_with_frontmatter(content):
                 continue
             frontmatter = extract_yaml_block(content)
             if not isinstance(frontmatter, dict):
@@ -91,9 +96,7 @@ class MultiplicityRenameStep:
         return outcomes
 
     def _rewrite(self, content: str) -> str:
-        match = _FRONTMATTER_BLOCK_RE.match(content)
-        if match is None:
+        reading = read_frontmatter(content)
+        if not isinstance(reading, Frontmatter):
             return content
-        yaml_text = match.group(2)
-        rewritten_yaml_text = _LEGACY_KEY_TOKEN_RE.sub(_CURRENT_KEY, yaml_text)
-        return content[: match.start(2)] + rewritten_yaml_text + content[match.end(2) :]
+        return replace_frontmatter_text(content, _LEGACY_KEY_TOKEN_RE.sub(_CURRENT_KEY, reading.text))

@@ -13,6 +13,7 @@ from __future__ import annotations
 from src.application.artifacts.parsing import extract_yaml_block
 from src.application.repository_upgrade.ports import RepoUpgradeView, RepoUpgradeWriter
 from src.application.repository_upgrade.steps._frontmatter_scan import list_frontmatter_candidate_files
+from src.domain.repository.frontmatter import opens_with_frontmatter
 from src.domain.repository.repository_upgrade import AppliedFinding, ScannedSurface, UpgradeFinding
 from src.domain.viewpoints.viewpoint_application_parsing import parse_viewpoint_application
 
@@ -27,7 +28,7 @@ class ViewpointApplicationScanStep:
         findings: list[UpgradeFinding] = []
         for rel in list_frontmatter_candidate_files(view):
             content = view.read_text(rel)
-            if content is None or not content.startswith("---"):
+            if content is None or not opens_with_frontmatter(content):
                 continue
             frontmatter = extract_yaml_block(content)
             if not isinstance(frontmatter, dict):

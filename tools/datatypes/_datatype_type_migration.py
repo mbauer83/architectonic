@@ -12,10 +12,10 @@ import yaml  # type: ignore[import-untyped]
 
 from src.application.identifier_allocator import IdentifierAllocator, get_default_allocator
 from src.domain.ontology_representation.artifact_types import RepoMount, infer_engagement_label
+from src.domain.repository.frontmatter import Frontmatter, read_frontmatter
 from src.domain.repository.repo_scope import MountScope, infer_repo_scope
 from src.domain.yaml_documents import parse_yaml
 
-_FM_RE = re.compile(r"^---\n(.*?\n)---\n", re.DOTALL)
 _ID_RE = re.compile(r"^CLF@[0-9]+\.[A-Za-z0-9_-]+\..+$")
 _PRIMITIVES = frozenset({"String", "Integer", "Number", "Boolean", "Date", "DateTime", "UUID"})
 
@@ -52,11 +52,11 @@ class MigrationBlockedError(ValueError):
 
 def _parse(path: Path) -> tuple[dict[str, object], str]:
     text = path.read_text(encoding="utf-8")
-    match = _FM_RE.match(text)
-    if match is None:
+    reading = read_frontmatter(text)
+    if not isinstance(reading, Frontmatter):
         return {}, text
-    loaded: object = parse_yaml(match.group(1)) or {}
-    return loaded if isinstance(loaded, dict) else {}, text[match.end():]
+    loaded: object = parse_yaml(reading.text) or {}
+    return loaded if isinstance(loaded, dict) else {}, reading.body
 
 
 def _render(frontmatter: Mapping[str, object], body: str) -> str:

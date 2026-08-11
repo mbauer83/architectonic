@@ -22,19 +22,26 @@ from src.domain.ontology_representation.artifact_types import (
 from src.domain.ontology_representation.property_value import decode_lenient, get_adhoc_type
 from src.domain.ontology_representation.specialization_values import applied_specialization_slugs
 from src.domain.repository.connection_declaration import parse_connection_declarations
+from src.domain.repository.frontmatter import Frontmatter, body_after_frontmatter, read_frontmatter
 from src.domain.yaml_documents import parse_yaml
 
 
 def extract_yaml_block(content: str) -> dict | None:
-    if not content.startswith("---"):
-        return None
-    end = content.find("\n---", 3)
-    if end == -1:
+    """The frontmatter mapping, or None when there is no readable block.
+
+    `None` and `{}` mean different things to callers here and must stay apart: the
+    unrecognized-structure upgrade step reports "starts with `---` but the block is malformed or
+    unterminated" on `None`, and falls through to its artifact-type checks on `{}`. So this reads
+    `read_frontmatter` rather than `parse_frontmatter`, which answers `{}` for both.
+    """
+    reading = read_frontmatter(content)
+    if not isinstance(reading, Frontmatter):
         return None
     try:
-        return parse_yaml(content[3:end].strip()) or {}
+        parsed = parse_yaml(reading.text)
     except yaml.YAMLError:
         return None
+    return parsed if isinstance(parsed, dict) else {}
 
 
 def extract_section(content: str, marker: str) -> str:
@@ -147,7 +154,7 @@ def parse_entity_content_sections(content_section: str) -> dict[str, Any]:
 def parse_diagram_source(content: str) -> dict[str, Any]:
     """Extract frontmatter and body from diagram source text."""
     frontmatter = extract_yaml_block(content) or {}
-    body = re.sub(r"^---\n.*?\n---\n", "", content, count=1, flags=re.DOTALL)
+    body = body_after_frontmatter(content)
     return {"frontmatter": frontmatter, "puml_body": body}
 
 
@@ -360,7 +367,7 @@ def parse_document(path: Path) -> DocumentRecord | None:
         return None
 
     # Extract body (everything after the second ---)
-    body = re.sub(r"^---\n.*?\n---\n", "", content, count=1, flags=re.DOTALL).strip()
+    body = body_after_frontmatter(content).strip()
 
     sections = tuple(m.group(1).strip() for m in re.finditer(r"^##\s+(.+)$", body, re.MULTILINE))
 

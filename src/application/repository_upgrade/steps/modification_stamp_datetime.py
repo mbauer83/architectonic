@@ -26,11 +26,16 @@ from datetime import date, datetime, timezone
 from src.application.artifacts.parsing import extract_yaml_block
 from src.application.repository_upgrade.ports import RepoUpgradeView, RepoUpgradeWriter
 from src.application.repository_upgrade.steps._frontmatter_scan import list_frontmatter_candidate_files
+from src.domain.repository.frontmatter import (
+    Frontmatter,
+    opens_with_frontmatter,
+    read_frontmatter,
+    replace_frontmatter_text,
+)
 from src.domain.repository.repository_upgrade import AppliedFinding, ScannedSurface, UpgradeFinding
 
 _STAMP_KEY = "last-updated"
 _CANONICAL_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
-_FRONTMATTER_BLOCK_RE = re.compile(r"^(---\n)(.*?)(\n---\n)", re.DOTALL)
 # Top-level only (no leading indent): a nested `last-updated:` inside another mapping is not
 # the artifact's own stamp and is not this step's business.
 _STAMP_LINE_RE = re.compile(
@@ -88,7 +93,7 @@ class ModificationStampDatetimeStep:
         findings: list[UpgradeFinding] = []
         for rel in list_frontmatter_candidate_files(view):
             content = view.read_text(rel)
-            if content is None or not content.startswith("---"):
+            if content is None or not opens_with_frontmatter(content):
                 continue
             frontmatter = extract_yaml_block(content)
             if not isinstance(frontmatter, dict) or _STAMP_KEY not in frontmatter:
@@ -153,10 +158,10 @@ class ModificationStampDatetimeStep:
 def rewrite_modification_stamp(content: str) -> str | None:
     """Return *content* with its frontmatter stamp canonicalized, or None if there is nothing
     to rewrite (no frontmatter, no top-level stamp line, or an unreadable value)."""
-    block = _FRONTMATTER_BLOCK_RE.match(content)
-    if block is None:
+    reading = read_frontmatter(content)
+    if not isinstance(reading, Frontmatter):
         return None
-    yaml_text = block.group(2)
+    yaml_text = reading.text
     line = _STAMP_LINE_RE.search(yaml_text)
     if line is None:
         return None
@@ -165,4 +170,4 @@ def rewrite_modification_stamp(content: str) -> str | None:
         return None
     rewritten_line = f"{line.group('prefix')}'{upgraded}'{line.group('suffix')}"
     rewritten_yaml = yaml_text[: line.start()] + rewritten_line + yaml_text[line.end() :]
-    return content[: block.start(2)] + rewritten_yaml + content[block.end(2) :]
+    return replace_frontmatter_text(content, rewritten_yaml)

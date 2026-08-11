@@ -19,6 +19,7 @@ from src.application.artifacts.parsing import extract_yaml_block
 from src.application.repository_upgrade.ports import RepoUpgradeView
 from src.application.repository_upgrade.steps._frontmatter_scan import list_frontmatter_candidate_files
 from src.domain.artifact_id import canonical_ids_by_stem, is_entity_id, stable_id
+from src.domain.repository.frontmatter import opens_with_frontmatter
 
 
 def declared_artifact_ids(view: RepoUpgradeView) -> list[str]:
@@ -26,7 +27,7 @@ def declared_artifact_ids(view: RepoUpgradeView) -> list[str]:
     declared: list[str] = []
     for rel in list_frontmatter_candidate_files(view):
         content = view.read_text(rel)
-        if content is None or not content.startswith("---"):
+        if content is None or not opens_with_frontmatter(content):
             continue
         frontmatter = extract_yaml_block(content)
         if not isinstance(frontmatter, dict):
