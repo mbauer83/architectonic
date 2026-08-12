@@ -200,6 +200,18 @@ _LOG_TIMESTAMP = re.compile(r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})", re.MULTIL
 #: request line is recognisable by its own shape wherever it appears.
 _ACCESS_LINE = re.compile(r'"(GET|POST|PUT|PATCH|DELETE) (\S+) HTTP/[0-9.]+" (\d{3})')
 
+#: The application's own record of the same event, from `arch_backend_app._log_requests`:
+#: ``HTTP request completed method=GET path=/api/stats status=200 duration_ms=1.7``.
+#:
+#: Both shapes are read, because the log's history spans a change of format. uvicorn's access line
+#: was one of *three* written per request and carried the least — no duration — so it was dropped as
+#: a second rendering of an event the application already records. A log from before that carries
+#: only the uvicorn shape, and this register's negative half depends on old history remaining
+#: readable, so recognising one format would have retired the evidence along with the duplication.
+_COMPLETED_LINE = re.compile(
+    r"HTTP request completed method=(GET|POST|PUT|PATCH|DELETE) path=(\S+) status=(\d{3})"
+)
+
 _PARAMETER_SEGMENT = re.compile(r"^\{[A-Za-z_][A-Za-z0-9_]*\}$")
 
 
@@ -240,7 +252,10 @@ def covers_the_register(log_text: str, taken: datetime | None = None) -> bool:
 
 
 def parse_requested_routes(log_text: str) -> frozenset[RequestedRoute]:
-    """Every distinct ``(method, path)`` an access log records **answering 2xx**.
+    """Every distinct ``(method, path)`` the backend's log records **answering 2xx**.
+
+    Either shape counts — see `_COMPLETED_LINE` — because one log may hold both, written either side
+    of the release that stopped rendering each request twice.
 
     Deduplicated on the way in: the question is *whether* an operation ran, never how often, and
     the log this was built against carries 101,389 request lines.
@@ -254,7 +269,8 @@ def parse_requested_routes(log_text: str) -> frozenset[RequestedRoute]:
     """
     return frozenset(
         RequestedRoute(method, target.split("?", 1)[0])
-        for method, target, status in _ACCESS_LINE.findall(log_text)
+        for pattern in (_ACCESS_LINE, _COMPLETED_LINE)
+        for method, target, status in pattern.findall(log_text)
         if status.startswith("2")
     )
 

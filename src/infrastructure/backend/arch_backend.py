@@ -283,10 +283,16 @@ def _serve(app: "Callable[..., Any]", *, host: str, port: int) -> None:
 
     `timeout_graceful_shutdown` is not optional: uvicorn's default is to wait for open connections
     for ever, and one abandoned event stream is enough to make that never end.
+
+    `access_log=False` because the application already logs every request. Measured: one `curl`
+    produced three lines — `HTTP request started` and `HTTP request completed` from the app's own
+    middleware, plus uvicorn's access line, which is a second rendering of the same event carrying
+    less (no duration). The SPA polls continuously, so the third of the volume this drops is the
+    third that said nothing new: `/api/sync/status` alone appeared 7,238 times in one window.
     """
     config = uvicorn.Config(
         app, host=host, port=port, log_level=backend_min_log_level().lower(),
-        timeout_graceful_shutdown=DRAIN_SECONDS,
+        timeout_graceful_shutdown=DRAIN_SECONDS, access_log=False,
     )
     _AnnouncingServer(config).run()
 
