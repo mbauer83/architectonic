@@ -3,6 +3,49 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [0.5.2] — 2026-08-12
+
+**[Full detail → `changelog-assets/0.5.2-detail.md`](changelog-assets/0.5.2-detail.md)**
+
+Nothing here changes an API or a contract. Two observable behaviours do change, both about what the
+product does when something it depends on goes away: a stdio bridge whose backend stopped now answers
+and exits instead of hanging, and a backend's log is bounded instead of growing without limit. Every
+item was reproduced before it was fixed.
+
+### Fixed
+
+- **A stdio MCP bridge whose backend goes away answers its pending calls and stops.** Measured before:
+  a `tools/list` issued after the backend stopped got **no answer for 45 s** and the bridge was still
+  running — no reply, no error, no EOF, so a client had nothing to react to. That is the five-hour park
+  observed live. Measured after: a JSON-RPC `CONNECTION_CLOSED` (-32000) naming the reason, in 10 ms,
+  then exit status 3 so the client relaunches a bridge that re-runs its health and workspace-identity
+  checks. The reported cause was wrong about the mechanism — the transport failure never reaches the
+  read stream — which is why the reproduction came first.
+- **A fetch against an unreachable remote is deferred instead of retried every minute.** Doubling from
+  the poll interval to a ceiling of half an hour, and one success clears the record. Twenty minutes of
+  a failing origin costs five attempts rather than twenty, and git's stderr is carried once per episode
+  instead of six lines a minute — 7.3 MB of one identical failure was observed on an instance whose key
+  needed an agent.
+
+### Changed
+
+- **The backend log is bounded.** Past `backend.log_max_bytes` (16 MiB) it rotates, keeping
+  `backend.log_generations` (3) as `backend.log.1` … `.3` — at most 64 MiB, where before it reached
+  **62 MB over 491,225 lines** and had to be truncated by hand. Only a backend whose own stdout *is*
+  the log rotates it, so a foreground run on a terminal keeps its console.
+- **A request is logged once, not twice.** uvicorn's access line was the third line per request and
+  carried the least — no duration — so it is off. The register that measures which operations the
+  running application has executed reads both formats now, because its history is all in the old one.
+- **`tests/architecture/` runs in 42 s again, not over ten minutes.** The retired-route scan was
+  reading 841 MB of istanbul coverage output that had appeared in `tools/gui/.nyc_output`.
+
+### Model
+
+- **`FMD@1785065977`'s occurrence judgement is re-recorded with the right date** — its rationale put
+  the analysis baseline at 2026-08-26 where the baseline is 2026-07-26. Value unchanged at `unlikely`,
+  same basis digest, revision 1 retained; the prior text's unreproducible commit count is dropped
+  rather than repeated.
+
 ## [0.5.1] — 2026-08-11
 
 **[Full detail → `changelog-assets/0.5.1-detail.md`](changelog-assets/0.5.1-detail.md)**
