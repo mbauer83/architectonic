@@ -18,6 +18,15 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
+from src.infrastructure.git.fetch_attempts import (
+    FetchAttempts,
+    FetchDeferred,
+    Fetched,
+    FetchFailed,
+    FetchOutcome,
+    report_attempt,
+)
+
 if TYPE_CHECKING:
     from src.application.mutation_authorization import SyncHealthReason
     from src.infrastructure.git.git_auth import GitCredentials
@@ -46,6 +55,7 @@ class GitSyncManager:
         credentials: "GitCredentials | None" = None,
         on_repo_changed: Callable[[Path], Awaitable[None]] | None = None,
         on_health_changed: Callable[[Path], None] | None = None,
+        fetch_attempts: FetchAttempts | None = None,
     ) -> None:
         self._repos = repos
         self._poll_interval_s = poll_interval_s
@@ -58,6 +68,9 @@ class GitSyncManager:
         self._askpass_script: Path | None = None
         self._last_dirty_state: dict[Path, bool] = {}
         self._last_block_reason: dict[Path, str | None] = {}
+        # One record for every repository this manager polls: the deferral a refusing remote earns
+        # belongs to the poll cadence, which is this object's, not to either role's sync path.
+        self._fetch_attempts = fetch_attempts or FetchAttempts()
 
     async def start(self) -> None:
         # Credentials are verified up front at collection (collect_verified_credentials), which
@@ -115,6 +128,27 @@ class GitSyncManager:
     # ------------------------------------------------------------------
     # Low-level git helpers
     # ------------------------------------------------------------------
+
+    async def _fetch_origin(self, repo: Path) -> FetchOutcome:
+        """Fetch from origin unless this remote is still deferred after refusing.
+
+        Every fetch in this manager comes through here, so a remote that is failing is attempted at
+        the same decreasing rate whatever role its repository plays, and reported the same way. The
+        schedule and the wording both belong to `fetch_attempts`; this contributes the attempt.
+        """
+        deferred = self._fetch_attempts.deferral(repo)
+        if deferred is not None:
+            report_attempt(repo, deferred)
+            return deferred
+
+        rc, _, err = await self._git(repo, "fetch", "origin", timeout=_FETCH_TIMEOUT_S)
+        outcome: FetchOutcome = (
+            self._fetch_attempts.succeeded(repo)
+            if rc == 0
+            else self._fetch_attempts.failed(repo, err.strip() or "unknown error")
+        )
+        report_attempt(repo, outcome)
+        return outcome
 
     async def _git(self, repo: Path, *args: str, timeout: float = 10.0) -> tuple[int, str, str]:
         from src.infrastructure.git.git_env import get_ssh_env
@@ -250,10 +284,11 @@ class GitSyncManager:
         is_clean = await self._is_clean(repo)
         await self._publish_dirty_state_change(repo, is_dirty=not is_clean)
 
-        rc, _, err = await self._git(repo, "fetch", "origin", timeout=_FETCH_TIMEOUT_S)
-        if rc != 0:
-            logger.warning("fetch failed for engagement %s: %s", repo, err.strip())
-            return
+        match await self._fetch_origin(repo):
+            case FetchDeferred() | FetchFailed():
+                return
+            case Fetched():
+                pass
 
         behind = await self._count(repo, "HEAD..@{u}")
         if behind == 0:

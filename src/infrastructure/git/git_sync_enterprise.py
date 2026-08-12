@@ -21,9 +21,9 @@ from pathlib import Path
 
 from src.config.repo_paths import DIAGRAM_CATALOG, DOCS, MODEL
 from src.infrastructure.git import enterprise_sync_state
+from src.infrastructure.git.fetch_attempts import FetchDeferred, Fetched, FetchFailed
 from src.infrastructure.git.git_sync import (
     _AUTO_UNBLOCK_S,
-    _FETCH_TIMEOUT_S,
     _PULL_TIMEOUT_S,
     GitSyncManager,
 )
@@ -47,12 +47,18 @@ class ReconcileOutcome:
 async def sync_enterprise(sync: GitSyncManager, root: Path) -> None:
     if not await sync._is_git_repo(root):
         return
-    rc, _, err = await sync._git(root, "fetch", "origin", timeout=_FETCH_TIMEOUT_S)
-    if rc != 0:
-        await sync._record_sync_blocked(
-            root, "fetch_failed", f"git fetch from origin failed — {err.strip() or 'unknown error'}"
-        )
-        return
+    match await sync._fetch_origin(root):
+        case FetchFailed(reason=reason):
+            await sync._record_sync_blocked(
+                root, "fetch_failed", f"git fetch from origin failed — {reason}"
+            )
+            return
+        case FetchDeferred():
+            # The failure that earned the deferral was recorded when it happened, and it still holds:
+            # a poll that did not attempt anything has nothing to add to it.
+            return
+        case Fetched():
+            pass
 
     outcome = await reconcile_state(sync, root)
     state = outcome.lifecycle
