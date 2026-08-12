@@ -16,10 +16,18 @@ from collections.abc import Iterator
 from pathlib import Path
 
 #: Directories that never contain live route references: build output, caches, dependencies.
+#:
+#: This list is an approximation of `.gitignore` maintained by hand, and the cost of it drifting is
+#: paid here rather than reported: every entry missing from it is read in full, once per file, and
+#: matched against every retired literal. `.nyc_output` arrived with the e2e coverage flag and was
+#: measured at **841 MB over 221 files**, which took this scan from 2 seconds to over 10 minutes —
+#: a gate that slow is a gate a developer starts skipping. Asking git what the repository contains
+#: would end the drift, and does not work here: `enterprise-repository` is its own checkout, so
+#: `git ls-files` at this root omits content that is genuinely part of the tree being scanned.
 _SKIP_DIRECTORIES = frozenset({
     ".git", ".venv", "node_modules", "dist", "__pycache__", ".pytest_cache", ".ruff_cache",
     ".mypy_cache", "coverage", "playwright-report", "test-results", ".arch-repo",
-    ".arch-assurance", "htmlcov",
+    ".arch-assurance", "htmlcov", ".nyc_output",
 })
 
 #: Files where a retired literal is a *record* rather than a reference.
