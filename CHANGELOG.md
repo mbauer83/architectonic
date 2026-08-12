@@ -3,6 +3,52 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [0.5.3] — 2026-08-12
+
+**[Full detail → `changelog-assets/0.5.3-detail.md`](changelog-assets/0.5.3-detail.md)**
+
+One defect, reported from another engagement and reproduced here before it was fixed: an ArchiMate view
+that draws a junction could not be authored. Nothing changes an API or a contract.
+
+### Fixed
+
+- **A diagram body may decorate a declaration, and the diagram it writes still verifies.** A junction
+  is drawn as a coloured circle (`circle " " as JNA_x #252327`), and the reader that derives
+  `entity-ids-used` required the alias to *end the line* — so the junction was dropped from the
+  frontmatter while the verifier, resolving drawn aliases another way, refused the diagram for omitting
+  it (**E315**). Not a junction problem: a coloured `rectangle` failed identically, and the renderer
+  itself appends a colour for any entity carrying a specialization notation. Two latent defects went
+  with it — a coloured *container* declaration was read as neither container nor leaf, losing its
+  nesting, and a coloured grouping-open lost its label.
+- **`artifact_create_diagram` no longer discards an `entity_ids` passed alongside a `puml` body.** It
+  routed on `entity_ids and not puml`, so ids the caller named were silently dropped in either id form,
+  and nothing said the diagram could not verify. Membership is now honoured and merged with what the
+  body infers.
+
+### Changed
+
+- **One reading of what declares a PUML alias** (`application.puml_alias_declarations`), replacing five
+  that disagreed about trailing decorations, about whether a hyphen belongs to an alias, and about
+  whether quoted prose can look like one. The tolerant reading already existed in one of the five.
+- **Every syntax this project reads now has a registered owner**
+  (`tests/architecture/test_each_syntax_has_one_reader.py`). The same class of defect had been fixed
+  three times, each as an instance with its own test, and between them they enumerated nothing — so a
+  fourth had nowhere to be a missing row. Four syntaxes are registered, and the register immediately
+  found eight second readers of the connection-declaration section — the syntax every connection in
+  the model is written in. **Three are converted here**: the verifier's shape check no longer accepts a
+  header its own parser declines, and two more stop hand-rolling the multiplicity stripping the parser
+  already does. Five are exempt, shrink-only and each with a reason — three *rewrite* files (cascade
+  delete, promotion retarget, cleanup) and need primitives the owner does not expose yet.
+- **One reading of how a connection may be named**, and the register found the worse half of it. Three
+  functions parsed `source type → target` into a three-string tuple, and two of them had **target and
+  type transposed** — a caller moved between them would have swapped the fields with nothing to catch
+  it, since both type-check and both read correctly. They also disagreed on `split` versus `rsplit` and
+  on stripping. `artifact_id.parse_connection_reference` now answers a `ConnectionReference` record, so
+  the transposition is unspellable rather than merely fixed.
+- `AGENTS.md` states the rule the register serves: name the owner before writing a parser, and where the
+  project both writes a syntax and reads it back, test the pair — over what the syntax permits, and
+  verified against the old behaviour before it is trusted.
+
 ## [0.5.2] — 2026-08-12
 
 **[Full detail → `changelog-assets/0.5.2-detail.md`](changelog-assets/0.5.2-detail.md)**
