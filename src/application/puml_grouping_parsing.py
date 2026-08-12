@@ -14,10 +14,19 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+from src.application.puml_alias_declarations import alias_declared_on
+
+#: A labelled grouping opening a block. What sits between the stereotype and the brace is not this
+#: pattern's business — it tolerated `as \w+` and so spelled the alias syntax a fourth time, which
+#: also meant a *coloured* grouping open (`… <<CommonGrouping>> as G1 #EEE {`) matched nothing and its
+#: label was lost. The alias, where there is one, belongs to `puml_alias_declarations`.
 _GROUP_OPEN = re.compile(
-    r'^\s*rectangle\s+"(?P<label>[^"]+)"\s+<<(?P<stereotype>[^>]*Grouping)>>\s*(?:as\s+\w+\s*)?\{\s*$'
+    r'^\s*rectangle\s+"(?P<label>[^"]+)"\s+<<(?P<stereotype>[^>]*Grouping)>>.*\{\s*$'
 )
-_ALIAS_DECL = re.compile(r'\bas\s+(?P<alias>[A-Za-z0-9_]+)\s*(\{\s*)?$')
+#: A member declaration is read by `puml_alias_declarations`, shared with every other caller. The
+#: regex this replaces ended at the alias and spelled it `\w+`, so it lost both an alias carrying a
+#: hyphen and any element whose declaration carries a trailing colour — a grouping's members are
+#: exactly the elements it must not drop when a body is preserved.
 
 
 @dataclass(frozen=True)
@@ -54,11 +63,11 @@ def parse_labeled_groupings(puml_body: str) -> list[LabeledGrouping]:
         if opened:
             stack.append((True, [], opened.group("label"), opened.group("stereotype").strip()))
             continue
-        alias_match = _ALIAS_DECL.search(line)
-        if alias_match and not line.lstrip().startswith("'"):
+        declaration = alias_declared_on(line)
+        if declaration is not None:
             collector = _current_collector()
             if collector is not None:
-                collector.append(alias_match.group("alias"))
+                collector.append(declaration.alias)
         if line.endswith("{") and not opened:
             stack.append((False, None, "", ""))
             continue

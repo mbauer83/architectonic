@@ -6,6 +6,10 @@ from typing import Any
 
 import yaml  # type: ignore[import-untyped]
 
+from src.application.puml_alias_declarations import (
+    alias_declared_on,
+    macro_alias_declared_on,
+)
 from src.application.verification.artifact_verifier_types import entity_id_from_path
 from src.domain.artifact_id import stable_id
 from src.domain.ontology_representation.artifact_types import (
@@ -188,24 +192,28 @@ def normalize_puml_alias(alias: str) -> str:
     return alias.strip().replace("-", "_")
 
 
-_PUML_MACRO_ALIAS_RE = re.compile(r"^[A-Z][A-Za-z_]*\(\s*([A-Za-z0-9_]+)\s*,")
-
-
 def extract_declared_puml_aliases(content: str) -> set[str]:
+    """Every alias *content* declares, normalised.
+
+    The reading itself belongs to `puml_alias_declarations`, which is shared with the verifier, the
+    containment parser, the grouping parser and the layout preserver. It used to be a regex here
+    anchoring the alias to the end of the line, and this function is what derives `entity-ids-used`
+    on a body-shaped write — so a declaration carrying a trailing `#colour` produced a diagram whose
+    frontmatter omitted an entity its body draws, which the verifier then refused (E315), along with
+    that entity's connections (E317). Junctions are rendered with a colour, which is why it looked
+    like junctions could not be drawn at all.
+    """
     aliases: set[str] = set()
     for line in content.splitlines():
-        stripped = line.strip()
-        if not stripped or stripped.startswith("'"):
-            continue
-        m = re.search(r"\bas\s+([A-Za-z0-9_-]+)\s*\{?\s*$", stripped)
-        if m:
-            aliases.add(normalize_puml_alias(m.group(1)))
+        declaration = alias_declared_on(line)
+        if declaration is not None:
+            aliases.add(normalize_puml_alias(declaration.alias))
             continue
         # Some PUML renderers emit macro calls where the alias is the first argument:
         # MacroName(ALIAS, "label", ...) rather than `element ... as ALIAS`.
-        m2 = _PUML_MACRO_ALIAS_RE.match(stripped)
-        if m2:
-            aliases.add(normalize_puml_alias(m2.group(1)))
+        macro_alias = macro_alias_declared_on(line)
+        if macro_alias is not None:
+            aliases.add(normalize_puml_alias(macro_alias))
     return aliases
 
 

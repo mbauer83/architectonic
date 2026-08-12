@@ -12,6 +12,7 @@ import re
 from dataclasses import dataclass, field
 
 from src.application.modeling.flow_ordering import order_aliases_along_flow
+from src.application.puml_alias_declarations import alias_declared_on
 
 
 @dataclass
@@ -48,16 +49,14 @@ def _parse_groupings(puml: str) -> list[_GroupInfo]:
                 group_idx += 1
                 result.append(current)
 
-        # Element with alias inside a grouping (has `as ALIAS`, no trailing `{`)
-        # Note: sprite labels like <$name{scale=0.9}> contain `{` mid-line, so we
-        # only exclude lines where `{` appears at the end (container openings).
-        # Strip quoted strings before searching to avoid matching "as" inside label text
-        # (e.g. "AI-Assisted Development as Dominant Production Mode").
+        # An element declared inside a grouping, which is one that names an alias and does not open
+        # a container. Both halves of that come from `puml_alias_declarations` now: the quoted-label
+        # care this line had — a label may read "…as Dominant Production Mode" — is where the shared
+        # reading got it, and in exchange this stops losing a hyphenated alias to `\w+`.
         elif current is not None and depth > 0:
-            without_quotes = re.sub(r'"[^"]*"', '""', stripped)
-            m = re.search(r"\bas\s+(\w+)", without_quotes)
-            if m and not re.search(r"\{\s*$", stripped):
-                current.aliases.append(m.group(1))
+            declaration = alias_declared_on(stripped)
+            if declaration is not None and not declaration.opens_block:
+                current.aliases.append(declaration.alias)
 
         depth += stripped.count("{") - stripped.count("}")
 

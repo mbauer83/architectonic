@@ -91,7 +91,7 @@ def artifact_create_diagram(
 ) -> dict[str, object]:
     entity_ids_used: list[str] | None = None
     connection_ids_used: list[str] | None = None
-    if entity_ids and not puml:
+    if entity_ids:
         from src.infrastructure.mcp.artifact_mcp.context import expand_artifact_id  # noqa: PLC0415
         from src.infrastructure.rendering.diagram_builder import generate_archimate_puml_body  # noqa: PLC0415
         from src.infrastructure.rendering.diagram_selection import (  # noqa: PLC0415
@@ -108,21 +108,29 @@ def artifact_create_diagram(
         key = roots_key(roots)
         repo = repo_cached(key)
         expanded_entity_ids = [expand_artifact_id(repo, eid) for eid in entity_ids]
-        entities, connections, entity_ids_used, connection_ids_used = resolve_diagram_selection(
-            repo,
-            expanded_entity_ids,
-            connections_among(repo, expanded_entity_ids),
-        )
-        puml = generate_archimate_puml_body(
-            name,
-            entities,
-            connections,
-            diagram_type=diagram_type,
-            repo_root=roots[0],
-            diagram_entities=diagram_entities,
-            diagram_connections=diagram_connections,
-            authored_groupings=authored_groupings,
-        )
+        if puml:
+            # A caller who supplies both is stating membership for a body they shaped themselves, and
+            # this used to read `entity_ids and not puml` — so the ids were *silently discarded*, in
+            # either id form. Membership is honoured; `connection-ids-used` is not touched, because
+            # that list records what the body draws and only the body can say what that is. The write
+            # path merges these with the ids inferred from the body.
+            entity_ids_used = expanded_entity_ids
+        else:
+            entities, connections, entity_ids_used, connection_ids_used = resolve_diagram_selection(
+                repo,
+                expanded_entity_ids,
+                connections_among(repo, expanded_entity_ids),
+            )
+            puml = generate_archimate_puml_body(
+                name,
+                entities,
+                connections,
+                diagram_type=diagram_type,
+                repo_root=roots[0],
+                diagram_entities=diagram_entities,
+                diagram_connections=diagram_connections,
+                authored_groupings=authored_groupings,
+            )
 
     roots = resolve_repo_roots(
         repo_scope="engagement",

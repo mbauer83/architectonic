@@ -25,6 +25,8 @@ import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 
+from src.application.puml_alias_declarations import alias_declared_on
+
 #: `Rel_Triggering(A, B, …)` — the macro form.
 _REL_MACRO_RE = re.compile(
     r"^\s*Rel_(?P<rel>[A-Za-z0-9]+)(?:_(?:Up|Down|Left|Right))?"
@@ -59,10 +61,10 @@ class DeclaredRelation:
     arrow: str
 
 
-#: `rectangle "…" <<stereo>> as ALIAS {` — an element that contains others.
-_CONTAINER_RE = re.compile(r"\bas\s+(?P<alias>[A-Za-z0-9_-]+)\s*\{\s*$")
-#: `rectangle "…" <<stereo>> as ALIAS` — an element declared with no children.
-_LEAF_RE = re.compile(r"\bas\s+(?P<alias>[A-Za-z0-9_-]+)\s*$")
+#: Container versus leaf is `opens_block` on the one declaration reading — see
+#: `puml_alias_declarations`. It used to be two regexes here, each anchoring the alias to the end of
+#: the line, which made "leaf" mean "nothing follows the alias": a trailing `#colour` then left an
+#: element neither container nor leaf, so its containment was never read and its nesting was lost.
 
 
 def _is_layout_only(arrow: str) -> bool:
@@ -94,20 +96,18 @@ def _containment_relations(content: str) -> list[DeclaredRelation]:
             if stack:
                 stack.pop()
             continue
-        container = _CONTAINER_RE.search(line)
-        if container is not None:
-            alias = container.group("alias")
+        declaration = alias_declared_on(line)
+        if declaration is not None and declaration.opens_block:
             if stack and stack[-1]:
-                found.append(DeclaredRelation(stack[-1], alias, None, ""))
-            stack.append(alias)
+                found.append(DeclaredRelation(stack[-1], declaration.alias, None, ""))
+            stack.append(declaration.alias)
             continue
-        if line.endswith("{"):
+        if declaration is None and line.endswith("{"):
             # A grouping rectangle or a `skinparam …{` block: opens a scope, names no parent.
             stack.append("")
             continue
-        leaf = _LEAF_RE.search(line)
-        if leaf is not None and stack and stack[-1]:
-            found.append(DeclaredRelation(stack[-1], leaf.group("alias"), None, ""))
+        if declaration is not None and stack and stack[-1]:
+            found.append(DeclaredRelation(stack[-1], declaration.alias, None, ""))
     return found
 
 
