@@ -10,7 +10,10 @@ from typing import Protocol
 
 from src.application.artifacts.parsing import extract_declared_puml_aliases, normalize_puml_alias
 from src.application.puml_relation_parsing import declared_relations
-from src.domain.artifact_id import MalformedArtifactIdError, connection_id_as_written
+from src.domain.artifact_id import (
+    ConnectionReference,
+    parse_connection_reference,
+)
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 
@@ -87,22 +90,13 @@ def resolve_connections(
     return records, removed
 
 
-def parse_connection_artifact_id(artifact_id: str) -> tuple[str, str, str] | None:
-    if "---" in artifact_id and "@@" in artifact_id:
-        # Through the domain grammar, never by splitting here: a key may end in a hyphen, and the
-        # first three-in-a-row are then the key's own plus two of the separator.
-        try:
-            return connection_id_as_written(artifact_id)
-        except MalformedArtifactIdError:
-            return None
-    if " → " in artifact_id:
-        try:
-            left, target = artifact_id.split(" → ", 1)
-            source, conn_type = left.split(" ", 1)
-        except ValueError:
-            return None
-        return source, target, conn_type
-    return None
+def parse_connection_artifact_id(artifact_id: str) -> ConnectionReference | None:
+    """Both naming forms, through the domain grammar that owns them.
+
+    Byte-identical to a second copy in `bulk/diagram_refs` and field-transposed against a third in
+    `_promote_planning`; all three now call one reading.
+    """
+    return parse_connection_reference(artifact_id)
 
 
 def resolve_connection_by_parts(
@@ -112,11 +106,10 @@ def resolve_connection_by_parts(
     parsed = parse_connection_artifact_id(artifact_id)
     if parsed is None:
         return None
-    source, target, conn_type = parsed
-    source_prefix = stable_prefix(source)
-    target_prefix = stable_prefix(target)
+    source_prefix = stable_prefix(parsed.source)
+    target_prefix = stable_prefix(parsed.target)
     for record in connections:
-        if record.conn_type != conn_type:
+        if record.conn_type != parsed.conn_type:
             continue
         if stable_prefix(record.source) == source_prefix and stable_prefix(record.target) == target_prefix:
             return record

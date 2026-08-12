@@ -7,7 +7,11 @@ from src.application.modeling.artifact_write import format_outgoing_markdown
 from src.application.verification.artifact_verifier import ArtifactRegistry, ArtifactVerifier
 from src.domain.artifact_id import stable_id
 from src.domain.modules.module_types import ConnectionTypeName, ElementClassName
-from src.domain.repository.connection_declaration import ConnectionDeclaration, format_connection_declaration
+from src.domain.repository.connection_declaration import (
+    ConnectionDeclaration,
+    format_connection_declaration,
+    parse_connection_declarations,
+)
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.atomic_file import write_atomic
 
@@ -150,21 +154,18 @@ def _build_content(
     applied = normalize_specializations(specializations)
     if outgoing_path.exists():
         existing = outgoing_path.read_text(encoding="utf-8")
-        # Duplicate check ignores multiplicities — same (conn_type, target) pair is a duplicate
-        dup_marker = f"### {connection_type} → "
-        dup_marker_with_card = f"### {connection_type} ["
-        for line in existing.splitlines():
-            if line.startswith(dup_marker) or line.startswith(dup_marker_with_card):
-                _, after_arrow = line.split(" → ", 1)
-                existing_target = after_arrow.strip()
-                if existing_target.startswith("["):
-                    bracket_end = existing_target.find("]")
-                    if bracket_end != -1:
-                        existing_target = existing_target[bracket_end + 1 :].lstrip()
-                if stable_id(existing_target) == stable_id(target_entity):
-                    raise ValueError(
-                        f"Connection '{connection_type} → {target_entity}' already exists in {outgoing_path.name}"
-                    )
+        # Duplicate check ignores multiplicities — same (conn_type, target) pair is a duplicate. Asked
+        # of `connection_declaration`, which owns the grammar: the two `startswith` markers here were a
+        # hand-rolled way of saying "this type, with or without a source multiplicity", and the bracket
+        # stripping below them was a third copy of the parser's own.
+        for declaration in parse_connection_declarations(existing):
+            same_pair = declaration.conn_type == connection_type and stable_id(
+                declaration.target_id
+            ) == stable_id(target_entity)
+            if same_pair:
+                raise ValueError(
+                    f"Connection '{connection_type} → {target_entity}' already exists in {outgoing_path.name}"
+                )
         # Appends the new section's formatted text without reparsing/redumping the rest of
         # the file — every other connection's byte content (incl. any uncommitted edit or
         # metadata block) is left untouched. Goes through the one shared grammar

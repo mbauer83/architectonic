@@ -13,7 +13,10 @@ from src.application.verification.artifact_verifier_parsing import (
     parse_frontmatter_from_path,
 )
 from src.config.repo_paths import DIAGRAM_CATALOG, DIAGRAMS, RENDERED
-from src.domain.artifact_id import MalformedArtifactIdError, connection_id_as_written
+from src.domain.artifact_id import (
+    ConnectionReference,
+    parse_connection_reference,
+)
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.write import artifact_write_ops
 from src.infrastructure.write.artifact_write._sync_helpers import LookupStore
@@ -34,29 +37,21 @@ def connection_ref_ids(source_entity: str, connection_type: str, target_entity: 
     }
 
 
-def parse_connection_ref_id(connection_id: str) -> tuple[str, str, str] | None:
-    if "---" in connection_id and "@@" in connection_id:
-        # See `connection_id_as_written`: splitting here would mis-place a hyphen-terminated key.
-        try:
-            return connection_id_as_written(connection_id)
-        except MalformedArtifactIdError:
-            return None
-    if " → " in connection_id:
-        try:
-            left, target = connection_id.split(" → ", 1)
-            source, connection_type = left.split(" ", 1)
-        except ValueError:
-            return None
-        return source, target, connection_type
-    return None
+def parse_connection_ref_id(connection_id: str) -> ConnectionReference | None:
+    """Both naming forms, through the domain grammar that owns them.
+
+    This used to be one of three copies, and the three disagreed — see
+    `artifact_id.parse_connection_reference`. It answers a named record now rather than a tuple,
+    because the copies had transposed two of its fields.
+    """
+    return parse_connection_reference(connection_id)
 
 
 def connection_id_involves_entity(connection_id: str, entity_id: str) -> bool:
     parsed = parse_connection_ref_id(connection_id)
     if parsed is None:
         return False
-    source, target, _connection_type = parsed
-    return source == entity_id or target == entity_id
+    return parsed.source == entity_id or parsed.target == entity_id
 
 
 def diagram_paths(repo_root: Path) -> list[Path]:

@@ -12,8 +12,8 @@ from typing import Any
 from src.application.artifacts.query import ArtifactRepository
 from src.application.verification.artifact_verifier import ArtifactRegistry
 from src.domain.artifact_id import (
-    MalformedArtifactIdError,
-    connection_id_as_written,
+    ConnectionReference,
+    parse_connection_reference,
     stable_id,
 )
 from src.infrastructure.write.artifact_write.parse_existing import parse_entity_file
@@ -52,21 +52,15 @@ def _extract_id_suffix(artifact_id: str) -> str | None:
     return artifact_id.split("@", 1)[1] if "@" in artifact_id else None
 
 
-def _parse_conn_full(cid: str) -> tuple[str, str, str] | None:
-    if "---" in cid and "@@" in cid:
-        try:
-            source, target, conn_type = connection_id_as_written(cid)
-        except MalformedArtifactIdError:
-            return None
-        if source and target and conn_type:
-            return source.strip(), conn_type.strip(), target.strip()
-    if " → " not in cid:
-        return None
-    left, target = cid.rsplit(" → ", 1)
-    parts = left.split(" ", 1)
-    if len(parts) < 2:
-        return None
-    return (parts[0].strip(), parts[1].strip(), target.strip())
+def _parse_conn_full(cid: str) -> ConnectionReference | None:
+    """Both naming forms, through the domain grammar that owns them.
+
+    This was the third of three readings and the one that disagreed: it split on the *last* arrow
+    rather than the first, and it returned `(source, type, target)` where the other two returned
+    `(source, target, type)`. The shared reading answers a named record, so that transposition cannot
+    be reintroduced by moving a caller.
+    """
+    return parse_connection_reference(cid)
 
 
 def _normalize_name(name: str) -> str:
@@ -141,7 +135,6 @@ def _collect_promotable_connections(
         parsed = _parse_conn_full(cid)
         if parsed is None:
             continue
-        src, _conn_type, tgt = parsed
-        if src in promotable and tgt in selected_set and cid in explicit_connection_ids:
+        if parsed.source in promotable and parsed.target in selected_set and cid in explicit_connection_ids:
             conn_ids.append(cid)
     return conn_ids

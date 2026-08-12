@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any, Final, Literal, TypeAlias
 
 from src.domain.artifact_id import PREFIX_PATTERN, RANDOM_KEY_PATTERN
+from src.domain.repository.connection_declaration import parse_connection_header
 
 
 class Severity:
@@ -88,14 +89,14 @@ ENTITY_ID_RE = re.compile(rf"^{PREFIX_PATTERN}@\d+\.{RANDOM_KEY_PATTERN}\..+$")
 
 
 def connection_header_matches_shape(header: str) -> bool:
-    """Check whether a connection header from an .outgoing.md ``### `` line is valid.
+    """Whether a connection header from an `.outgoing.md` `### ` line is valid.
 
-    Expected format: ``{connection-type} → {target-entity-id}``
+    Asks `connection_declaration`, which owns the grammar, rather than re-deciding it. The reading
+    this replaces required only a ` → ` with non-empty sides, so it accepted a header the parser then
+    declined — and the shape check and the parse disagreeing is how a section reads as valid to one
+    half of the verifier and as absent to the other.
     """
-    if " → " not in header:
-        return False
-    parts = header.split(" → ", 1)
-    return len(parts) == 2 and bool(parts[0].strip()) and bool(parts[1].strip())
+    return parse_connection_header(header) is not None
 
 
 VALID_STATUSES: frozenset[str] = frozenset({"draft", "active", "deprecated"})

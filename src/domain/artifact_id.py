@@ -281,6 +281,53 @@ def connection_id_as_written(s: str) -> tuple[str, str, str]:
     return src, tgt, conn_type
 
 
+@dataclass(frozen=True)
+class ConnectionReference:
+    """One connection named in either of the two forms a caller may write it in.
+
+    **Named fields rather than a tuple, and that is the point.** Three modules parsed these strings
+    into a three-string tuple and two of them disagreed about the *order*: `(source, target, type)`
+    in the bulk and sync readers, `(source, type, target)` in the promotion planner. Two functions
+    returning the same shape with two of its fields transposed is a defect waiting for the first
+    caller that is moved from one to the other, and no test would have caught it — both halves
+    type-check and both look right at the call site.
+    """
+
+    source: str
+    conn_type: str
+    target: str
+
+
+def parse_connection_reference(reference: str) -> ConnectionReference | None:
+    """Either form a connection may be named in, or None when it is neither.
+
+    * canonical — `{source}---{target}@@{type}`, delegated to `connection_id_as_written` so the
+      hyphen-terminated-key ambiguity is resolved in the one place that knows about it;
+    * as written by a caller — `{source} {type} → {target}`, which bulk operations, sync and
+      promotion all accept.
+
+    Three readings of this existed and disagreed on three things: `split` versus `rsplit` on the
+    arrow, whether to strip each part, and the tuple order. Resolved as: the **first** arrow (an
+    artifact id contains no spaces, so a well-formed reference has exactly one, and for a malformed
+    one either answer is equally arbitrary — this one is stated rather than incidental), parts
+    stripped, and a malformed canonical id is None rather than falling through to the arrow branch,
+    since a string carrying `---` and `@@` was making the canonical claim.
+    """
+    if "---" in reference and "@@" in reference:
+        try:
+            source, target, conn_type = connection_id_as_written(reference)
+        except MalformedArtifactIdError:
+            return None
+        return ConnectionReference(source=source.strip(), conn_type=conn_type.strip(), target=target.strip())
+    if " → " not in reference:
+        return None
+    left, target = reference.split(" → ", 1)
+    parts = left.split(" ", 1)
+    if len(parts) < 2:
+        return None
+    return ConnectionReference(source=parts[0].strip(), conn_type=parts[1].strip(), target=target.strip())
+
+
 def parse_connection_id(s: str) -> ConnectionKey:
     """Parse a connection ID of the form '{src}---{tgt}@@{type}'.
 

@@ -11,6 +11,7 @@ from src.application.verification.artifact_verifier_types import (
     Severity,
     VerificationResult,
 )
+from src.domain.repository.connection_declaration import parse_connection_header
 from src.domain.repository.frontmatter import Frontmatter, FrontmatterProblem, opens_with_frontmatter, read_frontmatter
 from src.domain.yaml_documents import parse_yaml
 
@@ -131,17 +132,14 @@ def parse_connection_refs(path: Path) -> ConnectionRefs | None:
     srcs = [str(source)] if source else []
 
     tgts: list[str] = []
+    # Through the owner of the section grammar rather than by splitting on the arrow here: the
+    # multiplicity stripping this replaces was the third copy of the same seven lines, and a copy is
+    # where "conn-type [src] → [tgt] target" stops meaning the same thing in two places.
     for line in content.splitlines():
-        if line.startswith("### ") and " → " in line:
-            header = line[4:].strip()
-            # Handle optional multiplicities: "conn-type [src] → [tgt] target_id"
-            after_arrow = header.split(" → ", 1)[1].strip()
-            # Strip optional target multiplicity "[tgt_mult] " prefix
-            if after_arrow.startswith("["):
-                bracket_end = after_arrow.find("]")
-                if bracket_end != -1:
-                    after_arrow = after_arrow[bracket_end + 1 :].lstrip()
-            tgts.append(after_arrow)
+        if line.startswith("### "):
+            declaration = parse_connection_header(line[4:])
+            if declaration is not None:
+                tgts.append(declaration.target_id)
 
     return ConnectionRefs(
         source_ids=tuple(srcs),

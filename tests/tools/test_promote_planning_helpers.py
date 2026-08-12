@@ -24,19 +24,22 @@ from src.infrastructure.write.artifact_write._promote_planning import (
 class TestParseConnFull:
     def test_canonical_format_parsed(self) -> None:
         result = _parse_conn_full("REQ@1.A.a---REQ@2.B.b@@archimate-association")
+
         assert result is not None
-        src, conn_type, tgt = result
-        assert src == "REQ@1.A.a"
-        assert conn_type == "archimate-association"
-        assert tgt == "REQ@2.B.b"
+        # Named rather than unpacked, deliberately: this test used to assert the order
+        # `(src, conn_type, tgt)` while two other readers of the same string returned
+        # `(source, target, type)`. A positional assertion could not have told them apart.
+        assert result.source == "REQ@1.A.a"
+        assert result.conn_type == "archimate-association"
+        assert result.target == "REQ@2.B.b"
 
     def test_arrow_format_parsed(self) -> None:
         result = _parse_conn_full("REQ@1.A.a archimate-association → REQ@2.B.b")
+
         assert result is not None
-        src, conn_type, tgt = result
-        assert src == "REQ@1.A.a"
-        assert conn_type == "archimate-association"
-        assert tgt == "REQ@2.B.b"
+        assert result.source == "REQ@1.A.a"
+        assert result.conn_type == "archimate-association"
+        assert result.target == "REQ@2.B.b"
 
     def test_arrow_format_returns_none_when_no_space_parts(self) -> None:
         result = _parse_conn_full("single → REQ@2.B.b")
