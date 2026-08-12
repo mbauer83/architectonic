@@ -40,6 +40,11 @@ from src.infrastructure.backend.backend_state import (
     remove_own_backend_state,
     write_backend_state,
 )
+from src.infrastructure.backend.log_rotation import (
+    keep_bounded,
+    point_output_at,
+    policy_from_settings,
+)
 from src.infrastructure.backend.shutdown import DRAIN_SECONDS, shutdown_signal
 
 logger = logging.getLogger(__name__)
@@ -130,19 +135,20 @@ def _is_background_tty_job() -> bool:
 
 
 def _redirect_stdio_to_backend_log(*, start: Path | None = None) -> Path:
+    """Detach this process's stdio: input from nowhere, output to the log.
+
+    The output half is `log_rotation.point_output_at`, which is also how a rotation re-points the
+    same descriptors — one definition of "this process writes to that file", so the two cannot
+    disagree about how it is done.
+    """
     log_path = backend_log_path(start)
-    log_path.parent.mkdir(parents=True, exist_ok=True)
-    log_fd = os.open(log_path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o644)
     null_fd = os.open(os.devnull, os.O_RDONLY)
     try:
         os.dup2(null_fd, sys.stdin.fileno())
-        os.dup2(log_fd, sys.stdout.fileno())
-        os.dup2(log_fd, sys.stderr.fileno())
     finally:
-        if log_fd > 2:
-            os.close(log_fd)
         if null_fd > 2:
             os.close(null_fd)
+    point_output_at(log_path)
     return log_path
 
 
@@ -296,6 +302,11 @@ def _run_foreground(args: argparse.Namespace, parser: argparse.ArgumentParser, r
     repo = _initialise_repo(repo_root_path, enterprise_root_path, args)
     _run_startup_validations(repo)
     _configure_server_state(repo, repo_root_path, enterprise_root_path, args)
+
+    # Started here rather than from the application's lifespan: rotation re-points *this process's*
+    # descriptors, which the entry point owns and an app object does not. It is a no-op unless stdout
+    # already is the log, so a foreground run on a terminal keeps its console.
+    keep_bounded(backend_log_path(Path.cwd()), policy_from_settings())
 
     app = _build_app(credentials=_get_git_credentials())
     write_backend_state(port=resolved_port)

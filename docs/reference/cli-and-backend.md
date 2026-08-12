@@ -51,6 +51,11 @@ uv run arch-backend --restart --daemon
 `backend.log_path`. `arch-backend &` also works and detaches stdin when it detects a
 background TTY job, but `--daemon` is the preferred operational form.
 
+A backend whose output *is* that file rotates it: past `backend.log_max_bytes` the log becomes
+`backend.log.1`, older generations shift up, and anything beyond `backend.log_generations` is
+dropped — so the file is bounded rather than growing for as long as the process runs. A foreground
+run on a terminal never rotates anything, because its output is the terminal and not the log.
+
 Every one of these commands is scoped to **this workspace's** backend, identified by the
 repositories it serves rather than by the port it occupies. So a start whose preferred port is taken
 by another workspace's backend serves on a derived port and says so, `--status` reports such a

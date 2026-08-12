@@ -94,6 +94,11 @@ backend:
                               # not absolute. A foreground run (the container's, and any
                               # plain `arch-backend`) logs to stdout/stderr instead
   min_log_level: INFO         # DEBUG | INFO | WARNING | ERROR | CRITICAL
+  log_max_bytes: 16777216     # rotate the log once it passes this size (16 MiB). Only a
+                              # backend whose own stdout IS the log rotates it, so a
+                              # foreground run on a terminal is never affected
+  log_generations: 3          # how many rotated logs to keep, as backend.log.1 … .3.
+                              # With the size above, the log costs at most 64 MiB
   slow_request_warning_s: 5   # log a warning for any request still running after this
   request_thread_dump_s: 20   # dump every thread's stack for a request still running
                               # after this — the diagnostic for a stuck request, so keep

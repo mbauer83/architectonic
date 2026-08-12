@@ -1109,16 +1109,24 @@ def test_arch_backend_start_refuses_unhealthy_backend(monkeypatch) -> None:
 
 
 def test_redirect_stdio_to_backend_log_detaches_stdin(monkeypatch, tmp_path: Path) -> None:
+    """Input from nowhere, output through the one function that also re-points it on a rotation.
+
+    Asserted as a delegation rather than as a second copy of the descriptor dance: `point_output_at`
+    owns that, and its effect — output written afterwards lands in the file — is what
+    `tests/tools/test_backend_log_rotation.py` drives in a real process.
+    """
     log_path = tmp_path / ".arch" / "backend.log"
     opened: list[tuple[object, int, object | None]] = []
     duped: list[tuple[int, int]] = []
     closed: list[int] = []
+    pointed_at: list[Path] = []
 
     def fake_open(path: object, flags: int, mode: object | None = None) -> int:
         opened.append((path, flags, mode))
-        return 10 if Path(path) == log_path else 11
+        return 11
 
     monkeypatch.setattr(arch_backend, "backend_log_path", lambda start=None: log_path)
+    monkeypatch.setattr(arch_backend, "point_output_at", pointed_at.append)
     monkeypatch.setattr(arch_backend.os, "open", fake_open)
     monkeypatch.setattr(arch_backend.os, "dup2", lambda src, dst: duped.append((src, dst)))
     monkeypatch.setattr(arch_backend.os, "close", lambda fd: closed.append(fd))
@@ -1131,18 +1139,14 @@ def test_redirect_stdio_to_backend_log_detaches_stdin(monkeypatch, tmp_path: Pat
             return self._fd
 
     monkeypatch.setattr(arch_backend.sys, "stdin", _FakeStream(0))
-    monkeypatch.setattr(arch_backend.sys, "stdout", _FakeStream(1))
-    monkeypatch.setattr(arch_backend.sys, "stderr", _FakeStream(2))
 
     result = arch_backend._redirect_stdio_to_backend_log(start=tmp_path)
 
     assert result == log_path
-    assert opened == [
-        (log_path, arch_backend.os.O_WRONLY | arch_backend.os.O_CREAT | arch_backend.os.O_APPEND, 0o644),
-        (arch_backend.os.devnull, arch_backend.os.O_RDONLY, None),
-    ]
-    assert duped == [(11, 0), (10, 1), (10, 2)]
-    assert closed == [10, 11]
+    assert opened == [(arch_backend.os.devnull, arch_backend.os.O_RDONLY, None)]
+    assert duped == [(11, 0)]
+    assert closed == [11]
+    assert pointed_at == [log_path]
 
 
 def test_start_daemon_detaches_stdin_and_session(monkeypatch, tmp_path: Path) -> None:

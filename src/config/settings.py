@@ -27,6 +27,11 @@ _DEFAULTS: dict[str, dict[str, object]] = {
         "port": 8000,
         "log_path": ".arch/backend.log",
         "min_log_level": "INFO",
+        # 16 MiB live plus three generations bounds the log at 64 MiB. Chosen against a measurement:
+        # the file this replaces reached 62 MB in one run, so the ceiling keeps roughly that much
+        # history while ending the unbounded growth that produced it.
+        "log_max_bytes": 16 * 1024 * 1024,
+        "log_generations": 3,
         "slow_request_warning_s": 5.0,
         "request_thread_dump_s": 20.0,
     },
@@ -230,6 +235,25 @@ def backend_log_path() -> str:
     if not isinstance(value, str) or not value.strip():
         return ".arch/backend.log"
     return value.strip()
+
+
+def _positive_int(key: str, fallback: int, *, minimum: int = 1) -> int:
+    value = load_settings()["backend"].get(key, fallback)
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return fallback
+    return max(minimum, parsed)
+
+
+def backend_log_max_bytes() -> int:
+    """How large the backend log may grow before it is rotated."""
+    return _positive_int("log_max_bytes", 16 * 1024 * 1024, minimum=4096)
+
+
+def backend_log_generations() -> int:
+    """How many rotated logs are kept. One means one previous log; there is no "keep nothing"."""
+    return _positive_int("log_generations", 3)
 
 
 def backend_min_log_level() -> str:
