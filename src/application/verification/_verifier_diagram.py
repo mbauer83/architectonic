@@ -21,6 +21,7 @@ from src.application.verification._verifier_contribution_runner import run_diagr
 from src.application.verification._verifier_rules_diagram_references import check_diagram_references_scoped
 from src.application.verification._verifier_rules_edge_labels import check_edge_label_overrides
 from src.application.verification._verifier_rules_puml_completeness import check_puml_relation_rules
+from src.application.verification._verifier_rules_puml_declarations import check_puml_alias_declarations
 from src.application.verification._verifier_rules_schema import check_frontmatter_schema
 from src.application.verification._verifier_rules_viewpoint import check_viewpoint_for_diagram_type
 from src.application.verification.artifact_verifier_parsing import (
@@ -139,6 +140,7 @@ def verify_diagram(
         result.issues.append(_no_registry_issue(loc))
 
     check_puml_structure(content, fm, result, loc)
+    check_puml_alias_declarations(content, fm, result, loc, diagram_type_catalog=ctx.catalogs.diagram_types)
     check_edge_label_overrides(content, fm, result, loc)
 
     repo_root = ctx.repo_root_for_path(path)

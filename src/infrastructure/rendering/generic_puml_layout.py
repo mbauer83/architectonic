@@ -7,7 +7,7 @@ from collections.abc import Mapping, Sequence
 
 from src.application.artifacts.parsing import normalize_puml_alias
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
-from src.infrastructure.rendering._diagram_layout import build_visual_nesting
+from src.infrastructure.rendering._diagram_nesting import build_visual_nesting
 from src.infrastructure.rendering._diagram_text import pluralize_label
 
 

@@ -22,9 +22,7 @@ from src.domain.modules.module_types import ConnectionTypeName, ElementClassName
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
 from src.domain.yaml_documents import parse_yaml
 from src.infrastructure.diagram_type_registry import get_diagram_type
-from src.infrastructure.rendering._diagram_layout import (
-    build_visual_nesting,
-)
+from src.infrastructure.rendering._diagram_nesting import build_visual_nesting
 from src.infrastructure.rendering.puml_runtime import (
     render_puml_preview as render_puml_preview,
 )
