@@ -1,14 +1,14 @@
 """Tests for artifact_write_layout.py: pure PlantUML layout optimization.
 
-Covers: _parse_groupings, _detect_direction, _select_direction,
-_insert_arrow_direction, and ensure_puml_layout.
+Covers: _parse_groupings, _detect_direction, _select_direction and ensure_puml_layout.
+Inserting a direction into an arrow token moved to its owner — see
+tests/application/test_puml_arrow_tokens.py.
 """
 
 from __future__ import annotations
 
 from src.application.modeling.artifact_write_layout import (
     _detect_direction,
-    _insert_arrow_direction,
     _parse_groupings,
     _select_direction,
     ensure_puml_layout,
@@ -112,41 +112,6 @@ class TestSelectDirection:
 
     def test_empty_groups_selects_top_to_bottom(self) -> None:
         assert _select_direction([]) == "top to bottom"
-
-
-class TestInsertArrowDirection:
-    def test_hidden_link_unchanged(self) -> None:
-        arrow = "-[hidden]-"
-        assert _insert_arrow_direction(arrow, "down") == arrow
-
-    def test_already_has_direction_unchanged(self) -> None:
-        arrow = "-down->"
-        assert _insert_arrow_direction(arrow, "up") == arrow
-
-    def test_bracket_syntax_inserts_direction(self) -> None:
-        arrow = "-[#red]->"
-        result = _insert_arrow_direction(arrow, "down")
-        assert "down" in result
-
-    def test_dot_arrow_inserts_direction(self) -> None:
-        arrow = "..>"
-        result = _insert_arrow_direction(arrow, "down")
-        assert "down" in result
-
-    def test_dash_arrow_inserts_direction(self) -> None:
-        arrow = "-->"
-        result = _insert_arrow_direction(arrow, "down")
-        assert "down" in result
-
-    def test_dash_arrow_without_double_dash(self) -> None:
-        arrow = "->"
-        result = _insert_arrow_direction(arrow, "down")
-        assert "down" in result
-
-    def test_unknown_arrow_returned_unchanged(self) -> None:
-        arrow = "***>"
-        result = _insert_arrow_direction(arrow, "down")
-        assert result == arrow
 
 
 class TestOptimizePumlLayout:

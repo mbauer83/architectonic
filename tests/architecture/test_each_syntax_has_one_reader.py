@@ -90,6 +90,10 @@ _CONNECTION_SECTION = re.compile("→")
 #: from prose, and the trailing charset is what the five readings disagreed about.
 _ALIAS_DECLARATION = re.compile(r"\\bas\\s|\bas\\s\+|\bas\s\+")
 
+#: The direction alternation any reading of an arrow token needs, to know a token already states
+#: one. A second implementation cannot avoid spelling it.
+_ARROW_DIRECTION = re.compile(r"up\|down\|left\|right")
+
 SYNTAX_READERS: tuple[SyntaxReader, ...] = (
     SyntaxReader(
         syntax="what counts as a frontmatter block",
@@ -143,6 +147,23 @@ SYNTAX_READERS: tuple[SyntaxReader, ...] = (
             # release, which is where a second reader gets converted without its own test pass.
             Path("src/diagram_types/gsn/svg_renderer.py"),
         }),
+    ),
+    SyntaxReader(
+        syntax="where a direction or line style goes inside a PUML arrow token",
+        owners=(Path("src/application/puml_arrow_tokens.py"),),
+        instead=(
+            "`src.application.puml_arrow_tokens`: `insert_arrow_direction` to rank a pair, "
+            "`insert_arrow_line_style` to restyle its line"
+        ),
+        incident=(
+            "three implementations of the direction insert — the renderer's, the layout optimiser's "
+            "that rewrites stored bodies, and a third in `diagram_builder` no caller had reached "
+            "since it was copied. The two live ones agreed, which is why nothing failed and nothing "
+            "reported them; then the containment arrows `o--` and `*--` needed a token form neither "
+            "knew, and a fix applied to the renderer alone would have left the optimiser silently "
+            "dropping the direction from every arrow it rewrote"
+        ),
+        literal_probe=_ARROW_DIRECTION,
     ),
     SyntaxReader(
         syntax="the arrow form of a connection — a `###` section, or a standalone reference",
@@ -332,6 +353,27 @@ class TestTheDetectorsCatchWhatTheyClaim:
             and (literal := _first_string_argument(node)) is not None
             and _called_name(node) in _LOCATING_CALLS
             and _ALIAS_DECLARATION.search(literal)
+        ]
+
+        assert decisions, reading
+
+    @pytest.mark.parametrize(
+        "reading",
+        [
+            pytest.param(r'''re.search(r"(up|down|left|right)", arrow)''', id="renderer"),
+            pytest.param(r'''re.search(r"(up|down|left|right|hidden)", arrow)''', id="line-style"),
+        ],
+    )
+    def test_each_arrow_direction_reading_is_recognised(self, reading: str) -> None:
+        """Both live copies spelled the alternation; the third, dead one did too."""
+        tree = ast.parse(reading)
+        decisions = [
+            literal
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Call)
+            and (literal := _first_string_argument(node)) is not None
+            and _called_name(node) in _LOCATING_CALLS
+            and _ARROW_DIRECTION.search(literal)
         ]
 
         assert decisions, reading

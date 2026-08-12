@@ -150,21 +150,6 @@ def _type_group_label(entity: EntityRecord) -> str:
     return _pluralize_label(entity.artifact_type.replace("-", " ").title())
 
 
-def _insert_arrow_direction(arrow: str, direction: str) -> str:
-    if "[hidden]" in arrow or re.search(r"(up|down|left|right)", arrow):
-        return arrow
-    match = re.match(r"(.*\])(.+)", arrow)
-    if match:
-        return match.group(1) + direction + match.group(2)
-    if arrow.startswith("."):
-        return "." + direction + arrow[1:]
-    if arrow.startswith("-"):
-        rest = arrow[1:]
-        sep = "" if rest.startswith("-") else "-"
-        return "-" + direction + sep + rest
-    return arrow
-
-
 def _ordered_type_groups(entities: list[EntityRecord]) -> list[tuple[str, list[EntityRecord]]]:
     grouped: dict[str, list[EntityRecord]] = defaultdict(list)
     labels: dict[str, str] = {}

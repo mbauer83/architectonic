@@ -8,11 +8,11 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping, Sequence
 
 from src.application.artifacts.parsing import normalize_puml_alias
+from src.application.puml_arrow_tokens import insert_arrow_direction, insert_arrow_line_style
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
 from src.domain.ontology_representation.ontology_types import ConnectionTypeInfo
 from src.domain.ontology_representation.specializations import SpecializationCatalog
 from src.domain.relationships.relationship_reachability import is_derived_connection_id
-from src.infrastructure.rendering._diagram_text import insert_arrow_direction, insert_arrow_line_style
 from src.infrastructure.rendering.archimate_relation_rendering import (
     display_connection_label,
     format_influence_polarity,

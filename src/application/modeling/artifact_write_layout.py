@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 
 from src.application.modeling.flow_ordering import order_aliases_along_flow
 from src.application.puml_alias_declarations import alias_declared_on
+from src.application.puml_arrow_tokens import insert_arrow_direction
 
 
 @dataclass
@@ -194,35 +195,6 @@ def _strip_auto_block(puml: str) -> str:
     return "\n".join(kept)
 
 
-def _insert_arrow_direction(arrow: str, direction: str) -> str:
-    """Insert a direction hint into PlantUML arrow syntax.
-
-    Returns the arrow unchanged if it already contains a direction keyword
-    or is a hidden link.
-    """
-    if "[hidden]" in arrow:
-        return arrow
-    if re.search(r"(up|down|left|right)", arrow):
-        return arrow
-
-    # Bracket syntax: -[#color]-> → -[#color]down->
-    m = re.match(r"(.*\])(.+)", arrow)
-    if m:
-        return m.group(1) + direction + m.group(2)
-
-    # Dot arrow: ..> → .down.>
-    if arrow.startswith("."):
-        return "." + direction + arrow[1:]
-
-    # Dash arrow: --> → -down->, -|> → -down-|>, -- → -down-
-    if arrow.startswith("-"):
-        rest = arrow[1:]
-        sep = "" if rest.startswith("-") else "-"
-        return "-" + direction + sep + rest
-
-    return arrow
-
-
 def ensure_puml_layout(puml_body: str) -> str:
     """Lay out a diagram that has no arrangement yet; leave one that has.
 
@@ -325,7 +297,7 @@ def _arrange(puml_body: str, *, original: str) -> str:
                 continue  # Intra-grouping — don't add layer hints
 
             hint = flow_dir if src_group < tgt_group else reverse_dir
-            new_arrow = _insert_arrow_direction(arrow, hint)
+            new_arrow = insert_arrow_direction(arrow, hint)
             if new_arrow != arrow:
                 lines[i] = m.group(1) + m.group(2) + m.group(3) + new_arrow + m.group(5) + m.group(6) + m.group(7)
             continue
