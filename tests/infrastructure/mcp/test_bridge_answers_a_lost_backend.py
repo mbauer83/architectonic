@@ -234,12 +234,17 @@ def test_the_bridge_answers_a_call_its_backend_can_no_longer_serve(tmp_path: Pat
             _send(bridge, {"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
             reply = _read_reply(bridge, _ANSWER_DEADLINE_SECONDS)
 
-    # Before the fix this was None: no reply, and a process still running to wait in.
-    assert reply is not None, "the bridge left the call unanswered"
-    assert reply["id"] == 2
-    error = reply["error"]
-    assert isinstance(error, dict)
-    assert error["code"] == CONNECTION_CLOSED
-    # The reason is the point: "the backend went away" is actionable, "it failed" is not.
-    assert "tools/list" in str(error["message"])
-    assert bridge.wait(timeout=30) == EXIT_CONNECTION_LOST, "a bridge with a dead transport must stop"
+            # Asserted inside the block, because leaving it kills a bridge that has not exited yet —
+            # which under a loaded parallel run reported the kill's own status instead of the
+            # bridge's, and passed only when the process happened to be quick.
+            # Before the fix `reply` was None: no reply, and a process still running to wait in.
+            assert reply is not None, "the bridge left the call unanswered"
+            assert reply["id"] == 2
+            error = reply["error"]
+            assert isinstance(error, dict)
+            assert error["code"] == CONNECTION_CLOSED
+            # The reason is the point: "the backend went away" is actionable, "it failed" is not.
+            assert "tools/list" in str(error["message"])
+            assert bridge.wait(timeout=30) == EXIT_CONNECTION_LOST, (
+                "a bridge with a dead transport must stop"
+            )
