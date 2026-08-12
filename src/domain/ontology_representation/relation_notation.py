@@ -4,11 +4,21 @@ Structural, not pictorial. A notation says "hollow triangle at the target", neve
 so a renderer can honour it without knowing any ontology's vocabulary, and a second modelling
 language can declare its own relationships in the same terms.
 
-This exists because `puml_arrow` cannot serve as the notation authority. It is the PlantUML
-spelling, and PlantUML expresses containment by nesting rather than by a diamond, so composition
-and aggregation are both spelled `-->` there. Anything reading `puml_arrow` to decide arrow shape
-draws two different relationships identically — which is exactly what the graph explorer did,
-rendering every ArchiMate relationship as one solid line with a filled head.
+This exists because `puml_arrow` cannot serve as the notation authority. It is one renderer's
+spelling, and it cannot say everything a notation can — PlantUML has no form for a ball at the
+source, so assignment is spelled `-->` there and loses its marker. Anything reading `puml_arrow`
+to decide arrow shape draws different relationships identically, which is exactly what the graph
+explorer did, rendering every ArchiMate relationship as one solid line with a filled head.
+
+**What it does not mean.** This docstring used to argue that PlantUML "expresses containment by
+nesting rather than by a diamond, so composition and aggregation are both spelled `-->` there", and
+that reasoning kept both types' arrows markerless for as long as it stood. Nesting is indeed how
+containment is drawn whenever it CAN be nested, and that stays the default. But the conclusion does
+not follow, and PlantUML disproves it: `A o-- B` between two rectangles draws a hollow diamond at
+A and `*--` a filled one — the project's own datatype diagrams had been spelling both all along.
+A containment that cannot be nested — an element with two parents, a cycle, a member an authored
+group claimed — falls back to an arrow, and there the diamond is what says which relation it is.
+`tests/domain/test_arrow_spells_the_notation.py` now holds the two in agreement.
 """
 
 from __future__ import annotations

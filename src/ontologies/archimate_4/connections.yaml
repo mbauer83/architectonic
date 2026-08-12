@@ -48,7 +48,10 @@ connection_types:
     archimate-composition:
       derivation: {role: structural, strength: 4}
       archimate_relationship_type: Composition
-      puml_arrow: "-->"
+      # Nesting is how containment is drawn whenever it CAN be nested; this is what it falls back
+      # to — a second parent, a cycle, a member an authored group claimed — and there the diamond
+      # is what says which relation it is. PlantUML draws it at the source end, as ArchiMate does.
+      puml_arrow: "*--"
       notation: {line: solid, source: filled-diamond, target: none}
       symmetric: false
       classes: [containment, nesting]
@@ -58,7 +61,7 @@ connection_types:
     archimate-aggregation:
       derivation: {role: structural, strength: 3}
       archimate_relationship_type: Aggregation
-      puml_arrow: "-->"
+      puml_arrow: "o--"
       notation: {line: solid, source: hollow-diamond, target: none}
       symmetric: false
       classes: [containment, nesting]

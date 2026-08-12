@@ -27,6 +27,17 @@ descriptions stay hidden unless a diagram explicitly opts in per connection.
 
 ![Rendered ArchiMate diagram with entity labels](../media/diagram-archimate.png)
 
+**Containment is drawn by nesting**, which is what the ArchiMate notation means by it: a composed
+or aggregated element is drawn inside its container rather than beside it on a line. Nesting is a
+tree, so an element is drawn inside exactly one container — where the model gives it more than one
+(two groupings aggregating one environment, say), the first is nested and **the rest are drawn as
+arrows carrying the containment's own notation**: a hollow diamond at the aggregating end, a filled
+one for composition. The same fallback draws the containment of a member an
+[authored group](#grouping-what-a-diagram-draws) has claimed. A containment the picture cannot nest
+is never silently dropped, and `artifact_verify` refuses a body that declares one element twice
+(**E318**) — PlantUML reads the second declaration as a reference, which would empty the second
+container without any error.
+
 A diagram connection's frontmatter entry can opt in to an inline **multiplicity** annotation
 (`include_multiplicity`) rendering its source/target cardinality on the arrow — the ArchiMate
 4.0 term for what earlier releases of this project called "cardinality" (the annotation key

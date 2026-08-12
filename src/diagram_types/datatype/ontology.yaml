@@ -221,6 +221,7 @@ connection_types:
     symmetric: false
     relationship_kind: containment
     puml_arrow: "o--"
+    notation: {line: solid, source: hollow-diamond, target: none}
     properties:
       note: {type: string, required: false}
 
@@ -230,6 +231,7 @@ connection_types:
     symmetric: false
     relationship_kind: containment
     puml_arrow: "*--"
+    notation: {line: solid, source: filled-diamond, target: none}
     properties:
       note: {type: string, required: false}
 

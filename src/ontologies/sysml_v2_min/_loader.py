@@ -11,6 +11,7 @@ from src.domain.modules.module_types import ConnectionTypeName, ElementClassName
 from src.domain.ontology_representation.behavioral_elements import BehavioralElementDeclaration
 from src.domain.ontology_representation.ontology_types import ConnectionTypeInfo, ElementClassInfo, EntityTypeInfo
 from src.domain.ontology_representation.profile_registry import ProfileRegistry
+from src.domain.ontology_representation.relation_notation import parse_relation_notation
 from src.domain.ontology_representation.specializations import SpecializationCatalog
 from src.domain.relationships.permitted_relationships import (
     PermittedRelationship,
@@ -186,6 +187,7 @@ def _load_connection_types(
                 archimate_relationship_type=None,
                 symmetric=bool(raw.get("symmetric", False)),
                 puml_arrow=raw.get("puml_arrow", "-->"),
+                notation=parse_relation_notation(raw.get("notation")),
                 show_stereotype=bool(raw.get("show_stereotype", "puml_arrow" not in raw)),
                 classes=tuple(raw.get("classes", ())),
             )

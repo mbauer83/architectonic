@@ -16,6 +16,7 @@ from src.domain.ontology_representation.ontology_types import (
     RequiredConnection,
     mapping_spec_from_config,
 )
+from src.domain.ontology_representation.relation_notation import parse_relation_notation
 from src.domain.relationships.permitted_relationships import PermittedRelationshipSet, permitted_connections_from_config
 from src.domain.yaml_documents import parse_yaml
 
@@ -118,6 +119,7 @@ def _parse_connection_types(raw: dict[str, Any]) -> dict[ConnectionTypeName, Con
             classes=tuple(str(c) for c in cfg.get("classes", ())),
             symmetric=bool(cfg.get("symmetric", False)),
             puml_arrow=str(cfg["puml_arrow"]) if cfg.get("puml_arrow") else "-->",
+            notation=parse_relation_notation(cfg.get("notation")),
             show_stereotype=bool(cfg.get("show_stereotype", True)),
             relationship_kind=str(cfg["relationship_kind"]) if cfg.get("relationship_kind") else None,
         )
