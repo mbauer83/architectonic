@@ -20,6 +20,36 @@ Examples of workarounds to reject:
 
 After every such fix: add a unit test verifying the delegation, and a regression test reproducing the original failure scenario.
 
+## Reading a syntax: name the owner before you write a parser
+
+**Before writing or extending anything that reads one of this project's own syntaxes — a frontmatter
+fence, a PUML declaration or arrow, a connection declaration, an id form — find the module that owns
+reading it and call that. A second reader is a defect, not a convenience.**
+
+`tests/architecture/test_each_syntax_has_one_reader.py` is the register: it names each syntax, its
+owning module, what to call instead, and the incident that earned the row. Adding a syntax is a row;
+adding a *reader* without one fails that test. Use it as the lookup — if a syntax has no row, that is
+the question to answer, not a licence to spell it again.
+
+The rule exists because the same class of defect has been fixed three times and the third arrived from
+a user: `yaml.safe_load` at 77 call sites, **fourteen** readings of a frontmatter fence, and **five**
+readings of a PUML alias declaration that disagreed about whether a trailing `#colour` still declares
+one — so a body drawing a junction lost it from `entity-ids-used` while the verifier, reading aliases
+another way, refused the diagram for omitting it. Each of the five knew something the others did not;
+the tolerant reading already existed, in the layout preserver, and nobody looked.
+
+**Where this project both writes a syntax and reads it back, test the round trip.** Not the writer
+against a fixture and the reader against another — the *pair*, asserting they agree. That is the test
+nobody had, and no amount of testing either side alone would have found this: the renderer emitted a
+trailing colour for specialised entities and the reader could not see past it. Two cautions, both
+paid for:
+
+- state the round trip over what the syntax **permits**, not over what the writer emits *today* — the
+  first version of this gate passed against the broken reading, because the shipped specialization
+  catalogue happens to declare no colours;
+- verify the new test fails against the old behaviour before trusting it. Neuter the fix, re-run, and
+  read the count.
+
 ## Quality gates (every change)
 
 **This list is CI.** `tests/architecture/test_local_gates_match_ci.py` fails when
