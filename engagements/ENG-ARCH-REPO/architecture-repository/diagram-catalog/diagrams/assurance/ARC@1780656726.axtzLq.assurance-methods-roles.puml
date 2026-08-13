@@ -42,7 +42,7 @@ connection-ids-used:
 - PRC@1780656241.bWETd2---SRV@1780656241.ooK3YN@@archimate-realization
 - ROL@1780656241.yswDMB---PRC@1780656241.lXql_n@@archimate-assignment
 - PRC@1780656241.lXql_n---SRV@1780656241.ooK3YN@@archimate-realization
-last-updated: '2026-08-13T13:57:49Z'
+last-updated: '2026-08-13T16:41:09Z'
 ---
 @startuml assurance-methods---roles
 
@@ -60,36 +60,38 @@ skinparam nodesep 60
 skinparam ranksep 80
 !define Rel_Triggering(from, to, label) from --> to
 !define Rel_Realization(from, to, label) from ..|> to
-!define Rel_Realization_Up(from, to, label) from ..|> to
+!define Rel_Realization_Up(from, to, label) from .up.|> to
 !define Rel_Serving(from, to, label) from --> to
 !define Rel_Association(from, to, label) from -- to
-!define Rel_Association_Left(from, to, label) from -- to
-!define Rel_Association_Right(from, to, label) from -- to
-!define Rel_Access(from, to, label) from ..> to
+!define Rel_Association_Left(from, to, label) from -left- to
+!define Rel_Association_Right(from, to, label) from -right- to
+!define Rel_Access(from, to, label) from -[dotted]-> to
 !define Rel_Influence(from, to, label) from ..> to
 skinparam rectangle<<BusinessGrouping>> {
-  BackgroundColor #FFFDEC
-  BorderColor #B8860B
+  BackgroundColor #F7EDC3
+  BorderColor #474024
 }
 skinparam rectangle<<CommonGrouping>> {
-  BackgroundColor #EDE8E1
-  BorderColor #8C7E6A
+  BackgroundColor #F3F1EB
+  BorderColor #45433F
 }
 skinparam rectangle<<business_object>> {
-  BackgroundColor #FFFAC8
-  BorderColor #B8860B
+  BackgroundColor #EDD779
+  BorderColor #474024
 }
 skinparam rectangle<<process>> {
-  BackgroundColor #E0D8CC
-  BorderColor #8C7E6A
+  BackgroundColor #E5DFD3
+  BorderColor #45433F
+  RoundCorner 14
 }
 skinparam rectangle<<role>> {
-  BackgroundColor #E0D8CC
-  BorderColor #8C7E6A
+  BackgroundColor #E5DFD3
+  BorderColor #45433F
 }
 skinparam rectangle<<service>> {
-  BackgroundColor #E0D8CC
-  BorderColor #8C7E6A
+  BackgroundColor #E5DFD3
+  BorderColor #45433F
+  RoundCorner 14
 }
 sprite $archimate_business_object <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.90 4.20h10.20v1.30H2.90z" fill="#252327"/><path d="M2.90 10.50h10.20v1.30H2.90z" fill="#252327"/><path d="M2.90 5.50v5.00h1.30V5.50z" fill="#252327"/><path d="M11.80 5.50v5.00h1.30V5.50z" fill="#252327"/><path d="M2.90 5.65h10.20v1.30H2.90z" fill="#252327"/></svg>
 sprite $archimate_process <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.6 4.1h6.3V2.8l4.5 5.2-4.5 5.2v-1.3H2.6z"  fill="#252327" stroke="none"/></svg>

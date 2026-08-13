@@ -32,7 +32,7 @@ connection-ids-used:
 - PRC@1777409515.tEdRzw---FNC@1777409516.91ddSi@@archimate-composition
 - PRC@1777409515.tEdRzw---FNC@1777409516.DGBZ9H@@archimate-composition
 diagram-entities: {}
-last-updated: '2026-08-13T13:58:19Z'
+last-updated: '2026-08-13T16:41:22Z'
 ---
 @startuml
 hide stereotype
@@ -48,36 +48,39 @@ skinparam nodesep 60
 skinparam ranksep 80
 !define Rel_Triggering(from, to, label) from --> to
 !define Rel_Realization(from, to, label) from ..|> to
-!define Rel_Realization_Up(from, to, label) from ..|> to
+!define Rel_Realization_Up(from, to, label) from .up.|> to
 !define Rel_Serving(from, to, label) from --> to
 !define Rel_Association(from, to, label) from -- to
-!define Rel_Association_Left(from, to, label) from -- to
-!define Rel_Association_Right(from, to, label) from -- to
-!define Rel_Access(from, to, label) from ..> to
+!define Rel_Association_Left(from, to, label) from -left- to
+!define Rel_Association_Right(from, to, label) from -right- to
+!define Rel_Access(from, to, label) from -[dotted]-> to
 !define Rel_Influence(from, to, label) from ..> to
 skinparam rectangle<<ApplicationGrouping>> {
-  BackgroundColor #E8F8FF
-  BorderColor #0078A0
+  BackgroundColor #DBEAEE
+  BorderColor #353E41
 }
 skinparam rectangle<<CommonGrouping>> {
-  BackgroundColor #EDE8E1
-  BorderColor #8C7E6A
+  BackgroundColor #F3F1EB
+  BorderColor #45433F
 }
 skinparam rectangle<<application_component>> {
-  BackgroundColor #CCF2FF
-  BorderColor #0078A0
+  BackgroundColor #B0D0D9
+  BorderColor #353E41
 }
 skinparam rectangle<<event>> {
-  BackgroundColor #E0D8CC
-  BorderColor #8C7E6A
+  BackgroundColor #E5DFD3
+  BorderColor #45433F
+  RoundCorner 14
 }
 skinparam rectangle<<function>> {
-  BackgroundColor #E0D8CC
-  BorderColor #8C7E6A
+  BackgroundColor #E5DFD3
+  BorderColor #45433F
+  RoundCorner 14
 }
 skinparam rectangle<<process>> {
-  BackgroundColor #E0D8CC
-  BorderColor #8C7E6A
+  BackgroundColor #E5DFD3
+  BorderColor #45433F
+  RoundCorner 14
 }
 sprite $archimate_application_component <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M4 4.2h7.4v7.6H4z"  fill="#252327" stroke="none"/><path d="M2.30 4.95h1.70v1.30H2.30z" fill="#252327"/><path d="M2.30 7.35h1.70v1.30H2.30z" fill="#252327"/><path d="M2.30 9.75h1.70v1.30H2.30z" fill="#252327"/><path d="M11.40 4.95h1.40v1.30H11.40z" fill="#252327"/><path d="M11.40 7.35h1.40v1.30H11.40z" fill="#252327"/><path d="M11.40 9.75h1.40v1.30H11.40z" fill="#252327"/></svg>
 sprite $archimate_event <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3.1 4h5.6a3.8 3.8 0 0 1 0 8H3.1l2.1-4z"  fill="#252327" stroke="none"/></svg>
