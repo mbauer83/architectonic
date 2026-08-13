@@ -28,7 +28,7 @@ connection-ids-used:
 - FNC@1784853344.qgicoe---REQ@1783870981.mdH8Uv@@archimate-realization
 - DOB@1783870961.y7M3wz---DOB@1784853343.CY3B-f@@archimate-composition
 - DOB@1783870961.y7M3wz---DOB@1784853344.zQzA5_@@archimate-composition
-last-updated: '2026-08-09T17:57:34Z'
+last-updated: '2026-08-13T11:21:55Z'
 ---
 @startuml viewpoint-execution---saved-and-ephemeral-paths
 hide stereotype
@@ -42,15 +42,61 @@ skinparam backgroundColor #FAFAFA
 skinparam linetype ortho
 skinparam nodesep 60
 skinparam ranksep 80
-!define Rel_Triggering(from, to, label) from --> to
-!define Rel_Realization(from, to, label) from ..|> to
-!define Rel_Realization_Up(from, to, label) from ..|> to
-!define Rel_Serving(from, to, label) from --> to
+!define Rel_Access(from, to, label) from -[dotted]-> to
+!define Rel_Access_Up(from, to, label) from -[dotted]up-> to
+!define Rel_Access_Down(from, to, label) from -[dotted]down-> to
+!define Rel_Access_Left(from, to, label) from -[dotted]left-> to
+!define Rel_Access_Right(from, to, label) from -[dotted]right-> to
+!define Rel_Aggregation(from, to, label) from o-- to
+!define Rel_Aggregation_Up(from, to, label) from o-up- to
+!define Rel_Aggregation_Down(from, to, label) from o-down- to
+!define Rel_Aggregation_Left(from, to, label) from o-left- to
+!define Rel_Aggregation_Right(from, to, label) from o-right- to
+!define Rel_Assignment(from, to, label) from --> to
+!define Rel_Assignment_Up(from, to, label) from -up-> to
+!define Rel_Assignment_Down(from, to, label) from -down-> to
+!define Rel_Assignment_Left(from, to, label) from -left-> to
+!define Rel_Assignment_Right(from, to, label) from -right-> to
 !define Rel_Association(from, to, label) from -- to
-!define Rel_Association_Left(from, to, label) from -- to
-!define Rel_Association_Right(from, to, label) from -- to
-!define Rel_Access(from, to, label) from ..> to
+!define Rel_Association_Up(from, to, label) from -up- to
+!define Rel_Association_Down(from, to, label) from -down- to
+!define Rel_Association_Left(from, to, label) from -left- to
+!define Rel_Association_Right(from, to, label) from -right- to
+!define Rel_Composition(from, to, label) from *-- to
+!define Rel_Composition_Up(from, to, label) from *-up- to
+!define Rel_Composition_Down(from, to, label) from *-down- to
+!define Rel_Composition_Left(from, to, label) from *-left- to
+!define Rel_Composition_Right(from, to, label) from *-right- to
+!define Rel_Flow(from, to, label) from ..> to
+!define Rel_Flow_Up(from, to, label) from .up.> to
+!define Rel_Flow_Down(from, to, label) from .down.> to
+!define Rel_Flow_Left(from, to, label) from .left.> to
+!define Rel_Flow_Right(from, to, label) from .right.> to
 !define Rel_Influence(from, to, label) from ..> to
+!define Rel_Influence_Up(from, to, label) from .up.> to
+!define Rel_Influence_Down(from, to, label) from .down.> to
+!define Rel_Influence_Left(from, to, label) from .left.> to
+!define Rel_Influence_Right(from, to, label) from .right.> to
+!define Rel_Realization(from, to, label) from ..|> to
+!define Rel_Realization_Up(from, to, label) from .up.|> to
+!define Rel_Realization_Down(from, to, label) from .down.|> to
+!define Rel_Realization_Left(from, to, label) from .left.|> to
+!define Rel_Realization_Right(from, to, label) from .right.|> to
+!define Rel_Serving(from, to, label) from --> to
+!define Rel_Serving_Up(from, to, label) from -up-> to
+!define Rel_Serving_Down(from, to, label) from -down-> to
+!define Rel_Serving_Left(from, to, label) from -left-> to
+!define Rel_Serving_Right(from, to, label) from -right-> to
+!define Rel_Specialization(from, to, label) from --|> to
+!define Rel_Specialization_Up(from, to, label) from -up-|> to
+!define Rel_Specialization_Down(from, to, label) from -down-|> to
+!define Rel_Specialization_Left(from, to, label) from -left-|> to
+!define Rel_Specialization_Right(from, to, label) from -right-|> to
+!define Rel_Triggering(from, to, label) from --> to
+!define Rel_Triggering_Up(from, to, label) from -up-> to
+!define Rel_Triggering_Down(from, to, label) from -down-> to
+!define Rel_Triggering_Left(from, to, label) from -left-> to
+!define Rel_Triggering_Right(from, to, label) from -right-> to
 skinparam rectangle<<ApplicationGrouping>> {
   BackgroundColor #E8F8FF
   BorderColor #0078A0
@@ -117,13 +163,13 @@ rectangle "Application" <<ApplicationGrouping>> as DOM_application {
 
 ' Connections
 APP_v9LvfK --> APP_lmO0mp
-APP_v9LvfK -down-> DOB_y7M3wz
+APP_v9LvfK -[dotted]down-> DOB_y7M3wz
 APP_v9LvfK -up-> FNC_qgicoe
 APP_lmO0mp -up-> FNC_bsmo2W
-FNC_bsmo2W --> DOB_CY3B_f
-FNC_qgicoe --> DOB_CY3B_f
-FNC_bsmo2W --> DOB_zQzA5_
-FNC_qgicoe --> DOB_zQzA5_
+FNC_bsmo2W -[dotted]-> DOB_CY3B_f
+FNC_qgicoe -[dotted]-> DOB_CY3B_f
+FNC_bsmo2W -[dotted]-> DOB_zQzA5_
+FNC_qgicoe -[dotted]-> DOB_zQzA5_
 FNC_bsmo2W --> FNC_qgicoe
 FNC_bsmo2W .up.|> REQ_mdH8Uv
 FNC_qgicoe .up.|> REQ_mdH8Uv

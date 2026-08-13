@@ -212,6 +212,7 @@ connection_types:
     symmetric: true
     relationship_kind: association
     puml_arrow: "--"
+    notation: {line: solid, source: none, target: none}
     properties:
       note: {type: string, required: false}
 
@@ -241,6 +242,7 @@ connection_types:
     symmetric: false
     relationship_kind: generalization
     puml_arrow: "--|>"
+    notation: {line: solid, source: none, target: hollow-triangle}
     properties:
       generalization_set:
         type: string
@@ -257,6 +259,7 @@ connection_types:
     symmetric: false
     relationship_kind: dependency
     puml_arrow: "..>"
+    notation: {line: dashed, source: none, target: open-arrow}
     properties:
       note: {type: string, required: false}
 

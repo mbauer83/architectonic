@@ -85,6 +85,48 @@ def parse_relation_notation(raw: object) -> RelationNotation:
     )
 
 
+#: The line of a PlantUML arrow token, per declared line style.
+#:
+#: `..` is **dashed**, not dotted — measured from what PlantUML emits, not assumed from the token's
+#: appearance in source: `A ..> B` renders `stroke-dasharray:7,7`, identical to `-[dashed]->`, while
+#: a genuinely dotted line is `stroke-dasharray:1,3` and needs the explicit `[dotted]` modifier.
+#: Reading `..` as "dotted" is why two types declared a dotted line, spelled `..`, agreed with
+#: themselves on paper and drew a dashed one.
+_PUML_LINE: Final[dict[str, str]] = {"solid": "--", "dashed": "..", "dotted": "-[dotted]-"}
+
+#: What a source-end decoration opens a token with. PlantUML has no form for a ball, so assignment
+#: keeps a plain line — an honest approximation rather than a different relation's marker. An arrow
+#: at the *source* is a line drawn back the way it is read, which is `<--`.
+_PUML_SOURCE: Final[dict[str, str]] = {
+    "filled-diamond": "*", "hollow-diamond": "o", "filled-arrow": "<", "open-arrow": "<",
+}
+
+#: What a target-end decoration closes a token with. PlantUML's arrow syntax draws one plain head,
+#: so an open and a filled arrow are the same token there; the distinction survives in the notation
+#: and is honoured by renderers that can draw it.
+_PUML_TARGET: Final[dict[str, str]] = {
+    "open-arrow": ">", "filled-arrow": ">", "hollow-triangle": "|>",
+}
+
+
+def puml_arrow_for(notation: RelationNotation) -> str:
+    """The PlantUML arrow token that draws *notation*.
+
+    One derivation, so a declaration and its spelling cannot disagree. They did: three ArchiMate
+    types spelled a line their notation contradicts, and the macro include spelled a third version
+    of the same fact for the bodies that use it.
+
+    Not every notation has an exact PlantUML form — a ball at the source has none — so this is the
+    closest legal token rather than a promise of fidelity. What it guarantees is that the token is
+    *derived from* the declaration, so the two move together.
+    """
+    return (
+        _PUML_SOURCE.get(notation.source, "")
+        + _PUML_LINE[notation.line]
+        + _PUML_TARGET.get(notation.target, "")
+    )
+
+
 def is_known_line_style(value: str) -> bool:
     return value in _LINE_STYLES
 

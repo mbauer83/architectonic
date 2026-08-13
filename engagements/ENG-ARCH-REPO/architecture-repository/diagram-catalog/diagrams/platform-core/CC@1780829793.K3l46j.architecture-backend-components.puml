@@ -174,7 +174,7 @@ bindings:
   correspondence_kind: scoped-by
   target:
     entity_id: APP@1777293133.OYEmP1.architecture-backend
-last-updated: '2026-08-09T08:28:38Z'
+last-updated: '2026-08-13T11:22:07Z'
 ---
 @startuml architecture-backend---components
 !include <C4/C4_Component>

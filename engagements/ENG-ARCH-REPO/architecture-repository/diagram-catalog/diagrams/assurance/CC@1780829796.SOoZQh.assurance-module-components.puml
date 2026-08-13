@@ -62,7 +62,7 @@ bindings:
   correspondence_kind: scoped-by
   target:
     entity_id: GRP@1780819145.rW_2nX.assurance-module
-last-updated: '2026-08-09T08:27:39Z'
+last-updated: '2026-08-13T11:21:02Z'
 ---
 @startuml assurance-module---components
 !include <C4/C4_Component>

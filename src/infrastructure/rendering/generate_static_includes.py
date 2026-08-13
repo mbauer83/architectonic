@@ -1,9 +1,10 @@
 """
 generate_static_includes.py — Regenerate ArchiMate static include files.
 
-Writes two files into <REPO_ROOT>/diagram-catalog/:
-  _archimate-glyphs.puml     — SVG sprite definitions for all entity types
+Writes three files into <REPO_ROOT>/diagram-catalog/:
+  _archimate-glyphs.puml      — SVG sprite definitions for all entity types
   _archimate-stereotypes.puml — skinparam blocks for all entity types
+  _archimate-relations.puml   — the Rel_* macros, from each relationship's declared notation
 
 These files are derived from the installed ontology, not from entity instance files.
 Regenerate after installing a new ontology version or when first initialising a repo.
@@ -168,6 +169,55 @@ def _generate_stereotype_include(repo_root: Path) -> str:
 # ---------------------------------------------------------------------------
 
 
+#: Direction-hinted variants a body may call, and the PlantUML direction each inserts. An author
+#: reaching for `Rel_Realization_Up` is stating a layout preference about one edge; without the
+#: variant defined, that line draws nothing at all.
+_MACRO_DIRECTIONS: tuple[tuple[str, str], ...] = (
+    ("", ""), ("_Up", "up"), ("_Down", "down"), ("_Left", "left"), ("_Right", "right"),
+)
+
+
+def _macro_name(conn_type: str) -> str:
+    """`archimate-realization` → `Rel_Realization`, the spelling the bodies already call."""
+    return "Rel_" + "".join(part.capitalize() for part in conn_type.removeprefix("archimate-").split("-"))
+
+
+def _generate_relations_include() -> str:
+    """Compose `_archimate-relations.puml` from the ontology's declared notations.
+
+    Generated for the reason the glyphs and stereotypes are: it is a *spelling* of what the
+    ontology declares, and every hand-maintained copy of a declaration this project has had
+    eventually disagreed with it. This one did twice over — it drew `archimate-influence` dotted
+    where the ontology declares dashed, and it defined nine macros for a catalogue of twelve
+    relationships, so a body reaching for a composition, an aggregation, an assignment, a
+    specialization or a flow called a macro that does not exist and drew nothing.
+
+    The arrow comes from `puml_arrow`, which `test_arrow_spells_the_notation` holds equal to the
+    notation's own derivation, so this file and the graph canvas cannot draw the same relation two
+    ways.
+    """
+    from src.application.puml_arrow_tokens import insert_arrow_direction  # noqa: PLC0415
+    from src.infrastructure.app_bootstrap import get_module_registry  # noqa: PLC0415
+
+    lines = [
+        "' _archimate-relations.puml — generated ArchiMate relationship macros (Rel_* syntax)",
+        "' Auto-generated — do not edit manually.",
+        "' Include after _archimate-stereotypes.puml / _archimate-glyphs.puml.",
+        "",
+    ]
+    types = get_module_registry().all_connection_types()
+    for name in sorted(str(key) for key in types):
+        if not name.startswith("archimate-"):
+            continue
+        arrow = types[name].puml_arrow  # type: ignore[index]
+        for suffix, direction in _MACRO_DIRECTIONS:
+            spelled = insert_arrow_direction(arrow, direction) if direction else arrow
+            lines.append(
+                f"!define {_macro_name(name)}{suffix}(from, to, label) from {spelled} to"
+            )
+    return "\n".join(lines) + "\n"
+
+
 def static_include_contents(repo_root: Path) -> dict[str, str]:
     """What the generated include files should contain, given the ontology as loaded now.
 
@@ -178,6 +228,7 @@ def static_include_contents(repo_root: Path) -> dict[str, str]:
     return {
         "_archimate-glyphs.puml": _generate_glyph_include(repo_root),
         "_archimate-stereotypes.puml": _generate_stereotype_include(repo_root),
+        "_archimate-relations.puml": _generate_relations_include(),
     }
 
 
@@ -244,7 +295,8 @@ def main() -> None:
         return
 
     generate_static_includes(repo_root)
-    print(f"Written _archimate-glyphs.puml and _archimate-stereotypes.puml → {repo_root / DIAGRAM_CATALOG}")
+    written = ", ".join(sorted(static_include_contents(repo_root)))
+    print(f"Written {written} → {repo_root / DIAGRAM_CATALOG}")
 
 
 if __name__ == "__main__":

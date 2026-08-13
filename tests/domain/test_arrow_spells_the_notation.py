@@ -1,27 +1,30 @@
-"""A connection type's PUML arrow draws the end markers its notation declares.
+"""A connection type's PUML arrow draws exactly the notation it declares.
 
 `notation` is the authority on how a relationship is drawn — structural, renderer-agnostic, and
-already honoured by the graph canvas, which draws both containment diamonds. `puml_arrow` is the
-PlantUML spelling of the same fact, maintained by hand beside it, and the two drifted: composition
-and aggregation both declared a diamond at the source and both spelled `-->`, so the graph view
-showed an ArchiMate diamond and the diagram showed an anonymous arrow for the same relation. With
-`show_stereotype: false` on both, nothing on the picture said which relation it was.
+honoured by the graph canvas. `puml_arrow` is the PlantUML spelling of the same fact, and the two
+drifted repeatedly because each was maintained by hand beside the other:
 
-The claim that put them there is in `relation_notation`'s own docstring — "PlantUML expresses
-containment by nesting rather than by a diamond, so composition and aggregation are both spelled
-`-->` there". The first half is true and is why nesting stays the default; the second does not
-follow, and PlantUML disproves it: `A o-- B` between two rectangles renders a hollow diamond at A
-(`<polygon fill="none" points="91,78.6 87,84.6 91,90.6 95,84.6 …"/>`) and `*--` a filled one.
-Nesting remains how containment is drawn whenever it CAN be nested; the arrow is what a containment
-falls back to — a second parent, a cycle, a member claimed by an authored group — and there the
-diamond is what says which relation it is.
+* composition and aggregation declared a diamond at the source and spelled `-->`, so the graph view
+  showed an ArchiMate diamond and the diagram an anonymous arrow for the same relation. With
+  `show_stereotype: false` on both, nothing on the picture said which relation it was.
+* `archimate-access` declared a dotted line and spelled a solid `-->`; `flow` and `influence`
+  declared dashed and spelled the dotted `..>`. Checked against the ArchiMate notation before
+  either side was touched: access is dotted, flow and influence are dashed, so the declarations
+  were right and the spellings were wrong.
+* **Twelve further types agreed with nothing.** They declared no `notation` at all, which the
+  parser answers with a plausible default — solid line, filled arrow — while their long-standing
+  `puml_arrow` said dotted, or reversed, or a hollow triangle. "Not declared" and "declared as the
+  default" were indistinguishable, so the graph canvas drew a dotted UML dependency as a solid
+  arrow and no test could see it. Those were fixed the other way round: the arrow was the authored
+  intent, so the notation now states what each has always drawn.
 
-**Scope: the end markers PlantUML can spell.** Not every notation has an arrow form. A `ball` at
-the source (assignment) has none, so `-->` is the honest approximation and is not asserted here.
-Line style is not asserted either, and two types disagree on it today — `archimate-access`
-declares a dotted line and spells a solid `-->`, and `flow`/`influence` declare dashed and spell
-the dotted `..>`. Those are real and recorded as their own item rather than folded in here, where
-they would change relations this change has no argument about.
+So the assertion is the derivation itself — `puml_arrow_for(notation)` — rather than a property of
+one end. A weaker gate is what let each of these through in turn.
+
+**Where PlantUML cannot spell a notation, the derivation is the closest legal token**, and it is
+still derived: `archimate-assignment` declares a ball at the source, which PlantUML has no form
+for, so it draws a plain line. The gate holds the token to the derivation, not to a promise that
+PlantUML can express every notation.
 """
 
 from __future__ import annotations
@@ -29,48 +32,47 @@ from __future__ import annotations
 import pytest
 
 from src.domain.ontology_representation.ontology_types import ConnectionTypeInfo
+from src.domain.ontology_representation.relation_notation import puml_arrow_for
 from src.infrastructure.app_bootstrap import get_module_registry
-
-#: The source-end markers PlantUML has a spelling for, and what that spelling is.
-_SOURCE_MARKER_TOKEN = {"filled-diamond": "*", "hollow-diamond": "o"}
 
 
 def _connection_types() -> list[tuple[str, ConnectionTypeInfo]]:
     return sorted((str(name), info) for name, info in get_module_registry().all_connection_types().items())
 
 
-def _diamond_types() -> list[tuple[str, ConnectionTypeInfo]]:
-    return [
-        (name, info) for name, info in _connection_types() if info.notation.source in _SOURCE_MARKER_TOKEN
-    ]
-
-
-class TestADeclaredDiamondIsSpelled:
-    def test_some_type_declares_a_diamond(self) -> None:
-        """Guards the assertions below against a catalogue that stopped declaring any."""
-        assert _diamond_types(), "no connection type declares a diamond — the walk found nothing to check"
-
-    @pytest.mark.parametrize("name,info", _diamond_types(), ids=lambda value: value if isinstance(value, str) else "")
-    def test_the_arrow_opens_with_the_declared_marker(self, name: str, info: ConnectionTypeInfo) -> None:
-        expected = _SOURCE_MARKER_TOKEN[info.notation.source]
-
-        assert info.puml_arrow.startswith(expected), (
-            f"{name} declares notation.source={info.notation.source!r} but spells "
-            f"puml_arrow={info.puml_arrow!r}, which draws no diamond — the graph canvas and the "
-            "diagram then disagree about what the relation is"
-        )
-
-
-class TestNoTypeDrawsAMarkerItDoesNotDeclare:
-    """The other direction, so the arrow cannot grow a diamond the notation does not claim."""
-
+class TestEveryArrowSpellsItsNotation:
     @pytest.mark.parametrize(
         "name,info", _connection_types(), ids=lambda value: value if isinstance(value, str) else ""
     )
-    def test_an_arrow_marker_is_declared_in_the_notation(self, name: str, info: ConnectionTypeInfo) -> None:
-        for marker, token in _SOURCE_MARKER_TOKEN.items():
-            if info.puml_arrow.startswith(token):
-                assert info.notation.source == marker, (
-                    f"{name} spells puml_arrow={info.puml_arrow!r} but declares "
-                    f"notation.source={info.notation.source!r}"
-                )
+    def test_the_arrow_is_the_one_the_notation_derives(self, name: str, info: ConnectionTypeInfo) -> None:
+        expected = puml_arrow_for(info.notation)
+
+        assert info.puml_arrow == expected, (
+            f"{name} declares notation line={info.notation.line!r} source={info.notation.source!r} "
+            f"target={info.notation.target!r}, which draws {expected!r}, but spells "
+            f"puml_arrow={info.puml_arrow!r} — the graph canvas and the diagram then disagree "
+            "about what the relation is"
+        )
+
+
+class TestTheWalkCoversWhatItClaimsTo:
+    """Guards on the walk above: a catalogue that stopped declaring the interesting cases would
+    leave every assertion vacuously true, which is how the first version of this gate passed
+    against the defect it was written for."""
+
+    def test_the_catalogue_is_not_empty(self) -> None:
+        assert _connection_types()
+
+    @pytest.mark.parametrize(
+        "predicate,what",
+        [
+            (lambda info: info.notation.source in ("filled-diamond", "hollow-diamond"), "a diamond"),
+            (lambda info: info.notation.line == "dashed", "a dashed line"),
+            (lambda info: info.notation.line == "dotted", "a dotted line"),
+            (lambda info: info.notation.target == "hollow-triangle", "a hollow triangle"),
+        ],
+    )
+    def test_some_type_declares_it(self, predicate: object, what: str) -> None:
+        assert any(predicate(info) for _, info in _connection_types()), (  # type: ignore[operator]
+            f"no connection type declares {what} — the walk proves nothing about it"
+        )

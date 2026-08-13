@@ -79,7 +79,7 @@ connection_types:
       derivation: {role: structural, strength: 1}
       archimate_relationship_type: Realization
       puml_arrow: "..|>"
-      notation: {line: dotted, source: none, target: hollow-triangle}
+      notation: {line: dashed, source: none, target: hollow-triangle}
       symmetric: false
       classes: []
       bidirectional_sync: true
@@ -93,7 +93,7 @@ connection_types:
     archimate-access:
       derivation: {role: dependency, strength: 3}
       archimate_relationship_type: Access
-      puml_arrow: "-->"
+      puml_arrow: "-[dotted]->"
       notation: {line: dotted, source: none, target: open-arrow}
       symmetric: false
       classes: []

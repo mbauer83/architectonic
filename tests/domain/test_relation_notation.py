@@ -92,9 +92,18 @@ class TestArchimateDistinctionsSurvive:
         assert aggregation["source"] == "hollow-diamond"
         assert composition != aggregation
 
-    def test_realization_is_dotted_with_a_hollow_triangle(self, catalogs) -> None:
+    def test_realization_is_dashed_with_a_hollow_triangle(self, catalogs) -> None:
+        """Dashed rather than dotted, which this declared while drawing dashed for its whole life.
+
+        `..|>` renders `stroke-dasharray:7,7` — dashed — so the declaration and the picture had
+        never agreed; nothing caught it because `..` *looks* dotted in source. The Open Group's
+        normative text is behind authentication, so the correction rests on three secondary
+        sources that agree realization is a dashed line with a hollow triangle, and on the
+        product's own long-standing rendering. Access, whose line every source calls dotted, is
+        the one that moved the other way.
+        """
         assert _notation(catalogs, "archimate-realization") == {
-            "line": "dotted", "source": "none", "target": "hollow-triangle",
+            "line": "dashed", "source": "none", "target": "hollow-triangle",
         }
 
     def test_specialization_is_solid_with_a_hollow_triangle(self, catalogs) -> None:

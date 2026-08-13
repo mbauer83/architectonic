@@ -94,12 +94,14 @@ connection_types:
 
     feedback:
       puml_arrow: "<--"
+      notation: {line: solid, source: filled-arrow, target: none}
       symmetric: false
       classes: []
 
     # ── STPA/CAST causal chain ───────────────────────────────────────────────
     concerns:
       puml_arrow: "..>"
+      notation: {line: dashed, source: none, target: open-arrow}
       symmetric: false
       classes: []
 
@@ -115,17 +117,20 @@ connection_types:
 
     explains:
       puml_arrow: "..>"
+      notation: {line: dashed, source: none, target: open-arrow}
       symmetric: false
       classes: []
 
     derives:
       puml_arrow: "..>"
+      notation: {line: dashed, source: none, target: open-arrow}
       symmetric: false
       classes: []
 
     # ── Constraint linkage, responsibility & evidence ────────────────────────
     refines:
       puml_arrow: "..>"
+      notation: {line: dashed, source: none, target: open-arrow}
       symmetric: false
       classes: []
 
@@ -143,6 +148,7 @@ connection_types:
 
     evidenced-by:
       puml_arrow: "..>"
+      notation: {line: dashed, source: none, target: open-arrow}
       symmetric: false
       classes: []
 
@@ -150,6 +156,7 @@ connection_types:
     # why this is not `mitigates` and why it never moves a bowtie barrier.
     detects:
       puml_arrow: "..>"
+      notation: {line: dashed, source: none, target: open-arrow}
       symmetric: false
       classes: []
 
@@ -161,6 +168,7 @@ connection_types:
 
     assesses:
       puml_arrow: "..>"
+      notation: {line: dashed, source: none, target: open-arrow}
       symmetric: false
       classes: []
 
@@ -171,6 +179,7 @@ connection_types:
 
     complies-with:
       puml_arrow: "..>"
+      notation: {line: dashed, source: none, target: open-arrow}
       symmetric: false
       classes: []
 
