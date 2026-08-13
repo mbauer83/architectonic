@@ -11,16 +11,13 @@ code from ``src.common``).
 
 from __future__ import annotations
 
-import re
 from collections import defaultdict
 from functools import lru_cache
 from pathlib import Path
 
 from src.application.artifacts.parsing import normalize_puml_alias
-from src.config.repo_paths import DIAGRAM_CATALOG
 from src.domain.modules.module_types import ConnectionTypeName, ElementClassName
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
-from src.domain.yaml_documents import parse_yaml
 from src.infrastructure.diagram_type_registry import get_diagram_type
 from src.infrastructure.rendering._diagram_nesting import build_visual_nesting
 from src.infrastructure.rendering.puml_runtime import (
@@ -53,68 +50,10 @@ def _flow_conn_types() -> frozenset[str]:
     return frozenset(_registry().connection_types_with_class("dynamic"))
 
 
-def _load_sprite_map(repo_root: Path) -> dict[str, str]:
-    """Return {element_type_name: full_sprite_line} from _archimate-glyphs.puml."""
-    glyphs_path = repo_root / DIAGRAM_CATALOG / "_archimate-glyphs.puml"
-    sprites: dict[str, str] = {}
-    try:
-        for line in glyphs_path.read_text(encoding="utf-8").splitlines():
-            if line.startswith("sprite $archimate_"):
-                m = re.match(r"sprite \$archimate_(\w+)", line)
-                if m:
-                    sprites[m.group(1)] = line
-    except OSError:
-        pass
-    return sprites
-
-
-def _load_stereotype_map(repo_root: Path) -> tuple[str, dict[str, str]]:
-    """Parse _archimate-stereotypes.puml into (header, {TypeName: skinparam_block}).
-
-    The header is all content before the first ``skinparam rectangle<<`` — it
-    contains the Archimate stdlib include, hide stereotype, global skinparams,
-    and layout directives that every diagram needs.  Each block map entry is the
-    complete ``skinparam rectangle<<Type>> { ... }`` text for one element type.
-    """
-    stereo_path = repo_root / DIAGRAM_CATALOG / "_archimate-stereotypes.puml"
-    try:
-        content = stereo_path.read_text(encoding="utf-8")
-    except OSError:
-        return "", {}
-    first = content.find("skinparam rectangle<<")
-    if first == -1:
-        return content, {}
-    header = content[:first].rstrip("\n") + "\n"
-    blocks: dict[str, str] = {}
-    for m in re.finditer(r"(skinparam rectangle<<(\w+)>>\s*\{[^}]+\})", content[first:]):
-        blocks[m.group(2)] = m.group(1)
-    return header, blocks
-
-
-def _strip_puml_comments(text: str) -> str:
-    lines = [line for line in text.splitlines() if not line.lstrip().startswith("'")]
-    return "\n".join(lines).strip("\n")
-
-
 def inject_archimate_includes(puml_body: str, repo_root: Path) -> str:
     from src.infrastructure.rendering.generic_puml_renderer import inject_archimate_includes as _inject
 
     return _inject(puml_body, repo_root)
-
-
-def _parse_archimate_block(raw: str) -> dict:
-    """Parse the archimate display block, stripping markdown code fences first.
-
-    ``display_blocks["archimate"]`` is stored as ``'```yaml\\n...\\n```'`` — the
-    fences must be removed before calling ``yaml.safe_load``.
-    """
-
-    text = re.sub(r"^```(?:yaml)?\n", "", raw.strip(), count=1)
-    text = re.sub(r"\n```$", "", text, count=1)
-    try:
-        return parse_yaml(text) or {}
-    except Exception:
-        return {}
 
 
 @lru_cache(maxsize=1)

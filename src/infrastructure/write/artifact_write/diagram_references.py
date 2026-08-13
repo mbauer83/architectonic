@@ -205,12 +205,29 @@ def diagram_entities_are_authoritative(verifier, diagram_type: str) -> bool:
     return bool(module is not None and module.ui_config.diagram_only_types)
 
 
+def _restate_generated_declarations(puml_body: str, repo_root: Path) -> str:
+    """Bring the generated declarations a body inlines level with the ontology, and nothing else.
+
+    A palette, a glyph and a relationship's line style are the ontology's statements rather than the
+    author's, so a body that keeps a copy of them has to be restated whenever it is written —
+    including on the edits that leave the picture alone, which is the only way a hand-laid-out
+    diagram ever hears about a change.
+
+    Deliberately not ``inject_includes``: that one *gives* a body a preamble when it has none, and
+    expands an ``!include`` marker in place. An edit that carries no body must not convert a
+    diagram's storage form, and `auto_include_stereotypes=False` is an author asking to keep the
+    marker. A body with no ArchiMate declarations comes back unchanged, so this is safe whatever the
+    diagram type.
+    """
+    from src.infrastructure.rendering._archimate_includes import ArchimateDeclarations  # noqa: PLC0415
+
+    return ArchimateDeclarations.from_repo(repo_root).restated_in(puml_body)
+
+
 def _prepare_diagram_puml_body(puml_body: str, repo_root: Path, diagram_type: str) -> str:
     from src.infrastructure.diagram_type_registry import get_diagram_type  # noqa: PLC0415
-
     # Drop relation-stereotype edge labels the arrow style already conveys. This
     # is an ontology-global normalisation (keyed on ``show_stereotype`` across all
     # connection types), not a per-diagram-type concern, so it applies uniformly.
     puml_body = strip_suppressed_relation_labels(puml_body, _suppressed_stereotype_tokens())
-    diagram_type_mod = get_diagram_type(diagram_type)
-    return diagram_type_mod.renderer.inject_includes(puml_body, repo_root)
+    return get_diagram_type(diagram_type).renderer.inject_includes(puml_body, repo_root)

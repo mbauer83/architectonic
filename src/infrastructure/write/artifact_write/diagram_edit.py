@@ -19,6 +19,7 @@ from .diagram_references import (
     _merge_reference_ids,
     _prepare_diagram_puml_body,
     _prune_unknown_references,
+    _restate_generated_declarations,
     diagram_entities_are_authoritative,
 )
 from .diagram_render import _render_diagram_entities_puml
@@ -319,6 +320,10 @@ def edit_diagram(
         # ranking is recomputed; every other edit — a rename, a binding, a status change —
         # leaves the stored body exactly as the author last left it.
         puml_body = rebuild_puml_layout(parsed.puml_body) if rebuild_layout else parsed.puml_body
+        # Except the generated declarations it inlines, which the author never wrote: a palette or
+        # a line style is the ontology's, and a body that keeps its own copy had no way of hearing
+        # about a change to one. The only route by which a manual-layout diagram hears at all.
+        puml_body = _restate_generated_declarations(puml_body, repo_root)
 
     # Drop references to entities/connections that no longer exist (e.g. after a rename or
     # delete) so a stale cached reference cannot leave the diagram permanently unwritable.

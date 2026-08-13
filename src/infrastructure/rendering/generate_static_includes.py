@@ -21,6 +21,7 @@ from typing import Any
 
 from src.config.repo_paths import DIAGRAM_CATALOG
 from src.config.settings import archimate_type_markers
+from src.infrastructure.rendering._archimate_includes import ArchimateDeclarations
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -239,6 +240,45 @@ def stale_static_includes(repo_root: Path) -> list[str]:
     return sorted(stale)
 
 
+def declared_now(repo_root: Path) -> ArchimateDeclarations:
+    """What the includes declare given the ontology as loaded now, without reading them from disk.
+
+    Composed rather than read for the reason `static_include_contents` is composed: a check that
+    compared a body against a stale include would let two copies of the same drift agree.
+    """
+    contents = static_include_contents(repo_root)
+    return ArchimateDeclarations.from_includes(
+        stereotypes=contents["_archimate-stereotypes.puml"],
+        glyphs=contents["_archimate-glyphs.puml"],
+        relations=contents["_archimate-relations.puml"],
+    )
+
+
+def stale_inlined_declarations(repo_root: Path) -> list[str]:
+    """Diagram bodies that inline a generated declaration and disagree with it.
+
+    A body may carry the `!include` marker or the expansion itself; both are permitted, and the
+    expansion is a copy. `stale_static_includes` above gates the include files against the
+    ontology — this gates every copy of them against the same answer, because the copy was only
+    ever refreshed as a side effect of regenerating the body. Nine diagrams here were drawing the
+    palette and the access line style they were authored with, two of them without even being
+    hand-laid-out: their content simply had not changed since.
+
+    Reported rather than repaired here. A diagram body is an artifact, so bringing one level again
+    is a write, and writes go through the write path — which restates these declarations on every
+    edit, so the repair is an edit of the named diagram and nothing else.
+    """
+    from src.application.repo_path_helpers import diagram_source_root  # noqa: PLC0415
+
+    declarations = declared_now(repo_root)
+    root = diagram_source_root(repo_root)
+    return [
+        str(path.relative_to(root))
+        for path in sorted(root.rglob("*.puml"))
+        if (body := path.read_text(encoding="utf-8")) != declarations.restated_in(body)
+    ]
+
+
 def main() -> None:
     check_only = "--check" in sys.argv
     args = [a for a in sys.argv[1:] if a != "--check"]
@@ -269,6 +309,16 @@ def main() -> None:
                 + ", ".join(stale)
                 + "\nRegenerate with: uv run python -m "
                 + f"src.infrastructure.rendering.generate_static_includes {repo_root}",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        stale_bodies = stale_inlined_declarations(repo_root)
+        if stale_bodies:
+            print(
+                "ERROR: these diagram bodies inline a generated declaration that disagrees with "
+                "the ontology:\n  " + "\n  ".join(stale_bodies)
+                + "\nEach is a write: edit the diagram (artifact_edit_diagram) and the write path "
+                "restates them.",
                 file=sys.stderr,
             )
             sys.exit(1)
