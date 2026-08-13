@@ -3,7 +3,7 @@ artifact-type: scratchpad
 name: Q3 platform thinking
 description: 'A worked example of the scratchpad tier, committed so the repository ships one: an untyped
   note, one narrowed to a domain, one typed, and one bound to an entity that already exists.'
-version: 0.1.8
+version: 0.1.4
 status: draft
 meta-ontology: archimate-4
 areas:
