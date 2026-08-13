@@ -13,6 +13,11 @@ import { friendlyEntityName } from '../views/GraphExploreView.helpers'
  * server-side. Here the population grows one hop at a time in response to the user, so the
  * two differ in what triggers a layout and in what "the current result" even means. They
  * live apart for that reason rather than as branches inside one loader.
+ *
+ * What they do **not** differ about is which relations exist between the elements on screen.
+ * The drawn edges are the model's edges among the drawn nodes — the same invariant the
+ * viewpoint path states — so two people looking at the same nodes see the same graph however
+ * they got there. Legibility is a filter over a complete set, never a fetch strategy.
  */
 //: How many times to sweep for nodes still missing a domain. Two would cover one concurrent
 //: expansion; three leaves room for a second without ever looping unboundedly.
@@ -106,6 +111,21 @@ export function useFreeExploration(deps: FreeExplorationDeps) {
    *
    * The root load already worked this way, for the same reason; see `loadRoot`.
    */
+  /**
+   * Every model connection among the nodes the graph is about to hold.
+   *
+   * Asked for as one question over the whole population rather than assembled from each node's
+   * own connections. A connection between two neighbours is incident to neither the focus nor
+   * any node expanded so far, so no star query ever names it: it was not filtered out, it was
+   * never asked for, and the drawn edge set therefore depended on click order rather than on the
+   * model. Aggregates stand for groups rather than being entities, so they are left out of the
+   * question — asking about a synthetic id would only widen it with nothing.
+   */
+  const edgesAmong = async (nodeIds: Iterable<string>): Promise<ConnectionList> => {
+    const entityIds = [...new Set(nodeIds)].filter((id) => !isAggregateNodeId(id))
+    return Effect.runPromise(svc.getConnectionsAmong(entityIds))
+  }
+
   const applyNeighbourhood = async (entityId: string, conns: ConnectionList): Promise<void> => {
     const beforeIds = new Set(nodes.value.map((n) => n.id))
     const arrivals = new Map<string, string | undefined>()
@@ -117,12 +137,16 @@ export function useFreeExploration(deps: FreeExplorationDeps) {
     }
 
     // One parallel round for the whole hop, before anything is shown. This costs no extra
-    // waiting: the layout could never run until these landed anyway.
+    // waiting: the layout could never run until these landed anyway — and the complete edge set
+    // is asked for in the same round, so it arrives with them rather than after a second wait.
     const factsById = new Map<string, EntityFacts>()
-    await Promise.all([...arrivals.keys()].map(async (id) => {
-      const facts = await fetchEntityFacts(id)
-      if (facts) factsById.set(id, facts)
-    }))
+    const [complete] = await Promise.all([
+      edgesAmong([...beforeIds, entityId, ...arrivals.keys()]),
+      ...[...arrivals.keys()].map(async (id) => {
+        const facts = await fetchEntityFacts(id)
+        if (facts) factsById.set(id, facts)
+      }),
+    ])
 
     // Synchronous from here: no await, so the nodes appear coloured, labelled and already
     // seeded around their parent, in a single paint, and then animate.
@@ -132,7 +156,7 @@ export function useFreeExploration(deps: FreeExplorationDeps) {
       const node = facts ? nodes.value.find((n) => n.id === id) : undefined
       if (node && facts) applyFacts(node, facts)
     }
-    for (const c of conns) {
+    for (const c of complete) {
       addEdge({
         source: c.source, target: c.target, connType: c.conn_type, description: c.content_text,
         srcMultiplicity: c.src_multiplicity || undefined,

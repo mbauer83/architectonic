@@ -99,6 +99,14 @@ export interface ModelRepository extends EnterpriseAdminRepository, ScratchpadRe
   readonly getConnections: (
     entityId: string, direction?: Direction, connType?: string,
   ) => Effect.Effect<ConnectionList, RepoError>
+  /**
+   * The connections among a set of entities — every model edge with both ends in the set.
+   *
+   * Distinct from asking each entity for its own connections and merging: an edge between two
+   * members is incident to neither of the entities a caller happened to name, so no star query
+   * ever returns it, and the drawn edge set ends up depending on which node was clicked first.
+   */
+  readonly getConnectionsAmong: (entityIds: readonly string[]) => Effect.Effect<ConnectionList, RepoError>
   readonly getNeighbors: (
     entityId: string, maxHops?: number,
   ) => Effect.Effect<Neighbors, RepoError>

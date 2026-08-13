@@ -100,6 +100,10 @@ MODEL_PURE_READS: tuple[ModelPureRead, ...] = (
         mcp_tools=("artifact_query_find_connections_for",),
     ),
     ModelPureRead(
+        what="The connections among a set of entities — the induced subgraph over them.",
+        rest_templates=("/api/connections/among",),
+    ),
+    ModelPureRead(
         what="The entities one diagram places.",
         rest_templates=("/api/diagrams/{artifact_id}/entities",),
     ),

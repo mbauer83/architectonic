@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from src.application.entity_type_predicates import is_internal_entity_type
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
+from src.infrastructure.rendering.diagram_selection import connections_among
 from src.infrastructure.rest.contracts.authoring_catalogs import (
     OntologyClassificationResponse,
     OntologyPairResponse,
@@ -50,6 +51,33 @@ def register_connection_read_routes(router: APIRouter) -> None:
         # An object rather than a bare array: a top-level array has nowhere to put a total or a
         # cursor without becoming a breaking change later.
         return {"items": [s.connection_to_dict(c) for c in conns]}
+
+    @router.get("/api/connections/among", tags=[TAG_CONNECTIONS],
+        summary="Connections with both endpoints in a set of entities",
+        response_model=ConnectionListResponse)
+    def get_connections_among(entity_ids: str) -> dict[str, Any]:
+        """The model's connections among these entities — the induced subgraph over the set.
+
+        What a picture of a set of elements draws without being told: a connection with one
+        endpoint outside the set has nothing to attach to. Served as one read rather than as a
+        star per node, because a caller assembling it from stars gets an answer that depends on
+        which nodes it happened to ask about — an edge between two of them is incident to neither
+        of the ones it asked for, so it is never in any response and nothing filters it out.
+
+        The same invariant a viewpoint's population already states, and the same rule a diagram's
+        membership already resolves; this exposes it once rather than adding a third reading.
+
+        ``entity_ids`` is comma-separated, and unknown ids simply match nothing: the caller is
+        naming a set to look within, not addressing a resource that must exist.
+        """
+        wanted = [entity_id.strip() for entity_id in entity_ids.split(",") if entity_id.strip()]
+        repo = s.get_repo()
+        found = [
+            connection
+            for connection_id in connections_among(repo, wanted)
+            if (connection := repo.get_connection(connection_id)) is not None
+        ]
+        return {"items": [s.connection_to_dict(connection) for connection in found]}
 
     @router.get("/api/entities/{artifact_id}/neighbors", tags=[TAG_CONNECTIONS],
         summary="Neighbouring entities of an entity",

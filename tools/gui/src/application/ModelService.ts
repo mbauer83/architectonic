@@ -18,6 +18,7 @@ export const makeModelService = (repo: ModelRepository) =>
     getEntityContext: (id: string) => repo.getEntityContext(id),
     getConnections: (entityId: string, direction: Direction = 'any') =>
       repo.getConnections(entityId, direction),
+    getConnectionsAmong: (entityIds: readonly string[]) => repo.getConnectionsAmong(entityIds),
     search: (query: string, limit?: number) => repo.search(query, limit),
     listDocumentTypes: () => repo.listDocumentTypes(),
     listDocuments: (params?: Parameters<ModelRepository['listDocuments']>[0]) => repo.listDocuments(params),

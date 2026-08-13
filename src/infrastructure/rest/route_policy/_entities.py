@@ -61,6 +61,14 @@ CONNECTION_ROWS: tuple[RouteRow, ...] = (
         cache_directive="no-cache", conditional_read="etag",
     ),
     RouteRow(
+        # The induced subgraph over a set of entities, as distinct from one entity's star above.
+        # Its own address rather than a second filter on the collection: the two are different
+        # questions, and choosing between them by which parameter arrived is how one address came
+        # to answer two — see `/api/ontology/classification` and `/api/ontology/pairs`.
+        "GET", "/api/connections/among", "collection", "connections_list_connections_among", TYPED,
+        cache_directive="no-cache", conditional_read="etag", timeout_class="derived-graph",
+    ),
+    RouteRow(
         "POST", "/api/connections", "collection", "connections_create_connection", TYPED,
         mutation_domain="repository",
     ),

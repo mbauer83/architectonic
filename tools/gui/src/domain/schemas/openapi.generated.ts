@@ -1312,6 +1312,38 @@ export interface paths {
         patch: operations["connections_update_connection_associations"];
         trace?: never;
     };
+    "/api/connections/among": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Connections with both endpoints in a set of entities
+         * @description The model's connections among these entities — the induced subgraph over the set.
+         *
+         *     What a picture of a set of elements draws without being told: a connection with one
+         *     endpoint outside the set has nothing to attach to. Served as one read rather than as a
+         *     star per node, because a caller assembling it from stars gets an answer that depends on
+         *     which nodes it happened to ask about — an edge between two of them is incident to neither
+         *     of the ones it asked for, so it is never in any response and nothing filters it out.
+         *
+         *     The same invariant a viewpoint's population already states, and the same rule a diagram's
+         *     membership already resolves; this exposes it once rather than adding a third reading.
+         *
+         *     ``entity_ids`` is comma-separated, and unknown ids simply match nothing: the caller is
+         *     naming a set to look within, not addressing a resource that must exist.
+         */
+        get: operations["connections_list_connections_among"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/connections/cleanup-broken-refs": {
         parameters: {
             query?: never;
@@ -15609,6 +15641,46 @@ export interface operations {
             };
             /** @description Write temporarily rejected by the workspace gate (retryable) */
             423: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    connections_list_connections_among: {
+        parameters: {
+            query: {
+                entity_ids: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionListResponse"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

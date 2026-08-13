@@ -66,7 +66,20 @@ alias: REQ_{slug}
 """
 
 
-def _outgoing_md(source: str, target: str, conn_type: str = "archimate-association") -> str:
+def _outgoing_md(source: str, *targets: str, conn_type: str = "archimate-association") -> str:
+    sections = "\n".join(
+        f"""\
+### {conn_type} → {target}
+
+```yaml
+polarity: positive
+weight: 2
+```
+
+Description.
+"""
+        for target in targets
+    )
     return f"""\
 ---
 source-entity: {source}
@@ -77,30 +90,31 @@ last-updated: '2026-01-01'
 
 <!-- §connections -->
 
-### {conn_type} → {target}
-
-```yaml
-polarity: positive
-weight: 2
-```
-
-Description.
-"""
+{sections}"""
 
 
 # ── fixtures ──────────────────────────────────────────────────────────────────
 
 SRC_ID = "REQ@1000000010.SrcCon.source-conn"
 TGT_ID = "REQ@1000000011.TgtCon.target-conn"
+FAR_ID = "REQ@1000000012.FarCon.far-conn"
 
 
 @pytest.fixture()
 def populated_root(tmp_path: Path) -> Path:
+    """A triangle: the source reaches two entities, and those two also reach each other.
+
+    Three entities rather than two, because the edge between the two *neighbours* is the one the
+    induced-subgraph read exists for — it is incident to neither endpoint a star query names, so a
+    fixture without it cannot tell a complete answer from a path-dependent one.
+    """
     root = tmp_path / "engagements" / "ENG-CONN" / "architecture-repository"
     model_dir = root / "model" / "motivation" / "requirement"
     _write(model_dir / f"{SRC_ID}.md", _entity_md(SRC_ID, "Source Conn"))
     _write(model_dir / f"{TGT_ID}.md", _entity_md(TGT_ID, "Target Conn"))
-    _write(model_dir / f"{SRC_ID}.outgoing.md", _outgoing_md(SRC_ID, TGT_ID))
+    _write(model_dir / f"{FAR_ID}.md", _entity_md(FAR_ID, "Far Conn"))
+    _write(model_dir / f"{SRC_ID}.outgoing.md", _outgoing_md(SRC_ID, TGT_ID, FAR_ID))
+    _write(model_dir / f"{TGT_ID}.outgoing.md", _outgoing_md(TGT_ID, FAR_ID))
     return root
 
 
@@ -204,6 +218,71 @@ class TestGetConnections:
         r = sync_client.get("/api/connections?entity_id=REQ@9.ZZZ.no-such-entity")
         assert r.status_code == 200
         assert r.json()["items"] == []
+
+
+class TestGetConnectionsAmong:
+    """The induced subgraph over a set of entities: complete over what is drawn, and the same
+    answer whichever node the caller arrived by."""
+
+    def _ids(self, response) -> set[str]:
+        return {item["artifact_id"] for item in response.json()["items"]}
+
+    def _pairs(self, response) -> set[tuple[str, str]]:
+        return {(item["source"], item["target"]) for item in response.json()["items"]}
+
+    def test_it_returns_the_edge_between_two_neighbours_that_no_star_query_names(
+        self, sync_client
+    ) -> None:
+        """The defect this read exists for: expanding the source draws all three nodes, and the
+        edge between its two neighbours is incident to neither endpoint the star asked about."""
+        star = self._pairs(sync_client.get(f"/api/connections?entity_id={SRC_ID}"))
+        among = self._pairs(
+            sync_client.get(f"/api/connections/among?entity_ids={SRC_ID},{TGT_ID},{FAR_ID}")
+        )
+
+        assert among - star == {(TGT_ID, FAR_ID)}
+
+    def test_it_leaves_out_a_connection_with_an_endpoint_outside_the_set(self, sync_client) -> None:
+        """A connection with one end outside the set has nothing to attach to."""
+        among = self._pairs(sync_client.get(f"/api/connections/among?entity_ids={SRC_ID},{TGT_ID}"))
+
+        assert among == {(SRC_ID, TGT_ID)}
+
+    def test_the_answer_does_not_depend_on_the_order_the_set_is_named_in(self, sync_client) -> None:
+        forwards = f"{SRC_ID},{TGT_ID},{FAR_ID}"
+        backwards = f"{FAR_ID},{TGT_ID},{SRC_ID}"
+
+        assert self._ids(sync_client.get(f"/api/connections/among?entity_ids={forwards}")) == self._ids(
+            sync_client.get(f"/api/connections/among?entity_ids={backwards}")
+        )
+
+    def test_an_id_the_model_does_not_have_matches_nothing_rather_than_404s(
+        self, sync_client
+    ) -> None:
+        """The caller names a set to look within, not a resource that must exist."""
+        response = sync_client.get(f"/api/connections/among?entity_ids={SRC_ID},REQ@9.ZZZ.nothing")
+
+        assert response.status_code == 200
+        assert response.json()["items"] == []
+
+    def test_an_empty_set_has_no_connections_among_it(self, sync_client) -> None:
+        response = sync_client.get("/api/connections/among?entity_ids=")
+
+        assert response.status_code == 200
+        assert response.json()["items"] == []
+
+    def test_each_row_carries_what_a_graph_draws_without_a_second_read(self, sync_client) -> None:
+        """Type, endpoints and both endpoint names, so a canvas renders an edge from one answer."""
+        row = next(
+            item
+            for item in sync_client.get(
+                f"/api/connections/among?entity_ids={SRC_ID},{TGT_ID}"
+            ).json()["items"]
+        )
+
+        assert row["conn_type"] == "archimate-association"
+        assert (row["source"], row["target"]) == (SRC_ID, TGT_ID)
+        assert (row["source_name"], row["target_name"]) == ("Source Conn", "Target Conn")
 
 
 class TestGetNeighbors:

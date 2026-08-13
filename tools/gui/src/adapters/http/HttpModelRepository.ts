@@ -131,6 +131,11 @@ export const makeHttpModelRepository = (): ModelRepository => ({
       buildUrl('/connections', { entity_id: entityId, direction, conn_type: connType }),
       ConnectionListResponseSchema,
     ).pipe(Effect.map((response) => response.items)),
+  getConnectionsAmong: (entityIds: readonly string[]) =>
+    fetchJson(
+      buildUrl('/connections/among', { entity_ids: entityIds.join(',') }),
+      ConnectionListResponseSchema,
+    ).pipe(Effect.map((response) => response.items)),
   getNeighbors: (entityId: string, maxHops = 1) =>
     fetchJson(
       buildUrl(`/entities/${encodeIdentitySegment(entityId)}/neighbors`, { max_hops: maxHops }),
