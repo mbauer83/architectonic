@@ -89,6 +89,12 @@ correctly, not a gap to route around.
   indirectly-connected element kind to pull in, and render. Selecting a derived arrow opens a
   witness-chain explanation: the real relationships that compose it, in order, with clickable
   entity links. Nothing here is saved unless a candidate is explicitly materialized (below).
+- **GUI — free exploration**: `/graph/⟨artifact-id⟩` opens on one entity and grows a hop at a time.
+  **The edges drawn are the model's edges among the nodes on screen** — including edges between two
+  neighbours of the element you started from, which belong to the picture as much as the ones
+  touching it. Two people looking at the same set of nodes therefore see the same relationships,
+  whatever order they expanded in. Legibility is a matter of filtering a complete picture, never of
+  fetching a partial one.
 - **GUI — the diagram viewer**: any executed `diagram`-representation viewpoint (ad-hoc or a
   saved definition) shows derived connections in their derived type's ordinary ArchiMate
   notation, marked with a certainty indicator. Clicking one opens the same witness-chain
