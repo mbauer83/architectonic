@@ -44,9 +44,10 @@ connection-ids-used:
 - REQ@1786230066.vVjYCpP---OUT@1786223967.Bz8wwkG@@archimate-realization
 - PRI@1786223967.IQqhM8k---REQ@1786223986.VV89psV@@archimate-influence
 - PRI@1786223967.IQqhM8k---REQ@1786223986.cMuroZ9@@archimate-influence
-last-updated: '2026-08-13T13:58:14Z'
+last-updated: '2026-08-13T19:36:10Z'
 ---
 @startuml why-a-scratchpad
+skinparam defaultTextAlignment center
 hide stereotype
 
 skinparam defaultFontName SansSerif

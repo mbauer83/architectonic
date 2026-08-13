@@ -72,9 +72,10 @@ authored-groupings:
   stereotype: MotivationGrouping
   entity-ids:
   - GOL@1780655839.AoatzG.provide-first-class-assurance-integrated-with-the-architecture-model
-last-updated: '2026-08-13T19:02:30Z'
+last-updated: '2026-08-13T19:35:59Z'
 ---
 @startuml
+skinparam defaultTextAlignment center
 skinparam wrapWidth 240
 skinparam maxMessageSize 240
 hide stereotype

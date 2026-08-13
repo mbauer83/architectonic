@@ -25,9 +25,10 @@ connection-ids-used:
 - RES@1784482462.dz41en---CAP@1784482422.FMvdNM@@archimate-assignment
 - RES@1784482471.0mpHI----CAP@1784482433.Eb_x83@@archimate-assignment
 - RES@1784482482.H7YRYJ---CAP@1784482433.Eb_x83@@archimate-assignment
-last-updated: '2026-08-13T13:59:09Z'
+last-updated: '2026-08-13T19:36:52Z'
 ---
 @startuml capability-map
+skinparam defaultTextAlignment center
 hide stereotype
 
 skinparam defaultFontName SansSerif

@@ -57,9 +57,10 @@ authored-groupings:
   entity-ids:
   - DOB@1777399930.hExrX3.operation-record
   - DOB@1777399929.hhYsiw.staged-repository
-last-updated: '2026-08-13T13:58:23Z'
+last-updated: '2026-08-13T19:36:16Z'
 ---
 @startuml execute-staged-write-transaction
+skinparam defaultTextAlignment center
 hide stereotype
 
 skinparam defaultFontName SansSerif

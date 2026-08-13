@@ -18,9 +18,10 @@ connection-ids-used:
 - FNC@1777390444.lLdx12---FNC@1776633080.BdEMPx@@archimate-triggering
 - FNC@1777390444.lLdx12---FNC@1776633704.bFY40B@@archimate-triggering
 - FNC@1777390444.lLdx12---FNC@1776633706.3jpc7O@@archimate-triggering
-last-updated: '2026-08-13T13:58:32Z'
+last-updated: '2026-08-13T19:36:27Z'
 ---
 @startuml querying---navigation
+skinparam defaultTextAlignment center
 hide stereotype
 
 skinparam defaultFontName SansSerif

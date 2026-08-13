@@ -44,9 +44,10 @@ connection-ids-used:
 - PRC@1777293168.CYgU64---FNC@1777409722.saMRQ0@@archimate-aggregation
 - PRC@1777293168.CYgU64---FNC@1777390449.uzJGYp@@archimate-aggregation
 - PRC@1777293168.CYgU64---FNC@1777390448.yuFXVJ@@archimate-aggregation
-last-updated: '2026-08-13T13:58:27Z'
+last-updated: '2026-08-13T19:36:21Z'
 ---
 @startuml reverse-architecture
+skinparam defaultTextAlignment center
 hide stereotype
 
 skinparam defaultFontName SansSerif

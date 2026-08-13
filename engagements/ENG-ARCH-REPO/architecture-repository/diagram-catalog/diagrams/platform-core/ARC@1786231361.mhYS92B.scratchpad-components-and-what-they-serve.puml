@@ -35,9 +35,10 @@ connection-ids-used:
 - APP@1777293133.OYEmP1---APP@1786225304.q6wT1kq@@archimate-composition
 - APP@1777293133.OYEmP1---APP@1712870400.yNhgdh@@archimate-composition
 - APP@1776149382.lmO0mp---APP@1786225304.HgIA072@@archimate-composition
-last-updated: '2026-08-13T13:58:38Z'
+last-updated: '2026-08-13T19:36:34Z'
 ---
 @startuml scratchpad---components-and-what-they-serve
+skinparam defaultTextAlignment center
 hide stereotype
 
 skinparam defaultFontName SansSerif

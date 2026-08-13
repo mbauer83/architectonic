@@ -69,9 +69,10 @@ authored-groupings:
   entity-ids:
   - GOL@1780220699.FCfDuc.sustain-unity-of-effort-at-agentic-velocity
   - PRI@1784845187.E3_ttJ.governance-is-proportional-to-impact-and-risk
-last-updated: '2026-08-13T19:02:20Z'
+last-updated: '2026-08-13T19:35:46Z'
 ---
 @startuml
+skinparam defaultTextAlignment center
 skinparam wrapWidth 240
 skinparam maxMessageSize 240
 hide stereotype

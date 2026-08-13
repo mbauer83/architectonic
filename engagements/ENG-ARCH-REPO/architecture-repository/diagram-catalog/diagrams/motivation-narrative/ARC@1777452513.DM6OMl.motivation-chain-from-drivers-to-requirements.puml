@@ -69,9 +69,10 @@ connection-ids-used:
 - REQ@1712870400.Cc2Dd2---OUT@1776670379.JZMIk3@@archimate-realization
 - REQ@1712870400.eBAa26---OUT@1776670379.JZMIk3@@archimate-realization
 - REQ@1712870400.s5B3gB---OUT@1776670379.JZMIk3@@archimate-realization
-last-updated: '2026-08-13T19:02:27Z'
+last-updated: '2026-08-13T19:35:57Z'
 ---
 @startuml
+skinparam defaultTextAlignment center
 skinparam wrapWidth 240
 skinparam maxMessageSize 240
 hide stereotype

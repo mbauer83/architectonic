@@ -34,9 +34,10 @@ connection-ids-used:
 - VS@1784483003.klQ_6----VS@1784483097.CBbqVO@@archimate-composition
 - VS@1784483003.klQ_6----VS@1784483084.Io9UQd@@archimate-composition
 - VS@1784483003.klQ_6----VS@1784483104.lVJLuL@@archimate-composition
-last-updated: '2026-08-13T13:59:07Z'
+last-updated: '2026-08-13T19:36:50Z'
 ---
 @startuml value-stream--adopt-the-platform
+skinparam defaultTextAlignment center
 hide stereotype
 
 skinparam defaultFontName SansSerif

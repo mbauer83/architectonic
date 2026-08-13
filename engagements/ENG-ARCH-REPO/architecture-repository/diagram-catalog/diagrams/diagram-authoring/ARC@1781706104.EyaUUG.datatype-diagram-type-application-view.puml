@@ -29,9 +29,10 @@ connections:
 - connection_id: APP@1781705596.n8Pikk.datatype-diagram-type-module---REQ@1781704600.TbcGSB.datatype-uml-class-diagram-authoring@@archimate-realization
 - connection_id: APP@1781705596.n8Pikk.datatype-diagram-type-module---FNC@1781705395.halAQt.validate-datatype-data-object-relationship-consistency@@archimate-association
 - connection_id: APP@1712870400.ca3vm7.model-verifier---FNC@1781705395.halAQt.validate-datatype-data-object-relationship-consistency@@archimate-assignment
-last-updated: '2026-08-13T13:57:59Z'
+last-updated: '2026-08-13T19:35:55Z'
 ---
 @startuml datatype-diagram-type---application-view
+skinparam defaultTextAlignment center
 hide stereotype
 
 skinparam defaultFontName SansSerif

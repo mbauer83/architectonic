@@ -51,9 +51,10 @@ authored-groupings:
   - VAL@1784845185.-RyIvn.team-solution-fitness
   - VAL@1784845185.fduAv-.local-autonomy
   - VAL@1784845186.56mLXu.local-efficiency
-last-updated: '2026-08-13T13:58:11Z'
+last-updated: '2026-08-13T19:36:06Z'
 ---
 @startuml the-core-trade-off---differentiation-and-integration
+skinparam defaultTextAlignment center
 hide stereotype
 
 skinparam defaultFontName SansSerif

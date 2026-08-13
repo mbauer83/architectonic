@@ -33,9 +33,10 @@ connection-ids-used:
 - PRC@1776635649.vlE-5j---FNC@1777390456.ns4pWw@@archimate-composition
 - PRC@1776635649.vlE-5j---FNC@1777390459.omV6nu@@archimate-composition
 - PRC@1776635649.vlE-5j---FNC@1777390458.tFTeOT@@archimate-composition
-last-updated: '2026-08-13T13:58:25Z'
+last-updated: '2026-08-13T19:36:18Z'
 ---
 @startuml reverse-architecture---architecture-conformance-review
+skinparam defaultTextAlignment center
 hide stereotype
 
 skinparam defaultFontName SansSerif

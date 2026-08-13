@@ -28,9 +28,10 @@ connection-ids-used:
 - FNC@1784853344.qgicoe---REQ@1783870981.mdH8Uv@@archimate-realization
 - DOB@1783870961.y7M3wz---DOB@1784853343.CY3B-f@@archimate-composition
 - DOB@1783870961.y7M3wz---DOB@1784853344.zQzA5_@@archimate-composition
-last-updated: '2026-08-13T13:58:34Z'
+last-updated: '2026-08-13T19:36:29Z'
 ---
 @startuml viewpoint-execution---saved-and-ephemeral-paths
+skinparam defaultTextAlignment center
 hide stereotype
 
 skinparam defaultFontName SansSerif

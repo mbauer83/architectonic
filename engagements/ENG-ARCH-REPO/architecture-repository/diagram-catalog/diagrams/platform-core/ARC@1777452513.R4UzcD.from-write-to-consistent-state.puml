@@ -59,9 +59,10 @@ authored-groupings:
   entity-ids:
   - EVT@1777390504.hDF1Qz.artifacts-promoted
   - EVT@1777390507.UCrh3V.architecture-repository-change-detected
-last-updated: '2026-08-13T13:58:21Z'
+last-updated: '2026-08-13T19:36:14Z'
 ---
 @startuml from-write-to-consistent-state
+skinparam defaultTextAlignment center
 hide stereotype
 
 skinparam defaultFontName SansSerif

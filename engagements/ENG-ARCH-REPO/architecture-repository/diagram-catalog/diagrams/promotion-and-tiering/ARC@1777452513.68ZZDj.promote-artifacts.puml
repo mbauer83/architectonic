@@ -46,9 +46,10 @@ connection-ids-used:
 - PRC@1712870400.0Rz5Ex---FNC@1777390496.Z2rrfP@@archimate-composition
 - PRC@1712870400.0Rz5Ex---FNC@1777390497.ndMgDn@@archimate-composition
 - PRC@1712870400.0Rz5Ex---FNC@1777390501.wahMSm@@archimate-composition
-last-updated: '2026-08-13T13:58:53Z'
+last-updated: '2026-08-13T19:36:36Z'
 ---
 @startuml promote-artifacts
+skinparam defaultTextAlignment center
 hide stereotype
 
 skinparam defaultFontName SansSerif

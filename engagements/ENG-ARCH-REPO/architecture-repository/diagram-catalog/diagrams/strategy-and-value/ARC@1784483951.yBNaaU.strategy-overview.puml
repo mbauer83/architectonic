@@ -46,9 +46,10 @@ connection-ids-used:
 - RES@1784482454.JnWnY1---COA@1784483697.FI0Xbj@@archimate-assignment
 - COA@1784483697.FI0Xbj---OUT@1712870400.LrpdG0@@archimate-influence
 - COA@1784483697.FI0Xbj---OUT@1780655839.Vhhne7@@archimate-realization
-last-updated: '2026-08-13T13:58:58Z'
+last-updated: '2026-08-13T19:36:40Z'
 ---
 @startuml strategy-overview
+skinparam defaultTextAlignment center
 hide stereotype
 
 skinparam defaultFontName SansSerif

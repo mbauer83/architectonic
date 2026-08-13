@@ -43,9 +43,10 @@ connection-ids-used:
 - REQ@1786223986.VV89psV---OUT@1786223967.Bz8wwkG@@archimate-realization
 - PRC@1786225282._6NSUkC---SRV@1786225282.lzo5hQK@@archimate-realization
 - PRC@1786225282.si8h9M1---SRV@1786225282.C8EOSEB@@archimate-realization
-last-updated: '2026-08-13T13:58:36Z'
+last-updated: '2026-08-13T19:36:31Z'
 ---
 @startuml the-scratchpad--end-to-end
+skinparam defaultTextAlignment center
 hide stereotype
 
 skinparam defaultFontName SansSerif

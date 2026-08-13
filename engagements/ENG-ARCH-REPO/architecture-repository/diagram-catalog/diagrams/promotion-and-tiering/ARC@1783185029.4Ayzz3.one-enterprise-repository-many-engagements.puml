@@ -83,9 +83,10 @@ bindings:
   correspondence_kind: represents
   target:
     entity_id: ROL@1776633082.udXPfB.ai-agent
-last-updated: '2026-08-13T19:02:38Z'
+last-updated: '2026-08-13T19:36:38Z'
 ---
 @startuml
+skinparam defaultTextAlignment center
 skinparam wrapWidth 240
 skinparam maxMessageSize 240
 hide stereotype

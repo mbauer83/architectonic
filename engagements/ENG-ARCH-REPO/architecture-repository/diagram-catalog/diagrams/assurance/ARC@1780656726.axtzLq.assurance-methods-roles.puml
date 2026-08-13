@@ -42,9 +42,10 @@ connection-ids-used:
 - PRC@1780656241.bWETd2---SRV@1780656241.ooK3YN@@archimate-realization
 - ROL@1780656241.yswDMB---PRC@1780656241.lXql_n@@archimate-assignment
 - PRC@1780656241.lXql_n---SRV@1780656241.ooK3YN@@archimate-realization
-last-updated: '2026-08-13T19:02:22Z'
+last-updated: '2026-08-13T19:35:48Z'
 ---
 @startuml assurance-methods---roles
+skinparam defaultTextAlignment center
 skinparam wrapWidth 240
 skinparam maxMessageSize 240
 
