@@ -2289,6 +2289,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/ontology/classification-levels": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * How the meta-ontology classifies elements and relationships
+         * @description The classification ladder, as data.
+         *
+         *     Its own address because `/api/ontology/classification` is taken and means something else —
+         *     what one entity type may connect to. The two are different questions and a shared address
+         *     answering both by which parameter arrived is the mistake that split it.
+         *
+         *     Every level crosses as `{id, label, source, …}` with an **opaque string id**: a generated
+         *     union over this meta-ontology's ids would bake its chain into the frontend contract, and a
+         *     second meta-ontology declaring its own would fail to typecheck instead of reshaping the
+         *     view. Resolved through `classification_levels_for`, so the answer is whichever module
+         *     governs, never a constant assembled once.
+         */
+        get: operations["taxonomy_read_classification_levels"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ontology/element-appearance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * How elements are drawn — colour per domain, corners per type
+         * @description What the ontology declares about drawing its elements, resolved for a client.
+         *
+         *     Corners arrive per entity *type* rather than per class: the classes are the ontology's own
+         *     vocabulary and resolving them is its business, so a renderer receives `square`, `rounded`
+         *     or `diagonal` and honours it without knowing what a `motivation-element` is.
+         *
+         *     Served at all because this was three hardcoded palettes disagreeing on every domain, one of
+         *     them missing a domain entirely.
+         */
+        get: operations["taxonomy_read_element_appearance"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/ontology/pairs": {
         parameters: {
             query?: never;
@@ -5069,6 +5126,47 @@ export interface components {
             severity: "ontology" | "entity-id";
         };
         /**
+         * ClassificationLevelResponse
+         * @description One rung of a classification ladder, as data rather than as a type.
+         *
+         *     ``id`` is an opaque string on purpose. A generated union over the ids this meta-ontology
+         *     happens to declare would bake its chain into every client, so a second meta-ontology declaring
+         *     its own would fail to typecheck rather than reshape the picture — which is the one thing the
+         *     per-module dispatch exists to prevent.
+         */
+        ClassificationLevelResponse: {
+            /** Carries Attributes */
+            carries_attributes: boolean;
+            /** Id */
+            id: string;
+            /** Keys Relationships */
+            keys_relationships: boolean;
+            /** Label */
+            label: string;
+            /** Narrows Relationships */
+            narrows_relationships: boolean;
+            /** Required */
+            required: boolean;
+            /** Source */
+            source: string;
+        };
+        /**
+         * ClassificationLevelsResponse
+         * @description How the governing meta-ontology classifies things, keyed by what is being classified.
+         *
+         *     Two keys rather than one list, because a client faceting a graph needs the relation side as
+         *     well as the entity side. The entity ladder is declared; the relation one is derived today, and
+         *     a payload shaped this way keeps working when a module starts declaring its own.
+         */
+        ClassificationLevelsResponse: {
+            /** Entity */
+            entity: components["schemas"]["ClassificationLevelResponse"][];
+            /** Meta Ontology */
+            meta_ontology: string;
+            /** Relation */
+            relation: components["schemas"]["ClassificationLevelResponse"][];
+        };
+        /**
          * ClassificationNotPublishableDetails
          * @description ``classification_not_publishable``: the effective classification that forbids publication.
          *
@@ -7104,6 +7202,39 @@ export interface components {
             upsert?: components["schemas"]["UpsertPatchWire"];
             /** Version */
             version: string;
+        };
+        /**
+         * ElementAppearanceResponse
+         * @description How elements are drawn, so every surface draws them the same way.
+         *
+         *     Served because it was previously three hardcoded palettes that disagreed on every domain.
+         *     ``corners`` maps an entity type to one of ``square``, ``rounded`` or ``diagonal`` — resolved
+         *     server-side through the classes the ontology declares, so a client renders the answer without
+         *     knowing the vocabulary that produced it.
+         */
+        ElementAppearanceResponse: {
+            /** Corners */
+            corners: {
+                [key: string]: string;
+            };
+            /** De Emphasis */
+            de_emphasis: {
+                [key: string]: string;
+            };
+            /** Domain Borders */
+            domain_borders: {
+                [key: string]: string;
+            };
+            /** Domain Colors */
+            domain_colors: {
+                [key: string]: string;
+            };
+            /** Domain Containers */
+            domain_containers: {
+                [key: string]: string;
+            };
+            /** Meta Ontology */
+            meta_ontology: string;
         };
         /**
          * EngagementSaveResponse
@@ -19312,6 +19443,82 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OntologyClassificationResponse"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    taxonomy_read_classification_levels: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClassificationLevelsResponse"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    taxonomy_read_element_appearance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ElementAppearanceResponse"];
                 };
             };
             /** @description Request validation failed */
