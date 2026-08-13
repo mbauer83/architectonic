@@ -136,33 +136,56 @@ interface PositionedNode {
   readonly y: number
 }
 
-/** SVG path for an edge: orthogonal elbows in cluster layout, a straight segment
- * otherwise. The target end stops `targetRadius` px short of the target node's centre so
- * a `marker-end` arrowhead lands ON the node boundary rather than hidden beneath it.
- * Empty string when either endpoint is missing from the node set. */
+/**
+ * SVG path for an edge: orthogonal elbows in cluster layout, a straight segment otherwise.
+ *
+ * **Both ends stop short of their node's centre**, each by its own node's radius, so the
+ * decoration at either end sits beside the node rather than under it. Only the target end was
+ * backed off for as long as this function existed, and the parameter was named `targetRadius`:
+ * every `marker-start` the ontology declares — the composition and aggregation diamonds, the
+ * assignment ball — was therefore drawn beneath the source node's own shape. The ball had never
+ * once been visible.
+ *
+ * `radiusOf` is asked per node rather than given as a number, because the two ends can want
+ * different answers: an anchor carries a larger ring, and the source's anchor state was not
+ * even consulted before. It says nothing about *why* a node is larger, which keeps this
+ * ignorant of anchors and selection.
+ *
+ * Empty string when either endpoint is missing from the node set.
+ */
 export const edgePathFor = (
   nodes: readonly PositionedNode[],
   edge: { readonly source: string; readonly target: string },
   clusterLayout: boolean,
-  targetRadius = 26,
+  radiusOf: (nodeId: string) => number = () => 26,
 ): string => {
   const src = nodes.find((n) => n.id === edge.source)
   const tgt = nodes.find((n) => n.id === edge.target)
   if (!src || !tgt) return ''
+  const sourceRadius = radiusOf(edge.source)
+  const targetRadius = radiusOf(edge.target)
   if (clusterLayout) {
     const midY = (src.y + tgt.y) / 2
-    // Final approach is vertical into the target; back it off along that axis.
+    // The elbow leaves the source vertically and arrives vertically; back both off along that
+    // axis, and only where the segment is long enough to give the back-off room.
+    const departure = midY >= src.y ? sourceRadius : -sourceRadius
+    const startY = Math.abs(midY - src.y) > sourceRadius ? src.y + departure : src.y
     const approach = tgt.y >= midY ? -targetRadius : targetRadius
     const endY = Math.abs(tgt.y - midY) > targetRadius ? tgt.y + approach : tgt.y
-    return `M ${src.x} ${src.y} V ${midY} H ${tgt.x} V ${endY}`
+    return `M ${src.x} ${startY} V ${midY} H ${tgt.x} V ${endY}`
   }
   const dx = tgt.x - src.x
   const dy = tgt.y - src.y
   const len = Math.sqrt(dx * dx + dy * dy)
-  if (len <= targetRadius) return `M ${src.x} ${src.y} L ${tgt.x} ${tgt.y}`
+  // Overlapping nodes have no room for either decoration, and inverting the segment to make
+  // room would draw an edge pointing the wrong way. Keep the honest centre-to-centre line and
+  // let the layout separate them.
+  if (len <= sourceRadius + targetRadius) return `M ${src.x} ${src.y} L ${tgt.x} ${tgt.y}`
+  const sx = src.x + (dx / len) * sourceRadius
+  const sy = src.y + (dy / len) * sourceRadius
   const ex = tgt.x - (dx / len) * targetRadius
   const ey = tgt.y - (dy / len) * targetRadius
-  return `M ${src.x} ${src.y} L ${ex.toFixed(2)} ${ey.toFixed(2)}`
+  return `M ${sx.toFixed(2)} ${sy.toFixed(2)} L ${ex.toFixed(2)} ${ey.toFixed(2)}`
 }
 
 /** SVG coords for a multiplicity label at `frac` (0=source, 1=target) along an edge,

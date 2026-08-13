@@ -16,6 +16,20 @@ import { wrapLabel } from './GraphCanvas.helpers'
 export const NODE_SHAPE_RADIUS = 24
 export const ANCHOR_HALO_RADIUS = 32
 
+/** Clear air between a node's boundary and the marker an edge ends in. */
+const MARKER_GAP = 2
+
+/**
+ * How far short of a node's centre an edge stops, so the decoration at that end sits beside the
+ * node rather than under it.
+ *
+ * Here rather than at the canvas, and derived rather than spelled: the call site used to carry
+ * `isAnchor ? 34 : 26`, which is these radii plus the gap, written a second time. The two agreed
+ * by luck, and only until one of them moved.
+ */
+export const edgeEndRadius = (isAnchor: boolean): number =>
+  (isAnchor ? ANCHOR_HALO_RADIUS : NODE_SHAPE_RADIUS) + MARKER_GAP
+
 const CHAR_WIDTH = 6
 const LINE_HEIGHT = 12
 const LABEL_PADDING = 10

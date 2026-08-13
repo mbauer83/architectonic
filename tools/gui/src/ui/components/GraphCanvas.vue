@@ -10,7 +10,7 @@ import { onMounted, ref, toRef } from 'vue'
 import type { GraphEdge, GraphNode } from '../composables/useForceGraph'
 import { useElementSize } from '../composables/useElementSize'
 import { useGraphPanZoom } from '../composables/useGraphPanZoom'
-import { nodeLabelBox } from './graphNodeGeometry'
+import { edgeEndRadius, nodeLabelBox } from './graphNodeGeometry'
 import {
   contrastTextColor, edgeCardPosFor, edgePathFor, nodeShapePoints, wrapLabel,
   type EdgeEndMarker, type EdgeVisual, type NodeVisual,
@@ -100,9 +100,10 @@ const centerOn = (x: number, y: number) => {
 
 defineExpose({ fitToView, refitUnlessUserFramed, zoomBy, centerOn, dragging })
 
-// Stop the edge at the target node's outer boundary so the arrowhead sits on it: anchor
-// nodes carry a larger halo ring (radius 32), normal nodes a radius-24 shape.
-const edgePath = (e: GraphEdge) => edgePathFor(props.nodes, e, props.clusterEdges, props.isAnchor(e.target) ? 34 : 26)
+// Stop the edge at each node's outer boundary so the decoration at that end sits beside it.
+// What "outer boundary" means per node is `graphNodeGeometry`'s answer, not one restated here.
+const edgePath = (e: GraphEdge) =>
+  edgePathFor(props.nodes, e, props.clusterEdges, (id) => edgeEndRadius(props.isAnchor(id)))
 
 // Translucent backing rect for the below-node label — labels can otherwise fall in front of
 // edges and become hard to read. The geometry is shared with the cluster layout, which sizes
