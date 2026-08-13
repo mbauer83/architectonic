@@ -23,8 +23,15 @@ import { friendlyEntityName } from '../views/GraphExploreView.helpers'
 //: expansion; three leaves room for a second without ever looping unboundedly.
 const DOMAIN_RESOLUTION_PASSES = 3
 
+/** The three reads exploration makes, and no more — the shape `useWitnessChain` already uses for
+ * the same reason: a dependency typed as the whole service cannot be stood in for without
+ * asserting past 100 methods it never calls. */
+export type FreeExplorationReads = Pick<
+  ModelService, 'getEntity' | 'getConnections' | 'getConnectionsAmong'
+>
+
 export interface FreeExplorationDeps {
-  svc: ModelService
+  svc: FreeExplorationReads
   nodes: Ref<GraphNode[]>
   edges: Ref<unknown[]>
   rootId: Ref<string>

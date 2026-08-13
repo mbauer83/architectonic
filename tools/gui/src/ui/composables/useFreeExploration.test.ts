@@ -47,17 +47,23 @@ const connection = ([source, target]: readonly [string, string]) => ({
   target_name: target,
 })
 
+/** A whole entity, since that is what the read answers. Exploration uses six of these fields; the
+ * rest are here because a partial stand-in would be asserting past the contract rather than
+ * meeting it. */
+const entity = (id: string) => ({
+  artifact_id: id, artifact_type: 'requirement', name: id, version: '0.1.0', status: 'active',
+  domain: 'motivation', subdomain: 'requirement', record_type: 'entity' as const, path: '',
+  keywords: [], properties: {}, attributes: {}, specializations: [], display_blocks: {}, extra: {},
+  referenced_in_documents: [], conn_in: 0, conn_sym: 0, conn_out: 0,
+})
+
 /** Enough of `ModelService` for exploration, answering from `MODEL`. */
 function fakeService() {
   const asked: string[][] = []
   return {
     asked,
     svc: {
-      getEntity: (id: string) =>
-        Effect.succeed({
-          artifact_id: id, name: id, domain: 'motivation', artifact_type: 'requirement',
-          conn_in: 0, conn_sym: 0, conn_out: 0,
-        }),
+      getEntity: (id: string) => Effect.succeed(entity(id)),
       getConnections: (entityId: string) =>
         Effect.succeed(
           MODEL.filter(([s, t]) => s === entityId || t === entityId).map(connection),
@@ -75,11 +81,9 @@ function explorer(rootId: string) {
   const graph = useForceGraph(() => 1200, () => 800)
   const { svc, asked } = fakeService()
   const exploration = useFreeExploration({
-    // The fake answers the three reads exploration makes; the rest of `ModelService` is not
-    // reachable from here, and a full stub would assert nothing while going stale.
-    svc: svc as never,
+    svc,
     nodes: graph.nodes,
-    edges: graph.edges as never,
+    edges: graph.edges,
     rootId: ref(rootId),
     addNode: graph.addNode,
     addEdge: graph.addEdge,
