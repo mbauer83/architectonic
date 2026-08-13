@@ -16,6 +16,7 @@ from src.domain.ontology_representation.classification_levels import (
     ClassificationLevel,
     classification_levels_from_config,
 )
+from src.domain.ontology_representation.element_appearance import ElementAppearance
 from src.domain.ontology_representation.ontology_types import ConnectionTypeInfo, ElementClassInfo, EntityTypeInfo
 from src.domain.ontology_representation.profile_registry import ProfileRegistry
 from src.domain.ontology_representation.specializations import (
@@ -74,6 +75,7 @@ class _ArchiMate4Module:
         matrix_abbreviations: dict[str, str],
         element_classes: dict[str, ElementClassInfo] | None = None,
         behavioral_elements: BehavioralElementDeclaration | None = None,
+        element_appearance: ElementAppearance | None = None,
         specialization_catalog: SpecializationCatalog | None = None,
         profile_registry: ProfileRegistry | None = None,
         derivation_rules: tuple[CompositionRule, ...] = (),
@@ -90,6 +92,7 @@ class _ArchiMate4Module:
         self._matrix_abbreviations = matrix_abbreviations
         self._element_classes: dict[str, ElementClassInfo] = element_classes or {}
         self._behavioral_elements = behavioral_elements or BehavioralElementDeclaration()
+        self._element_appearance = element_appearance or ElementAppearance()
         self._specialization_catalog = specialization_catalog or SpecializationCatalog.empty()
         self._profile_registry = profile_registry or ProfileRegistry.empty()
         self._svg_converter = svg_converter
@@ -145,6 +148,10 @@ class _ArchiMate4Module:
     @property
     def behavioral_elements(self) -> BehavioralElementDeclaration:
         return self._behavioral_elements
+
+    @property
+    def element_appearance(self) -> ElementAppearance:
+        return self._element_appearance
 
     @property
     def classification_levels(self) -> tuple[ClassificationLevel, ...]:
@@ -265,6 +272,7 @@ def load_archimate_4_module(
     matrix_abbreviations: dict[str, str] = dict(conn_data.get("matrix_abbreviations", {}))
     element_classes = load_element_classes(entity_data)
     behavioral_elements = BehavioralElementDeclaration.from_mapping(entity_data)
+    element_appearance = ElementAppearance.from_mapping(entity_data)
     overlay = guidance if guidance is not None else GuidanceOverlay()
     module_specializations = overlay_specialization_guidance(
         load_module_specializations(package_dir, META_ONTOLOGY_ALIAS),
@@ -283,6 +291,7 @@ def load_archimate_4_module(
         matrix_abbreviations=matrix_abbreviations,
         element_classes=element_classes,
         behavioral_elements=behavioral_elements,
+        element_appearance=element_appearance,
         specialization_catalog=specialization_catalog,
         profile_registry=load_module_profiles(package_dir),
         derivation_rules=derivation_rules,

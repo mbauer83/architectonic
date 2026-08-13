@@ -25,6 +25,7 @@ from src.domain.modules.module_types import (
     _FreeOntologyType,
 )
 from src.domain.ontology_representation.behavioral_elements import BehavioralElementDeclaration
+from src.domain.ontology_representation.element_appearance import ElementAppearance
 from src.domain.ontology_representation.ontology_types import (
     ConnectionTypeInfo,
     ElementClassInfo,
@@ -101,6 +102,16 @@ class OntologyModule(Protocol):
         answer and means the ontology has not said — see `behavioral_elements`.
         """
         ...
+
+    @property
+    def element_appearance(self) -> ElementAppearance:
+        """How this ontology's elements are drawn — domain colour, and corner shape per class.
+
+        A fact about the vocabulary rather than about any renderer, in the same sense
+        `relation_notation` is: a corner style says `diagonal`, never `motivation`. Empty is a
+        valid answer and means the ontology has not said.
+        """
+        return ElementAppearance()
 
     @property
     def display_section_id(self) -> str: ...

@@ -8,6 +8,7 @@ from typing import Any, Literal
 from src.domain.guidance.guidance import ConceptKind, GuidanceOverlay, resolved_type_guidance
 from src.domain.modules.module_types import ConnectionTypeName, ElementClassName, EntityTypeName
 from src.domain.ontology_representation.behavioral_elements import BehavioralElementDeclaration
+from src.domain.ontology_representation.element_appearance import ElementAppearance
 from src.domain.ontology_representation.ontology_types import ConnectionTypeInfo, ElementClassInfo, EntityTypeInfo
 from src.domain.ontology_representation.profile_registry import ProfileRegistry
 from src.domain.ontology_representation.relation_notation import parse_relation_notation
@@ -108,6 +109,12 @@ class _AssuranceModule:
         """Empty: this ontology's types are not architecture elements, so none of them acts in the
         sense the declaration is about. Stated rather than inherited, so the answer is deliberate."""
         return BehavioralElementDeclaration()
+
+    @property
+    def element_appearance(self) -> ElementAppearance:
+        """Undeclared: this ontology has not said how its elements are drawn, and silence
+        is the honest answer rather than a guess at a palette."""
+        return ElementAppearance()
 
     def entity_types_with_class(self, cls: ElementClassName) -> frozenset[EntityTypeName]:
         return self._class_index.get(ElementClassName(cls), frozenset())

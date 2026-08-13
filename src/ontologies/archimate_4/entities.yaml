@@ -74,6 +74,52 @@ element_classes:
   internal:
     description: Internal system element not directly modelable by users
 
+# ── How elements are drawn ────────────────────────────────────────────────────
+# The two visual properties that carry meaning. Declared here because they are facts about this
+# vocabulary, and because they were previously hardcoded — the colours three times, in the PUML
+# generator and twice in the frontend, disagreeing on every domain, with one copy missing
+# `implementation` so those elements rendered grey in the graph explorer.
+#
+# ArchiMate assigns no formal semantics to colour and defines no hex values: the layer colours in
+# the specification's own figures are conventional, and colour is explicitly left to the modeller.
+# These are therefore *this product's* declaration rather than an approximation of a normative
+# palette, which is what makes one central statement of them the right answer.
+element_appearance:
+  domain_colors:
+    motivation: '#D1BADC'
+    strategy: '#EFBD5D'
+    business: '#EDD779'
+    application: '#B0D0D9'
+    technology: '#BCD9AE'
+    implementation: '#F1BBB7'
+    common: '#E5DFD3'
+
+  # Corner shape says what kind of thing an element is: structure is drawn square, behaviour
+  # rounded, motivation with cut corners. Keyed on the classes entity types already declare, in the
+  # shape `behavioral_element_classes` established — a short list per category rather than a
+  # property repeated on forty types.
+  corner_classes:
+    rounded:
+      - behavior-element
+      - internal-behavior-element
+      - strategy-behavior-element
+    diagonal:
+      - motivation-element
+    square:
+      - structure-element
+      - active-structure-element
+      - internal-active-structure-element
+      - external-active-structure-element
+      - technology-internal-active-structure-element
+      - passive-structure-element
+      - composite-element
+
+  # One rule for muting a colour, so a surface that needs a de-emphasized variant derives it rather
+  # than carrying a second palette — which is how the three disagreeing ones came about.
+  de_emphasis:
+    toward: '#FFFFFF'
+    amount: 0.55
+
 # ── Which elements act ────────────────────────────────────────────────────────
 # A behavioural element is one that does something which can be done well or badly: a component, a
 # service, a function, a process, a device. Declared here because it is a fact about ArchiMate's own
