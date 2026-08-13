@@ -13,10 +13,7 @@ from src.domain.modules.module_types import ConnectionTypeName, ElementClassName
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
 from src.domain.ontology_representation.ontology_types import ConnectionTypeInfo
 from src.domain.ontology_representation.specializations import SpecializationCatalog, merge_specialization_catalogs
-from src.infrastructure.rendering._archimate_includes import (
-    ArchimateDeclarations,
-    inject_archimate_includes,
-)
+from src.infrastructure.rendering._archimate_includes import inject_archimate_includes
 from src.infrastructure.rendering._authored_grouping_rendering import render_authored_groupings
 from src.infrastructure.rendering._component_canvas import render_component_canvas
 from src.infrastructure.rendering._component_grouping import collect_subtree_aliases
@@ -334,16 +331,6 @@ class GenericPumlRenderer:
         return body
 
     def inject_includes(self, body: str, repo_root: Path) -> str:
-        declarations = ArchimateDeclarations.from_repo(repo_root)
-        if declarations.are_inlined_in(body):
-            # The body carries the expansion already. It gets restated, not marked: a marker here
-            # would expand a second preamble beside the one that is there.
-            return declarations.restated_in(body)
-        _STEREO = "!include ../_archimate-stereotypes.puml"
-        _GLYPH = "!include ../_archimate-glyphs.puml"
-        for marker in (_STEREO, _GLYPH):
-            if marker not in body:
-                body = re.sub(r"(@startuml(?:\s+\S+)?)\n", rf"\1\n{marker}\n", body, count=1)
         return inject_archimate_includes(body, repo_root)
 
 

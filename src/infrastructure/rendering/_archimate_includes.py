@@ -4,8 +4,8 @@ The generated ArchiMate includes are one declaration with two storage forms. A b
 ``!include ../_archimate-stereotypes.puml`` marker and have it expanded at render time, or it may
 carry the expansion inline so the ``.puml`` renders on its own. Both are permitted (E303 accepts
 either), and this module owns reading the syntax in both directions: `ArchimateDeclarations` is the
-one reader, `inject_archimate_includes` expands the marker form, and `restated_in` brings an
-already-inlined copy back level with the ontology.
+one reader, and `inject_archimate_includes` is the one entry point — it tells the forms apart and
+either expands the marker or restates what is already inlined.
 
 `restated_in` exists because the inline form is a *copy*, and a copy that nothing refreshes is a
 second declaration. Nine of this repository's ArchiMate diagrams were still drawing the palette and
@@ -110,22 +110,31 @@ class ArchimateDeclarations:
         return body
 
 
+#: The markers a body may carry, and the order they are inserted in when it carries none.
+_STEREOTYPE_MARKER = "!include ../_archimate-stereotypes.puml"
+_GLYPH_MARKER = "!include ../_archimate-glyphs.puml"
+
+
 def inject_archimate_includes(body: str, repo_root: Path) -> str:
-    """Inline only the ArchiMate stereotypes and sprites actually used by *body*.
+    """Make *body* carry the ontology's current declarations, in whichever form it stores them.
 
-    Scans *body* for ``<<stereotype>>`` and ``<$archimate_sprite>`` references.
-    Replaces the ``!include ../_archimate-stereotypes.puml`` marker with the
-    selective skinparam blocks and sprite definitions, then removes the
-    ``!include ../_archimate-glyphs.puml`` and
-    ``!include ../_archimate-relations.puml`` markers (the relations macros are
-    inlined into the header so they are available without a file-system lookup).
+    Three cases, and confusing the first two is what produced two preambles in one body:
 
-    A body that carries the expansion instead of the marker has its inlined declarations restated,
-    so the two storage forms answer to the ontology alike.
+    * it already carries the expansion — the declarations are restated in place;
+    * it carries the ``!include`` markers — they are replaced by only the skinparam blocks and
+      sprites its ``<<stereotype>>`` and ``<$archimate_sprite>`` references need, with every
+      relationship macro, so no file-system lookup is needed at render time;
+    * it carries neither, which makes it a body the renderer has just produced — it is given the
+      markers, then they are expanded as above.
     """
     declarations = ArchimateDeclarations.from_repo(repo_root)
-    if "_archimate-stereotypes.puml" not in body:
+    if declarations.are_inlined_in(body):
         return declarations.restated_in(body)
+    for marker in (_STEREOTYPE_MARKER, _GLYPH_MARKER):
+        if marker not in body:
+            body = re.sub(r"(@startuml(?:\s+\S+)?)\n", rf"\1\n{marker}\n", body, count=1)
+    if _STEREOTYPE_MARKER not in body:
+        return body
 
     needed_types = set(re.findall(r"<<(\w+)>>", body))
     needed_sprites = set(re.findall(r"<\$archimate_(\w+)", body))
@@ -144,8 +153,8 @@ def inject_archimate_includes(body: str, repo_root: Path) -> str:
             parts.append(declarations.sprites[name])
 
     replacement = "\n".join(parts) + "\n"
-    result = body.replace("!include ../_archimate-stereotypes.puml\n", replacement, 1)
-    result = result.replace("!include ../_archimate-glyphs.puml\n", "")
+    result = body.replace(f"{_STEREOTYPE_MARKER}\n", replacement, 1)
+    result = result.replace(f"{_GLYPH_MARKER}\n", "")
     return result.replace("!include ../_archimate-relations.puml\n", "")
 
 
