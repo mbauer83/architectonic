@@ -11,10 +11,11 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
+from src.application.document_links import references_from, strip_anchor
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.application.verification.artifact_verifier_parsing import parse_frontmatter, read_file
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
-from src.application.verification.artifact_verifier_rules import check_enum
+from src.application.verification.artifact_verifier_rules import check_enum, check_internal_links
 from src.application.verification.artifact_verifier_types import (
     VALID_STATUSES,
     Issue,
@@ -24,12 +25,7 @@ from src.application.verification.artifact_verifier_types import (
 from src.domain.repository.frontmatter import body_after_frontmatter
 from src.domain.repository.repo_layout import ARCH_REPO, DOCS, MODEL
 
-_WINDOWS_ABS_PATH_RE = re.compile(r"^[A-Za-z]:[/\\]")
 _SECTION_HEADING_RE = re.compile(r"^##\s+(.+)$", re.MULTILINE)
-
-
-def _is_absolute_markdown_link(href: str) -> bool:
-    return href.startswith("/") or href.startswith("file://") or bool(_WINDOWS_ABS_PATH_RE.match(href))
 
 
 def _infer_repo_root_for_document(path: Path) -> Path | None:
@@ -83,31 +79,27 @@ def resolve_entity_links(doc_path: Path, content: str) -> list[ResolvedEntityLin
 
     This is the single reading of "which entities does this document link" — the
     required-entity-type-connection rules (E155/E156) and the promotion closure
-    gate both consume it, so they cannot drift apart.
+    gate both consume it, so they cannot drift apart. What a link *is* comes from
+    `references_from`, which is the single reading one level down; this one says which of
+    those references turn out to be entities.
     """
     links: list[ResolvedEntityLink] = []
-    for m in re.finditer(r"\[([^\]]+)\]\(([^)]+)\)", content):
-        href = m.group(2)
-        if href.startswith("http") or href.startswith("#"):
-            continue
-        anchor_idx = href.find("#")
-        file_href = href[:anchor_idx] if anchor_idx >= 0 else href
-        if not file_href.endswith(".md"):
-            continue
-        target = (doc_path.parent / file_href).resolve()
-        if not target.is_file():
+    for reference in references_from(content, directory=doc_path.parent):
+        if not strip_anchor(reference.href).endswith(".md") or not reference.target.is_file():
             continue
         try:
-            target_content = target.read_text(encoding="utf-8")
+            target_content = reference.target.read_text(encoding="utf-8")
         except OSError:
             continue
         fm = parse_frontmatter(
-            target_content, VerificationResult(path=target, file_type="entity"), str(target)
+            target_content,
+            VerificationResult(path=reference.target, file_type="entity"),
+            str(reference.target),
         )
         if fm and fm.get("artifact-type"):
             links.append(
                 ResolvedEntityLink(
-                    href=href,
+                    href=reference.href,
                     artifact_id=str(fm.get("artifact-id", "")),
                     artifact_type=str(fm["artifact-type"]),
                     name=str(fm.get("name", fm.get("artifact-id", ""))),
@@ -274,24 +266,7 @@ def verify_document(  # noqa: C901
                     sections=schema.get("sections") or [],
                 )
 
-    for m in re.finditer(r"\[([^\]]+)\]\(([^)]+)\)", content):
-        href = m.group(2)
-        if href.startswith("http://") or href.startswith("https://") or href.startswith("#"):
-            continue
-        anchor_idx = href.find("#")
-        file_href = href[:anchor_idx] if anchor_idx >= 0 else href
-        if not file_href or not file_href.endswith(".md"):
-            continue
-        if _is_absolute_markdown_link(file_href):
-            result.issues.append(
-                Issue(Severity.WARNING, "W156", f"Absolute internal link must be relative: '{file_href}'", loc)
-            )
-            continue
-        target = (path.parent / file_href).resolve()
-        if not target.exists():
-            result.issues.append(
-                Issue(Severity.WARNING, "W155", f"Unresolvable internal link: '{file_href}'", loc)
-            )
+    check_internal_links(content, path, result, loc)
 
     check_enum(fm, "status", doc_type_status_enum or VALID_STATUSES, result, loc)
     return result

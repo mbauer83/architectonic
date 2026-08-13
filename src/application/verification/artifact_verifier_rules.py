@@ -1,4 +1,5 @@
 import re
+from pathlib import Path
 
 from src.application.artifacts.parsing import extract_declared_puml_aliases as _extract_declared_puml_aliases_shared
 from src.application.verification._verifier_rules_puml_relations import (
@@ -194,6 +195,43 @@ def _extract_declared_puml_aliases(content: str) -> set[str]:
 
 def check_diagram_artifact_type(fm: dict, result: VerificationResult, loc: str) -> None:
     check_artifact_type(fm, DIAGRAM_ARTIFACT_TYPES, "diagram artifact type", result, loc)
+
+
+_WINDOWS_ABS_PATH_RE = re.compile(r"^[A-Za-z]:[/\\]")
+
+
+def _is_absolute_markdown_link(href: str) -> bool:
+    return href.startswith(("/", "file://")) or bool(_WINDOWS_ABS_PATH_RE.match(href))
+
+
+def check_internal_links(content: str, path: Path, result: VerificationResult, loc: str) -> None:
+    """W156 (an internal link must be relative) and W155 (it must resolve to something).
+
+    Shared rather than document-only, because prose carrying links is not a property of documents:
+    a matrix diagram's body is a markdown table of links, and the rule that finds a link pointing
+    at nothing had never been asked about one. A link that no longer resolves is the same fact
+    wherever it is written, so it keeps one code rather than gaining a second for a second file
+    type.
+
+    The link reading is `references_from`, which is the one reading of what a document's prose
+    refers to. This rule used to carry its own regex, making three.
+    """
+    from src.application.document_links import references_from, strip_anchor  # noqa: PLC0415
+
+    for reference in references_from(content, directory=path.parent):
+        file_href = strip_anchor(reference.href)
+        if not file_href.endswith(".md"):
+            continue
+        if _is_absolute_markdown_link(file_href):
+            result.issues.append(Issue(
+                Severity.WARNING, "W156",
+                f"Absolute internal link must be relative: '{file_href}'", loc,
+            ))
+            continue
+        if not reference.target.exists():
+            result.issues.append(Issue(
+                Severity.WARNING, "W155", f"Unresolvable internal link: '{file_href}'", loc,
+            ))
 
 
 def check_matrix_markdown_shape(fm: dict, content: str, result: VerificationResult, loc: str) -> None:

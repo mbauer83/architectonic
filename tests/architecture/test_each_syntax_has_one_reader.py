@@ -94,6 +94,10 @@ _ALIAS_DECLARATION = re.compile(r"\\bas\\s|\bas\\s\+|\bas\s\+")
 #: one. A second implementation cannot avoid spelling it.
 _ARROW_DIRECTION = re.compile(r"up\|down\|left\|right")
 
+#: A markdown inline link. The bracket-then-paren shape is what every reading of one spells, and
+#: nothing else in these formats does: a literal carrying `](` is reading a link.
+_MARKDOWN_LINK = re.compile(r"\]\\?\(")
+
 SYNTAX_READERS: tuple[SyntaxReader, ...] = (
     SyntaxReader(
         syntax="what counts as a frontmatter block",
@@ -166,6 +170,31 @@ SYNTAX_READERS: tuple[SyntaxReader, ...] = (
         literal_probe=_ARROW_DIRECTION,
     ),
     SyntaxReader(
+        syntax="what a document's prose refers to — a markdown link and the file it addresses",
+        owners=(Path("src/application/document_links.py"),),
+        instead=(
+            "`src.application.document_links`: `references_from` for what a body points at, "
+            "`references_to_entity` for what points at one entity, `iter_markdown_links` for the "
+            "links alone where the target does not matter"
+        ),
+        incident=(
+            "three readings of one question. The cascade-delete preflight matched `](….md)` with a "
+            "regex of its own, which cannot match `](….md#properties)` — so a document linking into "
+            "a *section* of an entity was invisible to the check whose whole job is to find what a "
+            "deletion would break; the verifier's unresolvable-link rule spelled the link a third "
+            "way and was never asked about a diagram, where every dangling link in this repository "
+            "turned out to be. Reference-typed attributes would have been the fourth"
+        ),
+        literal_probe=_MARKDOWN_LINK,
+        exempt=frozenset({
+            # Reads the *documentation* tree rather than the model: `docs/**.md` links, anchors and
+            # media references, including image and non-markdown targets that the model's own link
+            # rules deliberately say nothing about. It is a build tool with its own gate, and the
+            # two answer different questions about different trees.
+            Path("tools/docs/check_doc_links.py"),
+        }),
+    ),
+    SyntaxReader(
         syntax="the arrow form of a connection — a `###` section, or a standalone reference",
         owners=(
             # Two owners on purpose, because this is two syntaxes sharing one glyph and a literal
@@ -218,6 +247,7 @@ SYNTAX_READERS: tuple[SyntaxReader, ...] = (
 #: registers: the number may fall and may never rise, so a twelfth reader cannot arrive quietly by
 #: being added to a list.
 _EXEMPTION_BUDGET: dict[str, int] = {
+    "what a document's prose refers to — a markdown link and the file it addresses": 1,
     "what it means for a PUML line to declare an alias": 1,
     "the arrow form of a connection — a `###` section, or a standalone reference": 3,
 }

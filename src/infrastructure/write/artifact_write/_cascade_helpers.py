@@ -13,7 +13,6 @@ _ID_RE = re.compile(r"^artifact-id:\s*(.+?)\s*$", re.MULTILINE)
 _NAME_RE = re.compile(r"^name:\s*(.+?)\s*$", re.MULTILINE)
 _SRC_RE = re.compile(r"^source-entity:\s*(.+?)\s*$", re.MULTILINE)
 _CONN_HDR_RE = re.compile(r"^### .+ → (.+)$", re.MULTILINE)
-_LINK_RE = re.compile(r"\]\(([^)]+\.md)\)")
 
 
 def read_frontmatter_id_name(path: Path) -> tuple[str, str] | None:
@@ -101,19 +100,24 @@ def is_puml_customised(diagram_path: Path, fm: dict) -> bool:
 
 
 def find_broken_links(doc_path: Path, owned_paths: set[Path], repo_root: Path) -> list[str]:  # noqa: ARG001
+    """The hrefs in *doc_path* that point at something this delete is about to remove.
+
+    A filter over `references_from`, which is the one reading of what a document's prose refers
+    to. It used to be a second one, matching `](….md)` with its own regex — and that cannot match
+    `](….md#properties)`, so a document linking into a *section* of an entity was invisible to the
+    check whose whole job is to find what a deletion would break.
+    """
+    from src.application.document_links import references_from  # noqa: PLC0415
+
     try:
         text = doc_path.read_text(encoding="utf-8")
     except OSError:
         return []
-    broken = []
-    for href in _LINK_RE.findall(text):
-        try:
-            resolved = (doc_path.parent / href).resolve()
-            if resolved in owned_paths:
-                broken.append(href)
-        except OSError:
-            pass
-    return broken
+    return [
+        reference.href
+        for reference in references_from(text, directory=doc_path.parent)
+        if reference.target in owned_paths
+    ]
 
 
 def remove_from_groups_yaml(repo_root: Path, project_slug: str) -> None:

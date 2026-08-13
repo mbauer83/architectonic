@@ -19,6 +19,7 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
+from src.application.document_links import MARKDOWN_LINK_RE, is_external_or_anchor_href
 from src.application.group_registry import _new_group_id, registry_to_yaml, write_groups_schema
 from src.config.repo_paths import ARCH_REPO, DIAGRAM_CATALOG, DIAGRAMS, DOCS, MODEL, RENDERED
 from src.domain.repository.groups import UNCATEGORIZED, GroupEntry, GroupRegistry
@@ -70,14 +71,13 @@ def _rewrite_links_in_doc(
     except OSError:
         return 0
 
-    link_re = re.compile(r"(\[([^\]]*)\]\()([^)]+)(\))")
     rewrites = 0
     doc_dir = doc_new_path.parent
 
     def _replace(m: re.Match[str]) -> str:
         nonlocal rewrites
         href = m.group(3)
-        if href.startswith("http://") or href.startswith("https://") or href.startswith("#"):
+        if is_external_or_anchor_href(href):
             return m.group(0)
         # Resolve relative to the *old* doc location (it hasn't moved yet when we call this)
         old_doc_dir = doc_path.parent
@@ -97,7 +97,7 @@ def _rewrite_links_in_doc(
         rewrites += 1
         return f"{m.group(1)}{new_rel}{m.group(4)}"
 
-    new_text = link_re.sub(_replace, text)
+    new_text = MARKDOWN_LINK_RE.sub(_replace, text)
     if new_text != text:
         doc_path.write_text(new_text, encoding="utf-8")
     return rewrites
