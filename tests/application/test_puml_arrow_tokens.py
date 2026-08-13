@@ -34,6 +34,10 @@ class TestInsertingADirection:
             ("o--", "o-down-"),
             ("*--", "*-down-"),
             ("o->", "o-down->"),
+            # An arrowhead at the source is a marker too — a line drawn back the way it is read.
+            # This sat in the "cannot take one" list below on the assumption that it could not,
+            # so every such token silently lost its rank hint. `<-down-` renders; measured.
+            ("<--", "<-down-"),
         ],
     )
     def test_a_source_marker_keeps_its_place_ahead_of_the_direction(
@@ -44,7 +48,7 @@ class TestInsertingADirection:
         hint from exactly the relations ArchiMate draws as containment."""
         assert insert_arrow_direction(arrow, "down") == expected
 
-    @pytest.mark.parametrize("arrow", ["-[hidden]down-", "-down->", "o-up-", "<--", "***>"])
+    @pytest.mark.parametrize("arrow", ["-[hidden]down-", "-down->", "o-up-", "***>"])
     def test_a_token_that_cannot_take_one_is_returned_unchanged(self, arrow: str) -> None:
         """A hidden link, a token already stating a direction, and anything unrecognised."""
         assert insert_arrow_direction(arrow, "left") == arrow

@@ -116,12 +116,17 @@ class TypeResolver:
         reads, rather than a second scan of the classifiers: a label index asked for by two
         callers is one index, and the scan it replaces walked in dictionary order.
 
-        Enterprise first, and then by id, for the reason `_type_catalog` sorts its answer the same
-        way: with two declarations sharing a label — an engagement one shadowing an enterprise one
-        during a promotion — the order decided which was found, so a reference the enterprise
-        declaration would have satisfied could be refused as out-of-scope depending on nothing but
-        how the dictionary happened to iterate. The collision itself is W333's to report; this only
-        has to stop resolution depending on it.
+        Enterprise first, and then by id: with two declarations sharing a label — an engagement one
+        shadowing an enterprise one during a promotion — the order decided which was found, so a
+        reference the enterprise declaration would have satisfied could be refused as out-of-scope
+        depending on nothing but how the dictionary happened to iterate. The collision itself is
+        W333's to report; this only has to stop resolution depending on it.
+
+        `_type_catalog` sorts its page the same way and this deliberately does not share that key:
+        one is presentation order and the other is resolution precedence. They agree today because
+        the enterprise declaration is the more authoritative in both senses, not because they are
+        one rule — and binding them would let a change to how a catalogue *reads* change which
+        declaration a reference *resolves to*.
         """
         found = [
             clf

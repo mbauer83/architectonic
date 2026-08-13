@@ -205,16 +205,17 @@ def _generate_relations_include() -> str:
         "' Include after _archimate-stereotypes.puml / _archimate-glyphs.puml.",
         "",
     ]
-    types = get_module_registry().all_connection_types()
-    for name in sorted(str(key) for key in types):
-        if not name.startswith("archimate-"):
-            continue
-        arrow = types[name].puml_arrow  # type: ignore[index]
+    archimate = sorted(
+        (str(name), info)
+        for name, info in get_module_registry().all_connection_types().items()
+        if str(name).startswith("archimate-")
+    )
+    for name, info in archimate:
         for suffix, direction in _MACRO_DIRECTIONS:
-            spelled = insert_arrow_direction(arrow, direction) if direction else arrow
-            lines.append(
-                f"!define {_macro_name(name)}{suffix}(from, to, label) from {spelled} to"
+            spelled = (
+                insert_arrow_direction(info.puml_arrow, direction) if direction else info.puml_arrow
             )
+            lines.append(f"!define {_macro_name(name)}{suffix}(from, to, label) from {spelled} to")
     return "\n".join(lines) + "\n"
 
 

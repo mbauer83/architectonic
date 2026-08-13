@@ -28,8 +28,12 @@ import re
 #: A direction already present, or a link that must not be redirected at all.
 _ALREADY_DIRECTED = re.compile(r"(up|down|left|right)")
 
-#: The optional end marker a token may open with, before its line begins.
-_SOURCE_MARKER = re.compile(r"^(?P<marker>[o*]?)(?P<line>[-.])(?P<rest>.*)$")
+#: The optional end marker a token may open with, before its line begins: the containment diamonds
+#: (`o`, `*`) and an arrowhead pointing back the way the line is read (`<`). The reversed form was
+#: missing, so `<--` matched nothing here and silently kept its direction hint dropped — found when
+#: the notation derivation began spelling that marker, and the two had to agree on the alphabet.
+#: `<-up-` renders; that is measured, not assumed.
+_SOURCE_MARKER = re.compile(r"^(?P<marker>[o*<]?)(?P<line>[-.])(?P<rest>.*)$")
 
 
 def insert_arrow_direction(arrow: str, direction: str) -> str:
