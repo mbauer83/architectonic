@@ -89,7 +89,7 @@ bindings:
   correspondence_kind: scoped-by
   target:
     entity_id: APP@1780783671.hkrdtm.architecture-management-platform
-last-updated: '2026-08-13T11:22:03Z'
+last-updated: '2026-08-13T13:58:40Z'
 ---
 @startuml amp---containers
 !include <C4/C4_Component>

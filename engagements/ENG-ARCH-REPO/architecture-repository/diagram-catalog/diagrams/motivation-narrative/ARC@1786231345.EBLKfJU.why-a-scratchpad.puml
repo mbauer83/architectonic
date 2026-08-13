@@ -44,7 +44,7 @@ connection-ids-used:
 - REQ@1786230066.vVjYCpP---OUT@1786223967.Bz8wwkG@@archimate-realization
 - PRI@1786223967.IQqhM8k---REQ@1786223986.VV89psV@@archimate-influence
 - PRI@1786223967.IQqhM8k---REQ@1786223986.cMuroZ9@@archimate-influence
-last-updated: '2026-08-13T11:21:29Z'
+last-updated: '2026-08-13T13:58:14Z'
 ---
 @startuml why-a-scratchpad
 hide stereotype
@@ -114,40 +114,46 @@ skinparam ranksep 80
 !define Rel_Triggering_Left(from, to, label) from -left-> to
 !define Rel_Triggering_Right(from, to, label) from -right-> to
 skinparam rectangle<<CommonGrouping>> {
-  BackgroundColor #EDE8E1
-  BorderColor #8C7E6A
+  BackgroundColor #F3F1EB
+  BorderColor #45433F
 }
 skinparam rectangle<<MotivationGrouping>> {
-  BackgroundColor #F7EEF9
-  BorderColor #7B3F9A
+  BackgroundColor #EAE0EF
+  BorderColor #3F3842
 }
 skinparam rectangle<<assessment>> {
-  BackgroundColor #EDD6F0
-  BorderColor #7B3F9A
+  BackgroundColor #D1BADC
+  BorderColor #3F3842
+  DiagonalCorner 10
 }
 skinparam rectangle<<driver>> {
-  BackgroundColor #EDD6F0
-  BorderColor #7B3F9A
+  BackgroundColor #D1BADC
+  BorderColor #3F3842
+  DiagonalCorner 10
 }
 skinparam rectangle<<goal>> {
-  BackgroundColor #EDD6F0
-  BorderColor #7B3F9A
+  BackgroundColor #D1BADC
+  BorderColor #3F3842
+  DiagonalCorner 10
 }
 skinparam rectangle<<grouping>> {
-  BackgroundColor #E0D8CC
-  BorderColor #8C7E6A
+  BackgroundColor #E5DFD3
+  BorderColor #45433F
 }
 skinparam rectangle<<outcome>> {
-  BackgroundColor #EDD6F0
-  BorderColor #7B3F9A
+  BackgroundColor #D1BADC
+  BorderColor #3F3842
+  DiagonalCorner 10
 }
 skinparam rectangle<<principle>> {
-  BackgroundColor #EDD6F0
-  BorderColor #7B3F9A
+  BackgroundColor #D1BADC
+  BorderColor #3F3842
+  DiagonalCorner 10
 }
 skinparam rectangle<<requirement>> {
-  BackgroundColor #EDD6F0
-  BorderColor #7B3F9A
+  BackgroundColor #D1BADC
+  BorderColor #3F3842
+  DiagonalCorner 10
 }
 sprite $archimate_assessment <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.5 3h11a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H6l-2 3 1-3H2.5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"  fill="#252327" stroke="none"/></svg>
 sprite $archimate_driver <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="4.6"  fill="none" stroke="#252327" stroke-width="1.3"/><circle cx="8" cy="8" r="1.7"  fill="none" stroke="#252327" stroke-width="1.3"/><path d="M7.35 2.30v3.00h1.30V2.30z" fill="#252327"/><path d="M7.35 10.70v3.00h1.30V10.70z" fill="#252327"/><path d="M2.30 7.35h3.00v1.30H2.30z" fill="#252327"/><path d="M10.70 7.35h3.00v1.30H10.70z" fill="#252327"/><path d="M3.54 4.46L4.46 3.54L6.56 5.64L5.64 6.56z" fill="#252327"/><path d="M9.44 10.36L10.36 9.44L12.46 11.54L11.54 12.46z" fill="#252327"/><path d="M11.54 3.54L12.46 4.46L10.36 6.56L9.44 5.64z" fill="#252327"/><path d="M5.64 9.44L6.56 10.36L4.46 12.46L3.54 11.54z" fill="#252327"/></svg>

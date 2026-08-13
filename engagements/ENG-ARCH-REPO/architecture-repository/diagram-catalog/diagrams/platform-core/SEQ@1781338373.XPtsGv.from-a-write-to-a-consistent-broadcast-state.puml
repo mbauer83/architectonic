@@ -129,7 +129,7 @@ connections:
   conn_type: seq-to
   source: m9
   target: author
-last-updated: '2026-08-13T11:22:17Z'
+last-updated: '2026-08-13T13:58:50Z'
 ---
 @startuml from-a-write-to-a-consistent--broadcast-state
 skinparam wrapWidth 240

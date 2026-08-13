@@ -83,7 +83,7 @@ bindings:
   correspondence_kind: represents
   target:
     entity_id: ROL@1776633082.udXPfB.ai-agent
-last-updated: '2026-08-13T11:22:24Z'
+last-updated: '2026-08-13T13:58:55Z'
 ---
 @startuml
 hide stereotype

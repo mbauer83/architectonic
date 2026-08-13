@@ -43,7 +43,7 @@ connection-ids-used:
 - REQ@1786223986.VV89psV---OUT@1786223967.Bz8wwkG@@archimate-realization
 - PRC@1786225282._6NSUkC---SRV@1786225282.lzo5hQK@@archimate-realization
 - PRC@1786225282.si8h9M1---SRV@1786225282.C8EOSEB@@archimate-realization
-last-updated: '2026-08-13T11:21:57Z'
+last-updated: '2026-08-13T13:58:36Z'
 ---
 @startuml the-scratchpad--end-to-end
 hide stereotype
@@ -113,68 +113,74 @@ skinparam ranksep 80
 !define Rel_Triggering_Left(from, to, label) from -left-> to
 !define Rel_Triggering_Right(from, to, label) from -right-> to
 skinparam rectangle<<ApplicationGrouping>> {
-  BackgroundColor #E8F8FF
-  BorderColor #0078A0
+  BackgroundColor #DBEAEE
+  BorderColor #353E41
 }
 skinparam rectangle<<BusinessGrouping>> {
-  BackgroundColor #FFFDEC
-  BorderColor #B8860B
+  BackgroundColor #F7EDC3
+  BorderColor #474024
 }
 skinparam rectangle<<CommonGrouping>> {
-  BackgroundColor #EDE8E1
-  BorderColor #8C7E6A
+  BackgroundColor #F3F1EB
+  BorderColor #45433F
 }
 skinparam rectangle<<MotivationGrouping>> {
-  BackgroundColor #F7EEF9
-  BorderColor #7B3F9A
+  BackgroundColor #EAE0EF
+  BorderColor #3F3842
 }
 skinparam rectangle<<StrategyGrouping>> {
-  BackgroundColor #FAF0D9
-  BorderColor #8B6914
+  BackgroundColor #F8E1B6
+  BorderColor #48391C
 }
 skinparam rectangle<<TechnologyGrouping>> {
-  BackgroundColor #E8FFEE
-  BorderColor #2E7D32
+  BackgroundColor #E1EEDB
+  BorderColor #384134
 }
 skinparam rectangle<<application_component>> {
-  BackgroundColor #CCF2FF
-  BorderColor #0078A0
+  BackgroundColor #B0D0D9
+  BorderColor #353E41
 }
 skinparam rectangle<<artifact>> {
-  BackgroundColor #CCFFCC
-  BorderColor #2E7D32
+  BackgroundColor #BCD9AE
+  BorderColor #384134
 }
 skinparam rectangle<<business_object>> {
-  BackgroundColor #FFFAC8
-  BorderColor #B8860B
+  BackgroundColor #EDD779
+  BorderColor #474024
 }
 skinparam rectangle<<capability>> {
-  BackgroundColor #F5DEB3
-  BorderColor #8B6914
+  BackgroundColor #EFBD5D
+  BorderColor #48391C
+  RoundCorner 14
 }
 skinparam rectangle<<data_object>> {
-  BackgroundColor #CCF2FF
-  BorderColor #0078A0
+  BackgroundColor #B0D0D9
+  BorderColor #353E41
 }
 skinparam rectangle<<goal>> {
-  BackgroundColor #EDD6F0
-  BorderColor #7B3F9A
+  BackgroundColor #D1BADC
+  BorderColor #3F3842
+  DiagonalCorner 10
 }
 skinparam rectangle<<outcome>> {
-  BackgroundColor #EDD6F0
-  BorderColor #7B3F9A
+  BackgroundColor #D1BADC
+  BorderColor #3F3842
+  DiagonalCorner 10
 }
 skinparam rectangle<<process>> {
-  BackgroundColor #E0D8CC
-  BorderColor #8C7E6A
+  BackgroundColor #E5DFD3
+  BorderColor #45433F
+  RoundCorner 14
 }
 skinparam rectangle<<requirement>> {
-  BackgroundColor #EDD6F0
-  BorderColor #7B3F9A
+  BackgroundColor #D1BADC
+  BorderColor #3F3842
+  DiagonalCorner 10
 }
 skinparam rectangle<<service>> {
-  BackgroundColor #E0D8CC
-  BorderColor #8C7E6A
+  BackgroundColor #E5DFD3
+  BorderColor #45433F
+  RoundCorner 14
 }
 sprite $archimate_application_component <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M4 4.2h7.4v7.6H4z"  fill="#252327" stroke="none"/><path d="M2.30 4.95h1.70v1.30H2.30z" fill="#252327"/><path d="M2.30 7.35h1.70v1.30H2.30z" fill="#252327"/><path d="M2.30 9.75h1.70v1.30H2.30z" fill="#252327"/><path d="M11.40 4.95h1.40v1.30H11.40z" fill="#252327"/><path d="M11.40 7.35h1.40v1.30H11.40z" fill="#252327"/><path d="M11.40 9.75h1.40v1.30H11.40z" fill="#252327"/></svg>
 sprite $archimate_artifact <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M4 3.5h5.8l2.2 2.2v6.8H4z"  fill="#252327" stroke="none"/><path d="M9.15 3.50v2.20h1.30V3.50z" fill="#252327"/><path d="M9.80 5.05h2.20v1.30H9.80z" fill="#252327"/></svg>

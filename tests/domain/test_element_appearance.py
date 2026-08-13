@@ -16,7 +16,7 @@ import pytest
 
 from src.domain.ontology_representation.element_appearance import (
     CORNER_STYLES,
-    DeEmphasis,
+    ColorMix,
     ElementAppearance,
 )
 from src.infrastructure.app_bootstrap import get_module_registry
@@ -85,11 +85,11 @@ class TestSilenceIsNotAClaim:
         assert appearance.is_empty
 
 
-class TestDeEmphasisIsDerivedFromTheOneColour:
+class TestColorMixIsDerivedFromTheOneColour:
     def test_a_muted_colour_moves_toward_the_declared_base(self) -> None:
         appearance = ElementAppearance(
             domain_colors={"motivation": "#000000"},
-            de_emphasis=DeEmphasis(toward="#FFFFFF", amount=0.5),
+            de_emphasis=ColorMix(toward="#FFFFFF", amount=0.5),
         )
 
         assert appearance.de_emphasized("#000000") == "#808080"
@@ -101,7 +101,7 @@ class TestDeEmphasisIsDerivedFromTheOneColour:
         assert appearance.de_emphasized("#D1BADC") == "#D1BADC"
 
     def test_an_unreadable_colour_is_returned_unchanged(self) -> None:
-        appearance = ElementAppearance(de_emphasis=DeEmphasis(toward="#FFFFFF", amount=0.5))
+        appearance = ElementAppearance(de_emphasis=ColorMix(toward="#FFFFFF", amount=0.5))
 
         assert appearance.de_emphasized("not-a-colour") == "not-a-colour"
 

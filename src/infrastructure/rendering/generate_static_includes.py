@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from typing import Any
 
 from src.config.repo_paths import DIAGRAM_CATALOG
 from src.config.settings import archimate_type_markers
@@ -52,51 +53,6 @@ def _generate_glyph_include(repo_root: Path) -> str:
     return "\n".join(lines) + "\n"
 
 
-_DOMAIN_COLORS: dict[str, dict[str, str]] = {
-    "motivation": {
-        "bg": "#EDD6F0",
-        "border": "#7B3F9A",
-        "grouping_bg": "#F7EEF9",
-        "grouping_name": "MotivationGrouping",
-    },
-    "strategy": {
-        "bg": "#F5DEB3",
-        "border": "#8B6914",
-        "grouping_bg": "#FAF0D9",
-        "grouping_name": "StrategyGrouping",
-    },
-    "common": {
-        "bg": "#E0D8CC",
-        "border": "#8C7E6A",
-        "grouping_bg": "#EDE8E1",
-        "grouping_name": "CommonGrouping",
-    },
-    "business": {
-        "bg": "#FFFAC8",
-        "border": "#B8860B",
-        "grouping_bg": "#FFFDEC",
-        "grouping_name": "BusinessGrouping",
-    },
-    "application": {
-        "bg": "#CCF2FF",
-        "border": "#0078A0",
-        "grouping_bg": "#E8F8FF",
-        "grouping_name": "ApplicationGrouping",
-    },
-    "technology": {
-        "bg": "#CCFFCC",
-        "border": "#2E7D32",
-        "grouping_bg": "#E8FFEE",
-        "grouping_name": "TechnologyGrouping",
-    },
-    "implementation": {
-        "bg": "#FFE4C4",
-        "border": "#8D4E00",
-        "grouping_bg": "#FFF3E8",
-        "grouping_name": "ImplementationGrouping",
-    },
-}
-
 _STEREOTYPE_HEADER = """\
 hide stereotype
 
@@ -118,8 +74,24 @@ skinparam rectangle<<Grouping>> {
 """
 
 
-def _stereotype_block(name: str, bg: str, border: str) -> str:
-    return f"skinparam rectangle<<{name}>> {{\n  BackgroundColor {bg}\n  BorderColor {border}\n}}"
+#: How far a corner is cut or rounded, in points. One number per style, because the *style* is the
+#: declaration and this is the renderer's rendition of it — the ontology says `diagonal`, not `12`.
+_CORNER_SIZE: dict[str, int] = {"rounded": 14, "diagonal": 10}
+
+
+def _stereotype_block(name: str, bg: str, border: str, corner: str = "square") -> str:
+    """One skinparam block: fill, line, and the corners this element's category is drawn with.
+
+    `square` adds nothing — PlantUML's default rectangle is already square, and stating a
+    `RoundCorner 0` would be a declaration where the absence is the answer.
+    """
+    lines = [f"skinparam rectangle<<{name}>> {{", f"  BackgroundColor {bg}", f"  BorderColor {border}"]
+    if corner == "rounded":
+        lines.append(f"  RoundCorner {_CORNER_SIZE['rounded']}")
+    elif corner == "diagonal":
+        lines.append(f"  DiagonalCorner {_CORNER_SIZE['diagonal']}")
+    lines.append("}")
+    return "\n".join(lines)
 
 
 def _generate_stereotype_include(repo_root: Path) -> str:
@@ -135,30 +107,38 @@ def _generate_stereotype_include(repo_root: Path) -> str:
         _STEREOTYPE_HEADER,
     ]
 
-    # Group entity types by domain (first hierarchy element).
-    domain_types: dict[str, list[str]] = {}
+    # Group entity types by domain (first hierarchy element), keeping the ontology that declared
+    # each one: colour and corners are that ontology's statement, not a global table.
+    domain_types: dict[str, list[tuple[str, Any]]] = {}
+    appearance_by_domain: dict[str, Any] = {}
     for om in registry.all_ontologies().values():
         for artifact_type, info in om.entity_types.items():
             domain = info.hierarchy[0] if info.hierarchy else "common"
-            domain_types.setdefault(domain, []).append(str(artifact_type))
+            domain_types.setdefault(domain, []).append((str(artifact_type), info))
+            appearance_by_domain.setdefault(domain, om.element_appearance)
 
-    ordered_domains = registry.domain_order()
-
-    for domain in ordered_domains:
-        colors = _DOMAIN_COLORS.get(domain)
-        if not colors:
+    for domain in registry.domain_order():
+        appearance = appearance_by_domain.get(domain)
+        fill = appearance.color_for(domain) if appearance is not None else None
+        if not fill or appearance is None:
             continue
-        types_in_domain = sorted(domain_types.get(domain, []))
+        types_in_domain = sorted(domain_types.get(domain, []), key=lambda pair: pair[0])
         if not types_in_domain:
             continue
 
+        border = appearance.border_for(fill)
         lines.append(f"' {'-' * 75}")
         lines.append(f"' {domain.capitalize()} layer")
         lines.append(f"' {'-' * 75}")
-        lines.append(_stereotype_block(colors["grouping_name"], colors["grouping_bg"], colors["border"]))
-        for artifact_type in types_in_domain:
-            key = _sprite_key(artifact_type)
-            lines.append(_stereotype_block(key, colors["bg"], colors["border"]))
+        # A container is the domain's colour, receding — the same rule a de-emphasized element
+        # uses, rather than a second tint declared beside the first.
+        lines.append(_stereotype_block(
+            f"{domain.capitalize()}Grouping", appearance.de_emphasized(fill), border,
+        ))
+        for artifact_type, info in types_in_domain:
+            lines.append(_stereotype_block(
+                _sprite_key(artifact_type), fill, border, appearance.corner_for(info.classes),
+            ))
         lines.append("")
 
     return "\n".join(lines)

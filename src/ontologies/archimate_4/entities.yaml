@@ -120,6 +120,12 @@ element_appearance:
     toward: '#FFFFFF'
     amount: 0.55
 
+  # The line around an element, derived from its fill rather than declared beside it — every
+  # earlier table carried a fill and a border side by side with nothing holding them to each other.
+  border:
+    toward: '#000000'
+    amount: 0.7
+
 # ── Which elements act ────────────────────────────────────────────────────────
 # A behavioural element is one that does something which can be done well or badly: a component, a
 # service, a function, a process, a device. Declared here because it is a fact about ArchiMate's own

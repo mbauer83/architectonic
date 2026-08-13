@@ -18,7 +18,7 @@ connection-ids-used:
 - FNC@1777390444.lLdx12---FNC@1776633080.BdEMPx@@archimate-triggering
 - FNC@1777390444.lLdx12---FNC@1776633704.bFY40B@@archimate-triggering
 - FNC@1777390444.lLdx12---FNC@1776633706.3jpc7O@@archimate-triggering
-last-updated: '2026-08-13T11:21:53Z'
+last-updated: '2026-08-13T13:58:32Z'
 ---
 @startuml querying---navigation
 hide stereotype
@@ -88,12 +88,14 @@ skinparam ranksep 80
 !define Rel_Triggering_Left(from, to, label) from -left-> to
 !define Rel_Triggering_Right(from, to, label) from -right-> to
 skinparam rectangle<<function>> {
-  BackgroundColor #E0D8CC
-  BorderColor #8C7E6A
+  BackgroundColor #E5DFD3
+  BorderColor #45433F
+  RoundCorner 14
 }
 skinparam rectangle<<service>> {
-  BackgroundColor #E0D8CC
-  BorderColor #8C7E6A
+  BackgroundColor #E5DFD3
+  BorderColor #45433F
+  RoundCorner 14
 }
 sprite $archimate_function <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.9 11.7V5.4L8 3.1l5.1 2.3v6.3L8 9.2z"  fill="#252327" stroke="none"/></svg>
 sprite $archimate_service <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3.2 4.1h7.2a2.8 2.8 0 0 1 0 7.8H3.2a2.8 2.8 0 0 1 0-7.8z"  fill="#252327" stroke="none"/></svg>

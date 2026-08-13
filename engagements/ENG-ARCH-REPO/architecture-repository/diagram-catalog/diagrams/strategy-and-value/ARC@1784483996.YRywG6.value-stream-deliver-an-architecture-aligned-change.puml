@@ -53,7 +53,7 @@ connection-ids-used:
 - VS@1784482984.VZ-P2h---VS@1784483026.nf-e3Y@@archimate-composition
 - VS@1784482984.VZ-P2h---VS@1784483014.xrSjjJ@@archimate-composition
 - VS@1784482984.VZ-P2h---VS@1784483024.z1Yg0V@@archimate-composition
-last-updated: '2026-08-13T11:22:31Z'
+last-updated: '2026-08-13T13:59:00Z'
 ---
 @startuml value-stream--deliver-an-architecture-aligned-change
 hide stereotype
@@ -123,28 +123,32 @@ skinparam ranksep 80
 !define Rel_Triggering_Left(from, to, label) from -left-> to
 !define Rel_Triggering_Right(from, to, label) from -right-> to
 skinparam rectangle<<MotivationGrouping>> {
-  BackgroundColor #F7EEF9
-  BorderColor #7B3F9A
+  BackgroundColor #EAE0EF
+  BorderColor #3F3842
 }
 skinparam rectangle<<StrategyGrouping>> {
-  BackgroundColor #FAF0D9
-  BorderColor #8B6914
+  BackgroundColor #F8E1B6
+  BorderColor #48391C
 }
 skinparam rectangle<<capability>> {
-  BackgroundColor #F5DEB3
-  BorderColor #8B6914
+  BackgroundColor #EFBD5D
+  BorderColor #48391C
+  RoundCorner 14
 }
 skinparam rectangle<<stakeholder>> {
-  BackgroundColor #EDD6F0
-  BorderColor #7B3F9A
+  BackgroundColor #D1BADC
+  BorderColor #3F3842
+  DiagonalCorner 10
 }
 skinparam rectangle<<value>> {
-  BackgroundColor #EDD6F0
-  BorderColor #7B3F9A
+  BackgroundColor #D1BADC
+  BorderColor #3F3842
+  DiagonalCorner 10
 }
 skinparam rectangle<<value_stream>> {
-  BackgroundColor #F5DEB3
-  BorderColor #8B6914
+  BackgroundColor #EFBD5D
+  BorderColor #48391C
+  RoundCorner 14
 }
 sprite $archimate_capability <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3.10 11.25h9.80v1.30H3.10z" fill="#252327"/><path d="M4.00 8.80h1.90v3.10H4.00z" fill="#252327"/><path d="M6.80 6.80h1.90v5.10H6.80z" fill="#252327"/><path d="M9.60 4.70h1.90v7.20H9.60z" fill="#252327"/></svg>
 sprite $archimate_stakeholder <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3.1 4.1h7.3L13 8l-2.6 3.9H3.1L5.6 8z"  fill="#252327" stroke="none"/></svg>

@@ -25,7 +25,7 @@ connection-ids-used:
 - PRC@1776635645.GHVpDA---FNC@1777409722.TSs7wk@@archimate-composition
 - PRC@1776635645.GHVpDA---FNC@1777474430.fCdnJ2@@archimate-composition
 - PRC@1776635645.GHVpDA---FNC@1777390444.lLdx12@@archimate-aggregation
-last-updated: '2026-08-13T11:21:50Z'
+last-updated: '2026-08-13T13:58:30Z'
 ---
 @startuml architecture-implementation
 hide stereotype
@@ -95,12 +95,14 @@ skinparam ranksep 80
 !define Rel_Triggering_Left(from, to, label) from -left-> to
 !define Rel_Triggering_Right(from, to, label) from -right-> to
 skinparam rectangle<<function>> {
-  BackgroundColor #E0D8CC
-  BorderColor #8C7E6A
+  BackgroundColor #E5DFD3
+  BorderColor #45433F
+  RoundCorner 14
 }
 skinparam rectangle<<process>> {
-  BackgroundColor #E0D8CC
-  BorderColor #8C7E6A
+  BackgroundColor #E5DFD3
+  BorderColor #45433F
+  RoundCorner 14
 }
 sprite $archimate_function <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.9 11.7V5.4L8 3.1l5.1 2.3v6.3L8 9.2z"  fill="#252327" stroke="none"/></svg>
 sprite $archimate_process <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.6 4.1h6.3V2.8l4.5 5.2-4.5 5.2v-1.3H2.6z"  fill="#252327" stroke="none"/></svg>

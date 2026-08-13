@@ -46,7 +46,7 @@ connection-ids-used:
 - PRC@1712870400.0Rz5Ex---FNC@1777390496.Z2rrfP@@archimate-composition
 - PRC@1712870400.0Rz5Ex---FNC@1777390497.ndMgDn@@archimate-composition
 - PRC@1712870400.0Rz5Ex---FNC@1777390501.wahMSm@@archimate-composition
-last-updated: '2026-08-13T11:22:22Z'
+last-updated: '2026-08-13T13:58:53Z'
 ---
 @startuml promote-artifacts
 hide stereotype
@@ -116,20 +116,24 @@ skinparam ranksep 80
 !define Rel_Triggering_Left(from, to, label) from -left-> to
 !define Rel_Triggering_Right(from, to, label) from -right-> to
 skinparam rectangle<<event>> {
-  BackgroundColor #E0D8CC
-  BorderColor #8C7E6A
+  BackgroundColor #E5DFD3
+  BorderColor #45433F
+  RoundCorner 14
 }
 skinparam rectangle<<function>> {
-  BackgroundColor #E0D8CC
-  BorderColor #8C7E6A
+  BackgroundColor #E5DFD3
+  BorderColor #45433F
+  RoundCorner 14
 }
 skinparam rectangle<<process>> {
-  BackgroundColor #E0D8CC
-  BorderColor #8C7E6A
+  BackgroundColor #E5DFD3
+  BorderColor #45433F
+  RoundCorner 14
 }
 skinparam rectangle<<service>> {
-  BackgroundColor #E0D8CC
-  BorderColor #8C7E6A
+  BackgroundColor #E5DFD3
+  BorderColor #45433F
+  RoundCorner 14
 }
 sprite $archimate_event <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3.1 4h5.6a3.8 3.8 0 0 1 0 8H3.1l2.1-4z"  fill="#252327" stroke="none"/></svg>
 sprite $archimate_function <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.9 11.7V5.4L8 3.1l5.1 2.3v6.3L8 9.2z"  fill="#252327" stroke="none"/></svg>

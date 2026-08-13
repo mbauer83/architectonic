@@ -39,12 +39,14 @@ DEFAULT_CORNER: Final[CornerStyle] = "square"
 
 
 @dataclass(frozen=True)
-class DeEmphasis:
-    """How a de-emphasized variant of a declared colour is produced.
+class ColorMix:
+    """A colour derived from a declared one by mixing toward another.
 
-    Declared rather than left to each surface, because "add some white" is exactly the kind of
-    instruction that becomes four slightly different greys. `amount` is the fraction of `toward`
-    mixed in, so 0 is the colour untouched and 1 is `toward` itself.
+    One shape for every derived colour this ontology needs — a muted variant, a border, a container
+    tint. Declared rather than left to each surface, because "add some white" is exactly the kind
+    of instruction that becomes four slightly different greys, which is how three palettes that
+    agreed on nothing came about. `amount` is the fraction of `toward` mixed in, so 0 is the colour
+    untouched and 1 is `toward` itself.
     """
 
     toward: str = "#FFFFFF"
@@ -66,7 +68,8 @@ class ElementAppearance:
 
     domain_colors: Mapping[str, str] = field(default_factory=dict)
     corner_classes: Mapping[str, frozenset[str]] = field(default_factory=dict)
-    de_emphasis: DeEmphasis = DeEmphasis()
+    de_emphasis: ColorMix = ColorMix()
+    border: ColorMix = ColorMix()
 
     @property
     def is_empty(self) -> bool:
@@ -91,9 +94,19 @@ class ElementAppearance:
 
     def de_emphasized(self, color: str) -> str:
         """*color*, muted by the declared rule. Returned unchanged where no rule is declared."""
-        if not self.de_emphasis.is_declared:
-            return color
-        return _mix(color, self.de_emphasis.toward, self.de_emphasis.amount)
+        return self._mixed(color, self.de_emphasis)
+
+    def border_for(self, color: str) -> str:
+        """The line drawn around an element filled with *color*.
+
+        Derived rather than declared per domain, so a palette cannot half-move: every earlier
+        table carried a fill and a border side by side, and nothing held them to each other.
+        """
+        return self._mixed(color, self.border)
+
+    @staticmethod
+    def _mixed(color: str, rule: ColorMix) -> str:
+        return _mix(color, rule.toward, rule.amount) if rule.is_declared else color
 
     @classmethod
     def from_mapping(cls, data: Mapping[str, object]) -> "ElementAppearance":
@@ -113,18 +126,21 @@ class ElementAppearance:
                 for style, names in corners.items()
                 if style in CORNER_STYLES and isinstance(names, (list, tuple))
             } if isinstance(corners, Mapping) else {},
-            de_emphasis=_de_emphasis_from(muted),
+            de_emphasis=_mix_rule(muted, default_toward="#FFFFFF"),
+            border=_mix_rule(raw.get("border"), default_toward="#000000"),
         )
 
 
-def _de_emphasis_from(raw: object) -> DeEmphasis:
+def _mix_rule(raw: object, *, default_toward: str) -> ColorMix:
     if not isinstance(raw, Mapping):
-        return DeEmphasis()
+        return ColorMix(toward=default_toward)
     try:
         amount = float(str(raw.get("amount", 0)))
     except ValueError:
-        return DeEmphasis()
-    return DeEmphasis(toward=str(raw.get("toward") or "#FFFFFF"), amount=max(0.0, min(1.0, amount)))
+        return ColorMix(toward=default_toward)
+    return ColorMix(
+        toward=str(raw.get("toward") or default_toward), amount=max(0.0, min(1.0, amount))
+    )
 
 
 def _channels(color: str) -> tuple[int, int, int] | None:

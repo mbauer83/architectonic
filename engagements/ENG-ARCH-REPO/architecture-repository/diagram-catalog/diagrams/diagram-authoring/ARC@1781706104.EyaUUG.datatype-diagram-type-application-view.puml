@@ -29,7 +29,7 @@ connections:
 - connection_id: APP@1781705596.n8Pikk.datatype-diagram-type-module---REQ@1781704600.TbcGSB.datatype-uml-class-diagram-authoring@@archimate-realization
 - connection_id: APP@1781705596.n8Pikk.datatype-diagram-type-module---FNC@1781705395.halAQt.validate-datatype-data-object-relationship-consistency@@archimate-association
 - connection_id: APP@1712870400.ca3vm7.model-verifier---FNC@1781705395.halAQt.validate-datatype-data-object-relationship-consistency@@archimate-assignment
-last-updated: '2026-08-13T11:21:08Z'
+last-updated: '2026-08-13T13:57:59Z'
 ---
 @startuml datatype-diagram-type---application-view
 hide stereotype
@@ -99,28 +99,30 @@ skinparam ranksep 80
 !define Rel_Triggering_Left(from, to, label) from -left-> to
 !define Rel_Triggering_Right(from, to, label) from -right-> to
 skinparam rectangle<<ApplicationGrouping>> {
-  BackgroundColor #E8F8FF
-  BorderColor #0078A0
+  BackgroundColor #DBEAEE
+  BorderColor #353E41
 }
 skinparam rectangle<<CommonGrouping>> {
-  BackgroundColor #EDE8E1
-  BorderColor #8C7E6A
+  BackgroundColor #F3F1EB
+  BorderColor #45433F
 }
 skinparam rectangle<<MotivationGrouping>> {
-  BackgroundColor #F7EEF9
-  BorderColor #7B3F9A
+  BackgroundColor #EAE0EF
+  BorderColor #3F3842
 }
 skinparam rectangle<<application_component>> {
-  BackgroundColor #CCF2FF
-  BorderColor #0078A0
+  BackgroundColor #B0D0D9
+  BorderColor #353E41
 }
 skinparam rectangle<<function>> {
-  BackgroundColor #E0D8CC
-  BorderColor #8C7E6A
+  BackgroundColor #E5DFD3
+  BorderColor #45433F
+  RoundCorner 14
 }
 skinparam rectangle<<requirement>> {
-  BackgroundColor #EDD6F0
-  BorderColor #7B3F9A
+  BackgroundColor #D1BADC
+  BorderColor #3F3842
+  DiagonalCorner 10
 }
 sprite $archimate_application_component <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M4 4.2h7.4v7.6H4z"  fill="#252327" stroke="none"/><path d="M2.30 4.95h1.70v1.30H2.30z" fill="#252327"/><path d="M2.30 7.35h1.70v1.30H2.30z" fill="#252327"/><path d="M2.30 9.75h1.70v1.30H2.30z" fill="#252327"/><path d="M11.40 4.95h1.40v1.30H11.40z" fill="#252327"/><path d="M11.40 7.35h1.40v1.30H11.40z" fill="#252327"/><path d="M11.40 9.75h1.40v1.30H11.40z" fill="#252327"/></svg>
 sprite $archimate_function <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.9 11.7V5.4L8 3.1l5.1 2.3v6.3L8 9.2z"  fill="#252327" stroke="none"/></svg>
