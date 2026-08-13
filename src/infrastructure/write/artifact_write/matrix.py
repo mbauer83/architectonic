@@ -49,9 +49,29 @@ def create_matrix(
     assert_engagement_write_root(repo_root)
     existing_path = registry.find_file_by_id(artifact_id) if artifact_id else None
     if existing_path is not None:
+        stored = parse_matrix_file(existing_path).frontmatter
         # artifact_id may be the short/stale-slug form that resolved to existing_path above;
         # canonicalize to the file's own recorded id so it isn't written back out truncated.
-        effective_id = str(parse_matrix_file(existing_path).frontmatter.get("artifact-id") or artifact_id)
+        effective_id = str(stored.get("artifact-id") or artifact_id)
+        # On an upsert, a declaration the caller does not state is preserved rather than dropped.
+        # It used to be dropped: the axes are frontmatter the *author* declares and the MCP tool
+        # does not even expose, so any agent handing back an edited body — repairing a link, say —
+        # silently erased which entities the matrix relates. Restating everything is not something
+        # a caller can do through a surface that will not carry it.
+        entity_ids = entity_ids if entity_ids is not None else as_optional_str_list(stored.get("entity-ids-used"))
+        from_entity_ids = (
+            from_entity_ids if from_entity_ids is not None
+            else as_optional_str_list(stored.get("from-entity-ids"))
+        )
+        to_entity_ids = (
+            to_entity_ids if to_entity_ids is not None else as_optional_str_list(stored.get("to-entity-ids"))
+        )
+        keywords = keywords if keywords is not None else as_optional_str_list(stored.get("keywords"))
+        stored_conn_types = stored.get("conn-type-configs")
+        if conn_type_configs is None and isinstance(stored_conn_types, list):
+            conn_type_configs = [row for row in stored_conn_types if isinstance(row, dict)]
+        if combined is None and stored.get("combined") is not None:
+            combined = bool(stored.get("combined"))
     else:
         effective_id = artifact_id or get_default_allocator().allocate(
             prefix=prefix_for_diagram_type("matrix"), name_hint=name

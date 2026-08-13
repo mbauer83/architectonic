@@ -113,3 +113,65 @@ def test_edit_diagram_matrix_not_found_still_reports_clear_error(repo: Path) -> 
         mcp.artifact_edit_diagram(
             artifact_id="MAT@1778000099.tmtx.missing", name="x", dry_run=False, repo_root=str(repo),
         )
+
+
+class TestAnUpsertKeepsWhatItIsNotToldAbout:
+    """`artifact_create_matrix` upserts an existing matrix, and used to write only what the caller
+    restated — dropping the axis declarations and the connection-type configuration, which are
+    frontmatter an author declares and the MCP tool does not even expose. An agent handing back an
+    edited body, to repair a link say, silently erased which entities the matrix relates."""
+
+    def test_the_axes_and_conn_type_configs_survive_a_body_only_upsert(self, repo: Path) -> None:
+        artifact_id = "MAT@1778000020.tmtx.matrix-upsert"
+        first = mcp.artifact_create_matrix(
+            name="Matrix", matrix_markdown="| A | B |\n|---|---|\n| 1 | 2 |\n",
+            artifact_id=artifact_id, dry_run=False, repo_root=str(repo),
+        )
+        assert first["wrote"], first
+        path = repo / "diagram-catalog" / "diagrams" / f"{artifact_id}.md"
+        # Declared directly, because the MCP tool has no parameter for them — which is the point.
+        text = path.read_text(encoding="utf-8")
+        text = text.replace(
+            "artifact-type: diagram",
+            "artifact-type: diagram\nfrom-entity-ids:\n- REQ@1.a.one\nto-entity-ids:\n- APP@1.b.two",
+            1,
+        )
+        path.write_text(text, encoding="utf-8")
+
+        mcp.artifact_create_matrix(
+            name="Matrix", matrix_markdown="| A | B |\n|---|---|\n| 1 | 3 |\n",
+            artifact_id=artifact_id, dry_run=False, repo_root=str(repo),
+        )
+
+        fm = _read_fm(path)
+        assert fm.get("from-entity-ids") == ["REQ@1.a.one"]
+        assert fm.get("to-entity-ids") == ["APP@1.b.two"]
+        assert "| 1 | 3 |" in path.read_text(encoding="utf-8")
+
+    def test_a_caller_that_states_an_axis_replaces_it(self, repo: Path) -> None:
+        """Preserving the unstated must not make a stated one unsettable."""
+        from src.infrastructure.mcp.artifact_mcp.context import registry_cached, roots_key, verifier_for
+        from src.infrastructure.write.artifact_write import matrix as matrix_ops
+
+        artifact_id = "MAT@1778000021.tmtx.matrix-restate"
+        mcp.artifact_create_matrix(
+            name="Matrix", matrix_markdown="| A | B |\n|---|---|\n| 1 | 2 |\n",
+            artifact_id=artifact_id, dry_run=False, repo_root=str(repo),
+        )
+        path = repo / "diagram-catalog" / "diagrams" / f"{artifact_id}.md"
+        roots = (repo.resolve(),)
+        key = roots_key(roots)
+
+        matrix_ops.create_matrix(
+            repo_root=repo.resolve(),
+            registry=registry_cached(key),
+            verifier=verifier_for(key, include_registry=True),
+            clear_repo_caches=lambda _root: None,
+            name="Matrix",
+            matrix_markdown="| A | B |\n|---|---|\n| 1 | 2 |\n",
+            artifact_id=artifact_id,
+            from_entity_ids=["REQ@9.z.stated"],
+            dry_run=False,
+        )
+
+        assert _read_fm(path).get("from-entity-ids") == ["REQ@9.z.stated"]

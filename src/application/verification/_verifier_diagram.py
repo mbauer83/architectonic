@@ -33,6 +33,7 @@ from src.application.verification.artifact_verifier_registry import ArtifactRegi
 from src.application.verification.artifact_verifier_rules import (
     check_diagram_artifact_type,
     check_enum,
+    check_internal_links,
     check_matrix_markdown_shape,
     check_puml_structure,
     check_required_fields,
@@ -182,4 +183,9 @@ def verify_matrix_diagram(
         result.issues.append(_no_registry_issue(loc))
 
     check_matrix_markdown_shape(fm, content, result, loc)
+    # A matrix body is prose: a table whose cells are markdown links to the elements it relates.
+    # The rule that finds a link pointing at nothing had only ever been asked about documents, and
+    # every dangling link in this repository was in a matrix — 57 of them, left behind when the
+    # model moved under `projects/<slug>/`. Same fact, same code, a second kind of file.
+    check_internal_links(content, path, result, loc)
     return result
