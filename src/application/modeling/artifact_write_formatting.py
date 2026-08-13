@@ -334,8 +334,11 @@ def format_matrix_markdown(
     if keywords:
         frontmatter["keywords"] = keywords
     frontmatter["last-updated"] = last_updated
-    if from_entity_ids is not None:
-        frontmatter["from-entity-ids"] = from_entity_ids
+    # Either axis being stated writes both, so the pair stays a pair. Keyed on `from` alone, a
+    # caller stating only the column axis got neither — the value was accepted and dropped, which
+    # is the one answer worse than a refusal.
+    if from_entity_ids is not None or to_entity_ids is not None:
+        frontmatter["from-entity-ids"] = from_entity_ids or []
         frontmatter["to-entity-ids"] = to_entity_ids or []
     elif entity_ids:
         frontmatter["entity-ids"] = entity_ids

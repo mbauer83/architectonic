@@ -73,6 +73,7 @@ def check_diagram_references_scoped(
         result,
         loc,
     )
+    _check_matrix_axis_ids(fm, allowed_entities, all_entities, file_scope, result, loc)
     check_all_view_derivations(fm, result, loc, catalog=derivation_catalog)
     check_bindings_scoped(
         fm, file_scope,
@@ -168,6 +169,58 @@ def _check_entity_ids_used(
             eid_str, current_spelling_of(eid_str, canonical_entities),
             code="W305", field="entity-ids-used", result=result, loc=loc,
         )
+
+
+#: A matrix declares its two axes as entity id lists, exactly as a diagram declares what it draws.
+_MATRIX_AXES = ("from-entity-ids", "to-entity-ids")
+
+
+def _check_matrix_axis_ids(
+    fm: dict,
+    allowed_entities: set[str],
+    all_entities: set[str],
+    file_scope: Literal["enterprise", "engagement", "unknown"],
+    result: VerificationResult,
+    loc: str,
+) -> None:
+    """A matrix's axes name entities, and those entities have to exist.
+
+    `entity-ids-used` has been resolved since the beginning; the axes never were, though they are
+    the same kind of claim — an entity id a diagram declares. Two outcome ids that were never
+    created sat in a `to-entity-ids` axis from the initial commit, drawing two columns of a
+    traceability matrix and four ticks against requirements, and nothing asked whether they
+    resolved. They surfaced only once a link check was pointed at diagram prose, because the table
+    happened to link them as well.
+
+    Same severity as `entity-ids-used`, for the same reason: a diagram naming an entity that does
+    not exist is not a style question, and the axis is what the columns are *derived from*.
+    """
+    allowed_short = {stable_id(entity_id) for entity_id in allowed_entities}
+    all_short = {stable_id(entity_id) for entity_id in all_entities}
+    for axis in _MATRIX_AXES:
+        declared = fm.get(axis)
+        if declared is None:
+            continue
+        if not isinstance(declared, list):
+            result.issues.append(Issue(Severity.WARNING, "W303", f"{axis} should be a YAML list", loc))
+            continue
+        for entity_id in declared:
+            entity_str = str(entity_id)
+            if stable_id(entity_str) in allowed_short:
+                continue
+            result.issues.append(
+                Issue(
+                    Severity.ERROR,
+                    "E310" if stable_id(entity_str) in all_short and file_scope == "enterprise" else "E301",
+                    (
+                        f"{axis} references non-enterprise entity '{entity_str}' "
+                        "— enterprise diagrams may only reference enterprise entities"
+                        if stable_id(entity_str) in all_short and file_scope == "enterprise"
+                        else f"{axis} references unknown entity '{entity_str}'"
+                    ),
+                    loc,
+                )
+            )
 
 
 def _check_connection_ids_used(

@@ -33,6 +33,25 @@ def _read_fm(path: Path) -> dict:
     return yaml.safe_load(text.split("---\n")[1])
 
 
+def _make_entity(repo: Path, artifact_id: str, name: str, artifact_type: str = "requirement") -> str:
+    """A real entity in the fixture, so a matrix axis naming it resolves.
+
+    Written directly rather than through a write tool: these tests are about the matrix, and the
+    entity is scenery. Every axis test needs one because the axis is now resolved against the
+    registry, which is the whole point of the rule.
+    """
+    domain = "motivation"
+    path = repo / "model" / domain / artifact_type / f"{artifact_id}.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        f"---\nartifact-id: {artifact_id}\nartifact-type: {artifact_type}\nname: {name}\n"
+        f"version: 0.1.0\nstatus: active\nlast-updated: '2026-01-01'\n---\n\n"
+        f"<!-- §content -->\n\n## {name}\n\nScenery.\n",
+        encoding="utf-8",
+    )
+    return artifact_id
+
+
 def _make_matrix_diagram(repo: Path, artifact_id: str, name: str = "Matrix") -> Path:
     result = mcp.artifact_create_matrix(
         name=name,
@@ -123,6 +142,8 @@ class TestAnUpsertKeepsWhatItIsNotToldAbout:
 
     def test_the_axes_and_conn_type_configs_survive_a_body_only_upsert(self, repo: Path) -> None:
         artifact_id = "MAT@1778000020.tmtx.matrix-upsert"
+        row = _make_entity(repo, "REQ@1778000020.aaaa.a-row", "A Row")
+        col = _make_entity(repo, "APP@1778000020.bbbb.a-column", "A Column", "application-component")
         first = mcp.artifact_create_matrix(
             name="Matrix", matrix_markdown="| A | B |\n|---|---|\n| 1 | 2 |\n",
             artifact_id=artifact_id, dry_run=False, repo_root=str(repo),
@@ -133,7 +154,7 @@ class TestAnUpsertKeepsWhatItIsNotToldAbout:
         text = path.read_text(encoding="utf-8")
         text = text.replace(
             "artifact-type: diagram",
-            "artifact-type: diagram\nfrom-entity-ids:\n- REQ@1.a.one\nto-entity-ids:\n- APP@1.b.two",
+            f"artifact-type: diagram\nfrom-entity-ids:\n- {row}\nto-entity-ids:\n- {col}",
             1,
         )
         path.write_text(text, encoding="utf-8")
@@ -144,8 +165,8 @@ class TestAnUpsertKeepsWhatItIsNotToldAbout:
         )
 
         fm = _read_fm(path)
-        assert fm.get("from-entity-ids") == ["REQ@1.a.one"]
-        assert fm.get("to-entity-ids") == ["APP@1.b.two"]
+        assert fm.get("from-entity-ids") == [row]
+        assert fm.get("to-entity-ids") == [col]
         assert "| 1 | 3 |" in path.read_text(encoding="utf-8")
 
     def test_a_caller_that_states_an_axis_replaces_it(self, repo: Path) -> None:
@@ -154,6 +175,7 @@ class TestAnUpsertKeepsWhatItIsNotToldAbout:
         from src.infrastructure.write.artifact_write import matrix as matrix_ops
 
         artifact_id = "MAT@1778000021.tmtx.matrix-restate"
+        stated = _make_entity(repo, "REQ@1778000021.cccc.stated", "Stated")
         mcp.artifact_create_matrix(
             name="Matrix", matrix_markdown="| A | B |\n|---|---|\n| 1 | 2 |\n",
             artifact_id=artifact_id, dry_run=False, repo_root=str(repo),
@@ -170,8 +192,73 @@ class TestAnUpsertKeepsWhatItIsNotToldAbout:
             name="Matrix",
             matrix_markdown="| A | B |\n|---|---|\n| 1 | 2 |\n",
             artifact_id=artifact_id,
-            from_entity_ids=["REQ@9.z.stated"],
+            from_entity_ids=[stated],
             dry_run=False,
         )
 
-        assert _read_fm(path).get("from-entity-ids") == ["REQ@9.z.stated"]
+        assert _read_fm(path).get("from-entity-ids") == [stated]
+
+
+class TestAnAxisNamesEntitiesThatExist:
+    """A matrix declares its columns as `to-entity-ids` and its rows as `from-entity-ids`, and
+    those lists were never resolved against the registry — only `entity-ids-used` was. Two outcome
+    ids that had never been created sat in a `to-entity-ids` axis from the initial commit, drawing
+    two columns of a traceability matrix and four ticks against requirements. Nothing asked whether
+    they resolved; they surfaced only when a link check was pointed at diagram prose."""
+
+    def test_a_write_whose_axis_names_a_missing_entity_is_refused(self, repo: Path) -> None:
+        """End to end: the write path verifies before it commits, so an invented column id never
+        reaches a file. This is what would have stopped the two hallucinated outcomes."""
+        result = mcp.artifact_create_matrix(
+            name="Matrix", matrix_markdown="| A | B |\n|---|---|\n| 1 | 2 |\n",
+            artifact_id="MAT@1778000030.tmtx.matrix-axis",
+            to_entity_ids=["OUT@9.zzz.never-created"],
+            dry_run=False, repo_root=str(repo),
+        )
+
+        assert not result.get("wrote"), result
+        assert "OUT@9.zzz.never-created" in str(result)
+
+    def test_the_axis_is_resolved_the_way_entity_ids_used_is(self, repo: Path) -> None:
+        """The rule itself, over a file that already holds the bad id — which is how the real one
+        arrived: authored once, before anything resolved the axis."""
+        from src.infrastructure.mcp.artifact_mcp.context import roots_key, verifier_for
+
+        artifact_id = "MAT@1778000032.tmtx.matrix-stored"
+        mcp.artifact_create_matrix(
+            name="Matrix", matrix_markdown="| A | B |\n|---|---|\n| 1 | 2 |\n",
+            artifact_id=artifact_id, dry_run=False, repo_root=str(repo),
+        )
+        path = repo / "diagram-catalog" / "diagrams" / f"{artifact_id}.md"
+        path.write_text(
+            path.read_text(encoding="utf-8").replace(
+                "artifact-type: diagram",
+                "artifact-type: diagram\nto-entity-ids:\n- OUT@9.zzz.never-created",
+                1,
+            ),
+            encoding="utf-8",
+        )
+
+        issues = verifier_for(
+            roots_key((repo.resolve(),)), include_registry=True
+        ).verify_matrix_diagram_file(path)
+
+        assert "E301" in {issue.code for issue in issues.issues}, [
+            f"{i.code}: {i.message}" for i in issues.issues
+        ]
+        assert any("to-entity-ids" in issue.message for issue in issues.issues)
+
+    def test_an_axis_naming_nothing_at_all_is_not_an_error(self, repo: Path) -> None:
+        """A matrix may declare no axes; only a *stated* id has to resolve."""
+        artifact_id = "MAT@1778000031.tmtx.matrix-no-axis"
+        mcp.artifact_create_matrix(
+            name="Matrix", matrix_markdown="| A | B |\n|---|---|\n| 1 | 2 |\n",
+            artifact_id=artifact_id, dry_run=False, repo_root=str(repo),
+        )
+        path = repo / "diagram-catalog" / "diagrams" / f"{artifact_id}.md"
+
+        from src.infrastructure.mcp.artifact_mcp.context import roots_key, verifier_for
+
+        issues = verifier_for(roots_key((repo.resolve(),)), include_registry=True).verify_matrix_diagram_file(path)
+
+        assert not [i for i in issues.issues if i.code in ("E301", "E310")]
