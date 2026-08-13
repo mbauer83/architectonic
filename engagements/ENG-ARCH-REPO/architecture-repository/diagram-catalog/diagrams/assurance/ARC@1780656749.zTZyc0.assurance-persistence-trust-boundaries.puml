@@ -35,9 +35,11 @@ connection-ids-used:
 - ART@1780656477.X7EfZb---DOB@1780656431.p04R7k@@archimate-realization
 - ART@1780656477.tkNvK_---DOB@1780656431.ApaPcg@@archimate-realization
 - ART@1780656477.tkNvK_---DOB@1780656431.H-xFye@@archimate-realization
-last-updated: '2026-08-13T16:41:11Z'
+last-updated: '2026-08-13T19:02:25Z'
 ---
 @startuml assurance-persistence---trust-boundaries
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
 
 top to bottom direction
 hide stereotype

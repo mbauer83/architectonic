@@ -32,9 +32,11 @@ connection-ids-used:
 - PRC@1777409515.tEdRzw---FNC@1777409516.91ddSi@@archimate-composition
 - PRC@1777409515.tEdRzw---FNC@1777409516.DGBZ9H@@archimate-composition
 diagram-entities: {}
-last-updated: '2026-08-13T16:41:22Z'
+last-updated: '2026-08-13T19:02:36Z'
 ---
 @startuml
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
 hide stereotype
 
 skinparam defaultFontName SansSerif

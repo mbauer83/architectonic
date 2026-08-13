@@ -50,9 +50,11 @@ authored-groupings:
   entity-ids:
   - ASS@1780220699.CK90bp.autonomy-at-agentic-velocity-threatens-unity-of-effort
   - ASS@1776628138.a6vxyj.centralized-governance-cannot-scale-at-agentic-velocity
-last-updated: '2026-08-13T16:41:18Z'
+last-updated: '2026-08-13T19:02:32Z'
 ---
 @startuml
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
 hide stereotype
 
 skinparam defaultFontName SansSerif

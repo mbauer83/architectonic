@@ -42,9 +42,11 @@ connection-ids-used:
 - PRC@1780656241.bWETd2---SRV@1780656241.ooK3YN@@archimate-realization
 - ROL@1780656241.yswDMB---PRC@1780656241.lXql_n@@archimate-assignment
 - PRC@1780656241.lXql_n---SRV@1780656241.ooK3YN@@archimate-realization
-last-updated: '2026-08-13T16:41:09Z'
+last-updated: '2026-08-13T19:02:22Z'
 ---
 @startuml assurance-methods---roles
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
 
 top to bottom direction
 hide stereotype
