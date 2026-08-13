@@ -251,7 +251,7 @@ def _emit_messages_with_groupings(
 
         # Else boundaries: innermost first (smallest span)
         for _g, _i, guard, _span in sorted(else_at.get(idx, []), key=lambda x: x[3]):
-            lines.append(f"else [{_puml_text(guard)}]" if guard else "else")
+            lines.append(f"else {_puml_text(guard)}" if guard else "else")
 
         # Open groupings: outermost first (largest span)
         for g, _span in sorted(open_at.get(idx, []), key=lambda x: -x[1]):
@@ -271,6 +271,16 @@ def _emit_messages_with_groupings(
 
 
 def _emit_grouping_open(g: dict[str, Any], lines: list[str]) -> None:
+    """Open one grouping. **A guard is emitted bare**, never in brackets.
+
+    PlantUML draws the brackets itself, and a single `[...]` in its source is *link* syntax —
+    `[target label]` — so `alt [features computed]` rendered as a hyperlink whose target was the
+    first token and whose label was the rest: the word "features" disappeared from the image.
+    Measured against the bundled plantuml.jar, `alt [features computed]` draws `computed` and
+    `alt features computed` draws `[features computed]`.
+
+    Single-word guards round-trip either way, which is why this survived: they are the common case.
+    """
     kind = str(g.get("kind") or "opt")
     label = str(g.get("label") or "")
     ops = _read_operands(g)
@@ -281,7 +291,7 @@ def _emit_grouping_open(g: dict[str, Any], lines: list[str]) -> None:
     elif kind in ("loop", "break", "critical") and label:
         lines.append(f"{kind} {_puml_text(label)}")
     elif first_guard:
-        lines.append(f"{kind} [{_puml_text(first_guard)}]")
+        lines.append(f"{kind} {_puml_text(first_guard)}")
     else:
         lines.append(kind)
 
