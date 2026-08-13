@@ -40,13 +40,13 @@ connection-ids-used:
 - EVT@1777399929.BKj6NZ---FNC@1777390446.dxb6ru@@archimate-triggering
 - EVT@1777399929.m-E9P1---FNC@1776637537.YD31f3@@archimate-triggering
 - FNC@1776637537.YD31f3---PRC@1777399926.gtgYvQ@@archimate-triggering
+- FNC@1777390446.dxb6ru---FNC@1776633702.b3mOTJ@@archimate-triggering
 - PRC@1777409610.wqtZ0P---FNC@1777390460.3ZsfnT@@archimate-composition
 - PRC@1777409610.wqtZ0P---FNC@1776637537.YD31f3@@archimate-composition
 - PRC@1777409610.wqtZ0P---FNC@1777390446.dxb6ru@@archimate-composition
 - FNC@1777390446.dxb6ru---FNC@1776633702.b3mOTJ@@archimate-composition
 - FNC@1777390446.dxb6ru---FNC@1776633708.n_JYA2@@archimate-composition
 - PRC@1777409610.wqtZ0P---PRC@1777399926.gtgYvQ@@archimate-aggregation
-- FNC@1777390446.dxb6ru---FNC@1776633702.b3mOTJ@@archimate-triggering
 authored-groupings:
 - label: Write Requests
   stereotype: ''
@@ -59,7 +59,7 @@ authored-groupings:
   entity-ids:
   - EVT@1777390504.hDF1Qz.artifacts-promoted
   - EVT@1777390507.UCrh3V.architecture-repository-change-detected
-last-updated: '2026-08-09T17:56:33Z'
+last-updated: '2026-08-13T08:14:02Z'
 ---
 @startuml from-write-to-consistent-state
 hide stereotype

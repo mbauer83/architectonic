@@ -39,7 +39,7 @@ authored-groupings:
   entity-ids:
   - GOL@1784845186.L4Ceuf.preserve-local-autonomy
   - GOL@1784845186.7RZp1S.enable-coherent-traceable-enterprise-action
-last-updated: '2026-08-09T17:57:36Z'
+last-updated: '2026-08-13T08:13:49Z'
 ---
 @startuml the-double-bind---and-the-response
 hide stereotype
@@ -104,7 +104,7 @@ ASS_a6vxyj .down.> GOL_FCfDuc
 ASS_a6vxyj .down.> GOL_L4Ceuf : <color:#b91c1c><b>-</b></color>
 ASS_CK90bp .down.> GOL_FCfDuc : <color:#b91c1c><b>-</b></color>
 ASS_CK90bp .down.> GOL_7RZp1S : <color:#b91c1c><b>-</b></color>
-GOL_FCfDuc -down-> GOL_7RZp1S
-GOL_FCfDuc -down-> GOL_L4Ceuf
+GOL_FCfDuc o-down- GOL_7RZp1S
+GOL_FCfDuc o-down- GOL_L4Ceuf
 
 @enduml
