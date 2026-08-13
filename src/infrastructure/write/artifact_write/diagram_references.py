@@ -205,23 +205,29 @@ def diagram_entities_are_authoritative(verifier, diagram_type: str) -> bool:
     return bool(module is not None and module.ui_config.diagram_only_types)
 
 
-def _restate_generated_declarations(puml_body: str, repo_root: Path) -> str:
-    """Bring the generated declarations a body inlines level with the ontology, and nothing else.
+def _restate_generated_declarations(puml_body: str, repo_root: Path, diagram_type: str) -> str:
+    """Bring what the *renderer* states in a stored body up to date, and nothing else.
 
-    A palette, a glyph and a relationship's line style are the ontology's statements rather than the
-    author's, so a body that keeps a copy of them has to be restated whenever it is written —
-    including on the edits that leave the picture alone, which is the only way a hand-laid-out
-    diagram ever hears about a change.
+    A palette, a glyph, a relationship's line style and the label width bound are the product's
+    statements rather than the author's, so a body that keeps a copy of them has to be refreshed
+    whenever it is written — including on the edits that leave the picture alone, which is the only
+    way a hand-laid-out diagram ever hears about a change.
 
-    Deliberately not ``inject_includes``: that one *gives* a body a preamble when it has none, and
+    Deliberately not ``inject_includes``: that one *gives* a body a header when it has none, and
     expands an ``!include`` marker in place. An edit that carries no body must not convert a
     diagram's storage form, and `auto_include_stereotypes=False` is an author asking to keep the
-    marker. A body with no ArchiMate declarations comes back unchanged, so this is safe whatever the
-    diagram type.
+    marker. A notation whose header states nothing generated does not implement the capability, and
+    its bodies come through untouched.
     """
-    from src.infrastructure.rendering._archimate_includes import ArchimateDeclarations  # noqa: PLC0415
+    from src.domain.ontology_representation.ontology_protocol import (  # noqa: PLC0415
+        GeneratedHeaderRefreshingRenderer,
+    )
+    from src.infrastructure.diagram_type_registry import get_diagram_type  # noqa: PLC0415
 
-    return ArchimateDeclarations.from_repo(repo_root).restated_in(puml_body)
+    renderer = get_diagram_type(diagram_type).renderer
+    if not isinstance(renderer, GeneratedHeaderRefreshingRenderer):
+        return puml_body
+    return renderer.refresh_generated_header(puml_body, repo_root)
 
 
 def _prepare_diagram_puml_body(puml_body: str, repo_root: Path, diagram_type: str) -> str:

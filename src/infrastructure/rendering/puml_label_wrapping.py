@@ -44,3 +44,51 @@ def label_wrap_skinparams(
     if width == 0:
         return []
     return [f"skinparam wrapWidth {width}", f"skinparam maxMessageSize {width}"]
+
+
+#: The parameter names the bound is written with, whatever width it was written at. Stated once,
+#: beside the writing, so a body already carrying the bound at a stale width is recognised as
+#: carrying it rather than given a second copy — the mistake the include markers made.
+_BOUND_PARAMETERS = ("wrapWidth", "maxMessageSize")
+
+
+def with_label_wrap_bound(
+    body: str, config: Mapping[str, Any], *, default: int = DEFAULT_LABEL_WRAP_WIDTH
+) -> str:
+    """*body* with this type's label width bound stated, replacing any width already stated.
+
+    The bound is written into a body when the body is generated and then frozen there, so a diagram
+    that has not been regenerated since the bound was introduced never received it. Nine ArchiMate
+    diagrams here had not: their labels ran to 548px where every other diagram's stopped at 240, and
+    a box wide enough to hold its label on one line is a box only one line tall.
+
+    A type that opts out with `wrap_width: 0` states nothing, and any bound a body carries is
+    removed — otherwise opting out would be something only a *new* body could do.
+
+    A bound already stated is restated **where it stands**. Moving it to where this function would
+    have written it changes nothing PlantUML reads and rewrites every body that was already
+    correct: measured, 32 diagrams reported stale where 9 were.
+    """
+    wanted = {line.split()[1]: line for line in label_wrap_skinparams(config, default=default)}
+    lines = body.splitlines()
+    out: list[str] = []
+    seen: set[str] = set()
+    for line in lines:
+        stated = next(
+            (name for name in _BOUND_PARAMETERS if line.strip().startswith(f"skinparam {name} ")),
+            None,
+        )
+        if stated is None:
+            out.append(line)
+        elif stated in wanted and stated not in seen:
+            out.append(wanted[stated])
+            seen.add(stated)
+        # A duplicate, or a bound the type has opted out of, is dropped.
+    missing = [line for name, line in wanted.items() if name not in seen]
+    if missing:
+        # Never stated before: after `@startuml`, where the renderer writes it on a new body.
+        insert_at = next(
+            (i + 1 for i, line in enumerate(out) if line.lstrip().startswith("@startuml")), 0
+        )
+        out[insert_at:insert_at] = missing
+    return "\n".join(out) + ("\n" if body.endswith("\n") else "")

@@ -256,6 +256,88 @@ class TestABodyIsGivenAPreambleOrHasOneRestated:
         assert "DiagonalCorner 10" in result
 
 
+class TestTheLabelWidthBoundReachesAStoredBody:
+    """The bound is written when a body is generated, so a body not regenerated since never got it.
+
+    A box is as wide as its widest unwrapped label, and a box wide enough to hold its label on one
+    line is a box one line tall. Measured across this repository's motivation elements: where the
+    bound is present the median box is 52px tall and its straight sides run 1.58x its corner
+    chamfers; where it is missing, 38px and 0.89 — the corners are longer than the sides, which is
+    what makes a cut corner and a rounded corner hard to tell apart at a glance.
+    """
+
+    _CONFIG = {"layout": {"wrap_width": 240}}
+
+    def test_a_body_without_the_bound_is_given_it(self) -> None:
+        from src.infrastructure.rendering.puml_label_wrapping import with_label_wrap_bound  # noqa: PLC0415
+
+        body = "@startuml x\nhide stereotype\ntitle T\nrectangle A\n@enduml\n"
+
+        result = with_label_wrap_bound(body, self._CONFIG)
+
+        assert result.splitlines()[:3] == [
+            "@startuml x", "skinparam wrapWidth 240", "skinparam maxMessageSize 240",
+        ]
+        assert result.endswith("@enduml\n")
+
+    def test_a_bound_already_stated_at_another_width_is_replaced_not_repeated(self) -> None:
+        from src.infrastructure.rendering.puml_label_wrapping import with_label_wrap_bound  # noqa: PLC0415
+
+        body = "@startuml\nskinparam wrapWidth 900\nskinparam maxMessageSize 900\ntitle T\n@enduml\n"
+
+        result = with_label_wrap_bound(body, self._CONFIG)
+
+        assert result.count("skinparam wrapWidth") == 1
+        assert "900" not in result
+        assert "skinparam wrapWidth 240" in result
+
+    def test_a_type_that_opts_out_states_nothing_and_loses_a_bound_it_carries(self) -> None:
+        """`wrap_width: 0` opts out. If a carried bound survived, only a new body could opt out."""
+        from src.infrastructure.rendering.puml_label_wrapping import with_label_wrap_bound  # noqa: PLC0415
+
+        body = "@startuml\nskinparam wrapWidth 240\ntitle T\n@enduml\n"
+
+        result = with_label_wrap_bound(body, {"layout": {"wrap_width": 0}})
+
+        assert "wrapWidth" not in result
+        assert "title T" in result
+
+    def test_a_bound_already_correct_is_left_exactly_where_it_stands(self) -> None:
+        """Moving it changes nothing PlantUML reads and rewrites every already-correct body: 32
+        diagrams reported stale where 9 were."""
+        from src.infrastructure.rendering.puml_label_wrapping import with_label_wrap_bound  # noqa: PLC0415
+
+        body = (
+            "@startuml x\nhide stereotype\nskinparam nodesep 60\n"
+            "skinparam wrapWidth 240\nskinparam maxMessageSize 240\ntitle T\n@enduml\n"
+        )
+
+        assert with_label_wrap_bound(body, self._CONFIG) == body
+
+    def test_a_stale_width_is_restated_where_it_stands(self) -> None:
+        from src.infrastructure.rendering.puml_label_wrapping import with_label_wrap_bound  # noqa: PLC0415
+
+        body = (
+            "@startuml x\nhide stereotype\nskinparam nodesep 60\n"
+            "skinparam wrapWidth 900\nskinparam maxMessageSize 900\ntitle T\n@enduml\n"
+        )
+
+        assert with_label_wrap_bound(body, self._CONFIG) == body.replace("900", "240")
+
+    def test_the_rest_of_the_body_is_untouched(self) -> None:
+        from src.infrastructure.rendering.puml_label_wrapping import with_label_wrap_bound  # noqa: PLC0415
+
+        body = (
+            "@startuml\nhide stereotype\nskinparam nodesep 40\ntitle T\n"
+            'rectangle "A" <<goal>> as G\nG -[hidden]- H\n@enduml\n'
+        )
+
+        result = with_label_wrap_bound(body, self._CONFIG)
+
+        for line in body.splitlines():
+            assert line in result, line
+
+
 class TestAnEditBringsAStoredBodyLevel:
     """The write path, end to end: the scenario the nine stale diagrams were in.
 
@@ -312,6 +394,9 @@ class TestAnEditBringsAStoredBodyLevel:
         assert "DiagonalCorner 10" in body
         assert "!define Rel_Access(from, to, label) from -[dotted]-> to" in body
         assert body.count("skinparam rectangle<<goal>>") == 1
+        # The label bound travels with them: it is written by the same renderer, and a body that
+        # predates it never received it either.
+        assert "skinparam wrapWidth" in body
 
     def test_a_body_keeping_the_include_marker_keeps_it(self, repo: Path) -> None:
         """`auto_include_stereotypes=False` is the author choosing the marker form. An edit that
@@ -348,16 +433,21 @@ class TestNoStoredBodyDisagreesWithTheOntology:
     def test_every_diagram_body_states_what_the_ontology_declares(self) -> None:
         from src.config.workspace_paths import resolve_workspace_repo_roots  # noqa: PLC0415
         from src.infrastructure.rendering.generate_static_includes import (  # noqa: PLC0415
-            stale_inlined_declarations,
+            stale_generated_headers,
+            stale_static_includes,
         )
 
         roots = resolve_workspace_repo_roots(Path(__file__).resolve().parents[2])
         if not roots:
             pytest.skip("no workspace configuration; the CLI check covers this in CI")
 
-        stale = stale_inlined_declarations(roots[0])
+        # In the order `main` runs them: a body is compared against the include files on disk, so
+        # a stale include would let two copies of the same drift agree.
+        assert stale_static_includes(roots[0]) == []
+
+        stale = stale_generated_headers(roots[0])
 
         assert stale == [], (
-            "these diagram bodies inline a generated declaration that disagrees with the "
-            f"ontology: {stale}"
+            "these diagram bodies carry a generated header that disagrees with what the "
+            f"renderer states today: {stale}"
         )

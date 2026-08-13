@@ -165,6 +165,31 @@ class NativeSvgDiagramRenderer(Protocol):
 
 
 @runtime_checkable
+class GeneratedHeaderRefreshingRenderer(Protocol):
+    """Optional capability for a renderer whose header states things the *author* did not write.
+
+    A stored body carries a header: colours, corner shapes, glyphs, relationship macros, the label
+    width bound. None of that is authored — each is a rendering decision the product makes — and
+    every one of them is written into the body once and then frozen there. So a decision taken after
+    a diagram was last regenerated never reaches it. Nine ArchiMate diagrams here were drawing a
+    superseded palette, and the same nine had never received the label-wrap bound either, which is
+    why their boxes were 38px tall where every other diagram's were 52px.
+
+    ``inject_includes`` cannot answer this. It *gives* a body a header, inserting the ``!include``
+    markers when a body has none — correct for a body the renderer has just produced, and wrong for a
+    stored one, where it either expands a second header beside the first or converts a storage form
+    the author chose. Refreshing an existing header is the other question, so it is the other method.
+
+    A capability rather than a required method, the idiom :class:`NativeSvgDiagramRenderer` and
+    :class:`ModelReferencingDiagramRenderer` already establish: a notation whose header states
+    nothing generated says so by not implementing this. The single caller
+    (`artifact_write/diagram_references.py`) asks once with ``isinstance``.
+    """
+
+    def refresh_generated_header(self, body: str, repo_root: Path) -> str: ...
+
+
+@runtime_checkable
 class ModelReferencingDiagramRenderer(Protocol):
     """Optional capability for a renderer whose diagram-owned data *names model artifacts*.
 

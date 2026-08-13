@@ -323,7 +323,7 @@ def edit_diagram(
         # Except the generated declarations it inlines, which the author never wrote: a palette or
         # a line style is the ontology's, and a body that keeps its own copy had no way of hearing
         # about a change to one. The only route by which a manual-layout diagram hears at all.
-        puml_body = _restate_generated_declarations(puml_body, repo_root)
+        puml_body = _restate_generated_declarations(puml_body, repo_root, diagram_type)
 
     # Drop references to entities/connections that no longer exist (e.g. after a rename or
     # delete) so a stale cached reference cannot leave the diagram permanently unwritable.

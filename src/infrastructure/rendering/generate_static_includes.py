@@ -21,7 +21,6 @@ from typing import Any
 
 from src.config.repo_paths import DIAGRAM_CATALOG
 from src.config.settings import archimate_type_markers
-from src.infrastructure.rendering._archimate_includes import ArchimateDeclarations
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -240,45 +239,53 @@ def stale_static_includes(repo_root: Path) -> list[str]:
     return sorted(stale)
 
 
-def declared_now(repo_root: Path) -> ArchimateDeclarations:
-    """What the includes declare given the ontology as loaded now, without reading them from disk.
+def stale_generated_headers(repo_root: Path) -> list[str]:
+    """Diagram bodies whose generated header disagrees with what the renderer states today.
 
-    Composed rather than read for the reason `static_include_contents` is composed: a check that
-    compared a body against a stale include would let two copies of the same drift agree.
-    """
-    contents = static_include_contents(repo_root)
-    return ArchimateDeclarations.from_includes(
-        stereotypes=contents["_archimate-stereotypes.puml"],
-        glyphs=contents["_archimate-glyphs.puml"],
-        relations=contents["_archimate-relations.puml"],
-    )
+    A stored body carries a header the author did not write: the ArchiMate declarations, which it
+    may hold as an `!include` marker or as the expansion itself, and the label width bound. Both
+    forms of the first are permitted and the expansion is a copy. `stale_static_includes` above
+    gates the include files against the ontology — this gates every body against the same answer,
+    because the copy was only ever refreshed as a side effect of regenerating the body. Nine
+    diagrams here were drawing the palette and the access line style they were authored with, and
+    the same nine had never received the label bound: their content simply had not changed since.
 
+    Asked of the renderer, which reads the include files from disk — so `stale_static_includes`
+    has to have passed first, or two copies of the same drift could agree. `main` runs them in that
+    order and stops on the first.
 
-def stale_inlined_declarations(repo_root: Path) -> list[str]:
-    """Diagram bodies that inline a generated declaration and disagree with it.
-
-    A body may carry the `!include` marker or the expansion itself; both are permitted, and the
-    expansion is a copy. `stale_static_includes` above gates the include files against the
-    ontology — this gates every copy of them against the same answer, because the copy was only
-    ever refreshed as a side effect of regenerating the body. Nine diagrams here were drawing the
-    palette and the access line style they were authored with, two of them without even being
-    hand-laid-out: their content simply had not changed since.
-
-    Reported rather than repaired here. A diagram body is an artifact, so bringing one level again
-    is a write, and writes go through the write path — which restates these declarations on every
+    Asked of the renderer, so a notation that states nothing generated is silent rather than
+    exempted. Reported rather than repaired: a diagram body is an artifact, so bringing one level
+    again is a write, and writes go through the write path — which refreshes the header on every
     edit, so the repair is an edit of the named diagram and nothing else.
     """
     from src.application.repo_path_helpers import diagram_source_root  # noqa: PLC0415
+    from src.domain.ontology_representation.ontology_protocol import (  # noqa: PLC0415
+        GeneratedHeaderRefreshingRenderer,
+    )
+    from src.domain.repository.frontmatter import body_after_frontmatter, parse_frontmatter  # noqa: PLC0415
+    from src.infrastructure.diagram_type_registry import get_diagram_type  # noqa: PLC0415
     from src.infrastructure.rendering.puml_runtime import is_render_scratch  # noqa: PLC0415
 
-    declarations = declared_now(repo_root)
     root = diagram_source_root(repo_root)
-    return [
-        str(path.relative_to(root))
-        for path in sorted(root.rglob("*.puml"))
-        if not is_render_scratch(path)
-        and (body := path.read_text(encoding="utf-8")) != declarations.restated_in(body)
-    ]
+    stale: list[str] = []
+    for path in sorted(root.rglob("*.puml")):
+        if is_render_scratch(path):
+            continue
+        text = path.read_text(encoding="utf-8")
+        diagram_type = str(parse_frontmatter(text).get("diagram-type", ""))
+        if not diagram_type:
+            continue
+        try:
+            renderer = get_diagram_type(diagram_type).renderer
+        except Exception:  # noqa: BLE001 - a type this build does not carry is not this gate's business
+            continue
+        if not isinstance(renderer, GeneratedHeaderRefreshingRenderer):
+            continue
+        body = body_after_frontmatter(text)
+        if renderer.refresh_generated_header(body, repo_root) != body:
+            stale.append(str(path.relative_to(root)))
+    return stale
 
 
 def main() -> None:
@@ -314,11 +321,11 @@ def main() -> None:
                 file=sys.stderr,
             )
             sys.exit(1)
-        stale_bodies = stale_inlined_declarations(repo_root)
+        stale_bodies = stale_generated_headers(repo_root)
         if stale_bodies:
             print(
-                "ERROR: these diagram bodies inline a generated declaration that disagrees with "
-                "the ontology:\n  " + "\n  ".join(stale_bodies)
+                "ERROR: these diagram bodies carry a generated header that disagrees with what "
+                "the renderer states today:\n  " + "\n  ".join(stale_bodies)
                 + "\nEach is a write: edit the diagram (artifact_edit_diagram) and the write path "
                 "restates them.",
                 file=sys.stderr,

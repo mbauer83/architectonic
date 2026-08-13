@@ -13,7 +13,10 @@ from src.domain.modules.module_types import ConnectionTypeName, ElementClassName
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
 from src.domain.ontology_representation.ontology_types import ConnectionTypeInfo
 from src.domain.ontology_representation.specializations import SpecializationCatalog, merge_specialization_catalogs
-from src.infrastructure.rendering._archimate_includes import inject_archimate_includes
+from src.infrastructure.rendering._archimate_includes import (
+    ArchimateDeclarations,
+    inject_archimate_includes,
+)
 from src.infrastructure.rendering._authored_grouping_rendering import render_authored_groupings
 from src.infrastructure.rendering._component_canvas import render_component_canvas
 from src.infrastructure.rendering._component_grouping import collect_subtree_aliases
@@ -35,7 +38,7 @@ from src.infrastructure.rendering.diagram_connection_overlay import (
     occurrence_alias_by_id,
 )
 from src.infrastructure.rendering.generic_puml_layout import build_generic_visual_nesting
-from src.infrastructure.rendering.puml_label_wrapping import label_wrap_skinparams
+from src.infrastructure.rendering.puml_label_wrapping import label_wrap_skinparams, with_label_wrap_bound
 from src.infrastructure.rendering.puml_safety import (
     configured_puml_size_warning_threshold,
     warn_when_puml_exceeds_threshold,
@@ -332,6 +335,16 @@ class GenericPumlRenderer:
 
     def inject_includes(self, body: str, repo_root: Path) -> str:
         return inject_archimate_includes(body, repo_root)
+
+    def refresh_generated_header(self, body: str, repo_root: Path) -> str:
+        """Bring a stored body's generated header up to date, changing nothing the author wrote.
+
+        Two things this renderer writes and an author does not: the ArchiMate declarations, restated
+        against the ontology, and the label width bound, which a body written before the bound
+        existed never received.
+        """
+        body = ArchimateDeclarations.from_repo(repo_root).restated_in(body)
+        return with_label_wrap_bound(body, self._config)
 
 
     def visible_connection_label(
