@@ -182,3 +182,51 @@ class OntologyPairResponse(Closed):
     symmetric: list[str]
     #: Each permitted type's relationship kind, or null where the ontology assigns none.
     relationship_kind_map: dict[str, str | None]
+
+
+class ClassificationLevelResponse(Closed):
+    """One rung of a classification ladder, as data rather than as a type.
+
+    ``id`` is an opaque string on purpose. A generated union over the ids this meta-ontology
+    happens to declare would bake its chain into every client, so a second meta-ontology declaring
+    its own would fail to typecheck rather than reshape the picture — which is the one thing the
+    per-module dispatch exists to prevent.
+    """
+
+    id: str
+    label: str
+    source: str
+    required: bool
+    keys_relationships: bool
+    narrows_relationships: bool
+    carries_attributes: bool
+
+
+class ClassificationLevelsResponse(Closed):
+    """How the governing meta-ontology classifies things, keyed by what is being classified.
+
+    Two keys rather than one list, because a client faceting a graph needs the relation side as
+    well as the entity side. The entity ladder is declared; the relation one is derived today, and
+    a payload shaped this way keeps working when a module starts declaring its own.
+    """
+
+    meta_ontology: str
+    entity: list[ClassificationLevelResponse]
+    relation: list[ClassificationLevelResponse]
+
+
+class ElementAppearanceResponse(Closed):
+    """How elements are drawn, so every surface draws them the same way.
+
+    Served because it was previously three hardcoded palettes that disagreed on every domain.
+    ``corners`` maps an entity type to one of ``square``, ``rounded`` or ``diagonal`` — resolved
+    server-side through the classes the ontology declares, so a client renders the answer without
+    knowing the vocabulary that produced it.
+    """
+
+    meta_ontology: str
+    domain_colors: dict[str, str]
+    domain_borders: dict[str, str]
+    domain_containers: dict[str, str]
+    corners: dict[str, str]
+    de_emphasis: dict[str, str]

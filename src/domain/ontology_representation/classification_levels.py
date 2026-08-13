@@ -86,6 +86,28 @@ DERIVED_DEFAULT_LEVELS: tuple[ClassificationLevel, ...] = (
 )
 
 
+#: How a *relationship* is classified. Derived rather than declared: a relation carries a type and
+#: may carry specializations, and that two-rung shape is implicit in the model — no ontology states
+#: it, and none can currently vary it.
+#:
+#: Named and served anyway, because a client faceting a graph needs the relation side as well as
+#: the entity side, and a payload shaped `{entity: [...], relation: [...]}` keeps working when a
+#: module starts declaring its own relation chain. A bare list would not.
+#:
+#: `keys_relationships` is deliberately unset on both: it says which *entity* level a relationship
+#: is keyed against, which is not a question about the relation's own ladder.
+DERIVED_RELATION_LEVELS: tuple[ClassificationLevel, ...] = (
+    ClassificationLevel(
+        id="connection_type", label="Relationship type", source="type", required=True,
+        carries_attributes=True,
+    ),
+    ClassificationLevel(
+        id="connection_specialization", label="Specialization", source="specializations",
+        required=False, narrows_relationships=True, carries_attributes=True,
+    ),
+)
+
+
 def _level_from_mapping(raw: Mapping[str, Any], *, module: str) -> ClassificationLevel:
     identifier = str(raw.get("id") or "").strip()
     if not identifier:

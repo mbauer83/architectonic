@@ -143,6 +143,16 @@ TAXONOMY_ROWS: tuple[RouteRow, ...] = (
         TYPED, cache_directive="private",
     ),
     RouteRow(
+        # Its own address because `/api/ontology/classification` is taken and means what one type
+        # may connect to. Two questions, two addresses.
+        "GET", "/api/ontology/classification-levels", "catalog",
+        "taxonomy_read_classification_levels", TYPED, cache_directive="private",
+    ),
+    RouteRow(
+        "GET", "/api/ontology/element-appearance", "catalog", "taxonomy_read_element_appearance",
+        TYPED, cache_directive="private",
+    ),
+    RouteRow(
         "GET", "/api/ontology/pairs", "catalog", "connections_read_ontology_pair", TYPED,
         cache_directive="private",
     ),

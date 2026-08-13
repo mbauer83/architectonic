@@ -14,6 +14,10 @@ from typing import Protocol, runtime_checkable
 from src.domain.modules.module_catalog import ModuleCatalog
 from src.domain.modules.module_types import ConnectionTypeName, ElementClassName, EntityTypeName
 from src.domain.ontology_representation.behavioral_elements import resolve_behavioral_types
+from src.domain.ontology_representation.classification_levels import (
+    ClassificationLevel,
+    classification_levels_for,
+)
 from src.domain.ontology_representation.ontology_protocol import DiagramTypeModule, StoreGraphProjectingDiagramType
 from src.domain.ontology_representation.ontology_types import ConnectionTypeInfo, EntityTypeInfo
 from src.domain.ontology_representation.relation_notation import DEFAULT_NOTATION
@@ -32,6 +36,10 @@ class OntologyCatalog(Protocol):
     def known_domain_names(self) -> frozenset[str]: ...
 
     def behavioral_entity_types(self) -> frozenset[str]: ...
+    def domain_appearance(self) -> Mapping[str, Mapping[str, str]]: ...
+    def corner_by_entity_type(self) -> Mapping[str, str]: ...
+    def de_emphasis_rule(self) -> Mapping[str, str]: ...
+    def classification_levels(self) -> Mapping[str, Sequence[ClassificationLevel]]: ...
     def domain_order(self) -> Sequence[str]: ...
     def domain_grouping(self) -> Mapping[str, str]: ...
     def entity_types_with_class(self, element_class: str) -> frozenset[str]: ...
@@ -106,6 +114,60 @@ class OntologyCatalogImpl:
 
     def behavioral_entity_types(self) -> frozenset[str]:
         return self._behavioral_types
+
+    def domain_appearance(self) -> Mapping[str, Mapping[str, str]]:
+        """Every domain's fill, border and container tint, from the ontology that owns the domain.
+
+        Three values from the one declared colour, so a consumer cannot pick up a fill from here
+        and a border from somewhere else — which is precisely what three hand-maintained palettes
+        let every consumer do.
+        """
+        resolved: dict[str, dict[str, str]] = {}
+        for module in self._catalog.all_ontologies().values():
+            appearance = module.element_appearance
+            for info in module.entity_types.values():
+                domain = info.hierarchy[0] if info.hierarchy else "common"
+                fill = appearance.color_for(domain)
+                if fill and domain not in resolved:
+                    resolved[domain] = {
+                        "fill": fill,
+                        "border": appearance.border_for(fill),
+                        "container": appearance.de_emphasized(fill),
+                    }
+        return resolved
+
+    def corner_by_entity_type(self) -> Mapping[str, str]:
+        """Each entity type's corner style, resolved through the classes its ontology declares.
+
+        Returned per *type* rather than per class, for the reason `behavioral_entity_types` is:
+        the class vocabulary stays inside the ontology that owns it, and a renderer receives an
+        answer it can draw.
+        """
+        return {
+            str(name): module.element_appearance.corner_for(info.classes)
+            for module in self._catalog.all_ontologies().values()
+            for name, info in module.entity_types.items()
+        }
+
+    def de_emphasis_rule(self) -> Mapping[str, str]:
+        """How a surface mutes a declared colour, from the ontology that declares it.
+
+        The rule rather than a muted palette, because a second palette is how the three that
+        disagreed came about. Empty where no ontology declares one — a client then leaves colours
+        as they are rather than guessing at a grey.
+        """
+        for module in self._catalog.all_ontologies().values():
+            rule = module.element_appearance.de_emphasis
+            if rule.is_declared:
+                return {"toward": rule.toward, "amount": str(rule.amount)}
+        return {}
+
+    def classification_levels(self) -> Mapping[str, Sequence[ClassificationLevel]]:
+        """Each ontology module's entity classification ladder, declared or derived."""
+        return {
+            str(name): classification_levels_for(module)
+            for name, module in self._catalog.all_ontologies().items()
+        }
 
     @functools.cached_property
     def _ct(self) -> dict[str, ConnectionTypeInfo]:

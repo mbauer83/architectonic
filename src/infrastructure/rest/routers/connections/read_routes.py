@@ -7,10 +7,16 @@ from typing import Any, Literal
 from fastapi import APIRouter, Depends, HTTPException
 
 from src.application.entity_type_predicates import is_internal_entity_type
+from src.application.ontology_views import (
+    classification_levels_payload,
+    element_appearance_payload,
+)
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
 from src.infrastructure.rendering.diagram_selection import connections_among
 from src.infrastructure.rest.contracts.authoring_catalogs import (
+    ClassificationLevelsResponse,
+    ElementAppearanceResponse,
     OntologyClassificationResponse,
     OntologyPairResponse,
     RelationNotationsResponse,
@@ -146,6 +152,43 @@ def register_connection_read_routes(router: APIRouter) -> None:
         relationship, so a renderer can honour them without knowing this ontology's vocabulary.
         """
         return {"notations": catalogs.connections.all_relation_notations()}
+
+    @router.get("/api/ontology/classification-levels", tags=[TAG_TAXONOMY],
+        summary="How the meta-ontology classifies elements and relationships",
+        response_model=ClassificationLevelsResponse)
+    def get_classification_levels(
+        catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
+    ) -> dict[str, Any]:
+        """The classification ladder, as data.
+
+        Its own address because `/api/ontology/classification` is taken and means something else —
+        what one entity type may connect to. The two are different questions and a shared address
+        answering both by which parameter arrived is the mistake that split it.
+
+        Every level crosses as `{id, label, source, …}` with an **opaque string id**: a generated
+        union over this meta-ontology's ids would bake its chain into the frontend contract, and a
+        second meta-ontology declaring its own would fail to typecheck instead of reshaping the
+        view. Resolved through `classification_levels_for`, so the answer is whichever module
+        governs, never a constant assembled once.
+        """
+        return classification_levels_payload(catalogs.ontology)
+
+    @router.get("/api/ontology/element-appearance", tags=[TAG_TAXONOMY],
+        summary="How elements are drawn — colour per domain, corners per type",
+        response_model=ElementAppearanceResponse)
+    def get_element_appearance(
+        catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
+    ) -> dict[str, Any]:
+        """What the ontology declares about drawing its elements, resolved for a client.
+
+        Corners arrive per entity *type* rather than per class: the classes are the ontology's own
+        vocabulary and resolving them is its business, so a renderer receives `square`, `rounded`
+        or `diagonal` and honours it without knowing what a `motivation-element` is.
+
+        Served at all because this was three hardcoded palettes disagreeing on every domain, one of
+        them missing a domain entirely.
+        """
+        return element_appearance_payload(catalogs.ontology)
 
     @router.get("/api/ontology/classification", tags=[TAG_CONNECTIONS],
         summary="What one entity type may connect to", response_model=OntologyClassificationResponse)
