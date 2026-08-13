@@ -61,8 +61,16 @@ export function basisGlyph(basis: string): string {
   return '–'
 }
 
+/** Who decided a judgement and why, in the one form both the applying and the retired one use. */
+function judgement(assessment: FactorView['superseded']): string {
+  return assessment ? ` ${assessment.author}: ${assessment.justification}` : ''
+}
+
 export function basisTooltip(factor: string, view: FactorView): string {
-  if (view.basis === 'asserted') return `${factor} was asserted by a person`
+  // The asserted branch used to stop at "was asserted by a person", which is the one thing a
+  // reader already knew. The rationale is what the write path refuses a value without, and it is
+  // what a band under review has to be defended with.
+  if (view.basis === 'asserted') return `${factor} was asserted by a person.${judgement(view.assessment)}`
   if (view.basis === 'derived') return `${factor} is derived from the model`
   if (view.basis === 'derived-superseding-an-assessment') {
     const previous = view.superseded

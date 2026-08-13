@@ -37,9 +37,9 @@ function cell(overrides: Partial<CellView> = {}): CellView {
     // Both fields, empty: the route sends a dismissal on every cell, not only a dismissed one.
     dismissal: { by: '', reason: '' },
     factors: {
-      severity: { value: 'major', basis: 'derived', basis_digest: 'sev-1', superseded: null },
-      occurrence: { value: null, basis: 'absent', basis_digest: 'occ-1', superseded: null },
-      detectability: { value: 'low', basis: 'derived', basis_digest: 'det-1', superseded: null },
+      severity: { value: 'major', basis: 'derived', basis_digest: 'sev-1', assessment: null, superseded: null },
+      occurrence: { value: null, basis: 'absent', basis_digest: 'occ-1', assessment: null, superseded: null },
+      detectability: { value: 'low', basis: 'derived', basis_digest: 'det-1', assessment: null, superseded: null },
     },
     occurrence_rationale_draft: '- nothing can stand in for it',
     ...overrides,
@@ -131,12 +131,38 @@ describe('every value says where it came from', () => {
       value: 'major',
       basis: 'derived-superseding-an-assessment',
       basis_digest: 'sev-2',
+      assessment: null,
       superseded: { value: 'minor', author: 'analyst', justification: 'reviewed at the time' },
     })
 
     expect(tooltip).toContain('the model has changed')
     expect(tooltip).toContain('minor')
     expect(tooltip).toContain('analyst')
+  })
+
+  it('an asserted value says who decided it and why, not merely that a person did', () => {
+    const tooltip = basisTooltip('occurrence', {
+      value: 'unlikely',
+      basis: 'asserted',
+      basis_digest: 'occ-1',
+      assessment: {
+        value: 'unlikely',
+        author: 'analyst',
+        justification: 'one report in two years of operation',
+      },
+      superseded: null,
+    })
+
+    expect(tooltip).toContain('analyst')
+    expect(tooltip).toContain('one report in two years of operation')
+  })
+
+  it('a derived value claims no author, because nobody asserted it', () => {
+    const tooltip = basisTooltip('severity', {
+      value: 'major', basis: 'derived', basis_digest: 'sev-1', assessment: null, superseded: null,
+    })
+
+    expect(tooltip).toBe('severity is derived from the model')
   })
 
   it('the basis lives in a glyph and its tooltip, not in a column of prose', () => {
@@ -227,7 +253,7 @@ describe('awaitsOccurrence', () => {
       factors: {
         ...cell().factors,
         occurrence: {
-          value: 'occasional', basis: 'asserted', basis_digest: 'occ-1', superseded: null,
+          value: 'occasional', basis: 'asserted', basis_digest: 'occ-1', assessment: null, superseded: null,
         },
       },
     })

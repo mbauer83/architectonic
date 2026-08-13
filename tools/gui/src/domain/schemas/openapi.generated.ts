@@ -7775,6 +7775,23 @@ export interface components {
             state: "untouched" | "not-credible" | "recorded";
         };
         /**
+         * FmeaFactorAssessment
+         * @description One recorded judgement about a factor: what was decided, by whom, and why.
+         *
+         *     The same shape whether the judgement still applies or has been superseded by a basis that
+         *     moved. A reader has to be able to see that someone judged this, what they judged and on what
+         *     grounds — before deciding whether a new basis changes the answer, and equally before defending
+         *     a band that a judgement is currently setting.
+         */
+        FmeaFactorAssessment: {
+            /** Author */
+            author: string;
+            /** Justification */
+            justification: string;
+            /** Value */
+            value: string;
+        };
+        /**
          * FmeaFactorRecordedResponse
          * @description The revision a recorded judgement produced.
          *
@@ -7804,11 +7821,12 @@ export interface components {
          *     basis still holds and a caller recording one has to send the digest back.
          */
         FmeaFactorView: {
+            assessment: components["schemas"]["FmeaFactorAssessment"] | null;
             /** Basis */
             basis: string;
             /** Basis Digest */
             basis_digest: string;
-            superseded: components["schemas"]["FmeaSupersededAssessment"] | null;
+            superseded: components["schemas"]["FmeaFactorAssessment"] | null;
             /** Value */
             value: string | null;
         };
@@ -7863,21 +7881,6 @@ export interface components {
             unanswered_cells: number;
             /** Worst Action Priority */
             worst_action_priority: ("high" | "medium" | "low" | "indeterminate") | null;
-        };
-        /**
-         * FmeaSupersededAssessment
-         * @description A judgement that no longer applies because the basis it was made against moved.
-         *
-         *     Retained and shown rather than dropped: a reader has to be able to see that someone did judge
-         *     this, and what they judged, before deciding whether the new basis changes the answer.
-         */
-        FmeaSupersededAssessment: {
-            /** Author */
-            author: string;
-            /** Justification */
-            justification: string;
-            /** Value */
-            value: string;
         };
         /**
          * ForkLineageSpec

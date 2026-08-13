@@ -18,9 +18,9 @@ export function cellAwaitingOccurrence(overrides: Partial<CellView> = {}): CellV
     // Both fields, empty: the route sends a dismissal on every cell, not only a dismissed one.
     dismissal: { by: '', reason: '' },
     factors: {
-      severity: { value: 'major', basis: 'derived', basis_digest: 'sev-1', superseded: null },
-      occurrence: { value: null, basis: 'absent', basis_digest: 'occ-1', superseded: null },
-      detectability: { value: 'low', basis: 'derived', basis_digest: 'det-1', superseded: null },
+      severity: { value: 'major', basis: 'derived', basis_digest: 'sev-1', assessment: null, superseded: null },
+      occurrence: { value: null, basis: 'absent', basis_digest: 'occ-1', assessment: null, superseded: null },
+      detectability: { value: 'low', basis: 'derived', basis_digest: 'det-1', assessment: null, superseded: null },
     },
     occurrence_rationale_draft:
       '- nothing can stand in for it — 3 dependent(s) rely on it alone\n'

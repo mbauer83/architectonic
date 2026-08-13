@@ -116,6 +116,14 @@ class EffectiveFactor:
     factor: str
     value: str | None
     basis: str
+    assessment: FactorAssessment | None = None
+    """The judgement this value *is*, where a person made one that still applies.
+
+    Carried for the same reason the superseded one is, and the more urgent of the two: this is the
+    assessment currently moving the action-priority band, and `validate_factor_assessment` refuses
+    to record one without a rationale precisely because "a band with no stated reason is exactly
+    the number that gets argued about in a review". A rationale the product demands on the way in
+    and cannot return on the way out is a rationale nobody can review."""
     superseded_assessment: FactorAssessment | None = None
     """An assessment that no longer applies because the basis moved. Retained and shown, so the
     reader can see a judgement was made and what it was made against."""
@@ -184,7 +192,9 @@ def effective_factor(
     """
     applicable = current_revision([a for a in assessments if a.basis_digest == current_basis_digest])
     if applicable is not None:
-        return EffectiveFactor(factor=factor, value=applicable.value, basis=BASIS_ASSERTED)
+        return EffectiveFactor(
+            factor=factor, value=applicable.value, basis=BASIS_ASSERTED, assessment=applicable,
+        )
     superseded = current_revision(assessments)
     if derived_value is None:
         return EffectiveFactor(

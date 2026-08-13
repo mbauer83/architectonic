@@ -18,11 +18,13 @@ from src.domain.assurance.fmea_action_priority import ActionPriority
 from src.infrastructure.rest.contracts.wire_shape import Closed
 
 
-class FmeaSupersededAssessment(Closed):
-    """A judgement that no longer applies because the basis it was made against moved.
+class FmeaFactorAssessment(Closed):
+    """One recorded judgement about a factor: what was decided, by whom, and why.
 
-    Retained and shown rather than dropped: a reader has to be able to see that someone did judge
-    this, and what they judged, before deciding whether the new basis changes the answer.
+    The same shape whether the judgement still applies or has been superseded by a basis that
+    moved. A reader has to be able to see that someone judged this, what they judged and on what
+    grounds — before deciding whether a new basis changes the answer, and equally before defending
+    a band that a judgement is currently setting.
     """
 
     value: str
@@ -42,7 +44,10 @@ class FmeaFactorView(Closed):
     value: str | None
     basis: str
     basis_digest: str
-    superseded: FmeaSupersededAssessment | None
+    #: The judgement this value is, when a person made one that still applies. Null when the value
+    #: is derived: nobody asserted it, so there is no rationale to answer with.
+    assessment: FmeaFactorAssessment | None
+    superseded: FmeaFactorAssessment | None
 
 
 class FmeaCellDismissal(Closed):

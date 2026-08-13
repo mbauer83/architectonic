@@ -18,7 +18,8 @@ export type ActionPriority = (typeof ACTION_PRIORITIES)[number]
 export const ASSESSMENT_STATES = ['untouched', 'not-credible', 'recorded'] as const
 export type AssessmentState = (typeof ASSESSMENT_STATES)[number]
 
-export const FmeaSupersededAssessmentSchema = Schema.Struct({
+/** One recorded judgement about a factor — the same shape whether it still applies or not. */
+export const FmeaFactorAssessmentSchema = Schema.Struct({
   value: Schema.String,
   author: Schema.String,
   justification: Schema.String,
@@ -32,7 +33,10 @@ export const FmeaFactorSchema = Schema.Struct({
   // The digest of the model inputs the derived value came from. A judgement has to be filed against
   // it, because one filed against a basis that has since moved no longer applies.
   basis_digest: Schema.String,
-  superseded: Schema.NullOr(FmeaSupersededAssessmentSchema),
+  // The judgement the value *is*, where a person made one that still applies. Null for a derived
+  // value: nobody asserted it, so there is no rationale to show.
+  assessment: Schema.NullOr(FmeaFactorAssessmentSchema),
+  superseded: Schema.NullOr(FmeaFactorAssessmentSchema),
 })
 export type FmeaFactor = typeof FmeaFactorSchema.Type
 

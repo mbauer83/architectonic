@@ -154,6 +154,39 @@ class TestWhichValueAReaderSees:
         assert result.value == "catastrophic"
         assert result.basis == BASIS_DERIVED_SUPERSEDING_AN_ASSESSMENT
 
+    def test_the_judgement_that_applies_stays_visible_too(self) -> None:
+        """The asymmetry that made a recorded rationale unreadable: the judgement that no longer
+        applies was carried whole, and the one currently setting the band was reduced to its
+        value. `validate_factor_assessment` refuses a value with no rationale, so the product
+        demanded a reason it could not then answer with."""
+        applying = _assessment(value="likely", basis="basis-a")
+
+        result = effective_factor(
+            OCCURRENCE, assessments=[applying], derived_value=None, current_basis_digest="basis-a",
+        )
+
+        assert result.assessment == applying
+
+    def test_a_derived_value_carries_no_judgement_because_nobody_made_one(self) -> None:
+        result = effective_factor(
+            SEVERITY, assessments=[], derived_value="major", current_basis_digest="basis-a",
+        )
+
+        assert result.assessment is None
+
+    def test_a_value_whose_judgement_has_been_superseded_is_nobody_s_assertion_now(self) -> None:
+        """The two fields answer different questions, so a superseded judgement must not appear as
+        the one that applies — the value on show is the model's, not that author's."""
+        result = effective_factor(
+            SEVERITY,
+            assessments=[_assessment(value="minor", basis="basis-a", factor=SEVERITY)],
+            derived_value="catastrophic",
+            current_basis_digest="basis-b",
+        )
+
+        assert result.assessment is None
+        assert result.superseded_assessment is not None
+
     def test_the_superseded_judgement_stays_visible(self) -> None:
         """Retained and shown, not discarded: the reader needs to know a person once decided this,
         and what they decided it against."""

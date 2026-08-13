@@ -211,12 +211,24 @@ def cell_payload(cell: Cell) -> dict[str, object]:
                 "value": factor.value,
                 "basis": factor.basis,
                 "basis_digest": cell.basis_digests.get(name, ""),
-                "superseded": None if factor.superseded_assessment is None else {
-                    "value": factor.superseded_assessment.value,
-                    "author": factor.superseded_assessment.author,
-                    "justification": factor.superseded_assessment.justification,
-                },
+                "assessment": _assessment_payload(factor.assessment),
+                "superseded": _assessment_payload(factor.superseded_assessment),
             }
             for name, factor in cell.factors.items()
         },
+    }
+
+
+def _assessment_payload(assessment: FactorAssessment | None) -> dict[str, object] | None:
+    """One recorded judgement, in the one shape both the applying and the superseded one use.
+
+    The applying one used to be absent, so a rationale the write path *refuses a value without*
+    could not be read back through any surface: the value and its basis were published, and who
+    decided it and why were reachable only by opening the encrypted store. The two are the same
+    kind of fact, so they are the same shape rather than two.
+    """
+    return None if assessment is None else {
+        "value": assessment.value,
+        "author": assessment.author,
+        "justification": assessment.justification,
     }

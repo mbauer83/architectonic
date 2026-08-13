@@ -127,6 +127,46 @@ class TestRecordingAgainstThePublishedDigestApplies:
         assert after["occurrence"]["value"] == "unlikely"
         assert after["occurrence"]["basis"] == "asserted"
 
+    def test_the_rationale_it_was_recorded_with_can_be_read_back(self, store: Any) -> None:
+        """The write path refuses a value with no rationale, because a band with no stated reason
+        is the number that gets argued about in a review. Reading it back required opening the
+        encrypted store: the report published the value and its basis, and the judgement behind it
+        only once it had stopped applying."""
+        from src.application.assurance.fmea_factors import RecordFactorRequest, record_factor_assessment
+
+        node_id = _failure_mode(store)
+        factors = _report(store, node_id)["factors"]
+        assert isinstance(factors, dict)
+
+        record_factor_assessment(
+            RecordFactorRequest(
+                node_id=node_id,
+                factor="occurrence",
+                value="unlikely",
+                justification="one report in two years of operation",
+                author="analyst",
+                basis_digest=str(factors["occurrence"]["basis_digest"]),
+            ),
+            store=store,
+            archive=_NullArchive(),  # type: ignore[arg-type]
+        )
+
+        after = _report(store, node_id)["factors"]
+        assert isinstance(after, dict)
+        assert after["occurrence"]["assessment"] == {
+            "value": "unlikely",
+            "author": "analyst",
+            "justification": "one report in two years of operation",
+        }
+
+    def test_a_derived_value_reports_no_judgement_because_nobody_made_one(self, store: Any) -> None:
+        node_id = _failure_mode(store)
+
+        factors = _report(store, node_id)["factors"]
+
+        assert isinstance(factors, dict)
+        assert factors["severity"]["assessment"] is None
+
     def test_a_judgement_against_a_made_up_digest_never_applies(self, store: Any) -> None:
         """Why the digest cannot be invented when a caller has no way to read it."""
         from src.application.assurance.fmea_factors import RecordFactorRequest, record_factor_assessment
