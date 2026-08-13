@@ -10,6 +10,7 @@ writer had dropped.
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import pytest
@@ -86,6 +87,36 @@ class TestWhatDeclaresAnAlias:
     def test_a_macro_call_declares_its_first_argument(self) -> None:
         assert macro_alias_declared_on('Person(user, "User", "…")') == "user"
         assert macro_alias_declared_on("FNC_a --> FNC_b") is None
+
+    @pytest.mark.parametrize(
+        "line",
+        [
+            'Rel_Realization(REQ_kOU3al, OUT_620dTh, "")',
+            'Rel_Realization_Up(REQ_kOU3al, OUT_620dTh, "realises")',
+            "Rel_Access(APP_a, DOB_b)",
+            'Rel(SYS_a, SYS_b, "calls")',
+        ],
+    )
+    def test_a_macro_that_relates_two_aliases_declares_neither(self, line: str) -> None:
+        """The second argument is what tells them apart: a declaration labels the thing it
+        declares, a relation names its other end bare. Reading the first argument of a relation as
+        a declaration reported three duplicate declarations in a diagram that draws each element
+        once and then relates it several times — every counting question over this was wrong."""
+        assert macro_alias_declared_on(line) is None
+
+    @pytest.mark.parametrize(
+        "line,alias",
+        [
+            ('Person(user, "User")', "user"),
+            ('System_Ext(sys_a, "A", "tech")', "sys_a"),
+            ('Boundary(b_1, "Edge") {', "b_1"),
+            ("Deployment_Node(node-1)", "node-1"),
+        ],
+    )
+    def test_a_macro_that_labels_what_it_declares_still_declares_it(
+        self, line: str, alias: str
+    ) -> None:
+        assert macro_alias_declared_on(line) == alias
 
 
 def _entity(artifact_type: str, alias: str) -> EntityRecord:
@@ -177,3 +208,44 @@ class TestWhatTheRendererWritesTheWriterCanRead:
         assert declaration.alias == alias
         # A junction is a circle and never nests, so only the nesting forms open a block.
         assert declaration.opens_block == line.rstrip().endswith("{"), line
+
+
+class TestWhatTheMacroRenderersWriteTheReaderCanRead:
+    """The macro form's round trip, stated over the *pair* rather than over a fixture each side.
+
+    The C4 renderer writes `Macro(alias, "label", …)` and the ArchiMate bodies write
+    `Rel_Type(from, to, "label")`. One reader answers both, and it has to answer them differently:
+    the first declares its alias, the second declares nothing. Stated over what each renderer
+    *can* emit — every macro name and arity the C4 renderer chooses between, and every relation
+    macro the ArchiMate include defines — rather than over one example of each.
+    """
+
+    def _c4_declaration_lines(self) -> list[str]:
+        """Every arity the C4 renderer emits, as it spells them."""
+        return [
+            'Person(P_user_0, "A User")',
+            'Person_Ext(P_user_1, "A User", "Outside the boundary")',
+            'System(S_sys_0, "A System", "Some description")',
+            'Container(C_api_0, "An API", "Python", "Serves the model")',
+            'Boundary(B_edge_0, "Edge") {',
+        ]
+
+    def _relation_macro_lines(self) -> list[str]:
+        """Every relation macro the repository's own ArchiMate include defines, as a call."""
+        include = (
+            Path(__file__).resolve().parents[2]
+            / "engagements/ENG-ARCH-REPO/architecture-repository"
+            / "diagram-catalog/_archimate-relations.puml"
+        )
+        names = re.findall(r"^!define\s+(Rel_[A-Za-z0-9_]+)\(", include.read_text(), re.MULTILINE)
+        assert names, "the include defines no relation macros — the walk found nothing to check"
+        return [f'{name}(SRC_a1, TGT_b2, "")' for name in names]
+
+    def test_every_c4_declaration_form_reads_back_as_its_alias(self) -> None:
+        for line in self._c4_declaration_lines():
+            alias = line.split("(")[1].split(",")[0].split(")")[0].strip()
+            assert macro_alias_declared_on(line) == alias, line
+
+    def test_no_relation_macro_the_include_defines_reads_as_a_declaration(self) -> None:
+        for line in self._relation_macro_lines():
+            assert macro_alias_declared_on(line) is None, line

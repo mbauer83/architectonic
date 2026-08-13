@@ -37,8 +37,18 @@ _DECLARATION = re.compile(r"\bas\s+(?P<alias>[A-Za-z0-9_-]+)\b")
 #: A quoted label, replaced before the search so its prose cannot look like a declaration.
 _QUOTED = re.compile(r'"[^"]*"')
 
-#: `MacroName(ALIAS, "label", …)` — some renderers put the alias first rather than after `as`.
-_MACRO_CALL = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*\(\s*([A-Za-z0-9_-]+)\s*[,)]")
+#: `MacroName(ALIAS)` or `MacroName(ALIAS, "label", …)` — some renderers put the alias first rather
+#: than after `as`. A **quoted** second argument, or none at all, is what distinguishes a
+#: declaration from a relation: `Rel_Realization(REQ_kOU3al, OUT_620dTh, "")` names two aliases and
+#: declares neither, and reading its first argument as a declaration reported three duplicate
+#: declarations in a diagram that draws each element once and then relates it several times.
+#:
+#: Structural rather than a list of relation macro names. `Rel_` is one dialect's spelling, and an
+#: allowlist of it is the same bet the end-anchored alias readings lost; every macro that declares
+#: something labels it, and every macro that relates two things names the second one bare.
+_MACRO_CALL = re.compile(
+    r"^[A-Za-z_][A-Za-z0-9_]*\(\s*(?P<alias>[A-Za-z0-9_-]+)\s*(?:\)|,\s*(?:\"|$))"
+)
 
 
 @dataclass(frozen=True)
@@ -62,12 +72,18 @@ def alias_declared_on(line: str) -> AliasDeclaration | None:
 
 
 def macro_alias_declared_on(line: str) -> str | None:
-    """The alias a macro-call line declares as its first argument, or None."""
+    """The alias a macro-call line declares as its first argument, or None.
+
+    None for a line that *relates* two aliases rather than declaring one — see `_MACRO_CALL`. The
+    over-reading was harmless to the only consumer it had, which collects a set and asks "is this
+    declared anywhere", so a spurious member failed open. It is wrong for any counting question,
+    and E318's duplicate-alias check had to sidestep it by counting the `as` form alone.
+    """
     stripped = line.strip()
     if not stripped or stripped.startswith("'"):
         return None
     match = _MACRO_CALL.match(stripped)
-    return match.group(1) if match is not None else None
+    return match.group("alias") if match is not None else None
 
 
 def declared_aliases(body: str) -> list[AliasDeclaration]:
