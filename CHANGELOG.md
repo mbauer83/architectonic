@@ -46,6 +46,11 @@ elements it draws; and three renderers stopped losing content that the source co
   one another and held equal by a gate.
 - **The relationship macros a diagram body may call are generated from the ontology.** Nine of the
   twelve ArchiMate relationships had a macro; a body calling one of the other three drew nothing.
+- **A diagram takes the colours, corners, glyphs and line styles the ontology declares today.** A
+  body may keep its own copy of those declarations so the `.puml` renders on its own, and that copy
+  was refreshed only when the whole picture was regenerated — so a diagram whose content had not
+  changed went on drawing the palette it was authored with. Nine diagrams here were doing exactly
+  that. Every copy is restated on each edit, and a check reports any that disagree.
 - **A scratchpad's version is the store's.** A client omitting the in-document version drove the
   stored version backwards, after which two writers could each overwrite the other indefinitely
   without either being detected as stale. A save that stores what is already stored is no longer a
