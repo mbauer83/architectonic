@@ -103,6 +103,28 @@ For any change touching the GUI, its API payloads, or model content the GUI rend
 
 The browser suite is the only one that exercises the real application, so leaving it to CI means UI and content regressions are discovered after the fact rather than before the commit.
 
+## Public prose: `CHANGELOG.md`, `changelog-assets/`, `README.md`, `docs/`
+
+**These files are published. Write what changed and what it means for a reader — nothing about how
+the work went.** A `PostToolUse` hook in `.claude/settings.json` reminds an agent of this on every
+edit to one of them; the rule is here because a reminder nobody can look up is not a rule.
+
+Three things do not belong in any of them, and the first is not a style preference:
+
+- **Provenance.** Never name where a defect came from, who reported it, or which engagement or
+  client it surfaced in. A changelog ships with the release, and "reported from another engagement"
+  identifies a third party's work to everyone who reads it. This reached two published entries.
+- **Narration about the work.** How it was found, that it was reproduced before it was fixed, what
+  an incoming diagnosis got wrong, how many tests ran. Where a wrong first diagnosis is worth
+  recording, state it as a fact about the defect — *a coloured rectangle failed identically* — not
+  as a verdict on whoever offered it. Gate counts belong in the commit body and the handover.
+- **The stock AI cadence.** Tricolons reached for as rhythm, "not X, but Y" as a default sentence
+  shape, pleonasm and padding, climax and countdown build-ups, and negative contrast ("it isn't
+  just X — it's Y"). Plain declarative sentences.
+
+The commit body is where the reasoning goes; `changelog-assets/<version>-detail.md` is for the
+maintainer-facing mechanism. Neither is licence for the three above.
+
 ## Commit messages
 
 **`Area: clause`, where the clause completes "When applied, this commit will …".**

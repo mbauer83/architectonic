@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // .tool_response.filePath // empty' | { read -r f || exit 0; r=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0; case \"$f\" in /*) a=\"$f\" ;; *) a=\"$PWD/$f\" ;; esac; case \"$a\" in \"$r\"/CHANGELOG.md|\"$r\"/README.md|\"$r\"/docs/*.md|\"$r\"/changelog-assets/*.md) ;; *) exit 0 ;; esac; jq -n --arg f \"${a#\"$r\"/}\" '{hookSpecificOutput:{hookEventName:\"PostToolUse\",additionalContext:(\"Published document edited: \" + $f + \". Re-read what you just wrote and cut, before doing anything else: (1) PROVENANCE - never name where a defect came from, who reported it, which engagement or client it surfaced in. (2) NARRATION about the work - how it was found, that it was reproduced first, what a diagnosis got wrong, how many tests ran. Say what changed and what it means for a reader. (3) AI CADENCE - tricolons used as rhythm, not-X-but-Y as a default sentence shape, pleonasm and padding, climax and countdown build-ups, negative contrast (it is not just X - it is Y). Plain declarative sentences.\")}}'; }",
+            "timeout": 10,
+            "statusMessage": "Checking public-doc prose rules"
+          }
+        ]
+      }
+    ]
+  }
+}
