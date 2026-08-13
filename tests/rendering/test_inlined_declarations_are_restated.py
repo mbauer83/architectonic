@@ -256,6 +256,14 @@ class TestABodyIsGivenAPreambleOrHasOneRestated:
         assert "DiagonalCorner 10" in result
 
 
+def _wrapped(body: str, config: dict) -> str:
+    """Only the width bound applied, so these assertions read about width alone."""
+    from src.infrastructure.rendering.generated_header import with_stated_skinparams
+    from src.infrastructure.rendering.puml_label_wrapping import label_wrap_skinparams
+
+    return with_stated_skinparams(body, {line.split()[1]: line for line in label_wrap_skinparams(config)})
+
+
 class TestTheLabelWidthBoundReachesAStoredBody:
     """The bound is written when a body is generated, so a body not regenerated since never got it.
 
@@ -269,11 +277,9 @@ class TestTheLabelWidthBoundReachesAStoredBody:
     _CONFIG = {"layout": {"wrap_width": 240}}
 
     def test_a_body_without_the_bound_is_given_it(self) -> None:
-        from src.infrastructure.rendering.puml_label_wrapping import with_label_wrap_bound  # noqa: PLC0415
-
         body = "@startuml x\nhide stereotype\ntitle T\nrectangle A\n@enduml\n"
 
-        result = with_label_wrap_bound(body, self._CONFIG)
+        result = _wrapped(body, self._CONFIG)
 
         assert result.splitlines()[:3] == [
             "@startuml x", "skinparam wrapWidth 240", "skinparam maxMessageSize 240",
@@ -281,11 +287,9 @@ class TestTheLabelWidthBoundReachesAStoredBody:
         assert result.endswith("@enduml\n")
 
     def test_a_bound_already_stated_at_another_width_is_replaced_not_repeated(self) -> None:
-        from src.infrastructure.rendering.puml_label_wrapping import with_label_wrap_bound  # noqa: PLC0415
-
         body = "@startuml\nskinparam wrapWidth 900\nskinparam maxMessageSize 900\ntitle T\n@enduml\n"
 
-        result = with_label_wrap_bound(body, self._CONFIG)
+        result = _wrapped(body, self._CONFIG)
 
         assert result.count("skinparam wrapWidth") == 1
         assert "900" not in result
@@ -293,11 +297,9 @@ class TestTheLabelWidthBoundReachesAStoredBody:
 
     def test_a_type_that_opts_out_states_nothing_and_loses_a_bound_it_carries(self) -> None:
         """`wrap_width: 0` opts out. If a carried bound survived, only a new body could opt out."""
-        from src.infrastructure.rendering.puml_label_wrapping import with_label_wrap_bound  # noqa: PLC0415
-
         body = "@startuml\nskinparam wrapWidth 240\ntitle T\n@enduml\n"
 
-        result = with_label_wrap_bound(body, {"layout": {"wrap_width": 0}})
+        result = _wrapped(body, {"layout": {"wrap_width": 0}})
 
         assert "wrapWidth" not in result
         assert "title T" in result
@@ -305,34 +307,28 @@ class TestTheLabelWidthBoundReachesAStoredBody:
     def test_a_bound_already_correct_is_left_exactly_where_it_stands(self) -> None:
         """Moving it changes nothing PlantUML reads and rewrites every already-correct body: 32
         diagrams reported stale where 9 were."""
-        from src.infrastructure.rendering.puml_label_wrapping import with_label_wrap_bound  # noqa: PLC0415
-
         body = (
             "@startuml x\nhide stereotype\nskinparam nodesep 60\n"
             "skinparam wrapWidth 240\nskinparam maxMessageSize 240\ntitle T\n@enduml\n"
         )
 
-        assert with_label_wrap_bound(body, self._CONFIG) == body
+        assert _wrapped(body, self._CONFIG) == body
 
     def test_a_stale_width_is_restated_where_it_stands(self) -> None:
-        from src.infrastructure.rendering.puml_label_wrapping import with_label_wrap_bound  # noqa: PLC0415
-
         body = (
             "@startuml x\nhide stereotype\nskinparam nodesep 60\n"
             "skinparam wrapWidth 900\nskinparam maxMessageSize 900\ntitle T\n@enduml\n"
         )
 
-        assert with_label_wrap_bound(body, self._CONFIG) == body.replace("900", "240")
+        assert _wrapped(body, self._CONFIG) == body.replace("900", "240")
 
     def test_the_rest_of_the_body_is_untouched(self) -> None:
-        from src.infrastructure.rendering.puml_label_wrapping import with_label_wrap_bound  # noqa: PLC0415
-
         body = (
             "@startuml\nhide stereotype\nskinparam nodesep 40\ntitle T\n"
             'rectangle "A" <<goal>> as G\nG -[hidden]- H\n@enduml\n'
         )
 
-        result = with_label_wrap_bound(body, self._CONFIG)
+        result = _wrapped(body, self._CONFIG)
 
         for line in body.splitlines():
             assert line in result, line
@@ -451,3 +447,39 @@ class TestNoStoredBodyDisagreesWithTheOntology:
             "these diagram bodies carry a generated header that disagrees with what the "
             f"renderer states today: {stale}"
         )
+
+
+class TestALabelsLinesShareOneAxis:
+    """A box's label is one string — the glyph, then the text — so a label that wraps put its
+    continuation, and the `«specialization»` line after it, hard against the left edge under the
+    glyph while the first line spanned the full width. Measured on a 240px box: the continuation
+    started at x=17 against a box centre of 126, and at x=102 once centred.
+    """
+
+    def test_the_alignment_is_stated_in_a_body_that_lacks_it(self) -> None:
+        from src.infrastructure.rendering.generated_header import refreshed_header  # noqa: PLC0415
+
+        body = "@startuml x\nhide stereotype\ntitle T\nrectangle A\n@enduml\n"
+
+        result = refreshed_header(body, Path("/nonexistent"), {"layout": {"wrap_width": 240}})
+
+        assert "skinparam defaultTextAlignment center" in result
+
+    def test_an_alignment_the_author_set_otherwise_is_restated(self) -> None:
+        """It is the renderer's statement, so a body carrying another value is brought level rather
+        than given a second line that PlantUML would resolve by position."""
+        from src.infrastructure.rendering.generated_header import refreshed_header  # noqa: PLC0415
+
+        body = "@startuml\nskinparam defaultTextAlignment left\ntitle T\n@enduml\n"
+
+        result = refreshed_header(body, Path("/nonexistent"), {"layout": {"wrap_width": 240}})
+
+        assert result.count("skinparam defaultTextAlignment") == 1
+        assert "defaultTextAlignment center" in result
+
+    def test_the_generated_stereotype_header_states_it_too(self) -> None:
+        """A freshly generated body takes its header from the include, not from the refresh, so
+        both have to say it or a new diagram and an old one would differ."""
+        from src.infrastructure.rendering.generate_static_includes import _STEREOTYPE_HEADER  # noqa: PLC0415
+
+        assert "skinparam defaultTextAlignment center" in _STEREOTYPE_HEADER

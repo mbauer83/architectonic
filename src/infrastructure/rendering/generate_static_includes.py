@@ -61,6 +61,7 @@ skinparam defaultFontSize 12
 skinparam shadowing false
 skinparam roundcorner 4
 skinparam backgroundColor #FAFAFA
+skinparam defaultTextAlignment center
 
 skinparam linetype ortho
 skinparam nodesep 60
