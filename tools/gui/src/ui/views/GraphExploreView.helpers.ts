@@ -272,10 +272,10 @@ const MIDDLE_CORE_BAND = Math.floor(
   (DOMAIN_NAMES as readonly string[]).filter((name) => !(name in SIDE_DOMAINS)).length / 2,
 )
 
-export const DOMAIN_COLORS: Record<string, string> = {
-  motivation: '#d8c1e4', strategy: '#efbd5d', business: '#f4de7f',
-  common: '#e8e5d3', application: '#b6d7e1', technology: '#c3e1b4',
-}
+/** Re-exported, not restated. This was a third copy of the palette and a truncated one: it had
+ * no `implementation`, so those elements fell back to grey here while a diagram drew them
+ * peach. The colour is the ontology's declaration, generated into `types.generated.ts`. */
+export { DOMAIN_COLORS } from '../../domain/types.generated'
 
 /**
  * Hop distance from the entity the exploration opened on, by the parentage the walk recorded.

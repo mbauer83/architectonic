@@ -1,23 +1,24 @@
 import type { EntitySummary } from '../../domain'
-import { DOMAIN_NAMES, type DomainName } from '../../domain/types.generated'
+import { DOMAIN_COLORS, DOMAIN_NAMES, type DomainName } from '../../domain/types.generated'
 
-type DomainDisplayConfig = { color: string; label: string }
 type ModuleLike = { readonly name: string }
 
-const DOMAIN_CONFIG: Partial<Record<DomainName, DomainDisplayConfig>> = {
-  motivation:     { color: '#d8c1e4', label: 'Motivation' },
-  strategy:       { color: '#efbd5d', label: 'Strategy' },
-  common:         { color: '#e8e5d3', label: 'Common' },
-  business:       { color: '#f4de7f', label: 'Business' },
-  application:    { color: '#b6d7e1', label: 'Application' },
-  technology:     { color: '#c3e1b4', label: 'Technology' },
-  implementation: { color: '#f4c896', label: 'Implementation' },
-  sysml:          { color: '#c0d4ee', label: 'SysML v2' },
+/** What a domain is called. The *colour* is not here: it is the ontology's declaration, generated
+ * into `types.generated.ts`, because three hand-written palettes disagreed on every domain and one
+ * of them was missing a domain entirely — so the same element was one colour in a rendered diagram
+ * and another in the graph explorer. A label is this surface's own business; a colour is not. */
+const DOMAIN_LABELS: Partial<Record<DomainName, string>> = {
+  motivation: 'Motivation',
+  strategy: 'Strategy',
+  common: 'Common',
+  business: 'Business',
+  application: 'Application',
+  technology: 'Technology',
+  implementation: 'Implementation',
+  sysml: 'SysML v2',
 }
 
-export const DOMAIN_COLORS: Partial<Record<DomainName, string>> = Object.fromEntries(
-  (Object.entries(DOMAIN_CONFIG) as [DomainName, DomainDisplayConfig][]).map(([k, v]) => [k, v.color]),
-)
+export { DOMAIN_COLORS }
 
 export const DOMAIN_OPTIONS = [
   { key: '' as string, label: 'All' },
@@ -25,12 +26,13 @@ export const DOMAIN_OPTIONS = [
     .filter(n => n !== 'unknown')
     .map(name => ({
       key: name,
-      label: DOMAIN_CONFIG[name]?.label ?? (name.charAt(0).toUpperCase() + name.slice(1)),
+      label: DOMAIN_LABELS[name] ?? (name.charAt(0).toUpperCase() + name.slice(1)),
     })),
 ]
 
+/** The declared colour for a domain, or a neutral grey for one no ontology has coloured. */
 export const getDomainColor = (domain?: string) =>
-  (domain ? DOMAIN_COLORS[domain as DomainName] : undefined) ?? '#cbd5e1'
+  (domain ? DOMAIN_COLORS[domain] : undefined) ?? '#cbd5e1'
 
 export const getDomainLabel = (domain: string) =>
   DOMAIN_OPTIONS.find(option => option.key === domain)?.label ?? domain
