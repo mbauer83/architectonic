@@ -21,6 +21,7 @@ import pytest
 import yaml
 
 from src.domain.yaml_documents import USES_LIBYAML, parse_yaml
+from src.infrastructure.rendering.puml_runtime import is_render_scratch
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 
@@ -103,6 +104,10 @@ def _repository_yaml_documents() -> list[str]:
     model = _REPO_ROOT / "engagements" / "ENG-ARCH-REPO" / "architecture-repository"
     documents: list[str] = []
     for path in list(model.rglob("*.md")) + list(model.rglob("*.puml")):
+        # The renderer writes its scratch file into the catalog it is rendering from, so one can be
+        # listed here and gone before it is read. It is not a document this repository stores.
+        if is_render_scratch(path):
+            continue
         text = path.read_text(encoding="utf-8", errors="replace")
         if match := _FRONTMATTER.match(text):
             documents.append(match.group(1))

@@ -7,6 +7,7 @@ import os
 import subprocess
 import tempfile
 import time
+from fnmatch import fnmatch
 from pathlib import Path
 
 from src.config.repo_paths import DIAGRAM_CATALOG, DIAGRAMS
@@ -21,6 +22,18 @@ from src.infrastructure.rendering.puml_safety import strip_leading_puml_frontmat
 _TEMP_PREFIX = tempfile.gettempprefix()
 _TEMP_SUFFIX = ".puml"
 RENDER_TEMP_GLOB = f"{_TEMP_PREFIX}*{_TEMP_SUFFIX}"
+
+
+def is_render_scratch(path: Path) -> bool:
+    """Whether *path* is one of the renderer's scratch files rather than repository content.
+
+    Anything walking the catalog's ``*.puml`` has to ask: renders overlap with everything else, so a
+    scratch file can exist when a walk lists the directory and be gone by the time the walk reads it.
+    Asked through the same convention the creation and the sweep use, so a walk cannot drift from
+    what is actually written.
+    """
+    return fnmatch(path.name, RENDER_TEMP_GLOB)
+
 
 #: How long a scratch file may live before it is assumed abandoned. Comfortably above the 60 s
 #: subprocess timeout below, so a render still running is never swept out from under itself — renders

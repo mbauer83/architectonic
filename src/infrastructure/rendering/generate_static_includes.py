@@ -269,13 +269,15 @@ def stale_inlined_declarations(repo_root: Path) -> list[str]:
     edit, so the repair is an edit of the named diagram and nothing else.
     """
     from src.application.repo_path_helpers import diagram_source_root  # noqa: PLC0415
+    from src.infrastructure.rendering.puml_runtime import is_render_scratch  # noqa: PLC0415
 
     declarations = declared_now(repo_root)
     root = diagram_source_root(repo_root)
     return [
         str(path.relative_to(root))
         for path in sorted(root.rglob("*.puml"))
-        if (body := path.read_text(encoding="utf-8")) != declarations.restated_in(body)
+        if not is_render_scratch(path)
+        and (body := path.read_text(encoding="utf-8")) != declarations.restated_in(body)
     ]
 
 
