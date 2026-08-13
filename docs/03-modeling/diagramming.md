@@ -38,22 +38,24 @@ is never silently dropped, and `artifact_verify` refuses a body that declares on
 (**E318**) — PlantUML reads the second declaration as a reference, which would empty the second
 container without any error.
 
-**Colour says which domain an element belongs to, and corner shape says what kind of thing it is.**
-Structure elements are drawn square, behaviour elements rounded, and motivation elements with cut
-corners, so a driver and an application component read as different kinds of thing rather than as
-the same rectangle in two colours. Both come from the meta-ontology: it declares one colour per
-domain and assigns each corner style to the element classes its types already carry, and the border
-and container tints are derived from that colour rather than listed beside it. The graph explorer
-and the rendered diagram therefore draw the same element the same way, and a second meta-ontology
-declares its own palette and categories without any code change. `GET
-/api/ontology/element-appearance` serves the resolved answer — colour per domain, corner style per
-entity type.
+**In ArchiMate views, colour says which domain an element belongs to and corner shape says what
+kind of thing it is** — square for structure elements, rounded for behaviour, cut corners for
+motivation. The ArchiMate meta-ontology declares one colour per domain and assigns each corner
+style to the element classes its types already carry; borders and container tints are derived from
+the declared colour rather than listed beside it. A meta-ontology that declares neither renders
+plainly, and one that declares its own brings its own palette and categories with no code change —
+this is a property of the declaration mechanism, not of ArchiMate. `GET
+/api/ontology/element-appearance` serves the resolved answer for whichever meta-ontology governs:
+colour per domain, corner style per entity type.
 
-**A relationship's line and end markers come from the same place.** Each connection type declares
-its notation structurally — `dashed`, `hollow-triangle at the target` — and its PlantUML spelling is
-derived from that declaration, so a diagram cannot draw a relationship differently from the graph
-explorer. ArchiMate itself assigns no formal meaning to colour and defines no palette; the values
-here are this product's declaration.
+Diagram families with their own renderer (activity, sequence, matrix, C4, datatype, GSN) draw in
+their own notation and are unaffected by the domain palette.
+
+**A relationship's line and end markers are declared the same way.** Each connection type states
+its notation structurally — `dashed`, `hollow-triangle at the target` — and its PlantUML spelling
+is derived from that statement, so a rendered diagram and the graph explorer cannot draw the same
+relationship differently. ArchiMate itself assigns no formal meaning to colour and defines no
+palette; the values here are this product's declaration.
 
 A diagram connection's frontmatter entry can opt in to an inline **multiplicity** annotation
 (`include_multiplicity`) rendering its source/target cardinality on the arrow — the ArchiMate

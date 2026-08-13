@@ -3,6 +3,79 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [0.6.0] — 2026-08-13
+
+**[Full detail → `changelog-assets/0.6.0-detail.md`](changelog-assets/0.6.0-detail.md)**
+
+**A picture now says what the model says.** Colour and corner shape are declared by the
+meta-ontology and drawn the same way everywhere; a graph shows every relationship among the
+elements it draws; and three renderers stopped losing content that the source contained.
+
+### Added
+
+- **Colour and corner shape are declarations.** The meta-ontology states one colour per domain and
+  assigns each corner style — square for structure, rounded for behaviour, cut for motivation — to
+  the element classes its types already carry. Borders and container tints derive from the declared
+  colour. Every surface draws from that one statement, so an element looks the same in a rendered
+  diagram and in the graph explorer, and a second meta-ontology brings its own palette and
+  categories without code changes.
+- **`GET /api/ontology/element-appearance`** answers colour per domain and corner style per entity
+  type, resolved, so a client renders without knowing the class vocabulary.
+- **`GET /api/ontology/classification-levels`** answers how elements and relationships are
+  classified, keyed by concept kind, with every level id an opaque string.
+- **`GET /api/connections/among`** answers the connections whose endpoints are both in a set of
+  entities.
+- **A legend for what a diagram's visual properties mean** is not in this release; the declarations
+  it reads are.
+
+### Fixed
+
+- **The graph explorer draws every relationship among the elements it shows.** Free exploration
+  asked each node for its own connections, so a relationship between two neighbours of the element
+  you started from was never requested and never drawn — and the visible relationships depended on
+  the order you expanded in. Two people looking at the same nodes now see the same graph.
+- **An `alt`/`else` guard keeps its first word.** Multi-word guards on sequence diagrams were
+  written into the source in brackets, which PlantUML reads as link syntax, so `features computed`
+  rendered as `computed`. Single-word guards were unaffected, which is why this went unnoticed.
+- **A fork's branches end at the join.** Activity diagrams walked every branch to the end of the
+  graph instead of stopping where the branches converge, so everything after the join was repeated
+  once per branch and nested forks multiplied it. The continuation is drawn once.
+- **Every relationship is drawn with the line style it declares.** `archimate-access` declared a
+  dotted line and drew a solid one; twelve further types across the assurance and datatype modules
+  declared nothing and drew something else. The declaration and the drawing are now derived from
+  one another and held equal by a gate.
+- **The relationship macros a diagram body may call are generated from the ontology.** Nine of the
+  twelve ArchiMate relationships had a macro; a body calling one of the other three drew nothing.
+- **A scratchpad's version is the store's.** A client omitting the in-document version drove the
+  stored version backwards, after which two writers could each overwrite the other indefinitely
+  without either being detected as stale. A save that stores what is already stored is no longer a
+  write, so a drag too small to move anything leaves no modified file and invalidates nobody's
+  token.
+- **A frame's declared domains survive being edited.** Reading a scratchpad and handing it back —
+  which the canvas does on every save — erased what each frame declared, so a frame's type picker
+  stopped narrowing.
+- **A matrix keeps its axes when its body is edited.** Upserting a matrix through the write path
+  dropped the entity axes and the connection-type configuration, which no caller could restate.
+- **A matrix's axes must name entities that exist**, and its links must resolve. Both are now
+  verified.
+- **An FMEA factor's justification can be read back.** The rationale a judgement is refused without
+  was recorded and then unavailable through every read surface.
+- **Relationship markers at the source end are visible.** Graph edges stopped short of the target
+  only, so composition and aggregation diamonds and the assignment ball were drawn underneath their
+  own node.
+- **A custom primitive resolves the same way every time.** Where two share a label, resolution
+  followed dictionary order and could refuse a reference an enterprise declaration satisfies, while
+  naming the wrong cause.
+
+### Changed
+
+- **Diagram colours.** Every ArchiMate element's fill, border and container tint changes with the
+  new declaration. Nothing about a model changes; the pictures are re-rendered.
+- **What a document's prose refers to has one reading.** Four readings of the same markdown link
+  disagreed; the one in the cascade-delete preflight could not see a link into a section, so a
+  document linking to part of an entity was invisible to the check that finds what a deletion
+  breaks.
+
 ## [0.5.4] — 2026-08-13
 
 **[Full detail → `changelog-assets/0.5.4-detail.md`](changelog-assets/0.5.4-detail.md)**
@@ -500,6 +573,7 @@ never-requested operations is empty — the reason to trust a release which rena
 - Confidential assurance tier (STPA/CAST/GRC/FMEA/GSN) on an encrypted store with tamper-evident history
 - Viewpoint query engine with diagram/matrix/table representations
 
+[0.6.0]: https://github.com/mbauer83/architectonic/compare/v0.5.4...v0.6.0
 [0.5.4]: https://github.com/mbauer83/architectonic/compare/v0.5.3...v0.5.4
 [0.5.3]: https://github.com/mbauer83/architectonic/compare/v0.5.2...v0.5.3
 [0.5.2]: https://github.com/mbauer83/architectonic/compare/v0.5.1...v0.5.2
