@@ -3,6 +3,48 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [0.5.4] — 2026-08-13
+
+**[Full detail → `changelog-assets/0.5.4-detail.md`](changelog-assets/0.5.4-detail.md)**
+
+**Containment survives the picture.** An element drawn in two containers no longer loses one of
+them, and a containment the notation cannot nest is drawn as the relation it is.
+
+### Fixed
+
+- **An element with two containers is drawn once, and the containment that cannot be nested is drawn
+  as an arrow.** PlantUML containment is a tree: a second `as ALIAS` is read as a *reference* to the
+  element already declared. So an element aggregated by two parents was built inside the first, the
+  second container rendered **empty**, and that containment left the picture — while `artifact_verify`
+  accepted the body, because every id in it still resolves. The duplication was recursive: a
+  twice-parented element took its whole subtree with it. Nesting remains the default, and what cannot
+  be nested is now drawn as its own typed arrow.
+- **A containment cycle no longer empties a diagram.** With A aggregating B and B aggregating A,
+  every element counted as nested and none was left to declare, so the generated body held no
+  elements at all. An element aggregating itself did the same.
+- **Composition and aggregation draw their ArchiMate diamond** where nesting cannot draw the
+  containment — a second parent, a cycle, or a member an authored group has claimed. Both types
+  declare a diamond in `notation` and both spelled `puml_arrow: "-->"`, so the graph canvas drew the
+  diamond and the diagram drew an anonymous arrow. `notation` is now honoured by every ontology
+  loader rather than the ArchiMate one alone, which is why `dt-aggregation` and `dt-composition` drew
+  their diamond in a diagram but not in the graph.
+
+### Added
+
+- **`artifact_verify` refuses a body that declares an alias twice (E318).** An error rather than a
+  warning: PlantUML reads the second declaration as a reference, so the container it opens renders
+  empty and the containment it draws is lost with nothing to see. Scoped to bodies written in the
+  element-declaration vocabulary — a diagram type that owns its entity types carries prose that no
+  reading of `as ALIAS` can tell from code.
+
+### Changed
+
+- **One insertion of a direction into a PUML arrow token**
+  (`application.puml_arrow_tokens`), replacing three that had each been written against the arrow
+  forms in use at the time. All three left the containment forms `o--` and `*--` undirected, so a
+  composition or aggregation arrow lost its layout rank on both the render and the layout-optimiser
+  paths.
+
 ## [0.5.3] — 2026-08-12
 
 **[Full detail → `changelog-assets/0.5.3-detail.md`](changelog-assets/0.5.3-detail.md)**
