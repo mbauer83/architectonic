@@ -71,10 +71,17 @@ class ScratchpadRepositoryPort(Protocol):
         ...
 
     def save(self, scratchpad: Scratchpad, *, group: str, expected_version: str | None = None) -> Scratchpad:
-        """Write the aggregate whole, returning what was stored — including its new version.
+        """Write the aggregate whole, returning what is stored — including its version.
 
         `expected_version` is the version the writer read. `None` means "this is a create"; a
         mismatch raises `ScratchpadVersionConflictError` rather than overwriting.
+
+        The version returned is the store's. A caller's document may carry one — it is what that
+        caller read — and it is not a claim about what the store now holds.
+
+        **Storing what is already stored is not a write**, so it moves no version: the returned
+        aggregate is what was passed in, and no other writer's token is invalidated. Callers that
+        count writes should expect a save of unchanged content to be one of these.
         """
         ...
 

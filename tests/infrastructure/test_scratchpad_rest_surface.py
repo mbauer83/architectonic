@@ -148,6 +148,22 @@ class TestReplace:
         assert response.status_code == 400
         assert "ghost" in response.text
 
+    def test_reading_a_scratchpad_and_handing_it_straight_back_stores_nothing(
+        self, client: TestClient
+    ) -> None:
+        """The documented loop is "read it, edit it, hand it back". Handing back an *unedited*
+        document is not a write, so it moves no version and invalidates no other writer's token."""
+        created = _create(client)
+        read = client.get(f"/api/scratchpads/{created['artifact-id']}").json()
+
+        stored = self._replace(client, created, {k: v for k, v in read.items() if k != "group"})
+
+        assert stored.status_code == 200, stored.text
+        assert stored.json()["version"] == created["version"]
+        # And the token the first reader still holds keeps working, because nothing moved.
+        again = self._replace(client, created, self._with_note(created))
+        assert again.status_code == 200, again.text
+
     def test_the_url_names_the_scratchpad_even_if_the_body_disagrees(self, client: TestClient) -> None:
         """A body carrying a different id is a client bug, not a rename request."""
         created = _create(client)

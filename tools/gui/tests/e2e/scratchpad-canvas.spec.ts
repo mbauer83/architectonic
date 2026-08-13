@@ -88,8 +88,17 @@ test('a scratchpad holds untyped notes and links, and survives a reload', async 
   await expect(page.getByTestId('scratchpad-name')).toHaveText(`E2E thinking ${RUN}`)
 })
 
-test('the canvas writes once when a burst of edits settles, not once per gesture', async ({ page }) => {
-  await newScratchpad(page, 'E2E write rate')
+/** What the server holds for this scratchpad, which is the only place a gesture's outcome is real. */
+async function storedScratchpad(page: import('@playwright/test').Page, id: string) {
+  const response = await page.request.get(`/api/scratchpads/${encodeURIComponent(id)}`)
+  expect(response.ok()).toBeTruthy()
+  return await response.json()
+}
+
+test('the canvas writes once when a burst of edits settles, and stores where the note landed', async ({
+  page,
+}) => {
+  const id = await newScratchpad(page, 'E2E write rate')
   await addNote(page, PANEL_CLEARANCE, 160, 'Dragged about')
   await expect(page.getByTestId('save-state')).toHaveText('Saved', { timeout: 15000 })
 
@@ -100,12 +109,21 @@ test('the canvas writes once when a burst of edits settles, not once per gesture
     }
   })
 
+  const before = await storedScratchpad(page, id)
+  const noteId: string = before.notes[0].id
+  const [x0, y0]: [number, number] = before.layout.notes[noteId]
+
   // One continuous drag: dozens of pointer positions, which a per-gesture write would send whole.
+  // Right and down by construction, from the note's own box, so the stored outcome can be checked
+  // against the gesture without knowing where the canvas sits on screen.
   const note = page.locator('.sp-note').first()
-  await note.hover()
+  const box = await note.boundingBox()
+  expect(box).not.toBeNull()
+  const from = { x: box!.x + box!.width / 2, y: box!.y + box!.height / 2 }
+  await page.mouse.move(from.x, from.y)
   await page.mouse.down()
-  for (let step = 0; step < 30; step++) {
-    await page.mouse.move(300 + step * 6, 260 + step * 3)
+  for (let step = 1; step <= 30; step++) {
+    await page.mouse.move(from.x + step * 6, from.y + step * 3)
   }
   await page.mouse.up()
   await expect(page.getByTestId('save-state')).toHaveText('Saved', { timeout: 15000 })
@@ -113,6 +131,18 @@ test('the canvas writes once when a burst of edits settles, not once per gesture
   // The endpoint sees a save, never a drag.
   expect(writes.length).toBeGreaterThan(0)
   expect(writes.length).toBeLessThanOrEqual(2)
+
+  // And the save carried the gesture. Asserting the write *rate* alone left the whole question of
+  // what a drag stores untested, which is how a save that stored nothing went unnoticed.
+  const after = await storedScratchpad(page, id)
+  const [x1, y1]: [number, number] = after.layout.notes[noteId]
+  expect(x1).toBeGreaterThan(x0)
+  expect(y1).toBeGreaterThan(y0)
+  // On the grid both sides snap to, so the canvas and the file agree about where the note is.
+  expect(x1 % 5).toBe(0)
+  expect(y1 % 5).toBe(0)
+  // One gesture, one version. The token every other client holds moves once, not once per frame.
+  expect(after.version).not.toBe(before.version)
 })
 
 test('undo reverses each kind of edit, and redo puts it back', async ({ page }) => {

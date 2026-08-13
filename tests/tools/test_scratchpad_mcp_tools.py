@@ -124,18 +124,39 @@ class TestRefusalsComeBackAsData:
             artifact_id=created["artifact-id"], repo_root=tools["_repo_root"]
         )["scratchpad"]
         document = {key: value for key, value in read.items() if key != "group"}
+        # Each write changes something. Two agents storing byte-identical documents are not two
+        # writers in conflict — the second stores nothing, so there is nothing to refuse.
         tools["scratchpad_replace"](
-            artifact_id=created["artifact-id"], scratchpad=document,
+            artifact_id=created["artifact-id"], scratchpad={**document, "name": "Renamed once"},
             version=read["version"], repo_root=tools["_repo_root"],
         )
 
         second = tools["scratchpad_replace"](
-            artifact_id=created["artifact-id"], scratchpad=document,
+            artifact_id=created["artifact-id"], scratchpad={**document, "name": "Renamed twice"},
             version=read["version"], repo_root=tools["_repo_root"],
         )
 
         assert second["error"] == "version_conflict"
         assert "Reload" in second["message"]
+
+    def test_handing_back_an_unread_document_unchanged_is_not_a_write(
+        self, tools: dict[str, Any]
+    ) -> None:
+        """An agent that reads a scratchpad, decides against an edit and stores it anyway has
+        written nothing, so the version it holds — and everyone else's — still validates."""
+        created = _create(tools)
+        read = tools["scratchpad_read"](
+            artifact_id=created["artifact-id"], repo_root=tools["_repo_root"]
+        )["scratchpad"]
+        document = {key: value for key, value in read.items() if key != "group"}
+
+        stored = tools["scratchpad_replace"](
+            artifact_id=created["artifact-id"], scratchpad=document,
+            version=read["version"], repo_root=tools["_repo_root"],
+        )
+
+        assert stored.get("error") is None, stored
+        assert stored["scratchpad"]["version"] == read["version"]
 
     def test_a_broken_invariant_names_the_id_at_fault(self, tools: dict[str, Any]) -> None:
         created = _create(tools)

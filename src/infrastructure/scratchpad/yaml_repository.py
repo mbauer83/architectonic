@@ -39,6 +39,12 @@ from src.domain.yaml_documents import parse_yaml
 #: the same thing. Every caller already asks this module for it.
 SUFFIX = SCRATCHPAD_SUFFIX
 
+#: What a scratchpad's version is before its first write, so the file it is created as carries the
+#: first bump of it. Nothing before a create is stored, so this is the store's own starting point
+#: rather than anything a caller supplies.
+_UNSTORED_VERSION = "0.1.0"
+
+
 def _bump(version: str) -> str:
     """Next patch version. The version is a concurrency token first and a version second, so it
     only has to move on every write — but it moves the way the rest of the repository's do."""
@@ -106,16 +112,39 @@ class YamlScratchpadRepository:
     # ── Writing ──────────────────────────────────────────────────────────────
 
     def save(self, scratchpad: Scratchpad, *, group: str, expected_version: str | None = None) -> Scratchpad:
+        """Store the aggregate, unless storing it would change nothing.
+
+        **The version stored is the store's, never the caller's.** The token travels beside the
+        document — `ScratchpadDocumentWire` says the in-document `version` is "read back and
+        ignored here" — so bumping the caller's copy of it made the store follow whatever a client
+        happened to send: one that omitted it drove the stored version *backwards*, after which
+        every writer's token validated forever and the conflict check protected nobody.
+
+        **A save that stores what is already stored is not a write.** Geometry snaps to the grid,
+        so a drag too small to leave its cell arrives as a document byte-identical to the file. That
+        cost a trip through the write queue, left a modified file in git with no content change, and
+        invalidated every other client's token for a change that never happened. Compared as text
+        because that is exactly the question — would this write change the file? — which also
+        re-writes a file whose formatting has drifted rather than declaring it unchanged.
+        """
         existing = self._path_for(scratchpad.artifact_id)
-        if existing is not None:
-            stored_version = str(_read_yaml(existing).get("version") or "0.1.0")
-            if expected_version is None or expected_version != stored_version:
-                raise ScratchpadVersionConflictError(
-                    scratchpad.artifact_id, expected_version or "(none)", stored_version
-                )
-        stored = replace(scratchpad, version=_bump(scratchpad.version), layout=scratchpad.layout.snapped())
-        stored.validate()
-        target = self._root / group / f"{stored.artifact_id}{SUFFIX}"
+        on_disk = existing.read_text(encoding="utf-8") if existing is not None else None
+        stored_version = _version_of(on_disk)
+        if stored_version is not None and expected_version != stored_version:
+            raise ScratchpadVersionConflictError(
+                scratchpad.artifact_id, expected_version or "(none)", stored_version
+            )
+        current = replace(
+            scratchpad,
+            version=stored_version or _UNSTORED_VERSION,
+            layout=scratchpad.layout.snapped(),
+        )
+        current.validate()
+        target = self._root / group / f"{current.artifact_id}{SUFFIX}"
+        # A re-home writes even an identical document, because the file has to move.
+        if existing == target and serialize(current) == on_disk:
+            return current
+        stored = replace(current, version=_bump(current.version))
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(serialize(stored), encoding="utf-8")
         # A re-home is a move, not a copy: leaving the old file behind would make one scratchpad
@@ -154,9 +183,24 @@ def _reindex(*paths: Path | None) -> None:
         notify_paths_changed(changed)
 
 
-def _read_yaml(path: Path) -> dict[str, Any]:
-    loaded = parse_yaml(path.read_text(encoding="utf-8"))
+def _version_of(document_text: str | None) -> str | None:
+    """The version the store holds, or `None` where it holds nothing yet — which is the difference
+    between an update and a create. A stored document with no version reads as the unstored one,
+    since that is what it would have been written from."""
+    if document_text is None:
+        return None
+    return str(_document(document_text).get("version") or _UNSTORED_VERSION)
+
+
+def _document(text: str) -> dict[str, Any]:
+    """The stored document. Takes the text rather than the path so `save` can ask what is stored
+    and whether writing would change it without reading the same file twice."""
+    loaded = parse_yaml(text)
     return loaded if isinstance(loaded, dict) else {}
+
+
+def _read_yaml(path: Path) -> dict[str, Any]:
+    return _document(path.read_text(encoding="utf-8"))
 
 
 def serialize(scratchpad: Scratchpad) -> str:
