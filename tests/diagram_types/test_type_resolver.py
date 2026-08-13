@@ -15,6 +15,8 @@ Acceptance criteria:
 
 from __future__ import annotations
 
+import pytest
+
 from src.diagram_types.datatype._projection import (
     ClassifierDefinition,
     DatatypeVerificationProjection,
@@ -242,6 +244,85 @@ def test_custom_primitive_out_of_scope() -> None:
     )
     assert isinstance(result, Unresolved)
     assert result.reason == "out-of-scope"
+
+
+# ---------------------------------------------------------------------------
+# Two declarations, one label — the promotion case
+# ---------------------------------------------------------------------------
+
+
+def _shadowed_pair(engagement_first: bool) -> DatatypeVerificationProjection:
+    """One label declared twice: an engagement copy and the enterprise one it shadows.
+
+    The pair is built in both orders because the defect *was* the order: the scan walked
+    `classifiers_by_id` as the dictionary happened to iterate, so which declaration answered a
+    reference depended on which was inserted first.
+    """
+    engagement = _clf(
+        type_id="CLF@1.eng.money", label="Money", kind="primitive", scope="engagement"
+    )
+    enterprise = _clf(
+        type_id="CLF@1.ent.money", label="Money", kind="primitive", scope="enterprise"
+    )
+    return _proj([engagement, enterprise] if engagement_first else [enterprise, engagement])
+
+
+@pytest.mark.parametrize("engagement_first", [True, False])
+def test_an_enterprise_diagram_resolves_the_enterprise_declaration_whichever_was_declared_first(
+    engagement_first: bool,
+) -> None:
+    """The defect: an engagement declaration found first answered `out-of-scope` for a reference
+    the enterprise declaration standing behind it satisfies — so the answer, and the stated
+    reason, depended on dictionary order."""
+    result = _RESOLVER.resolve(
+        {"kind": "primitive", "name": "Money"}, "enterprise", _shadowed_pair(engagement_first)
+    )
+
+    assert result == Resolved(label="Money")
+
+
+@pytest.mark.parametrize("engagement_first", [True, False])
+def test_an_engagement_diagram_resolves_it_too_whichever_was_declared_first(
+    engagement_first: bool,
+) -> None:
+    """An engagement diagram may use either, so it always resolves — the point is that it does so
+    identically whichever order the two arrived in."""
+    result = _RESOLVER.resolve(
+        {"kind": "primitive", "name": "Money"}, "engagement", _shadowed_pair(engagement_first)
+    )
+
+    assert result == Resolved(label="Money")
+
+
+def test_a_refusal_names_the_declaration_that_was_really_in_the_way() -> None:
+    """With nothing usable, the reason comes from the best-ranked candidate rather than from
+    whichever was met first, so it describes a declaration that really did refuse."""
+    draft_enterprise = _clf(
+        type_id="CLF@1.ent.money", label="Money", kind="primitive",
+        scope="enterprise", status="draft",
+    )
+    proj = _proj([draft_enterprise])
+
+    result = _RESOLVER.resolve(
+        {"kind": "primitive", "name": "Money"}, "enterprise", proj,
+        referencing_diagram_status="baselined",
+    )
+
+    assert result == Unresolved("status-violation")
+
+
+def test_a_classifier_that_is_not_a_primitive_does_not_answer_a_primitive_reference() -> None:
+    """The label index is shared with every classifier kind, so the kind filter has to survive
+    the move onto it."""
+    same_label_class = _clf(
+        type_id="CLF@1.ab.money", label="Money", kind="class", scope="engagement"
+    )
+    proj = _proj([same_label_class])
+
+    result = _RESOLVER.resolve({"kind": "primitive", "name": "Money"}, "engagement", proj)
+
+    assert isinstance(result, Unresolved)
+    assert result.reason == "unknown-primitive"
 
 
 # ---------------------------------------------------------------------------

@@ -95,17 +95,11 @@ class TypeResolver:
         if name in self._primitive_names:
             return Resolved(label=name)
 
-        # Custom primitive — classifier with kind == "primitive" and matching label
+        # Custom primitive — a classifier with kind == "primitive" and this label.
         norm = name.lower().strip()
-        for clf in projection.classifiers_by_id.values():
-            if clf.kind == "primitive" and clf.label.lower().strip() == norm:
-                scope_err = self._check_scope(clf.scope, referencing_scope)
-                if scope_err is not None:
-                    return scope_err
-                status_err = self._check_status(clf.status, referencing_diagram_status)
-                if status_err is not None:
-                    return status_err
-                return Resolved(label=clf.label)
+        declared = self._custom_primitives_named(norm, projection)
+        if declared:
+            return self._first_usable(declared, referencing_scope, referencing_diagram_status)
 
         # Suggest close matches from declared primitives
         candidates = tuple(
@@ -113,6 +107,50 @@ class TypeResolver:
             if norm in p.lower()
         )
         return Unresolved("unknown-primitive", candidates=candidates)
+
+    @staticmethod
+    def _custom_primitives_named(norm: str, projection: Any) -> tuple[Any, ...]:
+        """Every custom primitive carrying this label, enterprise first.
+
+        Through `classifier_ids_by_name`, which the projection already builds and W333 already
+        reads, rather than a second scan of the classifiers: a label index asked for by two
+        callers is one index, and the scan it replaces walked in dictionary order.
+
+        Enterprise first, and then by id, for the reason `_type_catalog` sorts its answer the same
+        way: with two declarations sharing a label — an engagement one shadowing an enterprise one
+        during a promotion — the order decided which was found, so a reference the enterprise
+        declaration would have satisfied could be refused as out-of-scope depending on nothing but
+        how the dictionary happened to iterate. The collision itself is W333's to report; this only
+        has to stop resolution depending on it.
+        """
+        found = [
+            clf
+            for clf_id in projection.classifier_ids_by_name.get(norm, ())
+            if (clf := projection.classifiers_by_id.get(clf_id)) is not None
+            and clf.kind == "primitive"
+        ]
+        return tuple(sorted(found, key=lambda clf: (0 if clf.scope == "enterprise" else 1, clf.type_id)))
+
+    def _first_usable(
+        self, declared: tuple[Any, ...], referencing_scope: str, referencing_diagram_status: str
+    ) -> Resolved | Unresolved:
+        """The first declaration this reference may actually use, or why the best one is refused.
+
+        Refusing on the first *match* rather than the first *usable* match is what named the wrong
+        cause: an engagement declaration found first answered `out-of-scope` while an enterprise
+        one sat behind it, satisfying the very reference being refused. When none is usable the
+        refusal comes from the highest-ranked candidate, so the message describes a declaration
+        that really was in the way.
+        """
+        refusals: list[Unresolved] = []
+        for clf in declared:
+            refusal = self._check_scope(clf.scope, referencing_scope) or self._check_status(
+                clf.status, referencing_diagram_status
+            )
+            if refusal is None:
+                return Resolved(label=clf.label)
+            refusals.append(refusal)
+        return refusals[0]
 
     def _resolve_classifier(
         self,
