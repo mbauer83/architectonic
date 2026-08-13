@@ -252,15 +252,41 @@ def _find_root(
 # ── Emission ──────────────────────────────────────────────────────────────────
 
 
+def _is_join(step_id: str, ctx: _Ctx) -> bool:
+    """A join is a fork-typed step that opens no branches — the bar the branches converge on.
+
+    The model spells a fork and a join the same way, in `diagram_entities.fork[]`; what tells them
+    apart is that a fork has outgoing `step-fork-branch` connections and a join has only incoming
+    `step-flow`. That is why the join used to vanish: with no branches it emitted nothing, and the
+    walk carried straight on through the continuation — once per branch.
+    """
+    step = ctx[0].get(step_id)
+    if step is None:
+        return False
+    return str(step.get("type") or "") == "fork" and not ctx[4].get(step_id)
+
+
 def _emit_from(start_id: str, ctx: _Ctx, lines: list[str], visited: set[str]) -> None:
+    _emit_until_join(start_id, ctx, lines, visited)
+
+
+def _emit_until_join(start_id: str, ctx: _Ctx, lines: list[str], visited: set[str]) -> str | None:
+    """Emit from *start_id* onward, stopping at a join. Returns the join, or None if none was met.
+
+    A branch of a fork ends where it reaches the join; the continuation beyond it belongs to the
+    fork as a whole and is emitted once, by whoever opened it.
+    """
     step_id: str | None = start_id
     while step_id and step_id not in visited:
+        if _is_join(step_id, ctx):
+            return step_id
         step = ctx[0].get(step_id)
         if not step:
             break
         visited.add(step_id)
         _emit_step(step, step_id, ctx, lines, visited)
         step_id = ctx[1].get(step_id)
+    return None
 
 
 def _emit_orphans(
@@ -320,11 +346,26 @@ def _emit_step(step: dict[str, Any], step_id: str, ctx: _Ctx, lines: list[str], 
         if branches:
             lines.append("fork")
             _emit_step_note(step_id, notes_index, lines)
+            # Each branch walks its own path — hence the copied `visited` — and stops where it
+            # reaches the join. Without that stop every branch ran on to the end of the graph, so
+            # the whole continuation was repeated once per branch and nested forks multiplied it.
+            joins: list[str] = []
             for i, branch_start in enumerate(branches):
                 if i > 0:
                     lines.append("fork again")
-                _emit_from(branch_start, ctx, lines, set(visited))
+                reached = _emit_until_join(branch_start, ctx, lines, set(visited))
+                if reached is not None:
+                    joins.append(reached)
             lines.append("end fork")
+            # The continuation belongs to the fork, not to any branch, so it is emitted once here.
+            # A branch that never reaches the join contributes nothing to this; the first join any
+            # branch did reach is the one the fork closes on.
+            if joins:
+                join_id = joins[0]
+                visited.add(join_id)
+                after_join = flow_next.get(join_id)
+                if after_join:
+                    _emit_from(after_join, ctx, lines, visited)
 
     elif stype == "partition":
         label = _puml_text(str(step.get("label") or "Partition"))

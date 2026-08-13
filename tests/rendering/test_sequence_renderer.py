@@ -130,9 +130,12 @@ def test_opt_grouping_wraps_messages() -> None:
         diagram_entities={"lifeline": lls, "message": msgs, "grouping": grps},
         diagram_connections=kcs,
     )
-    assert "opt [if ready]" in puml
+    # Bare, not bracketed: PlantUML adds the brackets, and a `[...]` in its source is link syntax,
+    # so the bracketed form silently dropped the first word of the guard from the image. The round
+    # trip through a real render is `tests/diagram_types/test_sequence_guard_round_trip.py`.
+    assert "opt if ready" in puml
     assert "end" in puml
-    assert puml.index("opt [if ready]") < puml.index("ll1 -> ll2: call")
+    assert puml.index("opt if ready") < puml.index("ll1 -> ll2: call")
     assert puml.index("ll1 -> ll2: call") < puml.rindex("end")
 
 
@@ -151,12 +154,12 @@ def test_alt_grouping_with_else() -> None:
         diagram_entities={"lifeline": lls, "message": msgs, "grouping": grps},
         diagram_connections=kcs,
     )
-    assert "alt [success]" in puml
-    assert "else [failure]" in puml
+    assert "alt success" in puml
+    assert "else failure" in puml
     assert "end" in puml
-    assert puml.index("alt [success]") < puml.index("yes-path")
-    assert puml.index("yes-path") < puml.index("else [failure]")
-    assert puml.index("else [failure]") < puml.index("no-path")
+    assert puml.index("alt success") < puml.index("yes-path")
+    assert puml.index("yes-path") < puml.index("else failure")
+    assert puml.index("else failure") < puml.index("no-path")
 
 
 def test_loop_grouping_with_label() -> None:
