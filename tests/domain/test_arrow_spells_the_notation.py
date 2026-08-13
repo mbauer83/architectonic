@@ -33,11 +33,19 @@ import pytest
 
 from src.domain.ontology_representation.ontology_types import ConnectionTypeInfo
 from src.domain.ontology_representation.relation_notation import puml_arrow_for
-from src.infrastructure.app_bootstrap import get_module_registry
+from src.infrastructure.app_bootstrap import build_module_registry
+
+#: The **complete** vocabulary, not the runtime one. A parametrised walk is expanded at collection
+#: time, and `get_module_registry()` drops a module whose optional capability is unavailable — so
+#: with 20 xdist workers probing the confidential store concurrently, workers disagreed about
+#: whether the assurance types exist and pytest refused the run for collecting different tests.
+#: `generate_types.py` takes the same view for the same reason: "so the generated file is identical
+#: on every machine — e.g. with or without the confidential assurance store configured".
+_REGISTRY = build_module_registry(complete_vocabulary=True)
 
 
 def _connection_types() -> list[tuple[str, ConnectionTypeInfo]]:
-    return sorted((str(name), info) for name, info in get_module_registry().all_connection_types().items())
+    return sorted((str(name), info) for name, info in _REGISTRY.all_connection_types().items())
 
 
 class TestEveryArrowSpellsItsNotation:

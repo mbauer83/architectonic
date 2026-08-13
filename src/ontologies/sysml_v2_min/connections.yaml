@@ -11,17 +11,22 @@
 connection_types:
   sysml:
     feature-membership:
-      puml_arrow: "-->>"
+      # `-->>` drew a double head, which the notation vocabulary has no term for and nothing
+      # declared a meaning for. The declaration is the authority, so it draws the arrow it states.
+      puml_arrow: "-->"
+      notation: {line: solid, source: none, target: filled-arrow}
       symmetric: false
       classes: [containment, membership]
 
     specialization:
       puml_arrow: "--|>"
+      notation: {line: solid, source: none, target: hollow-triangle}
       symmetric: false
       classes: [specialization]
 
     feature-typing:
       puml_arrow: "..>"
+      notation: {line: dashed, source: none, target: open-arrow}
       symmetric: false
       classes: [typing]
 
@@ -32,11 +37,13 @@ connection_types:
 
     allocation:
       puml_arrow: "..|>"
+      notation: {line: dashed, source: none, target: hollow-triangle}
       symmetric: false
       classes: [allocation, trace]
 
     satisfy:
       puml_arrow: "..>"
+      notation: {line: dashed, source: none, target: open-arrow}
       symmetric: false
       classes: [trace, satisfy]
 

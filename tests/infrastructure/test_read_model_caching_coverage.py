@@ -174,6 +174,9 @@ class TestTheAllowlistStaysHonest:
             # derived arm is the most expensive read this surface serves.
             "/api/entities/{artifact_id}/neighbors",
             "/api/connections",
+            # 0.6.0: the induced subgraph over a set of entities. A function of the index exactly
+            # as the star above it is, and the read a graph surface makes on every expansion.
+            "/api/connections/among",
             "/api/diagrams",
             # 0.2.0: the two detail reads the entity one was already eligible for. Same producer.
             "/api/diagrams/{artifact_id}",
@@ -292,6 +295,10 @@ class TestEveryEligibleTemplateRevalidates:
         filled = template.replace("{artifact_id}", quote(seeded[kind], safe=""))
         if filled == "/api/connections":
             return f"/api/connections?entity_id={quote(seeded['entity'], safe='')}"
+        if filled == "/api/connections/among":
+            # The induced subgraph over a *set*; one seeded entity is a set of one, which is
+            # enough to have a validator that must move when the model does.
+            return f"/api/connections/among?entity_ids={quote(seeded['entity'], safe='')}"
         if filled in {"/api/search", "/api/reference-search"}:
             return f"{filled}?q=Cache"
         return filled

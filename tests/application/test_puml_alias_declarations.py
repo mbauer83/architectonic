@@ -139,10 +139,17 @@ def _entity(artifact_type: str, alias: str) -> EntityRecord:
     )
 
 
-def _registry():
-    from src.infrastructure.app_bootstrap import get_module_registry  # noqa: PLC0415
 
-    return get_module_registry()
+#: The **complete** vocabulary, not the runtime one. A parametrised walk is expanded at collection
+#: time, and `get_module_registry()` drops a module whose optional capability is unavailable — so
+#: with 20 xdist workers probing the confidential store concurrently, workers disagreed about
+#: whether the assurance types exist and pytest refused the run for collecting different tests.
+#: `generate_types.py` takes the same view for the same reason: "so the generated file is identical
+#: on every machine — e.g. with or without the confidential assurance store configured".
+def _registry():
+    from src.infrastructure.app_bootstrap import build_module_registry  # noqa: PLC0415
+
+    return build_module_registry(complete_vocabulary=True)
 
 
 def _archimate_entity_types() -> list[str]:
