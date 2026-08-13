@@ -7,8 +7,7 @@ All notable changes to this project are documented here. The format follows
 
 **[Full detail → `changelog-assets/0.5.3-detail.md`](changelog-assets/0.5.3-detail.md)**
 
-One defect, reported from another engagement and reproduced here before it was fixed: an ArchiMate view
-that draws a junction could not be authored. Nothing changes an API or a contract.
+An ArchiMate view that draws a junction could not be authored. Nothing changes an API or a contract.
 
 ### Fixed
 
