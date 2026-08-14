@@ -50,3 +50,37 @@ test('the graph viewport goes fullscreen and re-frames against the new space', a
 
   await expect.poll(async () => page.evaluate(() => document.fullscreenElement === null)).toBe(true)
 })
+
+test('clicking blank space deselects, which is what puts the panel away', async ({ page }) => {
+  await page.goto(GRAPH)
+  await expect(page.locator('svg g.graph-node').first()).toBeVisible()
+
+  // Select something other than the root, so the panel is showing a deliberate choice.
+  await page.locator('svg g.graph-node').nth(2).click()
+  await expect(page.locator('aside.graph-sidebar')).toContainText('Artifact ID')
+
+  // The top-left corner of the canvas: away from every node, from the controls at top right and
+  // from the hint at bottom centre. Clicked by position because the element's own centre is where
+  // the root node sits.
+  const box = (await page.locator('svg.graph-svg').boundingBox())!
+  await page.mouse.click(box.x + 12, box.y + 12)
+
+  await expect(page.locator('aside.graph-sidebar')).not.toContainText('Artifact ID')
+})
+
+test('panning across the canvas does not deselect', async ({ page }) => {
+  await page.goto(GRAPH)
+  await expect(page.locator('svg g.graph-node').first()).toBeVisible()
+  await page.locator('svg g.graph-node').nth(2).click()
+  await expect(page.locator('aside.graph-sidebar')).toContainText('Artifact ID')
+
+  // Releasing a pan produces a click too; deselecting on it would make the panel impossible to
+  // keep open while moving around the graph.
+  const box = (await page.locator('svg.graph-svg').boundingBox())!
+  await page.mouse.move(box.x + 12, box.y + 12)
+  await page.mouse.down()
+  await page.mouse.move(box.x + 160, box.y + 120, { steps: 8 })
+  await page.mouse.up()
+
+  await expect(page.locator('aside.graph-sidebar')).toContainText('Artifact ID')
+})

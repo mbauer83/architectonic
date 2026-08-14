@@ -114,6 +114,18 @@ const keepFramed = () => {
 // Selected edge (connection) for sidebar
 const selectedEdge = ref<GraphEdge | null>(null)
 
+/**
+ * Clicking away from everything deselects, which is what flies the sidebar back out in fullscreen.
+ *
+ * The same affordance a diagram offers, and the reason the dock reveals on selection at all: over a
+ * graph filling the screen a permanent panel covers the thing being read, so there has to be a way
+ * to put it away that is not "select something else".
+ */
+const clearGraphSelection = () => {
+  selectedId.value = null
+  selectedEdge.value = null
+}
+
 // ── Viewpoint-driven exploration ────────────────────────────────────────────
 
 const viewpoints = ref<ViewpointSummary[]>([])
@@ -499,6 +511,7 @@ const showExpandBadge = (n: GraphNode) =>
         @edge-click="onEdgeClick"
         @drag-tick="onDragTick"
         @resized="onCanvasResized"
+        @background-click="clearGraphSelection"
       />
     </div>
 

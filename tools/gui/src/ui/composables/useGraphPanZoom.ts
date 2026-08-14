@@ -79,6 +79,8 @@ export function useGraphPanZoom(
       return
     }
     if (isPanning.value) {
+      if (Math.abs(e.clientX - panStart.value.x) > DRAG_THRESHOLD_PX
+        || Math.abs(e.clientY - panStart.value.y) > DRAG_THRESHOLD_PX) panTravelled.value = true
       const dx = (e.clientX - panStart.value.x) * (viewBox.value.w / svgWidth.value)
       const dy = (e.clientY - panStart.value.y) * (viewBox.value.h / svgHeight.value)
       viewBox.value.x -= dx
@@ -100,10 +102,21 @@ export function useGraphPanZoom(
     isPanning.value = false
   }
 
+  //: Whether the background press that is in flight has travelled far enough to be a pan. A press
+  //: that has not is a click on blank space, which is how a reader deselects — the same rule the
+  //: diagram viewport applies, and the same threshold, because the hand moves a pixel or two on
+  //: any click and treating that as a pan would make deselecting fail at random.
+  const panTravelled = ref(false)
+
   const onSvgMouseDown = (e: MouseEvent) => {
     isPanning.value = true
+    panTravelled.value = false
     panStart.value = { x: e.clientX, y: e.clientY }
   }
+
+  /** Whether the gesture that just ended was a pan rather than a click. */
+  const wasPan = (): boolean => panTravelled.value
+
 
   const onWheel = (e: WheelEvent) => {
     e.preventDefault()
@@ -208,6 +221,6 @@ export function useGraphPanZoom(
   return {
     viewBox, vb, dragging,
     onNodeMouseDown, onSvgMouseDown, onSvgMouseMove, onSvgMouseUp, onWheel,
-    zoomBy, fitToView, refitUnlessUserFramed, hasFitted, isTransformed,
+    zoomBy, fitToView, refitUnlessUserFramed, hasFitted, isTransformed, wasPan,
   }
 }

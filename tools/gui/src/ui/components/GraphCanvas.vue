@@ -68,6 +68,7 @@ const emit = defineEmits<{
   edgeClick: [edge: GraphEdge]
   dragTick: []
   resized: [width: number, height: number]
+  backgroundClick: []
 }>()
 
 const svgRef = ref<SVGSVGElement | null>(null)
@@ -95,7 +96,7 @@ watch(fullscreen.isFullscreen, () => { refitOnNextResize = true })
 const {
   viewBox, vb, dragging,
   onNodeMouseDown, onSvgMouseDown, onSvgMouseMove, onSvgMouseUp, onWheel,
-  zoomBy, fitToView, refitUnlessUserFramed, hasFitted, isTransformed,
+  zoomBy, fitToView, refitUnlessUserFramed, hasFitted, isTransformed, wasPan,
 } = useGraphPanZoom(svgRef, svgWidth, svgHeight, toRef(props, 'nodes'), () => emit('dragTick'))
 
 // Nodes are laid out in their own coordinate space, so the pre-fit viewBox — the bare
@@ -127,6 +128,15 @@ defineExpose({
   isFullscreen: fullscreen.isFullscreen,
   fitToView, refitUnlessUserFramed, zoomBy, centerOn, dragging,
 })
+
+/**
+ * A click on blank space deselects, as it does on a diagram.
+ *
+ * `.self`, so only the background is meant — nodes and edges stop their own clicks. Guarded on
+ * whether the gesture travelled: releasing a pan produces a click too, and deselecting at the end
+ * of every drag would make the panel impossible to keep open while moving around the graph.
+ */
+const onBackgroundClick = () => { if (!wasPan()) emit('backgroundClick') }
 
 // Stop the edge at each node's outer boundary so the decoration at that end sits beside it.
 // What "outer boundary" means per node is `graphNodeGeometry`'s answer, not one restated here.
@@ -194,6 +204,7 @@ const edgeCardPos = (e: GraphEdge, frac: number) => edgeCardPosFor(props.nodes, 
       :style="{ visibility: nodes.length > 0 && !hasFitted ? 'hidden' : 'visible' }"
       :viewBox="vb"
       @mousedown.self="onSvgMouseDown"
+      @click.self="onBackgroundClick"
       @mousemove="onSvgMouseMove"
       @mouseup="onSvgMouseUp"
       @mouseleave="onSvgMouseUp"
