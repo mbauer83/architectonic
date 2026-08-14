@@ -80,3 +80,24 @@ test('a filtered graph is a link, and reset returns the whole picture', async ({
   await expect(page).not.toHaveURL(/[?&]hide=/)
   await expect.poll(async () => page.locator('svg g.graph-node').count()).toBe(before)
 })
+
+test('excluding a relationship type takes the elements it strands, but never the root', async ({
+  page,
+}) => {
+  await page.goto(GRAPH)
+  await page.getByRole('button', { name: 'Filter', exact: true }).click()
+  const before = await page.locator('svg g.graph-node').count()
+
+  // Every relationship type at once: the strongest form of the rule, and the case that would
+  // otherwise leave an empty canvas with nothing to explore from.
+  const types = page.getByRole('group', { name: 'Relationship type' }).getByRole('button')
+  for (const button of await types.all()) await button.click()
+
+  await expect(page.locator('svg line, svg path.graph-edge-line')).toHaveCount(0)
+  await expect.poll(async () => page.locator('svg g.graph-node').count()).toBeLessThan(before)
+  // The element being explored survives: it is the subject of the view. A node carries its name
+  // in an SVG <title>, which is not page text, so it is asserted as the element it is.
+  await expect(
+    page.locator('svg g.graph-node title', { hasText: 'Sustain Unity of Effort' }),
+  ).toHaveCount(1)
+})

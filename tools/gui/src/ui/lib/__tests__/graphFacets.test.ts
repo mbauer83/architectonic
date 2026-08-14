@@ -149,13 +149,49 @@ describe('narrowing the graph', () => {
     expect(result.nodes.map((n) => n.id)).toEqual(['GOL@1', 'GOL@2'])
     // APP@1 -> GOL@1 goes with APP@1: an edge to a node that is not drawn is a line to nowhere.
     expect(result.edges).toEqual([EDGES[0]])
+    // GOL@1 loses that realization and keeps the aggregation, so it is not stranded.
+    expect(result.nodes.map((n) => n.id)).toContain('GOL@1')
   })
 
-  it('drops an excluded relation while keeping both its endpoints', () => {
+  it('drops an excluded relation, and with it any element it strands', () => {
+    // GOL@1 keeps its realization from APP@1, so it stays; GOL@2's only relation was the
+    // aggregation, so it goes. A scatter of unconnected boxes is what the filter is for removing.
     const result = narrowed(ARCHIMATE, { connection_type: ['archimate-aggregation'] }, NODES, EDGES)
 
-    expect(result.nodes).toHaveLength(3)
+    expect(result.nodes.map((n) => n.id)).toEqual(['GOL@1', 'APP@1'])
     expect(result.edges).toEqual([EDGES[1]])
+  })
+
+  it('keeps an element the caller says it cannot lose, however isolated', () => {
+    // The element being explored: filtering out its relationships would otherwise empty the canvas
+    // and leave nothing to explore from.
+    const result = narrowed(
+      ARCHIMATE,
+      { connection_type: ['archimate-aggregation'] },
+      NODES,
+      EDGES,
+      new Set(['GOL@2']),
+    )
+
+    expect(result.nodes.map((n) => n.id)).toContain('GOL@2')
+  })
+
+  it('keeps an element that never had a relation, because the filter took none from it', () => {
+    // Otherwise "hide the unconnected" would hide it with no filter active at all, and an
+    // unfiltered graph has to show everything it loaded.
+    const lonely = node('VAL@1', 'motivation', 'value')
+
+    const unfiltered = narrowed(ARCHIMATE, {}, [...NODES, lonely], EDGES)
+    const filtered = narrowed(ARCHIMATE, { entity_type: ['goal'] }, [...NODES, lonely], EDGES)
+
+    expect(unfiltered.nodes.map((n) => n.id)).toContain('VAL@1')
+    expect(filtered.nodes.map((n) => n.id)).toContain('VAL@1')
+  })
+
+  it('strands nothing when every relation survives', () => {
+    const result = narrowed(ARCHIMATE, { entity_type: ['outcome'] }, NODES, EDGES)
+
+    expect(result.nodes).toHaveLength(3)
   })
 
   it('narrows an unfiltered graph to itself', () => {

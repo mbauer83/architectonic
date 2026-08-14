@@ -125,25 +125,49 @@ export function excludedCount(selection: FacetSelection): number {
 /**
  * The graph *narrowed* to what the selection leaves.
  *
- * An edge goes when either endpoint goes, as well as when the relation itself is excluded: an
- * edge to a node that is not drawn is a line to nowhere, which is the same defect B31 fixed at
- * the other end.
+ * Three rules, in order:
+ *
+ * 1. An element excluded at any of its levels goes.
+ * 2. An edge goes when either endpoint goes, as well as when the relation itself is excluded: an
+ *    edge to a node that is not drawn is a line to nowhere, the same defect B31 fixed at the other
+ *    end of the edge.
+ * 3. **An element the filter left with no relation at all goes too.** Filtering out a relationship
+ *    type otherwise strands every element that had only that kind of relation, and a scatter of
+ *    unconnected boxes is what the filter is for getting rid of.
+ *
+ * Rule 3 is stated as *the filter removed every relation it had*, not as "hide isolated elements".
+ * The difference is the two cases the blunter rule gets wrong: an element that never had a relation
+ * had none removed and stays, so an unfiltered graph still shows everything it loaded and a
+ * single-element canvas is not blank; and `alwaysKeep` holds the elements a view cannot lose —
+ * the one being explored above all, since filtering out its relationships would otherwise empty
+ * the canvas and leave nothing to explore from.
+ *
+ * One pass reaches the fixed point: removing a stranded element removes no further edge, because
+ * every edge it had is already gone.
  */
 export function narrowed<N extends FacetableNode, E extends FacetableEdge>(
   levels: ClassificationLevels,
   selection: FacetSelection,
   nodes: readonly N[],
   edges: readonly E[],
+  alwaysKeep: ReadonlySet<string> = new Set(),
 ): { readonly nodes: readonly N[]; readonly edges: readonly E[] } {
-  const keptNodes = nodes.filter((node) => !isExcluded(selection, levels.entity, node))
-  const kept = new Set(keptNodes.map((node) => node.id))
-  return {
-    nodes: keptNodes,
-    edges: edges.filter(
-      (edge) =>
-        kept.has(edge.source) &&
-        kept.has(edge.target) &&
-        !isExcluded(selection, levels.relation, edge),
-    ),
-  }
+  const survivingNodes = nodes.filter((node) => !isExcluded(selection, levels.entity, node))
+  const surviving = new Set(survivingNodes.map((node) => node.id))
+  const keptEdges = edges.filter(
+    (edge) =>
+      surviving.has(edge.source) &&
+      surviving.has(edge.target) &&
+      !isExcluded(selection, levels.relation, edge),
+  )
+
+  const hadAnyRelation = new Set(edges.flatMap((edge) => [edge.source, edge.target]))
+  const stillRelated = new Set(keptEdges.flatMap((edge) => [edge.source, edge.target]))
+  const keptNodes = survivingNodes.filter(
+    (node) => stillRelated.has(node.id) || !hadAnyRelation.has(node.id) || alwaysKeep.has(node.id),
+  )
+
+  // The edges are already sound: every one joins two surviving nodes, and a node dropped just now
+  // is one no kept edge touches.
+  return { nodes: keptNodes, edges: keptEdges }
 }

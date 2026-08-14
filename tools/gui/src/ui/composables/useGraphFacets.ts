@@ -38,6 +38,8 @@ export function useGraphFacets<N extends FacetableNode, E extends FacetableEdge>
   svc: Pick<ModelService, 'getClassificationLevels'>
   nodes: Ref<readonly N[]>
   edges: Ref<readonly E[]>
+  /** Elements the view cannot lose to a filter — the one being explored, above all. */
+  alwaysKeep?: Ref<readonly string[]>
 }) {
   const route = useRoute()
   const router = useRouter()
@@ -74,7 +76,13 @@ export function useGraphFacets<N extends FacetableNode, E extends FacetableEdge>
   /** What the canvas draws. Unfiltered, and before the levels arrive, this is the graph itself. */
   const visible = computed(() =>
     levels.value
-      ? narrowed(levels.value, selection.value, input.nodes.value, input.edges.value)
+      ? narrowed(
+          levels.value,
+          selection.value,
+          input.nodes.value,
+          input.edges.value,
+          new Set(input.alwaysKeep?.value ?? []),
+        )
       : { nodes: input.nodes.value, edges: input.edges.value },
   )
 

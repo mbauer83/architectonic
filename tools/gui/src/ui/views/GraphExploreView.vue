@@ -71,7 +71,10 @@ const {
 } = useForceGraph(() => svgWidth.value, () => svgHeight.value)
 
 // `facets.visible` is what the canvas draws: a filter hides from the picture, never from the model.
-const facets = useGraphFacets<GraphNode, GraphEdge>({ svc, nodes, edges })
+const keepWhateverIsFiltered = computed(() => (rootId.value ? [rootId.value] : []))
+const facets = useGraphFacets<GraphNode, GraphEdge>({
+  svc, nodes, edges, alwaysKeep: keepWhateverIsFiltered,
+})
 
 /** Bring the force layout to rest and frame it — the pair every structural change needs. */
 const settleAndFit = () => { settleForceLayout(); fitToView() }
