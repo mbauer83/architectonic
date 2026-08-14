@@ -12,12 +12,14 @@ import type {
 import type { DocumentDetailSchema, DocumentListSchema } from './documents'
 import type { DiagramListSchema, DiagramSummarySchema } from './diagram-types'
 import type {
-  ClassificationLevelResponseSchema,
-  ClassificationLevelsResponseSchema,
   ConnectionListResponseSchema,
   ConnectionListSchema,
   ConnectionRecordSchema,
 } from './connections'
+import type {
+  ClassificationLevelResponseSchema,
+  ClassificationLevelsResponseSchema,
+} from './ontology'
 
 /**
  * The four busiest reads in the application, held against the published document.

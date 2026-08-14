@@ -7,7 +7,6 @@ import { modelServiceKey } from '../keys'
 import { useQuery } from '../composables/useQuery'
 import { useForceGraph, type GraphNode, type GraphEdge } from '../composables/useForceGraph'
 import { useGraphFacets } from '../composables/useGraphFacets'
-import type { ClassificationLevels } from '../lib/graphFacets'
 import GraphFilterPanel from '../components/GraphFilterPanel.vue'
 import GraphCanvas from '../components/GraphCanvas.vue'
 import { useViewpointExecution } from '../composables/useViewpointExecution'
@@ -71,19 +70,8 @@ const {
   animateForceLayout, applyGroupClusterLayout, applyRadialLayout,
 } = useForceGraph(() => svgWidth.value, () => svgHeight.value)
 
-/**
- * The legibility control over the complete edge set.
- *
- * Free exploration draws every model relation among the nodes it shows, which is the correct
- * default and 1.4x to 3.5x more edges than the star it replaced. Filtering is how that stays
- * readable — a filter over a complete set, never a fetch strategy — so the canvas is handed
- * `visibleGraph`, and what is hidden is hidden from the picture, not from the model.
- */
-const classificationLevels = ref<ClassificationLevels | null>(null)
-const {
-  selection: facetSelection, entityFacets, relationFacets, visible: visibleGraph,
-  excluded: excludedFacetValues, toggle: toggleFacetValue, reset: resetFacets,
-} = useGraphFacets<GraphNode, GraphEdge>({ levels: classificationLevels, nodes, edges })
+// `facets.visible` is what the canvas draws: a filter hides from the picture, never from the model.
+const facets = useGraphFacets<GraphNode, GraphEdge>({ svc, nodes, edges })
 
 /** Bring the force layout to rest and frame it — the pair every structural change needs. */
 const settleAndFit = () => { settleForceLayout(); fitToView() }
@@ -304,11 +292,6 @@ watch(() => nodes.value.length, () => {
 })
 
 onMounted(() => {
-  // The declared levels, once. A failure leaves the filter unmounted rather than the graph
-  // unusable: the picture is the point, and the control over it is not worth a blank view.
-  void Effect.runPromise(svc.getClassificationLevels())
-    .then((levels) => { classificationLevels.value = { entity: levels.entity, relation: levels.relation } })
-    .catch(() => { classificationLevels.value = null })
   if (props.adHoc) {
     void loadViewpointCatalog().then(() => runAdHocExploration())
     return
@@ -419,12 +402,9 @@ const showExpandBadge = (n: GraphNode) =>
           />
         </div>
         <GraphFilterPanel
-          :entity-facets="entityFacets"
-          :relation-facets="relationFacets"
-          :selection="facetSelection"
-          :excluded="excludedFacetValues"
-          @toggle="toggleFacetValue"
-          @reset="resetFacets"
+          v-bind="facets.panelProps.value"
+          @toggle="facets.toggle"
+          @reset="facets.reset"
         />
         <GraphLayoutToolbar
           :viewpoint-active="selectedViewpointSlug !== null"
@@ -480,8 +460,8 @@ const showExpandBadge = (n: GraphNode) =>
       />
       <GraphCanvas
         ref="canvasRef"
-        :nodes="visibleGraph.nodes"
-        :edges="visibleGraph.edges"
+        :nodes="facets.visible.value.nodes"
+        :edges="facets.visible.value.edges"
         :selected-id="selectedId"
         :selected-edge="selectedEdge"
         :node-visual="nodeVisual"
