@@ -287,15 +287,41 @@ export const layoutBandedClusters = (
  *  ordered lexicographically by id — deterministic, and adjacent BFS siblings (which
  *  usually share an id prefix via their type/group) tend to stay adjacent on the ring. */
 const RING_RADIUS_DECAY = 0.75
+
+/**
+ * Circumference a ring member is given, when nothing wider is asked for.
+ *
+ * A floor rather than the answer: what a member actually needs is the width of its own drawn
+ * extent, label included, and `ringArcFor` measures that. This was a fixed 70 when every label was
+ * wrapped to two lines of fourteen characters and so had a fixed width — once a label may be as
+ * wide as its longest word, spacing by a constant puts a 150px label in a 70px slot and the ring
+ * reads as one overlapping band.
+ */
 const MIN_RING_ARC = 70
+
+/** The widest drawn extent among a ring's members, which is the arc each of them is given. */
+const ringArcFor = (ids: readonly string[], byId: ReadonlyMap<string, GraphNode>): number => {
+  const widths = ids.map((id) => {
+    const node = byId.get(id)
+    return node ? nodeExtent(node.label, node.type, false).width : 0
+  })
+  // Every member gets the widest member's arc: unequal arcs would put the labels at unequal
+  // angles, and a ring whose spacing changes as it goes round reads as a mistake rather than as
+  // information. A small gap, so neighbours are separated rather than merely not overlapping.
+  return Math.max(MIN_RING_ARC, Math.max(0, ...widths) + RING_ARC_GAP)
+}
+
+const RING_ARC_GAP = 16
 
 /** Sub-linear ring radii: each additional hop adds a geometrically shrinking increment
  * (spacing · Σ decay^k), so deep neighborhoods stay compact instead of growing linearly
  * with hop count. A crowded ring is widened to give every member at least MIN_RING_ARC
  * of circumference, whichever radius is larger. */
-const ringRadius = (ring: number, memberCount: number, ringSpacing: number): number => {
+const ringRadius = (
+  ring: number, memberCount: number, ringSpacing: number, arcPerMember: number,
+): number => {
   const base = ringSpacing * ((1 - RING_RADIUS_DECAY ** ring) / (1 - RING_RADIUS_DECAY))
-  const crowdFit = (memberCount * MIN_RING_ARC) / (2 * Math.PI)
+  const crowdFit = (memberCount * arcPerMember) / (2 * Math.PI)
   return Math.max(base, crowdFit)
 }
 
@@ -313,6 +339,7 @@ export const layoutRadialByDistance = (
     if (!rings.has(ring)) rings.set(ring, [])
     rings.get(ring)!.push(node.id)
   }
+  const byId = new Map(nodes.map((node) => [node.id, node]))
   const posMap: PosMap = new Map()
   for (const [ring, ids] of rings) {
     ids.sort((a, b) => a.localeCompare(b))
@@ -320,7 +347,9 @@ export const layoutRadialByDistance = (
       posMap.set(ids[0], { x: center.x, y: center.y })
       continue
     }
-    const radius = ring === 0 ? ringSpacing * 0.4 : ringRadius(ring, ids.length, ringSpacing)
+    const radius = ring === 0
+      ? ringSpacing * 0.4
+      : ringRadius(ring, ids.length, ringSpacing, ringArcFor(ids, byId))
     ids.forEach((id, index) => {
       const angle = -Math.PI / 2 + (index / ids.length) * Math.PI * 2
       posMap.set(id, { x: center.x + Math.cos(angle) * radius, y: center.y + Math.sin(angle) * radius })

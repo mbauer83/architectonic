@@ -54,20 +54,38 @@ describe('wrapLabel', () => {
     expect(wrapLabel('Query Engine')).toEqual(['Query Engine'])
   })
 
-  it('wraps at word boundaries up to two lines', () => {
-    expect(wrapLabel('Canonical Per-Repo Artifact Index', 14, 2)).toEqual(['Canonical', 'Per-Repo…'])
+  it('wraps at word boundaries', () => {
+    expect(wrapLabel('Canonical Per-Repo Artifact Index', 14)).toEqual([
+      'Canonical', 'Per-Repo', 'Artifact Index',
+    ])
   })
 
-  it('ellipsizes when content remains beyond the last line', () => {
-    const lines = wrapLabel('Architecture Management Platform Backend Service', 14, 2)
-    expect(lines).toHaveLength(2)
-    expect(lines[1].endsWith('…')).toBe(true)
+  it('keeps every word, however many lines that takes', () => {
+    // The whole point: a label shown as "Architecture…" cannot be read away from the application
+    // that drew it, and an exported picture of the graph is then unnamed circles.
+    const label = 'Architecture Management Platform Backend Service'
+    const lines = wrapLabel(label)
+
+    expect(lines.join(' ')).toBe(label)
+    expect(lines.some((line) => line.includes('…'))).toBe(false)
   })
 
-  it('hard-truncates a single overlong word', () => {
-    const lines = wrapLabel('supercalifragilisticexpialidocious', 14, 2)
-    expect(lines[0].length).toBeLessThanOrEqual(14)
-    expect(lines[0].endsWith('…')).toBe(true)
+  it('reproduces the longest label this repository actually carries', () => {
+    const label = 'Provide Governed Self-Service Read Access to Architecture for Teams & Agents'
+
+    expect(wrapLabel(label).join(' ')).toBe(label)
+  })
+
+  it('lets a word longer than the width overflow rather than cutting it', () => {
+    // Cutting mid-word produced misreadings that reached real review artifacts. A word nothing can
+    // wrap is better wide than wrong.
+    const lines = wrapLabel('supercalifragilisticexpialidocious', 14)
+
+    expect(lines).toEqual(['supercalifragilisticexpialidocious'])
+  })
+
+  it('answers an empty label with one empty line rather than nothing to draw', () => {
+    expect(wrapLabel('')).toEqual([''])
   })
 })
 

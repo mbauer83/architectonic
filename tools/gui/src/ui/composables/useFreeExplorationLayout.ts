@@ -17,7 +17,8 @@ import { domainBandPlacement, hopDepthByParentage } from '../views/GraphExploreV
  * apart for the same reason their loaders do.
  */
 
-//: Ring spacing for the radial layout, in layout units.
+//: Ring spacing when the caller states none — the `Normal` rung, so a surface that offers no
+//: spacing control still gets the arrangement that rung describes.
 const RADIAL_RING_SPACING = 180
 
 /** Layout modes a free-exploration surface offers, in the order they are offered.
@@ -33,6 +34,8 @@ export const FREE_LAYOUT_MODES: readonly { value: LayoutMode; label: string }[] 
 ]
 
 export interface FreeExplorationLayoutDeps {
+  /** The radial layout's ring increment, from whatever spacing the surface is set to. */
+  ringSpacing?: () => number
   nodes: Ref<GraphNode[]>
   rootId: Ref<string>
   layoutMode: Ref<LayoutMode>
@@ -67,6 +70,7 @@ export function useFreeExplorationLayout(deps: FreeExplorationLayoutDeps) {
   const {
     nodes, rootId, layoutMode,
     applyGroupClusterLayout, applyRadialLayout, animateForceLayout, fitToView, keepFramed,
+    ringSpacing,
   } = deps
 
   /**
@@ -88,24 +92,30 @@ export function useFreeExplorationLayout(deps: FreeExplorationLayoutDeps) {
 
   /** Radial mode: ring the walk around the entity it opened on, by hop distance from it. */
   const applyHopRadialLayout = (): void => {
-    applyRadialLayout(hopDepthByParentage(nodes.value, rootId.value), RADIAL_RING_SPACING)
+    applyRadialLayout(hopDepthByParentage(nodes.value, rootId.value), ringSpacing?.() ?? RADIAL_RING_SPACING)
     keepFramed()
   }
 
   /**
    * Re-apply whichever layout is current — what every structural change needs.
    *
-   * The framing is reclaimed first: expanding, collapsing or changing the spacing changes what
-   * there is to look at, and the new arrangement is entitled to be shown in full. From that
-   * point the per-frame callback defers to the user, so a zoom *during* the move survives it.
+   * Expanding, collapsing, changing the spacing or switching the layout changes what there is to
+   * look at, and the new arrangement is entitled to be shown in full.
+   *
+   * The framing is reclaimed **after** the arrangement is computed, not before. Fitting first
+   * frames the arrangement being left behind and then moves every node out of it; that used to be
+   * covered up by the next container resize re-fitting, which only fired because the viewport
+   * matched the last fit *performed* even though it no longer matched the graph. Asking whether
+   * the framing fits the content — the question a diagram's viewport asks — correctly stops that
+   * refit, and left a layout switch framed for the previous layout.
+   *
+   * Force is the exception and keeps framing per frame: it animates, so there is no final
+   * arrangement to fit until it has cooled, and `keepFramed` defers to a zoom made during the
+   * move.
    */
   const relayout = (centerId?: string): void => {
-    fitToView()
-    if (layoutMode.value === 'cluster') applyDomainClusterLayout(centerId)
-    else if (layoutMode.value === 'radial') applyHopRadialLayout()
-    // Force is animated rather than settled: switching to it is a rearrangement the user asked
-    // for, so let them watch it happen. It used to start the loop and then immediately settle
-    // it synchronously, which is two answers to one question.
+    if (layoutMode.value === 'cluster') { applyDomainClusterLayout(centerId); fitToView() }
+    else if (layoutMode.value === 'radial') { applyHopRadialLayout(); fitToView() }
     else animateForceLayout(keepFramed)
   }
 

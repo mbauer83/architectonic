@@ -60,7 +60,10 @@ defineEmits<{ reset: []; 'toggle-fullscreen': [] }>()
 </template>
 
 <style scoped>
-.viewport-controls { position: absolute; top: 8px; right: 8px; display: flex; gap: 6px; }
+/* Above a docked sidebar (z-index 2 in `styles/shared.css`), which is teleported into the same
+   fullscreen host and would otherwise be painted over these — leaving the control that *leaves*
+   fullscreen unreachable behind the panel. */
+.viewport-controls { position: absolute; top: 8px; right: 8px; z-index: 3; display: flex; gap: 6px; }
 .viewport-btn {
   /* Square, like the zoom cluster it now matches: a glyph in a box rather than a label in a pill. */
   width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center;

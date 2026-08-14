@@ -32,7 +32,7 @@ import {
 } from './GraphExploreView.helpers'
 import { useExplorationLayout } from '../composables/useExplorationLayout'
 import { useFreeExploration } from '../composables/useFreeExploration'
-import type { SpacingPreset } from '../composables/graphSpacingPresets'
+import { SPACING_PRESETS, type SpacingPreset } from '../composables/graphSpacingPresets'
 import { useFreeExplorationLayout, FREE_LAYOUT_MODES } from '../composables/useFreeExplorationLayout'
 import type { ParameterDraft } from '../lib/viewpointExecutionParameters'
 import { VERIFIED_KEYS, executionQuery, parametersFromQuery } from '../lib/viewpointUrlState'
@@ -73,6 +73,7 @@ const {
 
 // `facets.visible` is what the canvas draws: a filter hides from the picture, never from the model.
 const keepWhateverIsFiltered = computed(() => (rootId.value ? [rootId.value] : []))
+
 const facets = useGraphFacets<GraphNode, GraphEdge>({
   svc, nodes, edges, alwaysKeep: keepWhateverIsFiltered,
 })
@@ -259,7 +260,11 @@ const edgeVisual = (e: GraphEdge) => {
   )
 }
 
+/** The spacing rung in force, so every layout can read its own units from one choice. */
+const spacing = ref<SpacingPreset>(SPACING_PRESETS[1])
+
 const applyPreset = (p: SpacingPreset) => {
+  spacing.value = p
   options.repulsion = p.repulsion
   options.idealDist = p.idealDist
   relayoutForMode()
@@ -267,6 +272,7 @@ const applyPreset = (p: SpacingPreset) => {
 
 const { applyDomainClusterLayout, relayout: relayoutForMode, switchLayout } = useFreeExplorationLayout({
   nodes, rootId, layoutMode,
+  ringSpacing: () => spacing.value.ringSpacing,
   applyGroupClusterLayout, applyRadialLayout, animateForceLayout, fitToView, keepFramed,
 })
 
@@ -317,6 +323,19 @@ onMounted(() => {
   loadRoot()
 })
 watch(rootId, () => { if (selectedViewpointSlug.value === null) loadRoot() })
+
+/**
+ * Re-arrange when the filter changes what is on screen.
+ *
+ * Every layout places nodes against the population it was given, so a filtered graph left in the
+ * old arrangement is the *unfiltered* one with pieces missing — a radial ring with gaps in it, a
+ * cluster grid with empty cells, and a fit that frames the space the hidden nodes used to occupy.
+ * Watched on the count rather than on the selection, so that toggling a value that hides nothing
+ * does not rearrange the graph under the reader for no visible reason.
+ */
+watch(() => facets.visible.value.nodes.length, (now, before) => {
+  if (now !== before && now > 0) relayoutForMode()
+})
 
 // ── Selection ────────────────────────────────────────────────────────────────
 

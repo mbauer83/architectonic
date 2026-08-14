@@ -103,12 +103,28 @@ export const fitViewBox = (
   return { x: minX - (correctedWidth - width) / 2, y: minY, w: correctedWidth, h: height }
 }
 
-/** Word-aware label wrapping for SVG tspans: up to `maxLines` lines of `maxChars`,
- * with an ellipsis when content remains — mid-word truncation was producing misreadings
- * that reached real review artifacts. The full name always travels in the node tooltip. */
-export const wrapLabel = (label: string, maxChars = 14, maxLines = 2): string[] => {
+/**
+ * Word-aware label wrapping for SVG tspans. **Nothing is dropped.**
+ *
+ * It used to wrap to two lines of fourteen characters and ellipsise the rest, leaving the full
+ * name only in the node's tooltip. Measured over this repository's own elements that is a median
+ * label of 44 characters shown as 28, and a longest of 78 shown as 28 — so a picture of the graph
+ * could not be read away from the application that produced it, and an exported one was a diagram
+ * of unnamed circles.
+ *
+ * The width is chosen against those same labels: at 22 characters the median wraps to three lines
+ * and the longest to four, and no word in the vocabulary is too long to fit. A word that *is*
+ * longer than the width overflows its line rather than being cut — the point of this function now
+ * is that the text survives, and mid-word truncation produced misreadings that reached real review
+ * artifacts before.
+ *
+ * Node geometry follows from the lines rather than the other way round: `nodeLabelBox` sizes the
+ * backing rectangle from them and `nodeExtent` feeds the cluster layout's cells, so a taller label
+ * takes the room it needs instead of being cropped to a box fixed in advance.
+ */
+export const wrapLabel = (label: string, maxChars = 22): string[] => {
   const words = label.split(/\s+/).filter((word) => word.length > 0)
-  const wrapped: string[] = []
+  const lines: string[] = []
   let current = ''
   for (const word of words) {
     const candidate = current === '' ? word : `${current} ${word}`
@@ -116,17 +132,10 @@ export const wrapLabel = (label: string, maxChars = 14, maxLines = 2): string[] 
       current = candidate
       continue
     }
-    if (current !== '') wrapped.push(current)
+    if (current !== '') lines.push(current)
     current = word
   }
-  if (current !== '') wrapped.push(current)
-  const lines = wrapped.slice(0, maxLines).map(
-    (line) => (line.length > maxChars ? `${line.slice(0, maxChars - 1)}…` : line),
-  )
-  if (wrapped.length > maxLines && !lines[maxLines - 1].endsWith('…')) {
-    const last = lines[maxLines - 1]
-    lines[maxLines - 1] = last.length >= maxChars ? `${last.slice(0, maxChars - 1)}…` : `${last}…`
-  }
+  if (current !== '') lines.push(current)
   return lines.length > 0 ? lines : ['']
 }
 
