@@ -141,12 +141,34 @@ export function useGraphPanZoom(
    */
   const hasFitted = ref(false)
 
+  //: The framing the last fit produced. Distinct from "the fit for what is on screen now", and the
+  //: distinction is the whole of why both exist — see `isTransformed` and `isUserFramed` below.
+  let lastFitted: ViewBoxRect | null = null
+
   const fitToView = () => {
     viewBox.value = fitViewBox(nodes.value, svgWidth.value, svgHeight.value)
+    lastFitted = { ...viewBox.value }
     // An empty population has no framing, so fitting it must not claim one. It used to: the
     // container's own resize fires before any node arrives, that fit was recorded, and the
     // first nodes then painted into a frame computed without them — visible, and wrong.
     if (nodes.value.length > 0) hasFitted.value = true
+  }
+
+  /**
+   * Whether the reader has taken the framing over: it has moved since the last fit was *performed*.
+   *
+   * Not the same question as `isTransformed`, and the two must not be merged — they were, and it
+   * cost the animated layouts their framing. While a cluster tween or a force run is in motion the
+   * content moves under a still viewport, so "the framing no longer fits the content" is true on
+   * every frame and an auto-refit keyed on it never fires: the graph animates into an arrangement
+   * the viewport was never re-framed for. Panning is what this asks about, and panning moves the
+   * viewport rather than the content.
+   */
+  const isUserFramed = (): boolean => {
+    if (lastFitted === null) return false
+    const box = viewBox.value
+    return Math.abs(box.x - lastFitted.x) > 0.5 || Math.abs(box.y - lastFitted.y) > 0.5
+      || Math.abs(box.w - lastFitted.w) > 0.5 || Math.abs(box.h - lastFitted.h) > 0.5
   }
 
   /**
@@ -173,14 +195,12 @@ export function useGraphPanZoom(
    * keeps changing after the first one: the surrounding filter summary, legend and notice
    * rows lay out once the result arrives. Without this, initialisation reliably fits to an
    * intermediate size and leaves the graph mis-scaled — the same failure as never fitting.
-   * The same rule `useFittedPanZoom` applies for a rendered diagram, asked through the same
-   * predicate: a viewport that is already off its fit is one the reader arranged, and a resize is
-   * not a reason to take that away. It used to ask a second, nearly-identical question — whether
-   * the framing had moved since the last fit was *performed* — which answered differently once the
-   * content moved under a still viewport, and gave the two surfaces two notions of "framed".
+   * Asks `isUserFramed` rather than `isTransformed`: a resize should not take away a framing the
+   * *reader* chose, but it must still re-fit a graph whose own content has moved, which is every
+   * frame of an animated layout.
    */
   const refitUnlessUserFramed = () => {
-    if (!isTransformed.value) fitToView()
+    if (!isUserFramed()) fitToView()
   }
 
   const vb = computed(() => `${viewBox.value.x} ${viewBox.value.y} ${viewBox.value.w} ${viewBox.value.h}`)

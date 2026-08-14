@@ -273,6 +273,8 @@ const applyPreset = (p: SpacingPreset) => {
 const { applyDomainClusterLayout, relayout: relayoutForMode, switchLayout } = useFreeExplorationLayout({
   nodes, rootId, layoutMode,
   ringSpacing: () => spacing.value.ringSpacing,
+  labelArc: () => spacing.value.labelArc,
+  cellGap: () => spacing.value.cellGap,
   applyGroupClusterLayout, applyRadialLayout, animateForceLayout, fitToView, keepFramed,
 })
 
@@ -434,7 +436,7 @@ const showExpandBadge = (n: GraphNode) =>
           :layout-mode="layoutMode"
           :layout-modes="FREE_LAYOUT_MODES"
           :layout-override="layoutOverride"
-          :ideal-dist="options.idealDist"
+          :active-spacing="spacing.label"
           :radial-available="anchorIds.length > 0"
           @switch-layout="switchLayout"
           @set-exploration-layout="setExplorationLayout"

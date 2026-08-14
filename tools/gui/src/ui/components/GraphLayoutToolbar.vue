@@ -20,7 +20,9 @@ withDefaults(defineProps<{
   viewpointActive: boolean
   layoutMode: LayoutMode
   layoutOverride?: ExplorationLayoutOverride
-  idealDist: number
+  /** Which spacing rung is in force, by its label — the rungs now differ in more than one number,
+   *  so no single one of them identifies the choice. */
+  activeSpacing: string
   /** Radial layout is anchor-centric — without an anchored execution it has no center
    * and would fling every node off-viewport, so the option is disabled with a reason. */
   radialAvailable?: boolean
@@ -80,16 +82,17 @@ const emit = defineEmits<{
       {{ o.label }}
     </button>
   </div>
-  <div
-    v-if="layoutMode === 'force'"
-    class="spacing-controls"
-  >
+  <!-- Every layout, not only force. Each rung states its own units for all three — a ring
+       increment, a cluster cell's air, the force pair — so asking for more room means something
+       whichever arrangement is on screen. It used to render only under force, which is why the
+       control simply vanished in the two layouts that now answer to it. -->
+  <div class="spacing-controls">
     <span class="spacing-label">Spacing:</span>
     <button
       v-for="p in SPACING_PRESETS"
       :key="p.label"
       class="spacing-btn"
-      :class="{ 'spacing-btn--active': idealDist === p.idealDist }"
+      :class="{ 'spacing-btn--active': p.label === activeSpacing }"
       @click="emit('apply-preset', p)"
     >
       {{ p.label }}

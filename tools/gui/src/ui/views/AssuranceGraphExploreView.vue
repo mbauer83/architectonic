@@ -10,7 +10,7 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import GraphCanvas from '../components/GraphCanvas.vue'
 import GraphLayoutToolbar, { type LayoutModeOption } from '../components/GraphLayoutToolbar.vue'
-import type { SpacingPreset } from '../composables/graphSpacingPresets'
+import { SPACING_PRESETS, type SpacingPreset } from '../composables/graphSpacingPresets'
 import AssuranceNodeDetail from '../components/AssuranceNodeDetail.vue'
 import {
   useForceGraph, type GraphNode, type GraphEdge, type LayoutMode,
@@ -104,7 +104,11 @@ const switchLayout = (mode: LayoutMode) => {
   else animateForceLayout(keepFramed)
 }
 
+/** The spacing rung in force, so the toolbar can show which one is chosen. */
+const spacing = ref<SpacingPreset>(SPACING_PRESETS[1])
+
 const applyPreset = (preset: SpacingPreset) => {
+  spacing.value = preset
   options.repulsion = preset.repulsion
   options.idealDist = preset.idealDist
   relayout()
@@ -232,7 +236,7 @@ const retry = () => {
           :viewpoint-active="false"
           :layout-mode="layoutMode"
           :layout-modes="ASSURANCE_LAYOUT_MODES"
-          :ideal-dist="options.idealDist"
+          :active-spacing="spacing.label"
           @switch-layout="switchLayout"
           @apply-preset="applyPreset"
         />

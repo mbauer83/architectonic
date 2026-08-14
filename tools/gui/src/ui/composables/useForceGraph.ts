@@ -191,7 +191,13 @@ export function useForceGraph(
    * `onFrame` runs after each step so the caller can keep the view framed while the graph
    * grows into its new bounds, rather than snapping to them once at the end.
    */
-  const tweenTo = (posMap: ReadonlyMap<string, { x: number; y: number }>, onFrame?: () => void): void => {
+  const tweenTo = (
+    posMap: ReadonlyMap<string, { x: number; y: number }>,
+    onFrame?: () => void,
+    /** Called once, when the nodes have arrived. A framing taken before that frames the
+     *  arrangement being left behind, which is what a cluster switch looked like. */
+    onSettled?: () => void,
+  ): void => {
     cancelTween()
     const legs = nodes.value.map((n) => ({ node: n, x0: n.x, y0: n.y, target: posMap.get(n.id) }))
     if (legs.every((leg) => leg.target === undefined)) return
@@ -211,6 +217,7 @@ export function useForceGraph(
     // at once rather than freezing on the first frame of a tween that will never advance.
     if (typeof requestAnimationFrame !== 'function') {
       settle(1)
+      onSettled?.()
       return
     }
 
@@ -219,6 +226,7 @@ export function useForceGraph(
       const elapsed = Math.min(1, (performance.now() - began) / TWEEN_MS)
       settle(1 - (1 - elapsed) ** 3) // ease-out cubic: quick departure, gentle arrival
       tweenId = elapsed < 1 ? requestAnimationFrame(step) : null
+      if (tweenId === null) onSettled?.()
     }
     step()
   }
@@ -271,28 +279,31 @@ export function useForceGraph(
     groupOf: (id: string) => string,
     banding?: { placementOf: (groupKey: string) => BandPlacement; anchorIds?: ReadonlySet<string> },
     onFrame?: () => void,
+    options?: { cellGap?: number; onSettled?: () => void },
   ): void => {
     stop()
     layoutMode.value = 'cluster'
     if (nodes.value.length === 0) return
-    const boxes = buildClusterBoxes(nodes.value, groupOf, banding?.anchorIds ?? new Set())
+    const boxes = buildClusterBoxes(nodes.value, groupOf, banding?.anchorIds ?? new Set(), options?.cellGap ?? 1)
     // Banded only when the caller supplies an ordering for its own group vocabulary. This
     // composable serves every graph surface, so it has no basis for inventing one.
     const { posMap } = banding
       ? layoutBandedClusters(boxes, width(), height(), banding.placementOf, banding.anchorIds ?? new Set())
       : layoutGroupClusters(boxes, width(), height())
-    tweenTo(posMap, onFrame)
+    tweenTo(posMap, onFrame, options?.onSettled)
   }
 
   /** Positions the current node set on concentric rings by hop distance from an anchored
    *  execution's anchors (`layoutRadialByDistance`) — anchors at the canvas centre, more
    *  distant nodes on farther rings. Returns the ring centre so callers can pan onto it. */
-  const applyRadialLayout = (distances: ReadonlyMap<string, number>, ringSpacing: number): { cx: number; cy: number } => {
+  const applyRadialLayout = (
+    distances: ReadonlyMap<string, number>, ringSpacing: number, labelArc = 1,
+  ): { cx: number; cy: number } => {
     stop()
     layoutMode.value = 'radial'
     const center = { x: width() / 2, y: height() / 2 }
     if (nodes.value.length === 0) return { cx: center.x, cy: center.y }
-    const posMap = layoutRadialByDistance(nodes.value, distances, center, ringSpacing)
+    const posMap = layoutRadialByDistance(nodes.value, distances, center, ringSpacing, labelArc)
     for (const nd of nodes.value) {
       const pos = posMap.get(nd.id)
       if (pos) { nd.x = pos.x; nd.y = pos.y }

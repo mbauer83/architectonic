@@ -36,6 +36,10 @@ export const FREE_LAYOUT_MODES: readonly { value: LayoutMode; label: string }[] 
 export interface FreeExplorationLayoutDeps {
   /** The radial layout's ring increment, from whatever spacing the surface is set to. */
   ringSpacing?: () => number
+  /** How much of its own width a ring member is granted as arc, from the same rung. */
+  labelArc?: () => number
+  /** How much air a cluster cell is given beyond what it holds, from the same rung. */
+  cellGap?: () => number
   nodes: Ref<GraphNode[]>
   rootId: Ref<string>
   layoutMode: Ref<LayoutMode>
@@ -43,8 +47,11 @@ export interface FreeExplorationLayoutDeps {
     groupOf: (id: string) => string,
     banding?: { placementOf: (k: string) => BandPlacement; anchorIds?: ReadonlySet<string> },
     onFrame?: () => void,
+    options?: { cellGap?: number; onSettled?: () => void },
   ) => void
-  applyRadialLayout: (distances: ReadonlyMap<string, number>, ringSpacing: number) => unknown
+  applyRadialLayout: (
+    distances: ReadonlyMap<string, number>, ringSpacing: number, labelArc?: number,
+  ) => unknown
   /** Cool the force layout to rest visibly, calling back on every frame of the motion. */
   animateForceLayout: (onFrame?: () => void) => void
   /**
@@ -70,7 +77,7 @@ export function useFreeExplorationLayout(deps: FreeExplorationLayoutDeps) {
   const {
     nodes, rootId, layoutMode,
     applyGroupClusterLayout, applyRadialLayout, animateForceLayout, fitToView, keepFramed,
-    ringSpacing,
+    ringSpacing, labelArc, cellGap,
   } = deps
 
   /**
@@ -87,12 +94,19 @@ export function useFreeExplorationLayout(deps: FreeExplorationLayoutDeps) {
       (id) => nodes.value.find((n) => n.id === id)?.domain || 'unknown',
       { placementOf: domainBandPlacement, anchorIds: new Set([centerId ?? rootId.value]) },
       keepFramed,
+      // The cell's air comes from the spacing rung, and the framing is taken when the tween has
+      // arrived — a fit before that frames the arrangement being left behind.
+      { cellGap: cellGap?.() ?? 1, onSettled: fitToView },
     )
   }
 
   /** Radial mode: ring the walk around the entity it opened on, by hop distance from it. */
   const applyHopRadialLayout = (): void => {
-    applyRadialLayout(hopDepthByParentage(nodes.value, rootId.value), ringSpacing?.() ?? RADIAL_RING_SPACING)
+    applyRadialLayout(
+      hopDepthByParentage(nodes.value, rootId.value),
+      ringSpacing?.() ?? RADIAL_RING_SPACING,
+      labelArc?.() ?? 1,
+    )
     keepFramed()
   }
 
@@ -114,7 +128,7 @@ export function useFreeExplorationLayout(deps: FreeExplorationLayoutDeps) {
    * move.
    */
   const relayout = (centerId?: string): void => {
-    if (layoutMode.value === 'cluster') { applyDomainClusterLayout(centerId); fitToView() }
+    if (layoutMode.value === 'cluster') applyDomainClusterLayout(centerId)
     else if (layoutMode.value === 'radial') { applyHopRadialLayout(); fitToView() }
     else animateForceLayout(keepFramed)
   }

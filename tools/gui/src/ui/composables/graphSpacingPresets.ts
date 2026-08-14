@@ -19,6 +19,16 @@ export interface SpacingPreset {
   idealDist: number
   /** Radial layout: the increment between hop rings. A ring crowded by its labels widens past it. */
   ringSpacing: number
+  /**
+   * How much of a ring member's own drawn width it is given as circumference.
+   *
+   * `1` separates every label completely, which is what a ring costs if nothing may touch: with
+   * 27 members whose labels run to 200 units, that is a ring some 850 units across. It is the
+   * right answer for the roomiest rung and much too much for the default one — a little overlap
+   * between neighbouring labels is what ordinary density looks like, and was what the fixed arc
+   * produced before labels were allowed their full width.
+   */
+  labelArc: number
   /** Cluster layout: how much air a cell gets beyond the extent of what it holds. */
   cellGap: number
 }
@@ -45,8 +55,8 @@ export interface SpacingPreset {
  * further apart, which is why the ladder used to get worse as it got roomier.
  */
 export const SPACING_PRESETS: readonly SpacingPreset[] = [
-  { label: 'Compact', repulsion: 6000, idealDist: 150, ringSpacing: 120, cellGap: 0.6 },
-  { label: 'Normal', repulsion: 20000, idealDist: 250, ringSpacing: 180, cellGap: 1 },
-  { label: 'Spacious', repulsion: 40000, idealDist: 400, ringSpacing: 280, cellGap: 1.6 },
-  { label: 'Very spacious', repulsion: 80000, idealDist: 600, ringSpacing: 400, cellGap: 2.4 },
+  { label: 'Compact', repulsion: 6000, idealDist: 150, ringSpacing: 120, cellGap: 0.6, labelArc: 0.4 },
+  { label: 'Normal', repulsion: 20000, idealDist: 250, ringSpacing: 180, cellGap: 1, labelArc: 0.6 },
+  { label: 'Spacious', repulsion: 40000, idealDist: 400, ringSpacing: 280, cellGap: 1.6, labelArc: 1 },
+  { label: 'Very spacious', repulsion: 80000, idealDist: 600, ringSpacing: 400, cellGap: 2.4, labelArc: 1.4 },
 ]

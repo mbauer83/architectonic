@@ -104,6 +104,8 @@ export const buildClusterBoxes = (
   nodes: readonly GraphNode[],
   groupOf: (id: string) => string,
   anchorIds: ReadonlySet<string> = new Set(),
+  /** How much of the standard margin a cell is given, from the surface's spacing rung. */
+  cellGap = 1,
 ): ClusterBox[] => {
   const groups = new Map<string, string[]>()
   for (const n of nodes) {
@@ -118,8 +120,8 @@ export const buildClusterBoxes = (
     // was between seven pixels and negative sixteen pixels of clearance from overlapping,
     // and the anchor's row always did.
     const measured = ids.map((id) => measuredNode(nodes, id, anchorIds.has(id)))
-    const cellW = Math.max(140, ...measured.map((m) => m.width)) + CELL_MARGIN_X
-    const cellH = Math.max(...measured.map((m) => m.height)) + CELL_MARGIN_Y
+    const cellW = Math.max(140, ...measured.map((m) => m.width)) + CELL_MARGIN_X * cellGap
+    const cellH = Math.max(...measured.map((m) => m.height)) + CELL_MARGIN_Y * cellGap
     const cols = Math.max(1, Math.ceil(Math.sqrt(ids.length)))
     const rows = Math.ceil(ids.length / cols)
     return { key, ids, cellW, cellH, cols, width: cols * cellW, height: rows * cellH }
@@ -299,8 +301,10 @@ const RING_RADIUS_DECAY = 0.75
  */
 const MIN_RING_ARC = 70
 
-/** The widest drawn extent among a ring's members, which is the arc each of them is given. */
-const ringArcFor = (ids: readonly string[], byId: ReadonlyMap<string, GraphNode>): number => {
+/** The widest drawn extent among a ring's members, scaled by how much of it the rung grants. */
+const ringArcFor = (
+  ids: readonly string[], byId: ReadonlyMap<string, GraphNode>, labelArc: number,
+): number => {
   const widths = ids.map((id) => {
     const node = byId.get(id)
     return node ? nodeExtent(node.label, node.type, false).width : 0
@@ -308,7 +312,7 @@ const ringArcFor = (ids: readonly string[], byId: ReadonlyMap<string, GraphNode>
   // Every member gets the widest member's arc: unequal arcs would put the labels at unequal
   // angles, and a ring whose spacing changes as it goes round reads as a mistake rather than as
   // information. A small gap, so neighbours are separated rather than merely not overlapping.
-  return Math.max(MIN_RING_ARC, Math.max(0, ...widths) + RING_ARC_GAP)
+  return Math.max(MIN_RING_ARC, (Math.max(0, ...widths) + RING_ARC_GAP) * labelArc)
 }
 
 const RING_ARC_GAP = 16
@@ -330,6 +334,7 @@ export const layoutRadialByDistance = (
   distances: ReadonlyMap<string, number>,
   center: { x: number; y: number },
   ringSpacing: number,
+  labelArc = 1,
 ): PosMap => {
   const maxDistance = Math.max(0, ...distances.values())
   const unreachableRing = maxDistance + 1
@@ -349,7 +354,7 @@ export const layoutRadialByDistance = (
     }
     const radius = ring === 0
       ? ringSpacing * 0.4
-      : ringRadius(ring, ids.length, ringSpacing, ringArcFor(ids, byId))
+      : ringRadius(ring, ids.length, ringSpacing, ringArcFor(ids, byId, labelArc))
     ids.forEach((id, index) => {
       const angle = -Math.PI / 2 + (index / ids.length) * Math.PI * 2
       posMap.set(id, { x: center.x + Math.cos(angle) * radius, y: center.y + Math.sin(angle) * radius })
