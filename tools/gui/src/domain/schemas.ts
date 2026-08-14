@@ -3,6 +3,7 @@
  * `domain/` needs to know about the split. */
 export * from './schemas/stats'
 export * from './schemas/connections'
+export * from './schemas/ontology'
 export * from './schemas/entities'
 export * from './schemas/search'
 export * from './schemas/assurance'

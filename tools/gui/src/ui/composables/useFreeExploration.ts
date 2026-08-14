@@ -35,10 +35,13 @@ export interface FreeExplorationDeps {
   nodes: Ref<GraphNode[]>
   edges: Ref<unknown[]>
   rootId: Ref<string>
-  addNode: (node: { id: string; label: string; type: string; addedBy?: string }) => void
+  addNode: (node: {
+    id: string; label: string; type: string; addedBy?: string
+    specializations?: readonly string[]
+  }) => void
   addEdge: (edge: {
     source: string; target: string; connType: string; description?: string
-    srcMultiplicity?: string; tgtMultiplicity?: string
+    srcMultiplicity?: string; tgtMultiplicity?: string; specializations?: readonly string[]
   }) => void
   markExpanded: (id: string) => void
   spreadAroundParent: (id: string) => void
@@ -67,6 +70,7 @@ export function useFreeExploration(deps: FreeExplorationDeps) {
     artifactType: string
     label: string
     totalConns: number
+    specializations: readonly string[]
   }
 
   /**
@@ -84,6 +88,7 @@ export function useFreeExploration(deps: FreeExplorationDeps) {
         artifactType: d.artifact_type,
         label: d.name || friendlyEntityName(id),
         totalConns: (d.conn_in ?? 0) + (d.conn_sym ?? 0) + (d.conn_out ?? 0),
+        specializations: d.specializations ?? [],
       }))
       .catch(() => null)
   }
@@ -93,6 +98,7 @@ export function useFreeExploration(deps: FreeExplorationDeps) {
     n.artifactType = facts.artifactType
     n.label = facts.label
     n.totalConns = facts.totalConns
+    n.specializations = facts.specializations
   }
 
   /**
@@ -168,6 +174,7 @@ export function useFreeExploration(deps: FreeExplorationDeps) {
         source: c.source, target: c.target, connType: c.conn_type, description: c.content_text,
         srcMultiplicity: c.src_multiplicity || undefined,
         tgtMultiplicity: c.tgt_multiplicity || undefined,
+        specializations: c.specializations ?? [],
       })
     }
     markExpanded(entityId)

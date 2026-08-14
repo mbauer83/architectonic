@@ -44,6 +44,11 @@ export const QUERY_PARAMETER_ROLES: Readonly<Record<string, QueryParameterRole>>
   'ui/composables/useDocumentsListState.ts#*': 'filter',
   'ui/composables/useTierFacet.ts#tier': 'filter',
   'ui/composables/useTierFacet.ts#*': 'filter',
+  // The graph filter's exclusions, so a filtered graph is a link. One key holding `level:value`
+  // pairs: the level ids belong to whichever meta-ontology is loaded, so they cannot be enumerated
+  // here — which is why the key is `hide` rather than one key per level.
+  'ui/composables/useGraphFacets.ts#hide': 'filter',
+  'ui/composables/useGraphFacets.ts#*': 'filter',
   'ui/components/NavBar.vue#viewpoint': 'filter',
   'ui/components/NavBar.vue#*': 'filter',
   'ui/views/EntityDetailView.vue#*': 'filter',

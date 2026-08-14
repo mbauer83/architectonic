@@ -12,6 +12,8 @@ import type {
 import type { DocumentDetailSchema, DocumentListSchema } from './documents'
 import type { DiagramListSchema, DiagramSummarySchema } from './diagram-types'
 import type {
+  ClassificationLevelResponseSchema,
+  ClassificationLevelsResponseSchema,
   ConnectionListResponseSchema,
   ConnectionListSchema,
   ConnectionRecordSchema,
@@ -79,6 +81,20 @@ describe('the diagram list', () => {
     >()
     expectTypeOf<SchemaType<typeof DiagramSummarySchema>>().toEqualTypeOf<
       Immutable<components['schemas']['DiagramSummary']>
+    >()
+  })
+})
+
+describe('the classification levels', () => {
+  it('decodes the payload and one level, with the id an opaque string', () => {
+    // Both, because the graph filter reads the levels *and* each level's fields. The assertion is
+    // what keeps `id` and `source` opaque: a generated union over this meta-ontology's ids would
+    // typecheck here today and fail to compile the moment a second one declared its own chain.
+    expectTypeOf<SchemaType<typeof ClassificationLevelsResponseSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['ClassificationLevelsResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof ClassificationLevelResponseSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['ClassificationLevelResponse']>
     >()
   })
 })

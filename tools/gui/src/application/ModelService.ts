@@ -19,6 +19,7 @@ export const makeModelService = (repo: ModelRepository) =>
     getConnections: (entityId: string, direction: Direction = 'any') =>
       repo.getConnections(entityId, direction),
     getConnectionsAmong: (entityIds: readonly string[]) => repo.getConnectionsAmong(entityIds),
+    getClassificationLevels: () => repo.getClassificationLevels(),
     search: (query: string, limit?: number) => repo.search(query, limit),
     listDocumentTypes: () => repo.listDocumentTypes(),
     listDocuments: (params?: Parameters<ModelRepository['listDocuments']>[0]) => repo.listDocuments(params),

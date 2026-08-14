@@ -43,6 +43,7 @@ import {
   ModuleSummaryListSchema,
   WriteHelpSchema,
   AuthoringGuidanceSchema,
+  ClassificationLevelsResponseSchema,
 } from '../../domain/schemas'
 import {
   buildUrl, deleteNoContent, deleteReq, entityAddress, fetchJson, fetchJsonNotFound, fetchText,
@@ -136,6 +137,8 @@ export const makeHttpModelRepository = (): ModelRepository => ({
       buildUrl('/connections/among', { entity_ids: entityIds.join(',') }),
       ConnectionListResponseSchema,
     ).pipe(Effect.map((response) => response.items)),
+  getClassificationLevels: () =>
+    fetchJson(buildUrl('/ontology/classification-levels'), ClassificationLevelsResponseSchema),
   getNeighbors: (entityId: string, maxHops = 1) =>
     fetchJson(
       buildUrl(`/entities/${encodeIdentitySegment(entityId)}/neighbors`, { max_hops: maxHops }),

@@ -11,7 +11,8 @@ export function useGraphPanZoom(
   svgRef: Ref<SVGSVGElement | null>,
   svgWidth: Ref<number>,
   svgHeight: Ref<number>,
-  nodes: Ref<GraphNode[]>,
+  // Read only here — it frames the nodes and never changes which ones there are.
+  nodes: Ref<readonly GraphNode[]>,
   onDragTick: () => void,
 ) {
   const viewBox = ref<ViewBoxRect>({ x: 0, y: 0, w: 800, h: 600 })

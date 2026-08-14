@@ -39,8 +39,10 @@ const markerUrl = (
 }
 
 const props = withDefaults(defineProps<{
-  nodes: GraphNode[]
-  edges: GraphEdge[]
+  // Readonly: the canvas moves nodes (it writes x/y during a drag) but never adds or removes one.
+  // Saying so is what lets a caller hand it a *narrowed* view of the graph rather than the graph.
+  nodes: readonly GraphNode[]
+  edges: readonly GraphEdge[]
   selectedId: string | null
   selectedEdge: GraphEdge | null
   nodeVisual: (n: GraphNode) => NodeVisual

@@ -26,12 +26,17 @@ export interface GraphNode {
   pinned: boolean
   totalConns?: number   // sum of conn_in + conn_sym + conn_out; undefined = not yet loaded
   addedBy?: string      // id of the node whose expansion added this node
+  /** Slugs of the specializations the entity declares. The meta-ontology declares a level over
+   *  these, so a graph that drops them cannot offer the level it says it has. */
+  specializations?: readonly string[]
 }
 
 export interface GraphEdge {
   source: string
   target: string
   connType: string
+  /** As on a node, and for the same reason: the relation chain declares a level over these. */
+  specializations?: readonly string[]
   description?: string  // raw content_text from the connection
   srcMultiplicity?: string
   tgtMultiplicity?: string

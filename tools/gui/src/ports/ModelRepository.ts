@@ -1,3 +1,4 @@
+import type { ClassificationLevelsResponse } from '../domain/schemas/ontology'
 import type { Effect } from 'effect'
 import type { DiagramComposition, DiagramWriteBody } from './diagramWriteBodies'
 import type { EnterpriseAdminRepository } from './EnterpriseAdminRepository'
@@ -107,6 +108,8 @@ export interface ModelRepository extends EnterpriseAdminRepository, ScratchpadRe
    * ever returns it, and the drawn edge set ends up depending on which node was clicked first.
    */
   readonly getConnectionsAmong: (entityIds: readonly string[]) => Effect.Effect<ConnectionList, RepoError>
+  /** How the governing meta-ontology classifies elements and relationships, as data. */
+  readonly getClassificationLevels: () => Effect.Effect<ClassificationLevelsResponse, RepoError>
   readonly getNeighbors: (
     entityId: string, maxHops?: number,
   ) => Effect.Effect<Neighbors, RepoError>
