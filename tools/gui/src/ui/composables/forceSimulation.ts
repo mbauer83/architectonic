@@ -15,8 +15,9 @@ export interface ForceOptions {
   damping: number
 }
 
+/** Matches the `Normal` spacing preset, whose docstring records what the numbers were measured on. */
 export const FORCE_DEFAULTS: ForceOptions = {
-  repulsion: 3000,
+  repulsion: 20000,
   attraction: 0.005,
   idealDist: 250,
   centerPull: 0.0005,

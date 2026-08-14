@@ -242,17 +242,26 @@ describe('alpha', () => {
     const equilibrium = (alpha: number): Array<{ x: number; y: number }> => {
       const bodies = [body('a', 300, 300), body('b', 900, 500), body('c', 610, 390)]
       const links: SimLink[] = [{ source: 'a', target: 'b' }, { source: 'b', target: 'c' }]
-      for (let i = 0; i < 20_000; i++) simulationStep(bodies, links, FORCE_DEFAULTS, CENTRE, alpha)
+      // Long enough that the *slower* run arrives too. The claim is about where the two runs end
+      // up, not how far each gets in a fixed budget, so a budget that only the hot run exhausts
+      // would be measuring convergence rate and calling it destination.
+      for (let i = 0; i < 80_000; i++) simulationStep(bodies, links, FORCE_DEFAULTS, CENTRE, alpha)
       return bodies.map((b) => ({ x: b.x, y: b.y }))
     }
 
     const hot = equilibrium(1)
     const gentle = equilibrium(0.25)
 
-    // Within a couple of pixels, not bit-identical: the two runs approach the same point at
-    // different rates, so after a fixed number of steps each is a hair short of it.
+    // Close, not bit-identical: the two runs approach the same point at different rates, so after
+    // a fixed number of steps each is a hair short of it. The tolerance is a fraction of the
+    // arrangement's own size rather than a pixel count, because the property is scale-free and a
+    // pixel count is not — raising `repulsion` moves the equilibrium further out and would fail an
+    // absolute bound while the claim it stands for still held exactly.
     const apart = Math.max(...hot.map((p, i) => Math.hypot(p.x - gentle[i].x, p.y - gentle[i].y)))
+    const span = Math.max(
+      ...hot.flatMap((p) => hot.map((q) => Math.hypot(p.x - q.x, p.y - q.y))),
+    )
 
-    expect(apart).toBeLessThan(2)
+    expect(apart / span).toBeLessThan(0.005)
   })
 })
