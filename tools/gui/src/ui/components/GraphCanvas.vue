@@ -121,7 +121,12 @@ const centerOn = (x: number, y: number) => {
   viewBox.value.y = y - viewBox.value.h / 2
 }
 
-defineExpose({ fitToView, refitUnlessUserFramed, zoomBy, centerOn, dragging })
+defineExpose({
+  /** The element the browser makes fullscreen, and so the host a docked sidebar teleports into. */
+  frameEl: frameRef,
+  isFullscreen: fullscreen.isFullscreen,
+  fitToView, refitUnlessUserFramed, zoomBy, centerOn, dragging,
+})
 
 // Stop the edge at each node's outer boundary so the decoration at that end sits beside it.
 // What "outer boundary" means per node is `graphNodeGeometry`'s answer, not one restated here.
@@ -138,7 +143,7 @@ const edgeCardPos = (e: GraphEdge, frac: number) => edgeCardPosFor(props.nodes, 
 <template>
   <div
     ref="frameRef"
-    class="canvas-frame"
+    class="canvas-frame viewport-host"
   >
     <div
       v-if="notice"

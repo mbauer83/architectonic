@@ -250,7 +250,7 @@ onMounted(() => { if (props.adHoc || slug.value) void load() })
       <template #canvas>
         <div
           ref="containerRef"
-          class="img-container"
+          class="img-container viewport-host"
           @mousedown="panZoom.onMouseDown"
           @dblclick="panZoom.resetView"
         >

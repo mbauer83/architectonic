@@ -169,7 +169,7 @@ const executeDelete = () => {
           <div
             v-else
             ref="containerRef"
-            class="img-container"
+            class="img-container viewport-host"
             @mousedown="panZoom.onMouseDown"
             @dblclick="panZoom.resetView"
           >

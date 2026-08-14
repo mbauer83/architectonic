@@ -25,7 +25,10 @@ defineProps<{
 </script>
 
 <template>
-  <aside class="graph-sidebar">
+  <!-- `sidebar` as well as its own class: that is the hook the shared rule in `styles/shared.css`
+       positions and animates a docked panel by, and it is the same panel doing the same thing here
+       as beside a diagram. -->
+  <aside class="graph-sidebar sidebar">
     <!-- The selected entity's own name is the headline, and it is the way through to its
          detail page — the same affordance the diagram sidebar offers, rather than a static
          word above a field list that happens to contain the link. -->

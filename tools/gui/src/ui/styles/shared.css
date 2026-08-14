@@ -27,12 +27,17 @@
 .status--active { background: #dcfce7; color: #166534; }
 .status--deprecated { background: #fee2e2; color: #991b1b; }
 
-/* The diagram sidebar while the canvas owns the screen — see `DiagramSidebarDock.vue`.
+/* A docked sidebar while the viewport owns the screen — see `DiagramSidebarDock.vue`.
+
+   Keyed on `.viewport-host` rather than on any one surface's own class: a rendered diagram, a
+   viewpoint's diagram and the graph explorer all put a pan/zoom viewport fullscreen and dock a
+   panel over it, and the rule is the same rule. It used to name `.img-container`, which is a
+   diagram's word for its container and left the graph either unstyled or renamed after an image.
    Global rather than scoped for two reasons: the positioning context is the *host* element
    (`.img-container`, which is already `position: relative`), and a scoped style in the dock could
    not reach the slotted sidebar's own root. Keyed on `:fullscreen` so nothing here applies to the
    docked layout, whose sticky grid column is left exactly as it was. */
-.img-container:fullscreen > .sidebar {
+.viewport-host:fullscreen > .sidebar {
   position: absolute;
   top: 0;
   right: 0;

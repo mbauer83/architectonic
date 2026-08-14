@@ -12,6 +12,7 @@ import GraphCanvas from '../components/GraphCanvas.vue'
 import { useViewpointExecution } from '../composables/useViewpointExecution'
 import { useViewpointParameterPrompt } from '../composables/useViewpointParameterPrompt'
 import type { ResolvedViewpointExecution } from '../composables/useViewpointParameterPrompt'
+import DiagramSidebarDock from '../components/DiagramSidebarDock.vue'
 import GraphExploreSidebar from '../components/GraphExploreSidebar.vue'
 import AggregationBanner from '../components/AggregationBanner.vue'
 import ExecutionReferenceBar from '../components/ExecutionReferenceBar.vue'
@@ -480,14 +481,24 @@ const showExpandBadge = (n: GraphNode) =>
       />
     </div>
 
-    <GraphExploreSidebar
-      :selected-id="selectedId"
-      :selected-edge="selectedEdge"
-      :selected-edge-summary="selectedEdgeSummary"
-      :detail="sd ?? null"
-      :loading="selectedDetail.loading.value"
-      :error-message="selectedDetail.errorMessage.value"
-    />
+    <!-- Beside the canvas normally; teleported inside it once it owns the screen, because the
+         browser paints nothing outside a fullscreen element and a docked panel would simply
+         vanish. Revealed on selection there, since a permanent panel over a full-screen graph
+         covers the thing being read most of the time. Same component, same rule, as a diagram. -->
+    <DiagramSidebarDock
+      :fullscreen-host="canvasRef?.frameEl ?? null"
+      :is-fullscreen="canvasRef?.isFullscreen ?? false"
+      :has-selection="selectedId !== null || selectedEdge !== null"
+    >
+      <GraphExploreSidebar
+        :selected-id="selectedId"
+        :selected-edge="selectedEdge"
+        :selected-edge-summary="selectedEdgeSummary"
+        :detail="sd ?? null"
+        :loading="selectedDetail.loading.value"
+        :error-message="selectedDetail.errorMessage.value"
+      />
+    </DiagramSidebarDock>
   </div>
 </template>
 
