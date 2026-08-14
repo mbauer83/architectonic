@@ -88,6 +88,30 @@ implicit.
 
 ![Graph exploration](../media/graph-explore.gif)
 
+The graph draws **every relationship among the entities it is showing**, not only the ones incident
+to what you expanded. Two people looking at the same set of nodes therefore see the same graph,
+whatever order they clicked in.
+
+### Filtering
+
+Completeness is the default and the filter is how it stays readable. **Filter** sits above the
+canvas and offers only the values actually present in the graph you have loaded, so the choices
+follow your exploration: expand a node that brings in a new domain and that domain joins the list.
+
+Values are grouped by what they classify — elements and relationships — and within that by the
+levels the meta-ontology declares. For ArchiMate that is domain, entity type and specialization on
+the element side, and relationship type and specialization on the relationship side. A different
+meta-ontology declaring a different chain is offered its own levels, under its own labels; the
+filter reads what each level says about where its values come from rather than knowing any level by
+name.
+
+Selecting a value excludes it. An element that is hidden takes its relationships with it, since a
+line to a node that is not drawn says nothing. The collapsed control always reports what it is
+doing — `Filter · 3 excluded`, with **Reset** beside it — so a graph is never quietly incomplete.
+
+The selection lives in the address (`?hide=entity_type:driver`), which makes a filtered graph a link
+you can send. Nothing is removed from the model; only from the picture.
+
 For agents, the same traversal is available through `artifact_query_find_neighbors` and
 `artifact_query_find_connections_for` — see [Interfaces & MCP](interfaces-and-mcp.md).
 

@@ -8,8 +8,9 @@ All notable changes to this project are documented here. The format follows
 **[Full detail → `changelog-assets/0.6.0-detail.md`](changelog-assets/0.6.0-detail.md)**
 
 **A picture now says what the model says.** Colour and corner shape are declared by the
-meta-ontology and drawn the same way everywhere; a graph shows every relationship among the
-elements it draws; and three renderers stopped losing content that the source contained.
+meta-ontology and drawn the same way everywhere. A graph shows every relationship among the
+elements it draws, with a filter — built from the same declarations — to keep that readable.
+Three renderers stopped losing content that the source contained.
 
 ### Added
 
@@ -25,6 +26,12 @@ elements it draws; and three renderers stopped losing content that the source co
   classified, keyed by concept kind, with every level id an opaque string.
 - **`GET /api/connections/among`** answers the connections whose endpoints are both in a set of
   entities.
+- **A filter for graph exploration**, built from the levels the meta-ontology declares and the graph
+  you have loaded. Values are grouped by what they classify and offered only where the loaded graph
+  actually has them, so the choices follow exploration. Excluding an element takes its relationships
+  with it. The collapsed control reports what it is hiding — `Filter · 3 excluded`, with reset — and
+  the selection lives in the address, so a filtered graph is a link. A meta-ontology declaring a
+  different chain is offered its own levels under its own labels, with no code change.
 - **A legend for what a diagram's visual properties mean** is not in this release; the declarations
   it reads are.
 
