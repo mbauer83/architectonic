@@ -114,8 +114,9 @@ Two things are never removed this way. An element that had no relationships to b
 since the filter took none from it. And the element you are exploring stays, whatever you exclude —
 it is the subject of the view.
 
-The collapsed control always reports what it is doing — `Filter · 3 excluded`, with **Reset**
-beside it — so a graph is never quietly incomplete.
+The collapsed control always reports what it is doing — `Filter · 3 excluded`, with **Clear** beside
+it — so a graph is never quietly incomplete. (Clear empties the filter; the viewport's **Reset**,
+top right, re-frames the graph. They are different controls and say so.)
 
 The selection lives in the address (`?hide=entity_type:driver`), which makes a filtered graph a link
 you can send. Nothing is removed from the model; only from the picture.

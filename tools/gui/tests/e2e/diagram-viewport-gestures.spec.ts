@@ -100,11 +100,11 @@ test('a press on the same spot that does not travel still selects that entity', 
 test('the diagram fills the screen and the page keeps track of whether it still does', async ({ page }) => {
   await openADiagramWithEntities(page)
   const container = page.locator('.img-container')
-  const control = page.locator('.viewport-btn', { hasText: 'Fullscreen' })
+  const control = page.getByRole('button', { name: 'View fullscreen' })
 
   await control.click()
 
-  await expect(page.locator('.viewport-btn', { hasText: 'Exit' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Exit fullscreen' })).toBeVisible()
   expect(await container.evaluate((el) => document.fullscreenElement === el)).toBe(true)
   await expect(page.locator('.zoom-hint')).toContainText('Esc to exit')
 
@@ -119,10 +119,10 @@ test('the diagram fills the screen and the page keeps track of whether it still 
 
 test('the fullscreen control gives the diagram back too', async ({ page }) => {
   await openADiagramWithEntities(page)
-  const control = page.locator('.viewport-btn', { hasText: 'Fullscreen' })
+  const control = page.getByRole('button', { name: 'View fullscreen' })
 
   await control.click()
-  await page.locator('.viewport-btn', { hasText: 'Exit' }).click()
+  await page.getByRole('button', { name: 'Exit fullscreen' }).click()
 
   await expect(control).toBeVisible()
   expect(await page.evaluate(() => document.fullscreenElement)).toBeNull()
@@ -182,10 +182,10 @@ test('the sidebar follows the diagram into fullscreen, arriving with a selection
   const container = page.locator('.img-container')
   const sidebar = page.locator('.sidebar')
 
-  await page.locator('.viewport-btn', { hasText: 'Fullscreen' }).click()
+  await page.getByRole('button', { name: 'View fullscreen' }).click()
   // The request is asynchronous: wait for the control to report the new state before asking the
   // document about it, or the assertion races the transition it is meant to observe.
-  await expect(page.locator('.viewport-btn', { hasText: 'Exit' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Exit fullscreen' })).toBeVisible()
   expect(await container.evaluate((el) => document.fullscreenElement === el)).toBe(true)
   // Nothing selected: a panel permanently over a diagram filling the screen covers the drawing for
   // no reason, so it waits to be asked for.

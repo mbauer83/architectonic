@@ -31,7 +31,7 @@ Three renderers stopped losing content that the source contained.
   actually has them, so the choices follow exploration. Excluding an element takes its relationships
   with it, and excluding a relationship type removes the elements it leaves with nothing to show —
   except one that had no relationships to begin with, and except the element being explored. The
-  collapsed control reports what it is hiding — `Filter · 3 excluded`, with reset — and
+  collapsed control reports what it is hiding — `Filter · 3 excluded`, with a clear beside it — and
   the selection lives in the address, so a filtered graph is a link. A meta-ontology declaring a
   different chain is offered its own levels under its own labels, with no code change.
 - **A legend for what a diagram's visual properties mean** is not in this release; the declarations

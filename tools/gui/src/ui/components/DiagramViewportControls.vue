@@ -8,6 +8,16 @@
  *
  * Purely presentational: it reports what was pressed and knows nothing about panning, fitting or
  * what is being viewed.
+ *
+ * **Glyph only, so the name has to be given rather than read.** With the words gone the accessible
+ * name can no longer come from the text, and `title` alone does not reliably supply one — hence the
+ * explicit `aria-label` on each. The tooltip still carries the words for a sighted reader.
+ *
+ * **The two glyphs differ in shape, not in direction.** Framing and fullscreen are both "make this
+ * fill the space" ideas and both ⛶ and ⤢ are read as fullscreen in the wild, so a framing control
+ * drawn with either would be the fullscreen control twice. ⊙ recentres — a target, not an arrow —
+ * against ⤢/⤡ for entering and leaving. The pair that *does* differ only in direction is entering
+ * versus leaving fullscreen, which is safe: they are states of one control and only ever one shows.
  */
 defineProps<{
   /** Whether the view has been moved off its fitted framing, so a reset would do something. */
@@ -28,18 +38,20 @@ defineEmits<{ reset: []; 'toggle-fullscreen': [] }>()
       v-if="isTransformed"
       class="viewport-btn"
       title="Reset view"
+      aria-label="Reset view"
       @click.stop="$emit('reset')"
     >
-      ⊙ Reset
+      ⊙
     </button>
     <!-- Last, so it keeps its place when Reset appears and disappears beside it. -->
     <button
       v-if="canFullscreen"
       class="viewport-btn"
       :title="isFullscreen ? 'Exit fullscreen (Esc)' : 'View fullscreen'"
+      :aria-label="isFullscreen ? 'Exit fullscreen' : 'View fullscreen'"
       @click.stop="$emit('toggle-fullscreen')"
     >
-      {{ isFullscreen ? '⤡ Exit' : '⤢ Fullscreen' }}
+      {{ isFullscreen ? '⤡' : '⤢' }}
     </button>
   </div>
   <div class="zoom-hint">
@@ -50,8 +62,10 @@ defineEmits<{ reset: []; 'toggle-fullscreen': [] }>()
 <style scoped>
 .viewport-controls { position: absolute; top: 8px; right: 8px; display: flex; gap: 6px; }
 .viewport-btn {
-  padding: 4px 10px; background: rgba(255, 255, 255, .92); border: 1px solid #d1d5db;
-  border-radius: 5px; font-size: 12px; cursor: pointer; color: #374151;
+  /* Square, like the zoom cluster it now matches: a glyph in a box rather than a label in a pill. */
+  width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(255, 255, 255, .92); border: 1px solid #d1d5db;
+  border-radius: 5px; font-size: 14px; line-height: 1; cursor: pointer; color: #374151;
 }
 .viewport-btn:hover { background: white; }
 .zoom-hint {

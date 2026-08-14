@@ -69,14 +69,17 @@ describe('collapsed, it still says what it is doing', () => {
     expect(host.querySelector('.reset')).toBeNull()
   })
 
-  it('reports the excluded count and offers a reset on the same line', () => {
+  it('reports the excluded count and offers a clear on the same line', () => {
     const host = render({ selection: { domain: ['motivation'] }, excluded: 1 })
 
     expect(summaryText(host)).toContain('1 excluded')
-    expect(host.querySelector('.summary .reset')).not.toBeNull()
+    const clear = host.querySelector('.summary .reset')
+    expect(clear).not.toBeNull()
+    // Not "Reset": the viewport control on this surface is a Reset, and resets the framing.
+    expect(clear?.textContent?.trim()).toBe('Clear')
   })
 
-  it('emits reset without the panel having to be opened', () => {
+  it('emits its clear without the panel having to be opened', () => {
     const host = render({ selection: { domain: ['motivation'] }, excluded: 1 })
 
     host.querySelector<HTMLButtonElement>('.reset')?.click()

@@ -16,6 +16,7 @@ import {
   contrastTextColor, edgeCardPosFor, edgePathFor, nodeShapePoints, wrapLabel,
   type EdgeEndMarker, type EdgeVisual, type NodeVisual,
 } from './GraphCanvas.helpers'
+import DiagramViewportControls from './DiagramViewportControls.vue'
 import EdgeMarkerDefs from './EdgeMarkerDefs.vue'
 import { edgeMarkerId } from './edgeMarkers'
 
@@ -77,11 +78,14 @@ const svgHeight = ref(600)
  * The whole viewport goes fullscreen, controls included — the frame rather than the `<svg>`, so the
  * zoom cluster is still reachable once there.
  *
- * Entering or leaving is a framing request: the space changed, and the point of the gesture is to
- * see the graph against the new one, so it re-fits unconditionally rather than honouring a framing
- * chosen for the old size. The fit waits for the *resize* rather than following the toggle,
- * because `fitToView` computes against `svgWidth`/`svgHeight` and those are written by the resize
- * observer below — fitting on the toggle would frame the graph to the size it just left.
+ * Entering or leaving is a framing request — the same one the diagram viewport makes on the same
+ * gesture: the space changed, and the point of the gesture is to see the picture against the new
+ * one, so it re-fits unconditionally rather than honouring a framing chosen for the old size.
+ *
+ * It differs from the diagram's only in *when*, and only because it has to. A diagram's fit awaits
+ * `nextTick` and then measures the container; this one computes against `svgWidth`/`svgHeight`,
+ * which a resize observer writes — so a fit that followed the toggle would frame the graph to the
+ * size it just left. It waits for the resize instead, and arrives at the same place.
  */
 const frameRef = ref<HTMLElement | null>(null)
 const fullscreen = useFullscreen(frameRef)
@@ -91,7 +95,7 @@ watch(fullscreen.isFullscreen, () => { refitOnNextResize = true })
 const {
   viewBox, vb, dragging,
   onNodeMouseDown, onSvgMouseDown, onSvgMouseMove, onSvgMouseUp, onWheel,
-  zoomBy, fitToView, refitUnlessUserFramed, hasFitted,
+  zoomBy, fitToView, refitUnlessUserFramed, hasFitted, isTransformed,
 } = useGraphPanZoom(svgRef, svgWidth, svgHeight, toRef(props, 'nodes'), () => emit('dragTick'))
 
 // Nodes are laid out in their own coordinate space, so the pre-fit viewBox — the bare
@@ -167,32 +171,18 @@ const edgeCardPos = (e: GraphEdge, frac: number) => edgeCardPosFor(props.nodes, 
       >
         －
       </button>
-      <button
-        type="button"
-        class="zoom-btn"
-        title="Fit all nodes in view"
-        aria-label="Fit to view"
-        @click="fitToView"
-      >
-        ⛶
-      </button>
-      <!-- With the zoom cluster rather than in `DiagramViewportControls`, which pairs fullscreen
-           with a Reset that is a *fit*. A graph already has one, always available: its content
-           moves when nodes are dragged, so re-framing is wanted even when the viewport itself has
-           not been transformed. Mounting that control here would put a second fit on screen. The
-           behaviour — Esc, the permissions-policy question, the listener's lifetime — is the
-           shared `useFullscreen`, which is the part worth not writing twice. -->
-      <button
-        v-if="fullscreen.isSupported"
-        type="button"
-        class="zoom-btn"
-        :title="fullscreen.isFullscreen.value ? 'Exit fullscreen (Esc)' : 'View fullscreen'"
-        :aria-label="fullscreen.isFullscreen.value ? 'Exit fullscreen' : 'View fullscreen'"
-        @click="fullscreen.toggle"
-      >
-        {{ fullscreen.isFullscreen.value ? '⤡' : '⤢' }}
-      </button>
     </div>
+    <!-- The same chrome a rendered diagram's viewport carries, in the same corner, with the same
+         labels and the same hint line. Reset is the fit: a separate ⛶ beside it would be two
+         controls for one action, and two vocabularies for it. -->
+    <DiagramViewportControls
+      :is-transformed="isTransformed"
+      :is-fullscreen="fullscreen.isFullscreen.value"
+      :can-fullscreen="fullscreen.isSupported"
+      hint="Scroll to zoom · Drag to pan · Click node to inspect · Double-click to expand"
+      @reset="fitToView"
+      @toggle-fullscreen="fullscreen.toggle"
+    />
     <svg
       ref="svgRef"
       class="graph-svg"

@@ -54,7 +54,7 @@ test('excluding a type removes it from the picture and says so', async ({ page }
 
   // The headline reports it: a filter that hides invisibly is B30's defect shipped as a feature.
   await expect(page.getByRole('button', { name: /Filter · 1 excluded/ })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Reset' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Clear', exact: true })).toBeVisible()
   await expect(page).toHaveURL(/[?&]hide=/)
   await expect
     .poll(async () => page.locator('svg g.graph-node').count())
@@ -62,7 +62,7 @@ test('excluding a type removes it from the picture and says so', async ({ page }
   expect(value).not.toBe('')
 })
 
-test('a filtered graph is a link, and reset returns the whole picture', async ({ page }) => {
+test('a filtered graph is a link, and clearing returns the whole picture', async ({ page }) => {
   await page.goto(GRAPH)
   await page.getByRole('button', { name: 'Filter', exact: true }).click()
   const before = await page.locator('svg g.graph-node').count()
@@ -75,7 +75,7 @@ test('a filtered graph is a link, and reset returns the whole picture', async ({
   await expect(page.getByRole('button', { name: /Filter · 1 excluded/ })).toBeVisible()
   await expect.poll(async () => page.locator('svg g.graph-node').count()).toBeLessThan(before)
 
-  await page.getByRole('button', { name: 'Reset' }).click()
+  await page.getByRole('button', { name: 'Clear', exact: true }).click()
 
   await expect(page).not.toHaveURL(/[?&]hide=/)
   await expect.poll(async () => page.locator('svg g.graph-node').count()).toBe(before)

@@ -128,7 +128,6 @@ export function useGraphPanZoom(
 
   //: The viewBox the last programmatic fit produced. Anything else means the user has
   //: panned, zoomed or dragged since, and their framing is theirs to keep.
-  let lastFitted: ViewBoxRect | null = null
 
   /**
    * Whether a fit has *ever* landed on a non-empty population — the canvas paints from then on.
@@ -144,19 +143,28 @@ export function useGraphPanZoom(
 
   const fitToView = () => {
     viewBox.value = fitViewBox(nodes.value, svgWidth.value, svgHeight.value)
-    lastFitted = { ...viewBox.value }
     // An empty population has no framing, so fitting it must not claim one. It used to: the
     // container's own resize fires before any node arrives, that fit was recorded, and the
     // first nodes then painted into a frame computed without them — visible, and wrong.
     if (nodes.value.length > 0) hasFitted.value = true
   }
 
-  const isUserFramed = (): boolean => {
-    if (lastFitted === null) return false
+  /**
+   * Whether a reset would do anything: the framing on screen is not the one fitting the graph.
+   *
+   * The same question `useFittedPanZoom.isTransformed` answers for a rendered diagram, and stated
+   * the same way — against the *fit for the current content*, not against the last fit performed.
+   * On a graph that distinction carries weight a diagram never puts on it: dragging a node moves
+   * the content without touching the viewport, so a framing that was a fit a moment ago is not one
+   * now. Asked this way, the control appears exactly when it has something to do.
+   */
+  const isTransformed = computed(() => {
+    if (!hasFitted.value) return false
+    const fit = fitViewBox(nodes.value, svgWidth.value, svgHeight.value)
     const box = viewBox.value
-    return Math.abs(box.x - lastFitted.x) > 0.5 || Math.abs(box.y - lastFitted.y) > 0.5
-      || Math.abs(box.w - lastFitted.w) > 0.5 || Math.abs(box.h - lastFitted.h) > 0.5
-  }
+    return Math.abs(box.x - fit.x) > 0.5 || Math.abs(box.y - fit.y) > 0.5
+      || Math.abs(box.w - fit.w) > 0.5 || Math.abs(box.h - fit.h) > 0.5
+  })
 
   /**
    * Re-fit after a container resize, unless the user has framed the view themselves.
@@ -165,10 +173,14 @@ export function useGraphPanZoom(
    * keeps changing after the first one: the surrounding filter summary, legend and notice
    * rows lay out once the result arrives. Without this, initialisation reliably fits to an
    * intermediate size and leaves the graph mis-scaled — the same failure as never fitting.
-   * Mirrors the contract `useFittedPanZoom` already provides for rendered diagrams.
+   * The same rule `useFittedPanZoom` applies for a rendered diagram, asked through the same
+   * predicate: a viewport that is already off its fit is one the reader arranged, and a resize is
+   * not a reason to take that away. It used to ask a second, nearly-identical question — whether
+   * the framing had moved since the last fit was *performed* — which answered differently once the
+   * content moved under a still viewport, and gave the two surfaces two notions of "framed".
    */
   const refitUnlessUserFramed = () => {
-    if (!isUserFramed()) fitToView()
+    if (!isTransformed.value) fitToView()
   }
 
   const vb = computed(() => `${viewBox.value.x} ${viewBox.value.y} ${viewBox.value.w} ${viewBox.value.h}`)
@@ -176,6 +188,6 @@ export function useGraphPanZoom(
   return {
     viewBox, vb, dragging,
     onNodeMouseDown, onSvgMouseDown, onSvgMouseMove, onSvgMouseUp, onWheel,
-    zoomBy, fitToView, refitUnlessUserFramed, hasFitted,
+    zoomBy, fitToView, refitUnlessUserFramed, hasFitted, isTransformed,
   }
 }

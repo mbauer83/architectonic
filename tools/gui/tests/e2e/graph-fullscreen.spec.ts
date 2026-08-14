@@ -27,6 +27,8 @@ test('the graph viewport goes fullscreen and re-frames against the new space', a
   await expect(page.locator('svg g.graph-node').first()).toBeVisible()
   const before = await viewBox(page)
 
+  // By accessible name, as the diagram viewport's own spec now does: the control is glyph-only, so
+  // its name is the `aria-label` rather than anything a text locator could find.
   const control = page.getByRole('button', { name: 'View fullscreen' })
   await expect(control).toBeVisible()
   await control.click()
@@ -36,6 +38,8 @@ test('the graph viewport goes fullscreen and re-frames against the new space', a
     .poll(async () => page.evaluate(() => document.fullscreenElement?.className ?? ''))
     .toContain('canvas-frame')
   await expect(page.getByRole('button', { name: 'Zoom in' })).toBeVisible()
+  // And the hint tells the reader how to leave, as it does on a diagram.
+  await expect(page.locator('.zoom-hint')).toContainText('Esc to exit')
 
   // Re-framed: a viewBox computed for the old size would have survived the transition.
   await expect.poll(async () => viewBox(page)).not.toBe(before)

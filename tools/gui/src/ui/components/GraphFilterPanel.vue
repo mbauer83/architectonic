@@ -8,7 +8,7 @@
  *
  * **Collapsed, it still says what it is doing.** A filter that hides relations without saying so
  * is the defect B30 fixed — a graph whose visible edge set depends on something the reader cannot
- * see — shipped back as a feature. So the summary carries the excluded count and the reset, and
+ * see — shipped back as a feature. So the summary carries the excluded count and the clear, and
  * both are reachable without opening the panel.
  *
  * Vocabulary-free by the same contract `FilterBar` states: the caller supplies levels and values
@@ -74,13 +74,16 @@ const groups = computed(() => [
           class="count"
         >· {{ excluded }} excluded</span>
       </button>
+      <!-- "Clear", not "Reset": the viewport control beside it on this same surface is a Reset,
+           and it resets the framing rather than the filter. Two controls a step apart under one
+           word is a worse problem than a slightly longer one. -->
       <button
         v-if="excluded > 0"
         type="button"
         class="reset"
         @click="emit('reset')"
       >
-        Reset
+        Clear
       </button>
     </div>
 
