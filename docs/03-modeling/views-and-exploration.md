@@ -106,8 +106,16 @@ filter reads what each level says about where its values come from rather than k
 name.
 
 Selecting a value excludes it. An element that is hidden takes its relationships with it, since a
-line to a node that is not drawn says nothing. The collapsed control always reports what it is
-doing — `Filter · 3 excluded`, with **Reset** beside it — so a graph is never quietly incomplete.
+line to a node that is not drawn says nothing. The reverse holds too: excluding a relationship type
+also removes the elements it leaves with nothing to show, so filtering down to one kind of
+relationship gives you that structure rather than that structure surrounded by unconnected boxes.
+
+Two things are never removed this way. An element that had no relationships to begin with stays,
+since the filter took none from it. And the element you are exploring stays, whatever you exclude —
+it is the subject of the view.
+
+The collapsed control always reports what it is doing — `Filter · 3 excluded`, with **Reset**
+beside it — so a graph is never quietly incomplete.
 
 The selection lives in the address (`?hide=entity_type:driver`), which makes a filtered graph a link
 you can send. Nothing is removed from the model; only from the picture.
