@@ -6,9 +6,10 @@
  * and loading/notice state; it never imports architecture, assurance, or
  * viewpoint concepts.
  */
-import { onMounted, ref, toRef } from 'vue'
+import { onMounted, ref, toRef, watch } from 'vue'
 import type { GraphEdge, GraphNode } from '../composables/useForceGraph'
 import { useElementSize } from '../composables/useElementSize'
+import { useFullscreen } from '../composables/useFullscreen'
 import { useGraphPanZoom } from '../composables/useGraphPanZoom'
 import { edgeEndRadius, nodeLabelBox } from './graphNodeGeometry'
 import {
@@ -72,6 +73,21 @@ const svgRef = ref<SVGSVGElement | null>(null)
 const svgWidth = ref(800)
 const svgHeight = ref(600)
 
+/**
+ * The whole viewport goes fullscreen, controls included — the frame rather than the `<svg>`, so the
+ * zoom cluster is still reachable once there.
+ *
+ * Entering or leaving is a framing request: the space changed, and the point of the gesture is to
+ * see the graph against the new one, so it re-fits unconditionally rather than honouring a framing
+ * chosen for the old size. The fit waits for the *resize* rather than following the toggle,
+ * because `fitToView` computes against `svgWidth`/`svgHeight` and those are written by the resize
+ * observer below — fitting on the toggle would frame the graph to the size it just left.
+ */
+const frameRef = ref<HTMLElement | null>(null)
+const fullscreen = useFullscreen(frameRef)
+let refitOnNextResize = false
+watch(fullscreen.isFullscreen, () => { refitOnNextResize = true })
+
 const {
   viewBox, vb, dragging,
   onNodeMouseDown, onSvgMouseDown, onSvgMouseMove, onSvgMouseUp, onWheel,
@@ -88,6 +104,7 @@ const frame = useElementSize(() => svgRef.value?.parentElement, () => {
   svgWidth.value = frame.width.value
   svgHeight.value = frame.height.value
   emit('resized', svgWidth.value, svgHeight.value)
+  if (refitOnNextResize) { refitOnNextResize = false; fitToView() }
   refitUnlessUserFramed()
 })
 
@@ -115,7 +132,10 @@ const edgeCardPos = (e: GraphEdge, frac: number) => edgeCardPosFor(props.nodes, 
 </script>
 
 <template>
-  <div class="canvas-frame">
+  <div
+    ref="frameRef"
+    class="canvas-frame"
+  >
     <div
       v-if="notice"
       class="canvas-notice"
@@ -155,6 +175,22 @@ const edgeCardPos = (e: GraphEdge, frac: number) => edgeCardPosFor(props.nodes, 
         @click="fitToView"
       >
         ⛶
+      </button>
+      <!-- With the zoom cluster rather than in `DiagramViewportControls`, which pairs fullscreen
+           with a Reset that is a *fit*. A graph already has one, always available: its content
+           moves when nodes are dragged, so re-framing is wanted even when the viewport itself has
+           not been transformed. Mounting that control here would put a second fit on screen. The
+           behaviour — Esc, the permissions-policy question, the listener's lifetime — is the
+           shared `useFullscreen`, which is the part worth not writing twice. -->
+      <button
+        v-if="fullscreen.isSupported"
+        type="button"
+        class="zoom-btn"
+        :title="fullscreen.isFullscreen.value ? 'Exit fullscreen (Esc)' : 'View fullscreen'"
+        :aria-label="fullscreen.isFullscreen.value ? 'Exit fullscreen' : 'View fullscreen'"
+        @click="fullscreen.toggle"
+      >
+        {{ fullscreen.isFullscreen.value ? '⤡' : '⤢' }}
       </button>
     </div>
     <svg
@@ -342,6 +378,9 @@ const edgeCardPos = (e: GraphEdge, frac: number) => edgeCardPosFor(props.nodes, 
 
 <style scoped>
 .canvas-frame { flex: 1; display: flex; flex-direction: column; position: relative; min-height: 0; }
+/* A fullscreen element is composited over the browser's own backdrop, which is black; without a
+   background of its own the graph would be drawn on it. */
+.canvas-frame:fullscreen { background: #fff; }
 .canvas-notice {
   position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 6;
   background: #fef3c7; border: 1px solid #f59e0b; color: #92400e;
