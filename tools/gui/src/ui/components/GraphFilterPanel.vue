@@ -137,6 +137,8 @@ const groups = computed(() => [
 
 <style scoped>
 .graph-filter {
+  /* As the layout groups beside it: wrap rather than squash. */
+  flex-shrink: 0;
   background: #fff;
   border: 1px solid #d1d5db;
   border-radius: 8px;

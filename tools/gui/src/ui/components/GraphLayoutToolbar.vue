@@ -101,7 +101,13 @@ const emit = defineEmits<{
 </template>
 
 <style scoped>
-.spacing-controls { display: inline-flex; align-items: center; gap: 4px; margin-left: 12px; }
+/* `flex-shrink: 0` because the row that holds these is a wrapping flex container: without it a
+   group is compressed below the width of its own buttons and the text overflows the box it is
+   drawn in, which reads as the neighbouring label sitting on top of the control beside it. Wrapping
+   is the intended answer to a narrow row; squashing is not. */
+.spacing-controls {
+  display: inline-flex; align-items: center; gap: 4px; margin-left: 12px; flex-shrink: 0;
+}
 .spacing-label { font-size: 11.5px; color: #6b7280; }
 .spacing-btn {
   font-size: 11.5px; padding: 3px 10px; border: 1px solid #d1d5db; border-radius: 5px;
