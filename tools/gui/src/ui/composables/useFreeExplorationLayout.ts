@@ -20,12 +20,16 @@ import { domainBandPlacement, hopDepthByParentage } from '../views/GraphExploreV
 //: Ring spacing for the radial layout, in layout units.
 const RADIAL_RING_SPACING = 180
 
-/** Layout modes a free-exploration surface offers. Radial belongs here because the walk always
- *  has an anchor — the entity it opened on — for its rings to be centred on. */
+/** Layout modes a free-exploration surface offers, in the order they are offered.
+ *
+ * Radial belongs here because the walk always has an anchor — the entity it opened on — for its
+ * rings to be centred on, and it leads because it is what the surface opens in: hop distance from
+ * the element you asked about is the thing a walk is actually reading, and a force layout of a
+ * complete edge set stops separating anything once the graph is dense. */
 export const FREE_LAYOUT_MODES: readonly { value: LayoutMode; label: string }[] = [
-  { value: 'force', label: 'Force' },
-  { value: 'cluster', label: 'Cluster' },
   { value: 'radial', label: 'Radial' },
+  { value: 'cluster', label: 'Cluster' },
+  { value: 'force', label: 'Force' },
 ]
 
 export interface FreeExplorationLayoutDeps {

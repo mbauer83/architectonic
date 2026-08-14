@@ -68,7 +68,7 @@ const {
   nodes, edges, options, layoutMode,
   addNode, addEdge, markExpanded, collapseNode, spreadAroundParent, settleForceLayout,
   animateForceLayout, applyGroupClusterLayout, applyRadialLayout,
-} = useForceGraph(() => svgWidth.value, () => svgHeight.value)
+} = useForceGraph(() => svgWidth.value, () => svgHeight.value, 'radial')
 
 // `facets.visible` is what the canvas draws: a filter hides from the picture, never from the model.
 const keepWhateverIsFiltered = computed(() => (rootId.value ? [rootId.value] : []))

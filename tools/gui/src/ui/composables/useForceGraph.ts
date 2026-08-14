@@ -42,11 +42,20 @@ export interface GraphEdge {
   tgtMultiplicity?: string
 }
 
-export function useForceGraph(width: () => number, height: () => number) {
+/**
+ * @param initialLayout the mode a surface opens in. Per-surface rather than one default here:
+ *   the assurance explorer has an unanchored route with no centre for rings, and its toolbar
+ *   disables radial accordingly — opening it in a mode it forbids would be a contradiction.
+ */
+export function useForceGraph(
+  width: () => number,
+  height: () => number,
+  initialLayout: LayoutMode = 'force',
+) {
   const nodes = ref<GraphNode[]>([])
   const edges = ref<GraphEdge[]>([])
   const options = reactive<ForceOptions>({ ...FORCE_DEFAULTS })
-  const layoutMode = ref<LayoutMode>('force')
+  const layoutMode = ref<LayoutMode>(initialLayout)
   let animId: number | null = null
   let running = false
 
