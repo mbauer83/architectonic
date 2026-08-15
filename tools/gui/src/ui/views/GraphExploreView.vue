@@ -8,6 +8,9 @@ import { useQuery } from '../composables/useQuery'
 import { useForceGraph, type GraphNode, type GraphEdge } from '../composables/useForceGraph'
 import { useGraphFacets } from '../composables/useGraphFacets'
 import GraphFilterPanel from '../components/GraphFilterPanel.vue'
+import {
+  downloadBlob, rasterise, snapshotFilename, snapshotSvgMarkup,
+} from '../lib/graphSnapshot'
 import GraphCanvas from '../components/GraphCanvas.vue'
 import { useViewpointExecution } from '../composables/useViewpointExecution'
 import { useViewpointParameterPrompt } from '../composables/useViewpointParameterPrompt'
@@ -121,6 +124,33 @@ const selectedEdge = ref<GraphEdge | null>(null)
  * graph filling the screen a permanent panel covers the thing being read, so there has to be a way
  * to put it away that is not "select something else".
  */
+/**
+ * A picture of the graph as it stands, in the format asked for.
+ *
+ * Of the *current frame*, so it is what the reader is looking at rather than everything loaded —
+ * zooming in and taking a snapshot is how a reader captures a part of a graph too large to show at
+ * once. Failures surface on the view rather than throwing: a snapshot that cannot be taken is a
+ * disappointment, not an error state for the graph.
+ */
+const snapshotError = ref<string | null>(null)
+
+const takeSnapshot = async (format: 'svg' | 'png') => {
+  snapshotError.value = null
+  const svgEl = canvasRef.value?.svgEl
+  const frame = canvasRef.value?.frame
+  if (!svgEl || !frame) return
+  const markup = snapshotSvgMarkup(svgEl, frame)
+  const name = snapshotFilename(sd.value?.name ?? rootId.value, format, new Date())
+  try {
+    const blob = format === 'svg'
+      ? new Blob([markup], { type: 'image/svg+xml;charset=utf-8' })
+      : await rasterise(markup, frame)
+    downloadBlob(blob, name)
+  } catch (cause) {
+    snapshotError.value = cause instanceof Error ? cause.message : String(cause)
+  }
+}
+
 /** Whether the floating toolbar is open. Only consulted while fullscreen; embedded it is always
  *  shown, because the page header is a place for controls and a canvas is not. */
 const toolbarOpen = ref(false)
@@ -477,6 +507,23 @@ const showExpandBadge = (n: GraphNode) =>
                 @toggle="facets.toggle"
                 @reset="facets.reset"
               />
+              <div class="spacing-controls">
+                <span class="spacing-label">Snapshot:</span>
+                <button
+                  class="spacing-btn"
+                  title="Download the current view as SVG"
+                  @click="takeSnapshot('svg')"
+                >
+                  SVG
+                </button>
+                <button
+                  class="spacing-btn"
+                  title="Download the current view as PNG"
+                  @click="takeSnapshot('png')"
+                >
+                  PNG
+                </button>
+              </div>
               <GraphLayoutToolbar
                 :viewpoint-active="selectedViewpointSlug !== null"
                 :layout-mode="layoutMode"

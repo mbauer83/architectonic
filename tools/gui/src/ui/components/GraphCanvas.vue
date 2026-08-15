@@ -125,6 +125,9 @@ const centerOn = (x: number, y: number) => {
 defineExpose({
   /** The element the browser makes fullscreen, and so the host a docked sidebar teleports into. */
   frameEl: frameRef,
+  /** The live drawing and the frame it is being read through — what a snapshot is *of*. */
+  svgEl: svgRef,
+  frame: viewBox,
   isFullscreen: fullscreen.isFullscreen,
   fitToView, refitUnlessUserFramed, zoomBy, centerOn, dragging,
 })
