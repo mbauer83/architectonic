@@ -112,11 +112,97 @@ describe('only what the loaded graph actually contains is offered', () => {
     ])
   })
 
+  it('offers a value that is excluded, so it can be un-excluded', () => {
+    // Excluding a value removes it from what is drawn — that is what excluding did. Deriving the
+    // list from the drawing alone would take away the only control that could put it back.
+    const drawn = NODES.filter((n) => n.domain !== 'application')
+
+    const options = facetOptions(ARCHIMATE.entity, drawn, { domain: ['application'] })
+
+    expect(options[0].values).toEqual(['application', 'motivation'])
+  })
+
   it('offers the other meta-ontology its own levels, by its own names', () => {
     expect(facetOptions(OTHER.entity, NODES)).toEqual([
       { level: OTHER.entity[0], values: ['application', 'motivation'] },
       { level: OTHER.entity[1], values: ['application-component', 'goal'] },
     ])
+  })
+})
+
+describe('the facets depend on each other, so they are offered against what is drawn', () => {
+  // A relationship type carried only by elements that have been excluded, and an element type
+  // reachable only through a relationship that has been excluded, both stop occurring. Offered
+  // against the loaded graph they would stay on the list as values that change nothing when
+  // chosen, because what they would exclude is already gone.
+  const nodes = [
+    node('GOL@1', 'motivation', 'goal'),
+    node('APP@1', 'application', 'application-component'),
+    node('APP@2', 'application', 'application-component'),
+  ]
+  const edges = [
+    edge('GOL@1', 'APP@1', 'archimate-realization'),
+    edge('APP@1', 'APP@2', 'archimate-serving'),   // exists only between application components
+  ]
+
+  it('stops offering a relationship type once the only elements carrying it are excluded', () => {
+    const selection = { domain: ['application'] }
+    const drawn = narrowed(ARCHIMATE, selection, nodes, edges, new Set(['GOL@1']))
+
+    const relationValues = facetOptions(ARCHIMATE.relation, drawn.edges, selection)
+      .flatMap((options) => options.values)
+
+    expect(relationValues).not.toContain('archimate-serving')
+  })
+
+  it('stops offering an element type once the relationship reaching it is excluded', () => {
+    // APP@2 hangs off APP@1, which hangs off the anchor. Cut the realization and both go, so
+    // "application-component" is no longer a choice that would change anything.
+    const selection = { connection_type: ['archimate-realization'] }
+    const drawn = narrowed(ARCHIMATE, selection, nodes, edges, new Set(['GOL@1']))
+
+    const entityValues = facetOptions(ARCHIMATE.entity, drawn.nodes, selection)
+      .flatMap((options) => options.values)
+
+    expect(entityValues).not.toContain('application-component')
+    expect(entityValues).toContain('goal')
+  })
+
+  it('keeps every excluded value offered, however the exclusions cascade', () => {
+    // The guarantee that makes filtering undoable: each exclusion may remove the elements that
+    // were another value's only occurrence, so an option can vanish through no choice of its own.
+    // What may never vanish is a value the reader themselves excluded — that control is the only
+    // way back.
+    const selection = { connection_type: ['archimate-realization'], domain: ['application'] }
+    const drawn = narrowed(ARCHIMATE, selection, nodes, edges, new Set(['GOL@1']))
+
+    const offered = [
+      ...facetOptions(ARCHIMATE.entity, drawn.nodes, selection),
+      ...facetOptions(ARCHIMATE.relation, drawn.edges, selection),
+    ].flatMap((options) => options.values)
+
+    for (const excluded of Object.values(selection).flat()) {
+      expect(offered).toContain(excluded)
+    }
+  })
+
+  it('restores the whole graph when the exclusions are lifted', () => {
+    const selection = { connection_type: ['archimate-realization'], domain: ['application'] }
+    narrowed(ARCHIMATE, selection, nodes, edges, new Set(['GOL@1']))
+
+    const restored = narrowed(ARCHIMATE, {}, nodes, edges, new Set(['GOL@1']))
+
+    expect(restored.nodes).toEqual(nodes)
+    expect(restored.edges).toEqual(edges)
+  })
+
+  it('offers everything again once the exclusion is lifted', () => {
+    const drawn = narrowed(ARCHIMATE, {}, nodes, edges, new Set(['GOL@1']))
+
+    const relationValues = facetOptions(ARCHIMATE.relation, drawn.edges, {})
+      .flatMap((options) => options.values)
+
+    expect(relationValues).toContain('archimate-serving')
   })
 })
 

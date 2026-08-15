@@ -101,3 +101,28 @@ test('excluding a relationship type takes the elements it strands, but never the
     page.locator('svg g.graph-node title', { hasText: 'Sustain Unity of Effort' }),
   ).toHaveCount(1)
 })
+
+test('every exclusion can be undone, including one that removed its own neighbours', async ({
+  page,
+}) => {
+  await page.goto(GRAPH)
+  await page.getByRole('button', { name: 'Filter', exact: true }).click()
+  const before = await page.locator('svg g.graph-node').count()
+
+  // Association, specifically: it is the type whose removal actually cuts elements off from the
+  // anchor here, so the exclusion cascades and other options disappear as a consequence. Any type
+  // would prove the toggle; only one that cascades proves the value survives its own consequences.
+  const value = 'archimate association'
+  const types = page.getByRole('group', { name: 'Relationship type' })
+  await types.getByRole('button', { name: value, exact: true }).click()
+  await expect.poll(async () => page.locator('svg g.graph-node').count()).toBeLessThan(before)
+
+  // The excluded value itself must still be offered — it is the only way back.
+  const same = types.getByRole('button', { name: value, exact: true })
+  await expect(same).toBeVisible()
+
+  await same.click()
+
+  await expect.poll(async () => page.locator('svg g.graph-node').count()).toBe(before)
+  await expect(page).not.toHaveURL(/[?&]hide=/)
+})

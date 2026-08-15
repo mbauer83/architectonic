@@ -98,6 +98,12 @@ Completeness is the default and the filter is how it stays readable. **Filter** 
 canvas and offers only the values actually present in the graph you have loaded, so the choices
 follow your exploration: expand a node that brings in a new domain and that domain joins the list.
 
+The values on offer are the ones present in **what is currently drawn**, so the facets follow each
+other: exclude an element type and a relationship carried only by those elements stops being
+offered; exclude a relationship type and an element type reachable only through it stops being
+offered. A value you have excluded stays on the list, struck through, because that is how you put it
+back — every exclusion can be undone, and **Clear** lifts them all at once.
+
 Values are grouped by what they classify — elements and relationships — and within that by the
 levels the meta-ontology declares. For ArchiMate that is domain, entity type and specialization on
 the element side, and relationship type and specialization on the relationship side. A different

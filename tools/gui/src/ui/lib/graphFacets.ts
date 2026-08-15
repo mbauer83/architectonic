@@ -82,18 +82,41 @@ export function valuesAt(
 const sortedUnique = (values: Iterable<string>): readonly string[] =>
   [...new Set(values)].sort((a, b) => a.localeCompare(b))
 
-/** The values each declared level actually takes across *things*, in display order. */
+/**
+ * The values each declared level actually takes across *things*, in display order.
+ *
+ * *things* is what is **drawn**, not what is loaded, and the difference is the whole of what makes
+ * the options honest. The facets are not independent of each other:
+ *
+ * * excluding an element type takes its relations with it, so a relationship type carried only by
+ *   those elements stops occurring;
+ * * excluding a relationship type takes with it everything it cut off from the anchor, so an
+ *   element type reachable only through it stops occurring;
+ * * and the same holds within one level — after a few expansions, one element type may be reachable
+ *   only through another.
+ *
+ * Offered against the loaded graph instead, each of those remains on the list as a value that
+ * changes nothing when chosen, because what it would exclude is already gone.
+ *
+ * `alsoOffer` is what keeps that from becoming a trap: a value excluded at this level is no longer
+ * present in what is drawn — that is what excluding it did — so deriving the list from the drawing
+ * alone would take away the only control that could put it back.
+ */
 export function facetOptions(
   levels: readonly ClassificationLevel[],
   things: readonly (FacetableNode | FacetableEdge)[],
+  alsoOffer: FacetSelection = {},
 ): readonly FacetOptions[] {
   return levels
     .map((level) => ({
       level,
-      values: sortedUnique(things.flatMap((thing) => valuesAt(level.source, thing))),
+      values: sortedUnique([
+        ...things.flatMap((thing) => valuesAt(level.source, thing)),
+        ...(alsoOffer[level.id] ?? []),
+      ]),
     }))
     // A level nothing in this graph has a value for offers no choice, so it is not shown. The
-    // level is still declared; it simply has nothing to say about what is loaded.
+    // level is still declared; it simply has nothing to say about what is drawn.
     .filter((options) => options.values.length > 0)
 }
 

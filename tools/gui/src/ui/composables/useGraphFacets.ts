@@ -66,13 +66,6 @@ export function useGraphFacets<N extends FacetableNode, E extends FacetableEdge>
     { immediate: true },
   )
 
-  const entityFacets = computed<readonly FacetOptions[]>(() =>
-    levels.value ? facetOptions(levels.value.entity, input.nodes.value) : [],
-  )
-  const relationFacets = computed<readonly FacetOptions[]>(() =>
-    levels.value ? facetOptions(levels.value.relation, input.edges.value) : [],
-  )
-
   /** What the canvas draws. Unfiltered, and before the levels arrive, this is the graph itself. */
   const visible = computed(() =>
     levels.value
@@ -84,6 +77,16 @@ export function useGraphFacets<N extends FacetableNode, E extends FacetableEdge>
           new Set(input.alwaysKeep?.value ?? []),
         )
       : { nodes: input.nodes.value, edges: input.edges.value },
+  )
+
+  // Derived from what is drawn rather than what is loaded, so a value that would change nothing is
+  // not offered — the facets depend on each other in both directions. `selection` comes back in so
+  // that what has been excluded can still be un-excluded; see `facetOptions`.
+  const entityFacets = computed<readonly FacetOptions[]>(() =>
+    levels.value ? facetOptions(levels.value.entity, visible.value.nodes, selection.value) : [],
+  )
+  const relationFacets = computed<readonly FacetOptions[]>(() =>
+    levels.value ? facetOptions(levels.value.relation, visible.value.edges, selection.value) : [],
   )
 
   /** What the collapsed headline reports. A filter that hides invisibly is B30's defect as a feature. */
