@@ -1,21 +1,34 @@
 <script setup lang="ts">
+/**
+ * "Download this, as…" — the ↓ that unfolds into the formats on offer.
+ *
+ * Presentational, and it decides nothing about what downloading means: it reports the format that
+ * was chosen. A persisted diagram answers by navigating to its download address; the graph explorer
+ * answers by serialising what is on screen. Both are the same affordance to a reader, and it used
+ * to take a `diagramId` and construct that address itself — which is why the graph explorer arrived
+ * with two bare buttons of its own instead, and looked like a different feature.
+ */
 import { ref } from 'vue'
 
-const props = defineProps<{ diagramId: string; diagramName: string }>()
 const open = ref(false)
+const emit = defineEmits<{ select: [format: 'png' | 'svg'] }>()
 
-const download = (format: 'png' | 'svg') => {
+const choose = (format: 'png' | 'svg') => {
   open.value = false
-  window.location.href =
-    `/api/diagrams/${encodeURIComponent(props.diagramId)}/download?format=${format}`
+  emit('select', format)
 }
 </script>
 
 <template>
   <div class="dl-wrap">
+    <!-- Glyph only, so the name is given rather than read: a `title` is not reliably an
+         accessible name once the button has text content of its own, and "↓" is what that text
+         is. The same reason the viewport controls carry one. -->
     <button
       class="dl-btn"
       title="Download"
+      aria-label="Download"
+      :aria-expanded="open"
       @click.stop.prevent="open = !open"
     >
       ↓
@@ -31,13 +44,13 @@ const download = (format: 'png' | 'svg') => {
     >
       <button
         class="dl-opt"
-        @click.stop="download('svg')"
+        @click.stop="choose('svg')"
       >
         SVG
       </button>
       <button
         class="dl-opt"
-        @click.stop="download('png')"
+        @click.stop="choose('png')"
       >
         PNG
       </button>

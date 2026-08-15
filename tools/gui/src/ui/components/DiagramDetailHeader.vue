@@ -3,7 +3,7 @@
  * promote/edit/sync/delete action row. Pure display + button clicks emitted up — the sync
  * and delete flows themselves live in DiagramSyncPanel/DiagramDeletePanel. */
 import type { DiagramDetail } from '../../domain'
-import DownloadMenu from './DownloadMenu.vue'
+import DiagramDownloadMenu from './DiagramDownloadMenu.vue'
 
 defineProps<{
   detail: DiagramDetail
@@ -26,10 +26,7 @@ const emit = defineEmits<{ sync: []; delete: [] }>()
     <h1 class="pg-title">
       {{ detail.name }}
     </h1>
-    <DownloadMenu
-      :diagram-id="diagramId"
-      :diagram-name="detail.name"
-    />
+    <DiagramDownloadMenu :diagram-id="diagramId" />
     <RouterLink
       v-if="!isGlobalDiagram"
       :to="{ path: '/promote', query: { diagram_id: diagramId } }"

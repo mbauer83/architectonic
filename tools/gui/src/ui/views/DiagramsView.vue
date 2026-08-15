@@ -7,7 +7,7 @@ import { modelServiceKey } from '../keys'
 import { LIST_TIERS } from '../lib/tierUrlState'
 import { tierFromIsGlobal } from '../components/TierBadge.helpers'
 import { useDiagramsListState } from '../composables/useDiagramsListState'
-import DownloadMenu from '../components/DownloadMenu.vue'
+import DiagramDownloadMenu from '../components/DiagramDownloadMenu.vue'
 import GroupSelector from '../components/GroupSelector.vue'
 import TierBadge from '../components/TierBadge.vue'
 import TierFacet from '../components/TierFacet.vue'
@@ -185,9 +185,8 @@ const diagramTypeLabel = (diagramType: string): string => {
                 {{ d.artifact_id }}
               </div>
             </RouterLink>
-            <DownloadMenu
+            <DiagramDownloadMenu
               :diagram-id="d.artifact_id"
-              :diagram-name="d.name"
               class="card-dl"
             />
           </div>

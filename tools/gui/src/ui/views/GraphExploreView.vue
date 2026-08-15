@@ -7,6 +7,7 @@ import { modelServiceKey } from '../keys'
 import { useQuery } from '../composables/useQuery'
 import { useForceGraph, type GraphNode, type GraphEdge } from '../composables/useForceGraph'
 import { useGraphFacets } from '../composables/useGraphFacets'
+import DownloadMenu from '../components/DownloadMenu.vue'
 import GraphFilterPanel from '../components/GraphFilterPanel.vue'
 import {
   downloadBlob, rasterise, snapshotFilename, snapshotSvgMarkup,
@@ -507,23 +508,9 @@ const showExpandBadge = (n: GraphNode) =>
                 @toggle="facets.toggle"
                 @reset="facets.reset"
               />
-              <div class="spacing-controls">
-                <span class="spacing-label">Snapshot:</span>
-                <button
-                  class="spacing-btn"
-                  title="Download the current view as SVG"
-                  @click="takeSnapshot('svg')"
-                >
-                  SVG
-                </button>
-                <button
-                  class="spacing-btn"
-                  title="Download the current view as PNG"
-                  @click="takeSnapshot('png')"
-                >
-                  PNG
-                </button>
-              </div>
+              <!-- The same affordance a diagram offers, answered differently: there is no
+                   persisted artifact here, so the bytes are the current view serialised. -->
+              <DownloadMenu @select="takeSnapshot" />
               <GraphLayoutToolbar
                 :viewpoint-active="selectedViewpointSlug !== null"
                 :layout-mode="layoutMode"

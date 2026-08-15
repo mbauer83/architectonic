@@ -2,7 +2,8 @@ import { test, expect } from './coverage-fixture'
 
 /**
  * A picture of the graph as it stands, taken in a browser — which is the only place it can be
- * taken at all. The markup builder is unit-tested; what those tests cannot show is that the thing
+ * taken at all, and through the same menu a diagram offers — the affordance is shared, only what
+ * downloading *means* differs. The markup builder is unit-tested; what those tests cannot show is that the thing
  * downloads, that the bytes are a usable file, and that the PNG path finds a canvas willing to
  * hand them back. `toBlob` throws on a tainted canvas, so a single remote reference anywhere in
  * the picture would break rasterising and nothing short of drawing it would say so.
@@ -20,7 +21,10 @@ test('the SVG snapshot downloads and stands alone', async ({ page }) => {
 
   const [download] = await Promise.all([
     page.waitForEvent('download'),
-    page.getByRole('button', { name: 'SVG' }).click(),
+    (async () => {
+      await page.getByRole('button', { name: 'Download' }).click()
+      await page.getByRole('button', { name: 'SVG', exact: true }).click()
+    })(),
   ])
 
   expect(download.suggestedFilename()).toMatch(/\.svg$/)
@@ -43,7 +47,10 @@ test('the PNG snapshot downloads as a raster', async ({ page }) => {
 
   const [download] = await Promise.all([
     page.waitForEvent('download'),
-    page.getByRole('button', { name: 'PNG' }).click(),
+    (async () => {
+      await page.getByRole('button', { name: 'Download' }).click()
+      await page.getByRole('button', { name: 'PNG', exact: true }).click()
+    })(),
   ])
 
   expect(download.suggestedFilename()).toMatch(/\.png$/)
