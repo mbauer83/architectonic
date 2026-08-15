@@ -27,7 +27,7 @@
 .status--active { background: #dcfce7; color: #166534; }
 .status--deprecated { background: #fee2e2; color: #991b1b; }
 
-/* A docked sidebar while the viewport owns the screen — see `DiagramSidebarDock.vue`.
+/* A docked sidebar while the viewport owns the screen — see `FullscreenDock.vue`.
 
    Keyed on `.viewport-host` rather than on any one surface's own class: a rendered diagram, a
    viewpoint's diagram and the graph explorer all put a pan/zoom viewport fullscreen and dock a
@@ -48,6 +48,32 @@
   overflow-y: auto;
   border-radius: 0;
   box-shadow: -8px 0 24px rgb(15 23 42 / 12%);
+}
+
+/* The graph's controls while the viewport owns the screen: floating over it at top left, opposite
+   the viewport controls at top right, rather than in a page header the browser does not paint.
+   Embedded it is laid out by the page and this says nothing about it — the whole point of the dock
+   is that one component is in two places rather than two components in one each. */
+.viewport-host:fullscreen > .graph-toolbar {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 3;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  max-width: calc(100% - 420px);
+}
+.viewport-host:fullscreen > .graph-toolbar .toolbar-body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  background: rgb(255 255 255 / 92%);
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 6px 10px;
+  box-shadow: 0 6px 20px rgb(15 23 42 / 10%);
 }
 
 /* Flies in from the right on selection and back out on deselection. `transform` and `opacity` only,

@@ -1,7 +1,10 @@
 <script setup lang="ts">
 /**
- * Where the diagram sidebar sits: beside the canvas in the layout, or over it once the canvas has
+ * Where a viewport's companion chrome sits: in the page layout, or over the viewport once it has
  * taken the whole screen.
+ *
+ * Used for a sidebar and for a toolbar, which is why it is named after the mechanism rather than
+ * after either of them. Both face the same fact and the same two options.
  *
  * Fullscreen is the browser's, on the canvas element (`useFullscreen`), and the browser paints
  * *nothing* outside that element — so a sidebar living in the layout's third grid column simply
@@ -30,8 +33,14 @@ defineProps<{
    */
   fullscreenHost: HTMLElement | null
   isFullscreen: boolean
-  /** Whether anything is selected. Gates the fullscreen presentation only — never the docked one. */
-  hasSelection: boolean
+  /**
+   * Whether to present it while fullscreen. Gates the fullscreen presentation only — never the
+   * docked one, which is laid out by the page and is the page's business.
+   *
+   * A sidebar passes "something is selected": over a viewport filling the screen, a permanently
+   * docked panel covers the drawing most of the time. A toolbar passes whether it is expanded.
+   */
+  revealed: boolean
 }>()
 </script>
 
@@ -44,7 +53,7 @@ defineProps<{
       name="sidebar-fly"
       appear
     >
-      <slot v-if="!isFullscreen || hasSelection" />
+      <slot v-if="!isFullscreen || revealed" />
     </Transition>
   </Teleport>
 </template>

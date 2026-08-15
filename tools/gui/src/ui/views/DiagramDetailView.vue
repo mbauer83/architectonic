@@ -19,7 +19,7 @@ import DiagramSplitLayout from '../components/DiagramSplitLayout.vue'
 import DiagramDetailHeader from '../components/DiagramDetailHeader.vue'
 import DiagramC4Navigation from '../components/DiagramC4Navigation.vue'
 import DiagramEntitySidebar from '../components/DiagramEntitySidebar.vue'
-import DiagramSidebarDock from '../components/DiagramSidebarDock.vue'
+import FullscreenDock from '../components/FullscreenDock.vue'
 import DiagramSyncPanel from '../components/DiagramSyncPanel.vue'
 import DiagramDeletePanel from '../components/DiagramDeletePanel.vue'
 import DiagramMatrixView from '../components/DiagramMatrixView.vue'
@@ -214,10 +214,10 @@ const executeDelete = () => {
         </template>
 
         <template #sidebar>
-          <DiagramSidebarDock
+          <FullscreenDock
             :fullscreen-host="containerRef"
             :is-fullscreen="fullscreen.isFullscreen.value"
-            :has-selection="selection.hasSelection.value"
+            :revealed="selection.hasSelection.value"
           >
             <DiagramEntitySidebar
               :entities="diagramEntities"
@@ -241,7 +241,7 @@ const executeDelete = () => {
               @entity-meta-save="selection.patchEntityMetadata($event)"
               @entity-edited="load"
             />
-          </DiagramSidebarDock>
+          </FullscreenDock>
         </template>
       </DiagramSplitLayout>
 

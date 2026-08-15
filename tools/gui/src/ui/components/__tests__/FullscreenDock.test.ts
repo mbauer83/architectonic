@@ -9,7 +9,7 @@
 
 import { afterEach, describe, expect, it } from 'vitest'
 import { createApp, defineComponent, h, nextTick, ref, type App } from 'vue'
-import DiagramSidebarDock from '../DiagramSidebarDock.vue'
+import FullscreenDock from '../FullscreenDock.vue'
 
 /** Stands in for the sidebar, and counts its own mounts so a remount cannot pass unnoticed. */
 let mountCount = 0
@@ -26,7 +26,7 @@ let mounted: App | null = null
 interface DockProps {
   fullscreenHost: HTMLElement | null
   isFullscreen: boolean
-  hasSelection: boolean
+  revealed: boolean
 }
 
 const render = (props: DockProps) => {
@@ -34,7 +34,7 @@ const render = (props: DockProps) => {
   const container = document.createElement('div')
   document.body.appendChild(container)
   const app = createApp({
-    render: () => h(DiagramSidebarDock, { ...props }, { default: () => h(Sidebar) }),
+    render: () => h(FullscreenDock, { ...props }, { default: () => h(Sidebar) }),
   })
   app.mount(container)
   mounted = app
@@ -55,9 +55,9 @@ afterEach(() => {
 
 describe('while the canvas is docked in the layout', () => {
   it('renders the sidebar in place, selected or not', () => {
-    for (const hasSelection of [true, false]) {
+    for (const revealed of [true, false]) {
       const host = freshHost()
-      const container = render({ fullscreenHost: host, isFullscreen: false, hasSelection })
+      const container = render({ fullscreenHost: host, isFullscreen: false, revealed })
       expect(container.querySelector('.sidebar')).not.toBeNull()
       expect(host.querySelector('.sidebar')).toBeNull()
       mounted?.unmount()
@@ -68,7 +68,7 @@ describe('while the canvas is docked in the layout', () => {
   it('adds no wrapper around it, because the sidebar is the grid child', () => {
     // A wrapper would become the grid child and leave the sidebar's `position: sticky` resolving
     // against an element of its own height — working layout, silently dead stickiness.
-    const container = render({ fullscreenHost: freshHost(), isFullscreen: false, hasSelection: true })
+    const container = render({ fullscreenHost: freshHost(), isFullscreen: false, revealed: true })
     expect(container.firstElementChild?.classList.contains('sidebar')).toBe(true)
   })
 })
@@ -76,19 +76,19 @@ describe('while the canvas is docked in the layout', () => {
 describe('once the canvas owns the screen', () => {
   it('moves the sidebar into the fullscreen host when something is selected', () => {
     const host = freshHost()
-    render({ fullscreenHost: host, isFullscreen: true, hasSelection: true })
+    render({ fullscreenHost: host, isFullscreen: true, revealed: true })
     expect(host.querySelector('.sidebar')).not.toBeNull()
   })
 
   it('withholds it while nothing is selected, so the diagram is not covered for no reason', () => {
     const host = freshHost()
-    render({ fullscreenHost: host, isFullscreen: true, hasSelection: false })
+    render({ fullscreenHost: host, isFullscreen: true, revealed: false })
     expect(host.querySelector('.sidebar')).toBeNull()
   })
 
   it('stays in place while the host element has not mounted yet', () => {
     // Teleporting to null throws in Vue; before the canvas exists there is nowhere to go.
-    const container = render({ fullscreenHost: null, isFullscreen: true, hasSelection: true })
+    const container = render({ fullscreenHost: null, isFullscreen: true, revealed: true })
     expect(container.querySelector('.sidebar')).not.toBeNull()
   })
 
@@ -103,8 +103,8 @@ describe('once the canvas owns the screen', () => {
     const app = createApp({
       render: () =>
         h(
-          DiagramSidebarDock,
-          { fullscreenHost: host, isFullscreen: isFullscreen.value, hasSelection: true },
+          FullscreenDock,
+          { fullscreenHost: host, isFullscreen: isFullscreen.value, revealed: true },
           { default: () => h(Sidebar) },
         ),
     })

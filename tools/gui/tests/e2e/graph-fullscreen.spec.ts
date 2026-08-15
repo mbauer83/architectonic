@@ -84,3 +84,37 @@ test('panning across the canvas does not deselect', async ({ page }) => {
 
   await expect(page.locator('aside.graph-sidebar')).toContainText('Artifact ID')
 })
+
+test('the toolbar is embedded in the page and floats only over a fullscreen canvas', async ({
+  page,
+}) => {
+  await page.goto(GRAPH)
+  await expect(page.locator('svg g.graph-node').first()).toBeVisible()
+
+  // Embedded: laid out by the page's header row, and its controls are simply there.
+  const toolbar = page.locator('.graph-toolbar')
+  await expect(toolbar).not.toHaveClass(/graph-toolbar--floating/)
+  await expect(page.getByRole('button', { name: 'Show controls' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Filter', exact: true })).toBeVisible()
+
+  await page.locator('.viewport-btn[aria-label="View fullscreen"]').click()
+  await expect
+    .poll(async () => page.evaluate(() => document.fullscreenElement !== null))
+    .toBe(true)
+
+  // Floating: inside the fullscreen element, because nothing outside it is painted at all.
+  await expect(toolbar).toHaveClass(/graph-toolbar--floating/)
+  expect(
+    await toolbar.evaluate((el) => document.fullscreenElement?.contains(el) ?? false),
+  ).toBe(true)
+
+  // Collapsed to a glyph, since the graph is wanted continuously and the controls occasionally.
+  const disclosure = page.getByRole('button', { name: 'Show controls' })
+  await expect(disclosure).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Filter', exact: true })).toBeHidden()
+
+  await disclosure.click()
+
+  await expect(page.getByRole('button', { name: 'Filter', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Hide controls' })).toBeVisible()
+})

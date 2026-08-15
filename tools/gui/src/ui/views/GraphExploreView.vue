@@ -12,7 +12,7 @@ import GraphCanvas from '../components/GraphCanvas.vue'
 import { useViewpointExecution } from '../composables/useViewpointExecution'
 import { useViewpointParameterPrompt } from '../composables/useViewpointParameterPrompt'
 import type { ResolvedViewpointExecution } from '../composables/useViewpointParameterPrompt'
-import DiagramSidebarDock from '../components/DiagramSidebarDock.vue'
+import FullscreenDock from '../components/FullscreenDock.vue'
 import GraphExploreSidebar from '../components/GraphExploreSidebar.vue'
 import AggregationBanner from '../components/AggregationBanner.vue'
 import ExecutionReferenceBar from '../components/ExecutionReferenceBar.vue'
@@ -121,6 +121,10 @@ const selectedEdge = ref<GraphEdge | null>(null)
  * graph filling the screen a permanent panel covers the thing being read, so there has to be a way
  * to put it away that is not "select something else".
  */
+/** Whether the floating toolbar is open. Only consulted while fullscreen; embedded it is always
+ *  shown, because the page header is a place for controls and a canvas is not. */
+const toolbarOpen = ref(false)
+
 const clearGraphSelection = () => {
   selectedId.value = null
   selectedEdge.value = null
@@ -427,33 +431,66 @@ const showExpandBadge = (n: GraphNode) =>
         >
           View as… (unsaved)
         </RouterLink>
-        <div
-          v-if="!adHoc"
-          class="spacing-controls"
+        <!-- In the header row normally; over the canvas once it owns the screen, where the page's
+             own header is not painted at all. The same dock the sidebar uses, so the two move by
+             one mechanism. Collapsed to a glyph while floating: the controls are wanted
+             occasionally and the graph is wanted continuously. -->
+        <FullscreenDock
+          :fullscreen-host="canvasRef?.frameEl ?? null"
+          :is-fullscreen="canvasRef?.isFullscreen ?? false"
+          revealed
         >
-          <span class="spacing-label">Viewpoint:</span>
-          <ViewpointSelect
-            :model-value="selectedViewpointSlug"
-            :viewpoints="viewpoints"
-            @select="onSelectViewpoint"
-          />
-        </div>
-        <GraphFilterPanel
-          v-bind="facets.panelProps.value"
-          @toggle="facets.toggle"
-          @reset="facets.reset"
-        />
-        <GraphLayoutToolbar
-          :viewpoint-active="selectedViewpointSlug !== null"
-          :layout-mode="layoutMode"
-          :layout-modes="FREE_LAYOUT_MODES"
-          :layout-override="layoutOverride"
-          :active-spacing="spacing.label"
-          :radial-available="anchorIds.length > 0"
-          @switch-layout="switchLayout"
-          @set-exploration-layout="setExplorationLayout"
-          @apply-preset="applyPreset"
-        />
+          <div
+            class="graph-toolbar"
+            :class="{ 'graph-toolbar--floating': canvasRef?.isFullscreen }"
+          >
+            <button
+              v-if="canvasRef?.isFullscreen"
+              type="button"
+              class="toolbar-disclosure"
+              :aria-expanded="toolbarOpen"
+              aria-controls="graph-toolbar-body"
+              :title="toolbarOpen ? 'Hide controls' : 'Show controls'"
+              :aria-label="toolbarOpen ? 'Hide controls' : 'Show controls'"
+              @click="toolbarOpen = !toolbarOpen"
+            >
+              {{ toolbarOpen ? '×' : '☰' }}
+            </button>
+            <div
+              v-show="!canvasRef?.isFullscreen || toolbarOpen"
+              id="graph-toolbar-body"
+              class="toolbar-body"
+            >
+              <div
+                v-if="!adHoc"
+                class="spacing-controls"
+              >
+                <span class="spacing-label">Viewpoint:</span>
+                <ViewpointSelect
+                  :model-value="selectedViewpointSlug"
+                  :viewpoints="viewpoints"
+                  @select="onSelectViewpoint"
+                />
+              </div>
+              <GraphFilterPanel
+                v-bind="facets.panelProps.value"
+                @toggle="facets.toggle"
+                @reset="facets.reset"
+              />
+              <GraphLayoutToolbar
+                :viewpoint-active="selectedViewpointSlug !== null"
+                :layout-mode="layoutMode"
+                :layout-modes="FREE_LAYOUT_MODES"
+                :layout-override="layoutOverride"
+                :active-spacing="spacing.label"
+                :radial-available="anchorIds.length > 0"
+                @switch-layout="switchLayout"
+                @set-exploration-layout="setExplorationLayout"
+                @apply-preset="applyPreset"
+              />
+            </div>
+          </div>
+        </FullscreenDock>
       </div>
       <ViewpointExecutionDiagnostics
         v-if="selectedViewpointSlug !== null && !viewpointPrompt.visible.value
@@ -519,10 +556,10 @@ const showExpandBadge = (n: GraphNode) =>
          browser paints nothing outside a fullscreen element and a docked panel would simply
          vanish. Revealed on selection there, since a permanent panel over a full-screen graph
          covers the thing being read most of the time. Same component, same rule, as a diagram. -->
-    <DiagramSidebarDock
+    <FullscreenDock
       :fullscreen-host="canvasRef?.frameEl ?? null"
       :is-fullscreen="canvasRef?.isFullscreen ?? false"
-      :has-selection="selectedId !== null || selectedEdge !== null"
+      :revealed="selectedId !== null || selectedEdge !== null"
     >
       <GraphExploreSidebar
         :selected-id="selectedId"
@@ -532,11 +569,24 @@ const showExpandBadge = (n: GraphNode) =>
         :loading="selectedDetail.loading.value"
         :error-message="selectedDetail.errorMessage.value"
       />
-    </DiagramSidebarDock>
+    </FullscreenDock>
   </div>
 </template>
 
 <style scoped>
+/* Embedded, the wrapper and its body are transparent: the three control groups are laid out by the
+   page's own header row, exactly as they were before there was anything to dock. `display: contents`
+   is what says "I am here for the dock, not for the layout".
+   Floating, it stops being three items in someone else's row and becomes one box of its own. */
+.graph-toolbar, .toolbar-body { display: contents; }
+.graph-toolbar--floating { display: flex; }
+.toolbar-disclosure {
+  width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center;
+  background: rgb(255 255 255 / 92%); border: 1px solid #d1d5db; border-radius: 6px;
+  font-size: 15px; line-height: 1; cursor: pointer; color: #374151; flex-shrink: 0;
+}
+.toolbar-disclosure:hover { background: #fff; }
+
 .graph-layout { display: flex; height: calc(100vh - 96px); gap: 0; margin: -24px; }
 
 /* min-width: 0 — a flex item defaults to min-width: auto, so the canvas column was sized by

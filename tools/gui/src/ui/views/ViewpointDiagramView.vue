@@ -21,7 +21,7 @@ import { useDiagramSvgSelection, type DiagramSvgSelectionDetail } from '../compo
 import { useSelectedConnectionWitnessChain } from '../composables/useSelectedConnectionWitnessChain'
 import DiagramSplitLayout from '../components/DiagramSplitLayout.vue'
 import DiagramEntitySidebar from '../components/DiagramEntitySidebar.vue'
-import DiagramSidebarDock from '../components/DiagramSidebarDock.vue'
+import FullscreenDock from '../components/FullscreenDock.vue'
 import ViewpointExecutionDiagnostics from '../components/ViewpointExecutionDiagnostics.vue'
 import ViewpointExecutionError from '../components/ViewpointExecutionError.vue'
 import ViewpointParameterPrompt from '../components/ViewpointParameterPrompt.vue'
@@ -276,10 +276,10 @@ onMounted(() => { if (props.adHoc || slug.value) void load() })
       </template>
 
       <template #sidebar>
-        <DiagramSidebarDock
+        <FullscreenDock
           :fullscreen-host="containerRef"
           :is-fullscreen="fullscreen.isFullscreen.value"
-          :has-selection="selection.hasSelection.value"
+          :revealed="selection.hasSelection.value"
         >
           <DiagramEntitySidebar
             :entities="diagramEntities"
@@ -297,7 +297,7 @@ onMounted(() => { if (props.adHoc || slug.value) void load() })
             @update:edge-label-input="selection.edgeLabelInput.value = $event"
             @save-edge-label="selection.saveEdgeLabel()"
           />
-        </DiagramSidebarDock>
+        </FullscreenDock>
       </template>
     </DiagramSplitLayout>
     <div
