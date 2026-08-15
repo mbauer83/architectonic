@@ -110,9 +110,20 @@ line to a node that is not drawn says nothing. The reverse holds too: excluding 
 also removes the elements it leaves with nothing to show, so filtering down to one kind of
 relationship gives you that structure rather than that structure surrounded by unconnected boxes.
 
+Excluding a relationship type also removes anything it **cuts off from the element you are
+exploring** — not only elements left with nothing, but whole clusters left with no surviving path
+back. The graph explorer is a walk: everything on it arrived by being reachable from your subject,
+and the radial layout places elements by hop distance from it. A cluster with no path back has no
+hop distance, so leaving it on screen draws it as though it were one hop further out than
+everything else.
+
 Two things are never removed this way. An element that had no relationships to begin with stays,
 since the filter took none from it. And the element you are exploring stays, whatever you exclude —
 it is the subject of the view.
+
+Because the consequence is not proportional to the cause — excluding one relationship type can take
+a third of the graph with it — the control reports how much survives: `Filter · 1 excluded · 22 of
+27 shown`.
 
 The collapsed control always reports what it is doing — `Filter · 3 excluded`, with **Clear** beside
 it — so a graph is never quietly incomplete. (Clear empties the filter; the viewport's **Reset**,

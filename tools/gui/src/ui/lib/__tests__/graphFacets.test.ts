@@ -201,6 +201,63 @@ describe('narrowing the graph', () => {
     expect(result.edges).toEqual(EDGES)
   })
 
+  it('removes a whole subgraph the filter cut off from the anchor, not only lone elements', () => {
+    // The case that matters on a walk: a cluster keeps its own relations and loses every path back
+    // to the element being explored. Nothing about it is isolated — it is simply no longer an
+    // answer to "what does this touch", and the radial layout would file it on a ring beyond the
+    // farthest real one, drawing it as though it were one hop further out than the rest.
+    const far = [node('FAR@1', 'business', 'business-process'), node('FAR@2', 'business', 'business-process')]
+    const edges = [
+      ...EDGES,
+      edge('GOL@2', 'FAR@1', 'archimate-association'),   // the only path from the walk to them
+      edge('FAR@1', 'FAR@2', 'archimate-realization'),   // and they hold each other
+    ]
+
+    const result = narrowed(
+      ARCHIMATE, { connection_type: ['archimate-association'] }, [...NODES, ...far], edges,
+      new Set(['GOL@1']),
+    )
+
+    expect(result.nodes.map((n) => n.id)).not.toContain('FAR@1')
+    expect(result.nodes.map((n) => n.id)).not.toContain('FAR@2')
+    // And the relation that held them to each other goes with them, rather than floating.
+    expect(result.edges.some((e) => e.source === 'FAR@1' || e.target === 'FAR@1')).toBe(false)
+  })
+
+  it('keeps a cluster that still has a path back, however many hops it takes', () => {
+    const far = [node('FAR@1', 'business', 'business-process'), node('FAR@2', 'business', 'business-process')]
+    const edges = [
+      ...EDGES,
+      edge('GOL@2', 'FAR@1', 'archimate-realization'),
+      edge('FAR@1', 'FAR@2', 'archimate-realization'),
+    ]
+
+    // GOL@1 → GOL@2 → FAR@1 → FAR@2: three hops, all surviving.
+    const result = narrowed(
+      ARCHIMATE, { connection_type: ['archimate-influence'] }, [...NODES, ...far], edges,
+      new Set(['GOL@1']),
+    )
+
+    expect(result.nodes.map((n) => n.id)).toContain('FAR@2')
+  })
+
+  it('keeps a disconnected cluster where there is no anchor to be disconnected from', () => {
+    // A viewpoint's result is a set rather than a neighbourhood, and the assurance explorer has an
+    // unanchored route that opens on the whole visible graph. Reachability needs somewhere to start.
+    const far = [node('FAR@1', 'business', 'business-process'), node('FAR@2', 'business', 'business-process')]
+    const edges = [
+      ...EDGES,
+      edge('GOL@2', 'FAR@1', 'archimate-association'),
+      edge('FAR@1', 'FAR@2', 'archimate-realization'),
+    ]
+
+    const result = narrowed(
+      ARCHIMATE, { connection_type: ['archimate-association'] }, [...NODES, ...far], edges,
+    )
+
+    expect(result.nodes.map((n) => n.id)).toContain('FAR@1')
+  })
+
   it('narrows the same graph the same way under the other meta-ontology', () => {
     // The selection is keyed on *that* chain's level ids, and nothing in the module had to change.
     const result = narrowed(OTHER, { tier: ['application'] }, NODES, EDGES)

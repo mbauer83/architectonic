@@ -40,6 +40,8 @@ const render = (props: Record<string, unknown> = {}) => {
         relationFacets: RELATION_FACETS,
         selection: {},
         excluded: 0,
+        shown: 3,
+        loaded: 3,
         onToggle: (...args: unknown[]) => events.push(['toggle', ...args]),
         onReset: () => events.push(['reset']),
         ...props,
@@ -67,6 +69,20 @@ describe('collapsed, it still says what it is doing', () => {
 
     expect(summaryText(host)).toBe('▸ Filter')
     expect(host.querySelector('.reset')).toBeNull()
+  })
+
+  it('reports how much of the graph survives, since the consequence is not proportional to the cause', () => {
+    // Excluding one relationship type takes with it everything it cut off from the anchor, which
+    // was measured at a third of a graph. A reader who cannot see that has to infer it.
+    const host = render({ selection: { domain: ['motivation'] }, excluded: 1, shown: 22, loaded: 33 })
+
+    expect(summaryText(host)).toContain('22 of 33 shown')
+  })
+
+  it('says nothing about the count when the filter took nothing away', () => {
+    const host = render({ selection: { domain: ['motivation'] }, excluded: 1, shown: 33, loaded: 33 })
+
+    expect(summaryText(host)).not.toContain('of 33')
   })
 
   it('reports the excluded count and offers a clear on the same line', () => {

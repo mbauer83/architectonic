@@ -122,6 +122,35 @@ export function excludedCount(selection: FacetSelection): number {
   return Object.values(selection).reduce((total, values) => total + values.length, 0)
 }
 
+/** Everything joined to *seeds* by a surviving edge, however many hops away. */
+const reachableFrom = (
+  seeds: readonly string[], edges: readonly FacetableEdge[],
+): ReadonlySet<string> => {
+  const adjacency = new Map<string, string[]>()
+  const link = (from: string, to: string) => {
+    const known = adjacency.get(from)
+    if (known) known.push(to)
+    else adjacency.set(from, [to])
+  }
+  for (const edge of edges) { link(edge.source, edge.target); link(edge.target, edge.source) }
+
+  const seen = new Set(seeds)
+  const pending = [...seeds]
+  while (pending.length > 0) {
+    for (const next of adjacency.get(pending.pop() as string) ?? []) {
+      if (!seen.has(next)) { seen.add(next); pending.push(next) }
+    }
+  }
+  return seen
+}
+
+/**
+ * Whether each node still holds a relation, for a surface with no anchor to measure reachability
+ * from. The caller keeps anything this does not name *and* that never had a relation to lose.
+ */
+const stillRelated = (edges: readonly FacetableEdge[]): ReadonlySet<string> =>
+  new Set(edges.flatMap((edge) => [edge.source, edge.target]))
+
 /**
  * The graph *narrowed* to what the selection leaves.
  *
@@ -131,19 +160,26 @@ export function excludedCount(selection: FacetSelection): number {
  * 2. An edge goes when either endpoint goes, as well as when the relation itself is excluded: an
  *    edge to a node that is not drawn is a line to nowhere, the same defect B31 fixed at the other
  *    end of the edge.
- * 3. **An element the filter left with no relation at all goes too.** Filtering out a relationship
- *    type otherwise strands every element that had only that kind of relation, and a scatter of
- *    unconnected boxes is what the filter is for getting rid of.
+ * 3. **What the filter cut off from the anchor goes too.** On a surface with an anchor the graph is
+ *    a walk — everything on it arrived by being reachable from the element being explored, and the
+ *    radial layout places it by hop distance from that element. Excluding a relationship type can
+ *    leave whole clusters with no surviving path back: measured on a two-hop graph here, excluding
+ *    association left 9 elements adrift of 57, and excluding association and influence together
+ *    left 11 of 33. They are no longer answering the question the view asks, and the layout has to
+ *    invent a ring beyond the farthest real one to put them on.
  *
- * Rule 3 is stated as *the filter removed every relation it had*, not as "hide isolated elements".
- * The difference is the two cases the blunter rule gets wrong: an element that never had a relation
- * had none removed and stays, so an unfiltered graph still shows everything it loaded and a
- * single-element canvas is not blank; and `alwaysKeep` holds the elements a view cannot lose —
- * the one being explored above all, since filtering out its relationships would otherwise empty
- * the canvas and leave nothing to explore from.
+ *    This subsumes the simpler rule it replaced — an element the filter left with no relation at
+ *    all is unreachable — but only where there is an anchor to be reachable *from*. Without one,
+ *    stranding is still the rule: a viewpoint's result is a set rather than a neighbourhood, and
+ *    the assurance explorer's unanchored route opens on the whole visible graph.
  *
- * One pass reaches the fixed point: removing a stranded element removes no further edge, because
- * every edge it had is already gone.
+ * Both forms of rule 3 apply **only while something is excluded**. An unfiltered graph shows
+ * everything it loaded, isolated elements included: nothing was taken from them, and a rule that
+ * hid them would be hiding on no one's instruction.
+ *
+ * `alwaysKeep` holds the elements the surface cannot lose and is what reachability is measured
+ * from — the element being explored above all, which is kept whatever is excluded, since filtering
+ * out its relationships would otherwise empty the canvas and leave nothing to explore from.
  */
 export function narrowed<N extends FacetableNode, E extends FacetableEdge>(
   levels: ClassificationLevels,
@@ -161,13 +197,22 @@ export function narrowed<N extends FacetableNode, E extends FacetableEdge>(
       !isExcluded(selection, levels.relation, edge),
   )
 
-  const hadAnyRelation = new Set(edges.flatMap((edge) => [edge.source, edge.target]))
-  const stillRelated = new Set(keptEdges.flatMap((edge) => [edge.source, edge.target]))
-  const keptNodes = survivingNodes.filter(
-    (node) => stillRelated.has(node.id) || !hadAnyRelation.has(node.id) || alwaysKeep.has(node.id),
-  )
+  if (excludedCount(selection) === 0) return { nodes: survivingNodes, edges: keptEdges }
 
-  // The edges are already sound: every one joins two surviving nodes, and a node dropped just now
-  // is one no kept edge touches.
-  return { nodes: keptNodes, edges: keptEdges }
+  const anchors = survivingNodes.filter((node) => alwaysKeep.has(node.id)).map((node) => node.id)
+  const hadRelation = new Set(edges.flatMap((edge) => [edge.source, edge.target]))
+  const keep = anchors.length > 0 ? reachableFrom(anchors, keptEdges) : stillRelated(keptEdges)
+  const keptNodes = survivingNodes.filter(
+    (node) => keep.has(node.id)
+      || alwaysKeep.has(node.id)
+      // Nothing was taken from an element that never had a relation, anchor or no anchor.
+      || !hadRelation.has(node.id),
+  )
+  const drawn = new Set(keptNodes.map((node) => node.id))
+
+  return {
+    nodes: keptNodes,
+    // An edge whose endpoint has just gone with the rest of its cluster goes with it.
+    edges: keptEdges.filter((edge) => drawn.has(edge.source) && drawn.has(edge.target)),
+  }
 }

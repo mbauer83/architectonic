@@ -110,6 +110,8 @@ export function useGraphFacets<N extends FacetableNode, E extends FacetableEdge>
       relationFacets: relationFacets.value,
       selection: selection.value,
       excluded: excluded.value,
+      shown: visible.value.nodes.length,
+      loaded: input.nodes.value.length,
     })),
   }
 }

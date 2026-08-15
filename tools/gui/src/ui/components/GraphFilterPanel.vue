@@ -25,6 +25,14 @@ const props = defineProps<{
   relationFacets: readonly FacetOptions[]
   selection: FacetSelection
   excluded: number
+  /**
+   * How much of the loaded graph is drawn. Reported because the consequence of a filter is not
+   * proportional to it: on an anchored walk, excluding one relationship type takes with it
+   * everything it cut off from the anchor, which was measured at a third of a graph. A reader who
+   * cannot see that happen has to infer it from the picture getting smaller.
+   */
+  shown: number
+  loaded: number
 }>()
 
 const emit = defineEmits<{
@@ -73,6 +81,10 @@ const groups = computed(() => [
           v-if="excluded > 0"
           class="count"
         >· {{ excluded }} excluded</span>
+        <span
+          v-if="excluded > 0 && shown < loaded"
+          class="shown"
+        >· {{ shown }} of {{ loaded }} shown</span>
       </button>
       <!-- "Clear", not "Reset": the viewport control beside it on this same surface is a Reset,
            and it resets the framing rather than the filter. Two controls a step apart under one
@@ -161,6 +173,7 @@ const groups = computed(() => [
 }
 .chevron { margin-right: 4px; }
 .count { color: #b45309; font-weight: 600; }
+.shown { color: #6b7280; font-weight: 500; margin-left: 4px; }
 .reset {
   border: 1px solid #d1d5db;
   border-radius: 6px;
