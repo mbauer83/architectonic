@@ -6957,6 +6957,8 @@ export interface components {
         DocumentTypeResponse: {
             /** Abbreviation */
             abbreviation: string;
+            /** Attribution */
+            attribution?: string;
             /** Doc Type */
             doc_type: string;
             /** Extra Frontmatter Fields */

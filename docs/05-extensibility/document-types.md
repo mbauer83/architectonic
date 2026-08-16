@@ -63,6 +63,25 @@ type still satisfies it, so a template stays usable on a host that cannot create
 The earlier `required_entity_type_connections` / `suggested_entity_type_connections` spelling is
 still accepted, and reads as a list of entity terms. Schemas are not rewritten on upgrade.
 
+## arc42
+
+Every repository is scaffolded with an `arc42` document type: the template's twelve sections, each
+declaring the model content that section expects. Creating one produces the whole skeleton, and
+verification then says what is still missing.
+
+Only two sections require anything, so a fresh arc42 document is writable the day it is created:
+**Architecture Decisions** requires `doc:adr`, and **Quality Requirements** requires `requirement`.
+The rest suggest — §3 a `diagram:c4-system-context` or `diagram:c4-system-landscape`, §5 a
+`diagram:c4-container`, §6 a `diagram:sequence`, §7 a `diagram:c4-deployment`, §8 a `doc:standard`.
+The twelve section headings themselves are required, as for any document type (E154).
+
+What is shipped is the section structure and this project's own one-line hint per section. arc42 is
+by Dr. Gernot Starke and Dr. Peter Hruschka, published under CC BY-SA 4.0; the attribution the
+licence asks for is carried on the document type itself — the create form shows it when the type is
+selected — and in `THIRD-PARTY-NOTICES.md`, generated from `licenses/content.json`. Adding arc42's
+own guidance prose to the template would make it an adaptation, and ShareAlike would then reach the
+file that carries it.
+
 ---
 
 *Next: [Ontology modules →](ontology-modules.md)*

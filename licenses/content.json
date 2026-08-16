@@ -1,0 +1,20 @@
+{
+  "ecosystem": "content",
+  "description": "Third-party *content* this project ships in its own source — templates, vocabularies and structures taken from a published work — as distinct from the dependencies a build assembles. The license gate introspects package manifests and sees none of this, so this file is the reviewed source of truth. Each entry states what is reproduced, what is this project's own, and what a redistributor must carry.",
+  "count": 1,
+  "components": [
+    {
+      "name": "arc42 section structure",
+      "version": "8 (twelve-chapter template)",
+      "license": "CC-BY-SA-4.0",
+      "bucket": "review",
+      "ships_in": "src/domain/repository/repo_default_arc42.py, and the `arc42` document type every repository is scaffolded with",
+      "reproduced": "The twelve chapter titles and their order.",
+      "own_work": "Every section's guidance text, the connection terms each section declares, and the frontmatter schema.",
+      "source_url": "https://arc42.org",
+      "license_text": "https://creativecommons.org/licenses/by-sa/4.0/legalcode",
+      "attribution": "arc42 by Dr. Gernot Starke and Dr. Peter Hruschka, licensed CC BY-SA 4.0.",
+      "obligation": "CC BY-SA 4.0 asks for attribution and, where a work is *adapted*, that the adaptation carry the same license. The attribution is carried three ways: in this file, in the generated THIRD-PARTY-NOTICES.md, and on the document type itself — `attribution` is served with the schema and shown on the create form, so an author writing an arc42 document sees it. ShareAlike does not reach this project's MIT-licensed code: a list of chapter titles is the structure rather than the expression, and no arc42 prose is reproduced. If YOU add arc42's own guidance text to a shipped template, that file becomes an adaptation and §3(b) applies to it."
+    }
+  ]
+}

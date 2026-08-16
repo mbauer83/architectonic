@@ -56,9 +56,9 @@ const selectedType = computed(() =>
 )
 
 const extraFields = computed(() => selectedType.value?.extra_frontmatter_fields ?? [])
-const requiredEntityTypes = computed(() => selectedType.value?.required_connections ?? [])
-const suggestedEntityTypes = computed(() => selectedType.value?.suggested_connections ?? [])
-const sectionsWithEntityHints = computed(() =>
+const requiredTerms = computed(() => selectedType.value?.required_connections ?? [])
+const suggestedTerms = computed(() => selectedType.value?.suggested_connections ?? [])
+const sectionsWithLinkHints = computed(() =>
   (selectedType.value?.sections ?? []).filter(
     (section) =>
       (section.required_connections?.length ?? 0) > 0 ||
@@ -351,29 +351,32 @@ const insertReference = (markdownLink: string) => {
         </label>
       </template>
 
+      <p
+        v-if="selectedType?.attribution"
+        class="section-hint__name"
+      >{{ selectedType.attribution }}</p>
+
       <div
-        v-if="requiredEntityTypes.length"
+        v-if="requiredTerms.length"
         class="entity-connection-hint entity-connection-hint--required"
       >
-        <strong>Required entity links:</strong>
-        Link at least one matching entity for each term:
-        <ReferenceTermChips :terms="requiredEntityTypes" :document-types="documentTypes" required />
+        <strong>Required links:</strong> link at least one match for each term:
+        <ReferenceTermChips :terms="requiredTerms" :document-types="documentTypes" required />
       </div>
       <div
-        v-if="suggestedEntityTypes.length"
+        v-if="suggestedTerms.length"
         class="entity-connection-hint entity-connection-hint--suggested"
       >
-        <strong>Suggested entity links:</strong>
-        Consider linking matching entities for:
-        <ReferenceTermChips :terms="suggestedEntityTypes" :document-types="documentTypes" />
+        <strong>Suggested links:</strong> consider linking a match for:
+        <ReferenceTermChips :terms="suggestedTerms" :document-types="documentTypes" />
       </div>
 
       <div
-        v-if="sectionsWithEntityHints.length"
+        v-if="sectionsWithLinkHints.length"
         class="section-hints"
       >
         <div
-          v-for="section in sectionsWithEntityHints"
+          v-for="section in sectionsWithLinkHints"
           :key="section.name"
           class="section-hint"
         >

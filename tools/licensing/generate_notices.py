@@ -52,9 +52,13 @@ def missing_license_texts() -> list[str]:
 
     A notice that cites a text it does not ship discharges nothing, and the failure is silent:
     the generated file looks complete. Checked here so `--check` fails on it in CI.
+
+    A `license_text` that is a URI is satisfied by the URI: some licenses — Creative Commons among
+    them — name a hyperlink to the license as one of the ways a redistributor may carry it, and
+    citing a link the reader can follow is not the failure this check is for.
     """
     declared: list[str] = []
-    for ecosystem in ("python", "npm", "native"):
+    for ecosystem in ("python", "npm", "native", "content"):
         for comp in _load(ecosystem)["components"]:
             declared.append(str(comp.get("license_text") or ""))
     declared.extend(str(offer.get("license_text") or "") for offer in _SOURCE_OFFERS.values())
@@ -62,6 +66,8 @@ def missing_license_texts() -> list[str]:
     for entry in declared:
         # A component may need several texts (a license plus its exception).
         for rel in (part.strip() for part in entry.split("+") if part.strip()):
+            if rel.startswith(("http://", "https://")):
+                continue
             if not (REPO_ROOT / rel).is_file():
                 missing.append(rel)
     return sorted(set(missing))
@@ -80,6 +86,7 @@ def _render() -> str:
     python = _load("python")
     npm = _load("npm")
     native = _load("native")
+    content = _load("content")
 
     lines: list[str] = []
     lines.append("# Third-Party Notices")
@@ -150,9 +157,41 @@ def _render() -> str:
             lines.append(f"| {comp['name']} | {comp['version'] or '—'} | {comp['license']} |")
         lines.append("")
 
+    lines.extend(_shipped_content_lines(content))
     lines.extend(_redistributor_lines())
 
     return "\n".join(lines) + "\n"
+
+
+def _shipped_content_lines(content: dict) -> list[str]:
+    """Third-party *content* this project ships in its own source, as against what a build fetches.
+
+    Its own section because the obligation is a different one: nothing here is a dependency, so
+    there is no upstream distributing it on the builder's behalf and no separate-process reasoning
+    to lean on. What each entry has to say instead is what was reproduced, what is this project's
+    own, and what a redistributor carries.
+    """
+    if not content["components"]:
+        return []
+    lines = [f"## Shipped content ({content['count']})", ""]
+    lines.append(
+        "Not dependencies: structures and vocabularies taken from a published work and shipped "
+        "inside this project's own source. A package-manifest scan sees none of it, so "
+        "`licenses/content.json` is the reviewed inventory and this section is generated from it."
+    )
+    lines.append("")
+    for comp in content["components"]:
+        lines.append(f"### {comp['name']} — {comp['license']}")
+        lines.append(f"- Version: {comp['version']}")
+        lines.append(f"- Ships in: {comp['ships_in']}")
+        lines.append(f"- Reproduced: {comp['reproduced']}")
+        lines.append(f"- This project's own: {comp['own_work']}")
+        lines.append(f"- Source: {comp['source_url']}")
+        lines.append(f"- License text: {comp['license_text']}")
+        lines.append(f"- Attribution: {comp['attribution']}")
+        lines.append(f"- Obligation: {comp['obligation']}")
+        lines.append("")
+    return lines
 
 
 def _redistributor_lines() -> list[str]:

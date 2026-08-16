@@ -107,6 +107,7 @@ def list_document_types() -> dict[str, object]:
             "extra_frontmatter_fields": _extra_frontmatter_fields(schema),
             "required_connections": schema.get(REQUIRED_CONNECTIONS_KEY, []),
             "suggested_connections": schema.get(SUGGESTED_CONNECTIONS_KEY, []),
+            "attribution": schema.get("attribution"),
         }
         for doc_type, schema in sorted(schemata.items())
     ]}

@@ -35,6 +35,13 @@ export const DocumentTypeSchema = Schema.Struct({
   extra_frontmatter_fields: Schema.Array(FrontmatterFieldSchema),
   required_connections: Schema.Array(Schema.String),
   suggested_connections: Schema.Array(Schema.String),
+  /**
+   * Present only for a type reproducing a third-party template; the create form shows it.
+   *
+   * Optional rather than nullable, like every other unset field on this surface: the route sends
+   * `response_model_exclude_none`, so an absent attribution is absent rather than null.
+   */
+  attribution: Schema.optional(Schema.String),
 })
 export type DocumentType = typeof DocumentTypeSchema.Type
 

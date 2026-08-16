@@ -8,10 +8,12 @@ template; here we keep only the base set and the attribute/frontmatter schemata.
 
 from __future__ import annotations
 
+from src.domain.repository.repo_default_arc42 import ARC42_DOCUMENT_SCHEMA
 from src.domain.repository.repo_default_assurance_schemata import ASSURANCE_ATTRIBUTE_SCHEMATA
 from src.domain.repository.repo_default_attribute_schemata import ARCHIMATE_ATTRIBUTE_SCHEMATA
 
 BASE_DOCUMENT_SCHEMAS: dict[str, dict] = {
+    "arc42": ARC42_DOCUMENT_SCHEMA,
     "adr": {
         "abbreviation": "ADR",
         "name": "Architecture Decision Record",

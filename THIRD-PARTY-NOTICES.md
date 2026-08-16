@@ -206,6 +206,20 @@ What follows is a disclosure inventory, for two purposes: to say what a build as
 | libharfbuzz0b | Debian trixie | MIT (Old MIT / HarfBuzz) |
 | python:3.13-slim-trixie (runtime base image) | 3.13-slim-trixie | PSF-2.0 (Python) + Debian trixie main (DFSG-free) |
 
+## Shipped content (1)
+
+Not dependencies: structures and vocabularies taken from a published work and shipped inside this project's own source. A package-manifest scan sees none of it, so `licenses/content.json` is the reviewed inventory and this section is generated from it.
+
+### arc42 section structure — CC-BY-SA-4.0
+- Version: 8 (twelve-chapter template)
+- Ships in: src/domain/repository/repo_default_arc42.py, and the `arc42` document type every repository is scaffolded with
+- Reproduced: The twelve chapter titles and their order.
+- This project's own: Every section's guidance text, the connection terms each section declares, and the frontmatter schema.
+- Source: https://arc42.org
+- License text: https://creativecommons.org/licenses/by-sa/4.0/legalcode
+- Attribution: arc42 by Dr. Gernot Starke and Dr. Peter Hruschka, licensed CC BY-SA 4.0.
+- Obligation: CC BY-SA 4.0 asks for attribution and, where a work is *adapted*, that the adaptation carry the same license. The attribution is carried three ways: in this file, in the generated THIRD-PARTY-NOTICES.md, and on the document type itself — `attribution` is served with the schema and shown on the create form, so an author writing an arc42 document sees it. ShareAlike does not reach this project's MIT-licensed code: a list of chapter titles is the structure rather than the expression, and no arc42 prose is reproduced. If YOU add arc42's own guidance text to a shipped template, that file becomes an adaptation and §3(b) applies to it.
+
 ## If you publish a built image
 
 Nothing above obliges Architectonic, which conveys no binaries. If you push a built image somewhere, you do convey them — but for this image that is **ordinary, low-risk practice**, and the reason is worth stating rather than assuming: every copyleft component in it is an **unmodified upstream package** whose exact version is identifiable from the image, and whose corresponding source is permanently retrievable from the Debian archive (`apt-get source`, snapshot.debian.org) or Maven Central. The substance of the source-availability terms is satisfied in fact — a recipient who wants the source can get precisely the source that built those binaries.

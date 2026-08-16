@@ -90,6 +90,9 @@ class DocumentTypeResponse(NullsOmitted):
     extra_frontmatter_fields: list[DocumentFrontmatterField]
     required_connections: list[str]
     suggested_connections: list[str]
+    #: What a third-party template this type reproduces asks a redistributor to carry. Served with
+    #: the type so the create form can show it: an attribution nobody sees discharges nothing.
+    attribution: str | None = None
 
 
 class DocumentTypeListResponse(NullsOmitted):
