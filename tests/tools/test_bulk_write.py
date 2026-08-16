@@ -16,6 +16,7 @@ from typing import Any, cast
 import pytest
 
 from src.application.verification.artifact_verifier import ArtifactRegistry, ArtifactVerifier
+from src.domain.artifact_id import stable_id
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.artifact_index.events import AuthoritativeIndexMutationCommitted, event_bus
 from src.infrastructure.mcp import mcp_artifact_server as mcp
@@ -1177,6 +1178,73 @@ Alice -> Bob
             cast(dict[str, Any], payload["batch_verification"])["auto_synced_diagrams"],
         )
         assert actions and actions[0]["artifact_id"] == diag_id
+
+    def test_bulk_delete_auto_sync_reaches_a_diagram_that_spells_the_connection_short(
+        self, repo: Path
+    ) -> None:
+        """A spelling is not an identity, and the two diagram writers disagree about it.
+
+        An ArchiMate diagram records ``connection-ids-used`` with short endpoints; a C4 diagram
+        records them full; and the lookup is built from a connection record, whose ``source`` and
+        ``target`` are full. So a batch reconciled the C4 diagrams drawing a deleted connection,
+        reached none of the ArchiMate ones, and answered success over a repository left failing
+        verification with E302 on every one of them — three in a single batch.
+
+        The body half of that failure (E317, an arrow with nothing behind it) is the reconcile's
+        own, and is covered by ``test_diagram_sync``; what this holds is that the diagram is
+        *found* at all.
+        """
+        src = _make(repo, "requirement", "ShortFormSrc")
+        tgt = _make(repo, "outcome", "ShortFormTgt")
+        _connect(repo, src, tgt, "archimate-realization")
+        short_ref = f"{stable_id(src)}---{stable_id(tgt)}@@archimate-realization"
+        diag_id = "bulk-delete-auto-sync-short-spelling"
+        _write(
+            repo / "diagram-catalog" / "diagrams" / f"{diag_id}.puml",
+            f"""\
+---
+artifact-id: {diag_id}
+artifact-type: diagram
+diagram-type: archimate-application
+name: "Short Spelling Diagram"
+entity-ids-used:
+  - {src}
+  - {tgt}
+connection-ids-used:
+  - {short_ref}
+version: 0.1.0
+status: active
+last-updated: '2026-04-28'
+---
+@startuml
+Alice -> Bob
+@enduml
+""",
+        )
+
+        payload = _bulk_delete(
+            repo,
+            [
+                {
+                    "op": "delete_connection",
+                    "source_entity": src,
+                    "connection_type": "archimate-realization",
+                    "target_entity": tgt,
+                }
+            ],
+            auto_sync_diagrams=True,
+        )
+
+        synced = [
+            action["artifact_id"]
+            for action in cast(
+                list[dict[str, Any]],
+                cast(dict[str, Any], payload["batch_verification"])["auto_synced_diagrams"],
+            )
+        ]
+        text = (repo / "diagram-catalog" / "diagrams" / f"{diag_id}.puml").read_text(encoding="utf-8")
+        assert diag_id in synced, payload
+        assert short_ref not in text
 
     def test_bulk_delete_auto_sync_preserves_now_empty_diagram(self, repo: Path) -> None:
         # Refresh-never-deletes: when all entity refs become unresolved, the diagram

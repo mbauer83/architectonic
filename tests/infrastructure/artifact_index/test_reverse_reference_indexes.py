@@ -112,3 +112,53 @@ def test_reverse_reference_indexes_update_incrementally(tmp_path: Path) -> None:
     assert [d.artifact_id for d in store.diagrams_referencing_artifact(other)] == ["DIA@1.probe.probe"]
     assert store.grf_references_to_entity("REQ@1.target.target") == []
     assert [e.artifact_id for e in store.grf_references_to_entity(other)] == ["GRF@1.proxy.proxy"]
+
+
+class TestASpellingIsNotAnIdentity:
+    """A reference is found however the file that holds it spells the id.
+
+    The two diagram writers disagree: an ArchiMate diagram records `connection-ids-used` with short
+    endpoints, a C4 diagram records them full. This lookup matched the string as written, so a
+    caller holding one spelling saw only the diagrams holding the same one — and callers hold the
+    full form, because that is how a connection record spells its `source` and `target`. The
+    visible cost was a bulk delete that reconciled the C4 diagrams drawing a deleted connection,
+    missed every ArchiMate one, and reported success over a repository left failing verification.
+    """
+
+    @staticmethod
+    def _both_spellings(tmp_path: Path) -> object:
+        """One connection, drawn by two diagrams that spell it differently."""
+        root = _repo(tmp_path)
+        archimate = root / "diagram-catalog" / "diagrams" / "ARC@1.short.short.puml"
+        _write_diagram(
+            archimate,
+            "ARC@1.short.short",
+            entity_id="REQ@1.target",
+            connection_id="REQ@1.source---REQ@1.target@@archimate-association",
+        )
+        return shared_artifact_index(root)
+
+    def test_a_full_form_lookup_finds_the_diagram_that_spelled_it_short(self, tmp_path: Path) -> None:
+        store = self._both_spellings(tmp_path)
+
+        found = [d.artifact_id for d in store.diagrams_referencing_artifact(
+            "REQ@1.source.source---REQ@1.target.target@@archimate-association"
+        )]
+
+        assert found == ["ARC@1.short.short", "DIA@1.probe.probe"]
+
+    def test_a_short_form_lookup_finds_the_diagram_that_spelled_it_full(self, tmp_path: Path) -> None:
+        store = self._both_spellings(tmp_path)
+
+        found = [d.artifact_id for d in store.diagrams_referencing_artifact(
+            "REQ@1.source---REQ@1.target@@archimate-association"
+        )]
+
+        assert found == ["ARC@1.short.short", "DIA@1.probe.probe"]
+
+    def test_an_entity_reference_is_matched_the_same_way(self, tmp_path: Path) -> None:
+        store = self._both_spellings(tmp_path)
+
+        assert [d.artifact_id for d in store.diagrams_referencing_artifact("REQ@1.target")] == [
+            "ARC@1.short.short", "DIA@1.probe.probe",
+        ]

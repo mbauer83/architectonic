@@ -4,7 +4,7 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 from src.application.ports import Candidate
-from src.domain.artifact_id import stable_conn_id, stable_id
+from src.domain.artifact_id import canonical_reference_key, stable_conn_id, stable_id
 from src.domain.ontology_representation.artifact_types import (
     ConnectionRecord,
     DiagramRecord,
@@ -267,12 +267,20 @@ class _MemStore:
 
 
 def _diagram_reference_ids(rec: DiagramRecord) -> set[str]:
-    refs: set[str] = set()
-    for key in ("entity-ids-used", "connection-ids-used"):
-        raw = rec.extra.get(key)
-        if isinstance(raw, list):
-            refs.update(str(item) for item in raw if str(item))
-    return refs
+    """What this diagram refers to, keyed the way a reader will ask for it.
+
+    Canonical rather than verbatim, because short and full spellings of an id name the same
+    artifact and diagram writers disagree about which to record — see ``canonical_reference_key``.
+    Matching the string as written made this the one reverse lookup in the project that treated the
+    two as different artifacts, and every caller inherited the blindness.
+    """
+    return {
+        canonical_reference_key(str(item))
+        for key in ("entity-ids-used", "connection-ids-used")
+        if isinstance(raw := rec.extra.get(key), list)
+        for item in raw
+        if str(item)
+    }
 
 
 def _entity_global_target(rec: EntityRecord) -> str | None:

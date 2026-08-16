@@ -227,6 +227,23 @@ def stable_conn_id(s: str) -> str:
         return s
 
 
+def canonical_reference_key(s: str) -> str:
+    """The key a *reference* to an artifact is matched under, whichever kind of id it names.
+
+    ``canonical_entity_key`` answers this for an entity. A reference may also name a connection,
+    which carries two ids inside it, so the same rule has to reach both endpoints — and a caller
+    holding one spelling must not be blind to a file holding the other. That is not hypothetical:
+    the ArchiMate diagram writer records ``connection-ids-used`` with short endpoints and the C4 one
+    records them long, so a lookup built from a connection record — whose ``source``/``target`` are
+    long — found the C4 diagrams drawing a connection and none of the ArchiMate ones. A bulk delete
+    reconciled the half it could see and left the rest failing verification, reporting success.
+
+    Anything that is neither is returned unchanged, for the reason ``canonical_entity_key`` states:
+    ``stable_id`` would truncate an arbitrary string at its last dot.
+    """
+    return canonical_entity_key(stable_conn_id(s.strip()))
+
+
 #: A well-formed id begins with its prefix and epoch, which is what tells the endpoint separator
 #: apart from a hyphen belonging to the id before it.
 _ID_START_RE = re.compile(rf"{PREFIX_PATTERN}@\d")
