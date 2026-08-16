@@ -250,6 +250,20 @@ onMounted(() => {
 watch(rootId, () => { if (selectedViewpointSlug.value === null) loadRoot() })
 
 /**
+ * Re-apply the arrangement, from whichever half of this surface owns it.
+ *
+ * A viewpoint execution is arranged by its presentation — `group_by` names the dimension and the
+ * layered domain ordering follows from it — while free exploration is arranged by the toolbar,
+ * grouping by the domain each node carries. Sending a viewpoint's population through the
+ * free-exploration layout asks nodes for a `domain` they are still resolving, so every one answers
+ * `unknown` and the layers the presentation had just banded collapse into one grid.
+ */
+const relayoutCurrentSurface = () => {
+  if (selectedViewpointSlug.value !== null) applyExplorationLayout()
+  else relayoutForMode()
+}
+
+/**
  * Re-arrange when the filter changes what is on screen.
  *
  * Every layout places nodes against the population it was given, so a filtered graph left in the
@@ -259,7 +273,7 @@ watch(rootId, () => { if (selectedViewpointSlug.value === null) loadRoot() })
  * does not rearrange the graph under the reader for no visible reason.
  */
 watch(() => facets.visible.value.nodes.length, (now, before) => {
-  if (now !== before && now > 0) relayoutForMode()
+  if (now !== before && now > 0) relayoutCurrentSurface()
 })
 
 // ── Selection ────────────────────────────────────────────────────────────────

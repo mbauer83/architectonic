@@ -13,6 +13,8 @@ interface ExplorationLayoutActions {
   applyGroupClusterLayout: (
     groupOf: (id: string) => string,
     banding?: { placementOf: (groupKey: string) => BandPlacement; anchorIds?: ReadonlySet<string> },
+    onFrame?: () => void,
+    options?: { onSettled?: () => void },
   ) => void
   fitToView: () => void
 }
@@ -71,13 +73,17 @@ export function useExplorationLayout(
     // Grouped by domain the keys carry the ontology's layer ordering, so position can mean
     // something; grouped by anything else there is no such ordering to honour.
     const keys = value.entities.map((e) => keyOf(e.id))
+    // Framed when the nodes have arrived, not when they set off: a cluster layout tweens, so a
+    // fit taken now measures the arrangement being left behind and leaves the finished one
+    // hanging outside the frame.
     actions.applyGroupClusterLayout(
       keyOf,
       isDomainGrouping(keys)
         ? { placementOf: domainBandPlacement, anchorIds: new Set(value.anchor_ids) }
         : undefined,
+      undefined,
+      { onSettled: actions.fitToView },
     )
-    actions.fitToView()
   }
 
   const setExplorationLayout = (choice: ExplorationLayoutOverride) => {

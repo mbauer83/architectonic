@@ -13,6 +13,9 @@
  */
 import { expect, test, type Page } from '@playwright/test'
 
+//: The requirement whose realization chain the intent-to-implementation viewpoint is anchored on.
+const HERO_ANCHOR = 'REQ@1712870400.peinbQ.tool-interfaces-mcp-cli-rest'
+
 const openGraph = async (page: Page): Promise<void> => {
   const res = await page.request.get('/api/entities?limit=1&domain=application')
   const body = (await res.json()) as { items: Array<{ artifact_id: string }> }
@@ -103,4 +106,63 @@ test('the selected layout button stays readable under the pointer', async ({ pag
   expect(color, 'the selected button keeps its light label').toBe('rgb(255, 255, 255)')
   const [r, g, b] = /(\d+), (\d+), (\d+)/.exec(background)!.slice(1).map(Number)
   expect((r + g + b) / 3, `background ${background} is too light for white text`).toBeLessThan(160)
+})
+
+/**
+ * A viewpoint execution is arranged by its presentation, and stays that way.
+ *
+ * `group_by: domain` asks for the layered ordering the ontology declares — intent above,
+ * realization descending — and the surface has two layout owners that must not be swapped for one
+ * another: the presentation's, and free exploration's. The filter watcher re-arranged through free
+ * exploration's, which groups by the `domain` a *graph node* carries. A viewpoint's nodes are still
+ * resolving theirs when the population lands, so every node answered `unknown`, every element fell
+ * into one box, and elements the presentation had banded across three layers collapsed into one
+ * undifferentiated grid.
+ *
+ * Asserted as "one band per domain, ordered by the ontology" rather than against a population:
+ * authoring an element into this chain is the model working, and a test that counts what the
+ * chain holds would report that as a regression.
+ */
+test('a domain-grouped viewpoint keeps the layered ordering its presentation asks for', async ({ page }) => {
+  // Hold the per-entity reads back so the population is arranged while its nodes still have no
+  // domain of their own. That is the window the defect lived in — with a warm cache the domains
+  // land first and the wrong layout owner happens to produce the right picture.
+  await page.route(/\/api\/entities\/[^/?]+$/, async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 700))
+    await route.continue()
+  })
+  await page.goto(
+    `/graph?viewpoint=intent-to-implementation&param.anchor=${encodeURIComponent(HERO_ANCHOR)}`,
+    { waitUntil: 'load' },
+  )
+  await expect(page.locator('.graph-node').first()).toBeAttached({ timeout: 20_000 })
+  await expect(page.locator('.domain-chip').first()).toBeVisible()
+
+  // Grouped by the fill the ontology declares per domain, so this reads the bands without naming
+  // which elements are in the picture.
+  const bandsByDomain = await page.locator('.graph-node').evaluateAll((els) => {
+    const ys: Record<string, number[]> = {}
+    for (const el of els) {
+      const fill = el.querySelector('polygon:not([fill="none"])')?.getAttribute('fill') ?? ''
+      const [, y] = /translate\([-\d.]+,\s*([-\d.]+)\)/.exec(el.getAttribute('transform') ?? '') ?? []
+      if (fill) (ys[fill] ??= []).push(Number(y))
+    }
+    return Object.fromEntries(
+      Object.entries(ys).map(([fill, values]) => [fill, values.reduce((a, b) => a + b, 0) / values.length]),
+    )
+  })
+
+  const centres = Object.values(bandsByDomain)
+  expect(centres.length, 'the viewpoint draws more than one domain').toBeGreaterThan(1)
+  // The failure this exists for: every domain in one box, so every domain shares one band centre.
+  expect(new Set(centres.map((y) => Math.round(y))).size, 'each domain has a band of its own')
+    .toBe(centres.length)
+
+  // Motivation above application is the ontology's declared order, and the direction the layered
+  // reading depends on: intent above, realization descending.
+  const motivation = bandsByDomain['#D1BADC']
+  const application = bandsByDomain['#B0D0D9']
+  if (motivation !== undefined && application !== undefined) {
+    expect(motivation, 'motivation is drawn above application').toBeLessThan(application)
+  }
 })
