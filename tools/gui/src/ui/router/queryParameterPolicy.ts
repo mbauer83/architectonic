@@ -63,8 +63,10 @@ export const QUERY_PARAMETER_ROLES: Readonly<Record<string, QueryParameterRole>>
   'ui/views/CreateDiagramView.vue#type': 'operation-input',
   'ui/views/ViewpointsManagementView.vue#seedEntityCriteria': 'operation-input',
   'ui/views/EphemeralViewpointQueryView.vue#slug': 'operation-input',
-  'ui/views/GraphExploreView.vue#viewpoint': 'operation-input',
-  'ui/views/GraphExploreView.vue#*': 'operation-input',
+  // The graph explorer's viewpoint half owns the address for `viewpoint`, `param.*` and the
+  // verification pins, so the uses sit with that composable rather than with the view.
+  'ui/composables/useGraphViewpointExploration.ts#viewpoint': 'operation-input',
+  'ui/composables/useGraphViewpointExploration.ts#*': 'operation-input',
   'ui/components/ExecutionLinkActions.vue#*': 'operation-input',
   'ui/components/ExecutionReferenceBar.vue#*': 'operation-input',
   'ui/components/ViewpointTablePage.vue#*': 'operation-input',

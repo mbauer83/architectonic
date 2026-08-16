@@ -57,6 +57,13 @@ _FRONTEND_GENERATED_SUFFIX = ".generated.ts"
 # focused pass on the most-used view rather than a tail-end tidy — recorded here so the next reader gets
 # the seam rather than the search for it.
 #
+# `GraphExploreView.vue` went 577 → 425 by the same method applied twice: its viewpoint half —
+# catalog, execution, and everything a result is read through — became
+# `useGraphViewpointExploration`, and its floating control group became `GraphExploreToolbar.vue`,
+# which took the dock and the disclosure state with it. The view kept the graph: what a population
+# does to the picture is its business, so clearing and populating are passed to the composable as
+# actions. Two rules for buttons that had already moved into `GraphLayoutToolbar` went with them.
+#
 # One entry is **gone**. `artifact_verifier.py` (403) was a facade that had kept two rule bodies for
 # itself while five others had modules of their own; entities and diagrams moved to `_verifier_entity.py`
 # and `_verifier_diagram.py` and it landed at 329, under the hard limit. The number followed the
@@ -80,7 +87,7 @@ SOURCE_FILE_BASELINE_LIMITS: dict[str, int] = {
     "tools/gui/src/ui/views/DocumentDetailView.vue": 432,
     "tools/gui/src/ui/views/EntitiesView.vue": 502,
     "tools/gui/src/ui/views/EntityCreateView.vue": 490,
-    "tools/gui/src/ui/views/GraphExploreView.vue": 457,
+    "tools/gui/src/ui/views/GraphExploreView.vue": 425,
     "tools/gui/src/ui/views/GroupManagementView.vue": 618,
 }
 

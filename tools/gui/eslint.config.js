@@ -60,6 +60,7 @@ export default tseslint.config(
       'src/ui/components/DiagramEntitySidebar.vue',
       'src/ui/components/DiagramMatrixView.vue',
       'src/ui/components/GraphCanvas.vue',
+      'src/ui/components/GraphCanvasNode.vue',
       'src/ui/components/MarkdownEditor.vue',
       'src/ui/components/SidebarEntityEditor.vue',
       'src/ui/views/CreateMatrixView.vue',

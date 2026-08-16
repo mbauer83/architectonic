@@ -11,13 +11,14 @@ import type { GraphEdge, GraphNode } from '../composables/useForceGraph'
 import { useElementSize } from '../composables/useElementSize'
 import { useFullscreen } from '../composables/useFullscreen'
 import { useGraphPanZoom } from '../composables/useGraphPanZoom'
-import { edgeEndRadius, nodeLabelBox } from './graphNodeGeometry'
+import { edgeEndRadius } from './graphNodeGeometry'
 import {
-  contrastTextColor, edgeCardPosFor, edgePathFor, nodeShapePoints, wrapLabel,
+  edgeCardPosFor, edgePathFor,
   type EdgeEndMarker, type EdgeVisual, type NodeVisual,
 } from './GraphCanvas.helpers'
 import DiagramViewportControls from './DiagramViewportControls.vue'
 import EdgeMarkerDefs from './EdgeMarkerDefs.vue'
+import GraphCanvasNode from './GraphCanvasNode.vue'
 import { edgeMarkerId } from './edgeMarkers'
 
 /** The marker to draw at one end, or nothing. `none` and absent both mean an undecorated end;
@@ -149,7 +150,6 @@ const edgePath = (e: GraphEdge) =>
 // Translucent backing rect for the below-node label — labels can otherwise fall in front of
 // edges and become hard to read. The geometry is shared with the cluster layout, which sizes
 // its grid cells from it; see `graphNodeGeometry`.
-const labelBoxFor = (n: GraphNode) => nodeLabelBox(n.label, n.type, props.isAnchor(n.id))
 const edgeCardPos = (e: GraphEdge, frac: number) => edgeCardPosFor(props.nodes, e, frac)
 </script>
 
@@ -280,106 +280,13 @@ const edgeCardPos = (e: GraphEdge, frac: number) => edgeCardPosFor(props.nodes, 
         @click.stop="emit('nodeClick', n)"
         @dblclick.stop="emit('nodeDblclick', n)"
       >
-        <!-- Anchor halo: outer ring + the white main-shape stroke = double ring -->
-        <polygon
-          v-if="isAnchor(n.id)"
-          :points="nodeShapePoints(nodeVisual(n).shape, 32)"
-          fill="none"
-          stroke="#1e293b"
-          stroke-width="2"
+        <GraphCanvasNode
+          :node="n"
+          :selected="selectedId === n.id"
+          :anchor="isAnchor(n.id)"
+          :visual="nodeVisual(n)"
+          :expandable="showExpandBadge(n)"
         />
-        <polygon
-          :points="nodeShapePoints(nodeVisual(n).shape, isAnchor(n.id) ? 27 : 24)"
-          :fill="nodeVisual(n).color"
-          :opacity="selectedId === n.id ? 1 : 0.8"
-          :stroke="selectedId === n.id ? '#1e293b' : 'white'"
-          :stroke-width="selectedId === n.id ? 3 : 2"
-        />
-        <!-- Glyph inside the node shape; falls back to the type abbreviation when the
-             consumer supplies no glyph (e.g. non-ArchiMate graphs). -->
-        <svg
-          v-if="nodeVisual(n).glyph"
-          x="-9"
-          y="-9"
-          width="18"
-          height="18"
-          viewBox="0 0 16 16"
-          fill="none"
-          :stroke="contrastTextColor(nodeVisual(n).color)"
-          stroke-width="1.3"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          pointer-events="none"
-        ><g v-html="nodeVisual(n).glyph" /></svg>
-        <text
-          v-else
-          dy="4"
-          text-anchor="middle"
-          :fill="contrastTextColor(nodeVisual(n).color)"
-          font-size="9"
-          font-weight="600"
-        >
-          {{ n.type }}
-        </text>
-        <!-- Translucent backing so the label stays legible where it crosses edges. -->
-        <rect
-          v-bind="labelBoxFor(n)"
-          rx="3"
-          fill="#ffffff"
-          opacity="0.6"
-          pointer-events="none"
-        />
-        <!-- Label below the node: bolded type abbreviation, a colon, then the name (wrapped).
-             Absolute y (not dy) — dy on <text> does not shift the baseline reliably once a
-             child tspan sets its own x, which left the label sitting over the node. -->
-        <text
-          :y="isAnchor(n.id) ? 46 : 40"
-          text-anchor="middle"
-          :fill="isAnchor(n.id) ? '#1e293b' : '#374151'"
-          font-size="10"
-        >
-          <title>{{ n.type }}: {{ n.label }}</title>
-          <tspan
-            v-for="(line, li) in wrapLabel(n.label)"
-            :key="li"
-            x="0"
-            :dy="li === 0 ? 0 : 12"
-          ><tspan
-            v-if="li === 0"
-            font-weight="700"
-          >{{ n.type }}: </tspan>{{ line }}</tspan>
-        </text>
-        <text
-          v-if="nodeVisual(n).iconLetter"
-          x="-17"
-          y="-14"
-          text-anchor="middle"
-          :fill="contrastTextColor(nodeVisual(n).color)"
-          font-size="9"
-          font-weight="bold"
-          pointer-events="none"
-        >{{ nodeVisual(n).iconLetter }}</text>
-        <circle
-          v-if="showExpandBadge(n)"
-          class="expand-badge"
-          cx="17"
-          cy="-17"
-          r="7"
-          fill="#2563eb"
-          stroke="white"
-          stroke-width="1.5"
-          cursor="pointer"
-        />
-        <text
-          v-if="showExpandBadge(n)"
-          x="17"
-          y="-14"
-          text-anchor="middle"
-          fill="#252327"
-          font-size="9"
-          font-weight="bold"
-          pointer-events="none"
-        >+</text>
       </g>
     </svg>
   </div>

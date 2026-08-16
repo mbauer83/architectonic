@@ -178,7 +178,7 @@ LINE_LENGTH_BASELINE: dict[str, int] = {
     "tools/gui/src/ui/views/EntityDetailView.vue": 2,
     "tools/gui/src/ui/views/GraphExploreView.aggregate.ts": 3,
     "tools/gui/src/ui/views/GraphExploreView.helpers.ts": 3,
-    "tools/gui/src/ui/views/GraphExploreView.vue": 6,
+    "tools/gui/src/ui/views/GraphExploreView.vue": 1,
     "tools/gui/src/ui/views/GroupManagementView.vue": 15,
     "tools/gui/src/ui/views/LayeredExplorationView.helpers.ts": 2,
     "tools/gui/src/ui/views/LayeredExplorationView.vue": 8,

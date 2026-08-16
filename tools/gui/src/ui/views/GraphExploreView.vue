@@ -1,53 +1,36 @@
 <script setup lang="ts">
 import { entityDetailRoute } from '../router/artifactRoutes'
-import { inject, nextTick, onMounted, watch, computed, ref } from 'vue'
-import { useRoute, useRouter, RouterLink } from 'vue-router'
-import { Effect } from 'effect'
+import { inject, nextTick, onMounted, watch, computed, ref, toRef } from 'vue'
+import { useRoute, RouterLink } from 'vue-router'
 import { modelServiceKey } from '../keys'
 import { useQuery } from '../composables/useQuery'
 import { useForceGraph, type GraphNode, type GraphEdge } from '../composables/useForceGraph'
 import { useGraphFacets } from '../composables/useGraphFacets'
-import DownloadMenu from '../components/DownloadMenu.vue'
-import GraphFilterPanel from '../components/GraphFilterPanel.vue'
-import {
-  downloadBlob, rasterise, snapshotFilename, snapshotSvgMarkup,
-} from '../lib/graphSnapshot'
 import GraphCanvas from '../components/GraphCanvas.vue'
-import { useViewpointExecution } from '../composables/useViewpointExecution'
-import { useViewpointParameterPrompt } from '../composables/useViewpointParameterPrompt'
-import type { ResolvedViewpointExecution } from '../composables/useViewpointParameterPrompt'
 import FullscreenDock from '../components/FullscreenDock.vue'
 import GraphExploreSidebar from '../components/GraphExploreSidebar.vue'
+import GraphExploreToolbar from '../components/GraphExploreToolbar.vue'
 import AggregationBanner from '../components/AggregationBanner.vue'
 import ExecutionReferenceBar from '../components/ExecutionReferenceBar.vue'
-import GraphLayoutToolbar from '../components/GraphLayoutToolbar.vue'
 import DomainColorLegend from '../components/DomainColorLegend.vue'
 import EdgeProvenanceLegend from '../components/EdgeProvenanceLegend.vue'
 import HopDistanceLegend from '../components/HopDistanceLegend.vue'
-import ViewpointSelect from '../components/ViewpointSelect.vue'
 import ViewpointExecutionDiagnostics from '../components/ViewpointExecutionDiagnostics.vue'
 import ViewpointExecutionError from '../components/ViewpointExecutionError.vue'
 import ViewpointParameterPrompt from '../components/ViewpointParameterPrompt.vue'
-import { computeExecutionDiagnostics, deriveLegend, deriveScaleGradients } from '../components/ViewpointExecutionDiagnostics.helpers'
 import {
-  nodeVisualFor, edgeVisualFor,
-  buildConnectionStyleIndex, buildConnectionSummaryIndex, edgeStyleKey, projectionByItemId, explorationRedirectFor,
+  nodeVisualFor, edgeVisualFor, edgeStyleKey,
   distanceColor, effectiveExplorationFill, fetchRelationNotations, DOMAIN_COLORS,
 } from './GraphExploreView.helpers'
 import { useExplorationLayout } from '../composables/useExplorationLayout'
 import { useFreeExploration } from '../composables/useFreeExploration'
+import { useGraphViewpointExploration } from '../composables/useGraphViewpointExploration'
+import { useGraphSnapshot } from '../composables/useGraphSnapshot'
 import { SPACING_PRESETS, type SpacingPreset } from '../composables/graphSpacingPresets'
 import { useFreeExplorationLayout, FREE_LAYOUT_MODES } from '../composables/useFreeExplorationLayout'
-import type { ParameterDraft } from '../lib/viewpointExecutionParameters'
-import { VERIFIED_KEYS, executionQuery, parametersFromQuery } from '../lib/viewpointUrlState'
-import { viewpointSummaryFromEnvelope } from '../lib/viewpointSummary'
 import { useAggregatedExploration } from '../composables/useAggregatedExploration'
-import { presentationFromMapping } from '../../domain/viewpointPresentationSerialization'
-import type { PresentationNode } from '../../domain/viewpointPresentation'
 import type { AdHocExecution } from '../lib/adHocExecution'
-import type {
-  EntityDetail, NotFoundError, ViewpointSummary, ViewpointDefinitionEnvelope,
-} from '../../domain'
+import type { EntityDetail, NotFoundError } from '../../domain'
 import type { MarkdownError } from '../../application/MarkdownService'
 import type { RepoError } from '../../ports/ModelRepository'
 
@@ -55,7 +38,6 @@ const props = defineProps<{ adHoc?: AdHocExecution }>()
 
 const svc = inject(modelServiceKey)!
 const route = useRoute()
-const router = useRouter()
 // Absent on the unanchored exploration route, which shows a viewpoint's whole population.
 const rootId = computed(() => (route.params.artifactId as string | undefined) ?? '')
 
@@ -125,83 +107,43 @@ const selectedEdge = ref<GraphEdge | null>(null)
  * graph filling the screen a permanent panel covers the thing being read, so there has to be a way
  * to put it away that is not "select something else".
  */
-/**
- * A picture of the graph as it stands, in the format asked for.
- *
- * Of the *current frame*, so it is what the reader is looking at rather than everything loaded —
- * zooming in and taking a snapshot is how a reader captures a part of a graph too large to show at
- * once. Failures surface on the view rather than throwing: a snapshot that cannot be taken is a
- * disappointment, not an error state for the graph.
- */
-const snapshotError = ref<string | null>(null)
-
-const takeSnapshot = async (format: 'svg' | 'png') => {
-  snapshotError.value = null
-  const svgEl = canvasRef.value?.svgEl
-  const frame = canvasRef.value?.frame
-  if (!svgEl || !frame) return
-  const markup = snapshotSvgMarkup(svgEl, frame)
-  const name = snapshotFilename(sd.value?.name ?? rootId.value, format, new Date())
-  try {
-    const blob = format === 'svg'
-      ? new Blob([markup], { type: 'image/svg+xml;charset=utf-8' })
-      : await rasterise(markup, frame)
-    downloadBlob(blob, name)
-  } catch (cause) {
-    snapshotError.value = cause instanceof Error ? cause.message : String(cause)
-  }
-}
-
-/** Whether the floating toolbar is open. Only consulted while fullscreen; embedded it is always
- *  shown, because the page header is a place for controls and a canvas is not. */
-const toolbarOpen = ref(false)
-
 const clearGraphSelection = () => {
   selectedId.value = null
   selectedEdge.value = null
 }
 
-// ── Viewpoint-driven exploration ────────────────────────────────────────────
-
-const viewpoints = ref<ViewpointSummary[]>([])
-const viewpointDefinitions = ref<readonly ViewpointDefinitionEnvelope[]>([])
-const selectedViewpointSlug = ref<string | null>(null)
-const viewpointExecution = useViewpointExecution(svc)
-
-const loadViewpointCatalog = async () => {
-  // Viewpoint discovery comes from the dedicated /api/viewpoints source, not authoring
-  // guidance — the picker summaries are projected from the same definition envelopes.
-  const definitions = await Effect.runPromise(svc.listViewpointDefinitions()).catch(() => [])
-  viewpointDefinitions.value = definitions
-  viewpoints.value = definitions.map(viewpointSummaryFromEnvelope)
+/** Nothing drawn and nothing selected — what every incoming population starts from. */
+const clearGraph = () => {
+  nodes.value = []
+  edges.value = []
+  clearGraphSelection()
 }
 
-const selectedPresentation = computed<PresentationNode | null>(() => {
-  if (props.adHoc) return props.adHoc.presentation
-  const envelope = viewpointDefinitions.value.find((d) => d.slug === selectedViewpointSlug.value)
-  return envelope ? presentationFromMapping(envelope.presentation) : null
+const { snapshotError, takeSnapshot } = useGraphSnapshot(
+  () => (canvasRef.value ? { svgEl: canvasRef.value.svgEl, frame: canvasRef.value.frame } : null),
+  () => sd.value?.name ?? rootId.value,
+)
+
+// ── Viewpoint-driven exploration ────────────────────────────────────────────
+// The catalog, the execution and everything read off a result. The graph itself stays here:
+// what a population does to the picture is this view's business, so it is passed in.
+
+const {
+  viewpoints, selectedViewpointSlug, viewpointExecution, viewpointPrompt,
+  selectedPresentation, entityStyleById, connectionStyleIndex, connectionSummaryIndex,
+  diagnostics, selectedEnvelope, legend, scaleGradients,
+  loadViewpointCatalog, runAdHocExploration, restoreFromAddress, onSelectViewpoint, rerunViewpoint,
+} = useGraphViewpointExploration(svc, { adHoc: toRef(props, 'adHoc'), rootId }, {
+  clearGraph,
+  populate: () => { resetExpansion(); populateFromResult() },
+  loadRoot: () => loadRoot(),
 })
-const currentRepresentation = computed(() => selectedPresentation.value?.representation ?? 'exploration')
-const entityStyleById = computed(() => projectionByItemId(viewpointExecution.projection.value))
-const connectionStyleIndex = computed(() =>
-  buildConnectionStyleIndex(viewpointExecution.result.value?.connections ?? [], viewpointExecution.projection.value),
-)
-const connectionSummaryIndex = computed(() =>
-  buildConnectionSummaryIndex(viewpointExecution.result.value?.connections ?? []),
-)
+
 const selectedEdgeSummary = computed(() => {
   const edge = selectedEdge.value
   if (!edge) return null
   return connectionSummaryIndex.value.get(edgeStyleKey(edge.source, edge.target, edge.connType)) ?? null
 })
-const diagnostics = computed(() => computeExecutionDiagnostics(
-  viewpointExecution.result.value, selectedPresentation.value, currentRepresentation.value,
-))
-const selectedEnvelope = computed(() =>
-  viewpointDefinitions.value.find((d) => d.slug === selectedViewpointSlug.value) ?? null,
-)
-const legend = computed(() => deriveLegend(selectedPresentation.value, viewpointExecution.projection.value?.rule_outcomes ?? []))
-const scaleGradients = computed(() => deriveScaleGradients(selectedPresentation.value, viewpointExecution.projection.value?.scale_legends ?? []))
 
 // ── Anchored executions: hop distances, distance fill, anchor marking ───────
 
@@ -225,59 +167,6 @@ const {
     applyExplorationLayout()
   },
 })
-
-const runViewpointExecution = async (resolved: ResolvedViewpointExecution) => {
-  nodes.value = []
-  edges.value = []
-  selectedId.value = null
-  selectedEdge.value = null
-  // URL = state: the address always names the ON-SCREEN execution (slug + parameters).
-  // Verification pins survive only a same-viewpoint re-run/reload — switching viewpoints
-  // must never carry a previous reference's pins forward.
-  const pins = route.query.viewpoint === resolved.slug
-    ? Object.fromEntries(VERIFIED_KEYS.flatMap((key) => (typeof route.query[key] === 'string' ? [[key, route.query[key]]] : [])))
-    : {}
-  void router.replace({ query: { ...executionQuery(resolved.slug, resolved.parameters), ...pins } })
-  await viewpointExecution.execute(resolved)
-  resetExpansion()
-  populateFromResult()
-}
-const viewpointPrompt = useViewpointParameterPrompt(runViewpointExecution, viewpointDefinitions)
-const loadViewpointPopulation = (slug: string, preset?: ParameterDraft) => viewpointPrompt.run(slug, preset)
-
-// Ad-hoc exploration: execute an inline query + presentation directly (no slug/picker/URL),
-// then populate the graph from the same result the saved path uses.
-const runAdHocExploration = async () => {
-  if (!props.adHoc) return
-  nodes.value = []
-  edges.value = []
-  selectedId.value = null
-  selectedEdge.value = null
-  await viewpointExecution.execute(props.adHoc.request)
-  resetExpansion()
-  populateFromResult()
-}
-
-const onSelectViewpoint = (viewpoint: ViewpointSummary | null) => {
-  selectedViewpointSlug.value = viewpoint?.slug ?? null
-  if (!viewpoint) {
-    viewpointExecution.clear()
-    void router.replace({ query: rootId.value ? { id: rootId.value } : {} })
-    loadRoot()
-    return
-  }
-  const envelope = viewpointDefinitions.value.find((d) => d.slug === viewpoint.slug)
-  const redirect = explorationRedirectFor(envelope)
-  if (redirect) {
-    void router.push(redirect)
-    return
-  }
-  void loadViewpointPopulation(viewpoint.slug)
-}
-
-const rerunViewpoint = () => {
-  if (selectedViewpointSlug.value) void loadViewpointPopulation(selectedViewpointSlug.value)
-}
 
 /** The fill for nodes the projection leaves uncolored — by domain unless the presentation
  * asks for hop distance. A projection-provided `node_color` still wins in `nodeVisualFor`. */
@@ -355,20 +244,7 @@ onMounted(() => {
     void loadViewpointCatalog().then(() => runAdHocExploration())
     return
   }
-  void loadViewpointCatalog().then(() => {
-    const viewpointSlug = route.query.viewpoint as string | undefined
-    const preselected = viewpointSlug ? viewpoints.value.find((v) => v.slug === viewpointSlug) : undefined
-    if (!preselected) return
-    const envelope = viewpointDefinitions.value.find((d) => d.slug === preselected.slug)
-    const redirect = explorationRedirectFor(envelope)
-    if (redirect) {
-      void router.push(redirect)
-      return
-    }
-    // Reload/shared link: URL-carried parameters execute directly (no re-prompt).
-    selectedViewpointSlug.value = preselected.slug
-    void loadViewpointPopulation(preselected.slug, parametersFromQuery(route.query))
-  })
+  void loadViewpointCatalog().then(() => restoreFromAddress())
   loadRoot()
 })
 watch(rootId, () => { if (selectedViewpointSlug.value === null) loadRoot() })
@@ -462,69 +338,31 @@ const showExpandBadge = (n: GraphNode) =>
         >
           View as… (unsaved)
         </RouterLink>
-        <!-- In the header row normally; over the canvas once it owns the screen, where the page's
-             own header is not painted at all. The same dock the sidebar uses, so the two move by
-             one mechanism. Collapsed to a glyph while floating: the controls are wanted
-             occasionally and the graph is wanted continuously. -->
-        <FullscreenDock
+        <!-- In the header row normally; over the canvas once it owns the screen. Docked by the
+             same component the sidebar uses, so the two move by one mechanism. -->
+        <GraphExploreToolbar
           :fullscreen-host="canvasRef?.frameEl ?? null"
           :is-fullscreen="canvasRef?.isFullscreen ?? false"
-          revealed
-        >
-          <div
-            class="graph-toolbar"
-            :class="{ 'graph-toolbar--floating': canvasRef?.isFullscreen }"
-          >
-            <button
-              v-if="canvasRef?.isFullscreen"
-              type="button"
-              class="toolbar-disclosure"
-              :aria-expanded="toolbarOpen"
-              aria-controls="graph-toolbar-body"
-              :title="toolbarOpen ? 'Hide controls' : 'Show controls'"
-              :aria-label="toolbarOpen ? 'Hide controls' : 'Show controls'"
-              @click="toolbarOpen = !toolbarOpen"
-            >
-              {{ toolbarOpen ? '×' : '☰' }}
-            </button>
-            <div
-              v-show="!canvasRef?.isFullscreen || toolbarOpen"
-              id="graph-toolbar-body"
-              class="toolbar-body"
-            >
-              <div
-                v-if="!adHoc"
-                class="spacing-controls"
-              >
-                <span class="spacing-label">Viewpoint:</span>
-                <ViewpointSelect
-                  :model-value="selectedViewpointSlug"
-                  :viewpoints="viewpoints"
-                  @select="onSelectViewpoint"
-                />
-              </div>
-              <GraphFilterPanel
-                v-bind="facets.panelProps.value"
-                @toggle="facets.toggle"
-                @reset="facets.reset"
-              />
-              <!-- The same affordance a diagram offers, answered differently: there is no
-                   persisted artifact here, so the bytes are the current view serialised. -->
-              <DownloadMenu @select="takeSnapshot" />
-              <GraphLayoutToolbar
-                :viewpoint-active="selectedViewpointSlug !== null"
-                :layout-mode="layoutMode"
-                :layout-modes="FREE_LAYOUT_MODES"
-                :layout-override="layoutOverride"
-                :active-spacing="spacing.label"
-                :radial-available="anchorIds.length > 0"
-                @switch-layout="switchLayout"
-                @set-exploration-layout="setExplorationLayout"
-                @apply-preset="applyPreset"
-              />
-            </div>
-          </div>
-        </FullscreenDock>
+          :show-viewpoint-picker="!adHoc"
+          :selected-viewpoint-slug="selectedViewpointSlug"
+          :viewpoints="viewpoints"
+          :filter="facets.panelProps.value"
+          :layout="{
+            viewpointActive: selectedViewpointSlug !== null,
+            layoutMode,
+            layoutModes: FREE_LAYOUT_MODES,
+            layoutOverride,
+            activeSpacing: spacing.label,
+            radialAvailable: anchorIds.length > 0,
+          }"
+          @select-viewpoint="onSelectViewpoint"
+          @toggle-facet="facets.toggle"
+          @reset-facets="facets.reset"
+          @snapshot="takeSnapshot"
+          @switch-layout="switchLayout"
+          @set-exploration-layout="setExplorationLayout"
+          @apply-preset="applyPreset"
+        />
       </div>
       <ViewpointExecutionDiagnostics
         v-if="selectedViewpointSlug !== null && !viewpointPrompt.visible.value
@@ -566,6 +404,13 @@ const showExpandBadge = (n: GraphNode) =>
         :fallback-message="viewpointExecution.errorMessage.value"
         @retry="rerunViewpoint"
       />
+      <p
+        v-if="snapshotError"
+        class="snapshot-error"
+        role="status"
+      >
+        The snapshot could not be taken: {{ snapshotError }}
+      </p>
       <GraphCanvas
         ref="canvasRef"
         :nodes="facets.visible.value.nodes"
@@ -608,19 +453,6 @@ const showExpandBadge = (n: GraphNode) =>
 </template>
 
 <style scoped>
-/* Embedded, the wrapper and its body are transparent: the three control groups are laid out by the
-   page's own header row, exactly as they were before there was anything to dock. `display: contents`
-   is what says "I am here for the dock, not for the layout".
-   Floating, it stops being three items in someone else's row and becomes one box of its own. */
-.graph-toolbar, .toolbar-body { display: contents; }
-.graph-toolbar--floating { display: flex; }
-.toolbar-disclosure {
-  width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center;
-  background: rgb(255 255 255 / 92%); border: 1px solid #d1d5db; border-radius: 6px;
-  font-size: 15px; line-height: 1; cursor: pointer; color: #374151; flex-shrink: 0;
-}
-.toolbar-disclosure:hover { background: #fff; }
-
 .graph-layout { display: flex; height: calc(100vh - 96px); gap: 0; margin: -24px; }
 
 /* min-width: 0 — a flex item defaults to min-width: auto, so the canvas column was sized by
@@ -641,20 +473,9 @@ const showExpandBadge = (n: GraphNode) =>
 .view-as-link { font-size: 12px; color: #4338ca; text-decoration: none; border: 1px solid #c7d2fe; border-radius: 6px; padding: 3px 9px; margin-right: 10px; }
 .view-as-link:hover { background: #eef2ff; }
 
-.spacing-controls { display: flex; align-items: center; gap: 4px; }
-.spacing-label { font-size: 11px; color: #6b7280; margin-right: 4px; }
-.spacing-btn {
-  padding: 3px 8px; border-radius: 4px; border: 1px solid #d1d5db;
-  background: white; font-size: 11px; cursor: pointer; color: #374151;
+.snapshot-error {
+  margin: 0; padding: 8px 16px; font-size: 13px; color: #b91c1c; background: #fef2f2;
 }
-/* Hover is excluded on the selected button and given its own darker shade there. A bare
-   `:hover` rule outranks the single-class active rule, so hovering the selected button
-   restored the pale hover background while the active rule's white text stayed — the
-   label disappeared for as long as the pointer rested on it. */
-.spacing-btn:hover:not(.spacing-btn--active) { background: #f3f4f6; }
-.spacing-btn--active { background: #2563eb; color: white; border-color: #2563eb; }
-.spacing-btn--active:hover { background: #1d4ed8; }
-
 
 .mono { font-family: monospace; }
 </style>

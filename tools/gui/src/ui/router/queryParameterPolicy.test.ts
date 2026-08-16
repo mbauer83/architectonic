@@ -78,7 +78,7 @@ describe('GUI route.query inventory', () => {
     const found = allUses()
     expect(found.has('ui/views/EntitiesView.vue#domain')).toBe(true)
     expect(found.has('ui/views/EntitiesView.vue#view')).toBe(true)
-    expect(found.has('ui/views/GraphExploreView.vue#viewpoint')).toBe(true)
+    expect(found.has('ui/composables/useGraphViewpointExploration.ts#viewpoint')).toBe(true)
     expect(found.has('ui/composables/useTierFacet.ts#*')).toBe(true)
   })
 
