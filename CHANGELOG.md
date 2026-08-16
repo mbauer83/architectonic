@@ -3,7 +3,7 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
-## [0.6.0] — 2026-08-13
+## [0.6.0] — 2026-08-16
 
 **[Full detail → `changelog-assets/0.6.0-detail.md`](changelog-assets/0.6.0-detail.md)**
 
@@ -31,18 +31,31 @@ Three renderers stopped losing content that the source contained.
   actually has them, so the choices follow exploration. Excluding an element takes its relationships
   with it, and excluding a relationship type removes the elements it leaves with nothing to show —
   except one that had no relationships to begin with, and except the element being explored. The
-  collapsed control reports what it is hiding — `Filter · 3 excluded`, with a clear beside it — and
-  the selection lives in the address, so a filtered graph is a link. A meta-ontology declaring a
-  different chain is offered its own levels under its own labels, with no code change.
-- **A legend for what a diagram's visual properties mean** is not in this release; the declarations
-  it reads are.
+  collapsed control reports what it is hiding — `Filter · 1 excluded · 22 of 27 shown` — and the
+  selection lives in the address, so a filtered graph is a link. A meta-ontology declaring a
+  different chain is offered its own levels under its own labels, with no code change. A level's own
+  exclusions are offered alongside what is present, so filtering is undoable one value at a time.
+- **The graph viewport has the chrome a diagram's has**: fullscreen, a docked sidebar, a floating
+  toolbar, blank-space deselection, and a snapshot of the current frame as SVG or PNG through the
+  download menu a diagram already carries. Spacing means something in every layout, each frames
+  itself, and free exploration opens in radial.
+- **A collaboration gathers the roles that participate in it.** Assignment states allocation and
+  association states a link; neither states membership.
+- **The declarations a legend reads**; the legend itself is not in this release.
 
 ### Fixed
 
-- **The graph explorer draws every relationship among the elements it shows.** Free exploration
-  asked each node for its own connections, so a relationship between two neighbours of the element
-  you started from was never requested and never drawn — and the visible relationships depended on
-  the order you expanded in. Two people looking at the same nodes now see the same graph.
+- **A filtered graph keeps what is reachable from the element being explored.** A cluster with no
+  path back was drawn one ring beyond the farthest connected element.
+- **A C4 container or component diagram draws the system's own services inside it**, not with the
+  external-system notation.
+- **A diagram whose grouping boxes nest can be read back**; it answered its own request with a 500.
+- **Deleting a connection reconciles every diagram that draws it**, whichever way that diagram
+  spells the connection's endpoints. Reconciling a diagram also names the relations it leaves
+  undrawn: a relation added between two elements it already draws no longer goes unreported.
+- **The graph's download control has an accessible name.**
+- **The graph explorer draws every relationship among the elements it shows.** What is drawn no
+  longer depends on the order you expanded in.
 - **An `alt`/`else` guard keeps its first word.** Multi-word guards on sequence diagrams were
   written into the source in brackets, which PlantUML reads as link syntax, so `features computed`
   rendered as `computed`. Single-word guards were unaffected, which is why this went unnoticed.
@@ -53,17 +66,13 @@ Three renderers stopped losing content that the source contained.
   dotted line and drew a solid one; twelve further types across the assurance and datatype modules
   declared nothing and drew something else. The declaration and the drawing are now derived from
   one another and held equal by a gate.
-- **The relationship macros a diagram body may call are generated from the ontology.** Nine of the
-  twelve ArchiMate relationships had a macro; a body calling one of the other three drew nothing.
+- **The relationship macros a diagram body may call are generated from the ontology.** Nine of
+  twelve ArchiMate relationships had one; a body calling another drew nothing.
 - **A diagram takes the colours, corners, glyphs, line styles and label width the renderer states
-  today.** A body carries its own copy of these so the `.puml` renders on its own, and that copy was
-  refreshed only when the whole picture was regenerated — so a diagram whose content had not changed
-  went on drawing the palette it was authored with. Nine diagrams here were doing exactly that, and
-  the same nine had never received the label width bound either: their labels ran to 548px where
-  every other diagram's stopped at 240, and a box wide enough for its label on one line is a box one
-  line tall. Their cut corners were consequently hard to tell from rounded ones, because the corners
-  were longer than the sides between them. The header is refreshed on every edit, and a check
-  reports any diagram that disagrees.
+  today.** A body carries its own copy so the `.puml` renders on its own, and that copy was
+  refreshed only when the whole picture was regenerated, so a diagram whose content had not changed
+  went on drawing the palette it was authored with. The header is refreshed on every edit, and a
+  check reports any diagram that disagrees.
 - **A scratchpad's version is the store's.** A client omitting the in-document version drove the
   stored version backwards, after which two writers could each overwrite the other indefinitely
   without either being detected as stale. A save that stores what is already stored is no longer a
@@ -82,8 +91,7 @@ Three renderers stopped losing content that the source contained.
   only, so composition and aggregation diamonds and the assignment ball were drawn underneath their
   own node.
 - **A custom primitive resolves the same way every time.** Where two share a label, resolution
-  followed dictionary order and could refuse a reference an enterprise declaration satisfies, while
-  naming the wrong cause.
+  followed dictionary order and could refuse a reference an enterprise declaration satisfies.
 
 ### Changed
 
