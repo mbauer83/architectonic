@@ -149,25 +149,38 @@ export function useFreeExploration(deps: FreeExplorationDeps) {
       }
     }
 
+    // The focus joins the round unless the canvas already knows it — on the root load the graph
+    // holds nothing at all, and on a straggler path it holds a node with no domain yet. Left out,
+    // it painted grey and id-labelled while every neighbour arrived coloured, and resolved a fetch
+    // later, at which point the domain it added to the legend re-framed the whole graph.
+    const focusOnCanvas = nodes.value.find((n) => n.id === entityId)
+    const unresolved = focusOnCanvas?.domain ? [...arrivals.keys()] : [entityId, ...arrivals.keys()]
+
     // One parallel round for the whole hop, before anything is shown. This costs no extra
     // waiting: the layout could never run until these landed anyway — and the complete edge set
     // is asked for in the same round, so it arrives with them rather than after a second wait.
     const factsById = new Map<string, EntityFacts>()
     const [complete] = await Promise.all([
       edgesAmong([...beforeIds, entityId, ...arrivals.keys()]),
-      ...[...arrivals.keys()].map(async (id) => {
+      ...unresolved.map(async (id) => {
         const facts = await fetchEntityFacts(id)
         if (facts) factsById.set(id, facts)
       }),
     ])
 
     // Synchronous from here: no await, so the nodes appear coloured, labelled and already
-    // seeded around their parent, in a single paint, and then animate.
+    // seeded around their parent, in a single paint, and then animate. The focus is added here
+    // too when the canvas does not hold it, so that the root and its hop are one transition; see
+    // `loadRoot`.
+    if (!focusOnCanvas) {
+      addNode({ id: entityId, label: friendlyEntityName(entityId), type: entityId.split('@')[0] })
+    }
     for (const [id, addedBy] of arrivals) {
       addNode({ id, label: friendlyEntityName(id), type: id.split('@')[0], addedBy })
-      const facts = factsById.get(id)
-      const node = facts ? nodes.value.find((n) => n.id === id) : undefined
-      if (node && facts) applyFacts(node, facts)
+    }
+    for (const [id, facts] of factsById) {
+      const node = nodes.value.find((n) => n.id === id)
+      if (node) applyFacts(node, facts)
     }
     for (const c of complete) {
       addEdge({
@@ -211,6 +224,12 @@ export function useFreeExploration(deps: FreeExplorationDeps) {
    * single node — and the neighbourhood arriving a moment later refits to something an order
    * of magnitude larger. The user sees a zoom flip that corresponds to no state they asked
    * for. The sidebar is a separate concern and still fills immediately.
+   *
+   * Which is why the root is *not* added here. It used to be, and that was one transition for as
+   * long as the hop published synchronously; resolving the hop before showing it — the fix for
+   * neighbours arriving grey — put a fetch between the two, and the lone root held the screen for
+   * a third of a second again. `applyNeighbourhood` adds whichever of the two the canvas is
+   * missing, in its own synchronous pass, so the pair cannot come apart a third time.
    */
   const loadRoot = (): void => {
     if (!rootId.value) return
@@ -220,7 +239,6 @@ export function useFreeExploration(deps: FreeExplorationDeps) {
     selectNode(id)
     void Effect.runPromise(svc.getConnections(id, 'any')).then(async (conns: ConnectionList) => {
       if (rootId.value !== id) return // superseded by a newer root while the fetch was in flight
-      addNode({ id, label: friendlyEntityName(id), type: id.split('@')[0] })
       await applyNeighbourhood(id, conns)
     })
   }
