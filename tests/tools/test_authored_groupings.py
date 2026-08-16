@@ -406,3 +406,55 @@ class TestADomainLeftEmptyIsNotDrawn:
         assert self._empty_boxes(body) == []
         assert "Unclaimed Goal" in body
         assert "DOM_motivation" in body, "the domain still holding a member must keep its box"
+
+
+class TestTheReadContractAcceptsWhatTheWriteSideAuthors:
+    """The pair, not each side alone.
+
+    `authored_groupings` nest to any depth on the write side, and a box that only nests others
+    carries no `entity-ids` at all. The read contract required that key on every box, so every
+    diagram whose groupings nest authored cleanly, verified cleanly, rendered — and answered its own
+    `GET /api/diagrams/{id}` with a 500. Testing either side alone would have found nothing: the
+    writer emitted valid frontmatter and the reader validated valid input; only the round trip over
+    what the syntax *permits* disagrees.
+    """
+
+    @staticmethod
+    def _shapes() -> list[dict[str, object]]:
+        """Every shape the write side permits a box to take."""
+        return [
+            {"label": "Members only", "entity-ids": ["APP@1.a.one"]},
+            {"label": "Nesting only", "groups": [{"label": "Inner", "entity-ids": ["APP@1.a.two"]}]},
+            {
+                "label": "Both",
+                "entity-ids": ["APP@1.a.three"],
+                "groups": [{"label": "Deeper", "groups": [{"label": "Deepest", "entity-ids": ["APP@1.a.four"]}]}],
+            },
+        ]
+
+    @pytest.mark.parametrize("shape", _shapes())
+    def test_every_authored_shape_validates_on_the_way_out(self, shape: dict[str, object]) -> None:
+        from src.infrastructure.rest.contracts.diagrams import AuthoredGroupingResponse
+
+        AuthoredGroupingResponse.model_validate(shape)
+
+    def test_a_box_that_only_nests_reads_back_with_its_nesting_intact(self) -> None:
+        from src.infrastructure.rest.contracts.diagrams import AuthoredGroupingResponse
+
+        read = AuthoredGroupingResponse.model_validate(self._shapes()[1])
+
+        assert read.entity_ids == [], "a box that only nests holds no members of its own"
+        assert read.groups is not None
+        assert [g.label for g in read.groups] == ["Inner"]
+        assert read.groups[0].entity_ids == ["APP@1.a.two"]
+
+    def test_nesting_survives_to_the_depth_the_writer_allows(self) -> None:
+        from src.infrastructure.rest.contracts.diagrams import AuthoredGroupingResponse
+
+        read = AuthoredGroupingResponse.model_validate(self._shapes()[2])
+
+        assert read.entity_ids == ["APP@1.a.three"]
+        assert read.groups is not None
+        deeper = read.groups[0]
+        assert deeper.groups is not None
+        assert deeper.groups[0].entity_ids == ["APP@1.a.four"]

@@ -282,8 +282,16 @@ class AuthoredGroupingResponse(NullsOmitted):
     look is otherwise derived from the members' domains.
     """
 
+    #: Absent from what the write side authors on a box that only nests others, and present in
+    #: every box this contract *serves*. Both halves matter: requiring the key made every diagram
+    #: whose groupings nest fail its own read with a 500 — authored cleanly, verified clean,
+    #: rendered — while letting the default reach the served document would declare the key
+    #: optional to clients and ask each of them to handle an absence the server cannot produce.
+    model_config = ConfigDict(json_schema_serialization_defaults_required=True)
+
     label: str
-    entity_ids: list[str] = Field(alias="entity-ids")
+    #: Empty for a box that only nests others. A box holds members, or holds boxes, or both.
+    entity_ids: list[str] = Field(default_factory=list, alias="entity-ids")
     #: Boxes nest to any depth.
     groups: list["AuthoredGroupingResponse"] | None = None
     stereotype: str | None = None
