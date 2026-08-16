@@ -40,23 +40,25 @@ _NEIGHBOR_TYPES: frozenset[str] = frozenset({
 })
 
 # Allowed model entity types per C4 level and role.
-# service removed from _CONTEXT_PROJ_TYPES: services are internal behavioural abstractions
-# (e.g. AMS), not external systems. External peers are application-components or persons.
-_CONTEXT_PROJ_TYPES: frozenset[str] = frozenset({
-    "application-component", "grouping", "business-actor", "role",
+#
+# A service is never an external peer, at any level: it is behaviour the architecture provides,
+# and drawing it with the external-system notation tells a reader the system depends on a third
+# party that does not exist. The rule was established for the context level and spelled only
+# there; the container and component neighbour sets kept `service` and so drew six of the
+# platform's own application services as external systems the moment the model gained an edge
+# reaching them. One rule, stated once here, for all three levels.
+_EXTERNAL_PEER_TYPES: frozenset[str] = frozenset({
+    "application-component", "business-actor", "role",
 })
+_CONTEXT_PROJ_TYPES: frozenset[str] = _EXTERNAL_PEER_TYPES | {"grouping"}
 _CONTAINER_INTERNAL_TYPES: frozenset[str] = frozenset({
     "application-component", "service", "data-object", "node", "grouping",
 })
-_CONTAINER_NEIGHBOR_TYPES: frozenset[str] = frozenset({
-    "application-component", "service", "business-actor", "role",
-})
+_CONTAINER_NEIGHBOR_TYPES: frozenset[str] = _EXTERNAL_PEER_TYPES
 _COMPONENT_INTERNAL_TYPES: frozenset[str] = frozenset({
     "application-component", "function", "service", "data-object", "grouping",
 })
-_COMPONENT_NEIGHBOR_TYPES: frozenset[str] = frozenset({
-    "application-component", "service", "data-object", "business-actor", "role",
-})
+_COMPONENT_NEIGHBOR_TYPES: frozenset[str] = _EXTERNAL_PEER_TYPES | {"data-object"}
 
 
 @dataclass(frozen=True)
