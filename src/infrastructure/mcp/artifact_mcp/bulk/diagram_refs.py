@@ -20,6 +20,7 @@ from src.domain.artifact_id import (
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.write import artifact_write_ops
 from src.infrastructure.write.artifact_write._sync_helpers import LookupStore
+from src.infrastructure.write.artifact_write.staged_workspace import materialize_directory_skeleton
 
 
 def connection_artifact_id(source_entity: str, connection_type: str, target_entity: str) -> str:
@@ -96,6 +97,10 @@ def auto_sync_diagrams(
     store_factory: Callable[[], LookupStore] | None = None,
 ) -> list[dict[str, object]]:
     actions: list[dict[str, object]] = []
+    # Reconciling a scope-bound diagram re-projects it, which needs an index over the whole
+    # repository — and inside a transaction that index is built over the staged root, whose tree is
+    # empty until something writes into it. Outside a transaction this is a no-op.
+    materialize_directory_skeleton(repo_root)
     for diagram_id in sorted(set(diagram_ids)):
         store = store_factory() if store_factory is not None else ArtifactRepository(shared_artifact_index([repo_root]))
         result = artifact_write_ops.refresh_diagram(

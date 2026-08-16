@@ -8,6 +8,7 @@ from typing import Callable
 from src.application.ports import Candidate
 from src.application.repo_path_helpers import all_model_roots
 from src.domain.artifact_id import stable_id
+from src.infrastructure.write.artifact_write.staged_workspace import overlay_paths
 
 from ._mem_store import _MemStore
 from ._rwlock import _RWLock
@@ -66,7 +67,7 @@ class _IdentityResolver:
             p
             for root in repo_roots
             for mr in all_model_roots(root)
-            for p in mr.rglob(f"{short}*.md")
+            for p in overlay_paths(mr, (f"{short}*.md",))
         ]
         with self._lock.reading():
             indexed_paths = [

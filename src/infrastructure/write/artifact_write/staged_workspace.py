@@ -106,6 +106,36 @@ def overlay_paths(root: Path, patterns: Sequence[str]) -> Iterator[Path]:
                 yield staged_path
 
 
+#: Directories never mirrored: git's own tree, and the transactions root itself — mirroring that
+#: would walk the staging tree being created.
+_SKELETON_EXCLUDED = frozenset({".git", ".arch-repo"})
+
+
+def materialize_directory_skeleton(staged_root: Path) -> None:
+    """Give *staged_root* the live repository's directory tree, leaving every file lazy.
+
+    Called by the operations that need to *discover* where to look rather than to read a path they
+    already name: building an index over a staged root walks `all_model_roots`, which asks
+    `exists()` and `iterdir()`, gets an empty tree, finds no model roots, and answers every
+    subsequent lookup `None`. `overlay_paths` cannot serve them — it lists files under a directory
+    already known, and the directory is what is missing.
+
+    Deliberately **not** part of creating the staging tree. Staging is O(1) by design and a fitness
+    test holds it there; this is O(directories) and is paid by the caller that needs a full index,
+    which is a whole-repository operation already. Directories are structure and cost one `mkdir`
+    each; files stay copy-on-write.
+    """
+    enclosing = _enclosing_staged_root(staged_root)
+    if enclosing is None:
+        return
+    _, live_root = enclosing
+    for live_dir in sorted(p for p in live_root.rglob("*") if p.is_dir()):
+        rel = live_dir.relative_to(live_root)
+        if _SKELETON_EXCLUDED.intersection(rel.parts):
+            continue
+        (staged_root / rel).mkdir(parents=True, exist_ok=True)
+
+
 def _enclosing_staged_root(path: Path) -> tuple[Path, Path] | None:
     """The (staged root, live root) pair whose staging tree contains *path*, if any."""
     for staged_root, live_root in _ACTIVE_LIVE_ROOTS.items():

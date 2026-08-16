@@ -46,6 +46,7 @@ from src.domain.ontology_representation.artifact_types import (
     RepoMount,
 )
 from src.domain.repository.repo_layout import SCRATCHPAD_SUFFIX
+from src.infrastructure.write.artifact_write.staged_workspace import overlay_paths
 
 from ._mem_store import _MemStore
 
@@ -82,7 +83,7 @@ def _insert_mounted(
 def _scan_model_records(mount: RepoMount, mem: _MemStore, *, domain_names: frozenset[str]) -> None:
     """Index entities and outgoing connections across every model root of a repo."""
     for model_root in all_model_roots(mount.root):
-        for path in sorted(model_root.rglob("*.md")):
+        for path in sorted(overlay_paths(model_root, ("*.md",))):
             if path.name.endswith(".outgoing.md"):
                 continue
             entity = parse_entity(path, model_root, domain_names=domain_names)
@@ -92,7 +93,7 @@ def _scan_model_records(mount: RepoMount, mem: _MemStore, *, domain_names: froze
                     replace(entity, group=grp), "entity", mount.root, mem.entities,
                     candidates_map=mem.identity_candidates, scope=mount.scope,
                 )
-        for path in sorted(model_root.rglob("*.outgoing.md")):
+        for path in sorted(overlay_paths(model_root, ("*.outgoing.md",))):
             grp = group_fn_entity(path, mount.root)
             for conn in parse_outgoing_file(path):
                 _insert_mounted(
@@ -103,11 +104,12 @@ def _scan_model_records(mount: RepoMount, mem: _MemStore, *, domain_names: froze
 
 def _iter_diagram_sources(diag_root: Path) -> Iterator[Path]:
     """Diagram .puml/.md sources under *diag_root*, excluding the rendered output tree."""
-    rendered = (diag_root.parent / RENDERED).resolve()
-    for suffix in ("*.puml", "*.md"):
-        for path in sorted(diag_root.rglob(suffix)):
-            if not path.resolve().is_relative_to(rendered):
-                yield path
+    # Matched on the path as listed, not on `resolve()`: inside a staged transaction `overlay_paths`
+    # symlinks live files in as it lists them, so resolving would compare a live path against a
+    # staged rendered root, never match, and index the rendered tree as if it were source.
+    for path in sorted(overlay_paths(diag_root, ("*.puml", "*.md"))):
+        if RENDERED not in path.parts:
+            yield path
 
 
 _AttrTypeRefFn = Callable[["DiagramRecord"], list[tuple[str, str, str]]]
@@ -138,10 +140,11 @@ def _scan_diagram_records(
 
 
 def _scan_document_records(repo_root: Path, mem: _MemStore) -> None:
+    # No `exists()` guard: inside a staged transaction the directory is not materialized until
+    # something writes to it, so the guard would return early and index no documents at all.
+    # `overlay_paths` yields nothing for a root that genuinely holds none.
     doc_root = docs_root(repo_root)
-    if not doc_root.exists():
-        return
-    for path in sorted(doc_root.rglob("*.md")):
+    for path in sorted(overlay_paths(doc_root, ("*.md",))):
         doc = parse_document(path)
         if doc is not None:
             grp = group_fn_document(path, repo_root)
@@ -157,9 +160,7 @@ def _scan_scratchpad_records(repo_root: Path, mem: _MemStore) -> None:
     scratchpad repository refuses at the point it can say so.
     """
     root = scratchpads_root(repo_root)
-    if not root.exists():
-        return
-    for path in sorted(root.rglob(f"*{SCRATCHPAD_SUFFIX}")):
+    for path in sorted(overlay_paths(root, (f"*{SCRATCHPAD_SUFFIX}",))):
         for note in parse_scratchpad_notes(path, group=group_fn_scratchpad(path, repo_root)):
             mem.scratchpad_notes[note.artifact_id] = note
 
