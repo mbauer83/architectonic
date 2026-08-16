@@ -1,0 +1,208 @@
+---
+artifact-id: ARC@1786821097.07gFaTo.setting-up-a-workspace
+artifact-type: diagram
+name: Setting Up a Workspace
+version: 0.1.0
+status: active
+keywords:
+- adoption
+- setup
+- workspace
+- onboarding
+- process
+diagram-type: archimate-layered
+entity-ids-used:
+- PRC@1786821069.1fMslbs.set-up-a-workspace
+- PRC@1776633074.Tz_a_O.initialize-workspace
+- PRC@1786821070.9ybAn48.upgrade-repository-format
+- JNO@1786821070.BJebiKN.initialized-or-upgraded
+- FNC@1783870976.MlO3ST.load-guidance-content
+- PRC@1776635640.U4aAdh.architecture-modelling-planning
+- APP@1786793392.Ir9SkCr.workspace-administration-toolkit
+- APP@1776633694.w51oVF.workspace-initializer
+- APP@1783872532.OZbaBh.repository-upgrade-framework
+- AIF@1786793394.ZVeJv9r.workspace-administration-interface
+- ACT@1712870400.OLWiNc.devops-engineer
+- ACT@1712870400.Pp8Qq8.developer
+connection-ids-used:
+- AIF@1786793394.ZVeJv9r---ACT@1712870400.OLWiNc@@archimate-association
+- AIF@1786793394.ZVeJv9r---ACT@1712870400.Pp8Qq8@@archimate-association
+- APP@1786793392.Ir9SkCr---AIF@1786793394.ZVeJv9r@@archimate-assignment
+- APP@1786793392.Ir9SkCr---APP@1776633694.w51oVF@@archimate-composition
+- APP@1776633694.w51oVF---PRC@1776633074.Tz_a_O@@archimate-assignment
+- APP@1786793392.Ir9SkCr---APP@1783872532.OZbaBh@@archimate-composition
+- APP@1783872532.OZbaBh---PRC@1786821070.9ybAn48@@archimate-assignment
+- APP@1786793392.Ir9SkCr---FNC@1783870976.MlO3ST@@archimate-assignment
+- JNO@1786821070.BJebiKN---FNC@1783870976.MlO3ST@@archimate-triggering
+- PRC@1786821069.1fMslbs---FNC@1783870976.MlO3ST@@archimate-composition
+- FNC@1783870976.MlO3ST---PRC@1776635640.U4aAdh@@archimate-triggering
+- PRC@1776633074.Tz_a_O---JNO@1786821070.BJebiKN@@archimate-triggering
+- PRC@1786821070.9ybAn48---JNO@1786821070.BJebiKN@@archimate-triggering
+- PRC@1786821069.1fMslbs---PRC@1776633074.Tz_a_O@@archimate-composition
+- PRC@1786821069.1fMslbs---PRC@1786821070.9ybAn48@@archimate-composition
+last-updated: '2026-08-15T19:24:59Z'
+---
+@startuml setting-up-a-workspace
+hide stereotype
+
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 12
+skinparam shadowing false
+skinparam roundcorner 4
+skinparam backgroundColor #FAFAFA
+skinparam defaultTextAlignment center
+
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 80
+!define Rel_Access(from, to, label) from -[dotted]-> to
+!define Rel_Access_Up(from, to, label) from -[dotted]up-> to
+!define Rel_Access_Down(from, to, label) from -[dotted]down-> to
+!define Rel_Access_Left(from, to, label) from -[dotted]left-> to
+!define Rel_Access_Right(from, to, label) from -[dotted]right-> to
+!define Rel_Aggregation(from, to, label) from o-- to
+!define Rel_Aggregation_Up(from, to, label) from o-up- to
+!define Rel_Aggregation_Down(from, to, label) from o-down- to
+!define Rel_Aggregation_Left(from, to, label) from o-left- to
+!define Rel_Aggregation_Right(from, to, label) from o-right- to
+!define Rel_Assignment(from, to, label) from --> to
+!define Rel_Assignment_Up(from, to, label) from -up-> to
+!define Rel_Assignment_Down(from, to, label) from -down-> to
+!define Rel_Assignment_Left(from, to, label) from -left-> to
+!define Rel_Assignment_Right(from, to, label) from -right-> to
+!define Rel_Association(from, to, label) from -- to
+!define Rel_Association_Up(from, to, label) from -up- to
+!define Rel_Association_Down(from, to, label) from -down- to
+!define Rel_Association_Left(from, to, label) from -left- to
+!define Rel_Association_Right(from, to, label) from -right- to
+!define Rel_Composition(from, to, label) from *-- to
+!define Rel_Composition_Up(from, to, label) from *-up- to
+!define Rel_Composition_Down(from, to, label) from *-down- to
+!define Rel_Composition_Left(from, to, label) from *-left- to
+!define Rel_Composition_Right(from, to, label) from *-right- to
+!define Rel_Flow(from, to, label) from ..> to
+!define Rel_Flow_Up(from, to, label) from .up.> to
+!define Rel_Flow_Down(from, to, label) from .down.> to
+!define Rel_Flow_Left(from, to, label) from .left.> to
+!define Rel_Flow_Right(from, to, label) from .right.> to
+!define Rel_Influence(from, to, label) from ..> to
+!define Rel_Influence_Up(from, to, label) from .up.> to
+!define Rel_Influence_Down(from, to, label) from .down.> to
+!define Rel_Influence_Left(from, to, label) from .left.> to
+!define Rel_Influence_Right(from, to, label) from .right.> to
+!define Rel_Realization(from, to, label) from ..|> to
+!define Rel_Realization_Up(from, to, label) from .up.|> to
+!define Rel_Realization_Down(from, to, label) from .down.|> to
+!define Rel_Realization_Left(from, to, label) from .left.|> to
+!define Rel_Realization_Right(from, to, label) from .right.|> to
+!define Rel_Serving(from, to, label) from --> to
+!define Rel_Serving_Up(from, to, label) from -up-> to
+!define Rel_Serving_Down(from, to, label) from -down-> to
+!define Rel_Serving_Left(from, to, label) from -left-> to
+!define Rel_Serving_Right(from, to, label) from -right-> to
+!define Rel_Specialization(from, to, label) from --|> to
+!define Rel_Specialization_Up(from, to, label) from -up-|> to
+!define Rel_Specialization_Down(from, to, label) from -down-|> to
+!define Rel_Specialization_Left(from, to, label) from -left-|> to
+!define Rel_Specialization_Right(from, to, label) from -right-|> to
+!define Rel_Triggering(from, to, label) from --> to
+!define Rel_Triggering_Up(from, to, label) from -up-> to
+!define Rel_Triggering_Down(from, to, label) from -down-> to
+!define Rel_Triggering_Left(from, to, label) from -left-> to
+!define Rel_Triggering_Right(from, to, label) from -right-> to
+skinparam rectangle<<ApplicationGrouping>> {
+  BackgroundColor #DBEAEE
+  BorderColor #353E41
+}
+skinparam rectangle<<BusinessGrouping>> {
+  BackgroundColor #F7EDC3
+  BorderColor #474024
+}
+skinparam rectangle<<CommonGrouping>> {
+  BackgroundColor #F3F1EB
+  BorderColor #45433F
+}
+skinparam rectangle<<application_component>> {
+  BackgroundColor #B0D0D9
+  BorderColor #353E41
+}
+skinparam rectangle<<application_interface>> {
+  BackgroundColor #B0D0D9
+  BorderColor #353E41
+}
+skinparam rectangle<<business_actor>> {
+  BackgroundColor #EDD779
+  BorderColor #474024
+}
+skinparam rectangle<<function>> {
+  BackgroundColor #E5DFD3
+  BorderColor #45433F
+  RoundCorner 14
+}
+skinparam rectangle<<process>> {
+  BackgroundColor #E5DFD3
+  BorderColor #45433F
+  RoundCorner 14
+}
+sprite $archimate_application_component <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M4 4.2h7.4v7.6H4z"  fill="#252327" stroke="none"/><path d="M2.30 4.95h1.70v1.30H2.30z" fill="#252327"/><path d="M2.30 7.35h1.70v1.30H2.30z" fill="#252327"/><path d="M2.30 9.75h1.70v1.30H2.30z" fill="#252327"/><path d="M11.40 4.95h1.40v1.30H11.40z" fill="#252327"/><path d="M11.40 7.35h1.40v1.30H11.40z" fill="#252327"/><path d="M11.40 9.75h1.40v1.30H11.40z" fill="#252327"/></svg>
+sprite $archimate_application_interface <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.80 7.35h3.60v1.30H2.80z" fill="#252327"/><circle cx="9.6" cy="8" r="3.4"  fill="none" stroke="#252327" stroke-width="1.3"/></svg>
+sprite $archimate_business_actor <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="4" r="1.9"  fill="none" stroke="#252327" stroke-width="1.3"/><path d="M7.35 5.90v4.10h1.30V5.90z" fill="#252327"/><path d="M5.68 13.54L4.72 12.66L7.52 9.56L8.48 10.44z" fill="#252327"/><path d="M7.52 10.44L8.48 9.56L11.28 12.66L10.32 13.54z" fill="#252327"/><path d="M5.00 7.45h6.00v1.30H5.00z" fill="#252327"/></svg>
+sprite $archimate_function <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.9 11.7V5.4L8 3.1l5.1 2.3v6.3L8 9.2z"  fill="#252327" stroke="none"/></svg>
+sprite $archimate_process <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.6 4.1h6.3V2.8l4.5 5.2-4.5 5.2v-1.3H2.6z"  fill="#252327" stroke="none"/></svg>
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
+
+title Setting Up a Workspace
+
+rectangle "Business" <<BusinessGrouping>> as DOM_business {
+  rectangle "Business Actors" <<BusinessGrouping>> as GRPT_business_1 {
+    rectangle "<$archimate_business_actor{scale=1.2}> DevOps Engineer" <<business_actor>> as ACT_OLWiNc
+    rectangle "<$archimate_business_actor{scale=1.2}> Developer" <<business_actor>> as ACT_Pp8Qq8
+  }
+  ACT_OLWiNc -[hidden]down- ACT_Pp8Qq8
+
+}
+
+rectangle "Common" <<CommonGrouping>> as DOM_common {
+  rectangle "<$archimate_process{scale=1.2}> Set Up a Workspace" <<process>> as PRC_1fMslbs {
+    rectangle "<$archimate_process{scale=1.2}> Initialize Workspace\n«Application Process»" <<process>> as PRC_Tz_a_O
+    rectangle "<$archimate_process{scale=1.2}> Upgrade Repository Format" <<process>> as PRC_9ybAn48
+    circle " " as JNO_BJebiKN
+    rectangle "<$archimate_function{scale=1.2}> Load Guidance Content\n«Application Function»" <<function>> as FNC_MlO3ST
+    PRC_Tz_a_O -[hidden]right- PRC_9ybAn48
+    PRC_9ybAn48 -[hidden]down- JNO_BJebiKN
+    JNO_BJebiKN -[hidden]down- FNC_MlO3ST
+    PRC_Tz_a_O -[hidden]down- JNO_BJebiKN
+    PRC_9ybAn48 -[hidden]down- JNO_BJebiKN
+  }
+
+  rectangle "<$archimate_process{scale=1.2}> Architecture Modelling & Planning\n«Business Process»" <<process>> as PRC_U4aAdh
+
+}
+DOM_business -[hidden]down- DOM_common
+
+rectangle "Application" <<ApplicationGrouping>> as DOM_application {
+  rectangle "<$archimate_application_interface{scale=1.2}> Workspace Administration Interface" <<application_interface>> as AIF_ZVeJv9r
+
+  rectangle "<$archimate_application_component{scale=1.2}> Workspace Administration Toolkit" <<application_component>> as APP_Ir9SkCr {
+    rectangle "<$archimate_application_component{scale=1.2}> Workspace Initializer\n«Module»" <<application_component>> as APP_w51oVF
+    rectangle "<$archimate_application_component{scale=1.2}> Repository Upgrade Framework" <<application_component>> as APP_OZbaBh
+    APP_w51oVF -[hidden]down- APP_OZbaBh
+  }
+
+}
+DOM_common -[hidden]down- DOM_application
+
+' Connections
+AIF_ZVeJv9r -up- ACT_OLWiNc
+AIF_ZVeJv9r -up- ACT_Pp8Qq8
+APP_Ir9SkCr -up-> AIF_ZVeJv9r
+APP_w51oVF --> PRC_Tz_a_O : «Behavior Assignment»
+APP_OZbaBh --> PRC_9ybAn48 : «Behavior Assignment»
+APP_Ir9SkCr --> FNC_MlO3ST : «Behavior Assignment»
+JNO_BJebiKN --> FNC_MlO3ST
+FNC_MlO3ST --> PRC_U4aAdh
+PRC_Tz_a_O --> JNO_BJebiKN
+PRC_9ybAn48 --> JNO_BJebiKN
+
+@enduml

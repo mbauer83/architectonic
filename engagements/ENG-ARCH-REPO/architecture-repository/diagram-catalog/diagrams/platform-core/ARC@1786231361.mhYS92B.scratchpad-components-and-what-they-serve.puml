@@ -21,24 +21,24 @@ entity-ids-used:
 - DOB@1786225252.cUsQOox.scratchpad-layout-record
 - DOB@1786225252.luoCiQt.scratchpad-content-record
 connection-ids-used:
+- APP@1712870400.yNhgdh---APP@1777293133.OYEmP1@@archimate-serving
 - APP@1712870400.yNhgdh---APP@1786225304.SpexYvB@@archimate-serving
 - APP@1712870400.yNhgdh---APP@1786225304.q6wT1kq@@archimate-serving
 - APP@1777293133.OYEmP1---APP@1776149382.lmO0mp@@archimate-serving
-- APP@1786225304.7RbfkON---APP@1786225304.SpexYvB@@archimate-serving
-- APP@1786225304.7RbfkON---DOB@1786225252.cUsQOox@@archimate-access
-- APP@1786225304.7RbfkON---DOB@1786225252.luoCiQt@@archimate-access
-- APP@1786225304._WMG8gv---APP@1786225304.SpexYvB@@archimate-serving
-- APP@1786225304.q6wT1kq---APP@1786225304.SpexYvB@@archimate-serving
+- APP@1776149382.lmO0mp---APP@1786225304.HgIA072@@archimate-composition
 - APP@1777293133.OYEmP1---APP@1786225304.7RbfkON@@archimate-composition
 - APP@1777293133.OYEmP1---APP@1786225304.SpexYvB@@archimate-composition
 - APP@1777293133.OYEmP1---APP@1786225304._WMG8gv@@archimate-composition
 - APP@1777293133.OYEmP1---APP@1786225304.q6wT1kq@@archimate-composition
-- APP@1777293133.OYEmP1---APP@1712870400.yNhgdh@@archimate-composition
-- APP@1776149382.lmO0mp---APP@1786225304.HgIA072@@archimate-composition
-last-updated: '2026-08-13T19:36:34Z'
+- APP@1786225304.7RbfkON---APP@1786225304.SpexYvB@@archimate-serving
+- APP@1786225304.7RbfkON---DOB@1786225252.cUsQOox@@archimate-access
+- APP@1786225304.7RbfkON---DOB@1786225252.luoCiQt@@archimate-access
+- APP@1786225304.SpexYvB---APP@1786225304.HgIA072@@archimate-serving
+- APP@1786225304._WMG8gv---APP@1786225304.SpexYvB@@archimate-serving
+- APP@1786225304.q6wT1kq---APP@1786225304.SpexYvB@@archimate-serving
+last-updated: '2026-08-15T19:34:42Z'
 ---
 @startuml scratchpad---components-and-what-they-serve
-skinparam defaultTextAlignment center
 hide stereotype
 
 skinparam defaultFontName SansSerif
@@ -46,6 +46,7 @@ skinparam defaultFontSize 12
 skinparam shadowing false
 skinparam roundcorner 4
 skinparam backgroundColor #FAFAFA
+skinparam defaultTextAlignment center
 
 skinparam linetype ortho
 skinparam nodesep 60
@@ -132,17 +133,17 @@ rectangle "Application Components" <<ApplicationGrouping>> as GRPT_1 {
     rectangle "<$archimate_application_component{scale=1.2}> Scratchpad Service" <<application_component>> as APP_SpexYvB
     rectangle "<$archimate_application_component{scale=1.2}> Scratchpad Lift Executor" <<application_component>> as APP__WMG8gv
     rectangle "<$archimate_application_component{scale=1.2}> Scratchpad Link Verifier" <<application_component>> as APP_q6wT1kq
-    rectangle "<$archimate_application_component{scale=1.2}> Module Catalog\n«Module»" <<application_component>> as APP_yNhgdh
     APP_7RbfkON -[hidden]down- APP_SpexYvB
     APP_SpexYvB -[hidden]down- APP__WMG8gv
     APP__WMG8gv -[hidden]down- APP_q6wT1kq
-    APP_7RbfkON -[hidden]right- APP_yNhgdh
   }
   rectangle "<$archimate_application_component{scale=1.2}> GUI Authoring Tool\n«Service»" <<application_component>> as APP_lmO0mp {
     rectangle "<$archimate_application_component{scale=1.2}> Scratchpad Canvas" <<application_component>> as APP_HgIA072
   }
+  rectangle "<$archimate_application_component{scale=1.2}> Module Catalog\n«Module»" <<application_component>> as APP_yNhgdh
 }
 APP_OYEmP1 -[hidden]right- APP_lmO0mp
+APP_lmO0mp -[hidden]right- APP_yNhgdh
 
 rectangle "Data Objects" <<ApplicationGrouping>> as GRPT_2 {
   rectangle "<$archimate_data_object{scale=1.2}> Scratchpad Layout Record" <<data_object>> as DOB_cUsQOox
@@ -151,12 +152,14 @@ rectangle "Data Objects" <<ApplicationGrouping>> as GRPT_2 {
 DOB_cUsQOox -[hidden]right- DOB_luoCiQt
 
 ' Connections
+APP_yNhgdh --> APP_OYEmP1
 APP_yNhgdh --> APP_SpexYvB
 APP_yNhgdh --> APP_q6wT1kq
 APP_OYEmP1 --> APP_lmO0mp
 APP_7RbfkON --> APP_SpexYvB
 APP_7RbfkON -[dotted]-> DOB_cUsQOox
 APP_7RbfkON -[dotted]-> DOB_luoCiQt
+APP_SpexYvB --> APP_HgIA072
 APP__WMG8gv --> APP_SpexYvB
 APP_q6wT1kq --> APP_SpexYvB
 

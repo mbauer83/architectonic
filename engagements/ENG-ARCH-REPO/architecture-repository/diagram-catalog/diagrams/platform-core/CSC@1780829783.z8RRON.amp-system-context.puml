@@ -26,8 +26,8 @@ entity-ids-used:
 - APP@1783872532.OZbaBh.repository-upgrade-framework
 connection-ids-used:
 - ACT@1712870400.Nn7Oo7.architect---APP@1776149382.lmO0mp.gui-authoring-tool@@archimate-association
-- ACT@1712870400.OLWiNc.devops-engineer---APP@1712870400.kjC6ex.cli-tool@@archimate-association
-- ACT@1712870400.Pp8Qq8.developer---APP@1712870400.kjC6ex.cli-tool@@archimate-association
+- ACT@1712870400.OLWiNc.devops-engineer---APP@1712870400.kjC6ex.repository-command-line@@archimate-association
+- ACT@1712870400.Pp8Qq8.developer---APP@1712870400.kjC6ex.repository-command-line@@archimate-association
 - ACT@1712870400.Rr9Ss9.product-owner---APP@1776149382.lmO0mp.gui-authoring-tool@@archimate-association
 - ACT@1712870400.Ut1Vv1.upper-technical-management---APP@1776149382.lmO0mp.gui-authoring-tool@@archimate-association
 - APP@1780783991.v6AXNw.ai-agent-host---APP@1780783708.Ne0utf.architecture-mcp-read-bridge@@archimate-association
@@ -61,6 +61,19 @@ connection-ids-used:
 - ROL@1780656241.yswDMB---APP@1780783710.iu_kKL@@archimate-association
 - APP@1783872532.OZbaBh---DOB@1780656431.ApaPcg@@archimate-access
 - APP@1783872532.OZbaBh---DOB@1780656431.p04R7k@@archimate-access
+- AIF@1712870400.KxvY-B---ACT@1712870400.OLWiNc@@archimate-association
+- AIF@1712870400.KxvY-B---ACT@1712870400.Pp8Qq8@@archimate-association
+- AIF@1712870400.wuleEe---ACT@1712870400.Rr9Ss9@@archimate-association
+- AIF@1712870400.wuleEe---ACT@1712870400.Ut1Vv1@@archimate-association
+- AIF@1712870400.wuleEe---ROL@1776633082.udXPfB@@archimate-association
+- AIF@1776149386.Ua50xU---ACT@1712870400.Nn7Oo7@@archimate-association
+- AIF@1776149386.Ua50xU---ACT@1712870400.OLWiNc@@archimate-association
+- AIF@1776149386.Ua50xU---ACT@1712870400.Pp8Qq8@@archimate-association
+- AIF@1776149386.Ua50xU---ACT@1712870400.Rr9Ss9@@archimate-association
+- AIF@1776149386.Ua50xU---ACT@1712870400.Ut1Vv1@@archimate-association
+- AIF@1786793394.ZVeJv9r---ACT@1712870400.OLWiNc@@archimate-association
+- AIF@1786793394.ZVeJv9r---ACT@1712870400.Pp8Qq8@@archimate-association
+- APP@1780783991.v6AXNw---AIF@1712870400.wuleEe@@archimate-association
 diagram-entities: {}
 bindings:
 - id: bind-scope
@@ -69,7 +82,7 @@ bindings:
   correspondence_kind: scoped-by
   target:
     entity_id: APP@1780783671.hkrdtm.architecture-management-platform
-last-updated: '2026-08-13T13:58:47Z'
+last-updated: '2026-08-15T19:49:52Z'
 ---
 @startuml amp---system-context
 !include <C4/C4_Component>
@@ -93,7 +106,6 @@ System_Ext(APP_v6AXNw, "AI Agent Host")
 System_Ext(APP_Je9pmw, "Git Hosting")
 System_Ext(APP_JqIBPJ, "Supply-Chain Signal Sources")
 System_Ext(APP_AeU7V3, "Identifier Allocation Service")
-System_Ext(APP_OZbaBh, "Repository Upgrade Framework")
 Person_Ext(ROL_udXPfB, "AI Agent")
 Person_Ext(ROL_abNYhO, "Risk & Compliance Officer")
 Person_Ext(ROL_yswDMB, "Safety / Security Analyst")
@@ -110,7 +122,6 @@ APP_hkrdtm -[hidden]right- APP_v6AXNw
 APP_v6AXNw -[hidden]right- APP_Je9pmw
 APP_Je9pmw -[hidden]right- APP_JqIBPJ
 APP_JqIBPJ -[hidden]right- APP_AeU7V3
-APP_AeU7V3 -[hidden]right- APP_OZbaBh
 
 
 ACT_Nn7Oo7 --> APP_hkrdtm : uses
@@ -118,12 +129,11 @@ ACT_OLWiNc --> APP_hkrdtm : uses
 ACT_Pp8Qq8 --> APP_hkrdtm : uses
 ACT_Rr9Ss9 --> APP_hkrdtm : uses
 ACT_Ut1Vv1 --> APP_hkrdtm : uses
+ROL_udXPfB --> APP_hkrdtm : uses
 APP_v6AXNw --> APP_hkrdtm : uses
 APP_hkrdtm --> APP_Je9pmw : uses
 APP_hkrdtm --> APP_JqIBPJ : uses
 APP_hkrdtm --> APP_AeU7V3 : uses
-APP_OZbaBh --> APP_hkrdtm : accesses
-ROL_udXPfB --> APP_hkrdtm : uses
 ROL_abNYhO --> APP_hkrdtm : uses
 ROL_yswDMB --> APP_hkrdtm : uses
 @enduml

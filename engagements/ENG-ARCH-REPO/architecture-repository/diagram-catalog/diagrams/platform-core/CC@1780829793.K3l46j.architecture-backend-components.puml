@@ -67,6 +67,10 @@ entity-ids-used:
 - APP@1786225304.q6wT1kq.scratchpad-link-verifier
 - DOB@1786225252.cUsQOox.scratchpad-layout-record
 - DOB@1786225252.luoCiQt.scratchpad-content-record
+- ACT@1712870400.Rr9Ss9.product-owner
+- ACT@1712870400.Ut1Vv1.upper-technical-management
+- APP@1780783991.v6AXNw.ai-agent-host
+- ROL@1776633082.udXPfB.ai-agent
 connection-ids-used:
 - APP@1712870400.ca3vm7.model-verifier---APP@1712870400.YOOEbL.frontmatter-parser@@archimate-serving
 - APP@1712870400.ca3vm7.model-verifier---APP@1776149382.lmO0mp.gui-authoring-tool@@archimate-serving
@@ -87,10 +91,6 @@ connection-ids-used:
 - APP@1712870400.kRZYOA.architecture-mcp-endpoint-adapter---DOB@1777293139.UjyXG3.architecture-ontology-configuration@@archimate-access
 - APP@1712870400.v9LvfK.query-engine---DOB@1712870400.3rilik.sqlite-index@@archimate-access
 - APP@1776149382.lmO0mp.gui-authoring-tool---DOB@1777293144.zynRsm.rendered-diagram@@archimate-access
-- APP@1776633693.tIMxjr.promotion-engine---DOB@1712870400.3rilik.sqlite-index@@archimate-access
-- APP@1776633693.tIMxjr.promotion-engine---DOB@1777293141.4dO6js.global-entity-reference-file@@archimate-access
-- APP@1776633694.w51oVF.workspace-initializer---DOB@1776633700.I9qEoI.workspace-configuration@@archimate-access
-- APP@1776633694.w51oVF.workspace-initializer---DOB@1777293139.UjyXG3.architecture-ontology-configuration@@archimate-access
 - APP@1777293133.OYEmP1.architecture-backend---DOB@1712870400.3rilik.sqlite-index@@archimate-access
 - APP@1777293133.OYEmP1.architecture-backend---DOB@1776633700.I9qEoI.workspace-configuration@@archimate-access
 - APP@1777293134.tY3JIK.git-sync-service---DOB@1776633700.I9qEoI.workspace-configuration@@archimate-access
@@ -115,10 +115,6 @@ connection-ids-used:
 - APP@1712870400.v9LvfK---APP@1776149382.lmO0mp@@archimate-serving
 - APP@1712870400.v9LvfK---DOB@1712870400.3rilik@@archimate-access
 - APP@1776149382.lmO0mp---DOB@1777293144.zynRsm@@archimate-access
-- APP@1776633693.tIMxjr---DOB@1712870400.3rilik@@archimate-access
-- APP@1776633693.tIMxjr---DOB@1777293141.4dO6js@@archimate-access
-- APP@1776633694.w51oVF---DOB@1776633700.I9qEoI@@archimate-access
-- APP@1776633694.w51oVF---DOB@1777293139.UjyXG3@@archimate-access
 - APP@1777293133.OYEmP1---APP@1776149382.lmO0mp@@archimate-serving
 - APP@1777293133.OYEmP1---APP@1780783708.Ne0utf@@archimate-serving
 - APP@1777293133.OYEmP1---APP@1780783709.etTj9M@@archimate-serving
@@ -145,7 +141,6 @@ connection-ids-used:
 - APP@1777293133.OYEmP1---DOB@1783266368.4f-C9z@@archimate-access
 - FNC@1783266393.4zLFys---DOB@1783266368.4f-C9z@@archimate-access
 - APP@1712870400.ca3vm7---DOB@1783872536.ZX-QYj@@archimate-access
-- APP@1712870400.v9LvfK---DOB@1783870961.y7M3wz@@archimate-access
 - APP@1782080489.XWVKAX---FNC@1784502389.EhfOy5@@archimate-association
 - APP@1782080489.XWVKAX---FNC@1784502392.wHsa2g@@archimate-association
 - FNC@1784502389.EhfOy5---DOB@1780656431.ApaPcg@@archimate-access
@@ -166,6 +161,23 @@ connection-ids-used:
 - APP@1786225304.q6wT1kq---APP@1786225304.SpexYvB@@archimate-serving
 - PRC@1786225282._6NSUkC---DOB@1786225252.luoCiQt@@archimate-access
 - PRC@1786225282.si8h9M1---DOB@1786225252.luoCiQt@@archimate-access
+- ACT@1712870400.Rr9Ss9---APP@1776149382.lmO0mp@@archimate-association
+- ACT@1712870400.Ut1Vv1---APP@1776149382.lmO0mp@@archimate-association
+- AIF@1712870400.wuleEe---ACT@1712870400.Rr9Ss9@@archimate-association
+- AIF@1712870400.wuleEe---ACT@1712870400.Ut1Vv1@@archimate-association
+- AIF@1712870400.wuleEe---ROL@1776633082.udXPfB@@archimate-association
+- APP@1776149382.lmO0mp---AIF@1782080492.Y4n-FB@@archimate-association
+- APP@1780783991.v6AXNw---AIF@1712870400.wuleEe@@archimate-association
+- APP@1780783991.v6AXNw---APP@1780783708.Ne0utf@@archimate-association
+- APP@1780783991.v6AXNw---APP@1780783709.etTj9M@@archimate-association
+- APP@1780783991.v6AXNw---APP@1780783710.iu_kKL@@archimate-association
+- APP@1780783991.v6AXNw---APP@1780783711.js9xHR@@archimate-association
+- FNC@1777390494.6xjXsw---DOB@1712870400.3rilik@@archimate-access
+- FNC@1777390494.6xjXsw---DOB@1777293141.4dO6js@@archimate-access
+- FNC@1784853344.qgicoe---DOB@1783870961.y7M3wz@@archimate-access
+- PRC@1776633074.Tz_a_O---DOB@1776633700.I9qEoI@@archimate-access
+- PRC@1776633074.Tz_a_O---DOB@1777293139.UjyXG3@@archimate-access
+- ROL@1776633082.udXPfB---APP@1780783708.Ne0utf@@archimate-association
 diagram-entities: {}
 bindings:
 - id: bind-scope
@@ -174,7 +186,7 @@ bindings:
   correspondence_kind: scoped-by
   target:
     entity_id: APP@1777293133.OYEmP1.architecture-backend
-last-updated: '2026-08-13T13:58:43Z'
+last-updated: '2026-08-15T19:20:59Z'
 ---
 @startuml architecture-backend---components
 !include <C4/C4_Component>
@@ -195,7 +207,6 @@ System_Boundary(APP_OYEmP1, "Architecture Backend") {
   Component(APP_v9LvfK, "Query Engine", "")
   Component(APP_yNhgdh, "Module Catalog", "")
   Component(APP_tIMxjr, "Promotion Engine", "")
-  Component(APP_w51oVF, "Workspace Initializer", "")
   Component(APP_SCKD2U, "Diagram Scaffolder", "")
   Component(APP_a9k_mJ, "Write Request Queue", "")
   Component(APP_tY3JIK, "Git Sync Service", "")
@@ -223,8 +234,7 @@ System_Boundary(APP_OYEmP1, "Architecture Backend") {
   APP_kRZYOA -[hidden]right- APP_v9LvfK
   APP_v9LvfK -[hidden]right- APP_yNhgdh
   APP_yNhgdh -[hidden]right- APP_tIMxjr
-  APP_tIMxjr -[hidden]right- APP_w51oVF
-  APP_w51oVF -[hidden]right- APP_SCKD2U
+  APP_tIMxjr -[hidden]right- APP_SCKD2U
   APP_SCKD2U -[hidden]right- APP_a9k_mJ
   APP_a9k_mJ -[hidden]right- APP_tY3JIK
   APP_tY3JIK -[hidden]right- APP_yaxrWl
@@ -248,11 +258,14 @@ System_Boundary(APP_OYEmP1, "Architecture Backend") {
 
 }
 
+Person_Ext(ACT_Rr9Ss9, "Product Owner")
+Person_Ext(ACT_Ut1Vv1, "Upper Technical Management")
 System_Ext(APP_lmO0mp, "GUI Authoring Tool")
 System_Ext(APP_Ne0utf, "Architecture MCP Read Bridge")
 System_Ext(APP_etTj9M, "Architecture MCP Write Bridge")
 System_Ext(APP_iu_kKL, "Assurance MCP Read Bridge")
 System_Ext(APP_js9xHR, "Assurance MCP Write Bridge")
+System_Ext(APP_v6AXNw, "AI Agent Host")
 System_Ext(APP_Je9pmw, "Git Hosting")
 System_Ext(APP_JqIBPJ, "Supply-Chain Signal Sources")
 System_Ext(APP_AeU7V3, "Identifier Allocation Service")
@@ -275,13 +288,18 @@ System_Ext(DOB_CY3B_f, "Executable Viewpoint Query")
 System_Ext(DOB_zQzA5_, "Viewpoint Presentation Specification")
 System_Ext(DOB_cUsQOox, "Scratchpad Layout Record")
 System_Ext(DOB_luoCiQt, "Scratchpad Content Record")
+Person_Ext(ROL_udXPfB, "AI Agent")
 
+ACT_Rr9Ss9 -[hidden]right- ACT_Ut1Vv1
+ACT_Ut1Vv1 -[hidden]right- ROL_udXPfB
+ROL_udXPfB -[hidden]right- APP_OYEmP1
 APP_OYEmP1 -[hidden]right- APP_lmO0mp
 APP_lmO0mp -[hidden]right- APP_Ne0utf
 APP_Ne0utf -[hidden]right- APP_etTj9M
 APP_etTj9M -[hidden]right- APP_iu_kKL
 APP_iu_kKL -[hidden]right- APP_js9xHR
-APP_js9xHR -[hidden]right- APP_Je9pmw
+APP_js9xHR -[hidden]right- APP_v6AXNw
+APP_v6AXNw -[hidden]right- APP_Je9pmw
 APP_Je9pmw -[hidden]right- APP_JqIBPJ
 APP_JqIBPJ -[hidden]right- APP_AeU7V3
 APP_AeU7V3 -[hidden]right- APP_HgIA072
@@ -305,6 +323,8 @@ DOB_zQzA5_ -[hidden]right- DOB_cUsQOox
 DOB_cUsQOox -[hidden]right- DOB_luoCiQt
 
 
+ACT_Rr9Ss9 --> APP_lmO0mp : uses
+ACT_Ut1Vv1 --> APP_lmO0mp : uses
 APP_yNhgdh --> APP_JOmFWy : uses
 APP_JOmFWy --> DOB_3rilik : accesses
 APP_YOOEbL --> DOB_UjyXG3 : accesses
@@ -317,14 +337,9 @@ APP_kRZYOA --> DOB_I9qEoI : accesses
 APP_kRZYOA --> DOB_UjyXG3 : accesses
 APP_lmO0mp --> APP_v9LvfK : uses
 APP_v9LvfK --> DOB_3rilik : accesses
-APP_v9LvfK --> DOB_y7M3wz : accesses
 APP_SpexYvB --> APP_yNhgdh : uses
 APP_q6wT1kq --> APP_yNhgdh : uses
 APP_lmO0mp --> DOB_zynRsm : accesses
-APP_tIMxjr --> DOB_3rilik : accesses
-APP_tIMxjr --> DOB_4dO6js : accesses
-APP_w51oVF --> DOB_I9qEoI : accesses
-APP_w51oVF --> DOB_UjyXG3 : accesses
 APP_lmO0mp --> APP_OYEmP1 : uses
 APP_Ne0utf --> APP_OYEmP1 : uses
 APP_etTj9M --> APP_OYEmP1 : uses
@@ -337,6 +352,10 @@ APP_tY3JIK --> DOB_I9qEoI : accesses
 APP_yaxrWl --> DOB_4Z28xK : accesses
 APP_yaxrWl --> DOB_zynRsm : accesses
 APP_m_U5S1 --> DOB_ApaPcg : accesses
+APP_v6AXNw --> APP_Ne0utf : uses
+APP_v6AXNw --> APP_etTj9M : uses
+APP_v6AXNw --> APP_iu_kKL : uses
+APP_v6AXNw --> APP_js9xHR : uses
 APP_OYEmP1 --> APP_Je9pmw : uses
 APP_tY3JIK --> APP_Je9pmw : uses
 APP_OYEmP1 --> APP_JqIBPJ : uses
@@ -358,4 +377,5 @@ FNC_EhfOy5 --> DOB_ApaPcg : accesses
 FNC_wHsa2g --> DOB_ApaPcg : accesses
 FNC_wHsa2g --> DOB_z3gor_ : accesses
 FNC_xBRahY --> DOB_UjyXG3 : accesses
+ROL_udXPfB --> APP_Ne0utf : uses
 @enduml

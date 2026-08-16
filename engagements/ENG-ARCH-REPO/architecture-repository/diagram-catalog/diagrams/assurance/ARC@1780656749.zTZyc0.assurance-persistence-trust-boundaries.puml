@@ -30,12 +30,12 @@ connection-ids-used:
 - SSW@1780656477.kIOyT2---APP@1780656431.E0fzqZ@@archimate-serving
 - SSW@1780656477.nhzGvk---APP@1780656431.E0fzqZ@@archimate-serving
 - APP@1780656431.E0fzqZ---DOB@1780656431.ApaPcg@@archimate-access
-- APP@1780656431.GnsLC8---DOB@1780656431.H-xFye@@archimate-access
+- APP@1780656431.GnsLC8---DOB@1780656431.H-xFye@@archimate-association
 - APP@1780656431.e2zPs6---DOB@1780656431.p04R7k@@archimate-access
 - ART@1780656477.X7EfZb---DOB@1780656431.p04R7k@@archimate-realization
 - ART@1780656477.tkNvK_---DOB@1780656431.ApaPcg@@archimate-realization
 - ART@1780656477.tkNvK_---DOB@1780656431.H-xFye@@archimate-realization
-last-updated: '2026-08-13T19:35:53Z'
+last-updated: '2026-08-15T18:41:15Z'
 ---
 @startuml assurance-persistence---trust-boundaries
 skinparam defaultTextAlignment center

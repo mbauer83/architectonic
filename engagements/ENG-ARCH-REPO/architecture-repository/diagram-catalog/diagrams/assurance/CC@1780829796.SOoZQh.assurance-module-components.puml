@@ -36,10 +36,8 @@ connection-ids-used:
 - APP@1780656431.e2zPs6.supply-chain-vulnerability-connector---DOB@1780656431.dRnK-o.bill-of-materials@@archimate-access
 - APP@1780656431.e2zPs6.supply-chain-vulnerability-connector---DOB@1780656431.p04R7k.security-signals-store@@archimate-access
 - APP@1780783993.JqIBPJ.supply-chain-signal-sources---APP@1780656431.e2zPs6.supply-chain-vulnerability-connector@@archimate-serving
-- APP@1780656431.GnsLC8.assurance-archive---DOB@1780656431.H-xFye.assurance-audit-log@@archimate-access
 - APP@1780656430.m-U5S1---DOB@1780656431.ApaPcg@@archimate-access
 - APP@1780656431.E0fzqZ---DOB@1780656431.ApaPcg@@archimate-access
-- APP@1780656431.GnsLC8---DOB@1780656431.H-xFye@@archimate-access
 - APP@1780656431.XFD85E---DOB@1780656431.ApaPcg@@archimate-access
 - APP@1780656431.e2zPs6---DOB@1780656431.dRnK-o@@archimate-access
 - APP@1780656431.e2zPs6---DOB@1780656431.p04R7k@@archimate-access
@@ -54,6 +52,7 @@ connection-ids-used:
 - FNC@1784532421.PILDZV---DOB@1784532443.6ruT_G@@archimate-access
 - APP@1780656431.E0fzqZ---APP@1780656431.GnsLC8@@archimate-serving
 - FNC@1780656241.3xVBUQ---SRV@1712870400.e5MCiF@@archimate-association
+- FNC@1780656241.z9Ac33---DOB@1780656431.H-xFye@@archimate-access
 diagram-entities: {}
 bindings:
 - id: bind-scope
@@ -62,7 +61,7 @@ bindings:
   correspondence_kind: scoped-by
   target:
     entity_id: GRP@1780819145.rW_2nX.assurance-module
-last-updated: '2026-08-13T13:57:55Z'
+last-updated: '2026-08-15T18:39:47Z'
 ---
 @startuml assurance-module---components
 !include <C4/C4_Component>
@@ -102,7 +101,6 @@ System_Ext(APP_OZbaBh, "Repository Upgrade Framework")
 System_Ext(DOB_H_xFye, "Assurance Audit Log")
 System_Ext(DOB_IU4RE4, "Security Signal Snapshot")
 System_Ext(DOB_6ruT_G, "Security Posture Metrics")
-System_Ext(SRV_e5MCiF, "Configuration Service")
 
 GRP_rW_2nX -[hidden]right- APP_lmO0mp
 APP_lmO0mp -[hidden]right- APP_m_U5S1
@@ -114,7 +112,6 @@ APP_KqDjXG -[hidden]right- APP_OZbaBh
 APP_OZbaBh -[hidden]right- DOB_H_xFye
 DOB_H_xFye -[hidden]right- DOB_IU4RE4
 DOB_IU4RE4 -[hidden]right- DOB_6ruT_G
-DOB_6ruT_G -[hidden]right- SRV_e5MCiF
 
 
 APP_m_U5S1 --> DOB_ApaPcg : accesses

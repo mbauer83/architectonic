@@ -27,7 +27,7 @@ entity-ids-used:
 - FNC@1777390446.dxb6ru.index-repository
 - FNC@1776633708.n_JYA2.alias-resolution
 - PRC@1777399926.gtgYvQ.execute-staged-write-transaction
-- PRC@1777409610.wqtZ0P.coordinate-repository-state
+- PRC@1777409610.wqtZ0P.coordinate-reads-and-writes-for-consistency
 connection-ids-used:
 - FNC@1777390460.3ZsfnT---APP@1776149382.lmO0mp@@archimate-association
 - FNC@1777390446.dxb6ru---EVT@1776633084.b6XB2D@@archimate-triggering
@@ -59,10 +59,9 @@ authored-groupings:
   entity-ids:
   - EVT@1777390504.hDF1Qz.artifacts-promoted
   - EVT@1777390507.UCrh3V.architecture-repository-change-detected
-last-updated: '2026-08-13T19:36:14Z'
+last-updated: '2026-08-15T19:07:51Z'
 ---
 @startuml from-write-to-consistent-state
-skinparam defaultTextAlignment center
 hide stereotype
 
 skinparam defaultFontName SansSerif
@@ -70,6 +69,7 @@ skinparam defaultFontSize 12
 skinparam shadowing false
 skinparam roundcorner 4
 skinparam backgroundColor #FAFAFA
+skinparam defaultTextAlignment center
 
 skinparam linetype ortho
 skinparam nodesep 60
@@ -181,7 +181,7 @@ EVT_hDF1Qz -[hidden]right- EVT_UCrh3V
 GRPA_1 -[hidden]down- GRPA_2
 
 rectangle "Common" <<CommonGrouping>> as DOM_common {
-  rectangle "<$archimate_process{scale=1.2}> Coordinate Repository State\n«Application Process»" <<process>> as PRC_wqtZ0P {
+  rectangle "<$archimate_process{scale=1.2}> Coordinate Reads and Writes for Consistency\n«Application Process»" <<process>> as PRC_wqtZ0P {
     rectangle "<$archimate_event{scale=1.2}> Staged Repository Committed\n«Application Event»" <<event>> as EVT_BKj6NZ
     rectangle "<$archimate_event{scale=1.2}> Repository Indexed\n«Application Event»" <<event>> as EVT_b6XB2D
     rectangle "<$archimate_function{scale=1.2}> Broadcast Model Update\n«Application Function»" <<function>> as FNC_3ZsfnT

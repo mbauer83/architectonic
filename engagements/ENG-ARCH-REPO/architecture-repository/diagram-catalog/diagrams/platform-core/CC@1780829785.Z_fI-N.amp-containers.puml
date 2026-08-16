@@ -15,7 +15,7 @@ entity-ids-used:
 - ACT@1712870400.Pp8Qq8.developer
 - ACT@1712870400.Rr9Ss9.product-owner
 - ACT@1712870400.Ut1Vv1.upper-technical-management
-- APP@1712870400.kjC6ex.cli-tool
+- APP@1712870400.kjC6ex.repository-command-line
 - APP@1776149382.lmO0mp.gui-authoring-tool
 - APP@1777293133.OYEmP1.architecture-backend
 - APP@1780783671.hkrdtm.architecture-management-platform
@@ -33,10 +33,17 @@ entity-ids-used:
 - APP@1781976554.AeU7V3.identifier-allocation-service
 - APP@1783872532.OZbaBh.repository-upgrade-framework
 - SRV@1712870400.e5MCiF.configuration-service
+- APP@1786793392.Ir9SkCr.workspace-administration-toolkit
+- SRV@1712870400.Au1Th1.authoring-service
+- SRV@1712870400.Qr8St8.discovery-querying-stats-service
+- SRV@1712870400.Uv9Wx9.repository-promotion-service
+- SRV@1776633088.AIGnSY.diagram-scaffolding-service
+- SRV@1776699451.J8ekRD.model-verification-service
+- SRV@1776699512.vQKsM9.diagram-verification-service
 connection-ids-used:
 - ACT@1712870400.Nn7Oo7.architect---APP@1776149382.lmO0mp.gui-authoring-tool@@archimate-association
-- ACT@1712870400.OLWiNc.devops-engineer---APP@1712870400.kjC6ex.cli-tool@@archimate-association
-- ACT@1712870400.Pp8Qq8.developer---APP@1712870400.kjC6ex.cli-tool@@archimate-association
+- ACT@1712870400.OLWiNc.devops-engineer---APP@1712870400.kjC6ex.repository-command-line@@archimate-association
+- ACT@1712870400.Pp8Qq8.developer---APP@1712870400.kjC6ex.repository-command-line@@archimate-association
 - ACT@1712870400.Rr9Ss9.product-owner---APP@1776149382.lmO0mp.gui-authoring-tool@@archimate-association
 - ACT@1712870400.Ut1Vv1.upper-technical-management---APP@1776149382.lmO0mp.gui-authoring-tool@@archimate-association
 - APP@1777293133.OYEmP1.architecture-backend---APP@1776149382.lmO0mp.gui-authoring-tool@@archimate-serving
@@ -81,6 +88,30 @@ connection-ids-used:
 - APP@1783872532.OZbaBh---DOB@1780656431.ApaPcg@@archimate-access
 - APP@1783872532.OZbaBh---DOB@1780656431.p04R7k@@archimate-access
 - FNC@1780656241.3xVBUQ---SRV@1712870400.e5MCiF@@archimate-association
+- AIF@1712870400.KxvY-B---ACT@1712870400.OLWiNc@@archimate-association
+- AIF@1712870400.KxvY-B---ACT@1712870400.Pp8Qq8@@archimate-association
+- AIF@1712870400.wuleEe---ACT@1712870400.Rr9Ss9@@archimate-association
+- AIF@1712870400.wuleEe---ACT@1712870400.Ut1Vv1@@archimate-association
+- AIF@1712870400.wuleEe---ROL@1776633082.udXPfB@@archimate-association
+- AIF@1776149386.Ua50xU---ACT@1712870400.Nn7Oo7@@archimate-association
+- AIF@1776149386.Ua50xU---ACT@1712870400.OLWiNc@@archimate-association
+- AIF@1776149386.Ua50xU---ACT@1712870400.Pp8Qq8@@archimate-association
+- AIF@1776149386.Ua50xU---ACT@1712870400.Rr9Ss9@@archimate-association
+- AIF@1776149386.Ua50xU---ACT@1712870400.Ut1Vv1@@archimate-association
+- APP@1780783991.v6AXNw---AIF@1712870400.wuleEe@@archimate-association
+- SRV@1712870400.Au1Th1---AIF@1712870400.KxvY-B@@archimate-serving
+- SRV@1712870400.Au1Th1---AIF@1712870400.XjbNQh@@archimate-serving
+- SRV@1712870400.Au1Th1---AIF@1712870400.wuleEe@@archimate-serving
+- SRV@1712870400.Qr8St8---AIF@1712870400.KxvY-B@@archimate-serving
+- SRV@1712870400.Qr8St8---AIF@1712870400.XjbNQh@@archimate-serving
+- SRV@1712870400.Qr8St8---AIF@1712870400.wuleEe@@archimate-serving
+- SRV@1712870400.Uv9Wx9---AIF@1712870400.XjbNQh@@archimate-serving
+- SRV@1776633088.AIGnSY---AIF@1712870400.KxvY-B@@archimate-serving
+- SRV@1776633088.AIGnSY---AIF@1712870400.wuleEe@@archimate-serving
+- SRV@1776699451.J8ekRD---AIF@1712870400.XjbNQh@@archimate-serving
+- SRV@1776699512.vQKsM9---AIF@1712870400.XjbNQh@@archimate-serving
+- AIF@1786793394.ZVeJv9r---ACT@1712870400.OLWiNc@@archimate-association
+- AIF@1786793394.ZVeJv9r---ACT@1712870400.Pp8Qq8@@archimate-association
 diagram-entities: {}
 bindings:
 - id: bind-scope
@@ -89,7 +120,7 @@ bindings:
   correspondence_kind: scoped-by
   target:
     entity_id: APP@1780783671.hkrdtm.architecture-management-platform
-last-updated: '2026-08-13T13:58:40Z'
+last-updated: '2026-08-15T19:07:45Z'
 ---
 @startuml amp---containers
 !include <C4/C4_Component>
@@ -103,13 +134,14 @@ skinparam maxMessageSize 240
 title AMP — Containers
 
 System_Boundary(APP_hkrdtm, "Architecture Management Platform") {
-  Container(APP_kjC6ex, "CLI Tool", "")
+  Container(APP_kjC6ex, "Repository Command Line", "")
   Container(APP_lmO0mp, "GUI Authoring Tool", "")
   Container(APP_OYEmP1, "Architecture Backend", "")
   Container(APP_Ne0utf, "Architecture MCP Read Bridge", "")
   Container(APP_etTj9M, "Architecture MCP Write Bridge", "")
   Container(APP_iu_kKL, "Assurance MCP Read Bridge", "")
   Container(APP_js9xHR, "Assurance MCP Write Bridge", "")
+  Container(APP_Ir9SkCr, "Workspace Administration Toolkit", "")
   Container(GRP_rW_2nX, "Assurance Module", "")
   APP_kjC6ex -[hidden]right- APP_lmO0mp
   APP_lmO0mp -[hidden]right- APP_OYEmP1
@@ -117,7 +149,8 @@ System_Boundary(APP_hkrdtm, "Architecture Management Platform") {
   APP_Ne0utf -[hidden]right- APP_etTj9M
   APP_etTj9M -[hidden]right- APP_iu_kKL
   APP_iu_kKL -[hidden]right- APP_js9xHR
-  APP_js9xHR -[hidden]right- GRP_rW_2nX
+  APP_js9xHR -[hidden]right- APP_Ir9SkCr
+  APP_Ir9SkCr -[hidden]right- GRP_rW_2nX
 
 }
 
@@ -130,11 +163,9 @@ System_Ext(APP_v6AXNw, "AI Agent Host")
 System_Ext(APP_Je9pmw, "Git Hosting")
 System_Ext(APP_JqIBPJ, "Supply-Chain Signal Sources")
 System_Ext(APP_AeU7V3, "Identifier Allocation Service")
-System_Ext(APP_OZbaBh, "Repository Upgrade Framework")
 Person_Ext(ROL_udXPfB, "AI Agent")
 Person_Ext(ROL_abNYhO, "Risk & Compliance Officer")
 Person_Ext(ROL_yswDMB, "Safety / Security Analyst")
-System_Ext(SRV_e5MCiF, "Configuration Service")
 
 ACT_Nn7Oo7 -[hidden]right- ACT_OLWiNc
 ACT_OLWiNc -[hidden]right- ACT_Pp8Qq8
@@ -148,8 +179,6 @@ APP_hkrdtm -[hidden]right- APP_v6AXNw
 APP_v6AXNw -[hidden]right- APP_Je9pmw
 APP_Je9pmw -[hidden]right- APP_JqIBPJ
 APP_JqIBPJ -[hidden]right- APP_AeU7V3
-APP_AeU7V3 -[hidden]right- APP_OZbaBh
-APP_OZbaBh -[hidden]right- SRV_e5MCiF
 
 
 ACT_Nn7Oo7 --> APP_lmO0mp : uses
