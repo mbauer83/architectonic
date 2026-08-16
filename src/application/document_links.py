@@ -37,6 +37,7 @@ import yaml
 
 from src.domain.ontology_representation.artifact_types import DocumentRecord, EntityRecord
 from src.domain.repository.frontmatter import parse_frontmatter
+from src.domain.repository.repo_layout import ARTIFACT_SOURCE_SUFFIXES
 
 #: What a resolved link turned out to address. The same three vocabularies a required-reference term
 #: may name, which is the join: a term of one kind is satisfied only by a link of that kind.
@@ -201,7 +202,8 @@ def resolve_artifact_links(doc_path: Path, content: str) -> list[ResolvedArtifac
     """
     links: list[ResolvedArtifactLink] = []
     for reference in references_from(content, directory=doc_path.parent):
-        if not strip_anchor(reference.href).endswith(".md") or not reference.target.is_file():
+        suffix = Path(strip_anchor(reference.href)).suffix
+        if suffix not in ARTIFACT_SOURCE_SUFFIXES or not reference.target.is_file():
             continue
         fm = _frontmatter_of(reference.target)
         if fm is None:

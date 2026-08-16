@@ -14,7 +14,7 @@ from src.application.verification.artifact_verifier_types import (
     VerificationResult,
     entity_id_from_path,
 )
-from src.domain.repository.repo_layout import MODEL
+from src.domain.repository.repo_layout import ARTIFACT_SOURCE_SUFFIXES, MODEL
 
 
 def check_required_fields(fm: dict, required: frozenset[str], result: VerificationResult, loc: str) -> None:
@@ -215,12 +215,16 @@ def check_internal_links(content: str, path: Path, result: VerificationResult, l
 
     The link reading is `references_from`, which is the one reading of what a document's prose
     refers to. This rule used to carry its own regex, making three.
+
+    Every artifact source counts, not markdown alone: a diagram's source is `.puml` unless its
+    notation is markdown, so a rule that watched only `.md` could not see a link to most of the
+    diagrams in a repository — and a document type can now *require* one.
     """
     from src.application.document_links import references_from, strip_anchor  # noqa: PLC0415
 
     for reference in references_from(content, directory=path.parent):
         file_href = strip_anchor(reference.href)
-        if not file_href.endswith(".md"):
+        if Path(file_href).suffix not in ARTIFACT_SOURCE_SUFFIXES:
             continue
         if _is_absolute_markdown_link(file_href):
             result.issues.append(Issue(

@@ -293,14 +293,17 @@ def _write_linked_document(repo: Path, artifact_id: str) -> str:
     return f"{artifact_id}.md"
 
 
-def _write_linked_diagram(repo: Path, artifact_id: str, diagram_type: str) -> str:
+def _write_linked_diagram(
+    repo: Path, artifact_id: str, diagram_type: str, *, suffix: str = ".md"
+) -> str:
     """A stored diagram of *diagram_type*; returns the href that reaches it from `documents/adr/`.
 
     The type is written as the frontmatter says it, registered or not — which is the point of the
-    unregistered cases below.
+    unregistered cases below. `.md` and `.puml` are both diagram sources, and which one a type uses
+    is a property of its notation rather than of the link.
     """
     _write(
-        repo / "diagram-catalog" / "diagrams" / f"{artifact_id}.md",
+        repo / "diagram-catalog" / "diagrams" / f"{artifact_id}{suffix}",
         f"""\
 ---
 artifact-id: {artifact_id}
@@ -313,7 +316,7 @@ last-updated: '2026-04-22'
 ---
 """,
     )
-    return f"../../diagram-catalog/diagrams/{artifact_id}.md"
+    return f"../../diagram-catalog/diagrams/{artifact_id}{suffix}"
 
 
 def _document_with_body(artifact_id: str, body: str) -> str:
@@ -776,6 +779,65 @@ class TestVerifyDocumentFile:
         assert [i.message for i in result.issues if i.code == "E155"] == [
             "Unknown required document-type connection term: not a doc type (doc:not-a-doc-type)"
         ]
+
+    def test_a_diagram_requirement_is_met_by_a_link_to_a_puml_source(self, repo: Path) -> None:
+        """A diagram's source is `.puml` unless its notation is markdown, which only the matrix
+        type's is. A link reading that accepts `.md` alone sees no diagram at all, so every
+        `diagram:` term would have been unsatisfiable by the diagrams the product mostly writes."""
+        _document_schema_with_sections(
+            repo,
+            sections='[{"name": "Context"}, {"name": "Decision"}, {"name": "Consequences"}]',
+            document_required='["diagram:c4-container"]',
+        )
+        diagram = _write_linked_diagram(
+            repo, "CC@1000000034.AbcDef.containers", "c4-container", suffix=".puml"
+        )
+        doc_id = "ADR@1000000035.AbcDef.source"
+        doc_path = repo / "documents" / "adr" / f"{doc_id}.md"
+        _write(doc_path, _document(doc_id, f"[Containers]({diagram})"))
+
+        verifier = ArtifactVerifier(ArtifactRegistry(shared_artifact_index(repo)), catalogs=_catalogs())
+        result = verifier.verify_document_file(doc_path)
+
+        assert not any(i.code in ("E155", "E156", "W159") for i in result.issues), [
+            i.message for i in result.issues
+        ]
+
+    def test_a_broken_link_to_a_diagram_source_is_reported(self, repo: Path) -> None:
+        """W155 watched `.md` alone, so a link to a deleted PlantUML diagram went unreported — and a
+        document type can now require such a link."""
+        _document_schema(repo)
+        doc_id = "ADR@1000000037.AbcDef.source"
+        doc_path = repo / "documents" / "adr" / f"{doc_id}.md"
+        _write(
+            doc_path,
+            _document(doc_id, "[Gone](../../diagram-catalog/diagrams/CSC@1.AbcDef.gone.puml)"),
+        )
+
+        verifier = ArtifactVerifier(ArtifactRegistry(shared_artifact_index(repo)), catalogs=_catalogs())
+        result = verifier.verify_document_file(doc_path)
+
+        assert [i.message for i in result.issues if i.code == "W155"] == [
+            "Unresolvable internal link: '../../diagram-catalog/diagrams/CSC@1.AbcDef.gone.puml'"
+        ]
+
+    def test_a_link_to_a_file_that_is_not_an_artifact_source_resolves_to_nothing(
+        self, repo: Path
+    ) -> None:
+        _document_schema_with_sections(
+            repo,
+            sections='[{"name": "Context"}, {"name": "Decision"}, {"name": "Consequences"}]',
+            document_required='["diagram:matrix"]',
+        )
+        _write(repo / "diagram-catalog" / "diagrams" / "notes.txt", "not an artifact")
+        doc_id = "ADR@1000000036.AbcDef.source"
+        doc_path = repo / "documents" / "adr" / f"{doc_id}.md"
+        _write(doc_path, _document(doc_id, "[Notes](../../diagram-catalog/diagrams/notes.txt)"))
+
+        verifier = ArtifactVerifier(ArtifactRegistry(shared_artifact_index(repo)), catalogs=_catalogs())
+        result = verifier.verify_document_file(doc_path)
+
+        assert any(i.code == "E155" for i in result.issues)
 
     def test_section_required_diagram_type_connection_is_met_by_a_link_to_one(self, repo: Path) -> None:
         _document_schema_with_sections(

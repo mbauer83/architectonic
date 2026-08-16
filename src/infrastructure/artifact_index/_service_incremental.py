@@ -34,7 +34,7 @@ from src.domain.ontology_representation.artifact_types import (
     RepoMount,
     ScratchpadNoteRecord,
 )
-from src.domain.repository.repo_layout import SCRATCHPAD_SUFFIX, SCRATCHPADS
+from src.domain.repository.repo_layout import ARTIFACT_SOURCE_SUFFIXES, SCRATCHPAD_SUFFIX, SCRATCHPADS
 
 from ._mem_store import _MemStore
 from ._service_scan import _AttrTypeRefFn
@@ -72,7 +72,7 @@ def is_diagram_source_path(path: Path, mounts: list[RepoMount]) -> bool:
         rel = path.resolve().relative_to(mount.root.resolve()).as_posix()
     except ValueError:
         return False
-    return rel.startswith("diagram-catalog/diagrams/") and path.suffix in {".md", ".puml"}
+    return rel.startswith("diagram-catalog/diagrams/") and path.suffix in ARTIFACT_SOURCE_SUFFIXES
 
 
 def is_document_path(path: Path, mounts: list[RepoMount]) -> bool:

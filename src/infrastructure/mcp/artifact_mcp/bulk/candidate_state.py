@@ -17,6 +17,7 @@ from src.domain.ontology_representation.artifact_types import (
     DocumentRecord,
     EntityRecord,
 )
+from src.domain.repository.repo_layout import ARTIFACT_SOURCE_SUFFIXES
 from src.infrastructure.mcp.artifact_mcp.bulk.candidate_lists import CandidateListMixin
 from src.infrastructure.write.artifact_write.staged_workspace import stage_live_path
 
@@ -98,7 +99,7 @@ class CandidateStore(CandidateListMixin):
 
     @staticmethod
     def _is_diagram_path(rel: Path) -> bool:
-        return rel.parts[:2] == (DIAGRAM_CATALOG, DIAGRAMS) and rel.suffix in {".puml", ".md"}
+        return rel.parts[:2] == (DIAGRAM_CATALOG, DIAGRAMS) and rel.suffix in ARTIFACT_SOURCE_SUFFIXES
 
     @staticmethod
     def _is_document_path(rel: Path) -> bool:

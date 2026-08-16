@@ -354,21 +354,30 @@ const insertReference = (markdownLink: string) => {
       <p
         v-if="selectedType?.attribution"
         class="section-hint__name"
-      >{{ selectedType.attribution }}</p>
+      >
+        {{ selectedType.attribution }}
+      </p>
 
       <div
         v-if="requiredTerms.length"
         class="entity-connection-hint entity-connection-hint--required"
       >
         <strong>Required links:</strong> link at least one match for each term:
-        <ReferenceTermChips :terms="requiredTerms" :document-types="documentTypes" required />
+        <ReferenceTermChips
+          :terms="requiredTerms"
+          :document-types="documentTypes"
+          required
+        />
       </div>
       <div
         v-if="suggestedTerms.length"
         class="entity-connection-hint entity-connection-hint--suggested"
       >
         <strong>Suggested links:</strong> consider linking a match for:
-        <ReferenceTermChips :terms="suggestedTerms" :document-types="documentTypes" />
+        <ReferenceTermChips
+          :terms="suggestedTerms"
+          :document-types="documentTypes"
+        />
       </div>
 
       <div
@@ -397,7 +406,10 @@ const insertReference = (markdownLink: string) => {
             class="entity-connection-hint entity-connection-hint--suggested entity-connection-hint--inline"
           >
             Suggested:
-            <ReferenceTermChips :terms="section.suggested_connections" :document-types="documentTypes" />
+            <ReferenceTermChips
+              :terms="section.suggested_connections"
+              :document-types="documentTypes"
+            />
           </span>
         </div>
       </div>
