@@ -86,6 +86,12 @@ runtime, model-backed at every level:
 <!-- media: docs/media/c4-context.png -->
 ![C4 system context for the Architecture Management Platform and its users and external systems](media/c4-context.png)
 
+<!-- media: docs/media/c4-containers.png -->
+![C4 container view of the Architecture Management Platform: the backend, the browser client, the command line and the MCP bridges, with the people and external systems around them](media/c4-containers.png)
+
+<!-- media: docs/media/c4-backend-components.png -->
+![C4 component view inside the architecture backend: the indexer, verifier, query engine, write pipeline and the adapters that expose them](media/c4-backend-components.png)
+
 **7. And into its decisions.** From the
 [Architecture Backend](http://localhost:8000/entities/APP%401777293133.OYEmP1) entity,
 document backlinks lead to the ADRs that shaped it — for instance
