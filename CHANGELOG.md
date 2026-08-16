@@ -3,6 +3,66 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [0.7.0] — 2026-08-16
+
+**[Full detail → `changelog-assets/0.7.0-detail.md`](changelog-assets/0.7.0-detail.md)**
+
+**A document type can now ask for a diagram or another document, not only an entity.** C4 gains the
+portfolio altitude above its zoom and a deployment view beside it, and arc42 ships as a template
+whose twelve sections say what model content each one expects.
+
+### Added
+
+- **Required and suggested references reach all three vocabularies.** A document type, and a section
+  within it, declares terms under `required_connections` and `suggested_connections`. A bare term
+  names an entity type, `@class` an element class, `doc:<type>` a document type and
+  `diagram:<type>` a diagram type. `doc:@all` and `diagram:@all` mean any of that kind. The
+  entity-only spelling is still read, so no schema file has to be rewritten.
+- **A term naming a diagram type this deployment does not register is a warning (W159), not an
+  error.** The assurance diagram types need the confidential store; a stored diagram of such a type
+  still satisfies the requirement, so a shipped template stays usable on a host that cannot create
+  one.
+- **C4 System Landscape** — the altitude above a system context. It is scoped by a *set* of systems
+  (`_scope_entity_ids`), draws them together with the people and third-party systems around all of
+  them, and drills down into the system context of whichever one you click.
+- **C4 Deployment** — where one system's containers run. It draws the same containers a container
+  view draws, placed on the technology hosting them, so it sits beside the zoom rather than below
+  it: the navigation offers it as a lookup from a logical view and the logical views as a lookup
+  back. Hosting is read along ArchiMate's own path,
+  `technology-node --aggregation--> artifact --realization--> application-component`; a container
+  with no artifact is left out rather than given an invented host.
+- **A diagram can be bound to several entities at once.** `bindings[].target` accepts `entity_ids`
+  beside `entity_id`, which is what a landscape's scope is. A diagram still has at most one
+  diagram-level `scoped-by` binding (E405); the plurality is in its target, and a member that does
+  not resolve is **E414**.
+- **arc42**, as a document type every repository is scaffolded with: twelve sections in the
+  standard's order, each declaring the model content it expects. Only *Architecture Decisions*
+  (`doc:adr`) and *Quality Requirements* (`requirement`) require anything, so a skeleton is writable
+  the day it is created. Section structure from arc42 by Dr. Gernot Starke and Dr. Peter Hruschka,
+  CC BY-SA 4.0; the attribution is carried on the document type and shown on the create form.
+- **`THIRD-PARTY-NOTICES.md` inventories shipped content**, not only dependencies — a new
+  "Shipped content" section, generated from `licenses/content.json`.
+
+### Changed
+
+- **`GET /api/document-types` and the document schemata serve `required_connections` /
+  `suggested_connections`** in place of the `*_entity_type_connections` pair, plus `attribution`
+  where a type reproduces a third-party template. Repository schema files keep whichever spelling
+  they carry.
+- **A C4 diagram's navigation carries two axes.** `current_level` orders containment (0 landscape,
+  1 context, 2 container, 3 component) and is `null` for a deployment view;
+  `deployment_diagrams` and `subject_diagrams` name the other axis in each direction.
+  `scope_entity_ids` and `scope_entity_names` accompany the singular fields.
+
+### Fixed
+
+- **An entity-type requirement is no longer satisfied by a linked document or diagram.** The reading
+  behind it reported every linked artifact's `artifact-type`, so a linked diagram contributed the
+  literal type `diagram` to the set an entity term was matched against.
+- **Promotion refuses a selection that would leave a required *document* or *diagram* reference
+  dangling**, and names the artifact — as it already did for a required entity. The engagement and
+  enterprise schema comparison also compares document-level terms, which it had never done.
+
 ## [0.6.0] — 2026-08-16
 
 **[Full detail → `changelog-assets/0.6.0-detail.md`](changelog-assets/0.6.0-detail.md)**
