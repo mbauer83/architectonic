@@ -117,6 +117,24 @@ describe('parametersToWireValues', () => {
     expect(parametersToWireValues(signature, { anchor: 'ARC@1', note: '' })).toEqual({ anchor: 'ARC@1' })
   })
 
+  it('sends one member of a set-valued parameter as a list, not as a bare value', () => {
+    // The shape follows the declaration, never the draft's runtime type. A shared link naming a
+    // single member yields a string from the address, and sending that string had the execution
+    // refused — so the same link worked with two values selected and failed with one.
+    const signature = parameterSignatureOf(envelopeWithParameters([
+      { name: 'group', type: 'slug', cardinality: 'many', required: false },
+    ]))
+    expect(parametersToWireValues(signature, { group: 'motivation-narrative' }))
+      .toEqual({ group: ['motivation-narrative'] })
+  })
+
+  it('coerces the members of a set-valued parameter, not only scalars', () => {
+    const signature = parameterSignatureOf(envelopeWithParameters([
+      { name: 'hops', type: 'integer', cardinality: 'many', required: false },
+    ]))
+    expect(parametersToWireValues(signature, { hops: ['1', '2'] })).toEqual({ hops: [1, 2] })
+  })
+
   it('coerces every supplied value to its declared type', () => {
     const signature = parameterSignatureOf(envelopeWithParameters([
       { name: 'limit', type: 'integer' },

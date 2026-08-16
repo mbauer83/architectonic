@@ -21,6 +21,7 @@ import type { ExecutableQueryNode } from '../../domain/viewpointCriteria'
 import { attributeTypeTablesFromCatalog } from '../../domain/viewpointBindings'
 import { HIGHLIGHTED_NODE_ID_KEY } from './CriteriaTreeBuilder.helpers'
 import { createDebouncer } from '../lib/debounce'
+import { needsParameterPrompt } from '../lib/viewpointExecutionParameters'
 import { firstErrorNodeId, formatPreviewCounts } from '../views/ViewpointsManagementView.helpers'
 import CriteriaTreeBuilder from './CriteriaTreeBuilder.vue'
 import NeighborInclusionEditor from './NeighborInclusionEditor.vue'
@@ -75,7 +76,10 @@ watch(() => props.draft.query, (query) => {
  * every settled keystroke while building criteria. */
 const debouncePreview = createDebouncer(400)
 watch(() => props.draft.query, (query) => {
-  if (!query) { previewResult.value = null; return }
+  // A query whose required parameter has no default has nothing to preview: the execution needs a
+  // value nobody has supplied here, and asking anyway spends one refused request per settled
+  // keystroke. Same empty state either way, without the round trip.
+  if (!query || needsParameterPrompt(query.parameters)) { previewResult.value = null; return }
   debouncePreview(() => {
     Effect.runPromise(svc.executeViewpoint({ query: queryToMapping(query, attributeTypes.value), limit: 0 }))
       .then((result) => { previewResult.value = result })

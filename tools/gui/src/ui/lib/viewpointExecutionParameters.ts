@@ -99,10 +99,21 @@ export const coerceParameterValue = (valueType: ParameterValueType, raw: string)
   return raw
 }
 
-/** The full wire-shaped `parameters` body from a draft — omits a parameter entirely when
- * its draft value is blank (an unsupplied optional parameter, not an explicit empty
- * string), matching the backend's "missing" vs. "supplied-empty" distinction. A set-valued
- * parameter sends its member array verbatim (the backend canonicalizes order + dedup). */
+/**
+ * The full wire-shaped `parameters` body from a draft.
+ *
+ * A parameter is omitted entirely when its draft value is blank — an unsupplied optional
+ * parameter, not an explicit empty string — matching the backend's "missing" vs "supplied-empty"
+ * distinction. A set-valued parameter sends its members as a list, which the backend canonicalizes
+ * for order and duplicates.
+ *
+ * **The declaration decides the shape, never the draft's runtime type.** A draft holds a string or
+ * an array depending on where it came from, and the address is one place it comes from: a link
+ * carrying `?param.group=x` yields a string, `?param.group=x&param.group=y` an array. Reading the
+ * shape off the draft therefore sent a bare string for a `cardinality: many` parameter whenever a
+ * shared link named exactly one member, and the execution was refused — so a viewpoint link worked
+ * with two values selected and failed with one.
+ */
 export const parametersToWireValues = (
   signature: readonly QueryParameterNode[],
   draft: Readonly<ParameterDraft>,
@@ -111,9 +122,9 @@ export const parametersToWireValues = (
   for (const parameter of signature) {
     const value = draft[parameter.name]
     if (isBlankDraftValue(value)) continue
-    result[parameter.name] = typeof value === 'string'
-      ? coerceParameterValue(parameter.valueType, value)
-      : [...value]
+    const members = (typeof value === 'string' ? [value] : value)
+      .map((member) => coerceParameterValue(parameter.valueType, member))
+    result[parameter.name] = parameter.cardinality === 'many' ? members : members[0]
   }
   return result
 }
