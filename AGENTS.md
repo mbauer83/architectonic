@@ -65,6 +65,13 @@ Run one at a time, never concurrently, before committing:
    anything. `-n auto` is safe at full width now — the PlantUML toolchain is bounded at its one
    acquisition point in `tests/conftest.py`, so the `PYTEST_XDIST_AUTO_NUM_WORKERS=6` prefix this
    list used to carry is no longer needed (and the capped run is the *slower* of the two).
+   **A green run is not proof that a capability-gated path works.** The module registry is
+   `lru_cache`d per process, so whether the assurance modules are registered depends on which test
+   built it first in an xdist worker — and CI's pytest job has no confidential store at all (only
+   the e2e job initialises one). A defect in code that resolves a *stored* diagram's type therefore
+   passed the full suite here and produced 88 errors in CI, from a file that reproduced them
+   immediately when run **alone**. Running a suspect file on its own is the cheap check;
+   `tests/architecture/test_stored_diagram_types_may_be_unregistered.py` is the standing one.
 2. `ruff check src/ tests/` — must be 0 errors (including E501)
 3. `uv run zuban check` — must pass
 4. `uv run tools/openapi/generate_timeout_policy.py --check` — the frontend's committed timeout

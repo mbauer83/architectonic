@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 from src.application.artifacts.parsing import extract_declared_puml_aliases, normalize_puml_alias
 from src.domain.artifact_id import stable_conn_id, stable_id
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
+from src.infrastructure.diagram_type_registry import find_renderer
 from src.infrastructure.rendering.archimate_relation_rendering import strip_suppressed_relation_labels
 
 from ._artifact_deduplication import get_repository
@@ -48,14 +49,13 @@ def _collect_diagram_renderer_references(
     from src.domain.ontology_representation.ontology_protocol import (  # noqa: PLC0415
         ModelReferencingDiagramRenderer,
     )
-    from src.infrastructure.diagram_type_registry import get_diagram_type  # noqa: PLC0415
 
-    renderer = get_diagram_type(diagram_type).renderer
+    renderer = find_renderer(diagram_type)
     # One `isinstance`, in the one place that asks. `collect_references` used to be required of every
     # renderer, so twelve of the thirteen implementations existed only to answer "nothing" — seven of
     # them with the same four lines. A renderer whose diagram-owned data names no model artifact says
     # so by not implementing the capability.
-    if not isinstance(renderer, ModelReferencingDiagramRenderer):
+    if renderer is None or not isinstance(renderer, ModelReferencingDiagramRenderer):
         return None, None
     refs = renderer.collect_references(
         diagram_type,
@@ -222,18 +222,17 @@ def _restate_generated_declarations(puml_body: str, repo_root: Path, diagram_typ
     from src.domain.ontology_representation.ontology_protocol import (  # noqa: PLC0415
         GeneratedHeaderRefreshingRenderer,
     )
-    from src.infrastructure.diagram_type_registry import get_diagram_type  # noqa: PLC0415
 
-    renderer = get_diagram_type(diagram_type).renderer
-    if not isinstance(renderer, GeneratedHeaderRefreshingRenderer):
+    renderer = find_renderer(diagram_type)
+    if renderer is None or not isinstance(renderer, GeneratedHeaderRefreshingRenderer):
         return puml_body
     return renderer.refresh_generated_header(puml_body, repo_root)
 
 
 def _prepare_diagram_puml_body(puml_body: str, repo_root: Path, diagram_type: str) -> str:
-    from src.infrastructure.diagram_type_registry import get_diagram_type  # noqa: PLC0415
     # Drop relation-stereotype edge labels the arrow style already conveys. This
     # is an ontology-global normalisation (keyed on ``show_stereotype`` across all
     # connection types), not a per-diagram-type concern, so it applies uniformly.
     puml_body = strip_suppressed_relation_labels(puml_body, _suppressed_stereotype_tokens())
-    return get_diagram_type(diagram_type).renderer.inject_includes(puml_body, repo_root)
+    renderer = find_renderer(diagram_type)
+    return puml_body if renderer is None else renderer.inject_includes(puml_body, repo_root)
