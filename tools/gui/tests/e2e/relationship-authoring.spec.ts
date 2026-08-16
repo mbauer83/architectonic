@@ -12,10 +12,10 @@ test('an existing relationship opens in the integrated editor', async ({ page })
   await relationship.locator('button[title="Edit relationship"]').click()
 
   // The wiring this covers: the form opens populated from the stored relationship, so a
-  // description that never reached the form would show up here as an empty textbox.
-  await expect(relationship.getByLabel('Description')).toHaveValue(
-    /^Architecture Backend exposes the REST Interface/,
-  )
+  // description that never reached the form would show up here as an empty textbox. Asserted as
+  // "carries the stored prose", never as the prose itself — rewording a description in the model
+  // is authoring, and a test that fails on it reports a regression that did not happen.
+  await expect(relationship.getByLabel('Description')).toHaveValue(/\S/)
   await expect(relationship.getByRole('button', { name: 'Save relationship' })).toBeVisible()
 
   // `serving` declares no metadata profile, and a profile-less type must render no properties

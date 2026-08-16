@@ -41,7 +41,7 @@ test('motivation coverage live fallback', async ({ page }) => {
 
 test('assurance graph explore', async ({ page }) => {
   const problems = watch(page)
-  await page.goto(`/assurance/graph?node_id=${encodeURIComponent(HAZARD)}`, { waitUntil: 'load' })
+  await page.goto(`/assurance/nodes/${encodeURIComponent(HAZARD)}/graph`, { waitUntil: 'load' })
   await expect(page.locator('.graph-layout')).toContainText('Renderer processes an untrusted PUML body', { timeout: 15_000 })
   await capture(page, 'assurance-graph-explore.png',
     provenance('assurance graph explore', [ANALYSIS, HAZARD]))

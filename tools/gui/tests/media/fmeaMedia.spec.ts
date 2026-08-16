@@ -32,7 +32,7 @@ const provenance = (testName: string): CaptureProvenance => ({
  * no-op that passed instantly.
  */
 async function openMatrix(page: Page): Promise<void> {
-  await page.goto(`/assurance/fmea?analysis=${encodeURIComponent(ANALYSIS)}`, { waitUntil: 'load' })
+  await page.goto(`/assurance/analyses/${encodeURIComponent(ANALYSIS)}/fmea`, { waitUntil: 'load' })
   await expect(page.locator('.fmea-locked'), 'the store must be unlocked to shoot this figure')
     .toHaveCount(0)
   await expect(page.locator('.fmea-table')).toBeVisible({ timeout: 10_000 })

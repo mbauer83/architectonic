@@ -89,7 +89,7 @@ test('locked security metrics state', async ({ page }) => {
 test('re-shoot security findings', async ({ page }) => {
   await installSyntheticSecurity(page)
   const problems = watch(page)
-  await page.goto(`/assurance/security/findings?anchor=${encodeURIComponent(BACKEND)}`, { waitUntil: 'load' })
+  await page.goto(`/assurance/arch-artifacts/${encodeURIComponent(BACKEND)}/security-findings`, { waitUntil: 'load' })
   await expect(page.getByTestId('component-group')).toContainText('Architectonic Backend')
   await capture(page, 'security-findings.png', syntheticProvenance('re-shoot security findings'))
   expect(problems).toEqual([])
@@ -98,7 +98,7 @@ test('re-shoot security findings', async ({ page }) => {
 test('re-shoot vulnerability impact', async ({ page }) => {
   await installSyntheticSecurity(page)
   const problems = watch(page)
-  await page.goto('/assurance/security/vulnerability?id=CVE-2026-0001', { waitUntil: 'load' })
+  await page.goto('/assurance/vulnerabilities/CVE-2026-0001', { waitUntil: 'load' })
   await expect(page.getByTestId('impact-headline')).toContainText('1 entity affected')
   await capture(page, 'security-vulnerability-impact.png', syntheticProvenance('re-shoot vulnerability impact'))
   expect(problems).toEqual([])

@@ -209,6 +209,22 @@ export async function captureStoredDiagram(
   expect(problems, `runtime problems while capturing ${fileName}`).toEqual([])
 }
 
+/**
+ * The words an SVG draws, in order, with element boundaries read as spaces.
+ *
+ * The two entities the renderer emits are decoded: it pads a wrapped label with `&#160;` and
+ * escapes an ampersand in a name. A general entity decoder would be more than this needs — what is
+ * being asked is only whether a label's words are in the picture.
+ */
+function renderedText(svg: string): string {
+  return svg
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&#160;|&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 export async function captureRenderedDiagram(
   page: Page,
   request: APIRequestContext,
@@ -220,7 +236,12 @@ export async function captureRenderedDiagram(
   await diagramById(request, artifactId)
   const svg = await request.get(`/api/diagrams/${encodeURIComponent(artifactId)}/svg`)
   expect(svg.ok()).toBeTruthy()
-  expect(await svg.text(), `${fileName} should contain a stable label`).toContain(expectedLabel)
+  // Read the rendered *text*, not the markup. A label wider than the renderer's bound is drawn as
+  // one `<text>` element per line, so searching the markup for the label as one string asks the
+  // picture to be laid out a particular way — which is the renderer's business and changes with
+  // the declared label width.
+  expect(renderedText(await svg.text()), `${fileName} should contain a stable label`)
+    .toContain(expectedLabel)
   const png = await request.get(
     `/api/diagrams/${encodeURIComponent(artifactId)}/download?format=png`,
   )

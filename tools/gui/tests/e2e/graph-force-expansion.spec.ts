@@ -55,15 +55,22 @@ const settled = async (page: Page): Promise<void> => {
   }, { timeout: 20_000, intervals: [120] }).toBe(true)
 }
 
-/** Open the graph in force mode — the default — and let the initial layout come to rest. */
+/**
+ * Open the graph in force mode and let the layout come to rest.
+ *
+ * Force is selected rather than inherited: the surface opens in radial, because hop distance from
+ * the entity you asked about is what a walk is reading, and a force layout of a dense edge set
+ * stops separating anything. This suite is about what force does once chosen.
+ */
 const openForce = async (page: Page): Promise<void> => {
   await page.goto(`/entities/${encodeURIComponent(ANCHOR)}/graph`, { waitUntil: 'load' })
   await expect(page.locator('.graph-node').first()).toBeAttached({ timeout: 20_000 })
-  await expect(page.getByRole('button', { name: 'Force', exact: true }))
-    .toHaveClass(/spacing-btn--active/)
   // The initial load legitimately withholds the first paint until a fit has landed, so wait
   // for the graph to be on screen before any test starts asserting about what it does there.
   await expect(page.locator('.graph-svg')).toBeVisible({ timeout: 20_000 })
+  await page.getByRole('button', { name: 'Force', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Force', exact: true }))
+    .toHaveClass(/spacing-btn--active/)
   await settled(page)
 }
 

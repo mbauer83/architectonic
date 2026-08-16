@@ -43,7 +43,9 @@ test('a real assurance neighborhood supports deep-linking, expansion, selection,
   const detailsLink = page.locator('.graph-sidebar').getByRole('link', { name: UCA_NAME, exact: true })
   await expect(detailsLink).toHaveAttribute('href', /^\/assurance\/nodes\//)
   await page.getByRole('button', { name: 'Zoom in' }).click()
-  await page.getByRole('button', { name: 'Fit to view' }).click()
+  // Reset *is* the fit, and it appears once the viewport has been moved off it — the graph carries
+  // the same viewport chrome a rendered diagram does, rather than a control of its own.
+  await page.getByRole('button', { name: 'Reset view' }).click()
   await detailsLink.click()
   await expect(page).toHaveURL(/\/assurance\/nodes\//)
 })
