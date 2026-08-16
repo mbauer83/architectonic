@@ -64,14 +64,15 @@ class DocumentSectionSpec(NullsOmitted):
     name: str
     #: Boilerplate the create form pre-fills this section with.
     template: str | None = None
-    required_entity_type_connections: list[str] | None = None
-    suggested_entity_type_connections: list[str] | None = None
+    required_connections: list[str] | None = None
+    suggested_connections: list[str] | None = None
 
 
 class DocumentTypeResponse(NullsOmitted):
     """What one document type expects: its identity, where it lives, and the sections it requires.
 
-    The connection lists name *entity types* a document of this type should or must link to — the
+    The connection lists name what a document of this type should or must link to: an entity type or
+    element class bare, a document type as ``doc:<type>``, a diagram type as ``diagram:<type>``. The
     schema's own vocabulary, carried through rather than interpreted here.
     """
 
@@ -87,8 +88,8 @@ class DocumentTypeResponse(NullsOmitted):
     #: is why this can be a DTO rather than pass-through YAML.
     sections: list[DocumentSectionSpec]
     extra_frontmatter_fields: list[DocumentFrontmatterField]
-    required_entity_type_connections: list[str]
-    suggested_entity_type_connections: list[str]
+    required_connections: list[str]
+    suggested_connections: list[str]
 
 
 class DocumentTypeListResponse(NullsOmitted):

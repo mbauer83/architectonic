@@ -24,12 +24,15 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
-from src.application.artifacts.document_schema import get_document_schema
+from src.application.artifacts.document_schema import get_document_schema_object
+from src.application.artifacts.reference_terms import (
+    ReferenceTermVocabulary,
+    parse_reference_term,
+)
+from src.application.document_links import ResolvedArtifactLink, resolve_artifact_links
 from src.application.verification._verifier_document import (
-    ResolvedEntityLink,
     document_body,
     document_section_spans,
-    resolve_entity_links,
 )
 from src.domain.artifact_id import (
     MalformedArtifactIdError,
@@ -58,7 +61,7 @@ class MissingDependency:
 
     artifact_id: str
     name: str
-    record_type: Literal["entity", "connection"]
+    record_type: Literal["entity", "connection", "document", "diagram"]
     required_by: str
     kind: DependencyKind
 
@@ -69,6 +72,8 @@ class _ClosureScope:
 
     set_entity_short: frozenset[str]
     enterprise_entity_short: frozenset[str]
+    set_document_ids: frozenset[str]
+    enterprise_document_ids: frozenset[str]
     set_diagram_ids: frozenset[str]
     enterprise_diagram_ids: frozenset[str]
     enterprise_connection_short: frozenset[str]
@@ -81,8 +86,19 @@ class _ClosureScope:
             or entity_id.startswith("GAR@")
         )
 
+    def document_satisfied(self, document_id: str) -> bool:
+        return document_id in self.set_document_ids or document_id in self.enterprise_document_ids
+
     def diagram_satisfied(self, diagram_id: str) -> bool:
         return diagram_id in self.set_diagram_ids or diagram_id in self.enterprise_diagram_ids
+
+    def link_satisfied(self, link: ResolvedArtifactLink) -> bool:
+        """Whether the artifact a required link names survives promotion, whatever kind it is."""
+        if link.kind == "document":
+            return self.document_satisfied(link.artifact_id)
+        if link.kind == "diagram":
+            return self.diagram_satisfied(link.artifact_id)
+        return self.entity_satisfied(link.artifact_id)
 
 
 def compute_reference_closure(
@@ -99,6 +115,8 @@ def compute_reference_closure(
     scope = _ClosureScope(
         set_entity_short=frozenset(stable_id(e) for e in promoted_entity_ids),
         enterprise_entity_short=frozenset(stable_id(e) for e in registry.enterprise_entity_ids()),
+        set_document_ids=frozenset(document_ids),
+        enterprise_document_ids=frozenset(registry.enterprise_document_ids()),
         set_diagram_ids=frozenset(diagram_ids),
         enterprise_diagram_ids=frozenset(registry.enterprise_diagram_ids()),
         enterprise_connection_short=frozenset(
@@ -121,7 +139,7 @@ def compute_reference_closure(
 def missing_dependency_errors(missing: list[MissingDependency]) -> list[str]:
     """Blocking prose for the same facts — every message names the missing artifact."""
     kind_phrases: dict[DependencyKind, str] = {
-        "document_required_link": "links it to satisfy a schema-required entity-type connection",
+        "document_required_link": "links it to satisfy a schema-required connection",
         "diagram_entity": "binds it in entity-ids-used",
         "diagram_connection_endpoint": "binds a connection whose endpoint it is",
         "diagram_connection": "binds it in connection-ids-used",
@@ -165,26 +183,25 @@ def _document_missing(
     doc = repo.get_document(doc_id)
     if path is None or doc is None:
         return []
-    schema = get_document_schema(engagement_root, doc.doc_type)
+    schema = get_document_schema_object(engagement_root, doc.doc_type)
     if schema is None:
         return []
     content = path.read_text(encoding="utf-8")
+    vocabulary = ReferenceTermVocabulary.for_repository(catalogs=catalogs, repo_root=engagement_root)
 
     missing = _missing_for_required_terms(
-        terms=schema.get("required_entity_type_connections") or [],
-        links=resolve_entity_links(path, content),
-        doc_id=doc_id, catalogs=catalogs, scope=scope,
+        terms=list(schema.required_connections),
+        links=resolve_artifact_links(path, content),
+        doc_id=doc_id, vocabulary=vocabulary, scope=scope,
     )
     spans = document_section_spans(document_body(content))
-    for section in schema.get("sections") or []:
-        name = str(section.get("name") or "").strip()
-        terms: list[str] = section.get("required_entity_type_connections") or []
-        if name and terms and name in spans:
+    for section in schema.sections:
+        if section.required_connections and section.name in spans:
             missing.extend(
                 _missing_for_required_terms(
-                    terms=terms,
-                    links=resolve_entity_links(path, spans[name]),
-                    doc_id=doc_id, catalogs=catalogs, scope=scope,
+                    terms=list(section.required_connections),
+                    links=resolve_artifact_links(path, spans[section.name]),
+                    doc_id=doc_id, vocabulary=vocabulary, scope=scope,
                 )
             )
     return missing
@@ -193,30 +210,34 @@ def _document_missing(
 def _missing_for_required_terms(
     *,
     terms: list[str],
-    links: list[ResolvedEntityLink],
+    links: list[ResolvedArtifactLink],
     doc_id: str,
-    catalogs: "RuntimeCatalogs",
+    vocabulary: ReferenceTermVocabulary,
     scope: _ClosureScope,
 ) -> list[MissingDependency]:
-    """For each required term: if no satisfying linked entity survives promotion,
-    every linked entity that *would* satisfy it is a missing dependency."""
-    ontology = catalogs.ontology
+    """For each required term: if no satisfying linked artifact survives promotion,
+    every linked artifact that *would* satisfy it is a missing dependency.
+
+    A required *document* or *diagram* is closed exactly as a required entity is, and for the same
+    reason: the enterprise verifier will raise E155/E156 for the dangling link after the copy, so
+    plan time is where the artifact that would fix it can still be named. It reports what is
+    missing rather than adding it — the selection stays the operator's.
+    """
     missing: list[MissingDependency] = []
     for term in terms:
+        kind = parse_reference_term(term).kind
         candidates = [
-            link
-            for link in links
-            if link.artifact_id and ontology.entity_type_term_matches(term, {link.artifact_type})
+            link for link in links if link.artifact_id and vocabulary.satisfied_by(term, link)
         ]
         if not candidates:
             continue  # nothing links this term at all — the engagement verifier's finding
-        if any(scope.entity_satisfied(link.artifact_id) for link in candidates):
+        if any(scope.link_satisfied(link) for link in candidates):
             continue
         missing.extend(
             MissingDependency(
                 artifact_id=link.artifact_id,
                 name=link.name,
-                record_type="entity",
+                record_type=kind,
                 required_by=doc_id,
                 kind="document_required_link",
             )

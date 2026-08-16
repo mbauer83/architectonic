@@ -234,7 +234,7 @@ def _document_schema_with_sections(
 ) -> None:
     schema_path = repo / ".arch-repo" / "documents" / "adr.json"
     document_required_text = (
-        f',\n  "required_entity_type_connections": {document_required}' if document_required else ""
+        f',\n  "required_connections": {document_required}' if document_required else ""
     )
     _write(
         schema_path,
@@ -285,6 +285,35 @@ Decision.
 
 Consequences.
 """
+
+
+def _write_linked_document(repo: Path, artifact_id: str) -> str:
+    """A second ADR beside the document under test; returns the href that reaches it."""
+    _write(repo / "documents" / "adr" / f"{artifact_id}.md", _document(artifact_id, "Peer."))
+    return f"{artifact_id}.md"
+
+
+def _write_linked_diagram(repo: Path, artifact_id: str, diagram_type: str) -> str:
+    """A stored diagram of *diagram_type*; returns the href that reaches it from `documents/adr/`.
+
+    The type is written as the frontmatter says it, registered or not — which is the point of the
+    unregistered cases below.
+    """
+    _write(
+        repo / "diagram-catalog" / "diagrams" / f"{artifact_id}.md",
+        f"""\
+---
+artifact-id: {artifact_id}
+artifact-type: diagram
+diagram-type: {diagram_type}
+name: "Linked Diagram"
+version: 0.1.0
+status: draft
+last-updated: '2026-04-22'
+---
+""",
+    )
+    return f"../../diagram-catalog/diagrams/{artifact_id}.md"
 
 
 def _document_with_body(artifact_id: str, body: str) -> str:
@@ -675,6 +704,178 @@ class TestVerifyDocumentFile:
 
         assert not any(i.code == "E155" for i in result.issues), [i.message for i in result.issues]
         assert not any(i.code == "E156" for i in result.issues), [i.message for i in result.issues]
+
+    def test_a_linked_document_does_not_satisfy_an_entity_term(self, repo: Path) -> None:
+        """The reading this replaced reported every artifact's `artifact-type`, so a linked document
+        contributed the literal type `document` and a linked diagram the literal type `diagram` to
+        the set an entity term was matched against. Harmless only while no entity type is spelled
+        either way."""
+        _document_schema_with_sections(
+            repo,
+            sections='[{"name": "Context"}, {"name": "Decision"}, {"name": "Consequences"}]',
+            document_required='["requirement"]',
+        )
+        peer = _write_linked_document(repo, "ADR@1000000020.AbcDef.peer")
+        doc_id = "ADR@1000000021.AbcDef.source"
+        doc_path = repo / "documents" / "adr" / f"{doc_id}.md"
+        _write(doc_path, _document(doc_id, f"[Peer]({peer})"))
+
+        verifier = ArtifactVerifier(ArtifactRegistry(shared_artifact_index(repo)), catalogs=_catalogs())
+        result = verifier.verify_document_file(doc_path)
+
+        assert [i.message for i in result.issues if i.code == "E155"] == [
+            "Required entity-type connection missing: link at least one requirement"
+        ]
+
+    def test_required_document_type_connection_is_met_by_a_link_to_one(self, repo: Path) -> None:
+        _document_schema_with_sections(
+            repo,
+            sections='[{"name": "Context"}, {"name": "Decision"}, {"name": "Consequences"}]',
+            document_required='["doc:adr"]',
+        )
+        peer = _write_linked_document(repo, "ADR@1000000022.AbcDef.peer")
+        doc_id = "ADR@1000000023.AbcDef.source"
+        doc_path = repo / "documents" / "adr" / f"{doc_id}.md"
+        _write(doc_path, _document(doc_id, f"[Peer]({peer})"))
+
+        verifier = ArtifactVerifier(ArtifactRegistry(shared_artifact_index(repo)), catalogs=_catalogs())
+        result = verifier.verify_document_file(doc_path)
+
+        assert not any(i.code == "E155" for i in result.issues), [i.message for i in result.issues]
+
+    def test_required_document_type_connection_missing_reports_the_type_name(self, repo: Path) -> None:
+        _document_schema_with_sections(
+            repo,
+            sections='[{"name": "Context"}, {"name": "Decision"}, {"name": "Consequences"}]',
+            document_required='["doc:adr"]',
+        )
+        doc_id = "ADR@1000000024.AbcDef.source"
+        doc_path = repo / "documents" / "adr" / f"{doc_id}.md"
+        _write(doc_path, _document(doc_id, "No links."))
+
+        verifier = ArtifactVerifier(ArtifactRegistry(shared_artifact_index(repo)), catalogs=_catalogs())
+        result = verifier.verify_document_file(doc_path)
+
+        assert [i.message for i in result.issues if i.code == "E155"] == [
+            "Required document-type connection missing: link at least one Architecture Decision Record"
+        ]
+
+    def test_unknown_document_type_term_is_an_error_on_the_document(self, repo: Path) -> None:
+        _document_schema_with_sections(
+            repo,
+            sections='[{"name": "Context"}, {"name": "Decision"}, {"name": "Consequences"}]',
+            document_required='["doc:not-a-doc-type"]',
+        )
+        doc_id = "ADR@1000000025.AbcDef.source"
+        doc_path = repo / "documents" / "adr" / f"{doc_id}.md"
+        _write(doc_path, _document(doc_id, "No links."))
+
+        verifier = ArtifactVerifier(ArtifactRegistry(shared_artifact_index(repo)), catalogs=_catalogs())
+        result = verifier.verify_document_file(doc_path)
+
+        assert [i.message for i in result.issues if i.code == "E155"] == [
+            "Unknown required document-type connection term: not a doc type (doc:not-a-doc-type)"
+        ]
+
+    def test_section_required_diagram_type_connection_is_met_by_a_link_to_one(self, repo: Path) -> None:
+        _document_schema_with_sections(
+            repo,
+            sections=(
+                '[{"name": "Context", "required_connections": ["diagram:matrix"]}, '
+                '{"name": "Decision"}, {"name": "Consequences"}]'
+            ),
+        )
+        diagram = _write_linked_diagram(repo, "MAT@1000000026.AbcDef.grid", "matrix")
+        doc_id = "ADR@1000000027.AbcDef.source"
+        doc_path = repo / "documents" / "adr" / f"{doc_id}.md"
+        _write(doc_path, _document(doc_id, f"[Grid]({diagram})"))
+
+        verifier = ArtifactVerifier(ArtifactRegistry(shared_artifact_index(repo)), catalogs=_catalogs())
+        result = verifier.verify_document_file(doc_path)
+
+        assert not any(i.code in ("E155", "E156", "W159") for i in result.issues), [
+            i.message for i in result.issues
+        ]
+
+    def test_section_required_diagram_type_connection_missing_is_e156(self, repo: Path) -> None:
+        _document_schema_with_sections(
+            repo,
+            sections=(
+                '[{"name": "Context", "required_connections": ["diagram:matrix"]}, '
+                '{"name": "Decision"}, {"name": "Consequences"}]'
+            ),
+        )
+        doc_id = "ADR@1000000028.AbcDef.source"
+        doc_path = repo / "documents" / "adr" / f"{doc_id}.md"
+        _write(doc_path, _document(doc_id, "No links."))
+
+        verifier = ArtifactVerifier(ArtifactRegistry(shared_artifact_index(repo)), catalogs=_catalogs())
+        result = verifier.verify_document_file(doc_path)
+
+        # The label is the registered module's, not the slug: a message that named `matrix` would be
+        # telling an author the schema's spelling rather than what they would go and create.
+        matrix_label = _catalogs().diagram_types.get_diagram_type("matrix").ui_config.label
+        assert [i.message for i in result.issues if i.code == "E156"] == [
+            f"Required diagram-type connection missing in section 'Context': link at least one {matrix_label}"
+        ]
+
+    def test_unregistered_diagram_type_warns_rather_than_refusing(self, repo: Path) -> None:
+        """A repository outlives any one deployment's module set: a host without the confidential
+        store registers no assurance diagram types. A template requiring one must not become
+        unsatisfiable because of what the host happens to provide."""
+        _document_schema_with_sections(
+            repo,
+            sections='[{"name": "Context"}, {"name": "Decision"}, {"name": "Consequences"}]',
+            document_required='["diagram:not-a-registered-type"]',
+        )
+        doc_id = "ADR@1000000029.AbcDef.source"
+        doc_path = repo / "documents" / "adr" / f"{doc_id}.md"
+        _write(doc_path, _document(doc_id, "No links."))
+
+        verifier = ArtifactVerifier(ArtifactRegistry(shared_artifact_index(repo)), catalogs=_catalogs())
+        result = verifier.verify_document_file(doc_path)
+
+        assert not any(i.code in ("E155", "E156") for i in result.issues), [
+            i.message for i in result.issues
+        ]
+        assert [i.message for i in result.issues if i.code == "W159"] == [
+            "Required diagram-type connection unverifiable: diagram type 'not-a-registered-type' "
+            "is not registered in this deployment, and nothing links one"
+        ]
+
+    def test_unregistered_diagram_type_is_still_satisfied_by_a_stored_diagram(self, repo: Path) -> None:
+        _document_schema_with_sections(
+            repo,
+            sections='[{"name": "Context"}, {"name": "Decision"}, {"name": "Consequences"}]',
+            document_required='["diagram:not-a-registered-type"]',
+        )
+        diagram = _write_linked_diagram(repo, "BOW@1000000030.AbcDef.stored", "not-a-registered-type")
+        doc_id = "ADR@1000000031.AbcDef.source"
+        doc_path = repo / "documents" / "adr" / f"{doc_id}.md"
+        _write(doc_path, _document(doc_id, f"[Stored]({diagram})"))
+
+        verifier = ArtifactVerifier(ArtifactRegistry(shared_artifact_index(repo)), catalogs=_catalogs())
+        result = verifier.verify_document_file(doc_path)
+
+        assert not any(i.code in ("E155", "E156", "W159") for i in result.issues), [
+            i.message for i in result.issues
+        ]
+
+    def test_doc_any_term_is_met_by_a_document_of_any_type(self, repo: Path) -> None:
+        _document_schema_with_sections(
+            repo,
+            sections='[{"name": "Context"}, {"name": "Decision"}, {"name": "Consequences"}]',
+            document_required='["doc:@all"]',
+        )
+        peer = _write_linked_document(repo, "ADR@1000000032.AbcDef.peer")
+        doc_id = "ADR@1000000033.AbcDef.source"
+        doc_path = repo / "documents" / "adr" / f"{doc_id}.md"
+        _write(doc_path, _document(doc_id, f"[Peer]({peer})"))
+
+        verifier = ArtifactVerifier(ArtifactRegistry(shared_artifact_index(repo)), catalogs=_catalogs())
+        result = verifier.verify_document_file(doc_path)
+
+        assert not any(i.code == "E155" for i in result.issues), [i.message for i in result.issues]
 
     def test_unknown_section_entity_connection_term_warns(self, repo: Path) -> None:
         _document_schema_with_sections(

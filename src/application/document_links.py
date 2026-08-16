@@ -15,6 +15,14 @@ So the reading lives here once, as `references_from`, and each caller is a filte
 
 The next filter is reference-typed attributes, which would otherwise have been the fourth reading
 of one question.
+
+`resolve_artifact_links` is the step past "what does the prose point at" to "what is the thing it
+points at" — one reading of a linked file's frontmatter, classifying it as an entity, a document or
+a diagram and naming its type. It lives beside `references_from` rather than beside the rule that
+first wanted it, because the required-reference rules, the promotion closure and the write-time
+placeholder all ask it, and the entity-only form they used to share could not tell a linked diagram
+from a linked entity at all: it reported every artifact's `artifact-type`, so a link to a diagram
+contributed the literal type `diagram` to the set an entity term was matched against.
 """
 
 from __future__ import annotations
@@ -23,8 +31,16 @@ import re
 from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal
+
+import yaml
 
 from src.domain.ontology_representation.artifact_types import DocumentRecord, EntityRecord
+from src.domain.repository.frontmatter import parse_frontmatter
+
+#: What a resolved link turned out to address. The same three vocabularies a required-reference term
+#: may name, which is the join: a term of one kind is satisfied only by a link of that kind.
+ArtifactLinkKind = Literal["entity", "document", "diagram"]
 
 MARKDOWN_LINK_RE = re.compile(r"(\[([^\]]*)\]\()([^)\s]+)(\))")
 SECTION_HEADING_RE = re.compile(r"^##\s+(.+)$", re.MULTILINE)
@@ -121,6 +137,90 @@ def references_from(content: str, *, directory: Path) -> list[DocumentReference]
             DocumentReference(label=link.label, href=link.href, start=link.start, target=target)
         )
     return references
+
+
+@dataclass(frozen=True)
+class ResolvedArtifactLink:
+    """One markdown link that resolves to an artifact file, and what that artifact is.
+
+    `type_name` is the type within the link's own vocabulary — the entity type, the `doc-type`, or
+    the `diagram-type`. Three vocabularies that do not share a namespace, which is why the kind is
+    carried beside the name rather than folded into it.
+    """
+
+    href: str
+    artifact_id: str
+    kind: ArtifactLinkKind
+    type_name: str
+    name: str
+
+
+def _frontmatter_of(target: Path) -> dict[str, object] | None:
+    """The linked file's frontmatter, or ``None`` when it is unreadable or not YAML.
+
+    A malformed *linked* file is not a finding about the document that links it, so this answers
+    nothing rather than raising into whatever asked. The tolerance is deliberate and was already the
+    behaviour of the entity-only reading this replaced.
+    """
+    try:
+        content = target.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    try:
+        return parse_frontmatter(content)
+    except yaml.YAMLError:
+        return None
+
+
+def _classify(fm: dict[str, object]) -> tuple[ArtifactLinkKind, str] | None:
+    """Which vocabulary a linked artifact belongs to, and its type within it."""
+    artifact_type = str(fm.get("artifact-type") or "").strip()
+    if not artifact_type:
+        return None
+    if artifact_type == "document":
+        doc_type = str(fm.get("doc-type") or "").strip()
+        return ("document", doc_type) if doc_type else None
+    if artifact_type == "diagram":
+        diagram_type = str(fm.get("diagram-type") or "").strip()
+        return ("diagram", diagram_type) if diagram_type else None
+    return ("entity", artifact_type)
+
+
+def resolve_artifact_links(doc_path: Path, content: str) -> list[ResolvedArtifactLink]:
+    """Every markdown link in *content* that resolves to an artifact, classified by what it is.
+
+    The single reading of "what model content does this document reach". `references_from` answers
+    what the prose points at; this one opens each target and says whether it is an entity, a document
+    or a diagram, and of which type. Non-artifact targets — an image, a plain markdown file, an
+    `.outgoing.md` carrying no `artifact-type`, a path that is not there — resolve to nothing.
+
+    The target's own frontmatter rather than the artifact index, which does hold a path→id map: the
+    verifier's document rules take an optional registry and run over a *staging* directory during
+    write-time preview, where the document is not indexed and its links reach out of the staged tree
+    entirely. The index answers what is indexed; this answers what a file is.
+    """
+    links: list[ResolvedArtifactLink] = []
+    for reference in references_from(content, directory=doc_path.parent):
+        if not strip_anchor(reference.href).endswith(".md") or not reference.target.is_file():
+            continue
+        fm = _frontmatter_of(reference.target)
+        if fm is None:
+            continue
+        classified = _classify(fm)
+        if classified is None:
+            continue
+        kind, type_name = classified
+        artifact_id = str(fm.get("artifact-id", ""))
+        links.append(
+            ResolvedArtifactLink(
+                href=reference.href,
+                artifact_id=artifact_id,
+                kind=kind,
+                type_name=type_name,
+                name=str(fm.get("name", fm.get("title", artifact_id))),
+            )
+        )
+    return links
 
 
 def references_to_entity(

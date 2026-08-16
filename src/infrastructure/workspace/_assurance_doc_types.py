@@ -29,7 +29,7 @@ ASSURANCE_DOCUMENT_SCHEMAS: dict[str, dict] = {
             "Assurance Constraints",
             "References",
         ],
-        "suggested_entity_type_connections": ["@all"],
+        "suggested_connections": ["@all"],
     },
     "cast-investigation": {
         "abbreviation": "CAST",
@@ -53,7 +53,7 @@ ASSURANCE_DOCUMENT_SCHEMAS: dict[str, dict] = {
             "Derived Constraints",
             "References",
         ],
-        "suggested_entity_type_connections": ["@all"],
+        "suggested_connections": ["@all"],
     },
     "risk-assessment": {
         "abbreviation": "RSKA",
@@ -80,7 +80,7 @@ ASSURANCE_DOCUMENT_SCHEMAS: dict[str, dict] = {
             "Monitoring and Review",
             "References",
         ],
-        "suggested_entity_type_connections": ["@all"],
+        "suggested_connections": ["@all"],
     },
     "risk-treatment-plan": {
         "abbreviation": "RTP",
@@ -102,7 +102,7 @@ ASSURANCE_DOCUMENT_SCHEMAS: dict[str, dict] = {
             "Residual Risk",
             "Sign-off",
         ],
-        "suggested_entity_type_connections": ["@all"],
+        "suggested_connections": ["@all"],
     },
     "compliance-statement": {
         "abbreviation": "CMPL",
@@ -130,7 +130,7 @@ ASSURANCE_DOCUMENT_SCHEMAS: dict[str, dict] = {
             "Sign-off",
             "References",
         ],
-        "suggested_entity_type_connections": ["@all"],
+        "suggested_connections": ["@all"],
     },
     "assurance-case": {
         "abbreviation": "AC",
@@ -154,9 +154,9 @@ ASSURANCE_DOCUMENT_SCHEMAS: dict[str, dict] = {
             {"name": "Purpose and Scope"},
             {"name": "Safety/Security Claims"},
             {"name": "GSN Argument Structure"},
-            {"name": "Evidence Summary", "suggested_entity_type_connections": ["@all"]},
+            {"name": "Evidence Summary", "suggested_connections": ["@all"]},
             {"name": "Argument Completeness"},
-            {"name": "Sign-off", "suggested_entity_type_connections": ["stakeholder"]},
+            {"name": "Sign-off", "suggested_connections": ["stakeholder"]},
             {"name": "References"},
         ],
     },

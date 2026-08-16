@@ -75,13 +75,13 @@ class DocumentDetailResponse(Closed):
 
 
 class DocumentSectionSpecEntry(NullsOmitted):
-    """One section a document type declares: its heading, an optional starter, and which entity
-    types a section of this kind is expected — or merely invited — to connect to."""
+    """One section a document type declares: its heading, an optional starter, and which model
+    content a section of this kind is expected — or merely invited — to connect to."""
 
     name: str
     template: str | None = None
-    required_entity_type_connections: list[str] | None = None
-    suggested_entity_type_connections: list[str] | None = None
+    required_connections: list[str] | None = None
+    suggested_connections: list[str] | None = None
 
 
 class DocumentSchemaEntry(NullsOmitted):
@@ -108,8 +108,8 @@ class DocumentSchemaEntry(NullsOmitted):
     required_sections: list[str]
     #: Section name → starter text, present only for the sections that declare one.
     section_templates: dict[str, str] | None = None
-    required_entity_type_connections: list[str] | None = None
-    suggested_entity_type_connections: list[str] | None = None
+    required_connections: list[str] | None = None
+    suggested_connections: list[str] | None = None
 
 
 class DocumentSchemataResponse(RootModel[dict[str, DocumentSchemaEntry]]):

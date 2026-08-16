@@ -209,11 +209,18 @@ def _frontmatter_schema_errors(
 
 
 def _document_section_errors(doc_type: str, ent_ds: "DocumentSchema", eng_ds: "DocumentSchema") -> list[str]:
-    """Compare normalized section specs: engagement must cover every enterprise section and,
+    """Compare normalized document schemata: engagement must cover every enterprise section and,
 
-    for sections present in both, require at least the same entity-type connection terms.
+    for the document and for sections present in both, require at least the same connection terms.
+
+    The document-level comparison is here for the reason the section-level one is: a term the
+    enterprise schema requires and the engagement one does not lets an engagement author a document
+    the enterprise repository then refuses, which is the failure this whole check exists to move
+    from after the copy to before it.
     """
-    errors: list[str] = []
+    errors: list[str] = _missing_term_errors(
+        doc_type, scope="", ent_terms=ent_ds.required_connections, eng_terms=eng_ds.required_connections
+    )
     eng_sections = {section.name: section for section in eng_ds.sections}
     missing_sections = [section.name for section in ent_ds.sections if section.name not in eng_sections]
     if missing_sections:
@@ -225,16 +232,28 @@ def _document_section_errors(doc_type: str, ent_ds: "DocumentSchema", eng_ds: "D
         eng_section = eng_sections.get(ent_section.name)
         if eng_section is None:
             continue
-        missing_terms = set(ent_section.required_entity_type_connections) - set(
-            eng_section.required_entity_type_connections
-        )
-        if missing_terms:
-            errors.append(
-                f"document schema '{doc_type}': section '{ent_section.name}' engagement schema does not "
-                "require entity-type connections: " + ", ".join(sorted(missing_terms))
-                + " (required by enterprise schema)"
+        errors.extend(
+            _missing_term_errors(
+                doc_type,
+                scope=f"section '{ent_section.name}' ",
+                ent_terms=ent_section.required_connections,
+                eng_terms=eng_section.required_connections,
             )
+        )
     return errors
+
+
+def _missing_term_errors(
+    doc_type: str, *, scope: str, ent_terms: tuple[str, ...], eng_terms: tuple[str, ...]
+) -> list[str]:
+    missing_terms = set(ent_terms) - set(eng_terms)
+    if not missing_terms:
+        return []
+    return [
+        f"document schema '{doc_type}': {scope}engagement schema does not require connections: "
+        + ", ".join(sorted(missing_terms))
+        + " (required by enterprise schema)"
+    ]
 
 
 def _document_schema_errors(

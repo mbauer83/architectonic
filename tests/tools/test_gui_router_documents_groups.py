@@ -145,8 +145,8 @@ class TestDocumentTypes:
             {"name": "Overview"},
             {
                 "name": "Decision",
-                "required_entity_type_connections": ["requirement"],
-                "suggested_entity_type_connections": ["@all"],
+                "required_connections": ["requirement"],
+                "suggested_connections": ["@all"],
             },
         ]
 

@@ -6847,8 +6847,8 @@ export interface components {
             };
             /** Name */
             name?: string;
-            /** Required Entity Type Connections */
-            required_entity_type_connections?: string[];
+            /** Required Connections */
+            required_connections?: string[];
             /** Required Sections */
             required_sections: string[];
             /** Section Templates */
@@ -6859,8 +6859,8 @@ export interface components {
             sections: components["schemas"]["DocumentSectionSpecEntry"][];
             /** Subdirectory */
             subdirectory?: string;
-            /** Suggested Entity Type Connections */
-            suggested_entity_type_connections?: string[];
+            /** Suggested Connections */
+            suggested_connections?: string[];
         } & {
             [key: string]: unknown;
         };
@@ -6887,25 +6887,25 @@ export interface components {
         DocumentSectionSpec: {
             /** Name */
             name: string;
-            /** Required Entity Type Connections */
-            required_entity_type_connections?: string[];
-            /** Suggested Entity Type Connections */
-            suggested_entity_type_connections?: string[];
+            /** Required Connections */
+            required_connections?: string[];
+            /** Suggested Connections */
+            suggested_connections?: string[];
             /** Template */
             template?: string;
         };
         /**
          * DocumentSectionSpecEntry
-         * @description One section a document type declares: its heading, an optional starter, and which entity
-         *     types a section of this kind is expected — or merely invited — to connect to.
+         * @description One section a document type declares: its heading, an optional starter, and which model
+         *     content a section of this kind is expected — or merely invited — to connect to.
          */
         DocumentSectionSpecEntry: {
             /** Name */
             name: string;
-            /** Required Entity Type Connections */
-            required_entity_type_connections?: string[];
-            /** Suggested Entity Type Connections */
-            suggested_entity_type_connections?: string[];
+            /** Required Connections */
+            required_connections?: string[];
+            /** Suggested Connections */
+            suggested_connections?: string[];
             /** Template */
             template?: string;
         };
@@ -6950,7 +6950,8 @@ export interface components {
          * DocumentTypeResponse
          * @description What one document type expects: its identity, where it lives, and the sections it requires.
          *
-         *     The connection lists name *entity types* a document of this type should or must link to — the
+         *     The connection lists name what a document of this type should or must link to: an entity type or
+         *     element class bare, a document type as ``doc:<type>``, a diagram type as ``diagram:<type>``. The
          *     schema's own vocabulary, carried through rather than interpreted here.
          */
         DocumentTypeResponse: {
@@ -6962,16 +6963,16 @@ export interface components {
             extra_frontmatter_fields: components["schemas"]["DocumentFrontmatterField"][];
             /** Name */
             name: string;
-            /** Required Entity Type Connections */
-            required_entity_type_connections: string[];
+            /** Required Connections */
+            required_connections: string[];
             /** Required Sections */
             required_sections: string[];
             /** Sections */
             sections: components["schemas"]["DocumentSectionSpec"][];
             /** Subdirectory */
             subdirectory: string;
-            /** Suggested Entity Type Connections */
-            suggested_entity_type_connections: string[];
+            /** Suggested Connections */
+            suggested_connections: string[];
         };
         /**
          * DuplicateEdgeDetails

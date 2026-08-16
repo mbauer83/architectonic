@@ -98,6 +98,11 @@ _ARROW_DIRECTION = re.compile(r"up\|down\|left\|right")
 #: nothing else in these formats does: a literal carrying `](` is reading a link.
 _MARKDOWN_LINK = re.compile(r"\]\\?\(")
 
+#: The kind prefix on a required-/suggested-reference term. Anchored to the whole literal, because
+#: `doc:` and `diagram:` are short enough to appear inside prose that is not deciding anything; a
+#: reader hands the prefix to `startswith` or `split` as exactly this string and nothing else.
+_REFERENCE_TERM_PREFIX = re.compile(r"\A(doc|diagram):\Z")
+
 SYNTAX_READERS: tuple[SyntaxReader, ...] = (
     SyntaxReader(
         syntax="what counts as a frontmatter block",
@@ -240,6 +245,23 @@ SYNTAX_READERS: tuple[SyntaxReader, ...] = (
             Path("src/infrastructure/write/artifact_write/_promote_file_ops.py"),
             Path("src/infrastructure/write/artifact_write/cleanup_broken_refs.py"),
         }),
+    ),
+    SyntaxReader(
+        syntax="which vocabulary a required-/suggested-reference term names",
+        owners=(Path("src/application/artifacts/reference_terms.py"),),
+        instead=(
+            "`src.application.artifacts.reference_terms`: `parse_reference_term` for the kind and "
+            "the name within it, `ReferenceTermVocabulary` for whether it expands here, what a link "
+            "of that kind would satisfy, and how to say it in a message"
+        ),
+        incident=(
+            "a row written when the vocabulary widened rather than after it went wrong. The "
+            "entity-only pair it replaced was named literally at thirteen sites across the loader, "
+            "the verifier, the promotion closure, the placeholder writer, two REST contracts and "
+            "four GUI modules — and a term whose kind each of those decided for itself is the same "
+            "shape as the PUML alias declaration that five modules disagreed about"
+        ),
+        literal_probe=_REFERENCE_TERM_PREFIX,
     ),
 )
 

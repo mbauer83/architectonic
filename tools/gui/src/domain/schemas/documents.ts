@@ -17,8 +17,8 @@ export type FrontmatterField = typeof FrontmatterFieldSchema.Type
 export const SectionSpecSchema = Schema.Struct({
   name: Schema.String,
   template: Schema.optional(Schema.String),
-  required_entity_type_connections: Schema.optional(Schema.Array(Schema.String)),
-  suggested_entity_type_connections: Schema.optional(Schema.Array(Schema.String)),
+  required_connections: Schema.optional(Schema.Array(Schema.String)),
+  suggested_connections: Schema.optional(Schema.Array(Schema.String)),
 })
 export type SectionSpec = typeof SectionSpecSchema.Type
 
@@ -33,8 +33,8 @@ export const DocumentTypeSchema = Schema.Struct({
   // reader writing a fallback for it.
   sections: Schema.Array(SectionSpecSchema),
   extra_frontmatter_fields: Schema.Array(FrontmatterFieldSchema),
-  required_entity_type_connections: Schema.Array(Schema.String),
-  suggested_entity_type_connections: Schema.Array(Schema.String),
+  required_connections: Schema.Array(Schema.String),
+  suggested_connections: Schema.Array(Schema.String),
 })
 export type DocumentType = typeof DocumentTypeSchema.Type
 

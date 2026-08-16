@@ -4,6 +4,11 @@ Split out of ``document.py`` to keep its CRUD/write-path functions the
 cohesive unit; these are pure functions over a doc-type schema's sections.
 """
 
+from src.application.artifacts.document_schema import (
+    REQUIRED_CONNECTIONS_KEY,
+    SUGGESTED_CONNECTIONS_KEY,
+)
+
 
 def _validate_section_templates(
     section_templates: object,
@@ -56,8 +61,8 @@ def _build_placeholder_body(
 
 
 def _section_expected_link_hint(section: dict) -> str:
-    required = _string_list(section.get("required_entity_type_connections"))
-    suggested = _string_list(section.get("suggested_entity_type_connections"))
+    required = _string_list(section.get(REQUIRED_CONNECTIONS_KEY))
+    suggested = _string_list(section.get(SUGGESTED_CONNECTIONS_KEY))
     parts = []
     if required:
         parts.append(f"required: {', '.join(required)}")
@@ -65,7 +70,7 @@ def _section_expected_link_hint(section: dict) -> str:
         parts.append(f"suggested: {', '.join(suggested)}")
     if not parts:
         return ""
-    return f"<!-- Expected entity links for this section: {'; '.join(parts)} -->\n"
+    return f"<!-- Expected links for this section: {'; '.join(parts)} -->\n"
 
 
 def _string_list(value: object) -> list[str]:

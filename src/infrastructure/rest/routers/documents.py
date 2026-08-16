@@ -8,7 +8,12 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from pydantic import BaseModel
 
-from src.application.artifacts.document_schema import get_document_subdirectory, load_document_schemata
+from src.application.artifacts.document_schema import (
+    REQUIRED_CONNECTIONS_KEY,
+    SUGGESTED_CONNECTIONS_KEY,
+    get_document_subdirectory,
+    load_document_schemata,
+)
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
 from src.infrastructure.rest.contracts.authoring_catalogs import DocumentTypeListResponse
@@ -100,8 +105,8 @@ def list_document_types() -> dict[str, object]:
             "required_sections": schema.get("required_sections", []),
             "sections": schema.get("sections", []),
             "extra_frontmatter_fields": _extra_frontmatter_fields(schema),
-            "required_entity_type_connections": schema.get("required_entity_type_connections", []),
-            "suggested_entity_type_connections": schema.get("suggested_entity_type_connections", []),
+            "required_connections": schema.get(REQUIRED_CONNECTIONS_KEY, []),
+            "suggested_connections": schema.get(SUGGESTED_CONNECTIONS_KEY, []),
         }
         for doc_type, schema in sorted(schemata.items())
     ]}

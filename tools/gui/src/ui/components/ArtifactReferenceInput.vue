@@ -4,7 +4,7 @@ import { Effect } from 'effect'
 import { modelServiceKey } from '../keys'
 import { domainOptionsForDomains, getDomainLabel } from '../lib/domains'
 import { buildReferenceMarkdown } from '../lib/referenceLinks.js'
-import { formatEntityTypeTerm, rankedEntityTypeSet } from '../lib/documentSections'
+import { formatReferenceTerm, rankedEntityTypeSet } from '../lib/documentSections'
 import type { DocumentType, ReferenceSearchHit, WriteHelp } from '../../domain'
 import { readErrorMessage } from '../lib/errors'
 
@@ -59,7 +59,7 @@ const selectedDomainLabels = computed(() =>
 const suggestedEntityTypeSet = computed(() => rankedEntityTypeSet(props.suggestedEntityTypes))
 
 const suggestedEntityTypeLabels = computed(() =>
-  (props.suggestedEntityTypes ?? []).map(formatEntityTypeTerm),
+  (props.suggestedEntityTypes ?? []).map((t) => formatReferenceTerm(t)),
 )
 
 const availableEntityTypes = computed(() => {

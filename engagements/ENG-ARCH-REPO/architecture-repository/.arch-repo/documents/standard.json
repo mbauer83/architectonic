@@ -11,6 +11,6 @@
     }
   },
   "required_sections": ["Scope", "Motivation", "Summary", "Specification"],
-  "required_entity_type_connections": ["requirement"],
-  "suggested_entity_type_connections": ["principle", "goal"]
+  "required_connections": ["requirement"],
+  "suggested_connections": ["principle", "goal"]
 }

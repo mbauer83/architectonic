@@ -8,10 +8,16 @@ if TYPE_CHECKING:
     from src.application.verification._verifier_snapshot import RepositorySnapshot
 
 import re
-from dataclasses import dataclass
 from pathlib import Path
 
-from src.application.document_links import references_from, strip_anchor
+from src.application.artifacts.document_schema import SectionSpec
+from src.application.artifacts.reference_terms import (
+    LinkedArtifactTypes,
+    ReferenceTermVocabulary,
+    TermStatus,
+    parse_reference_term,
+)
+from src.application.document_links import resolve_artifact_links
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.application.verification.artifact_verifier_parsing import parse_frontmatter, read_file
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
@@ -64,123 +70,87 @@ def document_section_spans(body: str) -> dict[str, str]:
     return {name: "\n".join(parts) for name, parts in spans.items()}
 
 
-@dataclass(frozen=True)
-class ResolvedEntityLink:
-    """One markdown link in a document that resolves to an entity file."""
-
-    href: str
-    artifact_id: str
-    artifact_type: str
-    name: str
+def linked_types_in(doc_path: Path, content: str) -> LinkedArtifactTypes:
+    """What *content* links, partitioned by vocabulary — the input every required-term rule takes."""
+    return LinkedArtifactTypes.from_links(resolve_artifact_links(doc_path, content))
 
 
-def resolve_entity_links(doc_path: Path, content: str) -> list[ResolvedEntityLink]:
-    """Resolve every relative markdown link in *content* to the entity it targets.
-
-    This is the single reading of "which entities does this document link" — the
-    required-entity-type-connection rules (E155/E156) and the promotion closure
-    gate both consume it, so they cannot drift apart. What a link *is* comes from
-    `references_from`, which is the single reading one level down; this one says which of
-    those references turn out to be entities.
-    """
-    links: list[ResolvedEntityLink] = []
-    for reference in references_from(content, directory=doc_path.parent):
-        if not strip_anchor(reference.href).endswith(".md") or not reference.target.is_file():
-            continue
-        try:
-            target_content = reference.target.read_text(encoding="utf-8")
-        except OSError:
-            continue
-        fm = parse_frontmatter(
-            target_content,
-            VerificationResult(path=reference.target, file_type="entity"),
-            str(reference.target),
-        )
-        if fm and fm.get("artifact-type"):
-            links.append(
-                ResolvedEntityLink(
-                    href=reference.href,
-                    artifact_id=str(fm.get("artifact-id", "")),
-                    artifact_type=str(fm["artifact-type"]),
-                    name=str(fm.get("name", fm.get("artifact-id", ""))),
-                )
-            )
-    return links
-
-
-def _linked_entity_types(doc_path: Path, content: str) -> set[str]:
-    return {link.artifact_type for link in resolve_entity_links(doc_path, content)}
-
-
-def _verify_required_entity_type_connections(
+def _verify_required_connections(
     *,
     result: VerificationResult,
     loc: str,
-    catalogs: RuntimeCatalogs,
-    linked_types: set[str],
-    required_entity_types: list[str],
+    vocabulary: ReferenceTermVocabulary,
+    linked: LinkedArtifactTypes,
+    terms: list[str],
+    section: str | None = None,
 ) -> None:
-    _oc = catalogs.ontology
-    for etype in required_entity_types:
-        label = _oc.format_entity_type_term(etype)
-        if not _oc.expand_entity_type_term(etype):
-            result.issues.append(
-                Issue(
-                    Severity.ERROR,
-                    "E155",
-                    f"Unknown required entity-type connection term: {label} ({etype})",
-                    loc,
+    """One rule for a document's declared terms and for a section's.
+
+    The two differ only in severity and in whether the message names a section: an unknown term is an
+    error about the document (E155) and a warning about a section (W157), because a typo in a schema
+    should not make somebody's document unwritable, while an unmet requirement is an error either way
+    (E155 / E156). A term naming a diagram type no module registers here is neither — it is a
+    template asking for something this deployment cannot create, which W159 reports and nothing
+    refuses.
+    """
+    where = f" in section '{section}'" if section else ""
+    for term in terms:
+        noun = vocabulary.kind_noun(term)
+        label = vocabulary.label(term)
+        match vocabulary.status(term):
+            case TermStatus.UNKNOWN:
+                result.issues.append(
+                    Issue(
+                        Severity.WARNING if section else Severity.ERROR,
+                        "W157" if section else "E155",
+                        f"Unknown required {noun} connection term{where}: {label} ({term})",
+                        loc,
+                    )
                 )
-            )
-        elif not _oc.entity_type_term_matches(etype, linked_types):
-            result.issues.append(
-                Issue(
-                    Severity.ERROR,
-                    "E155",
-                    f"Required entity-type connection missing: link at least one {label}",
-                    loc,
+            case TermStatus.UNREGISTERED if not vocabulary.matches(term, linked):
+                result.issues.append(
+                    Issue(
+                        Severity.WARNING,
+                        "W159",
+                        f"Required {noun} connection unverifiable{where}: diagram type "
+                        f"'{parse_reference_term(term).body}' is not registered in this deployment, "
+                        "and nothing links one",
+                        loc,
+                    )
                 )
-            )
+            case TermStatus.KNOWN if not vocabulary.matches(term, linked):
+                result.issues.append(
+                    Issue(
+                        Severity.ERROR,
+                        "E156" if section else "E155",
+                        f"Required {noun} connection missing{where}: link at least one {label}",
+                        loc,
+                    )
+                )
+            case _:
+                continue
 
 
-def _verify_section_entity_type_connections(
+def _verify_section_connections(
     *,
     result: VerificationResult,
     loc: str,
     doc_path: Path,
-    catalogs: RuntimeCatalogs,
+    vocabulary: ReferenceTermVocabulary,
     section_spans: dict[str, str],
-    sections: list[dict],
+    sections: tuple[SectionSpec, ...],
 ) -> None:
-    _oc = catalogs.ontology
     for section in sections:
-        name = str(section.get("name") or "").strip()
-        if not name:
+        if not section.required_connections or section.name not in section_spans:
             continue
-        required_entity_types: list[str] = section.get("required_entity_type_connections") or []
-        if not required_entity_types or name not in section_spans:
-            continue
-        linked_types = _linked_entity_types(doc_path, section_spans[name])
-        for etype in required_entity_types:
-            label = _oc.format_entity_type_term(etype)
-            if not _oc.expand_entity_type_term(etype):
-                result.issues.append(
-                    Issue(
-                        Severity.WARNING,
-                        "W157",
-                        f"Unknown required entity-type connection term in section '{name}': {label} ({etype})",
-                        loc,
-                    )
-                )
-            elif not _oc.entity_type_term_matches(etype, linked_types):
-                result.issues.append(
-                    Issue(
-                        Severity.ERROR,
-                        "E156",
-                        f"Required entity-type connection missing in section '{name}': link at least one {label}",
-                        loc,
-                    )
-                )
+        _verify_required_connections(
+            result=result,
+            loc=loc,
+            vocabulary=vocabulary,
+            linked=linked_types_in(doc_path, section_spans[section.name]),
+            terms=list(section.required_connections),
+            section=section.name,
+        )
 
 
 def verify_document(  # noqa: C901
@@ -207,9 +177,9 @@ def verify_document(  # noqa: C901
     else:
         repo_root = _doc_repo_root(path, registry)
         if repo_root is not None:
-            from src.application.artifacts.document_schema import get_document_schema  # noqa: PLC0415
+            from src.application.artifacts.document_schema import get_document_schema_object  # noqa: PLC0415
 
-            schema = get_document_schema(repo_root, doc_type)
+            schema = get_document_schema_object(repo_root, doc_type)
             if schema is None:
                 result.issues.append(
                     Issue(
@@ -220,7 +190,7 @@ def verify_document(  # noqa: C901
                     )
                 )
             else:
-                fm_schema = schema.get("frontmatter_schema")
+                fm_schema = schema.data.get("frontmatter_schema")
                 if fm_schema:
                     from src.application.artifacts.schema import validate_against_schema  # noqa: PLC0415
 
@@ -232,38 +202,35 @@ def verify_document(  # noqa: C901
                     status_enum = fm_schema.get("properties", {}).get("status", {}).get("enum")
                     if status_enum:
                         doc_type_status_enum = frozenset(str(v) for v in status_enum)
-                required_sections: list[str] = schema.get("required_sections") or []
                 body = document_body(content)
                 section_spans = document_section_spans(body)
-                if required_sections:
-                    present = set(section_spans)
-                    for section in required_sections:
-                        if section not in present:
-                            result.issues.append(
-                                Issue(
-                                    Severity.ERROR,
-                                    "E154",
-                                    f"Required section '## {section}' missing from document",
-                                    loc,
-                                )
+                present = set(section_spans)
+                for section_name in schema.required_sections:
+                    if section_name not in present:
+                        result.issues.append(
+                            Issue(
+                                Severity.ERROR,
+                                "E154",
+                                f"Required section '## {section_name}' missing from document",
+                                loc,
                             )
-                required_entity_types: list[str] = schema.get("required_entity_type_connections") or []
-                if required_entity_types:
-                    linked_types = _linked_entity_types(path, content)
-                    _verify_required_entity_type_connections(
+                        )
+                vocabulary = ReferenceTermVocabulary.for_repository(catalogs=catalogs, repo_root=repo_root)
+                if schema.required_connections:
+                    _verify_required_connections(
                         result=result,
                         loc=loc,
-                        catalogs=catalogs,
-                        linked_types=linked_types,
-                        required_entity_types=required_entity_types,
+                        vocabulary=vocabulary,
+                        linked=linked_types_in(path, content),
+                        terms=list(schema.required_connections),
                     )
-                _verify_section_entity_type_connections(
+                _verify_section_connections(
                     result=result,
                     loc=loc,
                     doc_path=path,
-                    catalogs=catalogs,
+                    vocabulary=vocabulary,
                     section_spans=section_spans,
-                    sections=schema.get("sections") or [],
+                    sections=schema.sections,
                 )
 
     check_internal_links(content, path, result, loc)

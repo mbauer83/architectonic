@@ -9,7 +9,7 @@ import ArtifactReferenceInput from '../components/ArtifactReferenceInput.vue'
 import type { DocumentDetail, DocumentType } from '../../domain'
 import { collectVerificationIssues, readErrorMessage } from '../lib/errors'
 import { routeInternalLinkClicks } from '../lib/internalLinkClicks'
-import { findSectionSpec, sectionAtOffset, sectionEntityTypeTerms } from '../lib/documentSections'
+import { findSectionSpec, sectionAtOffset, sectionReferenceTerms } from '../lib/documentSections'
 
 const svc = inject(modelServiceKey)!
 const addToast = inject(toastKey)!
@@ -91,7 +91,7 @@ const currentSectionSpec = computed(() =>
   findSectionSpec(matchedDocType.value?.sections, currentSectionName.value),
 )
 
-const suggestedEntityTypesForSection = computed(() => sectionEntityTypeTerms(currentSectionSpec.value))
+const suggestedEntityTypesForSection = computed(() => sectionReferenceTerms(currentSectionSpec.value))
 
 const openReferencePicker = () => {
   referenceCursorOffset.value = editorRef.value?.getCursorOffset() ?? body.value.length

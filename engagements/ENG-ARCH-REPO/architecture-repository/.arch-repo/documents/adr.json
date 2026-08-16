@@ -12,15 +12,15 @@
       "date": {"type": "string"}
     }
   },
-  "suggested_entity_type_connections": ["@all"],
+  "suggested_connections": ["@all"],
   "sections": [
     {
       "name": "Context",
-      "suggested_entity_type_connections": ["driver", "assessment", "principle", "requirement"]
+      "suggested_connections": ["driver", "assessment", "principle", "requirement"]
     },
     {
       "name": "Decision",
-      "suggested_entity_type_connections": [
+      "suggested_connections": [
         "requirement",
         "application-component",
         "application-interface",
@@ -31,7 +31,7 @@
     },
     {
       "name": "Consequences",
-      "suggested_entity_type_connections": ["outcome", "requirement"]
+      "suggested_connections": ["outcome", "requirement"]
     }
   ]
 }

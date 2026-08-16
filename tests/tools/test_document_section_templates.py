@@ -99,13 +99,13 @@ class TestBuildPlaceholderBody:
                 {
                     "name": "Context",
                     "template": "Describe the context.\n",
-                    "required_entity_type_connections": ["requirement"],
-                    "suggested_entity_type_connections": ["capability"],
+                    "required_connections": ["requirement"],
+                    "suggested_connections": ["capability"],
                 }
             ]
         )
         assert "## Context" in result
-        assert "<!-- Expected entity links for this section: required: requirement; suggested: capability -->" in result
+        assert "<!-- Expected links for this section: required: requirement; suggested: capability -->" in result
         assert "Describe the context." in result
 
 
@@ -280,10 +280,10 @@ class TestCreateDocumentSectionTemplates:
         )
         assert result.content is not None
         assert "## Context" in result.content
-        assert "<!-- Expected entity links for this section: required: requirement -->" in result.content
+        assert "<!-- Expected links for this section: required: requirement -->" in result.content
         assert "Describe the context." in result.content
         assert "## Decision" in result.content
-        assert "<!-- Expected entity links for this section: suggested: capability -->" in result.content
+        assert "<!-- Expected links for this section: suggested: capability -->" in result.content
 
 
 # ── end-to-end: real `standard` seed schema, create → placeholder → verify ──
@@ -320,9 +320,9 @@ class TestStandardDocTypeSectionLifecycle:
         )
         assert result.content is not None
         assert "## Specification" in result.content
-        assert "<!-- Expected entity links for this section: required: requirement -->" in result.content
+        assert "<!-- Expected links for this section: required: requirement -->" in result.content
         assert "## Motivation" in result.content
-        assert "<!-- Expected entity links for this section: suggested: principle, goal -->" in result.content
+        assert "<!-- Expected links for this section: suggested: principle, goal -->" in result.content
         # The document-level rule moved into "Specification"; "Scope"/"Summary" carry no hint.
         assert "## Scope\n\nState what this standard applies to" in result.content
 

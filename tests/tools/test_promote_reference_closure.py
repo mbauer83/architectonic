@@ -21,6 +21,7 @@ _PRN = "PRN@1000000703.RfcPrn.closure-principle"
 _STD = "STD@1000000704.RfcStd.closure-standard"
 _ARC = "ARC@1000000705.RfcArc.closure-diagram"
 _APP = "APP@1000000706.RfcApp.closure-component"
+_ADR = "ADR@1000000707.RfcAdr.closure-decision"
 
 
 def _write(path: Path, content: str) -> None:
@@ -65,6 +66,39 @@ _STANDARD_SCHEMA = """\
     {"name": "Specification", "required_entity_type_connections": ["principle"]}
   ]
 }
+"""
+
+
+#: An ADR that must reach a standard. The `doc:` vocabulary joined `required_connections` in 0.7.0;
+#: the standard schema above deliberately keeps the entity-only spelling, so both are exercised.
+_ADR_SCHEMA = """\
+{
+  "abbreviation": "ADR",
+  "name": "Architecture Decision Record",
+  "required_sections": ["Decision"],
+  "required_connections": ["doc:standard"]
+}
+"""
+
+
+def _adr_md(linked_document_ids: list[str]) -> str:
+    links = "\n".join(
+        f"See [{did}](../../standard/closure/{did}.md)" for did in linked_document_ids
+    )
+    return f"""\
+---
+artifact-id: {_ADR}
+artifact-type: document
+doc-type: adr
+title: Closure Decision
+status: draft
+version: 0.1.0
+last-updated: '2026-01-01'
+---
+
+## Decision
+
+{links}
 """
 
 
@@ -129,6 +163,7 @@ def roots(tmp_path: Path) -> tuple[Path, Path]:
     for root in (eng, ent):
         (root / "model").mkdir(parents=True, exist_ok=True)
         _write(root / ".arch-repo" / "documents" / "standard.json", _STANDARD_SCHEMA)
+        _write(root / ".arch-repo" / "documents" / "adr.json", _ADR_SCHEMA)
     _write(eng / "model/motivation/requirement" / f"{_REQ}.md", _entity_md(_REQ, "requirement", "Closure Req"))
     _write(eng / "model/motivation/requirement" / f"{_REQ2}.md", _entity_md(_REQ2, "requirement", "Second Req"))
     _write(eng / "model/motivation/principle" / f"{_PRN}.md", _entity_md(_PRN, "principle", "Closure Prn"))
@@ -208,6 +243,48 @@ class TestDocumentClosure:
         _write(eng / "docs/standard/closure" / f"{_STD}.md", _doc_md([], [_PRN]))
         plan, _ = _plan(eng, ent, document_ids=[_STD], entity_ids=[_PRN])
         assert [d for d in plan.missing_dependencies if d.kind == "document_required_link"] == []
+
+
+class TestRequiredDocumentClosure:
+    """A required *document* reference closes exactly as a required entity does.
+
+    The enterprise verifier raises E155 for the dangling link after the copy either way, so plan
+    time is where the artifact that would fix it can still be named.
+    """
+
+    def _standard_and_adr(self, eng: Path) -> None:
+        _write(eng / "docs/standard/closure" / f"{_STD}.md", _doc_md([_REQ], [_PRN]))
+        _write(eng / "docs/adr/closure" / f"{_ADR}.md", _adr_md([_STD]))
+
+    def test_required_document_left_behind_blocks_and_names_it(self, roots) -> None:
+        eng, ent = roots
+        self._standard_and_adr(eng)
+        plan, _ = _plan(eng, ent, document_ids=[_ADR])
+
+        deps = [d for d in plan.missing_dependencies if d.kind == "document_required_link"]
+        assert [d.artifact_id for d in deps] == [_STD]
+        assert deps[0].record_type == "document"
+        assert deps[0].required_by == _ADR
+        assert any(_STD in e and _ADR in e for e in plan.schema_errors)
+
+    def test_the_required_document_in_the_set_satisfies_the_closure(self, roots) -> None:
+        eng, ent = roots
+        self._standard_and_adr(eng)
+        plan, _ = _plan(eng, ent, document_ids=[_ADR, _STD], entity_ids=[_REQ, _PRN])
+        assert [d for d in plan.missing_dependencies if d.required_by == _ADR] == []
+
+    def test_an_enterprise_resident_document_satisfies_the_closure(self, roots) -> None:
+        eng, ent = roots
+        self._standard_and_adr(eng)
+        _write(ent / "docs/standard/closure" / f"{_STD}.md", _doc_md([_REQ], [_PRN]))
+        plan, _ = _plan(eng, ent, document_ids=[_ADR])
+        assert [d for d in plan.missing_dependencies if d.required_by == _ADR] == []
+
+    def test_no_link_at_all_is_the_engagement_verifier_s_finding(self, roots) -> None:
+        eng, ent = roots
+        _write(eng / "docs/adr/closure" / f"{_ADR}.md", _adr_md([]))
+        plan, _ = _plan(eng, ent, document_ids=[_ADR])
+        assert [d for d in plan.missing_dependencies if d.required_by == _ADR] == []
 
 
 class TestDiagramClosure:

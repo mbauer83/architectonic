@@ -9,7 +9,7 @@ import ArtifactReferenceInput from '../components/ArtifactReferenceInput.vue'
 import { draftDocumentPath } from '../lib/referenceLinks.js'
 import type { DocumentType } from '../../domain'
 import { collectVerificationIssues, readErrorMessage } from '../lib/errors'
-import { formatEntityTypeTerm } from '../lib/documentSections'
+import ReferenceTermChips from '../components/ReferenceTermChips.vue'
 
 const svc = inject(modelServiceKey)!
 const router = useRouter()
@@ -56,13 +56,13 @@ const selectedType = computed(() =>
 )
 
 const extraFields = computed(() => selectedType.value?.extra_frontmatter_fields ?? [])
-const requiredEntityTypes = computed(() => selectedType.value?.required_entity_type_connections ?? [])
-const suggestedEntityTypes = computed(() => selectedType.value?.suggested_entity_type_connections ?? [])
+const requiredEntityTypes = computed(() => selectedType.value?.required_connections ?? [])
+const suggestedEntityTypes = computed(() => selectedType.value?.suggested_connections ?? [])
 const sectionsWithEntityHints = computed(() =>
   (selectedType.value?.sections ?? []).filter(
     (section) =>
-      (section.required_entity_type_connections?.length ?? 0) > 0 ||
-      (section.suggested_entity_type_connections?.length ?? 0) > 0,
+      (section.required_connections?.length ?? 0) > 0 ||
+      (section.suggested_connections?.length ?? 0) > 0,
   ),
 )
 
@@ -357,12 +357,7 @@ const insertReference = (markdownLink: string) => {
       >
         <strong>Required entity links:</strong>
         Link at least one matching entity for each term:
-        <span
-          v-for="(t, i) in requiredEntityTypes"
-          :key="t"
-          class="entity-type-tag entity-type-tag--required"
-          :title="t"
-        >{{ formatEntityTypeTerm(t) }}<span v-if="i < requiredEntityTypes.length - 1">,&nbsp;</span></span>
+        <ReferenceTermChips :terms="requiredEntityTypes" :document-types="documentTypes" required />
       </div>
       <div
         v-if="suggestedEntityTypes.length"
@@ -370,12 +365,7 @@ const insertReference = (markdownLink: string) => {
       >
         <strong>Suggested entity links:</strong>
         Consider linking matching entities for:
-        <span
-          v-for="(t, i) in suggestedEntityTypes"
-          :key="t"
-          class="entity-type-tag"
-          :title="t"
-        >{{ formatEntityTypeTerm(t) }}<span v-if="i < suggestedEntityTypes.length - 1">,&nbsp;</span></span>
+        <ReferenceTermChips :terms="suggestedEntityTypes" :document-types="documentTypes" />
       </div>
 
       <div
@@ -389,28 +379,22 @@ const insertReference = (markdownLink: string) => {
         >
           <span class="section-hint__name"># {{ section.name }}</span>
           <span
-            v-if="section.required_entity_type_connections?.length"
+            v-if="section.required_connections?.length"
             class="entity-connection-hint entity-connection-hint--required entity-connection-hint--inline"
           >
             Required:
-            <span
-              v-for="(t, i) in section.required_entity_type_connections"
-              :key="t"
-              class="entity-type-tag entity-type-tag--required"
-              :title="t"
-            >{{ formatEntityTypeTerm(t) }}<span v-if="i < section.required_entity_type_connections.length - 1">,&nbsp;</span></span>
+            <ReferenceTermChips
+              :terms="section.required_connections"
+              :document-types="documentTypes"
+              required
+            />
           </span>
           <span
-            v-if="section.suggested_entity_type_connections?.length"
+            v-if="section.suggested_connections?.length"
             class="entity-connection-hint entity-connection-hint--suggested entity-connection-hint--inline"
           >
             Suggested:
-            <span
-              v-for="(t, i) in section.suggested_entity_type_connections"
-              :key="t"
-              class="entity-type-tag"
-              :title="t"
-            >{{ formatEntityTypeTerm(t) }}<span v-if="i < section.suggested_entity_type_connections.length - 1">,&nbsp;</span></span>
+            <ReferenceTermChips :terms="section.suggested_connections" :document-types="documentTypes" />
           </span>
         </div>
       </div>
@@ -610,17 +594,6 @@ const insertReference = (markdownLink: string) => {
   border: 1px solid #93c5fd;
   color: #1e40af;
 }
-.entity-type-tag {
-  font-family: monospace;
-  font-size: 11px;
-  background: rgba(0, 0, 0, .06);
-  border-radius: 3px;
-  padding: 1px 4px;
-}
-.entity-type-tag--required {
-  background: rgba(220, 38, 38, .1);
-}
-
 .section-hints {
   border: 1px solid #e5e7eb;
   border-radius: 8px;

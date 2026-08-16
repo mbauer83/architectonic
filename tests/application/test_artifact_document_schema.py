@@ -55,8 +55,8 @@ def test_normalize_sections_shape_preserves_per_section_rules() -> None:
     )
 
     assert schema.required_sections == ("Scope", "Specification")
-    assert schema.sections[0].required_entity_type_connections == ("requirement",)
-    assert schema.sections[0].suggested_entity_type_connections == ("principle", "@all")
+    assert schema.sections[0].required_connections == ("requirement",)
+    assert schema.sections[0].suggested_connections == ("principle", "@all")
     assert schema.to_dict()["required_sections"] == ["Scope", "Specification"]
     assert schema.to_dict()["section_templates"] == {"Scope": "State scope.\n"}
 
@@ -98,4 +98,125 @@ def test_loader_exposes_typed_document_schema(tmp_path: Path) -> None:
     loaded = get_document_schema_object(tmp_path, "standard")
     assert loaded is not None
     assert loaded.required_sections == ("Scope",)
-    assert loaded.sections[0].required_entity_type_connections == ("requirement",)
+    assert loaded.sections[0].required_connections == ("requirement",)
+
+
+# ---------------------------------------------------------------------------
+# The widened connection vocabulary, and the spelling it replaced
+# ---------------------------------------------------------------------------
+
+
+def test_legacy_entity_only_keys_normalize_to_the_widened_fields() -> None:
+    """A schema written before document and diagram types joined the vocabulary reads unchanged.
+
+    The old spelling is accepted at the loader and nowhere else, so there stays one declaration
+    reader — the alternative is every consumer checking both keys, which is how the entity-only pair
+    came to be named at thirteen sites.
+    """
+    schema = normalize_document_schema(
+        "standard",
+        {
+            "name": "Standard",
+            "sections": [
+                {
+                    "name": "Specification",
+                    "required_entity_type_connections": ["requirement"],
+                    "suggested_entity_type_connections": ["principle"],
+                }
+            ],
+            "required_entity_type_connections": ["outcome"],
+            "suggested_entity_type_connections": ["@all"],
+        },
+    )
+
+    assert schema.required_connections == ("outcome",)
+    assert schema.suggested_connections == ("@all",)
+    assert schema.sections[0].required_connections == ("requirement",)
+    assert schema.sections[0].suggested_connections == ("principle",)
+
+
+def test_the_legacy_keys_are_never_emitted_again() -> None:
+    schema = normalize_document_schema(
+        "standard",
+        {"name": "Standard", "sections": [{"name": "Scope"}], "required_entity_type_connections": ["requirement"]},
+    )
+
+    emitted = schema.to_dict()
+
+    assert emitted["required_connections"] == ["requirement"]
+    assert "required_entity_type_connections" not in emitted
+
+
+def test_both_spellings_are_read_rather_than_one_winning() -> None:
+    """A schema part-way through being rewritten would otherwise silently lose one of its lists."""
+    schema = normalize_document_schema(
+        "standard",
+        {
+            "name": "Standard",
+            "sections": [{"name": "Scope"}],
+            "required_connections": ["doc:adr"],
+            "required_entity_type_connections": ["requirement"],
+        },
+    )
+
+    assert schema.required_connections == ("doc:adr", "requirement")
+
+
+def test_widened_terms_survive_the_load_round_trip(tmp_path: Path) -> None:
+    _write_schema(
+        tmp_path,
+        "arch",
+        {
+            "name": "Architecture",
+            "sections": [
+                {"name": "Context", "required_connections": ["diagram:c4-system-context", "doc:adr"]}
+            ],
+            "suggested_connections": ["doc:@all"],
+        },
+    )
+
+    loaded = get_document_schema_object(tmp_path, "arch")
+    assert loaded is not None
+    assert loaded.sections[0].required_connections == ("diagram:c4-system-context", "doc:adr")
+    assert loaded.suggested_connections == ("doc:@all",)
+
+    served = get_document_schema(tmp_path, "arch")
+    assert served is not None
+    assert served["sections"][0]["required_connections"] == ["diagram:c4-system-context", "doc:adr"]
+    assert served["suggested_connections"] == ["doc:@all"]
+
+
+@pytest.mark.parametrize(
+    "terms",
+    [
+        ["requirement"],
+        ["@all"],
+        ["@internal-behavior-element"],
+        ["doc:adr"],
+        ["doc:@all"],
+        ["diagram:c4-container"],
+        ["diagram:@all"],
+        ["requirement", "doc:adr", "diagram:matrix", "@internal-behavior-element"],
+    ],
+)
+def test_the_term_syntax_survives_the_write_read_round_trip(terms: list[str]) -> None:
+    """The pair, not each side against a fixture.
+
+    Stated over what the syntax *permits* rather than what the shipped schemata happen to declare
+    today: the last gate of this shape passed against a broken reading because the catalogue in the
+    box exercised none of the interesting cases.
+    """
+    written = normalize_document_schema(
+        "arch",
+        {
+            "name": "Architecture",
+            "sections": [{"name": "Context", "required_connections": terms}],
+            "suggested_connections": terms,
+        },
+    ).to_dict()
+
+    read_back = normalize_document_schema("arch", written)
+
+    assert list(read_back.sections[0].required_connections) == terms
+    assert list(read_back.suggested_connections) == terms
+    assert read_back.to_dict() == written

@@ -32,7 +32,7 @@ BASE_DOCUMENT_SCHEMAS: dict[str, dict] = {
             "Decision": "Describe the decision that was made and why.\n",
             "Consequences": "Describe the resulting context, trade-offs, and any follow-up actions.\n",
         },
-        "suggested_entity_type_connections": ["@all"],
+        "suggested_connections": ["@all"],
     },
     "spec": {
         "abbreviation": "SPC",
@@ -73,7 +73,7 @@ BASE_DOCUMENT_SCHEMAS: dict[str, dict] = {
             {
                 "name": "Motivation",
                 "template": "Explain why this standard is needed.\n",
-                "suggested_entity_type_connections": ["principle", "goal"],
+                "suggested_connections": ["principle", "goal"],
             },
             {
                 "name": "Summary",
@@ -82,7 +82,7 @@ BASE_DOCUMENT_SCHEMAS: dict[str, dict] = {
             {
                 "name": "Specification",
                 "template": "Provide the normative specification with SHALL/SHOULD/MAY guidance.\n",
-                "required_entity_type_connections": ["requirement"],
+                "required_connections": ["requirement"],
             },
         ],
     },
