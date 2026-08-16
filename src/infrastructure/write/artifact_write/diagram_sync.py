@@ -32,6 +32,9 @@ from pathlib import Path
 
 from src.application.repo_path_helpers import diagram_source_root, resolve_diagram_source_path
 from src.application.verification.artifact_verifier import ArtifactVerifier
+from src.domain.artifact_id import stable_conn_id
+from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
+from src.infrastructure.rendering.diagram_selection import connections_among
 
 from ._sync_helpers import (
     LookupStore,
@@ -177,6 +180,44 @@ def _captured_authored_groupings(puml_body: str, entity_records: list, parse) ->
     return captured
 
 
+def _undrawn_connection_report(
+    store: LookupStore,
+    entity_records: list[EntityRecord],
+    conn_records: list[ConnectionRecord],
+) -> list[str]:
+    """Say which model connections between two elements the diagram draws are missing from it.
+
+    A reconcile converges in one direction only: it drops what the model no longer has and never
+    adopts what the model has gained. That is deliberate — the entity set is the authored thing and
+    the picture is the author's, and a bulk delete auto-syncs every dependent diagram, so adopting
+    would redraw curated views as a side effect of unrelated maintenance.
+
+    What was wrong is that the other direction was *silent*. A relation added between two elements
+    already on the diagram left it out of date, and a sync answered success over a picture that no
+    longer said what the model said. So it is reported and not applied: adopting these is one edit,
+    stating ``entity_ids``, and that edit is the author's to make.
+
+    Asked through ``connections_among``, which owns "what a diagram of these entities draws" — the
+    same rule ``artifact_create_diagram`` and the membership path apply, so this cannot disagree
+    with what adopting them would produce. Compared in stable form, because a short and a full
+    spelling of an id name the same connection.
+    """
+    drawn = {stable_conn_id(record.artifact_id) for record in conn_records}
+    undrawn = [
+        connection_id
+        for connection_id in connections_among(store, [record.artifact_id for record in entity_records])
+        if stable_conn_id(connection_id) not in drawn
+    ]
+    if not undrawn:
+        return []
+    listed = "\n".join(f"  - {connection_id}" for connection_id in undrawn)
+    return [
+        f"model connections among this diagram's entities that it does not draw ({len(undrawn)}):\n"
+        f"{listed}\n"
+        "Pass entity_ids with this diagram's current entity list to adopt them into the picture."
+    ]
+
+
 def sync_diagram_to_model(
     *,
     repo_root: Path,
@@ -249,6 +290,9 @@ def sync_diagram_to_model(
     raw_el = fm.get("edge-labels")
     existing_edge_labels = dict(raw_el) if isinstance(raw_el, dict) else None
     authored_groupings, grouping_warnings = _reconciled_authored_groupings(fm, parsed.puml_body, entity_records)
+    # Reported on both paths below: a hand-laid-out diagram goes out of date the same way, and
+    # keeping its body verbatim is a reason to say so, not a reason to stay quiet.
+    staleness_warnings = _undrawn_connection_report(store, entity_records, conn_records)
 
     if fm.get("manual-layout") is True:
         # A hand-tuned picture the user has ruled better than any regeneration:
@@ -268,7 +312,7 @@ def sync_diagram_to_model(
             path=write_result.path,
             artifact_id=write_result.artifact_id,
             content=write_result.content,
-            warnings=[*write_result.warnings, *grouping_warnings,
+            warnings=[*write_result.warnings, *grouping_warnings, *staleness_warnings,
                       "manual-layout: body kept verbatim; bindings reconciled only"],
             verification=write_result.verification,
             removed_entity_ids=removed_entity_ids,
@@ -303,7 +347,7 @@ def sync_diagram_to_model(
         path=write_result.path,
         artifact_id=write_result.artifact_id,
         content=write_result.content,
-        warnings=[*write_result.warnings, *grouping_warnings],
+        warnings=[*write_result.warnings, *grouping_warnings, *staleness_warnings],
         verification=write_result.verification,
         removed_entity_ids=removed_entity_ids,
         removed_connection_ids=removed_conn_ids,

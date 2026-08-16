@@ -425,3 +425,66 @@ class TestMcpAutoSyncDispatch:
 
         assert "removed_entity_ids" in result
         assert "removed_connection_ids" in result
+
+
+class TestAReconcileSaysWhatItIsNotDrawing:
+    """A relation added between two elements already on a diagram leaves it out of date.
+
+    Reconciling converges in one direction: it drops what the model no longer has, and never
+    adopts what the model has gained — the entity set is the authored thing, and a bulk delete
+    auto-syncs every dependent diagram, so adopting would redraw curated views as a side effect of
+    unrelated maintenance. What was wrong is that the other direction was *silent*: a sync answered
+    `wrote: true` over a picture that no longer said what the model said, and the only way to find
+    out was to look. Reported now, with the edit that adopts it.
+    """
+
+    @staticmethod
+    def _diagram_missing_one_relation(repo: Path) -> tuple[str, str]:
+        """Two entities on a diagram, and a model connection between them it does not draw."""
+        src = _make_entity(repo, "Reporter")
+        tgt = _make_entity(repo, "Reported On")
+        added = mcp.artifact_add_connection(
+            source_entity=src,
+            connection_type="archimate-influence",
+            target_entity=tgt,
+            dry_run=False,
+            repo_root=str(repo),
+        )
+        assert added["wrote"], added
+        return _make_diagram(repo, "Undrawn Relation Diagram", [src, tgt]), str(added["artifact_id"])
+
+    def _sync(self, repo: Path, diagram_id: str):  # type: ignore[no-untyped-def]
+        verifier, clear_caches = _make_context(repo)
+        return sync_diagram_to_model(
+            repo_root=repo,
+            store=_fresh_store(repo),
+            verifier=verifier,
+            clear_repo_caches=clear_caches,
+            artifact_id=diagram_id,
+            dry_run=True,
+        )
+
+    def test_the_undrawn_connection_is_named(self, repo: Path) -> None:
+        diagram_id, connection_id = self._diagram_missing_one_relation(repo)
+
+        result = self._sync(repo, diagram_id)
+
+        reported = [w for w in result.warnings if "does not draw" in w]
+        assert reported, result.warnings
+        assert connection_id in reported[0]
+
+    def test_the_report_says_how_to_adopt_it(self, repo: Path) -> None:
+        diagram_id, _ = self._diagram_missing_one_relation(repo)
+
+        result = self._sync(repo, diagram_id)
+
+        assert any("entity_ids" in w for w in result.warnings), result.warnings
+
+    def test_a_diagram_drawing_everything_is_not_warned_about(self, repo: Path) -> None:
+        e1 = _make_entity(repo, "Alone")
+        e2 = _make_entity(repo, "Also Alone")
+        diagram_id = _make_diagram(repo, "Nothing Undrawn", [e1, e2])
+
+        result = self._sync(repo, diagram_id)
+
+        assert [w for w in result.warnings if "does not draw" in w] == []

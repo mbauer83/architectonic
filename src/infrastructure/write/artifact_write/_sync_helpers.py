@@ -10,6 +10,7 @@ from typing import Protocol
 
 from src.application.artifacts.parsing import extract_declared_puml_aliases, normalize_puml_alias
 from src.application.puml_relation_parsing import declared_relations
+from src.application.read_models import EntityContextConnection
 from src.domain.artifact_id import (
     ConnectionReference,
     parse_connection_reference,
@@ -36,6 +37,11 @@ class LookupStore(Protocol):
         source: str | None = None,
         target: str | None = None,
     ) -> list[ConnectionRecord]: ...
+    #: What the model connects a set of entities with. Declared here rather than reached for through
+    #: `list_connections` and a filter written again: `connections_among` already owns that
+    #: question, and answering it a second way is how two callers come to disagree about what a
+    #: diagram of a set of entities draws.
+    def candidate_connections_for_entities(self, entity_ids: list[str]) -> list[EntityContextConnection]: ...
 
 
 _STD_ALIAS_RE = re.compile(r"^(?P<prefix>[A-Z]{2,6})_(?P<random>[A-Za-z0-9_-]{4,})$")
