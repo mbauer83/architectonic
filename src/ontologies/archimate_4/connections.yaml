@@ -196,6 +196,15 @@ permitted_relationships:
   - [role, "@internal-behavior-element", [assignment]]
   - [collaboration, "@external-active-structure-element", [composition, aggregation]]
   - [collaboration, "@internal-behavior-element", [assignment]]
+  # A collaboration gathers the roles that participate in it. Stated for this pair rather than
+  # for the class: the assignment a collaboration already takes from
+  # `@internal-active-structure-element -> role` says the collaboration is allocated to the role,
+  # which is not membership, and no other internal active structure element gathers roles this way.
+  # Without this row the type is unusable — `create_when` describes participants at length and no
+  # relation could record them, which is why the model holds no collaboration at all.
+  # Composition accompanies it because the spec permits composition wherever aggregation is
+  # permitted (§5.1.2), which `test_archimate_4_composition_semantics` holds for every pair.
+  - [collaboration, role, [aggregation, composition]]
   - ["@internal-behavior-element", event, [triggering, flow]]
   - ["@internal-behavior-element", service, [realization]]
   - ["@internal-behavior-element", "@passive-structure-element", [access]]
