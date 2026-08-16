@@ -13,7 +13,9 @@ from src.diagram_types.archimate.technology import module as archimate_technolog
 from src.diagram_types.bowtie import module as bowtie
 from src.diagram_types.c4.component import module as c4_component
 from src.diagram_types.c4.container import module as c4_container
+from src.diagram_types.c4.deployment import module as c4_deployment
 from src.diagram_types.c4.system_context import module as c4_system_context
+from src.diagram_types.c4.system_landscape import module as c4_system_landscape
 from src.diagram_types.control_structure import module as control_structure
 from src.diagram_types.datatype import module as datatype
 from src.diagram_types.fmea_matrix import module as fmea_matrix
@@ -36,9 +38,11 @@ DEFAULT_DIAGRAM_KINDS: tuple[DiagramTypeModule, ...] = (
     archimate_technology,
     archimate_implementation,
     archimate_layered,
+    c4_system_landscape,
     c4_system_context,
     c4_container,
     c4_component,
+    c4_deployment,
     matrix,
     control_structure,
     uca_matrix,

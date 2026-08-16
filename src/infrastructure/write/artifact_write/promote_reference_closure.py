@@ -353,6 +353,8 @@ def _binding_target_refs(fm: dict) -> tuple[list[str], list[str]]:
         target = raw["target"]
         if target.get("entity_id") is not None:
             entity_refs.append(str(target["entity_id"]))
+        for eid in target.get("entity_ids") or []:
+            entity_refs.append(str(eid))
         if target.get("connection_id") is not None:
             connection_refs.append(str(target["connection_id"]))
         for cid in target.get("connection_ids") or []:

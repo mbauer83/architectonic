@@ -26,6 +26,7 @@ from pathlib import Path
 from typing import NamedTuple
 
 from src.application.verification.artifact_verifier import ArtifactVerifier
+from src.domain.diagrams.bindings import SCOPE_KEYS, scope_entity_ids
 from src.infrastructure.rendering.diagram_selection import connections_among, resolve_diagram_selection
 
 from .coerce import as_optional_str_list
@@ -33,16 +34,13 @@ from .parse_existing import ParsedDiagram
 
 
 def is_scope_bound(parsed: ParsedDiagram) -> bool:
-    """True when the diagram is owned by a projector (has a scoped-by binding or _scope_entity_id)."""
-    for binding in parsed.bindings:
-        if (
-            binding.correspondence_kind == "scoped-by"
-            and binding.subject.kind == "diagram"
-            and binding.target.entity_id
-        ):
-            return True
+    """True when the diagram is owned by a projector (has a scoped-by binding or the shorthand)."""
+    if scope_entity_ids(parsed.bindings):
+        return True
     diagram_entities = parsed.frontmatter.get("diagram-entities")
-    return isinstance(diagram_entities, dict) and bool(diagram_entities.get("_scope_entity_id"))
+    return isinstance(diagram_entities, dict) and any(
+        diagram_entities.get(key) for key in SCOPE_KEYS
+    )
 
 
 def is_standalone(parsed: ParsedDiagram) -> bool:

@@ -5,9 +5,8 @@ projection tables (system-context / container / component membership rules).
 Both Seam B (strategy/refresh path) and Seam C (ViewProjector/preview path)
 are produced here from one run.
 
-Also registers the c4.scope-projection/v1 strategy and the ("c4", 1) module
-projection so that the refresh/diff path gets Seam B via the generic registry.
-This registration runs as a module-level side effect when c4/_type.py loads.
+The c4.scope-projection strategy that carries this to the refresh/diff path is declared in
+`_manifest.py`, beside the registry it is for rather than beside the algorithm it runs.
 """
 
 from __future__ import annotations
@@ -70,22 +69,46 @@ class C4ProjectedItem:
     item_type: str  # C4 node type: "software-system", "container", "component", "person"
 
 
+#: The portfolio altitude, named once: the only C4 type whose scope is a set rather than one entity.
+LANDSCAPE_TYPE = "c4-system-landscape"
+
+#: The other axis: where a system's containers run, rather than what they contain.
+DEPLOYMENT_TYPE = "c4-deployment"
+
+#: The levels whose scope is a drawn node rather than a boundary wrapper — so the scope entity is
+#: part of what the diagram references. Spelled here beside the branches that classify those items,
+#: which is the same place the render mode's consequences are already decided.
+_SCOPE_DRAWN_TYPES: frozenset[str] = frozenset({LANDSCAPE_TYPE, "c4-system-context"})
+
+
 @dataclass(frozen=True)
 class C4Projection:
     """Result of project_c4: classified items + connection ids.
 
-    diagram_type is stored so to_candidate_set() can decide whether to include
-    the scope entity (it IS a visible node in system-context, but is only a
-    boundary wrapper in container/component).
+    diagram_type is stored so to_candidate_set() can decide whether to include the scope entities
+    (they ARE visible nodes in system-landscape and system-context, but only a boundary wrapper in
+    container/component).
+
+    ``scope_of`` says which drawn scope item a *non*-drawn entity rolls up to — a structural
+    descendant inside a system's boundary, whose edges to the outside are drawn on the boundary
+    itself. One declared mapping in place of the "if this is the context level, everything falls
+    back to the one root" rule the resolver used to carry, which could not have expressed a
+    landscape's several roots at all.
+
+    ``contained_by`` is the other structural fact a projection can carry: which *drawn* item holds
+    another one inside it. Only the deployment view fills it, because only there does the diagram
+    nest one drawn element in another — a container inside the node it runs on.
     """
 
     diagram_type: str
     items: tuple[C4ProjectedItem, ...]
     connection_ids: tuple[str, ...]
+    scope_of: tuple[tuple[str, str], ...] = ()
+    contained_by: tuple[tuple[str, str], ...] = ()
 
     def to_candidate_set(self) -> CandidateSet:
         """Seam B: membership-only set for the refresh/diff path."""
-        include_scope = (self.diagram_type == "c4-system-context")
+        include_scope = self.diagram_type in _SCOPE_DRAWN_TYPES
         entity_ids = frozenset(
             i.entity_id for i in self.items
             if i.role != "scope" or include_scope
@@ -236,6 +259,7 @@ def project_c4(
     root_item = make(root_entity_id, "scope")
     # pre-compute full structural descendants for roll-up (all levels, used below)
     all_descendants = _structural_children(root_entity_id, _MAX_ROLLUP_DEPTH, query)
+    scope_of: tuple[tuple[str, str], ...] = ()
 
     if diagram_type == "c4-system-context":
         # Roll-up: discover neighbours reachable from ANY internal descendant, not just root.
@@ -249,6 +273,7 @@ def project_c4(
         items = (root_item, *neighbor_items)
         # Roll-up connections: any model connection between internal entities and neighbours.
         conn_ids = tuple(sorted(_rollup_conns(all_internal, neighbors, query)))
+        scope_of = tuple((eid, root_entity_id) for eid in sorted(all_internal))
 
     elif diagram_type == "c4-container":
         raw_children = _structural_children(root_entity_id, 1, query)
@@ -301,49 +326,90 @@ def project_c4(
             len(items), _WARNING_THRESHOLD, root_entity_id,
         )
 
-    return C4Projection(diagram_type=diagram_type, items=items, connection_ids=conn_ids)
-
-
-# ---------------------------------------------------------------------------
-# Module manifest (Seam B) — strategies registered at the composition root.
-# ---------------------------------------------------------------------------
-
-from src.domain.modules.module_manifest import DiagramTypeModuleManifest  # noqa: E402
-from src.domain.relationships.derivation_types import StrategySpec  # noqa: E402
-from src.domain.viewpoints.view_derivations import SourceModelSnapshot  # noqa: E402
-
-
-def _derive(
-    params: dict[str, object],
-    snapshot: SourceModelSnapshot,
-    query: ModelQuery,
-) -> CandidateSet:
-    root = snapshot.root_entity_id or str(params.get("scope_entity_id", ""))
-    if not root:
-        return CandidateSet()
-    raw_person_types = params.get("person_archimate_types")
-    person_types: frozenset[str] = (
-        frozenset(str(t) for t in raw_person_types)
-        if isinstance(raw_person_types, (list, tuple, set, frozenset))
-        else frozenset()
+    return C4Projection(
+        diagram_type=diagram_type, items=items, connection_ids=conn_ids, scope_of=scope_of
     )
+
+
+def project_c4_scope(
+    diagram_type: str,
+    root_entity_ids: tuple[str, ...],
+    query: ModelQuery,
+    *,
+    internal_c4_type: str,
+    scope_entity_type: str,
+    person_archimate_types: frozenset[str],
+) -> C4Projection:
+    """The projection for a diagram's whole scope, however many entities it names.
+
+    One dispatcher, because the resolver, the preview seam and the refresh strategy all have a
+    diagram's scope in hand and each would otherwise decide for itself which projection a landscape
+    takes — and a landscape that happens to name a single system must not fall through to the
+    single-root algorithm, whose type table has no row for it.
+    """
+    if diagram_type == LANDSCAPE_TYPE:
+        return project_c4_landscape(
+            root_entity_ids, query,
+            scope_entity_type=scope_entity_type,
+            person_archimate_types=person_archimate_types,
+        )
+    if not root_entity_ids:
+        return C4Projection(diagram_type=diagram_type, items=(), connection_ids=())
+    if diagram_type == DEPLOYMENT_TYPE:
+        from src.diagram_types.c4._projection_deployment import project_c4_deployment  # noqa: PLC0415
+
+        return project_c4_deployment(
+            root_entity_ids[0], query,
+            internal_c4_type=internal_c4_type,
+            scope_entity_type=scope_entity_type,
+            person_archimate_types=person_archimate_types,
+        )
     return project_c4(
-        str(params.get("diagram_type", "")),
-        root,
-        query,
-        internal_c4_type=str(params.get("internal_c4_type", "container")),
-        scope_entity_type=str(params.get("scope_entity_type", "")),
-        person_archimate_types=person_types,
-    ).to_candidate_set()
+        diagram_type, root_entity_ids[0], query,
+        internal_c4_type=internal_c4_type,
+        scope_entity_type=scope_entity_type,
+        person_archimate_types=person_archimate_types,
+    )
 
 
-MANIFEST = DiagramTypeModuleManifest(
-    id="c4",
-    version=1,
-    compatible_ontologies=("archimate-4-0", "sysml_v2_min"),
-    ontology_role_mapping={},  # K2-followon: parameterise projection per active ontology
-    strategies=((
-        StrategySpec(name="c4.scope-projection", version=1, supported_filters=frozenset({"repo_scope"})),
-        _derive,
-    ),),
-)
+def project_c4_landscape(
+    root_entity_ids: tuple[str, ...],
+    query: ModelQuery,
+    *,
+    scope_entity_type: str,
+    person_archimate_types: frozenset[str],
+) -> C4Projection:
+    """The portfolio altitude: several systems in scope at once, and what surrounds all of them.
+
+    The same membership rule as the system context, applied to a set rather than a root. The
+    difference that matters is what "external" means: at context level the peers are what one
+    system touches, and here a peer of one scoped system may be another scoped system — so the
+    scope set is subtracted from the neighbour set rather than only the single root's closure.
+    """
+    def make(eid: str, role: str) -> C4ProjectedItem:
+        return _make_item(eid, role, scope_entity_type, scope_entity_type, person_archimate_types, query)
+
+    scope_items = tuple(make(eid, "scope") for eid in root_entity_ids)
+    internals_by_root = {
+        root: {root} | _structural_children(root, _MAX_ROLLUP_DEPTH, query)
+        for root in root_entity_ids
+    }
+    all_internal: set[str] = {eid for members in internals_by_root.values() for eid in members}
+
+    neighbors = _neighbor_entities(all_internal, _CONTEXT_PROJ_TYPES, query) - all_internal
+    neighbor_items = tuple(make(eid, "external") for eid in sorted(neighbors))
+
+    conn_ids = tuple(sorted(
+        _rollup_conns(all_internal, neighbors, query) | _direct_conns(all_internal, query)
+    ))
+    scope_of = tuple(
+        (eid, root)
+        for root in root_entity_ids
+        for eid in sorted(internals_by_root[root])
+    )
+    return C4Projection(
+        diagram_type=LANDSCAPE_TYPE,
+        items=(*scope_items, *neighbor_items),
+        connection_ids=conn_ids,
+        scope_of=scope_of,
+    )

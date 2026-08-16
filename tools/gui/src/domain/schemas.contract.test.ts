@@ -100,13 +100,21 @@ const C4_CONTEXT_RESPONSE = {
     c4_navigation: {
       current_level: 2,
       scope_entity_id: 'APP@1780783671.hkrdtm.architecture-management-platform',
+      scope_entity_ids: ['APP@1780783671.hkrdtm.architecture-management-platform'],
       scope_entity_name: 'Architecture Management Platform',
+      scope_entity_names: ['Architecture Management Platform'],
       parent_diagrams: [{
         diagram_id: 'CSC@1780829783.z8RRON.amp-system-context',
         diagram_name: 'AMP — System Context',
         diagram_type: 'c4-system-context',
       }],
       child_diagrams: [],
+      deployment_diagrams: [{
+        diagram_id: 'CDP@1780829784.a1B2c3.amp-deployment',
+        diagram_name: 'AMP — Deployment',
+        diagram_type: 'c4-deployment',
+      }],
+      subject_diagrams: [],
     },
   },
 }

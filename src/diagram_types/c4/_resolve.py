@@ -14,7 +14,24 @@ from src.diagram_types.c4._c4_types import (  # noqa: F401
     _ResolvedState,
 )
 from src.diagram_types.c4._resolve_model import resolve_model_backed
+from src.domain.diagrams.bindings import SCOPE_IDS_KEY, SCOPE_KEY
 from src.domain.diagrams.diagram_selection import DiagramSelectionError
+
+
+def scope_ids_in(diagram_entities: Mapping[str, object]) -> tuple[str, ...]:
+    """The scope this diagram's entities declare in shorthand, singular or set.
+
+    The renderer sees the shorthand rather than the canonical binding, because the write path puts
+    it back before rendering (`render_entities_with_scope`). One reading of the pair of keys, so
+    the resolver and the navigation cannot disagree about which one a diagram carries.
+    """
+    single = str(diagram_entities.get(SCOPE_KEY) or "").strip()
+    if single:
+        return (single,)
+    raw = diagram_entities.get(SCOPE_IDS_KEY)
+    if isinstance(raw, list):
+        return tuple(cleaned for item in raw if (cleaned := str(item).strip()))
+    return ()
 
 
 def resolve_c4_state(
@@ -25,16 +42,16 @@ def resolve_c4_state(
     diagram_connections: list[dict[str, object]],
     person_archimate_types: frozenset[str],
 ) -> _ResolvedState:
-    scope_entity_id = str(diagram_entities.get("_scope_entity_id") or "").strip()
+    scope_entity_ids = scope_ids_in(diagram_entities)
     c4_cfg = _c4_settings(config)
     scope_entity_type = str(c4_cfg["scope_entity_type"])
     scope_render_mode = str(c4_cfg["scope_render_mode"])
     internal_types = [str(t) for t in (c4_cfg.get("internal_entity_types") or [])]
     internal_c4_type = internal_types[0] if internal_types else "container"
 
-    if scope_entity_id:
+    if scope_entity_ids:
         return resolve_model_backed(
-            diagram_type, repo_root, diagram_entities, scope_entity_id,
+            diagram_type, repo_root, diagram_entities, scope_entity_ids,
             scope_entity_type, scope_render_mode, internal_c4_type, person_archimate_types,
         )
     return _resolve_standalone(
@@ -60,7 +77,7 @@ def _resolve_standalone(
             description="", technology="", external=False,
         )
         return _ResolvedState(
-            scope_item=placeholder, scope_render_mode=scope_render_mode,
+            scope_items=(placeholder,), scope_render_mode=scope_render_mode,
             internal_items=[], outside_items=[], connections=(),
             entity_ids=(), connection_artifact_ids=(),
         )
@@ -100,7 +117,7 @@ def _resolve_standalone(
     )
 
     return _ResolvedState(
-        scope_item=scope_item,
+        scope_items=(scope_item,),
         scope_render_mode=scope_render_mode,
         internal_items=internal_items,
         outside_items=outside_items,

@@ -89,9 +89,13 @@ class C4PumlRenderer:
             diagram_entities or {}, diagram_connections or [],
             self._person_archimate_types,
         )
+        # Which C4-PlantUML header the body needs is the type's to say: `Deployment_Node` lives in
+        # `C4_Deployment`, and including the component header for a deployment view would leave the
+        # macro undefined and the diagram rendering as an error image rather than failing.
+        c4_config: dict[str, Any] = self._config.get("c4") or {}
         lines: list[str] = [
             f"@startuml {diagram_name}",
-            "!include <C4/C4_Component>",
+            f"!include <C4/{c4_config.get('puml_stdlib') or 'C4_Component'}>",
             "left to right direction",
             "skinparam shadowing false",
             "skinparam linetype ortho",
@@ -102,10 +106,28 @@ class C4PumlRenderer:
             "",
         ]
 
-        show_desc = bool((self._config.get("c4") or {}).get("show_node_descriptions", False))
+        show_desc = bool(c4_config.get("show_node_descriptions", False))
 
-        if state.scope_render_mode == "node":
-            lines.append(self._render_item(state.scope_item, show_descriptions=show_desc))
+        scope_aliases = [item.alias for item in state.scope_items]
+        if state.scope_render_mode == "deployment":
+            # The system in scope is the title, not a box: what the reader is being shown is where
+            # its containers run, so each hosting node is the boundary and the containers sit in it.
+            for host in state.internal_items:
+                lines.append(
+                    f'Deployment_Node({host.alias}, "{_escape_puml(host.label)}", '
+                    f'"{_escape_puml(host.technology or host.item_type)}") {{'
+                )
+                for child in host.children:
+                    lines.append(f"  {self._render_item(child, show_descriptions=show_desc)}")
+                self._append_hidden_chain(lines, [child.alias for child in host.children], indent="  ")
+                lines.append("}")
+            scope_aliases = [host.alias for host in state.internal_items]
+        elif state.scope_render_mode == "node":
+            # Every scope item is drawn: one system at context level, a portfolio of them at
+            # landscape level. A boundary can only wrap one thing, which is why the two modes and
+            # the two scope cardinalities divide along the same line.
+            for item in state.scope_items:
+                lines.append(self._render_item(item, show_descriptions=show_desc))
         else:
             lines.append(
                 f'System_Boundary({state.scope_item.alias}, "{_escape_puml(state.scope_item.label)}") {{'
@@ -115,7 +137,7 @@ class C4PumlRenderer:
             self._append_hidden_chain(lines, [item.alias for item in state.internal_items], indent="  ")
             lines.append("}")
 
-        self._append_hidden_chain(lines, [state.scope_item.alias], indent="")
+        self._append_hidden_chain(lines, scope_aliases, indent="")
 
         outside_items = state.outside_items
         if outside_items:
@@ -124,7 +146,7 @@ class C4PumlRenderer:
             lines.append("")
             ordered_aliases = (
                 [item.alias for item in outside_items if item.item_type == "person"]
-                + [state.scope_item.alias]
+                + scope_aliases
                 + [item.alias for item in outside_items if item.item_type != "person"]
             )
             self._append_hidden_chain(lines, ordered_aliases, indent="")
@@ -172,10 +194,15 @@ class C4PumlRenderer:
             if not isinstance(target, dict):
                 continue
             eid = target.get("entity_id")
+            eids = target.get("entity_ids")
             cid = target.get("connection_id")
             cids = target.get("connection_ids")
             if eid and str(eid) not in entity_ids:
                 entity_ids.append(str(eid))
+            if isinstance(eids, list):
+                for e in eids:
+                    if str(e) not in entity_ids:
+                        entity_ids.append(str(e))
             if cid and str(cid) not in conn_ids:
                 conn_ids.append(str(cid))
             if isinstance(cids, list):

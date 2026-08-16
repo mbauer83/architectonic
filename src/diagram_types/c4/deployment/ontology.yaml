@@ -1,0 +1,144 @@
+entity_types:
+  node:
+    create_when: >-
+      Use for the technology element a container runs on — a cluster, a host, a managed service, a
+      device. Link entity_id to a technology-node, device, system-software, facility or equipment
+      model entity; the model-backed mode derives these from the artifacts they aggregate.
+    never_create_when: Do not use for the software that runs on the node — that is a container.
+    permitted_mappings:
+      entity_types:
+        - technology-node
+        - device
+        - system-software
+        - facility
+        - equipment
+      sources:
+        - ontology: archimate-4-0
+          entity_type: technology-node
+          transparent: true
+        - ontology: archimate-4-0
+          entity_type: device
+          transparent: true
+        - ontology: archimate-4-0
+          entity_type: system-software
+          transparent: true
+        - ontology: archimate-4-0
+          entity_type: facility
+          transparent: true
+        - ontology: archimate-4-0
+          entity_type: equipment
+          transparent: true
+    properties:
+      description:
+        type: string
+        required: false
+      technology:
+        type: string
+        required: false
+  container:
+    create_when: >-
+      Use for a deployable unit of the system in scope, drawn inside the node that hosts it. Link
+      entity_id to the application-component, service or data-object model entity it stands for, so
+      the container view and this one agree about what they are both drawing.
+    never_create_when: Do not use for the technology that hosts it, or for whole systems.
+    permitted_mappings:
+      entity_types:
+        - application-component
+        - service
+        - data-object
+      sources:
+        - ontology: archimate-4-0
+          entity_type: application-component
+          transparent: true
+        - ontology: archimate-4-0
+          entity_type: service
+          transparent: true
+        - ontology: archimate-4-0
+          entity_type: data-object
+          transparent: true
+    properties:
+      description:
+        type: string
+        required: false
+      technology:
+        type: string
+        required: false
+      shape:
+        type: string
+        enum: ["", "Container", "ContainerDb", "ContainerQueue"]
+        required: false
+  software-system:
+    create_when: >-
+      Use for the software system in scope (set _scope_entity_id at diagram level) and for external
+      systems the deployed containers reach.
+    never_create_when: Do not use for the containers inside the system, or for the nodes hosting them.
+    permitted_mappings:
+      entity_types:
+        - application-component
+        - service
+      sources:
+        - ontology: archimate-4-0
+          entity_type: application-component
+          transparent: true
+        - ontology: archimate-4-0
+          entity_type: service
+          transparent: true
+    properties:
+      description:
+        type: string
+        required: false
+      external:
+        type: boolean
+        required: false
+
+connection_types:
+  c4-uses:
+    embedding: none
+    cascade_delete_source: false
+
+permitted_relationships:
+  - [node, node, [c4-uses]]
+  - [container, container, [c4-uses]]
+  - [container, node, [c4-uses]]
+  - [container, software-system, [c4-uses]]
+  - [software-system, container, [c4-uses]]
+
+bridges:
+  - name: c4-deployment-to-archimate-node
+    version: 1
+    from: {module: c4-deployment, type: node}
+    to:
+      module: archimate-4-0
+      types: [technology-node, device, system-software, facility, equipment]
+    preserves_classes: [active-structure-element]
+    correspondence_kind: represents
+  - name: c4-deployment-to-archimate-container
+    version: 1
+    from: {module: c4-deployment, type: container}
+    to:
+      module: archimate-4-0
+      types: [application-component]
+    preserves_classes: [active-structure-element]
+    correspondence_kind: represents
+
+allowed_bindings:
+  entity:
+    node:
+      correspondence_kinds: [represents, refines, traces-to]
+      default_correspondence_kind: represents
+      target_forms: [entity-id, diagram-local]
+    container:
+      correspondence_kinds: [represents, refines, traces-to]
+      default_correspondence_kind: represents
+      target_forms: [entity-id, diagram-local]
+    software-system:
+      correspondence_kinds: [represents, refines, traces-to]
+      default_correspondence_kind: represents
+      target_forms: [entity-id, diagram-local]
+  connection:
+    c4-uses:
+      target_connection_types: [serving, flow, access, association]
+      target_connection_classes: [dependency, flow]
+      correspondence_kinds: [abstracts, represents, traces-to]
+      default_correspondence_kind: abstracts
+      target_forms: [connection-id, connection-ids]

@@ -183,7 +183,7 @@ def test_resolve_meta_ontology_module_returns_none_when_inactive(monkeypatch: py
 
 
 def test_c4_manifest_tolerates_disabled_sysml_compatibility(monkeypatch: pytest.MonkeyPatch) -> None:
-    from src.diagram_types.c4._projection import MANIFEST
+    from src.diagram_types.c4._manifest import MANIFEST
 
     _patch_sysml_disabled_settings(monkeypatch)
     _clear_runtime_registry_caches()

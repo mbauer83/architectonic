@@ -11,12 +11,21 @@ No sync_policy or derivation_basis fields — those are deferred per the plan.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Literal
 
 CORE_CORRESPONDENCE_KINDS: frozenset[str] = frozenset(
     {"represents", "abstracts", "refines", "scoped-by", "traces-to"}
 )
+
+#: The scope shorthand a diagram's entities may carry, and its set form. The write path normalises
+#: either into the one diagram-level ``scoped-by`` binding below and strips it before persisting;
+#: the render path puts it back. Declared here with the binding it stands for, because a diagram
+#: type reads it too and spelling the key in each place is how the two came to disagree.
+SCOPE_KEY = "_scope_entity_id"
+SCOPE_IDS_KEY = "_scope_entity_ids"
+SCOPE_KEYS: frozenset[str] = frozenset({SCOPE_KEY, SCOPE_IDS_KEY})
 
 
 @dataclass(frozen=True)
@@ -33,9 +42,17 @@ class DiagramLocalTarget:
 
 @dataclass(frozen=True)
 class Target:
-    """Tagged union; exactly one field must be set."""
+    """Tagged union; exactly one field must be set.
+
+    ``entity_ids`` is the set form, and it exists for one correspondence: a diagram scoped by
+    several entities at once. A C4 system landscape is about a portfolio rather than one system,
+    and the singular ``entity_id`` could only have said which of them the diagram was *really*
+    about. It is the entity counterpart of ``connection_ids``, which has carried a set since the
+    first bindings shipped.
+    """
 
     entity_id: str | None = None
+    entity_ids: tuple[str, ...] | None = None
     connection_id: str | None = None
     connection_ids: tuple[str, ...] | None = None
     diagram_local: DiagramLocalTarget | None = None
@@ -46,6 +63,7 @@ class Target:
             v is not None
             for v in (
                 self.entity_id,
+                self.entity_ids,
                 self.connection_id,
                 self.connection_ids,
                 self.diagram_local,
@@ -54,7 +72,7 @@ class Target:
         )
         if filled != 1:
             raise ValueError(
-                "Target must have exactly one of: entity_id, connection_id, "
+                "Target must have exactly one of: entity_id, entity_ids, connection_id, "
                 "connection_ids, diagram_local, connection_path"
             )
 
@@ -99,6 +117,7 @@ BINDINGS_ARRAY_SCHEMA: dict[str, object] = {
                 "type": "object",
                 "properties": {
                     "entity_id": {"type": "string"},
+                    "entity_ids": {"type": "array", "items": {"type": "string"}},
                     "connection_id": {"type": "string"},
                     "connection_ids": {"type": "array", "items": {"type": "string"}},
                     "diagram_local": {
@@ -163,6 +182,11 @@ def parse_target(raw: dict[str, object]) -> Target:
     entity_id = str(raw["entity_id"]) if raw.get("entity_id") is not None else None
     connection_id = str(raw["connection_id"]) if raw.get("connection_id") is not None else None
 
+    entity_ids: tuple[str, ...] | None = None
+    raw_eids = raw.get("entity_ids")
+    if raw_eids is not None:
+        entity_ids = tuple(str(e) for e in raw_eids) if isinstance(raw_eids, list) else None
+
     connection_ids: tuple[str, ...] | None = None
     raw_cids = raw.get("connection_ids")
     if raw_cids is not None:
@@ -187,6 +211,7 @@ def parse_target(raw: dict[str, object]) -> Target:
 
     return Target(
         entity_id=entity_id,
+        entity_ids=entity_ids,
         connection_id=connection_id,
         connection_ids=connection_ids,
         diagram_local=diagram_local,
@@ -238,6 +263,8 @@ def binding_to_dict(b: Binding) -> dict[str, object]:
     target: dict[str, object] = {}
     if b.target.entity_id is not None:
         target["entity_id"] = b.target.entity_id
+    elif b.target.entity_ids is not None:
+        target["entity_ids"] = list(b.target.entity_ids)
     elif b.target.connection_id is not None:
         target["connection_id"] = b.target.connection_id
     elif b.target.connection_ids is not None:
@@ -309,13 +336,57 @@ def element_entity_ids(bindings: object) -> dict[str, str]:
     return resolved
 
 
-def diagram_scope_entity_id(bindings: object) -> str:
-    """The entity a diagram-level ``scoped-by`` binding names, or ``""``.
+def scope_target(bindings: Iterable[Binding]) -> Target | None:
+    """The target of the diagram-level ``scoped-by`` binding, or ``None``.
 
-    Model-backed C4 diagrams keep `diagram-entities` empty and record their scope this way.
+    The *target*, not the ids inside it, because the two shapes are not the same statement: a
+    landscape scoped by one system said `entity_ids`, and answering a bare tuple would have made
+    the restore path guess the key back from the count and rewrite the author's declaration.
+    """
+    for binding in bindings:
+        if binding.correspondence_kind != "scoped-by" or binding.subject.kind != "diagram":
+            continue
+        if binding.target.entity_id or binding.target.entity_ids:
+            return binding.target
+    return None
+
+
+def scope_entity_ids(bindings: Iterable[Binding]) -> tuple[str, ...]:
+    """Every entity the diagram-level ``scoped-by`` binding names — the parsed-record form.
+
+    The same rule as `diagram_scope_entity_ids` over the other representation. Both exist because
+    the write path holds `Binding` records while the verifier and the read envelope hold
+    unvalidated frontmatter dicts, where parsing first would raise on a file whose whole problem is
+    that it is malformed. `tests/domain/test_bindings.py` holds the two to the same answer; three
+    modules used to spell this loop themselves, and each read only the singular target.
+    """
+    target = scope_target(bindings)
+    if target is None:
+        return ()
+    return (target.entity_id,) if target.entity_id else tuple(target.entity_ids or ())
+
+
+def scope_shorthand(target: Target) -> tuple[str, object]:
+    """The ``diagram-entities`` key and value a scope target is written under.
+
+    One place decides this, and it decides from the target's shape rather than from how many ids it
+    holds — which is what keeps `_scope_entity_ids: [one]` round-tripping as itself.
+    """
+    if target.entity_id:
+        return (SCOPE_KEY, target.entity_id)
+    return (SCOPE_IDS_KEY, list(target.entity_ids or ()))
+
+
+def diagram_scope_entity_ids(bindings: object) -> tuple[str, ...]:
+    """Every entity a diagram-level ``scoped-by`` binding names, in declaration order.
+
+    Model-backed C4 diagrams keep `diagram-entities` empty and record their scope this way. One
+    reading for both target forms — the singular ``entity_id`` most diagrams carry, and the
+    ``entity_ids`` set a portfolio-altitude view needs — because a caller that asks for "the scope"
+    of a landscape and gets `""` cannot tell that from a diagram with no scope at all.
     """
     if not isinstance(bindings, list):
-        return ""
+        return ()
     for binding in bindings:
         if not isinstance(binding, dict):
             continue
@@ -325,6 +396,21 @@ def diagram_scope_entity_id(bindings: object) -> str:
         if binding.get("correspondence_kind") != "scoped-by":
             continue
         target = binding.get("target")
-        if isinstance(target, dict) and target.get("entity_id"):
-            return str(target["entity_id"])
-    return ""
+        if not isinstance(target, dict):
+            continue
+        if target.get("entity_id"):
+            return (str(target["entity_id"]),)
+        raw_ids = target.get("entity_ids")
+        if isinstance(raw_ids, list) and raw_ids:
+            return tuple(str(entity_id) for entity_id in raw_ids)
+    return ()
+
+
+def diagram_scope_entity_id(bindings: object) -> str:
+    """The single entity a diagram is scoped by, or ``""`` — a filter over the set form.
+
+    Answers the first of several for a diagram scoped by a set, which is what a caller that can
+    only hold one wants; a caller that can hold the set asks `diagram_scope_entity_ids`.
+    """
+    scope = diagram_scope_entity_ids(bindings)
+    return scope[0] if scope else ""

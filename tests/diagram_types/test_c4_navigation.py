@@ -9,7 +9,7 @@ from unittest.mock import MagicMock
 from src.diagram_types.c4._navigation import (
     build_c4_navigation,
     item_entity_ids,
-    scope_entity_id,
+    scope_entity_ids,
 )
 
 # ── helpers ───────────────────────────────────────────────────────────────────
@@ -30,32 +30,32 @@ def _make_repo(diagrams: list[FakeDiagramRecord]) -> MagicMock:
     return repo
 
 
-# ── scope_entity_id ────────────────────────────────────────────────────────────
+# ── scope_entity_ids ───────────────────────────────────────────────────────────
 
 
 class TestScopeEntityId:
     def test_explicit_field_returned(self) -> None:
         de: dict[str, Any] = {"_scope_entity_id": "ENT@1.A.a"}
-        assert scope_entity_id(de) == "ENT@1.A.a"
+        assert scope_entity_ids(de) == ("ENT@1.A.a",)
 
     def test_scope_from_item(self) -> None:
         de = {"items": [{"entity_id": "ENT@2.B.b", "scope": True}]}
-        assert scope_entity_id(de) == "ENT@2.B.b"
+        assert scope_entity_ids(de) == ("ENT@2.B.b",)
 
     def test_item_without_scope_skipped(self) -> None:
         de = {"items": [{"entity_id": "ENT@2.B.b"}]}
-        assert scope_entity_id(de) == ""
+        assert scope_entity_ids(de) == ()
 
     def test_underscore_key_skipped(self) -> None:
         de = {"_meta": [{"entity_id": "ENT@3.C.c", "scope": True}]}
-        assert scope_entity_id(de) == ""
+        assert scope_entity_ids(de) == ()
 
     def test_non_list_value_skipped(self) -> None:
         de = {"items": "not-a-list"}
-        assert scope_entity_id(de) == ""
+        assert scope_entity_ids(de) == ()
 
     def test_empty_dict_returns_empty(self) -> None:
-        assert scope_entity_id({}) == ""
+        assert scope_entity_ids({}) == ()
 
 
 # ── item_entity_ids ───────────────────────────────────────────────────────────

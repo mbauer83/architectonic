@@ -1,0 +1,61 @@
+name: c4-system-landscape
+
+guidance:
+  when_to_use: >-
+    Show several software systems together, with the people and external systems around all of them
+    — the portfolio altitude above a system context. Use this when the question is which systems
+    exist and how they relate, before any one of them is zoomed into.
+    Authoring steps: (1) create an application-component or service model entity for each system in
+    the portfolio; (2) create business-actor or role model entities for the people who use them;
+    (3) call artifact_authoring_guidance(diagram_type="c4-system-landscape") for the
+    diagram_entities schema; (4) create the diagram — set _scope_entity_ids to the list of system
+    entity_ids, and the surrounding people and third-party systems are derived from the model.
+  when_not_to_use: >-
+    Do not use when one system is the subject — that is a c4-system-context, which this level
+    drills down into. Do not use for the containers inside a system, or for where they run.
+
+  puml_notes:
+    - >-
+      Two modes, decided by one key. With `_scope_entity_ids` set, the diagram is *model-backed*:
+      the systems named there are drawn, and everything around all of them is derived from the
+      ArchiMate graph. Trim the result with `_included_entity_ids` or `_excluded_entity_ids`
+      (never both; pass whichever set is smaller). Without it, the diagram is *standalone* and
+      shows exactly what `diagram_entities` and `diagram_connections` declare.
+    - >-
+      The scope is a **set**, which is what distinguishes this level from every other C4 type: a
+      landscape is about a portfolio, and no one of its systems is the subject. `_scope_entity_id`
+      (singular) is not read here — use `_scope_entity_ids`.
+    - >-
+      A system inside the scope set is never drawn as external, however it is reached. `external:
+      true` is for the third parties around the portfolio, and it is the only distinction this
+      level makes, so leaving it off says the system is yours.
+    - >-
+      Standalone relations go in `diagram_connections` as {id, source, target, label?}, where
+      source and target are the **local `id`s** of items in `diagram_entities` — not entity ids,
+      and not the aliases in the rendered PUML. A connection naming an id no item declares is
+      dropped without drawing anything and without a warning.
+    - |-
+      Minimal model-backed example:
+        diagram_entities: {_scope_entity_ids: [APP@1.aaaaaa.billing, APP@2.bbbbbb.crm]}
+
+ui:
+  label: C4 System Landscape
+  description: >-
+    C4 landscape level. Shows several software systems together with the people and external
+    systems around them.
+  entity_search_filter: false
+  type_ui_slots:
+    c4_editor: c4-editor-context
+  diagram_only_types:
+    - entity_type: person
+      label: Person
+      plural: People
+    - entity_type: software-system
+      label: Software System
+      plural: Software Systems
+
+c4:
+  scope_entity_type: software-system
+  scope_render_mode: node
+  scope_is_a_set: true
+  internal_entity_types: []

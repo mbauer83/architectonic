@@ -15,9 +15,12 @@ from src.domain.diagrams.bindings import (
     Target,
     binding_to_dict,
     bindings_to_raw,
+    diagram_scope_entity_id,
+    diagram_scope_entity_ids,
     parse_binding,
     parse_bindings,
     parse_target,
+    scope_entity_ids,
 )
 
 # ---------------------------------------------------------------------------
@@ -264,3 +267,85 @@ class TestBindingShorthandSchema:
         target_props = BINDING_SHORTHAND_SCHEMA["properties"]["target"]["properties"]  # type: ignore[index]
         assert "connection_ids" not in target_props
         assert "connection_path" not in target_props
+
+
+# ---------------------------------------------------------------------------
+# The set target, and the two readings of the scope it expresses
+# ---------------------------------------------------------------------------
+
+
+class TestEntityIdsTarget:
+    """A diagram scoped by several entities at once — the C4 system landscape's binding shape."""
+
+    def test_entity_ids_is_a_member_of_the_tagged_union(self) -> None:
+        target = Target(entity_ids=("APP@1.a.X", "APP@2.b.Y"))
+        assert target.entity_ids == ("APP@1.a.X", "APP@2.b.Y")
+        assert target.entity_id is None
+
+    def test_the_singular_and_the_set_are_still_mutually_exclusive(self) -> None:
+        with pytest.raises(ValueError, match="exactly one"):
+            Target(entity_id="APP@1.a.X", entity_ids=("APP@2.b.Y",))
+
+    def test_round_trip(self) -> None:
+        binding = Binding(
+            id="bind-scope",
+            subject=BindingSubject(kind="diagram"),
+            correspondence_kind="scoped-by",
+            target=Target(entity_ids=("APP@1.a.X", "APP@2.b.Y")),
+        )
+        emitted = binding_to_dict(binding)
+
+        assert emitted["target"] == {"entity_ids": ["APP@1.a.X", "APP@2.b.Y"]}
+        assert parse_binding(emitted) == binding
+
+    def test_the_array_schema_declares_it(self) -> None:
+        properties = BINDINGS_ARRAY_SCHEMA["items"]["properties"]["target"]["properties"]  # type: ignore[index]
+        assert properties["entity_ids"] == {"type": "array", "items": {"type": "string"}}
+
+
+class TestScopeReadingsAgree:
+    """The rule is stated over two representations, and they have to answer the same thing.
+
+    The write path holds `Binding` records; the verifier and the read envelope hold unvalidated
+    frontmatter dicts, where parsing first would raise on a file whose whole problem is that it is
+    malformed. Three modules used to spell the loop themselves, and each read only the singular.
+    """
+
+    def _scoped_by(self, target: Target) -> Binding:
+        return Binding(
+            id="bind-scope",
+            subject=BindingSubject(kind="diagram"),
+            correspondence_kind="scoped-by",
+            target=target,
+        )
+
+    @pytest.mark.parametrize(
+        "target",
+        [
+            Target(entity_id="APP@1.a.X"),
+            Target(entity_ids=("APP@1.a.X",)),
+            Target(entity_ids=("APP@1.a.X", "APP@2.b.Y")),
+        ],
+    )
+    def test_both_readings_answer_the_same_scope(self, target: Target) -> None:
+        binding = self._scoped_by(target)
+
+        assert scope_entity_ids([binding]) == diagram_scope_entity_ids([binding_to_dict(binding)])
+
+    def test_both_readings_ignore_an_element_level_binding(self) -> None:
+        element = Binding(
+            id="bind-box",
+            subject=BindingSubject(kind="entity", id="box-web"),
+            correspondence_kind="represents",
+            target=Target(entity_id="APP@1.a.X"),
+        )
+
+        assert scope_entity_ids([element]) == ()
+        assert diagram_scope_entity_ids([binding_to_dict(element)]) == ()
+
+    def test_the_singular_reader_is_a_filter_over_the_set_one(self) -> None:
+        binding = self._scoped_by(Target(entity_ids=("APP@1.a.X", "APP@2.b.Y")))
+        raw = [binding_to_dict(binding)]
+
+        assert diagram_scope_entity_id(raw) == "APP@1.a.X"
+        assert diagram_scope_entity_ids(raw) == ("APP@1.a.X", "APP@2.b.Y")

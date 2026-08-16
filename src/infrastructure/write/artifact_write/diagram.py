@@ -25,7 +25,12 @@ from .diagram_references import (
     _merge_reference_ids,
     _prepare_diagram_puml_body,
 )
-from .diagram_render import _render_diagram_entities_puml, _render_diagram_png, _render_diagram_svg
+from .diagram_render import (
+    _render_diagram_entities_puml,
+    _render_diagram_png,
+    _render_diagram_svg,
+    render_entities_with_scope,
+)
 from .types import WriteResult
 from .verify import verify_content_in_temp_path
 
@@ -63,19 +68,7 @@ def _build_model_backed(
     connection_ids_used: list[str] | None,
 ) -> _DiagramBuild:
     """Render a diagram from structured entities/connections, collecting referenced ids."""
-    # Inject _scope_entity_id from a scoped-by binding so the C4 renderer can switch
-    # to model-backed mode for diagrams that previously used _scope_entity_id.
-    scope_eid = next(
-        (
-            b.target.entity_id
-            for b in norm_bindings
-            if b.correspondence_kind == "scoped-by" and b.subject.kind == "diagram" and b.target.entity_id
-        ),
-        None,
-    )
-    render_entities: dict[str, object] = dict(diagram_entities)
-    if scope_eid and "_scope_entity_id" not in render_entities:
-        render_entities["_scope_entity_id"] = scope_eid
+    render_entities = render_entities_with_scope(dict(diagram_entities), norm_bindings)
     puml_body = _render_diagram_entities_puml(diagram_type, name, render_entities, diagram_connections, repo_root)
     collected_e, collected_c = _collect_diagram_renderer_references(
         diagram_type, repo_root, render_entities, diagram_connections, bindings=norm_bindings_raw

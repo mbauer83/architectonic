@@ -9,6 +9,7 @@ E406: correspondence_kind not in the allowed set (core five + module-declared ki
 E407: a member of target.connection_ids is unknown or out of scope.
 E408: duplicate 'represents' binding for the same model target (without visual_roles).
 E408b: occurrence visual_role missing, not in the declared set, or duplicated for the same target.
+E414: a member of target.entity_ids is unknown or out of scope.
 """
 
 from __future__ import annotations

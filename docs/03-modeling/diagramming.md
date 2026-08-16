@@ -159,11 +159,26 @@ use the `dt-*` family.
 
 ## C4
 
-A progressive zoom across three levels — **system context** (L1), **container** (L2), and
-**component** (L3). C4 views are **model-backed**: a projection engine derives view content
-from the ArchiMate graph (a software system, its containers, its components), so the diagram
-stays consistent with the model. Parent/child navigation moves between levels, and a
-preview/refresh path shows what a projection will include before it is saved.
+A progressive zoom across four levels — **system landscape** (L0), **system context** (L1),
+**container** (L2) and **component** (L3) — plus a **deployment** view beside them. C4 views are
+**model-backed**: a projection engine derives view content from the ArchiMate graph (a software
+system, its containers, its components), so the diagram stays consistent with the model.
+Parent/child navigation moves between levels, and a preview/refresh path shows what a projection
+will include before it is saved.
+
+**System landscape** is the portfolio altitude: several systems drawn together with the people and
+third-party systems around all of them. It is the one C4 type whose scope is a *set* — set
+`_scope_entity_ids` to the systems it covers rather than `_scope_entity_id`, because no one of them
+is the subject. Drilling down from a landscape opens the system context of whichever system you
+click.
+
+**Deployment** shows where one system's containers run. It is a second axis rather than a fourth
+level: it draws the same containers a container view draws, placed on the technology that hosts
+them, so it sits beside the zoom rather than below it — the navigation offers it as a lookup from a
+logical view, and the logical views as a lookup back. Hosting is derived along ArchiMate's own
+path, `technology-node --aggregation--> artifact --realization--> application-component`; there is
+no relation from a node directly to an application component, so a container with no artifact is
+left out rather than given an invented host.
 
 Node descriptions are **off by default** — C4 nodes render name only. Set
 `show_node_descriptions: true` in the diagram's frontmatter to include the description line

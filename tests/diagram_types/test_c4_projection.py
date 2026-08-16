@@ -6,7 +6,8 @@ and AC B: strategy registration from the C4 module (not the generic package).
 
 from __future__ import annotations
 
-from src.diagram_types.c4._projection import MANIFEST, _c4_item_type, project_c4
+from src.diagram_types.c4._manifest import MANIFEST
+from src.diagram_types.c4._projection import _c4_item_type, project_c4
 from src.domain.viewpoints.view_projection import ProjectedViewItem
 from tests.application.derivation._fixtures import FakeQuery, _connection, _entity
 

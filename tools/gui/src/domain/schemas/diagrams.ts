@@ -92,12 +92,26 @@ export const C4NavLinkSchema = Schema.Struct({
 })
 export type C4NavLink = typeof C4NavLinkSchema.Type
 
+/**
+ * Where a C4 diagram sits among the others — on two axes rather than one depth.
+ *
+ * `current_level` orders *containment* altitude: 0 landscape, 1 system context, 2 container,
+ * 3 component. It is null for a deployment view, which crosses that axis rather than extending it:
+ * a deployment view shows the same containers a container view shows, placed on the technology that
+ * hosts them, so it is neither above nor below anything. That relation is named in its own two
+ * fields — `deployment_diagrams` from a logical view, `subject_diagrams` from a deployment one —
+ * so neither direction has to be read as a parent or a child.
+ */
 export const C4NavigationSchema = Schema.Struct({
-  current_level: Schema.Number,
+  current_level: Schema.NullOr(Schema.Number),
   scope_entity_id: Schema.NullOr(Schema.String),
+  scope_entity_ids: Schema.Array(Schema.String),
   scope_entity_name: Schema.NullOr(Schema.String),
+  scope_entity_names: Schema.Array(Schema.String),
   parent_diagrams: Schema.Array(C4NavLinkSchema),
   child_diagrams: Schema.Array(C4NavLinkSchema),
+  deployment_diagrams: Schema.Array(C4NavLinkSchema),
+  subject_diagrams: Schema.Array(C4NavLinkSchema),
 })
 export type C4Navigation = typeof C4NavigationSchema.Type
 

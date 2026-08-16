@@ -3,6 +3,7 @@
 import os
 import subprocess
 import tempfile
+from collections.abc import Iterable
 from pathlib import Path
 
 from src.application.repo_path_helpers import rendered_dir_for_diagram, repo_root_for_diagram_path
@@ -12,6 +13,13 @@ from src.application.verification.artifact_verifier_syntax import (
     resolve_java_executable,
 )
 from src.config.settings import plantuml_limit_size, render_dpi
+from src.domain.diagrams.bindings import (
+    SCOPE_IDS_KEY,
+    SCOPE_KEY,
+    Binding,
+    scope_shorthand,
+    scope_target,
+)
 from src.infrastructure.rendering.native_svg import render_native_svg
 from src.infrastructure.rendering.puml_safety import strip_leading_puml_frontmatter, strip_startuml_name
 
@@ -36,6 +44,26 @@ def _confidential_render_skip(puml_path: Path) -> str | None:
             "(G-f: confidential assurance diagrams must not write plaintext to diagram-catalog/rendered/)"
         )
     return None
+
+
+def render_entities_with_scope(
+    diagram_entities: dict[str, object],
+    bindings: Iterable[Binding],
+) -> dict[str, object]:
+    """The renderer's input, with the diagram's scope restored from its ``scoped-by`` binding.
+
+    The persist path is lossy of shorthand — `strip_diagram_shorthand` removes `_scope_entity_id`
+    because the top-level `bindings:` block is canonical on disk — so a projector-backed diagram
+    reaching the renderer from stored frontmatter carries no scope key at all. Restoring it lives
+    here, beside the render call, rather than being spelled at each of the two write paths that
+    make one: the create path and the edit path each had their own copy, and each read only the
+    singular target, so a diagram scoped by a set would have rendered as if it had no scope.
+    """
+    target = scope_target(bindings)
+    if target is None or SCOPE_KEY in diagram_entities or SCOPE_IDS_KEY in diagram_entities:
+        return dict(diagram_entities)
+    key, value = scope_shorthand(target)
+    return {**diagram_entities, key: value}
 
 
 def _renderer_supports_edge_labels(renderer: object) -> bool:

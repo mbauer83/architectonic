@@ -62,9 +62,14 @@ def diagram_bound_entity_ids(extra: Mapping[str, object]) -> list[str]:
     if isinstance(bindings, list):
         for binding in bindings:
             target = binding.get("target") if isinstance(binding, dict) else None
-            entity_id = target.get("entity_id") if isinstance(target, dict) else None
+            if not isinstance(target, dict):
+                continue
+            entity_id = target.get("entity_id")
             if isinstance(entity_id, str) and entity_id:
                 ids.append(entity_id)
+            entity_ids = target.get("entity_ids")
+            if isinstance(entity_ids, list):
+                ids.extend(v for v in entity_ids if isinstance(v, str) and v)
     return ids
 
 

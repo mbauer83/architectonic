@@ -72,7 +72,7 @@ class TestC4RendererCollectReferences:
             alias="C4_blank", label="", description="", technology="", external=False,
         )
         empty_state = _ResolvedState(
-            scope_item=empty_item, scope_render_mode="node",
+            scope_items=(empty_item,), scope_render_mode="node",
             internal_items=[], outside_items=[], connections=(),
             entity_ids=(), connection_artifact_ids=(),
         )
@@ -145,7 +145,7 @@ class TestC4RendererCollectReferences:
             alias="APP_scope", label="App", description="", technology="", external=False,
         )
         model_state = _ResolvedState(
-            scope_item=scope_item, scope_render_mode="boundary",
+            scope_items=(scope_item,), scope_render_mode="boundary",
             internal_items=[], outside_items=[], connections=(),
             entity_ids=(_ENTITY_A,), connection_artifact_ids=(),
         )
@@ -167,7 +167,7 @@ class TestC4RendererCollectReferences:
             alias="APP_scope", label="App", description="", technology="", external=False,
         )
         model_state = _ResolvedState(
-            scope_item=scope_item, scope_render_mode="node",
+            scope_items=(scope_item,), scope_render_mode="node",
             internal_items=[], outside_items=[], connections=(),
             entity_ids=(_ENTITY_A,), connection_artifact_ids=(),
         )

@@ -2,14 +2,15 @@
 
 Diagram entity items may carry a nested ``binding:`` shorthand for convenience.
 The write path also accepts shorthand forms: ``entity_id``/``backing_entity_id`` on items
-(→ ``represents`` binding) and ``_scope_entity_id`` at the top of
-``diagram-entities`` (→ diagram-level ``scoped-by`` binding).  All forms are
+(→ ``represents`` binding) and ``_scope_entity_id`` or ``_scope_entity_ids`` at the top of
+``diagram-entities`` (→ the one diagram-level ``scoped-by`` binding, whose target is a single
+entity or a set of them).  All forms are
 normalized to top-level Binding records; none is persisted in the output file.
 
 Shorthand restrictions for ``binding:`` (per spec §1.2):
 - Only for entity subjects (kind=entity).
 - Only single-target forms: entity_id, connection_id, or diagram_local.
-- connection_ids and connection_path are not expressible as shorthand.
+- entity_ids, connection_ids and connection_path are not expressible as shorthand.
 - Only correspondence kinds: represents, scoped-by, traces-to, refines.
 - Default correspondence_kind is "represents" when omitted.
 """
@@ -18,6 +19,9 @@ from __future__ import annotations
 
 from src.domain.diagrams.bindings import (
     CORE_CORRESPONDENCE_KINDS,
+    SCOPE_IDS_KEY,
+    SCOPE_KEY,
+    SCOPE_KEYS,
     Binding,
     BindingSubject,
     Target,
@@ -28,7 +32,6 @@ from src.domain.diagrams.bindings import (
 _SHORTHAND_ALLOWED_KINDS: frozenset[str] = frozenset(
     {"represents", "scoped-by", "traces-to", "refines"}
 )
-_SCOPE_KEY = "_scope_entity_id"
 
 
 def normalize_bindings(
@@ -41,7 +44,7 @@ def normalize_bindings(
     1. Explicit ``binding:`` key on a diagram-entity item (new API, §1.2).
     2. Legacy ``entity_id`` on a diagram-entity item → ``represents`` binding.
     3. ArchiMate ``backing_entity_id`` on a diagram-entity item → ``represents`` binding.
-    4. Legacy ``_scope_entity_id`` at top of diagram_entities → ``scoped-by`` binding.
+    4. ``_scope_entity_id`` or ``_scope_entity_ids`` at top of diagram_entities → ``scoped-by`` binding.
 
     Explicit top-level bindings take precedence: if an explicit binding has the same
     id as a shorthand-derived binding, the shorthand is silently dropped.
@@ -59,9 +62,9 @@ def normalize_bindings(
     if not diagram_entities:
         return result
 
-    # _scope_entity_id → diagram-level scoped-by binding
-    scope_eid = str(diagram_entities.get(_SCOPE_KEY) or "").strip()
-    if scope_eid:
+    # _scope_entity_id / _scope_entity_ids → the one diagram-level scoped-by binding
+    scope_target = _scope_target(diagram_entities)
+    if scope_target is not None:
         bid = "bind-scope"
         if bid not in seen_ids:
             result.append(
@@ -69,13 +72,13 @@ def normalize_bindings(
                     id=bid,
                     subject=BindingSubject(kind="diagram"),
                     correspondence_kind="scoped-by",
-                    target=Target(entity_id=scope_eid),
+                    target=scope_target,
                 )
             )
             seen_ids.add(bid)
 
     for entity_type, items in diagram_entities.items():
-        if entity_type == _SCOPE_KEY or not isinstance(items, list):
+        if entity_type in SCOPE_KEYS or not isinstance(items, list):
             continue
         for item in items:
             if not isinstance(item, dict):
@@ -122,13 +125,30 @@ def normalize_bindings(
     return result
 
 
+def _scope_target(diagram_entities: dict[str, object]) -> Target | None:
+    """The scope this diagram declares in shorthand, singular or set, or ``None``.
+
+    The singular wins when both are present, because it is the older spelling and the one every
+    existing diagram carries — a diagram that grew a set has to say so by dropping the singular.
+    """
+    scope_eid = str(diagram_entities.get(SCOPE_KEY) or "").strip()
+    if scope_eid:
+        return Target(entity_id=scope_eid)
+    raw_ids = diagram_entities.get(SCOPE_IDS_KEY)
+    if isinstance(raw_ids, list):
+        scope_eids = tuple(cleaned for raw in raw_ids if (cleaned := str(raw).strip()))
+        if scope_eids:
+            return Target(entity_ids=scope_eids)
+    return None
+
+
 def strip_diagram_shorthand(
     diagram_entities: dict[str, object] | None,
 ) -> dict[str, object] | None:
     """Return diagram_entities with all binding shorthand fields removed.
 
     Strips ``entity_id``, ``backing_entity_id``, and ``binding:`` from entity items, and removes
-    the top-level ``_scope_entity_id`` key.  The result is safe to persist;
+    the top-level ``_scope_entity_id`` / ``_scope_entity_ids`` keys.  The result is safe to persist;
     the write path calls this after normalize_bindings so the output file
     contains only clean entity data and top-level bindings.
     """
@@ -136,7 +156,7 @@ def strip_diagram_shorthand(
         return diagram_entities
     out: dict[str, object] = {}
     for key, value in diagram_entities.items():
-        if key == _SCOPE_KEY:
+        if key in SCOPE_KEYS:
             continue
         if isinstance(value, list):
             out[key] = [
@@ -170,11 +190,12 @@ def _normalize_shorthand(entity_type: str, element_id: str, shorthand: dict[str,
             f"Shorthand binding for '{element_id}' (type '{entity_type}'): "
             f"'target' must be a dict, got {type(target_raw).__name__}"
         )
-    if target_raw.get("connection_ids") is not None:
-        raise ValueError(
-            f"Shorthand binding for '{element_id}': connection_ids is a multi-target "
-            "form — use an explicit top-level binding"
-        )
+    for multi_form in ("entity_ids", "connection_ids"):
+        if target_raw.get(multi_form) is not None:
+            raise ValueError(
+                f"Shorthand binding for '{element_id}': {multi_form} is a multi-target "
+                "form — use an explicit top-level binding"
+            )
     if target_raw.get("connection_path") is not None:
         raise ValueError(
             f"Shorthand binding for '{element_id}': connection_path cannot be "

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -35,7 +36,9 @@ def _short_description(entity: Any) -> str:
     return ""
 
 
-def _item_from_entity(entity: Any, entity_id: str, item_type: str, *, external: bool) -> _ResolvedItem:
+def _item_from_entity(
+    entity: Any, entity_id: str, item_type: str, *, external: bool, technology: str = ""
+) -> _ResolvedItem:
     label = entity.name if entity is not None else entity_id
     raw_alias = getattr(entity, "display_alias", "") or "" if entity is not None else ""
     alias = _normalize_alias(raw_alias) if raw_alias else _alias_for(item_type, entity_id)
@@ -45,32 +48,69 @@ def _item_from_entity(entity: Any, entity_id: str, item_type: str, *, external: 
         alias=alias,
         label=label,
         description=_short_description(entity),
-        technology="",
+        technology=technology,
         external=external,
         shape=None,  # model-backed items use technology inference
     )
+
+
+def _host_technology(item_type: str, artifact_type: str) -> str:
+    """What kind of host a deployment node is, for its second label line.
+
+    The model's own type is what is known about a projected host — a reader learns something from
+    "System Software" and nothing from "node", which is the C4 item type they can already see.
+    """
+    if item_type != "node" or not artifact_type:
+        return ""
+    return artifact_type.replace("-", " ").title()
+
+
+def _nest(
+    internal_items: list[_ResolvedItem], contained_by: dict[str, str]
+) -> list[_ResolvedItem]:
+    """Move each item the projection placed inside another into that one's ``children``.
+
+    Empty ``contained_by`` leaves the list exactly as it was, which is every level but deployment.
+    """
+    if not contained_by:
+        return internal_items
+    by_id = {item.local_id: item for item in internal_items}
+    children: dict[str, list[_ResolvedItem]] = {}
+    for child_id, parent_id in contained_by.items():
+        child, parent = by_id.get(child_id), by_id.get(parent_id)
+        if child is not None and parent is not None:
+            children.setdefault(parent_id, []).append(child)
+    nested_ids = {child.local_id for group in children.values() for child in group}
+    return [
+        replace(item, children=tuple(children.get(item.local_id, ())))
+        for item in internal_items
+        if item.local_id not in nested_ids
+    ]
 
 
 def resolve_model_backed(
     diagram_type: str,
     repo_root: Path,
     diagram_entities: Mapping[str, object],
-    scope_entity_id: str,
+    scope_entity_ids: tuple[str, ...],
     scope_entity_type: str,
     scope_render_mode: str,
     internal_c4_type: str,
     person_archimate_types: frozenset[str],
 ) -> _ResolvedState:
-    from src.diagram_types.c4._projection import project_c4  # noqa: PLC0415
+    from src.diagram_types.c4._projection import project_c4_scope  # noqa: PLC0415
     from src.infrastructure.artifact_index import shared_artifact_index  # noqa: PLC0415
 
     query = shared_artifact_index([repo_root])
-    scope_entity = query.get_entity(scope_entity_id)
-    if scope_entity is None:
-        raise DiagramSelectionError(f"{diagram_type!r}: scope entity {scope_entity_id!r} not found")
+    scope_entities = []
+    for scope_entity_id in scope_entity_ids:
+        scope_entity = query.get_entity(scope_entity_id)
+        if scope_entity is None:
+            raise DiagramSelectionError(f"{diagram_type!r}: scope entity {scope_entity_id!r} not found")
+        scope_entities.append(scope_entity)
 
-    projection = project_c4(
-        diagram_type, scope_entity_id, query,
+    projection = project_c4_scope(
+        diagram_type, scope_entity_ids, query,
         internal_c4_type=internal_c4_type,
         scope_entity_type=scope_entity_type,
         person_archimate_types=person_archimate_types,
@@ -85,7 +125,11 @@ def resolve_model_backed(
     elif isinstance(raw_excluded, list) and raw_excluded:
         excluded_ids = {str(x) for x in raw_excluded}
 
-    scope_item = _item_from_entity(scope_entity, scope_entity_id, scope_entity_type, external=False)
+    scope_items = tuple(
+        _item_from_entity(entity, entity_id, scope_entity_type, external=False)
+        for entity, entity_id in zip(scope_entities, scope_entity_ids, strict=True)
+    )
+    scope_id_set = set(scope_entity_ids)
     internal_items: list[_ResolvedItem] = []
     outside_items: list[_ResolvedItem] = []
 
@@ -100,7 +144,11 @@ def resolve_model_backed(
         entity = query.get_entity(eid)
         if entity is None:
             continue
-        resolved = _item_from_entity(entity, eid, proj_item.item_type, external=(proj_item.role == "external"))
+        resolved = _item_from_entity(
+            entity, eid, proj_item.item_type,
+            external=(proj_item.role == "external"),
+            technology=_host_technology(proj_item.item_type, proj_item.artifact_type),
+        )
         if proj_item.role == "internal":
             internal_items.append(resolved)
         else:
@@ -109,7 +157,7 @@ def resolve_model_backed(
     # Additive validated inclusion — extra IDs in _included_entity_ids that the
     # projection did not yield are added as external neighbours if graph-justified.
     if included_only:
-        projected_eids = {scope_entity_id} | {i.local_id for i in internal_items} | {i.local_id for i in outside_items}
+        projected_eids = scope_id_set | {i.local_id for i in internal_items} | {i.local_id for i in outside_items}
         for extra_eid in sorted(included_only - projected_eids):
             entity = query.get_entity(extra_eid)
             if entity is None:
@@ -120,12 +168,23 @@ def resolve_model_backed(
             ):
                 outside_items.append(_item_from_entity(entity, extra_eid, "software-system", external=True))
 
+    internal_items = _nest(internal_items, dict(projection.contained_by))
+
     all_displayed = (
-        {scope_entity_id}
+        scope_id_set
         | {i.local_id for i in internal_items}
+        | {child.local_id for i in internal_items for child in i.children}
         | {i.local_id for i in outside_items}
     )
-    alias_by_eid = {i.local_id: i.alias for i in [scope_item, *internal_items, *outside_items]}
+    alias_by_eid = {
+        i.local_id: i.alias
+        for i in [
+            *scope_items,
+            *internal_items,
+            *(child for i in internal_items for child in i.children),
+            *outside_items,
+        ]
+    }
 
     model_conns: list[Any] = []
     for cid in projection.connection_ids:
@@ -138,14 +197,22 @@ def resolve_model_backed(
     model_conns.sort(key=lambda x: x.artifact_id)
 
     # Build the C4 edge list with direction normalisation and deduplication.
-    is_ctx = (diagram_type == "c4-system-context")
-    scope_alias = alias_by_eid.get(scope_entity_id, "")
-    provider_aliases = {scope_alias} | {i.alias for i in internal_items}
+    #
+    # An endpoint the diagram does not draw is a structural descendant inside somebody's boundary,
+    # and its edge belongs on that boundary. Which boundary comes from the projection's declared
+    # `scope_of` rather than from the diagram type — the rule used to read "if this is the context
+    # level, everything falls back to the one root", which a landscape's several roots cannot say.
+    rollup_alias = {
+        entity_id: alias
+        for entity_id, root in projection.scope_of
+        if (alias := alias_by_eid.get(root))
+    }
+    provider_aliases = {i.alias for i in scope_items} | {i.alias for i in internal_items}
     seen_pairs: set[tuple[str, str]] = set()
     conn_list: list[_C4Connection] = []
     for c in model_conns:
-        src = alias_by_eid.get(c.source) or (scope_alias if is_ctx else None)
-        tgt = alias_by_eid.get(c.target) or (scope_alias if is_ctx else None)
+        src = alias_by_eid.get(c.source) or rollup_alias.get(c.source)
+        tgt = alias_by_eid.get(c.target) or rollup_alias.get(c.target)
         if src is None or tgt is None:
             continue
         if c.conn_type == "archimate-serving":
@@ -165,7 +232,7 @@ def resolve_model_backed(
         ))
 
     return _ResolvedState(
-        scope_item=scope_item,
+        scope_items=scope_items,
         scope_render_mode=scope_render_mode,
         internal_items=internal_items,
         outside_items=outside_items,

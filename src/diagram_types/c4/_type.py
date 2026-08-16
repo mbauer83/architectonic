@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 # Import engine module to trigger strategy registration as a side effect.
-import src.diagram_types.c4._projection  # noqa: F401
+import src.diagram_types.c4._manifest  # noqa: F401
 from src.diagram_types._base import DiagramTypeBase
 from src.diagram_types.c4.renderer import C4PumlRenderer
 from src.domain.concept_scope import ConceptScope
@@ -134,14 +134,25 @@ class _C4DiagramType(DiagramTypeBase):
         props: dict[str, Any] = dict(base.get("properties") or {})
         c4_cfg: dict[str, Any] = self._config.get("c4") or {}
         scope_type = str(c4_cfg.get("scope_entity_type") or "entity")
-        props["_scope_entity_id"] = {
-            "type": "string",
-            "description": (
-                f"entity_id of the {scope_type} model entity this diagram is scoped to. "
-                "Set to enable model-backed mode (entities and connections auto-derived from ArchiMate graph). "
-                "Omit for standalone mode (explicit diagram entities and c4-uses connections)."
-            ),
-        }
+        if bool(c4_cfg.get("scope_is_a_set", False)):
+            props["_scope_entity_ids"] = {
+                "type": "array", "items": {"type": "string"},
+                "description": (
+                    f"entity_ids of the {scope_type} model entities this diagram is scoped to — the "
+                    "portfolio it is about. Set to enable model-backed mode (the systems, what "
+                    "surrounds all of them, and the relations between them are derived from the "
+                    "ArchiMate graph). Omit for standalone mode."
+                ),
+            }
+        else:
+            props["_scope_entity_id"] = {
+                "type": "string",
+                "description": (
+                    f"entity_id of the {scope_type} model entity this diagram is scoped to. "
+                    "Set to enable model-backed mode (entities and connections auto-derived from ArchiMate graph). "
+                    "Omit for standalone mode (explicit diagram entities and c4-uses connections)."
+                ),
+            }
         props["_included_entity_ids"] = {
             "type": "array", "items": {"type": "string"},
             "description": (
@@ -177,7 +188,7 @@ class _C4DiagramType(DiagramTypeBase):
         envelope declares ``diagram_entities``, and filling it in is not the same act as adding a key
         of one's own.
         """
-        from src.diagram_types.c4._navigation import resolve_scope_entity_id  # noqa: PLC0415
+        from src.diagram_types.c4._navigation import resolve_scope_shorthand  # noqa: PLC0415
         from src.domain.diagrams.bindings import element_entity_ids  # noqa: PLC0415
 
         frontmatter: dict[str, Any] = parsed_source.get("frontmatter") or {}
@@ -202,13 +213,14 @@ class _C4DiagramType(DiagramTypeBase):
 
         # Both shapes: a standalone diagram's scope item is bound element-level, a model-backed one
         # carries a diagram-level `scoped-by`. Reading only the second left the editor's scope
-        # detection blind for everything authored the standalone way.
-        scope_id = str(diagram_entities.get("_scope_entity_id") or "") or resolve_scope_entity_id(
-            diagram_entities, bindings
-        )
-        if scope_id and scope_id != diagram_entities.get("_scope_entity_id"):
-            rehydrated["_scope_entity_id"] = scope_id
-            changed = True
+        # detection blind for everything authored the standalone way. Served back under the key the
+        # binding's own target shape says, by the same rule the render path restores it with.
+        scope = resolve_scope_shorthand(diagram_entities, bindings)
+        if scope is not None:
+            key, value = scope
+            if diagram_entities.get(key) != value:
+                rehydrated[key] = value
+                changed = True
         # Merged into what the caller assembled rather than rebuilt from the frontmatter: the
         # caller's value carries the diagram's local `_connections`, and rebuilding dropped them.
         return rehydrated if changed else None
@@ -230,18 +242,19 @@ class _C4DiagramType(DiagramTypeBase):
         diagram_entities: Mapping[str, object],
         query: ModelQuery,
     ) -> ViewProjectionResult | None:
-        from src.diagram_types.c4._projection import project_c4  # noqa: PLC0415
+        from src.diagram_types.c4._projection import project_c4_scope  # noqa: PLC0415
+        from src.diagram_types.c4._resolve import scope_ids_in  # noqa: PLC0415
         from src.domain.viewpoints.view_derivations import SourceModelSnapshot, ViewDerivation  # noqa: PLC0415
         from src.domain.viewpoints.view_projection import ViewProjectionResult  # noqa: PLC0415
 
-        scope_id = str(diagram_entities.get("_scope_entity_id") or "").strip()
-        if not scope_id:
+        scope_ids = scope_ids_in(diagram_entities)
+        if not scope_ids:
             return None
 
         internal_c4_type = self._internal_c4_type()
         scope_entity_type = self._scope_entity_type()
-        projection = project_c4(
-            diagram_type, scope_id, query,
+        projection = project_c4_scope(
+            diagram_type, scope_ids, query,
             internal_c4_type=internal_c4_type,
             scope_entity_type=scope_entity_type,
             person_archimate_types=self._renderer._person_archimate_types,
@@ -250,7 +263,14 @@ class _C4DiagramType(DiagramTypeBase):
             id="__preview__",
             strategy="c4.scope-projection",
             strategy_version=1,
-            source_model_snapshot=SourceModelSnapshot(repo_scope="both", root_entity_id=scope_id),
+            # Both, and deliberately: the singular is what every existing derivation records and
+            # what a reader of one expects, and the plural is the whole scope. A landscape fills
+            # only the plural, because naming one of its systems the root would be a claim.
+            source_model_snapshot=SourceModelSnapshot(
+                repo_scope="both",
+                root_entity_id=scope_ids[0] if len(scope_ids) == 1 else None,
+                root_entity_ids=scope_ids,
+            ),
             parameters={
                 "diagram_type": diagram_type,
                 "internal_c4_type": internal_c4_type,

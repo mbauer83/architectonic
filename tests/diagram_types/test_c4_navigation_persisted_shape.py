@@ -97,10 +97,22 @@ def test_drilldown_is_reachable_between_two_persisted_diagrams() -> None:
     assert [child["diagram_id"] for child in navigation["child_diagrams"]] == [container.artifact_id]
 
 
-def test_a_landscape_level_is_not_invented() -> None:
-    """`_C4_LEVELS` carried `c4-system-landscape`, which is not a registered diagram type."""
+def test_a_landscape_is_the_level_above_a_system_context() -> None:
+    """`_C4_LEVELS` once carried `c4-system-landscape` for a type nothing could create; the type
+    exists now, and its level is 0 — above the system context rather than beside it."""
     repo = MagicMock()
     repo.list_diagrams = lambda: []
     repo.get_entity = lambda _eid: None
 
-    assert build_c4_navigation(repo, "X@1.a.a", "c4-system-landscape", {}) is None
+    navigation = build_c4_navigation(repo, "X@1.a.a", "c4-system-landscape", {})
+
+    assert navigation is not None
+    assert navigation["current_level"] == 0
+
+
+def test_a_diagram_type_outside_the_c4_family_still_has_no_navigation() -> None:
+    repo = MagicMock()
+    repo.list_diagrams = lambda: []
+    repo.get_entity = lambda _eid: None
+
+    assert build_c4_navigation(repo, "X@1.a.a", "archimate", {}) is None

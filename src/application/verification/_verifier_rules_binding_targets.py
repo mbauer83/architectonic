@@ -1,4 +1,4 @@
-"""Target-resolution helpers for binding verifier rules (E402, E403, E407, E408, E408b)."""
+"""Target-resolution helpers for binding verifier rules (E402, E403, E407, E408, E408b, E414)."""
 
 from __future__ import annotations
 
@@ -49,6 +49,16 @@ def check_binding_target(
             tracker, visual_role,
             result, loc,
         )
+    elif "entity_ids" in target:
+        raw_eids = target["entity_ids"]
+        if isinstance(raw_eids, list):
+            for eid_raw in raw_eids:
+                _check_entity_target(
+                    binding_id, corr_kind, str(eid_raw), file_scope,
+                    allowed_entities, all_entities,
+                    tracker, visual_role,
+                    result, loc, code="E414",
+                )
     elif "connection_id" in target:
         cid = str(target["connection_id"]) if target["connection_id"] is not None else ""
         _check_single_connection_target(binding_id, cid, file_scope, allowed_connections, all_connections, result, loc)
@@ -96,6 +106,7 @@ def _check_entity_target(
     visual_role: str | None,
     result: VerificationResult,
     loc: str,
+    code: str = "E402",
 ) -> None:
     if not entity_id:
         return
@@ -111,7 +122,7 @@ def _check_entity_target(
             if eid_short in all_short and file_scope == "enterprise"
             else f"binding '{binding_id}': target entity_id '{entity_id}' does not exist in scope"
         )
-        result.issues.append(Issue(Severity.ERROR, "E402", message, loc))
+        result.issues.append(Issue(Severity.ERROR, code, message, loc))
         return
 
     if corr_kind != "represents":

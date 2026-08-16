@@ -3,9 +3,17 @@ import { diagramDetailRoute } from '../router/artifactRoutes'
 /** C4 breadcrumb (parent diagrams, sticky) and drill-down links (child diagrams) for a
  * model-backed C4 diagram. Pure display over `c4Navigation` — navigation itself is plain
  * RouterLinks, no state of its own. */
+import { computed } from 'vue'
 import type { C4Navigation } from '../../domain'
 
-defineProps<{ c4Navigation: C4Navigation }>()
+const props = defineProps<{ c4Navigation: C4Navigation }>()
+
+const crossAxisRows = computed(() =>
+  [
+    { label: 'Deployed on', links: props.c4Navigation.deployment_diagrams },
+    { label: 'Shown logically in', links: props.c4Navigation.subject_diagrams },
+  ].filter((row) => row.links.length > 0),
+)
 </script>
 
 <template>
@@ -15,7 +23,10 @@ defineProps<{ c4Navigation: C4Navigation }>()
       v-if="c4Navigation.parent_diagrams.length"
       class="c4-up-banner"
     >
-      <span class="c4-level-badge">L{{ c4Navigation.current_level }}</span>
+      <span
+        v-if="c4Navigation.current_level !== null"
+        class="c4-level-badge"
+      >L{{ c4Navigation.current_level }}</span>
       <span
         v-if="c4Navigation.scope_entity_name"
         class="c4-scope-name"
@@ -44,6 +55,24 @@ defineProps<{ c4Navigation: C4Navigation }>()
         class="c4-nav-link"
       >
         ⤵ {{ child.diagram_name }}
+      </RouterLink>
+    </div>
+
+    <!-- The second axis: a deployment view and a logical view of the same system are neither above
+         nor below one another, so each names the other rather than appearing as a parent or child. -->
+    <div
+      v-for="axis in crossAxisRows"
+      :key="axis.label"
+      class="c4-child-nav"
+    >
+      <span class="c4-nav-dir">{{ axis.label }}:</span>
+      <RouterLink
+        v-for="link in axis.links"
+        :key="link.diagram_id"
+        :to="diagramDetailRoute(link.diagram_id)"
+        class="c4-nav-link"
+      >
+        ⇄ {{ link.diagram_name }}
       </RouterLink>
     </div>
   </div>

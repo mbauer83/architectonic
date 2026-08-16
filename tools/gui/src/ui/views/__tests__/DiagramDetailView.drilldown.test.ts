@@ -13,9 +13,13 @@ import type { C4Navigation } from '../../../domain'
 const makeNav = (overrides: Partial<C4Navigation> = {}): C4Navigation => ({
   current_level: 1,
   scope_entity_id: 'SYS1',
+  scope_entity_ids: ['SYS1'],
   scope_entity_name: 'My System',
+  scope_entity_names: ['My System'],
   parent_diagrams: [],
   child_diagrams: [],
+  deployment_diagrams: [],
+  subject_diagrams: [],
   ...overrides,
 })
 

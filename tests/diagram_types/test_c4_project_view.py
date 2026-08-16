@@ -8,7 +8,8 @@ what the engine projects for system-context, container, and component).
 from __future__ import annotations
 
 from src.application.derivation.preview import project_view_for_preview
-from src.diagram_types.c4._projection import MANIFEST, project_c4
+from src.diagram_types.c4._manifest import MANIFEST
+from src.diagram_types.c4._projection import project_c4
 from src.diagram_types.c4.component import module as c4_component
 from src.diagram_types.c4.container import module as c4_container
 from src.diagram_types.c4.system_context import module as c4_system_context

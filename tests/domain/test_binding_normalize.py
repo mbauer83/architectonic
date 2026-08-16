@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import pytest
 
-from src.application.modeling.binding_normalize import normalize_bindings
+from src.application.modeling.binding_normalize import normalize_bindings, strip_diagram_shorthand
+from src.domain.diagrams.bindings import SCOPE_IDS_KEY, SCOPE_KEY, SCOPE_KEYS
+from src.infrastructure.write.artifact_write.diagram_render import render_entities_with_scope
 
 
 class TestNormalizeBindings:
@@ -230,3 +232,59 @@ class TestNormalizeBindingsRejections:
         }
         with pytest.raises(ValueError, match="must be a dict"):
             normalize_bindings(entities, None)
+
+
+class TestScopeSetShorthand:
+    """`_scope_entity_ids` is the set form of the scope shorthand, for a diagram about a portfolio.
+
+    The pair, not each side alone: the write path normalises the shorthand into the canonical
+    binding and strips it, and the render path restores it. A test of either half against a fixture
+    would pass while the two disagreed about which key a set is written under.
+    """
+
+    def _scope_binding(self, bindings: list) -> object:
+        return next(
+            b for b in bindings
+            if b.subject.kind == "diagram" and b.correspondence_kind == "scoped-by"
+        )
+
+    def test_the_set_becomes_one_binding_with_a_set_target(self) -> None:
+        entities: dict[str, object] = {SCOPE_IDS_KEY: ["APP@1.a.Billing", "APP@2.b.Crm"]}
+
+        binding = self._scope_binding(normalize_bindings(entities, None))
+
+        assert binding.target.entity_ids == ("APP@1.a.Billing", "APP@2.b.Crm")  # type: ignore[attr-defined]
+        assert binding.target.entity_id is None  # type: ignore[attr-defined]
+
+    def test_the_singular_key_still_produces_a_singular_target(self) -> None:
+        binding = self._scope_binding(normalize_bindings({SCOPE_KEY: "APP@1.a.Billing"}, None))
+
+        assert binding.target.entity_id == "APP@1.a.Billing"  # type: ignore[attr-defined]
+
+    def test_only_one_scoped_by_binding_is_produced_for_a_set(self) -> None:
+        """E405 refuses a second diagram-level `scoped-by`, so the plurality lives in the target."""
+        entities: dict[str, object] = {SCOPE_IDS_KEY: ["APP@1.a.Billing", "APP@2.b.Crm"]}
+
+        bindings = normalize_bindings(entities, None)
+
+        assert sum(
+            1 for b in bindings if b.subject.kind == "diagram" and b.correspondence_kind == "scoped-by"
+        ) == 1
+
+    @pytest.mark.parametrize(
+        "entities",
+        [
+            {SCOPE_KEY: "APP@1.a.Billing"},
+            {SCOPE_IDS_KEY: ["APP@1.a.Billing"]},
+            {SCOPE_IDS_KEY: ["APP@1.a.Billing", "APP@2.b.Crm"]},
+        ],
+    )
+    def test_the_shorthand_survives_the_strip_and_restore_round_trip(self, entities: dict) -> None:
+        bindings = normalize_bindings(dict(entities), None)
+        persisted = strip_diagram_shorthand(dict(entities)) or {}
+
+        assert not (SCOPE_KEYS & set(persisted)), "the persisted form carries no shorthand"
+        assert render_entities_with_scope(persisted, bindings) == entities
+
+    def test_an_empty_set_declares_no_scope_at_all(self) -> None:
+        assert normalize_bindings({SCOPE_IDS_KEY: []}, None) == []

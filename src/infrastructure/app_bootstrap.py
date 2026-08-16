@@ -178,7 +178,7 @@ def _build_derivation_catalog():
         path_projection,
         viewpoint_execution,
     )
-    from src.diagram_types.c4._projection import MANIFEST as _c4_manifest  # noqa: PLC0415
+    from src.diagram_types.c4._manifest import MANIFEST as _c4_manifest  # noqa: PLC0415
     from src.infrastructure.derivation_strategy_wiring import (  # noqa: PLC0415
         derived_relationships_derive,
         viewpoint_execution_derive,

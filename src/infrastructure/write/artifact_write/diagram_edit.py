@@ -22,7 +22,7 @@ from .diagram_references import (
     _restate_generated_declarations,
     diagram_entities_are_authoritative,
 )
-from .diagram_render import _render_diagram_entities_puml
+from .diagram_render import _render_diagram_entities_puml, render_entities_with_scope
 from .parse_existing import parse_diagram_file
 from .types import WriteResult
 
@@ -265,23 +265,15 @@ def edit_diagram(
                 merged[k] = v
         eff_edge_labels = merged or None
 
-    # Determine PUML body; inject _scope_entity_id from scoped-by binding so the
-    # C4 renderer uses model-backed mode for diagrams that previously used _scope_entity_id.
+    # Determine PUML body; the scope the persist path stripped is restored from the scoped-by
+    # binding so the C4 renderer uses model-backed mode.
     if (
         eff_diagram_entities is not None
         and isinstance(eff_diagram_entities, dict)
         and puml is None
         and diagram_entities_are_authoritative(verifier, diagram_type)
     ):
-        scope_eid = next(
-            (b.target.entity_id for b in norm_bindings
-             if b.correspondence_kind == "scoped-by" and b.subject.kind == "diagram"
-             and b.target.entity_id),
-            None,
-        )
-        render_entities: dict[str, object] = dict(eff_diagram_entities)
-        if scope_eid and "_scope_entity_id" not in render_entities:
-            render_entities["_scope_entity_id"] = scope_eid
+        render_entities = render_entities_with_scope(dict(eff_diagram_entities), norm_bindings)
         eff_diagram_conns = eff_diagram_connections if isinstance(eff_diagram_connections, list) else None
         puml_body = _render_diagram_entities_puml(
             diagram_type,

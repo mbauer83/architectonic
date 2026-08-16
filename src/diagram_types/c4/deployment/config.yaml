@@ -1,0 +1,64 @@
+name: c4-deployment
+
+guidance:
+  when_to_use: >-
+    Show where one software system's containers run: the technology nodes, devices and system
+    software that host them. Use this alongside a container view of the same system, not below it —
+    it draws the same containers, placed.
+    Authoring steps: (1) create the application-component or service model entity for the system in
+    scope and the containers inside it; (2) create an artifact model entity for each deployable and
+    have it realize its container (`artifact --realization--> application-component`); (3) create
+    technology-node, device or system-software entities for the hosts and have each aggregate the
+    artifacts it holds; (4) call artifact_authoring_guidance(diagram_type="c4-deployment") for the
+    diagram_entities schema; (5) create the diagram — set _scope_entity_id to the system's entity_id.
+  when_not_to_use: >-
+    Do not use to show what a system contains — that is a c4-container view. Do not use for the
+    technology layer in its own right, where an ArchiMate technology view says more.
+
+  puml_notes:
+    - >-
+      Two modes, decided by one key. With `_scope_entity_id` set, the diagram is *model-backed*:
+      the containers inside that system and the technology elements hosting them are derived from
+      the ArchiMate graph. Without it, the diagram is *standalone* and shows exactly what
+      `diagram_entities` and `diagram_connections` declare.
+    - >-
+      Deployment is derived along ArchiMate's own path: `technology-node --aggregation--> artifact
+      --realization--> application-component`. There is no relation from a node directly to an
+      application component, and the ontology does not permit one — a container with no artifact is
+      simply undeployed, and it is left out rather than given an invented host.
+    - >-
+      Each hosting element is drawn as a `Deployment_Node` boundary and its containers inside it.
+      The system in scope is the diagram's title rather than a box, because the whole picture is
+      about that one system.
+    - >-
+      The node's second label line comes from `technology` when the item declares one, and falls
+      back to the item type. Naming the technology is what makes a deployment view readable.
+    - |-
+      Minimal model-backed example:
+        diagram_entities: {_scope_entity_id: APP@1.aaaaaa.billing}
+
+ui:
+  label: C4 Deployment
+  description: >-
+    Shows where one software system's containers run — the technology nodes, devices and system
+    software that host them.
+  entity_search_filter: false
+  type_ui_slots:
+    c4_editor: c4-editor-context
+  diagram_only_types:
+    - entity_type: node
+      label: Deployment Node
+      plural: Deployment Nodes
+    - entity_type: container
+      label: Container
+      plural: Containers
+    - entity_type: software-system
+      label: Software System
+      plural: Software Systems
+
+c4:
+  scope_entity_type: software-system
+  scope_render_mode: deployment
+  puml_stdlib: C4_Deployment
+  internal_entity_types:
+    - container
