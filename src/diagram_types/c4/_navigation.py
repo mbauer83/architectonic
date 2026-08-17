@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from src.diagram_types.c4._projection import LANDSCAPE_TYPE
+from src.diagram_types.c4._projection_vocabulary import LANDSCAPE_TYPE
 from src.domain.diagrams.bindings import (
     SCOPE_IDS_KEY,
     SCOPE_KEY,

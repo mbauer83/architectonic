@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from pathlib import Path
 from typing import Any
 
 # Re-export shared types so existing imports from this module continue to work.
@@ -22,7 +23,7 @@ def scope_ids_in(diagram_entities: Mapping[str, object]) -> tuple[str, ...]:
     """The scope this diagram's entities declare in shorthand, singular or set.
 
     The renderer sees the shorthand rather than the canonical binding, because the write path puts
-    it back before rendering (`render_entities_with_scope`). One reading of the pair of keys, so
+    it back before rendering (`render_entities_restored`). One reading of the pair of keys, so
     the resolver and the navigation cannot disagree about which one a diagram carries.
     """
     single = str(diagram_entities.get(SCOPE_KEY) or "").strip()
@@ -37,7 +38,7 @@ def scope_ids_in(diagram_entities: Mapping[str, object]) -> tuple[str, ...]:
 def resolve_c4_state(
     config: dict[str, Any],
     diagram_type: str,
-    repo_root: Any,
+    repo_root: Path,
     diagram_entities: Mapping[str, object],
     diagram_connections: list[dict[str, object]],
     person_archimate_types: frozenset[str],
@@ -53,6 +54,8 @@ def resolve_c4_state(
         return resolve_model_backed(
             diagram_type, repo_root, diagram_entities, scope_entity_ids,
             scope_entity_type, scope_render_mode, internal_c4_type, person_archimate_types,
+            technology_attributes=[str(a) for a in (c4_cfg.get("technology_attributes") or [])],
+            technology_limit=int(c4_cfg.get("technology_max_entries") or 0),
         )
     return _resolve_standalone(
         diagram_type, diagram_entities, diagram_connections,

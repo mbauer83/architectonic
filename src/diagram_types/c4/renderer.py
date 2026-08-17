@@ -12,6 +12,7 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
+from src.diagram_types.c4._projection_vocabulary import GROUP_TYPE
 from src.diagram_types.c4._resolve import _ResolvedItem, resolve_c4_state
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
 from src.domain.ontology_representation.ontology_protocol import DiagramRendererReferences
@@ -37,6 +38,28 @@ def _tech_variant(technology: str) -> str:
         if kw in t:
             return "queue"
     return "generic"
+
+
+#: Which way a generated C4 body lays out, and the key a diagram states it under. Left-to-right is
+#: the default because it is what these views were drawn with and what they were read as.
+#:
+#: It is per diagram because it cannot be global. Bisected against this repository's own
+#: `plantuml.jar`: `left to right direction` AND `linetype ortho` AND a nested cluster crashes dot —
+#: all three together, on a view of eleven boxes with no hidden edges at all. Any one of the three
+#: removed renders it, and the 45-box component view with four nested groups behaves identically.
+#: Neither of the other two is available to give up: ortho is the only routing that has looked right
+#: here, and the direction is worth keeping wherever it can be. So a diagram that nests boundaries
+#: and hits the crash says so for itself, and every other diagram keeps the default.
+DIRECTION_KEY = "_direction"
+_DIRECTIONS: dict[str, str] = {
+    "left_to_right": "left to right direction",
+    "top_to_bottom": "top to bottom direction",
+}
+
+
+def _direction_lines(diagram_entities: Mapping[str, object]) -> list[str]:
+    requested = str(diagram_entities.get(DIRECTION_KEY) or "left_to_right")
+    return [_DIRECTIONS.get(requested, _DIRECTIONS["left_to_right"])]
 
 
 def _c4_macro_name(item_type: str, variant: str, external: bool) -> str:
@@ -96,7 +119,7 @@ class C4PumlRenderer:
         lines: list[str] = [
             f"@startuml {diagram_name}",
             f"!include <C4/{c4_config.get('puml_stdlib') or 'C4_Component'}>",
-            "left to right direction",
+            *_direction_lines(diagram_entities or {}),
             "skinparam shadowing false",
             "skinparam linetype ortho",
             "skinparam defaultTextAlignment center",
@@ -108,58 +131,76 @@ class C4PumlRenderer:
 
         show_desc = bool(c4_config.get("show_node_descriptions", False))
 
-        scope_aliases = [item.alias for item in state.scope_items]
+        # Hidden chains that order top-level elements are collected here and emitted *after* the
+        # visible edges, which is the whole of what keeps this diagram renderable.
+        #
+        # Declared before them, the same 38 hidden edges over the same 41 boxes crashed dot's
+        # orthogonal router — reproducibly, three runs out of three — and PlantUML answers that by
+        # drawing the stack trace as the picture. Moving the identical lines below the `-->` lines
+        # renders. It is not a size limit: the version before this one carried 58 hidden edges over
+        # 56 boxes in the same diagram and drew fine, and each half of the crashing pair drew fine
+        # alone. Order is the variable, so order is what is fixed here.
+        #
+        # A chain inside a boundary cannot move — the brace closes above the edges — so that one
+        # stays where it is declared. No chain touches a boundary alias or runs between two of them:
+        # a `-[hidden]-` edge across a cluster wall is its own crash, shape-dependent and separate
+        # from this one.
+        top_level_chains: list[str] = []
         if state.scope_render_mode == "deployment":
             # The system in scope is the title, not a box: what the reader is being shown is where
             # its containers run, so each hosting node is the boundary and the containers sit in it.
             for host in state.internal_items:
-                lines.append(
-                    f'Deployment_Node({host.alias}, "{_escape_puml(host.label)}", '
-                    f'"{_escape_puml(host.technology or host.item_type)}") {{'
-                )
-                for child in host.children:
-                    lines.append(f"  {self._render_item(child, show_descriptions=show_desc)}")
-                self._append_hidden_chain(lines, [child.alias for child in host.children], indent="  ")
-                lines.append("}")
-            scope_aliases = [host.alias for host in state.internal_items]
+                self._append_nested(lines, host, indent="", show_descriptions=show_desc)
         elif state.scope_render_mode == "node":
             # Every scope item is drawn: one system at context level, a portfolio of them at
             # landscape level. A boundary can only wrap one thing, which is why the two modes and
             # the two scope cardinalities divide along the same line.
             for item in state.scope_items:
                 lines.append(self._render_item(item, show_descriptions=show_desc))
+            self._append_hidden_chain(
+                top_level_chains, [i.alias for i in state.scope_items], indent="",
+            )
         else:
             lines.append(
                 f'System_Boundary({state.scope_item.alias}, "{_escape_puml(state.scope_item.label)}") {{'
             )
             for item in state.internal_items:
-                lines.append(f"  {self._render_item(item, show_descriptions=show_desc)}")
-            self._append_hidden_chain(lines, [item.alias for item in state.internal_items], indent="  ")
+                self._append_nested(lines, item, indent="  ", show_descriptions=show_desc)
+            self._append_hidden_chain(lines, [i.alias for i in state.internal_items], indent="  ")
             lines.append("}")
-
-        self._append_hidden_chain(lines, scope_aliases, indent="")
+        lines.append("")
 
         outside_items = state.outside_items
         if outside_items:
             for item in outside_items:
                 lines.append(self._render_item(item, show_descriptions=show_desc))
             lines.append("")
-            ordered_aliases = (
-                [item.alias for item in outside_items if item.item_type == "person"]
-                + scope_aliases
-                + [item.alias for item in outside_items if item.item_type != "person"]
+            # Two chains, never one running through the scope. Threading people → boundary →
+            # systems onto a single line made the boundary alias — a cluster — an endpoint, and
+            # forced every rank it touched: that is what stacked eight actors into a column taller
+            # than the system they use. People and third-party systems are not siblings of each
+            # other, and the drawn edges already say which side of the system each one is on.
+            self._append_hidden_chain(
+                top_level_chains, [i.alias for i in outside_items if i.item_type == "person"], indent="",
             )
-            self._append_hidden_chain(lines, ordered_aliases, indent="")
-
-        lines.append("")
+            self._append_hidden_chain(
+                top_level_chains, [i.alias for i in outside_items if i.item_type != "person"], indent="",
+            )
         for conn in state.connections:
             raw_label = (
                 edge_labels.get(f"{conn.src_alias}:{conn.tgt_alias}", conn.label)
                 if edge_labels
                 else conn.label
             )
-            label = _escape_puml(raw_label) if raw_label else ""
-            lines.append(f"{conn.src_alias} --> {conn.tgt_alias} : {label}")
+            # No label means no ` : ` either. `A --> B : ` reserves label space GraphViz then
+            # routes around, so an empty one costs the layout as much as a real one and says less.
+            if raw_label:
+                lines.append(f"{conn.src_alias} --> {conn.tgt_alias} : {_escape_puml(raw_label)}")
+            else:
+                lines.append(f"{conn.src_alias} --> {conn.tgt_alias}")
+        if top_level_chains:
+            lines.append("")
+            lines.extend(top_level_chains)
         lines.append("@enduml")
 
         body = "\n".join(line for line in lines if line is not None)
@@ -227,7 +268,9 @@ class C4PumlRenderer:
                 macro = macro + "_Ext"
             has_tech_arg = not macro.startswith(("Person", "System"))
         else:
-            variant = _tech_variant(item.technology) if item.technology else "generic"
+            variant = "db" if item.is_store else (
+                _tech_variant(item.technology) if item.technology else "generic"
+            )
             macro = _c4_macro_name(item.item_type, variant, item.external)
             has_tech_arg = item.item_type not in ("person", "software-system")
 
@@ -238,6 +281,43 @@ class C4PumlRenderer:
         if descr:
             return f'{macro}({item.alias}, "{label}", "{descr}")'
         return f'{macro}({item.alias}, "{label}")'
+
+    def _append_nested(
+        self, lines: list[str], item: _ResolvedItem, *, indent: str, show_descriptions: bool
+    ) -> None:
+        """One element and everything drawn inside it, however deep the nesting goes.
+
+        Two things open a boundary rather than draw a box, and they are the same shape of statement:
+        a deployment node, which holds what runs on it, and a grouping, which holds what belongs
+        together. C4 calls the second a *group* and is explicit that it "will be rendered as a
+        boundary around those elements" and is not an element of the model at all — so it is emitted
+        with the generic `Boundary()` macro and never with a component's.
+
+        Recursive because both nest: a host holds a container runtime which holds the containers, and
+        a group may hold a subgroup. Drawing one level flattened a deployment into "these run side by
+        side on a machine", which is a different claim.
+
+        The hidden chain that orders siblings is emitted *inside* each boundary and never across
+        two. A `-[hidden]-` edge that crosses cluster walls crashes GraphViz in a way that depends
+        on the shapes involved, so it surfaces as a rendered error image rather than a failure.
+
+        """
+        if not item.children:
+            lines.append(f"{indent}{self._render_item(item, show_descriptions=show_descriptions)}")
+            return
+        lines.append(f"{indent}{self._open_boundary(item)}")
+        inner = indent + "  "
+        for child in item.children:
+            self._append_nested(lines, child, indent=inner, show_descriptions=show_descriptions)
+        self._append_hidden_chain(lines, [child.alias for child in item.children], indent=inner)
+        lines.append(f"{indent}}}")
+
+    def _open_boundary(self, item: _ResolvedItem) -> str:
+        """The macro that opens a boundary for an element that holds others."""
+        label = _escape_puml(item.label)
+        if item.item_type == GROUP_TYPE:
+            return f'Boundary({item.alias}, "{label}", "group") {{'
+        return f'Deployment_Node({item.alias}, "{label}", "{_escape_puml(item.technology or item.item_type)}") {{'
 
     def _append_hidden_chain(self, lines: list[str], aliases: list[str], *, indent: str) -> None:
         if len(aliases) < 2:

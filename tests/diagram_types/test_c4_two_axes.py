@@ -17,6 +17,8 @@ from src.diagram_types.c4._c4_types import _ResolvedItem, _ResolvedState
 from src.diagram_types.c4._navigation import build_c4_navigation
 from src.diagram_types.c4._projection import project_c4_landscape, project_c4_scope
 from src.diagram_types.c4._projection_deployment import project_c4_deployment
+from src.diagram_types.c4._projection_vocabulary import is_externally_styled
+from src.diagram_types.c4._resolve_model import _declared_technology, _nest
 from src.diagram_types.c4.renderer import C4PumlRenderer
 from tests.application.derivation._fixtures import FakeQuery, _connection, _entity
 
@@ -330,3 +332,158 @@ def test_the_component_header_is_still_the_default() -> None:
     )
 
     assert "!include <C4/C4_Component>" in body
+
+
+# ---------------------------------------------------------------------------
+# What "external" means
+# ---------------------------------------------------------------------------
+
+
+def test_a_person_is_never_drawn_external_in_a_model_backed_view() -> None:
+    """The model has no way to say an actor is a foreigner: `external` is a property of a
+    *standalone* diagram item, and ArchiMate's `external-active-structure-element` means an
+    interface. Deriving it from role drew every actor in grey, including the architects the system
+    is built for."""
+    assert not is_externally_styled("external", "person")
+
+
+def test_a_system_outside_the_scope_is_drawn_external() -> None:
+    """For a system the two do coincide: the scope set is the model's own statement of what is
+    being documented, so a system outside it is somebody else's."""
+    assert is_externally_styled("external", "software-system")
+
+
+def test_nothing_in_scope_or_inside_it_is_external() -> None:
+    assert not is_externally_styled("scope", "software-system")
+    assert not is_externally_styled("internal", "container")
+
+
+# ---------------------------------------------------------------------------
+# The technology line
+# ---------------------------------------------------------------------------
+
+
+class _Attributed:
+    def __init__(self, **attributes: object) -> None:
+        self.attributes = attributes
+
+
+_TECH_ATTRS = ("Programming Languages & Versions", "Frameworks & Versions")
+
+
+def test_the_language_and_the_first_framework_make_the_line() -> None:
+    """C4's third macro argument is one short phrase, and this is the phrase C4 itself uses."""
+    entity = _Attributed(**{
+        "Programming Languages & Versions": '["Python >=3.13"]',
+        "Frameworks & Versions": '["FastAPI >=0.115.0","Uvicorn >=0.32.0 (standard)","Pydantic >=2.0"]',
+    })
+
+    assert _declared_technology(entity, _TECH_ATTRS, 2) == "Python, FastAPI"
+
+
+def test_a_version_specifier_is_dropped() -> None:
+    entity = _Attributed(**{"Programming Languages & Versions": '["TypeScript >=5.7"]'})
+
+    assert _declared_technology(entity, _TECH_ATTRS, 2) == "TypeScript"
+
+
+def test_a_list_valued_attribute_is_read_whether_or_not_it_is_json_encoded() -> None:
+    """Attribute values reach the record as authored, and both shapes are live in one repository."""
+    encoded = _Attributed(**{"Programming Languages & Versions": '["Python"]'})
+    plain = _Attributed(**{"Programming Languages & Versions": ["Python"]})
+    scalar = _Attributed(**{"Programming Languages & Versions": "Python"})
+
+    assert _declared_technology(encoded, _TECH_ATTRS, 2) == "Python"
+    assert _declared_technology(plain, _TECH_ATTRS, 2) == "Python"
+    assert _declared_technology(scalar, _TECH_ATTRS, 2) == "Python"
+
+
+def test_an_entity_declaring_nothing_gets_no_line() -> None:
+    assert _declared_technology(_Attributed(), _TECH_ATTRS, 2) == ""
+    assert _declared_technology(_Attributed(**{"Frameworks & Versions": "[]"}), _TECH_ATTRS, 2) == ""
+
+
+def test_a_type_declaring_no_attributes_reads_none() -> None:
+    """The names belong to a specialization catalogue, so a diagram type that names none gets none
+    rather than the resolver reaching for another module's vocabulary on its own."""
+    entity = _Attributed(**{"Programming Languages & Versions": '["Python"]'})
+
+    assert _declared_technology(entity, (), 2) == ""
+    assert _declared_technology(entity, _TECH_ATTRS, 0) == ""
+
+
+def test_a_repeated_entry_is_not_said_twice() -> None:
+    entity = _Attributed(**{
+        "Programming Languages & Versions": '["Python >=3.13"]',
+        "Frameworks & Versions": '["Python >=3.13","FastAPI"]',
+    })
+
+    assert _declared_technology(entity, _TECH_ATTRS, 2) == "Python, FastAPI"
+
+
+# ---------------------------------------------------------------------------
+# Nesting, at any depth
+# ---------------------------------------------------------------------------
+
+
+def test_a_three_level_chain_keeps_what_is_innermost() -> None:
+    """The first version attached each child to its parent's *pre-`replace`* object, so a host
+    holding a container holding an application kept the container and silently dropped its
+    contents. Nothing failed; a diagram simply came back missing its inside."""
+    items = [
+        _item("host", "node", "Host"),
+        _item("runtime", "node", "Container"),
+        _item("app", "container", "App"),
+    ]
+
+    nested = _nest(items, {"runtime": "host", "app": "runtime"})
+
+    assert [i.local_id for i in nested] == ["host"]
+    assert [c.local_id for c in nested[0].children] == ["runtime"]
+    assert [c.local_id for c in nested[0].children[0].children] == ["app"]
+
+
+def test_a_containment_cycle_stops_rather_than_recursing_forever() -> None:
+    items = [_item("a", "node", "A"), _item("b", "node", "B")]
+
+    nested = _nest(items, {"a": "b", "b": "a"})
+
+    assert nested == [] or all(i.local_id in {"a", "b"} for i in nested)
+
+
+def test_an_unnested_list_is_returned_unchanged() -> None:
+    items = [_item("one", "container", "One"), _item("two", "container", "Two")]
+
+    assert _nest(items, {}) == items
+
+
+def test_the_renderer_nests_a_node_inside_a_node() -> None:
+    body = _render(
+        {"c4": {
+            "scope_entity_type": "software-system",
+            "scope_render_mode": "deployment",
+            "puml_stdlib": "C4_Deployment",
+        }},
+        _ResolvedState(
+            scope_items=(_item("sys", "software-system", "System"),),
+            scope_render_mode="deployment",
+            internal_items=[
+                _item(
+                    "host", "node", "Docker Host", technology="Technology Node",
+                    children=(
+                        _item(
+                            "runtime", "node", "App Container", technology="Technology Node",
+                            children=(_item("api", "container", "API", technology="Python"),),
+                        ),
+                    ),
+                )
+            ],
+        ),
+    )
+
+    assert 'Deployment_Node(HOST, "Docker Host", "Technology Node") {' in body
+    assert '  Deployment_Node(RUNTIME, "App Container", "Technology Node") {' in body
+    assert '    Container(API, "API", "Python")' in body
+    # A hidden edge that crosses a cluster wall crashes GraphViz shape-dependently, so each chain
+    # stays inside the boundary that owns it.
+    assert "HOST -[hidden]" not in body

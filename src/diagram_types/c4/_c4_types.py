@@ -4,16 +4,21 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from typing import Any
+
+from src.domain.ontology_representation.artifact_types import ConnectionRecord
 
 # Short, direction-consistent C4 edge labels per ArchiMate interaction type.
 # Projected (model-backed) C4 edges use these verbs rather than prose description.
+#
+# Serving and association have no entry, and that is the point. Both say only "there is a
+# dependency here", which is what the arrow already says: labelling them printed the word "uses"
+# thirty-four times on one diagram and fifty-nine words on another, none of which a reader could
+# have learned anything from. A label is for what the arrow cannot show. Where an author states one
+# — the `edge_labels` override the renderer takes — it is used whatever the type.
 _C4_CONN_LABELS: dict[str, str] = {
-    "archimate-serving": "uses",
     "archimate-flow": "flows to",
     "archimate-triggering": "triggers",
     "archimate-access": "accesses",
-    "archimate-association": "uses",
 }
 
 
@@ -31,6 +36,11 @@ class _ResolvedItem:
     #: Items drawn *inside* this one. Only a deployment view fills it — a container is drawn inside
     #: the node that holds its artifact — and every other level leaves it empty.
     children: tuple["_ResolvedItem", ...] = ()
+    #: Whether the model *declares* this a store, rather than a keyword in its technology hinting so.
+    #: Shape inference reads the technology string for "sqlite", "postgres" and the like, which
+    #: answers for a database and not for a file store — C4 counts a file system as a data store, and
+    #: "Git VCS, File System Service" matches no keyword. The declaration outranks the guess.
+    is_store: bool = False
 
 
 @dataclass(frozen=True)
@@ -75,5 +85,5 @@ def _normalize_alias(alias: str) -> str:
     return alias.strip().replace("-", "_")
 
 
-def _conn_label(conn: Any) -> str:
-    return _C4_CONN_LABELS.get(conn.conn_type, "uses")
+def _conn_label(conn: ConnectionRecord) -> str:
+    return _C4_CONN_LABELS.get(conn.conn_type, "")

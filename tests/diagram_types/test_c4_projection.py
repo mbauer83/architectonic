@@ -7,7 +7,8 @@ and AC B: strategy registration from the C4 module (not the generic package).
 from __future__ import annotations
 
 from src.diagram_types.c4._manifest import MANIFEST
-from src.diagram_types.c4._projection import _c4_item_type, project_c4
+from src.diagram_types.c4._projection import project_c4
+from src.diagram_types.c4._projection_vocabulary import c4_item_type
 from src.domain.viewpoints.view_projection import ProjectedViewItem
 from tests.application.derivation._fixtures import FakeQuery, _connection, _entity
 
@@ -37,39 +38,39 @@ def test_c4_projection_strategy_registered() -> None:
 
 
 def test_item_type_scope_returns_scope_entity_type() -> None:
-    assert _c4_item_type("scope", "application-component", "software-system", "container", frozenset()) == (
+    assert c4_item_type("scope", "application-component", "software-system", "container", frozenset()) == (
         "software-system"
     )
 
 
 def test_item_type_internal_app_component_container_level() -> None:
-    assert _c4_item_type("internal", "application-component", "software-system", "container", frozenset()) == (
+    assert c4_item_type("internal", "application-component", "software-system", "container", frozenset()) == (
         "container"
     )
 
 
 def test_item_type_internal_app_component_component_level() -> None:
-    assert _c4_item_type("internal", "application-component", "software-system", "component", frozenset()) == (
+    assert c4_item_type("internal", "application-component", "software-system", "component", frozenset()) == (
         "component"
     )
 
 
 def test_item_type_external_app_component_is_software_system() -> None:
-    assert _c4_item_type("external", "application-component", "software-system", "container", frozenset()) == (
+    assert c4_item_type("external", "application-component", "software-system", "container", frozenset()) == (
         "software-system"
     )
 
 
 def test_item_type_external_business_actor_is_person() -> None:
-    assert _c4_item_type("external", "business-actor", "software-system", "container", _PERSON_TYPES) == "person"
+    assert c4_item_type("external", "business-actor", "software-system", "container", _PERSON_TYPES) == "person"
 
 
 def test_item_type_external_role_is_person() -> None:
-    assert _c4_item_type("external", "role", "software-system", "container", _PERSON_TYPES) == "person"
+    assert c4_item_type("external", "role", "software-system", "container", _PERSON_TYPES) == "person"
 
 
 def test_item_type_external_unknown_type_is_software_system() -> None:
-    assert _c4_item_type("external", "artifact", "software-system", "container", _PERSON_TYPES) == "software-system"
+    assert c4_item_type("external", "artifact", "software-system", "container", _PERSON_TYPES) == "software-system"
 
 
 # ---------------------------------------------------------------------------

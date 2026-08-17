@@ -16,8 +16,14 @@ if TYPE_CHECKING:
 # Import engine module to trigger strategy registration as a side effect.
 import src.diagram_types.c4._manifest  # noqa: F401
 from src.diagram_types._base import DiagramTypeBase
-from src.diagram_types.c4.renderer import C4PumlRenderer
+from src.diagram_types.c4.renderer import DIRECTION_KEY, C4PumlRenderer
 from src.domain.concept_scope import ConceptScope
+from src.domain.diagrams.bindings import (
+    EXCLUDED_IDS_KEY,
+    INCLUDED_IDS_KEY,
+    SCOPE_IDS_KEY,
+    SCOPE_KEY,
+)
 from src.domain.diagrams.diagram_entities_schema import derive_diagram_entities_schema
 from src.domain.diagrams.diagram_ontology_loader import DiagramOntology, load_diagram_ontology
 from src.domain.diagrams.diagram_ontology_merge import merge_ontology_into_diagram_only_types
@@ -135,7 +141,7 @@ class _C4DiagramType(DiagramTypeBase):
         c4_cfg: dict[str, Any] = self._config.get("c4") or {}
         scope_type = str(c4_cfg.get("scope_entity_type") or "entity")
         if bool(c4_cfg.get("scope_is_a_set", False)):
-            props["_scope_entity_ids"] = {
+            props[SCOPE_IDS_KEY] = {
                 "type": "array", "items": {"type": "string"},
                 "description": (
                     f"entity_ids of the {scope_type} model entities this diagram is scoped to — the "
@@ -145,7 +151,7 @@ class _C4DiagramType(DiagramTypeBase):
                 ),
             }
         else:
-            props["_scope_entity_id"] = {
+            props[SCOPE_KEY] = {
                 "type": "string",
                 "description": (
                     f"entity_id of the {scope_type} model entity this diagram is scoped to. "
@@ -153,14 +159,25 @@ class _C4DiagramType(DiagramTypeBase):
                     "Omit for standalone mode (explicit diagram entities and c4-uses connections)."
                 ),
             }
-        props["_included_entity_ids"] = {
+        props[DIRECTION_KEY] = {
+            "type": "string",
+            "enum": ["left_to_right", "top_to_bottom"],
+            "description": (
+                "Layout direction for the generated body (default left_to_right). Set to "
+                "top_to_bottom when a view nests boundaries — a grouping, or a deployment node "
+                "inside another — and the render fails: left-to-right with orthogonal routing and a "
+                "nested cluster is a combination GraphViz cannot lay out, and the direction is the "
+                "one of the three this diagram can give up."
+            ),
+        }
+        props[INCLUDED_IDS_KEY] = {
             "type": "array", "items": {"type": "string"},
             "description": (
                 "entity_ids to include from the ArchiMate graph (model-backed only). "
                 "Omit to include all connected entities. Use the smaller of included or excluded."
             ),
         }
-        props["_excluded_entity_ids"] = {
+        props[EXCLUDED_IDS_KEY] = {
             "type": "array", "items": {"type": "string"},
             "description": (
                 "entity_ids to exclude from auto-derived neighbours (model-backed only). "
@@ -296,8 +313,8 @@ class _C4DiagramType(DiagramTypeBase):
 def _selection_from_entities(entities: Mapping[str, object]) -> DerivationSelection | None:
     from src.domain.viewpoints.view_derivations import DerivationSelection  # noqa: PLC0415
 
-    raw_included = entities.get("_included_entity_ids")
-    raw_excluded = entities.get("_excluded_entity_ids")
+    raw_included = entities.get(INCLUDED_IDS_KEY)
+    raw_excluded = entities.get(EXCLUDED_IDS_KEY)
     if isinstance(raw_included, list) and raw_included:
         return DerivationSelection(included_entity_ids=tuple(str(x) for x in raw_included))
     if isinstance(raw_excluded, list) and raw_excluded:

@@ -8,15 +8,16 @@ module inside the file-length policy, which the two axes together broke.
 
 from __future__ import annotations
 
-from src.diagram_types.c4._projection import (
-    _CONTAINER_INTERNAL_TYPES,
+from src.diagram_types.c4._projection_rollup import descendants, direct_conns
+from src.diagram_types.c4._projection_vocabulary import (
+    CONTAINER_INTERNAL_TYPES,
     DEPLOYMENT_TYPE,
+    NEIGHBOR_TYPES,
+    NESTING_TYPES,
     C4ProjectedItem,
     C4Projection,
-    _direct_conns,
-    _entity_type,
-    _make_item,
-    _structural_children,
+    entity_type,
+    make_item,
 )
 from src.domain.relationships.derivation_types import ModelQuery
 
@@ -41,12 +42,43 @@ def _hosts_of(container_id: str, query: ModelQuery) -> set[str]:
         if realization.conn_type != "archimate-realization":
             continue
         artifact_id = realization.source
-        if _entity_type(artifact_id, query) != "artifact":
+        if entity_type(artifact_id, query) != "artifact":
             continue
         for holds in query.find_connections_for(artifact_id, direction="inbound"):
-            if holds.conn_type in _HOSTING_TYPES and _entity_type(holds.source, query) in _DEPLOYMENT_HOST_TYPES:
+            if holds.conn_type in _HOSTING_TYPES and entity_type(holds.source, query) in _DEPLOYMENT_HOST_TYPES:
                 hosts.add(holds.source)
     return hosts
+
+
+def _enclosing_nodes(hosts: set[str], query: ModelQuery) -> dict[str, str]:
+    """Which node each host sits inside, following the chain as far as the model states it.
+
+    ArchiMate says containment between technology nodes with composition or aggregation — the
+    general `@all -> @same` rule permits it — so a container runtime declared inside a machine is a
+    fact the model can already hold. Reading only a container's immediate host drew every deployment
+    as one flat box, which says the containers run side by side on a machine rather than together
+    inside one runtime.
+
+    The walk stops on a repeat, because a containment cycle is a modelling error rather than a
+    reason to loop.
+    """
+    parents: dict[str, str] = {}
+    frontier = set(hosts)
+    while frontier:
+        nxt: set[str] = set()
+        for node in sorted(frontier):
+            for holds in query.find_connections_for(node, direction="inbound"):
+                if holds.conn_type not in _HOSTING_TYPES:
+                    continue
+                if entity_type(holds.source, query) not in _DEPLOYMENT_HOST_TYPES:
+                    continue
+                if node in parents or holds.source == node:
+                    continue
+                parents[node] = holds.source
+                if holds.source not in parents and holds.source not in hosts:
+                    nxt.add(holds.source)
+        frontier = nxt - set(parents)
+    return parents
 
 
 def project_c4_deployment(
@@ -64,14 +96,18 @@ def project_c4_deployment(
     below it — which is why it has no entry in `_C4_LEVELS`.
     """
     def make(eid: str, role: str, item_type: str) -> C4ProjectedItem:
-        return _make_item(eid, role, scope_entity_type, item_type, person_archimate_types, query)
+        return make_item(eid, role, scope_entity_type, item_type, person_archimate_types, query)
 
     containers = {
-        eid for eid in _structural_children(root_entity_id, 1, query)
-        if _entity_type(eid, query) in _CONTAINER_INTERNAL_TYPES
+        eid for eid in descendants(root_entity_id, query, nesting_types=NESTING_TYPES, max_depth=1)
+        if entity_type(eid, query) in CONTAINER_INTERNAL_TYPES
     }
     hosted: dict[str, set[str]] = {cid: _hosts_of(cid, query) for cid in sorted(containers)}
-    hosts = {host for host_set in hosted.values() for host in host_set}
+    direct_hosts = {host for host_set in hosted.values() for host in host_set}
+    #: Where each host itself sits. A deployment is nested in reality — a container runtime on a
+    #: machine — and reading only the immediate host flattened that into "side by side on a box".
+    enclosing = _enclosing_nodes(direct_hosts, query)
+    hosts = direct_hosts | set(enclosing.values())
 
     host_items = tuple(make(eid, "internal", "node") for eid in sorted(hosts))
     container_items = tuple(
@@ -81,10 +117,13 @@ def project_c4_deployment(
     return C4Projection(
         diagram_type=DEPLOYMENT_TYPE,
         items=(make(root_entity_id, "scope", scope_entity_type), *host_items, *container_items),
-        connection_ids=tuple(sorted(_direct_conns(drawn, query))),
+        connection_ids=tuple(sorted(direct_conns(drawn, query, dependency_types=NEIGHBOR_TYPES))),
         contained_by=tuple(
-            (cid, host)
-            for cid, host_set in sorted(hosted.items())
-            for host in sorted(host_set)[:1]  # one drawn home per container; a second would duplicate it
+            [
+                (cid, host)
+                for cid, host_set in sorted(hosted.items())
+                for host in sorted(host_set)[:1]  # one drawn home per container; a second duplicates it
+            ]
+            + sorted(enclosing.items())
         ),
     )

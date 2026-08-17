@@ -114,9 +114,12 @@ def test_system_context_renders_scope_and_model_relationship(monkeypatch) -> Non
         diagram_entities={"_scope_entity_id": "APP@1.system"},
     )
 
-    # Person uses Person_Ext macro (C4-PlantUML stdlib) — person glyph + coloured box.
-    # Customer is a business-actor OUTSIDE the system scope → Person_Ext.
-    assert 'Person_Ext(P_Cust01, "Customer")' in puml
+    # A person uses the Person macro (C4-PlantUML stdlib) — person glyph + coloured box. Being
+    # outside the scope is *membership*; it is not a claim that the actor is a third party, and the
+    # model has no way to make that claim. Drawing every actor with the external notation said the
+    # opposite about everyone a system is built for.
+    assert 'Person(P_Cust01, "Customer")' in puml
+    assert "Person_Ext(" not in puml
     assert "actor" not in puml
     assert 'System(SS_Order1, "Ordering System")' in puml
     assert "[[" not in puml
@@ -162,3 +165,47 @@ def test_container_view_renders_scope_as_boundary_and_collects_references() -> N
     assert "Reads and writes orders" in puml
     assert refs.entity_ids == ()  # standalone mode: no model entity tracking
     assert refs.connection_ids == ()
+
+
+def test_top_level_hidden_chains_are_declared_after_the_visible_edges() -> None:
+    """Regression: the same hidden edges crash dot's ortho router when declared above the arrows.
+
+    Bisected against this repository's own `plantuml.jar`: 38 `-[hidden]-` lines over 41 boxes
+    rendered a Java stack trace as the picture, three runs out of three, and the byte-identical body
+    with the outside chain moved below the `-->` lines drew fine. It is not a size limit — the
+    version before it carried 58 hidden edges over 56 boxes in the same diagram and rendered — so
+    the ordering is the fix and this is what holds it.
+
+    A chain inside a boundary is exempt and must stay inside: its brace closes above the edges.
+    """
+    renderer = _renderer("software-system", "boundary", ["container"])
+    diagram_entities = {
+        "software-system": [
+            {"id": "sys", "entity_id": "APP@1.system", "scope": True, "label": "System"},
+            {"id": "far", "entity_id": "APP@1.far", "label": "Far System", "external": True},
+            {"id": "near", "entity_id": "APP@1.near", "label": "Near System", "external": True},
+        ],
+        "container": [
+            {"id": "api", "entity_id": "APP@1.api", "label": "API"},
+            {"id": "web", "entity_id": "APP@1.web", "label": "Web"},
+        ],
+    }
+    puml = renderer.render_body(
+        "Ordering Containers", [], [], "c4-container", Path("/tmp"),
+        diagram_entities=diagram_entities,
+        diagram_connections=[{"source": "api", "target": "web", "label": "calls"}],
+    )
+    lines = puml.splitlines()
+    edge_at = max(i for i, line in enumerate(lines) if " --> " in line)
+    top_level_hidden = [
+        i for i, line in enumerate(lines) if "-[hidden]" in line and not line.startswith("  ")
+    ]
+
+    assert top_level_hidden, "the outside items must still be chained — this is a layout tool"
+    assert min(top_level_hidden) > edge_at, (
+        "a top-level hidden chain declared above the visible edges crashes GraphViz"
+    )
+    boundary_alias = "SS_sys_0"
+    assert not any(
+        boundary_alias in lines[i] for i in top_level_hidden
+    ), "a hidden edge must never take a cluster alias as an endpoint"

@@ -72,3 +72,11 @@ c4:
   scope_render_mode: boundary
   internal_entity_types:
     - container
+  # Which attributes supply a box's technology line, in the order they are read, and how many
+  # entries fit. The names belong to the specialization catalogue rather than to C4, so the diagram
+  # type declares them here instead of the resolver naming another module's vocabulary. Two entries
+  # is what the notation has room for: the language, then the framework listed first.
+  technology_attributes:
+    - "Programming Languages & Versions"
+    - "Frameworks & Versions"
+  technology_max_entries: 2
