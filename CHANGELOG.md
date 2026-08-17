@@ -42,6 +42,16 @@ whose twelve sections say what model content each one expects.
   CC BY-SA 4.0; the attribution is carried on the document type and shown on the create form.
 - **`THIRD-PARTY-NOTICES.md` inventories shipped content**, not only dependencies — a new
   "Shipped content" section, generated from `licenses/content.json`.
+- **`data-store`, a specialization of `application-component`**, with its own attribute profile:
+  source of truth, consistency model, retention, backup and recovery. C4 counts a data store as a
+  container, so a component the model declares one is drawn with the cylinder notation. The shape
+  follows the declaration, not a keyword in the technology string.
+- **A grouping is drawn as a C4 group** — a boundary around the elements it holds, rather than an
+  element of its own. A group holds one level of abstraction, so members the level does not draw are
+  left out, and a group with no drawn members is not drawn at all.
+- **`_direction` on a generated C4 body**, `left_to_right` (the default) or `top_to_bottom`. Left to
+  right, orthogonal routing and a nested boundary together are a combination GraphViz cannot lay
+  out, and the direction is the one of the three a view can give up.
 
 ### Changed
 
@@ -53,6 +63,17 @@ whose twelve sections say what model content each one expects.
   1 context, 2 container, 3 component) and is `null` for a deployment view;
   `deployment_diagrams` and `subject_diagrams` name the other axis in each direction.
   `scope_entity_ids` and `scope_entity_names` accompany the singular fields.
+- **A sibling container is drawn with ordinary notation.** Zooming into one container puts the rest
+  of the same system outside the frame; the external marker is reserved for software the
+  architecture does not own.
+- **A dependency edge carries a label only where the label adds something.** Serving and association
+  were labelled "uses", which the arrow already says. Flow, triggering and access keep their verbs,
+  and an author's own `edge_labels` entry is used whatever the type.
+- **A C4 view collects a dependency on any part of another drawn element**, not only on that element
+  itself, and raises the edge onto the box standing for it. A container whose only relations run to
+  something nested inside a sibling used to be drawn with no edges at all.
+- **A drill-down badge on a container with several component views opens a menu.** Where a container
+  is documented one concern at a time, the badge offered no way to say which view was meant.
 
 ### Fixed
 
@@ -62,6 +83,16 @@ whose twelve sections say what model content each one expects.
 - **Promotion refuses a selection that would leave a required *document* or *diagram* reference
   dangling**, and names the artifact — as it already did for a required entity. The engagement and
   enterprise schema comparison also compares document-level terms, which it had never done.
+- **A diagram whose layout crashes is refused (E350) rather than written.** PlantUML draws some
+  layout failures into the picture and exits 0 with nothing on stderr, so the rendered SVG is now
+  read for them. Every write path reports the failure the same way; an edit used to answer
+  `valid: true` over a picture that was a stack trace, and the previous good render is kept either
+  way.
+- **No edge is drawn onto a C4 boundary.** A boundary is not an element and cannot be an endpoint of
+  a relationship, which holds for the scope wrapper, a group and an occupied deployment node alike.
+  The containment is still recorded; only the arrow is declined.
+- **A viewpoint result past the renderer's entity ceiling says so on screen**, with the counts and
+  what to use instead. The refusal reached the page as a generic failure message.
 
 ## [0.6.0] — 2026-08-16
 

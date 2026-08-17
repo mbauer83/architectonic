@@ -80,8 +80,15 @@ renders the same strategy layer as a heat map over each resource's modeled
 **6. Down to the running system.** The C4 progression describes the platform's own
 runtime, model-backed at every level:
 [System Context](http://localhost:8000/diagrams/CSC%401780829783.z8RRON.amp-system-context) →
-[Containers](http://localhost:8000/diagrams/CC%401780829785.Z_fI-N.amp-containers) →
-[Architecture Backend — Components](http://localhost:8000/diagrams/CC%401780829793.K3l46j.architecture-backend-components).
+[Containers](http://localhost:8000/diagrams/CC%401780829785.Z_fI-N.amp-containers) → the backend
+one concern at a time:
+[Write Path](http://localhost:8000/diagrams/CC%401786952709.BT0ZHFR.architecture-backend-write-path),
+[Read and Query Path](http://localhost:8000/diagrams/CC%401786972094.IZeGsvN.architecture-backend-read-and-query-path),
+[Scratchpad Authoring](http://localhost:8000/diagrams/CC%401786961496.l3LvPfT.architecture-backend-scratchpad-authoring),
+[Diagram Rendering](http://localhost:8000/diagrams/CC%401786961513.BTHvKLy.architecture-backend-diagram-rendering)
+and [Assurance Module](http://localhost:8000/diagrams/CC%401786961588.b0QXPS5.architecture-backend-assurance-module).
+Each derives its membership from a grouping in the model, so a component added to the model appears
+without the diagram being edited.
 
 <!-- media: docs/media/c4-context.png -->
 ![C4 system context for the Architecture Management Platform and its users and external systems](media/c4-context.png)
@@ -90,7 +97,7 @@ runtime, model-backed at every level:
 ![C4 container view of the Architecture Management Platform: the backend, the browser client, the command line and the MCP bridges, with the people and external systems around them](media/c4-containers.png)
 
 <!-- media: docs/media/c4-backend-components.png -->
-![C4 component view inside the architecture backend: the indexer, verifier, query engine, write pipeline and the adapters that expose them](media/c4-backend-components.png)
+![C4 component view of the architecture backend's write path: the MCP adapter, the write queue, the bulk handlers, the staged transaction manager, the operation registry and the model verifier, inside a Write Pipeline boundary](media/c4-backend-components.png)
 
 **7. And into its decisions.** From the
 [Architecture Backend](http://localhost:8000/entities/APP%401777293133.OYEmP1) entity,
