@@ -29,6 +29,9 @@ entity-ids-used:
 - DOB@1784532438.IU4RE4.security-signal-snapshot
 - DOB@1784532443.6ruT_G.security-posture-metrics
 - SRV@1712870400.e5MCiF.configuration-service
+- FNC@1784502389.EhfOy5.resolve-assurance-edge-endpoints
+- FNC@1784502392.wHsa2g.traverse-assurance-neighbor-graph
+- FNC@1784502400.xBRahY.serve-assurance-edge-catalog
 connection-ids-used:
 - APP@1780656430.m-U5S1.assurance-mcp-endpoint-adapter---DOB@1780656431.ApaPcg.assurance-knowledge-base@@archimate-access
 - APP@1780656431.E0fzqZ.confidential-assurance-store---DOB@1780656431.ApaPcg.assurance-knowledge-base@@archimate-access
@@ -53,6 +56,15 @@ connection-ids-used:
 - APP@1780656431.E0fzqZ---APP@1780656431.GnsLC8@@archimate-serving
 - FNC@1780656241.3xVBUQ---SRV@1712870400.e5MCiF@@archimate-association
 - FNC@1780656241.z9Ac33---DOB@1780656431.H-xFye@@archimate-access
+- APP@1782080485.uTC8zx---APP@1780656430.m-U5S1@@archimate-serving
+- APP@1782080485.uTC8zx---APP@1780656431.e2zPs6@@archimate-serving
+- APP@1782080489.XWVKAX---FNC@1784502389.EhfOy5@@archimate-association
+- APP@1782080489.XWVKAX---FNC@1784502392.wHsa2g@@archimate-association
+- FNC@1780656241.0hyhf0---DOB@1780656431.p04R7k@@archimate-access
+- FNC@1782080495.afm5YF---DOB@1780656431.ApaPcg@@archimate-access
+- FNC@1784502389.EhfOy5---DOB@1780656431.ApaPcg@@archimate-access
+- FNC@1784502392.wHsa2g---DOB@1780656431.ApaPcg@@archimate-access
+- FNC@1784532421.PILDZV---DOB@1780656431.p04R7k@@archimate-access
 diagram-entities: {}
 bindings:
 - id: bind-scope
@@ -61,7 +73,7 @@ bindings:
   correspondence_kind: scoped-by
   target:
     entity_id: GRP@1780819145.rW_2nX.assurance-module
-last-updated: '2026-08-15T18:39:47Z'
+last-updated: '2026-08-17T13:41:59Z'
 ---
 @startuml assurance-module---components
 !include <C4/C4_Component>
@@ -75,56 +87,61 @@ skinparam maxMessageSize 240
 title Assurance Module — Components
 
 System_Boundary(GRP_rW_2nX, "Assurance Module") {
+  Component(APP_m_U5S1, "Assurance MCP Endpoint Adapter", "")
   Component(APP_E0fzqZ, "Confidential Assurance Store", "")
   Component(APP_GnsLC8, "Assurance Archive", "")
   Component(APP_XFD85E, "Assurance Verifier", "")
   Component(APP_e2zPs6, "Supply-Chain & Vulnerability Connector", "")
+  Component(APP_uTC8zx, "Assurance Write Queue", "")
+  Component(APP_XWVKAX, "Assurance Read Connection Pool", "")
   Component(DOB_ApaPcg, "Assurance Knowledge Base", "")
   Component(DOB_dRnK_o, "Bill of Materials", "")
   Component(DOB_p04R7k, "Security Signals Store", "")
+  Component(FNC_EhfOy5, "Resolve Assurance Edge Endpoints", "")
+  Component(FNC_wHsa2g, "Traverse Assurance Neighbor Graph", "")
+  Component(FNC_xBRahY, "Serve Assurance Edge Catalog", "")
+  APP_m_U5S1 -[hidden]right- APP_E0fzqZ
   APP_E0fzqZ -[hidden]right- APP_GnsLC8
   APP_GnsLC8 -[hidden]right- APP_XFD85E
   APP_XFD85E -[hidden]right- APP_e2zPs6
-  APP_e2zPs6 -[hidden]right- DOB_ApaPcg
+  APP_e2zPs6 -[hidden]right- APP_uTC8zx
+  APP_uTC8zx -[hidden]right- APP_XWVKAX
+  APP_XWVKAX -[hidden]right- DOB_ApaPcg
   DOB_ApaPcg -[hidden]right- DOB_dRnK_o
   DOB_dRnK_o -[hidden]right- DOB_p04R7k
+  DOB_p04R7k -[hidden]right- FNC_EhfOy5
+  FNC_EhfOy5 -[hidden]right- FNC_wHsa2g
+  FNC_wHsa2g -[hidden]right- FNC_xBRahY
 
 }
 
-System_Ext(APP_lmO0mp, "GUI Authoring Tool")
-System_Ext(APP_m_U5S1, "Assurance MCP Endpoint Adapter")
+Container(APP_lmO0mp, "GUI Authoring Tool", "TypeScript, Vue")
 System_Ext(APP_JqIBPJ, "Supply-Chain Signal Sources")
-System_Ext(APP_uTC8zx, "Assurance Write Queue")
-System_Ext(APP_XWVKAX, "Assurance Read Connection Pool")
-System_Ext(APP_KqDjXG, "Unified Assurance Diagram Surface")
-System_Ext(APP_OZbaBh, "Repository Upgrade Framework")
-System_Ext(DOB_H_xFye, "Assurance Audit Log")
-System_Ext(DOB_IU4RE4, "Security Signal Snapshot")
-System_Ext(DOB_6ruT_G, "Security Posture Metrics")
-
-GRP_rW_2nX -[hidden]right- APP_lmO0mp
-APP_lmO0mp -[hidden]right- APP_m_U5S1
-APP_m_U5S1 -[hidden]right- APP_JqIBPJ
-APP_JqIBPJ -[hidden]right- APP_uTC8zx
-APP_uTC8zx -[hidden]right- APP_XWVKAX
-APP_XWVKAX -[hidden]right- APP_KqDjXG
-APP_KqDjXG -[hidden]right- APP_OZbaBh
-APP_OZbaBh -[hidden]right- DOB_H_xFye
-DOB_H_xFye -[hidden]right- DOB_IU4RE4
-DOB_IU4RE4 -[hidden]right- DOB_6ruT_G
-
+Component(APP_KqDjXG, "Unified Assurance Diagram Surface", "")
+Component(APP_OZbaBh, "Repository Upgrade Framework", "")
 
 APP_m_U5S1 --> DOB_ApaPcg : accesses
-APP_GnsLC8 --> APP_E0fzqZ : uses
+APP_GnsLC8 --> APP_E0fzqZ
 APP_E0fzqZ --> DOB_ApaPcg : accesses
-APP_GnsLC8 --> DOB_H_xFye : accesses
 APP_XFD85E --> DOB_ApaPcg : accesses
 APP_e2zPs6 --> DOB_dRnK_o : accesses
 APP_e2zPs6 --> DOB_p04R7k : accesses
-APP_e2zPs6 --> APP_JqIBPJ : uses
+APP_e2zPs6 --> APP_JqIBPJ
+APP_m_U5S1 --> APP_uTC8zx
+APP_e2zPs6 --> APP_uTC8zx
 APP_uTC8zx --> DOB_ApaPcg : accesses
 APP_XWVKAX --> DOB_ApaPcg : accesses
+APP_XWVKAX --> FNC_EhfOy5
+APP_XWVKAX --> FNC_wHsa2g
 APP_KqDjXG --> DOB_ApaPcg : accesses
 APP_OZbaBh --> DOB_ApaPcg : accesses
 APP_OZbaBh --> DOB_p04R7k : accesses
+FNC_EhfOy5 --> DOB_ApaPcg : accesses
+FNC_wHsa2g --> DOB_ApaPcg : accesses
+APP_lmO0mp --> APP_e2zPs6
+
+APP_lmO0mp -[hidden]right- APP_JqIBPJ
+APP_JqIBPJ -[hidden]right- APP_KqDjXG
+APP_KqDjXG -[hidden]right- APP_OZbaBh
+
 @enduml

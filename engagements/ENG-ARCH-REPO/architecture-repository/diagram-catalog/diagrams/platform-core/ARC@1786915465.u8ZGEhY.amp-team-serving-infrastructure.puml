@@ -1,0 +1,163 @@
+---
+artifact-id: ARC@1786915465.u8ZGEhY.amp-team-serving-infrastructure
+artifact-type: diagram
+name: "AMP \u2014 Team-Serving Infrastructure"
+version: 0.1.0
+status: draft
+keywords:
+- technology
+- deployment
+- volumes
+- profiles
+diagram-type: archimate-technology
+entity-ids-used:
+- NOD@1782080479.7xNYBF.team-serving-deployment
+- NOD@1786915205.Yx71j_C.app-container
+- ART@1786912186.j7ySGgZ.architectonic-container-image
+- TIF@1786915451.cpBZx0u.platform-http-endpoint
+- NOD@1786915451.THkLB12.repository-data-volume
+- NOD@1786915451.pVqArvF.assurance-store-volume
+- NOD@1786915451.l1ntGpZ.backend-state-volume
+- NOD@1786915451.IwBEhEm.credential-vault-volume
+- NOD@1786915451.yVcsZO4.tls-reverse-proxy
+- SSW@1780656477.kIOyT2.pocketbase
+- ART@1712870400.YsLpM8.git-repository
+- ART@1780656477.tkNvK_.encrypted-assurance-database
+connection-ids-used:
+- NOD@1786915451.THkLB12---ART@1712870400.YsLpM8@@archimate-aggregation
+- NOD@1786915451.pVqArvF---ART@1780656477.tkNvK_@@archimate-aggregation
+- NOD@1786915205.Yx71j_C---ART@1786912186.j7ySGgZ@@archimate-aggregation
+- NOD@1782080479.7xNYBF---NOD@1786915205.Yx71j_C@@archimate-composition
+- NOD@1782080479.7xNYBF---NOD@1786915451.IwBEhEm@@archimate-composition
+- NOD@1782080479.7xNYBF---NOD@1786915451.THkLB12@@archimate-composition
+- NOD@1782080479.7xNYBF---NOD@1786915451.l1ntGpZ@@archimate-composition
+- NOD@1782080479.7xNYBF---NOD@1786915451.pVqArvF@@archimate-composition
+- NOD@1782080479.7xNYBF---NOD@1786915451.yVcsZO4@@archimate-composition
+- NOD@1782080479.7xNYBF---SSW@1780656477.kIOyT2@@archimate-aggregation
+- NOD@1786915205.Yx71j_C---TIF@1786915451.cpBZx0u@@archimate-composition
+- NOD@1786915451.yVcsZO4---TIF@1786915451.cpBZx0u@@archimate-association
+last-updated: '2026-08-16T21:24:25Z'
+---
+@startuml amp---team-serving-infrastructure
+hide stereotype
+
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 12
+skinparam shadowing false
+skinparam roundcorner 4
+skinparam backgroundColor #FAFAFA
+skinparam defaultTextAlignment center
+
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 80
+!define Rel_Access(from, to, label) from -[dotted]-> to
+!define Rel_Access_Up(from, to, label) from -[dotted]up-> to
+!define Rel_Access_Down(from, to, label) from -[dotted]down-> to
+!define Rel_Access_Left(from, to, label) from -[dotted]left-> to
+!define Rel_Access_Right(from, to, label) from -[dotted]right-> to
+!define Rel_Aggregation(from, to, label) from o-- to
+!define Rel_Aggregation_Up(from, to, label) from o-up- to
+!define Rel_Aggregation_Down(from, to, label) from o-down- to
+!define Rel_Aggregation_Left(from, to, label) from o-left- to
+!define Rel_Aggregation_Right(from, to, label) from o-right- to
+!define Rel_Assignment(from, to, label) from --> to
+!define Rel_Assignment_Up(from, to, label) from -up-> to
+!define Rel_Assignment_Down(from, to, label) from -down-> to
+!define Rel_Assignment_Left(from, to, label) from -left-> to
+!define Rel_Assignment_Right(from, to, label) from -right-> to
+!define Rel_Association(from, to, label) from -- to
+!define Rel_Association_Up(from, to, label) from -up- to
+!define Rel_Association_Down(from, to, label) from -down- to
+!define Rel_Association_Left(from, to, label) from -left- to
+!define Rel_Association_Right(from, to, label) from -right- to
+!define Rel_Composition(from, to, label) from *-- to
+!define Rel_Composition_Up(from, to, label) from *-up- to
+!define Rel_Composition_Down(from, to, label) from *-down- to
+!define Rel_Composition_Left(from, to, label) from *-left- to
+!define Rel_Composition_Right(from, to, label) from *-right- to
+!define Rel_Flow(from, to, label) from ..> to
+!define Rel_Flow_Up(from, to, label) from .up.> to
+!define Rel_Flow_Down(from, to, label) from .down.> to
+!define Rel_Flow_Left(from, to, label) from .left.> to
+!define Rel_Flow_Right(from, to, label) from .right.> to
+!define Rel_Influence(from, to, label) from ..> to
+!define Rel_Influence_Up(from, to, label) from .up.> to
+!define Rel_Influence_Down(from, to, label) from .down.> to
+!define Rel_Influence_Left(from, to, label) from .left.> to
+!define Rel_Influence_Right(from, to, label) from .right.> to
+!define Rel_Realization(from, to, label) from ..|> to
+!define Rel_Realization_Up(from, to, label) from .up.|> to
+!define Rel_Realization_Down(from, to, label) from .down.|> to
+!define Rel_Realization_Left(from, to, label) from .left.|> to
+!define Rel_Realization_Right(from, to, label) from .right.|> to
+!define Rel_Serving(from, to, label) from --> to
+!define Rel_Serving_Up(from, to, label) from -up-> to
+!define Rel_Serving_Down(from, to, label) from -down-> to
+!define Rel_Serving_Left(from, to, label) from -left-> to
+!define Rel_Serving_Right(from, to, label) from -right-> to
+!define Rel_Specialization(from, to, label) from --|> to
+!define Rel_Specialization_Up(from, to, label) from -up-|> to
+!define Rel_Specialization_Down(from, to, label) from -down-|> to
+!define Rel_Specialization_Left(from, to, label) from -left-|> to
+!define Rel_Specialization_Right(from, to, label) from -right-|> to
+!define Rel_Triggering(from, to, label) from --> to
+!define Rel_Triggering_Up(from, to, label) from -up-> to
+!define Rel_Triggering_Down(from, to, label) from -down-> to
+!define Rel_Triggering_Left(from, to, label) from -left-> to
+!define Rel_Triggering_Right(from, to, label) from -right-> to
+skinparam rectangle<<artifact>> {
+  BackgroundColor #BCD9AE
+  BorderColor #384134
+}
+skinparam rectangle<<system_software>> {
+  BackgroundColor #BCD9AE
+  BorderColor #384134
+}
+skinparam rectangle<<technology_interface>> {
+  BackgroundColor #BCD9AE
+  BorderColor #384134
+}
+skinparam rectangle<<technology_node>> {
+  BackgroundColor #BCD9AE
+  BorderColor #384134
+}
+sprite $archimate_artifact <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M4 3.5h5.8l2.2 2.2v6.8H4z"  fill="#252327" stroke="none"/><path d="M9.15 3.50v2.20h1.30V3.50z" fill="#252327"/><path d="M9.80 5.05h2.20v1.30H9.80z" fill="#252327"/></svg>
+sprite $archimate_system_software <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="7.2" cy="8" r="3.3"  fill="none" stroke="#252327" stroke-width="1.3"/><circle cx="9.8" cy="8.8" r="3.3"  fill="none" stroke="#252327" stroke-width="1.3"/></svg>
+sprite $archimate_technology_interface <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.80 7.35h3.60v1.30H2.80z" fill="#252327"/><circle cx="9.6" cy="8" r="3.4"  fill="none" stroke="#252327" stroke-width="1.3"/></svg>
+sprite $archimate_technology_node <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M4 4.6h6.8v6.6H4z"  fill="#252327" stroke="none"/><path d="M10.37 5.08L11.23 4.12L13.23 5.92L12.37 6.88z" fill="#252327"/><path d="M12.15 6.40v6.60h1.30V6.40z" fill="#252327"/><path d="M12.37 12.52L13.23 13.48L11.23 15.28L10.37 14.32z" fill="#252327"/><path d="M3.57 11.68L4.43 10.72L6.43 12.52L5.57 13.48z" fill="#252327"/><path d="M6.00 12.35h6.80v1.30H6.00z" fill="#252327"/><path d="M10.15 4.60v6.60h1.30V4.60z" fill="#252327"/></svg>
+skinparam wrapWidth 240
+top to bottom direction
+
+skinparam maxMessageSize 240
+
+title AMP — Team-Serving Infrastructure
+
+rectangle "<$archimate_technology_node{scale=1.2}> Team-Serving Deployment" <<technology_node>> as NOD_7xNYBF {
+  rectangle "<$archimate_technology_node{scale=1.2}> App Container" <<technology_node>> as NOD_Yx71j_C {
+    rectangle "<$archimate_artifact{scale=1.2}> Architectonic Container Image" <<artifact>> as ART_j7ySGgZ
+    rectangle "<$archimate_technology_interface{scale=1.2}> Platform HTTP Endpoint" <<technology_interface>> as TIF_cpBZx0u
+    ART_j7ySGgZ -[hidden]down- TIF_cpBZx0u
+  }
+  rectangle "<$archimate_technology_node{scale=1.2}> Repository Data Volume" <<technology_node>> as NOD_THkLB12 {
+    rectangle "<$archimate_artifact{scale=1.2}> Git Repository" <<artifact>> as ART_YsLpM8
+  }
+  rectangle "<$archimate_technology_node{scale=1.2}> Assurance Store Volume" <<technology_node>> as NOD_pVqArvF {
+    rectangle "<$archimate_artifact{scale=1.2}> Encrypted Assurance Database" <<artifact>> as ART_tkNvK_
+  }
+  rectangle "<$archimate_technology_node{scale=1.2}> Backend State Volume" <<technology_node>> as NOD_l1ntGpZ
+  rectangle "<$archimate_technology_node{scale=1.2}> Credential Vault Volume" <<technology_node>> as NOD_IwBEhEm
+  rectangle "<$archimate_technology_node{scale=1.2}> TLS Reverse Proxy" <<technology_node>> as NOD_yVcsZO4
+  rectangle "<$archimate_system_software{scale=1.2}> PocketBase" <<system_software>> as SSW_kIOyT2
+  NOD_Yx71j_C -[hidden]right- NOD_THkLB12
+  NOD_THkLB12 -[hidden]right- NOD_pVqArvF
+  NOD_pVqArvF -[hidden]right- NOD_l1ntGpZ
+  NOD_IwBEhEm -[hidden]right- NOD_yVcsZO4
+  NOD_yVcsZO4 -[hidden]right- SSW_kIOyT2
+  NOD_Yx71j_C -[hidden]down- NOD_IwBEhEm
+}
+
+' Connections
+NOD_yVcsZO4 -- TIF_cpBZx0u
+
+@enduml

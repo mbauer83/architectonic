@@ -1,0 +1,135 @@
+---
+artifact-id: CC@1786961496.l3LvPfT.architecture-backend-scratchpad-authoring
+artifact-type: diagram
+name: "Architecture Backend \u2014 Scratchpad Authoring"
+version: 0.1.0
+status: draft
+keywords:
+- c4
+- component
+- scratchpad
+- backend
+diagram-type: c4-component
+entity-ids-used:
+- APP@1777293133.OYEmP1.architecture-backend
+- APP@1786225304.7RbfkON.scratchpad-repository
+- APP@1786225304.SpexYvB.scratchpad-service
+- APP@1786225304._WMG8gv.scratchpad-lift-executor
+- APP@1786225304.q6wT1kq.scratchpad-link-verifier
+- GRP@1786958823.tuxSuXN.scratchpad-authoring
+- APP@1712870400.yNhgdh.module-catalog
+connection-ids-used:
+- APP@1712870400.JOmFWy---APP@1777293133.OYEmP1@@archimate-serving
+- APP@1712870400.YOOEbL---APP@1777293133.OYEmP1@@archimate-serving
+- APP@1712870400.ca3vm7---APP@1777293133.OYEmP1@@archimate-serving
+- APP@1712870400.v9LvfK---APP@1777293133.OYEmP1@@archimate-serving
+- APP@1712870400.yNhgdh---APP@1777293133.OYEmP1@@archimate-serving
+- APP@1712870400.yNhgdh---APP@1786225304.SpexYvB@@archimate-serving
+- APP@1712870400.yNhgdh---APP@1786225304.q6wT1kq@@archimate-serving
+- APP@1777293133.OYEmP1---APP@1776149382.lmO0mp@@archimate-serving
+- APP@1777293133.OYEmP1---APP@1780783708.Ne0utf@@archimate-serving
+- APP@1777293133.OYEmP1---APP@1780783709.etTj9M@@archimate-serving
+- APP@1777293133.OYEmP1---APP@1780783710.iu_kKL@@archimate-serving
+- APP@1777293133.OYEmP1---APP@1780783711.js9xHR@@archimate-serving
+- APP@1780783992.Je9pmw---APP@1777293133.OYEmP1@@archimate-serving
+- APP@1780783993.JqIBPJ---APP@1777293133.OYEmP1@@archimate-serving
+- APP@1786225304.7RbfkON---APP@1786225304.SpexYvB@@archimate-serving
+- APP@1786225304.SpexYvB---APP@1786225304.HgIA072@@archimate-serving
+- APP@1786225304._WMG8gv---APP@1786225304.SpexYvB@@archimate-serving
+- APP@1786225304.q6wT1kq---APP@1786225304.SpexYvB@@archimate-serving
+- APP@1712870400.JOmFWy---APP@1712870400.yNhgdh@@archimate-serving
+- APP@1712870400.ca3vm7---APP@1712870400.yNhgdh@@archimate-serving
+- APP@1712870400.yNhgdh---APP@1786793392.Ir9SkCr@@archimate-serving
+diagram-entities: {}
+connections: []
+view_derivations:
+- id: vp-scratchpad
+  strategy: viewpoint_execution
+  strategy_version: 1
+  source_model_snapshot:
+    repo_scope: both
+    root_entity_id: APP@1777293133.OYEmP1.architecture-backend
+  parameters:
+    repo_roots:
+    - /home/mb/workspace/architectonic/engagements/ENG-ARCH-REPO/architecture-repository
+    query:
+      query_schema: 1
+      entity_criteria:
+        kind: group
+        conjunction: and
+        children:
+        - kind: condition
+          attribute: id
+          comparator: eq
+          value: GRP@1786958823.tuxSuXN.scratchpad-authoring
+      include_connected:
+      - direction: outgoing
+        connection_criteria:
+          kind: group
+          conjunction: and
+          children:
+          - kind: condition
+            attribute: type
+            comparator: in
+            value:
+            - archimate-aggregation
+            - archimate-composition
+      - direction: incoming
+        connection_criteria:
+          kind: group
+          conjunction: and
+          children:
+          - kind: condition
+            attribute: type
+            comparator: eq
+            value: archimate-serving
+  selection:
+    included_entity_ids:
+    - GRP@1786958823.tuxSuXN.scratchpad-authoring
+    - APP@1786225304.SpexYvB.scratchpad-service
+    - APP@1786225304.7RbfkON.scratchpad-repository
+    - APP@1786225304._WMG8gv.scratchpad-lift-executor
+    - APP@1786225304.q6wT1kq.scratchpad-link-verifier
+    - APP@1712870400.yNhgdh.module-catalog
+bindings:
+- id: bind-scope
+  subject:
+    kind: diagram
+  correspondence_kind: scoped-by
+  target:
+    entity_id: APP@1777293133.OYEmP1.architecture-backend
+last-updated: '2026-08-17T12:18:01Z'
+---
+@startuml architecture-backend---scratchpad-authoring
+!include <C4/C4_Component>
+left to right direction
+skinparam shadowing false
+skinparam linetype ortho
+skinparam defaultTextAlignment center
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
+
+title Architecture Backend — Scratchpad Authoring
+
+System_Boundary(APP_OYEmP1, "Architecture Backend") {
+  Component(APP_yNhgdh, "Module Catalog", "")
+  Boundary(GRP_tuxSuXN, "Scratchpad Authoring", "group") {
+    Component(APP_7RbfkON, "Scratchpad Repository", "")
+    Component(APP_SpexYvB, "Scratchpad Service", "")
+    Component(APP__WMG8gv, "Scratchpad Lift Executor", "")
+    Component(APP_q6wT1kq, "Scratchpad Link Verifier", "")
+    APP_7RbfkON -[hidden]right- APP_SpexYvB
+    APP_SpexYvB -[hidden]right- APP__WMG8gv
+    APP__WMG8gv -[hidden]right- APP_q6wT1kq
+
+  }
+  APP_yNhgdh -[hidden]right- GRP_tuxSuXN
+
+}
+
+APP_SpexYvB --> APP_yNhgdh
+APP_q6wT1kq --> APP_yNhgdh
+APP_SpexYvB --> APP_7RbfkON
+APP_SpexYvB --> APP__WMG8gv
+APP_SpexYvB --> APP_q6wT1kq
+@enduml

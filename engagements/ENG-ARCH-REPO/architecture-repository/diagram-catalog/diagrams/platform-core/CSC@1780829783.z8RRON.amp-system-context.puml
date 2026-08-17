@@ -82,7 +82,7 @@ bindings:
   correspondence_kind: scoped-by
   target:
     entity_id: APP@1780783671.hkrdtm.architecture-management-platform
-last-updated: '2026-08-15T19:49:52Z'
+last-updated: '2026-08-17T06:17:36Z'
 ---
 @startuml amp---system-context
 !include <C4/C4_Component>
@@ -97,18 +97,30 @@ title AMP — System Context
 
 System(APP_hkrdtm, "Architecture Management Platform")
 
-Person_Ext(ACT_Nn7Oo7, "Architect")
-Person_Ext(ACT_OLWiNc, "DevOps Engineer")
-Person_Ext(ACT_Pp8Qq8, "Developer")
-Person_Ext(ACT_Rr9Ss9, "Product Owner")
-Person_Ext(ACT_Ut1Vv1, "Upper Technical Management")
+Person(ACT_Nn7Oo7, "Architect")
+Person(ACT_OLWiNc, "DevOps Engineer")
+Person(ACT_Pp8Qq8, "Developer")
+Person(ACT_Rr9Ss9, "Product Owner")
+Person(ACT_Ut1Vv1, "Upper Technical Management")
 System_Ext(APP_v6AXNw, "AI Agent Host")
 System_Ext(APP_Je9pmw, "Git Hosting")
 System_Ext(APP_JqIBPJ, "Supply-Chain Signal Sources")
-System_Ext(APP_AeU7V3, "Identifier Allocation Service")
-Person_Ext(ROL_udXPfB, "AI Agent")
-Person_Ext(ROL_abNYhO, "Risk & Compliance Officer")
-Person_Ext(ROL_yswDMB, "Safety / Security Analyst")
+Person(ROL_udXPfB, "AI Agent")
+Person(ROL_abNYhO, "Risk & Compliance Officer")
+Person(ROL_yswDMB, "Safety / Security Analyst")
+
+ACT_Nn7Oo7 --> APP_hkrdtm
+ACT_OLWiNc --> APP_hkrdtm
+ACT_Pp8Qq8 --> APP_hkrdtm
+ACT_Rr9Ss9 --> APP_hkrdtm
+ACT_Ut1Vv1 --> APP_hkrdtm
+ROL_udXPfB --> APP_hkrdtm
+APP_v6AXNw --> APP_hkrdtm
+APP_hkrdtm --> APP_Je9pmw
+APP_hkrdtm --> APP_JqIBPJ
+ROL_abNYhO --> APP_hkrdtm
+ROL_yswDMB --> APP_hkrdtm
+
 
 ACT_Nn7Oo7 -[hidden]right- ACT_OLWiNc
 ACT_OLWiNc -[hidden]right- ACT_Pp8Qq8
@@ -117,23 +129,8 @@ ACT_Rr9Ss9 -[hidden]right- ACT_Ut1Vv1
 ACT_Ut1Vv1 -[hidden]right- ROL_udXPfB
 ROL_udXPfB -[hidden]right- ROL_abNYhO
 ROL_abNYhO -[hidden]right- ROL_yswDMB
-ROL_yswDMB -[hidden]right- APP_hkrdtm
-APP_hkrdtm -[hidden]right- APP_v6AXNw
+
 APP_v6AXNw -[hidden]right- APP_Je9pmw
 APP_Je9pmw -[hidden]right- APP_JqIBPJ
-APP_JqIBPJ -[hidden]right- APP_AeU7V3
 
-
-ACT_Nn7Oo7 --> APP_hkrdtm : uses
-ACT_OLWiNc --> APP_hkrdtm : uses
-ACT_Pp8Qq8 --> APP_hkrdtm : uses
-ACT_Rr9Ss9 --> APP_hkrdtm : uses
-ACT_Ut1Vv1 --> APP_hkrdtm : uses
-ROL_udXPfB --> APP_hkrdtm : uses
-APP_v6AXNw --> APP_hkrdtm : uses
-APP_hkrdtm --> APP_Je9pmw : uses
-APP_hkrdtm --> APP_JqIBPJ : uses
-APP_hkrdtm --> APP_AeU7V3 : uses
-ROL_abNYhO --> APP_hkrdtm : uses
-ROL_yswDMB --> APP_hkrdtm : uses
 @enduml

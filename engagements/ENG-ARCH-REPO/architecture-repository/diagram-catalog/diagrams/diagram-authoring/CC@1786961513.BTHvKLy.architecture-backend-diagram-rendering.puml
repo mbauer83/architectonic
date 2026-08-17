@@ -1,0 +1,116 @@
+---
+artifact-id: CC@1786961513.BTHvKLy.architecture-backend-diagram-rendering
+artifact-type: diagram
+name: "Architecture Backend \u2014 Diagram Rendering"
+version: 0.1.0
+status: draft
+keywords:
+- c4
+- component
+- diagram
+- rendering
+diagram-type: c4-component
+entity-ids-used:
+- APP@1776633697.SCKD2U.diagram-scaffolder
+- APP@1777293133.OYEmP1.architecture-backend
+- APP@1777293136.yaxrWl.plantuml-renderer
+- GRP@1786958823.e0vtbVx.diagram-rendering
+- APP@1781976554.AeU7V3.identifier-allocation-service
+connection-ids-used:
+- APP@1712870400.JOmFWy---APP@1777293133.OYEmP1@@archimate-serving
+- APP@1712870400.YOOEbL---APP@1777293133.OYEmP1@@archimate-serving
+- APP@1712870400.ca3vm7---APP@1777293133.OYEmP1@@archimate-serving
+- APP@1712870400.v9LvfK---APP@1777293133.OYEmP1@@archimate-serving
+- APP@1712870400.yNhgdh---APP@1777293133.OYEmP1@@archimate-serving
+- APP@1777293133.OYEmP1---APP@1776149382.lmO0mp@@archimate-serving
+- APP@1777293133.OYEmP1---APP@1780783708.Ne0utf@@archimate-serving
+- APP@1777293133.OYEmP1---APP@1780783709.etTj9M@@archimate-serving
+- APP@1777293133.OYEmP1---APP@1780783710.iu_kKL@@archimate-serving
+- APP@1777293133.OYEmP1---APP@1780783711.js9xHR@@archimate-serving
+- APP@1777293136.yaxrWl---APP@1782080499.KqDjXG@@archimate-serving
+- APP@1780783992.Je9pmw---APP@1777293133.OYEmP1@@archimate-serving
+- APP@1780783993.JqIBPJ---APP@1777293133.OYEmP1@@archimate-serving
+- APP@1781976554.AeU7V3---APP@1776633697.SCKD2U@@archimate-serving
+diagram-entities: {}
+connections: []
+view_derivations:
+- id: vp-diagram-rendering
+  strategy: viewpoint_execution
+  strategy_version: 1
+  source_model_snapshot:
+    repo_scope: both
+    root_entity_id: APP@1777293133.OYEmP1.architecture-backend
+  parameters:
+    repo_roots:
+    - /home/mb/workspace/architectonic/engagements/ENG-ARCH-REPO/architecture-repository
+    query:
+      query_schema: 1
+      entity_criteria:
+        kind: group
+        conjunction: and
+        children:
+        - kind: condition
+          attribute: id
+          comparator: eq
+          value: GRP@1786958823.e0vtbVx.diagram-rendering
+      include_connected:
+      - direction: outgoing
+        connection_criteria:
+          kind: group
+          conjunction: and
+          children:
+          - kind: condition
+            attribute: type
+            comparator: in
+            value:
+            - archimate-aggregation
+            - archimate-composition
+      - direction: incoming
+        connection_criteria:
+          kind: group
+          conjunction: and
+          children:
+          - kind: condition
+            attribute: type
+            comparator: eq
+            value: archimate-serving
+  selection:
+    included_entity_ids:
+    - GRP@1786958823.e0vtbVx.diagram-rendering
+    - APP@1777293136.yaxrWl.plantuml-renderer
+    - APP@1776633697.SCKD2U.diagram-scaffolder
+    - APP@1781976554.AeU7V3.identifier-allocation-service
+bindings:
+- id: bind-scope
+  subject:
+    kind: diagram
+  correspondence_kind: scoped-by
+  target:
+    entity_id: APP@1777293133.OYEmP1.architecture-backend
+last-updated: '2026-08-17T12:18:17Z'
+---
+@startuml architecture-backend---diagram-rendering
+!include <C4/C4_Component>
+left to right direction
+skinparam shadowing false
+skinparam linetype ortho
+skinparam defaultTextAlignment center
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
+
+title Architecture Backend — Diagram Rendering
+
+System_Boundary(APP_OYEmP1, "Architecture Backend") {
+  Component(APP_AeU7V3, "Identifier Allocation Service", "")
+  Boundary(GRP_e0vtbVx, "Diagram Rendering", "group") {
+    Component(APP_SCKD2U, "Diagram Scaffolder", "")
+    Component(APP_yaxrWl, "PlantUML Renderer", "")
+    APP_SCKD2U -[hidden]right- APP_yaxrWl
+
+  }
+  APP_AeU7V3 -[hidden]right- GRP_e0vtbVx
+
+}
+
+APP_SCKD2U --> APP_AeU7V3
+@enduml

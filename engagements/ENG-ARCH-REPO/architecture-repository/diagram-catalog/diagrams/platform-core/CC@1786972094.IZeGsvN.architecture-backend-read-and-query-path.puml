@@ -1,0 +1,151 @@
+---
+artifact-id: CC@1786972094.IZeGsvN.architecture-backend-read-and-query-path
+artifact-type: diagram
+name: "Architecture Backend \u2014 Read and Query Path"
+version: 0.1.0
+status: draft
+keywords:
+- c4
+- component
+- read
+- query
+- backend
+diagram-type: c4-component
+entity-ids-used:
+- APP@1712870400.JOmFWy.sqlite-indexer
+- APP@1712870400.YOOEbL.frontmatter-parser
+- APP@1712870400.v9LvfK.query-engine
+- APP@1712870400.yNhgdh.module-catalog
+- APP@1777293133.OYEmP1.architecture-backend
+- APP@1786967678.R_K3YAQ.artifact-index-store
+- APP@1786967678.fvvCoDp.artifact-file-store
+- FNC@1783266393.4zLFys.compose-combined-scope-read
+- GRP@1786958823.ZYckdqy.read-query-engine
+connection-ids-used:
+- APP@1712870400.JOmFWy---APP@1712870400.yNhgdh@@archimate-serving
+- APP@1712870400.JOmFWy---APP@1777293133.OYEmP1@@archimate-serving
+- APP@1712870400.JOmFWy---APP@1786793392.Ir9SkCr@@archimate-serving
+- APP@1712870400.YOOEbL---APP@1777293133.OYEmP1@@archimate-serving
+- APP@1712870400.YOOEbL---APP@1786793392.Ir9SkCr@@archimate-serving
+- APP@1712870400.ca3vm7---APP@1712870400.YOOEbL@@archimate-serving
+- APP@1712870400.ca3vm7---APP@1712870400.yNhgdh@@archimate-serving
+- APP@1712870400.ca3vm7---APP@1777293133.OYEmP1@@archimate-serving
+- APP@1712870400.v9LvfK---APP@1776149382.lmO0mp@@archimate-serving
+- APP@1712870400.v9LvfK---APP@1777293133.OYEmP1@@archimate-serving
+- APP@1712870400.v9LvfK---APP@1786793392.Ir9SkCr@@archimate-serving
+- APP@1712870400.yNhgdh---APP@1777293133.OYEmP1@@archimate-serving
+- APP@1712870400.yNhgdh---APP@1786225304.SpexYvB@@archimate-serving
+- APP@1712870400.yNhgdh---APP@1786225304.q6wT1kq@@archimate-serving
+- APP@1712870400.yNhgdh---APP@1786793392.Ir9SkCr@@archimate-serving
+- APP@1777293133.OYEmP1---APP@1776149382.lmO0mp@@archimate-serving
+- APP@1777293133.OYEmP1---APP@1780783708.Ne0utf@@archimate-serving
+- APP@1777293133.OYEmP1---APP@1780783709.etTj9M@@archimate-serving
+- APP@1777293133.OYEmP1---APP@1780783710.iu_kKL@@archimate-serving
+- APP@1777293133.OYEmP1---APP@1780783711.js9xHR@@archimate-serving
+- APP@1780783992.Je9pmw---APP@1777293133.OYEmP1@@archimate-serving
+- APP@1780783993.JqIBPJ---APP@1777293133.OYEmP1@@archimate-serving
+- APP@1786967678.R_K3YAQ---APP@1712870400.JOmFWy@@archimate-serving
+- APP@1786967678.R_K3YAQ---APP@1712870400.v9LvfK@@archimate-serving
+- APP@1786967678.fvvCoDp---APP@1712870400.JOmFWy@@archimate-serving
+- APP@1786967678.fvvCoDp---APP@1777293134.tY3JIK@@archimate-serving
+- APP@1786967678.fvvCoDp---APP@1777399925.HOOYAQ@@archimate-serving
+diagram-entities: {}
+connections: []
+view_derivations:
+- id: vp-read-query
+  strategy: viewpoint_execution
+  strategy_version: 1
+  source_model_snapshot:
+    repo_scope: both
+    root_entity_id: APP@1777293133.OYEmP1.architecture-backend
+  parameters:
+    repo_roots:
+    - /home/mb/workspace/architectonic/engagements/ENG-ARCH-REPO/architecture-repository
+    query:
+      query_schema: 1
+      entity_criteria:
+        kind: group
+        conjunction: and
+        children:
+        - kind: condition
+          attribute: id
+          comparator: eq
+          value: GRP@1786958823.ZYckdqy.read-query-engine
+      include_connected:
+      - direction: outgoing
+        connection_criteria:
+          kind: group
+          conjunction: and
+          children:
+          - kind: condition
+            attribute: type
+            comparator: in
+            value:
+            - archimate-aggregation
+            - archimate-composition
+      - direction: incoming
+        connection_criteria:
+          kind: group
+          conjunction: and
+          children:
+          - kind: condition
+            attribute: type
+            comparator: eq
+            value: archimate-serving
+  selection:
+    included_entity_ids:
+    - GRP@1786958823.ZYckdqy.read-query-engine
+    - APP@1712870400.JOmFWy.sqlite-indexer
+    - APP@1712870400.v9LvfK.query-engine
+    - APP@1712870400.YOOEbL.frontmatter-parser
+    - APP@1712870400.yNhgdh.module-catalog
+    - FNC@1783266393.4zLFys.compose-combined-scope-read
+    - APP@1786967678.R_K3YAQ.artifact-index-store
+    - APP@1786967678.fvvCoDp.artifact-file-store
+bindings:
+- id: bind-scope
+  subject:
+    kind: diagram
+  correspondence_kind: scoped-by
+  target:
+    entity_id: APP@1777293133.OYEmP1.architecture-backend
+last-updated: '2026-08-17T13:08:14Z'
+---
+@startuml architecture-backend---read-and-query-path
+!include <C4/C4_Component>
+left to right direction
+skinparam shadowing false
+skinparam linetype ortho
+skinparam defaultTextAlignment center
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
+
+title Architecture Backend — Read and Query Path
+
+System_Boundary(APP_OYEmP1, "Architecture Backend") {
+  Boundary(GRP_ZYckdqy, "Read & Query Engine", "group") {
+    Component(APP_JOmFWy, "SQLite Indexer", "")
+    Component(APP_YOOEbL, "Frontmatter Parser", "")
+    Component(APP_v9LvfK, "Query Engine", "")
+    Component(APP_yNhgdh, "Module Catalog", "")
+    Component(FNC_4zLFys, "Compose Combined-Scope Read", "")
+    APP_JOmFWy -[hidden]right- APP_YOOEbL
+    APP_YOOEbL -[hidden]right- APP_v9LvfK
+    APP_v9LvfK -[hidden]right- APP_yNhgdh
+    APP_yNhgdh -[hidden]right- FNC_4zLFys
+
+  }
+
+}
+
+ContainerDb(APP_R_K3YAQ, "Artifact Index Store", "SQLite Runtime")
+ContainerDb(APP_fvvCoDp, "Artifact File Store", "Git VCS, File System Service")
+
+APP_yNhgdh --> APP_JOmFWy
+APP_JOmFWy --> APP_R_K3YAQ
+APP_v9LvfK --> APP_R_K3YAQ
+APP_JOmFWy --> APP_fvvCoDp
+
+APP_R_K3YAQ -[hidden]right- APP_fvvCoDp
+
+@enduml

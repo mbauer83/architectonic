@@ -40,6 +40,13 @@ entity-ids-used:
 - SRV@1776633088.AIGnSY.diagram-scaffolding-service
 - SRV@1776699451.J8ekRD.model-verification-service
 - SRV@1776699512.vQKsM9.diagram-verification-service
+- APP@1712870400.JOmFWy.sqlite-indexer
+- APP@1712870400.YOOEbL.frontmatter-parser
+- APP@1712870400.ca3vm7.model-verifier
+- APP@1712870400.v9LvfK.query-engine
+- APP@1712870400.yNhgdh.module-catalog
+- APP@1786967678.R_K3YAQ.artifact-index-store
+- APP@1786967678.fvvCoDp.artifact-file-store
 connection-ids-used:
 - ACT@1712870400.Nn7Oo7.architect---APP@1776149382.lmO0mp.gui-authoring-tool@@archimate-association
 - ACT@1712870400.OLWiNc.devops-engineer---APP@1712870400.kjC6ex.repository-command-line@@archimate-association
@@ -112,6 +119,34 @@ connection-ids-used:
 - SRV@1776699512.vQKsM9---AIF@1712870400.XjbNQh@@archimate-serving
 - AIF@1786793394.ZVeJv9r---ACT@1712870400.OLWiNc@@archimate-association
 - AIF@1786793394.ZVeJv9r---ACT@1712870400.Pp8Qq8@@archimate-association
+- APP@1712870400.JOmFWy---APP@1712870400.yNhgdh@@archimate-serving
+- APP@1712870400.JOmFWy---APP@1777293133.OYEmP1@@archimate-serving
+- APP@1712870400.JOmFWy---APP@1786793392.Ir9SkCr@@archimate-serving
+- APP@1712870400.YOOEbL---APP@1777293133.OYEmP1@@archimate-serving
+- APP@1712870400.YOOEbL---APP@1786793392.Ir9SkCr@@archimate-serving
+- APP@1712870400.ca3vm7---APP@1712870400.YOOEbL@@archimate-serving
+- APP@1712870400.ca3vm7---APP@1712870400.yNhgdh@@archimate-serving
+- APP@1712870400.ca3vm7---APP@1776149382.lmO0mp@@archimate-serving
+- APP@1712870400.ca3vm7---APP@1777293133.OYEmP1@@archimate-serving
+- APP@1712870400.ca3vm7---APP@1786793392.Ir9SkCr@@archimate-serving
+- APP@1712870400.v9LvfK---APP@1776149382.lmO0mp@@archimate-serving
+- APP@1712870400.v9LvfK---APP@1777293133.OYEmP1@@archimate-serving
+- APP@1712870400.v9LvfK---APP@1786793392.Ir9SkCr@@archimate-serving
+- APP@1712870400.yNhgdh---APP@1777293133.OYEmP1@@archimate-serving
+- APP@1712870400.yNhgdh---APP@1786793392.Ir9SkCr@@archimate-serving
+- APP@1776149382.lmO0mp---AIF@1782080492.Y4n-FB@@archimate-association
+- APP@1777293133.OYEmP1---AIF@1712870400.KxvY-B@@archimate-serving
+- APP@1777293133.OYEmP1---AIF@1776149386.Ua50xU@@archimate-serving
+- APP@1777293133.OYEmP1---AIF@1780783712.xJdQZ_@@archimate-serving
+- APP@1777293133.OYEmP1---AIF@1780783713.Ik61W4@@archimate-serving
+- APP@1777293133.OYEmP1---AIF@1780783714.bkIdu0@@archimate-serving
+- APP@1777293133.OYEmP1---AIF@1780783715.qf_Jla@@archimate-serving
+- APP@1786967678.R_K3YAQ---APP@1712870400.JOmFWy@@archimate-serving
+- APP@1786967678.R_K3YAQ---APP@1712870400.v9LvfK@@archimate-serving
+- APP@1786967678.fvvCoDp---APP@1712870400.JOmFWy@@archimate-serving
+- FNC@1777390460.3ZsfnT---APP@1776149382.lmO0mp@@archimate-association
+- FNC@1781705395.halAQt---APP@1776149382.lmO0mp@@archimate-association
+- FNC@1784532421.PILDZV---APP@1776149382.lmO0mp@@archimate-association
 diagram-entities: {}
 bindings:
 - id: bind-scope
@@ -120,7 +155,7 @@ bindings:
   correspondence_kind: scoped-by
   target:
     entity_id: APP@1780783671.hkrdtm.architecture-management-platform
-last-updated: '2026-08-15T19:07:45Z'
+last-updated: '2026-08-17T13:04:58Z'
 ---
 @startuml amp---containers
 !include <C4/C4_Component>
@@ -135,14 +170,15 @@ title AMP — Containers
 
 System_Boundary(APP_hkrdtm, "Architecture Management Platform") {
   Container(APP_kjC6ex, "Repository Command Line", "")
-  Container(APP_lmO0mp, "GUI Authoring Tool", "")
-  Container(APP_OYEmP1, "Architecture Backend", "")
+  Container(APP_lmO0mp, "GUI Authoring Tool", "TypeScript, Vue")
+  Container(APP_OYEmP1, "Architecture Backend", "Python, FastAPI")
   Container(APP_Ne0utf, "Architecture MCP Read Bridge", "")
   Container(APP_etTj9M, "Architecture MCP Write Bridge", "")
   Container(APP_iu_kKL, "Assurance MCP Read Bridge", "")
   Container(APP_js9xHR, "Assurance MCP Write Bridge", "")
   Container(APP_Ir9SkCr, "Workspace Administration Toolkit", "")
-  Container(GRP_rW_2nX, "Assurance Module", "")
+  ContainerDb(APP_R_K3YAQ, "Artifact Index Store", "SQLite Runtime")
+  ContainerDb(APP_fvvCoDp, "Artifact File Store", "Git VCS, File System Service")
   APP_kjC6ex -[hidden]right- APP_lmO0mp
   APP_lmO0mp -[hidden]right- APP_OYEmP1
   APP_OYEmP1 -[hidden]right- APP_Ne0utf
@@ -150,22 +186,55 @@ System_Boundary(APP_hkrdtm, "Architecture Management Platform") {
   APP_etTj9M -[hidden]right- APP_iu_kKL
   APP_iu_kKL -[hidden]right- APP_js9xHR
   APP_js9xHR -[hidden]right- APP_Ir9SkCr
-  APP_Ir9SkCr -[hidden]right- GRP_rW_2nX
+  APP_Ir9SkCr -[hidden]right- APP_R_K3YAQ
+  APP_R_K3YAQ -[hidden]right- APP_fvvCoDp
 
 }
 
-Person_Ext(ACT_Nn7Oo7, "Architect")
-Person_Ext(ACT_OLWiNc, "DevOps Engineer")
-Person_Ext(ACT_Pp8Qq8, "Developer")
-Person_Ext(ACT_Rr9Ss9, "Product Owner")
-Person_Ext(ACT_Ut1Vv1, "Upper Technical Management")
+Person(ACT_Nn7Oo7, "Architect")
+Person(ACT_OLWiNc, "DevOps Engineer")
+Person(ACT_Pp8Qq8, "Developer")
+Person(ACT_Rr9Ss9, "Product Owner")
+Person(ACT_Ut1Vv1, "Upper Technical Management")
 System_Ext(APP_v6AXNw, "AI Agent Host")
 System_Ext(APP_Je9pmw, "Git Hosting")
 System_Ext(APP_JqIBPJ, "Supply-Chain Signal Sources")
-System_Ext(APP_AeU7V3, "Identifier Allocation Service")
-Person_Ext(ROL_udXPfB, "AI Agent")
-Person_Ext(ROL_abNYhO, "Risk & Compliance Officer")
-Person_Ext(ROL_yswDMB, "Safety / Security Analyst")
+Person(ROL_udXPfB, "AI Agent")
+Person(ROL_abNYhO, "Risk & Compliance Officer")
+Person(ROL_yswDMB, "Safety / Security Analyst")
+
+ACT_Nn7Oo7 --> APP_lmO0mp
+ACT_OLWiNc --> APP_kjC6ex
+ACT_Pp8Qq8 --> APP_kjC6ex
+ACT_Rr9Ss9 --> APP_lmO0mp
+ACT_Ut1Vv1 --> APP_lmO0mp
+ACT_Rr9Ss9 --> APP_OYEmP1
+ACT_Ut1Vv1 --> APP_OYEmP1
+ROL_udXPfB --> APP_OYEmP1
+ACT_OLWiNc --> APP_lmO0mp
+ACT_Pp8Qq8 --> APP_lmO0mp
+ACT_OLWiNc --> APP_Ir9SkCr
+ACT_Pp8Qq8 --> APP_Ir9SkCr
+APP_Ir9SkCr --> APP_OYEmP1
+APP_lmO0mp --> APP_OYEmP1
+APP_kjC6ex --> APP_OYEmP1
+APP_Ne0utf --> APP_OYEmP1
+APP_etTj9M --> APP_OYEmP1
+APP_iu_kKL --> APP_OYEmP1
+APP_js9xHR --> APP_OYEmP1
+APP_v6AXNw --> APP_OYEmP1
+APP_v6AXNw --> APP_Ne0utf
+APP_v6AXNw --> APP_etTj9M
+APP_v6AXNw --> APP_iu_kKL
+APP_v6AXNw --> APP_js9xHR
+APP_OYEmP1 --> APP_Je9pmw
+APP_OYEmP1 --> APP_JqIBPJ
+APP_OYEmP1 --> APP_R_K3YAQ
+APP_OYEmP1 --> APP_fvvCoDp
+APP_OYEmP1 --> APP_lmO0mp
+ROL_udXPfB --> APP_Ne0utf
+ROL_abNYhO --> APP_iu_kKL
+ROL_yswDMB --> APP_iu_kKL
 
 ACT_Nn7Oo7 -[hidden]right- ACT_OLWiNc
 ACT_OLWiNc -[hidden]right- ACT_Pp8Qq8
@@ -174,30 +243,8 @@ ACT_Rr9Ss9 -[hidden]right- ACT_Ut1Vv1
 ACT_Ut1Vv1 -[hidden]right- ROL_udXPfB
 ROL_udXPfB -[hidden]right- ROL_abNYhO
 ROL_abNYhO -[hidden]right- ROL_yswDMB
-ROL_yswDMB -[hidden]right- APP_hkrdtm
-APP_hkrdtm -[hidden]right- APP_v6AXNw
+
 APP_v6AXNw -[hidden]right- APP_Je9pmw
 APP_Je9pmw -[hidden]right- APP_JqIBPJ
-APP_JqIBPJ -[hidden]right- APP_AeU7V3
 
-
-ACT_Nn7Oo7 --> APP_lmO0mp : uses
-ACT_OLWiNc --> APP_kjC6ex : uses
-ACT_Pp8Qq8 --> APP_kjC6ex : uses
-ACT_Rr9Ss9 --> APP_lmO0mp : uses
-ACT_Ut1Vv1 --> APP_lmO0mp : uses
-APP_lmO0mp --> APP_OYEmP1 : uses
-APP_Ne0utf --> APP_OYEmP1 : uses
-APP_etTj9M --> APP_OYEmP1 : uses
-APP_iu_kKL --> APP_OYEmP1 : uses
-APP_js9xHR --> APP_OYEmP1 : uses
-APP_v6AXNw --> APP_Ne0utf : uses
-APP_v6AXNw --> APP_etTj9M : uses
-APP_v6AXNw --> APP_iu_kKL : uses
-APP_v6AXNw --> APP_js9xHR : uses
-APP_OYEmP1 --> APP_Je9pmw : uses
-APP_OYEmP1 --> APP_JqIBPJ : uses
-ROL_udXPfB --> APP_Ne0utf : uses
-ROL_abNYhO --> APP_iu_kKL : uses
-ROL_yswDMB --> APP_iu_kKL : uses
 @enduml

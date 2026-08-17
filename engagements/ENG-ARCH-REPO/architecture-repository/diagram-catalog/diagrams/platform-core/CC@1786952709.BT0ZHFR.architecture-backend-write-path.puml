@@ -1,0 +1,249 @@
+---
+artifact-id: CC@1786952709.BT0ZHFR.architecture-backend-write-path
+artifact-type: diagram
+name: "Architecture Backend \u2014 Write Path"
+version: 0.1.0
+status: draft
+keywords:
+- c4
+- component
+- write
+- backend
+diagram-type: c4-component
+entity-ids-used:
+- AIF@1712870400.XjbNQh.rest-interface
+- APP@1712870400.ca3vm7.model-verifier
+- APP@1712870400.kRZYOA.architecture-mcp-endpoint-adapter
+- APP@1776633693.tIMxjr.promotion-engine
+- APP@1776637531.a9k_mJ.write-request-queue
+- APP@1777293133.OYEmP1.architecture-backend
+- APP@1777293134.tY3JIK.git-sync-service
+- APP@1777399924.5n_KQJ.bulk-write-handler
+- APP@1777399925.HOOYAQ.staged-write-transaction-manager
+- APP@1777399925.WK_78v.bulk-delete-handler
+- APP@1777399926.PDJI8F.operation-registry
+- APP@1781976554.AeU7V3.identifier-allocation-service
+- FNC@1777390460.3ZsfnT.broadcast-model-update
+- ACT@1712870400.Rr9Ss9.product-owner
+- ACT@1712870400.Ut1Vv1.upper-technical-management
+- APP@1712870400.JOmFWy.sqlite-indexer
+- APP@1712870400.YOOEbL.frontmatter-parser
+- APP@1712870400.v9LvfK.query-engine
+- APP@1712870400.yNhgdh.module-catalog
+- APP@1776149382.lmO0mp.gui-authoring-tool
+- APP@1776633697.SCKD2U.diagram-scaffolder
+- APP@1777293136.yaxrWl.plantuml-renderer
+- APP@1780656430.m-U5S1.assurance-mcp-endpoint-adapter
+- APP@1780783708.Ne0utf.architecture-mcp-read-bridge
+- APP@1780783709.etTj9M.architecture-mcp-write-bridge
+- APP@1780783710.iu_kKL.assurance-mcp-read-bridge
+- APP@1780783711.js9xHR.assurance-mcp-write-bridge
+- APP@1780783991.v6AXNw.ai-agent-host
+- APP@1780783992.Je9pmw.git-hosting
+- APP@1780783993.JqIBPJ.supply-chain-signal-sources
+- APP@1782080485.uTC8zx.assurance-write-queue
+- APP@1782080489.XWVKAX.assurance-read-connection-pool
+- APP@1782080499.KqDjXG.unified-assurance-diagram-surface
+- APP@1783872532.OZbaBh.repository-upgrade-framework
+- APP@1786225304.7RbfkON.scratchpad-repository
+- APP@1786225304.HgIA072.scratchpad-canvas
+- APP@1786225304.SpexYvB.scratchpad-service
+- APP@1786225304._WMG8gv.scratchpad-lift-executor
+- APP@1786225304.q6wT1kq.scratchpad-link-verifier
+- APP@1786793392.Ir9SkCr.workspace-administration-toolkit
+- FNC@1783266393.4zLFys.compose-combined-scope-read
+- FNC@1784502389.EhfOy5.resolve-assurance-edge-endpoints
+- FNC@1784502392.wHsa2g.traverse-assurance-neighbor-graph
+- FNC@1784502400.xBRahY.serve-assurance-edge-catalog
+- GRP@1780819145.rW_2nX.assurance-module
+- ROL@1776633082.udXPfB.ai-agent
+- GRP@1786958823.Rc3mGTi.write-pipeline
+- APP@1786967678.fvvCoDp.artifact-file-store
+connection-ids-used:
+- APP@1712870400.JOmFWy---APP@1777293133.OYEmP1@@archimate-serving
+- APP@1712870400.YOOEbL---APP@1777293133.OYEmP1@@archimate-serving
+- APP@1712870400.ca3vm7---APP@1712870400.YOOEbL@@archimate-serving
+- APP@1712870400.ca3vm7---APP@1712870400.yNhgdh@@archimate-serving
+- APP@1712870400.ca3vm7---APP@1776149382.lmO0mp@@archimate-serving
+- APP@1712870400.ca3vm7---APP@1777293133.OYEmP1@@archimate-serving
+- APP@1712870400.ca3vm7---APP@1777399924.5n_KQJ@@archimate-serving
+- APP@1712870400.ca3vm7---APP@1777399925.WK_78v@@archimate-serving
+- APP@1712870400.ca3vm7---APP@1786793392.Ir9SkCr@@archimate-serving
+- APP@1712870400.v9LvfK---APP@1777293133.OYEmP1@@archimate-serving
+- APP@1712870400.yNhgdh---APP@1777293133.OYEmP1@@archimate-serving
+- APP@1776637531.a9k_mJ---APP@1712870400.kRZYOA@@archimate-serving
+- APP@1777293133.OYEmP1---APP@1776149382.lmO0mp@@archimate-serving
+- APP@1777293133.OYEmP1---APP@1780783708.Ne0utf@@archimate-serving
+- APP@1777293133.OYEmP1---APP@1780783709.etTj9M@@archimate-serving
+- APP@1777293133.OYEmP1---APP@1780783710.iu_kKL@@archimate-serving
+- APP@1777293133.OYEmP1---APP@1780783711.js9xHR@@archimate-serving
+- APP@1777399924.5n_KQJ---APP@1712870400.kRZYOA@@archimate-serving
+- APP@1777399925.HOOYAQ---APP@1777399924.5n_KQJ@@archimate-serving
+- APP@1777399925.HOOYAQ---APP@1777399925.WK_78v@@archimate-serving
+- APP@1777399925.WK_78v---APP@1712870400.kRZYOA@@archimate-serving
+- APP@1777399926.PDJI8F---APP@1776637531.a9k_mJ@@archimate-serving
+- APP@1777399926.PDJI8F---APP@1777399924.5n_KQJ@@archimate-serving
+- APP@1777399926.PDJI8F---APP@1777399925.WK_78v@@archimate-serving
+- APP@1780783992.Je9pmw---APP@1777293133.OYEmP1@@archimate-serving
+- APP@1780783992.Je9pmw---APP@1777293134.tY3JIK@@archimate-serving
+- APP@1780783993.JqIBPJ---APP@1777293133.OYEmP1@@archimate-serving
+- APP@1781976554.AeU7V3---APP@1776633697.SCKD2U@@archimate-serving
+- FNC@1777390460.3ZsfnT---APP@1776149382.lmO0mp@@archimate-association
+- ACT@1712870400.Rr9Ss9---APP@1776149382.lmO0mp@@archimate-association
+- ACT@1712870400.Ut1Vv1---APP@1776149382.lmO0mp@@archimate-association
+- AIF@1712870400.wuleEe---ACT@1712870400.Rr9Ss9@@archimate-association
+- AIF@1712870400.wuleEe---ACT@1712870400.Ut1Vv1@@archimate-association
+- AIF@1712870400.wuleEe---ROL@1776633082.udXPfB@@archimate-association
+- APP@1712870400.JOmFWy---APP@1712870400.yNhgdh@@archimate-serving
+- APP@1712870400.JOmFWy---APP@1786793392.Ir9SkCr@@archimate-serving
+- APP@1712870400.YOOEbL---APP@1786793392.Ir9SkCr@@archimate-serving
+- APP@1712870400.v9LvfK---APP@1776149382.lmO0mp@@archimate-serving
+- APP@1712870400.v9LvfK---APP@1786793392.Ir9SkCr@@archimate-serving
+- APP@1712870400.yNhgdh---APP@1786225304.SpexYvB@@archimate-serving
+- APP@1712870400.yNhgdh---APP@1786225304.q6wT1kq@@archimate-serving
+- APP@1712870400.yNhgdh---APP@1786793392.Ir9SkCr@@archimate-serving
+- APP@1776149382.lmO0mp---AIF@1782080492.Y4n-FB@@archimate-association
+- APP@1777293136.yaxrWl---APP@1782080499.KqDjXG@@archimate-serving
+- APP@1780783991.v6AXNw---AIF@1712870400.wuleEe@@archimate-association
+- APP@1780783991.v6AXNw---APP@1780783708.Ne0utf@@archimate-association
+- APP@1780783991.v6AXNw---APP@1780783709.etTj9M@@archimate-association
+- APP@1780783991.v6AXNw---APP@1780783710.iu_kKL@@archimate-association
+- APP@1780783991.v6AXNw---APP@1780783711.js9xHR@@archimate-association
+- APP@1780783993.JqIBPJ---APP@1780656431.e2zPs6@@archimate-serving
+- APP@1782080485.uTC8zx---APP@1780656430.m-U5S1@@archimate-serving
+- APP@1782080489.XWVKAX---FNC@1784502389.EhfOy5@@archimate-association
+- APP@1782080489.XWVKAX---FNC@1784502392.wHsa2g@@archimate-association
+- APP@1782080499.KqDjXG---DOB@1780656431.ApaPcg@@archimate-access
+- APP@1783872532.OZbaBh---DOB@1780656431.ApaPcg@@archimate-access
+- APP@1783872532.OZbaBh---DOB@1780656431.p04R7k@@archimate-access
+- APP@1786225304.7RbfkON---APP@1786225304.SpexYvB@@archimate-serving
+- APP@1786225304.SpexYvB---APP@1786225304.HgIA072@@archimate-serving
+- APP@1786225304._WMG8gv---APP@1786225304.SpexYvB@@archimate-serving
+- APP@1786225304.q6wT1kq---APP@1786225304.SpexYvB@@archimate-serving
+- FNC@1781705395.halAQt---APP@1776149382.lmO0mp@@archimate-association
+- FNC@1784532421.PILDZV---APP@1776149382.lmO0mp@@archimate-association
+- ROL@1776633082.udXPfB---APP@1780783708.Ne0utf@@archimate-association
+- APP@1786967678.fvvCoDp---APP@1712870400.JOmFWy@@archimate-serving
+- APP@1786967678.fvvCoDp---APP@1777293134.tY3JIK@@archimate-serving
+- APP@1786967678.fvvCoDp---APP@1777399925.HOOYAQ@@archimate-serving
+diagram-entities:
+  _direction: top_to_bottom
+connections: []
+view_derivations:
+- id: vp-write-path
+  strategy: viewpoint_execution
+  strategy_version: 1
+  source_model_snapshot:
+    repo_scope: both
+    root_entity_id: APP@1777293133.OYEmP1.architecture-backend
+  parameters:
+    repo_roots:
+    - /home/mb/workspace/architectonic/engagements/ENG-ARCH-REPO/architecture-repository
+    query:
+      query_schema: 1
+      entity_criteria:
+        kind: group
+        conjunction: and
+        children:
+        - kind: condition
+          attribute: id
+          comparator: eq
+          value: GRP@1786958823.Rc3mGTi.write-pipeline
+      include_connected:
+      - direction: outgoing
+        connection_criteria:
+          kind: group
+          conjunction: and
+          children:
+          - kind: condition
+            attribute: type
+            comparator: in
+            value:
+            - archimate-aggregation
+            - archimate-composition
+      - direction: incoming
+        connection_criteria:
+          kind: group
+          conjunction: and
+          children:
+          - kind: condition
+            attribute: type
+            comparator: eq
+            value: archimate-serving
+  selection:
+    included_entity_ids:
+    - GRP@1786958823.Rc3mGTi.write-pipeline
+    - APP@1712870400.ca3vm7.model-verifier
+    - APP@1712870400.kRZYOA.architecture-mcp-endpoint-adapter
+    - APP@1776637531.a9k_mJ.write-request-queue
+    - APP@1777293134.tY3JIK.git-sync-service
+    - APP@1777399924.5n_KQJ.bulk-write-handler
+    - APP@1777399925.HOOYAQ.staged-write-transaction-manager
+    - APP@1777399925.WK_78v.bulk-delete-handler
+    - APP@1777399926.PDJI8F.operation-registry
+    - APP@1781976554.AeU7V3.identifier-allocation-service
+    - FNC@1777390460.3ZsfnT.broadcast-model-update
+    - APP@1786967678.fvvCoDp.artifact-file-store
+bindings:
+- id: bind-scope
+  subject:
+    kind: diagram
+  correspondence_kind: scoped-by
+  target:
+    entity_id: APP@1777293133.OYEmP1.architecture-backend
+last-updated: '2026-08-17T13:41:41Z'
+---
+@startuml architecture-backend---write-path
+!include <C4/C4_Component>
+top to bottom direction
+skinparam shadowing false
+skinparam linetype ortho
+skinparam defaultTextAlignment center
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
+
+title Architecture Backend — Write Path
+
+System_Boundary(APP_OYEmP1, "Architecture Backend") {
+  Boundary(GRP_Rc3mGTi, "Write Pipeline", "group") {
+    Component(APP_ca3vm7, "Model Verifier", "")
+    Component(APP_kRZYOA, "Architecture MCP Endpoint Adapter", "")
+    Component(APP_a9k_mJ, "Write Request Queue", "")
+    Component(APP_tY3JIK, "Git Sync Service", "")
+    Component(APP_5n_KQJ, "Bulk Write Handler", "")
+    Component(APP_HOOYAQ, "Staged Write Transaction Manager", "")
+    Component(APP_WK_78v, "Bulk Delete Handler", "")
+    Component(APP_PDJI8F, "Operation Registry", "")
+    Component(APP_AeU7V3, "Identifier Allocation Service", "")
+    Component(FNC_3ZsfnT, "Broadcast Model Update", "")
+    APP_ca3vm7 -[hidden]right- APP_kRZYOA
+    APP_kRZYOA -[hidden]right- APP_a9k_mJ
+    APP_a9k_mJ -[hidden]right- APP_tY3JIK
+    APP_tY3JIK -[hidden]right- APP_5n_KQJ
+    APP_5n_KQJ -[hidden]right- APP_HOOYAQ
+    APP_HOOYAQ -[hidden]right- APP_WK_78v
+    APP_WK_78v -[hidden]right- APP_PDJI8F
+    APP_PDJI8F -[hidden]right- APP_AeU7V3
+    APP_AeU7V3 -[hidden]right- FNC_3ZsfnT
+
+  }
+
+}
+
+ContainerDb(APP_fvvCoDp, "Artifact File Store", "Git VCS, File System Service")
+
+APP_5n_KQJ --> APP_ca3vm7
+APP_WK_78v --> APP_ca3vm7
+APP_kRZYOA --> APP_a9k_mJ
+APP_kRZYOA --> APP_5n_KQJ
+APP_5n_KQJ --> APP_HOOYAQ
+APP_WK_78v --> APP_HOOYAQ
+APP_kRZYOA --> APP_WK_78v
+APP_a9k_mJ --> APP_PDJI8F
+APP_5n_KQJ --> APP_PDJI8F
+APP_WK_78v --> APP_PDJI8F
+APP_tY3JIK --> APP_fvvCoDp
+APP_HOOYAQ --> APP_fvvCoDp
+
+
+@enduml

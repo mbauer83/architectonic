@@ -1,0 +1,65 @@
+---
+artifact-id: CD@1786912268.s4lI3nq.amp-deployment
+artifact-type: diagram
+name: "AMP \u2014 Deployment"
+version: 0.1.0
+status: draft
+keywords:
+- c4
+- deployment
+- amp
+diagram-type: c4-deployment
+entity-ids-used:
+- APP@1776149382.lmO0mp.gui-authoring-tool
+- APP@1777293133.OYEmP1.architecture-backend
+- APP@1780783671.hkrdtm.architecture-management-platform
+- NOD@1782080479.7xNYBF.team-serving-deployment
+- NOD@1786915205.Yx71j_C.app-container
+- APP@1786967678.R_K3YAQ.artifact-index-store
+- APP@1786967678.fvvCoDp.artifact-file-store
+- NOD@1712870400.4EFX7z.developer-workstation
+- NOD@1786915451.THkLB12.repository-data-volume
+connection-ids-used:
+- APP@1777293133.OYEmP1---APP@1776149382.lmO0mp@@archimate-serving
+diagram-entities: {}
+connections: []
+bindings:
+- id: bind-scope
+  subject:
+    kind: diagram
+  correspondence_kind: scoped-by
+  target:
+    entity_id: APP@1780783671.hkrdtm.architecture-management-platform
+last-updated: '2026-08-17T13:41:49Z'
+---
+@startuml amp---deployment
+!include <C4/C4_Deployment>
+left to right direction
+skinparam shadowing false
+skinparam linetype ortho
+skinparam defaultTextAlignment center
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
+
+title AMP — Deployment
+
+Deployment_Node(NOD_4EFX7z, "Developer Workstation", "Technology Node") {
+  ContainerDb(APP_R_K3YAQ, "Artifact Index Store", "SQLite Runtime")
+  ContainerDb(APP_fvvCoDp, "Artifact File Store", "Git VCS, File System Service")
+  APP_R_K3YAQ -[hidden]right- APP_fvvCoDp
+
+}
+Deployment_Node(NOD_7xNYBF, "Team-Serving Deployment", "Technology Node") {
+  Deployment_Node(NOD_Yx71j_C, "App Container", "Technology Node") {
+    Container(APP_lmO0mp, "GUI Authoring Tool", "TypeScript, Vue")
+    Container(APP_OYEmP1, "Architecture Backend", "Python, FastAPI")
+    APP_lmO0mp -[hidden]right- APP_OYEmP1
+
+  }
+  Container(NOD_THkLB12, "Repository Data Volume", "Technology Node")
+  NOD_Yx71j_C -[hidden]right- NOD_THkLB12
+
+}
+
+APP_lmO0mp --> APP_OYEmP1
+@enduml

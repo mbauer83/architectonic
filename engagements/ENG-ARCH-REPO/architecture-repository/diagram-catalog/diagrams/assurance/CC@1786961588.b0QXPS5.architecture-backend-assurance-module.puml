@@ -1,0 +1,131 @@
+---
+artifact-id: CC@1786961588.b0QXPS5.architecture-backend-assurance-module
+artifact-type: diagram
+name: "Architecture Backend \u2014 Assurance Module"
+version: 0.1.0
+status: draft
+keywords:
+- c4
+- component
+- assurance
+- backend
+diagram-type: c4-component
+entity-ids-used:
+- APP@1777293133.OYEmP1.architecture-backend
+- APP@1780656430.m-U5S1.assurance-mcp-endpoint-adapter
+- APP@1782080485.uTC8zx.assurance-write-queue
+- APP@1782080489.XWVKAX.assurance-read-connection-pool
+- FNC@1784502389.EhfOy5.resolve-assurance-edge-endpoints
+- FNC@1784502392.wHsa2g.traverse-assurance-neighbor-graph
+- FNC@1784502400.xBRahY.serve-assurance-edge-catalog
+- GRP@1780819145.rW_2nX.assurance-module
+connection-ids-used:
+- APP@1712870400.JOmFWy---APP@1777293133.OYEmP1@@archimate-serving
+- APP@1712870400.YOOEbL---APP@1777293133.OYEmP1@@archimate-serving
+- APP@1712870400.ca3vm7---APP@1777293133.OYEmP1@@archimate-serving
+- APP@1712870400.v9LvfK---APP@1777293133.OYEmP1@@archimate-serving
+- APP@1712870400.yNhgdh---APP@1777293133.OYEmP1@@archimate-serving
+- APP@1777293133.OYEmP1---APP@1776149382.lmO0mp@@archimate-serving
+- APP@1777293133.OYEmP1---APP@1780783708.Ne0utf@@archimate-serving
+- APP@1777293133.OYEmP1---APP@1780783709.etTj9M@@archimate-serving
+- APP@1777293133.OYEmP1---APP@1780783710.iu_kKL@@archimate-serving
+- APP@1777293133.OYEmP1---APP@1780783711.js9xHR@@archimate-serving
+- APP@1780783992.Je9pmw---APP@1777293133.OYEmP1@@archimate-serving
+- APP@1780783993.JqIBPJ---APP@1777293133.OYEmP1@@archimate-serving
+- APP@1782080485.uTC8zx---APP@1780656430.m-U5S1@@archimate-serving
+- APP@1782080489.XWVKAX---FNC@1784502389.EhfOy5@@archimate-association
+- APP@1782080489.XWVKAX---FNC@1784502392.wHsa2g@@archimate-association
+diagram-entities: {}
+connections: []
+view_derivations:
+- id: vp-assurance
+  strategy: viewpoint_execution
+  strategy_version: 1
+  source_model_snapshot:
+    repo_scope: both
+    root_entity_id: APP@1777293133.OYEmP1.architecture-backend
+  parameters:
+    repo_roots:
+    - /home/mb/workspace/architectonic/engagements/ENG-ARCH-REPO/architecture-repository
+    query:
+      query_schema: 1
+      entity_criteria:
+        kind: group
+        conjunction: and
+        children:
+        - kind: condition
+          attribute: id
+          comparator: eq
+          value: GRP@1780819145.rW_2nX.assurance-module
+      include_connected:
+      - direction: outgoing
+        connection_criteria:
+          kind: group
+          conjunction: and
+          children:
+          - kind: condition
+            attribute: type
+            comparator: in
+            value:
+            - archimate-aggregation
+            - archimate-composition
+      - direction: incoming
+        connection_criteria:
+          kind: group
+          conjunction: and
+          children:
+          - kind: condition
+            attribute: type
+            comparator: eq
+            value: archimate-serving
+  selection:
+    included_entity_ids:
+    - GRP@1780819145.rW_2nX.assurance-module
+    - APP@1780656430.m-U5S1.assurance-mcp-endpoint-adapter
+    - APP@1782080485.uTC8zx.assurance-write-queue
+    - APP@1782080489.XWVKAX.assurance-read-connection-pool
+    - FNC@1784502389.EhfOy5.resolve-assurance-edge-endpoints
+    - FNC@1784502392.wHsa2g.traverse-assurance-neighbor-graph
+    - FNC@1784502400.xBRahY.serve-assurance-edge-catalog
+bindings:
+- id: bind-scope
+  subject:
+    kind: diagram
+  correspondence_kind: scoped-by
+  target:
+    entity_id: APP@1777293133.OYEmP1.architecture-backend
+last-updated: '2026-08-17T12:18:36Z'
+---
+@startuml architecture-backend---assurance-module
+!include <C4/C4_Component>
+left to right direction
+skinparam shadowing false
+skinparam linetype ortho
+skinparam defaultTextAlignment center
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
+
+title Architecture Backend — Assurance Module
+
+System_Boundary(APP_OYEmP1, "Architecture Backend") {
+  Boundary(GRP_rW_2nX, "Assurance Module", "group") {
+    Component(APP_m_U5S1, "Assurance MCP Endpoint Adapter", "")
+    Component(APP_uTC8zx, "Assurance Write Queue", "")
+    Component(APP_XWVKAX, "Assurance Read Connection Pool", "")
+    Component(FNC_EhfOy5, "Resolve Assurance Edge Endpoints", "")
+    Component(FNC_wHsa2g, "Traverse Assurance Neighbor Graph", "")
+    Component(FNC_xBRahY, "Serve Assurance Edge Catalog", "")
+    APP_m_U5S1 -[hidden]right- APP_uTC8zx
+    APP_uTC8zx -[hidden]right- APP_XWVKAX
+    APP_XWVKAX -[hidden]right- FNC_EhfOy5
+    FNC_EhfOy5 -[hidden]right- FNC_wHsa2g
+    FNC_wHsa2g -[hidden]right- FNC_xBRahY
+
+  }
+
+}
+
+APP_m_U5S1 --> APP_uTC8zx
+APP_XWVKAX --> FNC_EhfOy5
+APP_XWVKAX --> FNC_wHsa2g
+@enduml
