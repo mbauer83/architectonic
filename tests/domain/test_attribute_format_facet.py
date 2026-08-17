@@ -20,7 +20,11 @@ import json
 from pathlib import Path
 
 from src.application._startup_schema_policy import validate_attribute_schemata_policy
-from src.application.artifacts.schema import attribute_descriptors, validate_against_schema
+from src.application.artifacts.schema import (
+    ENFORCED_FORMATS,
+    attribute_descriptors,
+    validate_against_schema,
+)
 from src.domain.ontology_representation.profile_conflict_resolution import (
     propose_conflict_resolution,
 )
@@ -175,10 +179,11 @@ def test_a_format_nothing_enforces_is_refused_at_startup(tmp_path: Path) -> None
 
     errors, _ = validate_attribute_schemata_policy(tmp_path)
 
-    assert errors == [
-        "attributes.requirement.schema.json: property 'Contact' declares format 'email', "
-        "which nothing enforces — declare one of: uri"
-    ]
+    # The register is stated rather than restated: an assertion listing today's formats would fail
+    # on the next one added, which is the product working.
+    (message,) = errors
+    assert "declares format 'email', which nothing enforces" in message
+    assert message.endswith(", ".join(sorted(ENFORCED_FORMATS)))
 
 
 def test_an_enforced_format_passes_startup(tmp_path: Path) -> None:
