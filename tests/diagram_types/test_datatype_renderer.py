@@ -54,13 +54,33 @@ class TestClassifierKinds:
 
     def test_datatype_has_stereotype(self):
         out = _render(classifiers=[_cls("c1", kind="datatype", label="Money")])
-        assert "<<datatype>>" in out
+        assert "datatype>>" in out
         assert 'class "Money"' in out
 
     def test_stereotype_follows_alias(self):
         # PlantUML requires: class "Label" as Alias <<stereotype>>  (stereotype after alias)
         out = _render(classifiers=[_cls("c1", kind="datatype", label="Money")])
-        assert 'class "Money" as _c1 <<datatype>> {' in out
+        assert 'class "Money" as _c1 <<(D,#B4A7E5) datatype>> {' in out
+
+    def test_a_kind_drawn_with_the_class_keyword_carries_its_own_spot(self):
+        """The circled letter is what a reader sees before any stereotype text.
+
+        `class` and `enum` carry PlantUML's own — a green C and a green E — so a kind rendered with
+        the `class` keyword was badged as a class whatever its stereotype said: a primitive read
+        «primitive» and wore the class spot.
+        """
+        primitive = _render(classifiers=[_cls("c1", kind="primitive", label="Money")])
+        plain = _render(classifiers=[_cls("c2", kind="class", label="Order")])
+
+        assert "<<(P,#A9DCDF) primitive>>" in primitive
+        assert "<<" not in plain, "an ordinary class keeps PlantUML's own spot and needs no marker"
+
+    def test_an_enumeration_keeps_plantumls_own_spot(self):
+        """The `enum` keyword already draws the right letter, so nothing is overridden."""
+        out = _render(classifiers=[_cls("c1", kind="enumeration", label="Status")])
+
+        assert 'enum "Status"' in out
+        assert "<<" not in out
 
     def test_enumeration_uses_enum_keyword(self):
         out = _render(classifiers=[_cls("c1", kind="enumeration", label="Status")])
@@ -77,7 +97,7 @@ class TestClassifierKinds:
 
     def test_primitive_has_stereotype(self):
         out = _render(classifiers=[_cls("c1", kind="primitive", label="String")])
-        assert "<<primitive>>" in out
+        assert "primitive>>" in out
 
     def test_alias_derived_from_id(self):
         out = _render(classifiers=[_cls("DOB@123.abc")])

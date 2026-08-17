@@ -40,12 +40,20 @@ _PUML_ARROWS: dict[str, str] = {
     "dt-dependency": "..>",
 }
 
-# classifier_kind → (puml keyword, stereotype label or None)
-_KIND_META: dict[str, tuple[str, str | None]] = {
-    "class": ("class", None),
-    "datatype": ("class", "datatype"),
-    "enumeration": ("enum", None),
-    "primitive": ("class", "primitive"),
+# classifier_kind → (puml keyword, stereotype label or None, spot letter and colour or None)
+#
+# The spot is the circled letter PlantUML draws on the box, and it is what a reader sees before any
+# stereotype text. `class` and `enum` carry their own — a green **C** and a green **E** — so a kind
+# rendered with the `class` keyword got the class spot whatever its stereotype said, and a primitive
+# was labelled «primitive» while being badged as a class. A custom spot, `<<(P,#colour) primitive>>`,
+# replaces the letter as well as the text.
+#
+# `enumeration` keeps PlantUML's own: the `enum` keyword already draws the right one.
+_KIND_META: dict[str, tuple[str, str | None, str | None]] = {
+    "class": ("class", None, None),
+    "datatype": ("class", "datatype", "D,#B4A7E5"),
+    "enumeration": ("enum", None, None),
+    "primitive": ("class", "primitive", "P,#A9DCDF"),
 }
 
 
@@ -58,8 +66,16 @@ def _safe_text(text: str) -> str:
 
 
 def _keyword(kind: str, is_abstract: bool) -> str:
-    keyword, _ = _KIND_META.get(kind, ("class", None))
+    keyword, _, _ = _KIND_META.get(kind, ("class", None, None))
     return f"abstract {keyword}" if is_abstract and keyword == "class" else keyword
+
+
+def _stereotype_token(kind: str) -> str:
+    """The `<<…>>` a kind is drawn with — its spot and its label, or neither."""
+    _, label, spot = _KIND_META.get(kind, ("class", None, None))
+    if spot and label:
+        return f"<<({spot}) {label}>>"
+    return f"<<{label}>>" if label else ""
 
 
 def _key_markers(c: dict[str, Any]) -> dict[str, list[str]]:
@@ -119,13 +135,13 @@ def _render_classifier(c: dict[str, Any]) -> list[str]:
     label = _safe_text(str(c.get("label") or eid))
     kind = str(c.get("classifier_kind") or "class")
     alias = _safe_alias(eid)
-    _, stereotype = _KIND_META.get(kind, ("class", None))
+    stereotype = _stereotype_token(kind)
 
     # PlantUML class syntax requires the stereotype AFTER the alias:
-    #   class "Label" as Alias <<stereotype>> { … }
+    #   class "Label" as Alias <<(P,#colour) stereotype>> { … }
     head_parts = [_keyword(kind, bool(c.get("is_abstract"))), f'"{label}"', f"as {alias}"]
     if stereotype:
-        head_parts.append(f"<<{stereotype}>>")
+        head_parts.append(stereotype)
     lines: list[str] = [" ".join(head_parts) + " {"]
 
     if kind == "enumeration":

@@ -266,7 +266,7 @@ bindings:
   correspondence_kind: represents
   target:
     entity_id: DOB@1777239887.V-MgY1.yaml-artifact-frontmatter
-last-updated: '2026-08-17T16:23:22Z'
+last-updated: '2026-08-17T18:19:23Z'
 ---
 @startuml Artifact Persistence Model
 title Artifact Persistence Model
@@ -274,7 +274,7 @@ skinparam linetype ortho
 skinparam wrapWidth 240
 skinparam maxMessageSize 240
 
-class "ArtifactId" as _CLF_1786983687_foS_lP_artifact_id <<primitive>> {
+class "ArtifactId" as _CLF_1786983687_foS_lP_artifact_id <<(P,#A9DCDF) primitive>> {
 }
 
 abstract class "Artifact" as _CLF_1782085920_ShZ_Qq_artifact {
@@ -315,7 +315,7 @@ class "Document" as _CLF_1782085920_5QwRvq_document {
   + body : String
 }
 
-class "Frontmatter" as _CLF_1782085920_GKQcVR_frontmatter <<datatype>> {
+class "Frontmatter" as _CLF_1782085920_GKQcVR_frontmatter <<(D,#B4A7E5) datatype>> {
   + artifact_type : String
   + keywords : String [*]
   + provenance_note : String {optional}
