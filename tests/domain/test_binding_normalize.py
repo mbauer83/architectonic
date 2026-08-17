@@ -6,7 +6,7 @@ import pytest
 
 from src.application.modeling.binding_normalize import normalize_bindings, strip_diagram_shorthand
 from src.domain.diagrams.bindings import SCOPE_IDS_KEY, SCOPE_KEY, SCOPE_KEYS
-from src.infrastructure.write.artifact_write.diagram_render import render_entities_with_scope
+from src.infrastructure.write.artifact_write.diagram_render_input import render_entities_restored
 
 
 class TestNormalizeBindings:
@@ -284,7 +284,7 @@ class TestScopeSetShorthand:
         persisted = strip_diagram_shorthand(dict(entities)) or {}
 
         assert not (SCOPE_KEYS & set(persisted)), "the persisted form carries no shorthand"
-        assert render_entities_with_scope(persisted, bindings) == entities
+        assert render_entities_restored(persisted, bindings) == entities
 
     def test_an_empty_set_declares_no_scope_at_all(self) -> None:
         assert normalize_bindings({SCOPE_IDS_KEY: []}, None) == []

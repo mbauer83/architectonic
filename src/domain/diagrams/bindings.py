@@ -27,6 +27,17 @@ SCOPE_KEY = "_scope_entity_id"
 SCOPE_IDS_KEY = "_scope_entity_ids"
 SCOPE_KEYS: frozenset[str] = frozenset({SCOPE_KEY, SCOPE_IDS_KEY})
 
+#: The membership shorthand a diagram's entities may carry: which of a projection's candidates the
+#: diagram draws, and which it withholds. It stands for `DerivationSelection`'s included/excluded
+#: entity ids the same way the scope keys above stand for the `scoped-by` binding — one fact, stated
+#: in the frontmatter where it is decided and in `diagram-entities` where it is read.
+#:
+#: Declared here for the reason the scope keys are: the render path restores it, a diagram type
+#: reads it, and it was spelled as a literal in six places across three modules.
+INCLUDED_IDS_KEY = "_included_entity_ids"
+EXCLUDED_IDS_KEY = "_excluded_entity_ids"
+SELECTION_KEYS: frozenset[str] = frozenset({INCLUDED_IDS_KEY, EXCLUDED_IDS_KEY})
+
 
 @dataclass(frozen=True)
 class ConnectionPathItem:

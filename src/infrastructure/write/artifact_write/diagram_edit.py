@@ -22,7 +22,8 @@ from .diagram_references import (
     _restate_generated_declarations,
     diagram_entities_are_authoritative,
 )
-from .diagram_render import _render_diagram_entities_puml, render_entities_with_scope
+from .diagram_render import _render_diagram_entities_puml
+from .diagram_render_input import render_entities_restored
 from .parse_existing import parse_diagram_file
 from .types import WriteResult
 
@@ -273,7 +274,7 @@ def edit_diagram(
         and puml is None
         and diagram_entities_are_authoritative(verifier, diagram_type)
     ):
-        render_entities = render_entities_with_scope(dict(eff_diagram_entities), norm_bindings)
+        render_entities = render_entities_restored(dict(eff_diagram_entities), norm_bindings, eff_view_derivations)
         eff_diagram_conns = eff_diagram_connections if isinstance(eff_diagram_connections, list) else None
         puml_body = _render_diagram_entities_puml(
             diagram_type,
