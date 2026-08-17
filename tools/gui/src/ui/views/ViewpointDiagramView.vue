@@ -8,7 +8,7 @@
  * overlay uses on a real diagram, never baked into the rendered notation.
  */
 import { computed, inject, nextTick, onMounted, ref, watch } from 'vue'
-import { Effect } from 'effect'
+import { Cause, Effect } from 'effect'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { modelServiceKey } from '../keys'
 import { useViewpointExecution } from '../composables/useViewpointExecution'
@@ -32,6 +32,8 @@ import type { ViewpointExecutionRequest } from '../../domain'
 import type { SignalBanner } from '../../domain/schemas/viewpoints'
 import SignalRenderBanner from '../components/SignalRenderBanner.vue'
 import { sanitizeDiagramSvg } from '../lib/svgSanitize'
+import { readApiErrorBody, readErrorMessage } from '../lib/errors'
+import type { ErrorBody } from '../../domain/schemas/errors'
 import { downloadStampedRender } from '../lib/stampedRenderExport'
 import {
   anchorBadges, applyDiagramOverlay, centerAnchorsAfterFit,
@@ -53,6 +55,12 @@ const signalBanner = ref<SignalBanner | null>(null)
 const diagramWarnings = ref<readonly string[]>([])
 const diagramLoading = ref(false)
 const diagramError = ref<string | null>(null)
+//: The published envelope of a failed *diagram* call, kept beside its message for the same reason
+//: the execution composable keeps one: `executionErrorDisplay` turns a code into prose a reader can
+//: act on. Only the execution's envelope was passed on, so a query that ran fine and then produced
+//: more than the renderer takes lost the backend's own "too large — use the table or narrow the
+//: scope" and showed the bare fallback title instead.
+const diagramTypedError = ref<ErrorBody | null>(null)
 // A large scope legitimately takes tens of seconds; a silent placeholder reads as a
 // hang. Ticking elapsed time is the honest signal that work is still happening.
 const loadingElapsedSeconds = ref(0)
@@ -129,6 +137,7 @@ const runExecution = async (resolved: ViewpointExecutionRequest) => {
   await execution.execute(resolved)
   diagramLoading.value = true
   diagramError.value = null
+  diagramTypedError.value = null
   const exit = await Effect.runPromiseExit(svc.executeViewpointDiagram(resolved))
   diagramLoading.value = false
   if (exit._tag === 'Success') {
@@ -137,7 +146,9 @@ const runExecution = async (resolved: ViewpointExecutionRequest) => {
     entityAliases.value = exit.value.entity_aliases ?? {}
     signalBanner.value = exit.value.signal_banner ?? null
   } else {
-    diagramError.value = String(exit.cause)
+    const reason = Cause.squash(exit.cause)
+    diagramError.value = readErrorMessage(reason)
+    diagramTypedError.value = readApiErrorBody(reason)
   }
   await nextTick()
   await centerAnchorsAfterFit(applyOverlay(), containerRef.value, panZoom.fitDiagramToViewport, panBy)
@@ -242,7 +253,7 @@ onMounted(() => { if (props.adHoc || slug.value) void load() })
     </div>
     <ViewpointExecutionError
       v-else-if="execution.errorMessage.value || diagramError"
-      :typed-error="execution.typedError.value"
+      :typed-error="execution.typedError.value ?? diagramTypedError"
       :fallback-message="execution.errorMessage.value || diagramError || 'Execution failed'"
       @retry="rerun"
     />

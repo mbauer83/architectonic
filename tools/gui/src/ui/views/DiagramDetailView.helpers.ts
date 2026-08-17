@@ -57,21 +57,31 @@ export function diagramNeedsSvg(diagramType: string | null | undefined): boolean
   return !!diagramType && diagramType !== 'matrix'
 }
 
+/** One diagram a node can drill into, with the name a reader chooses it by. */
+export type DrilldownTarget = { diagramId: string; name: string }
+
 /**
- * Builds a map of entityId → childDiagramId from the C4 navigation context.
+ * Builds a map of entityId → the diagrams that node drills into.
  *
  * For L2→L3 children, the child carries its own scope_entity_id (the container
  * whose component diagram it is). For L1/L2 same-scope children, the child shares
  * the parent's scope entity — fall back to c4Nav.scope_entity_id.
+ *
+ * The value is a list, and that is the whole of this function's history: it used to be one id, and
+ * the loop below overwrote it once per child, so a container with several component views drilled
+ * into whichever happened to come last. A container may be drawn one concern at a time — a write
+ * path, a read path, an assurance module — and no tie-break among those is right, because they are
+ * peers and only the reader knows which one they meant.
  */
 export function buildDrilldownByEntityId(
   c4Nav: C4Navigation | null | undefined,
-): Record<string, string> {
+): Record<string, DrilldownTarget[]> {
   if (!c4Nav) return {}
-  const map: Record<string, string> = {}
+  const map: Record<string, DrilldownTarget[]> = {}
   for (const child of c4Nav.child_diagrams) {
     const entityId = child.scope_entity_id ?? c4Nav.scope_entity_id
-    if (entityId) map[entityId] = child.diagram_id
+    if (!entityId) continue
+    ;(map[entityId] ??= []).push({ diagramId: child.diagram_id, name: child.diagram_name })
   }
   return map
 }

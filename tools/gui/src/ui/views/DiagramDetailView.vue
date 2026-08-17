@@ -10,6 +10,7 @@ import { useQuery } from '../composables/useQuery'
 import { renderMatrixMarkdown } from '../lib/matrixMarkdown'
 import type { C4Navigation } from '../../domain'
 import { buildDrilldownByEntityId, c4NavigationOf, diagramNeedsSvg, matrixBodyOf } from './DiagramDetailView.helpers'
+import DrilldownMenu from '../components/DrilldownMenu.vue'
 import { sanitizeDiagramSvg } from '../lib/svgSanitize'
 import { useFittedPanZoom } from '../composables/useFittedPanZoom'
 import { useFullscreen } from '../composables/useFullscreen'
@@ -121,6 +122,24 @@ const executeDelete = () => {
 
 <template>
   <div class="page">
+    <!-- The browser paints nothing outside a fullscreen element, so a menu living in the page
+         layout simply vanishes on entry. `FullscreenDock` moves it inside the canvas instead —
+         the same fact and the same fix the sidebar and the toolbar already face. -->
+    <FullscreenDock
+      :fullscreen-host="containerRef"
+      :is-fullscreen="fullscreen.isFullscreen.value"
+      :revealed="true"
+    >
+      <DrilldownMenu
+        v-if="selection.drilldownChoice.value"
+        :targets="selection.drilldownChoice.value.targets"
+        :x="selection.drilldownChoice.value.x"
+        :y="selection.drilldownChoice.value.y"
+        :scope-name="selection.drilldownChoice.value.nodeName"
+        @choose="selection.chooseDrilldown"
+        @dismiss="selection.drilldownChoice.value = null"
+      />
+    </FullscreenDock>
     <DiagramDetailHeader
       v-if="detail"
       :detail="detail"

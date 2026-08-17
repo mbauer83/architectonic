@@ -10,6 +10,7 @@ import type { WriteResult } from '../../domain'
 import type { RepoError } from '../../ports/ModelRepository'
 import type { NotFoundError } from '../../domain'
 import type { MarkdownError } from '../../application/MarkdownService'
+import type { DrilldownTarget } from '../views/DiagramDetailView.helpers'
 import { lookupViewerExtension, resolveElementMap, neutralizeSentinelLink } from '../lib/diagramViewerExtensions'
 import { SVG_MARKER_ATTRIBUTES } from '../lib/svgHitAreas'
 
@@ -37,7 +38,7 @@ export function useDiagramSvgSelection(options: {
   detail: Ref<DiagramSvgSelectionDetail | null>
   diagramEntities: Ref<readonly DiagramContextEntity[]>
   diagramConnections: Ref<readonly DiagramConnection[]>
-  drilldownByEntityId: Ref<Record<string, string>>
+  drilldownByEntityId: Ref<Record<string, DrilldownTarget[]>>
   diagramId: Ref<string>
   reload: () => void
 }) {
@@ -56,6 +57,14 @@ export function useDiagramSvgSelection(options: {
 
   const selectedId = ref<string | null>(null)
   const selectedConnection = ref<DiagramConnection | null>(null)
+  //: Which drill-down targets a reader is being asked to choose between, and where the badge they
+  //: clicked sits on screen. Null while nothing is being asked.
+  const drilldownChoice = ref<{ targets: DrilldownTarget[]; nodeName: string; x: number; y: number } | null>(null)
+
+  const chooseDrilldown = (target: DrilldownTarget) => {
+    drilldownChoice.value = null
+    void router.push(diagramDetailRoute(target.diagramId))
+  }
   // Opaque payload from the diagram type's viewer extension; rendered by its detailComponent.
   const selectedSubPart = ref<unknown>(null)
   // Bumped whenever the selected entity or sub-part changes, so the sidebar can re-mount its
@@ -304,7 +313,8 @@ export function useDiagramSvgSelection(options: {
     // Inject drill-down badges for entities that scope a child C4 diagram.
     // Badges sit at the node's top-right corner inside the SVG coordinate space (first occurrence).
     const drillTargets = drilldownByEntityId.value
-    for (const [artifactId, targetId] of Object.entries(drillTargets)) {
+    for (const [artifactId, targets] of Object.entries(drillTargets)) {
+      if (!targets.length) continue
       const entityEl = svgNodeElems.value.get(artifactId)?.[0]
       if (!(entityEl instanceof SVGGraphicsElement)) continue
       try {
@@ -327,7 +337,15 @@ export function useDiagramSvgSelection(options: {
         svgEl.appendChild(badgeG)
         badgeG.addEventListener('click', (ev) => {
           ev.stopPropagation()
-          void router.push(diagramDetailRoute(targetId))
+          // One target navigates; several ask. A container drawn one concern at a time has no
+          // "main" component view to prefer, so the reader picks — the same affordance the
+          // download control uses when a diagram offers more than one format.
+          if (targets.length === 1) {
+            void router.push(diagramDetailRoute(targets[0].diagramId))
+            return
+          }
+          const nodeName = diagramEntities.value.find((e) => e.artifact_id === artifactId)?.name ?? ''
+          drilldownChoice.value = { targets, nodeName, x: ev.clientX, y: ev.clientY }
         }, { signal })
       } catch { /* getBBox unavailable in non-rendered contexts */ }
     }
@@ -358,6 +376,8 @@ export function useDiagramSvgSelection(options: {
   )
 
   return {
+    drilldownChoice,
+    chooseDrilldown,
     viewerExtension,
     svgContainer,
     selectedId,

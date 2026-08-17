@@ -15,14 +15,19 @@ test.beforeEach(async ({ context }) => {
 })
 
 test('a large viewpoint diagram renders inside a bounded, resizable viewport with a working entity sidebar', async ({ page }) => {
-  await page.goto('/viewpoints/technology-usage/diagram')
+  // A whole-layer viewpoint over the dogfood repo, chosen for headroom under the renderer's
+  // entity ceiling rather than for size alone. `technology-usage` was here and crossed that
+  // ceiling as the model grew: the backend then refuses — correctly, and that refusal has a spec
+  // of its own below — so this one stopped being about the viewport at all and started failing
+  // for a reason it does not test.
+  await page.goto('/viewpoints/motivation/diagram')
   await expect(page.getByText(/entities:\s*\d+/i)).toBeVisible({ timeout: 15000 })
 
   const container = page.locator('.img-container')
-  // The count arrives as soon as the query resolves; the *picture* is a PlantUML render of 233
-  // entities and 444 connections, which the page itself says "can take a while". The default 5 s
-  // was a budget for the wrong operation — it held only while the machine was idle, so this failed
-  // in a full suite run and passed alone.
+  // The count arrives as soon as the query resolves; the *picture* is a PlantUML render of the
+  // whole population, which the page itself says "can take a while". The default 5 s was a budget
+  // for the wrong operation — it held only while the machine was idle, so this failed in a full
+  // suite run and passed alone.
   await expect(container).toBeVisible({ timeout: 30_000 })
   const containerBox = await container.boundingBox()
   expect(containerBox).not.toBeNull()
@@ -43,6 +48,17 @@ test('a diagram-representation viewpoint with only a small population still show
   await expect(page.getByText(/entities:\s*\d+/i)).toBeVisible({ timeout: 15000 })
   await expect(page.locator('.img-container')).toBeVisible({ timeout: 30_000 })
   await expect(page.locator('.sb-title', { hasText: 'Entities' })).toBeVisible()
+})
+
+test('a population past the renderer ceiling says so, and says what to do instead', async ({ page }) => {
+  // The refusal is the backend's, it names the counts and the alternatives, and none of it reached
+  // the reader: the diagram call's error envelope was stringified while only the *execution* call's
+  // was passed to the display, so a viewpoint that had simply outgrown the renderer showed the bare
+  // fallback title. Asserted on the prose rather than on any count, because which viewpoints are
+  // over the ceiling is a fact about the model and changes as it grows.
+  await page.goto('/viewpoints/layered/diagram')
+  await expect(page.locator('.exec-error-title')).toHaveText(/too large for diagram rendering/i, { timeout: 30_000 })
+  await expect(page.locator('.exec-error-detail')).toHaveText(/table representation|narrow the scope/i)
 })
 
 test.describe('derived connections', () => {

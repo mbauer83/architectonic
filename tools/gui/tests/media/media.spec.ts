@@ -11,7 +11,9 @@ const VALUE_STREAM = 'ARC@1784483996.YRywG6.value-stream-deliver-an-architecture
 const INVESTMENT = 'ARC@1784488894.WwyJAa.resource-investment-map'
 const C4_CONTEXT = 'CSC@1780829783.z8RRON.amp-system-context'
 const C4_CONTAINERS = 'CC@1780829785.Z_fI-N.amp-containers'
-const C4_COMPONENTS = 'CC@1780829793.K3l46j.architecture-backend-components'
+//: The backend is drawn one concern at a time rather than all at once, so the figure shows
+//: the write path — the concern the platform's central decision is about.
+const C4_COMPONENTS = 'CC@1786952709.BT0ZHFR.architecture-backend-write-path'
 const DATATYPE = 'DATATY@1782085920.9Nrbqf.artifact-persistence-model'
 //: A viewpoint whose query has something in most of its sections. `goal-realization` was the first
 //: choice and was the wrong one: it declares one condition and nothing else, so the figure was four
@@ -96,7 +98,7 @@ test('C4 containers', async ({ page, request }) => {
 
 test('C4 backend components', async ({ page, request }) => {
   await captureRenderedDiagram(page, request, 'c4-backend-components.png', C4_COMPONENTS,
-    'Architecture Backend &#8212; Components', provenance('C4 backend components', [C4_COMPONENTS]))
+    'Architecture Backend &#8212; Write Path', provenance('C4 backend components', [C4_COMPONENTS]))
 })
 
 test('re-shoot overview', async ({ page }) => {

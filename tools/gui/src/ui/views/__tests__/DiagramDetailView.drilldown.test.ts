@@ -55,7 +55,7 @@ describe('buildDrilldownByEntityId', () => {
         { diagram_id: 'COMP1', diagram_name: 'Comp', diagram_type: 'c4-component', scope_entity_id: 'C1' },
       ],
     })
-    expect(buildDrilldownByEntityId(nav)).toEqual({ C1: 'COMP1' })
+    expect(buildDrilldownByEntityId(nav)).toEqual({ C1: [{ diagramId: 'COMP1', name: 'Comp' }] })
   })
 
   it('falls back to c4Nav.scope_entity_id when child has no scope_entity_id (same-scope L1/L2)', () => {
@@ -66,7 +66,7 @@ describe('buildDrilldownByEntityId', () => {
         { diagram_id: 'CONT1', diagram_name: 'Container', diagram_type: 'c4-container', scope_entity_id: null },
       ],
     })
-    expect(buildDrilldownByEntityId(nav)).toEqual({ SYS1: 'CONT1' })
+    expect(buildDrilldownByEntityId(nav)).toEqual({ SYS1: [{ diagramId: 'CONT1', name: 'Container' }] })
   })
 
   it('skips a child when both its scope_entity_id and c4Nav.scope_entity_id are null', () => {
@@ -88,10 +88,16 @@ describe('buildDrilldownByEntityId', () => {
         { diagram_id: 'COMP2', diagram_name: 'Comp2', diagram_type: 'c4-component', scope_entity_id: 'C2' },
       ],
     })
-    expect(buildDrilldownByEntityId(nav)).toEqual({ C1: 'COMP1', C2: 'COMP2' })
+    expect(buildDrilldownByEntityId(nav)).toEqual({
+      C1: [{ diagramId: 'COMP1', name: 'Comp1' }],
+      C2: [{ diagramId: 'COMP2', name: 'Comp2' }],
+    })
   })
 
-  it('last child wins when two children share the same scope_entity_id', () => {
+  it('keeps every child when two share the same scope_entity_id, so the reader can choose', () => {
+    // Regression: this used to assert that the last child won, which encoded a defect as intent.
+    // A container drawn one concern at a time — write path, read path, assurance module — has
+    // several component views and no main one, so the drill-down asks instead of guessing.
     const nav = makeNav({
       current_level: 2,
       child_diagrams: [
@@ -99,7 +105,12 @@ describe('buildDrilldownByEntityId', () => {
         { diagram_id: 'COMP1_ALT', diagram_name: 'Comp1Alt', diagram_type: 'c4-component', scope_entity_id: 'C1' },
       ],
     })
-    expect(buildDrilldownByEntityId(nav)).toEqual({ C1: 'COMP1_ALT' })
+    expect(buildDrilldownByEntityId(nav)).toEqual({
+      C1: [
+        { diagramId: 'COMP1', name: 'Comp1' },
+        { diagramId: 'COMP1_ALT', name: 'Comp1Alt' },
+      ],
+    })
   })
 })
 
@@ -115,7 +126,7 @@ describe('drilldownByEntityId computed (reactive)', () => {
         { diagram_id: 'COMP1', diagram_name: 'Comp', diagram_type: 'c4-component', scope_entity_id: 'C1' },
       ],
     })
-    expect(drilldown.value).toEqual({ C1: 'COMP1' })
+    expect(drilldown.value).toEqual({ C1: [{ diagramId: 'COMP1', name: 'Comp' }] })
 
     navRef.value = null
     expect(drilldown.value).toEqual({})
