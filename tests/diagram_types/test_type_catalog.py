@@ -32,6 +32,13 @@ class _MockEntity:
     path: Path = Path("/fake/eng/order.md")
     host_diagram_id: str = "DT-001"
     artifact_type: str = "classifier"
+    #: `EntityRecord.extra` carries the frontmatter, and `classifier_kind` is declared there.
+    extra: dict[str, object] = field(default_factory=lambda: {"classifier_kind": "class"})
+
+
+def _primitive_entity(artifact_id: str, name: str) -> "_MockEntity":
+    """A classifier the repository declares as a leaf scalar type of its own."""
+    return _MockEntity(artifact_id, name, extra={"classifier_kind": "primitive"})
 
 
 @dataclass
@@ -99,7 +106,7 @@ def test_classifiers_returned():
     clf = result.classifiers[0]
     assert clf.type_id == _CLF_A
     assert clf.label == "Order"
-    assert clf.kind == "classifier"
+    assert clf.kind == "class", "the declared kind reaches the answer, not a constant"
 
 
 def test_generation_propagated():
@@ -193,16 +200,48 @@ def test_enterprise_diagram_excludes_engagement_classifiers():
     assert [classifier.type_id for classifier in result.classifiers] == [_CLF_ENT]
 
 
-def test_kind_filter_classifier_passes():
-    store = _store_with([_MockEntity(_CLF_A, "Order")])
-    result = query_datatype_types(store, _PRIMITIVES, kind="classifier")
-    assert len(result.classifiers) == 1
+def test_kind_filter_selects_the_declared_kind():
+    """The filter compares against what each classifier declares.
+
+    It compared against the literal `"classifier"` — the same constant every row was labelled
+    with — so it passed everything or nothing and could never name a kind.
+    """
+    store = _store_with([_MockEntity(_CLF_A, "Order"), _primitive_entity(_CLF_B, "Money")])
+
+    assert [c.label for c in query_datatype_types(store, _PRIMITIVES, kind="primitive").classifiers] == ["Money"]
+    assert [c.label for c in query_datatype_types(store, _PRIMITIVES, kind="class").classifiers] == ["Order"]
 
 
 def test_kind_filter_unknown_excludes_all():
     store = _store_with([_MockEntity(_CLF_A, "Order")])
     result = query_datatype_types(store, _PRIMITIVES, kind="enumeration")
     assert result.classifiers == []
+
+
+def test_a_declared_primitive_joins_the_scalar_vocabulary():
+    """A repository's own primitive is offered beside the built-in scalars, not among the types.
+
+    `primitives` carried the module list alone, so the one field naming what an attribute may be
+    typed as omitted every primitive a repository declared for itself.
+    """
+    store = _store_with([_primitive_entity(_CLF_B, "Money"), _MockEntity(_CLF_A, "Order")])
+
+    result = query_datatype_types(store, _PRIMITIVES)
+
+    assert result.primitives == [*_PRIMITIVES, "Money"], "declared first, then the repository's own"
+    assert "Order" not in result.primitives, "a structured type is not a scalar"
+
+
+def test_the_scalar_vocabulary_is_not_paged_with_the_classifiers():
+    """`primitives` is the vocabulary, so it must not depend on which page a picker is holding."""
+    entities = [_MockEntity(f"CLF@1.p{i}.t", f"T{i}") for i in range(5)]
+    entities.append(_primitive_entity(_CLF_B, "Money"))
+    store = _store_with(entities)
+
+    first = query_datatype_types(store, _PRIMITIVES, limit=2)
+
+    assert len(first.classifiers) == 2
+    assert "Money" in first.primitives
 
 
 # ── sort order ────────────────────────────────────────────────────────────────

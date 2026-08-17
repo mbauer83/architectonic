@@ -5873,6 +5873,11 @@ export interface components {
          *
          *     ``next_cursor`` is null on the last page, following the house pagination convention — present and
          *     null rather than absent, so a client can tell "no more" from "this server does not paginate".
+         *
+         *     ``primitives`` is the whole scalar vocabulary an attribute may name — the diagram type's
+         *     built-ins first, then the labels of any classifier the repository declares `primitive`. It is
+         *     deliberately not paged with ``classifiers``: it is the vocabulary rather than a page of it, and
+         *     paging it would make the scalars on offer depend on which page a picker happened to hold.
          */
         DatatypeTypeListResponse: {
             /** Classifiers */

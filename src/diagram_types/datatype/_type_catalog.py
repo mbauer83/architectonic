@@ -1,15 +1,27 @@
-"""Datatype type catalog — discovery queries for classifier-typed attribute types."""
+"""Datatype type catalog — discovery queries for classifier-typed attribute types.
+
+This is the answer an author picks a type from, so what it can distinguish is what they can choose
+between. It reported `kind="classifier"` for every row and listed only the module's built-in scalars
+under `primitives`, which made a repository's own `primitive`-kinded classifier — a declaration the
+ontology accepts, the renderer stereotypes and the resolver resolves — indistinguishable here from a
+structured type. It could still be selected, buried among the classifiers of whichever diagram
+declared it, and it never read as the scalar it is.
+"""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any
 
+from src.diagram_types.datatype._classifier_kinds import PRIMITIVE_KIND, classifier_kind_of
+
 
 @dataclass(frozen=True)
 class ClassifierInfo:
     type_id: str
     label: str
+    #: What the declaration says this is — `class`, `datatype`, `enumeration` or `primitive`.
+    #: A picker groups a `primitive` with the built-in scalars rather than with structured types.
     kind: str
     scope: str
     host_diagram_id: str
@@ -46,12 +58,13 @@ def query_datatype_types(
             continue
         if query is not None and query.lower() not in e.name.lower():
             continue
-        if kind is not None and kind != "classifier":
+        entity_kind = classifier_kind_of(e.extra or {})
+        if kind is not None and kind != entity_kind:
             continue
         classifiers.append(ClassifierInfo(
             type_id=e.artifact_id,
             label=e.name,
-            kind="classifier",
+            kind=entity_kind,
             scope=entity_scope,
             host_diagram_id=e.host_diagram_id or "",
         ))
@@ -61,10 +74,30 @@ def query_datatype_types(
     next_cursor = str(offset + limit) if offset + limit < len(classifiers) else None
     return TypeCatalogResult(
         generation=generation,
-        primitives=list(primitive_names),
+        primitives=_primitive_vocabulary(primitive_names, classifiers),
         classifiers=page,
         next_cursor=next_cursor,
     )
+
+
+def _primitive_vocabulary(
+    declared: list[str], classifiers: list[ClassifierInfo]
+) -> list[str]:
+    """Every scalar type an attribute may name — the module's, then the repository's own.
+
+    Whole-population rather than page-scoped, and deliberately: `primitives` is the vocabulary,
+    not a page of it, and paging it beside the classifiers would make the set of scalars on offer
+    depend on which page a picker happened to be holding.
+
+    A custom primitive's *label* is what goes in, because that is what the built-in entries are and
+    what an author reads. Selecting one still records the classifier reference the picker already
+    emits, which is what survives a rename; nothing about the reference form changes here.
+    """
+    names = list(declared)
+    for classifier in classifiers:
+        if classifier.kind == PRIMITIVE_KIND and classifier.label not in names:
+            names.append(classifier.label)
+    return names
 
 
 def _diagram_scope(store: Any, diagram_id: str | None) -> str:

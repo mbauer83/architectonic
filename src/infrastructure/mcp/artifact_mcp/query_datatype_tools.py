@@ -19,10 +19,15 @@ def register_query_datatype_tools(mcp: FastMCP) -> None:
         title="Datatype: Type Catalog",
         description=(
             "List available attribute types for datatype diagrams. "
-            "Returns built-in primitive names and named classifier types. "
+            "`primitives` is the whole scalar vocabulary — the built-in names, then the label of "
+            "every classifier this repository declares `classifier_kind: primitive`. Each entry in "
+            "`classifiers` carries its declared `kind` ('class', 'datatype', 'enumeration' or "
+            "'primitive'). "
             "Use type_id from the classifiers list when setting "
-            "{kind: 'classifier', id: '<type_id>'} attribute types via artifact_edit_diagram. "
+            "{kind: 'classifier', id: '<type_id>'} attribute types via artifact_edit_diagram; a "
+            "custom primitive may also be named as {kind: 'primitive', name: '<label>'}. "
             "Filters: query (name substring), scope ('engagement'|'enterprise'), "
+            "kind (the declared classifier kind), "
             "diagram_id (classifiers owned by a specific diagram). "
             "Pagination: pass next_cursor from the previous response as cursor."
         ),
@@ -42,8 +47,9 @@ def register_query_datatype_tools(mcp: FastMCP) -> None:
     ) -> dict[str, object]:
         from src.diagram_types.datatype import _config as _dt_config  # noqa: PLC0415
         from src.diagram_types.datatype._type_catalog import query_datatype_types  # noqa: PLC0415
+        from src.domain.diagrams.diagram_type_config import primitive_types_from_mapping  # noqa: PLC0415
 
-        primitive_names = list(str(p) for p in (_dt_config.get("ui") or {}).get("primitive_types") or [])
+        primitive_names = list(primitive_types_from_mapping(_dt_config))
         roots = resolve_repo_roots(
             repo_scope=repo_scope,
             repo_root=repo_root,
