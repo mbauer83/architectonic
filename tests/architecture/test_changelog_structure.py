@@ -136,3 +136,22 @@ def test_a_detail_file_points_back_at_the_summary(name: str) -> None:
     """
     text = (_ASSETS / name).read_text(encoding="utf-8")
     assert "CHANGELOG.md" in text, name
+
+
+def test_every_release_section_has_its_compare_link() -> None:
+    """A version heading is a shortcut reference, so a missing definition renders as literal text.
+
+    `## [0.7.0]` is markdown for a link to `[0.7.0]:` at the foot of the file. When the definition is
+    not added with the section, the heading silently loses its link and reads `[0.7.0] — 2026-08-17`
+    with the brackets showing. Nothing else notices: the link checker walks `docs/` and resolves file
+    references, and a shortcut reference to an absent definition is not a file reference at all.
+    """
+    text = _changelog()
+    undefined = [
+        version for version in _release_headings()
+        if f"\n[{version}]: " not in text
+    ]
+    assert undefined == [], (
+        f"release headings with no link definition at the foot of the file: {undefined}. "
+        "Add `[<version>]: <compare-url>` beside the others."
+    )
