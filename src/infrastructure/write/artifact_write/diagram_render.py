@@ -3,7 +3,6 @@
 import os
 import subprocess
 import tempfile
-from collections.abc import Iterable
 from pathlib import Path
 
 from src.application.repo_path_helpers import rendered_dir_for_diagram, repo_root_for_diagram_path
@@ -13,13 +12,6 @@ from src.application.verification.artifact_verifier_syntax import (
     resolve_java_executable,
 )
 from src.config.settings import plantuml_limit_size, render_dpi
-from src.domain.diagrams.bindings import (
-    SCOPE_IDS_KEY,
-    SCOPE_KEY,
-    Binding,
-    scope_shorthand,
-    scope_target,
-)
 from src.infrastructure.rendering.native_svg import render_native_svg
 from src.infrastructure.rendering.puml_safety import strip_leading_puml_frontmatter, strip_startuml_name
 
@@ -46,24 +38,28 @@ def _confidential_render_skip(puml_path: Path) -> str | None:
     return None
 
 
-def render_entities_with_scope(
-    diagram_entities: dict[str, object],
-    bindings: Iterable[Binding],
-) -> dict[str, object]:
-    """The renderer's input, with the diagram's scope restored from its ``scoped-by`` binding.
+def render_diagram_outputs(path: Path, warnings: list[str]) -> list[str]:
+    """Render a written diagram's SVG and PNG, and report any layout failure as a failure.
 
-    The persist path is lossy of shorthand — `strip_diagram_shorthand` removes `_scope_entity_id`
-    because the top-level `bindings:` block is canonical on disk — so a projector-backed diagram
-    reaching the renderer from stored frontmatter carries no scope key at all. Restoring it lives
-    here, beside the render call, rather than being spelled at each of the two write paths that
-    make one: the create path and the edit path each had their own copy, and each read only the
-    singular target, so a diagram scoped by a set would have rendered as if it had no scope.
+    SVG first, and the PNG only if it succeeded. Both are drawn from the same body, so one verdict
+    covers both — and only the SVG can *state* one: PlantUML draws a layout crash into the picture,
+    and SVG is the format whose picture is readable text. Rendering the PNG first meant a crashed
+    body reached disk as a stack trace under the diagram's own filename, replacing the last good
+    render, before anything had established that it was a crash.
+
+    One owner, because there were two. The create path turned a crash into an `E350` issue and the
+    shared commit tail every *edit* goes through reported the same crash as a warning with
+    `valid: true` — so `auto-sync` on a diagram that could no longer be drawn answered as a success.
+    A caller cannot tell a rendered diagram from one whose picture is a stack trace, which is the
+    whole reason the failure channel exists.
     """
-    target = scope_target(bindings)
-    if target is None or SCOPE_KEY in diagram_entities or SCOPE_IDS_KEY in diagram_entities:
-        return dict(diagram_entities)
-    key, value = scope_shorthand(target)
-    return {**diagram_entities, key: value}
+    failures: list[str] = []
+    svg_path = _render_diagram_svg(path, warnings, failures)
+    if svg_path is not None or not failures:
+        png_path = _render_diagram_png(path, warnings, failures)
+        if png_path:
+            warnings.append(f"Rendered PNG: {png_path}")
+    return failures
 
 
 def _renderer_supports_edge_labels(renderer: object) -> bool:
@@ -129,14 +125,36 @@ def _fail(warnings: list[str], failures: list[str] | None, message: str) -> None
         failures.append(message)
 
 
+#: Text PlantUML draws *into* the picture when it cannot lay a diagram out. Matched against the
+#: rendered SVG, which is the only place some crashes appear at all.
+_ERROR_IMAGE_MARKERS: tuple[str, ...] = ("An error has occurred", "has crashed")
+
+
 def _is_error_render(stderr: str) -> bool:
     """True when PlantUML produced an error image instead of a diagram.
 
-    PlantUML exits 0 even when graphviz layout crashes (e.g. UnparsableGraphvizException);
-    the only reliable signal is the Java stack trace on stderr. Detecting it lets callers
-    surface the failure and keep the previous good render instead of an error picture.
+    PlantUML exits 0 even when graphviz layout crashes, so the return code says nothing. A stack
+    trace on stderr is one signal — not, as this said, the only reliable one, and the difference
+    was a repository's own diagram written and reported valid with a Java stack trace where the
+    picture should be. An `EmptySvgException` out of dot's orthogonal router exits 0, prints
+    *nothing* to stderr, and draws the trace into the image; `-failfast2` does not change that.
+    See `_svg_is_error_image` for the reading that catches it.
     """
     return "Exception" in stderr
+
+
+def _svg_is_error_image(svg_path: Path) -> bool:
+    """True when a rendered SVG is PlantUML's error picture rather than the diagram.
+
+    The picture is the only place the failure is stated, so the picture is what is read. SVG is
+    text and carries the message verbatim, which is why the check lives on this format — a PNG of
+    the same body would need pixels read back to say the same thing.
+    """
+    try:
+        head = svg_path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return False
+    return any(marker in head for marker in _ERROR_IMAGE_MARKERS)
 
 
 def _render_diagram_png(
@@ -313,12 +331,13 @@ def _render_diagram_svg(
             return None
 
         rendered = rendered_dir / f"{tmp_path.stem}.svg"
-        if _is_error_render(result.stderr):
+        if _is_error_render(result.stderr) or _svg_is_error_image(rendered):
             rendered.unlink(missing_ok=True)
             _fail(
                 warnings,
                 failures,
-                f"PlantUML produced an error image (layout failure), previous render kept: {result.stderr[:200]}",
+                "PlantUML produced an error image (layout failure), previous render kept: "
+                f"{result.stderr[:200] or 'no stderr; the failure is drawn into the picture'}",
             )
             return None
         if rendered.exists():

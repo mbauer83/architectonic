@@ -27,10 +27,9 @@ from .diagram_references import (
 )
 from .diagram_render import (
     _render_diagram_entities_puml,
-    _render_diagram_png,
-    _render_diagram_svg,
-    render_entities_with_scope,
+    render_diagram_outputs,
 )
+from .diagram_render_input import render_entities_restored
 from .types import WriteResult
 from .verify import verify_content_in_temp_path
 
@@ -66,9 +65,10 @@ def _build_model_backed(
     effective_id: str | None,
     entity_ids_used: list[str] | None,
     connection_ids_used: list[str] | None,
+    view_derivations: list[dict[str, object]] | None,
 ) -> _DiagramBuild:
     """Render a diagram from structured entities/connections, collecting referenced ids."""
-    render_entities = render_entities_with_scope(dict(diagram_entities), norm_bindings)
+    render_entities = render_entities_restored(dict(diagram_entities), norm_bindings, view_derivations)
     puml_body = _render_diagram_entities_puml(diagram_type, name, render_entities, diagram_connections, repo_root)
     collected_e, collected_c = _collect_diagram_renderer_references(
         diagram_type, repo_root, render_entities, diagram_connections, bindings=norm_bindings_raw
@@ -227,6 +227,7 @@ def create_diagram(
             diagram_connections=diagram_connections, norm_bindings=norm_bindings,
             norm_bindings_raw=norm_bindings_raw, effective_id=artifact_id,
             entity_ids_used=entity_ids_used, connection_ids_used=connection_ids_used,
+            view_derivations=view_derivations,
         )
     else:
         build = _build_from_puml(
@@ -346,11 +347,7 @@ def create_diagram(
     # actually look at, and a layout crash used to come back as `verification.valid: true` with a
     # Java stack trace buried in `warnings`. A caller — or a CI step — could not tell a rendered
     # diagram from one that wrote a stack trace to disk.
-    render_failures: list[str] = []
-    png_path = _render_diagram_png(path, warnings, render_failures)
-    if png_path:
-        warnings.append(f"Rendered PNG: {png_path}")
-    _render_diagram_svg(path, warnings, render_failures)
+    render_failures = render_diagram_outputs(path, warnings)
     res.issues.extend(
         # E350 is the existing "PlantUML error" code the syntax verifier already emits; a layout
         # crash is the same class of fact, so it reuses it rather than minting a second vocabulary.

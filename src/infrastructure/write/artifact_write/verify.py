@@ -35,13 +35,19 @@ def _mirror_doc_entry(existing: Path, source_root: Path, mirror_root: Path, skip
 
 
 def _document_temp_path(tmp_root: Path, desired_name: str, support_repo_root: Path | None) -> Path:
-    """Mirror the docs tree (symlinks) around the document under test so cross-doc checks resolve."""
+    """Mirror the docs tree (symlinks) around the document under test so cross-doc checks resolve.
+
+    The diagram catalog is mirrored for the same reason the model is: a document's prose may point
+    at a diagram, and a document type may now *require* that it does. Without it the link rule
+    resolved every `.puml` href against a tree that has no diagrams in it and reported each one as
+    unresolvable, refusing a write the real repository would have accepted.
+    """
     tmp_path = tmp_root / DOCS / desired_name
     if support_repo_root is None:
         tmp_path.parent.mkdir(parents=True, exist_ok=True)
         return tmp_path
 
-    for top in (ARCH_REPO, MODEL, PROJECTS):
+    for top in (ARCH_REPO, MODEL, PROJECTS, DIAGRAM_CATALOG):
         src = support_repo_root / top
         if src.exists():
             os.symlink(src, tmp_root / top, target_is_directory=True)

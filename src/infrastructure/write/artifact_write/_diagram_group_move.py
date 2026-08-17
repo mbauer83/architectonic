@@ -17,10 +17,11 @@ from src.application.repo_path_helpers import (
     rendered_path_for,
 )
 from src.application.verification.artifact_verifier import ArtifactVerifier, VerificationResult
+from src.application.verification.artifact_verifier_types import Issue, Severity
 from src.domain.repository.groups import UNCATEGORIZED
 
 from .diagram_confidentiality import is_confidential_diagram_source
-from .diagram_render import _render_diagram_png, _render_diagram_svg
+from .diagram_render import render_diagram_outputs
 from .types import WriteResult
 from .verify import verify_content_in_temp_path
 
@@ -151,10 +152,10 @@ def commit_diagram_write(
         warnings.append(f"Moved diagram to group '{group}': {write_path}")
 
     if render:
-        png_path = _render_diagram_png(write_path, warnings)
-        if png_path:
-            warnings.append(f"Rendered PNG: {png_path}")
-        _render_diagram_svg(write_path, warnings)
+        res.issues.extend(
+            Issue(Severity.ERROR, "E350", failure, str(write_path))
+            for failure in render_diagram_outputs(write_path, warnings)
+        )
 
     clear_repo_caches(write_path)
     return WriteResult(
