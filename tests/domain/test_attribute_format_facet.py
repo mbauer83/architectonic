@@ -86,11 +86,33 @@ def test_validation_accepts_a_relative_reference_to_an_artifact() -> None:
     assert validate_against_schema({"Tracked by": reference}, _URI_SCHEMA) == []
 
 
+def test_validation_accepts_an_ssh_address_for_a_repository() -> None:
+    """`git@github.com:owner/repo.git` is what a source-repository field usually holds.
+
+    It is not a URI — it carries no scheme, and `github.com` cannot be one because a scheme may not
+    contain `@` — so it is accepted as its own form. The first version of this check took it only
+    by accident, having asked no more than that the value hold no whitespace.
+    """
+    for address in ("git@github.com:mbauer83/architectonic.git", "ssh://git@github.com/x/y.git"):
+        assert validate_against_schema({"Tracked by": address}, _URI_SCHEMA) == [], address
+
+
 def test_validation_rejects_a_value_that_addresses_nothing() -> None:
     """A facet nothing enforces is a promise nothing keeps."""
     errors = validate_against_schema({"Tracked by": "see the wiki, somewhere"}, _URI_SCHEMA)
 
     assert errors == ["Tracked by: 'see the wiki, somewhere' is not a valid uri"]
+
+
+def test_validation_rejects_a_bare_word_with_no_spaces() -> None:
+    """The check has to be about addressing, not about spacing.
+
+    Asking only for the absence of whitespace accepted `askJohn` as readily as a link, which is a
+    check in name and none in effect.
+    """
+    assert validate_against_schema({"Tracked by": "askJohn"}, _URI_SCHEMA) == [
+        "Tracked by: 'askJohn' is not a valid uri"
+    ]
 
 
 def test_validation_ignores_an_unset_value() -> None:
