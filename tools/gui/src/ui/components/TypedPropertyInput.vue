@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent } from 'vue'
 import type { EntityAttributeDescriptor } from '../../domain'
+import {
+  attributeValidationError, inputTypeForFormat, placeholderForFormat,
+} from '../lib/attributeValidation'
 
 // Async to break the TypedPropertyInput ⇄ ArrayPropertyInput import cycle (an array's items
 // are themselves typed inputs). The recursion terminates — item types are never `array`.
@@ -23,6 +26,11 @@ const isArray = computed(() => props.descriptor.type === 'array')
 const isNumeric = computed(
   () => props.descriptor.type === 'integer' || props.descriptor.type === 'number',
 )
+// A declared format can ask for its own control — a date picker whose value is already the shape
+// the backend enforces. Where it asks for none, the type's control stands and the format shows up
+// as validation and a hint instead.
+const formatInputType = computed(() => inputTypeForFormat(props.descriptor.format))
+const formatPlaceholder = computed(() => placeholderForFormat(props.descriptor.format))
 
 const step = computed(() => {
   if (props.descriptor.type === 'integer') return 1
@@ -42,18 +50,9 @@ const numMax = computed(() => {
   return c.maximum ?? c.exclusiveMaximum
 })
 
-const validationError = computed((): string | null => {
-  const v = props.modelValue
-  if (props.required && !v.trim()) return 'Required'
-  if (!v) return null
-  const t = props.descriptor.type
-  if (t === 'integer' && !/^-?[0-9]+$/.test(v.trim())) return 'Must be a whole number'
-  if (t === 'number' && isNaN(Number(v.trim()))) return 'Must be a number'
-  if (isEnum.value && !props.descriptor.enum!.includes(v)) {
-    return `Must be one of: ${props.descriptor.enum!.join(', ')}`
-  }
-  return null
-})
+const validationError = computed(
+  () => attributeValidationError(props.descriptor, props.modelValue, props.required ?? false),
+)
 </script>
 
 <template>
@@ -114,14 +113,16 @@ const validationError = computed((): string | null => {
       @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
     >
 
-    <!-- string (default) → text input -->
+    <!-- string (default) → text input, or the control the declared format asks for -->
     <input
       v-else
       class="prop-value"
-      type="text"
+      :type="formatInputType ?? 'text'"
       :value="modelValue"
-      :placeholder="placeholder ?? ''"
+      :placeholder="placeholder ?? formatPlaceholder ?? ''"
       :pattern="descriptor.constraints?.pattern"
+      :minlength="descriptor.constraints?.minLength"
+      :maxlength="descriptor.constraints?.maxLength"
       @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
     >
 

@@ -1,34 +1,22 @@
 /**
- * Logic tests for TypedPropertyInput typed-attribute behaviour.
+ * Typed-attribute validation for the schema-driven forms.
  *
- * The validationError computed is the source of truth for client-side mirroring
- * of server-side constraints. We test it directly using Vue reactivity, without
- * mounting the component (no DOM required for logic tests).
+ * `attributeValidationError` is the source of truth for the client-side mirroring of what the
+ * write path enforces, and it is what this exercises. It used to be re-implemented here, under a
+ * comment saying it was a mirror — so the copy agreed with the component only until one of them
+ * changed, and adding format, length and pattern checks to the component changed nothing here.
  */
 import { describe, it, expect } from 'vitest'
 import { ref, computed, type Ref } from 'vue'
 import type { EntityAttributeDescriptor } from '../../../domain'
+import { attributeValidationError } from '../../lib/attributeValidation'
 
-// Mirror the validationError logic from TypedPropertyInput.vue so we can unit-test it
-// without a browser DOM.
 function makeValidationError(
   modelValue: Ref<string>,
   descriptor: EntityAttributeDescriptor,
   required: boolean,
 ) {
-  return computed((): string | null => {
-    const v: string = modelValue.value
-    if (required && !v.trim()) return 'Required'
-    if (!v) return null
-    const t = descriptor.type
-    const isEnum = Boolean(descriptor.enum?.length)
-    if (t === 'integer' && !/^-?[0-9]+$/.test(v.trim())) return 'Must be a whole number'
-    if (t === 'number' && isNaN(Number(v.trim()))) return 'Must be a number'
-    if (isEnum && !descriptor.enum!.includes(v)) {
-      return `Must be one of: ${descriptor.enum!.join(', ')}`
-    }
-    return null
-  })
+  return computed(() => attributeValidationError(descriptor, modelValue.value, required))
 }
 
 describe('TypedPropertyInput — enum validation', () => {
@@ -211,5 +199,44 @@ describe('TypedPropertyInput — D2 default attribute shapes', () => {
   it('applies no scalar validation to an array attribute (Contained Information → list editor)', () => {
     const d: EntityAttributeDescriptor = { type: 'array' }
     expect(makeValidationError(ref('["sbom", "advisories"]'), d, false).value).toBeNull()
+  })
+})
+
+describe('TypedPropertyInput — declared constraints and formats', () => {
+  // These are what the copied mirror could not see: served on the descriptor, bound to the
+  // control, and reported by nothing, because the browser's validity state never reaches the
+  // form's own error line.
+  const withConstraints = (
+    constraints: EntityAttributeDescriptor['constraints'],
+  ): EntityAttributeDescriptor => ({ type: 'string', constraints })
+
+  it('reports a value shorter than the declared minimum', () => {
+    const value = ref('ab')
+    expect(makeValidationError(value, withConstraints({ minLength: 3 }), false).value)
+      .toBe('Must be at least 3 characters')
+  })
+
+  it('reports a value longer than the declared maximum', () => {
+    const value = ref('abcd')
+    expect(makeValidationError(value, withConstraints({ maxLength: 3 }), false).value)
+      .toBe('Must be at most 3 characters')
+  })
+
+  it('reports a value the declared pattern rejects', () => {
+    const value = ref('nope')
+    expect(makeValidationError(value, withConstraints({ pattern: '^[0-9]+$' }), false).value)
+      .toBe('Must match ^[0-9]+$')
+  })
+
+  it('judges nothing when the declared pattern cannot be parsed', () => {
+    const value = ref('anything')
+    expect(makeValidationError(value, withConstraints({ pattern: '([' }), false).value).toBeNull()
+  })
+
+  it('reports a value that does not satisfy its declared format', () => {
+    const value = ref('see the wiki, somewhere')
+    const descriptor: EntityAttributeDescriptor = { type: 'string', format: 'uri' }
+    expect(makeValidationError(value, descriptor, false).value)
+      .toBe('Must be a link or a path, with no spaces')
   })
 })
