@@ -11,7 +11,13 @@ So the reading lives here once, as `references_from`, and each caller is a filte
 
 * what refers to *this entity* — the document context read;
 * what refers to something *about to be deleted* — the cascade preflight;
-* what refers to something *that is not there* — W158.
+* what refers to something *that is not there* — **W155**, in `check_internal_links`.
+
+The third was listed here as W158, a code that was never minted: the fact already had a rule and a
+number, and giving it a second would have meant two vocabularies for one finding. W155 was a
+document-only, `.md`-only regex when this docstring was written, which is what made it look like a
+different question; it became a filter over `references_from` and grew to every artifact source, so
+it now answers the whole of it — for a diagram's prose as much as a document's.
 
 The next filter is reference-typed attributes, which would otherwise have been the fourth reading
 of one question.
