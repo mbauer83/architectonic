@@ -19,39 +19,40 @@ whose twelve sections say what model content each one expects.
   `diagram:<type>` a diagram type. `doc:@all` and `diagram:@all` mean any of that kind. The
   entity-only spelling is still read, so no schema file has to be rewritten.
 - **A term naming a diagram type this deployment does not register is a warning (W159), not an
-  error.** The assurance diagram types need the confidential store; a stored diagram of such a type
-  still satisfies the requirement, so a shipped template stays usable on a host that cannot create
-  one.
+  error.** The assurance diagram types need the confidential store, and a stored diagram of such a
+  type still satisfies the requirement, so a shipped template stays usable on a host that cannot
+  create one.
 - **C4 System Landscape** — the altitude above a system context. It is scoped by a *set* of systems
   (`_scope_entity_ids`), draws them together with the people and third-party systems around all of
   them, and drills down into the system context of whichever one you click.
 - **C4 Deployment** — where one system's containers run. It draws the same containers a container
-  view draws, placed on the technology hosting them, so it sits beside the zoom rather than below
-  it: the navigation offers it as a lookup from a logical view and the logical views as a lookup
-  back. Hosting is read along ArchiMate's own path,
+  view draws, placed on the technology hosting them, so it sits beside the zoom rather than below it,
+  and the navigation offers each as a lookup from the other. Hosting is read along ArchiMate's path,
   `technology-node --aggregation--> artifact --realization--> application-component`; a container
   with no artifact is left out rather than given an invented host.
 - **A diagram can be bound to several entities at once.** `bindings[].target` accepts `entity_ids`
   beside `entity_id`, which is what a landscape's scope is. A diagram still has at most one
-  diagram-level `scoped-by` binding (E405); the plurality is in its target, and a member that does
-  not resolve is **E414**.
+  diagram-level `scoped-by` binding (E405), the plurality is in its target, and an unresolved member
+  is **E414**.
 - **arc42**, as a document type every repository is scaffolded with: twelve sections in the
   standard's order, each declaring the model content it expects. Only *Architecture Decisions*
   (`doc:adr`) and *Quality Requirements* (`requirement`) require anything, so a skeleton is writable
   the day it is created. Section structure from arc42 by Dr. Gernot Starke and Dr. Peter Hruschka,
-  CC BY-SA 4.0; the attribution is carried on the document type and shown on the create form.
+  CC BY-SA 4.0, carried on the document type and shown on the create form.
 - **`THIRD-PARTY-NOTICES.md` inventories shipped content**, not only dependencies — a new
   "Shipped content" section, generated from `licenses/content.json`.
 - **`data-store`, a specialization of `application-component`**, with its own attribute profile:
   source of truth, consistency model, retention, backup and recovery. C4 counts a data store as a
-  container, so a component the model declares one is drawn with the cylinder notation. The shape
-  follows the declaration, not a keyword in the technology string.
+  container, so one the model declares is drawn with the cylinder notation — from the declaration
+  rather than from a keyword in the technology string.
 - **A grouping is drawn as a C4 group** — a boundary around the elements it holds, rather than an
   element of its own. A group holds one level of abstraction, so members the level does not draw are
-  left out, and a group with no drawn members is not drawn at all.
-- **`_direction` on a generated C4 body**, `left_to_right` (the default) or `top_to_bottom`. Left to
-  right, orthogonal routing and a nested boundary together are a combination GraphViz cannot lay
-  out, and the direction is the one of the three a view can give up.
+  left out, and a group with no drawn members is not drawn.
+- **`_direction` on a generated C4 body**, `left_to_right` (the default) or `top_to_bottom`, for a
+  view that nests boundaries and hits a GraphViz layout failure.
+- **A `format` facet on attribute declarations**, so a value can say what it *addresses*. `uri`
+  accepts a reference, absolute or relative; `date` is a calendar date. Both are enforced, and a
+  schema declaring a format nothing checks is refused at startup.
 
 ### Changed
 
@@ -68,12 +69,20 @@ whose twelve sections say what model content each one expects.
   architecture does not own.
 - **A dependency edge carries a label only where the label adds something.** Serving and association
   were labelled "uses", which the arrow already says. Flow, triggering and access keep their verbs,
-  and an author's own `edge_labels` entry is used whatever the type.
-- **A C4 view collects a dependency on any part of another drawn element**, not only on that element
-  itself, and raises the edge onto the box standing for it. A container whose only relations run to
-  something nested inside a sibling used to be drawn with no edges at all.
+  and an author's `edge_labels` entry is used whatever the type.
+- **A C4 view collects a dependency on any part of another drawn element** and raises the edge onto
+  the box standing for it. A container whose only relations ran to something nested inside a sibling
+  was drawn with no edges at all.
 - **A drill-down badge on a container with several component views opens a menu.** Where a container
   is documented one concern at a time, the badge offered no way to say which view was meant.
+- **The datatype type catalog reports what each classifier declares itself to be.** Every row
+  carried the constant `classifier`, so a repository's own `classifier_kind: primitive` was
+  indistinguishable from a structured type. The `kind` filter selects on the declared kind,
+  `primitives` lists the built-ins then the repository's own, and the picker offers one beside
+  `String` and `Integer`.
+- **An authoring input honours a declared format and the declared bounds.** A `date` attribute gets
+  a date control, a `uri` attribute a hint and a check, and `minLength`, `maxLength` and `pattern`
+  now report — they were served and bound to the control and shown by nothing.
 
 ### Fixed
 
@@ -83,11 +92,9 @@ whose twelve sections say what model content each one expects.
 - **Promotion refuses a selection that would leave a required *document* or *diagram* reference
   dangling**, and names the artifact — as it already did for a required entity. The engagement and
   enterprise schema comparison also compares document-level terms, which it had never done.
-- **A diagram whose layout crashes is refused (E350) rather than written.** PlantUML draws some
-  layout failures into the picture and exits 0 with nothing on stderr, so the rendered SVG is now
-  read for them. Every write path reports the failure the same way; an edit used to answer
-  `valid: true` over a picture that was a stack trace, and the previous good render is kept either
-  way.
+- **A diagram whose layout crashes is refused (E350) rather than written**, from every write path.
+  An edit used to answer `valid: true` over a picture that was a stack trace. The previous good
+  render is kept.
 - **No edge is drawn onto a C4 boundary.** A boundary is not an element and cannot be an endpoint of
   a relationship, which holds for the scope wrapper, a group and an occupied deployment node alike.
   The containment is still recorded; only the arrow is declined.
