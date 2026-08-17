@@ -19,6 +19,11 @@ entity-ids-used:
 - DOB@1777239887.V-MgY1.yaml-artifact-frontmatter
 diagram-entities:
   classifier:
+  - id: CLF@1786983687.foS-lP.artifact-id
+    classifier_kind: primitive
+    label: ArtifactId
+    role: "A typed epoch-random identity token, PREFIX@epoch.random.slug \u2014 a\
+      \ leaf value with no internal structure, immutable and unchanged by a rename."
   - id: CLF@1782085920.ShZ_Qq.artifact
     classifier_kind: class
     label: Artifact
@@ -38,8 +43,8 @@ diagram-entities:
     - id: a_aid
       name: artifact_id
       type:
-        kind: primitive
-        name: String
+        kind: classifier
+        id: CLF@1786983687.foS-lP.artifact-id
       role: Stable identity token PREFIX@epoch.random.slug; immutable, rename-free
     - id: a_name
       name: name
@@ -100,13 +105,13 @@ diagram-entities:
     - id: cn_src
       name: source_id
       type:
-        kind: primitive
-        name: String
+        kind: classifier
+        id: CLF@1786983687.foS-lP.artifact-id
     - id: cn_tgt
       name: target_id
       type:
-        kind: primitive
-        name: String
+        kind: classifier
+        id: CLF@1786983687.foS-lP.artifact-id
     - id: cn_typ
       name: conn_type
       type:
@@ -261,7 +266,7 @@ bindings:
   correspondence_kind: represents
   target:
     entity_id: DOB@1777239887.V-MgY1.yaml-artifact-frontmatter
-last-updated: '2026-08-13T13:58:01Z'
+last-updated: '2026-08-17T16:23:22Z'
 ---
 @startuml Artifact Persistence Model
 title Artifact Persistence Model
@@ -269,8 +274,11 @@ skinparam linetype ortho
 skinparam wrapWidth 240
 skinparam maxMessageSize 240
 
+class "ArtifactId" as _CLF_1786983687_foS_lP_artifact_id <<primitive>> {
+}
+
 abstract class "Artifact" as _CLF_1782085920_ShZ_Qq_artifact {
-  + artifact_id : String {id}
+  + artifact_id : ArtifactId {id}
   + name : String
   + status : String
   + version : String
@@ -286,8 +294,8 @@ class "Entity" as _CLF_1782085920_wrZtUi_entity {
 }
 
 class "Connection" as _CLF_1782085920_LEgkrJ_connection {
-  + source_id : String {id}
-  + target_id : String {id}
+  + source_id : ArtifactId {id}
+  + target_id : ArtifactId {id}
   + conn_type : String {id}
   + src_cardinality : String {optional}
   + tgt_cardinality : String {optional}
