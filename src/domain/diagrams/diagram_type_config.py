@@ -130,8 +130,22 @@ def diagram_type_ui_config_from_mapping(
             if isinstance(entry, Mapping)
         ),
         type_ui_slots={str(k): str(v) for k, v in ui.get("type_ui_slots", {}).items()},
-        primitive_types=tuple(str(t) for t in ui.get("primitive_types", ())),
+        primitive_types=primitive_types_from_mapping(config),
     )
+
+
+def primitive_types_from_mapping(config: Mapping[str, Any]) -> tuple[str, ...]:
+    """The scalar type vocabulary a diagram type declares, read in one place.
+
+    Four callers spelled `(config.get("ui") or {}).get("primitive_types") or []` themselves — the
+    module's two verification hooks, the MCP tool and the REST router — beside this module, which
+    already owned the reading and was the only one to normalise the entries. A fifth was about to
+    be written for the type catalog.
+    """
+    ui = config.get("ui")
+    if not isinstance(ui, Mapping):
+        return ()
+    return tuple(str(t) for t in ui.get("primitive_types", ()))
 
 
 def _own_entity_ui_config_from_mapping(config: Mapping[str, Any]) -> DiagramOwnEntityTypeUiConfig:

@@ -12,6 +12,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass, replace
 from typing import Any, Mapping
 
+from src.diagram_types.datatype._classifier_kinds import classifier_kind_of
 from src.domain.diagrams.diagram_verification import BaseDiagramVerificationContext
 
 
@@ -65,7 +66,7 @@ def compile_projection(
         classifiers_by_id[entity.artifact_id] = ClassifierDefinition(
             type_id=entity.artifact_id,
             label=entity.name,
-            kind=str(extra.get("classifier_kind") or ""),
+            kind=classifier_kind_of(extra),
             scope=str(candidate.scope_for_path(entity.path)),
             status=entity.status,
             host_diagram_id=str(entity.host_diagram_id or ""),
@@ -116,7 +117,7 @@ def _inline_classifier_defs(ctx: BaseDiagramVerificationContext) -> Iterator[Cla
         yield ClassifierDefinition(
             type_id=clf_id,
             label=str(clf.get("label") or clf_id),
-            kind=str(clf.get("classifier_kind") or ""),
+            kind=classifier_kind_of(clf),
             scope=str(ctx.scope),
             status=status,
             host_diagram_id=own_id,

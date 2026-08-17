@@ -9,6 +9,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from src.diagram_types.datatype._classifier_kinds import PRIMITIVE_KIND
+
 
 @dataclass(frozen=True)
 class Resolved:
@@ -132,7 +134,7 @@ class TypeResolver:
             clf
             for clf_id in projection.classifier_ids_by_name.get(norm, ())
             if (clf := projection.classifiers_by_id.get(clf_id)) is not None
-            and clf.kind == "primitive"
+            and clf.kind == PRIMITIVE_KIND
         ]
         return tuple(sorted(found, key=lambda clf: (0 if clf.scope == "enterprise" else 1, clf.type_id)))
 

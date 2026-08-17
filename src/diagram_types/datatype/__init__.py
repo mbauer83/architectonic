@@ -8,7 +8,7 @@ from src.diagram_types.datatype.renderer import DatatypePumlRenderer
 from src.domain.diagrams.diagram_entities_schema import derive_diagram_entities_schema
 from src.domain.diagrams.diagram_ontology_loader import DiagramOntology, load_diagram_ontology
 from src.domain.diagrams.diagram_ontology_merge import merge_ontology_into_diagram_only_types
-from src.domain.diagrams.diagram_type_config import puml_notes_from_config
+from src.domain.diagrams.diagram_type_config import primitive_types_from_mapping, puml_notes_from_config
 from src.domain.modules.bridges import BridgeDeclaration
 from src.domain.modules.module_types import ConnectionTypeName, DiagramTypeName, EntityTypeName, FreeOntology
 from src.domain.ontology_representation.ontology_protocol import (
@@ -173,9 +173,7 @@ class _DatatypeDiagramType(DiagramTypeBase):
         strings; non-dict types are preserved as-is (supports legacy string types).
         """
         label_map = _build_classifier_label_map(diagram_entities, candidate)
-        primitive_names = frozenset(
-            str(p) for p in (self._config.get("ui") or {}).get("primitive_types") or []
-        )
+        primitive_names = frozenset(primitive_types_from_mapping(self._config))
         return _apply_type_labels(diagram_entities, label_map, primitive_names)
 
     def repository_verification_contributions(self) -> tuple:
@@ -193,9 +191,7 @@ class _DatatypeDiagramType(DiagramTypeBase):
             GENERALIZATION_SET_CONTRIBUTION,
             KEY_CONSTRAINT_CONTRIBUTION,
         )
-        primitive_names = frozenset(
-            str(p) for p in (self._config.get("ui") or {}).get("primitive_types") or []
-        )
+        primitive_names = frozenset(primitive_types_from_mapping(self._config))
         return (
             BACKING_CONSISTENCY_CONTRIBUTION,
             ATTRIBUTE_TYPE_SCHEMA_CONTRIBUTION,

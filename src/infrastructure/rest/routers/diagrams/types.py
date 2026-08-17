@@ -64,8 +64,9 @@ def query_datatype_type_catalog(
 ) -> dict[str, Any]:
     from src.diagram_types.datatype import _config as _dt_config  # noqa: PLC0415
     from src.diagram_types.datatype._type_catalog import query_datatype_types  # noqa: PLC0415
+    from src.domain.diagrams.diagram_type_config import primitive_types_from_mapping  # noqa: PLC0415
 
-    primitive_names = list(str(p) for p in (_dt_config.get("ui") or {}).get("primitive_types") or [])
+    primitive_names = list(primitive_types_from_mapping(_dt_config))
     repo = s.get_repo()
     result = query_datatype_types(
         repo, primitive_names,
