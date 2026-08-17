@@ -70,6 +70,67 @@ def test_error_image_discarded_and_previous_render_kept(tmp_path: Path, monkeypa
     assert not leftovers, leftovers
 
 
+def test_a_crash_that_says_nothing_on_stderr_is_still_an_error_image(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Regression: the loudest crash class is the silent one.
+
+    An ``EmptySvgException`` out of dot's orthogonal router exits 0, writes nothing to stderr, and
+    draws the stack trace into the picture. Reading stderr alone therefore called it a success, and
+    a diagram in this repository was written and reported ``valid: true`` with a Java stack trace
+    where its component view should have been. The picture is what has to be read.
+    """
+    repo_root = tmp_path / "architecture-repository"
+    puml_path = _make_diagram(repo_root)
+    rendered_dir = repo_root / "diagram-catalog" / "rendered"
+    rendered_dir.mkdir(parents=True, exist_ok=True)
+    previous = rendered_dir / f"{puml_path.stem}.svg"
+    previous.write_text("GOOD-RENDER", encoding="utf-8")
+
+    def _fake_run(cmd, **kwargs):  # noqa: ANN001, ANN003
+        tmp_stem = Path(cmd[-1]).stem
+        (rendered_dir / f"{tmp_stem}.svg").write_text(
+            '<svg><text>An error has occurred!</text>'
+            "<text>net.sourceforge.plantuml.svek.EmptySvgException</text></svg>",
+            encoding="utf-8",
+        )
+        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(diagram_render, "find_plantuml_jar", lambda: tmp_path / "plantuml.jar")
+    monkeypatch.setattr(diagram_render.subprocess, "run", _fake_run)
+
+    warnings: list[str] = []
+    failures: list[str] = []
+    result = diagram_render._render_diagram_svg(puml_path, warnings, failures)
+
+    assert result is None
+    assert failures, "a crash drawn into the picture must be a failure, not only a warning"
+    assert any("error image" in f for f in failures), failures
+    assert previous.read_text(encoding="utf-8") == "GOOD-RENDER"
+
+
+def test_a_healthy_svg_is_not_mistaken_for_an_error_image(tmp_path: Path, monkeypatch) -> None:
+    """The marker check must not condemn every diagram that renders."""
+    repo_root = tmp_path / "architecture-repository"
+    puml_path = _make_diagram(repo_root)
+    rendered_dir = repo_root / "diagram-catalog" / "rendered"
+    rendered_dir.mkdir(parents=True, exist_ok=True)
+
+    def _fake_run(cmd, **kwargs):  # noqa: ANN001, ANN003
+        tmp_stem = Path(cmd[-1]).stem
+        (rendered_dir / f"{tmp_stem}.svg").write_text("<svg><rect/></svg>", encoding="utf-8")
+        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(diagram_render, "find_plantuml_jar", lambda: tmp_path / "plantuml.jar")
+    monkeypatch.setattr(diagram_render.subprocess, "run", _fake_run)
+
+    failures: list[str] = []
+    result = diagram_render._render_diagram_svg(puml_path, [], failures)
+
+    assert result == rendered_dir / f"{puml_path.stem}.svg"
+    assert not failures
+
+
 def test_the_image_map_plantuml_writes_beside_a_linked_png_does_not_survive_the_render(
     tmp_path: Path, monkeypatch
 ) -> None:
