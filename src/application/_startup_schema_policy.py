@@ -1,9 +1,14 @@
-"""Startup validation: attribute-schema syntax, declared-default validity, and required-defaults policy.
+"""Startup validation: attribute-schema syntax, declared formats, declared-default validity, and the
+required-defaults policy.
 
 Per-repo ``required_defaults_policy`` (from ``.arch-repo/config.yaml``) controls whether
 required properties without a declared ``default`` are a hard error (``strict``) or a
 finding (``non-strict``). Invalid JSON Schema syntax and declared defaults that do not
-validate against their own property schema are always hard errors regardless of policy.
+validate against their own property schema are always hard errors regardless of policy. So is a
+``format`` this project does not enforce: the facet says a value *addresses* something, and one that
+no checker recognises would compile into the schema, reach an authoring form and be validated by
+nothing — the silent weakening the facet exists to rule out. Refusing it here is the one place that
+sees a declaration before anything reads it.
 """
 
 from __future__ import annotations
@@ -14,7 +19,7 @@ from typing import TYPE_CHECKING, Any
 
 import jsonschema
 
-from src.application.artifacts.schema import list_schema_files
+from src.application.artifacts.schema import ENFORCED_FORMATS, list_schema_files
 from src.domain.yaml_documents import parse_yaml
 
 if TYPE_CHECKING:
@@ -90,7 +95,16 @@ def _validate_one_schema_file(
     required: list[str] = schema.get("required", [])
 
     for prop_name, prop_schema in properties.items():
-        if not isinstance(prop_schema, dict) or "default" not in prop_schema:
+        if not isinstance(prop_schema, dict):
+            continue
+        declared_format = str(prop_schema.get("format") or "")
+        if declared_format and declared_format not in ENFORCED_FORMATS:
+            known = ", ".join(sorted(ENFORCED_FORMATS))
+            errors.append(
+                f"{label}: property {prop_name!r} declares format {declared_format!r}, which "
+                f"nothing enforces — declare one of: {known}"
+            )
+        if "default" not in prop_schema:
             continue
         try:
             jsonschema.Draft202012Validator(prop_schema).validate(prop_schema["default"])

@@ -29,7 +29,3 @@ def classifier_kind_of(source: Mapping[str, object]) -> str:
     """The kind *source* declares, or `DEFAULT_KIND` where it declares none."""
     return str(source.get("classifier_kind") or "") or DEFAULT_KIND
 
-
-def is_primitive(source: Mapping[str, object]) -> bool:
-    """Whether *source* declares a leaf scalar type rather than a structured one."""
-    return classifier_kind_of(source) == PRIMITIVE_KIND

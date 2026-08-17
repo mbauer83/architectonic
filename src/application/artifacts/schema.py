@@ -20,8 +20,10 @@ validation is skipped (free schema).
 """
 
 import json
+import re
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
+from datetime import date
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Literal
@@ -289,9 +291,29 @@ def find_orphan_attachment_schemata(repo_root: Path, specialization_catalog: Spe
 #: Checked here rather than through `jsonschema`'s format machinery, which is annotation-only unless
 #: a checker is installed and which would otherwise add a dependency to answer a question this
 #: narrow.
+#: `date` is a calendar date, `YYYY-MM-DD`, per RFC 3339 full-date — the shape a review date, a
+#: baseline date or a decision date is written in everywhere else in this project.
+_ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
 _FORMAT_CHECKS: dict[str, Callable[[str], bool]] = {
     "uri": lambda value: bool(value.strip()) and not any(c.isspace() for c in value.strip()),
+    "date": lambda value: _valid_iso_date(value.strip()),
 }
+
+
+def _valid_iso_date(value: str) -> bool:
+    if _ISO_DATE.match(value) is None:
+        return False
+    try:
+        date.fromisoformat(value)
+    except ValueError:
+        return False
+    return True
+
+
+#: The formats a declaration may name. Startup refuses any other, because a format nothing checks
+#: would compile into the schema and be enforced by nothing — see `_startup_schema_policy`.
+ENFORCED_FORMATS: frozenset[str] = frozenset(_FORMAT_CHECKS)
 
 
 def _format_errors(instance: dict[str, Any], schema: dict[str, Any]) -> list[str]:

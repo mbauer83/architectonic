@@ -8,10 +8,18 @@ one loader of four.
 Six places carry `format`, and there is a test for each: the declaration it is read from, the schema
 it is compiled into, the validation that enforces it, the descriptor an authoring form renders from,
 the merge that carries it across profiles, and the conflict two disagreeing declarations produce.
+
+A seventh test closes the facet's own version of the failure it exists to prevent: a format nothing
+enforces is refused where a declaration is first read, rather than compiling into a schema and being
+checked by nobody.
 """
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
+from src.application._startup_schema_policy import validate_attribute_schemata_policy
 from src.application.artifacts.schema import attribute_descriptors, validate_against_schema
 from src.domain.ontology_representation.profile_conflict_resolution import (
     propose_conflict_resolution,
@@ -149,3 +157,39 @@ def test_a_type_conflict_still_parses_and_says_type() -> None:
     assert resolution is not None
     assert resolution.facet == "type"
     assert any("Align the type of 'Ref'" in proposal for proposal in resolution.proposals)
+
+
+def test_a_format_nothing_enforces_is_refused_at_startup(tmp_path: Path) -> None:
+    """The facet's own failure mode, closed where a declaration is first seen.
+
+    A format no checker recognises compiles into the schema, reaches an authoring form, and is
+    validated by nothing — the silent weakening this facet exists to rule out, reintroduced by the
+    facet itself. Startup refuses it and names what may be declared instead.
+    """
+    schemata = tmp_path / ".arch-repo" / "schemata"
+    schemata.mkdir(parents=True)
+    (schemata / "attributes.requirement.schema.json").write_text(json.dumps({
+        "type": "object",
+        "properties": {"Contact": {"type": "string", "format": "email"}},
+    }))
+
+    errors, _ = validate_attribute_schemata_policy(tmp_path)
+
+    assert errors == [
+        "attributes.requirement.schema.json: property 'Contact' declares format 'email', "
+        "which nothing enforces — declare one of: uri"
+    ]
+
+
+def test_an_enforced_format_passes_startup(tmp_path: Path) -> None:
+    """The register is a gate, not a ban: what it names is declarable."""
+    schemata = tmp_path / ".arch-repo" / "schemata"
+    schemata.mkdir(parents=True)
+    (schemata / "attributes.requirement.schema.json").write_text(json.dumps({
+        "type": "object",
+        "properties": {"Tracked by": {"type": "string", "format": "uri"}},
+    }))
+
+    errors, _ = validate_attribute_schemata_policy(tmp_path)
+
+    assert errors == []
