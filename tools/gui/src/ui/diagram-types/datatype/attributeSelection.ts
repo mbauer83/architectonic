@@ -95,12 +95,26 @@ export function buildClassifierAttributes(
   return map
 }
 
-/** Human-readable type label (primitive name, classifier id, or raw string). */
-export function attributeTypeLabel(attr: DatatypeAttr): string {
+/**
+ * The type an attribute is shown as: a primitive's name, or a classifier's label.
+ *
+ * A classifier reference is an id on disk and a name to a reader. This returned the id, so an
+ * attribute typed by picking `ArtifactId` from a dropdown read back as `CLF@1786983687.foS-lP…` —
+ * and that grew worse when the picker began offering a repository's own primitives, because those
+ * are the ones whose *name* is the whole point.
+ *
+ * `labels` is the map `buildClassifierAttributes` already builds from the diagram's own
+ * classifiers. An id it does not hold belongs to another diagram, and falls back to itself rather
+ * than to an empty cell.
+ */
+export function attributeTypeLabel(
+  attr: DatatypeAttr,
+  labels: ReadonlyMap<string, string> = new Map(),
+): string {
   const t = attr.type
   if (!t) return ''
   if (typeof t === 'string') return t
-  if (t.kind === 'classifier') return t.id ?? ''
+  if (t.kind === 'classifier') return t.id ? labels.get(t.id) ?? t.id : ''
   return t.name ?? ''
 }
 
@@ -116,14 +130,17 @@ export function attributeKeyBadges(info: ClassifierAttributeInfo, attrId: string
 }
 
 export function toAttributeDetail(
-  info: ClassifierAttributeInfo, attr: DatatypeAttr, classifierId: string,
+  info: ClassifierAttributeInfo,
+  attr: DatatypeAttr,
+  classifierId: string,
+  labels: ReadonlyMap<string, string> = new Map(),
 ): AttributeDetail {
   return {
     classifierId,
     ownerType: "classifier",
     attributeId: attr.id,
     name: attr.name,
-    typeLabel: attributeTypeLabel(attr),
+    typeLabel: attributeTypeLabel(attr, labels),
     multiplicity: attr.multiplicity,
     optional: !!attr.optional,
     default: attr.default,
@@ -144,13 +161,17 @@ export function toAttributeDetail(
  * mis-binds. Selectable elements are marked `data-subpart` for the viewer's hover affordance.
  */
 export function attachClassifierAttributeRows(ctx: ViewerSubPartContext): void {
-  const info = buildClassifierAttributes(ctx.diagramEntities).get(ctx.entityId)
+  const byId = buildClassifierAttributes(ctx.diagramEntities)
+  const info = byId.get(ctx.entityId)
   if (!info || info.attributes.length === 0) return
+  // Every classifier the diagram declares, by id — which is what resolves a `{kind: classifier}`
+  // type reference to the name a reader picked it by.
+  const labels = new Map([...byId].map(([id, entry]) => [id, entry.label]))
   const glyphs = Array.from(ctx.node.querySelectorAll<SVGGElement>('g[data-visibility-modifier]'))
   if (glyphs.length !== info.attributes.length) return
   glyphs.forEach((glyph, index) => {
     const attr = info.attributes[index]
-    const detail = toAttributeDetail(info, attr, ctx.entityId)
+    const detail = toAttributeDetail(info, attr, ctx.entityId, labels)
     const label = glyph.nextElementSibling
     const rowEls: Element[] =
       label && label.tagName.toLowerCase() === 'text' ? [glyph, label] : [glyph]

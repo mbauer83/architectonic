@@ -39,9 +39,30 @@ describe('buildClassifierAttributes', () => {
 })
 
 describe('attributeTypeLabel', () => {
-  it('renders primitive name and classifier id', () => {
+  it('renders a primitive by its name', () => {
     expect(attributeTypeLabel({ name: 'x', type: { kind: 'primitive', name: 'String' } })).toBe('String')
-    expect(attributeTypeLabel({ name: 'x', type: { kind: 'classifier', id: 'CLF@1.bb.person' } })).toBe('CLF@1.bb.person')
+  })
+
+  it('shows the name a classifier type was picked by, not the id it is stored as', () => {
+    // A classifier reference is an id on disk and a name to a reader. It rendered as the id, so an
+    // attribute typed by picking `ArtifactId` from a dropdown read back as `CLF@…` — worst for a
+    // repository's own primitives, whose name is the whole point of declaring one.
+    const labels = new Map([['CLF@1.bb.person', 'Person']])
+    expect(attributeTypeLabel({ name: 'x', type: { kind: 'classifier', id: 'CLF@1.bb.person' } }, labels))
+      .toBe('Person')
+  })
+
+  it('falls back to the id for a classifier this diagram does not declare', () => {
+    // Cross-diagram references resolve to nothing here; the id names the thing where an empty cell
+    // would name nothing.
+    const labels = new Map([['CLF@1.other.thing', 'Thing']])
+    expect(attributeTypeLabel({ name: 'x', type: { kind: 'classifier', id: 'CLF@1.bb.person' } }, labels))
+      .toBe('CLF@1.bb.person')
+    expect(attributeTypeLabel({ name: 'x', type: { kind: 'classifier', id: 'CLF@1.bb.person' } }))
+      .toBe('CLF@1.bb.person')
+  })
+
+  it('renders nothing for an attribute with no declared type', () => {
     expect(attributeTypeLabel({ name: 'x' })).toBe('')
   })
 })
