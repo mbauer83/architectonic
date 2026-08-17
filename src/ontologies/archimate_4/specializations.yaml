@@ -72,6 +72,33 @@ specializations:
         name: Module
       - slug: endpoint
         name: Endpoint
+      - slug: data-store
+        name: Data Store
+        description: >-
+          A component whose reason to exist is to hold data: a database, an index, a file store,
+          a blob store. It is the source of truth for the data objects it holds, and the artifact
+          that realizes it is the file or volume the data actually lives in.
+        create_when: >-
+          Use the data-store specialization for a component that stores data rather than performing
+          application behaviour on it. The engine it runs on is technology and serves it; the
+          information it holds is data objects it owns; the file on disk is the artifact realizing
+          it. Declaring the specialization is what lets a view draw it as a store rather than
+          guessing from the technology it happens to name.
+        never_create_when: >-
+          Don't use it for a component that reads or writes a store without being one (that is a
+          serving dependency on the store), for the engine itself (system software), for the file
+          or volume (artifact), or for the information held (data object).
+        attributes:
+          # What a reader has to know about a store that its relations do not already say. The
+          # engine, the file and the information are modelled as elements — system software serving
+          # it, an artifact realizing it, data objects it owns — so none of them is repeated here.
+          Source of Truth:
+            { type: string, level: recommended, enum: [Authoritative, Derived, Cache] }
+          Consistency Model:
+            { type: string, level: optional,
+              enum: [Strong, Eventual, Single-writer, Copy-on-write, Read-committed] }
+          Retention: { type: string, level: optional }
+          Backup and Recovery: { type: string, level: optional }
       - slug: ai-model
         name: AI Model
         description: >-
