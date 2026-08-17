@@ -5,9 +5,16 @@ export type TypeOptionGroup = 'Primitives' | 'This diagram' | 'Engagement' | 'En
 export interface CatalogClassifier {
   readonly type_id: string
   readonly label: string
+  //: What the declaration says this is. A `primitive` is a leaf scalar the repository declared for
+  //: itself, so it belongs beside `String` and `Integer` rather than among the structured types of
+  //: whichever diagram happened to declare it — which is where it used to appear, and the whole
+  //: reason it did not read as a scalar to whoever was choosing a type.
+  readonly kind?: string
   readonly scope: string
   readonly host_diagram_id: string
 }
+
+const PRIMITIVE_KIND = 'primitive'
 
 export interface TypeOption {
   readonly key: string
@@ -53,9 +60,11 @@ export function buildTypeOptions(
   catalogClassifiers.forEach((classifier) => append({
     key: `classifier:${classifier.type_id}`,
     label: classifier.label,
-    group: classifier.host_diagram_id === diagramId
-      ? 'This diagram'
-      : classifier.scope === 'enterprise' ? 'Enterprise' : 'Engagement',
+    group: classifier.kind === PRIMITIVE_KIND
+      ? 'Primitives'
+      : classifier.host_diagram_id === diagramId
+        ? 'This diagram'
+        : classifier.scope === 'enterprise' ? 'Enterprise' : 'Engagement',
     ref: { kind: 'classifier', id: classifier.type_id },
   }))
   return options

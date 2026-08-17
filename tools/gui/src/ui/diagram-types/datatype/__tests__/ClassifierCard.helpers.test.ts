@@ -63,6 +63,29 @@ describe('buildTypeOptions', () => {
     ])
   })
 
+  it('offers a repository-declared primitive beside the built-in scalars', () => {
+    // It was grouped by where it was declared, so a leaf scalar sat among the structured types of
+    // whichever diagram happened to hold it and read as one of them. The reference it emits is
+    // unchanged — the classifier id, which survives a rename — only where it is offered moves.
+    const options = buildTypeOptions(['String'], [], [
+      { type_id: 'CLF@1.ent.money', label: 'Money', kind: 'primitive', scope: 'enterprise', host_diagram_id: 'DT-9' },
+      { type_id: 'CLF@1.ent.order', label: 'Order', kind: 'class', scope: 'enterprise', host_diagram_id: 'DT-9' },
+    ], 'DT-1')
+
+    const groupOf = (label: string) => options.find((option) => option.label === label)?.group
+    expect(groupOf('Money')).toBe('Primitives')
+    expect(groupOf('Order')).toBe('Enterprise')
+    expect(options.find((option) => option.label === 'Money')?.ref)
+      .toEqual({ kind: 'classifier', id: 'CLF@1.ent.money' })
+  })
+
+  it('groups a classifier with no declared kind by where it lives, as before', () => {
+    const options = buildTypeOptions([], [], [
+      { type_id: 'CLF@1.eng.thing', label: 'Thing', scope: 'engagement', host_diagram_id: 'DT-9' },
+    ], 'DT-1')
+    expect(options[0].group).toBe('Engagement')
+  })
+
   it('round-trips only known option keys', () => {
     const options = buildTypeOptions(['String'], local, [], 'DT-1')
     const classifierRef = { kind: 'classifier' as const, id: local[0].id }
