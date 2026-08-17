@@ -34,6 +34,14 @@ class ProfileAttribute:
     """For ``type: array`` — the element schema (``{type, enum, ...}``), so an array attribute
     declares what it contains rather than being an untyped list. Feeds the GUI's typed list
     editor and makes the JSON Schema complete. Ignored for non-array types."""
+    format: str = ""
+    """What the value *addresses*, where it addresses something rather than merely matching a
+    shape. ``uri`` is the one this ontology declares: the value points at something — a tracker
+    item, a wiki page, or an artifact this system manages — without the target becoming a model
+    entity and without the reference becoming a relation.
+
+    A pattern can say a value looks like a URI. Only a format can say it is meant to be followed,
+    which is what linking, existence-checking and traceability each need to know before they act."""
 
 
 @dataclass(frozen=True)
@@ -63,6 +71,8 @@ def compile_profile_schema(profile: ProfileDefinition) -> dict[str, Any]:
             prop_schema["enum"] = list(attr.enum)
         if attr.type == "array" and attr.items is not None:
             prop_schema["items"] = dict(attr.items)
+        if attr.format:
+            prop_schema["format"] = attr.format
         if attr.default is not None:
             prop_schema["default"] = attr.default
         properties[attr.name] = prop_schema
@@ -95,6 +105,7 @@ def attributes_from_mapping(attributes: Mapping[str, Any]) -> tuple[ProfileAttri
                 default=raw.get("default"),
                 enum=tuple(str(v) for v in raw["enum"]) if isinstance(raw.get("enum"), (list, tuple)) else (),
                 items=dict(raw["items"]) if isinstance(raw.get("items"), Mapping) else None,
+                format=str(raw.get("format") or ""),
             )
         )
     return tuple(attrs)
@@ -107,13 +118,36 @@ def profile_from_inline_attributes(slug: str, attributes: Mapping[str, Any]) -> 
     )
 
 
+#: The facets two definitions of one attribute may not disagree about, in the order they are
+#: reported. Both change what a value *is*, rather than how it is presented or defaulted.
+DECIDING_FACETS: tuple[str, ...] = ("type", "format")
+
+
+def _facet_clash(
+    existing: dict[str, Any] | None, incoming: dict[str, Any]
+) -> tuple[str, str, str] | None:
+    """The first deciding facet the two definitions disagree about, or None."""
+    if existing is None:
+        return None
+    for facet in DECIDING_FACETS:
+        left, right = existing.get(facet), incoming.get(facet)
+        if left and right and left != right:
+            return facet, str(left), str(right)
+    return None
+
+
 def merge_property_schemas(schemas: list[dict[str, Any]]) -> tuple[dict[str, Any], list[str]]:
     """Merge a sequence of JSON-Schema-shaped fragments (`properties`/`required`/
     `x-recommended`), in order. Returns `(merged_schema, conflict_messages)`.
 
-    A property redefined with an incompatible `type` across schemas is a conflict, reported
-    but not applied (the later definition is dropped so the merge stays deterministic); any
+    A property redefined with an incompatible `type` **or `format`** across schemas is a conflict,
+    reported but not applied (the later definition is dropped so the merge stays deterministic); any
     other redefinition (e.g. a different `default`) resolves last-writer-wins.
+
+    `format` is decided the same way as `type` and for the same reason. It says what a value
+    *addresses*, so two profiles disagreeing about it disagree about whether the value may be
+    followed at all — which is not a difference a last-writer-wins merge may quietly settle. One
+    message shape covers both facets, so the resolution proposals read one thing rather than two.
     """
     properties: dict[str, Any] = {}
     required: set[str] = set()
@@ -123,13 +157,14 @@ def merge_property_schemas(schemas: list[dict[str, Any]]) -> tuple[dict[str, Any
         schema_properties: dict[str, Any] = schema.get("properties") or {}
         for prop_name, prop_schema in schema_properties.items():
             existing = properties.get(prop_name)
-            if existing is not None and existing.get("type") and prop_schema.get("type"):
-                if existing["type"] != prop_schema["type"]:
-                    conflicts.append(
-                        f"Conflicting definitions for attribute '{prop_name}': "
-                        f"type '{existing['type']}' vs '{prop_schema['type']}'"
-                    )
-                    continue
+            clash = _facet_clash(existing, prop_schema)
+            if clash is not None:
+                facet, left, right = clash
+                conflicts.append(
+                    f"Conflicting definitions for attribute '{prop_name}': "
+                    f"{facet} '{left}' vs '{right}'"
+                )
+                continue
             merged_prop = dict(existing or {})
             merged_prop.update(prop_schema)
             properties[prop_name] = merged_prop

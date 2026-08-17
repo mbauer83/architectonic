@@ -278,10 +278,46 @@ def find_orphan_attachment_schemata(repo_root: Path, specialization_catalog: Spe
     ]
 
 
+#: Formats this project enforces, and what each one accepts.
+#:
+#: `uri` accepts a *reference*, absolute or relative, which is what the attribute is for: the value
+#: points at a tracker item (`https://…`), or at an artifact this repository manages, and the latter
+#: is written the way every other link to it is — `../../../model/…/REQ@….md`. JSON Schema's own
+#: `uri` format requires a scheme and would refuse exactly the case the facet exists to carry;
+#: `uri-reference` is the correct reading and is what this checks.
+#:
+#: Checked here rather than through `jsonschema`'s format machinery, which is annotation-only unless
+#: a checker is installed and which would otherwise add a dependency to answer a question this
+#: narrow.
+_FORMAT_CHECKS: dict[str, Callable[[str], bool]] = {
+    "uri": lambda value: bool(value.strip()) and not any(c.isspace() for c in value.strip()),
+}
+
+
+def _format_errors(instance: dict[str, Any], schema: dict[str, Any]) -> list[str]:
+    """Every property whose value does not satisfy the `format` its schema declares."""
+    properties: dict[str, Any] = schema.get("properties") or {}
+    errors: list[str] = []
+    for name, prop_schema in properties.items():
+        check = _FORMAT_CHECKS.get(str((prop_schema or {}).get("format") or ""))
+        value = instance.get(name)
+        if check is None or not isinstance(value, str) or not value:
+            continue
+        if not check(value):
+            declared = prop_schema["format"]
+            errors.append(f"{name}: {value!r} is not a valid {declared}")
+    return errors
+
+
 def validate_against_schema(instance: dict[str, Any], schema: dict[str, Any]) -> list[str]:
     """Validate *instance* against *schema*, returning a list of error messages.
 
     Returns an empty list when *instance* conforms to *schema*.
+
+    `format` is enforced here rather than left as an annotation. A facet the decoder honours and the
+    validator drops is a silent weakening — the same shape as a notation honoured by one loader of
+    four — so a declared format is checked wherever a schema reaches this function, which is every
+    frontmatter, Properties-table and metadata read in the verifier.
     """
     validator_cls = jsonschema.Draft202012Validator
     validator = validator_cls(schema)
@@ -289,6 +325,7 @@ def validate_against_schema(instance: dict[str, Any], schema: dict[str, Any]) ->
     for error in sorted(validator.iter_errors(instance), key=lambda e: list(e.path)):
         path = ".".join(str(p) for p in error.absolute_path) if error.absolute_path else "(root)"
         errors.append(f"{path}: {error.message}")
+    errors.extend(_format_errors(instance, schema))
     return errors
 
 
@@ -308,7 +345,7 @@ _CONSTRAINT_KEYS = (
 
 
 def attribute_descriptors(schema: dict[str, Any]) -> dict[str, dict[str, Any]]:
-    """Per-attribute UI descriptors (type, enum, default, constraints) from a JSON Schema.
+    """Per-attribute UI descriptors (type, format, enum, default, constraints) from a JSON Schema.
 
     One shape for every authoring surface — the entity schema endpoint and the connection
     metadata guidance both serve it, so one typed input component can render either without
@@ -320,6 +357,11 @@ def attribute_descriptors(schema: dict[str, Any]) -> dict[str, dict[str, Any]]:
         if not isinstance(prop_schema, dict):
             continue
         descriptor: dict[str, Any] = {"type": prop_schema.get("type", "string")}
+        # What the value addresses, where it addresses something. An authoring input renders a
+        # `uri` attribute as a reference rather than as free text, and the descriptor is the only
+        # thing it sees — a facet that stops here is a facet the form cannot honour.
+        if prop_schema.get("format"):
+            descriptor["format"] = str(prop_schema["format"])
         if "enum" in prop_schema:
             descriptor["enum"] = [str(v) for v in prop_schema["enum"]]
         if "default" in prop_schema:

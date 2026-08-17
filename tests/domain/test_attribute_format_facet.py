@@ -1,0 +1,151 @@
+"""A `format` facet is threaded everywhere, or it is a silent weakening.
+
+The specification this implements states the rule the project had learned independently: thread a
+new facet through **every** place a schema passes, or through none. A facet the decoder honours and
+the validator drops promises something nothing enforces — the same shape as a notation honoured by
+one loader of four.
+
+Six places carry `format`, and there is a test for each: the declaration it is read from, the schema
+it is compiled into, the validation that enforces it, the descriptor an authoring form renders from,
+the merge that carries it across profiles, and the conflict two disagreeing declarations produce.
+"""
+
+from __future__ import annotations
+
+from src.application.artifacts.schema import attribute_descriptors, validate_against_schema
+from src.domain.ontology_representation.profile_conflict_resolution import (
+    propose_conflict_resolution,
+)
+from src.domain.ontology_representation.profiles import (
+    ProfileAttribute,
+    ProfileDefinition,
+    attributes_from_mapping,
+    compile_profile_schema,
+    merge_property_schemas,
+)
+
+_URI_SCHEMA = {"type": "object", "properties": {"Tracked by": {"type": "string", "format": "uri"}}}
+
+
+def test_a_declaration_carries_the_facet() -> None:
+    """Place one: `attributes: {format: uri}` reaches the typed declaration."""
+    (attribute,) = attributes_from_mapping({"Tracked by": {"type": "string", "format": "uri"}})
+
+    assert attribute.format == "uri"
+
+
+def test_an_undeclared_format_is_empty_rather_than_absent() -> None:
+    """Most attributes declare none, and that has to be an ordinary value rather than a special case."""
+    (attribute,) = attributes_from_mapping({"Name": {"type": "string"}})
+
+    assert attribute.format == ""
+
+
+def test_the_compiled_schema_carries_the_facet() -> None:
+    """Place two: what the declaration says reaches the schema every consumer reads."""
+    profile = ProfileDefinition(
+        slug="s", name="s",
+        attributes=(
+            ProfileAttribute(name="Tracked by", format="uri"),
+            ProfileAttribute(name="Name"),
+        ),
+    )
+
+    schema = compile_profile_schema(profile)
+
+    assert schema["properties"]["Tracked by"]["format"] == "uri"
+    assert "format" not in schema["properties"]["Name"], "an undeclared facet is not emitted"
+
+
+def test_validation_accepts_an_absolute_reference() -> None:
+    """Place three, the ordinary case: a tracker item or a wiki page."""
+    assert validate_against_schema({"Tracked by": "https://tracker.example/PROJ-1"}, _URI_SCHEMA) == []
+
+
+def test_validation_accepts_a_relative_reference_to_an_artifact() -> None:
+    """The case the facet exists for, and the reason this is not JSON Schema's `uri`.
+
+    A reference to something this system manages is written the way every other link to it is, and
+    that is relative. JSON Schema's `uri` format requires a scheme and would refuse exactly this;
+    `uri-reference` is the correct reading, so it is the one enforced.
+    """
+    reference = "../../../model/motivation/requirement/REQ@1712870400.Po1Qw3.coherent-model.md"
+
+    assert validate_against_schema({"Tracked by": reference}, _URI_SCHEMA) == []
+
+
+def test_validation_rejects_a_value_that_addresses_nothing() -> None:
+    """A facet nothing enforces is a promise nothing keeps."""
+    errors = validate_against_schema({"Tracked by": "see the wiki, somewhere"}, _URI_SCHEMA)
+
+    assert errors == ["Tracked by: 'see the wiki, somewhere' is not a valid uri"]
+
+
+def test_validation_ignores_an_unset_value() -> None:
+    """An optional attribute nobody filled in is not a malformed reference."""
+    assert validate_against_schema({}, _URI_SCHEMA) == []
+    assert validate_against_schema({"Tracked by": ""}, _URI_SCHEMA) == []
+
+
+def test_the_descriptor_an_authoring_form_reads_carries_the_facet() -> None:
+    """Place four: the form sees only the descriptor, so a facet stopping short of it cannot be honoured."""
+    descriptors = attribute_descriptors(
+        {"type": "object", "properties": {
+            "Tracked by": {"type": "string", "format": "uri"},
+            "Name": {"type": "string"},
+        }}
+    )
+
+    assert descriptors["Tracked by"]["format"] == "uri"
+    assert "format" not in descriptors["Name"]
+
+
+def test_a_merge_carries_the_facet_across_profiles() -> None:
+    """Place five: an attribute contributed by one profile keeps its facet through the merge."""
+    merged, conflicts = merge_property_schemas([
+        {"properties": {"Tracked by": {"type": "string", "format": "uri"}}},
+        {"properties": {"Name": {"type": "string"}}},
+    ])
+
+    assert conflicts == []
+    assert merged["properties"]["Tracked by"]["format"] == "uri"
+
+
+def test_two_formats_for_one_attribute_are_a_conflict() -> None:
+    """Place six: disagreeing about what a value addresses is not a last-writer-wins difference.
+
+    Two profiles disagreeing here disagree about whether the value may be followed at all, which is
+    the same class of disagreement as two types — so it is reported and the later one is dropped,
+    exactly as a type clash is.
+    """
+    merged, conflicts = merge_property_schemas([
+        {"properties": {"Ref": {"type": "string", "format": "uri"}}},
+        {"properties": {"Ref": {"type": "string", "format": "date-time"}}},
+    ])
+
+    assert conflicts == ["Conflicting definitions for attribute 'Ref': format 'uri' vs 'date-time'"]
+    assert merged["properties"]["Ref"]["format"] == "uri", "the later definition is dropped"
+
+
+def test_a_format_conflict_gets_the_same_resolutions_a_type_conflict_gets() -> None:
+    """One message shape for both deciding facets, so a second facet brought no second reader."""
+    resolution = propose_conflict_resolution(
+        "Conflicting definitions for attribute 'Ref': format 'uri' vs 'date-time'",
+        bound_profiles=("tracked-thing",),
+    )
+
+    assert resolution is not None
+    assert resolution.facet == "format"
+    assert resolution.attribute == "Ref"
+    assert any("Align the format of 'Ref'" in proposal for proposal in resolution.proposals)
+
+
+def test_a_type_conflict_still_parses_and_says_type() -> None:
+    """The generalisation must not have cost the facet it started with."""
+    resolution = propose_conflict_resolution(
+        "Conflicting definitions for attribute 'Ref': type 'string' vs 'integer'"
+    )
+
+    assert resolution is not None
+    assert resolution.facet == "type"
+    assert any("Align the type of 'Ref'" in proposal for proposal in resolution.proposals)

@@ -209,6 +209,10 @@ export type EntityAttributeItemDescriptor = typeof EntityAttributeItemDescriptor
 
 export const EntityAttributeDescriptorSchema = Schema.Struct({
   type: Schema.String,
+  //: What the value addresses, where it addresses something rather than merely matching a shape.
+  //: `uri` is the one the ontology declares; an authoring input renders such an attribute as a
+  //: reference. Absent for an attribute that declares no format, which is most of them.
+  format: Schema.optional(Schema.String),
   enum: Schema.optional(Schema.Array(Schema.String)),
   default: Schema.optional(Schema.String),
   constraints: Schema.optional(EntityAttributeConstraintsSchema),

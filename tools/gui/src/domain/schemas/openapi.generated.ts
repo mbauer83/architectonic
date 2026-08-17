@@ -4756,6 +4756,8 @@ export interface components {
             default?: string;
             /** Enum */
             enum?: string[];
+            /** Format */
+            format?: string;
             items?: components["schemas"]["AttributeItemDescriptor"];
             /** Type */
             type: string;

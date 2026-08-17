@@ -341,6 +341,10 @@ class AttributeDescriptor(NullsOmitted):
     """
 
     type: str
+    #: What the value addresses, where it addresses something rather than merely matching a shape.
+    #: ``uri`` is the one this ontology declares; an authoring input renders such an attribute as a
+    #: reference. Absent for an attribute that declares no format, which is most of them.
+    format: str | None = None
     enum: list[str] | None = None
     default: str | None = None
     constraints: AttributeConstraints | None = None
