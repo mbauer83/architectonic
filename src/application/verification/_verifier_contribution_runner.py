@@ -59,6 +59,7 @@ def run_diagram_contributions(
     module: Any,
     candidate: Any,
     fm: dict,
+    content: str,
     registry: Any,
     scope: str,
     runtime_catalogs: Any,
@@ -66,6 +67,7 @@ def run_diagram_contributions(
     loc: str,
 ) -> None:
     from src.domain.diagrams.diagram_verification import BaseDiagramVerificationContext  # noqa: PLC0415
+    from src.domain.repository.frontmatter import body_after_frontmatter  # noqa: PLC0415
 
     allowed_conns = (
         frozenset(registry.enterprise_connection_ids())
@@ -86,6 +88,7 @@ def run_diagram_contributions(
         allowed_entities=allowed_ents,
         catalogs=runtime_catalogs,
         type_references_blocking=getattr(runtime_catalogs, "datatype_type_references_blocking", True),
+        body=body_after_frontmatter(content),
     )
     for contribution in module.diagram_verification_contributions():
         contribution.run(candidate, ctx, result)

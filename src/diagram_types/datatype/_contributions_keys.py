@@ -48,7 +48,7 @@ class _KeyConstraintContribution:
 
     def run(self, candidate: Any, ctx: BaseDiagramVerificationContext, result: Any) -> None:
         del candidate
-        from src.application.verification.artifact_verifier_types import Issue, Severity  # noqa: PLC0415
+        from src.domain.verification_findings import Issue, Severity  # noqa: PLC0415
 
         de = ctx.fm.get("diagram-entities")
         classifiers = de.get("classifier") if isinstance(de, dict) else None
@@ -131,7 +131,7 @@ class _GeneralizationSetContribution:
 
     def run(self, candidate: Any, ctx: BaseDiagramVerificationContext, result: Any) -> None:
         del candidate
-        from src.application.verification.artifact_verifier_types import Issue, Severity  # noqa: PLC0415
+        from src.domain.verification_findings import Issue, Severity  # noqa: PLC0415
 
         result.issues.extend(
             Issue(Severity.ERROR, "E339", message, ctx.loc)

@@ -1,5 +1,3 @@
 [
-  "src/diagram_types/datatype/_contributions.py::src.application.verification._verifier_rules_datatype",
-  "src/diagram_types/datatype/_contributions.py::src.application.verification.artifact_verifier_types",
-  "src/diagram_types/datatype/_contributions_keys.py::src.application.verification.artifact_verifier_types"
+  "src/diagram_types/datatype/_contributions.py::src.application.verification._verifier_rules_datatype"
 ]

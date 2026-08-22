@@ -1,30 +1,17 @@
 import re
-from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Final, Literal, TypeAlias
+from typing import Literal, TypeAlias
 
 from src.domain.artifact_id import PREFIX_PATTERN, RANDOM_KEY_PATTERN
 from src.domain.repository.connection_declaration import parse_connection_header
+from src.domain.verification_findings import Issue, Severity, SeverityLiteral
 
+# Re-exported: the finding vocabulary is the domain's, so a diagram-type module implementing a
+# domain verification port does not have to reach up here for it.
+__all__ = ["Issue", "Severity", "SeverityLiteral"]
 
-class Severity:
-    ERROR: Final[Literal["error"]] = "error"
-    WARNING: Final[Literal["warning"]] = "warning"
-
-
-SeverityLiteral: TypeAlias = Literal["error", "warning"]
 VerificationFileType: TypeAlias = Literal["entity", "connection", "diagram", "document"]
-
-
-@dataclass(frozen=True)
-class Issue:
-    severity: SeverityLiteral
-    code: str
-    message: str
-    location: str
-    details: Mapping[str, Any] | None = None
-    actions: tuple[Mapping[str, Any], ...] | None = None
 
 
 @dataclass

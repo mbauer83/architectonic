@@ -98,6 +98,10 @@ _ARROW_DIRECTION = re.compile(r"up\|down\|left\|right")
 #: nothing else in these formats does: a literal carrying `](` is reading a link.
 _MARKDOWN_LINK = re.compile(r"\]\\?\(")
 
+#: The sentinel link's opening. Anchored to the scheme, which is what any reading of one must spell:
+#: a literal carrying `arch://` handed to a locating call is deciding where a step's id begins.
+_SENTINEL_LINK = re.compile(r"arch://")
+
 #: The kind prefix on a required-/suggested-reference term. Anchored to the whole literal, because
 #: `doc:` and `diagram:` are short enough to appear inside prose that is not deciding anything; a
 #: reader hands the prefix to `startswith` or `split` as exactly this string and nothing else.
@@ -262,6 +266,24 @@ SYNTAX_READERS: tuple[SyntaxReader, ...] = (
             "shape as the PUML alias declaration that five modules disagreed about"
         ),
         literal_probe=_REFERENCE_TERM_PREFIX,
+    ),
+    SyntaxReader(
+        syntax="the sentinel link naming the step a rendered activity line stands for",
+        owners=(Path("src/diagram_types/activity/_step_links.py"),),
+        instead=(
+            "`src.diagram_types.activity._step_links`: `sentinel_wrapped` and `link_suffix` to "
+            "write one, `sentinel_of` to read one off a line, `drawn_step_ids` for a whole body"
+        ),
+        incident=(
+            "a row written when the first reader arrived, not after a second one hurt. The step "
+            "coverage diagnostic had to answer whether a stored body draws a declared step, and the "
+            "sentinel is written in two forms — after the label, and as a clause of its own — that "
+            "end the id differently, one at a space and one at a bracket, with `]` escaped in both. "
+            "Nothing had ever read it back in Python, and the emission gained two new line kinds in "
+            "the same release, so a reader that stopped at the wrong delimiter would have reported "
+            "every step of a partition undrawn and nobody would have known which side was wrong"
+        ),
+        literal_probe=_SENTINEL_LINK,
     ),
 )
 

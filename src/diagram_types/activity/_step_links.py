@@ -1,4 +1,9 @@
-"""User-supplied + sentinel PlantUML link emission for activity steps.
+"""The sentinel link an activity step carries — written onto a line, and read back off one.
+
+Both directions live here because they are one syntax. The renderer writes a step's identity into
+the rendered line so the viewer can resolve a shape back to its artifact; the verifier reads it back
+to tell whether a declared step is drawn at all. A second reading of it is a defect, and
+`tests/architecture/test_each_syntax_has_one_reader.py` carries the row that says so.
 
 Extracted from ``renderer.py`` to keep it under the project's LoC limit.
 """
@@ -6,6 +11,13 @@ Extracted from ``renderer.py`` to keep it under the project's LoC limit.
 from __future__ import annotations
 
 from typing import Any
+
+_SENTINEL_START = "[[arch://"
+
+#: The step kinds whose emission carries a sentinel — so the only ones whose presence in a body can
+#: be read back. `fork` is absent because PlantUML's `fork` keyword takes no label or link argument
+#: at all, so a fork and a join are drawn as bare bars with nothing on them to read.
+LABELLED_STEP_KINDS = ("action", "decision", "partition")
 
 
 def _link_clause(url: str) -> str:
@@ -54,3 +66,31 @@ def link_suffix(step: dict[str, Any]) -> str:
     if sentinel:
         clauses.append(_link_clause(f"arch://{sentinel}"))
     return f" {' '.join(clauses)}" if clauses else ""
+
+
+def sentinel_of(line: str) -> str | None:
+    """The step a rendered line stands for, or None where the line carries no sentinel.
+
+    One reading serves both emission forms. `sentinel_wrapped` puts the label after the sentinel, so
+    the id ends at the space before it; `link_suffix` emits the sentinel as a clause of its own, so
+    the id ends at the closing bracket. Whichever comes first is the end of the id, and `]` inside
+    it was escaped on the way out.
+    """
+    at = line.find(_SENTINEL_START)
+    if at < 0:
+        return None
+    rest = line[at + len(_SENTINEL_START):]
+    ends = [where for where in (rest.find(" "), rest.find("]")) if where >= 0]
+    sentinel = rest[:min(ends)] if ends else rest
+    return sentinel.replace("%5D", "]") or None
+
+
+def drawn_step_ids(body: str) -> frozenset[str]:
+    """Every step the body draws, read off the sentinel each drawn line carries.
+
+    A step drawn once and reached from elsewhere by a connector appears once: the connector line
+    carries no sentinel of its own, only the line that draws the step does.
+    """
+    return frozenset(
+        sentinel for sentinel in (sentinel_of(line) for line in body.splitlines()) if sentinel
+    )

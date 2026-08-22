@@ -30,6 +30,7 @@ from dataclasses import dataclass, field
 
 import pytest
 
+from src.diagram_types.activity._step_links import sentinel_of
 from tests.diagram_types._activity_shapes import CATALOGUE, ActivityShape, bundled_shapes
 
 _LABELLED_KINDS = ("action", "decision", "partition")
@@ -66,7 +67,7 @@ def _parse(body: str) -> Node:
             pending_mark = line[1:-1]
         elif pending_mark is not None and line.startswith((":", "if (", "partition ")):
             # A lane switch or a note may sit between the connector and the step it introduces.
-            step_id = _sentinel(line)
+            step_id = sentinel_of(line)
             if step_id:
                 marks.setdefault(pending_mark, step_id)
             pending_mark = None
@@ -75,7 +76,7 @@ def _parse(body: str) -> Node:
     for raw in body.splitlines():
         line = raw.strip()
         if line.startswith("if ("):
-            node = Node("decision", _sentinel(line))
+            node = Node("decision", sentinel_of(line))
             stack[-1].regions[-1].nodes.append(node)
             stack.append(node)
         elif line.startswith("else ("):
@@ -91,7 +92,7 @@ def _parse(body: str) -> Node:
         elif line in ("end fork", "endfork"):
             stack.pop()
         elif line.startswith("partition "):
-            node = Node("partition", _sentinel(line))
+            node = Node("partition", sentinel_of(line))
             stack[-1].regions[-1].nodes.append(node)
             stack.append(node)
         elif line == "}":
@@ -102,20 +103,8 @@ def _parse(body: str) -> Node:
         elif line == "detach":
             continue
         elif line.startswith(":") and line.endswith(";"):
-            stack[-1].regions[-1].nodes.append(Node("step", _sentinel(line)))
+            stack[-1].regions[-1].nodes.append(Node("step", sentinel_of(line)))
     return root
-
-
-def _sentinel(line: str) -> str | None:
-    marker = "[[arch://"
-    at = line.find(marker)
-    if at < 0:
-        return None
-    rest = line[at + len(marker):]
-    for end, char in enumerate(rest):
-        if char in " ]":
-            return rest[:end]
-    return None
 
 
 def _drawn_steps(node: Node) -> list[str]:

@@ -76,6 +76,11 @@ class _ActivityDiagramType(DiagramTypeBase):
     def renderer(self) -> DiagramRenderer:
         return self._renderer
 
+    def diagram_verification_contributions(self) -> tuple:
+        from src.diagram_types.activity._contributions import STEP_COVERAGE_CONTRIBUTION  # noqa: PLC0415
+
+        return (STEP_COVERAGE_CONTRIBUTION,)
+
     def write_guidance(self) -> DiagramTypeWriteGuidance:
         g: dict[str, Any] = self._config.get("guidance") or {}
         own_types = self._ui_config.diagram_only_types

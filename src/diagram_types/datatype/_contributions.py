@@ -48,7 +48,7 @@ class _AttributeTypeSchemaContribution:
     def run(self, candidate: Any, ctx: BaseDiagramVerificationContext, result: Any) -> None:
         de: dict[str, Any] = ctx.fm.get("diagram-entities") or {}
         classifiers: list[Any] = de.get("classifier") or []
-        from src.application.verification.artifact_verifier_types import Issue, Severity  # noqa: PLC0415
+        from src.domain.verification_findings import Issue, Severity  # noqa: PLC0415
         severity = Severity.ERROR if ctx.type_references_blocking else Severity.WARNING
 
         def emit(clf_id: str, attr_name: str, msg: str) -> None:
@@ -214,11 +214,8 @@ class _ProjectionBasedContributions:
         self._primitive_names = primitive_names
 
     def run(self, candidate: Any, ctx: BaseDiagramVerificationContext, result: Any) -> None:
-        from src.application.verification.artifact_verifier_types import (  # noqa: PLC0415
-            Issue,
-            Severity,
-        )
         from src.diagram_types.datatype._projection import compile_projection  # noqa: PLC0415
+        from src.domain.verification_findings import Issue, Severity  # noqa: PLC0415
 
         projection = compile_projection(candidate, ctx)
         de: dict[str, Any] = ctx.fm.get("diagram-entities") or {}
@@ -280,7 +277,7 @@ class _ReferenceImpactContribution:
     diagnostic_codes: tuple[str, ...] = ("E334",)
 
     def run(self, ctx: Any, result: Any) -> None:
-        from src.application.verification.artifact_verifier_types import Issue, Severity  # noqa: PLC0415
+        from src.domain.verification_findings import Issue, Severity  # noqa: PLC0415
         severity = Severity.ERROR if ctx.type_references_blocking else Severity.WARNING
 
         committed_ids = frozenset(e.artifact_id for e in ctx.committed.list_entities(artifact_type="classifier"))

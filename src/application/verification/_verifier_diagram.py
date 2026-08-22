@@ -131,6 +131,7 @@ def verify_diagram(
                 module=module,
                 candidate=ctx.candidate_repo,
                 fm=fm,
+                content=content,
                 registry=ctx.registry,
                 scope=scope,
                 runtime_catalogs=ctx.catalogs,

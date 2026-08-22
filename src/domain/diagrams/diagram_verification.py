@@ -22,6 +22,10 @@ class BaseDiagramVerificationContext:
     allowed_entities: frozenset[str]
     catalogs: Any
     type_references_blocking: bool = True
+    #: The stored body, as the file holds it. A contribution that re-rendered from
+    #: `fm["diagram-entities"]` instead would be comparing the renderer with itself and could never
+    #: see a body that has gone stale — which is the whole of what one class of defect looks like.
+    body: str = ""
 
 
 class DiagramVerificationContribution(Protocol):
