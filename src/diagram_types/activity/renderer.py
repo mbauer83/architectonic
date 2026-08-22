@@ -16,6 +16,8 @@ diagram_connections encodes all structure as local-ID connections:
   step-contains:    partition → first step inside the partition
   step-in-lane:     step → swimlane
   step-note-of:     note → step
+
+This module builds the indices and the preamble; `_emission` walks the graph and emits the body.
 """
 
 from __future__ import annotations
@@ -33,7 +35,15 @@ from src.infrastructure.rendering.puml_safety import (
     warn_when_puml_exceeds_threshold,
 )
 
-from ._step_links import link_suffix, sentinel_wrapped, user_link_suffix
+from ._emission import (
+    EmissionContext,
+    LaneCursor,
+    StepGraph,
+    Swimlanes,
+    emit_from,
+    emit_orphans,
+    puml_text,
+)
 
 _STEP_KEYS = ("action", "decision", "fork", "partition")
 
@@ -53,30 +63,40 @@ class ActivityPumlRenderer:
         diagram_entities: Mapping[str, object] | None = None,
         diagram_connections: list[dict[str, object]] | None = None,
     ) -> str:
-        del diagram_type, entities, connections
+        del diagram_type, entities, connections, repo_root
         diagram_name = re.sub(r"[^a-zA-Z0-9_-]", "-", name.lower()).strip("-") or "activity"
         kd = diagram_entities or {}
         kcs = diagram_connections or []
 
-        step_by_id = _build_step_by_id(kd)
-        flow_next = _build_single_target(kcs, "step-flow")
-        then_target = _build_single_target(kcs, "step-then")
-        else_target = _build_single_target(kcs, "step-else")
-        fork_branches = _build_multi_target(kcs, "step-fork-branch")
-        contains_first = _build_single_target(kcs, "step-contains")
-        notes_index = _build_notes_index(kd, kcs)
-        lane_index = _build_lane_index(kcs)
-
-        branch_owned = _branch_owned_set(then_target, else_target, fork_branches, contains_first, flow_next)
+        graph = StepGraph(
+            step_by_id=_build_step_by_id(kd),
+            flow_next=_build_single_target(kcs, "step-flow"),
+            then_target=_build_single_target(kcs, "step-then"),
+            else_target=_build_single_target(kcs, "step-else"),
+            fork_branches=_build_multi_target(kcs, "step-fork-branch"),
+            contains_first=_build_single_target(kcs, "step-contains"),
+        )
+        branch_owned = _branch_owned_set(graph)
 
         lanes = _read_lanes(kd)
-        lane_map = {lane["id"]: lane for lane in lanes}
-        has_lanes = bool(lanes)
+        lane_index = _build_single_target(kcs, "step-in-lane")
 
-        root_id = _find_root(step_by_id, flow_next, branch_owned)
+        root_id = _find_root(graph, branch_owned)
         initial_lane_id = lane_index.get(root_id) if root_id else None
         if initial_lane_id is None and lanes:
             initial_lane_id = lanes[0]["id"]
+
+        lane_map = {lane["id"]: lane for lane in lanes}
+        ctx = EmissionContext(
+            graph=graph,
+            lanes=Swimlanes(
+                index=lane_index,
+                by_id=lane_map,
+                declared=bool(lanes),
+                cursor=LaneCursor(current=initial_lane_id),
+            ),
+            notes=_build_notes_index(kd, kcs),
+        )
 
         lines: list[str] = [
             f"@startuml {diagram_name}",
@@ -90,23 +110,20 @@ class ActivityPumlRenderer:
             # height, which a page has more of. Measured on a two-lane, thirteen-step diagram:
             # 2247x804 unwrapped against 1304x965 at 180 — 42% narrower.
             *label_wrap_skinparams(self._config),
-            f"title {_puml_text(name)}",
+            f"title {puml_text(name)}",
             "",
         ]
         if initial_lane_id and initial_lane_id in lane_map:
             lane = lane_map[initial_lane_id]
-            lines.append(f"|{_puml_text(str(lane.get('label') or lane['id']))}|")
+            lines.append(f"|{puml_text(str(lane.get('label') or lane['id']))}|")
         lines.append("start")
         lines.append("")
 
-        state: dict[str, str | None] = {"current_lane": initial_lane_id}
         visited: set[str] = set()
-        ctx = (step_by_id, flow_next, then_target, else_target, fork_branches, contains_first,
-               notes_index, lane_index, lane_map, has_lanes, state)
         if root_id:
-            _emit_from(root_id, ctx, lines, visited)
+            emit_from(root_id, ctx, lines, visited)
         else:
-            _emit_orphans(kd, branch_owned, ctx, lines, visited)
+            emit_orphans(branch_owned, ctx, lines, visited)
 
         lines.append("")
         lines.append("stop")
@@ -148,24 +165,6 @@ class ActivityPumlRenderer:
         return DiagramRendererReferences(entity_ids=tuple(entity_ids), connection_ids=tuple(conn_ids))
 
 
-# ── Context type alias ────────────────────────────────────────────────────────
-# (step_by_id, flow_next, then_target, else_target, fork_branches,
-#  contains_first, notes_index, lane_index, lane_map, has_lanes, state)
-_Ctx = tuple[
-    dict[str, dict[str, Any]],
-    dict[str, str],
-    dict[str, str],
-    dict[str, str],
-    dict[str, list[str]],
-    dict[str, str],
-    dict[str, dict[str, Any]],
-    dict[str, str],
-    dict[str, dict[str, Any]],
-    bool,
-    dict[str, str | None],
-]
-
-
 # ── Index builders ────────────────────────────────────────────────────────────
 
 
@@ -197,10 +196,6 @@ def _build_multi_target(kcs: list[dict[str, object]], conn_type: str) -> dict[st
     return result
 
 
-def _build_lane_index(kcs: list[dict[str, object]]) -> dict[str, str]:
-    return _build_single_target(kcs, "step-in-lane")
-
-
 def _build_notes_index(
     kd: Mapping[str, object], kcs: list[dict[str, object]]
 ) -> dict[str, dict[str, Any]]:
@@ -216,206 +211,31 @@ def _build_notes_index(
     }
 
 
-def _branch_owned_set(
-    then_target: dict[str, str],
-    else_target: dict[str, str],
-    fork_branches: dict[str, list[str]],
-    contains_first: dict[str, str],
-    flow_next: dict[str, str],
-) -> set[str]:
-    entries: set[str] = set(then_target.values()) | set(else_target.values()) | set(contains_first.values())
-    for ids in fork_branches.values():
+def _branch_owned_set(graph: StepGraph) -> set[str]:
+    entries: set[str] = (
+        set(graph.then_target.values())
+        | set(graph.else_target.values())
+        | set(graph.contains_first.values())
+    )
+    for ids in graph.fork_branches.values():
         entries.update(ids)
     owned = set(entries)
     changed = True
     while changed:
         changed = False
-        for src, tgt in flow_next.items():
+        for src, tgt in graph.flow_next.items():
             if src in owned and tgt not in owned:
                 owned.add(tgt)
                 changed = True
     return owned
 
 
-def _find_root(
-    step_by_id: dict[str, dict[str, Any]],
-    flow_next: dict[str, str],
-    branch_owned: set[str],
-) -> str | None:
-    has_incoming_flow = set(flow_next.values())
-    for step_id in step_by_id:
+def _find_root(graph: StepGraph, branch_owned: set[str]) -> str | None:
+    has_incoming_flow = set(graph.flow_next.values())
+    for step_id in graph.step_by_id:
         if step_id not in branch_owned and step_id not in has_incoming_flow:
             return step_id
     return None
-
-
-# ── Emission ──────────────────────────────────────────────────────────────────
-
-
-def _is_join(step_id: str, ctx: _Ctx) -> bool:
-    """A join is a fork-typed step that opens no branches — the bar the branches converge on.
-
-    The model spells a fork and a join the same way, in `diagram_entities.fork[]`; what tells them
-    apart is that a fork has outgoing `step-fork-branch` connections and a join has only incoming
-    `step-flow`. That is why the join used to vanish: with no branches it emitted nothing, and the
-    walk carried straight on through the continuation — once per branch.
-    """
-    step = ctx[0].get(step_id)
-    if step is None:
-        return False
-    return str(step.get("type") or "") == "fork" and not ctx[4].get(step_id)
-
-
-def _emit_from(start_id: str, ctx: _Ctx, lines: list[str], visited: set[str]) -> None:
-    _emit_until_join(start_id, ctx, lines, visited)
-
-
-def _emit_until_join(start_id: str, ctx: _Ctx, lines: list[str], visited: set[str]) -> str | None:
-    """Emit from *start_id* onward, stopping at a join. Returns the join, or None if none was met.
-
-    A branch of a fork ends where it reaches the join; the continuation beyond it belongs to the
-    fork as a whole and is emitted once, by whoever opened it.
-    """
-    step_id: str | None = start_id
-    while step_id and step_id not in visited:
-        if _is_join(step_id, ctx):
-            return step_id
-        step = ctx[0].get(step_id)
-        if not step:
-            break
-        visited.add(step_id)
-        _emit_step(step, step_id, ctx, lines, visited)
-        step_id = ctx[1].get(step_id)
-    return None
-
-
-def _emit_orphans(
-    kd: Mapping[str, object],
-    branch_owned: set[str],
-    ctx: _Ctx,
-    lines: list[str],
-    visited: set[str],
-) -> None:
-    for key in _STEP_KEYS:
-        raw = kd.get(key)
-        if isinstance(raw, list):
-            for item in raw:
-                if isinstance(item, dict) and item.get("id"):
-                    sid = str(item["id"])
-                    if sid not in branch_owned and sid not in visited:
-                        _emit_from(sid, ctx, lines, visited)
-
-
-def _emit_step(step: dict[str, Any], step_id: str, ctx: _Ctx, lines: list[str], visited: set[str]) -> None:
-    (step_by_id, flow_next, then_target, else_target, fork_branches,
-     contains_first, notes_index, lane_index, lane_map, has_lanes, state) = ctx
-    stype = str(step.get("type") or "")
-
-    if stype == "action":
-        _maybe_switch_lane(step_id, lane_index, lane_map, state, lines, has_lanes=has_lanes)
-        label = _puml_text(str(step.get("label") or "action"))
-        lines.append(f":{sentinel_wrapped(step, label)}{user_link_suffix(step)};")
-        _emit_step_note(step_id, notes_index, lines)
-
-    elif stype == "decision":
-        _maybe_switch_lane(step_id, lane_index, lane_map, state, lines, has_lanes=has_lanes)
-        condition = _puml_text(str(step.get("condition") or "?"))
-        then_label = _puml_text(str(step.get("then_label") or "yes"))
-        else_label = _puml_text(str(step.get("else_label") or "no"))
-        # Before the `if`, never inside the then-branch. A note emitted after `then (...)` sits in a
-        # branch, and a branch that switches lane renders the note once per lane — so a note on a
-        # decision appeared twice while a note on an action appeared once. Measured on a minimal
-        # two-lane diagram: inside-branch 2, floating-inside-branch 2, before-the-if 1.
-        _emit_step_note(step_id, notes_index, lines)
-        lines.append(f"if ({sentinel_wrapped(step, f'{condition}?')}{user_link_suffix(step)}) then ({then_label})")
-        then_first = then_target.get(step_id)
-        if then_first:
-            _emit_from(then_first, ctx, lines, visited)
-        lines.append(f"else ({else_label})")
-        else_first = else_target.get(step_id)
-        if else_first:
-            _emit_from(else_first, ctx, lines, visited)
-        lines.append("endif")
-
-    elif stype == "fork":
-        # No sentinel link here: PlantUML's `fork` keyword takes no label/link argument at
-        # all (`fork [[url]]` is a syntax error) and renders as an unlabeled, ungrouped bar
-        # with no distinguishing SVG attribute — forks are not selectable in the viewer.
-        _maybe_switch_lane(step_id, lane_index, lane_map, state, lines, has_lanes=has_lanes)
-        branches = fork_branches.get(step_id, [])
-        if branches:
-            lines.append("fork")
-            _emit_step_note(step_id, notes_index, lines)
-            # Each branch walks its own path — hence the copied `visited` — and stops where it
-            # reaches the join. Without that stop every branch ran on to the end of the graph, so
-            # the whole continuation was repeated once per branch and nested forks multiplied it.
-            joins: list[str] = []
-            for i, branch_start in enumerate(branches):
-                if i > 0:
-                    lines.append("fork again")
-                reached = _emit_until_join(branch_start, ctx, lines, set(visited))
-                if reached is not None:
-                    joins.append(reached)
-            lines.append("end fork")
-            # The continuation belongs to the fork, not to any branch, so it is emitted once here.
-            # A branch that never reaches the join contributes nothing to this; the first join any
-            # branch did reach is the one the fork closes on.
-            if joins:
-                join_id = joins[0]
-                visited.add(join_id)
-                after_join = flow_next.get(join_id)
-                if after_join:
-                    _emit_from(after_join, ctx, lines, visited)
-
-    elif stype == "partition":
-        label = _puml_text(str(step.get("label") or "Partition"))
-        lines.append(f'partition "{label}"{link_suffix(step)} {{')
-        _emit_step_note(step_id, notes_index, lines)
-        contains_id = contains_first.get(step_id)
-        if contains_id:
-            _emit_from(contains_id, ctx, lines, visited)
-        lines.append("}")
-
-
-def _maybe_switch_lane(
-    step_id: str,
-    lane_index: dict[str, str],
-    lane_map: dict[str, dict[str, Any]],
-    state: dict[str, str | None],
-    lines: list[str],
-    *,
-    has_lanes: bool,
-) -> None:
-    lane_id = lane_index.get(step_id)
-    if not lane_id:
-        if has_lanes and step_id:
-            lines.append(f"' WARNING: step '{step_id}' has no step-in-lane connection")
-        return
-    if lane_id == state["current_lane"]:
-        return
-    lane = lane_map.get(lane_id)
-    if lane:
-        lines.append(f"|{_puml_text(str(lane.get('label') or lane['id']))}|")
-        state["current_lane"] = lane_id
-
-
-def _emit_step_note(step_id: str, notes_index: dict[str, dict[str, Any]], lines: list[str]) -> None:
-    note = notes_index.get(step_id)
-    if not note:
-        return
-    side = str(note.get("side") or "right")
-    if side not in ("left", "right"):
-        side = "right"
-    text = str(note.get("text") or "")
-    if not text:
-        return
-    if "\n" in text:
-        lines.append(f"note {side}")
-        for note_line in text.split("\n"):
-            lines.append(_puml_text(note_line))
-        lines.append("end note")
-    else:
-        lines.append(f"note {side}: {_puml_text(text)}")
 
 
 def _read_lanes(kd: Mapping[str, object]) -> list[dict[str, Any]]:
@@ -423,7 +243,3 @@ def _read_lanes(kd: Mapping[str, object]) -> list[dict[str, Any]]:
     if not isinstance(raw, list):
         return []
     return [item for item in raw if isinstance(item, dict) and item.get("id")]
-
-
-def _puml_text(value: str) -> str:
-    return value.replace("\\", "\\\\").replace("\n", " ").replace("|", "/")

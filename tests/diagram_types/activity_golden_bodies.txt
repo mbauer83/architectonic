@@ -1,0 +1,406 @@
+### both arms converge
+# Arms of one decision flowing to the same step, with no declared merge edge.
+@startuml both-arms-converge
+skinparam hyperlinkColor #252327
+skinparam hyperlinkUnderline false
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
+title both arms converge
+
+start
+
+if ([[arch://keyed are both ends typed?]]) then (yes)
+:[[arch://select choose what to lift]];
+:[[arch://write write it]];
+else (no)
+endif
+
+stop
+@enduml
+
+### arms converge downstream
+# Arms meeting one step further on, with no declared merge edge.
+@startuml arms-converge-downstream
+skinparam hyperlinkColor #252327
+skinparam hyperlinkUnderline false
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
+title arms converge downstream
+
+start
+
+if ([[arch://valid does it pass?]]) then (yes)
+:[[arch://prepare prepare the change]];
+:[[arch://settle reconcile both outcomes]];
+:[[arch://publish publish the result]];
+else (no)
+:[[arch://reject record the refusal]];
+endif
+
+stop
+@enduml
+
+### merge equals a branch target
+# A declared merge edge pointing at the then-arm's own first step.
+@startuml merge-equals-a-branch-target
+skinparam hyperlinkColor #252327
+skinparam hyperlinkUnderline false
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
+title merge equals a branch target
+
+start
+
+if ([[arch://agreed is it agreed?]]) then (yes)
+:[[arch://settle apply it]];
+:[[arch://wrap close the request]];
+else (no)
+:[[arch://dispute raise an objection]];
+endif
+
+stop
+@enduml
+
+### fork converges on an action
+# Parallel branches meeting at a plain action, with no join entry in fork[].
+@startuml fork-converges-on-an-action
+skinparam hyperlinkColor #252327
+skinparam hyperlinkUnderline false
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
+title fork converges on an action
+
+start
+
+fork
+:[[arch://measure measure it]];
+:[[arch://compare compare the two]];
+:[[arch://report report the finding]];
+fork again
+:[[arch://sample sample it]];
+:[[arch://compare compare the two]];
+:[[arch://report report the finding]];
+end fork
+
+stop
+@enduml
+
+### a step graph that loops
+# A retry loop — a back edge from a branch to a step already emitted.
+@startuml a-step-graph-that-loops
+skinparam hyperlinkColor #252327
+skinparam hyperlinkUnderline false
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
+title a step graph that loops
+
+start
+
+
+stop
+@enduml
+
+### two disconnected chains
+# Two chains with no edge between them — both are declared, so both are drawn.
+@startuml two-disconnected-chains
+skinparam hyperlinkColor #252327
+skinparam hyperlinkUnderline false
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
+title two disconnected chains
+
+start
+
+:[[arch://draft draft it]];
+:[[arch://review review it]];
+
+stop
+@enduml
+
+### cross level convergence
+# One step arrived at from two different nesting depths, neither arrival dominating: the outer decision's else-arm and an inner decision's then-arm. No structured placement in an if/else tree covers exactly those two paths.
+@startuml cross-level-convergence
+skinparam hyperlinkColor #252327
+skinparam hyperlinkUnderline false
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
+title cross level convergence
+
+start
+
+if ([[arch://keyed are both ends typed?]]) then (yes)
+:[[arch://inspect inspect the pair]];
+if ([[arch://permitted is the pair permitted?]]) then (yes)
+:[[arch://select choose what to lift]];
+else (no)
+:[[arch://revise revise the link]];
+endif
+:[[arch://preflight report what would happen]];
+:[[arch://write write it in one transaction]];
+else (no)
+endif
+
+stop
+@enduml
+
+### cross level convergence across lanes
+# The same cross-level arrival, with the two arrival points in different swimlanes.
+@startuml cross-level-convergence-across-lanes
+skinparam hyperlinkColor #252327
+skinparam hyperlinkUnderline false
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
+title cross level convergence across lanes
+
+|Architectonic|
+start
+
+if ([[arch://keyed are both ends typed?]]) then (yes)
+:[[arch://inspect inspect the pair]];
+if ([[arch://permitted is the pair permitted?]]) then (yes)
+|You|
+:[[arch://select choose what to lift]];
+else (no)
+:[[arch://revise revise the link]];
+endif
+|Architectonic|
+:[[arch://preflight report what would happen]];
+:[[arch://write write it in one transaction]];
+else (no)
+endif
+
+stop
+@enduml
+
+### a join reached inside a decision
+# The reported minimal repro: a fork whose branch reaches its join inside a decision.
+@startuml a-join-reached-inside-a-decision
+skinparam hyperlinkColor #252327
+skinparam hyperlinkUnderline false
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
+title a join reached inside a decision
+
+start
+
+fork
+if ([[arch://needed is it needed?]]) then (yes)
+:[[arch://assess assess the request]];
+else (no)
+:[[arch://bypass skip it]];
+endif
+end fork
+
+stop
+@enduml
+
+### nested decisions past a join
+# The reported diagram's shape: a fork whose single branch is the outermost of three nested decisions, each carrying its own merge edge, the join reached at the innermost then-target, and a three-step tail past the join.
+@startuml nested-decisions-past-a-join
+skinparam hyperlinkColor #252327
+skinparam hyperlinkUnderline false
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
+title nested decisions past a join
+
+start
+
+fork
+if ([[arch://urgent is it urgent?]]) then (yes)
+if ([[arch://priced is it priced?]]) then (yes)
+if ([[arch://stocked is it stocked?]]) then (yes)
+else (no)
+:[[arch://defer defer it]];
+endif
+:[[arch://stamp stamp the record]];
+else (no)
+:[[arch://annotate annotate it]];
+endif
+:[[arch://log log the outcome]];
+else (no)
+:[[arch://escalate escalate it]];
+endif
+:[[arch://finish finish the case]];
+end fork
+
+stop
+@enduml
+
+### one fork
+# start -> fork -> (a | b | c) -> join -> tail1 -> tail2.
+@startuml one-fork
+skinparam hyperlinkColor #252327
+skinparam hyperlinkUnderline false
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
+title one fork
+
+start
+
+:[[arch://begin begin]];
+fork
+:[[arch://first branch a]];
+fork again
+:[[arch://second branch b]];
+fork again
+:[[arch://third branch c]];
+end fork
+:[[arch://tail_one after join]];
+:[[arch://tail_two and then]];
+
+stop
+@enduml
+
+### nested forks
+# The shape that multiplied the tail: an outer fork of two, one branch holding a fork of three.
+@startuml nested-forks
+skinparam hyperlinkColor #252327
+skinparam hyperlinkUnderline false
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
+title nested forks
+
+start
+
+:[[arch://begin begin]];
+fork
+:[[arch://meta_one meta one]];
+fork again
+fork
+:[[arch://inner_x inner x]];
+fork again
+:[[arch://inner_y inner y]];
+fork again
+:[[arch://inner_z inner z]];
+end fork
+:[[arch://meta_two meta two]];
+end fork
+:[[arch://tail_one after join]];
+:[[arch://tail_two and then]];
+
+stop
+@enduml
+
+### a branch that never reaches the join
+# A branch may end on its own — the fork still closes and the continuation is drawn once.
+@startuml a-branch-that-never-reaches-the-join
+skinparam hyperlinkColor #252327
+skinparam hyperlinkUnderline false
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
+title a branch that never reaches the join
+
+start
+
+:[[arch://begin begin]];
+fork
+:[[arch://first branch a]];
+fork again
+:[[arch://second branch b]];
+fork again
+:[[arch://third branch c]];
+end fork
+:[[arch://tail_one after join]];
+:[[arch://tail_two and then]];
+
+stop
+@enduml
+
+### a partition around a decision
+# A partition holding a decision whose arms converge — the stop must not escape the box.
+@startuml a-partition-around-a-decision
+skinparam hyperlinkColor #252327
+skinparam hyperlinkUnderline false
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
+title a partition around a decision
+
+start
+
+partition "Intake" [[arch://intake]] {
+if ([[arch://ready is it ready?]]) then (yes)
+:[[arch://gather gather the inputs]];
+:[[arch://reconcile reconcile them]];
+else (no)
+:[[arch://skip skip the step]];
+endif
+}
+:[[arch://hand_off hand it on]];
+
+stop
+@enduml
+
+### Working in a Scratchpad Area
+# the bundled diagram ACT@1786234873.w_H9LsR.working-in-a-scratchpad-area.puml
+@startuml working-in-a-scratchpad-area
+skinparam hyperlinkColor #252327
+skinparam hyperlinkUnderline false
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
+title Working in a Scratchpad Area
+
+|You|
+start
+
+note right: A note is bound at creation only when the search found a fitting element and you picked it. Otherwise the binding is made by lifting.
+if ([[arch://d_exists Adding a note: does the model already hold this??]]) then (it exists)
+:[[arch://a_search Search the area's permitted types for it]];
+|Architectonic|
+:[[arch://a_bind Create the note bound to that element; its type comes from the element]];
+else (it is new)
+|You|
+:[[arch://a_title Create the note from a title; it has no type yet]];
+endif
+:[[arch://a_narrow Optionally narrow it one level down the meta-ontology's hierarchy]];
+note right: Adding, refining, connecting and lifting are not phases. They happen in whatever order the thinking takes, and a note may stay untyped indefinitely.
+:[[arch://a_draw Drag a link between two notes]];
+|Architectonic|
+note right: Until both ends are typed there is nothing to check, so nothing is said.
+if ([[arch://d_keyed Have both ends reached the level relationships key on??]]) then (yes)
+:[[arch://a_verify Check that pair against the meta-ontology]];
+if ([[arch://d_ok Does the meta-ontology permit this pair??]]) then (permitted)
+|You|
+:[[arch://a_select Select notes and links; name the target project]];
+else (refused)
+:[[arch://a_remedy Reverse the link, retype an end, or remove it]];
+note right: A specialization that narrows rather than forbids warns and lets you carry on.
+endif
+|Architectonic|
+:[[arch://a_preflight Report what would be created, skipped and refused]];
+:[[arch://a_write Write it in one transaction, then record on each note what it became]];
+note right: Lifting leaves the notes in place; what was lifted now carries a reference to what it became.
+else (not yet)
+endif
+
+stop
+@enduml
+
+### Promote Engagement Work to the Enterprise Repository
+# the bundled diagram ACT@1781338474.NTuMXo.promote-engagement-work-to-the-enterprise-baseline.puml
+@startuml promote-engagement-work-to-the-enterprise-repository
+skinparam hyperlinkColor #252327
+skinparam hyperlinkUnderline false
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
+title Promote Engagement Work to the Enterprise Repository
+
+|Author / AI Agent|
+start
+
+:[[arch://a1 Select entities & connections to promote]];
+|Architecture Backend|
+:[[arch://a2 Detect & resolve name/id conflicts (accept / enterprise / merge)]];
+|Verifier|
+:[[arch://a3 Check engagement schemata ⊇ enterprise]];
+if ([[arch://d1 Engagement schemata ⊇ enterprise?]]) then (yes)
+|Architecture Backend|
+:[[arch://a4 Promote to enterprise working branch]];
+|Author / AI Agent|
+:[[arch://a5 Submit branch for review (open PR)]];
+else (no)
+|Architecture Backend|
+:[[arch://a6 Block promotion with per-violation errors]];
+endif
+
+stop
+@enduml
