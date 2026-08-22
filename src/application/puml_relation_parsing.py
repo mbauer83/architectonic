@@ -86,8 +86,50 @@ def _containment_relations(content: str) -> list[DeclaredRelation]:
     contributes no parent and its members are not mistaken for its children. Where an authored body
     does alias a grouping, the alias resolves to no entity and the caller drops it.
     """
-    found: list[DeclaredRelation] = []
-    stack: list[str] = []
+    return [
+        DeclaredRelation(enclosing[-1], alias, None, "")
+        for enclosing, alias in _nested_declarations(content)
+        if enclosing and enclosing[-1]
+    ]
+
+
+def indirect_nesting_relations(content: str) -> list[DeclaredRelation]:
+    """Relations the nesting states beyond the immediate parent — every further ancestor.
+
+    `_containment_relations` reads one level, which is what the completeness rules compare: they ask
+    whether the *drawn* pair is listed, and the drawn pair is the box inside the box. But a body
+    nesting C two levels inside A also states that A contains C, so a stored `A --composition--> C`
+    is drawn by it — and a reconcile reading one level would take that pair to be undrawn and drop
+    the reference. Complementary to `_containment_relations` rather than overlapping: only the
+    ancestors above the immediate parent are returned.
+
+    An unaliased grouping is transparent, as it is there: it opens a scope and names no parent, so it
+    neither appears in an ancestry nor interrupts one.
+    """
+    return [
+        DeclaredRelation(ancestor, alias, None, "")
+        for enclosing, alias in _nested_declarations(content)
+        for ancestor in _ancestors_above_the_parent(enclosing)
+    ]
+
+
+def _ancestors_above_the_parent(enclosing: tuple[str, ...]) -> tuple[str, ...]:
+    """The aliased ancestors `_containment_relations` does not already state a pair for.
+
+    It states one pair, for the immediate parent, and only when that parent carries an alias. So
+    where the immediate parent is an unaliased grouping it states nothing, and the nearest aliased
+    ancestor is this function's to state — which is what keeps a grouping transparent rather than
+    making it a wall.
+    """
+    aliased = tuple(alias for alias in enclosing if alias)
+    parent_already_stated = bool(enclosing) and bool(enclosing[-1])
+    return aliased[:-1] if parent_already_stated else aliased
+
+
+def _nested_declarations(content: str) -> list[tuple[tuple[str, ...], str]]:
+    """Each aliased declaration with the aliased elements enclosing it, outermost first."""
+    found: list[tuple[tuple[str, ...], str]] = []
+    stack: list[str] = []  # an unaliased scope is "" and is kept, so the parent stays identifiable
     for raw in content.splitlines():
         line = raw.strip()
         if not line or line.startswith(("'", "!", "@", "title", "sprite")):
@@ -98,16 +140,15 @@ def _containment_relations(content: str) -> list[DeclaredRelation]:
             continue
         declaration = alias_declared_on(line)
         if declaration is not None and declaration.opens_block:
-            if stack and stack[-1]:
-                found.append(DeclaredRelation(stack[-1], declaration.alias, None, ""))
+            found.append((tuple(stack), declaration.alias))
             stack.append(declaration.alias)
             continue
         if declaration is None and line.endswith("{"):
             # A grouping rectangle or a `skinparam …{` block: opens a scope, names no parent.
             stack.append("")
             continue
-        if declaration is not None and stack and stack[-1]:
-            found.append(DeclaredRelation(stack[-1], declaration.alias, None, ""))
+        if declaration is not None:
+            found.append((tuple(stack), declaration.alias))
     return found
 
 

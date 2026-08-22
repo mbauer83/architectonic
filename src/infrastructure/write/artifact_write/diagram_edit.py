@@ -21,6 +21,7 @@ from .diagram_references import (
     _prune_unknown_references,
     _restate_generated_declarations,
     diagram_entities_are_authoritative,
+    reconcile_recorded_connections,
 )
 from .diagram_render import _render_diagram_entities_puml
 from .diagram_render_input import render_entities_restored
@@ -168,8 +169,13 @@ def edit_diagram(
     eff_entity_ids_used = (
         entity_ids_used if entity_ids_used is not None else as_optional_str_list(fm.get("entity-ids-used"))
     )
+    # Kept apart on purpose. Merging a caller's own argument with what a new body draws is right;
+    # carrying the *stored* value across a body replacement is the defect — a connection the new body
+    # stopped drawing kept its reference. The two were conflated here, one line above the merge that
+    # then could not tell them apart.
+    stored_connection_ids_used = as_optional_str_list(fm.get("connection-ids-used"))
     eff_connection_ids_used = (
-        connection_ids_used if connection_ids_used is not None else as_optional_str_list(fm.get("connection-ids-used"))
+        connection_ids_used if connection_ids_used is not None else stored_connection_ids_used
     )
 
     # view_derivations: caller replaces; keep existing from file if caller omits
@@ -268,6 +274,9 @@ def edit_diagram(
 
     # Determine PUML body; the scope the persist path stripped is restored from the scoped-by
     # binding so the C4 renderer uses model-backed mode.
+    body_drawn_connection_ids: list[str] | None = None
+    body_drawn_entity_ids: list[str] | None = None
+    undecided_pairs: frozenset[frozenset[str]] = frozenset()
     if (
         eff_diagram_entities is not None
         and isinstance(eff_diagram_entities, dict)
@@ -292,7 +301,9 @@ def edit_diagram(
             bindings=norm_bindings_raw,
         )
         eff_entity_ids_used = _merge_reference_ids(eff_entity_ids_used, collected_entity_ids)
-        eff_connection_ids_used = _merge_reference_ids(eff_connection_ids_used, collected_connection_ids)
+        # The renderer reports what it drew, so there is nothing it was unsure about.
+        body_drawn_connection_ids = collected_connection_ids
+        body_drawn_entity_ids = collected_entity_ids
     elif puml is not None:
         # Untrusted input: reject file/network preprocessor directives before the body is
         # prepared, rendered (verification renders it), or stored — a submitted
@@ -305,9 +316,12 @@ def edit_diagram(
         # Both are idempotent and both skip when [hidden] links are already present, so
         # user-provided explicit hidden chains are preserved either way.
         puml_body = rebuild_puml_layout(puml_body) if rebuild_layout else ensure_puml_layout(puml_body)
-        inferred_entity_ids, inferred_connection_ids = _infer_reference_ids_from_puml(repo_root, puml_body)
+        inferred_entity_ids, inferred_connection_ids, undecided_pairs = _infer_reference_ids_from_puml(
+            repo_root, puml_body
+        )
         eff_entity_ids_used = _merge_reference_ids(eff_entity_ids_used, inferred_entity_ids)
-        eff_connection_ids_used = _merge_reference_ids(eff_connection_ids_used, inferred_connection_ids)
+        body_drawn_connection_ids = inferred_connection_ids
+        body_drawn_entity_ids = inferred_entity_ids
     else:
         # No body supplied. A sync asked for the picture to be rebuilt, so its generated
         # ranking is recomputed; every other edit — a rename, a binding, a status change —
@@ -317,6 +331,18 @@ def edit_diagram(
         # a line style is the ontology's, and a body that keeps its own copy had no way of hearing
         # about a change to one. The only route by which a manual-layout diagram hears at all.
         puml_body = _restate_generated_declarations(puml_body, repo_root, diagram_type)
+
+    # One reconcile, above both ways a body arrives. They differ only in how the fresh reference set
+    # was obtained — rendered from `diagram-entities`, or read off a supplied `puml` — and both end
+    # by handing it to the same question, so the answer is stated once.
+    if body_drawn_connection_ids is not None or body_drawn_entity_ids is not None:
+        eff_connection_ids_used = reconcile_recorded_connections(
+            caller_supplied=connection_ids_used,
+            stored=stored_connection_ids_used,
+            drawn=body_drawn_connection_ids,
+            drawn_entity_ids=body_drawn_entity_ids,
+            undecided_pairs=undecided_pairs,
+        )
 
     # Drop references to entities/connections that no longer exist (e.g. after a rename or
     # delete) so a stale cached reference cannot leave the diagram permanently unwritable.

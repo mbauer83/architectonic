@@ -300,7 +300,7 @@ class TestInferReadsThroughTheSharedParser:
             _infer_reference_ids_from_puml,
         )
 
-        _entity_ids, connection_ids = _infer_reference_ids_from_puml(
+        _entity_ids, connection_ids, _undecided = _infer_reference_ids_from_puml(
             repo, "REQ_AaaAaa ..> REQ_BbbBbb\n"
         )
         assert _stable(INFLUENCE) in _stable_set(connection_ids)
@@ -315,7 +315,7 @@ class TestInferReadsThroughTheSharedParser:
             '  rectangle "Gamma" <<requirement>> as REQ_CccCcc\n'
             "}\n"
         )
-        entity_ids, connection_ids = _infer_reference_ids_from_puml(repo, body)
+        entity_ids, connection_ids, _undecided = _infer_reference_ids_from_puml(repo, body)
         assert entity_ids is not None and {ALPHA, GAMMA} <= set(entity_ids)
         assert _stable(COMPOSITION) in _stable_set(connection_ids)
 
@@ -324,7 +324,7 @@ class TestInferReadsThroughTheSharedParser:
             _infer_reference_ids_from_puml,
         )
 
-        _entity_ids, connection_ids = _infer_reference_ids_from_puml(
+        _entity_ids, connection_ids, _undecided = _infer_reference_ids_from_puml(
             repo, "REQ_AaaAaa ..> REQ_BbbBbb : <<influence>>\n"
         )
         assert _stable(INFLUENCE) in _stable_set(connection_ids)

@@ -5,7 +5,12 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from src.application.artifacts.parsing import extract_declared_puml_aliases, normalize_puml_alias
-from src.domain.artifact_id import stable_conn_id, stable_id
+from src.domain.artifact_id import (
+    MalformedArtifactIdError,
+    parse_connection_id,
+    stable_conn_id,
+    stable_id,
+)
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.diagram_type_registry import find_renderer
 from src.infrastructure.rendering.archimate_relation_rendering import strip_suppressed_relation_labels
@@ -137,8 +142,13 @@ def _alias_entity_lookup(repo_root: Path) -> dict[str, str]:
 def _infer_reference_ids_from_puml(
     repo_root: Path,
     puml_body: str,
-) -> tuple[list[str] | None, list[str] | None]:
+) -> tuple[list[str] | None, list[str] | None, frozenset[frozenset[str]]]:
     """Entity and connection ids a hand-supplied body references, via the ONE shared parser.
+
+    Returns, third, the endpoint pairs the body draws something for that this could **not** name.
+    Inference is not omniscient and never was; what is new is that it says so, because a reconcile
+    that treats "I could not name it" as "the body does not draw it" would drop a reference the
+    author did draw.
 
     This used to carry its own blind regex copy that read only macro calls and
     stereotype-labelled arrows, so a body drawn with bare arrows (the renderer's own output
@@ -147,7 +157,10 @@ def _infer_reference_ids_from_puml(
     candidate wins, several are disambiguated by the drawn glyph, still-ambiguous stays
     uninferred rather than guessed.
     """
-    from src.application.puml_relation_parsing import declared_relations  # noqa: PLC0415
+    from src.application.puml_relation_parsing import (  # noqa: PLC0415
+        declared_relations,
+        indirect_nesting_relations,
+    )
 
     from ._sync_helpers import resolve_untyped_relation  # noqa: PLC0415
 
@@ -171,7 +184,12 @@ def _infer_reference_ids_from_puml(
             reverse_conn_index[(conn.target, conn.source, conn.conn_type)] = conn.artifact_id
 
     connection_ids: list[str] = []
-    for relation in declared_relations(puml_body, stereo_map):
+    undecided: set[frozenset[str]] = set()
+    # The nesting beyond the immediate parent, which `declared_relations` reads one level of: a body
+    # nesting C two levels inside A states that A contains C, so a stored composition A->C is drawn
+    # by it. Without this the reconcile would take that pair to be undrawn.
+    drawn = [*declared_relations(puml_body, stereo_map), *indirect_nesting_relations(puml_body)]
+    for relation in drawn:
         src_id = alias_map.get(normalize_puml_alias(relation.source_alias))
         tgt_id = alias_map.get(normalize_puml_alias(relation.target_alias))
         if src_id is None or tgt_id is None:
@@ -183,10 +201,76 @@ def _infer_reference_ids_from_puml(
         else:
             record = resolve_untyped_relation(src_id, tgt_id, relation.arrow, all_connections)
             artifact_id = record.artifact_id if record is not None else None
-        if artifact_id is not None and artifact_id not in connection_ids:
+        if artifact_id is None:
+            undecided.add(frozenset((stable_id(src_id), stable_id(tgt_id))))
+            continue
+        if artifact_id not in connection_ids:
             connection_ids.append(artifact_id)
 
-    return entity_ids or None, connection_ids or None
+    return entity_ids or None, connection_ids or None, frozenset(undecided)
+
+
+def reconcile_recorded_connections(
+    *,
+    caller_supplied: list[str] | None,
+    stored: list[str] | None,
+    drawn: list[str] | None,
+    drawn_entity_ids: list[str] | None,
+    undecided_pairs: frozenset[frozenset[str]] = frozenset(),
+) -> list[str] | None:
+    """What `connection-ids-used` should hold after an edit that replaced the body.
+
+    `_merge_reference_ids` is right for combining a caller's own argument with what a *fresh*
+    artifact's body draws — there is no stored value to carry. It is wrong for carrying a stored
+    value across a body **replacement**: a connection the new body stopped drawing kept its
+    reference, so the diagram went on claiming to draw a relation it did not. That corrupts a query
+    surface — which views show this connection — and so corrupts impact analysis.
+
+    A stored reference is dropped only where the body positively contradicts it, which is three
+    things at once: both its endpoints are among the entities the body declares, the pair is not one
+    the reader could not decide, and the reference is not among what the body was read to draw.
+    Anything else is kept, because inference that is merely silent about a pair is not evidence.
+    """
+    kept = _merge_reference_ids(caller_supplied, drawn)
+    if stored is None:
+        return kept
+    declared_entities = {stable_id(e) for e in (drawn_entity_ids or [])}
+    drawn_stable = {stable_conn_id(c) for c in (kept or [])}
+    surviving = [
+        reference for reference in stored
+        if not _body_contradicts(reference, declared_entities, drawn_stable, undecided_pairs)
+    ]
+    return _merge_reference_ids(surviving, kept)
+
+
+def _body_contradicts(
+    reference: str,
+    declared_entities: set[str],
+    drawn_stable: set[str],
+    undecided_pairs: frozenset[frozenset[str]],
+) -> bool:
+    """Whether the body positively says it does not draw this connection."""
+    if stable_conn_id(reference) in drawn_stable:
+        return False
+    endpoints = _reference_endpoints(reference)
+    if endpoints is None or not endpoints <= declared_entities:
+        return False
+    return frozenset(endpoints) not in undecided_pairs
+
+
+def _reference_endpoints(reference: str) -> set[str] | None:
+    """The pair a connection id names, in the form ids are compared in.
+
+    Read through `parse_connection_id`, which owns the `source---target@@type` form and already
+    canonicalises both endpoints. Spelling that separator here instead is what the register of
+    one-reader syntaxes refuses, and the reason is on the record: a plain `find("---")` matched the
+    hyphen inside a slug.
+    """
+    try:
+        key = parse_connection_id(reference)
+    except MalformedArtifactIdError:
+        return None
+    return {key.src_short, key.tgt_short}
 
 
 def diagram_entities_are_authoritative(verifier, diagram_type: str) -> bool:

@@ -106,7 +106,10 @@ def _build_from_puml(
     if auto_include_stereotypes:
         puml_body = _prepare_diagram_puml_body(puml_body, repo_root, diagram_type)
     puml_body = ensure_puml_layout(puml_body)
-    inferred_e, inferred_c = _infer_reference_ids_from_puml(repo_root, puml_body)
+    # A fresh artifact has no stored value to carry, so merging the caller's own argument with what
+    # the body draws is right here and the reconcile is not needed. What inference could not decide
+    # is likewise nothing to salvage.
+    inferred_e, inferred_c, _undecided = _infer_reference_ids_from_puml(repo_root, puml_body)
     return _DiagramBuild(
         puml_body=puml_body,
         effective_id=eid,
