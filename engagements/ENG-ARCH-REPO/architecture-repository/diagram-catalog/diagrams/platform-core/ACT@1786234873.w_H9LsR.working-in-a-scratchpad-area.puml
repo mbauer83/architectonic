@@ -256,7 +256,7 @@ bindings:
   correspondence_kind: represents
   target:
     entity_id: FNC@1786225282.foobGD2.write-lifted-model-content
-last-updated: '2026-08-13T13:58:17Z'
+last-updated: '2026-08-22T20:06:39Z'
 ---
 @startuml working-in-a-scratchpad-area
 skinparam hyperlinkColor #252327
@@ -286,6 +286,7 @@ if ([[arch://d_keyed Have both ends reached the level relationships key on??]]) 
 :[[arch://a_verify Check that pair against the meta-ontology]];
 if ([[arch://d_ok Does the meta-ontology permit this pair??]]) then (permitted)
 |You|
+(A)
 :[[arch://a_select Select notes and links; name the target project]];
 else (refused)
 :[[arch://a_remedy Reverse the link, retype an end, or remove it]];
@@ -296,6 +297,8 @@ endif
 :[[arch://a_write Write it in one transaction, then record on each note what it became]];
 note right: Lifting leaves the notes in place; what was lifted now carries a reference to what it became.
 else (not yet)
+(A)
+detach
 endif
 
 stop
