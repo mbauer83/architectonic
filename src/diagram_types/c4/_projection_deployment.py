@@ -8,6 +8,8 @@ module inside the file-length policy, which the two axes together broke.
 
 from __future__ import annotations
 
+from functools import lru_cache
+
 from src.diagram_types.c4._projection_rollup import descendants, direct_conns
 from src.diagram_types.c4._projection_vocabulary import (
     CONTAINER_INTERNAL_TYPES,
@@ -19,23 +21,51 @@ from src.diagram_types.c4._projection_vocabulary import (
     entity_type,
     make_item,
 )
+from src.domain.modules.module_types import ElementClassName
 from src.domain.relationships.derivation_types import ModelQuery
 
+_HOST_CLASS = ElementClassName("technology-internal-active-structure-element")
+
 #: What can host something, at the technology layer. ArchiMate has no relation from a node to an
-#: application component — the deployment fact is the two-hop `node -aggregation-> artifact
-#: -realization-> component`, which is what `connections.yaml` permits and what this walks.
-_DEPLOYMENT_HOST_TYPES: frozenset[str] = frozenset({
-    "technology-node", "device", "system-software", "facility", "equipment",
-})
-_HOSTING_TYPES: frozenset[str] = frozenset({"archimate-composition", "archimate-aggregation"})
+#: application component — the deployment fact is the two-hop `host -> artifact -realization->
+#: component`, which is what this walks.
+#:
+#: Derived rather than listed. The five types were enumerated here and the relationship table
+#: permitted the first hop from only one of them, so four of the five were declarable hosts that
+#: nothing could be deployed on — a literal and a table out of step, which is the kind of drift a
+#: derived set cannot have. `technology-internal-active-structure-element` is the class they share,
+#: and the table now states the rule for that class too.
+@lru_cache(maxsize=1)
+def _deployment_host_types() -> frozenset[str]:
+    from src.infrastructure.app_bootstrap import get_module_registry  # noqa: PLC0415
+
+    return frozenset(
+        str(name) for name in get_module_registry().entity_types_with_class(_HOST_CLASS)
+    )
+
+
+#: Which relation puts an artifact on a host. Assignment is ArchiMate's deployment relation and the
+#: one to write, from any host. Aggregation is read as well, for the models authored while it was the
+#: only path the table offered — which the table permits from `technology-node` only, and that is
+#: where it stays: widening it would break the composition-mirrors-aggregation invariant in four new
+#: places. Composition is deliberately absent: the table permits it from no host to an artifact, and
+#: containing an artifact is not what running one means.
+_ARTIFACT_HOSTING_TYPES: frozenset[str] = frozenset({"archimate-assignment", "archimate-aggregation"})
+
+#: Which relation puts one host inside another. A different question with a different answer, which
+#: is why it is a different set: composition *is* permitted here, via `@all -> @same`, and the
+#: shipped self-model states six of them. Sharing one literal with the pair above would have
+#: flattened every deployment view into a single box — see `_enclosing_nodes`.
+_NODE_CONTAINMENT_TYPES: frozenset[str] = frozenset({"archimate-composition", "archimate-aggregation"})
 
 
 def _hosts_of(container_id: str, query: ModelQuery) -> set[str]:
     """Which technology elements a container runs on, along ArchiMate's own deployment path.
 
-    `node -aggregation-> artifact -realization-> component` is the chain the spec defines and the
-    only one `connections.yaml` permits, so it is the only one read. A container with no artifact
-    is simply undeployed, and saying so by drawing nothing is more honest than inventing a host.
+    `host -assignment-> artifact -realization-> component` is the chain ArchiMate defines, and
+    aggregation is read on the first hop as well because it was the only path the table offered
+    before 0.7.1. A container with no artifact is simply undeployed, and saying so by drawing
+    nothing is more honest than inventing a host.
     """
     hosts: set[str] = set()
     for realization in query.find_connections_for(container_id, direction="inbound"):
@@ -45,7 +75,10 @@ def _hosts_of(container_id: str, query: ModelQuery) -> set[str]:
         if entity_type(artifact_id, query) != "artifact":
             continue
         for holds in query.find_connections_for(artifact_id, direction="inbound"):
-            if holds.conn_type in _HOSTING_TYPES and entity_type(holds.source, query) in _DEPLOYMENT_HOST_TYPES:
+            if (
+                holds.conn_type in _ARTIFACT_HOSTING_TYPES
+                and entity_type(holds.source, query) in _deployment_host_types()
+            ):
                 hosts.add(holds.source)
     return hosts
 
@@ -68,9 +101,9 @@ def _enclosing_nodes(hosts: set[str], query: ModelQuery) -> dict[str, str]:
         nxt: set[str] = set()
         for node in sorted(frontier):
             for holds in query.find_connections_for(node, direction="inbound"):
-                if holds.conn_type not in _HOSTING_TYPES:
+                if holds.conn_type not in _NODE_CONTAINMENT_TYPES:
                     continue
-                if entity_type(holds.source, query) not in _DEPLOYMENT_HOST_TYPES:
+                if entity_type(holds.source, query) not in _deployment_host_types():
                     continue
                 if node in parents or holds.source == node:
                     continue

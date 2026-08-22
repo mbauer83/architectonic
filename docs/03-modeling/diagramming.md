@@ -176,9 +176,12 @@ click.
 level: it draws the same containers a container view draws, placed on the technology that hosts
 them, so it sits beside the zoom rather than below it — the navigation offers it as a lookup from a
 logical view, and the logical views as a lookup back. Hosting is derived along ArchiMate's own
-path, `technology-node --aggregation--> artifact --realization--> application-component`; there is
-no relation from a node directly to an application component, so a container with no artifact is
-left out rather than given an invented host.
+path, `host --assignment--> artifact --realization--> application-component`, where a host is any
+technology-internal active-structure element: a node, a device, system software, equipment or a
+facility. Assignment is the relation to write for a new deployment. Aggregation from a technology
+node is still read on the first hop, so views of models authored while that was the only permitted
+path keep working. There is no relation from a host directly to an application component, so a
+container with no artifact is left out rather than given an invented host.
 
 Node descriptions are **off by default** — C4 nodes render name only. Set
 `show_node_descriptions: true` in the diagram's frontmatter to include the description line

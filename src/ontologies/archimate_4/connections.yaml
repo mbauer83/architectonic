@@ -239,6 +239,15 @@ permitted_relationships:
   # ── Technology Domain (internal) ───────────────────────────────────────
   - ["@technology-internal-active-structure-element", technology-interface, [composition, aggregation]]
   - [technology-node, [system-software, facility, device, equipment], [composition, aggregation]]
+  # Assignment is ArchiMate's deployment relation: a node is assigned to an artifact to say the
+  # artifact is deployed on it. Stated for the whole host class rather than for technology-node
+  # alone, which left the other four host types with no way to say what runs on them at all.
+  - ["@technology-internal-active-structure-element", artifact, [assignment]]
+  # Aggregation stays on this one pair, and is not widened with it. It is kept for the models
+  # authored while it was the only path the table offered — which can only be this pair, because it
+  # is the only one that was ever permitted. Widening it would also have broken the
+  # composition-mirrors-aggregation invariant (spec §5.1.2) in four new places, whose one documented
+  # exception is exactly this pair: see `test_archimate_4_composition_semantics`.
   - [technology-node, artifact, [aggregation]]
   - [system-software, system-software, [assignment]]
   - [system-software, communication-network, [association]]

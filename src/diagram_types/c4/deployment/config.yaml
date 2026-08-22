@@ -22,8 +22,12 @@ guidance:
       the ArchiMate graph. Without it, the diagram is *standalone* and shows exactly what
       `diagram_entities` and `diagram_connections` declare.
     - >-
-      Deployment is derived along ArchiMate's own path: `technology-node --aggregation--> artifact
-      --realization--> application-component`. There is no relation from a node directly to an
+      Deployment is derived along ArchiMate's own path: `host --assignment--> artifact
+      --realization--> application-component`, where a host is any technology-internal
+      active-structure element — a node, device, system software, equipment or facility. Assignment
+      is the relation to write, from any of them. Aggregation from a `technology-node` is still read
+      on the first hop, because it was the only path the table permitted before 0.7.1 and models
+      were authored against it. There is no relation from a host directly to an
       application component, and the ontology does not permit one — a container with no artifact is
       simply undeployed, and it is left out rather than given an invented host.
     - >-

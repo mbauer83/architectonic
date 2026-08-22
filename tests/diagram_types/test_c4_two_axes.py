@@ -13,6 +13,8 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from src.diagram_types.c4._c4_types import _ResolvedItem, _ResolvedState
 from src.diagram_types.c4._navigation import build_c4_navigation
 from src.diagram_types.c4._projection import project_c4_landscape, project_c4_scope
@@ -141,8 +143,10 @@ def _deployment_projection() -> Any:
 
 
 def test_the_host_is_reached_through_the_artifact_that_realizes_the_container() -> None:
-    """ArchiMate has no node→application-component relation and `connections.yaml` permits none;
-    the deployment fact is `node -aggregation-> artifact -realization-> component`."""
+    """ArchiMate has no host→application-component relation and `connections.yaml` permits none;
+    the deployment fact is `host -assignment-> artifact -realization-> component`. Aggregation from
+    a technology node is read on the first hop as well, because it was the only path the table
+    offered before 0.7.1 — which is what this fixture draws."""
     projection = _deployment_projection()
 
     assert _roles(projection)["CLUSTER"] == "internal"
@@ -153,6 +157,75 @@ def test_a_container_with_no_artifact_is_left_out_rather_than_given_a_host() -> 
     projection = _deployment_projection()
 
     assert "UNDEPLOYED" not in _roles(projection)
+
+
+def _deployed_on_system_software(hosting: str) -> FakeQuery:
+    """The shape defect 12 was reported as: the only host is system software, not a node.
+
+    Four of the five declared host types could not hold an artifact at all, so a model that said
+    where its containers run in the obvious way projected an empty view.
+    """
+    return FakeQuery(
+        entities=[
+            _entity("BILLING"), _entity("API"),
+            _entity("API_IMAGE", "artifact"),
+            _entity("RUNTIME", "system-software"),
+        ],
+        connections=[
+            _connection("c-b-api", "BILLING", "API", "archimate-composition"),
+            _connection("c-img-api", "API_IMAGE", "API", "archimate-realization"),
+            _connection("c-rt-img", "RUNTIME", "API_IMAGE", hosting),
+        ],
+    )
+
+
+@pytest.mark.parametrize("hosting", ["archimate-assignment", "archimate-aggregation"])
+def test_a_host_that_is_not_a_node_still_holds_its_container(hosting: str) -> None:
+    """Both relations: assignment is what a deployment should now say, aggregation is what models
+    authored against the only previously permitted path already say."""
+    projection = project_c4_deployment(
+        "BILLING", _deployed_on_system_software(hosting),
+        internal_c4_type="container", scope_entity_type="software-system",
+        person_archimate_types=_PERSON_TYPES,
+    )
+
+    assert _roles(projection)["RUNTIME"] == "internal"
+    assert dict(projection.contained_by)["API"] == "RUNTIME"
+
+
+def test_a_host_inside_a_node_keeps_its_enclosing_node() -> None:
+    """The shape of the shipped self-model, and the regression that pins two sets rather than one.
+
+    `node --composition--> host --aggregation--> artifact --realization--> component`. Composition
+    between hosts is permitted and the self-model states six of them; composition into an *artifact*
+    is permitted from no host at all. A single shrunken set of hosting types — which was the first
+    answer to this defect — would read the containment away and draw the whole deployment as one
+    flat box, which says the containers run side by side on a machine rather than together inside a
+    runtime.
+    """
+    query = FakeQuery(
+        entities=[
+            _entity("BILLING"), _entity("API"),
+            _entity("API_IMAGE", "artifact"),
+            _entity("RUNTIME", "system-software"),
+            _entity("MACHINE", "technology-node"),
+        ],
+        connections=[
+            _connection("c-b-api", "BILLING", "API", "archimate-composition"),
+            _connection("c-img-api", "API_IMAGE", "API", "archimate-realization"),
+            _connection("c-rt-img", "RUNTIME", "API_IMAGE", "archimate-aggregation"),
+            _connection("c-m-rt", "MACHINE", "RUNTIME", "archimate-composition"),
+        ],
+    )
+
+    projection = project_c4_deployment(
+        "BILLING", query, internal_c4_type="container", scope_entity_type="software-system",
+        person_archimate_types=_PERSON_TYPES,
+    )
+
+    contained = dict(projection.contained_by)
+    assert contained["API"] == "RUNTIME"
+    assert contained["RUNTIME"] == "MACHINE", "the enclosing node was flattened away"
 
 
 def test_the_deployed_system_is_the_title_rather_than_a_drawn_box() -> None:
