@@ -18,11 +18,28 @@ preferred port, a stale record, an exhausted range — is reachable in a test wi
 
 from __future__ import annotations
 
-import hashlib
 from collections.abc import Callable
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Literal
+
+from src.domain.deployment.endpoint_vocabulary import (
+    BackendIdentity,
+    EndpointObservation,
+    EndpointState,
+    PortAuthority,
+    PortPreference,
+    WorkspaceClaim,
+)
+
+# Re-exported: these are the vocabulary of an endpoint decision and every caller of the planner
+# speaks it, so moving them out of this module is not a reason to move every import.
+__all__ = [
+    "BackendIdentity",
+    "EndpointObservation",
+    "EndpointState",
+    "PortAuthority",
+    "PortPreference",
+    "WorkspaceClaim",
+]
 
 from src.domain.deployment._endpoint_refusals import (
     declared_port_taken_reason,
@@ -40,64 +57,6 @@ DERIVED_PORT_CEILING = 8499
 #: How many consecutive ports from the derived one a workspace considers before reporting that it
 #: has nowhere to start. Bounded so an exhausted range refuses with a reason instead of scanning.
 DERIVED_PORT_ATTEMPTS = 8
-
-
-@dataclass(frozen=True)
-class BackendIdentity:
-    """What a backend answers about itself: the roots it serves, and the software serving them.
-
-    `repo_roots` are realpath-normalized by the endpoint that publishes them, so a claim compared
-    against them must be normalized the same way — string equality is the whole comparison.
-    """
-
-    repo_roots: tuple[str, ...]
-    software_version: str
-
-    def serves(self, root: Path) -> bool:
-        return str(root) in self.repo_roots
-
-
-@dataclass(frozen=True)
-class WorkspaceClaim:
-    """The repositories a workspace expects its own backend to serve.
-
-    Both roots are already resolved by whoever built the claim; this type does no filesystem work.
-    """
-
-    engagement_root: Path
-    enterprise_root: Path | None = None
-
-    @property
-    def fingerprint(self) -> str:
-        """A stable digest of the roots — what makes a workspace's derived port its own.
-
-        Derived from the roots rather than the workspace directory: two directories configured to
-        serve the same repositories are one instance, and sharing a backend between them is right.
-        """
-        material = f"{self.engagement_root}\n{self.enterprise_root or ''}"
-        return hashlib.sha256(material.encode("utf-8")).hexdigest()[:12]
-
-
-#: What was found at a port, judged against what the workspace expects there.
-#:
-#: * `free` — nothing holds the port, so a backend may start on it
-#: * `ours` — a backend that serves this workspace's engagement repository
-#: * `foreign` — a backend serving some other workspace
-#: * `enterprise_conflict` — our engagement repository, served with a different enterprise tier
-#: * `unidentified` — something answers but will not say what it serves (a pre-identity backend,
-#:   or an unrelated HTTP service)
-#: * `occupied` — the port is bound by something that does not answer the probe at all
-EndpointState = Literal["free", "ours", "foreign", "enterprise_conflict", "unidentified", "occupied"]
-
-
-@dataclass(frozen=True)
-class EndpointObservation:
-    """One look at one port."""
-
-    port: int
-    socket_taken: bool
-    answers_probe: bool
-    identity: BackendIdentity | None = None
 
 
 def classify_endpoint(observation: EndpointObservation, claim: WorkspaceClaim | None) -> EndpointState:
@@ -122,22 +81,7 @@ def classify_endpoint(observation: EndpointObservation, claim: WorkspaceClaim | 
     return "ours"
 
 
-#: Where a preferred port came from. `command` (a CLI flag) and `environment` name this run, and
-#: `workspace_config` names this workspace — all three are statements, and a statement is obeyed or
-#: refused, never quietly moved. `settings_document` is the shipped default every clone carries, so
-#: it is a preference a workspace may yield when something else already holds it.
-PortAuthority = Literal["command", "environment", "workspace_config", "settings_document"]
 
-
-@dataclass(frozen=True)
-class PortPreference:
-    port: int
-    authority: PortAuthority
-
-    @property
-    def is_declared(self) -> bool:
-        """Whether this port was stated for this workspace, as opposed to inherited as a default."""
-        return self.authority != "settings_document"
 
 
 @dataclass(frozen=True)

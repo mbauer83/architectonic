@@ -3,24 +3,24 @@
 Separate from the planner because a refusal is only useful if it says what to do next, and that
 wording is worth reading on its own: "the port is in use" leaves an operator to guess, while naming
 the repositories the occupant serves and the file that stated the port does not.
+
+The types come from `endpoint_vocabulary`, not from the planner. Reaching back into the planner for
+them made a `TYPE_CHECKING` cycle that a type checker had to break by guessing an order.
 """
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from collections.abc import Callable
 
-if TYPE_CHECKING:  # types only: the planner imports this module at runtime, not the reverse
-    from collections.abc import Callable
+from src.domain.deployment.endpoint_vocabulary import (
+    EndpointObservation,
+    EndpointState,
+    PortPreference,
+    WorkspaceClaim,
+)
 
-    from src.domain.deployment.backend_endpoint import (
-        EndpointObservation,
-        EndpointState,
-        PortPreference,
-        WorkspaceClaim,
-    )
-
-    #: How the planner offers a port's judgement to a message that has to describe it.
-    StateOf = Callable[[int], tuple[EndpointState, EndpointObservation]]
+#: How the planner offers a port's judgement to a message that has to describe it.
+StateOf = Callable[[int], tuple[EndpointState, EndpointObservation]]
 
 #: Which knob set a port, for a message that tells the operator where to change it.
 PORT_AUTHORITY_SOURCES = {
