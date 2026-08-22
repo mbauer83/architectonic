@@ -3,15 +3,20 @@
 Four assertions, stated over the shapes the notation permits rather than over the shape that
 broke. The order they are written in is the order they were *measured* in, and it matters:
 
-* **Coverage** — every declared step appears exactly once. Blind on its own: the bundled diagram
-  drew all thirteen of its steps exactly once while telling a reader that nothing happens when the
-  two ends are not yet typed.
-* **No repetition** — an upper bound over all steps. Subsumed by "exactly once", kept separate
-  because the two fail differently: a fork that multiplies its tail should say "drawn twice", not
-  "coverage wrong".
+* **Coverage** — every declared step is drawn. Blind on its own: the bundled diagram drew all
+  thirteen of its steps while telling a reader that nothing happens when the two ends are not yet
+  typed.
+* **A bound on repetition** — a step is drawn no more often than the model gives it ways in. Where
+  two branches arrive at a step and no single structured placement covers both, the step is drawn in
+  each of them, which is how a reader sees that both paths reach it; drawing it more often than it
+  has arrivals is the fork-multiplication defect, where one tail appeared once per branch.
+* **Every drawing is the step itself** — a full labelled line, never a connector or a jump. A
+  flowchart connector renders correctly and is unreadable in this viewer: it puts an unlabelled
+  circle where every element is expected to be clickable and to resolve to an artifact, and the
+  circle resolves to nothing.
 * **Per-branch coverage** — the one that goes red on the bundled diagram. A branch's first step is
-  drawn inside that branch's own region, reached from it by a connector, or hoisted past the
-  construct's own `endif`/`end fork` because every arm converges on it.
+  drawn inside that branch's own region, or hoisted past the construct's own `endif`/`end fork`
+  because every arm converges on it.
 * **Structure** — a step every arm of a decision reaches is not drawn inside one arm.
 
 Coverage is stated over the step kinds that emit a *labelled* line — action, decision, partition.
@@ -54,23 +59,7 @@ class Node:
 
 
 def _parse(body: str) -> Node:
-    """The emitted body as a tree of regions.
-
-    A connector pair is read as one node per half: the entry half sits immediately before the step
-    it introduces, so the mark is resolved to that step and the arrival half is a jump to it.
-    """
-    marks: dict[str, str] = {}
-    pending_mark: str | None = None
-    for raw in body.splitlines():
-        line = raw.strip()
-        if line.startswith("(") and line.endswith(")"):
-            pending_mark = line[1:-1]
-        elif pending_mark is not None and line.startswith((":", "if (", "partition ")):
-            # A lane switch or a note may sit between the connector and the step it introduces.
-            step_id = sentinel_of(line)
-            if step_id:
-                marks.setdefault(pending_mark, step_id)
-            pending_mark = None
+    """The emitted body as a tree of regions."""
     root = Node("root")
     stack = [root]
     for raw in body.splitlines():
@@ -98,17 +87,13 @@ def _parse(body: str) -> Node:
         elif line == "}":
             if len(stack) > 1:
                 stack.pop()
-        elif line.startswith("(") and line.endswith(")"):
-            stack[-1].regions[-1].nodes.append(Node("connector", marks.get(line[1:-1])))
-        elif line == "detach":
-            continue
         elif line.startswith(":") and line.endswith(";"):
             stack[-1].regions[-1].nodes.append(Node("step", sentinel_of(line)))
     return root
 
 
 def _drawn_steps(node: Node) -> list[str]:
-    """Every step id the body *draws*, in emission order. A connector draws nothing itself."""
+    """Every step id the body draws, in emission order, including a second drawing of one."""
     found: list[str] = []
     for region in node.regions:
         for child in region.nodes:
@@ -125,7 +110,7 @@ def _reached_in(region: Region) -> set[str]:
     """The steps this region draws or jumps to, at any depth inside it."""
     reached: set[str] = set()
     for child in region.nodes:
-        if child.step_id and child.kind in ("step", "connector", "decision", "partition"):
+        if child.step_id and child.kind in ("step", "decision", "partition"):
             reached.add(child.step_id)
         if child.kind in ("decision", "fork", "partition"):
             for inner in child.regions:
@@ -166,8 +151,6 @@ def _step_after(holder: Region, construct: Node) -> str | None:
             return following.step_id
         if following.kind in ("decision", "partition"):
             return following.step_id
-        if following.kind == "connector":
-            continue
         return None
     return None
 
@@ -248,7 +231,7 @@ def shape(request: pytest.FixtureRequest) -> ActivityShape:
     return request.param
 
 
-class TestEveryDeclaredStepIsDrawnExactlyOnce:
+class TestEveryDeclaredStepIsDrawn:
     def test_coverage(self, shape: ActivityShape) -> None:
         """No reachability escape clause: a step the model declares is a step the picture owes."""
         body = shape.render()
@@ -258,14 +241,57 @@ class TestEveryDeclaredStepIsDrawnExactlyOnce:
 
         assert not missing, f"{shape.name}: declared but never drawn: {missing}\n{body}"
 
-    def test_no_step_is_drawn_twice(self, shape: ActivityShape) -> None:
-        """An upper bound over *all* steps — a defect-8 regression should say `drawn twice`."""
+    def test_no_step_is_drawn_more_often_than_the_model_gives_it_ways_in(
+        self, shape: ActivityShape
+    ) -> None:
+        """The bound on duplication, taken from the model rather than from the walk.
+
+        A step two branches arrive at is drawn in both, because nothing structured covers exactly
+        those two paths and a reader has to see that both paths reach it. What that must never become
+        is the fork-multiplication defect, where a single tail with one way in appeared once per
+        branch. So the ceiling is the number of edges the model points at the step.
+        """
         body = shape.render()
         drawn = _drawn_steps(_parse(body))
+        counted = {step_id: drawn.count(step_id) for step_id in set(drawn)}
+        predecessors: dict[str, list[str]] = {}
+        for conn_type in ("step-flow", "step-then", "step-else", "step-fork-branch", "step-contains"):
+            for source, target in _edges(shape, conn_type):
+                predecessors.setdefault(target, []).append(source)
 
-        repeated = {s: drawn.count(s) for s in set(drawn) if drawn.count(s) > 1}
+        def ceiling(step_id: str) -> int:
+            # A step that draws nothing — a join — still counts as one way in, so what follows it is
+            # not held to a ceiling of zero.
+            leading_in = predecessors.get(step_id) or []
+            return max(1, sum(max(1, counted.get(source, 0)) for source in leading_in))
 
-        assert not repeated, f"{shape.name}: drawn more than once: {repeated}\n{body}"
+        over = {
+            step_id: (count, ceiling(step_id))
+            for step_id, count in counted.items()
+            if count > ceiling(step_id)
+        }
+
+        assert not over, (
+            f"{shape.name}: drawn more often than what leads to it: {over}\n{body}"
+        )
+
+    def test_every_drawing_of_a_step_is_the_step_itself(self, shape: ActivityShape) -> None:
+        """Not a connector, not a jump. Both were tried and both are worse.
+
+        `label` / `goto` is inert on the pinned PlantUML — a backward `goto` draws an arrow to the
+        following node and inside a branch leaves a dangling arrowhead. A connector pair renders
+        correctly and is unreadable here: an unlabelled circle in a viewer where every element is
+        expected to be clickable and to resolve to the artifact it stands for.
+        """
+        body = shape.render()
+
+        stubs = [
+            line.strip() for line in body.splitlines()
+            if line.strip().startswith(("goto ", "label ", "detach"))
+            or (line.strip().startswith("(") and line.strip().endswith(")"))
+        ]
+
+        assert not stubs, f"{shape.name}: drawn as a stub rather than as the step: {stubs}\n{body}"
 
 
 class TestABranchDrawsWhatItReaches:
@@ -363,12 +389,15 @@ def _region_holding(node: Node, wanted: Node) -> Region | None:
 
 
 class TestAConvergenceIsNotDrawnInsideOneArm:
-    def test_a_step_every_arm_reaches_is_not_buried_in_one_of_them(self, shape: ActivityShape) -> None:
+    def test_a_step_every_arm_reaches_is_drawn_in_all_of_them_or_in_none(
+        self, shape: ActivityShape
+    ) -> None:
         """The defect this release exists for: the whole process drawn inside the first arm.
 
-        A step that every arm of a decision reaches belongs after that decision's `endif`. Where the
-        arrival points sit at different nesting depths and no single placement covers them, the
-        others reach it by a connector — so an arm that connects to it is not "burying" it.
+        A step every arm of a decision reaches belongs after that decision's `endif`, where one
+        drawing serves both paths. Where nothing structured covers exactly those arrivals it is drawn
+        in each arm that reaches it. What it must never be is drawn in *some* of them, which is a
+        picture saying one path carries on and the other stops.
         """
         body = shape.render()
         tree = _parse(body)
@@ -384,13 +413,11 @@ class TestAConvergenceIsNotDrawnInsideOneArm:
             node, _holder = found
             regions = node.regions[:len(arms)]
             for step_id in sorted(converging):
-                drawing = [i for i, r in enumerate(regions) if step_id in _drawn_in(r)]
-                if not drawing:
-                    continue
-                jumping = [i for i, r in enumerate(regions) if _jumps_to(r, step_id)]
-                assert len(drawing) + len(jumping) >= len(arms), (
+                drawing = [index for index, region in enumerate(regions) if step_id in _drawn_in(region)]
+
+                assert len(drawing) in (0, len(regions)), (
                     f"{shape.name}: {step_id} is reached by every arm of {decision_id} but is drawn "
-                    f"inside arm(s) {drawing} with no jump from the rest\n{body}"
+                    f"inside arm(s) {drawing} of {len(regions)}\n{body}"
                 )
 
 
@@ -398,12 +425,3 @@ def _drawn_in(region: Region) -> set[str]:
     return set(_drawn_steps(Node("root", None, [region])))
 
 
-def _jumps_to(region: Region, step_id: str) -> bool:
-    for child in region.nodes:
-        if child.kind == "connector" and child.step_id == step_id:
-            return True
-        if child.kind in ("decision", "fork", "partition") and any(
-            _jumps_to(inner, step_id) for inner in child.regions
-        ):
-            return True
-    return False

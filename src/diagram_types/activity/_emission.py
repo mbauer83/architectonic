@@ -13,9 +13,8 @@ placement, and which one depends on the shape:
 * the same for a fork's branches, drawn once past `end fork`, whether or not the model declares a
   join step for them to meet at;
 * the arrivals sit at different nesting depths and neither escapes the other — nothing structured
-  covers exactly those paths, so it is drawn once where the walk first reaches it, marked by a
-  flowchart connector, and every later arrival draws the matching connector and detaches. That is
-  also how a back edge is drawn: a retry loop has no structured rendering at all.
+  covers exactly those paths, so the step is **drawn in each branch that arrives at it**, along with
+  whatever follows it there.
 
 Post-dominance, not mere reachability, is what separates the first two from the third. A step both
 arms *can* reach may still be escaped by a path through one of them, and hoisting it past the
@@ -23,12 +22,19 @@ arms *can* reach may still be escaped by a path through one of them, and hoistin
 
 Convergence itself is `_step_graph`'s question, not this module's.
 
-**Why a connector and not `goto`.** PlantUML 1.2026.3 — the pinned jar — accepts `label` and `goto`
-without complaint and then ignores them: measured on its own documented example, a backward `goto`
-draws an arrow to the *following* node instead of the label, and in a branch it leaves a dangling
-arrowhead. Checking for error markup is what makes that look like support. A connector pair renders
-correctly in every shape measured, including across swimlanes and out of a fork branch, and it is
-the ordinary flowchart device for exactly this arrival.
+**Why the third case duplicates.** Two alternatives were tried and both are worse. `label` / `goto`
+would state the arrival directly, and on the pinned PlantUML 1.2026.3 both are accepted and then
+ignored — a backward `goto` draws an arrow to the following node, and inside a branch it leaves a
+dangling arrowhead. A flowchart connector pair renders correctly and is unreadable here: it puts an
+unlabelled circle in a viewer where every element is expected to be clickable and to resolve to the
+artifact it stands for, and the circle resolves to nothing. A second drawing of the step carries the
+same `arch://` sentinel as the first, so both are selectable and both resolve to one artifact, which
+is what a reader of this diagram needs.
+
+**What stops that from multiplying.** The walk carries the chain of steps it is currently inside, and
+a step already on that chain ends the walk instead of being drawn again — so a back edge closes
+rather than recurring. Duplication is therefore bounded by the number of branches that arrive at a
+step from outside, which is the number of times a reader would expect to see it.
 """
 
 from __future__ import annotations
@@ -37,7 +43,6 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
-from ._connectors import Connectors, emit_arrival, emit_entry
 from ._step_graph import StepGraph
 from ._step_links import link_suffix, sentinel_wrapped, user_link_suffix
 
@@ -66,7 +71,6 @@ class EmissionContext:
     graph: StepGraph
     lanes: Swimlanes
     notes: Mapping[str, dict[str, Any]]
-    connectors: Connectors
 
 
 def is_join(step_id: str, ctx: EmissionContext) -> bool:
@@ -87,8 +91,9 @@ def emit_from(
     start_id: str,
     ctx: EmissionContext,
     lines: list[str],
-    visited: set[str],
+    drawn: set[str],
     stops: frozenset[str] = frozenset(),
+    path: frozenset[str] = frozenset(),
 ) -> None:
     """Emit from *start_id* where no fork is waiting on a join, so one met here is owed to nobody.
 
@@ -97,15 +102,16 @@ def emit_from(
     because discarding that return **silently** is the defect this release fixed: the name is where a
     reader learns the discard is the contract and not an oversight.
     """
-    emit_until_join(start_id, ctx, lines, visited, stops)
+    emit_until_join(start_id, ctx, lines, drawn, stops, path)
 
 
 def emit_until_join(
     start_id: str,
     ctx: EmissionContext,
     lines: list[str],
-    visited: set[str],
+    drawn: set[str],
     stops: frozenset[str] = frozenset(),
+    path: frozenset[str] = frozenset(),
 ) -> str | None:
     """Emit from *start_id* onward, stopping at a join. Returns the join, or None if none was met.
 
@@ -113,6 +119,11 @@ def emit_until_join(
     fork as a whole and is emitted once, by whoever opened it. *stops* carries the convergence
     points of every construct this walk is inside, so an arm ends where its enclosing decision or
     fork will draw the step it arrived at.
+
+    *path* is the chain of steps this walk is inside. It, and not the set of everything drawn so far,
+    is what ends the walk — so a step another branch already drew is drawn again here, and a step
+    this walk is already inside is not. `drawn` only records what has been drawn at all, for the
+    pass over whatever the walk never reached.
     """
     graph = ctx.graph
     step_id: str | None = start_id
@@ -121,19 +132,18 @@ def emit_until_join(
     # already that construct's own — so the walk carries on through it instead of handing it up.
     resumed_at_convergence = False
     surfaced_join: str | None = None
-    while step_id and step_id not in stops:
-        if step_id in visited:
-            emit_arrival(ctx.connectors, step_id, lines)
-            return None
+    walked = path
+    while step_id and step_id not in stops and step_id not in walked:
         if is_join(step_id, ctx) and not resumed_at_convergence:
             return step_id
         step = graph.step_by_id.get(step_id)
         if not step:
             break
-        visited.add(step_id)
+        drawn.add(step_id)
+        walked = walked | {step_id}
         convergence = graph.convergence_point(step_id)
         arm_stops = stops | ({convergence} if convergence else frozenset())
-        surfaced = _emit_step(step, step_id, ctx, lines, visited, arm_stops)
+        surfaced = _emit_step(step, step_id, ctx, lines, drawn, arm_stops, walked)
         if surfaced is not None and surfaced_join is None:
             # A join reached inside the construct just emitted belongs to the fork that opened it,
             # which may be several levels out. Without this channel it was lost, and everything past
@@ -146,7 +156,7 @@ def emit_until_join(
 
 
 def emit_orphans(
-    branch_owned: set[str], ctx: EmissionContext, lines: list[str], visited: set[str]
+    branch_owned: set[str], ctx: EmissionContext, lines: list[str], drawn: set[str]
 ) -> None:
     """Draw whatever the walk from the root did not reach.
 
@@ -156,11 +166,11 @@ def emit_orphans(
     owned by a branch, so nothing in it is a head.
     """
     for step_id in ctx.graph.step_by_id:
-        if step_id not in branch_owned and step_id not in visited:
-            emit_from(step_id, ctx, lines, visited)
+        if step_id not in branch_owned and step_id not in drawn:
+            emit_from(step_id, ctx, lines, drawn)
     for step_id in ctx.graph.step_by_id:
-        if step_id not in visited:
-            emit_from(step_id, ctx, lines, visited)
+        if step_id not in drawn:
+            emit_from(step_id, ctx, lines, drawn)
 
 
 def _emit_step(
@@ -168,23 +178,21 @@ def _emit_step(
     step_id: str,
     ctx: EmissionContext,
     lines: list[str],
-    visited: set[str],
+    drawn: set[str],
     stops: frozenset[str],
+    path: frozenset[str],
 ) -> str | None:
     """Emit this step, and hand back a join reached inside it for an enclosing fork to close on."""
     stype = str(step.get("type") or "")
-    # The lane switch comes first so a connector circle is drawn in the lane of the step it
-    # introduces, not in the lane the walk happened to be in when it got there.
-    if stype in ("action", "decision"):
-        _maybe_switch_lane(step_id, ctx, lines)
-    emit_entry(ctx.connectors, step_id, lines)
 
     if stype == "action":
+        _maybe_switch_lane(step_id, ctx, lines)
         label = puml_text(str(step.get("label") or "action"))
         lines.append(f":{sentinel_wrapped(step, label)}{user_link_suffix(step)};")
         _emit_step_note(step_id, ctx, lines)
 
     elif stype == "decision":
+        _maybe_switch_lane(step_id, ctx, lines)
         condition = puml_text(str(step.get("condition") or "?"))
         then_label = puml_text(str(step.get("then_label") or "yes"))
         else_label = puml_text(str(step.get("else_label") or "no"))
@@ -197,10 +205,10 @@ def _emit_step(
             f"if ({sentinel_wrapped(step, f'{condition}?')}{user_link_suffix(step)}) then ({then_label})"
         )
         then_first = ctx.graph.then_target.get(step_id)
-        from_then = emit_until_join(then_first, ctx, lines, visited, stops) if then_first else None
+        from_then = emit_until_join(then_first, ctx, lines, drawn, stops, path) if then_first else None
         lines.append(f"else ({else_label})")
         else_first = ctx.graph.else_target.get(step_id)
-        from_else = emit_until_join(else_first, ctx, lines, visited, stops) if else_first else None
+        from_else = emit_until_join(else_first, ctx, lines, drawn, stops, path) if else_first else None
         lines.append("endif")
         return from_then or from_else
 
@@ -213,7 +221,7 @@ def _emit_step(
             # Only a fork switches lane. A join emits nothing at all, so a lane switch before one
             # would be a bar in a lane with no activity in it.
             _maybe_switch_lane(step_id, ctx, lines)
-            _emit_fork(step_id, branches, ctx, lines, visited, stops)
+            _emit_fork(step_id, branches, ctx, lines, drawn, stops, path)
             # A fork consumes its own join and must not hand it to an enclosing fork.
             return None
 
@@ -222,7 +230,7 @@ def _emit_step(
         lines.append(f'partition "{label}"{link_suffix(step)} {{')
         _emit_step_note(step_id, ctx, lines)
         contains_id = ctx.graph.contains_first.get(step_id)
-        inside = emit_until_join(contains_id, ctx, lines, visited, stops) if contains_id else None
+        inside = emit_until_join(contains_id, ctx, lines, drawn, stops, path) if contains_id else None
         lines.append("}")
         return inside
 
@@ -232,27 +240,22 @@ def _emit_fork(
     branches: Sequence[str],
     ctx: EmissionContext,
     lines: list[str],
-    visited: set[str],
+    drawn: set[str],
     stops: frozenset[str],
+    path: frozenset[str],
 ) -> None:
     lines.append("fork")
     _emit_step_note(step_id, ctx, lines)
-    # Each branch walks its own path — hence the copied `visited` — and stops where it reaches the
-    # join or the step every branch converges on. Without that stop every branch ran on to the end
-    # of the graph, so the whole continuation was repeated once per branch and nested forks
-    # multiplied it. What each branch drew is folded back in afterwards, so a later pass over the
-    # unemitted steps does not draw a branch's contents a second time.
+    # Each branch stops where it reaches the join or the step every branch converges on. Without
+    # that stop every branch ran on to the end of the graph, so the whole continuation was repeated
+    # once per branch and nested forks multiplied it.
     joins: list[str] = []
-    drawn_in_branches: set[str] = set()
     for index, branch_start in enumerate(branches):
         if index > 0:
             lines.append("fork again")
-        walked = set(visited)
-        reached = emit_until_join(branch_start, ctx, lines, walked, stops)
-        drawn_in_branches |= walked
+        reached = emit_until_join(branch_start, ctx, lines, drawn, stops, path)
         if reached is not None:
             joins.append(reached)
-    visited |= drawn_in_branches
     lines.append("end fork")
     # The continuation belongs to the fork, not to any branch, so it is emitted once here. A branch
     # that never reaches the join contributes nothing to this; the first join any branch did reach
@@ -260,10 +263,10 @@ def _emit_fork(
     # fork continues at the convergence point and this is not reached.
     if joins:
         join_id = joins[0]
-        visited.add(join_id)
+        drawn.add(join_id)
         after_join = ctx.graph.flow_next.get(join_id)
         if after_join:
-            emit_from(after_join, ctx, lines, visited, stops)
+            emit_from(after_join, ctx, lines, drawn, stops, path | {join_id})
 
 
 def _maybe_switch_lane(step_id: str, ctx: EmissionContext, lines: list[str]) -> None:

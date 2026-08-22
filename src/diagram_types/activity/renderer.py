@@ -35,7 +35,6 @@ from src.infrastructure.rendering.puml_safety import (
     warn_when_puml_exceeds_threshold,
 )
 
-from ._connectors import Connectors, connector_names
 from ._emission import (
     EmissionContext,
     LaneCursor,
@@ -88,36 +87,23 @@ class ActivityPumlRenderer:
             initial_lane_id = lanes[0]["id"]
 
         lane_map = {lane["id"]: lane for lane in lanes}
-        notes = _build_notes_index(kd, kcs)
-
-        def walk(connectors: Connectors) -> list[str]:
-            ctx = EmissionContext(
-                graph=graph,
-                lanes=Swimlanes(
-                    index=lane_index,
-                    by_id=lane_map,
-                    declared=bool(lanes),
-                    cursor=LaneCursor(current=initial_lane_id),
-                ),
-                notes=notes,
-                connectors=connectors,
-            )
-            walked: list[str] = []
-            visited: set[str] = set()
-            if root_id:
-                emit_from(root_id, ctx, walked, visited)
-            # Whenever steps remain, not only when there was no root: a diagram may declare two
-            # chains with no edge between them, and both are declared, so both are drawn.
-            emit_orphans(branch_owned, ctx, walked, visited)
-            return walked
-
-        # A connector's entry half has to be drawn before the arrival that needs it, and only the
-        # walk knows which steps are arrived at that way. So the walk runs twice: the first
-        # discovers the arrivals, the second names them and draws both halves. A connector changes
-        # no control flow, so the second walk meets the same arrivals as the first.
-        discovery = Connectors()
-        walk(discovery)
-        body_lines = walk(Connectors(name_for=connector_names(discovery.arrivals)))
+        ctx = EmissionContext(
+            graph=graph,
+            lanes=Swimlanes(
+                index=lane_index,
+                by_id=lane_map,
+                declared=bool(lanes),
+                cursor=LaneCursor(current=initial_lane_id),
+            ),
+            notes=_build_notes_index(kd, kcs),
+        )
+        body_lines: list[str] = []
+        drawn: set[str] = set()
+        if root_id:
+            emit_from(root_id, ctx, body_lines, drawn)
+        # Whenever steps remain, not only when there was no root: a diagram may declare two chains
+        # with no edge between them, and both are declared, so both are drawn.
+        emit_orphans(branch_owned, ctx, body_lines, drawn)
 
         lines: list[str] = [
             f"@startuml {diagram_name}",
