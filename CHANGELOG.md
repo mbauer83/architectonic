@@ -3,6 +3,72 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [0.7.1] — 2026-08-23
+
+**[Full detail → `changelog-assets/0.7.1-detail.md`](changelog-assets/0.7.1-detail.md)**
+
+**Four fixes, all of them cases where the product stated one thing and did another.** An activity
+diagram drew fewer steps than its model declares, a schema description contradicted the checker that
+enforces it, a diagram kept claiming to draw a relation it had stopped drawing, and four of the five
+technology types the deployment view treats as hosts had no permitted way to hold an artifact.
+
+### Fixed
+
+- **An activity diagram draws every step its model declares, exactly once.** Four separate causes,
+  each of which lost part of a picture: a step that more than one branch of a decision reaches was
+  drawn inside the first branch and dropped from the rest; a step reached from two different nesting
+  depths was drawn on one path and dropped from the other; a join reached inside a nested decision
+  never reached the fork that opened it, so everything past the join went undrawn; and a step graph
+  containing a loop drew `start` and `stop` with nothing between them, while a diagram declaring two
+  unconnected chains drew only the first. Where two branches arrive at a step and no single placement
+  in an `if`/`else` tree covers both, the step is drawn in each of them, carrying the same identity,
+  so either drawing selects the same element.
+- **A declared step the stored body does not draw is reported (W045).** This class of defect was
+  silent: a diagram missing a quarter of its steps verified clean, because every rule read the model
+  and none read the picture. Re-render with `puml="auto-sync"` to answer it.
+- **`connection-ids-used` records the connections a diagram draws, and no others.** An edit that
+  replaced the body kept the references the old body had, so a diagram went on claiming to draw a
+  relation it no longer drew. That surface answers which views show a connection, which is impact
+  analysis, so a wrong answer there is a wrong answer about the model. References are dropped only
+  where the new body positively contradicts them: a relation the reader cannot name unambiguously,
+  or a pair the body does not mention, keeps what it had.
+- **An `artifact` may be assigned to any technology host.** Assignment is ArchiMate's deployment
+  relation — a node is assigned to an artifact to say the artifact is deployed on it — and the
+  relationship table permitted it into an `artifact` from nothing at all. The only hosting path was
+  `technology-node --aggregation--> artifact`, so a model saying its containers run on system
+  software, a device, equipment or a facility could not say it, and a deployment view over such a
+  model drew no containers. Assignment is now permitted from every technology-internal
+  active-structure element and is the relation to write; the aggregation path is still read, so
+  existing views keep working.
+- **A `format` facet says what it accepts, and cannot say otherwise.** The `Source Repository`
+  description told authors the facet was informative only and that any string was accepted, while
+  the checker refused values — so real values were reported invalid by a schema that had promised
+  they were fine. Each format is now specified once, as the procedure that decides it, and both the
+  description an author reads and the message a refusal gives are composed from it. A refusal also
+  says what would have been accepted rather than only that something was not valid.
+
+### Changed
+
+- **Type checking is deterministic.** `zuban check` reported a type error on roughly four runs in
+  ten, on a file that had not changed, because two modules named each other's types and a checker had
+  to guess which to resolve first. The endpoint value types now sit in a module both import.
+
+### Known limitation
+
+- A `step-flow` that closes a loop is not drawn. Every step of the loop is, which is new — such a
+  diagram used to render as `start` and `stop` with nothing between — but the edge back to the
+  earlier step has no rendering here yet, and PlantUML's `repeat while` is not something this
+  notation emits.
+
+### Upgrading
+
+- Nothing to run. A repository whose stored activity bodies have the affected shape starts reporting
+  **W045** as a warning; `artifact_edit_diagram(puml="auto-sync")` on each named diagram clears it,
+  and verification passes either way.
+- A repository materialised before 0.7.1 holds the older `Source Repository` description. The upgrade
+  reports it as an operator customisation and never overwrites it, which is the intended behaviour
+  for any locally edited schema file — not a problem to fix.
+
 ## [0.7.0] — 2026-08-17
 
 **[Full detail → `changelog-assets/0.7.0-detail.md`](changelog-assets/0.7.0-detail.md)**
@@ -697,6 +763,7 @@ never-requested operations is empty — the reason to trust a release which rena
 - Confidential assurance tier (STPA/CAST/GRC/FMEA/GSN) on an encrypted store with tamper-evident history
 - Viewpoint query engine with diagram/matrix/table representations
 
+[0.7.1]: https://github.com/mbauer83/architectonic/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/mbauer83/architectonic/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/mbauer83/architectonic/compare/v0.5.4...v0.6.0
 [0.5.4]: https://github.com/mbauer83/architectonic/compare/v0.5.3...v0.5.4
