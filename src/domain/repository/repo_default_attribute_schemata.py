@@ -13,6 +13,7 @@ is guidance, not a gate. Property keys follow the display-key (Title Case) conve
 from __future__ import annotations
 
 from src.domain.ontology_representation.attribute_scales import ORDINAL_SCALE, SCALE_KEYWORD
+from src.domain.ontology_representation.format_rules import accepted_forms_phrase
 
 # Planner-friendly classification vocabulary; maps onto the TLP scale (documented in the
 # Sensitivity description). Single-sourced so business-object and any future using schema agree.
@@ -42,9 +43,10 @@ _TELEMETRY_DESCRIPTION = (
     "Alerting, or Synthetic Probing. A general property of the element, not a judgement about "
     "any particular failure."
 )
+#: Derived from the `uri` rule itself, not written out beside it, so this cannot come to disagree
+#: with what the checker admits — which is exactly what it did.
 _SOURCE_REPO_DESCRIPTION = (
-    "Where the code lives. Informative only — declared as format: uri, but the validator runs no "
-    "format checker, so any string is accepted."
+    f"Where the code lives. Enforced as a uri: the value must be {accepted_forms_phrase('uri')}."
 )
 
 

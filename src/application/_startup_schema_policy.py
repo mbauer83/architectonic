@@ -19,7 +19,8 @@ from typing import TYPE_CHECKING, Any
 
 import jsonschema
 
-from src.application.artifacts.schema import ENFORCED_FORMATS, list_schema_files
+from src.application.artifacts.schema import list_schema_files
+from src.domain.ontology_representation.format_rules import ENFORCED_FORMATS
 from src.domain.yaml_documents import parse_yaml
 
 if TYPE_CHECKING:

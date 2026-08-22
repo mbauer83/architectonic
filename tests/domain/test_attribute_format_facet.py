@@ -20,10 +20,11 @@ import json
 from pathlib import Path
 
 from src.application._startup_schema_policy import validate_attribute_schemata_policy
-from src.application.artifacts.schema import (
+from src.application.artifacts.schema import attribute_descriptors, validate_against_schema
+from src.domain.ontology_representation.format_rules import (
     ENFORCED_FORMATS,
-    attribute_descriptors,
-    validate_against_schema,
+    FORMAT_RULES,
+    accepted_forms_phrase,
 )
 from src.domain.ontology_representation.profile_conflict_resolution import (
     propose_conflict_resolution,
@@ -35,6 +36,7 @@ from src.domain.ontology_representation.profiles import (
     compile_profile_schema,
     merge_property_schemas,
 )
+from src.domain.repository.repo_default_schemata import DEFAULT_SCHEMATA
 
 _URI_SCHEMA = {"type": "object", "properties": {"Tracked by": {"type": "string", "format": "uri"}}}
 
@@ -101,7 +103,22 @@ def test_validation_rejects_a_value_that_addresses_nothing() -> None:
     """A facet nothing enforces is a promise nothing keeps."""
     errors = validate_against_schema({"Tracked by": "see the wiki, somewhere"}, _URI_SCHEMA)
 
-    assert errors == ["Tracked by: 'see the wiki, somewhere' is not a valid uri"]
+    assert errors == [
+        "Tracked by: 'see the wiki, somewhere' is not a valid uri "
+        f"— expected {accepted_forms_phrase('uri')}"
+    ]
+
+
+def test_the_refusal_says_what_would_have_been_accepted() -> None:
+    """Composed from the rule, not restated here: a message and a rule that disagree is defect 10.
+
+    So the assertion is that every term the `uri` rule specifies reaches the author, whatever those
+    terms come to be — not that the sentence reads a particular way today.
+    """
+    (message,) = validate_against_schema({"Tracked by": "askJohn"}, _URI_SCHEMA)
+
+    for term in FORMAT_RULES["uri"].terms:
+        assert term in message, message
 
 
 def test_validation_rejects_a_bare_word_with_no_spaces() -> None:
@@ -110,9 +127,9 @@ def test_validation_rejects_a_bare_word_with_no_spaces() -> None:
     Asking only for the absence of whitespace accepted `askJohn` as readily as a link, which is a
     check in name and none in effect.
     """
-    assert validate_against_schema({"Tracked by": "askJohn"}, _URI_SCHEMA) == [
+    assert validate_against_schema({"Tracked by": "askJohn"}, _URI_SCHEMA)[0].startswith(
         "Tracked by: 'askJohn' is not a valid uri"
-    ]
+    )
 
 
 def test_validation_ignores_an_unset_value() -> None:
@@ -220,3 +237,58 @@ def test_an_enforced_format_passes_startup(tmp_path: Path) -> None:
     errors, _ = validate_attribute_schemata_policy(tmp_path)
 
     assert errors == []
+
+
+class TestAShippedDescriptionCannotContradictTheChecker:
+    """Defect 10: a shipped description said `format: uri` was informative only and that any string
+    was accepted, months after the checker began refusing values. Nineteen values written in good
+    faith were reported invalid by a checker whose own schema had promised the author anything would
+    do — and the corrected sentence already existed in a materialised copy, having never reached the
+    default it was copied from.
+
+    Equality between a materialised copy and the shipped default is deliberately **not** asserted
+    anywhere: `DefaultSchemataEnsureStep` documents a divergent copy as a supported state — "an
+    operator's local edit is never overwritten" — so a gate demanding equality would turn any future
+    customisation into a build failure. What is asserted instead is the invariant that holds: a
+    description saying what a format accepts says it in the rule's own terms.
+    """
+
+    def _format_declaring_properties(self) -> list[tuple[str, str, str, str]]:
+        found: list[tuple[str, str, str, str]] = []
+        for schema_name, schema in DEFAULT_SCHEMATA.items():
+            for prop_name, prop in (schema.get("properties") or {}).items():
+                declared = str((prop or {}).get("format") or "") if isinstance(prop, dict) else ""
+                if declared:
+                    found.append((schema_name, prop_name, declared, str(prop.get("description") or "")))
+        return found
+
+    def test_the_whole_shipped_set_is_covered_not_a_subset_of_it(self) -> None:
+        """The first version of this measurement read nine of twenty-seven keys and reported one
+        drifting property from a third of its subject."""
+        assert len(DEFAULT_SCHEMATA) > 20
+        assert self._format_declaring_properties()
+
+    def test_every_declared_format_is_one_the_checker_runs(self) -> None:
+        """A format nothing checks compiles into the schema and is enforced by nothing."""
+        for schema_name, prop_name, declared, _ in self._format_declaring_properties():
+            assert declared in ENFORCED_FORMATS, f"{schema_name} / {prop_name}: {declared!r}"
+
+    def test_a_description_that_says_what_the_format_accepts_says_it_in_the_rules_terms(self) -> None:
+        """Derived, not restated. A description mentioning its format carries the rule's own terms."""
+        for schema_name, prop_name, declared, description in self._format_declaring_properties():
+            if f"format: {declared}" not in description and declared not in description.lower():
+                continue
+            where = f"{schema_name} / {prop_name}"
+            for term in FORMAT_RULES[declared].terms:
+                assert term in description, f"{where}: {description!r} omits {term!r}"
+
+    def test_no_shipped_description_claims_a_format_is_unenforced(self) -> None:
+        """The exact false claim, and the shapes it would come back as."""
+        disclaimers = (
+            "informative only", "runs no format checker", "any string is accepted",
+            "not enforced", "no format checker", "not validated",
+        )
+        for schema_name, prop_name, _, description in self._format_declaring_properties():
+            lowered = description.lower()
+            for disclaimer in disclaimers:
+                assert disclaimer not in lowered, f"{schema_name} / {prop_name}: {disclaimer!r}"

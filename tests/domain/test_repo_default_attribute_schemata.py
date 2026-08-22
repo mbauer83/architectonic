@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 
 from src.application.artifacts.schema import clear_schema_cache, compute_effective_attribute_schema
+from src.domain.ontology_representation.format_rules import FORMAT_RULES
 from src.domain.ontology_representation.specializations import SpecializationCatalog
 from src.domain.repository.repo_default_attribute_schemata import (
     ARCHIMATE_ATTRIBUTE_SCHEMATA,
@@ -63,7 +64,12 @@ class TestApplicationComponentSpecializations:
         }
         assert props["Programming Languages & Versions"]["type"] == "array"
         assert props["Source Repository"]["format"] == "uri"
-        assert "Informative only" in props["Source Repository"]["description"]
+        # This asserted "Informative only" until 0.7.1, which pinned the defect in place: the
+        # description promised the author that any string was accepted while the checker refused
+        # values. The description is now derived from the rule, so the assertion is that it carries
+        # the rule's terms — whatever those terms come to be.
+        for term in FORMAT_RULES["uri"].terms:
+            assert term in props["Source Repository"]["description"]
         assert props["Lifecycle State"]["enum"] == LIFECYCLE_STATE_ENUM
 
     def test_module_and_endpoint_schemas(self) -> None:

@@ -20,10 +20,8 @@ validation is skipped (free schema).
 """
 
 import json
-import re
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from datetime import date
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Literal
@@ -31,6 +29,10 @@ from typing import Any, Literal
 import jsonschema  # type: ignore[import-untyped]
 
 from src.application.profile_registry_loading import load_repo_profile_registry
+from src.domain.ontology_representation.format_rules import (
+    FORMAT_RULES,
+    accepted_forms_phrase,
+)
 from src.domain.ontology_representation.profile_registry import ProfileRegistry
 from src.domain.ontology_representation.profiles import (
     compile_profile_schema,
@@ -280,81 +282,25 @@ def find_orphan_attachment_schemata(repo_root: Path, specialization_catalog: Spe
     ]
 
 
-#: Formats this project enforces, and what each one accepts.
-#:
-#: Checked here rather than through `jsonschema`'s format machinery, which is annotation-only unless
-#: a checker is installed and which would otherwise add a dependency to answer a question this
-#: narrow — and answer it wrongly, since RFC 3986's `uri` requires a scheme.
-
-#: An absolute reference: `https://…`, `ssh://…`, `mailto:…`. A scheme is letters, digits and
-#: `+ - .` after a letter, per RFC 3986 §3.1.
-_URI_SCHEME = re.compile(r"^[A-Za-z][A-Za-z0-9+.\-]*:")
-
-#: `git@github.com:owner/repo.git` — the SCP-like address a git remote is usually written as. It is
-#: **not** a URI: it has no scheme, and `github.com` cannot be one because a scheme may not contain
-#: `@`. It is what people paste into a source-repository field, so it is accepted as its own form
-#: rather than by an accident of laxness.
-_SCP_SSH_ADDRESS = re.compile(r"^[^\s/@]+@[^\s/@]+:")
-
-#: `date` is a calendar date, `YYYY-MM-DD`, per RFC 3339 full-date — the shape a review date, a
-#: baseline date or a decision date is written in everywhere else in this project.
-_ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
-
-_FORMAT_CHECKS: dict[str, Callable[[str], bool]] = {
-    "uri": lambda value: _addresses_something(value.strip()),
-    "date": lambda value: _valid_iso_date(value.strip()),
-}
-
-
-def _addresses_something(value: str) -> bool:
-    """Whether *value* is a reference rather than prose about one.
-
-    Three forms are accepted, and naming them is the point — the first version of this asked only
-    that the value hold no whitespace, which accepted `askJohn` as readily as a link and so promised
-    a check it was not making.
-
-    * an absolute reference, which is anything carrying a scheme;
-    * an SCP-like SSH address, which carries none and is how a git remote is usually written;
-    * a relative reference to something this repository manages, which is a path — written the way
-      every other link to it is, `../../../model/…/REQ@….md`.
-
-    A path is recognised by carrying a separator or an extension, which is what distinguishes
-    `notes.md` from a bare word. Whitespace disqualifies all three.
-    """
-    if not value or any(c.isspace() for c in value):
-        return False
-    if _URI_SCHEME.match(value) or _SCP_SSH_ADDRESS.match(value):
-        return True
-    return "/" in value or "." in value
-
-
-def _valid_iso_date(value: str) -> bool:
-    if _ISO_DATE.match(value) is None:
-        return False
-    try:
-        date.fromisoformat(value)
-    except ValueError:
-        return False
-    return True
-
-
-#: The formats a declaration may name. Startup refuses any other, because a format nothing checks
-#: would compile into the schema and be enforced by nothing — see `_startup_schema_policy`.
-ENFORCED_FORMATS: frozenset[str] = frozenset(_FORMAT_CHECKS)
-
-
+# Formats are checked against `format_rules` rather than through `jsonschema`'s format machinery,
+# which is annotation-only unless a checker is installed and would otherwise add a dependency to
+# answer a question this narrow — and answer it wrongly, since RFC 3986's `uri` requires a scheme.
 def _format_errors(instance: dict[str, Any], schema: dict[str, Any]) -> list[str]:
     """Every property whose value does not satisfy the `format` its schema declares."""
     properties: dict[str, Any] = schema.get("properties") or {}
     errors: list[str] = []
     for name, prop_schema in properties.items():
-        check = _FORMAT_CHECKS.get(str((prop_schema or {}).get("format") or ""))
+        rule = FORMAT_RULES.get(str((prop_schema or {}).get("format") or ""))
         value = instance.get(name)
-        if check is None or not isinstance(value, str) or not value:
+        if rule is None or not isinstance(value, str) or not value:
             continue
-        if not check(value):
-            declared = prop_schema["format"]
-            errors.append(f"{name}: {value!r} is not a valid {declared}")
+        if not rule.admits(value):
+            declared = str(prop_schema["format"])
+            # Say what would have been accepted. The message used to stop at "is not a valid uri",
+            # which tells an author that something is wrong and nothing about what to write instead.
+            expected = accepted_forms_phrase(declared)
+            suffix = f" — expected {expected}" if expected else ""
+            errors.append(f"{name}: {value!r} is not a valid {declared}{suffix}")
     return errors
 
 

@@ -41,7 +41,9 @@ class ProfileAttribute:
     entity and without the reference becoming a relation.
 
     A pattern can say a value looks like a URI. Only a format can say it is meant to be followed,
-    which is what linking, existence-checking and traceability each need to know before they act."""
+    which is what linking, existence-checking and traceability each need to know before they act.
+
+    Which formats exist, and what each one admits, is specified in `format_rules`."""
 
 
 @dataclass(frozen=True)
@@ -121,7 +123,6 @@ def profile_from_inline_attributes(slug: str, attributes: Mapping[str, Any]) -> 
 #: The facets two definitions of one attribute may not disagree about, in the order they are
 #: reported. Both change what a value *is*, rather than how it is presented or defaulted.
 DECIDING_FACETS: tuple[str, ...] = ("type", "format")
-
 
 def _facet_clash(
     existing: dict[str, Any] | None, incoming: dict[str, Any]
