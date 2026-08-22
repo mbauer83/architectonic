@@ -10,10 +10,10 @@ title both arms converge
 start
 
 if ([[arch://keyed are both ends typed?]]) then (yes)
-:[[arch://select choose what to lift]];
-:[[arch://write write it]];
 else (no)
 endif
+:[[arch://select choose what to lift]];
+:[[arch://write write it]];
 
 stop
 @enduml
@@ -31,11 +31,11 @@ start
 
 if ([[arch://valid does it pass?]]) then (yes)
 :[[arch://prepare prepare the change]];
-:[[arch://settle reconcile both outcomes]];
-:[[arch://publish publish the result]];
 else (no)
 :[[arch://reject record the refusal]];
 endif
+:[[arch://settle reconcile both outcomes]];
+:[[arch://publish publish the result]];
 
 stop
 @enduml
@@ -52,11 +52,14 @@ title merge equals a branch target
 start
 
 if ([[arch://agreed is it agreed?]]) then (yes)
+(A)
 :[[arch://settle apply it]];
 :[[arch://wrap close the request]];
 else (no)
 :[[arch://dispute raise an objection]];
 endif
+(A)
+detach
 
 stop
 @enduml
@@ -74,13 +77,11 @@ start
 
 fork
 :[[arch://measure measure it]];
-:[[arch://compare compare the two]];
-:[[arch://report report the finding]];
 fork again
 :[[arch://sample sample it]];
+end fork
 :[[arch://compare compare the two]];
 :[[arch://report report the finding]];
-end fork
 
 stop
 @enduml
@@ -96,6 +97,39 @@ title a step graph that loops
 
 start
 
+(A)
+:[[arch://attempt attempt the write]];
+if ([[arch://ok did it succeed?]]) then (yes)
+else (no)
+:[[arch://wait back off]];
+(A)
+detach
+endif
+:[[arch://accept accept it]];
+
+stop
+@enduml
+
+### a loop declared from its middle
+# The same retry loop with its branch targets declared first. Where the walk starts is then a choice rather than a fact, and taking the first declared step draws the loop from inside one of its branches.
+@startuml a-loop-declared-from-its-middle
+skinparam hyperlinkColor #252327
+skinparam hyperlinkUnderline false
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
+title a loop declared from its middle
+
+start
+
+(A)
+:[[arch://attempt attempt the write]];
+if ([[arch://ok did it succeed?]]) then (yes)
+else (no)
+:[[arch://wait back off]];
+(A)
+detach
+endif
+:[[arch://accept accept it]];
 
 stop
 @enduml
@@ -113,6 +147,8 @@ start
 
 :[[arch://draft draft it]];
 :[[arch://review review it]];
+:[[arch://archive archive it]];
+:[[arch://purge purge it]];
 
 stop
 @enduml
@@ -131,6 +167,7 @@ start
 if ([[arch://keyed are both ends typed?]]) then (yes)
 :[[arch://inspect inspect the pair]];
 if ([[arch://permitted is the pair permitted?]]) then (yes)
+(A)
 :[[arch://select choose what to lift]];
 else (no)
 :[[arch://revise revise the link]];
@@ -138,6 +175,8 @@ endif
 :[[arch://preflight report what would happen]];
 :[[arch://write write it in one transaction]];
 else (no)
+(A)
+detach
 endif
 
 stop
@@ -159,6 +198,7 @@ if ([[arch://keyed are both ends typed?]]) then (yes)
 :[[arch://inspect inspect the pair]];
 if ([[arch://permitted is the pair permitted?]]) then (yes)
 |You|
+(A)
 :[[arch://select choose what to lift]];
 else (no)
 :[[arch://revise revise the link]];
@@ -167,6 +207,8 @@ endif
 :[[arch://preflight report what would happen]];
 :[[arch://write write it in one transaction]];
 else (no)
+(A)
+detach
 endif
 
 stop
@@ -190,6 +232,8 @@ else (no)
 :[[arch://bypass skip it]];
 endif
 end fork
+:[[arch://notify notify the requester]];
+:[[arch://close close the request]];
 
 stop
 @enduml
@@ -222,6 +266,37 @@ else (no)
 endif
 :[[arch://finish finish the case]];
 end fork
+:[[arch://notify notify the requester]];
+:[[arch://archive archive the record]];
+:[[arch://purge purge the working copy]];
+
+stop
+@enduml
+
+### a join reached inside a nested fork
+# A fork inside a decision arm, its single branch reaching the join within a further decision. What follows the join belongs inside that arm, past `end fork` — appending it to the end of the body would land it outside the arm that leads to it.
+@startuml a-join-reached-inside-a-nested-fork
+skinparam hyperlinkColor #252327
+skinparam hyperlinkUnderline false
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
+title a join reached inside a nested fork
+
+start
+
+if ([[arch://approved is it approved?]]) then (yes)
+fork
+if ([[arch://checked does it check out?]]) then (yes)
+else (no)
+:[[arch://amend amend the paperwork]];
+endif
+end fork
+:[[arch://dispatch dispatch it]];
+:[[arch://confirm confirm receipt]];
+else (no)
+:[[arch://refuse refuse the request]];
+endif
+:[[arch://close close the file]];
 
 stop
 @enduml
@@ -320,10 +395,10 @@ start
 partition "Intake" [[arch://intake]] {
 if ([[arch://ready is it ready?]]) then (yes)
 :[[arch://gather gather the inputs]];
-:[[arch://reconcile reconcile them]];
 else (no)
 :[[arch://skip skip the step]];
 endif
+:[[arch://reconcile reconcile them]];
 }
 :[[arch://hand_off hand it on]];
 
@@ -360,6 +435,7 @@ if ([[arch://d_keyed Have both ends reached the level relationships key on??]]) 
 :[[arch://a_verify Check that pair against the meta-ontology]];
 if ([[arch://d_ok Does the meta-ontology permit this pair??]]) then (permitted)
 |You|
+(A)
 :[[arch://a_select Select notes and links; name the target project]];
 else (refused)
 :[[arch://a_remedy Reverse the link, retype an end, or remove it]];
@@ -370,6 +446,8 @@ endif
 :[[arch://a_write Write it in one transaction, then record on each note what it became]];
 note right: Lifting leaves the notes in place; what was lifted now carries a reference to what it became.
 else (not yet)
+(A)
+detach
 endif
 
 stop

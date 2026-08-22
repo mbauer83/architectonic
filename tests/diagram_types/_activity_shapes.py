@@ -19,6 +19,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from src.diagram_types.activity.renderer import ActivityPumlRenderer
+from src.domain.repository.frontmatter import parse_frontmatter
 
 _REPO = Path(__file__).resolve().parents[2] / "engagements" / "ENG-ARCH-REPO" / "architecture-repository"
 
@@ -139,6 +140,20 @@ A_STEP_GRAPH_THAT_LOOPS = ActivityShape(
     connections=[flow("attempt", "ok"), then("ok", "accept"), otherwise("ok", "wait"), flow("wait", "attempt")],
 )
 
+A_LOOP_DECLARED_FROM_ITS_MIDDLE = ActivityShape(
+    name="a loop declared from its middle",
+    exercises=(
+        "The same retry loop with its branch targets declared first. Where the walk starts is then "
+        "a choice rather than a fact, and taking the first declared step draws the loop from inside "
+        "one of its branches."
+    ),
+    entities={
+        "action": actions(accept="accept it", wait="back off", attempt="attempt the write"),
+        "decision": [decision("ok", "did it succeed")],
+    },
+    connections=[flow("attempt", "ok"), then("ok", "accept"), otherwise("ok", "wait"), flow("wait", "attempt")],
+)
+
 TWO_DISCONNECTED_CHAINS = ActivityShape(
     name="two disconnected chains",
     exercises="Two chains with no edge between them — both are declared, so both are drawn.",
@@ -222,6 +237,28 @@ NESTED_DECISIONS_PAST_A_JOIN = ActivityShape(
     ],
 )
 
+A_JOIN_REACHED_INSIDE_A_NESTED_FORK = ActivityShape(
+    name="a join reached inside a nested fork",
+    exercises=(
+        "A fork inside a decision arm, its single branch reaching the join within a further "
+        "decision. What follows the join belongs inside that arm, past `end fork` — appending it to "
+        "the end of the body would land it outside the arm that leads to it."
+    ),
+    entities={
+        "action": actions(refuse="refuse the request", amend="amend the paperwork",
+                          dispatch="dispatch it", confirm="confirm receipt",
+                          close="close the file"),
+        "decision": [decision("approved", "is it approved"), decision("checked", "does it check out")],
+        "fork": [{"id": "split"}, {"id": "rejoin"}],
+    },
+    connections=[
+        then("approved", "split"), otherwise("approved", "refuse"), flow("approved", "close"),
+        branch("split", "checked"),
+        then("checked", "rejoin"), otherwise("checked", "amend"),
+        flow("rejoin", "dispatch"), flow("dispatch", "confirm"),
+    ],
+)
+
 ONE_FORK = ActivityShape(
     name="one fork",
     exercises="start -> fork -> (a | b | c) -> join -> tail1 -> tail2.",
@@ -289,13 +326,36 @@ CATALOGUE: tuple[ActivityShape, ...] = (
     MERGE_EQUALS_A_BRANCH_TARGET,
     FORK_CONVERGES_ON_AN_ACTION,
     A_STEP_GRAPH_THAT_LOOPS,
+    A_LOOP_DECLARED_FROM_ITS_MIDDLE,
     TWO_DISCONNECTED_CHAINS,
     CROSS_LEVEL_CONVERGENCE,
     CROSS_LEVEL_CONVERGENCE_ACROSS_LANES,
     A_JOIN_REACHED_INSIDE_A_DECISION,
     NESTED_DECISIONS_PAST_A_JOIN,
+    A_JOIN_REACHED_INSIDE_A_NESTED_FORK,
     ONE_FORK,
     NESTED_FORKS,
     A_BRANCH_THAT_NEVER_REACHES_THE_JOIN,
     A_PARTITION_AROUND_A_DECISION,
 )
+
+
+def bundled_shapes() -> list[ActivityShape]:
+    """Both bundled activity diagrams, rendered from their own declared entities and connections.
+
+    The frontmatter is read through its one owner (`src.domain.repository.frontmatter`) rather than
+    spelled here a second time.
+    """
+    shapes: list[ActivityShape] = []
+    for path in sorted(_REPO.glob("diagram-catalog/diagrams/*/ACT@*.puml")):
+        fm = parse_frontmatter(path.read_text(encoding="utf-8"))
+        entities = fm.get("diagram-entities")
+        connections = fm.get("connections")
+        assert isinstance(entities, dict) and isinstance(connections, list), path
+        shapes.append(ActivityShape(
+            name=str(fm.get("name") or path.stem),
+            exercises=f"the bundled diagram {path.name}",
+            entities=entities,
+            connections=[c for c in connections if isinstance(c, dict)],
+        ))
+    return shapes

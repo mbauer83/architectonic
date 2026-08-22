@@ -36,14 +36,16 @@ from src.infrastructure.rendering.puml_safety import (
 )
 
 from ._emission import (
+    Connectors,
     EmissionContext,
     LaneCursor,
-    StepGraph,
     Swimlanes,
+    connector_names,
     emit_from,
     emit_orphans,
     puml_text,
 )
+from ._step_graph import StepGraph
 
 _STEP_KEYS = ("action", "decision", "fork", "partition")
 
@@ -87,16 +89,36 @@ class ActivityPumlRenderer:
             initial_lane_id = lanes[0]["id"]
 
         lane_map = {lane["id"]: lane for lane in lanes}
-        ctx = EmissionContext(
-            graph=graph,
-            lanes=Swimlanes(
-                index=lane_index,
-                by_id=lane_map,
-                declared=bool(lanes),
-                cursor=LaneCursor(current=initial_lane_id),
-            ),
-            notes=_build_notes_index(kd, kcs),
-        )
+        notes = _build_notes_index(kd, kcs)
+
+        def walk(connectors: Connectors) -> list[str]:
+            ctx = EmissionContext(
+                graph=graph,
+                lanes=Swimlanes(
+                    index=lane_index,
+                    by_id=lane_map,
+                    declared=bool(lanes),
+                    cursor=LaneCursor(current=initial_lane_id),
+                ),
+                notes=notes,
+                connectors=connectors,
+            )
+            walked: list[str] = []
+            visited: set[str] = set()
+            if root_id:
+                emit_from(root_id, ctx, walked, visited)
+            # Whenever steps remain, not only when there was no root: a diagram may declare two
+            # chains with no edge between them, and both are declared, so both are drawn.
+            emit_orphans(branch_owned, ctx, walked, visited)
+            return walked
+
+        # A connector's entry half has to be drawn before the arrival that needs it, and only the
+        # walk knows which steps are arrived at that way. So the walk runs twice: the first
+        # discovers the arrivals, the second names them and draws both halves. A connector changes
+        # no control flow, so the second walk meets the same arrivals as the first.
+        discovery = Connectors()
+        walk(discovery)
+        body_lines = walk(Connectors(name_for=connector_names(discovery.arrivals)))
 
         lines: list[str] = [
             f"@startuml {diagram_name}",
@@ -118,13 +140,7 @@ class ActivityPumlRenderer:
             lines.append(f"|{puml_text(str(lane.get('label') or lane['id']))}|")
         lines.append("start")
         lines.append("")
-
-        visited: set[str] = set()
-        if root_id:
-            emit_from(root_id, ctx, lines, visited)
-        else:
-            emit_orphans(branch_owned, ctx, lines, visited)
-
+        lines.extend(body_lines)
         lines.append("")
         lines.append("stop")
         lines.append("@enduml")
@@ -212,14 +228,7 @@ def _build_notes_index(
 
 
 def _branch_owned_set(graph: StepGraph) -> set[str]:
-    entries: set[str] = (
-        set(graph.then_target.values())
-        | set(graph.else_target.values())
-        | set(graph.contains_first.values())
-    )
-    for ids in graph.fork_branches.values():
-        entries.update(ids)
-    owned = set(entries)
+    owned = _branch_entries(graph)
     changed = True
     while changed:
         changed = False
@@ -231,11 +240,33 @@ def _branch_owned_set(graph: StepGraph) -> set[str]:
 
 
 def _find_root(graph: StepGraph, branch_owned: set[str]) -> str | None:
+    """Where the walk starts: a step nothing flows into and no branch owns.
+
+    A back edge leaves no such step — every step of a retry loop is reached from somewhere — and
+    returning None then drew `start` and `stop` with nothing between them. So a graph that loops
+    falls back to a step no branch enters, and failing that to the first declared step: an entry
+    into a cycle is a choice rather than a fact, and any of them draws the whole loop.
+    """
     has_incoming_flow = set(graph.flow_next.values())
     for step_id in graph.step_by_id:
         if step_id not in branch_owned and step_id not in has_incoming_flow:
             return step_id
-    return None
+    branch_entries = _branch_entries(graph)
+    for step_id in graph.step_by_id:
+        if step_id not in branch_entries:
+            return step_id
+    return next(iter(graph.step_by_id), None)
+
+
+def _branch_entries(graph: StepGraph) -> set[str]:
+    entries = (
+        set(graph.then_target.values())
+        | set(graph.else_target.values())
+        | set(graph.contains_first.values())
+    )
+    for ids in graph.fork_branches.values():
+        entries.update(ids)
+    return entries
 
 
 def _read_lanes(kd: Mapping[str, object]) -> list[dict[str, Any]]:
