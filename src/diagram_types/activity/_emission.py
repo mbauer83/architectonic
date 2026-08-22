@@ -34,9 +34,10 @@ the ordinary flowchart device for exactly this arrival.
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
+from ._connectors import Connectors, emit_arrival, emit_entry
 from ._step_graph import StepGraph
 from ._step_links import link_suffix, sentinel_wrapped, user_link_suffix
 
@@ -56,42 +57,6 @@ class Swimlanes:
     by_id: Mapping[str, dict[str, Any]]
     declared: bool
     cursor: LaneCursor
-
-
-@dataclass
-class Connectors:
-    """Which steps are reached by a connector, and the mark each connector pair carries.
-
-    Two passes: the first walk records the arrivals it cannot place structurally, in the order it
-    meets them; the second names them and draws both halves of each pair. One extra pass is enough
-    because a connector changes no control flow, so the second walk arrives at the same steps.
-    """
-
-    name_for: Mapping[str, str] = field(default_factory=dict)
-    arrivals: list[str] = field(default_factory=list)
-
-    def record(self, step_id: str) -> None:
-        if step_id not in self.arrivals:
-            self.arrivals.append(step_id)
-
-
-def connector_names(arrivals: Sequence[str]) -> dict[str, str]:
-    """One short mark per connector pair — `A`, `B`, … `AA` — in the order the walk meets them.
-
-    Short because the mark is drawn inside a small circle, and a connector nobody can read at a
-    glance is worse than none.
-    """
-    names: dict[str, str] = {}
-    for index, step_id in enumerate(arrivals):
-        mark = ""
-        remaining = index
-        while True:
-            mark = chr(ord("A") + remaining % 26) + mark
-            remaining = remaining // 26 - 1
-            if remaining < 0:
-                break
-        names[step_id] = mark
-    return names
 
 
 @dataclass(frozen=True)
@@ -125,6 +90,13 @@ def emit_from(
     visited: set[str],
     stops: frozenset[str] = frozenset(),
 ) -> None:
+    """Emit from *start_id* where no fork is waiting on a join, so one met here is owed to nobody.
+
+    The four callers are the root walk, the pass over what it did not reach, and a fork's own
+    continuation past its own join. Kept as its own name rather than folded into `emit_until_join`
+    because discarding that return **silently** is the defect this release fixed: the name is where a
+    reader learns the discard is the contract and not an oversight.
+    """
     emit_until_join(start_id, ctx, lines, visited, stops)
 
 
@@ -151,7 +123,7 @@ def emit_until_join(
     surfaced_join: str | None = None
     while step_id and step_id not in stops:
         if step_id in visited:
-            _emit_connector_arrival(step_id, ctx, lines)
+            emit_arrival(ctx.connectors, step_id, lines)
             return None
         if is_join(step_id, ctx) and not resumed_at_convergence:
             return step_id
@@ -191,21 +163,6 @@ def emit_orphans(
             emit_from(step_id, ctx, lines, visited)
 
 
-def _emit_connector_arrival(step_id: str, ctx: EmissionContext, lines: list[str]) -> None:
-    """Reach a step drawn elsewhere. `detach` is what keeps this from also drawing a dangling arrow."""
-    ctx.connectors.record(step_id)
-    mark = ctx.connectors.name_for.get(step_id)
-    if mark:
-        lines.append(f"({mark})")
-        lines.append("detach")
-
-
-def _emit_connector_entry(step_id: str, ctx: EmissionContext, lines: list[str]) -> None:
-    mark = ctx.connectors.name_for.get(step_id)
-    if mark:
-        lines.append(f"({mark})")
-
-
 def _emit_step(
     step: dict[str, Any],
     step_id: str,
@@ -220,7 +177,7 @@ def _emit_step(
     # introduces, not in the lane the walk happened to be in when it got there.
     if stype in ("action", "decision"):
         _maybe_switch_lane(step_id, ctx, lines)
-    _emit_connector_entry(step_id, ctx, lines)
+    emit_entry(ctx.connectors, step_id, lines)
 
     if stype == "action":
         label = puml_text(str(step.get("label") or "action"))

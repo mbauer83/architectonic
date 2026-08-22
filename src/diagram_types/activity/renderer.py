@@ -35,12 +35,11 @@ from src.infrastructure.rendering.puml_safety import (
     warn_when_puml_exceeds_threshold,
 )
 
+from ._connectors import Connectors, connector_names
 from ._emission import (
-    Connectors,
     EmissionContext,
     LaneCursor,
     Swimlanes,
-    connector_names,
     emit_from,
     emit_orphans,
     puml_text,
