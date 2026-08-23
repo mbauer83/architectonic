@@ -1,5 +1,5 @@
 {
-  "export_time": "2026-07-31T09:56:43Z",
+  "export_time": "2026-08-23T08:02:37Z",
   "signal_anchors": [
     {
       "anchor_entity_id": "APP@1777293133.OYEmP1",
@@ -47,13 +47,13 @@
     {
       "analysis_id": "STPA@1785251204.4cq4.20ad9f",
       "group_id": "GRP@1785243014.f28i.3c55d8",
-      "name": "Confidential Assurance Store \u2014 Access and Confidentiality",
+      "name": "Confidential Assurance Store \u2014 Access, Activation and Availability (STPA-Sec)",
       "method": "STPA",
       "architecture_anchor_id": "",
       "status": "draft",
       "tlp": "TLP:WHITE",
       "created_at": "2026-07-28T15:06:44Z",
-      "updated_at": "2026-07-28T15:06:44Z"
+      "updated_at": "2026-08-23T07:57:27Z"
     },
     {
       "analysis_id": "GRC@1785251204.5xrw.2cd87f",
@@ -85,8 +85,7 @@
       "attributes_json": "{\"severity\": \"major\"}",
       "content_text": "Assurance evidence \u2014 hazard analyses, attack-surface findings, incident data, risk registers \u2014 is read or exfiltrated by a party without authorization. Such disclosure aids an attacker and breaches the confidentiality expected of safety and security work.\n\nRealised only through the assurance access path itself: the classification gate releasing content above a requestor's clearance, or the store standing open when no authorized session is active. The encrypted database on disk is not a route to this loss, because it discloses nothing without a key that is not kept on disk \u2014 file-read access to the host is a different loss, with different material and a different consequence.\n\n**What the severity is rated against.** The capability as its users deploy it, holding assurance work that is genuinely confidential. It is not rated against this repository's own store, whose content is published on purpose: that is why these nodes sit at a low TLP and the exposure ceiling withholds nothing here. The two are independent \u2014 TLP says how restricted this content is, severity says how bad the loss would be \u2014 and reading either off the other is a mistake.",
       "created_at": "2026-06-11T12:39:59Z",
-      "updated_at": "2026-07-28T15:06:44Z",
-      "created_by": ""
+      "updated_at": "2026-07-28T15:06:44Z"
     },
     {
       "node_id": "HAZ@1781181601.2lta.003f49",
@@ -105,13 +104,12 @@
       "attributes_json": "{}",
       "content_text": "System state: the encrypted store's contents are obtainable as plaintext by a process or actor that has not passed the gated, classification-aware access path (e.g. an open connection or exported key is reachable outside the intended interface).",
       "created_at": "2026-06-11T12:40:01Z",
-      "updated_at": "2026-07-28T15:06:44Z",
-      "created_by": ""
+      "updated_at": "2026-07-28T15:06:44Z"
     },
     {
       "node_id": "HAZ@1781181604.w69v.e14520",
       "node_type": "hazard",
-      "name": "Store remains auto-unlocked beyond an authorized activation window",
+      "name": "Store stays unlocked with no authorized session active",
       "status": "draft",
       "tlp": "TLP:GREEN",
       "concern_class": "security",
@@ -123,10 +121,9 @@
       "node_role": null,
       "analysis_id": "STPA@1785251204.4cq4.20ad9f",
       "attributes_json": "{}",
-      "content_text": "System state: the decryption key is available to the backend and the store opens automatically even when no authorized analysis session is active \u2014 for example, persisting unattended across restarts on a shared or compromised host.",
+      "content_text": "System state: the decryption key is available to the backend and the store opens automatically even when no authorized analysis session is active \u2014 for example, persisting unattended across restarts on a shared or compromised host.\n\nNamed for the activation gate rather than for a window. The earlier wording, \"beyond an authorized activation window\", was retired by the constraint that answers this: being open is process state that dies with the process, so a restart already locks the store and there is no window for anything to expire. What persists is the activation gate held by the credential backend, and that is what makes this state reachable.",
       "created_at": "2026-06-11T12:40:04Z",
-      "updated_at": "2026-07-28T15:06:44Z",
-      "created_by": ""
+      "updated_at": "2026-08-23T08:01:58Z"
     },
     {
       "node_id": "CSN@1781181619.aao3.b29a6b",
@@ -145,8 +142,7 @@
       "attributes_json": "{}",
       "content_text": "The controller that decides when to open the confidential store and release decrypted content to a requestor, enforcing the classification-aware gate. Bound to the Architecture Backend application component.\n\n**Process model** \u2014 the state this controller believes about what it controls: whether the store is currently open; whether the setup-confirmed activation gate is set; whether the encryption key is readable from the credential actuator; and the requestor's clearance ceiling for the current read.\n\n**Control algorithm** \u2014 on first use of a workspace's store it reads the activation gate through the credential actuator and, if the gate is set, issues \"open the store / release the decryption key\"; thereafter it serves assurance reads only while it believes the store is open, and refuses with 423 otherwise. Every read is filtered against the requestor's ceiling before leaving the boundary.\n\n**How feedback updates that model** \u2014 the store's feedback sets open-versus-locked and the key-verification outcome; the credential actuator's feedback sets key-and-gate readability. Both are read at the moment of unlocking. Known weakness: the model is re-evaluated only when the belief is \"not open\" and at most once per retry window, so a credential actuator that is briefly unreachable leaves a stale \"not activated\" belief until the next window \u2014 the controller then withholds an action it should provide. The retry window and the warning it emits are the constraint on that weakness.",
       "created_at": "2026-06-11T12:40:19Z",
-      "updated_at": "2026-07-28T15:06:44Z",
-      "created_by": ""
+      "updated_at": "2026-07-28T15:06:44Z"
     },
     {
       "node_id": "CSN@1781181620.aqwf.36e22b",
@@ -165,8 +161,7 @@
       "attributes_json": "{}",
       "content_text": "The controlled process: an AES-256 encrypted SQLite store that opens when supplied the key and returns plaintext assurance content. Bound to the Confidential Assurance Store application component.",
       "created_at": "2026-06-11T12:40:20Z",
-      "updated_at": "2026-07-28T15:06:44Z",
-      "created_by": ""
+      "updated_at": "2026-07-28T15:06:44Z"
     },
     {
       "node_id": "CSN@1781181622.sf29.f7a722",
@@ -185,8 +180,7 @@
       "attributes_json": "{}",
       "content_text": "The OS credential store (macOS Keychain, Windows DPAPI via WSL2 interop, or SecretService) that holds the store encryption key and the setup-confirmed activation gate. An **actuator** in the unlock loop rather than a separately controlled process: it is how the controller's \"open the store / release the decryption key\" action is effected \u2014 the controller reads the gate and the key through it, and cannot open the store without it. Its feedback reports whether the key and gate are readable at all. Bound to the OS credential backend technology node.\n\nEach secret it holds is scoped to the store it opens, so two stores on one host cannot contend for one account. They once did, and the consequence was not a conflict but a silent overwrite: initialising any store replaced the key of whichever store held the shared account, together with the recovery key meant to survive exactly that.",
       "created_at": "2026-06-11T12:40:22Z",
-      "updated_at": "2026-07-28T15:06:44Z",
-      "created_by": ""
+      "updated_at": "2026-07-28T15:06:44Z"
     },
     {
       "node_id": "CAC@1781181624.umvk.63c038",
@@ -205,8 +199,7 @@
       "attributes_json": "{}",
       "content_text": "The specific control action by which the backend obtains the key from the credential backend and opens the encrypted store for a requestor.",
       "created_at": "2026-06-11T12:40:24Z",
-      "updated_at": "2026-07-28T15:06:44Z",
-      "created_by": ""
+      "updated_at": "2026-07-28T15:06:44Z"
     },
     {
       "node_id": "UCA@1781181637.olif.4bc98d",
@@ -225,8 +218,7 @@
       "attributes_json": "{}",
       "content_text": "Provided-when-unsafe: the backend releases plaintext content to a requestor whose classification clearance is below the TLP of the requested entries, exposing confidential evidence through the gated path itself.",
       "created_at": "2026-06-11T12:40:37Z",
-      "updated_at": "2026-07-28T15:06:44Z",
-      "created_by": ""
+      "updated_at": "2026-07-28T15:06:44Z"
     },
     {
       "node_id": "UCA@1781181639.ccn4.f452d7",
@@ -245,13 +237,12 @@
       "attributes_json": "{}",
       "content_text": "Wrong-timing: the store is opened and content returned before the requestor's clearance and the entry's TLP ceiling have been evaluated, so a check that would have denied access arrives too late.",
       "created_at": "2026-06-11T12:40:39Z",
-      "updated_at": "2026-07-28T15:06:44Z",
-      "created_by": ""
+      "updated_at": "2026-07-28T15:06:44Z"
     },
     {
       "node_id": "UCA@1781181642.03qv.111d9d",
       "node_type": "unsafe-control-action",
-      "name": "Backend keeps the store open after the authorized activation window ends",
+      "name": "Backend keeps the store open with no authorized session active",
       "status": "draft",
       "tlp": "TLP:GREEN",
       "concern_class": "security",
@@ -263,10 +254,9 @@
       "node_role": null,
       "analysis_id": "STPA@1785251204.4cq4.20ad9f",
       "attributes_json": "{}",
-      "content_text": "Applied-too-long: the open/unlocked state is held beyond the authorized session \u2014 persisting unattended across restarts \u2014 so the store is accessible when no analyst is present.",
+      "content_text": "Applied too long: the open/unlocked state is held after the authorized session has ended \u2014 persisting unattended across restarts \u2014 so the store is accessible when no analyst is present.\n\nNamed for the session rather than for a window, following the constraint that answers this: being open is process state that dies with the process, so there is no window to outlast. What the controller holds too long is the belief that the activation gate authorises it to serve.",
       "created_at": "2026-06-11T12:40:42Z",
-      "updated_at": "2026-07-28T15:06:44Z",
-      "created_by": ""
+      "updated_at": "2026-08-23T08:02:07Z"
     },
     {
       "node_id": "LOS@1781181663.yliy.d6e6cf",
@@ -285,8 +275,7 @@
       "attributes_json": "{}",
       "content_text": "Causal factors (technical + feedback): the clearance/TLP check is evaluated after content is fetched rather than enforced before it, and the default on an ambiguous or incomplete check is to serve rather than deny. An under-cleared requestor, or one whose check has not yet completed, therefore receives plaintext content.",
       "created_at": "2026-06-11T12:41:03Z",
-      "updated_at": "2026-07-28T15:06:44Z",
-      "created_by": ""
+      "updated_at": "2026-07-28T15:06:44Z"
     },
     {
       "node_id": "LOS@1781181666.ylrr.976e5b",
@@ -305,8 +294,7 @@
       "attributes_json": "{}",
       "content_text": "Causal factors (feedback + technical): the setup-confirmed activation gate enables auto-unlock indefinitely and lock-state is never re-evaluated against an activation window, so the store re-opens automatically on every restart with no analyst present.",
       "created_at": "2026-06-11T12:41:06Z",
-      "updated_at": "2026-07-28T15:06:44Z",
-      "created_by": ""
+      "updated_at": "2026-07-28T15:06:44Z"
     },
     {
       "node_id": "ACN@1781181668.5xan.24d7b4",
@@ -325,8 +313,7 @@
       "attributes_json": "{\"enforcement_justification\": \"Enforced by the exposure policy applied in every read path: each returned entry is checked against the requestor's clearance before content leaves the store, and access is denied when clearance cannot be established.\"}",
       "content_text": "Derived from the advisory-gate scenario. The classification check must be enforced before any plaintext leaves the store, and must deny by default when clearance cannot be established.",
       "created_at": "2026-06-11T12:41:08Z",
-      "updated_at": "2026-07-28T15:06:44Z",
-      "created_by": ""
+      "updated_at": "2026-07-28T15:06:44Z"
     },
     {
       "node_id": "ACN@1781181670.yg1v.bd474b",
@@ -345,8 +332,7 @@
       "attributes_json": "{}",
       "content_text": "Derived from the persistent-activation scenario. Access must be explicitly activated; must fail closed when the activation gate is absent, the policy is unrecognised, or the credential backend is unreachable; must be revocable at any time with immediate effect on a running backend rather than only at its next start; and must re-authorize on process start unless the deployment explicitly configures otherwise.\n\nRestated from a demand the design was never going to meet. The previous wording required the store to \"re-lock at the end of an authorized activation window\" \u2014 but being open is process state that dies with the process, so a restart already locks it and an abrupt kill locks it harder, and there is no window for anything to expire. What actually persists is the activation gate held by the credential backend, so that is what this constrains.\n\nThe limit is stated too: this bounds application-level access to the store. It does not bound extraction of the key from the credential backend by an actor who already holds the account's own authority.",
       "created_at": "2026-06-11T12:41:10Z",
-      "updated_at": "2026-07-28T15:06:44Z",
-      "created_by": ""
+      "updated_at": "2026-07-28T15:06:44Z"
     },
     {
       "node_id": "ACN@1781181672.qgcw.f35e97",
@@ -365,8 +351,7 @@
       "attributes_json": "{\"enforcement_justification\": \"Enforced by the hash-chained archive: every mutation use case appends its entry as part of the write protocol, so a write path that skipped the archive would fail that protocol rather than silently omit a record.\"}",
       "content_text": "Supports detection and after-the-fact accountability for disclosure events, and discharges the regulatory record-keeping obligation. Realized by the hash-chained Assurance Archive.",
       "created_at": "2026-06-11T12:41:12Z",
-      "updated_at": "2026-07-28T15:06:44Z",
-      "created_by": ""
+      "updated_at": "2026-07-28T15:06:44Z"
     },
     {
       "node_id": "RSK@1781181688.orlu.5746f2",
@@ -382,11 +367,10 @@
       "binding_status": null,
       "node_role": null,
       "analysis_id": "GRC@1785251204.5xrw.2cd87f",
-      "attributes_json": "{\"likelihood\": \"medium\", \"impact\": \"high\", \"treatment\": \"mitigate\", \"owner\": \"Safety / Security Analyst\", \"review_date\": \"2026-12-01\"}",
+      "attributes_json": "{\"likelihood\": \"possible\", \"impact\": \"major\", \"treatment\": \"mitigate\", \"owner\": \"Safety / Security Analyst\", \"review_date\": \"2026-12-01\"}",
       "content_text": "Evaluates the plaintext-disclosure hazard. Treatment is mitigate (not accept) \u2014 disclosure of attack-surface evidence is not an acceptable residual for this system. The risk overlay prioritises treatment; it never closes the underlying security constraint.",
       "created_at": "2026-06-11T12:41:28Z",
-      "updated_at": "2026-07-28T15:06:44Z",
-      "created_by": ""
+      "updated_at": "2026-08-23T08:02:14Z"
     },
     {
       "node_id": "OBL@1781181690.44yz.9e8500",
@@ -405,8 +389,7 @@
       "attributes_json": "{\"cites\": \"EU-AI-Act:Art-12\", \"framework\": \"EU AI Act\", \"clause\": \"Article 12 \\u2014 Record-keeping\", \"status\": \"in-progress\"}",
       "content_text": "High-risk AI systems must technically allow for the automatic recording of events (logs) over their lifetime. Discharged here by the append-only, hash-chained Assurance Archive that records every significant assurance operation.",
       "created_at": "2026-06-11T12:41:30Z",
-      "updated_at": "2026-07-28T15:06:44Z",
-      "created_by": ""
+      "updated_at": "2026-07-28T15:06:44Z"
     },
     {
       "node_id": "LSS@1784721758.xyb7.5e5a41",
@@ -425,8 +408,7 @@
       "attributes_json": "{\"severity\": \"catastrophic\"}",
       "content_text": "Confidential material held on the server host that is *not* assurance content \u2014 credentials and secrets, TLP-restricted files, deployment configuration \u2014 is read off disk and returned to a requester who was never authorized to see it.\n\nDistinct from the disclosure of assurance evidence, and reached by a different route. This loss is realised when a component holding the host's ambient filesystem authority reads a file it was never meant to; the assurance store's own encryption is no defence, because the material in question was never behind it. Disclosure of the assurance content itself requires the assurance access gate to fail, which is its own loss with its own hazards \u2014 the encrypted database on disk discloses nothing without a key, and the key is not on disk.\n\nThe consequence is also different in kind: secrets and configuration are the means of further access, so a realisation escalates beyond this system into whatever they reach, and cannot be undone once out.\n\n**What the severity is rated against.** The capability as its users deploy it, on a host holding real credentials and real deployment configuration. This applies to the source-public case as much as any other: the source being public says nothing about the host's secrets, and it is precisely a public codebase that tells a submitter exactly which files to ask for.",
       "created_at": "2026-07-22T12:02:38Z",
-      "updated_at": "2026-07-26T11:08:21Z",
-      "created_by": ""
+      "updated_at": "2026-07-26T11:08:21Z"
     },
     {
       "node_id": "LSS@1784721761.subh.8af6a4",
@@ -445,8 +427,7 @@
       "attributes_json": "{\"severity\": \"major\"}",
       "content_text": "Content reaches a requester outside the exposure policy that is supposed to gate every read (TLP ceiling, unlock gating, one-way persistence), defeating the platform's confidentiality guarantees.\n\nThe loss is the guarantee, not any one disclosure. Once the gate can be bypassed, every read is unguarded until it is fixed, and no reader can tell which of the results they hold were ever checked.\n\n**What the severity is rated against.** The guarantee as the capability's users rely on it. This repository's own store publishes its content and sets the ceiling so that nothing is withheld \u2014 which demonstrates the gate rather than exempting it, since a gate that is verified against a permissive ceiling is the same gate a restrictive deployment depends on.",
       "created_at": "2026-07-22T12:02:41Z",
-      "updated_at": "2026-07-26T11:08:30Z",
-      "created_by": ""
+      "updated_at": "2026-07-26T11:08:30Z"
     },
     {
       "node_id": "HAZ@1784721764.wra3.48aefe",
@@ -465,8 +446,7 @@
       "attributes_json": "{}",
       "content_text": "System state: a PUML body originating from an untrusted submitter is handed to the PlantUML renderer, which runs with the server process's ambient filesystem and network authority and a preprocessor able to read files and fetch URLs.",
       "created_at": "2026-07-22T12:02:44Z",
-      "updated_at": "2026-07-22T12:02:44Z",
-      "created_by": ""
+      "updated_at": "2026-07-22T12:02:44Z"
     },
     {
       "node_id": "CSN@1784721769.xsxc.b4d1e7",
@@ -485,8 +465,7 @@
       "attributes_json": "{}",
       "content_text": "The Architecture Backend use case that accepts a diagram body (via the edit/create surfaces), prepares it, and submits it to the renderer for verification and SVG output. It is the controller that decides what content reaches the renderer.\n\n**Process model** \u2014 whether the body in hand is caller-supplied or generated from the model; whether it has been vetted for I/O-capable preprocessor directives; which includes are the pipeline's own managed macros; and whether the bytes it vetted are the bytes it is about to submit.\n\n**Control algorithm** \u2014 a body generated from `diagram-entities` is submitted directly. A caller-supplied body is first rejected outright if it carries any file- or network-reading directive other than the managed macro includes (`assert_user_puml_safe`); only then is it prepared, rendered, and stored. The check is **feed-forward**: it runs before submission, on the same bytes that are submitted.\n\n**How feedback updates that model** \u2014 the renderer returns the artifact, its diagnostics, and an exit status, which tell the controller whether a render succeeded. Structural weakness: PlantUML reports nothing about *attempted* file or URL access, so the controller has **no sensor for the hazardous behaviour itself**. The loop cannot detect a bypassed barrier after the fact, which is why the control must be preventive rather than detective, and why a sandbox and egress restriction on the renderer are the remaining constraints rather than an alarm on its output.",
       "created_at": "2026-07-22T12:02:49Z",
-      "updated_at": "2026-07-26T10:56:38Z",
-      "created_by": ""
+      "updated_at": "2026-07-26T10:56:38Z"
     },
     {
       "node_id": "CSN@1784721771.uwzz.7ae76a",
@@ -505,8 +484,7 @@
       "attributes_json": "{}",
       "content_text": "The arm's-length PlantUML process (java -jar) that expands the preprocessor and lays out the diagram. Under its default security profile the preprocessor may read local files and fetch URLs.",
       "created_at": "2026-07-22T12:02:51Z",
-      "updated_at": "2026-07-22T12:02:51Z",
-      "created_by": ""
+      "updated_at": "2026-07-22T12:02:51Z"
     },
     {
       "node_id": "CAC@1784721773.wlse.921a96",
@@ -525,8 +503,7 @@
       "attributes_json": "{}",
       "content_text": "The control action of handing a diagram body to the PlantUML process to syntax-check and render. The body's provenance (renderer-generated vs. untrusted-submitter) is the safety-relevant context.",
       "created_at": "2026-07-22T12:02:53Z",
-      "updated_at": "2026-07-22T12:02:53Z",
-      "created_by": ""
+      "updated_at": "2026-07-22T12:02:53Z"
     },
     {
       "node_id": "UCA@1784721777.tdvx.edace6",
@@ -545,8 +522,7 @@
       "attributes_json": "{}",
       "content_text": "The pipeline PROVIDES the submit-to-renderer action in the unsafe context where the body came from an untrusted submitter and contains a file/network preprocessor directive (e.g. an absolute !include, !includeurl, !import, %load_json, %getenv) outside the renderer's own managed includes.",
       "created_at": "2026-07-22T12:02:57Z",
-      "updated_at": "2026-07-22T12:02:57Z",
-      "created_by": ""
+      "updated_at": "2026-07-22T12:02:57Z"
     },
     {
       "node_id": "LOS@1784721780.jswt.792275",
@@ -565,8 +541,7 @@
       "attributes_json": "{}",
       "content_text": "A submitter sends a diagram body \u2014 directly (edit surface) or by smuggling a newline + directive through a diagram name into the generated title \u2014 containing e.g. `!include /etc/passwd`. Verification and rendering run PlantUML under its default security profile, which resolves the include and embeds the file's contents in the SVG returned to the requester. Confirmed empirically with a canary file.",
       "created_at": "2026-07-22T12:03:00Z",
-      "updated_at": "2026-07-22T12:03:00Z",
-      "created_by": ""
+      "updated_at": "2026-07-22T12:03:00Z"
     },
     {
       "node_id": "ACN@1784721782.lrw1.6ca350",
@@ -585,8 +560,7 @@
       "attributes_json": "{\"enforcement_justification\": \"Enforced by a boundary validator in the diagram edit write path: a submitted body carrying a file or network preprocessor directive is rejected before it is prepared, rendered or stored, permitting only the renderer's own managed relative includes and bundled stdlib.\"}",
       "content_text": "The pipeline must reject any user-submitted PUML body containing a file/network preprocessor directive (absolute/arbitrary/URL !include, !includeurl, !includesub, !import, !theme\u2026from, %load_json, %getenv) before it is prepared, rendered, or stored, permitting only the renderer's own managed relative macro includes and bundled stdlib. Implemented as a boundary validator enforced in the diagram edit write path.",
       "created_at": "2026-07-22T12:03:02Z",
-      "updated_at": "2026-07-26T10:55:45Z",
-      "created_by": ""
+      "updated_at": "2026-07-26T10:55:45Z"
     },
     {
       "node_id": "ACN@1784721785.rgil.543a7f",
@@ -605,8 +579,7 @@
       "attributes_json": "{\"enforcement_justification\": \"Enforced in the diagram formatter: control characters are collapsed before a name is embedded in a frontmatter value or the PlantUML title line, so a name cannot break out into a standalone preprocessor directive. Exercised by the rendering safety suites the backend quality gate runs.\"}",
       "content_text": "A diagram name is a single-line label. Control characters (CR/LF/TAB) must be collapsed before the name is embedded in the frontmatter value or the PlantUML `title` line, so the name cannot break out into a standalone preprocessor directive. Implemented in the diagram formatter.",
       "created_at": "2026-07-22T12:03:05Z",
-      "updated_at": "2026-07-26T10:55:52Z",
-      "created_by": ""
+      "updated_at": "2026-07-26T10:55:52Z"
     },
     {
       "node_id": "EVD@1785063476.b1ah.76d898",
@@ -625,8 +598,7 @@
       "attributes_json": "{\"gate\": \"backend quality gate (pytest, every change)\"}",
       "content_text": "Pointer: tests/rendering/test_puml_safety_startuml_name.py.\n\nClaim: a diagram name carrying CR, LF or TAB is collapsed to a single-line label before it is embedded in a frontmatter value or the PlantUML title line, so a name cannot break out of its line and stand as a preprocessor directive in its own right.\n\nGate: the backend quality gate, which runs the full pytest suite on every change.",
       "created_at": "2026-07-26T10:57:56Z",
-      "updated_at": "2026-07-28T15:06:44Z",
-      "created_by": ""
+      "updated_at": "2026-07-28T15:06:44Z"
     },
     {
       "node_id": "EVD@1785063486.rkk3.e4921e",
@@ -645,8 +617,7 @@
       "attributes_json": "{\"gate\": \"backend quality gate (pytest, every change)\"}",
       "content_text": "Pointer: tests/rendering/test_puml_safety_user_input.py.\n\nClaim: a submitted PlantUML body containing a file or network preprocessor directive is rejected at the diagram edit write path \u2014 before the body is prepared, rendered or stored \u2014 while the renderer's own managed relative includes and bundled standard library remain permitted.\n\nGate: the backend quality gate, which runs the full pytest suite on every change.",
       "created_at": "2026-07-26T10:58:06Z",
-      "updated_at": "2026-07-28T15:06:44Z",
-      "created_by": ""
+      "updated_at": "2026-07-28T15:06:44Z"
     },
     {
       "node_id": "EVD@1785063494.c0l7.7084d0",
@@ -665,8 +636,7 @@
       "attributes_json": "{\"gate\": \"backend quality gate (pytest, every change)\"}",
       "content_text": "Pointer: tests/assurance/test_assurance_archive.py and tests/assurance/test_encrypted_git_archive.py.\n\nClaim: every mutating assurance operation appends an entry as part of the write protocol, and an entry altered or removed after the fact breaks the hash chain and is detected on verification. The encrypted-git archive backend is held to the same two properties.\n\nGate: the backend quality gate, which runs the full pytest suite on every change.",
       "created_at": "2026-07-26T10:58:14Z",
-      "updated_at": "2026-07-28T15:06:44Z",
-      "created_by": ""
+      "updated_at": "2026-07-28T15:06:44Z"
     },
     {
       "node_id": "EVD@1785063503.p0t0.bb6f7b",
@@ -685,8 +655,7 @@
       "attributes_json": "{\"gate\": \"backend quality gate (pytest, every change)\"}",
       "content_text": "Pointer: tests/assurance/test_max_classification.py, tests/application/test_assurance_exposure.py, tests/assurance/test_assurance_node_sort_exposure.py and tests/domain/test_tlp_scale_agreement.py.\n\nClaim: an entry classified above the requestor's clearance is withheld before its content leaves the store rather than returned redacted; the withheld count is reported so a truncated result is visibly truncated; ordering a result set cannot reveal that a withheld entry exists; and every surface orders the classification scale identically, so a comparison cannot pass in one place and fail in another.\n\nGate: the backend quality gate, which runs the full pytest suite on every change.",
       "created_at": "2026-07-26T10:58:23Z",
-      "updated_at": "2026-07-28T15:06:44Z",
-      "created_by": ""
+      "updated_at": "2026-07-28T15:06:44Z"
     },
     {
       "node_id": "EVD@1785063513.c30e.ea926f",
@@ -705,8 +674,7 @@
       "attributes_json": "{\"gate\": \"backend quality gate (pytest, every change)\"}",
       "content_text": "Pointer: tests/assurance/test_activation_policy.py, tests/assurance/test_store_factory.py, tests/assurance/test_store_factory_locking.py, tests/assurance/test_assurance_auto_unlock_recovery.py and tests/assurance/test_credential_scoping.py.\n\nClaim: the shipped default requires a per-process authorization even when the activation gate is already set, so a new process starts locked; the unattended policy opens from the gate but never without it; revoking closes a store already open in a running process rather than taking effect only at the next start; an unrecognised policy value or an unreachable credential backend leaves the store locked rather than granting the more permissive behaviour; and each secret is scoped to the store it opens, so initialising a store at one path cannot overwrite the key \u2014 or the recovery key \u2014 of a store at another.\n\nGate: the backend quality gate, which runs the full pytest suite on every change.",
       "created_at": "2026-07-26T10:58:33Z",
-      "updated_at": "2026-07-28T15:06:44Z",
-      "created_by": ""
+      "updated_at": "2026-07-28T15:06:44Z"
     },
     {
       "node_id": "FMD@1785064663.l74s.c40963",
@@ -725,8 +693,7 @@
       "attributes_json": "{}",
       "content_text": "One read path computes a count, a sort key, a roll-up or a traversal over the full node set and only then applies the exposure filter. The endpoint answers, the shape is right, and the surplus is detectable only by knowing which nodes the requestor was cleared for.\n\nDegraded rather than absent, which is what makes it the credible one: the gate is present and running, just not first. An aggregate computed over withheld content leaks its existence even when the content itself never ships.",
       "created_at": "2026-07-26T11:17:43Z",
-      "updated_at": "2026-07-26T11:17:43Z",
-      "created_by": ""
+      "updated_at": "2026-07-26T11:17:43Z"
     },
     {
       "node_id": "FMD@1785065977.qwwh.63503b",
@@ -745,8 +712,7 @@
       "attributes_json": "{}",
       "content_text": "The controller's belief that the store is open outlives the revocation that should have closed it, on some threads or for some window. Reads continue to be served from a session an operator has already withdrawn.\n\nIntermittent rather than absent because it depends on which connection answers: revocation that took effect at the next process start instead of immediately would let `lock` report success while access stayed open, and a per-thread connection pool gives that failure somewhere to hide.",
       "created_at": "2026-07-26T11:39:37Z",
-      "updated_at": "2026-07-26T11:39:37Z",
-      "created_by": ""
+      "updated_at": "2026-07-26T11:39:37Z"
     },
     {
       "node_id": "FMD@1785066017.86nq.f20ce8",
@@ -765,8 +731,7 @@
       "attributes_json": "{}",
       "content_text": "A caller-supplied body reaches the renderer still carrying a preprocessor directive that reads a file or fetches a URL \u2014 because a write path was added that does not run the boundary validator, or because the bytes vetted are not the bytes submitted. The pipeline then performs file and network reads on the submitter's behalf, with the server process's own authority.\n\nUnintended rather than excessive: the pipeline is not doing too much of its job, it is doing something outside it. Its function is to render the body it was given; reading `/etc/passwd` was never part of that.",
       "created_at": "2026-07-26T11:40:17Z",
-      "updated_at": "2026-07-26T11:40:17Z",
-      "created_by": ""
+      "updated_at": "2026-07-26T11:40:17Z"
     },
     {
       "node_id": "FMD@1785066053.y3iz.25d27b",
@@ -785,8 +750,7 @@
       "attributes_json": "{\"assessment_state\": \"not-credible\", \"dismissed_by\": \"Michael Bauer\", \"dismissal_rationale\": \"Re-examined against the availability loss and still dismissed, on narrower ground than before. That loss is the durable loss of accumulated reasoning \\u2014 the analysis unreachable or gone. A stopped process is neither: the key is obtainable, the content is intact, and a restart restores everything with nothing lost. It discloses nothing either, so it reaches no loss in this analysis. Not the same as the credential-backend cases, which were converted to recorded rows: there the key itself cannot be obtained, which is a state no restart of this process resolves.\"}",
       "content_text": "The process is not running, or is running and refusing every request. Examined twice \u2014 once against the disclosure losses and once against the availability loss \u2014 and dismissed both times, for different reasons each time.",
       "created_at": "2026-07-26T11:40:53Z",
-      "updated_at": "2026-07-26T12:23:43Z",
-      "created_by": ""
+      "updated_at": "2026-07-26T12:23:43Z"
     },
     {
       "node_id": "FMD@1785066073.2ljp.ec8ecf",
@@ -805,8 +769,7 @@
       "attributes_json": "{\"assessment_state\": \"not-credible\", \"dismissed_by\": \"Michael Bauer\", \"dismissal_rationale\": \"Everything returned has passed the clearance filter, so over-returning hands a requestor more of what they were already cleared to see. Bounded besides, by the traversal's hop, node and wall-clock budgets. A performance and usability concern, not a route to any loss here \\u2014 the disclosure case is a result assembled BEFORE the filter, which is its own recorded row under partial-function.\"}",
       "content_text": "A traversal or listing expands past the requested scope \u2014 more hops, more neighbours, an unbounded page. Examined and dismissed for this analysis.",
       "created_at": "2026-07-26T11:41:13Z",
-      "updated_at": "2026-07-26T11:41:13Z",
-      "created_by": ""
+      "updated_at": "2026-07-26T11:41:13Z"
     },
     {
       "node_id": "FMD@1785066093.vq7k.2f8d01",
@@ -825,8 +788,7 @@
       "attributes_json": "{}",
       "content_text": "The store encrypts its own pages but some working file alongside them is written in the clear \u2014 most credibly a temp b-tree spilled for a sort or a join, which SQLite writes outside SQLCipher's encryption boundary.\n\nPartial rather than absent: encryption is working, on most of what is written. The consequence does not need the gated interface at all \u2014 anyone able to read the directory reads assurance content, which is the state the plaintext-outside-the-gate hazard names.\n\nCorrected after checking rather than inferring. This was first recorded as an open hole because the pragma was absent; the wheel in use compiles with memory as the temp-store default, so nothing was leaking. What was true is narrower and still worth a control: the property belonged to the dependency, was requested nowhere, and asserted nowhere, so a build shipping a file-backed temp store would have leaked silently. It is now a stated pragma with a suite that reads it back.",
       "created_at": "2026-07-26T11:41:33Z",
-      "updated_at": "2026-07-26T12:09:10Z",
-      "created_by": ""
+      "updated_at": "2026-07-26T12:09:10Z"
     },
     {
       "node_id": "FMD@1785066121.wpiv.488ae8",
@@ -845,8 +807,7 @@
       "attributes_json": "{}",
       "content_text": "A deleted node's bytes remain recoverable in free pages the store never overwrites. It performs beyond what was asked \u2014 retaining content it was told to forget \u2014 which is why this is the excessive guideword rather than a partial one.\n\nThe consequence is specific and bounded. An analyst who removed a finding believes it gone and behaves accordingly; but the pages sit inside the encryption, so reading them still needs the key. This is not a route to disclosure on its own, which is why it composes with the plaintext-outside-the-gate hazard rather than reaching a loss by itself.\n\nCorrected after checking rather than inferring. First recorded as uncontrolled because no pragma set it; SQLCipher forces secure delete on for an encrypted database, so freed pages were already being overwritten. As with the temp store, the property was the dependency's rather than the store's, and is now requested explicitly and verified.",
       "created_at": "2026-07-26T11:42:01Z",
-      "updated_at": "2026-07-26T12:09:23Z",
-      "created_by": ""
+      "updated_at": "2026-07-26T12:09:23Z"
     },
     {
       "node_id": "FMD@1785066154.3r8r.71fdbf",
@@ -865,8 +826,7 @@
       "attributes_json": "{}",
       "content_text": "Connections are per-thread, so locking the store means disposing of every one of them. A connection that survives \u2014 created during the lock, or held by a thread the disposal did not reach \u2014 keeps answering from a store the operator has closed.\n\nIntermittent by construction: whether a request succeeds depends on which thread serves it, so the failure is invisible to any test that opens one connection and checks it closed. Generation-based invalidation exists for precisely this, which is why the failure mode belongs in the matrix rather than being assumed away.",
       "created_at": "2026-07-26T11:42:34Z",
-      "updated_at": "2026-07-26T11:42:34Z",
-      "created_by": ""
+      "updated_at": "2026-07-26T11:42:34Z"
     },
     {
       "node_id": "FMD@1785066196.kt7b.189d93",
@@ -885,8 +845,7 @@
       "attributes_json": "{}",
       "content_text": "The key is absent, wrong, or destroyed, and the store returns \"file is not a database\". The content is intact on disk and unreachable.\n\n`mode` is observed: this has happened twice, both times because a process wrote a credential for a store it did not own. Recorded rather than dismissed now that the analysis has a loss for it \u2014 the earlier dismissal was correct about disclosure and wrong to stop there, since the consequence it named as out of scope is exactly what the availability loss covers.\n\nAbsent function in the plainest sense: the store's whole job is to open when given the key, and it does not.",
       "created_at": "2026-07-26T11:43:16Z",
-      "updated_at": "2026-07-26T12:21:32Z",
-      "created_by": ""
+      "updated_at": "2026-07-26T12:21:32Z"
     },
     {
       "node_id": "FMD@1785066213.r7jz.232923",
@@ -905,8 +864,7 @@
       "attributes_json": "{\"assessment_state\": \"not-credible\", \"dismissed_by\": \"Michael Bauer\", \"dismissal_rationale\": \"The store has exactly one plaintext egress and it is an explicit operator command that says so in its own help text. There is no code path that writes content out on its own initiative \\u2014 no replication, no sync, no telemetry, no crash reporter carrying rows. Nothing to fail this way, so this is a genuine not-credible rather than a low-priority one. The adjacent credible failures are recorded separately: working data written outside the encrypted pages, and content retained past deletion.\"}",
       "content_text": "The store writes its content somewhere it was not told to \u2014 a replica, a sync target, a diagnostic dump. Examined and dismissed: no such path exists.",
       "created_at": "2026-07-26T11:43:33Z",
-      "updated_at": "2026-07-26T11:43:33Z",
-      "created_by": ""
+      "updated_at": "2026-07-26T11:43:33Z"
     },
     {
       "node_id": "FMD@1785066233.pzuf.586b67",
@@ -925,8 +883,7 @@
       "attributes_json": "{}",
       "content_text": "Revocation deletes the gate and the backend goes on answering as though it were set \u2014 the delete failed silently, or it removed one account while a second still answers for the same store. Under the unattended policy the next process then opens the store from a gate nobody holds any more.\n\nPartial because retrieval still works; it is the removal that did not. This is the actuator's one asymmetric failure: almost everything else it does wrong leaves the store shut, and this leaves it openable.",
       "created_at": "2026-07-26T11:43:53Z",
-      "updated_at": "2026-07-26T11:43:53Z",
-      "created_by": ""
+      "updated_at": "2026-07-26T11:43:53Z"
     },
     {
       "node_id": "FMD@1785066281.i9zn.380858",
@@ -945,8 +902,7 @@
       "attributes_json": "{}",
       "content_text": "Asked for one store's key or activation gate, the backend returns another store's. It does not fail \u2014 it answers, plausibly, with the wrong secret, and nothing in the response distinguishes that from the right one.\n\nUnintended function: the actuator performed for a store it was not asked about. Two consequences, opposite in sign, and the analysis now carries both. A process may open a store it was never activated for, which reaches the plaintext-outside-the-gate hazard. Or a store's own secret is replaced by another's, which reaches the key-unavailable hazard and destroys access to the content \u2014 observed twice, both times taking the key and its recovery counterpart together, because they are written in the same call.\n\nObserved, and the cause was structural rather than incidental: the accounts were named globally while stores are per-path, so every store on the host contended for one account. They are now scoped to the store's own path.",
       "created_at": "2026-07-26T11:44:41Z",
-      "updated_at": "2026-07-26T12:21:57Z",
-      "created_by": ""
+      "updated_at": "2026-07-26T12:21:57Z"
     },
     {
       "node_id": "FMD@1785066322.m151.d5efa4",
@@ -965,8 +921,7 @@
       "attributes_json": "{}",
       "content_text": "The credential service is absent, the interop probe times out, or no session backend can be resolved, so the key cannot be obtained at all.\n\nRecorded rather than dismissed now that the analysis has an availability loss. The earlier dismissal was right that this fails closed and discloses nothing, and wrong to conclude there was nothing to record: failing closed *is* the availability loss, and withholding access is no longer the safe direction in every respect.\n\n`mode` is observed \u2014 routine on this platform, where the WSL2 interop bridge times out and a headless host may have no session keyring at all.",
       "created_at": "2026-07-26T11:45:22Z",
-      "updated_at": "2026-07-26T12:22:45Z",
-      "created_by": ""
+      "updated_at": "2026-07-26T12:22:45Z"
     },
     {
       "node_id": "FMD@1785066341.f1uw.74f4d2",
@@ -985,8 +940,7 @@
       "attributes_json": "{\"assessment_state\": \"not-credible\", \"dismissed_by\": \"Michael Bauer\", \"dismissal_rationale\": \"Not a failure of the actuator: this is what a user-scoped OS credential store is, and any process running as that user can read it. It is the accepted residual exposure the activation constraint states the bound of \\u2014 that constraint governs application-level access, explicitly not key extraction by someone who already holds the account's authority. Recording it as a failure mode would put an accepted design position into a worksheet whose job is to find work to do.\"}",
       "content_text": "The key stays retrievable by anything running as the owning user, with no per-process gate of its own. Examined and dismissed: the platform's designed behaviour and a stated, accepted residual.",
       "created_at": "2026-07-26T11:45:41Z",
-      "updated_at": "2026-07-26T11:45:41Z",
-      "created_by": ""
+      "updated_at": "2026-07-26T11:45:41Z"
     },
     {
       "node_id": "FMD@1785066363.yyb9.ee1dd2",
@@ -1005,8 +959,7 @@
       "attributes_json": "{}",
       "content_text": "Reads succeed, then fail, then succeed, as the interop bridge or session service comes and goes. The key is obtainable, intermittently.\n\nRecorded rather than dismissed, for the reason the previous dismissal itself supplied: the control structure documents this weakness as the controller *withholding* an action it should have provided, and withholding was called the safe direction. With an availability loss in the analysis it is not \u2014 a controller that withholds access is how this loss is realised.\n\nWorse than the plain unreachable case in one respect, which is why it is its own row: the controller re-evaluates its belief at most once per retry window, so a brief outage can leave a stale \"not activated\" belief long after the backend has recovered. The outage is momentary and the withholding is not.",
       "created_at": "2026-07-26T11:46:03Z",
-      "updated_at": "2026-07-26T12:23:16Z",
-      "created_by": ""
+      "updated_at": "2026-07-26T12:23:16Z"
     },
     {
       "node_id": "ACN@1785067669.u3mb.9f45d1",
@@ -1025,8 +978,7 @@
       "attributes_json": "{\"enforcement_justification\": \"Enforced by connection pragmas applied on every open \\u2014 temp_store = MEMORY, secure_delete = ON \\u2014 so the settings reach each of the store's per-thread connections rather than only the one that opened it. Read back off a live connection by the confinement suite, which the backend quality gate runs.\"}",
       "content_text": "The store must not write content anywhere its own encryption does not reach, and must overwrite pages it frees rather than leaving their contents in the file.\n\nDerived from two failure modes rather than from a scenario: SQLCipher encrypts the database and its write-ahead log but not a temp b-tree that SQLite spills for a sort or a join, and freed pages retain what was in them unless overwritten.\n\nThis constraint exists because both properties held only by accident. The wheel in use compiles with memory as the temp-store default and SQLCipher forces secure delete on for an encrypted database \u2014 so nothing was leaking, and nothing had asked for either. A different build shipping a file-backed temp store would put assurance content on disk in the clear, past every gate, with nothing anywhere reporting it. The constraint turns a property of the dependency into a property of the store.\n\nThe limit is worth stating: this bounds where the store writes, not what a holder of the key can read. Freed-page contents sit inside the encryption either way.",
       "created_at": "2026-07-26T12:07:49Z",
-      "updated_at": "2026-07-28T15:06:44Z",
-      "created_by": ""
+      "updated_at": "2026-07-28T15:06:44Z"
     },
     {
       "node_id": "EVD@1785067689.efk3.99428d",
@@ -1045,8 +997,7 @@
       "attributes_json": "{\"gate\": \"backend quality gate (pytest, every change)\"}",
       "content_text": "Pointer: tests/assurance/test_store_confinement_pragmas.py.\n\nClaim: reading the pragmas back off a live connection shows `temp_store = MEMORY` and `secure_delete = ON`; that `temp_store` is a value the store asked for rather than the build's default, so a wheel whose default changes fails here; that both hold on a second thread's connection, which is what a per-connection setting applied only on the opening thread would fail; that they survive a lock and unlock; and that a store created before these pragmas existed is confined on its next open, which is why no migration step exists.\n\nGate: the backend quality gate, which runs the full pytest suite on every change.",
       "created_at": "2026-07-26T12:08:09Z",
-      "updated_at": "2026-07-28T15:06:44Z",
-      "created_by": ""
+      "updated_at": "2026-07-28T15:06:44Z"
     },
     {
       "node_id": "LSS@1785068464.q4xv.1fedde",
@@ -1065,8 +1016,7 @@
       "attributes_json": "{\"severity\": \"major\"}",
       "content_text": "The analysis cannot be opened, or its content is gone: hazard analyses, control structures, evidence and the judgements behind them no longer exist, and no assurance case can be argued from them.\n\nThe counterpart of the disclosure losses rather than a duplicate of them. Those ask who can read the analysis; this asks whether it is there to read. A failure that fails closed is safe for every one of them and realises this one, which is why an analysis with only disclosure losses reads as though a store nobody can open is a good outcome.\n\nDistinct from the loss of any one finding. What is lost is the accumulated reasoning \u2014 the part that took judgement rather than time to produce, and that a rebuild cannot reconstruct because the reasoning was the artefact.\n\n**What the severity is rated against.** Not catastrophic: nothing is disclosed, and a committed export bundle makes this recoverable in practice. Not moderate either \u2014 the archive lives inside the store's own encryption under the default backend, so losing the key takes the audit trail with the content, and a deployment without a current export has no route back at all.",
       "created_at": "2026-07-26T12:21:04Z",
-      "updated_at": "2026-07-28T15:06:44Z",
-      "created_by": ""
+      "updated_at": "2026-07-28T15:06:44Z"
     },
     {
       "node_id": "HAZ@1785068474.d8my.105615",
@@ -1085,8 +1035,159 @@
       "attributes_json": "{}",
       "content_text": "System state: the encrypted store exists on disk and the key needed to open it cannot be obtained, or the key obtained is not the one it was encrypted under. The content is intact and unreachable.\n\nOne state however it arises \u2014 a credential backend that cannot answer, a key overwritten by another store's, a vault whose master password is absent from the environment, a backup restored beside a credential store that moved on. The pathway belongs on the scenario; what makes this a hazard is that no read of the analysis can succeed from here.\n\nWorth separating from being locked. A locked store has a key and a gate that has not been passed, and passing it opens the store. This state has no route back that does not come from outside the store: another copy of the key, or another copy of the content.",
       "created_at": "2026-07-26T12:21:14Z",
-      "updated_at": "2026-07-28T15:06:44Z",
-      "created_by": ""
+      "updated_at": "2026-07-28T15:06:44Z"
+    },
+    {
+      "node_id": "CSN@1787471869.yqr9.03d73e",
+      "node_type": "control-structure-node",
+      "name": "Deployment administrator (grants assurance access)",
+      "status": "draft",
+      "tlp": "TLP:GREEN",
+      "concern_class": "security",
+      "disposition": null,
+      "uca_type": null,
+      "failure_type": null,
+      "mode": null,
+      "binding_status": "bound",
+      "node_role": "controller",
+      "analysis_id": "STPA@1785251204.4cq4.20ad9f",
+      "attributes_json": "{}",
+      "content_text": "The human controller that decides which agents hold an assurance bridge, by writing it into their MCP configuration. Outside the platform's own boundary and inside this control structure, because the platform's access to assurance content is conferred here and nowhere else.\n\n**Process model** \u2014 which agents ought to have assurance access, and for what engagement. Held in the administrator's own notes; the platform contributes nothing to it.\n\n**Control algorithm** \u2014 grant a bridge when an agent needs assurance access; remove it when that need ends. The second half depends entirely on the administrator noticing that the need has ended.\n\n**How feedback updates that model** \u2014 nothing feeds it. The platform cannot enumerate the grants that exist, so there is no report against which the administrator could check their belief, and a belief that has drifted from the configuration cannot be corrected by anything the system says. Both unsafe control actions on the grant come from this.",
+      "created_at": "2026-08-23T07:57:49Z",
+      "updated_at": "2026-08-23T07:57:49Z"
+    },
+    {
+      "node_id": "CSN@1787471880.hvaj.1c4881",
+      "node_type": "control-structure-node",
+      "name": "Assurance MCP Read Bridge (grantable read boundary)",
+      "status": "draft",
+      "tlp": "TLP:GREEN",
+      "concern_class": "security",
+      "disposition": null,
+      "uca_type": null,
+      "failure_type": null,
+      "mode": null,
+      "binding_status": "bound",
+      "node_role": "controller",
+      "analysis_id": "STPA@1785251204.4cq4.20ad9f",
+      "attributes_json": "{}",
+      "content_text": "A stdio\u2194HTTP client of the Architecture Backend carrying assurance read operations, and an independently grantable trust boundary: granting it to an agent is a separate act from granting anything else the platform offers.\n\n**Process model** \u2014 that the caller on its stdio channel is the agent the grant was made to, and that the backend behind it applies the exposure policy to every result. It holds no clearance of its own and no view of TLP.\n\n**Control algorithm** \u2014 forward each read to the backend and return what comes back. It makes no access decision, which is why it matters here: its authority is conferred entirely by the act of granting it, and nothing inside it re-checks that grant.\n\n**How feedback updates that model** \u2014 none. The bridge learns nothing about whether the grant is still intended; it is configured once and runs until removed.",
+      "created_at": "2026-08-23T07:58:00Z",
+      "updated_at": "2026-08-23T07:58:00Z"
+    },
+    {
+      "node_id": "CSN@1787471891.plnc.0df47c",
+      "node_type": "control-structure-node",
+      "name": "Assurance MCP Write Bridge (grantable write boundary)",
+      "status": "draft",
+      "tlp": "TLP:GREEN",
+      "concern_class": "security",
+      "disposition": null,
+      "uca_type": null,
+      "failure_type": null,
+      "mode": null,
+      "binding_status": "bound",
+      "node_role": "controller",
+      "analysis_id": "STPA@1785251204.4cq4.20ad9f",
+      "attributes_json": "{}",
+      "content_text": "A stdio\u2194HTTP client of the Architecture Backend carrying assurance write operations, and a trust boundary grantable independently of the read bridge: an agent can hold one without the other.\n\n**Process model** \u2014 the same belief as the read bridge, over a wider authority: that its caller is the agent the grant was made to, and that the backend validates every write behind it.\n\n**Control algorithm** \u2014 forward each write and return the outcome. It makes no authorization decision of its own.\n\n**How feedback updates that model** \u2014 none, and the asymmetry with the read bridge is the point: a write grant that outlives its purpose leaves an agent able to author, edit and seal assurance content, and nothing in the bridge reports that the grant is stale.",
+      "created_at": "2026-08-23T07:58:11Z",
+      "updated_at": "2026-08-23T07:58:11Z"
+    },
+    {
+      "node_id": "CAC@1787471925.rvaa.d50b0e",
+      "node_type": "control-action",
+      "name": "Grant an agent an assurance bridge",
+      "status": "draft",
+      "tlp": "TLP:GREEN",
+      "concern_class": "security",
+      "disposition": null,
+      "uca_type": null,
+      "failure_type": null,
+      "mode": null,
+      "binding_status": null,
+      "node_role": null,
+      "analysis_id": "STPA@1785251204.4cq4.20ad9f",
+      "attributes_json": "{}",
+      "content_text": "Configuring an assurance MCP bridge for an agent, which is what confers that agent's access to assurance content. Issued by whoever administers the deployment, not by the platform: the grant is an act of configuration, and the platform has no say in whether it was intended.\n\nHeld over time rather than issued once, so the duration guideword applies: a grant persists until it is removed, and nothing expires it.\n\nDistinguished from \"Open the store / release the decryption key\", which the backend issues to the store. That action decides whether content may leave the store at all; this one decides who is on the far end of the channel that asks. Both must hold for a read to be authorized, and until now only one of them was analysed.",
+      "created_at": "2026-08-23T07:58:45Z",
+      "updated_at": "2026-08-23T07:58:45Z"
+    },
+    {
+      "node_id": "UCA@1787471936.o3w5.1b2cdd",
+      "node_type": "unsafe-control-action",
+      "name": "A bridge is granted to an agent whose clearance is below the content it will reach",
+      "status": "draft",
+      "tlp": "TLP:GREEN",
+      "concern_class": "security",
+      "disposition": null,
+      "uca_type": "provided-in-unsafe-context",
+      "failure_type": null,
+      "mode": "hypothesized",
+      "binding_status": null,
+      "node_role": null,
+      "analysis_id": "STPA@1785251204.4cq4.20ad9f",
+      "attributes_json": "{}",
+      "content_text": "The grant is made in a context where it should not be: the agent receiving the bridge is not cleared for the classification of the content the store holds. The act of configuring is well-formed; issuing it for this agent is what makes it unsafe.\n\nThe backend's exposure policy is the compensating control and it is not a substitute. The policy filters each result against a requestor clearance, so this is unsafe precisely where the deployment cannot establish a clearance for a bridge-borne caller \u2014 the policy then has nothing to compare against.",
+      "created_at": "2026-08-23T07:58:56Z",
+      "updated_at": "2026-08-23T07:58:56Z"
+    },
+    {
+      "node_id": "UCA@1787471945.k5jo.28e915",
+      "node_type": "unsafe-control-action",
+      "name": "A granted bridge is left in place after the agent's authorization has ended",
+      "status": "draft",
+      "tlp": "TLP:GREEN",
+      "concern_class": "security",
+      "disposition": null,
+      "uca_type": "wrong-duration",
+      "failure_type": null,
+      "mode": "hypothesized",
+      "binding_status": null,
+      "node_role": null,
+      "analysis_id": "STPA@1785251204.4cq4.20ad9f",
+      "attributes_json": "{}",
+      "content_text": "Applied too long: the grant is held past the point it should have ended \u2014 an engagement finishes, a role changes, an agent is retired \u2014 and the bridge keeps carrying assurance operations, because removing it is a separate act that nothing prompts.\n\nThe parallel of the store's own duration failure, one layer out. The backend can be locked, restarted and re-gated while a stale grant survives all three, because the grant lives in the agent's configuration rather than in the store's state.",
+      "created_at": "2026-08-23T07:59:05Z",
+      "updated_at": "2026-08-23T07:59:05Z"
+    },
+    {
+      "node_id": "LOS@1787471956.6dwb.f79986",
+      "node_type": "loss-scenario",
+      "name": "A grant is configured once and nothing ever revisits it",
+      "status": "draft",
+      "tlp": "TLP:GREEN",
+      "concern_class": "security",
+      "disposition": null,
+      "uca_type": null,
+      "failure_type": null,
+      "mode": null,
+      "binding_status": null,
+      "node_role": null,
+      "analysis_id": "STPA@1785251204.4cq4.20ad9f",
+      "attributes_json": "{}",
+      "content_text": "Causal factors (feedback + technical): a bridge is granted by writing it into an agent's MCP configuration, and from that moment no component holds the fact that a grant exists. The platform cannot enumerate its own grants, so nothing can list them for review, nothing expires them, and nothing reports one whose purpose has ended. The only feedback that a grant is stale is a human remembering.\n\nThis is why both unsafe control actions on the grant are reachable from the same place: the context check happens once, at configuration time, by a person, and the duration is unbounded by construction.",
+      "created_at": "2026-08-23T07:59:16Z",
+      "updated_at": "2026-08-23T07:59:16Z"
+    },
+    {
+      "node_id": "ACN@1787471967.5217.046982",
+      "node_type": "assurance-constraint",
+      "name": "A granted assurance bridge must be enumerable and reviewable by the deployment that granted it",
+      "status": "draft",
+      "tlp": "TLP:GREEN",
+      "concern_class": "security",
+      "disposition": "alarp-justified",
+      "uca_type": null,
+      "failure_type": null,
+      "mode": null,
+      "binding_status": null,
+      "node_role": null,
+      "analysis_id": "STPA@1785251204.4cq4.20ad9f",
+      "attributes_json": "{\"enforcement_justification\": \"Not enforced by the platform, and recorded as such rather than left blank. A grant is written into an agent's own MCP configuration, so what limits a stale or over-broad grant today is that the administrator who wrote it can read it back. The platform holds no record of its grants and can neither enumerate nor expire them, which is why the disposition is alarp-justified: this is an argument about who can see the configuration, not a control the system applies. Enforcing it would require the deployment to hold the grants it has made \\u2014 the change this constraint asks for.\"}",
+      "content_text": "A deployment must be able to state which agents currently hold an assurance bridge, so that a grant made for a context that has ended can be found and removed. Without that, neither unsafe control action on the grant is detectable: a below-clearance grant and a stale grant look identical to a deployment that cannot list its grants.\n\nDeliberately a constraint on the deployment rather than on the bridge. The bridge is thin plumbing by design, and giving it a view of its own grant would put an access decision inside the component whose whole purpose is not to make one.\n\nDisposition is alarp-justified rather than controlled-with-evidence, and the gap is stated rather than papered over: the platform holds no record of its grants, so what limits this today is that a grant is written into an agent's own configuration by a person who can read it back. That is an argument, not a control, and it is what makes this the weakest link in the assurance access path.",
+      "created_at": "2026-08-23T07:59:27Z",
+      "updated_at": "2026-08-23T08:01:48Z"
     }
   ],
   "edges": [
@@ -1753,6 +1854,126 @@
       "conn_type": "detects",
       "attributes_json": "{}",
       "created_at": "2026-07-26T12:23:30Z"
+    },
+    {
+      "edge_id": "EDG@87c4b9e1d4e5",
+      "source_id": "CSN@1787471869.yqr9.03d73e",
+      "target_id": "CAC@1787471925.rvaa.d50b0e",
+      "conn_type": "issues",
+      "attributes_json": "{}",
+      "created_at": "2026-08-23T07:59:48Z"
+    },
+    {
+      "edge_id": "EDG@dc68d407f9a5",
+      "source_id": "CAC@1787471925.rvaa.d50b0e",
+      "target_id": "CSN@1787471880.hvaj.1c4881",
+      "conn_type": "acts-on",
+      "attributes_json": "{}",
+      "created_at": "2026-08-23T07:59:56Z"
+    },
+    {
+      "edge_id": "EDG@781984412709",
+      "source_id": "CAC@1787471925.rvaa.d50b0e",
+      "target_id": "CSN@1787471891.plnc.0df47c",
+      "conn_type": "acts-on",
+      "attributes_json": "{}",
+      "created_at": "2026-08-23T08:00:05Z"
+    },
+    {
+      "edge_id": "EDG@7714f1f66a0a",
+      "source_id": "UCA@1787471936.o3w5.1b2cdd",
+      "target_id": "CAC@1787471925.rvaa.d50b0e",
+      "conn_type": "concerns",
+      "attributes_json": "{}",
+      "created_at": "2026-08-23T08:00:12Z"
+    },
+    {
+      "edge_id": "EDG@cfd4d81fe68d",
+      "source_id": "UCA@1787471945.k5jo.28e915",
+      "target_id": "CAC@1787471925.rvaa.d50b0e",
+      "conn_type": "concerns",
+      "attributes_json": "{}",
+      "created_at": "2026-08-23T08:00:19Z"
+    },
+    {
+      "edge_id": "EDG@f3d3240c2a62",
+      "source_id": "UCA@1787471936.o3w5.1b2cdd",
+      "target_id": "CSN@1787471869.yqr9.03d73e",
+      "conn_type": "by-controller",
+      "attributes_json": "{}",
+      "created_at": "2026-08-23T08:00:27Z"
+    },
+    {
+      "edge_id": "EDG@bc279a85736a",
+      "source_id": "UCA@1787471945.k5jo.28e915",
+      "target_id": "CSN@1787471869.yqr9.03d73e",
+      "conn_type": "by-controller",
+      "attributes_json": "{}",
+      "created_at": "2026-08-23T08:00:34Z"
+    },
+    {
+      "edge_id": "EDG@73757d522dca",
+      "source_id": "UCA@1787471936.o3w5.1b2cdd",
+      "target_id": "HAZ@1781181601.2lta.003f49",
+      "conn_type": "leads-to",
+      "attributes_json": "{}",
+      "created_at": "2026-08-23T08:00:41Z"
+    },
+    {
+      "edge_id": "EDG@da63a1b1f9d2",
+      "source_id": "UCA@1787471945.k5jo.28e915",
+      "target_id": "HAZ@1781181604.w69v.e14520",
+      "conn_type": "leads-to",
+      "attributes_json": "{}",
+      "created_at": "2026-08-23T08:00:49Z"
+    },
+    {
+      "edge_id": "EDG@b6f202a0987a",
+      "source_id": "LOS@1787471956.6dwb.f79986",
+      "target_id": "UCA@1787471936.o3w5.1b2cdd",
+      "conn_type": "explains",
+      "attributes_json": "{}",
+      "created_at": "2026-08-23T08:00:57Z"
+    },
+    {
+      "edge_id": "EDG@224e9ed92b64",
+      "source_id": "LOS@1787471956.6dwb.f79986",
+      "target_id": "UCA@1787471945.k5jo.28e915",
+      "conn_type": "explains",
+      "attributes_json": "{}",
+      "created_at": "2026-08-23T08:01:04Z"
+    },
+    {
+      "edge_id": "EDG@1626e50e42c9",
+      "source_id": "UCA@1787471936.o3w5.1b2cdd",
+      "target_id": "ACN@1787471967.5217.046982",
+      "conn_type": "derives",
+      "attributes_json": "{}",
+      "created_at": "2026-08-23T08:01:16Z"
+    },
+    {
+      "edge_id": "EDG@0975c38f06b3",
+      "source_id": "UCA@1787471945.k5jo.28e915",
+      "target_id": "ACN@1787471967.5217.046982",
+      "conn_type": "derives",
+      "attributes_json": "{}",
+      "created_at": "2026-08-23T08:01:24Z"
+    },
+    {
+      "edge_id": "EDG@8f353793071e",
+      "source_id": "LOS@1787471956.6dwb.f79986",
+      "target_id": "ACN@1787471967.5217.046982",
+      "conn_type": "derives",
+      "attributes_json": "{}",
+      "created_at": "2026-08-23T08:01:31Z"
+    },
+    {
+      "edge_id": "EDG@8513e55dbe5c",
+      "source_id": "CSN@1787471869.yqr9.03d73e",
+      "target_id": "ACN@1787471967.5217.046982",
+      "conn_type": "responsible-for",
+      "attributes_json": "{}",
+      "created_at": "2026-08-23T08:01:40Z"
     }
   ],
   "arch_refs": [
@@ -1945,6 +2166,24 @@
     {
       "assurance_node_id": "EVD@1785067689.efk3.99428d",
       "arch_artifact_id": "ART@1785067654.aMcG3H",
+      "ref_type": "binds-to",
+      "resolved_at": null
+    },
+    {
+      "assurance_node_id": "CSN@1787471869.yqr9.03d73e",
+      "arch_artifact_id": "ACT@1712870400.OLWiNc",
+      "ref_type": "binds-to",
+      "resolved_at": null
+    },
+    {
+      "assurance_node_id": "CSN@1787471880.hvaj.1c4881",
+      "arch_artifact_id": "APP@1780783710.iu_kKL",
+      "ref_type": "binds-to",
+      "resolved_at": null
+    },
+    {
+      "assurance_node_id": "CSN@1787471891.plnc.0df47c",
+      "arch_artifact_id": "APP@1780783711.js9xHR",
       "ref_type": "binds-to",
       "resolved_at": null
     }
