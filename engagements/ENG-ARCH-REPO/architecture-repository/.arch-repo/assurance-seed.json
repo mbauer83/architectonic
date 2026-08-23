@@ -1,5 +1,5 @@
 {
-  "export_time": "2026-08-23T10:45:49Z",
+  "export_time": "2026-08-23T13:15:29Z",
   "signal_anchors": [
     {
       "anchor_entity_id": "APP@1777293133.OYEmP1",
@@ -2309,6 +2309,16 @@
       "created_at": "2026-08-23T10:37:47Z"
     },
     {
+      "node_id": "FMD@1785064663.l74s.c40963",
+      "factor": "occurrence",
+      "basis_digest": "52801fb074597a68673e65f886f92d03",
+      "revision": 1,
+      "value": "unlikely",
+      "justification": "The exposure filter is applied by one shared policy object rather than re-implemented per endpoint, and its suites assert both withholding and the withheld count on every read path. A new path that assembled before filtering would have to bypass that object deliberately. Not rare: the aggregate-before-filter shape is easy to write by accident, and this analysis was itself prompted by finding a per-entity lens that computed the whole matrix before scoping.",
+      "author": "Michael Bauer",
+      "created_at": "2026-08-23T13:15:03Z"
+    },
+    {
       "node_id": "FMD@1785065977.qwwh.63503b",
       "factor": "occurrence",
       "basis_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5",
@@ -2329,6 +2339,16 @@
       "created_at": "2026-08-23T10:37:47Z"
     },
     {
+      "node_id": "FMD@1785065977.qwwh.63503b",
+      "factor": "occurrence",
+      "basis_digest": "52801fb074597a68673e65f886f92d03",
+      "revision": 1,
+      "value": "unlikely",
+      "justification": "Revocation closes the store in the running process rather than at its next start, and the activation suite asserts exactly that against an already-open store. Reaching this failure needs a regression in connection disposal, not an oversight in the revocation path. Not rare, because the disposal has to reach every thread's connection and a pool gives a missed one somewhere to hide \u2014 a test that opens one connection and checks it closed would not see it.",
+      "author": "Michael Bauer",
+      "created_at": "2026-08-23T13:15:03Z"
+    },
+    {
       "node_id": "FMD@1785066017.86nq.f20ce8",
       "factor": "occurrence",
       "basis_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5",
@@ -2347,6 +2367,16 @@
       "justification": "This has occurred: the STPA analysis that produced the hazard confirmed the include expansion empirically with a canary file, and the boundary validator exists because of it. Rated possible rather than lower because recurrence needs no new vulnerability, only a new write path that reaches the renderer without calling the validator \u2014 and diagram write paths are added routinely, so the requirement has to be remembered each time rather than being structurally unavoidable. The validator is one call, not a type the compiler enforces. [Re-grounded 2026-08-23: the original revision was recorded against an empty basis \u2014 the architecture model was not reachable from the recording process \u2014 so it never applied. This revision carries the same value and the rationale above unchanged, against the assembled model. Re-recorded mechanically, not re-reviewed.]",
       "author": "Michael Bauer",
       "created_at": "2026-08-23T10:37:47Z"
+    },
+    {
+      "node_id": "FMD@1785066017.86nq.f20ce8",
+      "factor": "occurrence",
+      "basis_digest": "52801fb074597a68673e65f886f92d03",
+      "revision": 1,
+      "value": "possible",
+      "justification": "This has occurred: the STPA analysis that produced the hazard confirmed the include expansion empirically with a canary file, and the boundary validator exists because of it. Rated possible rather than lower because recurrence needs no new vulnerability, only a new write path that reaches the renderer without calling the validator \u2014 and diagram write paths are added routinely, so the requirement has to be remembered each time rather than being structurally unavoidable. The validator is one call, not a type the compiler enforces.",
+      "author": "Michael Bauer",
+      "created_at": "2026-08-23T13:15:03Z"
     },
     {
       "node_id": "FMD@1785066093.vq7k.2f8d01",
@@ -2449,6 +2479,16 @@
       "created_at": "2026-08-23T10:37:47Z"
     },
     {
+      "node_id": "FMD@1785066233.pzuf.586b67",
+      "factor": "occurrence",
+      "basis_digest": "726afb914807c6418ff39443bb16e952",
+      "revision": 1,
+      "value": "unlikely",
+      "justification": "Clearing the gate now removes both the store-scoped account and the unscoped one a pre-scoping deployment may hold, and a test asserts that a subsequent read finds nothing \u2014 written precisely because leaving one behind would let the next read inherit it and reopen a store just locked. Not rare: the deletion crosses a process boundary to the OS credential backend, which on this platform is the least reliable step in the whole path, and a failure there is reported as an exception the caller may swallow.",
+      "author": "Michael Bauer",
+      "created_at": "2026-08-23T13:15:03Z"
+    },
+    {
       "node_id": "FMD@1785066281.i9zn.380858",
       "factor": "occurrence",
       "basis_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5",
@@ -2467,6 +2507,16 @@
       "justification": "Occurred twice within a week before the accounts were scoped to the store path, so the honest starting point is high. Rated unlikely rather than lower because the fix is new and unproven outside its tests: scoping makes the collision structurally impossible for any code going through the accounts module, and a test asserts a live store still opens after another is initialised. Not rare, because the reachable mistake now is a caller writing a credential without going through that module at all \u2014 which is what happened both times, from a script that never ran under the test harness. [Re-grounded 2026-08-23: the original revision was recorded against an empty basis \u2014 the architecture model was not reachable from the recording process \u2014 so it never applied. This revision carries the same value and the rationale above unchanged, against the assembled model. Re-recorded mechanically, not re-reviewed.]",
       "author": "Michael Bauer",
       "created_at": "2026-08-23T10:37:47Z"
+    },
+    {
+      "node_id": "FMD@1785066281.i9zn.380858",
+      "factor": "occurrence",
+      "basis_digest": "726afb914807c6418ff39443bb16e952",
+      "revision": 1,
+      "value": "unlikely",
+      "justification": "Occurred twice within a week before the accounts were scoped to the store path, so the honest starting point is high. Rated unlikely rather than lower because the fix is new and unproven outside its tests: scoping makes the collision structurally impossible for any code going through the accounts module, and a test asserts a live store still opens after another is initialised. Not rare, because the reachable mistake now is a caller writing a credential without going through that module at all \u2014 which is what happened both times, from a script that never ran under the test harness.",
+      "author": "Michael Bauer",
+      "created_at": "2026-08-23T13:15:03Z"
     },
     {
       "node_id": "FMD@1785066322.m151.d5efa4",
@@ -2489,6 +2539,16 @@
       "created_at": "2026-08-23T10:37:47Z"
     },
     {
+      "node_id": "FMD@1785066322.m151.d5efa4",
+      "factor": "occurrence",
+      "basis_digest": "726afb914807c6418ff39443bb16e952",
+      "revision": 1,
+      "value": "possible",
+      "justification": "The most frequent of these by a wide margin. On WSL2 the key is read by spawning powershell.exe across the interop bridge, which times out under load; a headless host has no session keyring at all unless the Fernet vault is configured; and a container without its master password in the environment cannot read the key either. Each of those is a normal operating condition rather than a defect. Not likely, because none of them is the steady state of a working deployment, and each announces itself in a warning naming the cause.",
+      "author": "Michael Bauer",
+      "created_at": "2026-08-23T13:15:03Z"
+    },
+    {
       "node_id": "FMD@1785066363.yyb9.ee1dd2",
       "factor": "occurrence",
       "basis_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5",
@@ -2507,6 +2567,16 @@
       "justification": "Same frequency as the plain unreachable case, since it is the same interop bridge failing briefly rather than persistently, and brief is the commoner shape. What makes it its own row rather than a milder variant: the controller re-reads the gate at most once per retry window, so a momentary outage withholds access for the rest of that window. Not likely, because the window is short and a retry recovers without intervention. [Re-grounded 2026-08-23: the original revision was recorded against an empty basis \u2014 the architecture model was not reachable from the recording process \u2014 so it never applied. This revision carries the same value and the rationale above unchanged, against the assembled model. Re-recorded mechanically, not re-reviewed.]",
       "author": "Michael Bauer",
       "created_at": "2026-08-23T10:37:47Z"
+    },
+    {
+      "node_id": "FMD@1785066363.yyb9.ee1dd2",
+      "factor": "occurrence",
+      "basis_digest": "726afb914807c6418ff39443bb16e952",
+      "revision": 1,
+      "value": "possible",
+      "justification": "Same frequency as the plain unreachable case, since it is the same interop bridge failing briefly rather than persistently, and brief is the commoner shape. What makes it its own row rather than a milder variant: the controller re-reads the gate at most once per retry window, so a momentary outage withholds access for the rest of that window. Not likely, because the window is short and a retry recovers without intervention.",
+      "author": "Michael Bauer",
+      "created_at": "2026-08-23T13:15:03Z"
     }
   ],
   "analysis_members": [
