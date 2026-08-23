@@ -23,11 +23,9 @@
         "prevented-by-design",
         "controlled-with-evidence",
         "alarp-justified",
-        "accepted",
-        "mitigate",
-        "transfer",
-        "avoid"
-      ]
+        "accepted"
+      ],
+      "x-scale": "ordinal"
     },
     "level": {
       "type": "string",
@@ -44,9 +42,10 @@
         "TLP:GREEN",
         "TLP:AMBER",
         "TLP:RED"
-      ]
+      ],
+      "x-scale": "ordinal"
     },
-    "enforcement_status": {
+    "enforcement_justification": {
       "type": "string"
     }
   },

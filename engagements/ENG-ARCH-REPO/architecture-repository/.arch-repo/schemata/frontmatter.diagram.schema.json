@@ -20,7 +20,9 @@
     },
     "artifact-type": {
       "type": "string",
-      "enum": ["diagram"]
+      "enum": [
+        "diagram"
+      ]
     },
     "name": {
       "type": "string",
@@ -35,14 +37,46 @@
     },
     "status": {
       "type": "string",
-      "enum": ["draft", "active", "deprecated"]
+      "enum": [
+        "draft",
+        "active",
+        "deprecated"
+      ]
     },
     "keywords": {
       "type": "array",
-      "items": { "type": "string" }
+      "items": {
+        "type": "string"
+      }
     },
     "last-updated": {
       "type": "string"
+    },
+    "viewpoint": {
+      "type": "object",
+      "required": [
+        "slug",
+        "version"
+      ],
+      "properties": {
+        "slug": {
+          "type": "string"
+        },
+        "version": {
+          "type": "integer"
+        },
+        "enforcement_override": {
+          "type": "string",
+          "enum": [
+            "off",
+            "warn",
+            "ghost"
+          ]
+        },
+        "derivation_params": {
+          "type": "object"
+        }
+      }
     }
   },
   "additionalProperties": true

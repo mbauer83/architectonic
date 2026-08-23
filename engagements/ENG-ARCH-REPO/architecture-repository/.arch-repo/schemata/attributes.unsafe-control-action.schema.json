@@ -10,9 +10,10 @@
       "type": "string",
       "enum": [
         "not-provided",
-        "provided",
+        "provided-in-unsafe-context",
+        "provided-incorrectly",
         "wrong-timing",
-        "stopped-too-soon"
+        "wrong-duration"
       ]
     },
     "mode": {

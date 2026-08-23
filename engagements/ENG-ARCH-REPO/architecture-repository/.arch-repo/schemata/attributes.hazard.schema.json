@@ -24,6 +24,7 @@
         "TLP:AMBER",
         "TLP:RED"
       ],
+      "x-scale": "ordinal",
       "default": "TLP:WHITE"
     },
     "classification_scheme": {

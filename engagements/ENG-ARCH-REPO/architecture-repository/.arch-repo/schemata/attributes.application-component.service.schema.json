@@ -41,7 +41,7 @@
     "Source Repository": {
       "type": "string",
       "format": "uri",
-      "description": "Where the code lives. Declared as format: uri and enforced as one — a value that addresses nothing is a verification finding, and startup refuses a format nothing checks."
+      "description": "Where the code lives. Enforced as a uri: the value must be an absolute reference carrying a scheme, an SCP-like SSH address, as a git remote is usually written, or a relative path to something this repository manages."
     },
     "Lifecycle State": {
       "type": "string",

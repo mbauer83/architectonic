@@ -30,11 +30,20 @@
     },
     "status": {
       "type": "string",
-      "enum": ["draft", "active", "deprecated"]
+      "enum": [
+        "draft",
+        "active",
+        "deprecated"
+      ]
     },
     "keywords": {
       "type": "array",
-      "items": { "type": "string" }
+      "items": {
+        "type": "string"
+      }
+    },
+    "specialization": {
+      "type": "string"
     },
     "last-updated": {
       "type": "string"
