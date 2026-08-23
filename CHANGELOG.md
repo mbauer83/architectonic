@@ -11,8 +11,8 @@ All notable changes to this project are documented here. The format follows
 fewer steps than its model declares, a schema description contradicted the checker that enforces it,
 a diagram kept claiming to draw a relation it had stopped drawing, four of the five technology types
 the deployment view treats as hosts had no permitted way to hold an artifact, replacing an assurance
-graph left no trace in the audit archive, and an analysis created without an architecture anchor
-could never be given one.
+graph left no trace in the audit archive, an analysis created without an architecture anchor could
+never be given one, and a deployment host holding nothing was drawn as an application.
 
 ### Fixed
 
@@ -63,6 +63,15 @@ could never be given one.
   claim stays wrong. Reported only where the body positively contradicts it: both endpoints
   declared, and no relation drawn between them — a relation the reader cannot name unambiguously
   keeps what it had.
+- **A deployment host is drawn as a node whether or not anything is drawn inside it.** The C4 macro
+  table had no row for a node, so a host holding nothing fell through to the generic container shape:
+  a storage volume or a machine rendered as a deployed application carrying the node's technology as
+  its own. A host that holds something was never affected, which is why it went unseen.
+- **A constraint answered by argument is no longer asked for evidence of a control.** An
+  `alarp-justified` constraint states that residual exposure remains and is argued to be as low as
+  reasonably practicable — there is no control whose working could be evidenced, so the warning asked
+  for an artefact the disposition declares absent. It is skipped where the disposition is
+  argument-shaped *and* the argument is recorded; every other disposition still owes evidence.
 - **A `format` facet says what it accepts, and cannot say otherwise.** The `Source Repository`
   description told authors the facet was informative only and that any string was accepted, while
   the checker refused values — so real values were reported invalid by a schema that had promised
