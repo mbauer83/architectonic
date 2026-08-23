@@ -1,1 +1,616 @@
-[]
+[
+  {
+    "test_name": "re-shoot assurance bowtie",
+    "artifact_ids": [
+      "STPA@1784721732.pflr.3e4395"
+    ],
+    "synthetic_augmentation": false,
+    "viewpoint_slug": null,
+    "parameters": {},
+    "viewport": {
+      "width": 1440,
+      "height": 900,
+      "device_scale_factor": 2
+    },
+    "capture_tool_version": "Playwright 1.62.0",
+    "output_path": "docs/media/assurance-bowtie.png",
+    "sha256": "7c4e80fa6b2a06401cb8f161d7b77716404ac0bed82d974a167747478af5759c"
+  },
+  {
+    "test_name": "re-shoot assurance control structure",
+    "artifact_ids": [
+      "STPA@1784721732.pflr.3e4395"
+    ],
+    "synthetic_augmentation": false,
+    "viewpoint_slug": null,
+    "parameters": {},
+    "viewport": {
+      "width": 1440,
+      "height": 900,
+      "device_scale_factor": 2
+    },
+    "capture_tool_version": "Playwright 1.62.0",
+    "output_path": "docs/media/assurance-control-structure.png",
+    "sha256": "aea188cd20c63c812da79f07c447cf732f35f67d1a4de8b82ea9e0a37083d388"
+  },
+  {
+    "test_name": "assurance FMEA matrix",
+    "artifact_ids": [
+      "FMEA@1785064654.x4kk.27b68b",
+      "APP@1777293133.OYEmP1.architecture-backend",
+      "APP@1780656431.E0fzqZ.confidential-assurance-store",
+      "SSW@1780656477.OCX11y.os-keychain"
+    ],
+    "synthetic_augmentation": false,
+    "viewpoint_slug": null,
+    "parameters": {},
+    "viewport": {
+      "width": 1440,
+      "height": 900,
+      "device_scale_factor": 2
+    },
+    "capture_tool_version": "Playwright 1.62.0",
+    "output_path": "docs/media/assurance-fmea-matrix.png",
+    "sha256": "8f3211216da932eb81457a512254c29ed7ea06f3b804d7cef5964bc9ae365acf"
+  },
+  {
+    "test_name": "assurance graph explore",
+    "artifact_ids": [
+      "STPA@1784721732.pflr.3e4395",
+      "HAZ@1784721764.wra3.48aefe"
+    ],
+    "viewpoint_slug": null,
+    "parameters": {},
+    "synthetic_augmentation": false,
+    "viewport": {
+      "width": 1440,
+      "height": 900,
+      "device_scale_factor": 2
+    },
+    "capture_tool_version": "Playwright 1.62.0",
+    "output_path": "docs/media/assurance-graph-explore.png",
+    "sha256": "5c1a257543bf7877cb863158cbf2c4bc474e4e225515447f19b455e0418b232f"
+  },
+  {
+    "test_name": "re-shoot assurance GSN",
+    "artifact_ids": [
+      "STPA@1784721732.pflr.3e4395"
+    ],
+    "synthetic_augmentation": false,
+    "viewpoint_slug": null,
+    "parameters": {},
+    "viewport": {
+      "width": 1440,
+      "height": 900,
+      "device_scale_factor": 2
+    },
+    "capture_tool_version": "Playwright 1.62.0",
+    "output_path": "docs/media/assurance-gsn.png",
+    "sha256": "217840eff444866053ecc04eae6a4c8524d4a2d0a08346da7660cda10164513f"
+  },
+  {
+    "test_name": "assurance method workflow",
+    "artifact_ids": [
+      "STPA@1784721732.pflr.3e4395"
+    ],
+    "viewpoint_slug": null,
+    "parameters": {},
+    "synthetic_augmentation": false,
+    "viewport": {
+      "width": 1440,
+      "height": 900,
+      "device_scale_factor": 2
+    },
+    "capture_tool_version": "Playwright 1.62.0",
+    "output_path": "docs/media/assurance-method-workflow.png",
+    "sha256": "0be141a1c1cc29ad078eefba8b851658bd023b294834207531bacd6509c80d71"
+  },
+  {
+    "test_name": "re-shoot assurance overview",
+    "artifact_ids": [],
+    "synthetic_augmentation": false,
+    "viewpoint_slug": null,
+    "parameters": {},
+    "viewport": {
+      "width": 1440,
+      "height": 900,
+      "device_scale_factor": 2
+    },
+    "capture_tool_version": "Playwright 1.62.0",
+    "output_path": "docs/media/assurance-overview.png",
+    "sha256": "32984821c3b40e7eea6b5375baaff069a0d774068cc9392b7ece5fb0c1b9c6ed"
+  },
+  {
+    "test_name": "C4 backend components",
+    "artifact_ids": [
+      "CC@1786952709.BT0ZHFR.architecture-backend-write-path"
+    ],
+    "synthetic_augmentation": false,
+    "viewpoint_slug": null,
+    "parameters": {},
+    "viewport": {
+      "width": 1440,
+      "height": 900,
+      "device_scale_factor": 2
+    },
+    "capture_tool_version": "Playwright 1.62.0",
+    "output_path": "docs/media/c4-backend-components.png",
+    "sha256": "c0451d03a9b1b10398b318a81ebd1c53962d8e869a5e6b9a58dc7ba9d99b8899"
+  },
+  {
+    "test_name": "C4 containers",
+    "artifact_ids": [
+      "CC@1780829785.Z_fI-N.amp-containers"
+    ],
+    "synthetic_augmentation": false,
+    "viewpoint_slug": null,
+    "parameters": {},
+    "viewport": {
+      "width": 1440,
+      "height": 900,
+      "device_scale_factor": 2
+    },
+    "capture_tool_version": "Playwright 1.62.0",
+    "output_path": "docs/media/c4-containers.png",
+    "sha256": "ee76605d13474129392e5b4cfd3cf6710d178b75515b13b8962c734b30947b05"
+  },
+  {
+    "test_name": "C4 system context",
+    "artifact_ids": [
+      "CSC@1780829783.z8RRON.amp-system-context"
+    ],
+    "synthetic_augmentation": false,
+    "viewpoint_slug": null,
+    "parameters": {},
+    "viewport": {
+      "width": 1440,
+      "height": 900,
+      "device_scale_factor": 2
+    },
+    "capture_tool_version": "Playwright 1.62.0",
+    "output_path": "docs/media/c4-context.png",
+    "sha256": "975e1c4911d6592fd7bb9a60437b72ae587faa80948e50af8e17a4c7ca29592b"
+  },
+  {
+    "test_name": "re-shoot activity diagram",
+    "artifact_ids": [
+      "ACT@1781338474.NTuMXo.promote-engagement-work-to-the-enterprise-baseline"
+    ],
+    "synthetic_augmentation": false,
+    "viewpoint_slug": null,
+    "parameters": {},
+    "viewport": {
+      "width": 1440,
+      "height": 900,
+      "device_scale_factor": 2
+    },
+    "capture_tool_version": "Playwright 1.62.0",
+    "output_path": "docs/media/diagram-activity.png",
+    "sha256": "ccdecfac6e419a7e01fd2feb7591b0bb06e62486eae36feebbebdf6d06b1a75b"
+  },
+  {
+    "test_name": "re-shoot ArchiMate diagram",
+    "artifact_ids": [
+      "ARC@1777452513.68ZZDj.promote-artifacts"
+    ],
+    "synthetic_augmentation": false,
+    "viewpoint_slug": null,
+    "parameters": {},
+    "viewport": {
+      "width": 1440,
+      "height": 900,
+      "device_scale_factor": 2
+    },
+    "capture_tool_version": "Playwright 1.62.0",
+    "output_path": "docs/media/diagram-archimate.png",
+    "sha256": "29948f36b3b48f75328a269cc26bc177ad820a4d1df93c27e275950df809b1f4"
+  },
+  {
+    "test_name": "re-shoot C4 diagram",
+    "artifact_ids": [
+      "CC@1780829785.Z_fI-N.amp-containers"
+    ],
+    "synthetic_augmentation": false,
+    "viewpoint_slug": null,
+    "parameters": {},
+    "viewport": {
+      "width": 1440,
+      "height": 900,
+      "device_scale_factor": 2
+    },
+    "capture_tool_version": "Playwright 1.62.0",
+    "output_path": "docs/media/diagram-c4.png",
+    "sha256": "8f2e3b3067d7b666b6168dec4f26289d44468cf81a65f096dcf2b1ec1a81810f"
+  },
+  {
+    "test_name": "datatype diagram with an attribute selected",
+    "artifact_ids": [
+      "DATATY@1782085920.9Nrbqf.artifact-persistence-model"
+    ],
+    "synthetic_augmentation": false,
+    "viewpoint_slug": null,
+    "parameters": {},
+    "viewport": {
+      "width": 1440,
+      "height": 900,
+      "device_scale_factor": 2
+    },
+    "capture_tool_version": "Playwright 1.62.0",
+    "output_path": "docs/media/diagram-datatype-attribute.png",
+    "sha256": "0e88e1f54634f0996e493dc0b99b9722261efff3f0d5f2dcb91aebcd139bd84e"
+  },
+  {
+    "test_name": "re-shoot matrix diagram",
+    "artifact_ids": [
+      "MAT@1784484071.Vyfzpw.capabilities-value-stream-stages"
+    ],
+    "synthetic_augmentation": false,
+    "viewpoint_slug": null,
+    "parameters": {},
+    "viewport": {
+      "width": 1440,
+      "height": 900,
+      "device_scale_factor": 2
+    },
+    "capture_tool_version": "Playwright 1.62.0",
+    "output_path": "docs/media/diagram-matrix.png",
+    "sha256": "0949a5ab67eeb2ff91c54789cbb3958f46c3d7c555e977952765586f7b36daf1"
+  },
+  {
+    "test_name": "re-shoot sequence diagram",
+    "artifact_ids": [
+      "SEQ@1781338373.XPtsGv.from-a-write-to-a-consistent-broadcast-state"
+    ],
+    "synthetic_augmentation": false,
+    "viewpoint_slug": null,
+    "parameters": {},
+    "viewport": {
+      "width": 1440,
+      "height": 900,
+      "device_scale_factor": 2
+    },
+    "capture_tool_version": "Playwright 1.62.0",
+    "output_path": "docs/media/diagram-sequence.png",
+    "sha256": "327426d6ea3322fafe7562509676700a2d99a70591fe65fb16238f1dcbd0a326"
+  },
+  {
+    "test_name": "application entities catalog",
+    "artifact_ids": [],
+    "synthetic_augmentation": false,
+    "viewpoint_slug": null,
+    "parameters": {},
+    "viewport": {
+      "width": 1440,
+      "height": 900,
+      "device_scale_factor": 2
+    },
+    "capture_tool_version": "Playwright 1.62.0",
+    "output_path": "docs/media/entities-list.png",
+    "sha256": "da282b3941ba219ad1aac2f18ad4590725e640ee923db8e415e72ba14b6f7642"
+  },
+  {
+    "test_name": "re-shoot entity detail",
+    "artifact_ids": [
+      "APP@1777293133.OYEmP1.architecture-backend"
+    ],
+    "synthetic_augmentation": false,
+    "viewpoint_slug": null,
+    "parameters": {},
+    "viewport": {
+      "width": 1440,
+      "height": 900,
+      "device_scale_factor": 2
+    },
+    "capture_tool_version": "Playwright 1.62.0",
+    "output_path": "docs/media/entity-detail.png",
+    "sha256": "5dfa7758eca220cd35e0f1dae98e790fe1df567805c32d7517276e77a80d99a1"
+  },
+  {
+    "test_name": "re-shoot graph exploration walk",
+    "artifact_ids": [
+      "REQ@1712870400.eBAa26.graph-based-relationship-discovery"
+    ],
+    "synthetic_augmentation": false,
+    "viewpoint_slug": null,
+    "parameters": {},
+    "viewport": {
+      "width": 1440,
+      "height": 900,
+      "device_scale_factor": 2
+    },
+    "capture_tool_version": "Playwright 1.62.0",
+    "output_path": "docs/media/graph-explore.gif",
+    "sha256": "8576c13774631293abc3efe6a41ab4acfd226a5f9ef8140ab630f8cdcada728f"
+  },
+  {
+    "test_name": "re-shoot group management",
+    "artifact_ids": [],
+    "synthetic_augmentation": false,
+    "viewpoint_slug": null,
+    "parameters": {},
+    "viewport": {
+      "width": 1440,
+      "height": 900,
+      "device_scale_factor": 2
+    },
+    "capture_tool_version": "Playwright 1.62.0",
+    "output_path": "docs/media/group-management.png",
+    "sha256": "e588b686928e631e281ca61eca3a3ad00590be1921d92b6391377c0b38ff8255"
+  },
+  {
+    "test_name": "guidance wizard context",
+    "artifact_ids": [],
+    "viewpoint_slug": null,
+    "parameters": {},
+    "synthetic_augmentation": false,
+    "viewport": {
+      "width": 1440,
+      "height": 900,
+      "device_scale_factor": 2
+    },
+    "capture_tool_version": "Playwright 1.62.0",
+    "output_path": "docs/media/guidance-wizard-context.png",
+    "sha256": "468fa7d462ab3ec06b3b494f22fe207a91fa143b3c3b462721000e59b0bff929"
+  },
+  {
+    "test_name": "hero intent-to-implementation exploration",
+    "artifact_ids": [],
+    "synthetic_augmentation": false,
+    "viewpoint_slug": "intent-to-implementation",
+    "parameters": {
+      "anchor": "REQ@1712870400.peinbQ.tool-interfaces-mcp-cli-rest"
+    },
+    "viewport": {
+      "width": 1440,
+      "height": 900,
+      "device_scale_factor": 2
+    },
+    "capture_tool_version": "Playwright 1.62.0",
+    "output_path": "docs/media/hero-overview.png",
+    "sha256": "80938af134228023b83aaa7797765932cd9f379409bd6d1ee6db05fdc4425998"
+  },
+  {
+    "test_name": "motivation coverage live fallback",
+    "artifact_ids": [],
+    "viewpoint_slug": "motivation-coverage",
+    "parameters": {
+      "scope": [
+        "goal",
+        "outcome",
+        "requirement"
+      ],
+      "gaps_only": "true",
+      "group": [
+        "motivation-narrative"
+      ]
+    },
+    "synthetic_augmentation": false,
+    "viewport": {
+      "width": 1440,
+      "height": 900,
+      "device_scale_factor": 2
+    },
+    "capture_tool_version": "Playwright 1.62.0",
+    "output_path": "docs/media/motivation-coverage-gaps.png",
+    "sha256": "5b06b8b4cbec25701bf830beae3baf7b17fc03fc0766e70d4308bec3a4b75e57"
+  },
+  {
+    "test_name": "re-shoot overview",
+    "artifact_ids": [],
+    "synthetic_augmentation": false,
+    "viewpoint_slug": null,
+    "parameters": {},
+    "viewport": {
+      "width": 1440,
+      "height": 900,
+      "device_scale_factor": 2
+    },
+    "capture_tool_version": "Playwright 1.62.0",
+    "output_path": "docs/media/overview.png",
+    "sha256": "149cf12f3c7abdbb8bd1fd04bb51cac48f1d0938aa27bdf1f51585c054bee00b"
+  },
+  {
+    "test_name": "resource investment map",
+    "artifact_ids": [
+      "ARC@1784488894.WwyJAa.resource-investment-map"
+    ],
+    "synthetic_augmentation": false,
+    "viewpoint_slug": null,
+    "parameters": {},
+    "viewport": {
+      "width": 1440,
+      "height": 900,
+      "device_scale_factor": 2
+    },
+    "capture_tool_version": "Playwright 1.62.0",
+    "output_path": "docs/media/resource-investment-map.png",
+    "sha256": "6e2055944563c2766300a234196fe9bcda9b91275e66eb65c9099ce14cfd4291"
+  },
+  {
+    "test_name": "re-shoot search",
+    "artifact_ids": [],
+    "synthetic_augmentation": false,
+    "viewpoint_slug": null,
+    "parameters": {},
+    "viewport": {
+      "width": 1440,
+      "height": 900,
+      "device_scale_factor": 2
+    },
+    "capture_tool_version": "Playwright 1.62.0",
+    "output_path": "docs/media/search.png",
+    "sha256": "02da2c1664a02bef6c699bc24626842d1914447d03cf550002f7501cbecf410a"
+  },
+  {
+    "test_name": "security entity metrics panel",
+    "artifact_ids": [
+      "APP@1777293133.OYEmP1.architecture-backend"
+    ],
+    "synthetic_augmentation": true,
+    "viewpoint_slug": null,
+    "parameters": {},
+    "viewport": {
+      "width": 1440,
+      "height": 900,
+      "device_scale_factor": 2
+    },
+    "capture_tool_version": "Playwright 1.62.0",
+    "output_path": "docs/media/security-entity-panel.png",
+    "sha256": "e272216bcfdfc1cae45ef56415b6e6604119cd6d47344fcc59bf0f36b6ea52a8"
+  },
+  {
+    "test_name": "stamped security export",
+    "artifact_ids": [
+      "APP@1780783993.JqIBPJ.supply-chain-signal-sources",
+      "APP@1780656431.e2zPs6.supply-chain-vulnerability-connector",
+      "APP@1777293133.OYEmP1.architecture-backend"
+    ],
+    "viewpoint_slug": "security-posture",
+    "parameters": {},
+    "synthetic_augmentation": true,
+    "viewport": {
+      "width": 1440,
+      "height": 900,
+      "device_scale_factor": 2
+    },
+    "capture_tool_version": "Playwright 1.62.0",
+    "output_path": "docs/media/security-export-stamped.png",
+    "sha256": "069a148c1cb22502c140dc49845bc7f9359da6837d7a7c43c4b39c9c30b039b9"
+  },
+  {
+    "test_name": "re-shoot security findings",
+    "artifact_ids": [
+      "APP@1777293133.OYEmP1.architecture-backend"
+    ],
+    "synthetic_augmentation": true,
+    "viewpoint_slug": null,
+    "parameters": {},
+    "viewport": {
+      "width": 1440,
+      "height": 900,
+      "device_scale_factor": 2
+    },
+    "capture_tool_version": "Playwright 1.62.0",
+    "output_path": "docs/media/security-findings.png",
+    "sha256": "d2cdecb319ecb069b47346221d49da8e9660a65e493203514aef07cd0ed6a60c"
+  },
+  {
+    "test_name": "locked security metrics state",
+    "artifact_ids": [
+      "APP@1777293133.OYEmP1.architecture-backend"
+    ],
+    "synthetic_augmentation": false,
+    "viewpoint_slug": null,
+    "parameters": {},
+    "viewport": {
+      "width": 1440,
+      "height": 900,
+      "device_scale_factor": 2
+    },
+    "capture_tool_version": "Playwright 1.62.0",
+    "output_path": "docs/media/security-metrics-locked.png",
+    "sha256": "4e25d5debc250e958af312b2f0715963ff1d72490079bf4c5e5b65c6e5e8e75c"
+  },
+  {
+    "test_name": "security posture viewpoint",
+    "artifact_ids": [
+      "APP@1780783993.JqIBPJ.supply-chain-signal-sources",
+      "APP@1780656431.e2zPs6.supply-chain-vulnerability-connector",
+      "APP@1777293133.OYEmP1.architecture-backend"
+    ],
+    "viewpoint_slug": "security-posture",
+    "parameters": {},
+    "synthetic_augmentation": true,
+    "viewport": {
+      "width": 1440,
+      "height": 900,
+      "device_scale_factor": 2
+    },
+    "capture_tool_version": "Playwright 1.62.0",
+    "output_path": "docs/media/security-posture-viewpoint.png",
+    "sha256": "62c64ed25859c06b478084b788ae4007d62918e62d4ea2215aedb9de3354aace"
+  },
+  {
+    "test_name": "re-shoot vulnerability impact",
+    "artifact_ids": [
+      "APP@1777293133.OYEmP1.architecture-backend"
+    ],
+    "synthetic_augmentation": true,
+    "viewpoint_slug": null,
+    "parameters": {},
+    "viewport": {
+      "width": 1440,
+      "height": 900,
+      "device_scale_factor": 2
+    },
+    "capture_tool_version": "Playwright 1.62.0",
+    "output_path": "docs/media/security-vulnerability-impact.png",
+    "sha256": "aa61f12b99c5dbf5cd9bb806c3240163b97f99f80e1ab47491a8d50ae00be348"
+  },
+  {
+    "test_name": "strategy overview diagram",
+    "artifact_ids": [
+      "ARC@1784483951.yBNaaU.strategy-overview"
+    ],
+    "synthetic_augmentation": false,
+    "viewpoint_slug": null,
+    "parameters": {},
+    "viewport": {
+      "width": 1440,
+      "height": 900,
+      "device_scale_factor": 2
+    },
+    "capture_tool_version": "Playwright 1.62.0",
+    "output_path": "docs/media/strategy-overview.png",
+    "sha256": "397bf073137aebcff337193c74b05a79e8ab0db1540fc23d6d54361086a049e5"
+  },
+  {
+    "test_name": "re-shoot treemap",
+    "artifact_ids": [],
+    "synthetic_augmentation": false,
+    "viewpoint_slug": null,
+    "parameters": {},
+    "viewport": {
+      "width": 1440,
+      "height": 900,
+      "device_scale_factor": 2
+    },
+    "capture_tool_version": "Playwright 1.62.0",
+    "output_path": "docs/media/treemap.png",
+    "sha256": "9c7dc3258f04838c1e7da82047098854f740cd1c41646d07a94761c292229799"
+  },
+  {
+    "test_name": "architecture-aligned change value stream",
+    "artifact_ids": [
+      "ARC@1784483996.YRywG6.value-stream-deliver-an-architecture-aligned-change"
+    ],
+    "synthetic_augmentation": false,
+    "viewpoint_slug": null,
+    "parameters": {},
+    "viewport": {
+      "width": 1440,
+      "height": 900,
+      "device_scale_factor": 2
+    },
+    "capture_tool_version": "Playwright 1.62.0",
+    "output_path": "docs/media/value-stream-deliver-change.png",
+    "sha256": "79c4fed8570c14f0b8655005761b45e203ddb6d31bacf357b3e08dbf0743be23"
+  },
+  {
+    "test_name": "viewpoint query tab",
+    "artifact_ids": [
+      "element-dependents"
+    ],
+    "synthetic_augmentation": false,
+    "viewpoint_slug": null,
+    "parameters": {},
+    "viewport": {
+      "width": 1440,
+      "height": 900,
+      "device_scale_factor": 2
+    },
+    "capture_tool_version": "Playwright 1.62.0",
+    "output_path": "docs/media/viewpoint-query-tab.png",
+    "sha256": "7fb85e48fb60915ea21006b58033ccab6f11046087b7f1f7b158b917578bc4a5"
+  }
+]

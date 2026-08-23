@@ -155,11 +155,18 @@ The rows are the candidate set described in [Methods](methods.md#fmea-failure-mo
 the elements a control structure already names, plus the ones the architecture graph shows to be
 load-bearing. Each candidate says which of the two nominated it.
 
-![Failure-mode matrix of the assurance access and rendering paths: three nominated elements against the five guidewords, with recorded cells showing each factor and a glyph for whether it was derived or asserted, dismissed cells carrying their reason, and a priority roll-up per element](../media/assurance-fmea-matrix.png)
+![Failure-mode matrix of the assurance access and rendering paths: six nominated elements against the five guidewords, with recorded cells showing each factor and a glyph for whether it was derived or asserted, dismissed cells carrying their reason, unexamined cells saying what would advance them, and a priority roll-up per element](../media/assurance-fmea-matrix.png)
 
-This is the project's own analysis rather than a staged example — the same rows the store holds, with
-the single `high` cell being the one failure whose severity is catastrophic and whose occurrence a
-person judged `possible`.
+This is the project's own analysis rather than a staged example — the same rows the store holds, and it
+shows both ways a cell reaches `high`. One is severity: the backend's unintended-function cell is
+`catastrophic` with an occurrence a person judged `possible`. The other three are detectability, and
+they say so in the cell — *nothing detects this failure*. An element whose failures nothing would catch
+is at the worst band whatever its severity, which is the reading that sends you to build a detection
+rather than to argue about likelihood.
+
+The three rows with a single examined cell are newly nominated and largely unexamined. That is what an
+honest matrix looks like mid-analysis: the count above it says how far it has got, and an unexamined
+cell states the one action that would advance it.
 
 &nbsp;
 
