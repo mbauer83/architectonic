@@ -99,6 +99,21 @@ def is_known(slug: str) -> bool:
     return slug in CONSTRAINT_DISPOSITION_SLUGS
 
 
+def answers_by_argument(slug: str) -> bool:
+    """True where this disposition's answer is a recorded argument rather than evidence of a control.
+
+    The distinction is in the vocabulary's own wording: `controlled-with-evidence` reads *claiming
+    this requires that evidence*, while `alarp-justified` reads *residual exposure remains and is
+    argued* — there is no control, so there is nothing whose working could be evidenced.
+
+    Stated here because two rules read it. One accepts a constraint that records why nothing enforces
+    it; the other asked the same constraint for evidence of enforcement, which is the artefact this
+    disposition declares absent. An unrecognised value is not an argument, for the reason `rank`
+    gives it no position: what this software does not know, it does not get to characterise.
+    """
+    return slug == ALARP_JUSTIFIED.slug
+
+
 def rank(slug: str) -> int | None:
     """Position in the hierarchy of controls, 0 strongest; None when unrecognised.
 

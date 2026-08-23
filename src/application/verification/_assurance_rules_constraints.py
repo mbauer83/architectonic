@@ -15,7 +15,11 @@ from src.application.verification.assurance_findings import (
     SAFETY_CONSTRAINT_NOT_MERELY_ACCEPTED,
 )
 from src.application.verification.assurance_issues import AssuranceIssue, AssuranceVerificationResult
-from src.domain.assurance.constraint_dispositions import ACCEPTED, CONSTRAINT_DISPOSITION_SLUGS
+from src.domain.assurance.constraint_dispositions import (
+    ACCEPTED,
+    CONSTRAINT_DISPOSITION_SLUGS,
+    answers_by_argument,
+)
 
 SAFETY_CLASSES = frozenset({"safety", "security"})
 
@@ -111,9 +115,22 @@ def check_has_evidence(
     evidenced_ref_node_ids: frozenset[str],
     result: AssuranceVerificationResult,
 ) -> None:
-    """A constraint with no evidence supports no claim in a published assurance case."""
+    """A constraint with no evidence supports no claim in a published assurance case.
+
+    Unless the constraint's answer is an argument rather than a control. `alarp-justified` says
+    residual exposure remains and is argued to be as low as reasonably practicable, so there is no
+    control whose working could be evidenced, and asking for some is asking for the artefact the
+    disposition declares absent — which trains a reader to skip this code.
+
+    Both conditions, not the disposition alone: an argued disposition with no justification written
+    is an empty label, and `check_is_enforced_or_justified` above is already objecting to exactly
+    that emptiness. So a constraint escapes this rule only where the argument is present and readable.
+    """
     node_id = str(node["node_id"])
     if edges_from(edges, node_id, "evidenced-by") or node_id in evidenced_ref_node_ids:
+        return
+    argued = answers_by_argument(str(node.get("disposition") or ""))
+    if argued and str(attributes_of(node).get("enforcement_justification") or "").strip():
         return
     result.issues.append(AssuranceIssue.of(
         CONSTRAINT_HAS_EVIDENCE,
