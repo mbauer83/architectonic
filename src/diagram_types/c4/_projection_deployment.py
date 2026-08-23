@@ -152,11 +152,16 @@ def project_c4_deployment(
         diagram_type=DEPLOYMENT_TYPE,
         items=(make(root_entity_id, "scope", scope_entity_type), *host_items, *container_items),
         connection_ids=tuple(sorted(direct_conns(drawn, query, dependency_types=NEIGHBOR_TYPES))),
+        # Every placement the model states, not the first of them. The drawing is still a tree —
+        # PUML declares an alias once — but choosing *which* host draws a container is the
+        # resolver's, because only it knows which hosts this view keeps. Truncating here left a
+        # container with no surviving parent as soon as a view was narrowed to one topology, which
+        # is what a deployment scenario is.
         contained_by=tuple(
             [
                 (cid, host)
                 for cid, host_set in sorted(hosted.items())
-                for host in sorted(host_set)[:1]  # one drawn home per container; a second duplicates it
+                for host in sorted(host_set)
             ]
             + sorted(enclosing.items())
         ),

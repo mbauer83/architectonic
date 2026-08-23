@@ -4,8 +4,7 @@ from __future__ import annotations
 
 import json
 import re
-from collections.abc import Iterable, Mapping, Sequence
-from dataclasses import replace
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 
 from src.diagram_types.c4._c4_types import (
@@ -17,6 +16,7 @@ from src.diagram_types.c4._c4_types import (
     _ResolvedState,
 )
 from src.diagram_types.c4._projection_vocabulary import NODE_TYPE, is_externally_styled
+from src.diagram_types.c4._resolve_nesting import _boundary_aliases, _flatten, _nest
 from src.domain.diagrams.bindings import EXCLUDED_IDS_KEY, INCLUDED_IDS_KEY
 from src.domain.diagrams.diagram_selection import DiagramSelectionError
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
@@ -175,83 +175,6 @@ def _served_technology(
     return ", ".join(names)
 
 
-def _nest(
-    internal_items: list[_ResolvedItem], contained_by: dict[str, str]
-) -> list[_ResolvedItem]:
-    """Move each item the projection placed inside another into that one's ``children``.
-
-    Empty ``contained_by`` leaves the list exactly as it was, which is every level but deployment.
-
-    Built bottom-up, and that is the whole of the difficulty. The first version attached each child
-    to its parent's *pre-`replace`* object, so a chain of three — a host holding a container holding
-    an application — kept the container and silently dropped what was inside it. `contained_by` can
-    express any chain, so a structure the renderer could not draw was reachable without anything
-    failing; a diagram simply came back missing its contents.
-
-    A cycle in the declared containment would recurse forever, so each branch carries the ancestors
-    it has already passed through and stops rather than following one.
-    """
-    if not contained_by:
-        return internal_items
-    by_id = {item.local_id: item for item in internal_items}
-    children_of: dict[str, list[str]] = {}
-    for child_id, parent_id in contained_by.items():
-        if child_id != parent_id and child_id in by_id and parent_id in by_id:
-            children_of.setdefault(parent_id, []).append(child_id)
-    nested_ids = {child_id for group in children_of.values() for child_id in group}
-
-    def build(item_id: str, ancestors: frozenset[str]) -> _ResolvedItem:
-        seen = ancestors | {item_id}
-        kids = tuple(
-            build(child_id, seen)
-            for child_id in children_of.get(item_id, ())
-            if child_id not in seen
-        )
-        return replace(by_id[item_id], children=kids)
-
-    return [
-        build(item.local_id, frozenset())
-        for item in internal_items
-        if item.local_id not in nested_ids
-    ]
-
-
-def _boundary_aliases(
-    scope_items: Sequence[_ResolvedItem],
-    nested_internal: Sequence[_ResolvedItem],
-    scope_render_mode: str,
-) -> set[str]:
-    """Every alias that names a boundary rather than an element, so no edge may land on one.
-
-    A C4 boundary is not an element and cannot be an endpoint of a relationship. Three things are
-    drawn as one and they were not recognised as the same thing: the scope in `boundary` mode, a
-    grouping, and a deployment node holding containers. Naming only the first left four arrows
-    running from the Architecture Backend's own boundary to components inside it — which reads as a
-    thing depending on its own parts — and then, once groupings became boundaries too, six more
-    running onto the Assurance Module group.
-
-    "Has children" is the test rather than the item type, because it is exactly the test the
-    renderer applies when it decides to open a boundary instead of drawing a box: a grouping the
-    level draws nothing inside is not drawn at all, and an unoccupied deployment node is a plain
-    container that an edge may perfectly well reach.
-
-    The membership is still recorded — `scope_of` says which boundary contains the element — and it
-    is only the drawing that is declined. Context and landscape draw their scope as an element, so
-    there the same edge is meaningful and is kept.
-    """
-    scope_boundary = {i.alias for i in scope_items} if scope_render_mode == "boundary" else set()
-    return scope_boundary | {i.alias for i in nested_internal if i.children}
-
-
-def _flatten(items: Iterable[_ResolvedItem]) -> list[_ResolvedItem]:
-    """Every item in a nesting, at any depth — what "drawn" means once boxes can hold boxes."""
-    out: list[_ResolvedItem] = []
-    for item in items:
-        out.append(item)
-        out.extend(_flatten(item.children))
-    return out
-
-
 def resolve_model_backed(
     diagram_type: str,
     repo_root: Path,
@@ -350,7 +273,7 @@ def resolve_model_backed(
             ):
                 outside_items.append(_item_from_entity(entity, extra_eid, "software-system", external=True))
 
-    internal_items = _nest(internal_items, dict(projection.contained_by))
+    internal_items = _nest(internal_items, projection.contained_by)
 
     # Everything inside the scope, at whatever depth the nesting put it. Reading the *top* level
     # instead was correct for as long as only a deployment view nested anything; once a grouping

@@ -20,7 +20,8 @@ from src.diagram_types.c4._navigation import build_c4_navigation
 from src.diagram_types.c4._projection import project_c4_landscape, project_c4_scope
 from src.diagram_types.c4._projection_deployment import project_c4_deployment
 from src.diagram_types.c4._projection_vocabulary import is_externally_styled
-from src.diagram_types.c4._resolve_model import _declared_technology, _nest
+from src.diagram_types.c4._resolve_model import _declared_technology
+from src.diagram_types.c4._resolve_nesting import _nest
 from src.diagram_types.c4.renderer import C4PumlRenderer
 from tests.application.derivation._fixtures import FakeQuery, _connection, _entity
 
@@ -509,7 +510,7 @@ def test_a_three_level_chain_keeps_what_is_innermost() -> None:
         _item("app", "container", "App"),
     ]
 
-    nested = _nest(items, {"runtime": "host", "app": "runtime"})
+    nested = _nest(items, (("runtime", "host"), ("app", "runtime")))
 
     assert [i.local_id for i in nested] == ["host"]
     assert [c.local_id for c in nested[0].children] == ["runtime"]
@@ -519,7 +520,7 @@ def test_a_three_level_chain_keeps_what_is_innermost() -> None:
 def test_a_containment_cycle_stops_rather_than_recursing_forever() -> None:
     items = [_item("a", "node", "A"), _item("b", "node", "B")]
 
-    nested = _nest(items, {"a": "b", "b": "a"})
+    nested = _nest(items, (("a", "b"), ("b", "a")))
 
     assert nested == [] or all(i.local_id in {"a", "b"} for i in nested)
 
@@ -527,7 +528,7 @@ def test_a_containment_cycle_stops_rather_than_recursing_forever() -> None:
 def test_an_unnested_list_is_returned_unchanged() -> None:
     items = [_item("one", "container", "One"), _item("two", "container", "Two")]
 
-    assert _nest(items, {}) == items
+    assert _nest(items, ()) == items
 
 
 def test_the_renderer_nests_a_node_inside_a_node() -> None:
