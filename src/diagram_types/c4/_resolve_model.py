@@ -16,7 +16,7 @@ from src.diagram_types.c4._c4_types import (
     _ResolvedItem,
     _ResolvedState,
 )
-from src.diagram_types.c4._projection_vocabulary import is_externally_styled
+from src.diagram_types.c4._projection_vocabulary import NODE_TYPE, is_externally_styled
 from src.domain.diagrams.bindings import EXCLUDED_IDS_KEY, INCLUDED_IDS_KEY
 from src.domain.diagrams.diagram_selection import DiagramSelectionError
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
@@ -133,7 +133,7 @@ def _host_technology(item_type: str, artifact_type: str) -> str:
     The model's own type is what is known about a projected host — a reader learns something from
     "System Software" and nothing from "node", which is the C4 item type they can already see.
     """
-    if item_type != "node" or not artifact_type:
+    if item_type != NODE_TYPE or not artifact_type:
         return ""
     return artifact_type.replace("-", " ").title()
 

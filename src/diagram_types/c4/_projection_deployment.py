@@ -16,6 +16,7 @@ from src.diagram_types.c4._projection_vocabulary import (
     DEPLOYMENT_TYPE,
     NEIGHBOR_TYPES,
     NESTING_TYPES,
+    NODE_TYPE,
     C4ProjectedItem,
     C4Projection,
     entity_type,
@@ -142,7 +143,7 @@ def project_c4_deployment(
     enclosing = _enclosing_nodes(direct_hosts, query)
     hosts = direct_hosts | set(enclosing.values())
 
-    host_items = tuple(make(eid, "internal", "node") for eid in sorted(hosts))
+    host_items = tuple(make(eid, "internal", NODE_TYPE) for eid in sorted(hosts))
     container_items = tuple(
         make(cid, "internal", internal_c4_type) for cid, host_set in sorted(hosted.items()) if host_set
     )

@@ -30,7 +30,7 @@ bindings:
   correspondence_kind: scoped-by
   target:
     entity_id: APP@1780783671.hkrdtm.architecture-management-platform
-last-updated: '2026-08-17T13:41:49Z'
+last-updated: '2026-08-23T10:31:23Z'
 ---
 @startuml amp---deployment
 !include <C4/C4_Deployment>
@@ -56,7 +56,7 @@ Deployment_Node(NOD_7xNYBF, "Team-Serving Deployment", "Technology Node") {
     APP_lmO0mp -[hidden]right- APP_OYEmP1
 
   }
-  Container(NOD_THkLB12, "Repository Data Volume", "Technology Node")
+  Deployment_Node(NOD_THkLB12, "Repository Data Volume", "Technology Node")
   NOD_Yx71j_C -[hidden]right- NOD_THkLB12
 
 }

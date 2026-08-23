@@ -12,7 +12,7 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
-from src.diagram_types.c4._projection_vocabulary import GROUP_TYPE
+from src.diagram_types.c4._projection_vocabulary import GROUP_TYPE, NODE_TYPE
 from src.diagram_types.c4._resolve import _ResolvedItem, resolve_c4_state
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
 from src.domain.ontology_representation.ontology_protocol import DiagramRendererReferences
@@ -80,6 +80,16 @@ def _c4_macro_name(item_type: str, variant: str, external: bool) -> str:
         if variant == "queue":
             return f"ComponentQueue{ext}"
         return f"Component{ext}"
+    if item_type == NODE_TYPE:
+        # A deployment host, and no variant or suffix applies to it. `_open_boundary` emits the same
+        # macro for a host that holds something, so this is the *childless* case — and it had no row
+        # here at all, falling through to the container fallback below: a volume or a machine with
+        # nothing drawn inside it rendered as an application container labelled with its technology.
+        #
+        # Neither the store variant nor `_Ext` is taken. A node is not a database whatever it holds,
+        # and `Deployment_Node_Ext` is not defined by the C4 deployment stdlib — calling it on the
+        # pinned PlantUML produces no diagram at all.
+        return "Deployment_Node"
     return f"Container{ext}"  # unknown item type → generic container shape
 
 

@@ -85,6 +85,13 @@ LANDSCAPE_TYPE = "c4-system-landscape"
 #: The other axis: where a system's containers run, rather than what they contain.
 DEPLOYMENT_TYPE = "c4-deployment"
 
+#: A deployment host — the C4 item type every technology element the deployment axis draws is given.
+#: Named because three modules spelled it: the projection that builds the items, the resolver that
+#: decides whether a technology name is worth showing beside it, and the renderer's macro table. The
+#: macro table was the one that did not, and a host with nothing drawn inside it came out as an
+#: application container.
+NODE_TYPE = "node"
+
 #: The levels whose scope is a drawn node rather than a boundary wrapper — so the scope entity is
 #: part of what the diagram references. Spelled here beside the branches that classify those items,
 #: which is the same place the render mode's consequences are already decided.
