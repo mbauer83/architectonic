@@ -7,10 +7,12 @@ All notable changes to this project are documented here. The format follows
 
 **[Full detail → `changelog-assets/0.7.1-detail.md`](changelog-assets/0.7.1-detail.md)**
 
-**Four fixes, all of them cases where the product stated one thing and did another.** An activity
-diagram drew fewer steps than its model declares, a schema description contradicted the checker that
-enforces it, a diagram kept claiming to draw a relation it had stopped drawing, and four of the five
-technology types the deployment view treats as hosts had no permitted way to hold an artifact.
+**Fixes for cases where the product stated one thing and did another.** An activity diagram drew
+fewer steps than its model declares, a schema description contradicted the checker that enforces it,
+a diagram kept claiming to draw a relation it had stopped drawing, four of the five technology types
+the deployment view treats as hosts had no permitted way to hold an artifact, replacing an assurance
+graph left no trace in the audit archive, and an analysis created without an architecture anchor
+could never be given one.
 
 ### Fixed
 
@@ -40,6 +42,27 @@ technology types the deployment view treats as hosts had no permitted way to hol
   model drew no containers. Assignment is now permitted from every technology-internal
   active-structure element and is the relation to write; the aggregation path is still read, so
   existing views keep working.
+- **Replacing the assurance graph is recorded in the audit archive.** `import` and `seed` delete
+  every node, edge, architecture reference, membership and factor assessment in the store, and
+  appended nothing to the hash-chained archive. The archive then showed an analysis created and its
+  nodes attributed, with nothing to explain why the store held neither — effects with no recorded
+  cause, which is what a tamper-evident log exists to rule out. One entry now lands in the same
+  transaction as the rows it describes, naming the bundle, whether the graph was replaced, what the
+  replace destroyed and what was written. The chain itself is never carried in or cleared by an
+  import: it belongs to the store, not to the graph it describes.
+- **An analysis with no architecture anchor can be given one.** `architecture_anchor_id` is optional
+  at creation and immutable afterwards, and together those left no route — an analysis created
+  without one could never acquire one, and recreating it was barred too, because provenance is
+  immutable and its nodes cannot be re-filed under a replacement. Filling an empty anchor is now
+  permitted; moving or clearing one is refused (`anchor_immutable`, HTTP 409), because that rewrites
+  what the analysis was scoped to and every finding under it was reached against the old subject.
+- **A relation `connection-ids-used` lists but the body does not draw is reported (W307).** The
+  entity side has refused this since E309; the connection side had no rule, so a wrong answer to
+  *which views show this connection* went unreported. A regenerating refresh redraws the missing
+  edge, but a `manual-layout` diagram keeps its body and a hand-edited file never heals, so the
+  claim stays wrong. Reported only where the body positively contradicts it: both endpoints
+  declared, and no relation drawn between them — a relation the reader cannot name unambiguously
+  keeps what it had.
 - **A `format` facet says what it accepts, and cannot say otherwise.** The `Source Repository`
   description told authors the facet was informative only and that any string was accepted, while
   the checker refused values — so real values were reported invalid by a schema that had promised
@@ -68,6 +91,12 @@ technology types the deployment view treats as hosts had no permitted way to hol
 - A repository materialised before 0.7.1 holds the older `Source Repository` description. The upgrade
   reports it as an operator customisation and never overwrites it, which is the intended behaviour
   for any locally edited schema file — not a problem to fix.
+- A diagram whose stored frontmatter lists a connection its body does not draw starts reporting
+  **W307** as a warning. `artifact_edit_diagram(puml="auto-sync")` redraws the edge if the relation
+  should be there; removing the entry is right if it should not.
+- An assurance store carries its archive forward across `seed` and `import`, so the first re-seed
+  after upgrading appends an entry rather than rewriting anything. Chains recorded before 0.7.1 have
+  no entry for imports that already happened, and none is invented for them.
 
 ## [0.7.0] — 2026-08-17
 

@@ -11381,6 +11381,8 @@ export interface components {
         };
         /** UpdateAnalysisBody */
         UpdateAnalysisBody: {
+            /** Architecture Anchor Id */
+            architecture_anchor_id?: string | null;
             /** Name */
             name?: string | null;
             /** Status */
