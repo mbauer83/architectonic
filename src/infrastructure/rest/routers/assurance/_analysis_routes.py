@@ -63,6 +63,9 @@ class UpdateAnalysisBody(BaseModel):
     name: str | None = None
     status: str | None = None
     tlp: str | None = None
+    #: Fillable while empty, then fixed. Omitted and empty are the same request — leave it alone —
+    #: so a client sending the whole record back does not have to strip it.
+    architecture_anchor_id: str | None = None
 
 
 def _invalid(result: uc.AnalysisInvalid) -> ApiError:
@@ -154,6 +157,7 @@ def update_analysis(analysis_id: str, body: UpdateAnalysisBody) -> JSONResponse:
         ctx.store, ctx.archive,
         analysis_id=analysis_id,
         name=body.name, status=body.status, tlp=body.tlp,
+        architecture_anchor_id=body.architecture_anchor_id,
     ))
     return _translate_write(result, AssuranceAnalysisRecord)
 

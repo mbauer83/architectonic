@@ -36,6 +36,9 @@ INVALID_MAPPING: dict[str, tuple[int, ErrorCode]] = {
     "invalid_status": (422, "validation_error"),
     "group_not_found": (404, "not_found"),
     "analysis_not_empty": (409, "analysis_not_empty"),
+    # The analysis is already anchored, so nothing the caller sent is malformed — the aggregate is
+    # in a state where this field no longer moves. The same reading as `invalid_binding_status`.
+    "anchor_immutable": (409, "conflict"),
 }
 
 #: The bind use case's own invalids. Neither needs a new vocabulary member: one is a state conflict

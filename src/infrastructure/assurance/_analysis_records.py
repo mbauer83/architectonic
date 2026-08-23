@@ -17,7 +17,12 @@ from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from src.domain.assurance.assurance_analysis import ANALYSIS_METHODS, ANALYSIS_STATUSES, ANALYSIS_UPDATABLE
+from src.domain.assurance.assurance_analysis import (
+    ANALYSIS_METHODS,
+    ANALYSIS_STATUSES,
+    ANALYSIS_UPDATABLE,
+    permitted_analysis_updates,
+)
 from src.domain.clock import utc_now_iso as _now_iso
 from src.infrastructure.assurance._id_utils import make_analysis_id
 
@@ -129,10 +134,12 @@ def analysis_matches(
 
 
 def apply_analysis_update(record: dict[str, object], attrs: dict[str, object]) -> dict[str, object]:
-    """Apply only updatable fields to ``record`` in place and bump ``updated_at``."""
-    for key, value in attrs.items():
-        if key in ANALYSIS_UPDATABLE:
-            record[key] = value
+    """Apply the fields this update may change to ``record`` in place and bump ``updated_at``.
+
+    Which fields those are is `permitted_analysis_updates`, in the domain, because the SQLCipher
+    store decides the same thing when it builds its UPDATE and the two backends must not differ.
+    """
+    record.update(permitted_analysis_updates(record, attrs))
     record["updated_at"] = _now_iso()
     return record
 

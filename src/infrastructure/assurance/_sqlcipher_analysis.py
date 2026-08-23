@@ -78,12 +78,19 @@ def delete(conn: Any, analysis_id: str) -> None:
 
 
 def update(conn: Any, analysis_id: str, attrs: dict[str, object]) -> None:
+    """Apply the fields this update may change.
+
+    The current row is read first because a fill-once field's verdict depends on what is already
+    there — `permitted_analysis_updates` is the same judgement the file stores apply, so a backend
+    cannot admit what another refuses. Every interpolated column name comes from that verdict, which
+    is built from the domain's own vocabulary rather than from the caller.
+    """
+    current = get(conn, analysis_id) or {}
     sets: list[str] = ["updated_at = ?"]
     params: list[object] = [now_iso()]
-    for key, value in attrs.items():
-        if key in analyses.ANALYSIS_UPDATABLE:
-            sets.append(f"{key} = ?")
-            params.append(value)
+    for key, value in analyses.permitted_analysis_updates(current, attrs).items():
+        sets.append(f"{key} = ?")
+        params.append(value)
     params.append(analysis_id)
     conn.execute(
         f"UPDATE assurance_analyses SET {', '.join(sets)} WHERE analysis_id = ?", params

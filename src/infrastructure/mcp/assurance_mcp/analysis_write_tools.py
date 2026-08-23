@@ -54,7 +54,10 @@ def register_analysis_write_tools(server: FastMCP) -> None:
         name="assurance_update_analysis",
         description=(
             "Update an analysis's name, status (draft/active/completed/archived), or tlp. "
-            "method and architecture_anchor_id are immutable (they scope the whole aggregate)."
+            "architecture_anchor_id may be filled in if the analysis never had one; once set it "
+            "cannot be moved or cleared (it scopes the whole aggregate, and every finding under it "
+            "was reached against that subject) — attempting to change it is refused with "
+            "anchor_immutable. method is immutable and takes no parameter."
         ),
         annotations=DESTRUCTIVE_LOCAL_WRITE,
     )
@@ -63,6 +66,7 @@ def register_analysis_write_tools(server: FastMCP) -> None:
         name: str | None = None,
         status: str | None = None,
         tlp: str | None = None,
+        architecture_anchor_id: str | None = None,
     ) -> dict[str, object]:
         from src.application.assurance import analysis as analysis_uc  # noqa: PLC0415
 
@@ -71,6 +75,7 @@ def register_analysis_write_tools(server: FastMCP) -> None:
         result = run_write(lambda: analysis_uc.update_analysis(
             ctx.store, ctx.archive,
             analysis_id=analysis_id, name=name, status=status, tlp=tlp,
+            architecture_anchor_id=architecture_anchor_id,
         ))
         return _analysis_result(result, ctx)
 

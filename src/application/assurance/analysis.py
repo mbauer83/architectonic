@@ -18,7 +18,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
-from src.domain.assurance.assurance_analysis import ANALYSIS_METHODS, ANALYSIS_STATUSES
+from src.domain.assurance.assurance_analysis import (
+    ANALYSIS_METHODS,
+    ANALYSIS_STATUSES,
+    analysis_field_value,
+)
 
 if TYPE_CHECKING:
     from src.application.assurance.ports import AssuranceArchive, ConfidentialAssuranceStore
@@ -145,10 +149,22 @@ def update_analysis(
     name: str | None = None,
     status: str | None = None,
     tlp: str | None = None,
+    architecture_anchor_id: str | None = None,
 ) -> AnalysisResult:
+    """Change what an analysis may change, and fill an architecture anchor it never had.
+
+    The anchor is refused rather than dropped. Every other non-updatable field a caller might send
+    is silently ignored, which is right for a field nothing can ever change — but the anchor *can*
+    be set, so ignoring the request would report success on a write that did not happen, and the
+    caller would have to re-read the record to find out.
+
+    A refused anchor refuses the whole call. One request, one verdict: a partly-applied update
+    leaves a caller unable to say from the refusal what state the analysis is now in.
+    """
     if not store.is_unlocked():
         return AnalysisLocked()
-    if store.get_analysis(analysis_id) is None:
+    record = store.get_analysis(analysis_id)
+    if record is None:
         return AnalysisNotFound(analysis_id)
     if status is not None and status not in ANALYSIS_STATUSES:
         return AnalysisInvalid(
@@ -159,10 +175,33 @@ def update_analysis(
     for key, value in [("name", name), ("status", status), ("tlp", tlp)]:
         if value is not None:
             updates[key] = value
+    if architecture_anchor_id is not None:
+        refusal = _anchor_refusal(record, architecture_anchor_id)
+        if refusal is not None:
+            return refusal
+        if architecture_anchor_id.strip():
+            updates["architecture_anchor_id"] = architecture_anchor_id
     if updates:
         store.update_analysis(analysis_id, **updates)
         archive.append("UPDATE_ANALYSIS", node_id=analysis_id, payload=dict(updates))
     return AnalysisOk(payload=store.get_analysis(analysis_id) or {"analysis_id": analysis_id})
+
+
+def _anchor_refusal(record: dict[str, object], requested: str) -> AnalysisResult | None:
+    """Why this anchor may not be written, or None if it may.
+
+    Restating the anchor an analysis already has is accepted: it asks for the state the analysis is
+    in, so refusing would only punish a caller that sent the whole record back.
+    """
+    current = analysis_field_value(record, "architecture_anchor_id")
+    if not current or current == requested.strip():
+        return None
+    return AnalysisInvalid(
+        "anchor_immutable",
+        f"This analysis is anchored to {current!r}, and an anchor cannot be moved or cleared — "
+        "it scopes the whole aggregate, and every finding under it was reached against that "
+        "subject. An analysis with no anchor may be given one.",
+    )
 
 
 def delete_analysis(
