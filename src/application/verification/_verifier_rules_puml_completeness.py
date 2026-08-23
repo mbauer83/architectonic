@@ -26,6 +26,16 @@ What is checked, per relation the shared parser reads out of the body:
   until then the stored bindings disown what the picture asserts.
 * An **arrow** whose pair has **no** model connection at all is an error (E317) — nothing backs
   it, so a regeneration can only drop it.
+* A relation ``connection-ids-used`` **lists** that the body does not draw is a warning (W307) —
+  the same disagreement read the other way. E309 has refused the entity-side equivalent for some
+  time; the connection side had no rule, so a wrong claim about which views show a connection went
+  unreported. A warning rather than an error because the rule is stated over live model content and
+  a repository that verified clean must not fail over frontmatter nobody has touched.
+
+Where the wrong claim persists rather than heals is what makes W307 worth reporting: a
+regenerating refresh redraws the missing edge, so the claim becomes true again, while a
+``manual-layout`` diagram keeps its body verbatim and unions the references, and a hand-edited file
+never heals at all.
 
 Containment nesting is exempt from E317 (not from E316): the generator nests flow-through
 events and junction components inside a container purely visually, with no model relation —
@@ -39,10 +49,15 @@ element.
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from typing import TYPE_CHECKING, Literal
 
-from src.application.puml_relation_parsing import DeclaredRelation, declared_relations
+from src.application.artifacts.parsing import extract_declared_puml_aliases
+from src.application.puml_relation_parsing import (
+    DeclaredRelation,
+    declared_relations,
+    indirect_nesting_relations,
+)
 from src.application.verification._verifier_rules_puml_relations import (
     _build_alias_lookup,
     _normalize_puml_alias,
@@ -51,6 +66,7 @@ from src.application.verification._verifier_rules_puml_relations import (
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.application.verification.artifact_verifier_types import Issue, Severity, VerificationResult
 from src.domain.artifact_id import stable_conn_id, stable_id
+from src.domain.diagrams.recorded_references import body_contradicts_reference
 from src.domain.modules.catalogs import DiagramTypeCatalog
 
 if TYPE_CHECKING:
@@ -126,6 +142,83 @@ def _is_nesting(relation: DeclaredRelation) -> bool:
     return relation.connection_type is None and relation.arrow == ""
 
 
+def _drawn_connection_ids(
+    content: str,
+    registry: ArtifactRegistry,
+    resolve: Callable[[str], str | None],
+    stereotype_map: Mapping[str, str],
+) -> set[str]:
+    """The stable id of every model connection the body can be read to draw.
+
+    Indirect nesting counts, which is why it is read here and not only in E316's walk: a body nesting
+    C two levels inside A draws ``A --composition--> C`` without stating the pair at any single level,
+    and reading one level would report that correct entry as a wrong claim.
+
+    An **untyped** arrow between a pair joined by more than one connection contributes *all* of them.
+    It names none of them, so treating any as undrawn would read the reader's own silence as evidence
+    against the frontmatter. A typed arrow filters to its type and is therefore decisive — that is
+    what lets the rule report anything at all.
+    """
+    drawn: set[str] = set()
+    for relation in (
+        *declared_relations(content, stereotype_map),
+        *indirect_nesting_relations(content),
+    ):
+        src_id, tgt_id = resolve(relation.source_alias), resolve(relation.target_alias)
+        if src_id is None or tgt_id is None:
+            continue
+        candidates = _model_connections_between(registry, src_id, tgt_id)
+        if relation.connection_type is not None:
+            candidates = [c for c in candidates if c.conn_type == relation.connection_type]
+        drawn |= {stable_conn_id(c.artifact_id) for c in candidates}
+    return drawn
+
+
+def _check_recorded_connections_are_drawn(
+    content: str,
+    fm: dict,
+    registry: ArtifactRegistry,
+    result: VerificationResult,
+    loc: str,
+    *,
+    resolve: Callable[[str], str | None],
+    stereotype_map: Mapping[str, str],
+) -> None:
+    """W307: `connection-ids-used` names a relation the body does not draw.
+
+    The judgement itself is `body_contradicts_reference`, in the domain, because the write path asks
+    the same question when it decides what survives a body replacement. Two spellings of it could
+    disagree about the same picture, and then a reconcile would drop a reference this rule had just
+    said was fine.
+    """
+    raw = fm.get("connection-ids-used")
+    if not isinstance(raw, list) or not raw:
+        return
+    declared_entities = {
+        stable_id(entity_id)
+        for alias in extract_declared_puml_aliases(content)
+        if (entity_id := resolve(alias)) is not None
+    }
+    drawn = _drawn_connection_ids(content, registry, resolve, stereotype_map)
+    reported: set[str] = set()
+    for reference in raw:
+        text = str(reference)
+        if stable_conn_id(text) in reported:
+            continue
+        if not body_contradicts_reference(
+            text, declared_entities=declared_entities, drawn_stable=drawn
+        ):
+            continue
+        reported.add(stable_conn_id(text))
+        result.issues.append(Issue(
+            Severity.WARNING, "W307",
+            f"connection-ids-used lists '{text}' but the diagram body draws no relation between "
+            "the pair, and declares both of its endpoints — so the claim that this view shows the "
+            "connection is wrong, and impact analysis reads it",
+            loc,
+        ))
+
+
 def check_diagram_relation_completeness(
     content: str,
     fm: dict,
@@ -136,7 +229,8 @@ def check_diagram_relation_completeness(
     stereotype_map: Mapping[str, str],
     diagram_type_catalog: DiagramTypeCatalog,
 ) -> None:
-    """Every relation the body expresses is bound; every entity it touches is listed."""
+    """Every relation the body expresses is bound; every entity it touches is listed; and every
+    relation it claims to draw, it draws."""
     if not diagram_body_is_reconcile_owned(fm, diagram_type_catalog):
         return
 
@@ -214,3 +308,7 @@ def check_diagram_relation_completeness(
                 "the drawn relation is not model-backed",
                 loc,
             ))
+
+    _check_recorded_connections_are_drawn(
+        content, fm, registry, result, loc, resolve=resolve, stereotype_map=stereotype_map,
+    )
