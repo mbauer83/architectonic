@@ -6,11 +6,10 @@ from typing import TYPE_CHECKING
 
 from src.application.artifacts.parsing import extract_declared_puml_aliases, normalize_puml_alias
 from src.domain.artifact_id import (
-    MalformedArtifactIdError,
-    parse_connection_id,
     stable_conn_id,
     stable_id,
 )
+from src.domain.diagrams.recorded_references import body_contradicts_reference
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.diagram_type_registry import find_renderer
 from src.infrastructure.rendering.archimate_relation_rendering import strip_suppressed_relation_labels
@@ -226,10 +225,9 @@ def reconcile_recorded_connections(
     reference, so the diagram went on claiming to draw a relation it did not. That corrupts a query
     surface — which views show this connection — and so corrupts impact analysis.
 
-    A stored reference is dropped only where the body positively contradicts it, which is three
-    things at once: both its endpoints are among the entities the body declares, the pair is not one
-    the reader could not decide, and the reference is not among what the body was read to draw.
-    Anything else is kept, because inference that is merely silent about a pair is not evidence.
+    What counts as a contradiction is `body_contradicts_reference`, in the domain, because
+    verification asks the same question of a stored body and the two must not answer it
+    differently. A stored reference is dropped only where the body positively contradicts it.
     """
     kept = _merge_reference_ids(caller_supplied, drawn)
     if stored is None:
@@ -238,39 +236,16 @@ def reconcile_recorded_connections(
     drawn_stable = {stable_conn_id(c) for c in (kept or [])}
     surviving = [
         reference for reference in stored
-        if not _body_contradicts(reference, declared_entities, drawn_stable, undecided_pairs)
+        if not body_contradicts_reference(
+            reference,
+            declared_entities=declared_entities,
+            drawn_stable=drawn_stable,
+            undecided_pairs=undecided_pairs,
+        )
     ]
     return _merge_reference_ids(surviving, kept)
 
 
-def _body_contradicts(
-    reference: str,
-    declared_entities: set[str],
-    drawn_stable: set[str],
-    undecided_pairs: frozenset[frozenset[str]],
-) -> bool:
-    """Whether the body positively says it does not draw this connection."""
-    if stable_conn_id(reference) in drawn_stable:
-        return False
-    endpoints = _reference_endpoints(reference)
-    if endpoints is None or not endpoints <= declared_entities:
-        return False
-    return frozenset(endpoints) not in undecided_pairs
-
-
-def _reference_endpoints(reference: str) -> set[str] | None:
-    """The pair a connection id names, in the form ids are compared in.
-
-    Read through `parse_connection_id`, which owns the `source---target@@type` form and already
-    canonicalises both endpoints. Spelling that separator here instead is what the register of
-    one-reader syntaxes refuses, and the reason is on the record: a plain `find("---")` matched the
-    hyphen inside a slug.
-    """
-    try:
-        key = parse_connection_id(reference)
-    except MalformedArtifactIdError:
-        return None
-    return {key.src_short, key.tgt_short}
 
 
 def diagram_entities_are_authoritative(verifier, diagram_type: str) -> bool:
