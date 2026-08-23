@@ -1,7 +1,7 @@
 ---
 artifact-id: CD@1786912268.s4lI3nq.amp-deployment
 artifact-type: diagram
-name: "AMP \u2014 Deployment"
+name: "AMP \u2014 Deployment (Team-Serving)"
 version: 0.1.0
 status: draft
 keywords:
@@ -19,9 +19,12 @@ entity-ids-used:
 - APP@1786967678.fvvCoDp.artifact-file-store
 - NOD@1712870400.4EFX7z.developer-workstation
 - NOD@1786915451.THkLB12.repository-data-volume
+- NOD@1786915451.l1ntGpZ.backend-state-volume
 connection-ids-used:
 - APP@1777293133.OYEmP1---APP@1776149382.lmO0mp@@archimate-serving
-diagram-entities: {}
+diagram-entities:
+  _excluded_entity_ids:
+  - NOD@1712870400.4EFX7z.developer-workstation
 connections: []
 bindings:
 - id: bind-scope
@@ -30,9 +33,9 @@ bindings:
   correspondence_kind: scoped-by
   target:
     entity_id: APP@1780783671.hkrdtm.architecture-management-platform
-last-updated: '2026-08-23T10:31:23Z'
+last-updated: '2026-08-23T11:06:04Z'
 ---
-@startuml amp---deployment
+@startuml amp---deployment--team-serving
 !include <C4/C4_Deployment>
 left to right direction
 skinparam shadowing false
@@ -41,14 +44,8 @@ skinparam defaultTextAlignment center
 skinparam wrapWidth 240
 skinparam maxMessageSize 240
 
-title AMP — Deployment
+title AMP — Deployment (Team-Serving)
 
-Deployment_Node(NOD_4EFX7z, "Developer Workstation", "Technology Node") {
-  ContainerDb(APP_R_K3YAQ, "Artifact Index Store", "SQLite Runtime")
-  ContainerDb(APP_fvvCoDp, "Artifact File Store", "Git VCS, File System Service")
-  APP_R_K3YAQ -[hidden]right- APP_fvvCoDp
-
-}
 Deployment_Node(NOD_7xNYBF, "Team-Serving Deployment", "Technology Node") {
   Deployment_Node(NOD_Yx71j_C, "App Container", "Technology Node") {
     Container(APP_lmO0mp, "GUI Authoring Tool", "TypeScript, Vue")
@@ -56,8 +53,16 @@ Deployment_Node(NOD_7xNYBF, "Team-Serving Deployment", "Technology Node") {
     APP_lmO0mp -[hidden]right- APP_OYEmP1
 
   }
-  Deployment_Node(NOD_THkLB12, "Repository Data Volume", "Technology Node")
+  Deployment_Node(NOD_THkLB12, "Repository Data Volume", "Technology Node") {
+    ContainerDb(APP_fvvCoDp, "Artifact File Store", "Git VCS, File System Service")
+
+  }
+  Deployment_Node(NOD_l1ntGpZ, "Backend State Volume", "Technology Node") {
+    ContainerDb(APP_R_K3YAQ, "Artifact Index Store", "SQLite Runtime")
+
+  }
   NOD_Yx71j_C -[hidden]right- NOD_THkLB12
+  NOD_THkLB12 -[hidden]right- NOD_l1ntGpZ
 
 }
 
