@@ -155,9 +155,6 @@ SIGNALS_SCHEMA_VERSION = 3
 #: pre-rename store as merely outdated, and then try to migrate a schema that has no upgrade path.
 SNAPSHOT_TABLES_VERSION = 2
 
-_LEGACY_BASELINE_VERSION = 1
-
-
 
 def signals_migration_statements(ddl: str) -> list[str]:
     return [stmt.strip() for stmt in ddl.split(";") if stmt.strip()]
