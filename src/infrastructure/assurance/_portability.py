@@ -26,6 +26,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from src.infrastructure.assurance._archive import append_audit_row
+
 if TYPE_CHECKING:
     from src.infrastructure.assurance._sqlcipher_store import SQLCipherAssuranceStore
 
@@ -49,10 +51,29 @@ _SECTION_TABLES: tuple[tuple[str, str], ...] = (
 # Children before parents on delete; parents before children on insert (FK-safe ordering).
 # Assessments are listed first for the same reason the edges are: a replace that left them behind
 # would orphan judgements against deleted nodes, and a later node reusing an id would inherit them.
+#
+# `audit_log` and `baselines` are absent from both this and `_SECTION_TABLES`, and that is the whole
+# design: the chain belongs to the store rather than to the graph it describes. So an import neither
+# clears the history that is there — which is what makes a re-seed auditable rather than a gap — nor
+# carries another store's hashes in and presents them as this one's.
 _DELETE_ORDER = (
     "fmea_factor_assessments", "assurance_analysis_members", "assurance_edges", "arch_refs",
     "assurance_nodes", "assurance_analyses", "assurance_groups",
 )
+
+#: The archive operation an import appends. Replacing the graph is the largest single mutation the
+#: store has, and it was the one operation the chain did not record.
+_IMPORT_OPERATION = "IMPORT_BUNDLE"
+
+
+def _row_counts(conn: object, tables: tuple[str, ...]) -> dict[str, int]:
+    """How many rows each table holds. Read before a replace deletes them, so the archive entry can
+    say what was destroyed rather than only that something was."""
+    counts: dict[str, int] = {}
+    for table in tables:
+        row = conn.execute(f"SELECT COUNT(*) AS n FROM {table}").fetchone()  # type: ignore[attr-defined]
+        counts[table] = int(row["n"])
+    return counts
 
 
 def export_bundle(store: SQLCipherAssuranceStore) -> dict[str, list[dict[str, object]]]:
@@ -103,15 +124,27 @@ def import_bundle(
     bundle: dict[str, list[dict[str, object]]],
     *,
     replace: bool = False,
+    source: str = "",
 ) -> dict[str, int]:
     """Insert an exported bundle into *store*, preserving ids. Requires an unlocked store.
 
     With ``replace=True`` the existing graph is cleared first (children before parents) so
     a re-seed is idempotent rather than additive.
+
+    *source* names where the bundle came from, for the archive entry. It is recorded rather than
+    used, and an empty one is honest about a caller that has no path to give.
+
+    **The import records itself**, in the same transaction as the rows it writes. Replacing the graph
+    deletes every node, edge, arch ref, membership and factor assessment, and until this was appended
+    the chain said none of that had happened: the archive read *analysis created, nodes assigned
+    provenance* and then held nothing to explain why the store showed neither. Effects with no
+    recorded cause is what a tamper-evident log exists to make impossible, so the omission was in the
+    one operation that most needed the entry.
     """
     if not store.is_unlocked():
         raise RuntimeError("Store must be unlocked before import.")
     conn = store.unlocked_connection()
+    cleared = _row_counts(conn, _DELETE_ORDER) if replace else {}
     if replace:
         for table in _DELETE_ORDER:
             conn.execute(f"DELETE FROM {table}")
@@ -119,5 +152,17 @@ def import_bundle(
         section: _insert_rows(conn, table, table_columns(conn, table), bundle.get(section, []))
         for section, table in _SECTION_TABLES
     }
+    # Appended, not committed, by the chained writer — so the entry and the rows it describes land
+    # together or not at all. A separate commit could leave a recorded import that did not happen.
+    append_audit_row(
+        conn,
+        _IMPORT_OPERATION,
+        payload={
+            "source": source,
+            "replace": replace,
+            "cleared": {table: n for table, n in cleared.items() if n},
+            "inserted": {section: n for section, n in counts.items() if n},
+        },
+    )
     conn.commit()  # type: ignore[attr-defined]
     return counts

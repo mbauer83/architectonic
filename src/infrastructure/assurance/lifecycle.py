@@ -240,11 +240,16 @@ def export_store(store: SQLCipherAssuranceStore, output_path: Path) -> dict[str,
 
 
 def import_store(store: SQLCipherAssuranceStore, input_path: Path, *, replace: bool = False) -> dict[str, object]:
-    """Restore an exported JSON bundle into *store*, preserving ids (inverse of export_store)."""
+    """Restore an exported JSON bundle into *store*, preserving ids (inverse of export_store).
+
+    The bundle's file name reaches the archive entry the import appends. The name rather than the
+    path: the entry is what a reader outside this machine consults, and an absolute path there names
+    somebody's home directory to everyone who reads the log.
+    """
     from src.infrastructure.assurance._portability import import_bundle  # noqa: PLC0415
 
     bundle = json.loads(input_path.read_text())
-    counts = import_bundle(store, bundle, replace=replace)
+    counts = import_bundle(store, bundle, replace=replace, source=input_path.name)
     logger.info("Assurance store imported from %s: %s", input_path, counts)
     return {"status": "imported", "input_path": str(input_path), "counts": counts}
 
