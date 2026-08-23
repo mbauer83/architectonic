@@ -121,6 +121,16 @@ def init_store(db_path: Path, *, force: bool = False) -> dict[str, object]:
     # there is no moment at which the path holds a file no key matches.
     os.replace(staging, db_path)
 
+    # The replaced store's write-ahead log and shared-memory file, which the move does not carry with
+    # it. They belong to the database that has just stopped being reachable, and leaving them beside
+    # the new one is not untidiness: SQLite treats `<db>-wal` as this database's journal, so the fresh
+    # store either fails to open — `database disk image is malformed`, because the log is encrypted
+    # under the key the old store had — or, where no cipher hides it, silently comes up holding the
+    # previous store's contents instead of its own. Both were reproduced. Removed after the backup
+    # above, so what the log still held is preserved there rather than discarded with it.
+    for sidecar in _wal_sidecars(db_path):
+        sidecar.unlink(missing_ok=True)
+
     # Scoped to this db_path, so initialising a store here cannot reach the key of a store anywhere
     # else — including the recovery key, which is written in the same breath and so was once destroyed
     # by the very operation it exists to insure against.
@@ -153,14 +163,36 @@ def _add_to_gitignore(directory: Path) -> None:
 # ── backup ────────────────────────────────────────────────────────────────────
 
 
+def _wal_sidecars(db_path: Path) -> tuple[Path, Path]:
+    """This database's write-ahead log and shared-memory file, named as SQLite names them."""
+    return (
+        db_path.with_name(db_path.name + "-wal"),
+        db_path.with_name(db_path.name + "-shm"),
+    )
+
+
 def backup_store(db_path: Path, *, backup_path: Path | None = None) -> dict[str, object]:
-    """Copy the encrypted DB file to a backup location."""
+    """Copy the encrypted DB to a backup location, with the write-ahead log it needs to be complete.
+
+    The log is the point. These stores run in WAL mode, so a commit lands in `<db>-wal` and reaches
+    the main file only at a checkpoint — and copying the main file alone therefore takes a snapshot
+    from before every un-checkpointed commit. Reproduced with a table created and a row committed
+    behind an open connection: the copy did not merely lack the row, it **did not contain the
+    table**. That made this the emptiest possible backup at the moment it is most needed, since this
+    is what `init --force` leaves behind for someone who reinitialised a store by mistake.
+
+    `-shm` is deliberately not copied: it is scratch state SQLite rebuilds on open, and a stale one
+    is a liability rather than a record.
+    """
     if not db_path.exists():
         raise FileNotFoundError(f"No store at {db_path}. Run `arch-assurance init` first.")
     if backup_path is None:
         ts = utc_now_compact()
         backup_path = db_path.parent / f"store.backup.{ts}.db"
     shutil.copy2(db_path, backup_path)
+    wal, _shm = _wal_sidecars(db_path)
+    if wal.exists():
+        shutil.copy2(wal, backup_path.with_name(backup_path.name + "-wal"))
     logger.info("Assurance store backed up to %s", backup_path)
     return {"status": "backed_up", "backup_path": str(backup_path)}
 

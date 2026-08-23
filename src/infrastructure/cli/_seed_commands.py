@@ -19,9 +19,11 @@ cwd-relative default only worked when the command was run from one particular pl
 and gave a second engagement nowhere to put its own seed.
 
 ``signal_anchors`` is AUTHORED seed metadata, not store state: the store never
-holds it, ``import`` ignores it, and ``arch-assurance export`` does not emit it.
-Regenerating a seed bundle by exporting a live store therefore drops the block,
-and it must be re-added by hand.
+holds it and ``import`` ignores it. ``arch-assurance export`` does not *produce*
+it either, but it does carry it over from an existing target bundle
+(``lifecycle._AUTHORED_BUNDLE_KEYS``), so regenerating a seed by exporting a live
+store over the old one preserves the block. Exporting to a fresh path does not,
+and there the anchors have to be re-added by hand.
 """
 
 from __future__ import annotations
