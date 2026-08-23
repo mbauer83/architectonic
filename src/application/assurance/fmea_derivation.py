@@ -26,7 +26,12 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 
 from src.application.verification._assurance_rule_support import attributes_of
-from src.domain.assurance.fmea_factors import DETECTABILITY_SCALE, SEVERITY_SCALE, compute_basis_digest
+from src.domain.assurance.fmea_factors import (
+    DETECTABILITY_SCALE,
+    SEVERITY_SCALE,
+    UNGROUNDED_BASIS,
+    compute_basis_digest,
+)
 from src.domain.viewpoints.viewpoint_derived_value_reduction import reduce_values
 
 LEADS_TO = "leads-to"
@@ -186,12 +191,22 @@ def derive_factors(
     edges: Sequence[Mapping[str, object]],
     evidenced_ref_ids: frozenset[str] = frozenset(),
     sealed_evidence_ids: frozenset[str] = frozenset(),
-    occurrence_basis: Sequence[str] = (),
+    occurrence_basis: Sequence[str] | None = (),
 ) -> DerivedFactors:
     """Both derived factors for one failure mode, with a basis digest per factor.
 
     `occurrence_basis` is what an occurrence rationale cited — occurrence has no derived value, but
     it does have a basis, so a judgement about it retires when what it cited changes.
+
+    **`None` is not the empty sequence.** Empty means the architecture graph was read and cites
+    nothing about this element, which is a fact a judgement may be held against. `None` means the
+    graph could not be read at all, and the digest is then `UNGROUNDED_BASIS` rather than the hash of
+    an empty list — a value no judgement may be recorded against, because it would be superseded the
+    moment anyone with the model looked. Stated as two types rather than a flag, since it is a
+    property of the input and not a mode.
+
+    Severity and detectability are unaffected either way: both derive from the assurance graph, which
+    is present whatever the architecture model is doing.
     """
     graph = _Graph(nodes, edges)
     severity = derive_severity(failure_mode_id, graph)
@@ -206,6 +221,9 @@ def derive_factors(
         digests={
             "severity": compute_basis_digest(list(severity.basis)),
             "detectability": compute_basis_digest(list(detectability.basis)),
-            "occurrence": compute_basis_digest(list(occurrence_basis)),
+            "occurrence": (
+                UNGROUNDED_BASIS if occurrence_basis is None
+                else compute_basis_digest(list(occurrence_basis))
+            ),
         },
     )

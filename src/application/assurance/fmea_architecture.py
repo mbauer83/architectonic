@@ -76,6 +76,13 @@ class ArchitectureBasis:
     edges: tuple[TypedEdge, ...] = ()
     connections: tuple[Mapping[str, object], ...] = ()
     entities: Mapping[str, Mapping[str, object]] = field(default_factory=dict)
+    assembled: bool = False
+    """Whether the graph was read at all, as against read and found to say nothing.
+
+    The difference decides whether a judgement may be recorded: a basis that cites no facts about an
+    element is something to hold a judgement against, and a basis nobody could assemble is not. Both
+    are otherwise the same empty object, which is how eleven judgements came to be recorded against
+    the second and retire the instant anyone read them with the model in hand."""
     analysable_element_ids: frozenset[str] = frozenset()
     """Elements a failure mode is a sensible question about — see
     `fmea_analysable_elements.can_bear_failure_modes`. Empty when no entity-type source was given,
@@ -146,6 +153,7 @@ def read_architecture_basis(
         edges=typed_edges(connections, dict(connection_types.all_connection_types())),
         connections=connections,
         entities=entities,
+        assembled=True,
         analysable_element_ids=_analysable_ids(entities, entity_types),
     )
 

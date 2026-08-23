@@ -47,13 +47,19 @@ def occurrence_basis(
     *,
     basis: ArchitectureBasis,
     security: Mapping[str, ElementSecurityBasis],
-) -> tuple[str, ...]:
-    """What a judgement about this failure mode's occurrence would have cited.
+) -> tuple[str, ...] | None:
+    """What a judgement about this failure mode's occurrence would have cited, or None if unknowable.
 
     Recomputed here rather than stored, so it is by construction the *current* picture. A recorded
     judgement carries the digest of the picture it was made against; comparing the two is what
     tells a reader the judgement has stopped applying.
+
+    `None` where the basis was never assembled, which is not the same as assembled and citing
+    nothing: the first cannot ground a judgement at all, and returning an empty tuple for it is how
+    eleven judgements came to be recorded against a hash that retired them on sight.
     """
+    if not basis.assembled:
+        return None
     element_security = security.get(element_id, ElementSecurityBasis())
     return occurrence_evidence(
         element_id,

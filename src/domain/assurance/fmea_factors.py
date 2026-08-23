@@ -161,6 +161,28 @@ def validate_factor_assessment(
     return errors
 
 
+#: What stands in place of a digest when the picture a judgement would be made against could not be
+#: assembled at all — the architecture model unreachable from the process, rather than reachable and
+#: saying nothing about this element.
+#:
+#: Deliberately not a hash. `compute_basis_digest([])` is the legitimate digest of an element that
+#: cites no facts in a basis that *was* assembled, so a marker equal to it would refuse a correct
+#: judgement about an isolated element and admit an ungrounded one. Every real digest is 32 hex
+#: characters; this is a word.
+UNGROUNDED_BASIS = "ungrounded"
+
+
+def is_grounded(basis_digest: str) -> bool:
+    """Whether this digest names a picture a judgement can be held against.
+
+    Two ways it does not, and they fail in opposite directions. An absent digest leaves nothing to
+    retire the judgement, so it would apply forever. `UNGROUNDED_BASIS` says the picture was never
+    assembled, so the judgement is born superseded and applies never. Both are refused at the write.
+    """
+    stripped = basis_digest.strip()
+    return bool(stripped) and stripped != UNGROUNDED_BASIS
+
+
 def compute_basis_digest(parts: Sequence[object]) -> str:
     """A stable digest of the derived inputs a judgement was made against.
 

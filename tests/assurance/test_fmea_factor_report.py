@@ -64,12 +64,26 @@ def _failure_mode(store: Any, *, with_hazard: bool = True) -> str:
     return node_id
 
 
-def _report(store: Any, node_id: str) -> dict[str, object]:
+def _report(store: Any, node_id: str, *, assembled: bool = True) -> dict[str, object]:
+    """The report as a caller with the architecture model in hand sees it.
+
+    `assembled=True` rather than the default empty basis, and the distinction is the point: an
+    assembled basis that cites nothing about this element publishes a digest a judgement can be held
+    against, while a basis nobody could read publishes `UNGROUNDED_BASIS` and the write refuses it.
+    Staged the second way, every test below would have been recording judgements that could never
+    apply — which is the state `factor_report`'s own docstring calls undecidable for good.
+    """
+    from src.application.assurance.fmea_architecture import ArchitectureBasis
+
     policy = AssuranceExposurePolicy("TLP:RED", True)
     visible, _ = policy.filter_nodes(store.list_nodes())
-    found = factor_report(node_id, store=store, policy=policy, nodes=visible)
+    found = factor_report(
+        node_id, store=store, policy=policy, nodes=visible,
+        basis=ArchitectureBasis(assembled=assembled),
+    )
     assert found is not None
     return found
+
 
 
 class TestTheReportCarriesWhatAJudgementNeeds:
@@ -204,3 +218,52 @@ class TestAnUnboundFailureModeHasNoRow:
 class _NullArchive:
     def append(self, *_args: object, **_kwargs: object) -> None:
         return None
+
+
+class TestAReportWithNoArchitectureModel:
+    """The state a bridge run standalone is in, and what it must not offer."""
+
+    def test_occurrence_publishes_the_ungrounded_marker(self, store: Any) -> None:
+        from src.domain.assurance.fmea_factors import UNGROUNDED_BASIS
+
+        factors = _report(store, _failure_mode(store), assembled=False)["factors"]
+        assert isinstance(factors, dict)
+
+        assert factors["occurrence"]["basis_digest"] == UNGROUNDED_BASIS
+
+    def test_the_store_derived_factors_still_publish_real_digests(self, store: Any) -> None:
+        """They derive from the assurance graph, which is present either way — so a severity
+        correction is still recordable on a standalone bridge."""
+        from src.domain.assurance.fmea_factors import is_grounded
+
+        factors = _report(store, _failure_mode(store), assembled=False)["factors"]
+        assert isinstance(factors, dict)
+
+        assert is_grounded(str(factors["severity"]["basis_digest"]))
+        assert is_grounded(str(factors["detectability"]["basis_digest"]))
+
+    def test_recording_an_occurrence_against_it_is_refused(self, store: Any) -> None:
+        """Eleven judgements in the shipped store were recorded in this state and none ever
+        applied."""
+        from src.application.assurance.fmea_factors import (
+            FactorInvalid,
+            RecordFactorRequest,
+            record_factor_assessment,
+        )
+
+        node_id = _failure_mode(store)
+        factors = _report(store, node_id, assembled=False)["factors"]
+        assert isinstance(factors, dict)
+
+        result = record_factor_assessment(
+            RecordFactorRequest(
+                node_id=node_id, factor="occurrence", value="unlikely",
+                justification="one report in two years of operation", author="analyst",
+                basis_digest=str(factors["occurrence"]["basis_digest"]),
+            ),
+            store=store,
+            archive=_NullArchive(),  # type: ignore[arg-type]
+        )
+
+        assert isinstance(result, FactorInvalid)
+        assert [e.field for e in result.errors] == ["basis_digest"]

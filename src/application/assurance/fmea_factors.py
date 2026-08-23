@@ -17,7 +17,11 @@ from dataclasses import dataclass
 
 from src.application.assurance.legacy_invalid import PERMITTED_OPERATION, is_legacy_invalid
 from src.application.assurance.ports import AssuranceArchive, ConfidentialAssuranceStore
-from src.domain.assurance.fmea_factors import FactorValidationError, validate_factor_assessment
+from src.domain.assurance.fmea_factors import (
+    FactorValidationError,
+    is_grounded,
+    validate_factor_assessment,
+)
 
 FAILURE_MODE_NODE_TYPE = "failure-mode"
 
@@ -82,13 +86,19 @@ def record_factor_assessment(
     errors = list(validate_factor_assessment(
         request.factor, request.value, request.justification, request.author,
     ))
-    if not request.basis_digest.strip():
-        # Without a basis there is nothing to say when the judgement stops applying, so it would
-        # apply forever — which is the behaviour keying it to a basis exists to prevent.
+    if not is_grounded(request.basis_digest):
+        # Two ways to have no basis, failing in opposite directions. Absent leaves nothing to retire
+        # the judgement, so it would apply forever — the behaviour keying it to a basis prevents.
+        # `UNGROUNDED_BASIS` says the picture was never assembled, so the judgement is superseded the
+        # moment a reader with the model looks at it, and applies never. Eleven were recorded that
+        # way before the report distinguished the two.
         errors.append(FactorValidationError(
             field="basis_digest",
-            message="a basis digest is required: it records the picture of the model this "
-                    "judgement was made against, and is what retires it when the model moves",
+            message="a basis digest is required and must name a picture that was actually read: it "
+                    "records the model this judgement was made against, and is what retires the "
+                    "judgement when that model moves. A report assembled without the architecture "
+                    "model offers no digest to record against — a judgement filed there could never "
+                    "apply",
         ))
     if errors:
         return FactorInvalid(errors=tuple(errors))

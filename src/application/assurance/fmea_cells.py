@@ -149,7 +149,10 @@ def cell_for(
         )
     evidence = _occurrence_evidence_for(element_id, node, basis=basis, security=security)
     derived = derive_factors(
-        node_id, nodes=nodes, edges=edges, occurrence_basis=evidence.basis,
+        # None, not the assembled-and-empty tuple, where the architecture graph could not be read:
+        # a cell must not offer a digest that would retire the judgement recorded against it.
+        node_id, nodes=nodes, edges=edges,
+        occurrence_basis=evidence.basis if basis.assembled else None,
     )
     rows = list(assessments.get(node_id, ()))
     derived_values = {
