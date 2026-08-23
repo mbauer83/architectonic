@@ -35,38 +35,34 @@ never be given one, and a deployment host holding nothing was drawn as an applic
   where the new body positively contradicts them: a relation the reader cannot name unambiguously,
   or a pair the body does not mention, keeps what it had.
 - **An `artifact` may be assigned to any technology host.** Assignment is ArchiMate's deployment
-  relation — a node is assigned to an artifact to say the artifact is deployed on it — and the
-  relationship table permitted it into an `artifact` from nothing at all. The only hosting path was
-  `technology-node --aggregation--> artifact`, so a model saying its containers run on system
-  software, a device, equipment or a facility could not say it, and a deployment view over such a
-  model drew no containers. Assignment is now permitted from every technology-internal
-  active-structure element and is the relation to write; the aggregation path is still read, so
-  existing views keep working.
+  relation, and the relationship table permitted it into an `artifact` from nothing at all: the only
+  hosting path was `technology-node --aggregation--> artifact`, so a model whose containers run on
+  system software, a device, equipment or a facility could not say so, and a deployment view over it
+  drew no containers. Assignment is now permitted from every technology-internal active-structure
+  element and is the relation to write; the aggregation path is still read, so existing views keep
+  working.
 - **Replacing the assurance graph is recorded in the audit archive.** `import` and `seed` delete
-  every node, edge, architecture reference, membership and factor assessment in the store, and
-  appended nothing to the hash-chained archive. The archive then showed an analysis created and its
-  nodes attributed, with nothing to explain why the store held neither — effects with no recorded
-  cause, which is what a tamper-evident log exists to rule out. One entry now lands in the same
-  transaction as the rows it describes, naming the bundle, whether the graph was replaced, what the
-  replace destroyed and what was written. The chain itself is never carried in or cleared by an
-  import: it belongs to the store, not to the graph it describes.
-- **An analysis with no architecture anchor can be given one.** `architecture_anchor_id` is optional
-  at creation and immutable afterwards, and together those left no route — an analysis created
-  without one could never acquire one, and recreating it was barred too, because provenance is
-  immutable and its nodes cannot be re-filed under a replacement. Filling an empty anchor is now
-  permitted; moving or clearing one is refused (`anchor_immutable`, HTTP 409), because that rewrites
+  every node, edge, architecture reference, membership and factor assessment, and appended nothing
+  to the hash-chained archive — leaving effects with no recorded cause, which is what a
+  tamper-evident log exists to rule out. One entry now lands in the same transaction as the rows it
+  describes, naming the bundle, whether the graph was replaced, what the replace destroyed and what
+  was written. The chain is never carried in or cleared by an import: it belongs to the store, not
+  to the graph it describes.
+- **An analysis with no architecture anchor can be given one.** `architecture_anchor_id` was
+  optional at creation and immutable afterwards, which together left no route: recreating the
+  analysis was barred too, because provenance is immutable and its nodes cannot be re-filed.
+  Filling an empty anchor is now permitted; moving or clearing one is refused
+  (`anchor_immutable`, HTTP 409), because that rewrites
   what the analysis was scoped to and every finding under it was reached against the old subject.
 - **A relation `connection-ids-used` lists but the body does not draw is reported (W307).** The
   entity side has refused this since E309; the connection side had no rule, so a wrong answer to
-  *which views show this connection* went unreported. A regenerating refresh redraws the missing
-  edge, but a `manual-layout` diagram keeps its body and a hand-edited file never heals, so the
-  claim stays wrong. Reported only where the body positively contradicts it: both endpoints
-  declared, and no relation drawn between them — a relation the reader cannot name unambiguously
-  keeps what it had.
+  *which views show this connection* went unreported — and on a `manual-layout` or hand-edited
+  diagram it never heals. Reported only where the body positively contradicts it: both endpoints
+  declared, and no relation drawn between them.
 - **A deployment host is drawn as a node whether or not anything is drawn inside it.** The C4 macro
-  table had no row for a node, so a host holding nothing fell through to the generic container shape:
-  a storage volume or a machine rendered as a deployed application carrying the node's technology as
-  its own. A host that holds something was never affected, which is why it went unseen.
+  table had no row for a node, so a host holding nothing fell through to the generic container
+  shape — a volume or a machine rendered as a deployed application. A host holding something never
+  reached that table, which is why it went unseen.
 - **A constraint answered by argument is no longer asked for evidence of a control.** An
   `alarp-justified` constraint states that residual exposure remains and is argued to be as low as
   reasonably practicable — there is no control whose working could be evidenced, so the warning asked
