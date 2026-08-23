@@ -1,5 +1,5 @@
 {
-  "export_time": "2026-08-23T09:23:09Z",
+  "export_time": "2026-08-23T10:45:49Z",
   "signal_anchors": [
     {
       "anchor_entity_id": "APP@1777293133.OYEmP1",
@@ -1188,6 +1188,63 @@
       "content_text": "A deployment must be able to state which agents currently hold an assurance bridge, so that a grant made for a context that has ended can be found and removed. Without that, neither unsafe control action on the grant is detectable: a below-clearance grant and a stale grant look identical to a deployment that cannot list its grants.\n\nDeliberately a constraint on the deployment rather than on the bridge. The bridge is thin plumbing by design, and giving it a view of its own grant would put an access decision inside the component whose whole purpose is not to make one.\n\nDisposition is alarp-justified rather than controlled-with-evidence, and the gap is stated rather than papered over: the platform holds no record of its grants, so what limits this today is that a grant is written into an agent's own configuration by a person who can read it back. That is an argument, not a control, and it is what makes this the weakest link in the assurance access path.",
       "created_at": "2026-08-23T07:59:27Z",
       "updated_at": "2026-08-23T08:01:48Z"
+    },
+    {
+      "node_id": "FMD@1787481606.51hq.11ade8",
+      "node_type": "failure-mode",
+      "name": "Read bridge serves a caller that is not the agent its grant was made to",
+      "status": "draft",
+      "tlp": "TLP:GREEN",
+      "concern_class": "security",
+      "disposition": null,
+      "uca_type": null,
+      "failure_type": "unintended-function",
+      "mode": "hypothesized",
+      "binding_status": null,
+      "node_role": null,
+      "analysis_id": "FMEA@1785064654.x4kk.27b68b",
+      "attributes_json": "{}",
+      "content_text": "The bridge's process model is that whatever writes to its stdio channel is the agent the grant names. It holds no clearance of its own, sees no TLP, and re-checks nothing: its authority is conferred entirely by having been configured. So any process on the host able to reach that channel inherits the grant, and the backend behind it sees a well-formed request from an authorized bridge.\n\nUnintended rather than absent or degraded, and that is what makes it the credible one: the bridge performs its function exactly as designed, for a principal nobody granted it to. Nothing malfunctions, so nothing reports.\n\nDistinct from the grant being made wrongly (a control action) \u2014 here the grant is correct and the caller is not.",
+      "created_at": "2026-08-23T10:40:06Z",
+      "updated_at": "2026-08-23T10:40:06Z"
+    },
+    {
+      "node_id": "FMD@1787481698.rn9l.89361c",
+      "node_type": "failure-mode",
+      "name": "Write bridge returns assurance content to a caller that is not the agent its grant was made to",
+      "status": "draft",
+      "tlp": "TLP:GREEN",
+      "concern_class": "security",
+      "disposition": null,
+      "uca_type": null,
+      "failure_type": "unintended-function",
+      "mode": "hypothesized",
+      "binding_status": null,
+      "node_role": null,
+      "analysis_id": "FMEA@1785064654.x4kk.27b68b",
+      "attributes_json": "{}",
+      "content_text": "The same failure as the read bridge's, on the component that carries the wider authority \u2014 which is why it is a row of its own rather than a note on that one. A failure mode belongs to a component, and these are two components, granted independently: an agent can hold this one without the other.\n\nThe write operations return content, not only outcomes. An edit answers with the node it wrote and a create answers with the verification findings against it, so a caller that reaches this bridge's stdio channel reads assurance material as well as authoring it \u2014 and can then seal a baseline over what it authored.\n\nUnintended rather than degraded: the bridge does exactly what it was configured to do, for a principal nobody configured it for.",
+      "created_at": "2026-08-23T10:41:38Z",
+      "updated_at": "2026-08-23T10:41:38Z"
+    },
+    {
+      "node_id": "FMD@1787481722.jplj.3986d5",
+      "node_type": "failure-mode",
+      "name": "Only one of an agent's two bridge grants is removed",
+      "status": "draft",
+      "tlp": "TLP:GREEN",
+      "concern_class": "security",
+      "disposition": null,
+      "uca_type": null,
+      "failure_type": "partial-function",
+      "mode": "hypothesized",
+      "binding_status": null,
+      "node_role": null,
+      "analysis_id": "FMEA@1785064654.x4kk.27b68b",
+      "attributes_json": "{}",
+      "content_text": "Read and write are separately grantable, so revoking an agent's assurance access is two acts on two configuration entries. Performing one of them leaves the agent holding the other.\n\nNot a restatement of the control actions already analysed. Those ask whether the grant should have been made, and whether it was held too long; this asks what happens when the removal is performed and is incomplete \u2014 a distinct failure with a distinct consequence, and one this design creates by making the two grants independent.\n\nThe dangerous asymmetry is the one that looks finished. Removing the read bridge and leaving the write bridge leaves an agent that can author, edit and seal assurance content while its own reads fail \u2014 and failing reads are what an operator would take as evidence that access was revoked. The half that remains is both the more consequential and the less visible.\n\nPartial rather than absent: the revocation was attempted and did something. A revocation nobody attempted is the control action already recorded.",
+      "created_at": "2026-08-23T10:42:02Z",
+      "updated_at": "2026-08-23T10:42:02Z"
     }
   ],
   "edges": [
@@ -1974,6 +2031,30 @@
       "conn_type": "responsible-for",
       "attributes_json": "{}",
       "created_at": "2026-08-23T08:01:40Z"
+    },
+    {
+      "edge_id": "EDG@de75c97c26c0",
+      "source_id": "FMD@1787481606.51hq.11ade8",
+      "target_id": "HAZ@1781181601.2lta.003f49",
+      "conn_type": "leads-to",
+      "attributes_json": "{}",
+      "created_at": "2026-08-23T10:40:19Z"
+    },
+    {
+      "edge_id": "EDG@b572f71acb6f",
+      "source_id": "FMD@1787481698.rn9l.89361c",
+      "target_id": "HAZ@1781181601.2lta.003f49",
+      "conn_type": "leads-to",
+      "attributes_json": "{}",
+      "created_at": "2026-08-23T10:41:50Z"
+    },
+    {
+      "edge_id": "EDG@573de4b8fd24",
+      "source_id": "FMD@1787481722.jplj.3986d5",
+      "target_id": "HAZ@1781181601.2lta.003f49",
+      "conn_type": "leads-to",
+      "attributes_json": "{}",
+      "created_at": "2026-08-23T10:42:16Z"
     }
   ],
   "arch_refs": [
@@ -2186,6 +2267,24 @@
       "arch_artifact_id": "APP@1780783711.js9xHR",
       "ref_type": "binds-to",
       "resolved_at": null
+    },
+    {
+      "assurance_node_id": "FMD@1787481606.51hq.11ade8",
+      "arch_artifact_id": "APP@1780783710.iu_kKL",
+      "ref_type": "binds-to",
+      "resolved_at": null
+    },
+    {
+      "assurance_node_id": "FMD@1787481698.rn9l.89361c",
+      "arch_artifact_id": "APP@1780783711.js9xHR",
+      "ref_type": "binds-to",
+      "resolved_at": null
+    },
+    {
+      "assurance_node_id": "FMD@1787481722.jplj.3986d5",
+      "arch_artifact_id": "ACT@1712870400.OLWiNc",
+      "ref_type": "binds-to",
+      "resolved_at": null
     }
   ],
   "factor_assessments": [
@@ -2200,6 +2299,16 @@
       "created_at": "2026-07-26T11:39:00Z"
     },
     {
+      "node_id": "FMD@1785064663.l74s.c40963",
+      "factor": "occurrence",
+      "basis_digest": "c61da075655510609e54d701ffdb7259",
+      "revision": 1,
+      "value": "unlikely",
+      "justification": "The exposure filter is applied by one shared policy object rather than re-implemented per endpoint, and its suites assert both withholding and the withheld count on every read path. A new path that assembled before filtering would have to bypass that object deliberately. Not rare: the aggregate-before-filter shape is easy to write by accident, and this analysis was itself prompted by finding a per-entity lens that computed the whole matrix before scoping. [Re-grounded 2026-08-23: the original revision was recorded against an empty basis \u2014 the architecture model was not reachable from the recording process \u2014 so it never applied. This revision carries the same value and the rationale above unchanged, against the assembled model. Re-recorded mechanically, not re-reviewed.]",
+      "author": "Michael Bauer",
+      "created_at": "2026-08-23T10:37:47Z"
+    },
+    {
       "node_id": "FMD@1785065977.qwwh.63503b",
       "factor": "occurrence",
       "basis_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5",
@@ -2208,6 +2317,16 @@
       "justification": "Revocation closes the store in the running process rather than at its next start, and the activation suite asserts exactly that against an already-open store. Reaching this failure needs a regression in connection disposal, not an oversight in the revocation path. Not rare, because the disposal has to reach every thread's connection and a pool gives a missed one somewhere to hide \u2014 a test that opens one connection and checks it closed would not see it.",
       "author": "Michael Bauer",
       "created_at": "2026-07-26T11:47:00Z"
+    },
+    {
+      "node_id": "FMD@1785065977.qwwh.63503b",
+      "factor": "occurrence",
+      "basis_digest": "c61da075655510609e54d701ffdb7259",
+      "revision": 1,
+      "value": "unlikely",
+      "justification": "Revocation closes the store in the running process rather than at its next start, and the activation suite asserts exactly that against an already-open store. Reaching this failure needs a regression in connection disposal, not an oversight in the revocation path. Not rare, because the disposal has to reach every thread's connection and a pool gives a missed one somewhere to hide \u2014 a test that opens one connection and checks it closed would not see it. [Re-grounded 2026-08-23: the original revision was recorded against an empty basis \u2014 the architecture model was not reachable from the recording process \u2014 so it never applied. This revision carries the same value and the rationale above unchanged, against the assembled model. Re-recorded mechanically, not re-reviewed.]",
+      "author": "Michael Bauer",
+      "created_at": "2026-08-23T10:37:47Z"
     },
     {
       "node_id": "FMD@1785066017.86nq.f20ce8",
@@ -2220,6 +2339,16 @@
       "created_at": "2026-07-26T11:46:48Z"
     },
     {
+      "node_id": "FMD@1785066017.86nq.f20ce8",
+      "factor": "occurrence",
+      "basis_digest": "c61da075655510609e54d701ffdb7259",
+      "revision": 1,
+      "value": "possible",
+      "justification": "This has occurred: the STPA analysis that produced the hazard confirmed the include expansion empirically with a canary file, and the boundary validator exists because of it. Rated possible rather than lower because recurrence needs no new vulnerability, only a new write path that reaches the renderer without calling the validator \u2014 and diagram write paths are added routinely, so the requirement has to be remembered each time rather than being structurally unavoidable. The validator is one call, not a type the compiler enforces. [Re-grounded 2026-08-23: the original revision was recorded against an empty basis \u2014 the architecture model was not reachable from the recording process \u2014 so it never applied. This revision carries the same value and the rationale above unchanged, against the assembled model. Re-recorded mechanically, not re-reviewed.]",
+      "author": "Michael Bauer",
+      "created_at": "2026-08-23T10:37:47Z"
+    },
+    {
       "node_id": "FMD@1785066093.vq7k.2f8d01",
       "factor": "occurrence",
       "basis_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5",
@@ -2228,6 +2357,16 @@
       "justification": "Reaching this now needs two independent things to go wrong: the SQLCipher wheel would have to ship a file-backed temp store, and the suite that reads the pragma back off a live connection would have to miss it \u2014 which is the one case it was written for. Rare rather than unlikely because the pragma is applied on every connection open rather than at a single initialisation point, so there is no per-thread or per-reconnect path that skips it. Before the pragma existed the honest rating would have been higher, not because anything was leaking but because nothing would have reported it if the dependency changed.",
       "author": "Michael Bauer",
       "created_at": "2026-07-26T12:10:04Z"
+    },
+    {
+      "node_id": "FMD@1785066093.vq7k.2f8d01",
+      "factor": "occurrence",
+      "basis_digest": "c25c3b9d6ef0a13ae0f7c6109692e9e6",
+      "revision": 1,
+      "value": "rare",
+      "justification": "Reaching this now needs two independent things to go wrong: the SQLCipher wheel would have to ship a file-backed temp store, and the suite that reads the pragma back off a live connection would have to miss it \u2014 which is the one case it was written for. Rare rather than unlikely because the pragma is applied on every connection open rather than at a single initialisation point, so there is no per-thread or per-reconnect path that skips it. Before the pragma existed the honest rating would have been higher, not because anything was leaking but because nothing would have reported it if the dependency changed. [Re-grounded 2026-08-23: the original revision was recorded against an empty basis \u2014 the architecture model was not reachable from the recording process \u2014 so it never applied. This revision carries the same value and the rationale above unchanged, against the assembled model. Re-recorded mechanically, not re-reviewed.]",
+      "author": "Michael Bauer",
+      "created_at": "2026-08-23T10:37:47Z"
     },
     {
       "node_id": "FMD@1785066121.wpiv.488ae8",
@@ -2240,6 +2379,16 @@
       "created_at": "2026-07-26T12:10:16Z"
     },
     {
+      "node_id": "FMD@1785066121.wpiv.488ae8",
+      "factor": "occurrence",
+      "basis_digest": "c25c3b9d6ef0a13ae0f7c6109692e9e6",
+      "revision": 1,
+      "value": "rare",
+      "justification": "SQLCipher forces secure delete on for an encrypted database, and the pragma now states it as well, so both the dependency and this codebase have to stop doing it before freed pages retain anything. The suite reads the setting back per connection. Rare rather than unlikely for the same reason as the temp store: there is no path that opens a connection without applying it. [Re-grounded 2026-08-23: the original revision was recorded against an empty basis \u2014 the architecture model was not reachable from the recording process \u2014 so it never applied. This revision carries the same value and the rationale above unchanged, against the assembled model. Re-recorded mechanically, not re-reviewed.]",
+      "author": "Michael Bauer",
+      "created_at": "2026-08-23T10:37:47Z"
+    },
+    {
       "node_id": "FMD@1785066154.3r8r.71fdbf",
       "factor": "occurrence",
       "basis_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5",
@@ -2248,6 +2397,16 @@
       "justification": "Connection lifecycle is delegated to one manager that invalidates by generation rather than by walking a list of connections, so a connection created during a lock is refused by the generation check instead of having to be found and closed. Not rare: the property is only as good as that single manager, every store operation depends on it, and the concurrency suite has already proved timing-sensitive enough here to need a raised patience budget.",
       "author": "Michael Bauer",
       "created_at": "2026-07-26T11:47:10Z"
+    },
+    {
+      "node_id": "FMD@1785066154.3r8r.71fdbf",
+      "factor": "occurrence",
+      "basis_digest": "c25c3b9d6ef0a13ae0f7c6109692e9e6",
+      "revision": 1,
+      "value": "unlikely",
+      "justification": "Connection lifecycle is delegated to one manager that invalidates by generation rather than by walking a list of connections, so a connection created during a lock is refused by the generation check instead of having to be found and closed. Not rare: the property is only as good as that single manager, every store operation depends on it, and the concurrency suite has already proved timing-sensitive enough here to need a raised patience budget. [Re-grounded 2026-08-23: the original revision was recorded against an empty basis \u2014 the architecture model was not reachable from the recording process \u2014 so it never applied. This revision carries the same value and the rationale above unchanged, against the assembled model. Re-recorded mechanically, not re-reviewed.]",
+      "author": "Michael Bauer",
+      "created_at": "2026-08-23T10:37:47Z"
     },
     {
       "node_id": "FMD@1785066196.kt7b.189d93",
@@ -2260,6 +2419,16 @@
       "created_at": "2026-07-26T12:24:01Z"
     },
     {
+      "node_id": "FMD@1785066196.kt7b.189d93",
+      "factor": "occurrence",
+      "basis_digest": "c25c3b9d6ef0a13ae0f7c6109692e9e6",
+      "revision": 1,
+      "value": "unlikely",
+      "justification": "Twice in one week before the credential accounts were scoped to the store path, which is the honest starting point. Rated unlikely rather than higher because the cause was structural and is now removed: initialising a store cannot reach another store's key. Not rare, because the fix is new, unproven outside its tests, and does not cover the path that actually caused both incidents \u2014 a caller writing a credential without going through the accounts module at all. [Re-grounded 2026-08-23: the original revision was recorded against an empty basis \u2014 the architecture model was not reachable from the recording process \u2014 so it never applied. This revision carries the same value and the rationale above unchanged, against the assembled model. Re-recorded mechanically, not re-reviewed.]",
+      "author": "Michael Bauer",
+      "created_at": "2026-08-23T10:37:47Z"
+    },
+    {
       "node_id": "FMD@1785066233.pzuf.586b67",
       "factor": "occurrence",
       "basis_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5",
@@ -2268,6 +2437,16 @@
       "justification": "Clearing the gate now removes both the store-scoped account and the unscoped one a pre-scoping deployment may hold, and a test asserts that a subsequent read finds nothing \u2014 written precisely because leaving one behind would let the next read inherit it and reopen a store just locked. Not rare: the deletion crosses a process boundary to the OS credential backend, which on this platform is the least reliable step in the whole path, and a failure there is reported as an exception the caller may swallow.",
       "author": "Michael Bauer",
       "created_at": "2026-07-26T11:47:20Z"
+    },
+    {
+      "node_id": "FMD@1785066233.pzuf.586b67",
+      "factor": "occurrence",
+      "basis_digest": "7d5bca0dd5ff0f7ba390e7c7974c312d",
+      "revision": 1,
+      "value": "unlikely",
+      "justification": "Clearing the gate now removes both the store-scoped account and the unscoped one a pre-scoping deployment may hold, and a test asserts that a subsequent read finds nothing \u2014 written precisely because leaving one behind would let the next read inherit it and reopen a store just locked. Not rare: the deletion crosses a process boundary to the OS credential backend, which on this platform is the least reliable step in the whole path, and a failure there is reported as an exception the caller may swallow. [Re-grounded 2026-08-23: the original revision was recorded against an empty basis \u2014 the architecture model was not reachable from the recording process \u2014 so it never applied. This revision carries the same value and the rationale above unchanged, against the assembled model. Re-recorded mechanically, not re-reviewed.]",
+      "author": "Michael Bauer",
+      "created_at": "2026-08-23T10:37:47Z"
     },
     {
       "node_id": "FMD@1785066281.i9zn.380858",
@@ -2280,6 +2459,16 @@
       "created_at": "2026-07-26T11:47:31Z"
     },
     {
+      "node_id": "FMD@1785066281.i9zn.380858",
+      "factor": "occurrence",
+      "basis_digest": "7d5bca0dd5ff0f7ba390e7c7974c312d",
+      "revision": 1,
+      "value": "unlikely",
+      "justification": "Occurred twice within a week before the accounts were scoped to the store path, so the honest starting point is high. Rated unlikely rather than lower because the fix is new and unproven outside its tests: scoping makes the collision structurally impossible for any code going through the accounts module, and a test asserts a live store still opens after another is initialised. Not rare, because the reachable mistake now is a caller writing a credential without going through that module at all \u2014 which is what happened both times, from a script that never ran under the test harness. [Re-grounded 2026-08-23: the original revision was recorded against an empty basis \u2014 the architecture model was not reachable from the recording process \u2014 so it never applied. This revision carries the same value and the rationale above unchanged, against the assembled model. Re-recorded mechanically, not re-reviewed.]",
+      "author": "Michael Bauer",
+      "created_at": "2026-08-23T10:37:47Z"
+    },
+    {
       "node_id": "FMD@1785066322.m151.d5efa4",
       "factor": "occurrence",
       "basis_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5",
@@ -2290,6 +2479,16 @@
       "created_at": "2026-07-26T12:24:11Z"
     },
     {
+      "node_id": "FMD@1785066322.m151.d5efa4",
+      "factor": "occurrence",
+      "basis_digest": "7d5bca0dd5ff0f7ba390e7c7974c312d",
+      "revision": 1,
+      "value": "possible",
+      "justification": "The most frequent of these by a wide margin. On WSL2 the key is read by spawning powershell.exe across the interop bridge, which times out under load; a headless host has no session keyring at all unless the Fernet vault is configured; and a container without its master password in the environment cannot read the key either. Each of those is a normal operating condition rather than a defect. Not likely, because none of them is the steady state of a working deployment, and each announces itself in a warning naming the cause. [Re-grounded 2026-08-23: the original revision was recorded against an empty basis \u2014 the architecture model was not reachable from the recording process \u2014 so it never applied. This revision carries the same value and the rationale above unchanged, against the assembled model. Re-recorded mechanically, not re-reviewed.]",
+      "author": "Michael Bauer",
+      "created_at": "2026-08-23T10:37:47Z"
+    },
+    {
       "node_id": "FMD@1785066363.yyb9.ee1dd2",
       "factor": "occurrence",
       "basis_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5",
@@ -2298,6 +2497,16 @@
       "justification": "Same frequency as the plain unreachable case, since it is the same interop bridge failing briefly rather than persistently, and brief is the commoner shape. What makes it its own row rather than a milder variant: the controller re-reads the gate at most once per retry window, so a momentary outage withholds access for the rest of that window. Not likely, because the window is short and a retry recovers without intervention.",
       "author": "Michael Bauer",
       "created_at": "2026-07-26T12:24:21Z"
+    },
+    {
+      "node_id": "FMD@1785066363.yyb9.ee1dd2",
+      "factor": "occurrence",
+      "basis_digest": "7d5bca0dd5ff0f7ba390e7c7974c312d",
+      "revision": 1,
+      "value": "possible",
+      "justification": "Same frequency as the plain unreachable case, since it is the same interop bridge failing briefly rather than persistently, and brief is the commoner shape. What makes it its own row rather than a milder variant: the controller re-reads the gate at most once per retry window, so a momentary outage withholds access for the rest of that window. Not likely, because the window is short and a retry recovers without intervention. [Re-grounded 2026-08-23: the original revision was recorded against an empty basis \u2014 the architecture model was not reachable from the recording process \u2014 so it never applied. This revision carries the same value and the rationale above unchanged, against the assembled model. Re-recorded mechanically, not re-reviewed.]",
+      "author": "Michael Bauer",
+      "created_at": "2026-08-23T10:37:47Z"
     }
   ],
   "analysis_members": [
