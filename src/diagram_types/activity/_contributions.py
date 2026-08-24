@@ -1,4 +1,4 @@
-"""Activity per-diagram verification contributions (W045).
+"""Activity per-diagram verification contributions (W045, W047).
 
 Wrapped as a `DiagramVerificationContribution` so the central verifier imports no activity symbol:
 what counts as a drawn step is the activity module's question, and only this module knows that a
@@ -67,4 +67,77 @@ def _declared_steps(fm: dict[str, Any]) -> list[tuple[str, dict[str, Any]]]:
     return declared
 
 
+#: The three edges a decision declares: the true branch, the false branch, and the step the two
+#: converge on once the decision closes.
+_THEN, _ELSE, _FLOW = "step-then", "step-else", "step-flow"
+
+
+def _decision_edges(fm: dict[str, Any]) -> dict[str, dict[str, str]]:
+    """Per decision id, its outgoing branch and merge targets keyed by connection type."""
+    connections = fm.get("connections")
+    if not isinstance(connections, list):
+        return {}
+    edges: dict[str, dict[str, str]] = {}
+    for item in connections:
+        if not isinstance(item, dict):
+            continue
+        conn_type = str(item.get("conn_type") or "")
+        if conn_type not in (_THEN, _ELSE, _FLOW):
+            continue
+        source, target = str(item.get("source") or ""), str(item.get("target") or "")
+        if source and target:
+            edges.setdefault(source, {})[conn_type] = target
+    return edges
+
+
+class _MergeTargetContribution:
+    """W047 — a decision whose merge edge names a step one of its own branches already names.
+
+    A decision declares three edges: `step-then`, `step-else`, and a `step-flow` naming the step the
+    branches converge on once it closes. Pointing that merge edge at a step a branch already names
+    says two contradictory things — the step is both the content of one branch and what follows the
+    whole decision — and its only observable effect is that the renderer emits that step, and its
+    entire downstream chain, twice: once inside the branch and once after the `endif`. Nested
+    decisions compound it multiplicatively.
+
+    Measured on a five-decision diagram carrying four such declarations: the release tail was drawn
+    four times and one step seven times, at 3205 x 3544 px. With the four edges withheld, once and
+    three times, at 2910 x 1705. `artifact_verify` reported 0 errors and 0 warnings throughout, and
+    the diagram was valid — nothing was lost, the picture simply described a workflow that did not
+    exist, and a reader was the only thing that could notice.
+
+    One comparison per decision, no traversal. It names the declaration rather than the drawing,
+    because the declaration is what someone can fix; a first diagnosis blamed the graph's cycles and
+    was wrong — withholding the cyclic edge changed no count.
+
+    A warning: an existing repository holding these verifies clean today, the diagram still renders,
+    and the remedy is an authoring decision — either the merge edge is redundant and goes, or the
+    branch is wrong.
+    """
+
+    diagnostic_codes: tuple[str, ...] = ("W047",)
+
+    def run(self, candidate: Any, ctx: BaseDiagramVerificationContext, result: Any) -> None:
+        del candidate
+        from src.domain.verification_findings import Issue, Severity  # noqa: PLC0415
+
+        for decision_id, edges in sorted(_decision_edges(ctx.fm).items()):
+            merge = edges.get(_FLOW)
+            if not merge:
+                continue
+            for branch in (_THEN, _ELSE):
+                if edges.get(branch) != merge:
+                    continue
+                result.issues.append(Issue(
+                    Severity.WARNING,
+                    "W047",
+                    f"Decision '{decision_id}' declares {_FLOW} to '{merge}', which its {branch} "
+                    f"already names. The step and everything after it is drawn twice — once in the "
+                    f"branch and once after the decision closes. Remove the {_FLOW} edge if the "
+                    f"branch is right, or retarget it at the step the branches truly converge on.",
+                    ctx.loc,
+                ))
+
+
 STEP_COVERAGE_CONTRIBUTION = _StepCoverageContribution()
+MERGE_TARGET_CONTRIBUTION = _MergeTargetContribution()

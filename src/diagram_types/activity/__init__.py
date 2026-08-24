@@ -77,9 +77,12 @@ class _ActivityDiagramType(DiagramTypeBase):
         return self._renderer
 
     def diagram_verification_contributions(self) -> tuple:
-        from src.diagram_types.activity._contributions import STEP_COVERAGE_CONTRIBUTION  # noqa: PLC0415
+        from src.diagram_types.activity._contributions import (  # noqa: PLC0415
+            MERGE_TARGET_CONTRIBUTION,
+            STEP_COVERAGE_CONTRIBUTION,
+        )
 
-        return (STEP_COVERAGE_CONTRIBUTION,)
+        return (STEP_COVERAGE_CONTRIBUTION, MERGE_TARGET_CONTRIBUTION)
 
     def write_guidance(self) -> DiagramTypeWriteGuidance:
         g: dict[str, Any] = self._config.get("guidance") or {}
