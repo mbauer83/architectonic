@@ -13,11 +13,11 @@ wrote, and findings computed and then withheld from every reader entitled to the
 
 ### Fixed
 
-- **An activity diagram draws every step its model declares, exactly once.** Four causes: a step two
-  branches reach, one reached from two nesting depths, a join inside a nested decision, and a loop.
+- **An activity diagram draws every step its model declares, exactly once.** Four causes, from a step
+  two branches reach to a graph containing a loop.
 - **A declared step the stored body does not draw is reported (W045).** Every rule read the model and
-  none read the picture. `puml="auto-sync"` answers it.
-- **A swimlane header selects its lane**, as an action, a decision and a partition already did. The
+  none the picture; `puml="auto-sync"` answers it.
+- **A swimlane header selects its lane**, as an action, a decision and a partition already did — the
   renderer emitted the anchor and the viewer resolved none of it.
 - **A decision whose merge edge names its own branch is reported (W047).** It draws that step, and
   everything after it, twice.
@@ -32,8 +32,8 @@ wrote, and findings computed and then withheld from every reader entitled to the
 - **A container deployed on more than one host is drawn inside the host a view is showing.** One
   placement was kept per container, picked by id order, so a view narrowed to one topology could lose
   the container entirely.
-- **Replacing the assurance graph is recorded in the audit archive.** `import` and `seed` delete
-  everything the store holds and appended nothing; one entry now lands in the same transaction.
+- **Replacing the assurance graph is recorded in the audit archive.** `import` and `seed` empty the
+  store and appended nothing; one entry now lands in the same transaction.
 - **An analysis with no architecture anchor can be given one.** Optional at creation and immutable
   afterwards left no route. Moving or clearing one is still refused (`anchor_immutable`, HTTP 409).
 - **A factor judgement cannot be recorded against a basis that was never assembled.** Its digest was
@@ -41,22 +41,21 @@ wrote, and findings computed and then withheld from every reader entitled to the
 - **An element inside an analysed controller is no longer reported as unanalysed (W511).** Containment
   carries that finding's control-structure half, not its per-component failure-mode half.
 - **Coverage findings reach the API and the GUI.** The exposure filter kept an issue only when its
-  subject was an assurance node; every coverage finding names an architecture element.
+  subject was an assurance node, and every coverage finding names an architecture element.
 - **A constraint answered by argument is no longer asked for evidence of a control.** An
   `alarp-justified` constraint argues that residual exposure is as low as reasonably practicable;
   there is no control whose working could be evidenced.
 - **A `format` facet says what it accepts.** The `Source Repository` description called it
   informative while the checker refused values.
-- **A tag the sanitiser rejects is shown, not deleted.** An unknown element with no children vanished
-  — `projects/<slug>/model/` rendered as `projects//model/`.
+- **A tag the sanitiser rejects is shown, not deleted** — `projects/<slug>/model/` had rendered as
+  `projects//model/`.
 - **The security-findings page renders.** Its route mounted the per-entity view with no entity. It
   lists the assessed anchors instead.
 - **Search finds a diagram by its title and a scratchpad by its title.** Three causes: a diagram's
   four columns ranked equally, a note's weights sat one column out of line, and merging the two
   repository roots dropped every note.
-- **A search window belongs to the ranking that filled it.** `/api/search` asked for three times the
-  requested limit and re-cut afterwards, spending the round-robin and the minority-kind floor on rows
-  nobody saw.
+- **A search window belongs to the ranking that filled it.** `/api/search` asked for three times its
+  limit and re-cut afterwards, spending the round-robin and the minority-kind floor on unseen rows.
 - **`artifact_group` honours `dry_run` for every action.** It defaulted to true and was read by one
   branch of one action. The answer now names `dry_run` and `wrote`.
 - **Content filed under a group nothing declares is reported (W046).** An artifact created into an
@@ -65,6 +64,10 @@ wrote, and findings computed and then withheld from every reader entitled to the
   and no rule enforced it.
 - **A batch commit that cannot carry all of its changes publishes none of them.** A staged change
   outside the managed subtrees was dropped after the write said it wrote.
+- **A bound element shows what it corresponds to in the model**, as a link, on every diagram type
+  that declares element bindings. The correspondence was stored and shown nowhere.
+- **An ArchiMate occurrence keeps the entity it redraws.** Two consumers read a shorthand the persist
+  path strips: the renderer resolved no occurrences, and the editor saw none as a drawing.
 
 ### Changed
 
@@ -91,8 +94,7 @@ wrote, and findings computed and then withheld from every reader entitled to the
 - `arch-repair upgrade` now rewrites the generated `_archimate-*.puml` includes. It never did, so an
   upgraded repository still carried the appearance declarations of whenever it was last initialised.
 - On the next `puml="auto-sync"`: a stored activity diagram's lane headers become selectable, and a
-  stored `c4-deployment` view redraws a host holding nothing as a node and moves a multi-hosted
-  container into the host the view draws.
+  `c4-deployment` view redraws an empty host as a node and rehomes a multi-hosted container.
 - An assurance store carries its archive across `seed` and `import`, so the first re-seed after
   upgrading appends an entry. Imports that already happened get none invented for them.
 - Three new diagnostics on existing content. **W046**: content under a group its axis does not
