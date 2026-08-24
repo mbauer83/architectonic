@@ -45,13 +45,20 @@ marked.use({
  * The sanitiser stays the authority on what is markup. This changes only what becomes of what it
  * rejects: a text node carrying the source, which serialises escaped and cannot execute. Registered
  * once, beside the link hook, for the same reason.
+ *
+ * The text node is *inserted before* the rejected element and the element is left in place, because
+ * DOMPurify removes it itself immediately after this hook returns. Replacing the element here instead
+ * detached it first, and DOMPurify then refused: "a node selected for removal could not be detached
+ * from its tree and cannot be safely returned; refusing to sanitize in place". The output was right
+ * either way, so no unit test on the rendered string could see it — every page rendering prose logged
+ * that error, and twenty browser specs that assert a clean console failed on it.
  */
 DOMPurify.addHook('uponSanitizeElement', (node, data) => {
   if (data.allowedTags[data.tagName]) return
   const parent = node.parentNode
   const source = (node as Element).outerHTML
   if (!parent || typeof source !== 'string' || !node.ownerDocument) return
-  parent.replaceChild(node.ownerDocument.createTextNode(source), node)
+  parent.insertBefore(node.ownerDocument.createTextNode(source), node)
 })
 
 /**
