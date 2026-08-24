@@ -80,13 +80,32 @@ skinparam rectangle<<Grouping>> {
 _CORNER_SIZE: dict[str, int] = {"rounded": 14, "diagonal": 10}
 
 
-def _stereotype_block(name: str, bg: str, border: str, corner: str = "square") -> str:
-    """One skinparam block: fill, line, and the corners this element's category is drawn with.
+#: What an open container is filled with and drawn in. White rather than `transparent`, which
+#: PlantUML honours inconsistently across output formats, and near-black rather than the domain's
+#: derived border: the line is the whole of the box, so it has to read as one.
+_OPEN_CONTAINER_FILL = "#FFFFFF"
+_OPEN_CONTAINER_BORDER = "#1F1F1F"
+
+
+def _stereotype_block(
+    name: str, bg: str, border: str, corner: str = "square", outline: str = "solid",
+) -> str:
+    """One skinparam block: fill, line, the corners this element's category is drawn with, and
+    whether it is an open container.
 
     `square` adds nothing — PlantUML's default rectangle is already square, and stating a
     `RoundCorner 0` would be a declaration where the absence is the answer.
+
+    A `dashed` outline replaces the fill and the border rather than adding to them. An open container
+    holds other elements, so keeping the domain colour would put a coloured plane behind them, and
+    keeping the derived border would draw a line the same weight as theirs — the two properties the
+    ontology declares separately are one rendition here.
     """
+    if outline == "dashed":
+        bg, border = _OPEN_CONTAINER_FILL, _OPEN_CONTAINER_BORDER
     lines = [f"skinparam rectangle<<{name}>> {{", f"  BackgroundColor {bg}", f"  BorderColor {border}"]
+    if outline == "dashed":
+        lines.append("  BorderStyle dashed")
     if corner == "rounded":
         lines.append(f"  RoundCorner {_CORNER_SIZE['rounded']}")
     elif corner == "diagonal":
@@ -138,7 +157,9 @@ def _generate_stereotype_include(repo_root: Path) -> str:
         ))
         for artifact_type, info in types_in_domain:
             lines.append(_stereotype_block(
-                _sprite_key(artifact_type), fill, border, appearance.corner_for(info.classes),
+                _sprite_key(artifact_type), fill, border,
+                appearance.corner_for(info.classes),
+                appearance.outline_for(info.classes),
             ))
         lines.append("")
 

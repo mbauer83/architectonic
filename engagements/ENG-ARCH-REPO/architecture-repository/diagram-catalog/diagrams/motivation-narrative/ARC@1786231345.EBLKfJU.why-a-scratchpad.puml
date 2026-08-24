@@ -44,10 +44,9 @@ connection-ids-used:
 - REQ@1786230066.vVjYCpP---OUT@1786223967.Bz8wwkG@@archimate-realization
 - PRI@1786223967.IQqhM8k---REQ@1786223986.VV89psV@@archimate-influence
 - PRI@1786223967.IQqhM8k---REQ@1786223986.cMuroZ9@@archimate-influence
-last-updated: '2026-08-13T19:36:10Z'
+last-updated: '2026-08-24T08:34:22Z'
 ---
 @startuml why-a-scratchpad
-skinparam defaultTextAlignment center
 hide stereotype
 
 skinparam defaultFontName SansSerif
@@ -55,6 +54,7 @@ skinparam defaultFontSize 12
 skinparam shadowing false
 skinparam roundcorner 4
 skinparam backgroundColor #FAFAFA
+skinparam defaultTextAlignment center
 
 skinparam linetype ortho
 skinparam nodesep 60
@@ -138,8 +138,9 @@ skinparam rectangle<<goal>> {
   DiagonalCorner 10
 }
 skinparam rectangle<<grouping>> {
-  BackgroundColor #E5DFD3
-  BorderColor #45433F
+  BackgroundColor #FFFFFF
+  BorderColor #1F1F1F
+  BorderStyle dashed
 }
 skinparam rectangle<<outcome>> {
   BackgroundColor #D1BADC

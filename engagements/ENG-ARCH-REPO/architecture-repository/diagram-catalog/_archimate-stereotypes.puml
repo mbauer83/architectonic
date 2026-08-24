@@ -154,8 +154,9 @@ skinparam rectangle<<global_artifact_reference>> {
   BorderColor #45433F
 }
 skinparam rectangle<<grouping>> {
-  BackgroundColor #E5DFD3
-  BorderColor #45433F
+  BackgroundColor #FFFFFF
+  BorderColor #1F1F1F
+  BorderStyle dashed
 }
 skinparam rectangle<<location>> {
   BackgroundColor #E5DFD3

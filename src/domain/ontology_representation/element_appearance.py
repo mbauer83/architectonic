@@ -37,6 +37,19 @@ CORNER_STYLES: Final[tuple[CornerStyle, ...]] = ("square", "rounded", "diagonal"
 #: colour: the least specific thing that is still a drawable element.
 DEFAULT_CORNER: Final[CornerStyle] = "square"
 
+#: How an element's outline is drawn, and whether it is filled at all. A closed set, like the corners.
+#:
+#: `dashed` says the element is an **open container**: what it holds is drawn inside it, so a fill
+#: would put a coloured plane behind those elements and a solid line would read as a boundary of the
+#: same kind as its contents. ArchiMate's Grouping is the case, and the distinction is structural
+#: rather than pictorial — a renderer honours `dashed` without knowing what a grouping is.
+OutlineStyle = Literal["solid", "dashed"]
+
+OUTLINE_STYLES: Final[tuple[OutlineStyle, ...]] = ("solid", "dashed")
+
+#: A filled box with a solid line: what an element that contains nothing looks like.
+DEFAULT_OUTLINE: Final[OutlineStyle] = "solid"
+
 
 @dataclass(frozen=True)
 class ColorMix:
@@ -68,16 +81,30 @@ class ElementAppearance:
 
     domain_colors: Mapping[str, str] = field(default_factory=dict)
     corner_classes: Mapping[str, frozenset[str]] = field(default_factory=dict)
+    outline_classes: Mapping[str, frozenset[str]] = field(default_factory=dict)
     de_emphasis: ColorMix = ColorMix()
     border: ColorMix = ColorMix()
 
     @property
     def is_empty(self) -> bool:
-        return not (self.domain_colors or self.corner_classes)
+        return not (self.domain_colors or self.corner_classes or self.outline_classes)
 
     def color_for(self, domain: str) -> str | None:
         """The colour this ontology gives that domain, or None where it declares none."""
         return self.domain_colors.get(domain)
+
+    def outline_for(self, classes: Sequence[str]) -> OutlineStyle:
+        """How the outline of an element carrying these classes is drawn.
+
+        Same resolution as `corner_for`, and the same reason for it: a type carrying classes from two
+        categories gets a stable answer rather than one that depends on mapping iteration. A type
+        matching none is solid, which is what every element that holds nothing already looks like.
+        """
+        carried = frozenset(str(name) for name in classes)
+        for style in OUTLINE_STYLES:
+            if style != DEFAULT_OUTLINE and carried & self.outline_classes.get(style, frozenset()):
+                return style
+        return DEFAULT_OUTLINE
 
     def corner_for(self, classes: Sequence[str]) -> CornerStyle:
         """The corner style for an element carrying these classes.
@@ -116,19 +143,32 @@ class ElementAppearance:
             return cls()
         colors = raw.get("domain_colors")
         corners = raw.get("corner_classes")
+        outlines = raw.get("outline_classes")
         muted = raw.get("de_emphasis")
         return cls(
             domain_colors={
                 str(domain): str(value) for domain, value in colors.items()
             } if isinstance(colors, Mapping) else {},
-            corner_classes={
-                str(style): frozenset(str(name) for name in names)
-                for style, names in corners.items()
-                if style in CORNER_STYLES and isinstance(names, (list, tuple))
-            } if isinstance(corners, Mapping) else {},
+            corner_classes=_class_lists(corners, CORNER_STYLES),
+            outline_classes=_class_lists(outlines, OUTLINE_STYLES),
             de_emphasis=_mix_rule(muted, default_toward="#FFFFFF"),
             border=_mix_rule(raw.get("border"), default_toward="#000000"),
         )
+
+
+def _class_lists(raw: object, styles: Sequence[str]) -> dict[str, frozenset[str]]:
+    """One style-keyed block of class names, for the two declarations that share the shape.
+
+    A style the closed set does not name is dropped rather than carried: a renderer must be able to
+    exhaust these, so an unrecognised key is a typo in the ontology and not a third style.
+    """
+    if not isinstance(raw, Mapping):
+        return {}
+    return {
+        str(style): frozenset(str(name) for name in names)
+        for style, names in raw.items()
+        if style in styles and isinstance(names, (list, tuple))
+    }
 
 
 def _mix_rule(raw: object, *, default_toward: str) -> ColorMix:

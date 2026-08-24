@@ -67,6 +67,10 @@ element_classes:
     description: Passive structure element (data, objects, artifacts)
   composite-element:
     description: Composite element that aggregates others (products, plateaus)
+  grouping-element:
+    description: >-
+      Element whose purpose is to hold others, drawn as an open container around them rather than
+      as a box of its own. Narrower than composite-element, which a location also carries.
   internal-behavior-element:
     description: Behavioral element representing internal behavior
   junction:
@@ -113,6 +117,15 @@ element_appearance:
       - technology-internal-active-structure-element
       - passive-structure-element
       - composite-element
+
+  # An element whose purpose is to hold others is drawn as an open container: dashed line, no fill.
+  # ArchiMate's Grouping is the case — what it holds is drawn *inside* it, so a fill would put a
+  # coloured plane behind those elements and a solid line would read as a boundary of the same kind
+  # as its contents. `location` shares `composite-element` with it and is drawn filled, which is why
+  # this names a class of its own rather than reusing that one.
+  outline_classes:
+    dashed:
+      - grouping-element
 
   # One rule for muting a colour, so a surface that needs a de-emphasized variant derives it rather
   # than carrying a second palette — which is how the three disagreeing ones came about.
@@ -314,7 +327,7 @@ entity_types:
   grouping:
     prefix: GRP
     hierarchy: [common]
-    classes: [composite-element]
+    classes: [composite-element, grouping-element]
     create_when: ""
     never_create_when: ""
 
