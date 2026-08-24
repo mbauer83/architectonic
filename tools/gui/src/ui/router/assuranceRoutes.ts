@@ -80,7 +80,9 @@ export const assuranceRoutes: RouteRecordRaw[] = [
   // first addresses no particular element, so it carries no identity.
   {
     path: ROUTE_TEMPLATES.assuranceSecurityFindingsList,
-    component: () => import('../views/SecurityFindingsView.vue'),
+    // The anchors, not the findings. `SecurityFindingsView` needs an entity id — mounted here it
+    // rendered its header with an empty one and nothing else.
+    component: () => import('../views/SecurityFindingsIndexView.vue'),
   },
   {
     path: ROUTE_TEMPLATES.assuranceSecurityFindings,

@@ -17,8 +17,10 @@ import {
 import { entityDetailRoute } from '../router/artifactRoutes'
 
 const route = useRoute()
-// Absent on the list route, which shows every anchor's findings rather than one anchor's.
-const anchorId = computed(() => (route.params.archArtifactId as string | undefined) ?? '')
+// Required by this view's route, so there is no absent case to carry. The fallback that used to be
+// here existed for the list route, which mounted this component with no anchor and got a header
+// reading "Active signal snapshot for" and an empty link; that route has its own view now.
+const anchorId = computed(() => route.params.archArtifactId as string)
 
 const payload = ref<FindingsPayload | null>(null)
 const loading = ref(false)
@@ -29,7 +31,6 @@ const withheld = computed(() => (payload.value ? withheldNote(payload.value) : n
 const empty = computed(() => (payload.value ? emptyMessage(payload.value) : null))
 
 async function load() {
-  if (!anchorId.value) { payload.value = null; return }
   loading.value = true
   error.value = null
   try {

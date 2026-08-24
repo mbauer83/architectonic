@@ -1,6 +1,7 @@
 import { describe, expectTypeOf, it } from 'vitest'
 import type { Immutable, SchemaType } from './contractOracle'
 import type { AiBomExportSchema } from './assurance-aibom'
+import type { AssessedEntitySchema, SecuritySignalStatsSchema } from './assurance-security'
 import type { components } from './openapi.generated'
 import type {
   AnalysisMethod,
@@ -55,6 +56,17 @@ import type {
  * subject; the assertions have to be type-level, because the generated file has no runtime
  * representation to compare against.
  */
+
+describe('assurance security signals', () => {
+  it('decodes the store-wide totals and the anchors they cover', () => {
+    expectTypeOf<SchemaType<typeof SecuritySignalStatsSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['SecuritySignalStatsResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof AssessedEntitySchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['AssessedEntity']>
+    >()
+  })
+})
 
 describe('assurance analyses', () => {
   it('decodes the collection, the detail read and the record they share', () => {
