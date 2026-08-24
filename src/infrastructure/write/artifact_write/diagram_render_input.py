@@ -9,12 +9,14 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
+from src.application.modeling.binding_normalize import restore_diagram_shorthand
 from src.domain.diagrams.bindings import (
     EXCLUDED_IDS_KEY,
     INCLUDED_IDS_KEY,
     SCOPE_IDS_KEY,
     SCOPE_KEY,
     Binding,
+    bindings_to_raw,
     scope_shorthand,
     scope_target,
 )
@@ -28,10 +30,16 @@ def render_entities_restored(
 ) -> dict[str, object]:
     """The renderer's input, with everything the persist path keeps elsewhere put back.
 
-    Two facts about a diagram are canonical outside `diagram_entities` and have to be restored
+    Three facts about a diagram are canonical outside `diagram_entities` and have to be restored
     before the renderer, which reads only that mapping: the scope, which lives in the top-level
-    `bindings:` block, and the membership a derivation has ratified, which lives in
-    `view_derivations[].selection`.
+    `bindings:` block; the membership a derivation has ratified, which lives in
+    `view_derivations[].selection`; and which model entity an ArchiMate occurrence is a second
+    drawing of, which the persist path strips from the item and keeps as a `represents` binding.
+
+    The third was missing, and `occurrence_entities` *requires* the stripped field — so a diagram whose
+    occurrences had been normalised resolved none of them, and a regenerating edit drew none of the
+    duplicates. It is the same shape as the scope: the renderer reads one mapping, and the canonical
+    home is elsewhere.
 
     Restoring both lives here, beside the render call, rather than being spelled at each of the two
     write paths that make one. That is not tidiness — the create path and the edit path each had
@@ -40,6 +48,7 @@ def render_entities_restored(
     pair of copies is the same defect waiting.
     """
     restored = _with_scope(dict(diagram_entities), bindings)
+    restored = restore_diagram_shorthand(restored, bindings_to_raw(list(bindings))) or restored
     return _with_ratified_selection(restored, view_derivations)
 
 

@@ -25,6 +25,7 @@ from src.domain.diagrams.bindings import (
     Binding,
     BindingSubject,
     Target,
+    element_entity_ids,
     parse_binding,
     parse_target,
 )
@@ -168,6 +169,49 @@ def strip_diagram_shorthand(
         else:
             out[key] = value
     return out
+
+
+def restore_diagram_shorthand(
+    diagram_entities: dict[str, object] | None,
+    bindings: object,
+) -> dict[str, object] | None:
+    """The inverse of `strip_diagram_shorthand`: put `backing_entity_id` back from the canonical block.
+
+    `strip_diagram_shorthand` is deliberately lossy, because the top-level `bindings:` block is
+    canonical. Every consumer that still reads the shorthand therefore reads a field the persist path
+    guarantees is absent — the domain records three that did, and two more were found afterwards: the
+    ArchiMate occurrence renderer, which *requires* it, and the editor's `occurrencesOf`, which
+    matches on it and so could not recognise a stored occurrence as a drawing of its entity.
+
+    Restoring is the smaller correction than teaching each of them to read bindings, and it is what
+    keeps the shorthand a *shorthand*: one direction normalises it away, one puts it back, and the
+    two are held against each other by a round-trip test rather than by inspection.
+
+    Only where the item does not already carry it — an in-flight write still holds the caller's
+    shorthand, and that is the caller's statement, not this function's to overwrite.
+    """
+    if not diagram_entities:
+        return diagram_entities
+    backing_by_element = element_entity_ids(bindings)
+    if not backing_by_element:
+        return diagram_entities
+    out: dict[str, object] = {}
+    for key, value in diagram_entities.items():
+        if not isinstance(value, list):
+            out[key] = value
+            continue
+        out[key] = [
+            _with_backing(item, backing_by_element) if isinstance(item, dict) else item
+            for item in value
+        ]
+    return out
+
+
+def _with_backing(item: dict[str, object], backing_by_element: dict[str, str]) -> dict[str, object]:
+    if item.get("backing_entity_id") or item.get("entity_id"):
+        return item
+    backing = backing_by_element.get(str(item.get("id") or "").strip())
+    return {**item, "backing_entity_id": backing} if backing else item
 
 
 def _normalize_shorthand(entity_type: str, element_id: str, shorthand: dict[str, object]) -> Binding:
