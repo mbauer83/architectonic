@@ -201,6 +201,8 @@ class AssuranceExposurePolicy:
         self,
         result: AssuranceVerificationResult,
         visible_node_ids: frozenset[str],
+        *,
+        known_node_ids: frozenset[str] | None = None,
     ) -> AssuranceVerificationResult:
         """Verification narrowed to what this reader may see.
 
@@ -211,8 +213,25 @@ class AssuranceExposurePolicy:
         withheld from the list.
 
         An issue naming no node is about the store itself and stays: there is no subject to withhold.
+        **An issue naming something that is not an assurance node at all is the same case**, and it was
+        not treated as one: every two-way coverage finding names the *architecture element* it is about,
+        which is never an assurance node id, so all 17 of them were computed, counted and then dropped
+        before reaching REST or the GUI — from a reader entitled to every one.
+
+        `known_node_ids` is what tells "not an assurance node" from "an assurance node held back", so
+        withholding stays exact. Its absence keeps the old, closed behaviour: this is a confidentiality
+        boundary, and a caller that cannot say which ids are assurance nodes must not thereby open it.
+
+        Loosening it is safe on the merits. A coverage finding discloses architecture facts, which carry
+        no TLP, and the *absence* of assurance content. It cannot disclose withheld content by
+        inference either: the finding is computed over the whole store, so it fires only where nothing
+        is bound at all — an element analysed above the ceiling produces no finding, and that silence
+        says nothing.
         """
-        return AssuranceVerificationResult(issues=[
-            issue for issue in result.issues
-            if not issue.node_id or issue.node_id in visible_node_ids
-        ])
+        def visible(issue: object) -> bool:
+            node_id = getattr(issue, "node_id", "")
+            if not node_id or node_id in visible_node_ids:
+                return True
+            return known_node_ids is not None and node_id not in known_node_ids
+
+        return AssuranceVerificationResult(issues=[i for i in result.issues if visible(i)])

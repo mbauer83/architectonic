@@ -243,10 +243,15 @@ def assurance_verify() -> JSONResponse:
     if pol.check_locked():
         raise _locked_response()
     from src.application.verification.assurance_verifier import format_result, verify_store  # noqa: PLC0415
-    visible, _ = pol.filter_nodes(ctx.store.list_nodes())
+    all_nodes = ctx.store.list_nodes()
+    visible, _ = pol.filter_nodes(all_nodes)
     visible_ids = frozenset(str(n["node_id"]) for n in visible)
     result = pol.redact_verification(
-        verify_store(ctx.store, basis=current_architecture_basis()), visible_ids
+        verify_store(ctx.store, basis=current_architecture_basis()),
+        visible_ids,
+        # Which ids are assurance nodes at all, so a finding whose subject is an *architecture*
+        # element is not mistaken for one held back above the ceiling.
+        known_node_ids=frozenset(str(n["node_id"]) for n in all_nodes),
     )
     return _ok(
         {**format_result(result), "visibility_limited": pol.scope().visibility_limited},
