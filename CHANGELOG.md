@@ -8,101 +8,101 @@ All notable changes to this project are documented here. The format follows
 **[Full detail → `changelog-assets/0.7.1-detail.md`](changelog-assets/0.7.1-detail.md)**
 
 **Fixes for cases where the product stated one thing and did another** — a diagram drawing fewer steps
-than its model declares, a schema description contradicting the checker that enforces it, an audit
-archive silent about the operation that empties it, and findings computed and then withheld from every
-reader entitled to them.
+than its model declares, an audit archive silent about the operation that empties it, a preview that
+wrote, and findings computed and then withheld from every reader entitled to them.
 
 ### Fixed
 
 - **An activity diagram draws every step its model declares, exactly once.** Four causes, each losing
-  part of a picture: a step two branches reach drawn in the first only; one reached from two nesting
-  depths drawn on one path only; a join inside a nested decision never reaching its fork; and a graph
-  containing a loop drawing `start` and `stop` with nothing between. Where no placement in an
-  `if`/`else` tree covers both arrivals, the step is drawn in each, carrying the same identity.
-- **A declared step the stored body does not draw is reported (W045).** The class of defect was
-  silent: every rule read the model and none read the picture. `puml="auto-sync"` answers it.
+  part of a picture: a step two branches reach, one reached from two nesting depths, a join inside a
+  nested decision, and a graph containing a loop.
+- **A declared step the stored body does not draw is reported (W045).** Every rule read the model and
+  none read the picture. `puml="auto-sync"` answers it.
 - **A bound swimlane's header is selectable**, as an action, a decision and a partition already were.
-  The binding persisted while the header was drawn as plain text.
 - **`connection-ids-used` records the connections a diagram draws, and no others.** An edit that
-  replaced the body kept the old body's references, so a diagram claimed to draw a relation it no
-  longer drew — and that surface answers which views show a connection.
-- **A relation `connection-ids-used` lists but the body does not draw is reported (W307).** E309 has
-  refused the entity-side equivalent for some time; the connection side had no rule, and on a
-  `manual-layout` or hand-edited diagram the wrong claim never heals.
-- **An `artifact` may be assigned to any technology host.** Assignment is ArchiMate's deployment
-  relation and the table permitted it into an `artifact` from nothing at all, so a model whose
-  containers run on system software, a device, equipment or a facility could not say so. The
-  aggregation path is still read.
+  replaced the body kept the old body's references, and that surface answers which views show a
+  connection.
+- **A relation `connection-ids-used` lists but the body does not draw is reported (W307).** The
+  entity-side equivalent was already refused; on a hand-edited diagram the wrong claim never heals.
+- **An `artifact` may be assigned to any technology host.** The table permitted ArchiMate's
+  deployment relation into an `artifact` from nothing at all. The aggregation path is still read.
 - **A deployment host is drawn as a node whether or not anything is drawn inside it.** A host holding
   nothing fell through to the generic container shape — a volume rendered as a deployed application.
 - **A container deployed on more than one host is drawn inside the host a view is showing.** One
   placement was kept per container, picked by id order, so a view narrowed to one topology could lose
   the container entirely.
 - **Replacing the assurance graph is recorded in the audit archive.** `import` and `seed` delete every
-  node, edge, reference, membership and assessment, and appended nothing to the hash-chained archive.
-  One entry now lands in the same transaction, naming what was destroyed and what was written.
+  node, edge, reference, membership and assessment and appended nothing. One entry now lands in the
+  same transaction.
 - **An analysis with no architecture anchor can be given one.** Optional at creation and immutable
   afterwards left no route. Moving or clearing one is still refused (`anchor_immutable`, HTTP 409).
 - **A factor judgement cannot be recorded against a basis that was never assembled.** Its digest was a
-  well-formed hash no reader holding the model would compute, so the judgement never applied.
+  hash no reader holding the model would compute, so the judgement never applied.
 - **An element inside an analysed controller is no longer reported as unanalysed (W511).** Containment
-  now carries that finding's *control structure* half and not its *failure mode* half, which is
-  per-component.
+  carries that finding's control-structure half and not its per-component failure-mode half.
 - **Coverage findings reach the API and the GUI.** The exposure filter kept an issue only when its
-  subject was a visible assurance node, and every coverage finding names an architecture element.
+  subject was an assurance node, and every coverage finding names an architecture element.
 - **A constraint answered by argument is no longer asked for evidence of a control.** An
   `alarp-justified` constraint argues that residual exposure is as low as reasonably practicable;
   there is no control whose working could be evidenced.
 - **A `format` facet says what it accepts, and cannot say otherwise.** The `Source Repository`
-  description called the facet informative while the checker refused values. Each format is now
-  specified once, as the procedure that decides it.
-- **A tag the sanitiser rejects is shown, not deleted.** Angle brackets in prose are placeholders, and
-  an unknown element with no children vanished entirely — `projects/<slug>/model/` rendered as
-  `projects//model/`.
-- **The security-findings page renders.** Its route mounted the per-entity view with no entity, which
-  drew a header naming nothing and stopped. It lists the assessed anchors instead.
+  description called the facet informative while the checker refused values.
+- **A tag the sanitiser rejects is shown, not deleted.** An unknown element with no children vanished
+  entirely — `projects/<slug>/model/` rendered as `projects//model/`.
+- **The security-findings page renders.** Its route mounted the per-entity view with no entity. It
+  lists the assessed anchors instead.
+- **Search finds a diagram by its title and a scratchpad by its title.** A diagram's title, type and
+  member names ranked equally; a note's weights were one column out of line; and merging the two
+  repository roots dropped every note. Three separate causes, one symptom each.
+- **A search window belongs to the ranking that filled it.** `/api/search` asked for three times the
+  requested limit and re-cut the result afterwards, so the round-robin across kinds and the floor that
+  keeps a minority kind present were spent on rows nobody saw.
+- **`artifact_group` honours `dry_run` for every action.** It defaulted to true and was read by one
+  branch of one action. The answer now names `dry_run` and `wrote`.
+- **Content filed under a group nothing declares is reported (W046).** An artifact could be created
+  into an undeclared project and be absent from everywhere a person browses.
+- **A part composed by two wholes is reported (E340).** This ontology defines composition as exclusive
+  and no rule enforced it.
+- **A batch commit that cannot carry all of its changes publishes none of them.** A staged change
+  outside the managed subtrees was dropped after the write had answered that it wrote.
 
 ### Changed
 
 - **An ArchiMate grouping is drawn as an open container** — no fill, dashed border — instead of taking
-  its domain's colour like an ordinary element. It holds other elements, so a fill put a coloured plane
-  behind them. Declared through `outline_classes`, keyed on element classes the way corners are.
-- **Type checking is deterministic.** `zuban check` reported a type error on roughly four runs in
-  ten, on a file that had not changed, because two modules named each other's types and a checker had
-  to guess which to resolve first. The endpoint value types now sit in a module both import.
+  its domain's colour. It holds other elements, so a fill put a coloured plane behind them.
+- **Type checking is deterministic.** `zuban check` reported a type error on roughly four runs in ten
+  on an unchanged file: two modules named each other's types. The values now sit in a shared module.
 
 ### Known limitation
 
 - A fork whose branches sit in different swimlanes renders with its edges turning against the bar and
   overlapping it. Same-lane forks draw cleanly, and PlantUML's activity layout honours no spacing
-  parameter — `nodesep`, `ranksep`, `spacing` and style margins all leave it unchanged.
-- A `step-flow` that closes a loop is not drawn. Every step of the loop is, which is new — such a
-  diagram used to render as `start` and `stop` with nothing between — but the edge back to the
-  earlier step has no rendering here yet, and PlantUML's `repeat while` is not something this
-  notation emits.
+  parameter.
+- A `step-flow` that closes a loop is not drawn. Every step of the loop is, which is new, but the edge
+  back to the earlier step has no rendering here yet.
 
 ### Upgrading
 
 - Nothing to run. A repository whose stored activity bodies have the affected shape starts reporting
-  **W045** as a warning; `artifact_edit_diagram(puml="auto-sync")` on each named diagram clears it,
-  and verification passes either way.
+  **W045**; `artifact_edit_diagram(puml="auto-sync")` on each named diagram clears it.
 - A repository materialised before 0.7.1 holds the older `Source Repository` description. The upgrade
-  reports it as an operator customisation and never overwrites it — intended for any locally edited
-  schema file, not a problem to fix.
-- A diagram whose stored frontmatter lists a connection its body does not draw starts reporting
-  **W307** as a warning. `artifact_edit_diagram(puml="auto-sync")` redraws the edge if the relation
-  should be there; removing the entry is right if it should not.
-- `arch-repair upgrade` now rewrites the generated `_archimate-*.puml` includes. It never did, so a
-  repository upgraded before this release still carries the appearance declarations of whenever it was
-  last initialised — including the grouping notation above. Upgrading refreshes them.
+  reports it as an operator customisation and never overwrites it.
+- A diagram listing a connection its body does not draw starts reporting **W307**.
+  `artifact_edit_diagram(puml="auto-sync")` redraws the edge; removing the entry is right if the
+  relation should not be there.
+- `arch-repair upgrade` now rewrites the generated `_archimate-*.puml` includes. It never did, so an
+  upgraded repository still carried the appearance declarations of whenever it was last initialised.
 - A stored activity diagram's lane headers become selectable on the next `puml="auto-sync"`. Nothing
-  reports it, because an unlinked header is a missing affordance rather than a wrong claim.
+  reports it: an unlinked header is a missing affordance rather than a wrong claim.
 - A stored `c4-deployment` view re-renders on its next `puml="auto-sync"`: a host holding nothing
-  becomes a node, and a container hosted by several nodes moves into the one the view draws. No
-  frontmatter changes.
+  becomes a node, and a multi-hosted container moves into the host the view draws.
 - An assurance store carries its archive across `seed` and `import`, so the first re-seed after
-  upgrading appends an entry. Chains recorded before 0.7.1 have no entry for imports that already
-  happened, and none is invented.
+  upgrading appends an entry. Imports that already happened get none invented for them.
+- Content under a group its axis does not declare starts reporting **W046**;
+  `artifact_group(action="create", target=<slug>)` clears it. Two wholes composing one part start
+  reporting **E340**, an error that blocks a write: all but one is an aggregation, or is wrong.
+- `artifact_group` previews by default: a caller relying on `create` writing without an explicit
+  `dry_run=False` now gets a report and no change.
 
 ## [0.7.0] — 2026-08-17
 
