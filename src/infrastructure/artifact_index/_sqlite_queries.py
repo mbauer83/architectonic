@@ -8,6 +8,7 @@ from typing import Any, cast
 from src.application.artifacts.scoring import tokenize
 from src.domain.ontology_representation.specialization_values import applied_specialization_slugs
 
+from ._fts_weights import DIAGRAM_WEIGHTS, ENTITY_WEIGHTS, NOTE_WEIGHTS
 from .types import (
     CONNECTION_DIRECTIONS,
     ConnectionDirection,
@@ -15,15 +16,6 @@ from .types import (
     EntityContextCounts,
     EntityContextReadModel,
 )
-
-# Entity name column (position 1) gets 15× weight over content_text (0.5).
-# Columns: artifact_id(UNINDEXED), name, artifact_type, domain, subdomain, keywords, content_text, display_label
-_ENT_WEIGHTS = "0, 15.0, 1.0, 1.0, 1.0, 4.0, 0.5, 4.0"
-
-# A note's title matters most, but only about as much as an entity's *keywords* do — the ranking
-# guarantee is in `_rank_balanced`, and these weights only order notes against one another.
-# Columns: artifact_id(UNINDEXED), title, body, element_type, domain, scratchpad_name
-_NOTE_WEIGHTS = "0, 4.0, 0.5, 1.0, 1.0, 0.5"
 
 
 def _entity_exclusion_filter(excluded_entity_types: frozenset[str]) -> tuple[str, tuple[str, ...]]:
@@ -53,13 +45,13 @@ def search_fts(
     # Per-kind subqueries each get their own ORDER BY + LIMIT so that a dominant
     # kind (e.g. hundreds of entity hits) cannot crowd out minority kinds.
     kind_rows: list[tuple[str, str, str, str, str, tuple[str, ...]]] = [
-        ("entities", "entity", "entities_fts", f"-bm25(entities_fts, {_ENT_WEIGHTS})",
+        ("entities", "entity", "entities_fts", f"-bm25(entities_fts, {ENTITY_WEIGHTS})",
          entity_filter_sql, entity_filter_params),
         ("connections", "connection", "connections_fts", "-bm25(connections_fts)", "", ()),
-        ("diagrams", "diagram", "diagrams_fts", "-bm25(diagrams_fts)", "", ()),
+        ("diagrams", "diagram", "diagrams_fts", f"-bm25(diagrams_fts, {DIAGRAM_WEIGHTS})", "", ()),
         ("documents", "document", "documents_fts", "-bm25(documents_fts)", "", ()),
         ("scratchpad-notes", "scratchpad-note", "scratchpad_notes_fts",
-         f"-bm25(scratchpad_notes_fts, {_NOTE_WEIGHTS})", "", ()),
+         f"-bm25(scratchpad_notes_fts, {NOTE_WEIGHTS})", "", ()),
     ]
     subqueries: list[str] = []
     params: list[str] = []
