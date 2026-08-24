@@ -3,7 +3,7 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
-## [0.7.1] — 2026-08-23
+## [0.7.1] — 2026-08-24
 
 **[Full detail → `changelog-assets/0.7.1-detail.md`](changelog-assets/0.7.1-detail.md)**
 
@@ -17,63 +17,55 @@ never be given one, and a deployment host holding nothing was drawn as an applic
 ### Fixed
 
 - **An activity diagram draws every step its model declares, exactly once.** Four separate causes,
-  each of which lost part of a picture: a step that more than one branch of a decision reaches was
-  drawn inside the first branch and dropped from the rest; a step reached from two different nesting
-  depths was drawn on one path and dropped from the other; a join reached inside a nested decision
-  never reached the fork that opened it, so everything past the join went undrawn; and a step graph
-  containing a loop drew `start` and `stop` with nothing between them, while a diagram declaring two
-  unconnected chains drew only the first. Where two branches arrive at a step and no single placement
-  in an `if`/`else` tree covers both, the step is drawn in each of them, carrying the same identity,
-  so either drawing selects the same element.
+  each losing part of a picture: a step more than one branch reaches was drawn in the first branch
+  only; a step reached from two nesting depths was drawn on one path only; a join reached inside a
+  nested decision never reached its fork, so everything past it went undrawn; and a graph containing
+  a loop drew `start` and `stop` with nothing between. Where two branches arrive at a step and no
+  placement in an `if`/`else` tree covers both, it is drawn in each of them carrying the same
+  identity, so either drawing selects the same element.
 - **A declared step the stored body does not draw is reported (W045).** This class of defect was
   silent: a diagram missing a quarter of its steps verified clean, because every rule read the model
   and none read the picture. Re-render with `puml="auto-sync"` to answer it.
 - **`connection-ids-used` records the connections a diagram draws, and no others.** An edit that
-  replaced the body kept the references the old body had, so a diagram went on claiming to draw a
-  relation it no longer drew. That surface answers which views show a connection, which is impact
-  analysis, so a wrong answer there is a wrong answer about the model. References are dropped only
-  where the new body positively contradicts them: a relation the reader cannot name unambiguously,
-  or a pair the body does not mention, keeps what it had.
-- **An `artifact` may be assigned to any technology host.** Assignment is ArchiMate's deployment
-  relation, and the relationship table permitted it into an `artifact` from nothing at all: the only
-  hosting path was `technology-node --aggregation--> artifact`, so a model whose containers run on
-  system software, a device, equipment or a facility could not say so, and a deployment view over it
-  drew no containers. Assignment is now permitted from every technology-internal active-structure
-  element and is the relation to write; the aggregation path is still read, so existing views keep
-  working.
-- **Replacing the assurance graph is recorded in the audit archive.** `import` and `seed` delete
-  every node, edge, architecture reference, membership and factor assessment, and appended nothing
-  to the hash-chained archive — leaving effects with no recorded cause, which is what a
-  tamper-evident log exists to rule out. One entry now lands in the same transaction as the rows it
-  describes, naming the bundle, whether the graph was replaced, what the replace destroyed and what
-  was written. The chain is never carried in or cleared by an import: it belongs to the store, not
-  to the graph it describes.
-- **An analysis with no architecture anchor can be given one.** `architecture_anchor_id` was
-  optional at creation and immutable afterwards, which together left no route: recreating the
-  analysis was barred too, because provenance is immutable and its nodes cannot be re-filed.
-  Filling an empty anchor is now permitted; moving or clearing one is refused
-  (`anchor_immutable`, HTTP 409), because that rewrites
-  what the analysis was scoped to and every finding under it was reached against the old subject.
+  replaced the body kept the old body's references, so a diagram went on claiming to draw a relation
+  it no longer drew — and that surface answers which views show a connection, which is impact
+  analysis. References are dropped only where the new body positively contradicts them.
 - **A relation `connection-ids-used` lists but the body does not draw is reported (W307).** The
-  entity side has refused this since E309; the connection side had no rule, so a wrong answer to
-  *which views show this connection* went unreported — and on a `manual-layout` or hand-edited
-  diagram it never heals. Reported only where the body positively contradicts it: both endpoints
-  declared, and no relation drawn between them.
-- **A deployment host is drawn as a node whether or not anything is drawn inside it.** The C4 macro
-  table had no row for a node, so a host holding nothing fell through to the generic container
-  shape — a volume or a machine rendered as a deployed application. A host holding something never
-  reached that table, which is why it went unseen.
+  entity side has refused this since E309; the connection side had no rule, and on a `manual-layout`
+  or hand-edited diagram the wrong claim never heals.
+- **An `artifact` may be assigned to any technology host.** Assignment is ArchiMate's deployment
+  relation, and the table permitted it into an `artifact` from nothing at all: the only hosting path
+  was `technology-node --aggregation--> artifact`, so a model whose containers run on system
+  software, a device, equipment or a facility could not say so, and a deployment view over it drew no
+  containers. The aggregation path is still read, so existing views keep working.
+- **A deployment host is drawn as a node whether or not anything is drawn inside it.** A host holding
+  nothing fell through to the generic container shape — a volume or a machine rendered as a deployed
+  application.
+- **A container deployed on more than one host is drawn inside the host a view is showing.** One
+  placement was kept per container, picked by id order, so every other host was drawn holding
+  nothing — and a view narrowed to one topology could lose the container entirely, because the
+  placement kept was the host that got filtered out.
+- **Replacing the assurance graph is recorded in the audit archive.** `import` and `seed` delete every
+  node, edge, architecture reference, membership and factor assessment, and appended nothing to the
+  hash-chained archive — leaving effects with no recorded cause. One entry now lands in the same
+  transaction as the rows it describes, naming the bundle, what the replace destroyed and what was
+  written.
+- **An analysis with no architecture anchor can be given one.** `architecture_anchor_id` was optional
+  at creation and immutable afterwards, which together left no route. Filling an empty anchor is now
+  permitted; moving or clearing one is refused (`anchor_immutable`, HTTP 409).
+- **A factor judgement cannot be recorded against a basis that was never assembled.** The assurance
+  surfaces yield an empty architecture basis when the model is unreachable, and its digest was a
+  well-formed hash no reader holding the model would compute — so a judgement recorded against it was
+  superseded on sight and never applied. Such a report now publishes no digest, and the write refuses
+  one.
 - **A constraint answered by argument is no longer asked for evidence of a control.** An
-  `alarp-justified` constraint states that residual exposure remains and is argued to be as low as
-  reasonably practicable — there is no control whose working could be evidenced, so the warning asked
-  for an artefact the disposition declares absent. It is skipped where the disposition is
-  argument-shaped *and* the argument is recorded; every other disposition still owes evidence.
+  `alarp-justified` constraint argues that residual exposure is as low as reasonably practicable, so
+  there is no control whose working could be evidenced. Skipped only where the disposition is
+  argument-shaped *and* the argument is recorded.
 - **A `format` facet says what it accepts, and cannot say otherwise.** The `Source Repository`
-  description told authors the facet was informative only and that any string was accepted, while
-  the checker refused values — so real values were reported invalid by a schema that had promised
-  they were fine. Each format is now specified once, as the procedure that decides it, and both the
-  description an author reads and the message a refusal gives are composed from it. A refusal also
-  says what would have been accepted rather than only that something was not valid.
+  description told authors the facet was informative only and any string accepted, while the checker
+  refused values. Each format is now specified once, as the procedure that decides it, and both the
+  description and the refusal message are composed from it.
 
 ### Changed
 
@@ -99,6 +91,9 @@ never be given one, and a deployment host holding nothing was drawn as an applic
 - A diagram whose stored frontmatter lists a connection its body does not draw starts reporting
   **W307** as a warning. `artifact_edit_diagram(puml="auto-sync")` redraws the edge if the relation
   should be there; removing the entry is right if it should not.
+- A stored `c4-deployment` view re-renders differently on its next `puml="auto-sync"`: a host holding
+  nothing becomes a node rather than an application container, and a container hosted by several nodes
+  moves into the one the view draws. Both are the picture correcting itself; no frontmatter changes.
 - An assurance store carries its archive forward across `seed` and `import`, so the first re-seed
   after upgrading appends an entry rather than rewriting anything. Chains recorded before 0.7.1 have
   no entry for imports that already happened, and none is invented for them.
