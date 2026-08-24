@@ -21,7 +21,7 @@ how the two come to disagree. This walks the files and asks it.
 
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Any
 
@@ -31,7 +31,7 @@ from src.domain.repository.repo_layout import PROJECTS
 
 #: Each axis, the root beneath which its groups' content lives, and what to call that content in a
 #: finding. The roots come from the path helpers rather than being spelled here.
-_AXES: tuple[tuple[GroupAxis, Any, str], ...] = (
+_AXES: tuple[tuple[GroupAxis, Callable[[Path], Path], str], ...] = (
     ("model-project", lambda root: root / PROJECTS, "model file"),
     ("diagram-collection", diagram_source_root, "diagram"),
     ("document-collection", docs_root, "document"),
