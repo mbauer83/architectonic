@@ -15,72 +15,67 @@ reader entitled to them.
 ### Fixed
 
 - **An activity diagram draws every step its model declares, exactly once.** Four causes, each losing
-  part of a picture: a step two branches reach drawn in the first only; a step reached from two nesting
-  depths drawn on one path only; a join inside a nested decision never reaching its fork, so everything
-  past it went undrawn; and a graph containing a loop drawing `start` and `stop` with nothing between.
-  Where no placement in an `if`/`else` tree covers both arrivals, the step is drawn in each carrying
-  the same identity, so either drawing selects the same element.
-- **A declared step the stored body does not draw is reported (W045).** This class of defect was
-  silent: a diagram missing a quarter of its steps verified clean, because every rule read the model
-  and none read the picture. Re-render with `puml="auto-sync"` to answer it.
+  part of a picture: a step two branches reach drawn in the first only; one reached from two nesting
+  depths drawn on one path only; a join inside a nested decision never reaching its fork; and a graph
+  containing a loop drawing `start` and `stop` with nothing between. Where no placement in an
+  `if`/`else` tree covers both arrivals, the step is drawn in each, carrying the same identity.
+- **A declared step the stored body does not draw is reported (W045).** The class of defect was
+  silent: every rule read the model and none read the picture. `puml="auto-sync"` answers it.
+- **A bound swimlane's header is selectable**, as an action, a decision and a partition already were.
+  The binding persisted while the header was drawn as plain text.
 - **`connection-ids-used` records the connections a diagram draws, and no others.** An edit that
-  replaced the body kept the old body's references, so a diagram went on claiming to draw a relation
-  it no longer drew — and that surface answers which views show a connection, which is impact
-  analysis. References are dropped only where the new body positively contradicts them.
-- **A relation `connection-ids-used` lists but the body does not draw is reported (W307).** The
-  entity side has refused this since E309; the connection side had no rule, and on a `manual-layout`
-  or hand-edited diagram the wrong claim never heals.
+  replaced the body kept the old body's references, so a diagram claimed to draw a relation it no
+  longer drew — and that surface answers which views show a connection.
+- **A relation `connection-ids-used` lists but the body does not draw is reported (W307).** E309 has
+  refused the entity-side equivalent for some time; the connection side had no rule, and on a
+  `manual-layout` or hand-edited diagram the wrong claim never heals.
 - **An `artifact` may be assigned to any technology host.** Assignment is ArchiMate's deployment
-  relation, and the table permitted it into an `artifact` from nothing at all: the only path was
-  `technology-node --aggregation--> artifact`, so a model whose containers run on system software, a
-  device, equipment or a facility could not say so, and a deployment view over it drew none. The
-  aggregation path is still read, so existing views keep working.
+  relation and the table permitted it into an `artifact` from nothing at all, so a model whose
+  containers run on system software, a device, equipment or a facility could not say so. The
+  aggregation path is still read.
 - **A deployment host is drawn as a node whether or not anything is drawn inside it.** A host holding
-  nothing fell through to the generic container shape — a volume or a machine rendered as a deployed
-  application.
+  nothing fell through to the generic container shape — a volume rendered as a deployed application.
 - **A container deployed on more than one host is drawn inside the host a view is showing.** One
-  placement was kept per container, picked by id order, so every other host was drawn holding
-  nothing — and a view narrowed to one topology could lose the container entirely, because the
-  placement kept was the host that got filtered out.
+  placement was kept per container, picked by id order, so a view narrowed to one topology could lose
+  the container entirely.
 - **Replacing the assurance graph is recorded in the audit archive.** `import` and `seed` delete every
-  node, edge, architecture reference, membership and factor assessment, and appended nothing to the
-  hash-chained archive — leaving effects with no recorded cause. One entry now lands in the same
-  transaction, naming the bundle, what the replace destroyed and what was written.
-- **An analysis with no architecture anchor can be given one.** `architecture_anchor_id` was optional
-  at creation and immutable afterwards, which together left no route. Filling an empty anchor is now
-  permitted; moving or clearing one is refused (`anchor_immutable`, HTTP 409).
-- **A factor judgement cannot be recorded against a basis that was never assembled.** The assurance
-  surfaces yield an empty architecture basis when the model is unreachable, and its digest was a
-  well-formed hash no reader holding the model would compute — so a judgement recorded against it was
-  superseded on sight and never applied. Such a report now publishes no digest, and the write refuses
-  one.
-- **An element inside an analysed controller is no longer reported as unanalysed (W511).** The check
-  suppressed on direct bindings only, so a component inside a control-structure node's own element read
-  as a gap — with its own witness printing the containment edge that said otherwise. Containment now
-  carries the *control structure* half of that finding and not the *failure mode* half, which is
-  per-component; W510 still reads direct bindings.
+  node, edge, reference, membership and assessment, and appended nothing to the hash-chained archive.
+  One entry now lands in the same transaction, naming what was destroyed and what was written.
+- **An analysis with no architecture anchor can be given one.** Optional at creation and immutable
+  afterwards left no route. Moving or clearing one is still refused (`anchor_immutable`, HTTP 409).
+- **A factor judgement cannot be recorded against a basis that was never assembled.** Its digest was a
+  well-formed hash no reader holding the model would compute, so the judgement never applied.
+- **An element inside an analysed controller is no longer reported as unanalysed (W511).** Containment
+  now carries that finding's *control structure* half and not its *failure mode* half, which is
+  per-component.
 - **Coverage findings reach the API and the GUI.** The exposure filter kept an issue only when its
-  subject was a *visible assurance node*, and every two-way coverage finding names the architecture
-  element it is about — never an assurance node. All were computed, counted and dropped, so the half of
-  the verifier that compares the two models was invisible. Withholding now applies where the subject is
-  an assurance node above the reader's ceiling.
+  subject was a visible assurance node, and every coverage finding names an architecture element.
 - **A constraint answered by argument is no longer asked for evidence of a control.** An
-  `alarp-justified` constraint argues that residual exposure is as low as reasonably practicable, so
-  there is no control whose working could be evidenced. Skipped only where the disposition is
-  argument-shaped *and* the argument is recorded.
+  `alarp-justified` constraint argues that residual exposure is as low as reasonably practicable;
+  there is no control whose working could be evidenced.
 - **A `format` facet says what it accepts, and cannot say otherwise.** The `Source Repository`
-  description told authors the facet was informative only and any string accepted, while the checker
-  refused values. Each format is now specified once, as the procedure that decides it, and both the
-  description and the refusal message are composed from it.
+  description called the facet informative while the checker refused values. Each format is now
+  specified once, as the procedure that decides it.
+- **A tag the sanitiser rejects is shown, not deleted.** Angle brackets in prose are placeholders, and
+  an unknown element with no children vanished entirely — `projects/<slug>/model/` rendered as
+  `projects//model/`.
+- **The security-findings page renders.** Its route mounted the per-entity view with no entity, which
+  drew a header naming nothing and stopped. It lists the assessed anchors instead.
 
 ### Changed
 
+- **An ArchiMate grouping is drawn as an open container** — no fill, dashed border — instead of taking
+  its domain's colour like an ordinary element. It holds other elements, so a fill put a coloured plane
+  behind them. Declared through `outline_classes`, keyed on element classes the way corners are.
 - **Type checking is deterministic.** `zuban check` reported a type error on roughly four runs in
   ten, on a file that had not changed, because two modules named each other's types and a checker had
   to guess which to resolve first. The endpoint value types now sit in a module both import.
 
 ### Known limitation
 
+- A fork whose branches sit in different swimlanes renders with its edges turning against the bar and
+  overlapping it. Same-lane forks draw cleanly, and PlantUML's activity layout honours no spacing
+  parameter — `nodesep`, `ranksep`, `spacing` and style margins all leave it unchanged.
 - A `step-flow` that closes a loop is not drawn. Every step of the loop is, which is new — such a
   diagram used to render as `start` and `stop` with nothing between — but the edge back to the
   earlier step has no rendering here yet, and PlantUML's `repeat while` is not something this
@@ -97,6 +92,11 @@ reader entitled to them.
 - A diagram whose stored frontmatter lists a connection its body does not draw starts reporting
   **W307** as a warning. `artifact_edit_diagram(puml="auto-sync")` redraws the edge if the relation
   should be there; removing the entry is right if it should not.
+- `arch-repair upgrade` now rewrites the generated `_archimate-*.puml` includes. It never did, so a
+  repository upgraded before this release still carries the appearance declarations of whenever it was
+  last initialised — including the grouping notation above. Upgrading refreshes them.
+- A stored activity diagram's lane headers become selectable on the next `puml="auto-sync"`. Nothing
+  reports it, because an unlinked header is a missing affordance rather than a wrong claim.
 - A stored `c4-deployment` view re-renders on its next `puml="auto-sync"`: a host holding nothing
   becomes a node, and a container hosted by several nodes moves into the one the view draws. No
   frontmatter changes.
