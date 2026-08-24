@@ -213,3 +213,75 @@ def test_deleting_a_scratchpad_takes_its_notes_with_it(repo_root: Path) -> None:
     assert repo.list_scratchpad_notes() == []
     # And nothing is left behind in the full-text half either, which has no foreign key to cascade.
     assert repo.search_artifacts(_QUERY, limit=10).hits == []
+
+
+def test_a_note_is_findable_by_its_scratchpads_name_as_the_product_serves_it(tmp_path: Path) -> None:
+    """Over a *combined* store, because that is the only shape the defect lived in.
+
+    A scratchpad is asked for by its title, and its notes are what a search can return. Nothing had
+    ever found one this way in the product, and stating this over a single root would not have shown
+    it: one root always matched the pad's name, so the whole failure was in the merge. It iterated
+    four record types where the vocabulary has five, and dropped every `scratchpad-note` row — and
+    the backend serves a combined store on every search.
+
+    That also meant notes only ever reached a caller by the scored supplement, which runs for a kind
+    with no FTS hits. See `test_the_pad_name_ranks_below_the_notes_own_title` for the other half:
+    that path did not match a pad's name either.
+
+    Both halves were needed and this test goes red only when both are missing, because either path
+    can answer it — which is the honest shape of the claim, and why the merge half is additionally
+    held by `tests/architecture/test_combined_search_carries_every_kind.py`.
+    """
+    from src.infrastructure.artifact_index import combined_artifact_index
+
+    engagement = tmp_path / "engagement"
+    enterprise = tmp_path / "enterprise"
+    _write(
+        engagement / "scratchpads" / "platform-core" / f"{_PAD_ID}.scratchpad.yaml",
+        _scratchpad(name="Marsupial migration"),
+    )
+    _write(
+        enterprise / "model" / "motivation" / "OUT@1780000009.aaaaaa.unrelated.md",
+        _entity("OUT@1780000009.aaaaaa.unrelated", "Unrelated outcome"),
+    )
+    combined = combined_artifact_index(engagement, enterprise)
+    combined.refresh()
+
+    found = ArtifactRepository(combined).search_artifacts("marsupial", limit=10).hits
+
+    assert {hit.record.artifact_id for hit in found} == {
+        f"{_PAD_ID}#note/n1",
+        f"{_PAD_ID}#note/n2",
+    }, "both notes belong to the pad that was asked for"
+
+
+def test_the_pad_name_ranks_below_the_notes_own_title() -> None:
+    """Stated on the scorer, because this is the half the FTS weights cannot speak for.
+
+    The two paths must agree on which of a note's fields are searchable — a reader cannot know which
+    one answered — so this asserts the supplement matches the pad name, and asserts the ordering the
+    FTS row's weights already give it (title 4.0, scratchpad_name 2.0).
+    """
+    from src.application.artifacts.scoring import score_scratchpad_note
+
+    def _note(*, title: str, scratchpad_name: str) -> ScratchpadNoteRecord:
+        return ScratchpadNoteRecord(
+            artifact_id=f"{_PAD_ID}#note/n1",
+            scratchpad_id=_PAD_ID,
+            scratchpad_name=scratchpad_name,
+            note_id="n1",
+            title=title,
+            body="",
+            element_type="",
+            domain="",
+            group="platform-core",
+            area="unfiled",
+            status="draft",
+            path=Path("x.scratchpad.yaml"),
+        )
+
+    by_pad = score_scratchpad_note(_note(title="Unrelated", scratchpad_name="Marsupial"), "marsupial", ["marsupial"])
+    by_title = score_scratchpad_note(_note(title="Marsupial", scratchpad_name="Unrelated"), "marsupial", ["marsupial"])
+
+    assert by_pad > 0.0, "a note is findable by the pad it lives on"
+    assert by_title > by_pad, "its own title is the more specific answer to the same query"

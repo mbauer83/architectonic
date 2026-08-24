@@ -3,9 +3,22 @@ from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor
 from typing import Callable, TypeVar
 
+from src.domain.ontology_representation.artifact_types import (
+    KIND_TO_RECORD_TYPE,
+    SUBORDINATE_RECORD_TYPES,
+)
+
 _T = TypeVar("_T")
 _S = TypeVar("_S")
-_RECORD_TYPE_ORDER = ("entity", "connection", "diagram", "document")
+#: The record types the merge interleaves, and the order it interleaves them in. Derived from the
+#: vocabulary rather than restated beside it: a hand-kept second list of the record types is what
+#: drifted — it named four of the five, so every `scratchpad-note` row was dropped whenever the two
+#: roots were merged, which is every search the backend serves. Subordinate kinds sort last, the
+#: condition they are indexed under (SUBORDINATE_RECORD_TYPES).
+_RECORD_TYPE_ORDER: tuple[str, ...] = (
+    *(rt for rt in KIND_TO_RECORD_TYPE.values() if rt not in SUBORDINATE_RECORD_TYPES),
+    *(rt for rt in KIND_TO_RECORD_TYPE.values() if rt in SUBORDINATE_RECORD_TYPES),
+)
 
 EXECUTOR = ThreadPoolExecutor(max_workers=4, thread_name_prefix="combined-artifact-index")
 
