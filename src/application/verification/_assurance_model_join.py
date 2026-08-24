@@ -22,10 +22,11 @@ from src.application.verification.assurance_issues import (
 )
 from src.application.verification.assurance_two_way_coverage import two_way_findings
 from src.domain.artifact_id import canonical_entity_key
+from src.domain.assurance.assurance_node_types import CONTROL_STRUCTURE_NODE
+from src.domain.assurance.fmea_structural_signals import elements_within
 
 BINDS_TO = "binds-to"
 FAILURE_MODE = "failure-mode"
-CONTROL_STRUCTURE_NODE = "control-structure-node"
 
 
 def bound_elements(store: ConfidentialAssuranceStore) -> Mapping[str, str]:
@@ -87,14 +88,28 @@ def append_two_way_findings(
     only a control-structure node: an element someone has already written failure modes against is
     plainly not overlooked, and reporting it as an analysis gap would train readers to ignore the
     finding.
+
+    `within_analysed_control_structure` extends that downward through declared containment, from the
+    elements a **control-structure** node binds to and from those only. A control structure is coarser
+    than the component decomposition on purpose, so a part of an analysed controller has been reached
+    by that analysis; a part of an element that merely has *failure modes* has not, because a failure
+    mode is per-component. Which relations contain is the ontology's to say and travels on the basis.
     """
+    node_types = {str(n["node_id"]): str(n.get("node_type", "")) for n in all_nodes}
     analysed = frozenset(
         element for node_id, element in element_by_node.items()
-        if element and node_id in {str(n["node_id"]) for n in all_nodes}
+        if element and node_id in node_types
+    )
+    controllers = frozenset(
+        element for node_id, element in element_by_node.items()
+        if element and node_types.get(node_id) == CONTROL_STRUCTURE_NODE
     )
     for finding in two_way_findings(
         basis=basis,
         analysed_element_ids=analysed,
+        within_analysed_control_structure=elements_within(
+            controllers, basis.edges, containment_types=basis.containment_types,
+        ),
         severity_by_element=severity_by_element,
     ):
         result.issues.append(AssuranceIssue.of(

@@ -58,6 +58,44 @@ class TypedEdge:
     strength: int | None
 
 
+def elements_within(
+    roots: frozenset[str],
+    edges: Sequence[TypedEdge],
+    *,
+    containment_types: frozenset[str],
+) -> frozenset[str]:
+    """Every element inside one of *roots*, following declared containment downward.
+
+    Downward only, and that direction is the claim: what a container holds is part of it, while the
+    container an element belongs to is not thereby part of the element. Walking up would say that
+    analysing a component analysed the system it sits in.
+
+    `containment_types` is injected because which relations mean containment belongs to the ontology
+    that declares them — the ArchiMate module marks composition and aggregation
+    `relationship_kind: containment`. An empty set expands nothing rather than falling back to a
+    guess, the same restraint an absent analysable set takes: a caller that cannot say which
+    relations contain gets the unexpanded answer, not an invented one.
+
+    A containment cycle is a modelling error rather than a reason to loop, so the frontier stops on a
+    repeat. Roots are included in the result, because an element is trivially within itself and every
+    caller wants the closure rather than the difference.
+    """
+    if not containment_types:
+        return frozenset()
+    children: dict[str, list[str]] = {}
+    for edge in edges:
+        if edge.connection_type in containment_types and edge.source_id and edge.target_id:
+            children.setdefault(edge.source_id, []).append(edge.target_id)
+    seen = set(roots)
+    frontier = list(roots)
+    while frontier:
+        for child in children.get(frontier.pop(), ()):
+            if child not in seen:
+                seen.add(child)
+                frontier.append(child)
+    return frozenset(seen)
+
+
 @dataclass(frozen=True)
 class Reliance:
     """What leans on one element, and how heavily."""

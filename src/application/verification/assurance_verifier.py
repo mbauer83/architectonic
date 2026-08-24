@@ -34,6 +34,7 @@ from src.application.verification.assurance_issues import (
     SeverityLiteral,
 )
 from src.domain.artifact_id import canonical_entity_key
+from src.domain.assurance.assurance_node_types import CONTROL_STRUCTURE_NODE
 
 if TYPE_CHECKING:
     from src.application.assurance.ports import ConfidentialAssuranceStore
@@ -129,7 +130,7 @@ def verify_store(
         elif node_type == "risk":
             risk.check_accepted_risk_is_not_the_whole_answer(node, all_nodes, all_edges, result)
             risk.check_has_a_treatment(node, result)
-        elif node_type == "control-structure-node":
+        elif node_type == CONTROL_STRUCTURE_NODE:
             chain.check_control_node_is_bound(node, result)
         elif node_type == "hazard":
             chain.check_hazard_reaches_a_loss(node, all_edges, result)
@@ -181,7 +182,7 @@ def _check_analysed_elements_are_examined(
         # and a failure mode bound by the short one describe the same element; compared raw, the
         # finding is reported once per spelling and no amount of analysis silences it.
         element_id = canonical_entity_key(str(ref["arch_artifact_id"]))
-        if node_types.get(node_id) == "control-structure-node":
+        if node_types.get(node_id) == CONTROL_STRUCTURE_NODE:
             by_element.setdefault(element_id, []).append(node_id)
         elif node_types.get(node_id) == failures.FAILURE_MODE:
             failure_mode_elements.add(element_id)

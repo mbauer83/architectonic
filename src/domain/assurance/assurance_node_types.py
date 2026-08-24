@@ -39,6 +39,11 @@ NODE_ID_PREFIXES: dict[str, str] = {
 
 CREATABLE_NODE_TYPES: frozenset[str] = frozenset(NODE_ID_PREFIXES)
 
+#: The controller-side node type, named once. Two rules ask "was this element analysed *as part of a
+#: control structure*", which is a different question from "does any assurance node mention it", and
+#: a literal in each of them is how the two came to disagree.
+CONTROL_STRUCTURE_NODE = "control-structure-node"
+
 
 #: Fields a caller may change on an existing node.
 #:

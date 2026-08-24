@@ -17,10 +17,10 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
 from src.domain.artifact_id import canonical_entity_key
+from src.domain.assurance.assurance_node_types import CONTROL_STRUCTURE_NODE
 from src.domain.assurance.fmea_structural_signals import TypedEdge, countable
 
 BINDS_TO = "binds-to"
-CONTROL_STRUCTURE_NODE = "control-structure-node"
 FAILURE_MODE = "failure-mode"
 LEADS_TO = "leads-to"
 

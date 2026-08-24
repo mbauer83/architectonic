@@ -38,6 +38,7 @@ from src.application.assurance.fmea_architecture import ArchitectureBasis
 from src.application.assurance.fmea_cells import cell_for, cell_payload
 from src.application.assurance.fmea_occurrence_evidence import ElementSecurityBasis
 from src.domain.artifact_id import canonical_entity_key
+from src.domain.assurance.assurance_node_types import CONTROL_STRUCTURE_NODE
 from src.domain.assurance.failure_modes import (
     ANSWERED_ASSESSMENT_STATES,
     FAILURE_GUIDEWORDS,
@@ -48,7 +49,6 @@ from src.domain.assurance.fmea_factors import (
 )
 
 FAILURE_MODE = "failure-mode"
-CONTROL_STRUCTURE_NODE = "control-structure-node"
 BINDS_TO = "binds-to"
 
 

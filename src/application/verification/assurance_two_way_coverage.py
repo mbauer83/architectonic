@@ -88,6 +88,7 @@ def load_bearing_but_unanalysed(
     *,
     edges: Sequence[TypedEdge],
     analysed_element_ids: frozenset[str],
+    within_analysed_control_structure: frozenset[str] = frozenset(),
     analysable_element_ids: frozenset[str] = frozenset(),
     names: Mapping[str, str] | None = None,
 ) -> tuple[CoverageFinding, ...]:
@@ -112,6 +113,17 @@ def load_bearing_but_unanalysed(
     list nobody reads. An empty set narrows nothing, so a caller without the ontology still gets the
     dependency finding rather than silently none.
 
+    **`within_analysed_control_structure` is the containment half, and it is only half on purpose.**
+    This finding asserts two absences at once — *appears in no control structure* and *has no failure
+    modes* — and containment answers the first, never the second. An STPA control structure is
+    deliberately coarser than the component decomposition: what was analysed is a controller's process
+    model and control algorithm, and those cover its parts, so a component inside an analysed
+    controller has been reached. A *failure mode* is per-component by definition, and the parent
+    having them says nothing about the child, so nothing here expands that question — and **W510,
+    which asks only that, is not given this set at all.** Measured before the split: 7 of 24 findings
+    named elements composed directly by an analysed controller, each witness printing the composition
+    edge that said so.
+
     ``names`` maps element id → reader-facing name. Optional, and absent means the finding carries
     no name: a caller with no architecture model still gets sound findings, and inventing a label
     for an element nothing can describe would be worse than showing its id."""
@@ -119,7 +131,8 @@ def load_bearing_but_unanalysed(
     if analysable_element_ids:
         candidates &= analysable_element_ids
     findings: list[CoverageFinding] = []
-    for element_id in sorted(candidates - analysed_element_ids):
+    reached = analysed_element_ids | within_analysed_control_structure
+    for element_id in sorted(candidates - reached):
         reliance = reliance_on(element_id, edges)
         if reliance is None or reliance.dependent_count < MANY_DEPENDENTS:
             continue
@@ -192,6 +205,7 @@ def two_way_findings(
     *,
     basis: ArchitectureBasis,
     analysed_element_ids: frozenset[str],
+    within_analysed_control_structure: frozenset[str] = frozenset(),
     severity_by_element: Mapping[str, str],
 ) -> tuple[CoverageFinding, ...]:
     """Every finding that needs both models, from one assembled view of the graph.
@@ -216,6 +230,7 @@ def two_way_findings(
         *load_bearing_but_unanalysed(
             edges=basis.edges,
             analysed_element_ids=analysed_element_ids,
+            within_analysed_control_structure=within_analysed_control_structure,
             analysable_element_ids=basis.analysable_element_ids,
             names=element_names(basis),
         ),

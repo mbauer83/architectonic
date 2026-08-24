@@ -10,6 +10,8 @@ from __future__ import annotations
 import json
 from typing import Any
 
+from src.domain.assurance.assurance_node_types import CONTROL_STRUCTURE_NODE
+
 
 def coverage_gaps(
     nodes: list[dict[str, Any]],
@@ -43,7 +45,7 @@ def coverage_gaps(
     ]
     unbound_csns = [
         {"node_id": str(n["node_id"]), "name": str(n.get("name", ""))}
-        for n in by_type.get("control-structure-node", [])
+        for n in by_type.get(CONTROL_STRUCTURE_NODE, [])
         if str(n.get("binding_status", "")) == "unbound-pending"
     ]
 

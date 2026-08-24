@@ -133,7 +133,16 @@ class EntityTypeInfo:
     id_prefix: str | None = None
 
 
+#: The kinds of relation an ontology may declare — schema vocabulary, shared by ArchiMate 4 and the
+#: datatype notation, as against the type names each module owns. Kept a set of strings rather than a
+#: `Literal` because every value arrives from a YAML file: narrowing the field would buy type-level
+#: safety only by forcing each loader to suppress the checker, and nothing branches over the set.
 RELATIONSHIP_KINDS: frozenset[str] = frozenset({"association", "containment", "generalization", "dependency"})
+
+#: One element is part of another — composition and aggregation carry it in ArchiMate 4,
+#: `dt-composition` and `dt-aggregation` in the datatype notation. Named so a generic reader can ask
+#: "which relations contain?" without spelling any ontology's type names.
+CONTAINMENT_KIND = "containment"
 
 
 @dataclass(frozen=True)
@@ -164,6 +173,9 @@ class ConnectionTypeInfo:
     embedding: Literal["none", "array", "property"] = "none"
     embed_key: str | None = None
     cascade_delete_source: bool = False
+    #: What sort of relation this is, from `RELATIONSHIP_KINDS`. Schema vocabulary rather than any
+    #: one ontology's type names, which is what lets a generic reader ask "which relations contain?"
+    #: without spelling `archimate-composition`.
     relationship_kind: str | None = None
     derivation_role: Literal["structural", "dependency", "dynamic", "specialization"] | None = None
     derivation_strength: int | None = None

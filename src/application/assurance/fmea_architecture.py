@@ -21,7 +21,7 @@ from typing import Protocol, runtime_checkable
 from src.domain.artifact_id import canonical_entity_key
 from src.domain.assurance.fmea_structural_signals import TypedEdge, typed_edges
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
-from src.domain.ontology_representation.ontology_types import ConnectionTypeInfo
+from src.domain.ontology_representation.ontology_types import CONTAINMENT_KIND, ConnectionTypeInfo
 
 CONNECTION_TYPE_KEY = "connection_type"
 
@@ -76,6 +76,13 @@ class ArchitectureBasis:
     edges: tuple[TypedEdge, ...] = ()
     connections: tuple[Mapping[str, object], ...] = ()
     entities: Mapping[str, Mapping[str, object]] = field(default_factory=dict)
+    containment_types: frozenset[str] = frozenset()
+    """Which relation types mean one element contains another, from the ontology that declares it.
+
+    Injected rather than named here: the ArchiMate module marks composition and aggregation
+    `relationship_kind: containment`, and a layer that spelled those type names would be reading
+    another module's vocabulary. Empty where no connection-type source was given, and an empty set
+    expands nothing rather than guessing."""
     assembled: bool = False
     """Whether the graph was read at all, as against read and found to say nothing.
 
@@ -153,8 +160,21 @@ def read_architecture_basis(
         edges=typed_edges(connections, dict(connection_types.all_connection_types())),
         connections=connections,
         entities=entities,
+        containment_types=_containment_types(connection_types),
         assembled=True,
         analysable_element_ids=_analysable_ids(entities, entity_types),
+    )
+
+
+def _containment_types(connection_types: ConnectionTypeSource) -> frozenset[str]:
+    """The relation types whose declared kind is containment.
+
+    Read off the same `all_connection_types()` mapping the derivation roles come from, so no new port
+    is needed and no ontology's type names are spelled here.
+    """
+    return frozenset(
+        name for name, info in connection_types.all_connection_types().items()
+        if getattr(info, "relationship_kind", None) == CONTAINMENT_KIND
     )
 
 
