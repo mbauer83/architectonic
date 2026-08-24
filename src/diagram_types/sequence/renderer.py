@@ -21,6 +21,7 @@ from typing import Any
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
 from src.domain.ontology_representation.ontology_protocol import DiagramRendererReferences
 from src.infrastructure.rendering.puml_label_wrapping import label_wrap_skinparams
+from src.infrastructure.rendering.puml_text_escaping import puml_line_text
 
 _PARTICIPANT_KEYWORD: dict[str, str] = {
     "participant": "participant",
@@ -82,7 +83,7 @@ class SequencePumlRenderer:
         lines: list[str] = [
             f"@startuml {diagram_name}",
             *label_wrap_skinparams(self._config),
-            f"title {_puml_text(name)}",
+            f"title {puml_line_text(name)}",
             "",
         ]
 
@@ -92,7 +93,7 @@ class SequencePumlRenderer:
             label = str(ll.get("label") or ll_id)
             ptype = str(ll.get("participant_type") or "participant")
             keyword = _PARTICIPANT_KEYWORD.get(ptype, "participant")
-            lines.append(f'{keyword} "{_puml_text(label)}" as {alias}')
+            lines.append(f'{keyword} "{puml_line_text(label)}" as {alias}')
 
         if lifelines:
             lines.append("")
@@ -251,7 +252,7 @@ def _emit_messages_with_groupings(
 
         # Else boundaries: innermost first (smallest span)
         for _g, _i, guard, _span in sorted(else_at.get(idx, []), key=lambda x: x[3]):
-            lines.append(f"else {_puml_text(guard)}" if guard else "else")
+            lines.append(f"else {puml_line_text(guard)}" if guard else "else")
 
         # Open groupings: outermost first (largest span)
         for g, _span in sorted(open_at.get(idx, []), key=lambda x: -x[1]):
@@ -287,11 +288,11 @@ def _emit_grouping_open(g: dict[str, Any], lines: list[str]) -> None:
     first_guard = str(ops[0].get("guard") or "") if ops else ""
 
     if kind == "group" and label:
-        lines.append(f"group {_puml_text(label)}")
+        lines.append(f"group {puml_line_text(label)}")
     elif kind in ("loop", "break", "critical") and label:
-        lines.append(f"{kind} {_puml_text(label)}")
+        lines.append(f"{kind} {puml_line_text(label)}")
     elif first_guard:
-        lines.append(f"{kind} {_puml_text(first_guard)}")
+        lines.append(f"{kind} {puml_line_text(first_guard)}")
     else:
         lines.append(kind)
 
@@ -310,7 +311,7 @@ def _emit_message(
     tgt_alias = alias_map.get(tgt_ll, tgt_ll)
     arrow_key = str(msg.get("arrow") or "sync")
     arrow = _ARROW_MAP.get(arrow_key, "->")
-    label = _puml_text(str(msg.get("label") or ""))
+    label = puml_line_text(str(msg.get("label") or ""))
     activate = bool(msg.get("activate_target"))
     deactivate = bool(msg.get("deactivate_target"))
 
@@ -348,12 +349,10 @@ def _emit_note(note: dict[str, Any], alias_map: dict[str, str], lines: list[str]
     if not aliases:
         return
     if placement == "left_of":
-        lines.append(f"note left of {aliases[0]}: {_puml_text(text)}")
+        lines.append(f"note left of {aliases[0]}: {puml_line_text(text)}")
     elif placement == "over":
-        lines.append(f"note over {', '.join(aliases)}: {_puml_text(text)}")
+        lines.append(f"note over {', '.join(aliases)}: {puml_line_text(text)}")
     else:
-        lines.append(f"note right of {aliases[0]}: {_puml_text(text)}")
+        lines.append(f"note right of {aliases[0]}: {puml_line_text(text)}")
 
 
-def _puml_text(value: str) -> str:
-    return value.replace("\\", "\\\\").replace("\n", " ").replace("|", "/")

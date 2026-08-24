@@ -17,6 +17,7 @@ import pytest
 
 from src.diagram_types.activity._step_links import (
     LABELLED_STEP_KINDS,
+    drawn_lane_ids,
     drawn_step_ids,
     link_suffix,
     sentinel_of,
@@ -77,3 +78,15 @@ class TestWhatTheWriterEmitsIsWhatTheReaderFinds:
         }
 
         assert drawn_step_ids(shape.render()) == declared
+
+    @pytest.mark.parametrize("shape", _all_shapes(), ids=lambda s: s.name)
+    def test_every_lane_of_every_shape_round_trips(self, shape: ActivityShape) -> None:
+        """The other half of the syntax, since a bound lane became selectable. Read apart from the
+        steps, because W045 asks about steps and a lane counted as one makes that unanswerable."""
+        declared = {
+            sentinel_target(item)
+            for item in (shape.entities.get("swimlane") or [])  # type: ignore[union-attr]
+            if isinstance(item, dict) and item.get("id")
+        }
+
+        assert drawn_lane_ids(shape.render()) <= declared, "a lane header names something undeclared"

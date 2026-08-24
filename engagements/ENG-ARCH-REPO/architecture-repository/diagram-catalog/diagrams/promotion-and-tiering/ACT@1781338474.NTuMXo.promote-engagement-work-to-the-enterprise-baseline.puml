@@ -84,7 +84,7 @@ connections:
   conn_type: step-else
   source: d1
   target: a6
-last-updated: '2026-08-13T13:58:52Z'
+last-updated: '2026-08-24T09:15:11Z'
 ---
 @startuml promote-engagement-work-to-the-enterprise-repository
 skinparam hyperlinkColor #252327
@@ -93,21 +93,21 @@ skinparam wrapWidth 180
 skinparam maxMessageSize 180
 title Promote Engagement Work to the Enterprise Repository
 
-|Author / AI Agent|
+|[[arch://author Author / AI Agent]]|
 start
 
 :[[arch://a1 Select entities & connections to promote]];
-|Architecture Backend|
+|[[arch://backend Architecture Backend]]|
 :[[arch://a2 Detect & resolve name/id conflicts (accept / enterprise / merge)]];
-|Verifier|
+|[[arch://verifier Verifier]]|
 :[[arch://a3 Check engagement schemata ⊇ enterprise]];
 if ([[arch://d1 Engagement schemata ⊇ enterprise?]]) then (yes)
-|Architecture Backend|
+|[[arch://backend Architecture Backend]]|
 :[[arch://a4 Promote to enterprise working branch]];
-|Author / AI Agent|
+|[[arch://author Author / AI Agent]]|
 :[[arch://a5 Submit branch for review (open PR)]];
 else (no)
-|Architecture Backend|
+|[[arch://backend Architecture Backend]]|
 :[[arch://a6 Block promotion with per-violation errors]];
 endif
 

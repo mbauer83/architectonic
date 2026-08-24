@@ -12,12 +12,27 @@ from __future__ import annotations
 
 from typing import Any
 
+from src.infrastructure.rendering.puml_text_escaping import puml_line_text
+
 _SENTINEL_START = "[[arch://"
 
 #: The step kinds whose emission carries a sentinel — so the only ones whose presence in a body can
 #: be read back. `fork` is absent because PlantUML's `fork` keyword takes no label or link argument
 #: at all, so a fork and a join are drawn as bare bars with nothing on them to read.
 LABELLED_STEP_KINDS = ("action", "decision", "partition")
+
+
+def puml_text(value: str) -> str:
+    """*value*, safe on an activity line — the shared line escaping plus this notation's own rule.
+
+    `|` bounds a swimlane header, so a label carrying one would close the header early and leave the
+    rest as body text. Replaced rather than escaped: PlantUML offers no escape for it there.
+
+    Beside the sentinel because both are what this notation does to a label before writing it, and
+    because `lane_header` needs it — `_emission` used to own it and imports this module, so leaving it
+    there would have made the pair circular.
+    """
+    return puml_line_text(value).replace("|", "/")
 
 
 def _link_clause(url: str) -> str:
@@ -68,6 +83,26 @@ def link_suffix(step: dict[str, Any]) -> str:
     return f" {' '.join(clauses)}" if clauses else ""
 
 
+def lane_header(lane: dict[str, Any]) -> str:
+    """One swimlane header, carrying the lane's identity — ``|[[arch://id Label]]|``.
+
+    A lane may be bound, and the binding persisted while the header stayed a bare `|Label|`: an
+    action, a decision and a partition were all selectable and the lane alone was not, in this same
+    module. The notation permits it — verified on the pinned PlantUML, where such a header renders one
+    anchor and keeps its visible text — so a lane is not the case `fork` is, whose keyword accepts no
+    link at all.
+
+    Here rather than in either caller because both spelled it: the renderer wrote the first lane's
+    header and the emission walk wrote every switch after it. Wiring one and not the other would have
+    left the first lane as the only unclickable one.
+
+    `puml_text` runs on the label before the link wraps it, and that order matters: `|` delimits the
+    header, so a label carrying one has to be replaced before it can end the header early.
+    """
+    label = puml_text(str(lane.get("label") or lane.get("id") or ""))
+    return f"|{sentinel_wrapped(lane, label)}|"
+
+
 def sentinel_of(line: str) -> str | None:
     """The step a rendered line stands for, or None where the line carries no sentinel.
 
@@ -85,12 +120,46 @@ def sentinel_of(line: str) -> str | None:
     return sentinel.replace("%5D", "]") or None
 
 
+def _is_lane_header(line: str) -> bool:
+    """Whether this line is a swimlane header rather than a step.
+
+    A header is the only construct bounded by `|` on both sides, and `puml_text` has already replaced
+    any `|` a label carried — so the delimiters cannot be anything but the header's own.
+    """
+    stripped = line.strip()
+    return len(stripped) > 1 and stripped.startswith("|") and stripped.endswith("|")
+
+
 def drawn_step_ids(body: str) -> frozenset[str]:
-    """Every step the body draws, read off the sentinel each drawn line carries.
+    """Every **step** the body draws, read off the sentinel each drawn line carries.
 
     A step drawn once and reached from elsewhere by a connector appears once: the connector line
     carries no sentinel of its own, only the line that draws the step does.
+
+    Lane headers are excluded, and the exclusion is the point: since a bound lane became selectable
+    it carries a sentinel too, and W045 asks whether every declared *step* is drawn. Counting a lane
+    as a step would make that question unanswerable — the two are read apart here rather than by each
+    caller, because one syntax gets one reader.
     """
     return frozenset(
-        sentinel for sentinel in (sentinel_of(line) for line in body.splitlines()) if sentinel
+        sentinel
+        for line in body.splitlines()
+        if not _is_lane_header(line)
+        for sentinel in (sentinel_of(line),)
+        if sentinel
+    )
+
+
+def drawn_lane_ids(body: str) -> frozenset[str]:
+    """Every swimlane the body draws, read off its header's sentinel.
+
+    The other half of the same syntax. A lane's header is emitted once per switch *into* it, so a
+    diagram that returns to a lane repeats the header — hence a set, not a count.
+    """
+    return frozenset(
+        sentinel
+        for line in body.splitlines()
+        if _is_lane_header(line)
+        for sentinel in (sentinel_of(line),)
+        if sentinel
     )

@@ -41,9 +41,9 @@ from ._emission import (
     Swimlanes,
     emit_from,
     emit_orphans,
-    puml_text,
 )
 from ._step_graph import StepGraph
+from ._step_links import lane_header, puml_text
 
 _STEP_KEYS = ("action", "decision", "fork", "partition")
 
@@ -121,8 +121,7 @@ class ActivityPumlRenderer:
             "",
         ]
         if initial_lane_id and initial_lane_id in lane_map:
-            lane = lane_map[initial_lane_id]
-            lines.append(f"|{puml_text(str(lane.get('label') or lane['id']))}|")
+            lines.append(lane_header(lane_map[initial_lane_id]))
         lines.append("start")
         lines.append("")
         lines.extend(body_lines)

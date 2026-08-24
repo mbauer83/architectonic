@@ -44,7 +44,13 @@ from dataclasses import dataclass
 from typing import Any
 
 from ._step_graph import StepGraph
-from ._step_links import link_suffix, sentinel_wrapped, user_link_suffix
+from ._step_links import (
+    lane_header,
+    link_suffix,
+    puml_text,
+    sentinel_wrapped,
+    user_link_suffix,
+)
 
 
 @dataclass
@@ -280,7 +286,7 @@ def _maybe_switch_lane(step_id: str, ctx: EmissionContext, lines: list[str]) -> 
         return
     lane = lanes.by_id.get(lane_id)
     if lane:
-        lines.append(f"|{puml_text(str(lane.get('label') or lane['id']))}|")
+        lines.append(lane_header(lane))
         lanes.cursor.current = lane_id
 
 
@@ -303,5 +309,3 @@ def _emit_step_note(step_id: str, ctx: EmissionContext, lines: list[str]) -> Non
         lines.append(f"note {side}: {puml_text(text)}")
 
 
-def puml_text(value: str) -> str:
-    return value.replace("\\", "\\\\").replace("\n", " ").replace("|", "/")

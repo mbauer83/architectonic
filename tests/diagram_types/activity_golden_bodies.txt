@@ -182,22 +182,22 @@ skinparam wrapWidth 240
 skinparam maxMessageSize 240
 title cross level convergence across lanes
 
-|Architectonic|
+|[[arch://tool Architectonic]]|
 start
 
 if ([[arch://keyed are both ends typed?]]) then (yes)
 :[[arch://inspect inspect the pair]];
 if ([[arch://permitted is the pair permitted?]]) then (yes)
-|You|
+|[[arch://author You]]|
 :[[arch://select choose what to lift]];
 else (no)
 :[[arch://revise revise the link]];
 endif
-|Architectonic|
+|[[arch://tool Architectonic]]|
 :[[arch://preflight report what would happen]];
 :[[arch://write write it in one transaction]];
 else (no)
-|You|
+|[[arch://author You]]|
 :[[arch://select choose what to lift]];
 endif
 
@@ -404,38 +404,38 @@ skinparam wrapWidth 240
 skinparam maxMessageSize 240
 title Working in a Scratchpad Area
 
-|You|
+|[[arch://lane_you You]]|
 start
 
 note right: A note is bound at creation only when the search found a fitting element and you picked it. Otherwise the binding is made by lifting.
 if ([[arch://d_exists Adding a note: does the model already hold this??]]) then (it exists)
 :[[arch://a_search Search the area's permitted types for it]];
-|Architectonic|
+|[[arch://lane_sys Architectonic]]|
 :[[arch://a_bind Create the note bound to that element; its type comes from the element]];
 else (it is new)
-|You|
+|[[arch://lane_you You]]|
 :[[arch://a_title Create the note from a title; it has no type yet]];
 endif
 :[[arch://a_narrow Optionally narrow it one level down the meta-ontology's hierarchy]];
 note right: Adding, refining, connecting and lifting are not phases. They happen in whatever order the thinking takes, and a note may stay untyped indefinitely.
 :[[arch://a_draw Drag a link between two notes]];
-|Architectonic|
+|[[arch://lane_sys Architectonic]]|
 note right: Until both ends are typed there is nothing to check, so nothing is said.
 if ([[arch://d_keyed Have both ends reached the level relationships key on??]]) then (yes)
 :[[arch://a_verify Check that pair against the meta-ontology]];
 if ([[arch://d_ok Does the meta-ontology permit this pair??]]) then (permitted)
-|You|
+|[[arch://lane_you You]]|
 :[[arch://a_select Select notes and links; name the target project]];
 else (refused)
 :[[arch://a_remedy Reverse the link, retype an end, or remove it]];
 note right: A specialization that narrows rather than forbids warns and lets you carry on.
 endif
-|Architectonic|
+|[[arch://lane_sys Architectonic]]|
 :[[arch://a_preflight Report what would be created, skipped and refused]];
 :[[arch://a_write Write it in one transaction, then record on each note what it became]];
 note right: Lifting leaves the notes in place; what was lifted now carries a reference to what it became.
 else (not yet)
-|You|
+|[[arch://lane_you You]]|
 :[[arch://a_select Select notes and links; name the target project]];
 endif
 
@@ -451,21 +451,21 @@ skinparam wrapWidth 240
 skinparam maxMessageSize 240
 title Promote Engagement Work to the Enterprise Repository
 
-|Author / AI Agent|
+|[[arch://author Author / AI Agent]]|
 start
 
 :[[arch://a1 Select entities & connections to promote]];
-|Architecture Backend|
+|[[arch://backend Architecture Backend]]|
 :[[arch://a2 Detect & resolve name/id conflicts (accept / enterprise / merge)]];
-|Verifier|
+|[[arch://verifier Verifier]]|
 :[[arch://a3 Check engagement schemata ⊇ enterprise]];
 if ([[arch://d1 Engagement schemata ⊇ enterprise?]]) then (yes)
-|Architecture Backend|
+|[[arch://backend Architecture Backend]]|
 :[[arch://a4 Promote to enterprise working branch]];
-|Author / AI Agent|
+|[[arch://author Author / AI Agent]]|
 :[[arch://a5 Submit branch for review (open PR)]];
 else (no)
-|Architecture Backend|
+|[[arch://backend Architecture Backend]]|
 :[[arch://a6 Block promotion with per-violation errors]];
 endif
 

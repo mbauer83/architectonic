@@ -256,7 +256,7 @@ bindings:
   correspondence_kind: represents
   target:
     entity_id: FNC@1786225282.foobGD2.write-lifted-model-content
-last-updated: '2026-08-22T21:45:26Z'
+last-updated: '2026-08-24T09:15:06Z'
 ---
 @startuml working-in-a-scratchpad-area
 skinparam hyperlinkColor #252327
@@ -265,38 +265,38 @@ skinparam wrapWidth 180
 skinparam maxMessageSize 180
 title Working in a Scratchpad Area
 
-|You|
+|[[arch://lane_you You]]|
 start
 
 note right: A note is bound at creation only when the search found a fitting element and you picked it. Otherwise the binding is made by lifting.
 if ([[arch://d_exists Adding a note: does the model already hold this??]]) then (it exists)
 :[[arch://a_search Search the area's permitted types for it]];
-|Architectonic|
+|[[arch://lane_sys Architectonic]]|
 :[[arch://a_bind Create the note bound to that element; its type comes from the element]];
 else (it is new)
-|You|
+|[[arch://lane_you You]]|
 :[[arch://a_title Create the note from a title; it has no type yet]];
 endif
 :[[arch://a_narrow Optionally narrow it one level down the meta-ontology's hierarchy]];
 note right: Adding, refining, connecting and lifting are not phases. They happen in whatever order the thinking takes, and a note may stay untyped indefinitely.
 :[[arch://a_draw Drag a link between two notes]];
-|Architectonic|
+|[[arch://lane_sys Architectonic]]|
 note right: Until both ends are typed there is nothing to check, so nothing is said.
 if ([[arch://d_keyed Have both ends reached the level relationships key on??]]) then (yes)
 :[[arch://a_verify Check that pair against the meta-ontology]];
 if ([[arch://d_ok Does the meta-ontology permit this pair??]]) then (permitted)
-|You|
+|[[arch://lane_you You]]|
 :[[arch://a_select Select notes and links; name the target project]];
 else (refused)
 :[[arch://a_remedy Reverse the link, retype an end, or remove it]];
 note right: A specialization that narrows rather than forbids warns and lets you carry on.
 endif
-|Architectonic|
+|[[arch://lane_sys Architectonic]]|
 :[[arch://a_preflight Report what would be created, skipped and refused]];
 :[[arch://a_write Write it in one transaction, then record on each note what it became]];
 note right: Lifting leaves the notes in place; what was lifted now carries a reference to what it became.
 else (not yet)
-|You|
+|[[arch://lane_you You]]|
 :[[arch://a_select Select notes and links; name the target project]];
 endif
 
