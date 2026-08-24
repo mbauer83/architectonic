@@ -100,19 +100,40 @@ def commit_staged_repo(
     return result
 
 
+class UnrepresentableChangeError(RuntimeError):
+    """A staged change the manifest cannot carry, so the commit must not proceed.
+
+    The manifest is derived from the paths a write reported touching, and only the managed subtrees
+    can appear in it. A touched path outside them used to be dropped here without a word: the write
+    had already happened in the staged root and had already answered `wrote: true`, the verification
+    passed, and the change simply never reached the live repository. A silent partial commit is the
+    one outcome a transaction must never produce, so it fails instead.
+
+    No operation reaches this today — bulk write and bulk delete are the only users of the staged
+    transaction and every path they touch is under `model/`, `docs/`, `diagram-catalog/` or
+    `projects/`. It is a guard against the next one, and against the class of report that reads
+    "it said it wrote and nothing was on disk".
+    """
+
+
 def _derive_manifest_from_touched_paths(
     *,
     live_root: Path,
     staged_root: Path,
     touched_paths: set[Path],
 ) -> tuple[list[ManifestEntry], BatchCommitResult]:
-    relpaths = sorted(
-        {
-            relpath
-            for path in touched_paths
-            if (relpath := _managed_relpath(path, live_root=live_root, staged_root=staged_root)) is not None
-        }
-    )
+    resolved = {
+        path: _managed_relpath(path, live_root=live_root, staged_root=staged_root)
+        for path in touched_paths
+    }
+    unrepresentable = sorted(str(path) for path, relpath in resolved.items() if relpath is None)
+    if unrepresentable:
+        raise UnrepresentableChangeError(
+            "the commit manifest cannot carry these staged changes, so none of the batch is "
+            f"published: {', '.join(unrepresentable)}. Only {', '.join(_MANAGED_SUBTREES)} are "
+            "managed by a staged transaction."
+        )
+    relpaths = sorted({relpath for relpath in resolved.values() if relpath is not None})
     entries: list[ManifestEntry] = []
     changed_paths: list[Path] = []
     deleted_paths: list[Path] = []
