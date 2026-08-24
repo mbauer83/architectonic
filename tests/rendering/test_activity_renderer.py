@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+from src.diagram_types.activity._step_links import lane_header
 from src.diagram_types.activity.renderer import ActivityPumlRenderer
 from src.infrastructure.rendering.puml_safety import strip_leading_puml_frontmatter
 
@@ -123,9 +124,9 @@ def test_swimlane_emitted_before_first_step_in_lane() -> None:
     import re as _re
 
     start_pos = _re.search(r"^start$", puml, _re.MULTILINE).start()  # type: ignore[union-attr]
-    customer_pos = puml.index("|Customer|")
+    customer_pos = puml.index(lane_header({"id": "sw-1", "label": "Customer"}))
     submit_pos = puml.index(":[[arch://a1 Submit]];")
-    system_pos = puml.index("|System|")
+    system_pos = puml.index(lane_header({"id": "sw-2", "label": "System"}))
     process_pos = puml.index(":[[arch://a2 Process]];")
     assert customer_pos < start_pos < submit_pos < system_pos < process_pos
 
@@ -141,7 +142,7 @@ def test_lane_not_repeated_for_consecutive_steps_in_same_lane() -> None:
         },
         diagram_connections=[_lane_kc("a1", "sw-1"), _lane_kc("a2", "sw-1"), _flow("a1", "a2")],
     )
-    assert puml.count("|Lane|") == 1
+    assert puml.count(lane_header({"id": "sw-1", "label": "Lane"})) == 1
 
 
 def test_unknown_lane_id_emits_no_lane_marker() -> None:
@@ -210,8 +211,8 @@ def test_decision_branch_lane_switch() -> None:
             _then("d1", "a1"), _else("d1", "a2"),
         ],
     )
-    assert "|Manager|" in puml
-    assert "|System|" in puml
+    assert lane_header({"id": "sw-1", "label": "Manager"}) in puml
+    assert lane_header({"id": "sw-2", "label": "System"}) in puml
     assert "if ([[arch://d1 Approved?]]) then (yes)" in puml
 
 
@@ -330,7 +331,7 @@ def test_partition_first_lane_emitted_before_start() -> None:
         diagram_connections=[_lane_kc("a1", "sw-1"), _contains("p1", "a1")],
     )
     start_pos = _re.search(r"^start$", puml, _re.MULTILINE).start()  # type: ignore[union-attr]
-    lane_pos = puml.index("|Owner|")
+    lane_pos = puml.index(lane_header({"id": "sw-1", "label": "Owner"}))
     assert lane_pos < start_pos
 
 
