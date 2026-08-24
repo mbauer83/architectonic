@@ -36,12 +36,12 @@ def artifact_group(
       archive    : hide from default pickers; typed confirm required when non-empty
       unarchive  : restore archived group to default pickers
       delete     : remove folder + contents; typed confirm required
-                   For model-project: two-stage cascade delete via dry_run flag.
-                   dry_run=True (default): returns impact report without mutating.
-                   dry_run=False: applies deletion after you have reviewed the report.
+                   For model-project, the impact report lists what the cascade would remove.
 
     confirm — echo the target slug back for destructive/non-empty ops (archive/delete).
-    dry_run — for model-project delete only: True returns impact report, False applies.
+    dry_run — applies to every action. True (the default) validates the operation and reports what
+              it would do without changing anything; False carries it out. The result always names
+              both `dry_run` and `wrote`, so a caller never has to infer which happened.
     """
     from src.infrastructure.write.artifact_write.group_ops import GroupOpError, group_op  # noqa: PLC0415
 
@@ -67,8 +67,10 @@ def artifact_group(
         )
     except GroupOpError as exc:
         return {"error": str(exc), "action": action, "axis": kind, "target": target}
-    live_delete = action == "delete" and not dry_run
-    if live_delete or (action == "rename" and new_slug is not None):
+    # Refresh on what was written, not on which action was asked for: a preview changes nothing,
+    # and a rename that moved a slug moves every file under it.
+    wrote = bool(result.get("wrote"))
+    if wrote and (action == "delete" or (action == "rename" and new_slug is not None)):
         from src.infrastructure.mcp.artifact_mcp.context import enqueue_background_refresh  # noqa: PLC0415
         enqueue_background_refresh([repo], full_refresh=True)
     return result
@@ -90,7 +92,8 @@ def register(mcp: FastMCP) -> None:
             "name: display name (for create/rename). "
             "new_slug: new directory name (rename only). "
             "confirm: echo the target slug back for destructive/non-empty ops. "
-            "dry_run: for model-project delete — True (default) returns impact report, False applies."
+            "dry_run: True (the default) reports what the action would do and changes nothing; "
+            "False carries it out. Honoured by every action; the result names dry_run and wrote."
         ),
         annotations=DESTRUCTIVE_LOCAL_WRITE,
         structured_output=True,

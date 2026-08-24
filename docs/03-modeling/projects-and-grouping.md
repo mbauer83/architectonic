@@ -57,8 +57,12 @@ of each written item rather than of the write.
 - `archive` / `unarchive` — hide or restore from default pickers
 - `delete` (diagram / document collections) — remove folder + contents; typed confirmation
   required
-- `delete` (model-project) — a two-stage cascade: run with `dry_run=True` for a preflight
-  impact report, then apply
+- `delete` (model-project) — a cascade that also removes the connections into the project and
+  rewrites the diagrams that referenced it; the impact report lists what it would touch
+
+Every action takes `dry_run`, which defaults to `True`: the operation is validated and reported, and
+nothing is written. Pass `dry_run=False` to carry it out. The answer names both `dry_run` and
+`wrote`, so a caller can tell a preview from a completed change without inspecting the repository.
 
 **Create or edit with a group** — `artifact_create_entity`, `artifact_create_diagram`,
 `artifact_create_document`, and their `edit_*` counterparts all take an optional `group`

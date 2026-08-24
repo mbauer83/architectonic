@@ -244,9 +244,10 @@ def project_group_delete(result: dict[str, Any], *, axis: str, slug: str) -> dic
     declares a wire shape is the layer that owes the mapping into it — the same seam the assurance
     routers gained when they started serialising through their DTO instead of past it.
 
-    Three of the cascade's keys are deliberately not carried over. `project` is `slug` under another
-    name. `applied` restates the status code. `staged_paths` is which files the git index now holds,
-    which is how the write was made rather than what it did.
+    Two of the cascade's keys are deliberately not carried over. `project` is `slug` under another
+    name, and `staged_paths` is which files the git index now holds — how the write was made rather
+    than what it did. `applied` is carried, as the answer to "did this change anything": a cascade
+    that declines reports `applied: false` with a 200, so the status code does not say.
     """
     if "action" in result:
         return result
@@ -254,6 +255,9 @@ def project_group_delete(result: dict[str, Any], *, axis: str, slug: str) -> dic
         "action": "deleted",
         "axis": axis,
         "slug": slug,
+        "dry_run": bool(result.get("dry_run", False)),
+        # `group_op` stamps `wrote`; a raw cascade envelope answers the same question as `applied`.
+        "wrote": bool(result.get("wrote", result.get("applied", True))),
         "owned_deleted": result.get("owned_deleted", 0),
         "foreign_connections_deleted": result.get("foreign_connections_deleted", 0),
         "diagrams_updated": result.get("diagrams_updated", 0),

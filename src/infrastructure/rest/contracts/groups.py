@@ -43,6 +43,12 @@ class GroupOperationResponse(NullsOmitted):
     action: Literal["created", "renamed", "archived", "unarchived", "updated", "deleted"]
     axis: str
     slug: str
+    #: What was asked for. Every action honours it: true validates the operation and changes nothing.
+    dry_run: bool
+    #: Whether the repository changed. A preview and a refusal both report false, and the past-tense
+    #: ``action`` alone cannot tell them from a completed change — which is the whole reason this is
+    #: on the wire rather than inferred.
+    wrote: bool
 
     #: The registry id assigned by a create.
     id: str | None = None

@@ -46,8 +46,29 @@ def _returned_key_sets() -> list[frozenset[str]]:
         keys = {k.value for k in node.value.keys if isinstance(k, ast.Constant) and isinstance(k.value, str)}
         # Only the operation summaries, which every one of them identifies with `action`.
         if "action" in keys:
-            shapes.append(frozenset(keys))
+            shapes.append(frozenset(keys | _stamped_keys(tree)))
     return shapes
+
+
+def _stamped_keys(tree: ast.Module) -> set[str]:
+    """Keys the dispatch adds to whichever summary it returns.
+
+    `group_op` answers `{**result, …}`, so the keys it stamps on top of every action's shape appear in
+    no summary literal. A third shape hid behind that: the dispatch began reporting `dry_run` and
+    `wrote` on every action, this file could not see either, and `GroupOperationResponse` — closed —
+    would have rejected all six responses with a 500. The same class of blind spot as the cascade
+    envelope this file already records, so it is read rather than restated.
+    """
+    stamped: set[str] = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Return) or not isinstance(node.value, ast.Dict):
+            continue
+        if any(key is None for key in node.value.keys):  # a `**unpack` entry
+            stamped |= {
+                k.value for k in node.value.keys
+                if isinstance(k, ast.Constant) and isinstance(k.value, str)
+            }
+    return stamped
 
 
 def test_the_producer_returns_the_six_shapes_this_contract_projects() -> None:
@@ -119,13 +140,14 @@ def test_every_action_the_producer_reports_is_a_permitted_value() -> None:
 
 def test_a_real_summary_from_each_action_validates() -> None:
     """The field sets agreeing is necessary, not sufficient: the *types* have to agree too."""
+    applied = {"dry_run": False, "wrote": True}
     for summary in (
-        {"action": "created", "axis": "model-project", "slug": "platform", "id": "grp-1"},
-        {"action": "renamed", "axis": "docs", "slug": "new", "old_slug": "old"},
-        {"action": "archived", "axis": "docs", "slug": "old"},
-        {"action": "unarchived", "axis": "docs", "slug": "old"},
-        {"action": "updated", "axis": "diagram-catalog", "slug": "views"},
-        {"action": "deleted", "axis": "docs", "slug": "gone", "files_removed": 0},
+        {"action": "created", "axis": "model-project", "slug": "platform", "id": "grp-1", **applied},
+        {"action": "renamed", "axis": "docs", "slug": "new", "old_slug": "old", **applied},
+        {"action": "archived", "axis": "docs", "slug": "old", **applied},
+        {"action": "unarchived", "axis": "docs", "slug": "old", **applied},
+        {"action": "updated", "axis": "diagram-catalog", "slug": "views", **applied},
+        {"action": "deleted", "axis": "docs", "slug": "gone", "files_removed": 0, **applied},
     ):
         validated = GroupOperationResponse.model_validate(summary)
         assert validated.action == summary["action"]
@@ -133,7 +155,7 @@ def test_a_real_summary_from_each_action_validates() -> None:
     # Zero removals is a real outcome, and must survive as zero rather than being confused with
     # "not applicable" — which is why the unset extras are absent rather than null.
     deleted = GroupOperationResponse.model_validate(
-        {"action": "deleted", "axis": "docs", "slug": "gone", "files_removed": 0}
+        {"action": "deleted", "axis": "docs", "slug": "gone", "files_removed": 0, **applied}
     )
     assert deleted.model_dump(exclude_none=True)["files_removed"] == 0
 
@@ -165,7 +187,8 @@ def test_the_projection_leaves_a_normal_group_result_alone() -> None:
     them, or a rename would start reporting itself as a delete."""
     from src.infrastructure.rest.routers.groups import project_group_delete
 
-    already = {"action": "deleted", "axis": "diagram-collection", "slug": "views", "files_removed": 3}
+    already = {"action": "deleted", "axis": "diagram-collection", "slug": "views", "files_removed": 3,
+               "dry_run": False, "wrote": True}
     assert project_group_delete(dict(already), axis="diagram-collection", slug="views") == already
 
 
