@@ -36,6 +36,7 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 
 from src.diagram_types._assurance_puml_alias import safe_alias
+from src.domain.assurance.assurance_node_types import CONTROL_STRUCTURE_NODE
 from src.infrastructure.rendering.puml_label_wrapping import label_wrap_skinparams
 
 _NON_ALIAS_CHARS = re.compile(r"[^A-Za-z0-9_]")
@@ -53,7 +54,6 @@ ACTS_THROUGH = "acts-through"
 FEEDBACK = "feedback"
 LOOP_CONNECTION_TYPES = frozenset({ISSUES, ACTS_ON, ACTS_THROUGH})
 
-CONTROL_STRUCTURE_NODE = "control-structure-node"
 CONTROL_ACTION = "control-action"
 
 #: Stereotype a control action carries. It is also what its styling keys off, so it is never
