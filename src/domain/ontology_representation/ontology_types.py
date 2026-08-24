@@ -177,5 +177,11 @@ class ConnectionTypeInfo:
     #: one ontology's type names, which is what lets a generic reader ask "which relations contain?"
     #: without spelling `archimate-composition`.
     relationship_kind: str | None = None
+    #: Whether a target may be claimed by at most one source of this relation. Declared here rather
+    #: than inferred, because `relationship_kind` cannot carry it: composition and aggregation are
+    #: both `containment` and exclusivity is the whole of what separates them — a part belongs to one
+    #: whole or it is aggregated. A generic rule can then ask "may two sources claim this target?"
+    #: without spelling any ontology's type names.
+    exclusive_target: bool = False
     derivation_role: Literal["structural", "dependency", "dynamic", "specialization"] | None = None
     derivation_strength: int | None = None

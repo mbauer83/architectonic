@@ -130,6 +130,7 @@ def load_connection_types(
                 hierarchy_label=str(raw["hierarchy_label"]) if raw.get("hierarchy_label") else None,
                 bidirectional_sync=bool(raw.get("bidirectional_sync", False)),
                 relationship_kind=str(raw["relationship_kind"]) if raw.get("relationship_kind") else None,
+                exclusive_target=bool(raw.get("exclusive_target", False)),
                 derivation_role=derivation_role,
                 derivation_strength=derivation_strength,
             )

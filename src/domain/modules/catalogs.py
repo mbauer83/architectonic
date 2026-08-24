@@ -58,6 +58,7 @@ class ConnectionSemantics(Protocol):
 
     def is_symmetric(self, conn_type: str) -> bool: ...
     def relationship_kind(self, conn_type: str) -> str | None: ...
+    def claims_its_target_exclusively(self, conn_type: str) -> bool: ...
     def relation_notation(self, conn_type: str) -> Mapping[str, str]: ...
     def all_relation_notations(self) -> Mapping[str, Mapping[str, str]]: ...
     def permissible_connection_types(self, source_type: str, target_type: str) -> Sequence[str]: ...
@@ -273,6 +274,15 @@ class ConnectionSemanticsImpl:
     def relationship_kind(self, conn_type: str) -> str | None:
         info = self._catalog.find_connection_type(ConnectionTypeName(conn_type))
         return info.relationship_kind if info is not None else None
+
+    def claims_its_target_exclusively(self, conn_type: str) -> bool:
+        """Whether at most one source of this relation may claim a given target.
+
+        A type this catalog does not know claims nothing exclusively: an unrecognised relation must
+        not have a constraint invented for it.
+        """
+        info = self._catalog.find_connection_type(ConnectionTypeName(conn_type))
+        return info.exclusive_target if info is not None else False
 
     def relation_notation(self, conn_type: str) -> Mapping[str, str]:
         """How this relationship is drawn — line style and the marker at each end.

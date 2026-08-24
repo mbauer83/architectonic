@@ -58,6 +58,10 @@ connection_types:
       hierarchy_priority: 1
       hierarchy_label: composition
       relationship_kind: containment
+      # What separates this from aggregation: `create_when` says the part belongs to that whole
+      # "and of that whole alone", and `never_create_when` sends the shared case to aggregation. So
+      # a second source claiming the same target contradicts the relation it uses.
+      exclusive_target: true
     archimate-aggregation:
       derivation: {role: structural, strength: 3}
       archimate_relationship_type: Aggregation

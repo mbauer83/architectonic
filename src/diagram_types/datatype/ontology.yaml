@@ -231,6 +231,8 @@ connection_types:
     cascade_delete_source: false
     symmetric: false
     relationship_kind: containment
+    # A composed part belongs to one whole; the shared case is `dt-aggregation`.
+    exclusive_target: true
     puml_arrow: "*--"
     notation: {line: solid, source: filled-diamond, target: none}
     properties:

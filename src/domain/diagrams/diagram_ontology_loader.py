@@ -122,6 +122,7 @@ def _parse_connection_types(raw: dict[str, Any]) -> dict[ConnectionTypeName, Con
             notation=parse_relation_notation(cfg.get("notation")),
             show_stereotype=bool(cfg.get("show_stereotype", True)),
             relationship_kind=str(cfg["relationship_kind"]) if cfg.get("relationship_kind") else None,
+            exclusive_target=bool(cfg.get("exclusive_target", False)),
         )
     return out
 

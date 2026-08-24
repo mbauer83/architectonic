@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from src.application.verification import (
+    _exclusive_containment_rule,  # noqa: F401  # ensure E340 registered
     _orphan_attachment_schema_rule,  # noqa: F401  # ensure W044 registered
     _undeclared_group_rule,  # noqa: F401  # ensure W046 registered
     _workspace_identity_rules,  # noqa: F401  # ensure E335 registered
