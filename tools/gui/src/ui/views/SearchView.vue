@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { inject, ref, watch } from 'vue'
+import { hitKindLabel, hitTypeLabel } from './SearchView.helpers'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { modelServiceKey } from '../keys'
 import { searchHitRoute } from '../lib/searchNavigation'
@@ -113,10 +114,15 @@ const friendlyName = (id: string) => {
               v-if="h.record_type === 'scratchpad-note'"
               class="note-chip"
             >note on {{ h.scratchpad_name || 'a scratchpad' }}</span>
+            <!-- Kind and type answer different questions — *a diagram* against *a C4 deployment
+                 view* — and a list mixing four kinds has to say which is which. A diagram's own
+                 `artifact_type` is the constant "diagram", so `hitTypeLabel` reads `diagram_type`
+                 for it; every other kind already carries its type there. -->
+            <span class="kind-chip">{{ hitKindLabel(h.record_type) }}</span>
             <span
-              v-if="h.artifact_type"
+              v-if="hitTypeLabel(h)"
               class="mono result-type"
-            >{{ h.artifact_type }}</span>
+            >{{ hitTypeLabel(h) }}</span>
             <span
               v-else-if="h.record_type === 'scratchpad-note'"
               class="untyped"
@@ -183,6 +189,8 @@ const friendlyName = (id: string) => {
 .score { font-size: 11px; color: #9ca3af; font-family: monospace; }
 
 .result-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap; }
+.kind-chip { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em;
+  padding: 0.1rem 0.4rem; border-radius: 999px; background: #eef1f5; color: #445; }
 .result-type { font-size: 12px; color: #374151; }
 .result-id { font-size: 11px; color: #9ca3af; }
 .mono { font-family: monospace; }

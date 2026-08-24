@@ -25,7 +25,19 @@ def _entity(artifact_id: str, *, host_diagram_id: str | None = None) -> EntityRe
     )
 
 
-def test_model_entities_precede_diagram_owned_and_other_records() -> None:
+def test_a_diagram_owned_entity_is_demoted_and_nothing_else_is() -> None:
+    """This test asserted the defect, so the expectation is restated rather than quietly corrected.
+
+    It required a document scoring 9.0 to come back *below* an entity scoring 7.0, because every
+    non-entity record was bucketed behind every entity. That is how a diagram searched for by its
+    exact title returned forty entities and none of it: the window filled with entities before the
+    kind the index had ranked first could be reached.
+
+    The concern the bucketing was really expressing is narrower — a diagram-local node is a drawing
+    detail, a model entity is a commitment — and it applies to entities only. Cross-kind order belongs
+    to `_rank_balanced`, which round-robins precisely because the scores are incomparable.
+    """
+def test_model_entities_precede_diagram_owned_records() -> None:
     document = DocumentRecord(
         artifact_id="DOC@1",
         doc_type="spec",
@@ -45,7 +57,7 @@ def test_model_entities_precede_diagram_owned_and_other_records() -> None:
 
     ordered = prioritize_global_hits(hits)
 
-    assert [hit.record.artifact_id for hit in ordered] == ["APP@1", "LOCAL@1", "DOC@1"]
+    assert [hit.record.artifact_id for hit in ordered] == ["DOC@1", "APP@1", "LOCAL@1"]
 
 
 def test_undeclared_diagram_owned_types_are_hidden_by_default() -> None:

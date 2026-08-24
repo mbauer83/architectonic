@@ -30,12 +30,30 @@ def filter_global_hits(
 
 
 def prioritize_global_hits(hits: Sequence[SearchHit]) -> list[SearchHit]:
-    """Keep relevance order within model entities, diagram-owned entities, and other records."""
+    """Demote diagram-owned entities, and leave every other kind in the order it arrived.
+
+    The concern this expresses is about *entities*: a diagram-local node is a drawing detail and a
+    model entity is a commitment, so the two should not interleave. That is the whole of it.
+
+    It used to put every non-entity record in a third bucket behind both — so a diagram or a document
+    ranked after *every* entity hit, however it scored. With a window of twenty and forty entity hits,
+    a diagram could not appear at all: searching a diagram's exact title returned forty entities and
+    none of it, though the index ranked that diagram top of its kind. A document scoring 9.0 came back
+    below an entity scoring 7.0, and the test asserted it.
+
+    Worse, it silently undid `_rank_balanced`, which exists to guarantee exactly this: the search use
+    case ranks within each kind and round-robins across them *because* bm25 and the token-match
+    supplement are incomparable scales. Re-sorting the result here overrode that with a hard
+    precedence — two deciders, and the second one won without knowing what the first had promised.
+
+    So a stable sort on one key: diagram-owned entities last, everyone else untouched. `_rank_balanced`
+    has already put scratchpad notes behind the other kinds, and leaving non-entity records alone
+    preserves that too.
+    """
     return sorted(
         hits,
         key=lambda hit: (
-            0 if hit.record_type == "entity" and getattr(hit.record, "host_diagram_id", None) is None
-            else 1 if hit.record_type == "entity"
-            else 2
+            1 if hit.record_type == "entity" and getattr(hit.record, "host_diagram_id", None) is not None
+            else 0
         ),
     )
