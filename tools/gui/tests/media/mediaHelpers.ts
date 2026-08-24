@@ -39,15 +39,26 @@ export function mediaPath(fileName: string): string {
   return path.join(mediaDir, fileName)
 }
 
-export function resetManifest(): void {
-  fs.writeFileSync(manifestPath, '[]\n')
-}
+/**
+ * Whether this process has already begun rewriting the manifest.
+ *
+ * The reset used to happen in the global preflight, guarded on the media project being present in
+ * `config.projects` — which lists every *configured* project, not the selected one. So
+ * `playwright test --project=chromium` cleared the committed manifest to `[]` and rewrote none of
+ * it, losing the provenance of forty-three figures, which is the exact thing that guard's own
+ * comment said must not happen.
+ *
+ * Truncating at the first capture instead needs no knowledge of which project was selected: a run
+ * that captures nothing never touches the file.
+ */
+let manifestStarted = false
 
 function record(fileName: string, provenance: CaptureProvenance): void {
   const bytes = fs.readFileSync(mediaPath(fileName))
-  const current = fs.existsSync(manifestPath)
+  const current = manifestStarted && fs.existsSync(manifestPath)
     ? JSON.parse(fs.readFileSync(manifestPath, 'utf8')) as ManifestEntry[]
     : []
+  manifestStarted = true
   const entry: ManifestEntry = {
     ...provenance,
     viewpoint_slug: provenance.viewpoint_slug ?? null,

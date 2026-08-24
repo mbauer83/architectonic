@@ -24,13 +24,11 @@ import type { FullConfig } from '@playwright/test'
 
 // @ts-expect-error - plain ESM helper shared with the postbuild script; no type declarations by design
 import { computeSourceHash, readStamp } from '../scripts/buildStamp.mjs'
-import { resetManifest } from './media/mediaHelpers'
 
 const PROBE_TIMEOUT_MS = 5_000
 const SCHEMA_PROBE_TIMEOUT_MS = 20_000
 //: Building the tree's document imports the whole application; generous, and bounded.
 const SCHEMA_DUMP_TIMEOUT_MS = 120_000
-const MEDIA_PROJECT = 'media'
 const GUI_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
 /**
@@ -247,10 +245,4 @@ export default async function preflight(config: FullConfig): Promise<void> {
     )
   }
 
-  // Only for a media run: an e2e-only invocation must not clear a manifest it never rewrites.
-  // Reusing the helper rather than re-deriving the manifest path, so there is one place that knows
-  // where it lives.
-  if (config.projects.some((project) => project.name === MEDIA_PROJECT)) {
-    resetManifest()
-  }
 }
