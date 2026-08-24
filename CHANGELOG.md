@@ -58,6 +58,12 @@ never be given one, and a deployment host holding nothing was drawn as an applic
   well-formed hash no reader holding the model would compute — so a judgement recorded against it was
   superseded on sight and never applied. Such a report now publishes no digest, and the write refuses
   one.
+- **An element inside an analysed controller is no longer reported as unanalysed (W511).** The check
+  suppressed on the elements an assurance node binds to *directly*, so a component sitting inside a
+  control-structure node's own element read as a gap — and each finding's witness printed the
+  containment edge that said otherwise. Containment now carries the *control structure* half of that
+  finding and deliberately not the *failure mode* half, because a failure mode is per-component: W510,
+  which asks only about failure modes, still reads direct bindings.
 - **A constraint answered by argument is no longer asked for evidence of a control.** An
   `alarp-justified` constraint argues that residual exposure is as low as reasonably practicable, so
   there is no control whose working could be evidenced. Skipped only where the disposition is
