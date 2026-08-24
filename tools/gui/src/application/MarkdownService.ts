@@ -34,6 +34,27 @@ marked.use({
 })
 
 /**
+ * Keep a tag the allowlist rejects, as visible text.
+ *
+ * DOMPurify removes an element it does not know and keeps its children. An element with no children
+ * therefore disappeared entirely, and repository prose is full of them: `projects/<slug>/model/`
+ * rendered as `projects//model/`, with nothing to say that anything had been dropped. Angle brackets
+ * in this corpus are placeholders — path shapes, ArchiMate type names, id forms — so a rejected tag is
+ * authored text and deleting it loses content silently.
+ *
+ * The sanitiser stays the authority on what is markup. This changes only what becomes of what it
+ * rejects: a text node carrying the source, which serialises escaped and cannot execute. Registered
+ * once, beside the link hook, for the same reason.
+ */
+DOMPurify.addHook('uponSanitizeElement', (node, data) => {
+  if (data.allowedTags[data.tagName]) return
+  const parent = node.parentNode
+  const source = (node as Element).outerHTML
+  if (!parent || typeof source !== 'string' || !node.ownerDocument) return
+  parent.replaceChild(node.ownerDocument.createTextNode(source), node)
+})
+
+/**
  * Render markdown to sanitized HTML with artifact links mapped to in-app routes.
  *
  * Pass `area` when rendering an artifact's own content, so a same-directory link — one ADR citing
