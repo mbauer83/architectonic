@@ -7,22 +7,19 @@ All notable changes to this project are documented here. The format follows
 
 **[Full detail → `changelog-assets/0.7.1-detail.md`](changelog-assets/0.7.1-detail.md)**
 
-**Fixes for cases where the product stated one thing and did another.** An activity diagram drew
-fewer steps than its model declares, a schema description contradicted the checker that enforces it,
-a diagram kept claiming to draw a relation it had stopped drawing, four of the five technology types
-the deployment view treats as hosts had no permitted way to hold an artifact, replacing an assurance
-graph left no trace in the audit archive, an analysis created without an architecture anchor could
-never be given one, and a deployment host holding nothing was drawn as an application.
+**Fixes for cases where the product stated one thing and did another** — a diagram drawing fewer steps
+than its model declares, a schema description contradicting the checker that enforces it, an audit
+archive silent about the operation that empties it, and findings computed and then withheld from every
+reader entitled to them.
 
 ### Fixed
 
-- **An activity diagram draws every step its model declares, exactly once.** Four separate causes,
-  each losing part of a picture: a step more than one branch reaches was drawn in the first branch
-  only; a step reached from two nesting depths was drawn on one path only; a join reached inside a
-  nested decision never reached its fork, so everything past it went undrawn; and a graph containing
-  a loop drew `start` and `stop` with nothing between. Where two branches arrive at a step and no
-  placement in an `if`/`else` tree covers both, it is drawn in each of them carrying the same
-  identity, so either drawing selects the same element.
+- **An activity diagram draws every step its model declares, exactly once.** Four causes, each losing
+  part of a picture: a step two branches reach drawn in the first only; a step reached from two nesting
+  depths drawn on one path only; a join inside a nested decision never reaching its fork, so everything
+  past it went undrawn; and a graph containing a loop drawing `start` and `stop` with nothing between.
+  Where no placement in an `if`/`else` tree covers both arrivals, the step is drawn in each carrying
+  the same identity, so either drawing selects the same element.
 - **A declared step the stored body does not draw is reported (W045).** This class of defect was
   silent: a diagram missing a quarter of its steps verified clean, because every rule read the model
   and none read the picture. Re-render with `puml="auto-sync"` to answer it.
@@ -34,10 +31,10 @@ never be given one, and a deployment host holding nothing was drawn as an applic
   entity side has refused this since E309; the connection side had no rule, and on a `manual-layout`
   or hand-edited diagram the wrong claim never heals.
 - **An `artifact` may be assigned to any technology host.** Assignment is ArchiMate's deployment
-  relation, and the table permitted it into an `artifact` from nothing at all: the only hosting path
-  was `technology-node --aggregation--> artifact`, so a model whose containers run on system
-  software, a device, equipment or a facility could not say so, and a deployment view over it drew no
-  containers. The aggregation path is still read, so existing views keep working.
+  relation, and the table permitted it into an `artifact` from nothing at all: the only path was
+  `technology-node --aggregation--> artifact`, so a model whose containers run on system software, a
+  device, equipment or a facility could not say so, and a deployment view over it drew none. The
+  aggregation path is still read, so existing views keep working.
 - **A deployment host is drawn as a node whether or not anything is drawn inside it.** A host holding
   nothing fell through to the generic container shape — a volume or a machine rendered as a deployed
   application.
@@ -48,8 +45,7 @@ never be given one, and a deployment host holding nothing was drawn as an applic
 - **Replacing the assurance graph is recorded in the audit archive.** `import` and `seed` delete every
   node, edge, architecture reference, membership and factor assessment, and appended nothing to the
   hash-chained archive — leaving effects with no recorded cause. One entry now lands in the same
-  transaction as the rows it describes, naming the bundle, what the replace destroyed and what was
-  written.
+  transaction, naming the bundle, what the replace destroyed and what was written.
 - **An analysis with no architecture anchor can be given one.** `architecture_anchor_id` was optional
   at creation and immutable afterwards, which together left no route. Filling an empty anchor is now
   permitted; moving or clearing one is refused (`anchor_immutable`, HTTP 409).
@@ -59,11 +55,15 @@ never be given one, and a deployment host holding nothing was drawn as an applic
   superseded on sight and never applied. Such a report now publishes no digest, and the write refuses
   one.
 - **An element inside an analysed controller is no longer reported as unanalysed (W511).** The check
-  suppressed on the elements an assurance node binds to *directly*, so a component sitting inside a
-  control-structure node's own element read as a gap — and each finding's witness printed the
-  containment edge that said otherwise. Containment now carries the *control structure* half of that
-  finding and deliberately not the *failure mode* half, because a failure mode is per-component: W510,
-  which asks only about failure modes, still reads direct bindings.
+  suppressed on direct bindings only, so a component inside a control-structure node's own element read
+  as a gap — with its own witness printing the containment edge that said otherwise. Containment now
+  carries the *control structure* half of that finding and not the *failure mode* half, which is
+  per-component; W510 still reads direct bindings.
+- **Coverage findings reach the API and the GUI.** The exposure filter kept an issue only when its
+  subject was a *visible assurance node*, and every two-way coverage finding names the architecture
+  element it is about — never an assurance node. All were computed, counted and dropped, so the half of
+  the verifier that compares the two models was invisible. Withholding now applies where the subject is
+  an assurance node above the reader's ceiling.
 - **A constraint answered by argument is no longer asked for evidence of a control.** An
   `alarp-justified` constraint argues that residual exposure is as low as reasonably practicable, so
   there is no control whose working could be evidenced. Skipped only where the disposition is
@@ -92,17 +92,17 @@ never be given one, and a deployment host holding nothing was drawn as an applic
   **W045** as a warning; `artifact_edit_diagram(puml="auto-sync")` on each named diagram clears it,
   and verification passes either way.
 - A repository materialised before 0.7.1 holds the older `Source Repository` description. The upgrade
-  reports it as an operator customisation and never overwrites it, which is the intended behaviour
-  for any locally edited schema file — not a problem to fix.
+  reports it as an operator customisation and never overwrites it — intended for any locally edited
+  schema file, not a problem to fix.
 - A diagram whose stored frontmatter lists a connection its body does not draw starts reporting
   **W307** as a warning. `artifact_edit_diagram(puml="auto-sync")` redraws the edge if the relation
   should be there; removing the entry is right if it should not.
-- A stored `c4-deployment` view re-renders differently on its next `puml="auto-sync"`: a host holding
-  nothing becomes a node rather than an application container, and a container hosted by several nodes
-  moves into the one the view draws. Both are the picture correcting itself; no frontmatter changes.
-- An assurance store carries its archive forward across `seed` and `import`, so the first re-seed
-  after upgrading appends an entry rather than rewriting anything. Chains recorded before 0.7.1 have
-  no entry for imports that already happened, and none is invented for them.
+- A stored `c4-deployment` view re-renders on its next `puml="auto-sync"`: a host holding nothing
+  becomes a node, and a container hosted by several nodes moves into the one the view draws. No
+  frontmatter changes.
+- An assurance store carries its archive across `seed` and `import`, so the first re-seed after
+  upgrading appends an entry. Chains recorded before 0.7.1 have no entry for imports that already
+  happened, and none is invented.
 
 ## [0.7.0] — 2026-08-17
 
