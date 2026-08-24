@@ -40,6 +40,18 @@ type SearchDropdownHit = SearchHit | {
   artifact_type: string
 }
 
+/**
+ * How many rows the dropdown shows, and therefore how many it asks for.
+ *
+ * The two have to be the same number. It asked for 20 and displayed the first 12, and the ranking
+ * draws subordinate kinds last by design — so the scratchpad notes it reserved room for landed at
+ * positions 19 and 20 and were sliced off every time, making a pad unfindable from the search box
+ * however exactly its title matched. Asking for what will be shown is what lets the use case's own
+ * reservation apply to the window a reader actually sees; the same mistake was fixed in
+ * `/api/search`, which used to ask for three times its caller's limit and re-cut the result.
+ */
+const SEARCH_DROPDOWN_ROWS = 12
+
 const searchHits = ref<SearchDropdownHit[]>([])
 const showDropdown = ref(false)
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
@@ -49,7 +61,7 @@ const onSearchInput = () => {
   if (debounceTimer) clearTimeout(debounceTimer)
   if (q.length < 2) { searchHits.value = []; showDropdown.value = false; return }
   debounceTimer = setTimeout(() => {
-    void Effect.runPromise(svc.search(q, 20))
+    void Effect.runPromise(svc.search(q, SEARCH_DROPDOWN_ROWS))
       .then((result) => {
         const raw = result.hits
         const seen = new Set<string>()
@@ -61,7 +73,7 @@ const onSearchInput = () => {
           }
         }
         const entityNames = new Map(resolved.map((hit) => [hit.artifact_id, hit.name]))
-        searchHits.value = resolved.slice(0, 12).map((hit) => ({
+        searchHits.value = resolved.slice(0, SEARCH_DROPDOWN_ROWS).map((hit) => ({
           ...hit,
           name: entityNames.get(hit.artifact_id) ?? hit.artifact_id,
         }))

@@ -253,7 +253,13 @@ def _rank_balanced(hits: list[SearchHit], limit: int, prefer_rt: str | None) -> 
             break
         ranked.extend(drawn)
         rank += 1
-    return (ranked + subordinate)[:limit] if len(ranked) < limit else ranked[:limit]
+    # Trimmed to the reservation before the tail is appended. The round-robin draws one hit per
+    # kind per pass, so it extends in batches and overshoots `limit - reserved` whenever the kind
+    # count does not divide it — and the guard this replaces (`if len(ranked) < limit`) then saw a
+    # full window and dropped the reserved slots on the floor. A window of twenty survived on
+    # arithmetic alone: three kinds reach eighteen and stop short. Twelve reached exactly twelve, so
+    # the floor was silently spent and a note was unreachable in any dropdown that asked for one.
+    return (ranked[: limit - reserved] + subordinate)[:limit]
 
 
 def _subordinate_floor(limit: int, available: int) -> int:

@@ -21,7 +21,12 @@ from pathlib import Path
 import pytest
 
 from src.application.artifacts._search import _rank_balanced
-from src.domain.ontology_representation.artifact_types import EntityRecord, ScratchpadNoteRecord
+from src.domain.ontology_representation.artifact_types import (
+    DiagramRecord,
+    DocumentRecord,
+    EntityRecord,
+    ScratchpadNoteRecord,
+)
 
 
 def _entity(n: int) -> EntityRecord:
@@ -30,6 +35,21 @@ def _entity(n: int) -> EntityRecord:
         version="0.1.0", status="active", domain="application", subdomain="", path=Path("e.md"),
         keywords=(), extra={}, content_text="", display_blocks={}, display_label=f"entity {n}",
         display_alias=f"APP{n}",
+    )
+
+
+def _diagram(n: int) -> DiagramRecord:
+    return DiagramRecord(
+        artifact_id=f"ARC@{n}", artifact_type="diagram", name=f"diagram {n}",
+        diagram_type="archimate-layered", version="0.1.0", status="draft", path=Path("d.puml"),
+        extra={},
+    )
+
+
+def _document(n: int) -> DocumentRecord:
+    return DocumentRecord(
+        artifact_id=f"ADR@{n}", doc_type="adr", title=f"document {n}", status="draft",
+        path=Path("c.md"), keywords=(), sections=(), content_text="", extra={},
     )
 
 
@@ -47,6 +67,18 @@ def _hits(entities: int, notes: int) -> list:
     return [SearchHit(100.0 - i, "entity", _entity(i)) for i in range(entities)] + [
         SearchHit(1.0, "scratchpad-note", _note(i)) for i in range(notes)
     ]
+
+
+def _three_kinds_and_notes(each: int, notes: int, *, note_score: float = 1e-6) -> list:
+    """A corpus whose non-subordinate kinds divide some windows exactly and not others — which is
+    what decided whether the reservation survived."""
+    from src.domain.ontology_representation.artifact_types import SearchHit
+
+    hits = [SearchHit(9.0 - i * 0.01, "entity", _entity(i)) for i in range(each)]
+    hits += [SearchHit(8.0 - i * 0.01, "diagram", _diagram(i)) for i in range(each)]
+    hits += [SearchHit(7.0 - i * 0.01, "document", _document(i)) for i in range(each)]
+    hits += [SearchHit(note_score, "scratchpad-note", _note(i)) for i in range(notes)]
+    return hits
 
 
 def _kinds(ranked) -> list[str]:
@@ -98,3 +130,41 @@ class TestWhereTheFloorDoesNotApply:
 
         assert len(ranked) == 20
         assert set(_kinds(ranked)) == {"entity"}
+
+
+class TestTheReservationSurvivesTheRoundRobin:
+    """The floor was reserved and then thrown away, for every window the kind count divides.
+
+    `_rank_balanced` draws one hit per non-subordinate kind per pass, so it extends in batches and
+    overshoots `limit - reserved` whenever the kinds do not divide it. The guard that followed —
+    `(ranked + subordinate)[:limit] if len(ranked) < limit else ranked[:limit]` — then saw a window
+    already full and dropped the reserved slots.
+
+    A window of twenty survived on arithmetic alone: three kinds reach eighteen and stop short of
+    eighteen, so the tail was appended. Twelve reaches exactly twelve, so it was not, and the
+    navigation dropdown — which asks for twenty and shows twelve — could never display a note
+    however well it matched. Parametrised over the windows either side of every multiple, because
+    one lucky window is what hid this.
+    """
+
+    @pytest.mark.parametrize("limit", [10, 11, 12, 13, 14, 15, 18, 19, 20, 21, 24, 30])
+    def test_a_window_of_ten_or_more_keeps_room_for_a_note(self, limit: int) -> None:
+        ranked = _rank_balanced(_three_kinds_and_notes(40, 3), limit, None)
+
+        assert len(ranked) == limit, "the window is still filled"
+        assert "scratchpad-note" in _kinds(ranked), f"a window of {limit} reserved no room for a note"
+
+    @pytest.mark.parametrize("limit", [1, 2, 5, 9])
+    def test_a_small_window_still_belongs_to_model_content(self, limit: int) -> None:
+        """The other half of the trade: below ten slots nothing is reserved, so a note cannot take
+        a share of a window that small."""
+        ranked = _rank_balanced(_hits(40, 3), limit, None)
+
+        assert _kinds(ranked) == ["entity"] * limit
+
+    def test_a_note_never_outranks_model_content_in_the_window_it_is_kept_in(self) -> None:
+        """The reservation moves a note *into* the window; it must not move it up the order."""
+        ranked = _rank_balanced(_three_kinds_and_notes(40, 1, note_score=99.0), 12, None)
+
+        assert ranked[-1].record_type == "scratchpad-note", "a note is drawn last, whatever it scored"
+        assert all(h.record_type != "scratchpad-note" for h in ranked[:-1])
