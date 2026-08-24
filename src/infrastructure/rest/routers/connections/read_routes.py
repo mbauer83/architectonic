@@ -129,14 +129,22 @@ def register_connection_read_routes(router: APIRouter) -> None:
         limit: int = 20,
         catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
     ) -> dict[str, Any]:
+        # `limit`, not a multiple of it. The use case decides the window: it ranks within each kind
+        # and round-robins across them, and reserves a floor so a subordinate kind is not starved.
+        # Asking for three times as many and re-cutting to `limit` here spent both guarantees on
+        # rows nobody sees — a diagram ranked top of its kind fell outside the window, and so did
+        # every scratchpad note. `filter_global_hits` then drops nothing to speak of, because the
+        # same exclusion is already applied upstream through `excluded_entity_types`; it stays as
+        # the guard for a caller that forgets to pass them, at the cost of an occasional short
+        # window, which is a far smaller price than re-deciding the ranking.
         result = s.get_repo().search_artifacts(
             q,
-            limit=limit * 3,
+            limit=limit,
             include_connections=False,
             excluded_entity_types=hidden_diagram_entity_types(catalogs),
         )
         visible_hits = filter_global_hits(result.hits, catalogs)
-        hits = prioritize_global_hits(visible_hits)[:limit]
+        hits = prioritize_global_hits(visible_hits)
         return {"query": result.query, "hits": [search_hit_to_dict(hit) for hit in hits]}
 
     @router.get("/api/relation-notations", tags=[TAG_CONNECTIONS],

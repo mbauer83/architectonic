@@ -99,8 +99,13 @@ class DisplaySearchHit(Closed):
 
 
 class DisplaySearchResponse(Closed):
-    """The candidates, architecture first: ``prioritize_global_hits`` puts enterprise artifacts above
-    engagement ones, so a picker offers the shared vocabulary before a local restatement of it."""
+    """The candidates a picker offers, model content first.
+
+    ``prioritize_global_hits`` demotes diagram-owned entities — a node drawn inside one diagram is a
+    drawing detail, and a model entity is a commitment — and leaves every other kind in the order the
+    search use case ranked it. It has never sorted by repository: an enterprise artifact and an
+    engagement one rank against each other on score alone.
+    """
 
     query: str
     hits: list[DisplaySearchHit]

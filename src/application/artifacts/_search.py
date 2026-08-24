@@ -235,9 +235,15 @@ def _rank_balanced(hits: list[SearchHit], limit: int, prefer_rt: str | None) -> 
     order = sorted(by_kind, key=lambda rt: by_kind[rt][0].score, reverse=True)
     if prefer_rt in by_kind and prefer_rt not in SUBORDINATE_RECORD_TYPES:
         order = [prefer_rt, *(rt for rt in order if rt != prefer_rt)]
+    subordinate = sorted(
+        (h for rt in order if rt in SUBORDINATE_RECORD_TYPES for h in by_kind[rt]),
+        key=lambda h: h.score,
+        reverse=True,
+    )
+    reserved = _subordinate_floor(limit, len(subordinate))
     ranked: list[SearchHit] = []
     rank = 0
-    while len(ranked) < limit:
+    while len(ranked) < limit - reserved:
         drawn = [
             by_kind[rt][rank]
             for rt in order
@@ -247,12 +253,28 @@ def _rank_balanced(hits: list[SearchHit], limit: int, prefer_rt: str | None) -> 
             break
         ranked.extend(drawn)
         rank += 1
-    subordinate = sorted(
-        (h for rt in order if rt in SUBORDINATE_RECORD_TYPES for h in by_kind[rt]),
-        key=lambda h: h.score,
-        reverse=True,
-    )
     return (ranked + subordinate)[:limit] if len(ranked) < limit else ranked[:limit]
+
+
+def _subordinate_floor(limit: int, available: int) -> int:
+    """How many of the window's slots the subordinate kinds may not be starved out of.
+
+    They are drawn last and that does not change: the condition they were admitted under is that a
+    note never outranks model content. But that is a statement about *order*, and being kept out of
+    the window is a different thing — it made a scratchpad unfindable by its own title, because any
+    query model content also matches filled twenty slots before the notes were reached.
+
+    The floor only applies where the window can afford it. A window of four belongs to committed
+    content, and spending a quarter of it on a half-formed thought is the trade the subordination
+    exists to refuse — so below ten slots nothing is reserved at all.
+    """
+    if available <= 0 or limit < _FLOOR_MIN_WINDOW:
+        return 0
+    return min(available, max(1, limit // 10))
+
+
+#: Below this many slots a window is too small to give one away — see `_subordinate_floor`.
+_FLOOR_MIN_WINDOW = 10
 
 
 def _search_entities(
