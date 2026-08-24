@@ -21,6 +21,7 @@ shape a per-file verifier cannot see.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -31,7 +32,9 @@ from src.application.repo_path_helpers import all_model_roots
 _OUTGOING_GLOB = "**/*.outgoing.md"
 
 
-def _exclusive_claims(repo_root: Path, is_exclusive: Any) -> dict[tuple[str, str], set[str]]:
+def _exclusive_claims(
+    repo_root: Path, is_exclusive: Callable[[str], bool]
+) -> dict[tuple[str, str], set[str]]:
     """For each (relation, target) an exclusive relation claims, the sources claiming it.
 
     Read through `parse_outgoing_file`, which owns turning one of these files into connections —
