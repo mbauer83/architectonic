@@ -24,15 +24,24 @@ from src.diagram_types.activity._step_links import lane_header, sentinel_of
 
 
 class TestTheHeaderCarriesTheLane:
-    def test_a_bound_lane_carries_its_entity(self) -> None:
-        header = lane_header({"id": "ln_ops", "label": "Operations", "entity_id": "ROL@1.a.engineer"})
+    def test_a_lane_carries_its_own_local_id(self) -> None:
+        """Always its local id, bound or not — and the first version of this test got that wrong.
 
-        assert sentinel_of(header) == "ROL@1.a.engineer"
+        It passed `entity_id` in the lane dict and asserted the header carried it. No lane dict ever
+        holds one: a lane's binding lives in the diagram's `bindings:` block, keyed by
+        `subject.id`, and so does every step's. `sentinel_target`'s `entity_id` branch is reached by
+        no authored content at all, so the test was asserting a shape the product never produces.
 
-    def test_an_unbound_lane_carries_its_own_id(self) -> None:
-        """The same fallback `sentinel_target` gives every other kind: a lane with no binding is
-        still a thing the viewer can resolve to, and treating it differently would put a second
-        rule beside the one the module already states."""
+        The viewer resolves a local id to the diagram-local placeholder entity
+        (`…#swimlane/ln_ops`), which is exactly what it does for a bound action — measured in the
+        running GUI, a bound action's anchor carries `…#action/a_detect`, not the entity it
+        represents. So a lane selecting its own placeholder is the consistent behaviour, not a
+        lesser one, and the binding is shown in that placeholder's details.
+
+        `sentinel_target` would prefer an `entity_id` if a lane dict held one. That is left alone
+        rather than special-cased here: no authored content reaches it, and making a bound lane
+        address its entity directly would give lanes a behaviour no other bound construct has.
+        """
         header = lane_header({"id": "ln_ops", "label": "Operations"})
 
         assert sentinel_of(header) == "ln_ops"

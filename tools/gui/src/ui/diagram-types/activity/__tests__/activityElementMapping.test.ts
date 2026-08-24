@@ -39,6 +39,62 @@ describe('activityMapElements', () => {
     expect(nodes.get('ACT@1#action/a2')).toEqual([link])
   })
 
+  it('maps an unbound swimlane header to its diagram-local lane entity', () => {
+    // The renderer emits `|[[arch://author Author]]|` and PlantUML renders it as a real anchor —
+    // that much was tested. Nothing tested that the viewer resolves it, and it did not: the
+    // sentinel index only indexed `display_alias` for action/decision/partition, so a lane's own
+    // id resolved to nothing and the anchor was skipped. The header was a link that selected
+    // nothing, which is what a reader meets.
+    const root = new FakeSvgRoot()
+    const link = addSentinelLink(root, 'arch://author')
+
+    const { nodes } = activityMapElements(asSvgRoot(root), {
+      entities: [makeEntity('ACT@1#swimlane/author', 'author', 'swimlane')],
+      connections: [],
+    })
+    expect(nodes.get('ACT@1#swimlane/author')).toEqual([link])
+  })
+
+  it('does not adopt the shape that happens to precede a lane header', () => {
+    // A lane header is a label in the lane band with no shape of its own. On a real three-lane
+    // render the first lane's anchor follows a <polygon> belonging to the content above it, so the
+    // step's shape-then-label pairing would adopt an unrelated element and highlight it with the
+    // lane — while the other two lanes, whose anchors follow <text>, paired with nothing. One
+    // header, two behaviours, in one diagram.
+    const root = new FakeSvgRoot()
+    root.appendChild(new FakeElement('polygon'))
+    const link = addSentinelLink(root, 'arch://author')
+
+    const { nodes } = activityMapElements(asSvgRoot(root), {
+      entities: [makeEntity('ACT@1#swimlane/author', 'author', 'swimlane')],
+      connections: [],
+    })
+    expect(nodes.get('ACT@1#swimlane/author')).toEqual([link])
+  })
+
+  it('still adopts the shape that precedes an action label', () => {
+    const root = new FakeSvgRoot()
+    const shape = root.appendChild(new FakeElement('rect'))
+    const link = addSentinelLink(root, 'arch://a2')
+
+    const { nodes } = activityMapElements(asSvgRoot(root), {
+      entities: [makeEntity('ACT@1#action/a2', 'a2', 'action')],
+      connections: [],
+    })
+    expect(nodes.get('ACT@1#action/a2')).toEqual([shape, link])
+  })
+
+  it('maps a bound swimlane header to the entity it represents', () => {
+    const root = new FakeSvgRoot()
+    const link = addSentinelLink(root, 'arch://ROL@1.a.engineer')
+
+    const { nodes } = activityMapElements(asSvgRoot(root), {
+      entities: [makeEntity('ROL@1.a.engineer', '', 'business-role')],
+      connections: [],
+    })
+    expect(nodes.get('ROL@1.a.engineer')).toEqual([link])
+  })
+
   it('maps a decision sentinel the same way as an action', () => {
     const root = new FakeSvgRoot()
     const link = addSentinelLink(root, 'arch://d1')
