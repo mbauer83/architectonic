@@ -25,12 +25,13 @@ ENTITY_WEIGHTS = "0, 15.0, 1.0, 1.0, 1.0, 4.0, 0.5, 4.0"
 # the only symptom was a ranking nobody could explain — a note matched on its scratchpad's *name*
 # outranking one matched on its own title, both at ~1e-7.
 #
-# `scratchpad_name` is weighted rather than left at nothing: a scratchpad is loaded and saved whole
-# and its notes are what search returns, so its title is how a reader asks for the pad itself. Below
-# the note's own title, which is the more specific answer to the same query.
+# `scratchpad_name` is weighted at nothing, deliberately. A pad is a container and its notes are what
+# search returns, so matching the container's name answers with notes that contain none of the query —
+# "Q3 platform thinking" returning a note called "AI-Assisted and Agentic Development". Finding the pad
+# is a different question and needs a pad-shaped result, not its contents.
 # Columns: artifact_id(UNINDEXED), scratchpad_id(UNINDEXED), title, body, element_type, domain,
 #          scratchpad_name
-NOTE_WEIGHTS = "0, 0, 4.0, 0.5, 1.0, 1.0, 2.0"
+NOTE_WEIGHTS = "0, 0, 4.0, 0.5, 1.0, 1.0, 0"
 
 # A diagram is discoverable by its title, its type, and the names of the entities it draws. Ranked
 # rather than left at fts5's flat 1.0 per column, because those are not equally strong evidence: a

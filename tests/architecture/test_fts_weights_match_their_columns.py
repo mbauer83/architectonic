@@ -36,7 +36,11 @@ def _fts_columns() -> dict[str, int]:
         r"CREATE VIRTUAL TABLE IF NOT EXISTS (\w+_fts) USING fts5\((.*?)\)", ddl, re.S
     ):
         name, body = match.group(1), match.group(2)
-        tables[name] = len([part for part in body.split(",") if part.strip()])
+        # SQL comments first: a column list may be annotated, and a comma inside the prose would
+        # otherwise be counted as a column. This gate exists to notice a miscount, so it must not
+        # introduce one.
+        columns = re.sub(r"--[^\n]*", "", body)
+        tables[name] = len([part for part in columns.split(",") if part.strip()])
     return tables
 
 

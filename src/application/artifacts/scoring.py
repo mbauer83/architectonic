@@ -95,11 +95,11 @@ def score_scratchpad_note(rec: ScratchpadNoteRecord, query_lc: str, tokens: list
     document's content does, and its address is not matched at all — a note id is minted from a
     clock and matching one would only ever be an accident.
 
-    Its scratchpad's name is matched, below the note's own title. A scratchpad is loaded and saved
-    whole and its notes are what search returns, so the pad's title is how a reader asks for the pad
-    itself; the note's own title is the more specific answer to the same query. This mirrors the
-    ratio the FTS row weights those two columns by — the fields a note is searchable by must not
-    depend on which of the two paths answered, and for a while they did.
+    Its scratchpad's name is **not** matched, and that is the decision rather than an omission. A pad
+    is a container; its notes are what search can return. So matching the container's name hands back
+    notes whose own titles contain none of the query — ask for "Q3 platform thinking" and receive a
+    note called "AI-Assisted and Agentic Development", which reads as a wrong answer however it was
+    reached. Finding the *pad* is a different question, and one a note-shaped result cannot answer.
 
     This alone does not keep notes below model content: bm25 and the token-match supplement are on
     incomparable scales, so the guarantee lives in `_rank_balanced`, which draws the subordinate
@@ -108,7 +108,6 @@ def score_scratchpad_note(rec: ScratchpadNoteRecord, query_lc: str, tokens: list
     expanded = expand_tokens(tokens)
     score = 0.0
     score += token_match_score(rec.title, query_lc, expanded, 2.0)
-    score += token_match_score(rec.scratchpad_name, query_lc, expanded, 1.0)
     score += token_match_score(rec.element_type, query_lc, expanded, 1.0)
     score += token_match_score(rec.domain, query_lc, expanded, 1.0)
     score += content_score(rec.body, expanded, 0.5)

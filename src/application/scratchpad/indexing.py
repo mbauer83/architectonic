@@ -17,6 +17,7 @@ from src.domain.ontology_representation.artifact_types import (
     ScratchpadNoteRecord,
     scratchpad_note_id,
 )
+from src.domain.scratchpad.parts import Note
 from src.domain.yaml_documents import parse_yaml
 
 
@@ -59,4 +60,22 @@ def parse_scratchpad_notes(path: Path, *, group: str) -> list[ScratchpadNoteReco
             group=group,
         )
         for note in scratchpad.notes
+        if _still_a_thought(note)
     ]
+
+
+def _still_a_thought(note: Note) -> bool:
+    """Whether this note is the thing search should return, or whether the model now is.
+
+    A note is searchable until it has a model counterpart. Once it holds a `model_ref` the aggregate
+    itself calls it an element — `invariants.py` refuses the reference unless the note's destination
+    is `element`, "a note holding a model reference is an element" — so the model has a artifact
+    standing for the same thought, and returning both offers two results for one thing. The weaker
+    one goes: a scratchpad note is a half-formed thought and an entity is a commitment.
+
+    Both kinds, not only `realized`. The flag distinguishes a lift this pad performed from content a
+    user attached that already existed, and it earns its keep deciding whether untyping is free — not
+    whether the thought is still the model's best answer to a query. A `bound` note whose body holds
+    rationale the entity lacks is an argument for lifting that rationale, not for answering twice.
+    """
+    return note.model_ref is None

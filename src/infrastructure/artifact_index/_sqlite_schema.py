@@ -123,6 +123,11 @@ CREATE VIRTUAL TABLE IF NOT EXISTS documents_fts USING fts5(
 -- anything else: an fts5 table has no foreign key, and deleting by a set read from elsewhere leaks
 -- rows the moment that elsewhere is wrong.
 CREATE VIRTUAL TABLE IF NOT EXISTS scratchpad_notes_fts USING fts5(
-    artifact_id UNINDEXED, scratchpad_id UNINDEXED, title, body, element_type, domain, scratchpad_name
+    -- `scratchpad_name` is UNINDEXED, not merely weighted at nothing. A zero bm25 weight stops a
+    -- column contributing to the *rank* and not to the *match*, so with it indexed a note answered
+    -- any query its pad's title matched, whatever the note itself said. Finding the pad is a
+    -- different question and a note cannot answer it.
+    artifact_id UNINDEXED, scratchpad_id UNINDEXED, title, body, element_type, domain,
+    scratchpad_name UNINDEXED
 );
 """
