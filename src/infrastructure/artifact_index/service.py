@@ -488,6 +488,7 @@ class ArtifactIndex(_ReverseReferenceQueries, _ScratchpadNoteQueries):
         limit: int,
         kinds: frozenset[str] = ALL_SEARCHABLE_KINDS,
         excluded_entity_types: frozenset[str] = frozenset(),
+        visible_diagram_entity_types: frozenset[str] | None = None,
     ) -> list[tuple[str, str, float]]:
         self._ensure_loaded()
         with self._lock.reading(), self._db.reader() as conn:
@@ -495,6 +496,7 @@ class ArtifactIndex(_ReverseReferenceQueries, _ScratchpadNoteQueries):
                 conn, query, limit=limit,
                 kinds=kinds,
                 excluded_entity_types=excluded_entity_types,
+                visible_diagram_entity_types=visible_diagram_entity_types,
                 fts_enabled=self._db.fts_enabled,
             )
 

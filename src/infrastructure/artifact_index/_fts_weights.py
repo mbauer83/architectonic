@@ -13,8 +13,14 @@ supplement are on scales that say nothing about each other.
 from __future__ import annotations
 
 # Entity name column (position 1) gets 15× weight over content_text (0.5).
-# Columns: artifact_id(UNINDEXED), name, artifact_type, domain, subdomain, keywords, content_text, display_label
-ENTITY_WEIGHTS = "0, 15.0, 1.0, 1.0, 1.0, 4.0, 0.5, 4.0"
+#
+# `host_diagram_id` is weighted at nothing and is UNINDEXED: it is carried on the table so the
+# visibility filter can run inside the per-kind LIMIT, never so a query can match on it. Nine values
+# for nine columns — the gate next door exists because fts5 accepts a short list and silently shifts
+# every later weight onto the wrong column.
+# Columns: artifact_id(UNINDEXED), name, artifact_type, domain, subdomain, keywords, content_text,
+#          display_label, host_diagram_id(UNINDEXED)
+ENTITY_WEIGHTS = "0, 15.0, 1.0, 1.0, 1.0, 4.0, 0.5, 4.0, 0"
 
 # A note's title matters most, but only about as much as an entity's *keywords* do — the ranking
 # guarantee is in `_rank_balanced`, and these weights only order notes against one another.

@@ -287,6 +287,7 @@ class ArtifactRepository:
         prefer_record_type: _RecordType | None = None,
         strict_record_type: bool = False,
         excluded_entity_types: frozenset[str] = frozenset(),
+        visible_diagram_entity_types: frozenset[str] | None = None,
     ) -> SearchResult:
         return _search_artifacts(
             self._store,
@@ -303,6 +304,7 @@ class ArtifactRepository:
             prefer_record_type=prefer_record_type,
             strict_record_type=strict_record_type,
             excluded_entity_types=self._excluded_entity_types | excluded_entity_types,
+            visible_diagram_entity_types=visible_diagram_entity_types,
         )
 
     def scope_for_path(self, path: Path) -> Literal["enterprise", "engagement", "unknown"]:

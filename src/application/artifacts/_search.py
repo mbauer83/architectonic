@@ -60,6 +60,7 @@ def search_artifacts(
     prefer_record_type: RecordType | None = None,
     strict_record_type: bool = False,
     excluded_entity_types: frozenset[str] = frozenset(),
+    visible_diagram_entity_types: frozenset[str] | None = None,
 ) -> SearchResult:
     """One flag per kind, as the REST query parameters have — mapped to the kind set ``search`` wants.
 
@@ -95,6 +96,7 @@ def search_artifacts(
         included_kinds=frozenset(kinds),
         prefer_kind=prefer_kind,
         excluded_entity_types=excluded_entity_types,
+        visible_diagram_entity_types=visible_diagram_entity_types,
     )
 
 
@@ -109,6 +111,7 @@ def search(
     included_kinds: frozenset[str] | None = None,
     prefer_kind: str | None = None,
     excluded_entity_types: frozenset[str] = frozenset(),
+    visible_diagram_entity_types: frozenset[str] | None = None,
 ) -> SearchResult:
     """Search across requested kinds with per-kind FTS + scored supplement.
 
@@ -124,7 +127,9 @@ def search(
     kinds = (included_kinds if included_kinds is not None else ALL_SEARCHABLE_KINDS) & ALL_SEARCHABLE_KINDS
     query_lc = query.lower()
     tokens = tokenize(query_lc)
-    eligibility = EntityEligibility.build(excluded_entity_types, entity_types, domains)
+    eligibility = EntityEligibility.build(
+        excluded_entity_types, entity_types, domains, visible_diagram_entity_types
+    )
     if eligibility.effective_request_is_empty:
         kinds = kinds - {"entities"}
 
@@ -135,6 +140,7 @@ def search(
         limit=per_kind_limit,
         kinds=frozenset(kinds),
         excluded_entity_types=excluded_entity_types,
+        visible_diagram_entity_types=visible_diagram_entity_types,
     )
 
     seen: set[tuple[str, str]] = set()
@@ -148,7 +154,7 @@ def search(
         match record_type:
             case "entity":
                 artifact = store.get_entity(artifact_id)
-                if artifact is None or not eligibility.is_eligible(artifact.artifact_type, artifact.domain):
+                if artifact is None or not eligibility.is_eligible(artifact):
                     continue
             case "connection":
                 artifact = store.get_connection(artifact_id)
@@ -291,7 +297,7 @@ def _search_entities(
 ) -> list[SearchHit]:
     hits = []
     for rec in store.list_entities():
-        if not eligibility.is_eligible(rec.artifact_type, rec.domain):
+        if not eligibility.is_eligible(rec):
             continue
         if (score := score_entity(rec, query_lc, tokens)) > 0:
             hits.append(SearchHit(score=score, record_type="entity", record=rec))

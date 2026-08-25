@@ -17,9 +17,8 @@ from src.infrastructure.rest.contracts.search import (
 )
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers._global_search import (
-    filter_global_hits,
-    hidden_diagram_entity_types,
     prioritize_global_hits,
+    visible_diagram_entity_types,
 )
 from src.infrastructure.rest.routers._openapi import (
     TAG_DOCUMENTS,
@@ -95,11 +94,10 @@ def search_artifacts(
         include_documents=include_documents,
         # See `_display_search`: this feeds a dropdown of things to reference, not a search.
         include_scratchpad_notes=False,
-        excluded_entity_types=hidden_diagram_entity_types(catalogs),
+        visible_diagram_entity_types=visible_diagram_entity_types(catalogs),
     )
     hits: list[dict[str, Any]] = []
-    visible_hits = filter_global_hits(result.hits, catalogs)
-    for h in prioritize_global_hits(visible_hits)[:limit]:
+    for h in prioritize_global_hits(result.hits)[:limit]:
         aid = getattr(h.record, "artifact_id", "")
         hits.append({
             "score": h.score,

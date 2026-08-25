@@ -43,19 +43,17 @@ def _catalogs():
 def _served(query: str, limit: int = 20) -> list:
     """What the route hands back: the use case's ranking, then the global-search policy."""
     from src.infrastructure.rest.routers._global_search import (
-        filter_global_hits,
-        hidden_diagram_entity_types,
         prioritize_global_hits,
+        visible_diagram_entity_types,
     )
 
     result = _repo().search_artifacts(
         query,
-        limit=limit * 3,
+        limit=limit,
         include_connections=False,
-        excluded_entity_types=hidden_diagram_entity_types(_catalogs()),
+        visible_diagram_entity_types=visible_diagram_entity_types(_catalogs()),
     )
-    visible = filter_global_hits(result.hits, _catalogs())
-    return prioritize_global_hits(visible)[:limit]
+    return prioritize_global_hits(result.hits)
 
 
 def _kinds(hits) -> set[str]:

@@ -106,9 +106,14 @@ CREATE INDEX IF NOT EXISTS idx_attr_type_refs_type ON attribute_type_refs(type_i
 """
 
 FTS_SQL = """
+-- `host_diagram_id` is UNINDEXED and carried for filtering, not for matching: search visibility
+-- turns on whether a record is diagram-owned, and that question has to be answerable *inside* the
+-- per-kind `ORDER BY … LIMIT` below. Answering it after the window was allocated is how a search
+-- asked for twenty rows returned sixteen — the four it lost were the highest-scoring entity hits,
+-- ranked and then discarded by a filter keyed on something the ranking could not see.
 CREATE VIRTUAL TABLE IF NOT EXISTS entities_fts USING fts5(
     artifact_id UNINDEXED, name, artifact_type, domain,
-    subdomain, keywords, content_text, display_label
+    subdomain, keywords, content_text, display_label, host_diagram_id UNINDEXED
 );
 CREATE VIRTUAL TABLE IF NOT EXISTS connections_fts USING fts5(
     artifact_id UNINDEXED, source, target, conn_type, content_text

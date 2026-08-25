@@ -18,13 +18,37 @@ from .types import (
 )
 
 
-def _entity_exclusion_filter(excluded_entity_types: frozenset[str]) -> tuple[str, tuple[str, ...]]:
-    """Prepared NOT IN filter, applied before the per-kind LIMIT so hidden entity
-    rows never consume the result budget."""
-    if not excluded_entity_types:
-        return "", ()
-    placeholders = ",".join("?" * len(excluded_entity_types))
-    return f" AND artifact_type NOT IN ({placeholders})", tuple(sorted(excluded_entity_types))
+def _entity_visibility_filter(
+    excluded_entity_types: frozenset[str], visible_diagram_entity_types: frozenset[str] | None
+) -> tuple[str, tuple[str, ...]]:
+    """Prepared visibility filter, applied before the per-kind LIMIT.
+
+    Both halves of the eligibility policy, rendered as SQL from the sets the application hands over:
+    an excluded *type* never matches, and a *diagram-owned* record matches only if its type opted in.
+    A record with no `host_diagram_id` is a model entity and passes regardless.
+
+    It runs here, inside the subquery, rather than over the returned rows, because a row filtered
+    afterwards has already spent a slot: the same query answered with sixteen rows of twenty because
+    four invisible records were ranked first and then removed. `host_diagram_id` is carried UNINDEXED
+    on the FTS table for exactly this.
+    """
+    clauses: list[str] = []
+    params: list[str] = []
+    if excluded_entity_types:
+        clauses.append(f" AND artifact_type NOT IN ({','.join('?' * len(excluded_entity_types))})")
+        params.extend(sorted(excluded_entity_types))
+    # `None` and an empty set are different instructions. `None` is a caller not applying the
+    # ownership policy — a direct index query — and adds no clause. An empty set is the policy applied
+    # with nothing opted in, and admits only records with no host diagram.
+    if visible_diagram_entity_types is not None:
+        opted_in = ",".join("?" * len(visible_diagram_entity_types))
+        clauses.append(
+            f" AND (host_diagram_id = '' OR artifact_type IN ({opted_in}))"
+            if opted_in
+            else " AND host_diagram_id = ''"
+        )
+        params.extend(sorted(visible_diagram_entity_types))
+    return "".join(clauses), tuple(params)
 
 
 def search_fts(
@@ -34,6 +58,7 @@ def search_fts(
     limit: int,
     kinds: frozenset[str],
     excluded_entity_types: frozenset[str] = frozenset(),
+    visible_diagram_entity_types: frozenset[str] | None = None,
     fts_enabled: bool,
 ) -> list[tuple[str, str, float]]:
     tokens = tokenize(query.lower())
@@ -41,7 +66,9 @@ def search_fts(
         return []
     match_query = " OR ".join(f'"{token}"' for token in tokens)
     per_kind_limit = max(limit, 1)
-    entity_filter_sql, entity_filter_params = _entity_exclusion_filter(excluded_entity_types)
+    entity_filter_sql, entity_filter_params = _entity_visibility_filter(
+        excluded_entity_types, visible_diagram_entity_types
+    )
     # Per-kind subqueries each get their own ORDER BY + LIMIT so that a dominant
     # kind (e.g. hundreds of entity hits) cannot crowd out minority kinds.
     kind_rows: list[tuple[str, str, str, str, str, tuple[str, ...]]] = [

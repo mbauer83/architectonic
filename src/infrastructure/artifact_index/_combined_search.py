@@ -137,6 +137,7 @@ class CombinedSearchMixin:
         limit: int,
         kinds: frozenset[str] = ALL_SEARCHABLE_KINDS,
         excluded_entity_types: frozenset[str] = frozenset(),
+        visible_diagram_entity_types: frozenset[str] | None = None,
     ) -> list[tuple[str, str, float]]:
         def call(store: ReadableArtifactStore) -> list[tuple[str, str, float]]:
             return store.search_fts(
@@ -144,6 +145,7 @@ class CombinedSearchMixin:
                 limit=limit,
                 kinds=kinds,
                 excluded_entity_types=excluded_entity_types,
+                visible_diagram_entity_types=visible_diagram_entity_types,
             )
 
         left, right = dispatch_both(call, self._engagement, self._enterprise)

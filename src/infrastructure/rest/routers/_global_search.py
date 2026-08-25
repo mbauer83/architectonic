@@ -6,27 +6,23 @@ from src.application.runtime_catalogs import RuntimeCatalogs
 from src.domain.ontology_representation.artifact_types import SearchHit
 
 
-def hidden_diagram_entity_types(catalogs: RuntimeCatalogs) -> frozenset[str]:
-    declared = catalogs.module_catalog.all_diagram_entity_types()
-    visible = catalogs.module_catalog.diagram_entity_types_in_global_search()
-    return frozenset(str(entity_type) for entity_type in declared - visible)
+def visible_diagram_entity_types(catalogs: RuntimeCatalogs) -> frozenset[str]:
+    """The diagram-owned entity types a module has declared searchable.
 
+    The *positive* set, and that is the correction. This module used to answer the complement —
+    declared diagram-only types minus the ones opting in — which the search use case then excluded by
+    type name. That could not express the population it was meant to hide: several diagram families
+    (`gsn`, `bowtie`, `control_structure`) declare no diagram-only types at all, so their nodes were
+    outside the complement entirely, and every diagram family shares one container key for its nodes,
+    so a type-name rule hides all of them or none.
 
-def filter_global_hits(
-    hits: Sequence[SearchHit], catalogs: RuntimeCatalogs
-) -> list[SearchHit]:
-    """Hide diagram-owned entities unless their type explicitly opts in."""
-    visible_types = {
-        str(entity_type)
-        for entity_type in catalogs.module_catalog.diagram_entity_types_in_global_search()
-    }
-    return [
-        hit
-        for hit in hits
-        if hit.record_type != "entity"
-        or getattr(hit.record, "host_diagram_id", None) is None
-        or str(getattr(hit.record, "artifact_type", "")) in visible_types
-    ]
+    So visibility keys on the record — does it have a host diagram, and is its type listed here — and
+    the answer travels as data into one predicate that both the scored path and the SQL apply. What
+    this function owes that predicate is the module vocabulary, which is the one thing a policy in
+    `application/` must not know for itself.
+    """
+    declared = catalogs.module_catalog.diagram_entity_types_in_global_search()
+    return frozenset(str(entity_type) for entity_type in declared)
 
 
 def prioritize_global_hits(hits: Sequence[SearchHit]) -> list[SearchHit]:

@@ -313,6 +313,7 @@ class FakeStore:
         limit: int,
         kinds: frozenset[str] = ALL_SEARCHABLE_KINDS,
         excluded_entity_types: frozenset[str] = frozenset(),
+        visible_diagram_entity_types: frozenset[str] | None = None,
     ) -> list[tuple[str, str, float]]:
         return []
 

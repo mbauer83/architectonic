@@ -22,6 +22,7 @@ from ._sqlite_rows import (
     connection_row,
     diagram_row,
     document_row,
+    entity_fts_row,
     entity_row,
     note_fts_row,
     note_row,
@@ -62,8 +63,8 @@ _INS_EDGE = (
 )
 _INS_EFTS = (
     "INSERT INTO entities_fts "
-    "(artifact_id,name,artifact_type,domain,subdomain,keywords,content_text,display_label)"
-    " VALUES (?,?,?,?,?,?,?,?)"
+    "(artifact_id,name,artifact_type,domain,subdomain,keywords,content_text,display_label,host_diagram_id)"
+    " VALUES (?,?,?,?,?,?,?,?,?)"
 )
 _INS_CFTS = "INSERT INTO connections_fts (artifact_id,source,target,conn_type,content_text) VALUES (?,?,?,?,?)"
 _INS_DFTS = "INSERT INTO diagrams_fts (artifact_id,name,diagram_type,artifact_type,member_names) VALUES (?,?,?,?,?)"
@@ -137,19 +138,7 @@ class _SqliteStore:
             self._conn.execute(_INS_ENTITY, entity_row(rec, self._scope))
             if self._fts_enabled:
                 self._conn.execute("DELETE FROM entities_fts WHERE artifact_id=?", (rec.artifact_id,))
-                self._conn.execute(
-                    _INS_EFTS,
-                    (
-                        rec.artifact_id,
-                        rec.name,
-                        rec.artifact_type,
-                        rec.domain,
-                        rec.subdomain,
-                        " ".join(rec.keywords),
-                        rec.content_text,
-                        rec.display_label,
-                    ),
-                )
+                self._conn.execute(_INS_EFTS, entity_fts_row(rec))
 
     def delete_entity(self, artifact_id: str) -> None:
         old = self._mem.entities.pop(artifact_id, None)
@@ -316,20 +305,7 @@ class _SqliteStore:
                 self._conn.executemany(_INS_ATTR_TYPE_REF, attr_ref_rows)
             if self._fts_enabled:
                 self._conn.executemany(
-                    _INS_EFTS,
-                    [
-                        (
-                            r.artifact_id,
-                            r.name,
-                            r.artifact_type,
-                            r.domain,
-                            r.subdomain,
-                            " ".join(r.keywords),
-                            r.content_text,
-                            r.display_label,
-                        )
-                        for r in self._mem.entities.values()
-                    ],
+                    _INS_EFTS, [entity_fts_row(r) for r in self._mem.entities.values()]
                 )
                 self._conn.executemany(
                     _INS_CFTS,

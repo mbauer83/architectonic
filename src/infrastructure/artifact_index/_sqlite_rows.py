@@ -113,5 +113,26 @@ def note_row(r: ScratchpadNoteRecord, scope: _ScopeFn) -> tuple[str, ...]:
     )
 
 
+def entity_fts_row(rec: EntityRecord) -> tuple[str, ...]:
+    """One entity's full-text row.
+
+    A function rather than two inline tuples: the incremental upsert and the bulk rebuild both build
+    this row, and they were spelled separately — so a column added to the table had to be remembered
+    in two places, and a column added to one of them would have failed only whichever path ran first.
+    Every other kind already answers this through a builder or a one-liner.
+    """
+    return (
+        rec.artifact_id,
+        rec.name,
+        rec.artifact_type,
+        rec.domain,
+        rec.subdomain,
+        " ".join(rec.keywords),
+        rec.content_text,
+        rec.display_label,
+        rec.host_diagram_id or "",
+    )
+
+
 def note_fts_row(r: ScratchpadNoteRecord) -> tuple[str, ...]:
     return (r.artifact_id, r.scratchpad_id, r.title, r.body, r.element_type, r.domain, r.scratchpad_name)
