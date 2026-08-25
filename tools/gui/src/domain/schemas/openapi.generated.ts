@@ -6141,17 +6141,27 @@ export interface components {
         };
         /**
          * DiagramContextEntity
-         * @description One entity as this diagram places it: the list row, plus the alias it is drawn under.
+         * @description One entity as this diagram places it: the list row, the alias it is drawn under, and what it
+         *     corresponds to in the model.
          *
          *     ``display_alias`` is here and not on :class:`EntitySummary` because only a diagram read resolves
          *     it — the entity list has no diagram to draw the entity on, and a field the list route never
-         *     fills would read as "this entity has no alias".
+         *     fills would read as "this entity has no alias". ``bindings`` is here for the same reason and a
+         *     stronger one: a correspondence belongs to the *diagram*, not to the entity. The same element
+         *     drawn on two diagrams may represent two different things, so an entity-shaped home for it would
+         *     be a claim one diagram makes leaking into another.
+         *
+         *     Absent rather than empty when the element declares none: there is no second state to tell apart
+         *     here — an element with no correspondence and an element for which the question does not arise
+         *     are the same element.
          */
         DiagramContextEntity: {
             /** Artifact Id */
             artifact_id: string;
             /** Artifact Type */
             artifact_type: string;
+            /** Bindings */
+            bindings?: components["schemas"]["ElementCorrespondenceWire"][];
             /** Conn In */
             conn_in?: number;
             /** Conn Out */
@@ -7249,6 +7259,27 @@ export interface components {
             };
             /** Meta Ontology */
             meta_ontology: string;
+        };
+        /**
+         * ElementCorrespondenceWire
+         * @description One correspondence an element on this diagram declares: what it means in the model.
+         *
+         *     The ``correspondence_kind`` travels with the target because it is the content of the statement —
+         *     ``represents`` and ``traces-to`` are different claims about the same pair, and a link shown
+         *     without its kind says something the model does not.
+         *
+         *     ``name`` is resolved here rather than left to the reader: the route already holds every entity it
+         *     could name, and a client that had to fetch each target to render a label would issue one request
+         *     per bound element. Absent when the target is an id this repository cannot resolve, which is a
+         *     dangling binding and worth looking different from a resolved one.
+         */
+        ElementCorrespondenceWire: {
+            /** Artifact Id */
+            artifact_id: string;
+            /** Correspondence Kind */
+            correspondence_kind: string;
+            /** Name */
+            name?: string;
         };
         /**
          * EngagementSaveResponse

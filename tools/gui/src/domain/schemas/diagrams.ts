@@ -120,6 +120,19 @@ export type C4Navigation = typeof C4NavigationSchema.Type
  * A struct of its own rather than `EntitySummarySchema`, which is the *list* row and carries
  * several optional fields no diagram read fills. `display_alias` is required here because only a
  * diagram read resolves it. */
+/** One correspondence an element on this diagram declares: what it means in the model.
+ *
+ * The kind travels with the target because it is the content of the statement — `represents` and
+ * `traces-to` are different claims about the same pair. `name` is resolved by the route that already
+ * holds every entity it could name; absent when the target resolves to nothing, which is a dangling
+ * binding and should read as one. */
+export const ElementCorrespondenceSchema = Schema.Struct({
+  correspondence_kind: Schema.String,
+  artifact_id: Schema.String,
+  name: Schema.optional(Schema.String),
+})
+export type ElementCorrespondence = typeof ElementCorrespondenceSchema.Type
+
 export const DiagramContextEntitySchema = Schema.Struct({
   artifact_id: Schema.String,
   artifact_type: Schema.String,
@@ -131,6 +144,7 @@ export const DiagramContextEntitySchema = Schema.Struct({
   path: Schema.String,
   is_global: Schema.Boolean,
   display_alias: Schema.String,
+  bindings: Schema.optional(Schema.Array(ElementCorrespondenceSchema)),
   group: Schema.optional(Schema.String),
   specializations: Schema.Array(Schema.String),
   host_diagram_id: Schema.optional(Schema.String),
