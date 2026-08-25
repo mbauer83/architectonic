@@ -74,6 +74,21 @@ SUBORDINATE_RECORD_ORDER: tuple[str, ...] = ("scratchpad-note",)
 #: the three call sites that ask it, and derived because a second literal is a second declaration.
 SUBORDINATE_RECORD_TYPES: frozenset[str] = frozenset(SUBORDINATE_RECORD_ORDER)
 
+#: Every record type, in the order a reader should meet them: declaration order for the kinds that
+#: take part in the round-robin, then the subordinate kinds in theirs.
+#:
+#: One declaration, and the combined index's merge order derives from it rather than restating it —
+#: a hand-kept second list is what once named four of the five kinds, so every note row was dropped
+#: whenever two repository roots were merged, which is every search the backend serves.
+#:
+#: It is also the kind order *within* a search tier. A tier's members are equal on the only thing
+#: the tier asserts — the reader typed this title — so ordering the kinds by their top score would
+#: rank equals on an axis the tiering exists to stop relying on.
+RECORD_TYPE_ORDER: tuple[str, ...] = (
+    *(rt for rt in KIND_TO_RECORD_TYPE.values() if rt not in SUBORDINATE_RECORD_TYPES),
+    *SUBORDINATE_RECORD_ORDER,
+)
+
 
 @runtime_checkable
 class SemanticSearchProvider(Protocol):

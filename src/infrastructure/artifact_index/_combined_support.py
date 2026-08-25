@@ -3,22 +3,17 @@ from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor
 from typing import Callable, TypeVar
 
-from src.domain.ontology_representation.artifact_types import (
-    KIND_TO_RECORD_TYPE,
-    SUBORDINATE_RECORD_TYPES,
-)
+from src.domain.search_records import RECORD_TYPE_ORDER
 
 _T = TypeVar("_T")
 _S = TypeVar("_S")
-#: The record types the merge interleaves, and the order it interleaves them in. Derived from the
-#: vocabulary rather than restated beside it: a hand-kept second list of the record types is what
-#: drifted — it named four of the five, so every `scratchpad-note` row was dropped whenever the two
-#: roots were merged, which is every search the backend serves. Subordinate kinds sort last, the
-#: condition they are indexed under (SUBORDINATE_RECORD_TYPES).
-_RECORD_TYPE_ORDER: tuple[str, ...] = (
-    *(rt for rt in KIND_TO_RECORD_TYPE.values() if rt not in SUBORDINATE_RECORD_TYPES),
-    *(rt for rt in KIND_TO_RECORD_TYPE.values() if rt in SUBORDINATE_RECORD_TYPES),
-)
+#: The record types the merge interleaves, and the order it interleaves them in. Read from the
+#: vocabulary rather than derived here: a hand-kept second list is what drifted — it named four of
+#: the five record types, so every `scratchpad-note` row was dropped whenever the two roots were
+#: merged, which is every search the backend serves. Deriving it here was the first fix; declaring
+#: it once, where the kinds are declared, is the same fix taken one step further, and it means the
+#: search use case's tiers and this merge cannot disagree about the order.
+_RECORD_TYPE_ORDER: tuple[str, ...] = RECORD_TYPE_ORDER
 
 EXECUTOR = ThreadPoolExecutor(max_workers=4, thread_name_prefix="combined-artifact-index")
 

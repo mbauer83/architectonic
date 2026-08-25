@@ -20,7 +20,7 @@ from pathlib import Path
 
 import pytest
 
-from src.application.artifacts._search import _rank_balanced
+from src.application.artifacts._ranking import rank_balanced as _rank_balanced
 from src.domain.ontology_representation.artifact_types import (
     DiagramRecord,
     DocumentRecord,
@@ -168,3 +168,62 @@ class TestTheReservationSurvivesTheRoundRobin:
 
         assert ranked[-1].record_type == "scratchpad-note", "a note is drawn last, whatever it scored"
         assert all(h.record_type != "scratchpad-note" for h in ranked[:-1])
+
+
+class TestTheFloorSurvivesAVerbatimPromotion:
+    """A title the reader typed exactly is promoted above the balanced ranking entirely, so the
+    ranking sees a smaller window and fewer hits. The floor is computed against *that* window.
+
+    The interaction to get wrong is double-counting: a note promoted for naming itself must not also
+    consume the slot reserved for the notes that were not. It cannot, because it is no longer among
+    the hits the balanced ranking is given — but the arithmetic is asserted here rather than argued,
+    since the first version of this reservation was correct for four window sizes out of twelve.
+    """
+
+    @pytest.mark.parametrize("limit", [11, 12, 13, 14, 15, 18, 19, 20, 21, 24, 30])
+    def test_a_promoted_note_does_not_spend_the_reservation(self, limit: int) -> None:
+        from src.application.artifacts._ranking import rank_hits
+        from src.domain.ontology_representation.artifact_types import SearchHit
+
+        hits = _three_kinds_and_notes(40, 3)
+        hits.append(SearchHit(1.0, "scratchpad-note", _note(99)))
+
+        ranked = rank_hits(hits, "note 99", limit, None)
+
+        assert len(ranked) == limit, "the window is still filled"
+        assert ranked[0].record.artifact_id == "SCR@1.pad#note/n99", "the named note leads"
+        assert _kinds(ranked).count("scratchpad-note") >= 2, "the other notes keep their floor"
+
+    def test_a_promotion_can_take_the_window_below_the_floor_threshold(self) -> None:
+        """The boundary, asserted rather than discovered: at a window of ten a promotion leaves nine,
+        and nine is below the size at which a slot is reserved at all.
+
+        That is the floor rule working, not a defect — reserving in a nine-slot window is the trade
+        the subordination exists to refuse, and the reader has already been given the note they named.
+        Stated here so the next reader of these numbers does not read the absence as starvation.
+        """
+        from src.application.artifacts._ranking import rank_hits
+        from src.domain.ontology_representation.artifact_types import SearchHit
+
+        hits = _three_kinds_and_notes(40, 3)
+        hits.append(SearchHit(1.0, "scratchpad-note", _note(99)))
+
+        ranked = rank_hits(hits, "note 99", 10, None)
+
+        assert ranked[0].record.artifact_id == "SCR@1.pad#note/n99"
+        assert _kinds(ranked).count("scratchpad-note") == 1
+
+    @pytest.mark.parametrize("limit", [1, 2, 5, 9])
+    def test_a_promotion_reaches_a_window_too_small_for_the_floor(self, limit: int) -> None:
+        """Below ten slots nothing is reserved — but a title the reader typed is not a reservation,
+        and it is drawn even into a window of one."""
+        from src.application.artifacts._ranking import rank_hits
+        from src.domain.ontology_representation.artifact_types import SearchHit
+
+        hits = _three_kinds_and_notes(40, 3)
+        hits.append(SearchHit(1.0, "scratchpad-note", _note(99)))
+
+        ranked = rank_hits(hits, "note 99", limit, None)
+
+        assert ranked[0].record.artifact_id == "SCR@1.pad#note/n99"
+        assert len(ranked) == limit

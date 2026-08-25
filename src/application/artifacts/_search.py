@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import cast
 
 from src.application._search_eligibility import EntityEligibility, semantic_entity_hits
+from src.application.artifacts._ranking import rank_hits
 from src.application.artifacts.scoring import (
     score_connection,
     score_diagram,
@@ -15,24 +16,27 @@ from src.application.artifacts.scoring import (
 )
 from src.application.ports import ReadableArtifactStore
 from src.domain.ontology_representation.artifact_types import (
-    ALL_SEARCHABLE_KINDS,
-    KIND_TO_RECORD_TYPE,
-    RECORD_TYPE_TO_KIND,
-    SUBORDINATE_RECORD_TYPES,
     ConnectionRecord,
     DiagramRecord,
     DocumentRecord,
     EntityRecord,
-    RecordType,
     ScratchpadNoteRecord,
-    SearchableKind,
     SearchHit,
     SearchResult,
+)
+from src.domain.search_records import (
+    ALL_SEARCHABLE_KINDS,
+    KIND_TO_RECORD_TYPE,
+    RECORD_TYPE_TO_KIND,
+    RecordType,
+    SearchableKind,
     SemanticSearchProvider,
 )
 
-# The vocabulary itself lives beside `SearchHit` in the domain, where the record types are declared;
-# these names stay importable from here because every caller already reaches for them here.
+# The vocabulary is imported from where it is declared, and the record types from where *they* are:
+# `artifact_types` re-exports the vocabulary for the callers that predate the split, but new
+# references go to its home. These names stay importable from here because every caller already
+# reaches for them here.
 __all__ = [
     "ALL_SEARCHABLE_KINDS",
     "RecordType",
@@ -209,84 +213,7 @@ def search(
         hits.extend(semantic_entity_hits(store, semantic, query, eligibility=eligibility, seen=seen))
 
     prefer_rt = KIND_TO_RECORD_TYPE.get(prefer_kind) if prefer_kind else None
-    return SearchResult(query=query, hits=_rank_balanced(hits, limit, prefer_rt))
-
-
-def _rank_balanced(hits: list[SearchHit], limit: int, prefer_rt: str | None) -> list[SearchHit]:
-    """Select up to ``limit`` hits with fair representation across record kinds.
-
-    Per-table FTS (bm25) and the token-match supplement produce scores on incomparable
-    scales, so a single global sort lets a high-volume kind (entities) crowd minority
-    kinds (diagrams, documents) out of the result window entirely. Instead, rank within
-    each kind by its own score, then round-robin across kinds — ordering the kinds by
-    their strongest hit (``prefer_rt`` first) — so every matching kind stays visible.
-
-    ``SUBORDINATE_RECORD_TYPES`` do not take part in the round-robin at all: they fill whatever
-    slots are left once every other kind has had its turn. A scratchpad note is a half-formed
-    thought and an entity is a commitment, and "never outranks model content, documents or
-    diagrams" was the condition notes were allowed into the index under — a round-robin honours it
-    only against the *first* hit of each other kind, and would still put a note above the second
-    entity. A preference cannot lift them either.
-
-    It is enforced here rather than by weights because the two scales cannot be compared: bm25 and
-    the token-match supplement say nothing about each other, so only the draw order can promise it.
-    The cost is real and accepted — a query whose window is filled by model content will not show a
-    note even if the note matched it exactly.
-    """
-    by_kind: dict[str, list[SearchHit]] = {}
-    for h in hits:
-        by_kind.setdefault(h.record_type, []).append(h)
-    for group in by_kind.values():
-        group.sort(key=lambda h: h.score, reverse=True)
-    order = sorted(by_kind, key=lambda rt: by_kind[rt][0].score, reverse=True)
-    if prefer_rt in by_kind and prefer_rt not in SUBORDINATE_RECORD_TYPES:
-        order = [prefer_rt, *(rt for rt in order if rt != prefer_rt)]
-    subordinate = sorted(
-        (h for rt in order if rt in SUBORDINATE_RECORD_TYPES for h in by_kind[rt]),
-        key=lambda h: h.score,
-        reverse=True,
-    )
-    reserved = _subordinate_floor(limit, len(subordinate))
-    ranked: list[SearchHit] = []
-    rank = 0
-    while len(ranked) < limit - reserved:
-        drawn = [
-            by_kind[rt][rank]
-            for rt in order
-            if rt not in SUBORDINATE_RECORD_TYPES and rank < len(by_kind[rt])
-        ]
-        if not drawn:
-            break
-        ranked.extend(drawn)
-        rank += 1
-    # Trimmed to the reservation before the tail is appended. The round-robin draws one hit per
-    # kind per pass, so it extends in batches and overshoots `limit - reserved` whenever the kind
-    # count does not divide it — and the guard this replaces (`if len(ranked) < limit`) then saw a
-    # full window and dropped the reserved slots on the floor. A window of twenty survived on
-    # arithmetic alone: three kinds reach eighteen and stop short. Twelve reached exactly twelve, so
-    # the floor was silently spent and a note was unreachable in any dropdown that asked for one.
-    return (ranked[: limit - reserved] + subordinate)[:limit]
-
-
-def _subordinate_floor(limit: int, available: int) -> int:
-    """How many of the window's slots the subordinate kinds may not be starved out of.
-
-    They are drawn last and that does not change: the condition they were admitted under is that a
-    note never outranks model content. But that is a statement about *order*, and being kept out of
-    the window is a different thing — it made a scratchpad unfindable by its own title, because any
-    query model content also matches filled twenty slots before the notes were reached.
-
-    The floor only applies where the window can afford it. A window of four belongs to committed
-    content, and spending a quarter of it on a half-formed thought is the trade the subordination
-    exists to refuse — so below ten slots nothing is reserved at all.
-    """
-    if available <= 0 or limit < _FLOOR_MIN_WINDOW:
-        return 0
-    return min(available, max(1, limit // 10))
-
-
-#: Below this many slots a window is too small to give one away — see `_subordinate_floor`.
-_FLOOR_MIN_WINDOW = 10
+    return SearchResult(query=query, hits=rank_hits(hits, query, limit, prefer_rt))
 
 
 def _search_entities(
