@@ -19,7 +19,8 @@ from unittest.mock import MagicMock
 
 from src.application.modeling.binding_normalize import normalize_bindings, strip_diagram_shorthand
 from src.diagram_types.c4._navigation import build_c4_navigation, resolve_scope_entity_id
-from src.domain.diagrams.bindings import bindings_to_raw, element_entity_ids
+from src.domain.diagrams.bindings import bindings_to_raw
+from src.domain.diagrams.element_correspondence import element_entity_ids
 
 _SYSTEM = "APP@1.aaaaaa.the-platform"
 _CONTAINER = "APP@2.bbbbbb.the-api"

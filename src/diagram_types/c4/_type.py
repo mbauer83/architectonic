@@ -206,7 +206,7 @@ class _C4DiagramType(DiagramTypeBase):
         of one's own.
         """
         from src.diagram_types.c4._navigation import resolve_scope_shorthand  # noqa: PLC0415
-        from src.domain.diagrams.bindings import element_entity_ids  # noqa: PLC0415
+        from src.domain.diagrams.element_correspondence import element_entity_ids  # noqa: PLC0415
 
         frontmatter: dict[str, Any] = parsed_source.get("frontmatter") or {}
         bindings = frontmatter.get("bindings")
