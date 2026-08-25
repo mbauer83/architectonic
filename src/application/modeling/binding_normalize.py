@@ -25,9 +25,11 @@ from src.domain.diagrams.bindings import (
     Binding,
     BindingSubject,
     Target,
-    element_entity_ids,
     parse_binding,
     parse_target,
+)
+from src.domain.diagrams.element_correspondence import (
+    element_entity_ids,
 )
 
 _SHORTHAND_ALLOWED_KINDS: frozenset[str] = frozenset(

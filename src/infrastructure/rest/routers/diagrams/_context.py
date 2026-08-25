@@ -17,6 +17,7 @@ from src.application.modeling.diagram_kind_palette import (
     diagram_kind_entity_types,
 )
 from src.application.runtime_catalogs import RuntimeCatalogs
+from src.domain.diagrams.element_correspondence import element_correspondences
 from src.domain.modules.module_types import EntityTypeName
 from src.domain.ontology_representation.artifact_types import DiagramRecord, EntityRecord
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
@@ -88,6 +89,9 @@ def diagram_entities_and_puml(
     ws = _workspace_entity_types(catalogs, diag_rec.diagram_type)
     records = {rec.artifact_id: rec for rec in repo.list_entities()}
     records.update({rec.artifact_id: rec for rec in extract_diagram_entities(diag_rec, ws)})
+    # What each element on this diagram says it corresponds to, read once through the module that
+    # owns the `bindings:` block rather than walked here.
+    correspondences = element_correspondences(diag_rec.extra.get("bindings"))
     entities = []
     for rec in records.values():
         # Diagram-only entities from a *different* diagram must never bleed in.
@@ -97,6 +101,19 @@ def diagram_entities_and_puml(
         if is_owned or (rec.display_alias and normalize_puml_alias(rec.display_alias) in aliases):
             row = s.entity_to_summary(rec)
             row["display_alias"] = rec.display_alias
+            declared = correspondences.get(rec.display_alias)
+            if declared:
+                row["bindings"] = [
+                    {
+                        "correspondence_kind": item.correspondence_kind,
+                        "artifact_id": item.entity_id,
+                        # Resolved from what this route already holds: a client fetching each target
+                        # to render a label would issue one request per bound element. None where the
+                        # id resolves to nothing — a dangling binding should look like one.
+                        "name": getattr(records.get(item.entity_id), "name", None),
+                    }
+                    for item in declared
+                ]
             entities.append(row)
     ordered_domains = catalogs.ontology.domain_order()
     entities.sort(

@@ -308,45 +308,6 @@ def bindings_to_raw(bindings: list[Binding]) -> list[dict[str, object]]:
     return [binding_to_dict(b) for b in bindings]
 
 
-# ── Read side ─────────────────────────────────────────────────────────────────
-#
-# The persist path is deliberately lossy of shorthand: `strip_diagram_shorthand` removes
-# `entity_id`, `backing_entity_id`, `binding:` and `_scope_entity_id` from `diagram-entities`, because
-# the top-level `bindings:` block is the canonical form. Every consumer that wants "which model
-# entity does this diagram element stand for" must therefore read it from here.
-#
-# It is stated once, in the domain, because three consumers each answered it by reading a field the
-# persist path guarantees is absent — and the result was a C4 diagram whose elements selected nothing
-# and whose drill-down badges never appeared, with a green suite the whole time.
-
-
-def element_entity_ids(bindings: object) -> dict[str, str]:
-    """Diagram-local element id → the model entity it represents.
-
-    Reads the raw (frontmatter) binding shape rather than `Binding`, because every caller has the
-    persisted dict in hand and converting first would be ceremony. Only `subject.kind == "entity"`
-    bindings carry an element correspondence; a diagram-level `scoped-by` is a different question,
-    answered by `diagram_scope_entity_id`.
-    """
-    resolved: dict[str, str] = {}
-    if not isinstance(bindings, list):
-        return resolved
-    for binding in bindings:
-        if not isinstance(binding, dict):
-            continue
-        subject = binding.get("subject")
-        target = binding.get("target")
-        if not isinstance(subject, dict) or not isinstance(target, dict):
-            continue
-        if subject.get("kind") != "entity":
-            continue
-        element_id = str(subject.get("id") or "").strip()
-        entity_id = str(target.get("entity_id") or "").strip()
-        if element_id and entity_id:
-            resolved.setdefault(element_id, entity_id)
-    return resolved
-
-
 def scope_target(bindings: Iterable[Binding]) -> Target | None:
     """The target of the diagram-level ``scoped-by`` binding, or ``None``.
 

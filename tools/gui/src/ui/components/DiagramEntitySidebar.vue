@@ -19,6 +19,7 @@ import { toGlyphKey } from '../lib/glyphKey'
 import { isDiagramOnly } from '../views/DiagramDetailView.helpers'
 import { contentHtmlWithoutTitleHeading } from './entityContentHtml'
 import ArchimateTypeGlyph from './ArchimateTypeGlyph.vue'
+import ElementCorrespondenceList from './ElementCorrespondenceList.vue'
 import SidebarEntityEditor from './SidebarEntityEditor.vue'
 
 const props = defineProps<{
@@ -59,6 +60,18 @@ const emit = defineEmits<{
 
 /** Strips a first-heading duplicate of the entity's own name — the raw markdown-rendered
  * content otherwise repeats the title the panel already shows above it. */
+/**
+ * What the selected element says it corresponds to in the model.
+ *
+ * Read from the diagram's own rows rather than from the entity read: a correspondence belongs to the
+ * *diagram*, and the same element drawn on two diagrams may represent two different things. The
+ * entity read has no diagram in hand and could only ever answer for one of them.
+ */
+const selectedBindings = computed(() => {
+  const row = props.entities.find((entity) => entity.artifact_id === props.selectedId)
+  return row?.bindings ?? []
+})
+
 const selectedEntityDetailHtml = computed(() => {
   const entity = props.entityQuery.data.value
   if (!entity) return null
@@ -240,6 +253,7 @@ const selectedIsDiagramOnly = computed(() => {
         >{{ entityQuery.data.value.status }}</span>
         <span class="chip chip-type">{{ entityQuery.data.value.artifact_type }}</span>
       </div>
+      <ElementCorrespondenceList :bindings="selectedBindings" />
       <!-- Diagram-type-specific metadata section for a diagram-only entity (e.g. a datatype
            classifier): shown once, edited in place — never duplicated as a read-only block. -->
       <component

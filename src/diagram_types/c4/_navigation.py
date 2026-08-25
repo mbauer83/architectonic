@@ -17,9 +17,11 @@ from src.domain.diagrams.bindings import (
     SCOPE_IDS_KEY,
     SCOPE_KEY,
     diagram_scope_entity_ids,
-    element_entity_ids,
     parse_bindings,
     scope_shorthand,
+)
+from src.domain.diagrams.element_correspondence import (
+    element_entity_ids,
 )
 
 #: Registered C4 types and their containment depth. `c4-deployment` is deliberately absent: it is
