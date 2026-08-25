@@ -3,7 +3,7 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
-## [0.7.1] — 2026-08-24
+## [0.7.1] — 2026-08-25
 
 **[Full detail → `changelog-assets/0.7.1-detail.md`](changelog-assets/0.7.1-detail.md)**
 
@@ -15,7 +15,7 @@ wrote, and findings computed and then withheld from every reader entitled to the
 
 - **An activity diagram draws every step its model declares, exactly once.** Four causes, from a step
   two branches reach to a graph containing a loop.
-- **A declared step the stored body does not draw is reported (W045).** Every rule read the model and
+- **A declared step the stored body does not draw is reported (W045)** — every rule read the model and
   none the picture; `puml="auto-sync"` answers it.
 - **A swimlane header selects its lane**, as an action, a decision and a partition already did — the
   renderer emitted the anchor and the viewer resolved none of it.
@@ -30,8 +30,7 @@ wrote, and findings computed and then withheld from every reader entitled to the
 - **A deployment host is drawn as a node whether or not anything is drawn inside it.** A host holding
   nothing fell through to the generic container shape — a volume rendered as a deployed application.
 - **A container deployed on more than one host is drawn inside the host a view is showing.** One
-  placement was kept per container, picked by id order, so a view narrowed to one topology could lose
-  the container entirely.
+  placement was kept per container, by id order, so a narrowed view could lose the container.
 - **Replacing the assurance graph is recorded in the audit archive.** `import` and `seed` empty the
   store and appended nothing; one entry now lands in the same transaction.
 - **An analysis with no architecture anchor can be given one.** Optional at creation and immutable
@@ -45,29 +44,30 @@ wrote, and findings computed and then withheld from every reader entitled to the
 - **A constraint answered by argument is no longer asked for evidence of a control.** An
   `alarp-justified` constraint argues that residual exposure is as low as reasonably practicable;
   there is no control whose working could be evidenced.
-- **A `format` facet says what it accepts.** The `Source Repository` description called it
+- **A `format` facet says what it accepts** — the `Source Repository` description called it
   informative while the checker refused values.
 - **A tag the sanitiser rejects is shown, not deleted** — `projects/<slug>/model/` had rendered as
   `projects//model/`.
 - **The security-findings page renders.** Its route mounted the per-entity view with no entity. It
   lists the assessed anchors instead.
-- **Search finds a diagram by its title and a scratchpad by its title.** Three causes: a diagram's
-  four columns ranked equally, a note's weights sat one column out of line, and merging the two
-  repository roots dropped every note.
+- **Search finds a diagram by its title.** Its four indexed columns ranked equally, so a diagram named
+  for the query ranked level with one that merely drew something of that name.
+- **A scratchpad note is returned for its own words, and only while it is still a thought.** It
+  answered any query its *pad's* title matched, kept answering after a lift, and was dropped outright
+  when the two repository roots were merged.
 - **A search window belongs to the ranking that filled it.** `/api/search` asked for three times its
   limit and re-cut afterwards, spending the round-robin and the minority-kind floor on unseen rows.
 - **`artifact_group` honours `dry_run` for every action.** It defaulted to true and was read by one
-  branch of one action. The answer now names `dry_run` and `wrote`.
+  branch of one action; the answer now names `dry_run` and `wrote`.
 - **Content filed under a group nothing declares is reported (W046).** An artifact created into an
   undeclared project was absent from everywhere a person browses.
-- **A part composed by two wholes is reported (E340).** This ontology defines composition as exclusive
-  and no rule enforced it.
-- **A batch commit that cannot carry all of its changes publishes none of them.** A staged change
+- **A part composed by two wholes is reported (E340)** — this ontology defines composition as
+  exclusive and no rule enforced it.
+- **A batch commit that cannot carry all of its changes publishes none of them** — a staged change
   outside the managed subtrees was dropped after the write said it wrote.
-- **A bound element shows what it corresponds to in the model**, as a link, on every diagram type
-  that declares element bindings. The correspondence was stored and shown nowhere.
-- **An ArchiMate occurrence keeps the entity it redraws.** Two consumers read a shorthand the persist
-  path strips: the renderer resolved no occurrences, and the editor saw none as a drawing.
+- **A bound element shows what it corresponds to in the model**, as a link, on every diagram type that
+  declares one. Two further consumers read a shorthand the persist path strips, so an ArchiMate
+  occurrence lost the entity it redraws: the renderer resolved none, the editor saw none as a drawing.
 
 ### Changed
 
