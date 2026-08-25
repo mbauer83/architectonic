@@ -1,8 +1,7 @@
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
-from types import MappingProxyType
-from typing import Literal, Protocol, TypeAlias, runtime_checkable
+from typing import Literal, TypeAlias
 
 from src.domain.repository.repo_scope import MountScope, infer_repo_scope
 
@@ -225,39 +224,22 @@ class ScratchpadNoteRecord:
         return f"[{self.artifact_id}] {self.title}  (note on {self.scratchpad_name})"
 
 
-# ── The searchable-kind vocabulary, in one place ─────────────────────────────
-# Two spellings of the same list, and they have to agree: `RecordType` is the discriminator on an
-# individual hit, `SearchableKind` the member of the include-set that gates which kinds participate.
-# Both were previously restated in `application/artifacts/_search.py`, in `artifacts/repository.py`,
-# on `SearchHit` below and in the REST contract — four copies of one vocabulary, which is how a fifth
-# kind becomes a hunt rather than an edit.
-RecordType: TypeAlias = Literal["entity", "connection", "diagram", "document", "scratchpad-note"]
-SearchableKind: TypeAlias = Literal[
-    "entities", "connections", "diagrams", "documents", "scratchpad-notes"
-]
-
-#: Kind → the record type its hits carry. The plural is what a caller asks for; the singular is what
-#: it gets back. Typed `str` → `str` rather than Literal → Literal because every caller looks a
-#: *runtime* value up in it — an FTS row's `record_type` column, a request's `include_` flag — and a
-#: narrower key type only moves the narrowing to the call site.
-KIND_TO_RECORD_TYPE: Mapping[str, str] = MappingProxyType(
-    {
-        "entities": "entity",
-        "connections": "connection",
-        "diagrams": "diagram",
-        "documents": "document",
-        "scratchpad-notes": "scratchpad-note",
-    }
-)
-RECORD_TYPE_TO_KIND: Mapping[str, str] = MappingProxyType(
-    {record_type: kind for kind, record_type in KIND_TO_RECORD_TYPE.items()}
-)
-ALL_SEARCHABLE_KINDS: frozenset[str] = frozenset(KIND_TO_RECORD_TYPE)
-
-#: Kinds that must never outrank the others, whatever they score. A note is a half-formed thought
-#: and an entity is a commitment, so a scratchpad can never push model content down a result list —
-#: the condition the feature was allowed into the index under.
-SUBORDINATE_RECORD_TYPES: frozenset[str] = frozenset({"scratchpad-note"})
+# ── The searchable-kind vocabulary ───────────────────────────────────────────
+# Declared in `src/domain/search_records.py` and re-exported here, so no call site had to move when
+# it left. The edge runs one way only — that module names nothing here — because these two naming
+# each other is refused by `test_no_type_checking_import_cycles`, even under `TYPE_CHECKING`.
+#
+# `SearchHit` and `SearchResult` stay: a hit's `record` union names the five record classes declared
+# above, so they belong on this side of that edge.
+from src.domain.search_records import ALL_SEARCHABLE_KINDS as ALL_SEARCHABLE_KINDS  # noqa: E402
+from src.domain.search_records import KIND_TO_RECORD_TYPE as KIND_TO_RECORD_TYPE  # noqa: E402
+from src.domain.search_records import RECORD_TYPE_TO_KIND as RECORD_TYPE_TO_KIND  # noqa: E402
+from src.domain.search_records import SUBORDINATE_RECORD_ORDER as SUBORDINATE_RECORD_ORDER  # noqa: E402
+from src.domain.search_records import SUBORDINATE_RECORD_TYPES as SUBORDINATE_RECORD_TYPES  # noqa: E402
+from src.domain.search_records import RecordType as RecordType  # noqa: E402
+from src.domain.search_records import SearchableKind as SearchableKind  # noqa: E402
+from src.domain.search_records import SemanticSearchProvider as SemanticSearchProvider  # noqa: E402
+from src.domain.search_records import record_title as record_title  # noqa: E402
 
 
 @dataclass
@@ -353,11 +335,6 @@ def summary_from_diagram(rec: DiagramRecord) -> ArtifactSummary:
         group=rec.group,
         last_updated=rec.last_updated,
     )
-
-
-@runtime_checkable
-class SemanticSearchProvider(Protocol):
-    def top_k(self, query: str, k: int, *, threshold: float = 0.75) -> list[tuple[float, str]]: ...
 
 
 STANDARD_ENTITY_FIELDS = frozenset(
