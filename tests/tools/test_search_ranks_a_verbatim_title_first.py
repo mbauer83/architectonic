@@ -73,10 +73,10 @@ def _document(n: int, title: str, *, content: str | None = None) -> DocumentReco
     )
 
 
-def _note(n: int, title: str) -> ScratchpadNoteRecord:
+def _note(n: int, title: str, *, body: str = "") -> ScratchpadNoteRecord:
     return ScratchpadNoteRecord(
         artifact_id=f"SCR@1.pad#note/n{n}", scratchpad_id="SCR@1.pad", scratchpad_name="Q3 thinking",
-        note_id=f"n{n}", title=title, body="", element_type="", domain="", status="draft",
+        note_id=f"n{n}", title=title, body=body, element_type="", domain="", status="draft",
         path=Path("pad.yaml"), area="",
     )
 
@@ -162,26 +162,24 @@ class TestAnExactTitleComesFirst:
 
 
 class TestEveryTermInTheTitle:
-    """A weaker signal than an exact title, and treated as one — it orders hits *within* a kind.
+    """The second section, and it runs across kinds like the first.
 
-    The strength difference is the whole reason. For a single-word query "every term is in the title"
-    degenerates to "the word is in the title", which 66 entity titles satisfy for `assurance` on the
-    live repository. Promoting that across kinds would hand a whole class of query to whichever kinds
-    happened to match, and would suspend two guarantees that were already paid for: that a note never
-    outranks model content on similarity alone, and that `prefer_record_type` decides the head of the
-    list. Both are asserted elsewhere and both broke when this was tried the other way.
+    Weaker evidence than an exact title, but still evidence the reader meant *this* artifact rather
+    than something whose body happened to mention the words. It sits above the scored section for
+    every kind, which is what makes a scratchpad reachable when someone half-remembers its name.
+
+    What it does **not** do is suspend subordination for the scored section below it, and it cannot
+    lift a subordinate kind above a preference — both asserted here, because building this section
+    kind-blind is what broke them the first time.
     """
 
-    def test_a_title_match_outranks_a_body_match_within_its_kind(self) -> None:
-        """Two documents: one carries every term in its title, the other only in its body."""
+    def test_a_title_carrying_every_term_outranks_a_body_match_of_another_kind(self) -> None:
         store = _Store(
-            documents=[
-                _document(1, "Something else entirely", content=f"{_QUERY} " * 20),
-                _document(2, "Naming a type: sketch before you commit"),
-            ],
+            entities=[_entity(n, f"unrelated {n}") for n in range(20)],
+            documents=[_document(1, "Naming a type: sketch before you commit")],
         )
 
-        assert _ranked(store)[0] == "ADR@2"
+        assert _ranked(store)[0] == "ADR@1"
 
     def test_an_exact_title_outranks_a_title_carrying_every_term(self) -> None:
         store = _Store(
@@ -191,9 +189,10 @@ class TestEveryTermInTheTitle:
 
         assert _ranked(store)[:2] == ["SCR@1.pad#note/n1", "ADR@1"]
 
-    def test_a_note_carrying_every_term_still_does_not_outrank_model_content(self) -> None:
-        """The guarantee the cross-kind reading would have suspended, stated here so it cannot be
-        lost again: only an *exact* title lifts a subordinate kind."""
+    def test_a_note_carrying_every_term_is_ranked_with_the_rest(self) -> None:
+        """A note whose title carries what the reader typed is in the same section as the entities
+        whose titles do. That is the change B63 makes deliberately: subordination applies to the
+        section reached on *similarity*, not to one reached by naming the thing."""
         store = _Store(
             entities=[_entity(n, f"Chameleon {n}") for n in range(4)],
             notes=[_note(1, "Chameleon onboarding")],
@@ -201,19 +200,20 @@ class TestEveryTermInTheTitle:
 
         kinds = [h.record_type for h in search_artifacts(store, None, "chameleon", limit=10).hits]
 
+        assert "scratchpad-note" in kinds[:2]
+
+    def test_a_note_matching_only_in_its_body_still_comes_last(self) -> None:
+        """The half of subordination that is unchanged, and the reason the case above is not a
+        weakening: a note that merely mentions the words is still drawn after everything."""
+        store = _Store(
+            entities=[_entity(n, f"Chameleon {n}") for n in range(4)],
+            notes=[_note(1, "Something else entirely", body="chameleon " * 20)],
+        )
+
+        kinds = [h.record_type for h in search_artifacts(store, None, "chameleon", limit=10).hits]
+
         assert kinds[-1] == "scratchpad-note"
         assert all(kind != "scratchpad-note" for kind in kinds[:-1])
-
-    def test_a_synonym_does_not_count_as_a_term_appearing(self) -> None:
-        """Tier 2's promise is explainable in one sentence — *you typed these words and they are all
-        in the title*. The scored path expands `diagram` and `view` into each other, which would make
-        that sentence false, so the tier predicate does not use the expansion."""
-        store = _Store(diagrams=[_diagram(1, "Layered view of the platform")])
-
-        ranked = search_artifacts(store, None, "layered diagram", limit=12).hits
-
-        assert [h.record.artifact_id for h in ranked] == ["ARC@1"]  # found, but on score, not tier 2
-        assert ranked[0].score < 100.0
 
 
 class TestNoKindIsStarved:
@@ -273,12 +273,11 @@ class TestNothingElseMoves:
 def _expected_round_robin(store: _Store, query: str, limit: int) -> list[str]:
     """What the balanced ranking alone produces — computed by asking it, so this asserts *stability*
     rather than restating the algorithm."""
-    from src.application.artifacts._ranking import normalised_terms, rank_balanced
+    from src.application.artifacts._ranking import rank_balanced
     from src.application.artifacts._search import search
 
     result = search(store, None, query, limit=limit)  # type: ignore[arg-type]
-    ranked = rank_balanced(list(result.hits), limit, None, normalised_terms(query))
-    return [h.record.artifact_id for h in ranked]
+    return [h.record.artifact_id for h in rank_balanced(list(result.hits), limit, None)]
 
 
 @pytest.mark.parametrize("limit", [1, 2, 5, 12, 20])

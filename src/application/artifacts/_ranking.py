@@ -1,29 +1,31 @@
 """How search hits are ordered once they have been found.
 
 Its own module because finding and ordering are different questions and `_search.py` had reached the
-source-length policy's hard limit answering both. What is here is the whole of the ordering decision:
-the verbatim-title promotion, the per-kind round-robin, the subordinate tail and its floor.
+source-length policy's hard limit answering both. What is here is the whole of the ordering decision.
 
-**Why ordering cannot be a score.** Per-table bm25 and the token-match supplement produce numbers on
-scales that say nothing about each other, so there is no common axis on which "this title is exactly
-what you typed" could be worth *n* points. Inventing one undoes the reason the round-robin exists.
-What can cross the scales is a **boolean**, computed identically for every kind — and that is what
-the promotion below is.
+**Three sections, and the first two run across artifact kinds.**
 
-**Two strengths of title evidence, and they earn different treatment.**
+1. **The title is exactly the query.** The reader named the thing, so it leads — whatever kind it is.
+2. **The title carries every query term.** Weaker, still evidence the reader meant *this* artifact.
+3. **Everything else, by score**, with the kinds interleaved: model content, diagrams and documents
+   together, then scratchpads, then — when they become searchable — viewpoints.
 
-*The title is exactly the query* is unambiguous: the reader named the thing. It is promoted above
-everything, kind-blind, and subordination does not apply to it — an artifact whose title someone
-typed exactly is not a half-formed thought, whatever kind it is. That is what makes a scratchpad
-findable by its own name.
+**Why the first two cannot be a score.** Per-table bm25 and the token-match supplement produce
+numbers on scales that say nothing about each other, so there is no common axis on which "this title
+is exactly what you typed" could be worth *n* points. Inventing one undoes the reason the round-robin
+in section 3 exists. What crosses the scales is a **boolean**, computed identically for every kind —
+and that is what sections 1 and 2 are.
 
-*Every query term appears in the title* is much weaker, and measurement is what settled how weak. For
-a single-word query it degenerates to "the word is in the title", which 66 entity titles satisfy for
-`assurance` on the live repository. Promoting that above everything would have handed a whole class
-of query to whichever kinds happened to match, and would have suspended two guarantees this project
-already paid for: that a note never outranks model content on similarity alone, and that a caller's
-`prefer_record_type` decides the head of the list. So it ranks hits **within** their kind, where it
-means "a title match beats a body match" and nothing more.
+**Why subordination lives in section 3 only.** A scratchpad is preliminary and an entity is a
+commitment, so a pad never pushes model content down a list it reached *on similarity*. But an
+artifact whose title someone typed is not a half-formed thought, whatever kind it is: it is the thing
+they asked for by name. Holding it back would make a scratchpad unfindable by its own title, which is
+the defect the sections exist to fix. So sections 1 and 2 are kind-blind and section 3 subordinates.
+
+**A preference reorders kinds wherever kinds are interleaved.** `prefer_record_type` applies to all
+three sections, not only the last. Applying it to section 3 alone silently disabled it for any query
+some title matched — the preference decided the head of a list whose head was already spoken for.
+It still cannot lift a subordinate kind, which is what subordination means.
 """
 
 from __future__ import annotations
@@ -32,7 +34,12 @@ from collections.abc import Sequence
 
 from src.application.artifacts.scoring import tokenize
 from src.domain.ontology_representation.artifact_types import SearchHit
-from src.domain.search_records import RECORD_TYPE_ORDER, SUBORDINATE_RECORD_TYPES, record_title
+from src.domain.search_records import (
+    RECORD_TYPE_ORDER,
+    SUBORDINATE_RECORD_ORDER,
+    SUBORDINATE_RECORD_TYPES,
+    record_title,
+)
 
 #: Below this many slots a window is too small to give one away — see `subordinate_floor`.
 _FLOOR_MIN_WINDOW = 10
@@ -77,20 +84,30 @@ def carries_every_term(hit: SearchHit, query_terms: tuple[str, ...]) -> bool:
     return bool(query_terms) and terms is not None and all(term in terms for term in query_terms)
 
 
-def by_kind(hits: Sequence[SearchHit], query_terms: tuple[str, ...] = ()) -> dict[str, list[SearchHit]]:
-    """Hits grouped by record type, each group in the order that kind should be drawn.
+def by_kind(hits: Sequence[SearchHit]) -> dict[str, list[SearchHit]]:
+    """Hits grouped by record type, each group strongest first.
 
-    A title carrying every query term sorts above one that matched only in its body, and score
-    decides the rest. The artifact id is the final key so a tie is stable rather than incidental —
-    two hits with the same score came from the same scorer on the same evidence, and which of them
-    a reader sees first should not depend on dictionary order.
+    The artifact id is the final key so a tie is stable rather than incidental — two hits with the
+    same score came from the same scorer on the same evidence, and which of them a reader sees first
+    should not depend on dictionary order.
     """
     grouped: dict[str, list[SearchHit]] = {}
     for hit in hits:
         grouped.setdefault(hit.record_type, []).append(hit)
     for group in grouped.values():
-        group.sort(key=lambda h: (not carries_every_term(h, query_terms), -h.score, h.record.artifact_id))
+        group.sort(key=lambda h: (-h.score, h.record.artifact_id))
     return grouped
+
+
+def preferred_first(order: Sequence[str], prefer_rt: str | None) -> list[str]:
+    """``order`` with the caller's preferred kind moved to the front, where that is permitted.
+
+    A preference cannot lift a subordinate kind: that is what subordination means, and a caller
+    asking for scratchpads gets them where they belong rather than ahead of committed content.
+    """
+    if prefer_rt is None or prefer_rt in SUBORDINATE_RECORD_TYPES or prefer_rt not in order:
+        return list(order)
+    return [prefer_rt, *(rt for rt in order if rt != prefer_rt)]
 
 
 def round_robin(grouped: dict[str, list[SearchHit]], order: Sequence[str], limit: int) -> list[SearchHit]:
@@ -128,31 +145,23 @@ def subordinate_floor(limit: int, available: int) -> int:
     return min(available, max(1, limit // 10))
 
 
-def rank_balanced(
-    hits: Sequence[SearchHit], limit: int, prefer_rt: str | None, query_terms: tuple[str, ...] = ()
-) -> list[SearchHit]:
-    """Select up to ``limit`` hits with fair representation across record kinds.
+def rank_balanced(hits: Sequence[SearchHit], limit: int, prefer_rt: str | None) -> list[SearchHit]:
+    """Section 3: fair representation across record kinds, subordinate kinds last.
 
-    Rank within each kind by that kind's own evidence, then round-robin across kinds — ordering the
-    kinds by their strongest hit, ``prefer_rt`` first — so every matching kind stays visible. A
-    single global sort would let a high-volume kind crowd the minority kinds out of the window
-    entirely, and the scales do not permit one anyway.
+    Rank within each kind by its own score, then round-robin across kinds — ordering the kinds by
+    their strongest hit, the preferred kind first — so every matching kind stays visible. A single
+    global sort would let a high-volume kind crowd the minority kinds out of the window entirely,
+    and the scales do not permit one anyway.
 
-    ``SUBORDINATE_RECORD_TYPES`` do not take part in the round-robin at all: they fill whatever slots
-    are left once every other kind has had its turn. A scratchpad note is a half-formed thought and
-    an entity is a commitment, and "never outranks model content, documents or diagrams" was the
-    condition notes were allowed into the index under — a round-robin honours it only against the
-    *first* hit of each other kind, and would still put a note above the second entity. A preference
-    cannot lift them either.
+    ``SUBORDINATE_RECORD_TYPES`` do not take part in that round-robin: they fill whatever slots are
+    left once every other kind has had its turn, in the order the vocabulary declares them. A
+    round-robin would honour "never outranks model content" only against the *first* hit of each
+    other kind, and would still put a scratchpad above the second entity.
     """
-    grouped = by_kind(hits, query_terms)
-    order = sorted(grouped, key=lambda rt: grouped[rt][0].score, reverse=True)
-    if prefer_rt in grouped and prefer_rt not in SUBORDINATE_RECORD_TYPES:
-        order = [prefer_rt, *(rt for rt in order if rt != prefer_rt)]
-    subordinate = sorted(
-        (h for rt in order if rt in SUBORDINATE_RECORD_TYPES for h in grouped[rt]),
-        key=lambda h: (not carries_every_term(h, query_terms), -h.score, h.record.artifact_id),
-    )
+    grouped = by_kind(hits)
+    scored_order = sorted(grouped, key=lambda rt: grouped[rt][0].score, reverse=True)
+    order = preferred_first(scored_order, prefer_rt)
+    subordinate = [h for rt in SUBORDINATE_RECORD_ORDER for h in grouped.get(rt, [])]
     reserved = subordinate_floor(limit, len(subordinate))
     ranked = round_robin(
         {rt: group for rt, group in grouped.items() if rt not in SUBORDINATE_RECORD_TYPES},
@@ -169,10 +178,22 @@ def rank_balanced(
 
 
 def rank_hits(hits: Sequence[SearchHit], query: str, limit: int, prefer_rt: str | None) -> list[SearchHit]:
-    """The whole ordering: titles the reader typed, then the balanced ranking over the rest."""
+    """The whole ordering: named exactly, then carrying every term, then by score."""
     query_terms = normalised_terms(query)
-    named, rest = [], []
+    named: list[SearchHit] = []
+    carrying: list[SearchHit] = []
+    rest: list[SearchHit] = []
     for hit in hits:
-        (named if names_exactly(hit, query_terms) else rest).append(hit)
-    promoted = round_robin(by_kind(named, query_terms), RECORD_TYPE_ORDER, limit)
-    return (promoted + rank_balanced(rest, max(limit - len(promoted), 0), prefer_rt, query_terms))[:limit]
+        if names_exactly(hit, query_terms):
+            named.append(hit)
+        elif carries_every_term(hit, query_terms):
+            carrying.append(hit)
+        else:
+            rest.append(hit)
+    order = preferred_first(RECORD_TYPE_ORDER, prefer_rt)
+    ranked: list[SearchHit] = []
+    for section in (named, carrying):
+        if len(ranked) >= limit:
+            return ranked[:limit]
+        ranked.extend(round_robin(by_kind(section), order, limit - len(ranked)))
+    return (ranked + rank_balanced(rest, max(limit - len(ranked), 0), prefer_rt))[:limit]

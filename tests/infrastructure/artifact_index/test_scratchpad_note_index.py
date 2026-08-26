@@ -117,20 +117,52 @@ def test_a_note_is_findable_by_its_own_words(repo_root: Path) -> None:
     assert [hit.record.artifact_id for hit in found] == [f"{_PAD_ID}#note/n1"]
 
 
-def test_a_note_never_appears_above_model_content(repo_root: Path) -> None:
-    # Enough entities matching the same word that a fair round-robin would interleave the note.
+def test_a_note_never_appears_above_model_content_it_only_resembles(repo_root: Path) -> None:
+    """The condition notes were admitted under, restated for the ranking that now surrounds it.
+
+    It used to be unconditional: a note came last, whatever the query. That was the whole of
+    subordination when similarity was the only way a note could be reached — and it is why a
+    scratchpad was unfindable by its own title, because any query model content also matched filled
+    the window before the notes.
+
+    Subordination now applies to the section a hit reaches *on similarity*. A note the reader named,
+    or whose title carries every term they typed, is not a half-formed thought — it is the thing they
+    asked for, and it is ranked as one. What subordination still refuses is a note winning on a body
+    match, a stray word, or a `prefer_record_type`.
+
+    So the query here matches the note only in ways that do not name it: the note is titled
+    "Chameleon onboarding", and `chameleon-corpus` shares no whole term with it.
+    """
     for index in range(4):
         _write(
             repo_root / "model" / "motivation" / f"OUT@178000000{index}.aaaaaa.chameleon-{index}.md",
             _entity(f"OUT@178000000{index}.aaaaaa.chameleon-{index}", f"Chameleon {index}"),
         )
 
-    result = _repository(repo_root).search_artifacts(_QUERY, limit=10)
+    result = _repository(repo_root).search_artifacts("chameleon-corpus", limit=10)
 
     kinds = [hit.record_type for hit in result.hits]
     assert "scratchpad-note" in kinds, "the note is still findable"
     assert kinds.index("scratchpad-note") == len(kinds) - 1
     assert all(kind != "scratchpad-note" for kind in kinds[:-1])
+
+
+def test_a_note_the_reader_named_is_not_held_below_model_content(repo_root: Path) -> None:
+    """The other half of the same rule, and the reason the one above had to be narrowed.
+
+    A pad's own title is how a person looks for the thinking they did. Holding it behind every
+    entity that happens to share a word is what made a scratchpad unreachable in a twelve-row
+    dropdown, and no floor fixes that — a reserved last slot is still last.
+    """
+    for index in range(4):
+        _write(
+            repo_root / "model" / "motivation" / f"OUT@178000000{index}.aaaaaa.chameleon-{index}.md",
+            _entity(f"OUT@178000000{index}.aaaaaa.chameleon-{index}", f"Chameleon {index}"),
+        )
+
+    result = _repository(repo_root).search_artifacts("Chameleon onboarding", limit=10)
+
+    assert result.hits[0].record_type == "scratchpad-note"
 
 
 def test_a_note_is_not_offered_as_something_to_reference(repo_root: Path) -> None:
