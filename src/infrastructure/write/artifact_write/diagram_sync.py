@@ -38,6 +38,7 @@ from src.infrastructure.rendering.diagram_selection import connections_among
 
 from ._sync_helpers import (
     LookupStore,
+    current_reference_spellings,
     dedupe_connections,
     dedupe_entities,
     infer_connections_from_puml,
@@ -78,11 +79,27 @@ def refresh_diagram(
     if is_scope_bound(parsed) or is_standalone(parsed):
         # Both scope-bound and standalone diagrams are re-rendered from stored state.
         # Neither is ever deleted by a refresh — deletion requires an explicit call.
+        #
+        # The reference lists are passed so their *spellings* can be brought up to date. This branch
+        # used to pass neither, so `entity-ids-used` survived byte for byte and a reference naming an
+        # artifact by a slug it had dropped stayed wrong forever: the verifier reported it (W305),
+        # told the author to rewrite it, and no operation would. The reconcile branch below has
+        # always corrected them, as a side effect of resolving each id to its record.
+        #
+        # Spellings only — `current_reference_spellings` returns the same ids in the same order, so
+        # this adds no membership and removes none, which a refresh must never do.
+        fm = parsed.frontmatter
         write_result = edit_diagram(
             repo_root=repo_root,
             verifier=verifier,
             clear_repo_caches=clear_repo_caches,
             artifact_id=artifact_id,
+            entity_ids_used=current_reference_spellings(
+                as_optional_str_list(fm.get("entity-ids-used")) or [], store
+            ),
+            connection_ids_used=current_reference_spellings(
+                as_optional_str_list(fm.get("connection-ids-used")) or [], store
+            ),
             # A refresh is the user asking for the picture to be rebuilt, so the generated
             # ranking is recomputed here and only here. Hand-placed hidden links still
             # survive it — the optimizer replaces its own block, never anyone else's.

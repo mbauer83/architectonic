@@ -52,6 +52,31 @@ def stable_prefix(artifact_id: str) -> str:
     return artifact_id.rsplit(".", 1)[0]
 
 
+def current_reference_spellings(ids: list[str], store: LookupStore) -> list[str]:
+    """*ids*, each spelled the way its artifact is spelled now. Same length, same order.
+
+    Identity is the rename-stable stem, so an id holding a former slug resolves forever and no read
+    ever fails — which is exactly why nothing repairs it by use. The slug is the only part of an id a
+    human interprets, so one naming a title the artifact dropped misleads every reader of the file,
+    and the drift only accumulates.
+
+    **Spellings only.** Nothing is added and nothing is removed, including an id whose stem names no
+    artifact at all: on the refresh path this list is the author's, and a refresh has never deleted a
+    reference. Dropping an unresolvable one here would turn a spelling correction into a silent
+    deletion, and re-deriving the list from the body is the inference the membership contract refuses.
+
+    The correction is `resolve_entities`' own rule — resolve, then take the record's id — rather than
+    a second reading of what makes two spellings the same artifact.
+    """
+    entities, _removed = resolve_entities(ids, store)
+    connections, _also_removed = resolve_connections(ids, store)
+    current = {
+        stable_prefix(record.artifact_id): record.artifact_id
+        for record in (*entities, *connections)
+    }
+    return [current.get(stable_prefix(reference), reference) for reference in ids]
+
+
 def resolve_entities(
     ids: list[str],
     store: LookupStore,
