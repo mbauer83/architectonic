@@ -42,4 +42,20 @@ test.describe('search results', () => {
     expect(kinds.length).toBeGreaterThan(0)
     expect(new Set(kinds.map((k) => k.trim().toLowerCase())).size).toBeGreaterThan(1)
   })
+
+  test('a scratchpad searched for by its own name leads the list and opens the pad', async ({ page }) => {
+    // The pad was not a searchable record at all: querying its exact name returned twenty hits and
+    // none of them was it. A note answering for its pad was withdrawn in 0.7.1, which removed the
+    // wrong answer without providing the right one.
+    await page.goto('/search?q=Q3+platform+thinking')
+
+    const first = page.locator('li', { has: page.locator('.result-id') }).first()
+    await expect(first).toBeVisible()
+    await expect(first.locator('.kind-chip')).toHaveText(/scratchpad/i)
+
+    // And it is reachable: a pad has a page of its own, which is the whole reason it is a record
+    // rather than a container its notes speak for.
+    await first.locator('a.result-name').click()
+    await expect(page).toHaveURL(/\/scratchpads\//)
+  })
 })
