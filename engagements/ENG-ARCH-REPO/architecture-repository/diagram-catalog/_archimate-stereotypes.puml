@@ -105,23 +105,23 @@ skinparam rectangle<<value_stream>> {
 ' ---------------------------------------------------------------------------
 skinparam rectangle<<BusinessGrouping>> {
   BackgroundColor #F7EDC3
-  BorderColor #474024
+  BorderColor #474124
 }
 skinparam rectangle<<business_actor>> {
   BackgroundColor #EDD779
-  BorderColor #474024
+  BorderColor #474124
 }
 skinparam rectangle<<business_interface>> {
   BackgroundColor #EDD779
-  BorderColor #474024
+  BorderColor #474124
 }
 skinparam rectangle<<business_object>> {
   BackgroundColor #EDD779
-  BorderColor #474024
+  BorderColor #474124
 }
 skinparam rectangle<<product>> {
   BackgroundColor #EDD779
-  BorderColor #474024
+  BorderColor #474124
 }
 
 ' ---------------------------------------------------------------------------

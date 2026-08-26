@@ -26,11 +26,8 @@ from src.application.viewpoints.persist_definition import (
 )
 from src.application.viewpoints.pins import load_pinned_slugs, save_pinned_slugs
 from src.application.viewpoints.reference_report_cache import cached_reference_report
-from src.application.viewpoints.registry_snapshot import build_registry_snapshot
 from src.config.viewpoints_settings import (
     viewpoints_derivation_max_hops,
-    viewpoints_derivation_max_relationships,
-    viewpoints_derivation_time_budget_seconds,
 )
 from src.domain.viewpoints.viewpoint_condition_validation import RegistrySnapshot
 from src.domain.viewpoints.viewpoint_criteria import RESERVED_CONNECTION_PATHS, RESERVED_ENTITY_PATHS
@@ -58,6 +55,7 @@ from src.infrastructure.viewpoint_declarations import (
     load_effective_viewpoint_catalog,
     load_viewpoint_catalog_file,
 )
+from src.infrastructure.viewpoints_snapshot import configured_registry_snapshot
 from src.infrastructure.write.artifact_write.viewpoint_type_guidance import summarize_scope
 
 router = APIRouter()
@@ -85,13 +83,7 @@ def _tier(slug: str, *, engagement_catalog: ViewpointCatalog, enterprise_catalog
 def _reference_report_settings(catalogs: RuntimeCatalogs) -> RegistrySnapshot:
     """Given the catalogs rather than reading process state: its callers are handlers, and catalogs a
     handler is given are the ones a test can override."""
-    return build_registry_snapshot(
-        catalogs,
-        _both_roots(),
-        derivation_max_hops=viewpoints_derivation_max_hops(),
-        derivation_max_relationships=viewpoints_derivation_max_relationships(),
-        derivation_time_budget_seconds=viewpoints_derivation_time_budget_seconds(),
-    )
+    return configured_registry_snapshot(catalogs, _both_roots())
 
 
 def _broken_references(
@@ -195,13 +187,7 @@ def _known_group_slugs() -> list[str]:
 def get_criteria_catalog(catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency)) -> dict[str, Any]:
     """Registries snapshot the criteria-tree builder's pickers are fed from — the same
     ``RegistrySnapshot`` save-mode validation itself resolves attribute paths against."""
-    registries: RegistrySnapshot = build_registry_snapshot(
-        catalogs,
-        _both_roots(),
-        derivation_max_hops=viewpoints_derivation_max_hops(),
-        derivation_max_relationships=viewpoints_derivation_max_relationships(),
-        derivation_time_budget_seconds=viewpoints_derivation_time_budget_seconds(),
-    )
+    registries: RegistrySnapshot = configured_registry_snapshot(catalogs, _both_roots())
     derivation = {
         str(name): {"role": info.derivation_role, "strength": info.derivation_strength}
         for name, info in catalogs.ontology.all_connection_types().items()

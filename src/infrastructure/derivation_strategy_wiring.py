@@ -18,11 +18,9 @@ from src.application.artifacts.repository import ArtifactRepository
 from src.application.derivation.derived_relationships import evaluate_candidates as derive_relationship_candidates
 from src.application.derivation.types import CandidateSet, ModelQuery
 from src.application.derivation.viewpoint_execution import evaluate_candidates
-from src.application.viewpoints.registry_snapshot import build_registry_snapshot
 from src.config.viewpoints_settings import (
     viewpoints_derivation_max_hops,
     viewpoints_derivation_max_relationships,
-    viewpoints_derivation_time_budget_seconds,
     viewpoints_execution_default_entity_limit_mcp,
     viewpoints_execution_max_entities,
     viewpoints_execution_timeout_seconds,
@@ -31,6 +29,7 @@ from src.domain.viewpoints.view_derivations import SourceModelSnapshot
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.viewpoint_declarations import load_effective_viewpoint_catalog
+from src.infrastructure.viewpoints_snapshot import configured_registry_snapshot
 
 
 def _repo_roots(params: dict[str, object]) -> list[Path]:
@@ -50,13 +49,7 @@ def viewpoint_execution_derive(
         params,
         catalog=load_effective_viewpoint_catalog(roots),
         read_access=read_access,
-        registries=build_registry_snapshot(
-            runtime_catalogs,
-            roots,
-            derivation_max_hops=viewpoints_derivation_max_hops(),
-            derivation_max_relationships=viewpoints_derivation_max_relationships(),
-            derivation_time_budget_seconds=viewpoints_derivation_time_budget_seconds(),
-        ),
+        registries=configured_registry_snapshot(runtime_catalogs, roots),
         max_entities=viewpoints_execution_max_entities(),
         default_limit=viewpoints_execution_default_entity_limit_mcp(),
         timeout_seconds=viewpoints_execution_timeout_seconds(),

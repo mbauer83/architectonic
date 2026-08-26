@@ -196,7 +196,7 @@ export const DOMAIN_COLORS: Record<string, string> = {
 
 export const DOMAIN_BORDER_COLORS: Record<string, string> = {
   "application": "#353E41",
-  "business": "#474024",
+  "business": "#474124",
   "common": "#45433F",
   "implementation": "#483837",
   "motivation": "#3F3842",
@@ -233,6 +233,18 @@ export const SCALE_ENDPOINT_ORDER = [
   "heat-high",
 ] as const
 export type ScaleEndpointToken = typeof SCALE_ENDPOINT_ORDER[number]
+
+export const CATEGORICAL_PALETTE = [
+  "#2563eb",
+  "#d97706",
+  "#0891b2",
+  "#7c3aed",
+  "#16a34a",
+  "#db2777",
+  "#65a30d",
+  "#9a3412",
+] as const
+export type CategoricalColor = typeof CATEGORICAL_PALETTE[number]
 
 export const ENTITY_TYPE_CORNERS: Record<string, 'square' | 'rounded' | 'diagonal'> = {
   "action-definition": "square",

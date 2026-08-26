@@ -15,7 +15,6 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
-from src.application.viewpoints.registry_snapshot import build_registry_snapshot
 from src.domain.viewpoints.viewpoint_application_parsing import parse_viewpoint_application
 from src.domain.viewpoints.viewpoint_validation import validate_viewpoint_definition
 from src.domain.viewpoints.viewpoints import TargetKind, ViewpointCatalog
@@ -26,6 +25,7 @@ from src.infrastructure.viewpoint_declarations import (
     viewpoint_declarations_path,
     write_viewpoint_catalog_file,
 )
+from src.infrastructure.viewpoints_snapshot import configured_registry_snapshot
 from src.infrastructure.write.artifact_write._promote_file_ops import rewrite_viewpoint_pin
 from src.infrastructure.write.artifact_write.promote_schema_check import (
     _specialization_engagement_only,
@@ -120,7 +120,10 @@ def _promote_alongside_errors(slug: str, *, eng_root: Path, ent_root: Path, cata
     eng_def = load_effective_viewpoint_catalog([eng_root]).get(slug)
     if eng_def is None:
         return [f"viewpoint '{slug}': no engagement-repo definition found to promote alongside"]
-    base = build_registry_snapshot(catalogs, [ent_root])
+    # Under the *configured* budgets, like every other surface. It built the snapshot with the
+    # library defaults, so a repository that raises the derivation hop limit validated a promotion
+    # against a shorter reach than the viewpoint would use once promoted — and nothing said so.
+    base = configured_registry_snapshot(catalogs, [ent_root])
     snapshot = replace(
         base,
         known_specialization_slugs=_enterprise_known_specialization_slugs(

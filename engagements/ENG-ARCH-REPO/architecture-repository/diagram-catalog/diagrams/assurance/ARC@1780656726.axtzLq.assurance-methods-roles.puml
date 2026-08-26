@@ -42,7 +42,7 @@ connection-ids-used:
 - PRC@1780656241.bWETd2---SRV@1780656241.ooK3YN@@archimate-realization
 - ROL@1780656241.yswDMB---PRC@1780656241.lXql_n@@archimate-assignment
 - PRC@1780656241.lXql_n---SRV@1780656241.ooK3YN@@archimate-realization
-last-updated: '2026-08-13T19:35:48Z'
+last-updated: '2026-08-26T10:11:32Z'
 ---
 @startuml assurance-methods---roles
 skinparam defaultTextAlignment center
@@ -72,7 +72,7 @@ skinparam ranksep 80
 !define Rel_Influence(from, to, label) from ..> to
 skinparam rectangle<<BusinessGrouping>> {
   BackgroundColor #F7EDC3
-  BorderColor #474024
+  BorderColor #474124
 }
 skinparam rectangle<<CommonGrouping>> {
   BackgroundColor #F3F1EB
@@ -80,7 +80,7 @@ skinparam rectangle<<CommonGrouping>> {
 }
 skinparam rectangle<<business_object>> {
   BackgroundColor #EDD779
-  BorderColor #474024
+  BorderColor #474124
 }
 skinparam rectangle<<process>> {
   BackgroundColor #E5DFD3

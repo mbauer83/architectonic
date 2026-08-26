@@ -43,10 +43,9 @@ connection-ids-used:
 - REQ@1786223986.VV89psV---OUT@1786223967.Bz8wwkG@@archimate-realization
 - PRC@1786225282._6NSUkC---SRV@1786225282.lzo5hQK@@archimate-realization
 - PRC@1786225282.si8h9M1---SRV@1786225282.C8EOSEB@@archimate-realization
-last-updated: '2026-08-13T19:36:31Z'
+last-updated: '2026-08-26T10:11:40Z'
 ---
 @startuml the-scratchpad--end-to-end
-skinparam defaultTextAlignment center
 hide stereotype
 
 skinparam defaultFontName SansSerif
@@ -54,6 +53,7 @@ skinparam defaultFontSize 12
 skinparam shadowing false
 skinparam roundcorner 4
 skinparam backgroundColor #FAFAFA
+skinparam defaultTextAlignment center
 
 skinparam linetype ortho
 skinparam nodesep 60
@@ -119,7 +119,7 @@ skinparam rectangle<<ApplicationGrouping>> {
 }
 skinparam rectangle<<BusinessGrouping>> {
   BackgroundColor #F7EDC3
-  BorderColor #474024
+  BorderColor #474124
 }
 skinparam rectangle<<CommonGrouping>> {
   BackgroundColor #F3F1EB
@@ -147,7 +147,7 @@ skinparam rectangle<<artifact>> {
 }
 skinparam rectangle<<business_object>> {
   BackgroundColor #EDD779
-  BorderColor #474024
+  BorderColor #474124
 }
 skinparam rectangle<<capability>> {
   BackgroundColor #EFBD5D

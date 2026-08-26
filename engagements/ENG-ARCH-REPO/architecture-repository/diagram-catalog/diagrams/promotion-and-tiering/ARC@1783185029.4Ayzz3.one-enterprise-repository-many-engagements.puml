@@ -83,7 +83,7 @@ bindings:
   correspondence_kind: represents
   target:
     entity_id: ROL@1776633082.udXPfB.ai-agent
-last-updated: '2026-08-13T19:36:38Z'
+last-updated: '2026-08-26T10:12:06Z'
 ---
 @startuml
 skinparam defaultTextAlignment center
@@ -115,7 +115,7 @@ skinparam rectangle<<ApplicationGrouping>> {
 }
 skinparam rectangle<<BusinessGrouping>> {
   BackgroundColor #F7EDC3
-  BorderColor #474024
+  BorderColor #474124
 }
 skinparam rectangle<<CommonGrouping>> {
   BackgroundColor #F3F1EB
@@ -127,11 +127,11 @@ skinparam rectangle<<MotivationGrouping>> {
 }
 skinparam rectangle<<business_actor>> {
   BackgroundColor #EDD779
-  BorderColor #474024
+  BorderColor #474124
 }
 skinparam rectangle<<business_object>> {
   BackgroundColor #EDD779
-  BorderColor #474024
+  BorderColor #474124
 }
 skinparam rectangle<<data_object>> {
   BackgroundColor #B0D0D9

@@ -28,6 +28,8 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Final, Literal
 
+from src.domain.hex_colors import mix_colors
+
 #: How an element's corners are drawn. A closed set: a renderer must be able to exhaust it.
 CornerStyle = Literal["square", "rounded", "diagonal"]
 
@@ -133,7 +135,7 @@ class ElementAppearance:
 
     @staticmethod
     def _mixed(color: str, rule: ColorMix) -> str:
-        return _mix(color, rule.toward, rule.amount) if rule.is_declared else color
+        return mix_colors(color, rule.toward, rule.amount) if rule.is_declared else color
 
     @classmethod
     def from_mapping(cls, data: Mapping[str, object]) -> "ElementAppearance":
@@ -183,20 +185,3 @@ def _mix_rule(raw: object, *, default_toward: str) -> ColorMix:
     )
 
 
-def _channels(color: str) -> tuple[int, int, int] | None:
-    value = color.lstrip("#")
-    if len(value) != 6:
-        return None
-    try:
-        return int(value[0:2], 16), int(value[2:4], 16), int(value[4:6], 16)
-    except ValueError:
-        return None
-
-
-def _mix(color: str, toward: str, amount: float) -> str:
-    """*color* moved *amount* of the way to *toward*. Either colour unreadable leaves it alone."""
-    left, right = _channels(color), _channels(toward)
-    if left is None or right is None:
-        return color
-    mixed = (round(a + (b - a) * amount) for a, b in zip(left, right, strict=True))
-    return "#" + "".join(f"{channel:02X}" for channel in mixed)

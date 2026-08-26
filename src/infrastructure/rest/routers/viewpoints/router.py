@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import asdict
-from pathlib import Path
 from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Response
@@ -20,11 +19,7 @@ from src.application.viewpoints.evaluate_viewpoint import (
 )
 from src.application.viewpoints.export_csv import build_execution_csv
 from src.application.viewpoints.parameter_binding import ViewpointParameterError
-from src.application.viewpoints.registry_snapshot import build_registry_snapshot
 from src.config.viewpoints_settings import (
-    viewpoints_derivation_max_hops,
-    viewpoints_derivation_max_relationships,
-    viewpoints_derivation_time_budget_seconds,
     viewpoints_diagram_render_max_entities,
     viewpoints_execution_max_entities,
     viewpoints_execution_timeout_seconds,
@@ -32,7 +27,6 @@ from src.config.viewpoints_settings import (
 )
 from src.domain.relationships.relationship_reachability import DerivationLimitError, is_derived_connection_id
 from src.domain.viewpoints.viewpoint_binding_evaluation import BindingCardinalityError
-from src.domain.viewpoints.viewpoint_condition_validation import RegistrySnapshot
 from src.domain.viewpoints.viewpoints import PresentationSpec, TargetKind
 from src.infrastructure.assurance.signal_attribute_capability import (
     composed_signal_attribute_capability,
@@ -59,6 +53,7 @@ from src.infrastructure.rest.routers.viewpoints.signal_render import (
     signal_banner_for,
     signal_render_router,
 )
+from src.infrastructure.viewpoints_snapshot import configured_registry_snapshot
 
 router = APIRouter()
 router.include_router(signal_render_router)
@@ -66,16 +61,6 @@ router.include_router(signal_render_router)
 # Fixed notation for unpersisted diagram previews. Styling overlays are applied by the
 # client to the returned SVG, so this endpoint returns unstyled notation only.
 _AD_HOC_DIAGRAM_TYPE = "archimate-layered"
-
-
-def _registry_snapshot(catalogs: RuntimeCatalogs, repo_roots: list[Path]) -> RegistrySnapshot:
-    return build_registry_snapshot(
-        catalogs,
-        repo_roots,
-        derivation_max_hops=viewpoints_derivation_max_hops(),
-        derivation_max_relationships=viewpoints_derivation_max_relationships(),
-        derivation_time_budget_seconds=viewpoints_derivation_time_budget_seconds(),
-    )
 
 
 def _effective_presentation(
@@ -124,7 +109,7 @@ def execute_viewpoint(
         slug=slug, query=parsed_query, limit=limit, parameters=parameters, presentation=parsed_presentation
     )
     repo = s.get_repo()
-    registries = _registry_snapshot(catalogs, repo.repo_roots)
+    registries = configured_registry_snapshot(catalogs, repo.repo_roots)
     max_entities = viewpoints_execution_max_entities()
     try:
         result = evaluate_viewpoint(
@@ -172,7 +157,7 @@ def export_viewpoint_csv(
     parsed_query = parse_query(query)
     parsed_presentation = parse_presentation(presentation)
     repo = s.get_repo()
-    registries = _registry_snapshot(catalogs, repo.repo_roots)
+    registries = configured_registry_snapshot(catalogs, repo.repo_roots)
     max_entities = viewpoints_execution_max_entities()
     request = ViewpointExecutionRequest(
         slug=slug, query=parsed_query, limit=max_entities, parameters=parameters, presentation=parsed_presentation
@@ -227,7 +212,7 @@ def execute_viewpoint_projection(
     parsed_query = parse_query(query)
     parsed_presentation = parse_presentation(presentation)
     repo = s.get_repo()
-    registries = _registry_snapshot(catalogs, repo.repo_roots)
+    registries = configured_registry_snapshot(catalogs, repo.repo_roots)
     index_generation = repo.read_model_version().generation
     try:
         projection = project_viewpoint_repository(
@@ -278,7 +263,7 @@ def execute_viewpoint_diagram(
     repo_root = s.maybe_engagement_root()
     if repo_root is None:
         raise HTTPException(500, "Repository not initialized")
-    registries = _registry_snapshot(catalogs, repo.repo_roots)
+    registries = configured_registry_snapshot(catalogs, repo.repo_roots)
     max_entities = viewpoints_execution_max_entities()
     request = ViewpointExecutionRequest(
         slug=slug, query=parsed_query, limit=max_entities, parameters=parameters, presentation=parsed_presentation
@@ -370,7 +355,7 @@ def get_diagram_viewpoint_projection(
     if module is None:
         raise HTTPException(404, f"Diagram type not found: {diag_rec.diagram_type!r}")
     _, registry, _ = s.get_write_deps(catalogs)
-    registries = _registry_snapshot(catalogs, repo.repo_roots)
+    registries = configured_registry_snapshot(catalogs, repo.repo_roots)
     projection = project_artifact_by_frontmatter(
         diag_rec.extra,
         target_kind=target_kind,

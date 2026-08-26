@@ -3,10 +3,11 @@ anything else is rejected at validation time instead of being silently painted n
 
 from __future__ import annotations
 
+from src.domain.hex_colors import is_hex_color
 from src.domain.viewpoints.viewpoint_condition_validation import RegistrySnapshot
 from src.domain.viewpoints.viewpoint_criteria import AttributeCondition, EntityCriteriaGroup, ValueRef
 from src.domain.viewpoints.viewpoint_presentation_validation import validate_presentation
-from src.domain.viewpoints.viewpoint_style_values import is_hex_color, is_valid_style_value
+from src.domain.viewpoints.viewpoint_style_values import is_valid_style_value
 from src.domain.viewpoints.viewpoints import PresentationSpec, RangeBand, StyleRule
 
 _REGISTRIES = RegistrySnapshot(

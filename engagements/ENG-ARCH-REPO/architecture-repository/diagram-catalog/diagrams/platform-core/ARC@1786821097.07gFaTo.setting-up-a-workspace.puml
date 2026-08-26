@@ -12,18 +12,18 @@ keywords:
 - process
 diagram-type: archimate-layered
 entity-ids-used:
-- PRC@1786821069.1fMslbs.set-up-a-workspace
-- PRC@1776633074.Tz_a_O.initialize-workspace
-- PRC@1786821070.9ybAn48.upgrade-repository-format
-- JNO@1786821070.BJebiKN.initialized-or-upgraded
-- FNC@1783870976.MlO3ST.load-guidance-content
-- PRC@1776635640.U4aAdh.architecture-modelling-planning
-- APP@1786793392.Ir9SkCr.workspace-administration-toolkit
-- APP@1776633694.w51oVF.workspace-initializer
-- APP@1783872532.OZbaBh.repository-upgrade-framework
-- AIF@1786793394.ZVeJv9r.workspace-administration-interface
 - ACT@1712870400.OLWiNc.devops-engineer
 - ACT@1712870400.Pp8Qq8.developer
+- AIF@1786793394.ZVeJv9r.workspace-administration-interface
+- APP@1786793392.Ir9SkCr.workspace-administration-toolkit
+- APP@1783872532.OZbaBh.repository-upgrade-framework
+- APP@1776633694.w51oVF.workspace-initializer
+- FNC@1783870976.MlO3ST.load-guidance-content
+- JNO@1786821070.BJebiKN.initialized-or-upgraded
+- PRC@1786821069.1fMslbs.set-up-a-workspace
+- PRC@1786821070.9ybAn48.upgrade-repository-format
+- PRC@1776633074.Tz_a_O.initialize-workspace
+- PRC@1776635640.U4aAdh.architecture-modelling-planning
 connection-ids-used:
 - AIF@1786793394.ZVeJv9r---ACT@1712870400.OLWiNc@@archimate-association
 - AIF@1786793394.ZVeJv9r---ACT@1712870400.Pp8Qq8@@archimate-association
@@ -40,7 +40,7 @@ connection-ids-used:
 - PRC@1786821070.9ybAn48---JNO@1786821070.BJebiKN@@archimate-triggering
 - PRC@1786821069.1fMslbs---PRC@1776633074.Tz_a_O@@archimate-composition
 - PRC@1786821069.1fMslbs---PRC@1786821070.9ybAn48@@archimate-composition
-last-updated: '2026-08-15T19:24:59Z'
+last-updated: '2026-08-26T10:11:49Z'
 ---
 @startuml setting-up-a-workspace
 hide stereotype
@@ -116,7 +116,7 @@ skinparam rectangle<<ApplicationGrouping>> {
 }
 skinparam rectangle<<BusinessGrouping>> {
   BackgroundColor #F7EDC3
-  BorderColor #474024
+  BorderColor #474124
 }
 skinparam rectangle<<CommonGrouping>> {
   BackgroundColor #F3F1EB
@@ -132,7 +132,7 @@ skinparam rectangle<<application_interface>> {
 }
 skinparam rectangle<<business_actor>> {
   BackgroundColor #EDD779
-  BorderColor #474024
+  BorderColor #474124
 }
 skinparam rectangle<<function>> {
   BackgroundColor #E5DFD3
@@ -165,15 +165,15 @@ rectangle "Business" <<BusinessGrouping>> as DOM_business {
 
 rectangle "Common" <<CommonGrouping>> as DOM_common {
   rectangle "<$archimate_process{scale=1.2}> Set Up a Workspace" <<process>> as PRC_1fMslbs {
-    rectangle "<$archimate_process{scale=1.2}> Initialize Workspace\n«Application Process»" <<process>> as PRC_Tz_a_O
-    rectangle "<$archimate_process{scale=1.2}> Upgrade Repository Format" <<process>> as PRC_9ybAn48
-    circle " " as JNO_BJebiKN
     rectangle "<$archimate_function{scale=1.2}> Load Guidance Content\n«Application Function»" <<function>> as FNC_MlO3ST
-    PRC_Tz_a_O -[hidden]right- PRC_9ybAn48
-    PRC_9ybAn48 -[hidden]down- JNO_BJebiKN
-    JNO_BJebiKN -[hidden]down- FNC_MlO3ST
+    circle " " as JNO_BJebiKN
+    rectangle "<$archimate_process{scale=1.2}> Upgrade Repository Format" <<process>> as PRC_9ybAn48
+    rectangle "<$archimate_process{scale=1.2}> Initialize Workspace\n«Application Process»" <<process>> as PRC_Tz_a_O
+    PRC_9ybAn48 -[hidden]right- PRC_Tz_a_O
     PRC_Tz_a_O -[hidden]down- JNO_BJebiKN
+    JNO_BJebiKN -[hidden]down- FNC_MlO3ST
     PRC_9ybAn48 -[hidden]down- JNO_BJebiKN
+    PRC_Tz_a_O -[hidden]down- JNO_BJebiKN
   }
 
   rectangle "<$archimate_process{scale=1.2}> Architecture Modelling & Planning\n«Business Process»" <<process>> as PRC_U4aAdh
@@ -185,9 +185,9 @@ rectangle "Application" <<ApplicationGrouping>> as DOM_application {
   rectangle "<$archimate_application_interface{scale=1.2}> Workspace Administration Interface" <<application_interface>> as AIF_ZVeJv9r
 
   rectangle "<$archimate_application_component{scale=1.2}> Workspace Administration Toolkit" <<application_component>> as APP_Ir9SkCr {
-    rectangle "<$archimate_application_component{scale=1.2}> Workspace Initializer\n«Module»" <<application_component>> as APP_w51oVF
     rectangle "<$archimate_application_component{scale=1.2}> Repository Upgrade Framework" <<application_component>> as APP_OZbaBh
-    APP_w51oVF -[hidden]down- APP_OZbaBh
+    rectangle "<$archimate_application_component{scale=1.2}> Workspace Initializer\n«Module»" <<application_component>> as APP_w51oVF
+    APP_OZbaBh -[hidden]down- APP_w51oVF
   }
 
 }

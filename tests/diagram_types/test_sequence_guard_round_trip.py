@@ -20,7 +20,7 @@ from pathlib import Path
 import pytest
 
 from src.diagram_types.sequence.renderer import SequencePumlRenderer
-from src.infrastructure.rendering.puml_runtime import _render
+from src.infrastructure.rendering.puml_runtime import render_puml_svg
 
 _REPO = Path(__file__).resolve().parents[2] / "engagements" / "ENG-ARCH-REPO" / "architecture-repository"
 
@@ -54,7 +54,7 @@ def _diagram_entities(first_guard: str, second_guard: str) -> dict[str, object]:
 
 
 def _rendered_text(body: str) -> list[str]:
-    svg, errors = _render(body, _REPO, "svg", None)
+    svg, errors = render_puml_svg(body, _REPO)
     assert svg, f"render produced nothing: {errors}"
     return [re.sub(r"\s+", " ", t).strip() for t in re.findall(r"<text[^>]*>([^<]*)</text>", svg)]
 

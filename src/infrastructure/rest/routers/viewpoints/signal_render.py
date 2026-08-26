@@ -14,17 +14,12 @@ from src.application.viewpoints.evaluate_viewpoint import (
     ViewpointExecutionRequest,
     evaluate_viewpoint,
 )
-from src.application.viewpoints.registry_snapshot import build_registry_snapshot
 from src.config.viewpoints_settings import (
-    viewpoints_derivation_max_hops,
-    viewpoints_derivation_max_relationships,
-    viewpoints_derivation_time_budget_seconds,
     viewpoints_execution_max_entities,
     viewpoints_execution_timeout_seconds,
     viewpoints_legibility_budget,
 )
 from src.domain.clock import utc_now_iso
-from src.domain.viewpoints.viewpoint_condition_validation import RegistrySnapshot
 from src.domain.viewpoints.viewpoint_derived_attribute_deferral import declares_signal_source
 from src.infrastructure.assurance.signal_attribute_capability import (
     composed_signal_attribute_capability,
@@ -35,18 +30,9 @@ from src.infrastructure.rest.routers._openapi import TAG_VIEWPOINTS, media_respo
 from src.infrastructure.rest.routers.viewpoints._freshness import (
     fresh_viewpoints_runtime_catalogs_dependency,
 )
+from src.infrastructure.viewpoints_snapshot import configured_registry_snapshot
 
 signal_render_router = APIRouter()
-
-
-def _registry_snapshot(catalogs: RuntimeCatalogs, repo_roots: list) -> RegistrySnapshot:  # type: ignore[type-arg]
-    return build_registry_snapshot(
-        catalogs,
-        repo_roots,
-        derivation_max_hops=viewpoints_derivation_max_hops(),
-        derivation_max_relationships=viewpoints_derivation_max_relationships(),
-        derivation_time_budget_seconds=viewpoints_derivation_time_budget_seconds(),
-    )
 
 
 def signal_banner_for(
@@ -103,7 +89,7 @@ def export_viewpoint_render(
     request = ViewpointExecutionRequest(
         slug=slug, query=None, limit=viewpoints_execution_max_entities(), parameters=parameters,
     )
-    registries = _registry_snapshot(catalogs, repo.repo_roots)
+    registries = configured_registry_snapshot(catalogs, repo.repo_roots)
     result = evaluate_viewpoint(
         request,
         catalog=catalogs.viewpoints,

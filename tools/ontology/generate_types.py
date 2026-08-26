@@ -11,7 +11,11 @@ import argparse
 import sys
 from pathlib import Path
 
-from src.domain.viewpoints.viewpoint_style_values import SCALE_ENDPOINT_ORDER, STYLE_TOKEN_COLORS
+from src.domain.viewpoints.viewpoint_style_values import (
+    CATEGORICAL_PALETTE,
+    SCALE_ENDPOINT_ORDER,
+    STYLE_TOKEN_COLORS,
+)
 from src.infrastructure.app_bootstrap import build_module_registry, build_runtime_catalogs
 
 _OUTPUT = Path(__file__).resolve().parents[1] / "gui" / "src" / "domain" / "types.generated.ts"
@@ -83,6 +87,10 @@ def main(argv: list[str]) -> None:
     # lookup and a lookup has no order, while the endpoints an author is offered are a sequence whose
     # order groups the pairs. `_const_record` sorts, which is right for a lookup and wrong for this.
     out += _const_array("SCALE_ENDPOINT_ORDER", "ScaleEndpointToken", list(SCALE_ENDPOINT_ORDER))
+    # The qualitative sequence for colouring by an unordered value set. An array, because the *position*
+    # is the assignment: a member takes the colour at its index in the declared value order, so a
+    # record keyed by anything would lose the only thing this table says.
+    out += _const_array("CATEGORICAL_PALETTE", "CategoricalColor", list(CATEGORICAL_PALETTE))
 
     out += _const_record(
         "ENTITY_TYPE_CORNERS", "'square' | 'rounded' | 'diagonal'",

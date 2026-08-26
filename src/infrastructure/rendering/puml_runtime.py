@@ -40,6 +40,11 @@ def is_render_scratch(path: Path) -> bool:
 #: do overlap, the pool is bounded but not serial.
 _ABANDONED_AFTER_S = 300.0
 
+#: What each requested format's bytes actually are. Stated so a caller setting a `Content-Type` asks
+#: the render what it produced rather than assuming the format it asked for — the two differ for a
+#: diagram type with a native SVG renderer.
+_MEDIA_TYPES = {"svg": "image/svg+xml", "png": "image/png"}
+
 
 def discard_abandoned_render_temp_files(diagram_dir: Path, *, now: float | None = None) -> list[Path]:
     """Remove scratch files a previous render left behind, and report what was removed.
@@ -72,12 +77,25 @@ def _prepare_body(puml_body: str, repo_root: Path, diagram_type: str | None) -> 
     return get_diagram_type(diagram_type).renderer.inject_includes(body, repo_root)
 
 
-def _render(
+def render_puml_bytes(
     puml_body: str,
     repo_root: Path,
     fmt: str,
     diagram_type: str | None,
-) -> tuple[str | None, list[str]]:
+) -> tuple[bytes | None, str, list[str]]:
+    """Render *puml_body* and return the image **bytes**, the media type they are, and any warnings.
+
+    The bytes, not a data URL. A data URL is one caller's packaging — the GUI preview's — and while
+    that was the only caller it could sit in here harmlessly. It stopped being harmless when a reader
+    could download an ad-hoc rendering: a caller needing PNG bytes would either have to decode the
+    base64 this function had just encoded, or reach around it into the subprocess. Both are the shape
+    of workaround this repository refuses, so the layer that has the bytes hands them over and
+    `render_puml_preview` does the encoding it wants.
+
+    The media type is returned rather than inferred from *fmt* because the two can differ: a diagram
+    type with a native SVG renderer answers a PNG request with SVG, which was already true and is now
+    *sayable*. A caller that sets a `Content-Type` from `fmt` alone would have mislabelled those bytes.
+    """
     from src.application.verification.artifact_verifier_syntax import (
         find_graphviz_dot,
         find_plantuml_jar,
@@ -87,21 +105,20 @@ def _render(
 
     diag_dir = repo_root / DIAGRAM_CATALOG / DIAGRAMS
     if not diag_dir.exists():
-        return None, [f"Diagram directory not found: {diag_dir}"]
+        return None, _MEDIA_TYPES[fmt], [f"Diagram directory not found: {diag_dir}"]
     # Before anything can return early: a machine that has switched to native SVG, or that has no
     # PlantUML jar, still carries whatever a previous kill left behind and is still one `git add -A`
     # away from committing it.
     discard_abandoned_render_temp_files(diag_dir)
     render_body = _prepare_body(puml_body, repo_root, diagram_type)
     if (native_svg := render_native_svg(render_body, diagram_type)) is not None:
-        if fmt == "svg":
-            return native_svg, []
-        encoded = base64.b64encode(native_svg.encode()).decode()
-        return f"data:image/svg+xml;base64,{encoded}", []
+        # Answered in SVG whatever was asked for: this diagram type renders natively and there is no
+        # PNG to produce. Saying so in the media type is the whole reason it is returned.
+        return native_svg.encode("utf-8"), "image/svg+xml", []
 
     jar = find_plantuml_jar()
     if jar is None:
-        return None, ["plantuml.jar not found; render skipped"]
+        return None, _MEDIA_TYPES[fmt], ["plantuml.jar not found; render skipped"]
     tmp_path: Path | None = None
     try:
         with tempfile.NamedTemporaryFile(
@@ -126,16 +143,13 @@ def _render(
                 cmd, cwd=str(diag_dir), capture_output=True, text=True, timeout=60, env=env
             )
             if proc.returncode != 0:
-                return None, [f"PlantUML render failed: {proc.stderr[:300]}"]
+                return None, _MEDIA_TYPES[fmt], [f"PlantUML render failed: {proc.stderr[:300]}"]
             outputs = list(Path(out_dir).glob(f"*.{fmt}"))
             if not outputs:
-                return None, [f"PlantUML produced no {fmt.upper()} output"]
-            if fmt == "png":
-                encoded = base64.b64encode(outputs[0].read_bytes()).decode()
-                return f"data:image/png;base64,{encoded}", []
-            return outputs[0].read_text(encoding="utf-8"), []
+                return None, _MEDIA_TYPES[fmt], [f"PlantUML produced no {fmt.upper()} output"]
+            return outputs[0].read_bytes(), _MEDIA_TYPES[fmt], []
     except (OSError, subprocess.TimeoutExpired) as exc:
-        return None, [f"Render error: {exc}"]
+        return None, _MEDIA_TYPES[fmt], [f"Render error: {exc}"]
     finally:
         if tmp_path is not None:
             tmp_path.unlink(missing_ok=True)
@@ -146,8 +160,15 @@ def render_puml_preview(
     repo_root: Path,
     diagram_type: str | None = None,
 ) -> tuple[str | None, list[str]]:
-    """Render a diagram to an image data URL for GUI preview."""
-    return _render(puml_body, repo_root, "png", diagram_type)
+    """Render a diagram to an image data URL for GUI preview.
+
+    The media type comes from the render rather than from the request, so a natively-rendered diagram
+    is labelled `image/svg+xml` in its own data URL instead of being announced as a PNG.
+    """
+    image, media_type, warnings = render_puml_bytes(puml_body, repo_root, "png", diagram_type)
+    if image is None:
+        return None, warnings
+    return f"data:{media_type};base64,{base64.b64encode(image).decode()}", warnings
 
 
 def render_puml_svg(
@@ -156,4 +177,5 @@ def render_puml_svg(
     diagram_type: str | None = None,
 ) -> tuple[str | None, list[str]]:
     """Render a diagram to SVG."""
-    return _render(puml_body, repo_root, "svg", diagram_type)
+    image, _media_type, warnings = render_puml_bytes(puml_body, repo_root, "svg", diagram_type)
+    return (None if image is None else image.decode("utf-8")), warnings

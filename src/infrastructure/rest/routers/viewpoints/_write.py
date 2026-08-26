@@ -26,12 +26,6 @@ from src.application.viewpoints.persist_definition import (
     delete_viewpoint_definition,
     persist_viewpoint_definition,
 )
-from src.application.viewpoints.registry_snapshot import build_registry_snapshot
-from src.config.viewpoints_settings import (
-    viewpoints_derivation_max_hops,
-    viewpoints_derivation_max_relationships,
-    viewpoints_derivation_time_budget_seconds,
-)
 from src.domain.viewpoints.viewpoint_parsing import viewpoint_definition_from_mapping
 from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
 from src.infrastructure.rest.contracts.errors import (
@@ -52,6 +46,7 @@ from src.infrastructure.viewpoint_declarations import (
     load_viewpoint_catalog_file,
     write_viewpoint_catalog_file,
 )
+from src.infrastructure.viewpoints_snapshot import configured_registry_snapshot
 
 router = APIRouter()
 
@@ -107,13 +102,7 @@ def _persist(
     both_roots = _both_roots()
     merged_catalog = load_effective_viewpoint_catalog(both_roots)
     local_catalog = load_viewpoint_catalog_file(engagement_root)
-    registries = build_registry_snapshot(
-        catalogs,
-        both_roots,
-        derivation_max_hops=viewpoints_derivation_max_hops(),
-        derivation_max_relationships=viewpoints_derivation_max_relationships(),
-        derivation_time_budget_seconds=viewpoints_derivation_time_budget_seconds(),
-    )
+    registries = configured_registry_snapshot(catalogs, both_roots)
     body_slug = body.definition.get("slug")
     if isinstance(body_slug, str):
         _reject_reserved_slug(body_slug)
