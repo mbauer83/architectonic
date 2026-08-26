@@ -1,4 +1,4 @@
-"""Activity per-diagram verification contributions (W045, W047).
+"""Activity per-diagram verification contributions (W045, W047, W048).
 
 Wrapped as a `DiagramVerificationContribution` so the central verifier imports no activity symbol:
 what counts as a drawn step is the activity module's question, and only this module knows that a
@@ -11,6 +11,7 @@ from typing import Any
 
 from src.domain.diagrams.diagram_verification import BaseDiagramVerificationContext
 
+from ._step_graph import colliding_declarations
 from ._step_links import LABELLED_STEP_KINDS, drawn_step_ids, sentinel_target
 
 
@@ -139,5 +140,59 @@ class _MergeTargetContribution:
                 ))
 
 
+class _EdgeCollisionContribution:
+    """W048 — declared step edges the renderer's index can hold only one of.
+
+    W045 asks whether every declared *step* is drawn. Nothing asked it of a declared *edge*, and the
+    loss starts earlier than any walk: `_build_single_target` is a dict comprehension keyed by
+    `source`, so a second `step-flow`, `step-then`, `step-else`, `step-contains` or `step-in-lane` out
+    of one step is discarded when the index is built. `_build_notes_index` is keyed by **target**, so
+    two notes on one step lose one — the same accident with the opposite key. `_build_multi_target`
+    sits beside them and does not lose; it is used for exactly one type, `step-fork-branch`.
+
+    Verified rather than assumed: two `step-flow` out of one step index to the second alone, and two
+    notes on one step to the second alone.
+
+    **A declaration-side answer, not a walk-side one.** The decision is `colliding_declarations`, a
+    grouping over declared data with no traversal — which is what makes it complete: an edge of a
+    single-target type is either alone under its key or not, and there is no third case. Two earlier
+    designs asked the walk or the emission and neither could be complete or observable.
+
+    It names the survivor as well as the losses, because an author cannot tell from "several edges
+    collided" whether the one the picture kept is the one they meant — and the survivor is the *last*
+    declared, which is not a rule anybody would guess.
+
+    A warning: a repository holding these verifies clean today and the diagram still renders. The
+    remedy is an authoring decision, and for a partition it is written down — the ontology's own
+    guidance says to connect the first contained step with `step-contains` and chain the rest with
+    `step-flow`, while its declared cardinality permits many. This reports the picture's behaviour
+    rather than adjudicating that.
+    """
+
+    diagnostic_codes: tuple[str, ...] = ("W048",)
+
+    def run(self, candidate: Any, ctx: BaseDiagramVerificationContext, result: Any) -> None:
+        del candidate
+        from src.domain.verification_findings import Issue, Severity  # noqa: PLC0415
+
+        connections = ctx.fm.get("connections")
+        if not isinstance(connections, list):
+            return
+        declared = [item for item in connections if isinstance(item, dict)]
+        for collision in colliding_declarations(declared):
+            lost = ", ".join(f"{source} → {target}" for source, target in collision.lost)
+            kept_source, kept_target = collision.kept
+            result.issues.append(Issue(
+                Severity.WARNING,
+                "W048",
+                f"'{collision.keyed_on}' declares {len(collision.edges)} {collision.conn_type} edges, "
+                f"and the drawing can carry one. It draws {kept_source} → {kept_target}; "
+                f"{lost} is not drawn anywhere. Keep one edge of this type here and express the rest "
+                f"another way.",
+                ctx.loc,
+            ))
+
+
 STEP_COVERAGE_CONTRIBUTION = _StepCoverageContribution()
 MERGE_TARGET_CONTRIBUTION = _MergeTargetContribution()
+EDGE_COLLISION_CONTRIBUTION = _EdgeCollisionContribution()

@@ -180,6 +180,9 @@ def _build_step_by_id(kd: Mapping[str, object]) -> dict[str, dict[str, Any]]:
 
 
 def _build_single_target(kcs: list[dict[str, object]], conn_type: str) -> dict[str, str]:
+    """One target per source. A second edge of this type out of one step is *lost here*, before any
+    walk runs — which is what `colliding_declarations` reports, and why the type list it checks is
+    the list of types this function is called with."""
     return {
         str(kc["source"]): str(kc["target"])
         for kc in kcs
