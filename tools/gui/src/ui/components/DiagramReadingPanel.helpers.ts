@@ -77,6 +77,11 @@ export const withPrinted = (lens: ReadingLens, name: string): ReadingLens => ({
 export interface ColourStep {
   readonly label: string
   readonly colour: string
+  /** The value-set member this step is for, where there is one — what a reader's chosen colour is
+   * keyed by. Absent for a gradient end, which is identified by `end` instead. */
+  readonly member?: string
+  /** Which end of a gradient, where this step is one. `0` is the near end. */
+  readonly end?: 0 | 1
 }
 
 /** The mapping for the attribute currently coloured by, or `[]` when nothing is.
@@ -85,11 +90,16 @@ export interface ColourStep {
  * named (`negligible → catastrophic`) instead of labelled "low" and "high". A plain number has no
  * declared range and its ends are whatever the diagram happens to hold, so they are named as
  * directions rather than given numbers this panel does not know. */
-export const colourKey = (attribute: AttributeOffer, endpoints: readonly [string, string]): ColourStep[] => {
+export const colourKey = (
+  attribute: AttributeOffer,
+  endpoints: readonly [string, string],
+  lens: ReadingLens,
+): ColourStep[] => {
   if (attribute.colour === 'palette') {
     return attribute.values.map((member, index) => ({
       label: member,
-      colour: CATEGORICAL_PALETTE[index % CATEGORICAL_PALETTE.length],
+      member,
+      colour: lens.key[member] ?? CATEGORICAL_PALETTE[index % CATEGORICAL_PALETTE.length],
     }))
   }
   if (attribute.colour !== 'ramp') return []
@@ -97,11 +107,17 @@ export const colourKey = (attribute: AttributeOffer, endpoints: readonly [string
   const ends = named
     ? [attribute.values[0], attribute.values[attribute.values.length - 1]]
     : ['lower', 'higher']
+  const ramp = lens.ramp ?? endpoints
   return [
-    { label: ends[0], colour: endpoints[0] },
-    { label: ends[1], colour: endpoints[1] },
+    { label: ends[0], colour: ramp[0], end: 0 },
+    { label: ends[1], colour: ramp[1], end: 1 },
   ]
 }
+
+/** Whether the reader has changed anything about this attribute's colours, so the panel can offer to
+ * put them back without offering it when there is nothing to undo. */
+export const hasCustomColours = (attribute: AttributeOffer, lens: ReadingLens): boolean =>
+  lens.ramp !== null || attribute.values.some((member) => member in lens.key)
 
 /** What the panel header says is happening, so a reader with the panel folded away still knows. */
 export const lensSummary = (lens: ReadingLens): string => {

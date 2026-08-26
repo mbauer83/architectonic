@@ -1,15 +1,20 @@
 import { describe, expect, it } from 'vitest'
 import {
-  canTakeColour, colourKey, foldSummary, lensSummary, presenceLabel, typeOfferLabel, withColourBy,
-  withPrinted,
+  canTakeColour, colourKey, foldSummary, hasCustomColours, lensSummary, presenceLabel, typeOfferLabel,
+  withColourBy, withPrinted,
 } from '../DiagramReadingPanel.helpers'
 import { CATEGORICAL_PALETTE } from '../../../domain/types.generated'
-import { EMPTY_READING_LENS, isEmptyLens, lensParams } from '../../../domain/readingLens'
+import {
+  EMPTY_READING_LENS, isEmptyLens, lensParams, withDeclaredColours, withRampEnd, type ReadingLens,
+} from '../../../domain/readingLens'
 import type { AttributeOffer, TypeOffer } from '../../../domain/schemas/diagrams'
 
 const attribute = (over: Partial<AttributeOffer> = {}): AttributeOffer => ({
   name: 'risk_score', declared_type: 'integer', colour: 'ramp', values: [], present_on: 3, ...over,
 })
+
+/** A lens literal, so a test states only the part it is about. */
+const lens = (over: Partial<ReadingLens> = {}): ReadingLens => ({ ...EMPTY_READING_LENS, ...over })
 
 const offer = (over: Partial<TypeOffer> = {}): TypeOffer => ({
   entity_type: 'application-component', specialization: '', drawn: 4, attributes: [attribute()], ...over,
@@ -33,7 +38,7 @@ describe('what a row says', () => {
     const row = offer({ attributes: [attribute(), attribute({ name: 'owner', colour: 'none' })] })
 
     expect(foldSummary(row, EMPTY_READING_LENS)).toBe('2 attributes')
-    expect(foldSummary(row, { colourBy: 'risk_score', printed: ['owner'] })).toBe('2 attributes, 2 in use')
+    expect(foldSummary(row, lens({ colourBy: 'risk_score', printed: ['owner'] }))).toBe('2 attributes, 2 in use')
   })
 
   it('states an absence of values rather than leaving the row blank', () => {
@@ -51,14 +56,14 @@ describe('what a row says', () => {
 describe('what a click does', () => {
   it('replaces the colouring rather than adding to it', () => {
     // A fill can only be one colour, so this is exclusive across the whole panel.
-    const after = withColourBy({ colourBy: 'risk_score', printed: [] }, 'severity')
+    const after = withColourBy(lens({ colourBy: 'risk_score', printed: [] }), 'severity')
 
     expect(after.colourBy).toBe('severity')
   })
 
   it('clears the colouring when the chosen attribute is chosen again', () => {
     // The same control sets and unsets, so getting the authored colours back needs no separate "off".
-    expect(withColourBy({ colourBy: 'risk_score', printed: [] }, 'risk_score').colourBy).toBe('')
+    expect(withColourBy(lens({ colourBy: 'risk_score', printed: [] }), 'risk_score').colourBy).toBe('')
   })
 
   it('keeps the order attributes were chosen to print in', () => {
@@ -68,19 +73,19 @@ describe('what a click does', () => {
   })
 
   it('removes a printed attribute without disturbing the others', () => {
-    const lens = { colourBy: '', printed: ['a', 'b', 'c'] }
+    const current = lens({ colourBy: '', printed: ['a', 'b', 'c'] })
 
-    expect(withPrinted(lens, 'b').printed).toEqual(['a', 'c'])
+    expect(withPrinted(current, 'b').printed).toEqual(['a', 'c'])
   })
 
   it('leaves the printed order alone when an attribute is re-added', () => {
-    const lens = { colourBy: '', printed: ['a', 'b'] }
+    const current = lens({ colourBy: '', printed: ['a', 'b'] })
 
-    expect(withPrinted(withPrinted(lens, 'a'), 'a').printed).toEqual(['b', 'a'])
+    expect(withPrinted(withPrinted(current, 'a'), 'a').printed).toEqual(['b', 'a'])
   })
 
   it('does not confuse colouring with printing', () => {
-    const after = withColourBy({ colourBy: '', printed: ['owner'] }, 'risk_score')
+    const after = withColourBy(lens({ colourBy: '', printed: ['owner'] }), 'risk_score')
 
     expect(after.printed).toEqual(['owner'])
   })
@@ -91,9 +96,9 @@ describe('the colour key a colouring unfolds', () => {
 
   it('gives a plain number two ends named as directions', () => {
     // The ends are whatever this diagram happens to hold, and the panel is not told the numbers.
-    expect(colourKey(attribute(), ends)).toEqual([
-      { label: 'lower', colour: '#fbbf24' },
-      { label: 'higher', colour: '#dc2626' },
+    expect(colourKey(attribute(), ends, EMPTY_READING_LENS)).toEqual([
+      { label: 'lower', colour: '#fbbf24', end: 0 },
+      { label: 'higher', colour: '#dc2626', end: 1 },
     ])
   })
 
@@ -104,16 +109,16 @@ describe('the colour key a colouring unfolds', () => {
       values: ['negligible', 'minor', 'major', 'catastrophic'],
     })
 
-    expect(colourKey(severity, ends).map((step) => step.label)).toEqual(['negligible', 'catastrophic'])
+    expect(colourKey(severity, ends, EMPTY_READING_LENS).map((step) => step.label)).toEqual(['negligible', 'catastrophic'])
   })
 
   it('gives an unordered value set one swatch per member, in the declared order', () => {
     const lifecycle = attribute({ colour: 'palette', values: ['planned', 'active', 'retired'] })
 
-    expect(colourKey(lifecycle, ends)).toEqual([
-      { label: 'planned', colour: CATEGORICAL_PALETTE[0] },
-      { label: 'active', colour: CATEGORICAL_PALETTE[1] },
-      { label: 'retired', colour: CATEGORICAL_PALETTE[2] },
+    expect(colourKey(lifecycle, ends, EMPTY_READING_LENS)).toEqual([
+      { label: 'planned', member: 'planned', colour: CATEGORICAL_PALETTE[0] },
+      { label: 'active', member: 'active', colour: CATEGORICAL_PALETTE[1] },
+      { label: 'retired', member: 'retired', colour: CATEGORICAL_PALETTE[2] },
     ])
   })
 
@@ -123,13 +128,76 @@ describe('the colour key a colouring unfolds', () => {
       values: Array.from({ length: CATEGORICAL_PALETTE.length + 1 }, (_v, i) => `m${i}`),
     })
 
-    const steps = colourKey(many, ends)
+    const steps = colourKey(many, ends, EMPTY_READING_LENS)
     expect(steps).toHaveLength(CATEGORICAL_PALETTE.length + 1)
     expect(steps[steps.length - 1].colour).toBe(CATEGORICAL_PALETTE[0])
   })
 
   it('has no key for an attribute no colour can read', () => {
-    expect(colourKey(attribute({ colour: 'none' }), ends)).toEqual([])
+    expect(colourKey(attribute({ colour: 'none' }), ends, EMPTY_READING_LENS)).toEqual([])
+  })
+})
+
+describe('the colours a reader chooses for themselves', () => {
+  const ends: readonly [string, string] = ['#fbbf24', '#dc2626']
+
+  it("shows a member's chosen colour in place of its declared one", () => {
+    const lifecycle = attribute({ colour: 'palette', values: ['planned', 'active'] })
+    const chosen = lens({ colourBy: 'lifecycle', key: { active: '#111111' } })
+
+    expect(colourKey(lifecycle, ends, chosen).map((step) => step.colour))
+      .toEqual([CATEGORICAL_PALETTE[0], '#111111'])
+  })
+
+  it('leaves every other member on its declared colour', () => {
+    // Partial by design: changing one colour must not mean restating the rest.
+    const lifecycle = attribute({ colour: 'palette', values: ['a', 'b', 'c'] })
+    const chosen = lens({ key: { b: '#111111' } })
+
+    expect(colourKey(lifecycle, ends, chosen).map((step) => step.colour))
+      .toEqual([CATEGORICAL_PALETTE[0], '#111111', CATEGORICAL_PALETTE[2]])
+  })
+
+  it("shows a chosen gradient in place of the declared endpoints", () => {
+    const chosen = lens({ colourBy: 'risk_score', ramp: ['#000000', '#ffffff'] })
+
+    expect(colourKey(attribute(), ends, chosen).map((step) => step.colour))
+      .toEqual(['#000000', '#ffffff'])
+  })
+
+  it('changes one end of a gradient against the declared other end', () => {
+    // The first adjustment has no gradient to build on, so it starts from what is declared —
+    // otherwise the untouched end would come back as undefined and the ramp would be half a request.
+    const after = withRampEnd(EMPTY_READING_LENS, 1, '#ffffff', ends)
+
+    expect(after.ramp).toEqual(['#fbbf24', '#ffffff'])
+  })
+
+  it('sends the mapping only for what is being coloured by', () => {
+    const chosen = lens({ colourBy: 'lifecycle', ramp: ['#000000', '#ffffff'], key: { a: '#111111' } })
+
+    expect(lensParams(chosen)).toEqual({
+      colour_by: 'lifecycle', print: [], ramp: '#000000:#ffffff', key: ['a:#111111'],
+    })
+  })
+
+  it('sends no mapping when the reader has customised nothing', () => {
+    expect(lensParams(lens({ colourBy: 'risk_score' }))).toEqual({ colour_by: 'risk_score', print: [] })
+  })
+
+  it('offers to put back the declared colours only once something was changed', () => {
+    const lifecycle = attribute({ colour: 'palette', values: ['a', 'b'] })
+
+    expect(hasCustomColours(lifecycle, EMPTY_READING_LENS)).toBe(false)
+    expect(hasCustomColours(lifecycle, lens({ key: { a: '#111111' } }))).toBe(true)
+    expect(hasCustomColours(lifecycle, lens({ ramp: ['#000000', '#ffffff'] }))).toBe(true)
+  })
+
+  it("puts back one attribute's declared colours without touching another's", () => {
+    const chosen = lens({ key: { a: '#111111', other: '#222222' } })
+
+    expect(withDeclaredColours(chosen, ['a']).key).toEqual({ other: '#222222' })
+    expect(withDeclaredColours(chosen, ['a']).ramp).toBeNull()
   })
 })
 
@@ -139,7 +207,7 @@ describe('what the folded header reports', () => {
   })
 
   it('reports both halves of a reading', () => {
-    expect(lensSummary({ colourBy: 'risk_score', printed: ['owner', 'tier'] }))
+    expect(lensSummary(lens({ colourBy: 'risk_score', printed: ['owner', 'tier'] })))
       .toBe('coloured by risk_score; printing owner, tier')
   })
 })
@@ -155,11 +223,11 @@ describe('the lens as a request', () => {
   it('sends printed attributes as a repeated key rather than one joined value', () => {
     // The route declares `list[str]`, which reads repeated keys; a joined value arrives as one
     // member named "a,b".
-    expect(lensParams({ colourBy: 'risk_score', printed: ['a', 'b'] }))
+    expect(lensParams(lens({ colourBy: 'risk_score', printed: ['a', 'b'] })))
       .toEqual({ colour_by: 'risk_score', print: ['a', 'b'] })
   })
 
   it('is a request when only printing is asked for', () => {
-    expect(lensParams({ colourBy: '', printed: ['owner'] })).toEqual({ colour_by: '', print: ['owner'] })
+    expect(lensParams(lens({ colourBy: '', printed: ['owner'] }))).toEqual({ colour_by: '', print: ['owner'] })
   })
 })

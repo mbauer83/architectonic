@@ -11,10 +11,8 @@ import { renderMatrixMarkdown } from '../lib/matrixMarkdown'
 import type { C4Navigation } from '../../domain'
 import { buildDrilldownByEntityId, c4NavigationOf, diagramNeedsSvg, matrixBodyOf } from './DiagramDetailView.helpers'
 import DrilldownMenu from '../components/DrilldownMenu.vue'
-import { sanitizeDiagramSvg } from '../lib/svgSanitize'
 import DiagramReadingPanel from '../components/DiagramReadingPanel.vue'
-import { EMPTY_READING_LENS, isEmptyLens, type ReadingLens } from '../../domain/readingLens'
-import type { DiagramAttributePanel } from '../../domain/schemas/diagrams'
+import { useDiagramReadingLens } from '../composables/useDiagramReadingLens'
 import { useFittedPanZoom } from '../composables/useFittedPanZoom'
 import { useFullscreen } from '../composables/useFullscreen'
 import DiagramViewportControls from '../components/DiagramViewportControls.vue'
@@ -37,14 +35,11 @@ const adminMode = ref(false)
 const diagramId = computed(() => route.params.artifactId as string)
 
 const contextQuery = useQuery<DiagramContext, RepoError | NotFoundError>()
-const svgQuery = useQuery<string, RepoError>()
-const attributePanelQuery = useQuery<DiagramAttributePanel, RepoError>()
-
-// The ad-hoc reading of this diagram. Component state and nothing else — not the route, not browser
-// storage: the decision about this feature is that a lens is momentary, lasting a visit to the page,
-// and both of those alternatives would outlive the visit. It resets with the diagram id below for the
-// same reason a lens is per-diagram: `risk_score` on one picture says nothing about the next.
-const lens = ref<ReadingLens>(EMPTY_READING_LENS)
+// This diagram's picture and how it is being read: the lens, the offer, and the render.
+const reading = useDiagramReadingLens({
+  svc, diagramId, drawn: () => diagramNeedsSvg(detail.value?.diagram_type),
+})
+const { lens, svgHtml } = reading
 
 const detail = computed(() => contextQuery.data.value?.diagram ?? null)
 const c4Nav = computed<C4Navigation | null>(() => c4NavigationOf(contextQuery.data.value?.type_extras))
@@ -56,7 +51,6 @@ const diagramEntities = computed(() =>
 )
 const diagramConnections = computed(() => contextQuery.data.value?.connections ?? [])
 
-const svgHtml = computed(() => svgQuery.data.value ? sanitizeDiagramSvg(svgQuery.data.value) : null)
 const matrixHtml = computed(() => {
   const body = matrixBodyOf(detail.value?.type_extras)
   if (body === null || detail.value?.diagram_type !== 'matrix') return null
@@ -73,7 +67,7 @@ const load = () => {
   if (!diagramId.value) return
   selection.selectedId.value = null
   contextQuery.reset()
-  svgQuery.reset()
+  reading.reset()
   contextQuery.run(svc.getDiagramContext(diagramId.value))
 }
 
@@ -104,17 +98,9 @@ onMounted(() => {
 watch(svgHtml, (svg) => { if (svg) void panZoom.fitDiagramToViewport() })
 watch(detail, (next) => {
   if (!diagramNeedsSvg(next?.diagram_type)) return
-  svgQuery.run(svc.getDiagramSvg(diagramId.value, lens.value))
-  attributePanelQuery.run(svc.getDiagramAttributePanel(diagramId.value))
+  reading.begin()
 })
-// A lens change is a re-render, because there is nothing else it could be: the colouring and the
-// printed values are in the PlantUML body, so the server draws the picture the reader asked for and
-// the browser receives it like any other.
-watch(lens, (next) => {
-  if (!diagramNeedsSvg(detail.value?.diagram_type)) return
-  svgQuery.run(svc.getDiagramSvg(diagramId.value, next))
-})
-watch(diagramId, () => { lens.value = EMPTY_READING_LENS; load() })
+watch(diagramId, load)
 
 // The diagram type's editable-metadata config — the single source the sidebar's detail panels
 // derive their editable fields from. Fetched once per diagram type; keyed by entity type so a
@@ -202,9 +188,9 @@ const executeDelete = () => {
       <DiagramReadingPanel
         v-if="diagramNeedsSvg(detail.diagram_type)"
         class="reading-panel"
-        :panel="attributePanelQuery.data.value ?? null"
+        :panel="reading.panel.value"
         :lens="lens"
-        :busy="svgQuery.loading.value && !isEmptyLens(lens)"
+        :busy="reading.adjusting.value"
         @update:lens="lens = $event"
       />
 
@@ -226,16 +212,16 @@ const executeDelete = () => {
               :style="panZoom.canvasStyle.value"
             >
               <div
-                v-if="svgQuery.loading.value"
+                v-if="reading.loading.value"
                 class="no-img"
               >
                 Rendering SVG…
               </div>
               <div
-                v-else-if="svgQuery.errorMessage.value"
+                v-else-if="reading.errorMessage.value"
                 class="no-img err-txt"
               >
-                {{ svgQuery.errorMessage.value }}
+                {{ reading.errorMessage.value }}
               </div>
               <div
                 v-else-if="svgHtml"

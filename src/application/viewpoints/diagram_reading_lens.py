@@ -18,6 +18,14 @@ declared range and calling the mildest value on the diagram "worst".
 So the lens *synthesises a rule* and asks the existing evaluator. The reader's choice becomes a
 `StyleRule`; everything after that is the code the viewpoint surfaces already use.
 
+**The reader chooses the colours, not only the attribute.** A gradient's two ends and any member's
+colour can be overridden, and neither requires authoring anything: two readers colouring by two
+different attributes are not obliged to want the same two colours. An override is *partial* — a member
+with no colour of its own keeps the one its declared position gives it — so changing one does not mean
+restating the rest. What an override cannot be is anything other than `#rrggbb`: these colours are
+written into a PUML declaration whose compound colour form is `;`-separated, so the route that accepts
+them refuses everything else rather than trusting a caller.
+
 **Nothing here names an attribute, a type, or a diagram family.** Which attributes exist is a profile
 question (`diagram_attribute_panel` asks it), whether one has an order is a declared level of
 measurement (`attribute_scales` answers it), and what a token paints as is the style-value table's
@@ -68,9 +76,23 @@ class ReadingLens:
 
     colour_by: str = ""
     printed: tuple[str, ...] = ()
+    #: The reader's own gradient for a continuous attribute, as two `#rrggbb` colours, or None for the
+    #: declared endpoints. A reader colouring by cost and a reader colouring by risk are not obliged to
+    #: want the same two colours, and neither is obliged to author a rule to say so.
+    ramp: tuple[str, str] | None = None
+    #: The reader's own colour for individual members of a value set. Partial: a member absent here
+    #: keeps the colour its declared position gives it, so changing one member's colour does not mean
+    #: restating the rest.
+    key: Mapping[str, str] = field(default_factory=dict)
 
     @property
     def is_empty(self) -> bool:
+        """Whether this asks for anything.
+
+        A mapping alone asks for nothing: it says how to colour, and without `colour_by` there is
+        nothing to colour. So a stale `ramp` left in a URL cannot force a re-render of a diagram
+        nobody asked to have coloured.
+        """
         return not self.colour_by and not self.printed
 
 
@@ -109,17 +131,24 @@ class LensedDiagram:
     notes: tuple[str, ...] = field(default_factory=tuple)
 
 
-def _ramp_rule(attribute: str) -> StyleRule:
-    """The reader's colour choice over an ordered attribute, as the style rule it is."""
+def _ramp_rule(attribute: str, ramp: tuple[str, str] | None) -> StyleRule:
+    """The reader's colour choice over an ordered attribute, as the style rule it is.
+
+    An overridden gradient goes in as two `#rrggbb` literals where the default goes in as two tokens,
+    and `token_color` passes a literal through — so the endpoints are interchangeable and the
+    interpolation is the same code either way.
+    """
     return StyleRule(
         capability="node_color",
         mode="scale",
         scale_attribute=attribute,
-        scale_tokens=AD_HOC_RAMP_TOKENS,
+        scale_tokens=ramp if ramp is not None else AD_HOC_RAMP_TOKENS,
     )
 
 
-def _member_rules(attribute: str, members: Sequence[str]) -> tuple[tuple[StyleRule, ...], tuple[ColorKey, ...]]:
+def _member_rules(
+    attribute: str, members: Sequence[str], key: Mapping[str, str]
+) -> tuple[tuple[StyleRule, ...], tuple[ColorKey, ...]]:
     """The reader's colour choice over an *unordered* set: one match rule per declared member.
 
     A ramp needs an order and these values have none — an enum's members are a set, and interpolating
@@ -132,7 +161,7 @@ def _member_rules(attribute: str, members: Sequence[str]) -> tuple[tuple[StyleRu
     admits a literal for every colour capability, which is what makes this expressible at all.
     """
     keys = tuple(
-        ColorKey(attribute=attribute, member=member, color=color)
+        ColorKey(attribute=attribute, member=member, color=key.get(member, color))
         for member, color in categorical_colors(members)
     )
     rules = tuple(
@@ -225,9 +254,9 @@ def apply_reading_lens(
         members = registries.entity_attribute_enums.get(lens.colour_by, ())
         ordinal = attribute_ordinal_scale(lens.colour_by, context="entity", registries=registries)
         if members and ordinal is None:
-            rules, color_keys = _member_rules(lens.colour_by, members)
+            rules, color_keys = _member_rules(lens.colour_by, members, lens.key)
         else:
-            rules = (_ramp_rule(lens.colour_by),)
+            rules = (_ramp_rule(lens.colour_by, lens.ramp),)
         presentation = PresentationSpec(representation="diagram", styling_rules=rules)
         bounds, legends, drift = calculate_scale_bounds(
             presentation,

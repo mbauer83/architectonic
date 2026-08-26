@@ -20,19 +20,23 @@
  * unset by clicking the one already chosen either, so turning a colouring off would have needed a
  * Reset button somewhere else on the page. With checkboxes there is nothing for one to do.
  *
- * **A colouring shows its key.** Checking `colour` unfolds the mapping under the row: a ramp's two
- * endpoints, or one swatch per member of a value set. A colour a reader cannot decode is decoration,
- * and the swatches are drawn from the same generated tables the renderer resolves, so the key and the
- * picture cannot disagree.
+ * **A colouring shows its key, and the key is editable.** Checking `colour` unfolds the mapping under
+ * the row: a gradient's two ends, or one swatch per member of a value set. Each swatch is a colour
+ * input, so a reader picks the colours they want for the attribute in front of them — no rule to
+ * author, no declaration to add, and a picker rather than a hex field to type into. Where they have
+ * changed nothing the swatches show the declared colours, which come from the same generated tables
+ * the renderer resolves, so an untouched key and its picture cannot disagree.
  */
 import { computed, ref } from 'vue'
 import type { AttributeOffer, DiagramAttributePanel, TypeOffer } from '../../domain/schemas/diagrams'
-import { isEmptyLens, type ReadingLens } from '../../domain/readingLens'
+import {
+  isEmptyLens, withDeclaredColours, withMemberColour, withRampEnd, type ReadingLens,
+} from '../../domain/readingLens'
 import { AD_HOC_RAMP_TOKENS } from '../../domain/types.generated'
 import { tokenColor } from '../lib/viewpointStyleTokens'
 import {
-  canTakeColour, colourKey, foldSummary, lensSummary, presenceLabel, typeOfferLabel, withColourBy,
-  withPrinted,
+  canTakeColour, colourKey, foldSummary, hasCustomColours, lensSummary, presenceLabel, typeOfferLabel,
+  withColourBy, withPrinted,
 } from './DiagramReadingPanel.helpers'
 
 const props = defineProps<{ panel: DiagramAttributePanel | null; lens: ReadingLens; busy?: boolean }>()
@@ -59,7 +63,20 @@ const rampEnds: readonly [string, string] = [
   tokenColor(AD_HOC_RAMP_TOKENS[0]),
   tokenColor(AD_HOC_RAMP_TOKENS[1]),
 ]
-const keyFor = (attribute: AttributeOffer) => colourKey(attribute, rampEnds)
+const keyFor = (attribute: AttributeOffer) => colourKey(attribute, rampEnds, props.lens)
+
+/** Why an attribute is offered no colour, on hover. The row's declared type says it too, but only to
+ * a reader who already knows that a ramp needs an order and a palette a bounded set. */
+const NO_COLOUR_REASON =
+  'A ramp needs an order and a palette needs a bounded set of values; this attribute declares neither.'
+
+// A colour input always reports `#rrggbb`, which is what the wire and the renderer both want, so the
+// value goes through untouched — the server validates it again regardless, because a query string is
+// not a trusted source however this page behaves.
+const pick = (step: { member?: string; end?: 0 | 1 }, colour: string) => {
+  if (step.member !== undefined) emit('update:lens', withMemberColour(props.lens, step.member, colour))
+  else if (step.end !== undefined) emit('update:lens', withRampEnd(props.lens, step.end, colour, rampEnds))
+}
 </script>
 
 <template>
@@ -165,9 +182,7 @@ const keyFor = (attribute: AttributeOffer) => colourKey(attribute, rampEnds)
                   <span
                     v-else
                     class="attr__control attr__control--absent"
-                    :title="
-                      'A ramp needs an order and a palette needs a bounded set of values; this attribute declares neither.'
-                    "
+                    :title="NO_COLOUR_REASON"
                   >no colour</span>
                   <label class="attr__control">
                     <input
@@ -184,22 +199,32 @@ const keyFor = (attribute: AttributeOffer) => colourKey(attribute, rampEnds)
                 v-if="lens.colourBy === attribute.name"
                 class="key"
               >
-                <span
+                <label
                   v-for="step in keyFor(attribute)"
                   :key="step.label"
                   class="key__step"
                 >
-                  <span
+                  <input
                     class="key__swatch"
-                    :style="{ background: step.colour }"
-                    aria-hidden="true"
-                  />
+                    type="color"
+                    :value="step.colour"
+                    :title="`Pick the colour for ${step.label}`"
+                    @input="pick(step, ($event.target as HTMLInputElement).value)"
+                  >
                   {{ step.label }}
-                </span>
+                </label>
                 <span
                   v-if="attribute.colour === 'ramp'"
                   class="key__note"
                 >values in between shade between these</span>
+                <button
+                  v-if="hasCustomColours(attribute, lens)"
+                  class="key__revert"
+                  type="button"
+                  @click="emit('update:lens', withDeclaredColours(lens, attribute.values))"
+                >
+                  declared colours
+                </button>
               </div>
             </li>
           </ul>
@@ -246,9 +271,20 @@ const keyFor = (attribute: AttributeOffer) => colourKey(attribute, rampEnds)
 .attr__control--absent { color: #9ca3af; cursor: default; font-size: 0.8rem; }
 .key { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; padding: 0.1rem 0 0.3rem; }
 .key__step { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.8rem; }
+/* A colour input rather than a plain swatch: it *is* the picker, and the browser's own is the one a
+   reader already knows. Sized down to a swatch, with the platform chrome stripped so a row of them
+   reads as a key rather than as a row of form controls. */
 .key__swatch {
-  display: inline-block; width: 0.85rem; height: 0.85rem; border-radius: 2px;
-  border: 1px solid rgb(0 0 0 / 0.15);
+  width: 1rem; height: 1rem; padding: 0; border: 1px solid rgb(0 0 0 / 0.2); border-radius: 2px;
+  background: none; cursor: pointer; appearance: none; -webkit-appearance: none;
 }
+.key__swatch::-webkit-color-swatch-wrapper { padding: 0; }
+.key__swatch::-webkit-color-swatch { border: none; border-radius: 1px; }
+.key__swatch::-moz-color-swatch { border: none; border-radius: 1px; }
+.key__revert {
+  font: inherit; font-size: 0.75rem; color: #6b7280; background: none; border: none;
+  padding: 0; text-decoration: underline; cursor: pointer;
+}
+.key__revert:hover { color: #374151; }
 .key__note { color: #9ca3af; font-size: 0.75rem; }
 </style>

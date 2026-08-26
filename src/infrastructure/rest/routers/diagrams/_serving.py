@@ -17,7 +17,6 @@ request is not asking for.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
 from pathlib import Path
 from typing import Annotated, Literal
 
@@ -31,6 +30,7 @@ from src.config.repo_paths import DIAGRAM_CATALOG, DIAGRAMS, RENDERED
 from src.domain.ontology_representation.artifact_types import DiagramRecord
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers._openapi import READ_RESPONSES, TAG_DIAGRAMS, media_response
+from src.infrastructure.rest.routers.diagrams._reading_lens_request import lens_from_query
 from src.infrastructure.rest.routers.viewpoints._freshness import (
     fresh_viewpoints_runtime_catalogs_dependency,
 )
@@ -72,14 +72,6 @@ def _rendered_path(d: DiagramRecord, suffix: str) -> Path | None:
             if f.suffix == suffix and f.stem in d.artifact_id:
                 return f
     return None
-
-
-def _lens(colour_by: str, printed: Sequence[str]) -> ReadingLens:
-    """The reader's request, normalised. Blank names are dropped and order is kept."""
-    return ReadingLens(
-        colour_by=colour_by.strip(),
-        printed=tuple(dict.fromkeys(name.strip() for name in printed if name.strip())),
-    )
 
 
 def _lensed_body(
@@ -153,10 +145,16 @@ def get_diagram_svg(
     printed: Annotated[
         list[str], Query(alias="print", description="Attribute values to print with the elements")
     ] = [],  # noqa: B006
+    ramp: Annotated[
+        str, Query(description="A gradient for a continuous attribute, as `near:far` in #rrggbb")
+    ] = "",
+    key: Annotated[
+        list[str], Query(description="A colour for one value, as `member:#rrggbb`; repeatable")
+    ] = [],  # noqa: B006
     catalogs: RuntimeCatalogs = Depends(fresh_viewpoints_runtime_catalogs_dependency),
 ) -> Response:
     id = artifact_id
-    lens = _lens(colour_by, printed)
+    lens = lens_from_query(colour_by, printed, ramp, key)
     repo_root = s.maybe_engagement_root()
     if repo_root is None:
         raise HTTPException(500, "Repository not initialized")
@@ -213,6 +211,12 @@ def download_diagram(
     printed: Annotated[
         list[str], Query(alias="print", description="Attribute values the current display prints")
     ] = [],  # noqa: B006
+    ramp: Annotated[
+        str, Query(description="A gradient for a continuous attribute, as `near:far` in #rrggbb")
+    ] = "",
+    key: Annotated[
+        list[str], Query(description="A colour for one value, as `member:#rrggbb`; repeatable")
+    ] = [],  # noqa: B006
     catalogs: RuntimeCatalogs = Depends(fresh_viewpoints_runtime_catalogs_dependency),
 ) -> Response:
     """The diagram as an attachment — the authored image, or the reader's current display.
@@ -223,7 +227,7 @@ def download_diagram(
     the display that will drift from it.
     """
     id = artifact_id
-    lens = _lens(colour_by, printed)
+    lens = lens_from_query(colour_by, printed, ramp, key)
     repo_root = s.maybe_engagement_root()
     if repo_root is None:
         raise HTTPException(500, "Repository not initialized")
