@@ -79,6 +79,7 @@ def _lensed_body(
     diagram_path: Path,
     lens: ReadingLens,
     catalogs: RuntimeCatalogs,
+    repo_root: Path,
 ) -> str:
     """The diagram's body with the lens applied, or its authored body when the lens is empty.
 
@@ -93,7 +94,15 @@ def _lensed_body(
     directly.
     """
     from src.application.viewpoints.diagram_reading_lens import apply_reading_lens  # noqa: PLC0415
-    from src.application.viewpoints.placed_occurrences import resolve_placed_entities  # noqa: PLC0415
+    from src.application.viewpoints.placed_occurrences import (  # noqa: PLC0415
+        resolve_placed_connections,
+        resolve_placed_entities,
+    )
+    from src.infrastructure.rendering._archimate_includes import ArchimateDeclarations  # noqa: PLC0415
+    from src.infrastructure.rendering.diagram_legend_for_reading import (  # noqa: PLC0415
+        body_with_reading_legend,
+        notations_for_connection_types,
+    )
     from src.infrastructure.viewpoints_snapshot import configured_registry_snapshot  # noqa: PLC0415
     from src.infrastructure.write.artifact_write.parse_existing import parse_diagram_file  # noqa: PLC0415
 
@@ -105,12 +114,24 @@ def _lensed_body(
     if diag_rec is None:
         return body
     _, registry, _ = s.get_write_deps(catalogs)
-    return apply_reading_lens(
-        body,
-        resolve_placed_entities(dict(diag_rec.extra), registry),
+    registries = configured_registry_snapshot(catalogs, repo.repo_roots)
+    entities = resolve_placed_entities(dict(diag_rec.extra), registry)
+    lensed = apply_reading_lens(
+        body, entities, lens=lens, read_access=repo, registries=registries
+    )
+    if not lens.legends:
+        return lensed
+    # The legend composes over the lensed body rather than being woven into it: it is appended, and
+    # keeping it a second step is what lets a reader ask for one on an otherwise untouched diagram.
+    return body_with_reading_legend(
+        lensed,
         lens=lens,
-        read_access=repo,
-        registries=configured_registry_snapshot(catalogs, repo.repo_roots),
+        declarations=ArchimateDeclarations.from_repo(repo_root),
+        members=registries.entity_attribute_enums.get(lens.colour_by, ()),
+        connection_notations=notations_for_connection_types(
+            [connection.conn_type for connection in resolve_placed_connections(dict(diag_rec.extra), registry)],
+            catalogs.connections.all_relation_notations(),
+        ),
     )
 
 
@@ -150,10 +171,13 @@ def get_diagram_svg(
     key: Annotated[
         list[str], Query(description="A colour for one value, as `member:#rrggbb`; repeatable")
     ] = [],  # noqa: B006
+    legend: Annotated[
+        list[str], Query(description="Marks the diagram should explain: colour, shape, glyph, arrow")
+    ] = [],  # noqa: B006
     catalogs: RuntimeCatalogs = Depends(fresh_viewpoints_runtime_catalogs_dependency),
 ) -> Response:
     id = artifact_id
-    lens = lens_from_query(colour_by, printed, ramp, key)
+    lens = lens_from_query(colour_by, printed, ramp, key, legend)
     repo_root = s.maybe_engagement_root()
     if repo_root is None:
         raise HTTPException(500, "Repository not initialized")
@@ -188,7 +212,7 @@ def get_diagram_svg(
     from src.infrastructure.rendering.diagram_builder import render_puml_svg  # noqa: PLC0415
 
     svg, warnings = render_puml_svg(
-        _lensed_body(id, diagram_path, lens, catalogs), repo_root, diagram_type
+        _lensed_body(id, diagram_path, lens, catalogs, repo_root), repo_root, diagram_type
     )
     if svg is None:
         raise HTTPException(500, f"SVG render failed: {'; '.join(warnings)}")
@@ -216,6 +240,9 @@ def download_diagram(
     key: Annotated[
         list[str], Query(description="A colour for one value, as `member:#rrggbb`; repeatable")
     ] = [],  # noqa: B006
+    legend: Annotated[
+        list[str], Query(description="Marks the diagram should explain: colour, shape, glyph, arrow")
+    ] = [],  # noqa: B006
     catalogs: RuntimeCatalogs = Depends(fresh_viewpoints_runtime_catalogs_dependency),
 ) -> Response:
     """The diagram as an attachment — the authored image, or the reader's current display.
@@ -226,7 +253,7 @@ def download_diagram(
     the display that will drift from it.
     """
     id = artifact_id
-    lens = lens_from_query(colour_by, printed, ramp, key)
+    lens = lens_from_query(colour_by, printed, ramp, key, legend)
     repo_root = s.maybe_engagement_root()
     if repo_root is None:
         raise HTTPException(500, "Repository not initialized")
@@ -253,7 +280,7 @@ def download_diagram(
     from src.infrastructure.rendering.puml_runtime import render_puml_bytes  # noqa: PLC0415
 
     image, produced, warnings = render_puml_bytes(
-        _lensed_body(id, diagram_path, lens, catalogs), repo_root, format, diag_rec.diagram_type
+        _lensed_body(id, diagram_path, lens, catalogs, repo_root), repo_root, format, diag_rec.diagram_type
     )
     if image is None:
         raise HTTPException(500, f"{format.upper()} render failed: {'; '.join(warnings)}")

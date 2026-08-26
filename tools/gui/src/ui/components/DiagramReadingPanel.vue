@@ -40,7 +40,10 @@
  */
 import { computed, ref } from 'vue'
 import type { AttributeOffer, DiagramAttributePanel, TypeOffer } from '../../domain/schemas/diagrams'
-import { isEmptyLens, withMemberColour, withRampEnd, type ReadingLens } from '../../domain/readingLens'
+import {
+  isEmptyLens, withLegendMark, withMemberColour, withRampEnd,
+  LEGEND_MARKS, LEGEND_MARK_MEANING, type ReadingLens,
+} from '../../domain/readingLens'
 import { AD_HOC_RAMP_TOKENS } from '../../domain/types.generated'
 import { tokenColor } from '../lib/viewpointStyleTokens'
 import DiagramReadingAttributeRow from './DiagramReadingAttributeRow.vue'
@@ -136,6 +139,30 @@ const pick = (step: ColourStep, colour: string) => emit(
         <!-- Either half is reason to show this. The disputed line used to sit inside the shared
              check, so a diagram whose only cross-type attributes *disagreed* showed nothing at all —
              which is precisely the silence naming them is meant to break. -->
+        <!-- The legend explains the notation the picture already carries, so it is not about any one
+             type and sits above the rows rather than inside them. It is drawn *into* the image, which
+             is what makes it export with an SVG or a PNG. -->
+        <div class="marks">
+          <p class="marks__head">
+            Explain the notation, in the image
+          </p>
+          <span class="marks__options">
+            <label
+              v-for="mark in LEGEND_MARKS"
+              :key="mark"
+              class="attr__control"
+              :title="LEGEND_MARK_MEANING[mark]"
+            >
+              <input
+                type="checkbox"
+                :checked="lens.legends.includes(mark)"
+                @change="emit('update:lens', withLegendMark(lens, mark))"
+              >
+              {{ mark }}
+            </label>
+          </span>
+        </div>
+
         <div
           v-if="panel.shared.length || panel.disputed.length"
           class="across"
@@ -224,6 +251,10 @@ const pick = (step: ColourStep, colour: string) => emit(
 .reading__note { color: #6b7280; margin: 0.2rem 0; }
 .chev { display: inline-block; transition: transform 0.12s; }
 .chev--open { transform: rotate(90deg); }
+.marks { display: flex; align-items: baseline; gap: 0.75rem; padding: 0.35rem 0 0.4rem; }
+.marks__head { margin: 0; font-size: 0.8rem; color: #6b7280; }
+.marks__options { display: inline-flex; align-items: baseline; gap: 0.75rem; margin-left: auto; }
+.marks .attr__control { display: inline-flex; align-items: baseline; gap: 0.2rem; cursor: pointer; }
 .across { border-top: 1px solid #f3f4f6; padding-bottom: 0.2rem; }
 .across__head { margin: 0.35rem 0 0.1rem; font-size: 0.8rem; color: #6b7280; }
 .across__disputed { margin: 0.2rem 0 0 1.2rem; font-size: 0.75rem; color: #d97706; }

@@ -17030,6 +17030,8 @@ export interface operations {
                 format?: "png" | "svg";
                 /** @description A colour for one value, as `member:#rrggbb`; repeatable */
                 key?: string[];
+                /** @description Marks the diagram should explain: colour, shape, glyph, arrow */
+                legend?: string[];
                 /** @description Attribute values the current display prints */
                 print?: string[];
                 /** @description A gradient for a continuous attribute, as `near:far` in #rrggbb */
@@ -17433,6 +17435,8 @@ export interface operations {
                 colour_by?: string;
                 /** @description A colour for one value, as `member:#rrggbb`; repeatable */
                 key?: string[];
+                /** @description Marks the diagram should explain: colour, shape, glyph, arrow */
+                legend?: string[];
                 /** @description Attribute values to print with the elements */
                 print?: string[];
                 /** @description A gradient for a continuous attribute, as `near:far` in #rrggbb */

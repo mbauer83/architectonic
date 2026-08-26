@@ -83,6 +83,10 @@ class ReadingLens:
     #: keeps the colour its declared position gives it, so changing one member's colour does not mean
     #: restating the rest.
     key: Mapping[str, str] = field(default_factory=dict)
+    #: Which marks the diagram should explain about itself. A legend goes *into* the image, so asking
+    #: for one is asking for a different picture — which is why it counts as a request below even
+    #: though the elements are untouched by it.
+    legends: frozenset[str] = frozenset()
 
     @property
     def is_empty(self) -> bool:
@@ -90,9 +94,10 @@ class ReadingLens:
 
         A mapping alone asks for nothing: it says how to colour, and without `colour_by` there is
         nothing to colour. So a stale `ramp` left in a URL cannot force a re-render of a diagram
-        nobody asked to have coloured.
+        nobody asked to have coloured. A legend is different — nothing else can add one — so it makes
+        the request non-empty on its own.
         """
-        return not self.colour_by and not self.printed
+        return not self.colour_by and not self.printed and not self.legends
 
 
 def _ramp_rule(attribute: str, ramp: tuple[str, str] | None) -> StyleRule:

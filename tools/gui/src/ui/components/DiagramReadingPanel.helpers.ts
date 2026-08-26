@@ -144,5 +144,6 @@ export const lensSummary = (lens: ReadingLens): string => {
   const parts: string[] = []
   if (lens.colourBy) parts.push(`coloured by ${lens.colourBy}`)
   if (lens.printed.length) parts.push(`printing ${lens.printed.join(', ')}`)
+  if (lens.legends.length) parts.push(`explaining ${lens.legends.join(', ')}`)
   return parts.join('; ')
 }

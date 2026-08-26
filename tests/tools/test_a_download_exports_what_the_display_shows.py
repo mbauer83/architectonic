@@ -64,6 +64,17 @@ def _entity() -> EntityRecord:
     )
 
 
+class _Connections:
+    """The one catalogue question the legend asks: how each relationship is drawn."""
+
+    def all_relation_notations(self) -> dict[str, dict[str, str]]:
+        return {"archimate-realization": {"line": "dashed", "source": "none", "target": "hollow-triangle"}}
+
+
+class _Catalogs:
+    connections = _Connections()
+
+
 class _Repo:
     def __init__(self, record: DiagramRecord) -> None:
         self._record = record
@@ -89,6 +100,13 @@ def rendered(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[dict[s
     catalog.mkdir(parents=True)
     source = catalog / f"{_ID}.puml"
     source.write_text(f"---\nartifact_id: {_ID}\n---\n{_BODY}", encoding="utf-8")
+    # The generated declarations the body's stereotypes resolve against. Without them a legend has
+    # nothing to say about `<<capability>>` and correctly emits no block at all — which is right, and
+    # would make the assertions below pass for the wrong reason.
+    (catalog.parent / "_archimate-stereotypes.puml").write_text(
+        "skinparam rectangle<<capability>> {\n  BackgroundColor #EFBD5D\n  RoundCorner 14\n}\n",
+        encoding="utf-8",
+    )
     image = tmp_path / "diagram-catalog" / "rendered" / f"{_ID}.svg"
     image.parent.mkdir(parents=True)
     image.write_text("<svg>the authored diagram</svg>", encoding="utf-8")
@@ -111,6 +129,10 @@ def rendered(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[dict[s
     monkeypatch.setattr(
         "src.application.viewpoints.placed_occurrences.resolve_placed_entities",
         lambda extra, registry: [_entity()],
+    )
+    monkeypatch.setattr(
+        "src.application.viewpoints.placed_occurrences.resolve_placed_connections",
+        lambda extra, registry: [],
     )
     monkeypatch.setattr(
         "src.infrastructure.viewpoints_snapshot.configured_registry_snapshot",
@@ -140,7 +162,7 @@ def rendered(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[dict[s
     router = APIRouter()
     router.include_router(_serving.router)
     app = build_api_app(router)
-    app.dependency_overrides[fresh_viewpoints_runtime_catalogs_dependency] = lambda: object()
+    app.dependency_overrides[fresh_viewpoints_runtime_catalogs_dependency] = lambda: _Catalogs()
     with TestClient(app) as client:
         seen["client"] = client  # type: ignore[assignment]
         yield seen
@@ -150,7 +172,7 @@ def _get(rendered: dict, path: str, **params: object):
     return rendered["client"].get(path, params=params)  # type: ignore[index]
 
 
-_LENS = {"colour_by": "risk_score", "print": ["risk_score"]}
+_LENS = {"colour_by": "risk_score", "print": ["risk_score"], "legend": ["colour", "shape"]}
 
 
 class TestTheExportIsTheDisplay:
@@ -166,6 +188,17 @@ class TestTheExportIsTheDisplay:
 
         assert "risk_score: 7" in rendered["svg"][0]
         assert "#back:" in rendered["svg"][0]
+        # The legend is part of the picture, so it has to be part of what the export renders — the
+        # whole reason it is a PlantUML block rather than HTML beside the image.
+        assert "legend bottom" in rendered["svg"][0]
+
+    def test_a_legend_alone_is_still_a_reading(self, rendered: dict) -> None:
+        """It changes the picture and nothing else can add it, so it must not be served from the
+        image on disk — which is the authored diagram, legend-free."""
+        response = _get(rendered, f"/api/diagrams/{_ID}/svg", legend=["shape"])
+
+        assert response.text == "<svg>rendered</svg>"
+        assert "legend bottom" in rendered["svg"][0]
 
 
 class TestWhatEachRequestIsServed:

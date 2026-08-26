@@ -19,7 +19,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Literal, Mapping
 
 from src.config.repo_paths import DIAGRAM_CATALOG
 from src.domain.yaml_documents import parse_yaml
@@ -31,6 +31,16 @@ _STEREOTYPE_BLOCK = re.compile(r"skinparam rectangle<<(\w+)>>\s*\{[^}]+\}")
 _RELATION_MACRO = re.compile(r"^!define\s+(Rel_\w+)\([^)]*\).*$", re.MULTILINE)
 #: A glyph sprite definition, which carries its SVG on the same line.
 _SPRITE = re.compile(r"^sprite \$archimate_(\w+)\s.*$", re.MULTILINE)
+#: A `<<stereotype>>` reference on an element line — a body saying it uses that notation.
+_STEREOTYPE_REFERENCE = re.compile(r"<<(\w+)>>")
+#: A `<$archimate_sprite>` reference inside a label — a body saying it draws that glyph.
+_SPRITE_REFERENCE = re.compile(r"<\$archimate_(\w+)")
+#: What a stereotype block says about how its elements are drawn.
+_FILL = re.compile(r"BackgroundColor\s+(#[0-9a-fA-F]{6})")
+_BORDER = re.compile(r"BorderColor\s+(#[0-9a-fA-F]{6})")
+_DASHED = re.compile(r"BorderStyle\s+dashed")
+_ROUNDED = re.compile(r"RoundCorner\s+\d+")
+_DIAGONAL = re.compile(r"DiagonalCorner\s+\d+")
 
 
 def parse_archimate_display_block(raw: str) -> dict[str, Any]:
@@ -42,6 +52,41 @@ def parse_archimate_display_block(raw: str) -> dict[str, Any]:
     except Exception:  # noqa: BLE001
         return {}
     return loaded if isinstance(loaded, dict) else {}
+
+
+#: How an element carrying a stereotype is drawn: the corner shape says what *kind* of thing it is.
+#: Named as the notation rather than as the ontology's categories, which is the same separation
+#: `relation_notation` keeps — "cut corners", never "motivation".
+CornerShape = Literal["square", "rounded", "diagonal"]
+
+
+@dataclass(frozen=True)
+class StereotypeNotation:
+    """How one stereotype's elements are drawn, as its own declaration states it."""
+
+    fill: str
+    border: str
+    corner: CornerShape
+    dashed: bool
+
+
+@dataclass(frozen=True)
+class ReferencedDeclarations:
+    """Which declarations a body actually uses — the notation the picture carries.
+
+    The set a legend must describe, and the set an expansion must inject, are the same set. Two
+    callers asked it, each with its own regex over `<<…>>` and `<$archimate_…>`; a third would have
+    been the fourth reading of a syntax this module owns.
+    """
+
+    stereotypes: frozenset[str]
+    sprites: frozenset[str]
+    inlined_sprites: frozenset[str]
+
+    @property
+    def sprites_to_inject(self) -> frozenset[str]:
+        """Referenced but not already carried inline."""
+        return self.sprites - self.inlined_sprites
 
 
 @dataclass(frozen=True)
@@ -78,6 +123,37 @@ class ArchimateDeclarations:
             stereotypes=read("_archimate-stereotypes.puml"),
             glyphs=read("_archimate-glyphs.puml"),
             relations=read("_archimate-relations.puml"),
+        )
+
+    def referenced_in(self, body: str) -> ReferencedDeclarations:
+        """Which of these declarations *body* refers to."""
+        return ReferencedDeclarations(
+            stereotypes=frozenset(_STEREOTYPE_REFERENCE.findall(body)),
+            sprites=frozenset(_SPRITE_REFERENCE.findall(body)),
+            inlined_sprites=frozenset(match.group(1) for match in _SPRITE.finditer(body)),
+        )
+
+    def notation_of(self, stereotype: str) -> StereotypeNotation | None:
+        """How elements carrying *stereotype* are drawn, or None if nothing declares it.
+
+        Read out of the block this class already holds, rather than re-derived from the ontology. The
+        block is what the renderer hands to PlantUML, so a legend built from it describes the picture
+        that was actually drawn — including a body carrying an older inlined copy, where a legend
+        derived from today's ontology would describe a palette this diagram is not using.
+        """
+        block = self.stereotype_blocks.get(stereotype)
+        if block is None:
+            return None
+        fill = _FILL.search(block)
+        border = _BORDER.search(block)
+        corner: CornerShape = (
+            "rounded" if _ROUNDED.search(block) else "diagonal" if _DIAGONAL.search(block) else "square"
+        )
+        return StereotypeNotation(
+            fill=fill.group(1) if fill else "",
+            border=border.group(1) if border else "",
+            corner=corner,
+            dashed=_DASHED.search(block) is not None,
         )
 
     def are_inlined_in(self, body: str) -> bool:
@@ -136,19 +212,16 @@ def inject_archimate_includes(body: str, repo_root: Path) -> str:
     if _STEREOTYPE_MARKER not in body:
         return body
 
-    needed_types = set(re.findall(r"<<(\w+)>>", body))
-    needed_sprites = set(re.findall(r"<\$archimate_(\w+)", body))
-    already_sprites = set(re.findall(r"^sprite \$archimate_(\w+)", body, re.MULTILINE))
-    sprites_to_inject = needed_sprites - already_sprites
+    referenced = declarations.referenced_in(body)
 
     clean_header = _strip_puml_comments(declarations.header)
     parts: list[str] = [clean_header] if clean_header else []
     if declarations.relation_macros:
         parts.append("\n".join(declarations.relation_macros.values()))
-    for name in sorted(needed_types):
+    for name in sorted(referenced.stereotypes):
         if name in declarations.stereotype_blocks:
             parts.append(declarations.stereotype_blocks[name])
-    for name in sorted(sprites_to_inject):
+    for name in sorted(referenced.sprites_to_inject):
         if name in declarations.sprites:
             parts.append(declarations.sprites[name])
 

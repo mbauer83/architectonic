@@ -70,11 +70,20 @@ def _key(pairs: Sequence[str]) -> dict[str, str]:
     return key
 
 
-def lens_from_query(colour_by: str, printed: Sequence[str], ramp: str, key: Sequence[str]) -> ReadingLens:
+#: The marks a reader may ask a diagram to explain. A closed set, checked here rather than trusted:
+#: an unrecognised name would otherwise reach the legend assembly and produce nothing, leaving a
+#: reader to wonder whether their request was understood.
+LEGEND_MARKS = frozenset({"colour", "shape", "glyph", "arrow"})
+
+
+def lens_from_query(
+    colour_by: str, printed: Sequence[str], ramp: str, key: Sequence[str], legends: Sequence[str]
+) -> ReadingLens:
     """The reader's request, normalised. Blank names are dropped and order is kept."""
     return ReadingLens(
         colour_by=colour_by.strip(),
         printed=tuple(dict.fromkeys(name.strip() for name in printed if name.strip())),
         ramp=_ramp(ramp) if ramp else None,
         key=_key(key),
+        legends=frozenset(mark.strip() for mark in legends if mark.strip() in LEGEND_MARKS),
     )

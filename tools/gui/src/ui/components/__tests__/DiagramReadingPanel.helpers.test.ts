@@ -5,7 +5,8 @@ import {
 } from '../DiagramReadingPanel.helpers'
 import { CATEGORICAL_PALETTE } from '../../../domain/types.generated'
 import {
-  EMPTY_READING_LENS, isEmptyLens, lensParams, withDeclaredColours, withRampEnd, type ReadingLens,
+  EMPTY_READING_LENS, isEmptyLens, lensParams, withDeclaredColours, withLegendMark, withRampEnd,
+  type ReadingLens,
 } from '../../../domain/readingLens'
 import type { AttributeOffer, TypeOffer } from '../../../domain/schemas/diagrams'
 
@@ -187,12 +188,12 @@ describe('the colours a reader chooses for themselves', () => {
     const chosen = lens({ colourBy: 'lifecycle', ramp: ['#000000', '#ffffff'], key: { a: '#111111' } })
 
     expect(lensParams(chosen)).toEqual({
-      colour_by: 'lifecycle', print: [], ramp: '#000000:#ffffff', key: ['a:#111111'],
+      colour_by: 'lifecycle', ramp: '#000000:#ffffff', key: ['a:#111111'],
     })
   })
 
   it('sends no mapping when the reader has customised nothing', () => {
-    expect(lensParams(lens({ colourBy: 'risk_score' }))).toEqual({ colour_by: 'risk_score', print: [] })
+    expect(lensParams(lens({ colourBy: 'risk_score' }))).toEqual({ colour_by: 'risk_score' })
   })
 
   it('offers to put back the declared colours only once something was changed', () => {
@@ -220,6 +221,43 @@ describe('what the folded header reports', () => {
     expect(lensSummary(lens({ colourBy: 'risk_score', printed: ['owner', 'tier'] })))
       .toBe('coloured by risk_score; printing owner, tier')
   })
+
+  it('reports a legend, which is a reading with no attribute in it', () => {
+    expect(lensSummary(lens({ legends: ['colour', 'glyph'] }))).toBe('explaining colour, glyph')
+  })
+})
+
+describe('asking a diagram to explain its own notation', () => {
+  it('is a request on its own, unlike a colour mapping', () => {
+    // Nothing else can add a legend, so asking for one is asking for a different picture — where a
+    // mapping with nothing to colour asks for nothing.
+    expect(isEmptyLens(lens({ legends: ['shape'] }))).toBe(false)
+    expect(isEmptyLens(lens({ ramp: ['#000000', '#ffffff'] }))).toBe(true)
+  })
+
+  it('sends the marks as repeated keys', () => {
+    expect(lensParams(lens({ legends: ['colour', 'arrow'] })))
+      .toEqual({ legend: ['colour', 'arrow'] })
+  })
+
+  it('keeps the declared order however the marks were clicked', () => {
+    // The legend's sections are laid out in a fixed order; a reader unchecking and rechecking a mark
+    // should not find their legend rearranged.
+    const after = withLegendMark(withLegendMark(lens(), 'arrow'), 'colour')
+
+    expect(after.legends).toEqual(['colour', 'arrow'])
+  })
+
+  it('turns a mark off again', () => {
+    expect(withLegendMark(lens({ legends: ['colour', 'shape'] }), 'colour').legends).toEqual(['shape'])
+  })
+
+  it('leaves the rest of the reading alone', () => {
+    const after = withLegendMark(lens({ colourBy: 'risk_score', printed: ['owner'] }), 'glyph')
+
+    expect(after.colourBy).toBe('risk_score')
+    expect(after.printed).toEqual(['owner'])
+  })
 })
 
 describe('the lens as a request', () => {
@@ -238,6 +276,6 @@ describe('the lens as a request', () => {
   })
 
   it('is a request when only printing is asked for', () => {
-    expect(lensParams(lens({ colourBy: '', printed: ['owner'] }))).toEqual({ colour_by: '', print: ['owner'] })
+    expect(lensParams(lens({ colourBy: '', printed: ['owner'] }))).toEqual({ print: ['owner'] })
   })
 })
