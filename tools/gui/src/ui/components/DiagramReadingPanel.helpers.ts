@@ -40,9 +40,24 @@ export const canTakeColour = (attribute: AttributeOffer): boolean => attribute.c
 
 /** How many of the drawn entities carry a value, as a row reads it. Zero is stated, not blank: a
  * reader who colours by an attribute nothing carries needs to know that before wondering why the
- * picture did not change. */
+ * picture did not change.
+ *
+ * The wording says *have a value* rather than *with values*, which was read as a count of the
+ * attribute's possible values — so a free-text field with five entities filled in looked identical to
+ * a five-member enum, and nothing on the row explained why only one of them could be coloured. That
+ * question is now answered by `valueSetLabel` beside it. */
 export const presenceLabel = (attribute: AttributeOffer): string =>
-  attribute.present_on === 0 ? 'no values' : `${attribute.present_on} with values`
+  attribute.present_on === 0 ? 'none have a value' : `${attribute.present_on} have a value`
+
+/** How many values the attribute may take, where the model bounds them — and nothing at all where it
+ * does not.
+ *
+ * This is the row's answer to "why can I colour that one and not this one". An enum and a free string
+ * are both declared `string`, so the declared type alone distinguishes them not at all; the bounded
+ * set is exactly what a palette needs and what free text lacks. Absent rather than "unbounded",
+ * because a row saying nothing about a value set is the honest shape of "there isn't one". */
+export const valueSetLabel = (attribute: AttributeOffer): string =>
+  attribute.values.length === 0 ? '' : `${attribute.values.length} values`
 
 /** Colouring is exclusive: one attribute at a time, because a fill can only be one colour. Choosing
  * the attribute already chosen clears it, so the same control both sets and unsets.
@@ -74,14 +89,18 @@ export const withPrinted = (lens: ReadingLens, name: string): ReadingLens => ({
  * its two endpoints; a value set gives one step per member, in the declared order the server sent —
  * which is the same order the position in `CATEGORICAL_PALETTE` is taken from, so this key and the
  * picture cannot disagree about which member is which colour. */
-export interface ColourStep {
+/** What a reader's chosen colour would be keyed by: a member of a value set, or one end of a gradient.
+ *
+ * A discriminated union rather than two optional fields on one shape. As optionals it was possible to
+ * construct a step that was neither, or both, and the handler had to test for each in turn and do
+ * nothing if it found neither — a silent no-op where an exhaustive match is available for free. */
+export type ColourSubject =
+  | { readonly kind: 'member'; readonly member: string }
+  | { readonly kind: 'end'; readonly end: 0 | 1 }
+
+export type ColourStep = ColourSubject & {
   readonly label: string
   readonly colour: string
-  /** The value-set member this step is for, where there is one — what a reader's chosen colour is
-   * keyed by. Absent for a gradient end, which is identified by `end` instead. */
-  readonly member?: string
-  /** Which end of a gradient, where this step is one. `0` is the near end. */
-  readonly end?: 0 | 1
 }
 
 /** The mapping for the attribute currently coloured by, or `[]` when nothing is.
@@ -97,8 +116,9 @@ export const colourKey = (
 ): ColourStep[] => {
   if (attribute.colour === 'palette') {
     return attribute.values.map((member, index) => ({
-      label: member,
+      kind: 'member' as const,
       member,
+      label: member,
       colour: lens.key[member] ?? CATEGORICAL_PALETTE[index % CATEGORICAL_PALETTE.length],
     }))
   }
@@ -109,8 +129,8 @@ export const colourKey = (
     : ['lower', 'higher']
   const ramp = lens.ramp ?? endpoints
   return [
-    { label: ends[0], colour: ramp[0], end: 0 },
-    { label: ends[1], colour: ramp[1], end: 1 },
+    { kind: 'end', end: 0, label: ends[0], colour: ramp[0] },
+    { kind: 'end', end: 1, label: ends[1], colour: ramp[1] },
   ]
 }
 

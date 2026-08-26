@@ -274,5 +274,27 @@ export const TypeOfferSchema = Schema.Struct({
 })
 export type TypeOffer = typeof TypeOfferSchema.Type
 
-export const DiagramAttributePanelSchema = Schema.Struct({ types: Schema.Array(TypeOfferSchema) })
+/** One attribute more than one drawn row declares identically.
+ *
+ * Colouring is by attribute *name* and applies to every drawn entity that has one, so an attribute
+ * several types share is a reading of the whole diagram. `on_rows` names those rows — as `type` or
+ * `type/specialization` — because a reader weighing a global colouring needs to know over what. The
+ * nested `present_on` counts entities diagram-wide, not the sum of the per-row counts. */
+export const SharedAttributeOfferSchema = Schema.Struct({
+  attribute: AttributeOfferSchema,
+  on_rows: Schema.Array(Schema.String),
+})
+export type SharedAttributeOffer = typeof SharedAttributeOfferSchema.Type
+
+export const DiagramAttributePanelSchema = Schema.Struct({
+  /** What reads across the diagram, listed first. Its members still appear in their own `types`
+   * entries, where the per-type presence count lives — the shared row is a shortcut, not a move. */
+  shared: Schema.Array(SharedAttributeOfferSchema),
+  /** Attribute names several rows declare *differently* — the same name as an integer on one type and
+   * a string on another. Colouring by one is still global and would put two meanings on one scale, so
+   * it is named rather than silently omitted from `shared`, where its absence would read as "nothing
+   * else declares this". */
+  disputed: Schema.Array(Schema.String),
+  types: Schema.Array(TypeOfferSchema),
+})
 export type DiagramAttributePanel = typeof DiagramAttributePanelSchema.Type

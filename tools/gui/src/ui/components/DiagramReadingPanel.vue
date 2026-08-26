@@ -1,12 +1,23 @@
 <script setup lang="ts">
 /**
- * The reading controls for one diagram: colour the elements by an attribute, print values with them.
+ * The display options for one diagram: colour the elements by an attribute, print values with them.
+ *
+ * Called what it is. It was headed "Reading" — the word this codebase uses internally for an ad-hoc,
+ * unpersisted view of a diagram — which says nothing to somebody looking at a panel of checkboxes and
+ * wondering what it adjusts.
  *
  * **Unobtrusive by construction.** It is folded away by default and, folded, still says what is
  * active — a reader who set a heat map, scrolled, and came back must not have to reopen the panel to
  * find out why the picture is orange. Inside, one row per entity type and specialization the diagram
  * actually draws, each folding to its attributes; nothing is offered that no drawn element could
  * answer for.
+ *
+ * **What reads across the diagram comes first.** Colouring is by attribute name and applies to every
+ * drawn entity that has one, so an attribute several types declare identically is a global reading —
+ * and burying it inside each type's fold would say the opposite. Those rows sit above the types,
+ * unfolded, and their members still appear in their own type folds where the per-type presence count
+ * lives. A name several types declare *differently* is called out instead of quietly left out: it can
+ * still be coloured by, globally, and it would put two meanings on one scale.
  *
  * **The rows are the server's answer, in the server's order.** Which types occur, which attributes
  * they declare, which of those a colour can read and how many drawn elements carry a value are all
@@ -29,15 +40,11 @@
  */
 import { computed, ref } from 'vue'
 import type { AttributeOffer, DiagramAttributePanel, TypeOffer } from '../../domain/schemas/diagrams'
-import {
-  isEmptyLens, withDeclaredColours, withMemberColour, withRampEnd, type ReadingLens,
-} from '../../domain/readingLens'
+import { isEmptyLens, withMemberColour, withRampEnd, type ReadingLens } from '../../domain/readingLens'
 import { AD_HOC_RAMP_TOKENS } from '../../domain/types.generated'
 import { tokenColor } from '../lib/viewpointStyleTokens'
-import {
-  canTakeColour, colourKey, foldSummary, hasCustomColours, lensSummary, presenceLabel, typeOfferLabel,
-  withColourBy, withPrinted,
-} from './DiagramReadingPanel.helpers'
+import DiagramReadingAttributeRow from './DiagramReadingAttributeRow.vue'
+import { colourKey, foldSummary, lensSummary, typeOfferLabel, type ColourStep } from './DiagramReadingPanel.helpers'
 
 const props = defineProps<{ panel: DiagramAttributePanel | null; lens: ReadingLens; busy?: boolean }>()
 const emit = defineEmits<{ 'update:lens': [ReadingLens] }>()
@@ -65,18 +72,16 @@ const rampEnds: readonly [string, string] = [
 ]
 const keyFor = (attribute: AttributeOffer) => colourKey(attribute, rampEnds, props.lens)
 
-/** Why an attribute is offered no colour, on hover. The row's declared type says it too, but only to
- * a reader who already knows that a ramp needs an order and a palette a bounded set. */
-const NO_COLOUR_REASON =
-  'A ramp needs an order and a palette needs a bounded set of values; this attribute declares neither.'
 
 // A colour input always reports `#rrggbb`, which is what the wire and the renderer both want, so the
 // value goes through untouched — the server validates it again regardless, because a query string is
 // not a trusted source however this page behaves.
-const pick = (step: { member?: string; end?: 0 | 1 }, colour: string) => {
-  if (step.member !== undefined) emit('update:lens', withMemberColour(props.lens, step.member, colour))
-  else if (step.end !== undefined) emit('update:lens', withRampEnd(props.lens, step.end, colour, rampEnds))
-}
+const pick = (step: ColourStep, colour: string) => emit(
+  'update:lens',
+  step.kind === 'member'
+    ? withMemberColour(props.lens, step.member, colour)
+    : withRampEnd(props.lens, step.end, colour, rampEnds),
+)
 </script>
 
 <template>
@@ -95,7 +100,7 @@ const pick = (step: { member?: string; end?: 0 | 1 }, colour: string) => {
         :class="{ 'chev--open': open }"
         aria-hidden="true"
       >›</span>
-      <span class="reading__title">Reading</span>
+      <span class="reading__title">Display options</span>
       <span
         v-if="summary"
         class="reading__summary"
@@ -128,6 +133,41 @@ const pick = (step: { member?: string; end?: 0 | 1 }, colour: string) => {
         This diagram draws no model entities, so there is nothing to colour or print.
       </p>
       <template v-else>
+        <!-- Either half is reason to show this. The disputed line used to sit inside the shared
+             check, so a diagram whose only cross-type attributes *disagreed* showed nothing at all —
+             which is precisely the silence naming them is meant to break. -->
+        <div
+          v-if="panel.shared.length || panel.disputed.length"
+          class="across"
+        >
+          <p
+            v-if="panel.shared.length"
+            class="across__head"
+          >
+            Across every type that declares it
+          </p>
+          <ul
+            v-if="panel.shared.length"
+            class="attrs attrs--across"
+          >
+            <DiagramReadingAttributeRow
+              v-for="offer in panel.shared"
+              :key="offer.attribute.name"
+              :attribute="offer.attribute"
+              :lens="lens"
+              :on-rows="offer.on_rows"
+              @update:lens="emit('update:lens', $event)"
+            />
+          </ul>
+          <p
+            v-if="panel.disputed.length"
+            class="across__disputed"
+          >
+            Declared differently by different types, so one colouring would mix two meanings:
+            {{ panel.disputed.join(', ') }}
+          </p>
+        </div>
+
         <div
           v-for="offer in panel.types"
           :key="rowKey(offer)"
@@ -153,80 +193,15 @@ const pick = (step: { member?: string; end?: 0 | 1 }, colour: string) => {
             v-if="isUnfolded(offer) && offer.attributes.length"
             class="attrs"
           >
-            <li
+            <DiagramReadingAttributeRow
               v-for="attribute in offer.attributes"
               :key="attribute.name"
-              class="attr"
-            >
-              <div class="attr__row">
-                <span class="attr__name">{{ attribute.name }}</span>
-                <span class="attr__type">{{ attribute.declared_type }}</span>
-                <span
-                  class="attr__presence"
-                  :class="{ 'attr__presence--none': attribute.present_on === 0 }"
-                >
-                  {{ presenceLabel(attribute) }}
-                </span>
-                <span class="attr__controls">
-                  <label
-                    v-if="canTakeColour(attribute)"
-                    class="attr__control"
-                  >
-                    <input
-                      type="checkbox"
-                      :checked="lens.colourBy === attribute.name"
-                      @change="emit('update:lens', withColourBy(lens, attribute.name))"
-                    >
-                    colour
-                  </label>
-                  <span
-                    v-else
-                    class="attr__control attr__control--absent"
-                    :title="NO_COLOUR_REASON"
-                  >no colour</span>
-                  <label class="attr__control">
-                    <input
-                      type="checkbox"
-                      :checked="lens.printed.includes(attribute.name)"
-                      @change="emit('update:lens', withPrinted(lens, attribute.name))"
-                    >
-                    print
-                  </label>
-                </span>
-              </div>
-
-              <div
-                v-if="lens.colourBy === attribute.name"
-                class="key"
-              >
-                <label
-                  v-for="step in keyFor(attribute)"
-                  :key="step.label"
-                  class="key__step"
-                >
-                  <input
-                    class="key__swatch"
-                    type="color"
-                    :value="step.colour"
-                    :title="`Pick the colour for ${step.label}`"
-                    @input="pick(step, ($event.target as HTMLInputElement).value)"
-                  >
-                  {{ step.label }}
-                </label>
-                <span
-                  v-if="attribute.colour === 'ramp'"
-                  class="key__note"
-                >values in between shade between these</span>
-                <button
-                  v-if="hasCustomColours(attribute, lens)"
-                  class="key__revert"
-                  type="button"
-                  @click="emit('update:lens', withDeclaredColours(lens, attribute.values))"
-                >
-                  declared colours
-                </button>
-              </div>
-            </li>
+              :attribute="attribute"
+              :lens="lens"
+              :colour-key="keyFor(attribute)"
+              @update:lens="emit('update:lens', $event)"
+              @pick="pick"
+            />
           </ul>
         </div>
       </template>
@@ -243,14 +218,16 @@ const pick = (step: { member?: string; end?: 0 | 1 }, colour: string) => {
 }
 .reading__title { font-weight: 600; }
 .reading__summary { color: #2563eb; }
-.reading__hint, .reading__busy, .type__drawn, .type__summary, .attr__type, .attr__presence {
-  color: #6b7280; font-size: 0.8rem;
-}
+.reading__hint, .reading__busy, .type__drawn, .type__summary { color: #6b7280; font-size: 0.8rem; }
 .reading__busy { margin-left: auto; }
 .reading__body { padding: 0 0.6rem 0.6rem; }
 .reading__note { color: #6b7280; margin: 0.2rem 0; }
 .chev { display: inline-block; transition: transform 0.12s; }
 .chev--open { transform: rotate(90deg); }
+.across { border-top: 1px solid #f3f4f6; padding-bottom: 0.2rem; }
+.across__head { margin: 0.35rem 0 0.1rem; font-size: 0.8rem; color: #6b7280; }
+.across__disputed { margin: 0.2rem 0 0 1.2rem; font-size: 0.75rem; color: #d97706; }
+.attrs--across { margin-left: 1.2rem; }
 .type { border-top: 1px solid #f3f4f6; }
 .type__head {
   display: flex; align-items: baseline; gap: 0.5rem; width: 100%; padding: 0.35rem 0;
@@ -259,32 +236,4 @@ const pick = (step: { member?: string; end?: 0 | 1 }, colour: string) => {
 .type__name { font-family: ui-monospace, monospace; }
 .type__summary { margin-left: auto; }
 .attrs { list-style: none; margin: 0 0 0.3rem 1.2rem; padding: 0; }
-.attr { padding: 0.15rem 0; }
-.attr__row { display: flex; align-items: baseline; gap: 0.5rem; }
-.attr__name { font-family: ui-monospace, monospace; }
-.attr__presence--none { color: #d97706; }
-/* The controls are one group pushed to the right, rather than each control finding its own way
-   there: "no colour" is a `span` where a colour choice is a `label`, so a `:first-of-type` rule
-   aligned the choices and left the absences stranded mid-row. */
-.attr__controls { display: inline-flex; align-items: baseline; gap: 0.75rem; margin-left: auto; }
-.attr__control { display: inline-flex; align-items: baseline; gap: 0.2rem; cursor: pointer; }
-.attr__control--absent { color: #9ca3af; cursor: default; font-size: 0.8rem; }
-.key { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; padding: 0.1rem 0 0.3rem; }
-.key__step { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.8rem; }
-/* A colour input rather than a plain swatch: it *is* the picker, and the browser's own is the one a
-   reader already knows. Sized down to a swatch, with the platform chrome stripped so a row of them
-   reads as a key rather than as a row of form controls. */
-.key__swatch {
-  width: 1rem; height: 1rem; padding: 0; border: 1px solid rgb(0 0 0 / 0.2); border-radius: 2px;
-  background: none; cursor: pointer; appearance: none; -webkit-appearance: none;
-}
-.key__swatch::-webkit-color-swatch-wrapper { padding: 0; }
-.key__swatch::-webkit-color-swatch { border: none; border-radius: 1px; }
-.key__swatch::-moz-color-swatch { border: none; border-radius: 1px; }
-.key__revert {
-  font: inherit; font-size: 0.75rem; color: #6b7280; background: none; border: none;
-  padding: 0; text-decoration: underline; cursor: pointer;
-}
-.key__revert:hover { color: #374151; }
-.key__note { color: #9ca3af; font-size: 0.75rem; }
 </style>

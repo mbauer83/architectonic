@@ -19,15 +19,33 @@ diagram family.
 reader may not put on the picture — an owner's name as readily as a risk score. A field carrying one
 value for every instance is noise, and the panel does not need to be told what it can always do.
 
-**Absent is reported, not hidden.** An attribute no drawn entity carries is listed with a count of zero
-rather than dropped. A reader then learns that the attribute exists and that nothing here fills it,
-which is information; a dropped row says "this type has no such attribute", which is false.
+**An attribute several types share is offered once, at the top.** Colouring is by attribute name, and
+it applies to every drawn entity that has one — so an attribute more than one drawn type declares
+*identically* is a global reading, and burying it inside each type's fold says the opposite. It stays
+in those folds too, where its per-type presence count lives; the shared row is a shortcut to the same
+choice, not a move.
+
+**Identically defined**, and that qualifier is the whole of it: same declared type, same colour kind,
+same value set. Two types declaring `risk_score` as an integer share it. One declaring it an integer
+and another a string do not, and colouring by that name globally would put two different meanings on
+one scale — so those are reported separately rather than left to look like the attributes that were
+simply not shared.
+
+**An absent *value* is reported; an absent *attribute* is not a row.** Those pull in opposite
+directions and both are right. An attribute no drawn entity carries is listed with a count of zero,
+because a reader who cannot see the attribute cannot learn why nothing is coloured. A type that
+declares no attributes at all is left out entirely: this is a panel for *choosing*, and a row with
+nothing to choose is a fold that opens on nothing. Which types the diagram draws is a question the
+entity list beside it already answers.
+
+That row was originally kept, on the reasoning that "this type is here and offers nothing" is
+information. It is — but not information this panel is for.
 """
 
 from __future__ import annotations
 
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Literal
 
@@ -76,6 +94,31 @@ class TypeOffer:
     attributes: tuple[AttributeOffer, ...]
 
 
+@dataclass(frozen=True)
+class SharedAttributeOffer:
+    """One attribute more than one drawn type declares, and how far the agreement goes."""
+
+    attribute: AttributeOffer
+    #: The rows that declare it, as ``type`` or ``type/specialization``. Named rather than counted: a
+    #: reader deciding whether a global colouring means what they want needs to know over what.
+    on_rows: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class DiagramAttributeOffers:
+    """The whole panel: what reads across the diagram, and then what each type declares."""
+
+    #: Attributes several rows declare identically, so colouring by one is a reading of the diagram
+    #: rather than of one type. ``present_on`` here counts *entities*, diagram-wide — an entity drawn
+    #: under two specializations is one entity, not two.
+    shared: tuple[SharedAttributeOffer, ...]
+    types: tuple[TypeOffer, ...]
+    #: Attribute names several rows declare *differently*. Colouring by one of these is still possible
+    #: and still global, and would put two meanings on one scale — which a reader can only weigh if
+    #: told. Names only: there is no single definition to report.
+    disputed: tuple[str, ...] = ()
+
+
 def _colour_kind(prop: dict[str, object], declared_type: str, values: tuple[str, ...]) -> ColourKind:
     if declares_ordinal(prop):
         return "ramp"
@@ -116,13 +159,58 @@ def _carries(entity: EntityRecord, name: str) -> bool:
     return present
 
 
+def _row_label(entity_type: str, specialization: str) -> str:
+    return f"{entity_type}/{specialization}" if specialization else entity_type
+
+
+def _definition(attribute: AttributeOffer) -> tuple[str, str, str]:
+    """What has to match for two rows to be declaring the *same* attribute.
+
+    Not the presence count, which is per row by construction, and not the name alone — that is the
+    mistake this guards: a global colouring keyed on a name alone would read two types' unrelated
+    `status` fields as one scale.
+    """
+    return (attribute.declared_type, attribute.colour, "\u0000".join(attribute.values))
+
+
+def _shared(
+    offers: Sequence[TypeOffer], entities: Sequence[EntityRecord]
+) -> tuple[tuple[SharedAttributeOffer, ...], tuple[str, ...]]:
+    """The attributes that read across this diagram, and the names that only look as though they do."""
+    by_name: dict[str, list[tuple[str, AttributeOffer]]] = {}
+    for offer in offers:
+        label = _row_label(offer.entity_type, offer.specialization)
+        for attribute in offer.attributes:
+            by_name.setdefault(attribute.name, []).append((label, attribute))
+
+    shared: list[SharedAttributeOffer] = []
+    disputed: list[str] = []
+    for name, declarations in by_name.items():
+        rows = tuple(dict.fromkeys(label for label, _attribute in declarations))
+        if len(rows) < 2:
+            continue
+        definitions = {_definition(attribute) for _label, attribute in declarations}
+        if len(definitions) > 1:
+            disputed.append(name)
+            continue
+        # Diagram-wide, over *entities*: the per-row counts cannot simply be added, because an entity
+        # carrying two specializations appears under each of them and would be counted twice.
+        carriers = {entity.artifact_id for entity in entities if _carries(entity, name)}
+        shared.append(
+            SharedAttributeOffer(
+                attribute=replace(declarations[0][1], present_on=len(carriers)), on_rows=rows
+            )
+        )
+    return tuple(shared), tuple(sorted(disputed))
+
+
 def offers_for_diagram(
     entities: Sequence[EntityRecord],
     repo_root: Path,
     *,
     specialization_catalog: object,
     profile_registry: object,
-) -> tuple[TypeOffer, ...]:
+) -> DiagramAttributeOffers:
     """The panel, for the entities one diagram draws.
 
     Grouped by ``(entity_type, specialization)`` because that pair decides the attribute set. Sorted so
@@ -156,7 +244,10 @@ def offers_for_diagram(
             for name, prop in sorted(properties.items())
             if isinstance(prop, dict)
         )
+        if not attributes:
+            continue
         offers.append(
             TypeOffer(entity_type=entity_type, specialization=slug, drawn=len(drawn), attributes=attributes)
         )
-    return tuple(offers)
+    shared, disputed = _shared(offers, entities)
+    return DiagramAttributeOffers(shared=shared, types=tuple(offers), disputed=disputed)

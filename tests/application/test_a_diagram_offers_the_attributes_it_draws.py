@@ -12,6 +12,12 @@ number, a date and an *ordinal* have an order — the last because `x-scale: ord
 an enum and a boolean have a bounded set with no inherent order. Free text and lists have neither, and
 saying so is better than offering a colour that means nothing.
 
+**An attribute several types share reads across the diagram.** Colouring is by attribute name and
+applies to every drawn entity that has one, so an attribute more than one drawn type declares
+*identically* is a global reading and is offered as one. Identically is the load-bearing word: two
+types declaring `status` as unrelated enums are not sharing an attribute, and a global colouring keyed
+on the name alone would put two meanings on one scale.
+
 **Presence is read where values live.** This repository records attribute values in a Properties table
 in the document body and declares only their types in frontmatter, so a check of `extra` reports every
 value absent. That mistake was made once in this release already, which is why the panel asks
@@ -61,6 +67,13 @@ def _entity(
     )
 
 
+def _schema_for(repo_root: Path, entity_type: str, properties: dict) -> Path:
+    """Declare an attribute schema for a second type, so agreement between rows can be stated."""
+    path = repo_root / _SCHEMATA / f"attributes.{entity_type}.schema.json"
+    path.write_text(json.dumps({"type": "object", "properties": properties}), encoding="utf-8")
+    return path
+
+
 @pytest.fixture()
 def repo_root(tmp_path: Path) -> Path:
     """A repository whose one type declares one attribute of each interesting kind."""
@@ -85,13 +98,18 @@ def repo_root(tmp_path: Path) -> Path:
     return root
 
 
-def _offers(entities: list[EntityRecord], repo_root: Path):
+def _panel(entities: list[EntityRecord], repo_root: Path):
     return offers_for_diagram(
         entities,
         repo_root,
         specialization_catalog=SpecializationCatalog(),
         profile_registry=ProfileRegistry.empty(),
     )
+
+
+def _offers(entities: list[EntityRecord], repo_root: Path):
+    """Just the per-type rows, which is what most of these tests are about."""
+    return _panel(entities, repo_root).types
 
 
 def _by_name(offer) -> dict:  # noqa: ANN001
@@ -178,6 +196,7 @@ class TestWhatIsActuallyThere:
         assert attributes["risk_score"].present_on == 1
 
     def test_the_count_is_per_type_rather_than_per_diagram(self, repo_root: Path) -> None:
+        _schema_for(repo_root, "data-object", {"risk_score": {"type": "integer"}})
         entities = [_entity(1, risk_score=3), _entity(2, artifact_type="data-object")]
 
         offers = {offer.entity_type: offer for offer in _offers(entities, repo_root)}
@@ -217,10 +236,101 @@ class TestTheAnswerIsStable:
         ]
         assert [a.name for a in first[0].attributes] == [a.name for a in second[0].attributes]
 
-    def test_a_type_with_no_declared_attributes_is_still_a_row(self, repo_root: Path) -> None:
-        """It says "this type is here and offers nothing", which is what folds to a stated line rather
-        than to an empty drawer."""
-        offers = {offer.entity_type: offer for offer in _offers([_entity(1, artifact_type="data-object")], repo_root)}
+    def test_a_type_with_no_declared_attributes_is_not_a_row(self, repo_root: Path) -> None:
+        """This is a panel for choosing, and a row with nothing to choose is a fold that opens on
+        nothing. It was kept at first on the reasoning that "this type is here and offers nothing" is
+        information — it is, but not information this panel is for, and the entity list beside it
+        already says which types are drawn."""
+        offers = {offer.entity_type for offer in _offers([_entity(1, artifact_type="data-object")], repo_root)}
 
-        assert offers["data-object"].attributes == ()
-        assert offers["data-object"].drawn == 1
+        assert offers == set()
+
+
+def _shared_by_name(panel) -> dict:  # noqa: ANN001
+    return {offer.attribute.name: offer for offer in panel.shared}
+
+
+class TestWhatReadsAcrossTheDiagram:
+    """The shared section. Its own class because its rules are about *agreement between* rows, where
+    everything above is about one row."""
+
+    def test_an_attribute_two_types_declare_identically_is_shared(self, repo_root: Path) -> None:
+        second = _schema_for(repo_root, "data-object", {"risk_score": {"type": "integer"}})
+        assert second.exists()
+        entities = [_entity(1, risk_score=3), _entity(2, artifact_type="data-object", risk_score=9)]
+
+        panel = _panel(entities, repo_root)
+
+        shared = _shared_by_name(panel)
+        assert "risk_score" in shared
+        assert shared["risk_score"].on_rows == ("application-component", "data-object")
+
+    def test_a_shared_attribute_counts_entities_across_the_whole_diagram(self, repo_root: Path) -> None:
+        """Not the sum of the per-row counts. An entity carrying two specializations appears under each
+        of them, and adding those rows up would count it twice."""
+        _schema_for(repo_root, "data-object", {"risk_score": {"type": "integer"}})
+        entities = [
+            _entity(1, specializations=("module", "gateway"), risk_score=3),
+            _entity(2, artifact_type="data-object", risk_score=9),
+        ]
+
+        panel = _panel(entities, repo_root)
+
+        assert _shared_by_name(panel)["risk_score"].attribute.present_on == 2
+
+    def test_an_attribute_only_one_type_declares_is_not_shared(self, repo_root: Path) -> None:
+        panel = _panel([_entity(1, risk_score=3)], repo_root)
+
+        assert panel.shared == ()
+
+    def test_the_same_name_declared_differently_is_disputed_rather_than_shared(
+        self, repo_root: Path
+    ) -> None:
+        """The whole point of "identically". `risk_score` as an integer on one type and a string on
+        another is two attributes with one name, and a global ramp over both would put two meanings on
+        one scale. Reported, because leaving it silently out of `shared` makes it look like a name
+        nothing else declares."""
+        _schema_for(repo_root, "data-object", {"risk_score": {"type": "string"}})
+        entities = [_entity(1, risk_score=3), _entity(2, artifact_type="data-object", risk_score="high")]
+
+        panel = _panel(entities, repo_root)
+
+        assert panel.shared == ()
+        assert panel.disputed == ("risk_score",)
+
+    def test_two_enums_with_different_members_are_disputed(self, repo_root: Path) -> None:
+        """Same declared type and same colour kind, different value sets — so a member's colour would
+        mean one thing on one type and nothing on the other."""
+        _schema_for(
+            repo_root, "data-object", {"lifecycle": {"type": "string", "enum": ["draft", "final"]}}
+        )
+        entities = [_entity(1), _entity(2, artifact_type="data-object")]
+
+        panel = _panel(entities, repo_root)
+
+        assert "lifecycle" in panel.disputed
+        assert "lifecycle" not in _shared_by_name(panel)
+
+    def test_a_shared_attribute_still_appears_under_each_type(self, repo_root: Path) -> None:
+        """The shared row is a shortcut to the same choice, not a move: the type fold is where the
+        per-type presence count lives, and a reader who went looking under `data-object` must find it."""
+        _schema_for(repo_root, "data-object", {"risk_score": {"type": "integer"}})
+        entities = [_entity(1, risk_score=3), _entity(2, artifact_type="data-object")]
+
+        panel = _panel(entities, repo_root)
+
+        per_type = {offer.entity_type: [a.name for a in offer.attributes] for offer in panel.types}
+        assert "risk_score" in per_type["data-object"]
+        assert "risk_score" in per_type["application-component"]
+
+    def test_a_specialization_row_counts_as_a_second_declarer(self, repo_root: Path) -> None:
+        """A specialization is its own row, so an attribute the bare type and a specialization both
+        offer reads across two rows — which is what a global colouring will actually cover."""
+        entities = [_entity(1, risk_score=3), _entity(2, specializations=("module",), risk_score=4)]
+
+        panel = _panel(entities, repo_root)
+
+        assert _shared_by_name(panel)["risk_score"].on_rows == (
+            "application-component",
+            "application-component/module",
+        )

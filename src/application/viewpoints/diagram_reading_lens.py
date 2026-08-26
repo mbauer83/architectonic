@@ -46,7 +46,6 @@ from src.domain.viewpoints.viewpoint_condition_validation import RegistrySnapsho
 from src.domain.viewpoints.viewpoint_criteria import AttributeCondition, EntityCriteriaGroup, ValueRef
 from src.domain.viewpoints.viewpoint_evaluation_context import CriteriaReadAccess, EvaluationEnvironment
 from src.domain.viewpoints.viewpoint_scale_styling import (
-    ScaleLegend,
     ScaleStyleValue,
     calculate_scale_bounds,
 )
@@ -96,41 +95,6 @@ class ReadingLens:
         return not self.colour_by and not self.printed
 
 
-@dataclass(frozen=True)
-class ColorKey:
-    """One member of an unordered value set and the colour it took.
-
-    The palette's answer, reported rather than left implicit: a reader looking at four hues has no way
-    to know which value each one is, and the legend that will say so needs to be told the same
-    assignment the picture used. Computing it twice is how a legend comes to disagree with its diagram.
-    """
-
-    attribute: str
-    member: str
-    color: str
-
-
-@dataclass(frozen=True)
-class LensedDiagram:
-    """The body to render, and what the lens managed to say."""
-
-    puml_body: str
-    legends: tuple[ScaleLegend, ...] = ()
-    #: How many drawn elements took a colour. Zero with a `colour_by` set is worth reporting: it means
-    #: the attribute resolved for nothing on this diagram, which a reader otherwise reads as "the
-    #: colouring is broken".
-    coloured: int = 0
-    #: How many drawn elements had at least one printed value put on them.
-    printed_on: int = 0
-    #: Attributes the reader asked for that no drawn entity carries. Named rather than counted,
-    #: because the reader chose them by name and needs to know which of their choices said nothing.
-    silent: tuple[str, ...] = ()
-    #: The colour each member of an unordered set took, where the colouring was categorical.
-    color_keys: tuple[ColorKey, ...] = ()
-    unstyled: int = 0
-    notes: tuple[str, ...] = field(default_factory=tuple)
-
-
 def _ramp_rule(attribute: str, ramp: tuple[str, str] | None) -> StyleRule:
     """The reader's colour choice over an ordered attribute, as the style rule it is.
 
@@ -146,9 +110,7 @@ def _ramp_rule(attribute: str, ramp: tuple[str, str] | None) -> StyleRule:
     )
 
 
-def _member_rules(
-    attribute: str, members: Sequence[str], key: Mapping[str, str]
-) -> tuple[tuple[StyleRule, ...], tuple[ColorKey, ...]]:
+def _member_rules(attribute: str, members: Sequence[str], key: Mapping[str, str]) -> tuple[StyleRule, ...]:
     """The reader's colour choice over an *unordered* set: one match rule per declared member.
 
     A ramp needs an order and these values have none — an enum's members are a set, and interpolating
@@ -160,11 +122,7 @@ def _member_rules(
     (`caution`, `critical`) and a member of an arbitrary value set has none. `is_valid_style_value`
     admits a literal for every colour capability, which is what makes this expressible at all.
     """
-    keys = tuple(
-        ColorKey(attribute=attribute, member=member, color=key.get(member, color))
-        for member, color in categorical_colors(members)
-    )
-    rules = tuple(
+    return tuple(
         StyleRule(
             capability="node_color",
             mode="match",
@@ -173,15 +131,14 @@ def _member_rules(
                     AttributeCondition(
                         attribute=attribute,
                         comparator="eq",
-                        value=ValueRef(kind="literal", literal=key.member),
+                        value=ValueRef(kind="literal", literal=member),
                     ),
                 )
             ),
-            value=key.color,
+            value=key.get(member, colour),
         )
-        for key in keys
+        for member, colour in categorical_colors(members)
     )
-    return rules, keys
 
 
 def _fill_for(value: object) -> str | None:
@@ -221,7 +178,7 @@ def apply_reading_lens(
     read_access: CriteriaReadAccess,
     registries: RegistrySnapshot,
     environment: EvaluationEnvironment | None = None,
-) -> LensedDiagram:
+) -> str:
     """*puml_body* with the reader's colouring and printing applied to the elements it declares.
 
     Element lines are found through `alias_declared_on` and rewritten through
@@ -233,18 +190,22 @@ def apply_reading_lens(
     it. A line whose alias belongs to no drawn entity — a grouping, a junction, a note — is returned
     untouched, which is the honest answer: the lens colours by an attribute, and those elements have
     none.
+
+    **A body in, a body out.** This returned a record carrying the legends, the styled and unstyled
+    counts, and the attributes that said nothing — seven fields of which the route read one. Nobody
+    displayed the rest: what a reader needs to know before choosing an attribute is how many drawn
+    entities carry a value, and the attribute panel already answers that from the same reading. A
+    legend drawn *into* the image will need the legend data, and can introduce a return type then,
+    with a consumer.
     """
     if lens.is_empty:
-        return LensedDiagram(puml_body=puml_body)
+        return puml_body
 
     env = environment or EvaluationEnvironment()
     by_alias: dict[str, EntityRecord] = {e.display_alias: e for e in entities if e.display_alias}
 
     presentation: PresentationSpec | None = None
     bounds: Mapping[int, object] = {}
-    legends: tuple[ScaleLegend, ...] = ()
-    color_keys: tuple[ColorKey, ...] = ()
-    notes: list[str] = []
     if lens.colour_by:
         # Which of the two colourings applies is the *model's* answer, not the reader's: an attribute
         # declaring a bounded value set with no order takes one colour per member, and everything else
@@ -254,26 +215,22 @@ def apply_reading_lens(
         members = registries.entity_attribute_enums.get(lens.colour_by, ())
         ordinal = attribute_ordinal_scale(lens.colour_by, context="entity", registries=registries)
         if members and ordinal is None:
-            rules, color_keys = _member_rules(lens.colour_by, members, lens.key)
+            rules = _member_rules(lens.colour_by, members, lens.key)
         else:
             rules = (_ramp_rule(lens.colour_by, lens.ramp),)
         presentation = PresentationSpec(representation="diagram", styling_rules=rules)
-        bounds, legends, drift = calculate_scale_bounds(
+        # The bounds are the whole reason to call this: an ordinal's ramp spans its *declared* range,
+        # not the drawn extremes, and a lens computing its own would paint the mildest value on a
+        # diagram as the worst. The legends and the drift set it also returns have no reader here.
+        bounds, _legends, _drift = calculate_scale_bounds(
             presentation,
             tuple((entity, "entity") for entity in entities),
             registries=registries,
             environment=env,
         )
-        if drift:
-            # The evaluator's own word for "this attribute resolves in no context". Reported rather
-            # than silently rendering the authored diagram: a reader who chose an attribute and got
-            # the plain picture back cannot tell a lens that found nothing from a lens that did not run.
-            notes.append(
-                f"{lens.colour_by!r} is not an attribute any drawn type declares, so nothing is coloured by it"
-            )
 
     fills: dict[str, str] = {}
-    if presentation is not None and not notes:
+    if presentation is not None:
         for entity in entities:
             evaluation = evaluate_item_style(
                 entity,
@@ -313,18 +270,6 @@ def apply_reading_lens(
             )
         )
 
-    silent = tuple(
-        name
-        for name in lens.printed
-        if not any(_printed_lines(entity, (name,), environment=env) for entity in entities)
-    )
-    return LensedDiagram(
-        puml_body="\n".join(rewritten) + ("\n" if puml_body.endswith("\n") else ""),
-        legends=legends,
-        coloured=len(fills),
-        printed_on=len(labels),
-        silent=silent,
-        color_keys=color_keys,
-        unstyled=max(len(by_alias) - len(fills), 0) if lens.colour_by else 0,
-        notes=tuple(notes),
-    )
+    # The trailing newline is preserved rather than always added: a body that had none is not a
+    # body this function should decide to change.
+    return "\n".join(rewritten) + ("\n" if puml_body.endswith("\n") else "")

@@ -12,13 +12,12 @@ application layer's answers, and this turns them into JSON.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
 from src.application.runtime_catalogs import RuntimeCatalogs
-from src.application.viewpoints.diagram_attribute_panel import AttributeOffer, TypeOffer
+from src.application.viewpoints.diagram_attribute_panel import AttributeOffer, DiagramAttributeOffers
 from src.infrastructure.rest.contracts.viewpoint_projection import DiagramAttributePanelResponse
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers._openapi import READ_RESPONSES, TAG_VIEWPOINTS
@@ -37,13 +36,18 @@ def _attribute_to_dict(attribute: AttributeOffer) -> dict[str, Any]:
     }
 
 
-def attribute_panel_to_dict(offers: Sequence[TypeOffer]) -> dict[str, Any]:
-    """The whole panel: one entry per (type, specialization) the diagram draws, in the order given.
+def attribute_panel_to_dict(offers: DiagramAttributeOffers) -> dict[str, Any]:
+    """The whole panel: what reads across the diagram, then one entry per (type, specialization).
 
     The order is the application layer's and is preserved rather than re-sorted here — it sorts so the
     answer is stable, and a second sort at the edge would be a second opinion about it.
     """
     return {
+        "shared": [
+            {"attribute": _attribute_to_dict(offer.attribute), "on_rows": list(offer.on_rows)}
+            for offer in offers.shared
+        ],
+        "disputed": list(offers.disputed),
         "types": [
             {
                 "entity_type": offer.entity_type,
@@ -51,8 +55,8 @@ def attribute_panel_to_dict(offers: Sequence[TypeOffer]) -> dict[str, Any]:
                 "drawn": offer.drawn,
                 "attributes": [_attribute_to_dict(attribute) for attribute in offer.attributes],
             }
-            for offer in offers
-        ]
+            for offer in offers.types
+        ],
     }
 
 

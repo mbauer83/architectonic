@@ -105,14 +105,13 @@ def _lensed_body(
     if diag_rec is None:
         return body
     _, registry, _ = s.get_write_deps(catalogs)
-    lensed = apply_reading_lens(
+    return apply_reading_lens(
         body,
         resolve_placed_entities(dict(diag_rec.extra), registry),
         lens=lens,
         read_access=repo,
         registries=configured_registry_snapshot(catalogs, repo.repo_roots),
     )
-    return lensed.puml_body
 
 
 @router.get("/api/diagram-images/{filename}", tags=[TAG_DIAGRAMS], summary="Serve a rendered diagram image",

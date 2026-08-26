@@ -1,4 +1,5 @@
 import { computed, ref, watch, type Ref } from 'vue'
+import { usePanCanvasStyle } from './usePanCanvasStyle'
 import { usePanGesture } from './usePanGesture'
 import { useWheelZoom } from './useWheelZoom'
 
@@ -21,12 +22,7 @@ export const usePanZoom = (
   const { onMouseDown } = usePanGesture(translateX, translateY)
   useWheelZoom(containerRef, { scale, tx: translateX, ty: translateY })
 
-  const canvasStyle = computed(() => ({
-    transform: `translate(${translateX.value}px, ${translateY.value}px) scale(${scale.value})`,
-    transformOrigin: '0 0',
-    willChange: 'transform',
-    display: 'inline-block',
-  }))
+  const { canvasStyle } = usePanCanvasStyle(scale, translateX, translateY)
   const isTransformed = computed(() => scale.value !== 1 || translateX.value !== 0 || translateY.value !== 0)
 
   const resetView = () => {

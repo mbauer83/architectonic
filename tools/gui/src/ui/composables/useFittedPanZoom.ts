@@ -1,4 +1,5 @@
 import { computed, nextTick, onUnmounted, ref, watch, type Ref } from 'vue'
+import { usePanTranslateStyle } from './usePanCanvasStyle'
 import { usePanGesture } from './usePanGesture'
 import { useWheelZoom } from './useWheelZoom'
 
@@ -24,12 +25,36 @@ export function useFittedPanZoom(containerRef: Ref<HTMLElement | null>, svgConta
   const { onMouseDown } = usePanGesture(tx, ty)
   useWheelZoom(containerRef, { scale, tx, ty })
 
-  const canvasStyle = computed(() => ({
-    transform: `translate(${tx.value}px, ${ty.value}px) scale(${scale.value})`,
-    transformOrigin: '0 0',
-    willChange: 'transform',
-    display: 'inline-block',
-  }))
+  const { canvasStyle } = usePanTranslateStyle(tx, ty)
+
+  /**
+   * Put the scale on the SVG's own `width`/`height` rather than in the wrapper's transform.
+   *
+   * An SVG owns its size, and giving it one makes the browser lay the text out at the final size. A
+   * scaled wrapper instead rasterises a scaled layer, which is blurry at best — and on a large diagram
+   * at a small fit scale it left every element label unpainted until a pointer movement invalidated
+   * the layer. The boxes, the diagram title and the grouping headings drew; the labels inside the
+   * elements did not, because they are the bulk of the text runs.
+   *
+   * Both dimensions come from the one scale, so the aspect ratio is unchanged — which matters because
+   * PlantUML emits `preserveAspectRatio="none"`, and sizing the two independently would distort.
+   */
+  const sizeSvgToScale = () => {
+    const svgEl = svgContainer.value?.querySelector('svg') as SVGSVGElement | null
+    const viewBox = svgEl?.viewBox?.baseVal
+    if (!svgEl || !viewBox || viewBox.width <= 0 || viewBox.height <= 0) return
+    const width = Math.round(viewBox.width * scale.value)
+    const height = Math.round(viewBox.height * scale.value)
+    svgEl.setAttribute('width', `${width}px`)
+    svgEl.setAttribute('height', `${height}px`)
+    // PlantUML also states the size inline, and an inline style beats the attributes.
+    svgEl.style.width = `${width}px`
+    svgEl.style.height = `${height}px`
+  }
+
+  // Every zoom is a resize of the SVG. Watched rather than done at the two call sites, so a future
+  // third way of changing the scale cannot forget it.
+  watch(scale, sizeSvgToScale)
   const isTransformed = computed(() =>
     Math.abs(scale.value - fitScale.value) > 0.001
     || Math.abs(tx.value - fitTx.value) > 0.5
@@ -84,6 +109,9 @@ export function useFittedPanZoom(containerRef: Ref<HTMLElement | null>, svgConta
     scale.value = fitScale.value
     tx.value = fitTx.value
     ty.value = fitTy.value
+    // Applied here as well as by the watcher above: a re-render arrives as a *new* SVG element at its
+    // natural size, and if the fitted scale happens to be unchanged the watcher never fires.
+    sizeSvgToScale()
   }
 
   const resetView = () => {

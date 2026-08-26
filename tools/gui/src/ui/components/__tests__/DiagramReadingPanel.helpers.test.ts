@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   canTakeColour, colourKey, foldSummary, hasCustomColours, lensSummary, presenceLabel, typeOfferLabel,
-  withColourBy, withPrinted,
+  valueSetLabel, withColourBy, withPrinted,
 } from '../DiagramReadingPanel.helpers'
 import { CATEGORICAL_PALETTE } from '../../../domain/types.generated'
 import {
@@ -41,9 +41,19 @@ describe('what a row says', () => {
     expect(foldSummary(row, lens({ colourBy: 'risk_score', printed: ['owner'] }))).toBe('2 attributes, 2 in use')
   })
 
-  it('states an absence of values rather than leaving the row blank', () => {
-    expect(presenceLabel(attribute({ present_on: 0 }))).toBe('no values')
-    expect(presenceLabel(attribute({ present_on: 1 }))).toBe('1 with values')
+  it('says how many entities have a value, in words that cannot be read as a value count', () => {
+    // "5 with values" was read as "five possible values", so a free-text field five entities had
+    // filled in looked identical to a five-member enum — and nothing said why only one could be
+    // coloured.
+    expect(presenceLabel(attribute({ present_on: 0 }))).toBe('none have a value')
+    expect(presenceLabel(attribute({ present_on: 1 }))).toBe('1 have a value')
+  })
+
+  it('reports a bounded value set, and nothing where there is none', () => {
+    // The row's answer to "why that one and not this one": an enum and a free string are both declared
+    // `string`, so the declared type distinguishes them not at all.
+    expect(valueSetLabel(attribute({ values: ['a', 'b', 'c'] }))).toBe('3 values')
+    expect(valueSetLabel(attribute({ values: [] }))).toBe('')
   })
 
   it('offers no colour where the model declares neither an order nor a bounded set', () => {
@@ -97,8 +107,8 @@ describe('the colour key a colouring unfolds', () => {
   it('gives a plain number two ends named as directions', () => {
     // The ends are whatever this diagram happens to hold, and the panel is not told the numbers.
     expect(colourKey(attribute(), ends, EMPTY_READING_LENS)).toEqual([
-      { label: 'lower', colour: '#fbbf24', end: 0 },
-      { label: 'higher', colour: '#dc2626', end: 1 },
+      { kind: 'end', end: 0, label: 'lower', colour: '#fbbf24' },
+      { kind: 'end', end: 1, label: 'higher', colour: '#dc2626' },
     ])
   })
 
@@ -116,9 +126,9 @@ describe('the colour key a colouring unfolds', () => {
     const lifecycle = attribute({ colour: 'palette', values: ['planned', 'active', 'retired'] })
 
     expect(colourKey(lifecycle, ends, EMPTY_READING_LENS)).toEqual([
-      { label: 'planned', member: 'planned', colour: CATEGORICAL_PALETTE[0] },
-      { label: 'active', member: 'active', colour: CATEGORICAL_PALETTE[1] },
-      { label: 'retired', member: 'retired', colour: CATEGORICAL_PALETTE[2] },
+      { kind: 'member', member: 'planned', label: 'planned', colour: CATEGORICAL_PALETTE[0] },
+      { kind: 'member', member: 'active', label: 'active', colour: CATEGORICAL_PALETTE[1] },
+      { kind: 'member', member: 'retired', label: 'retired', colour: CATEGORICAL_PALETTE[2] },
     ])
   })
 

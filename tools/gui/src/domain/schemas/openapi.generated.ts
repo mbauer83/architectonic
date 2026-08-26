@@ -6141,11 +6141,26 @@ export interface components {
          * DiagramAttributePanelResponse
          * @description What a reader can do with the attributes of the entities one diagram draws.
          *
-         *     Only the types the diagram actually draws, which is the same convention every legend in the
-         *     product already keeps: list what is present. The declared vocabulary is much larger, and offering
-         *     it is the difference between a menu and a catalogue.
+         *     Only the types the diagram actually draws *and* that declare something to choose from — the same
+         *     convention every legend in the product keeps: list what is present. The declared vocabulary is much
+         *     larger, and offering it is the difference between a menu and a catalogue; a type with no attributes
+         *     is a fold that opens on nothing, and which types are drawn is what the entity list beside this
+         *     answers.
+         *
+         *     ``shared`` comes first because it is what reads across the picture. Its members are still listed
+         *     inside their own ``types`` entries, where the per-type presence count lives — the shared row is a
+         *     shortcut to the same choice, not a move.
+         *
+         *     ``disputed`` names attributes several rows declare *differently* — the same name as an integer on
+         *     one type and a string on another. Colouring by one is still possible and still global, and it
+         *     would put two meanings on one scale; a reader can only weigh that if told, and leaving such a name
+         *     out of ``shared`` without saying why makes it look like one that simply is not shared.
          */
         DiagramAttributePanelResponse: {
+            /** Disputed */
+            disputed: string[];
+            /** Shared */
+            shared: components["schemas"]["SharedAttributeOfferResponse"][];
             /** Types */
             types: components["schemas"]["TypeOfferResponse"][];
         };
@@ -10876,6 +10891,21 @@ export interface components {
             justification: string;
             /** Value */
             value: string;
+        };
+        /**
+         * SharedAttributeOfferResponse
+         * @description One attribute more than one drawn row declares identically.
+         *
+         *     Colouring is by attribute *name* and applies to every drawn entity that has one, so an attribute
+         *     several types share is a reading of the whole diagram. ``on_rows`` names those rows — as
+         *     ``type`` or ``type/specialization`` — because a reader weighing a global colouring needs to know
+         *     over what. The nested ``present_on`` counts *entities* diagram-wide, not the sum of the per-row
+         *     counts: an entity carrying two specializations appears under each and would be counted twice.
+         */
+        SharedAttributeOfferResponse: {
+            attribute: components["schemas"]["AttributeOfferResponse"];
+            /** On Rows */
+            on_rows: string[];
         };
         /**
          * ShortcutObligationResponse

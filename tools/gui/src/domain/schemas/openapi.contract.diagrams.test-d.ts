@@ -22,6 +22,7 @@ import type {
   DiagramPreviewResultSchema,
   HopSuggestionGroupSchema,
   MatrixPreviewResultSchema,
+  SharedAttributeOfferSchema,
   TypeOfferSchema,
 } from './diagrams'
 import type {
@@ -246,6 +247,9 @@ describe("what a diagram's entities can be coloured by and print", () => {
     >()
     expectTypeOf<SchemaType<typeof AttributeOfferSchema>>().toEqualTypeOf<
       Immutable<components['schemas']['AttributeOfferResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof SharedAttributeOfferSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['SharedAttributeOfferResponse']>
     >()
   })
 })
