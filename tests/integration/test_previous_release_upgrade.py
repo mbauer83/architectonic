@@ -130,6 +130,14 @@ class TestBlockingTargets:
     def test_locked_encrypted_store_is_blocking_not_current(
         self, tmp_path: Path, capsys: pytest.CaptureFixture[str]
     ) -> None:
+        """Not runnable under `ARCH_ASSURANCE_DB_PATH`, and that is the subject rather than a flaw.
+
+        The variable overrides the deployment-root default in exactly the resolution this test is
+        about, so setting it points the upgrade at a store outside the fixture deployment and there is
+        no `assurance_sqlcipher` target to find. It surfaces when rehearsing CI's storeless pytest job
+        by pointing the variable at a path that does not exist — which is not how that job runs: CI
+        sets no such variable, it simply has no store at the default location.
+        """
         dep = build_previous_release_deployment(tmp_path / "deploy", locked_store=True)
         # A dry run observes the store as blocked (a blocking commit prints to stderr and
         # returns before emitting JSON, so the state is read from the dry-run report).

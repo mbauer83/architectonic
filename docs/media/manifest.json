@@ -14,7 +14,7 @@
     },
     "capture_tool_version": "Playwright 1.62.0",
     "output_path": "docs/media/assurance-bowtie.png",
-    "sha256": "7c4e80fa6b2a06401cb8f161d7b77716404ac0bed82d974a167747478af5759c"
+    "sha256": "a4e40084ec582068d9641f0491e19e38370e294d7289ef044ec88c9013b249af"
   },
   {
     "test_name": "re-shoot assurance control structure",
@@ -31,7 +31,7 @@
     },
     "capture_tool_version": "Playwright 1.62.0",
     "output_path": "docs/media/assurance-control-structure.png",
-    "sha256": "aea188cd20c63c812da79f07c447cf732f35f67d1a4de8b82ea9e0a37083d388"
+    "sha256": "98bbfd641a8d80bec5d7b3d403e5b3d6f7a44ca832e52f3cf1f544f5a15dae40"
   },
   {
     "test_name": "assurance FMEA matrix",
@@ -186,7 +186,7 @@
     },
     "capture_tool_version": "Playwright 1.62.0",
     "output_path": "docs/media/diagram-activity.png",
-    "sha256": "ccdecfac6e419a7e01fd2feb7591b0bb06e62486eae36feebbebdf6d06b1a75b"
+    "sha256": "51c0592c7dd121e69b735ba7b9c73930d1c1cd48840483e8d21913bdd87ea3be"
   },
   {
     "test_name": "re-shoot ArchiMate diagram",
@@ -220,7 +220,7 @@
     },
     "capture_tool_version": "Playwright 1.62.0",
     "output_path": "docs/media/diagram-c4.png",
-    "sha256": "8f2e3b3067d7b666b6168dec4f26289d44468cf81a65f096dcf2b1ec1a81810f"
+    "sha256": "758a24b91d31401a66a9b59418ffc2de6fddb08a6ff032f2c765245f16cff249"
   },
   {
     "test_name": "datatype diagram with an attribute selected",
@@ -237,7 +237,7 @@
     },
     "capture_tool_version": "Playwright 1.62.0",
     "output_path": "docs/media/diagram-datatype-attribute.png",
-    "sha256": "0e88e1f54634f0996e493dc0b99b9722261efff3f0d5f2dcb91aebcd139bd84e"
+    "sha256": "d82fad12f19bcb6bd531c1e854ac07c0ea766cc4756e2bec2f53be5eba37e7fb"
   },
   {
     "test_name": "re-shoot matrix diagram",
@@ -271,7 +271,7 @@
     },
     "capture_tool_version": "Playwright 1.62.0",
     "output_path": "docs/media/diagram-sequence.png",
-    "sha256": "327426d6ea3322fafe7562509676700a2d99a70591fe65fb16238f1dcbd0a326"
+    "sha256": "d4a877914cdfb19d338a00763b42d5b190911f71cfdddb9908a5450cd5e9c7ef"
   },
   {
     "test_name": "application entities catalog",
@@ -286,7 +286,7 @@
     },
     "capture_tool_version": "Playwright 1.62.0",
     "output_path": "docs/media/entities-list.png",
-    "sha256": "da282b3941ba219ad1aac2f18ad4590725e640ee923db8e415e72ba14b6f7642"
+    "sha256": "7c8e2718d3d15681ab2450f47e26623a547a21be749cffa93d8d017a7470aa6f"
   },
   {
     "test_name": "re-shoot entity detail",
@@ -320,7 +320,7 @@
     },
     "capture_tool_version": "Playwright 1.62.0",
     "output_path": "docs/media/graph-explore.gif",
-    "sha256": "8576c13774631293abc3efe6a41ab4acfd226a5f9ef8140ab630f8cdcada728f"
+    "sha256": "ead69d4a817427646f3eacb19be739a499ca25e6f6901629a107af65e09ce64e"
   },
   {
     "test_name": "re-shoot group management",
@@ -439,7 +439,7 @@
     },
     "capture_tool_version": "Playwright 1.62.0",
     "output_path": "docs/media/search.png",
-    "sha256": "02da2c1664a02bef6c699bc24626842d1914447d03cf550002f7501cbecf410a"
+    "sha256": "a0e5c6fd3af30dd91b0dad1743fbe1a371613e8e4a60ec36e1e1022f2a40c446"
   },
   {
     "test_name": "security entity metrics panel",
@@ -475,7 +475,7 @@
     },
     "capture_tool_version": "Playwright 1.62.0",
     "output_path": "docs/media/security-export-stamped.png",
-    "sha256": "069a148c1cb22502c140dc49845bc7f9359da6837d7a7c43c4b39c9c30b039b9"
+    "sha256": "33b5b4efc1eeb8219987664935aa9f75ad5aee7cb8e52bd922bc013b68f8181e"
   },
   {
     "test_name": "re-shoot security findings",
@@ -528,7 +528,7 @@
     },
     "capture_tool_version": "Playwright 1.62.0",
     "output_path": "docs/media/security-posture-viewpoint.png",
-    "sha256": "62c64ed25859c06b478084b788ae4007d62918e62d4ea2215aedb9de3354aace"
+    "sha256": "6377d938e92991bbc0a67c35e880394745daed1c5b5ff9f21f92c9b3861dd0fe"
   },
   {
     "test_name": "re-shoot vulnerability impact",

@@ -3,6 +3,54 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [0.8.0] — 2026-08-26
+
+**[Full detail → `changelog-assets/0.8.0-detail.md`](changelog-assets/0.8.0-detail.md)**
+
+**Read a diagram your own way, find what you named, and be told what a picture cannot say.** A
+diagram can be coloured and annotated by any attribute for the length of a visit, without changing
+it; searching for a title finds it; and several things the product knew but kept to itself are now
+reported.
+
+### Added
+
+- **Read a diagram by an attribute.** Colour its elements by any attribute the drawn entities
+  declare, and print values alongside them. The reading lasts a visit and is never written to the
+  diagram — reload and it is gone.
+- **Choose the colours.** A gradient's two ends and every member of a value set are editable with a
+  colour picker, for any attribute, with no rule to author first. A download exports exactly what is
+  on screen.
+- **A legend, drawn into the image.** One control adds a key explaining the notation the diagram
+  actually uses — colours, corner shapes, glyphs, and relationship lines drawn as the marks
+  themselves. It exports with the SVG or PNG, and follows the display options: colour by an
+  attribute and the legend explains that instead of element kinds.
+- **An entity says where it appears** — the documents, diagrams and scratchpads that reference it,
+  with links, on its page and through MCP alike.
+- **An activity diagram can draw a loop.** A flow that returns to an earlier step is drawn as a
+  repetition rather than silently dropped.
+
+### Changed
+
+- **Searching for a title finds it.** An exact title match ranks first across every kind of artifact,
+  and a scratchpad is findable by its own name.
+- **A scratchpad is a record of its own** in the index, rather than being reachable only through its
+  notes.
+
+### Fixed
+
+- **Diagram labels stay legible at every zoom.** Text vanished from the picture at some fit scales.
+- **Fullscreen releases the sidebar.** Editing an entity from a fullscreen diagram left the sidebar
+  unreachable until the page was reloaded.
+- **The sidebar scrolls under the pointer** instead of zooming the diagram behind it.
+- **The activity step editor keeps what a diagram declares.** It wrote a step twice when two branches
+  met at it, and dropped the edge that closed a loop.
+- **Display options appear only where there is something to adjust**, and say what that is.
+- **A diagram refresh corrects a reference naming an artifact by a slug it no longer has.**
+- **Declared step edges a drawing cannot carry are reported (W048)**, as are returning flows it
+  cannot express (W049).
+- **Two files claiming one identity are refused (E319).** The backend already declined to start on
+  this; verification was silent about it.
+
 ## [0.7.1] — 2026-08-25
 
 **[Full detail → `changelog-assets/0.7.1-detail.md`](changelog-assets/0.7.1-detail.md)**
@@ -798,6 +846,7 @@ never-requested operations is empty — the reason to trust a release which rena
 - Confidential assurance tier (STPA/CAST/GRC/FMEA/GSN) on an encrypted store with tamper-evident history
 - Viewpoint query engine with diagram/matrix/table representations
 
+[0.8.0]: https://github.com/mbauer83/architectonic/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/mbauer83/architectonic/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/mbauer83/architectonic/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/mbauer83/architectonic/compare/v0.5.4...v0.6.0

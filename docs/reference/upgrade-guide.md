@@ -53,6 +53,20 @@ untouched (so re-running changes nothing), and a value no date parser can make s
 reported for a human to fix rather than guessed at. Artifacts with no stamp at all stay
 unstamped; they show "—" in the column.
 
+### One identity per file, now checked on every pass
+
+Two files carrying the same rename-stable id — the `PREFIX@epoch.random` stem, without the slug —
+are two artifacts claiming one identity, and a reference spelled with that stem resolves to whichever
+the index happened to key. The backend has always refused to start on this. Verification did not
+report it, so a rename that left the old file in place could sit unnoticed while the same content
+would have stopped the process.
+
+It is now an **error (E319)**, and repository-level rules run on every verification pass rather than
+only a full one. A deployment that serves today holds no such pair, because the backend would not
+have started; a repository that has not been served since a rename may. The remedy is to keep one
+file and delete the other — no migration step touches this, because which of the two is wanted is an
+authoring decision.
+
 ### Ranked attribute enums gain their marker
 
 Some attributes are rated on a scale whose order matters — a severity, a likelihood, a TLP level.

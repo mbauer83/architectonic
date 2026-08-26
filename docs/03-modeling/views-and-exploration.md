@@ -68,11 +68,16 @@ domain or type.
 
 ## Search
 
-Full-text search across every artifact family (entities, connections, diagrams, documents)
-with relevance ranking, plus optional semantic supplement where configured. Results carry
-enough metadata to act on without a second round-trip. System-managed bookkeeping
-artifacts (such as the cross-repository reference proxies created by promotion) never
-appear in results — search surfaces only content someone authored.
+Full-text search across every artifact family (entities, connections, diagrams, documents,
+scratchpads) with relevance ranking, plus optional semantic supplement where configured. Results
+carry enough metadata to act on without a second round-trip. System-managed bookkeeping artifacts
+(such as the cross-repository reference proxies created by promotion) never appear in results —
+search surfaces only content someone authored.
+
+**A title you type is a title you find.** An artifact whose name matches what you searched for ranks
+first, across every family rather than within one, so an entity and a diagram sharing a name arrive
+together at the head rather than the diagram waiting behind every entity. A scratchpad is findable by
+its own name, not only through the notes it holds.
 
 ![Search view](../media/search.png)
 
@@ -153,6 +158,15 @@ The permitted target types come straight from the connection ontology, so the ed
 offers links the verifier will accept.
 
 ![Entity detail for the Architecture Backend: the connection editor with per-type rows, and the assurance lens reporting this element's worst failure-mode priority alongside how many guidewords remain unexamined](../media/entity-detail.png)
+
+### Where an entity appears
+
+Below the connections, the page lists what refers to this entity, with links: the **documents** that
+reference it and where inside them, the **diagrams** that draw it with their type and status, and the
+**scratchpads** whose notes point at it. A section is absent when nothing of that kind refers to it.
+
+The same three lists come back from the MCP read tools, so an agent asking where an entity is used
+gets the answer the page shows rather than having to search for it.
 
 ---
 

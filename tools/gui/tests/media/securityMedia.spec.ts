@@ -49,8 +49,12 @@ async function installSyntheticSecurity(page: Page): Promise<void> {
 }
 
 async function focusSecurityPanel(page: Page): Promise<void> {
+  // `.reference-card` covers all three "where does this appear" lists, which are one component. It
+  // was `.document-reference-card` while they were three, and the rename let them back into the
+  // frame — the figure's subject sank to the bottom edge and the file grew by 168 KB. The media
+  // suite is not in CI, so a stale selector here is only ever caught by looking at the picture.
   await page.addStyleTag({ content: `
-    .content-card,.document-reference-card,.connections-section,.lens-section,.signal-ingest{display:none!important}
+    .content-card,.reference-card,.connections-section,.lens-section,.signal-ingest{display:none!important}
   ` })
 }
 

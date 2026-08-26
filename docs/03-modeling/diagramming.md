@@ -96,6 +96,12 @@ lanes map to model roles or actors, and notes attach to steps. Structural relati
 (step-in-lane, note-of) are stored in the diagram's `connections:` list, not as properties,
 and the custom renderer builds the swimlane layout from them.
 
+A flow that returns to an earlier step is drawn as a repetition. A decision whose branch leads back
+to a step already reached becomes a loop with the condition at its foot, and the other branch is the
+one that leaves it. Where the returning flow runs through more than one step on its way back, the
+drawing cannot carry it and verification says so (**W049**) rather than drawing a picture that claims
+the flow falls through.
+
 ![Activity diagram](../media/diagram-activity.png)
 
 &nbsp;
@@ -207,6 +213,31 @@ the sidebar with the **derived entities** (grouped by role: software systems, co
 components, actors) and the **read-only connections** between them. Entities in the sidebar
 are those the projection found in the model — adding or removing them in the model updates
 what appears on a refresh.
+
+&nbsp;
+
+## Display options: reading a diagram your own way
+
+A diagram's page offers **Display options** wherever there is something to adjust. What you set
+there changes only what you are looking at — it is never written to the diagram, never saved as a
+viewpoint, and gone when you reload. The panel is absent on diagrams that permit no adjustment.
+
+- **Colour by an attribute.** Any attribute the drawn entities declare can colour them. A bounded
+  value set gets one colour per member; a number, a date or an ordinal gets a gradient. An attribute
+  several types declare identically is listed first, because colouring by it reads across the whole
+  diagram rather than one type.
+- **Print values with the elements.** Any attribute can be printed alongside the entities that carry
+  one, whether or not it can be coloured by.
+- **Choose the colours.** Checking `colour` opens the key: a gradient's two ends, or one swatch per
+  member, each a colour picker. There is no rule to author first — the mapping is yours for the
+  visit. Untouched, the swatches show the declared colours, so the key and the picture agree.
+- **Explain the notation, in the image.** One checkbox adds a legend covering the marks the diagram
+  actually uses: fills, corner shapes, glyphs, and relationship lines drawn as the marks themselves.
+  It follows the display options — colour by an attribute and the legend explains that instead of
+  element kinds.
+
+**A download exports what is on screen**, legend included, in SVG or PNG. The picture and the file
+come from the same rendered body rather than from two paths that agree by construction.
 
 &nbsp;
 

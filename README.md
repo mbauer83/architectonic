@@ -105,6 +105,7 @@ More on the audience in [Who it serves](docs/01-motivation.md#who-it-serves).
 | 🗺️ | **A typed architecture graph** | Entities and connections across motivation → strategy → business → application → technology, geared toward the ArchiMate 4.0 standard | 
 | 🔍 | **Browse and explore** | List, treemap, full-text search, and interactive graph navigation — *what connects to this, and how far to that?* |
 | 📐 | **Diagram families** | ArchiMate views, C4 (model-backed), UML activity, sequence & class (datatype), and relationship matrices |
+| 🎨 | **Read a diagram your own way** | Colour and annotate any diagram by any attribute its elements declare, with colours you pick and a legend drawn into the image — for the length of a visit, changing nothing, and exported exactly as shown |
 | 🎯 | **Viewpoints** | Criteria-based ways of looking at the model — table/matrix/diagram/exploration, applied to existing diagrams or executed ad hoc, persisted or run on-the-fly |
 | 🧭 | **Impact analysis** | *What is affected if this changes?* — indirect relationships derived across real ones per the ArchiMate rules, as parameterized default viewpoints and ad-hoc graph exploration |
 | ✅ | **Always-on verification** | Schema, referential integrity, cross-repo rules, and PlantUML syntax checked on every write |
@@ -252,6 +253,9 @@ Under consideration:
 - [ ] SysML v2 modeling. An experimental minimal meta-ontology exists but ships
       **disabled by default** (enable with `modules.sysml_v2_min.enabled: true`); first-class,
       supported SysML v2 is a considered future direction, not a current capability.
+- [ ] Proposing changes to promoted content from an engagement deployment. Promotion currently runs
+      one direction, once, per artifact: afterwards the enterprise copy is the authority and a local
+      deployment can no longer propose anything about it.
 - [ ] Rework of the packaged agent skills.
 - [ ] Broader persona and scenario usability coverage. Modelling, decision support,
       implementation guidance, the assurance methods, and mixed-channel situations in
