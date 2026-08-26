@@ -69,6 +69,21 @@ DIAGRAM_ROWS: tuple[RouteRow, ...] = (
         "GET", "/api/diagrams/{artifact_id}/download", "subresource", "diagrams_download_diagram_source",
         MEDIA, identity_parameters=_ID, timeout_class="derived-graph",
     ),
+    # What a reader can do with the attributes of the entities this diagram draws: the types and
+    # specializations occurring on it, and per type the attributes, what each is declared to be, which
+    # can take a colour, and how many drawn entities carry a value.
+    #
+    # Owned by the viewpoints router, following `viewpoints_read_diagram_viewpoint_projection`: it
+    # answers a *styling* question at the diagram's address, and the styling machinery is the
+    # viewpoints'. `derived-graph` because it resolves each drawn entity's effective attribute schema,
+    # which is per (type, specialization) rather than per diagram. `no-cache` and no conditional read:
+    # the conditional-read registry is a reviewed set of model-derived templates, and claiming
+    # eligibility without being in it promises something the middleware does not keep.
+    RouteRow(
+        "GET", "/api/diagrams/{artifact_id}/attribute-panel", "subresource",
+        "viewpoints_read_diagram_attribute_panel", TYPED,
+        identity_parameters=_ID, cache_directive="no-cache", timeout_class="derived-graph",
+    ),
     RouteRow(
         "GET", "/api/diagrams/{artifact_id}/viewpoint-projection", "subresource",
         "viewpoints_read_diagram_viewpoint_projection", TYPED,

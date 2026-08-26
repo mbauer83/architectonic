@@ -1557,6 +1557,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/diagrams/{artifact_id}/attribute-panel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What a diagram's entities can be coloured by and print
+         * @description The reading panel for one diagram: its types, and what their attributes allow.
+         *
+         *     Assembled by the application layer, not here. This resolves the diagram, hands over the entities
+         *     it places and the catalogues that know what a type declares, and serialises the answer — the same
+         *     division the projection route keeps, and for the reason cycle 3's survey gives: a domain rule
+         *     assembled in a router is a second assembly of it.
+         */
+        get: operations["viewpoints_read_diagram_attribute_panel"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/diagrams/{artifact_id}/connections": {
         parameters: {
             query?: never;
@@ -4776,6 +4801,40 @@ export interface components {
             type: string;
         };
         /**
+         * AttributeOfferResponse
+         * @description One attribute, as a reading control can offer it.
+         *
+         *     ``colour`` is what a colour control may do with it, decided by what the ontology declares rather
+         *     than by the attribute's name: ``ramp`` where there is an order — a number, a date, or an ordinal
+         *     whose rank `x-scale: ordinal` declares — ``palette`` where there is a bounded value set with no
+         *     inherent order, and ``none`` for free text and lists, where a ramp would be meaningless and a
+         *     palette one colour per entity.
+         *
+         *     ``printable`` is true for every attribute, whatever its colour: a reader may want an owner's name
+         *     on the picture as readily as a risk score.
+         *
+         *     ``present_on`` is how many of the drawn entities of this type carry a value, and **zero is
+         *     reported rather than hidden**. A dropped row would say "this type has no such attribute", which is
+         *     false, and a reader who cannot see the attribute cannot learn why nothing is coloured.
+         */
+        AttributeOfferResponse: {
+            /**
+             * Colour
+             * @enum {string}
+             */
+            colour: "ramp" | "palette" | "none";
+            /** Declared Type */
+            declared_type: string;
+            /** Name */
+            name: string;
+            /** Present On */
+            present_on: number;
+            /** Printable */
+            printable: boolean;
+            /** Values */
+            values: string[];
+        };
+        /**
          * AttributeValueRef
          * @description Compare against another attribute rather than a literal.
          *
@@ -6071,6 +6130,18 @@ export interface components {
              * @enum {string}
              */
             role: "diagnostic";
+        };
+        /**
+         * DiagramAttributePanelResponse
+         * @description What a reader can do with the attributes of the entities one diagram draws.
+         *
+         *     Only the types the diagram actually draws, which is the same convention every legend in the
+         *     product already keeps: list what is present. The declared vocabulary is much larger, and offering
+         *     it is the difference between a menu and a catalogue.
+         */
+        DiagramAttributePanelResponse: {
+            /** Types */
+            types: components["schemas"]["TypeOfferResponse"][];
         };
         /**
          * DiagramConnectionListResponse
@@ -11408,6 +11479,24 @@ export interface components {
             truncated: boolean;
         };
         /**
+         * TypeOfferResponse
+         * @description One entity type, or one specialization of it, as it occurs on this diagram.
+         *
+         *     A specialization is its own row because it contributes its own attributes: two entities of one
+         *     type carrying different specializations do not offer the same set, and merging them would offer
+         *     each the other's. ``specialization`` is empty for the bare type.
+         */
+        TypeOfferResponse: {
+            /** Attributes */
+            attributes: components["schemas"]["AttributeOfferResponse"][];
+            /** Drawn */
+            drawn: number;
+            /** Entity Type */
+            entity_type: string;
+            /** Specialization */
+            specialization: string;
+        };
+        /**
          * UnknownDiagramTypeDetails
          * @description ``unknown_diagram_type``: the projection asked for, and the ones this method does draw.
          */
@@ -16732,6 +16821,55 @@ export interface operations {
             };
             /** @description Write temporarily rejected by the workspace gate (retryable) */
             423: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    viewpoints_read_diagram_attribute_panel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagramAttributePanelResponse"];
+                };
+            };
+            /** @description Artifact not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

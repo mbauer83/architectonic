@@ -52,6 +52,7 @@ from src.infrastructure.rest.contracts.viewpoint_projection import (
 from src.infrastructure.rest.routers import _failures as failures
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers._openapi import READ_RESPONSES, TAG_VIEWPOINTS, media_response
+from src.infrastructure.rest.routers.viewpoints._attribute_panel import register_attribute_panel_route
 from src.infrastructure.rest.routers.viewpoints._freshness import fresh_viewpoints_runtime_catalogs_dependency
 from src.infrastructure.rest.routers.viewpoints._request_parsing import parse_presentation, parse_query
 from src.infrastructure.rest.routers.viewpoints.signal_render import (
@@ -384,3 +385,9 @@ def get_diagram_viewpoint_projection(
     if projection is None:
         return {"applied": False}
     return {"applied": True, **asdict(projection)}
+
+
+# The panel endpoint lives in its own module, for the reason `_search_hits.py` does: this file holds
+# what a request handler reaches for, and one endpoint's assembly plus its serialisation is a concern of
+# its own. It grew this file past the source-length policy on the commit that introduced it.
+register_attribute_panel_route(router)

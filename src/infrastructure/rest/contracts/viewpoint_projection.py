@@ -182,3 +182,53 @@ class DiagramViewpointProjectionResponse(
     """
 
     root: NoDiagramViewpointResponse | AppliedDiagramViewpointResponse
+
+
+class AttributeOfferResponse(Closed):
+    """One attribute, as a reading control can offer it.
+
+    ``colour`` is what a colour control may do with it, decided by what the ontology declares rather
+    than by the attribute's name: ``ramp`` where there is an order — a number, a date, or an ordinal
+    whose rank `x-scale: ordinal` declares — ``palette`` where there is a bounded value set with no
+    inherent order, and ``none`` for free text and lists, where a ramp would be meaningless and a
+    palette one colour per entity.
+
+    ``printable`` is true for every attribute, whatever its colour: a reader may want an owner's name
+    on the picture as readily as a risk score.
+
+    ``present_on`` is how many of the drawn entities of this type carry a value, and **zero is
+    reported rather than hidden**. A dropped row would say "this type has no such attribute", which is
+    false, and a reader who cannot see the attribute cannot learn why nothing is coloured.
+    """
+
+    name: str
+    declared_type: str
+    colour: Literal["ramp", "palette", "none"]
+    values: list[str]
+    present_on: int
+    printable: bool
+
+
+class TypeOfferResponse(Closed):
+    """One entity type, or one specialization of it, as it occurs on this diagram.
+
+    A specialization is its own row because it contributes its own attributes: two entities of one
+    type carrying different specializations do not offer the same set, and merging them would offer
+    each the other's. ``specialization`` is empty for the bare type.
+    """
+
+    entity_type: str
+    specialization: str
+    drawn: int
+    attributes: list[AttributeOfferResponse]
+
+
+class DiagramAttributePanelResponse(Closed):
+    """What a reader can do with the attributes of the entities one diagram draws.
+
+    Only the types the diagram actually draws, which is the same convention every legend in the
+    product already keeps: list what is present. The declared vocabulary is much larger, and offering
+    it is the difference between a menu and a catalogue.
+    """
+
+    types: list[TypeOfferResponse]
