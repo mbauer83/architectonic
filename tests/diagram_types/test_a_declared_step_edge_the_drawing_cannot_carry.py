@@ -29,7 +29,7 @@ from typing import Any
 import pytest
 
 from src.diagram_types.activity._contributions import EDGE_COLLISION_CONTRIBUTION
-from src.diagram_types.activity._step_graph import colliding_declarations
+from src.diagram_types.activity._edge_collisions import colliding_declarations
 from src.domain.diagrams.diagram_verification import BaseDiagramVerificationContext
 
 

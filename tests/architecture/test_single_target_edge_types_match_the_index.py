@@ -20,7 +20,7 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
-from src.diagram_types.activity._step_graph import (
+from src.diagram_types.activity._edge_collisions import (
     SINGLE_TARGET_BY_SOURCE,
     SINGLE_TARGET_BY_TARGET,
 )

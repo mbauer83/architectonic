@@ -42,6 +42,7 @@ from ._emission import (
     emit_from,
     emit_orphans,
 )
+from ._step_cycles import cycles_of
 from ._step_graph import StepGraph
 from ._step_links import lane_header, puml_text
 
@@ -96,6 +97,10 @@ class ActivityPumlRenderer:
                 cursor=LaneCursor(current=initial_lane_id),
             ),
             notes=_build_notes_index(kd, kcs),
+            # Computed here because the root is this function's choice, and which step a cycle is
+            # entered at *is* that choice — `_find_root`'s own docstring says so. Keyed by header so
+            # the walk can ask "does a loop open here" without carrying a list.
+            loops={loop.header: loop for loop in cycles_of(graph, start=root_id)[0]},
         )
         body_lines: list[str] = []
         drawn: set[str] = set()

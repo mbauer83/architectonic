@@ -11,7 +11,7 @@ from typing import Any
 
 from src.domain.diagrams.diagram_verification import BaseDiagramVerificationContext
 
-from ._step_graph import colliding_declarations
+from ._edge_collisions import colliding_declarations
 from ._step_links import LABELLED_STEP_KINDS, drawn_step_ids, sentinel_target
 
 

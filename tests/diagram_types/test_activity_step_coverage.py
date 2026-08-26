@@ -35,7 +35,16 @@ from dataclasses import dataclass, field
 
 import pytest
 
+from src.diagram_types.activity._step_cycles import cycles_of
+from src.diagram_types.activity._step_graph import StepGraph
 from src.diagram_types.activity._step_links import sentinel_of
+from src.diagram_types.activity.renderer import (
+    _branch_owned_set,
+    _build_multi_target,
+    _build_single_target,
+    _build_step_by_id,
+    _find_root,
+)
 from tests.diagram_types._activity_shapes import CATALOGUE, ActivityShape, bundled_shapes
 
 _LABELLED_KINDS = ("action", "decision", "partition")
@@ -87,6 +96,17 @@ def _parse(body: str) -> Node:
         elif line == "}":
             if len(stack) > 1:
                 stack.pop()
+        elif line == "repeat":
+            node = Node("loop")
+            stack[-1].regions[-1].nodes.append(node)
+            stack.append(node)
+        elif line.startswith("repeat while ("):
+            # The condition is drawn *by* this line — it is the diamond at the foot of the loop — so
+            # the step it stands for is a node of the loop, and the line also closes the loop.
+            stack[-1].regions[-1].nodes.append(Node("step", sentinel_of(line)))
+            stack.pop()
+        elif line.startswith("backward:") and line.endswith(";"):
+            stack[-1].regions[-1].nodes.append(Node("step", sentinel_of(line)))
         elif line.startswith(":") and line.endswith(";"):
             stack[-1].regions[-1].nodes.append(Node("step", sentinel_of(line)))
     return root
@@ -101,7 +121,7 @@ def _drawn_steps(node: Node) -> list[str]:
                 found.append(child.step_id)
             if child.kind == "step" and child.step_id:
                 found.append(child.step_id)
-            elif child.kind in ("decision", "fork", "partition"):
+            elif child.kind in ("decision", "fork", "partition", "loop"):
                 found.extend(_drawn_steps(child))
     return found
 
@@ -294,16 +314,43 @@ class TestEveryDeclaredStepIsDrawn:
         assert not stubs, f"{shape.name}: drawn as a stub rather than as the step: {stubs}\n{body}"
 
 
+def _loop_conditions(tree: Node) -> set[str]:
+    """The decisions drawn as a loop's condition rather than as an `if`.
+
+    Such a decision has no arms to draw: one arm *is* the loop body, already drawn above the
+    condition, and the other is the exit, drawn after it. So the arm-placement rule below does not
+    apply to it, and the loop's own rule does.
+    """
+    found: set[str] = set()
+    for region in tree.regions:
+        for child in region.nodes:
+            if child.kind == "loop":
+                found |= {n.step_id for n in child.regions[-1].nodes if n.kind == "step" and n.step_id}
+                # Only the last node of a loop is its condition; the rest are body steps.
+                body_nodes = [n for n in child.regions[-1].nodes if n.kind == "step" and n.step_id]
+                found = (found - {n.step_id for n in body_nodes[:-1] if n.step_id}) if body_nodes else found
+            if child.kind in ("decision", "fork", "partition", "loop"):
+                found |= _loop_conditions(child)
+    return found
+
+
 class TestABranchDrawsWhatItReaches:
     def test_a_decision_arm_reaches_its_first_step(self, shape: ActivityShape) -> None:
-        """Inside the arm's own region, jumped to from it, or hoisted past this decision's endif."""
+        """Inside the arm's own region, jumped to from it, or hoisted past this decision's endif.
+
+        A decision drawn as a **loop condition** is exempt, and that is the loop's shape rather than a
+        gap in it: the diamond sits at the foot of a `repeat`, one arm is the body above it and the
+        other is the exit below, so there are no arm regions for a target to be inside.
+        `TestALoopIsDrawnAsALoop` is where those two are asserted.
+        """
         body = shape.render()
         tree = _parse(body)
+        conditions = _loop_conditions(tree)
 
         labelled = set(_declared(shape, _LABELLED_KINDS))
         for arm_index, conn_type in ((0, "step-then"), (1, "step-else")):
             for decision_id, first in _edges(shape, conn_type):
-                if first not in labelled:
+                if first not in labelled or decision_id in conditions:
                     continue  # a fork or a join emits no labelled line, so its placement is unobservable
                 found = _find_construct(tree, "decision", decision_id)
                 assert found, f"{shape.name}: decision {decision_id} was not drawn\n{body}"
@@ -402,10 +449,13 @@ class TestAConvergenceIsNotDrawnInsideOneArm:
         body = shape.render()
         tree = _parse(body)
         successors = _successors(shape)
+        conditions = _loop_conditions(tree)
 
         for decision_id in _declared(shape, ("decision",)):
             arms = _arms(shape, decision_id)
-            if len(arms) < 2:
+            # A loop condition has no arm regions to compare — one arm is the body above it and the
+            # other the exit below — so "drawn inside one arm and not the other" cannot arise.
+            if len(arms) < 2 or decision_id in conditions:
                 continue
             converging = set.intersection(*(_reachable_from(a, successors) for a in arms))
             found = _find_construct(tree, "decision", decision_id)
@@ -419,6 +469,106 @@ class TestAConvergenceIsNotDrawnInsideOneArm:
                     f"{shape.name}: {step_id} is reached by every arm of {decision_id} but is drawn "
                     f"inside arm(s) {drawing} of {len(regions)}\n{body}"
                 )
+
+
+class TestALoopIsDrawnAsALoop:
+    """What the two exemptions above are exempt *for*.
+
+    A cycle used to close silently: the walk stopped at the returning step, nothing was drawn, and the
+    picture said the flow fell straight through — the opposite of what the model declared, with every
+    step present so coverage saw nothing wrong. So the properties worth asserting are the ones a
+    silent close would fail.
+    """
+
+    def test_a_declared_cycle_is_drawn_as_a_repeat(self, shape: ActivityShape) -> None:
+        body = shape.render()
+        loops, _refused = cycles_of(_graph_of(shape), start=_root_of(shape))
+        if not loops:
+            return
+
+        assert "repeat" in body, f"{shape.name}: a drawable loop was found and no repeat was drawn\n{body}"
+        for loop in loops:
+            assert "repeat while (" in body
+            assert sentinel_in_repeat_while(body) == loop.condition, (
+                f"{shape.name}: the repeat while draws {sentinel_in_repeat_while(body)!r} rather than "
+                f"the loop's condition {loop.condition!r}\n{body}"
+            )
+
+    def test_the_body_precedes_the_condition_and_the_exit_follows_the_loop(
+        self, shape: ActivityShape
+    ) -> None:
+        """The whole shape of a `repeat`: what runs each time is above the diamond, and what runs once
+        the loop ends is below it. Reversing them is a picture that reads backwards."""
+        body = shape.render()
+        loops, _refused = cycles_of(_graph_of(shape), start=_root_of(shape))
+        lines = body.splitlines()
+
+        for loop in loops:
+            condition_at = next(i for i, line in enumerate(lines) if line.startswith("repeat while ("))
+            opened_at = next(i for i, line in enumerate(lines) if line.strip() == "repeat")
+            for step_id in loop.body:
+                drawn_at = next(
+                    (i for i, line in enumerate(lines) if sentinel_of(line) == step_id), None
+                )
+                assert drawn_at is not None and opened_at < drawn_at < condition_at, (
+                    f"{shape.name}: {step_id} runs each time round but is not drawn inside the "
+                    f"repeat\n{body}"
+                )
+            if loop.exit_target:
+                exit_at = next(
+                    (i for i, line in enumerate(lines) if sentinel_of(line) == loop.exit_target), None
+                )
+                assert exit_at is None or exit_at > condition_at, (
+                    f"{shape.name}: {loop.exit_target} runs when the loop ends but is drawn inside "
+                    f"it\n{body}"
+                )
+
+    def test_a_step_on_the_way_back_is_drawn_backward(self, shape: ActivityShape) -> None:
+        """`backward:` is what puts it on the returning arrow rather than in the forward chain, where
+        it would read as running before the condition instead of after it."""
+        body = shape.render()
+        loops, _refused = cycles_of(_graph_of(shape), start=_root_of(shape))
+
+        for loop in loops:
+            for step_id in loop.backward:
+                assert any(
+                    line.startswith("backward:") and sentinel_of(line) == step_id
+                    for line in body.splitlines()
+                ), f"{shape.name}: {step_id} runs on the way back but is not drawn backward\n{body}"
+
+    def test_the_condition_is_drawn_once(self, shape: ActivityShape) -> None:
+        """It is consumed by the `repeat while` line. Drawing it as an `if` as well would put the same
+        diamond in the picture twice — which the pass over unemitted steps would happily do."""
+        body = shape.render()
+        loops, _refused = cycles_of(_graph_of(shape), start=_root_of(shape))
+
+        for loop in loops:
+            drawn = [line for line in body.splitlines() if sentinel_of(line) == loop.condition]
+            assert len(drawn) == 1, (
+                f"{shape.name}: the loop condition {loop.condition} is drawn {len(drawn)} times\n{body}"
+            )
+
+
+def sentinel_in_repeat_while(body: str) -> str | None:
+    return next(
+        (sentinel_of(line) for line in body.splitlines() if line.startswith("repeat while (")), None
+    )
+
+
+def _graph_of(shape: ActivityShape) -> StepGraph:
+    """The shape's declared graph, built the way the renderer builds it."""
+    return StepGraph(
+        step_by_id=_build_step_by_id(shape.entities),
+        flow_next=_build_single_target(shape.connections, "step-flow"),
+        then_target=_build_single_target(shape.connections, "step-then"),
+        else_target=_build_single_target(shape.connections, "step-else"),
+        fork_branches=_build_multi_target(shape.connections, "step-fork-branch"),
+        contains_first=_build_single_target(shape.connections, "step-contains"),
+    )
+
+
+def _root_of(shape: ActivityShape) -> str | None:
+    return _find_root(_graph_of(shape), _branch_owned_set(_graph_of(shape)))
 
 
 def _drawn_in(region: Region) -> set[str]:

@@ -96,11 +96,10 @@ title a step graph that loops
 
 start
 
+repeat
 :[[arch://attempt attempt the write]];
-if ([[arch://ok did it succeed?]]) then (yes)
-else (no)
-:[[arch://wait back off]];
-endif
+backward:[[arch://wait back off]];
+repeat while ([[arch://ok did it succeed?]]) is (no) not (yes)
 :[[arch://accept accept it]];
 
 stop
@@ -117,11 +116,10 @@ title a loop declared from its middle
 
 start
 
+repeat
 :[[arch://attempt attempt the write]];
-if ([[arch://ok did it succeed?]]) then (yes)
-else (no)
-:[[arch://wait back off]];
-endif
+backward:[[arch://wait back off]];
+repeat while ([[arch://ok did it succeed?]]) is (no) not (yes)
 :[[arch://accept accept it]];
 
 stop

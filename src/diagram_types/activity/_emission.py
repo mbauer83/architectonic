@@ -35,14 +35,23 @@ is what a reader of this diagram needs.
 a step already on that chain ends the walk instead of being drawn again — so a back edge closes
 rather than recurring. Duplication is therefore bounded by the number of branches that arrive at a
 step from outside, which is the number of times a reader would expect to see it.
+
+**A cycle is drawn as a `repeat`, not closed silently.** Ending the walk at the returning step left a
+picture that said the flow falls straight through — the opposite of what the model declared, with
+every step present so no coverage rule noticed. Where `_step_graph` recognises a drawable loop, the
+walk emits `repeat` / `backward:` / `repeat while (…) is (…) not (…)` and carries on from the exit.
+The condition is *consumed* by the `repeat while` line, so it is marked drawn and never also emitted
+as an `if`. Where the cycle is not one of the drawable shapes the walk still closes it as before,
+and `_contributions` reports why rather than leaving a reader to notice by eye.
 """
 
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
+from ._step_cycles import Loop
 from ._step_graph import StepGraph
 from ._step_links import (
     lane_header,
@@ -77,6 +86,9 @@ class EmissionContext:
     graph: StepGraph
     lanes: Swimlanes
     notes: Mapping[str, dict[str, Any]]
+    #: The drawable loops of this graph, keyed by the step each one opens at. Computed once by the
+    #: renderer with the root it chose, because which step a cycle is entered at is that choice.
+    loops: Mapping[str, Loop] = field(default_factory=dict)
 
 
 def is_join(step_id: str, ctx: EmissionContext) -> bool:
@@ -142,6 +154,15 @@ def emit_until_join(
     while step_id and step_id not in stops and step_id not in walked:
         if is_join(step_id, ctx) and not resumed_at_convergence:
             return step_id
+        loop = ctx.loops.get(step_id)
+        if loop is not None and step_id not in drawn:
+            # The whole loop is emitted here, condition included, and the walk resumes past it. Only
+            # when the header has not been drawn: a loop reached a second time from another branch is
+            # an ordinary revisit, and re-opening `repeat` would draw the cycle twice.
+            step_id = _emit_loop(loop, ctx, lines, drawn, stops, walked)
+            walked = walked | frozenset(loop.body) | {loop.condition}
+            resumed_at_convergence = False
+            continue
         step = graph.step_by_id.get(step_id)
         if not step:
             break
@@ -159,6 +180,56 @@ def emit_until_join(
         resumed_at_convergence = convergence is not None
         step_id = convergence or graph.flow_next.get(step_id)
     return surfaced_join
+
+
+def _emit_loop(
+    loop: Loop,
+    ctx: EmissionContext,
+    lines: list[str],
+    drawn: set[str],
+    stops: frozenset[str],
+    path: frozenset[str],
+) -> str | None:
+    """Emit *loop* as a `repeat`, and hand back where the flow continues.
+
+    The body is walked by the ordinary emission with the condition as a stop, so a step inside a loop
+    is drawn by the same code as a step outside one — including its lane switches, its note and any
+    decision or fork nested within it.
+
+    `backward:` carries the single step on the way round. One, because a second `backward:` line
+    renders nothing at all on the pinned PlantUML — measured, with a clean render and no warning — so
+    `_step_graph` refuses a longer return path rather than letting it be lost here.
+    """
+    graph = ctx.graph
+    condition_step = graph.step_by_id.get(loop.condition) or {}
+    lines.append("repeat")
+    # Marked before the body is walked, because the walk asks `ctx.loops` at every step and would
+    # otherwise re-open this same `repeat` on reaching the header again — endlessly. The mark does not
+    # suppress the header's own emission: the walk decides that from the path it carries, not from
+    # what has been drawn.
+    drawn.add(loop.header)
+    emit_until_join(loop.header, ctx, lines, drawn, stops | {loop.condition}, path)
+    for step_id in loop.backward:
+        step = graph.step_by_id.get(step_id)
+        if step is None:
+            continue
+        drawn.add(step_id)
+        label = puml_text(str(step.get("label") or "action"))
+        lines.append(f"backward:{sentinel_wrapped(step, label)}{user_link_suffix(step)};")
+    # Marked drawn *by* this line: the condition is the diamond at the foot of the loop, so nothing
+    # else may draw it — and `emit_orphans` would otherwise find it unemitted and draw it again.
+    drawn.add(loop.condition)
+    condition = puml_text(str(condition_step.get("condition") or "?"))
+    then_label = puml_text(str(condition_step.get("then_label") or "yes"))
+    else_label = puml_text(str(condition_step.get("else_label") or "no"))
+    going_round, leaving = (
+        (then_label, else_label) if loop.looping_arm == "then" else (else_label, then_label)
+    )
+    lines.append(
+        f"repeat while ({sentinel_wrapped(condition_step, f'{condition}?')}"
+        f"{user_link_suffix(condition_step)}) is ({going_round}) not ({leaving})"
+    )
+    return loop.exit_target
 
 
 def emit_orphans(
