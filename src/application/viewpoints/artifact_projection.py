@@ -18,15 +18,23 @@ from src.domain.ontology_representation.ontology_types import EntityTypeInfo
 from src.domain.viewpoints.viewpoint_application_parsing import parse_viewpoint_application
 from src.domain.viewpoints.viewpoint_condition_validation import RegistrySnapshot
 from src.domain.viewpoints.viewpoint_criteria_evaluation import evaluate_connection_criteria, evaluate_entity_criteria
-from src.domain.viewpoints.viewpoint_evaluation_context import CriteriaReadAccess
+from src.domain.viewpoints.viewpoint_evaluation_context import CriteriaReadAccess, EvaluationEnvironment
 from src.domain.viewpoints.viewpoint_projection import (
     ExclusionReason,
     OcclusionState,
     ProjectedOccurrence,
+    ScaleLegendData,
     ViewpointProjection,
     drift_warnings,
+    rule_outcome_warnings,
 )
-from src.domain.viewpoints.viewpoint_style_evaluation import StyleValue, evaluate_item_style
+from src.domain.viewpoints.viewpoint_scale_styling import calculate_scale_bounds
+from src.domain.viewpoints.viewpoint_style_evaluation import (
+    RuleItemHit,
+    StyleValue,
+    classify_style_rule_outcomes,
+    evaluate_item_style,
+)
 from src.domain.viewpoints.viewpoints import (
     EnforcementSetting,
     TargetKind,
@@ -132,6 +140,32 @@ def project_artifact_local(
     drift: set[str] = set()
     entity_reasons: dict[str, tuple[ExclusionReason, ...]] = {}
     items: list[ProjectedOccurrence] = []
+    rule_hits: list[RuleItemHit] = []
+
+    # Bounds first, from the *complete* placed population, and before any item is styled. A scale is a
+    # property of what the diagram draws, so every placed occurrence counts toward it — including the
+    # ones that will turn out excluded. Letting an exclusion move the scale would make the same entity
+    # a different colour on two diagrams for a reason the reader cannot see.
+    #
+    # This is the call the path was missing. Without it `scale_bounds` is empty, `_scale_value` returns
+    # `None` for every rule index, and a scale rule styles nothing — even one declaring explicit
+    # bounds, which is why the shipped catalogue declaring them did not save it.
+    styled_items = tuple(
+        [(entity, "entity") for entity in placed_entities]
+        + [(connection, "connection") for connection in placed_connections]
+    )
+    # A neutral environment, and the reason is worth stating: bindings, parameters and derived values
+    # belong to an *execution*, and this path projects a stored diagram — there is no execution to
+    # take them from. So a `derived.<name>` scale attribute cannot resolve here and is reported
+    # `unresolvable` rather than silently unstyled, which is the honest answer for a rule that needs a
+    # query this target does not run.
+    scale_bounds, scale_legends, scale_drift = calculate_scale_bounds(
+        definition.presentation,
+        styled_items,  # type: ignore[arg-type]
+        registries=registries,
+        environment=EvaluationEnvironment(),
+    )
+    drift |= scale_drift
 
     for entity in placed_entities:
         reasons, entity_drift = _entity_reasons(
@@ -143,10 +177,16 @@ def project_artifact_local(
         style: Mapping[str, StyleValue] = {}
         if not effective_reasons:
             evaluation = evaluate_item_style(
-                entity, "entity", definition.presentation, read_access=read_access, registries=registries
+                entity,
+                "entity",
+                definition.presentation,
+                read_access=read_access,
+                registries=registries,
+                scale_bounds=scale_bounds,
             )
             style = evaluation.style
             drift |= evaluation.schema_drift
+            rule_hits.extend(evaluation.rule_hits)
         state: OcclusionState = "ghosted" if enforcement == "ghost" and effective_reasons else "visible"
         items.append(
             ProjectedOccurrence(
@@ -163,10 +203,16 @@ def project_artifact_local(
         style = {}
         if not effective_reasons:
             evaluation = evaluate_item_style(
-                connection, "connection", definition.presentation, read_access=read_access, registries=registries
+                connection,
+                "connection",
+                definition.presentation,
+                read_access=read_access,
+                registries=registries,
+                scale_bounds=scale_bounds,
             )
             style = evaluation.style
             drift |= evaluation.schema_drift
+            rule_hits.extend(evaluation.rule_hits)
         state: OcclusionState = "ghosted" if enforcement == "ghost" and effective_reasons else "visible"
         items.append(
             ProjectedOccurrence(
@@ -178,12 +224,43 @@ def project_artifact_local(
             )
         )
 
+    # The "no silent no-op" contract, which held only on the repository path. An authored rule that
+    # styles nothing was unreportable here: no `unresolvable`, no `expected-empty`, no warning. The
+    # same viewpoint therefore answered differently depending on how it was reached.
+    #
+    # `declared_derived_names` comes from the query's derived attributes. A definition with no query
+    # declares none — and with no query there are no `derived.` references for an empty set to
+    # misjudge. An empty set alongside a *present* query would report every derived reference as
+    # unresolvable, which is why this reads the query rather than defaulting.
+    declared_derived_names = frozenset(
+        attribute.name for attribute in (definition.query.derived if definition.query is not None else ())
+    )
+    rule_outcomes = classify_style_rule_outcomes(
+        definition.presentation,
+        rule_hits,
+        registries=registries,
+        declared_derived_names=declared_derived_names,
+    )
+
     stale_pin = application.pinned_version < definition.version
     return ViewpointProjection(
         target=application.target_kind,
         items=tuple(items),
         stale_pin=stale_pin,
-        warnings=drift_warnings(frozenset(drift)),
+        warnings=drift_warnings(frozenset(drift)) + rule_outcome_warnings(rule_outcomes),
+        scale_legends=tuple(
+            ScaleLegendData(
+                capability=legend.capability,
+                attribute=legend.attribute,
+                minimum=legend.minimum,
+                maximum=legend.maximum,
+                tokens=legend.tokens,
+                minimum_label=legend.minimum_label,
+                maximum_label=legend.maximum_label,
+            )
+            for legend in scale_legends
+        ),
+        rule_outcomes=rule_outcomes,
     )
 
 

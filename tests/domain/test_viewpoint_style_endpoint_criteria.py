@@ -105,11 +105,11 @@ class TestEndpointCriteria:
         presentation = PresentationSpec(representation="exploration", styling_rules=(_boundary_rule(),))
         crossing = evaluate_item_style(
             _connection("ENT@in", "ENT@out"), "connection", presentation,
-            read_access=graph, registries=_REGISTRIES,
+            read_access=graph, registries=_REGISTRIES, scale_bounds={},
         )
         internal = evaluate_item_style(
             _connection("ENT@in", "ENT@in2"), "connection", presentation,
-            read_access=graph, registries=_REGISTRIES,
+            read_access=graph, registries=_REGISTRIES, scale_bounds={},
         )
         assert crossing.style == {"edge_color": "critical"}
         assert internal.style == {}
@@ -121,7 +121,7 @@ class TestEndpointCriteria:
         presentation = PresentationSpec(representation="exploration", styling_rules=(_boundary_rule(),))
         evaluation = evaluate_item_style(
             _connection("ENT@in", "ENT@gone"), "connection", presentation,
-            read_access=graph, registries=_REGISTRIES,
+            read_access=graph, registries=_REGISTRIES, scale_bounds={},
         )
         assert evaluation.style == {}
 
@@ -178,7 +178,8 @@ class TestDisabledRuleQuarantine:
             representation="exploration", styling_rules=(_drifted_scale_rule(disabled=True),)
         )
         evaluation = evaluate_item_style(
-            _entity("ENT@x", "core"), "entity", presentation, read_access=_Graph(), registries=_REGISTRIES
+            _entity("ENT@x", "core"), "entity", presentation,
+            read_access=_Graph(), registries=_REGISTRIES, scale_bounds={},
         )
         assert evaluation.style == {}
         assert evaluation.rule_hits == ()

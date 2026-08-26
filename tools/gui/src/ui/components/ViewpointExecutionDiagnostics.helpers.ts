@@ -188,8 +188,11 @@ export const deriveScaleGradients = (
     gradients.push({
       capability: rule.capability,
       gradientCss: `linear-gradient(to right, ${tokenColor(rule.scaleTokens[0])}, ${tokenColor(rule.scaleTokens[1])})`,
-      minLabel: minimum !== null ? String(minimum) : '−∞',
-      maxLabel: maximum !== null ? String(maximum) : '∞',
+      // A server-supplied label wins over the number. An ordinal's bounds are ranks, so the number
+      // is an implementation detail of reading the scale and the member name is the scale itself.
+      // An authored `scaleMin` that names a member is already a string and reads correctly as one.
+      minLabel: resolved?.minimum_label ?? (minimum !== null ? String(minimum) : '−∞'),
+      maxLabel: resolved?.maximum_label ?? (maximum !== null ? String(maximum) : '∞'),
     })
   }
   return gradients

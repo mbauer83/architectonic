@@ -13,7 +13,7 @@ from src.domain.viewpoints.viewpoint_condition_validation import (
     resolve_attribute_path,
 )
 from src.domain.viewpoints.viewpoint_criteria import (
-    NUMERIC_ATTRIBUTE_TYPES,
+    ORDERED_ATTRIBUTE_TYPES,
     ConnectionCriteriaGroup,
     EntityCriteriaGroup,
 )
@@ -213,13 +213,24 @@ def _validate_scale_rule(
             ]
     elif declared is None:
         return [issue("error", "unknown-attribute", f"{path}/scale_attribute", "unknown scale attribute")]
-    if declared not in (None, "reserved") and declared not in NUMERIC_ATTRIBUTE_TYPES:
+    # `ORDERED_ATTRIBUTE_TYPES`, not `NUMERIC_ATTRIBUTE_TYPES`: an ordinal declares its own rank and
+    # the comparators already order by it, so a ramp can read it too. The narrower set refused an
+    # ordinal scale attribute outright — the wider one already existed, next door, for exactly this
+    # question, and the newer feature had reached for the wrong one.
+    #
+    # A **reserved** path is checked rather than skipped. The guard used to read
+    # `declared not in (None, "reserved") and …`, and no reserved path is numeric, date-typed or
+    # ordinal, so a scale rule on `status` or `domain` was accepted and then styled nothing — silently
+    # on both projection paths, and reported as `expected-empty` ("nothing matched") once the
+    # artifact-local path learned to report outcomes at all. A reserved path's type is known, so the
+    # refusal belongs at save time where the author can act on it.
+    if declared is not None and declared not in ORDERED_ATTRIBUTE_TYPES:
         return [
             issue(
                 "error",
                 "operator-type-mismatch",
                 f"{path}/scale_attribute",
-                "scale attributes must be numeric or date values",
+                "scale attributes must be numeric, date, or ordinal values",
             )
         ]
     if len(rule.scale_tokens) != 2:

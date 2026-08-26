@@ -100,6 +100,10 @@ class ScaleLegendData:
     minimum: float
     maximum: float
     tokens: tuple[str, str]
+    #: What the endpoints are called, where their numbers are not the answer — an ordinal's positions
+    #: are ranks, and `0 → 4` reports an implementation detail instead of the declared scale.
+    minimum_label: str | None = None
+    maximum_label: str | None = None
 
 
 def drift_warnings(drift: frozenset[str]) -> tuple[str, ...]:

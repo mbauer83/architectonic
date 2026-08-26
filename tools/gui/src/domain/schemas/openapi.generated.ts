@@ -10350,6 +10350,11 @@ export interface components {
          * ScaleLegendResponse
          * @description A scale's resolved bounds and endpoint tokens, so a legend can be drawn without re-deriving
          *     the data range the styling used.
+         *
+         *     The labels are what the endpoints are *called*, and they are `null` wherever the numbers are the
+         *     answer. An ordinal attribute is positioned by its declared rank, so a legend reading `0 → 4` for
+         *     `negligible → catastrophic` reports how the ramp is computed rather than what it shows — the words
+         *     are the scale the model declared, and the ranks are an implementation detail of reading it.
          */
         ScaleLegendResponse: {
             /** Attribute */
@@ -10358,8 +10363,12 @@ export interface components {
             capability: string;
             /** Maximum */
             maximum: number;
+            /** Maximum Label */
+            maximum_label?: string | null;
             /** Minimum */
             minimum: number;
+            /** Minimum Label */
+            minimum_label?: string | null;
             /** Tokens */
             tokens: [
                 string,

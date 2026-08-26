@@ -57,6 +57,11 @@ export const ScaleLegendDataSchema = Schema.Struct({
   minimum: Schema.Number,
   maximum: Schema.Number,
   tokens: Schema.Tuple(Schema.String, Schema.String),
+  /** What the endpoints are *called*, and `null` wherever the numbers are the answer. An ordinal
+   * attribute is positioned by its declared rank, so `0 → 4` for `negligible → catastrophic` shows
+   * how the ramp is computed rather than what it means — the words are the declared scale. */
+  minimum_label: Schema.optional(Schema.NullOr(Schema.String)),
+  maximum_label: Schema.optional(Schema.NullOr(Schema.String)),
 })
 export type ScaleLegendData = typeof ScaleLegendDataSchema.Type
 

@@ -5,16 +5,18 @@ population never reports drift for an attribute its entities resolve)."""
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Literal
 
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
+from src.domain.ontology_representation.attribute_scales import ordinal_rank
 from src.domain.viewpoints.viewpoint_condition_evaluation import read_attribute_value
 from src.domain.viewpoints.viewpoint_condition_validation import (
     CriteriaContext,
     RegistrySnapshot,
+    attribute_ordinal_scale,
     resolve_attribute_path,
 )
 from src.domain.viewpoints.viewpoint_evaluation_context import EvaluationEnvironment
@@ -58,6 +60,13 @@ class ScaleLegend:
     minimum: float
     maximum: float
     tokens: tuple[str, str]
+    #: What the endpoints are *called*, where the numbers are not the answer.
+    #:
+    #: An ordinal's positions are ranks, so a legend showing `0 → 4` for
+    #: `negligible → catastrophic` reports an implementation detail and hides the scale the model
+    #: actually declares. `None` for a number or a date, whose own value is the label.
+    minimum_label: str | None = None
+    maximum_label: str | None = None
 
 
 
@@ -81,8 +90,37 @@ def _number(value: object) -> float | None:
     return None
 
 
-def _scale_bound(value: float | str | None) -> float | None:
-    return _number(value) if value is not None else None
+def _member_at(position: float, scale: Sequence[str] | None) -> str | None:
+    """The ordinal member a position names, or `None` where the position is its own label."""
+    if scale is None:
+        return None
+    index = int(position)
+    return scale[index] if 0 <= index < len(scale) else None
+
+
+def _positioned(value: object, scale: Sequence[str] | None) -> float | None:
+    """A value as a position on this attribute's scale.
+
+    An ordinal declares its own order — its enum is written in ascending rank — so the position is the
+    rank, read through `ordinal_rank`. Everything else falls back to the numeric reading.
+
+    `ordinal_rank` answers `None` for a member the scale does not contain, and that answer is passed
+    straight through: an unrecognised value has no rank, and "a rank of zero reads as the *lowest*
+    member and would flatter unrecognised data into looking benign". Absent and unranked are both
+    unstyled, which is the same rule `_scale_value` already applies to absence.
+    """
+    if scale is not None:
+        return None if (rank := ordinal_rank(value, scale)) is None else float(rank)
+    return _number(value)
+
+
+def _scale_bound(value: float | str | None, scale: Sequence[str] | None = None) -> float | None:
+    """An authored `scale_min`/`scale_max`, which for an ordinal may name a member.
+
+    Through the same reading as a value, or an ordinal rule with explicit bounds silently degrades to
+    drawn extremes — the exact failure the declared-range default exists to prevent.
+    """
+    return _positioned(value, scale) if value is not None else None
 
 
 def calculate_scale_bounds(
@@ -117,6 +155,11 @@ def calculate_scale_bounds(
             and not rule.scale_attribute.startswith("derived.")
         ):
             drift.add(rule.scale_attribute)
+        ordinal_scale = attribute_ordinal_scale(rule.scale_attribute, context="entity", registries=registries)
+        if ordinal_scale is None:
+            ordinal_scale = attribute_ordinal_scale(
+                rule.scale_attribute, context="connection", registries=registries
+            )
         values: list[float] = []
         for item, kind in items:
             if rule.applies_to and not (rule.applies_to & _item_tags(item, kind)):
@@ -127,11 +170,19 @@ def calculate_scale_bounds(
             value, present = read_attribute_value(
                 item, rule.scale_attribute, context=context, environment=environment
             )
-            numeric = _number(value) if present else None
+            numeric = _positioned(value, ordinal_scale) if present else None
             if numeric is not None:
                 values.append(numeric)
-        minimum = _scale_bound(rule.scale_min)
-        maximum = _scale_bound(rule.scale_max)
+        minimum = _scale_bound(rule.scale_min, ordinal_scale)
+        maximum = _scale_bound(rule.scale_max, ordinal_scale)
+        # An ordinal's bounds default to its **declared range**, not to the drawn extremes. The enum
+        # *is* the scale: on a diagram where every value is `unlikely` or `possible`, drawn-extreme
+        # bounds would paint them as least and most likely — saying "worst here" about values the
+        # model calls mild. A number has no declared range, so for one the drawn extremes are the only
+        # honest answer, which is why the two differ deliberately.
+        if ordinal_scale is not None:
+            minimum = 0.0 if minimum is None else minimum
+            maximum = float(len(ordinal_scale) - 1) if maximum is None else maximum
         if minimum is None and values:
             minimum = min(values)
         if maximum is None and values:
@@ -147,6 +198,8 @@ def calculate_scale_bounds(
                 minimum=minimum,
                 maximum=maximum,
                 tokens=tokens,
+                minimum_label=_member_at(minimum, ordinal_scale),
+                maximum_label=_member_at(maximum, ordinal_scale),
             )
         )
     return bounds, tuple(legends), frozenset(drift)
@@ -173,7 +226,8 @@ def _scale_value(
     ):
         return None
     value, present = read_attribute_value(item, rule.scale_attribute, context=context, environment=environment)
-    numeric = _number(value) if present else None
+    ordinal_scale = attribute_ordinal_scale(rule.scale_attribute, context=context, registries=registries)
+    numeric = _positioned(value, ordinal_scale) if present else None
     if numeric is None:
         return None
     scale = bounds[index]

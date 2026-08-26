@@ -205,12 +205,20 @@ def evaluate_item_style(
     read_access: CriteriaReadAccess,
     registries: RegistrySnapshot,
     environment: EvaluationEnvironment = EvaluationEnvironment(),
-    scale_bounds: Mapping[int, ScaleBounds] = {},
+    scale_bounds: Mapping[int, ScaleBounds],
 ) -> ItemStyleEvaluation:
     """Resolve every display capability for one occurrence. First match per capability
     wins the styling, but every applicable rule is still evaluated so its engagement is
     observable (``rule_hits``) — a rule outshadowed on every item must be reportable,
-    never silently inert."""
+    never silently inert.
+
+    ``scale_bounds`` is **required**, and it used to default to ``{}``. That default was not a neutral
+    value: an empty bounds map makes `_scale_value` return ``None`` for every rule index, so a caller
+    that simply forgot it got a projection in which the whole scale mode silently did nothing. One did
+    forget, for a release — the artifact-local projection — and a viewpoint pinned to a diagram styled
+    nothing while the same viewpoint executed against the repository styled correctly. Requiring it
+    turns that class of omission into a type error.
+    """
     if presentation is None:
         return ItemStyleEvaluation({}, frozenset(), ())
     context: CriteriaContext = item_kind

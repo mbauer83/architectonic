@@ -236,6 +236,8 @@ def project_repository(
                 minimum=legend.minimum,
                 maximum=legend.maximum,
                 tokens=legend.tokens,
+                minimum_label=legend.minimum_label,
+                maximum_label=legend.maximum_label,
             )
             for legend in scale_legends
         ),
