@@ -41,6 +41,10 @@ class IncrementalPassContext:
     verify_full: Callable[..., list[VerificationResult]]
     verify_subset: Callable[..., list[VerificationResult]]
     verify_documents: Callable[..., list[VerificationResult]]
+    #: The rules that are about the repository rather than about a file in it. Needed here for the
+    #: reason documents are: they sit outside the incremental inventory, so a pass that reuses stored
+    #: per-file state would skip them and report a repository-level fault as clean.
+    verify_repository: Callable[..., VerificationResult | None]
 
 
 def run_incremental_pass(
@@ -79,6 +83,13 @@ def run_incremental_pass(
     # document issue twice.
     if mode != "full":
         results.extend(ctx.verify_documents(repo_path, evaluation=evaluation))
+        # And the repository-level rules, for the same reason and with the same guard. A rule asking
+        # whether two files claim one identity is not answered by any file's own state, so reusing
+        # that state answered "clean" for a repository the backend would refuse to serve. Cheap
+        # enough to run every pass: it is one listing, not a per-file walk.
+        repository_result = ctx.verify_repository(repo_path)
+        if repository_result is not None:
+            results.append(repository_result)
 
     # Governs `incremental-cached` too, which applies no rule and so passes no per-file check: it
     # still saves, and a saved state is exactly what a cancelled pass must not leave behind.

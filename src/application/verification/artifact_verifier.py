@@ -294,6 +294,12 @@ class ArtifactVerifier:
         results.extend(self._scheduler.run(self.verify_document_file, doc_files))
         return results
 
+    def _verify_repository(self, repo_path: Path) -> VerificationResult | None:
+        """The rules that are about the repository rather than about any one file in it."""
+        return run_repository_contributions(
+            candidate=self._candidate_repo, runtime_catalogs=self._catalogs, repo_path=repo_path
+        )
+
     def _verify_all_full(
         self, repo_path: Path, *, include_diagrams: bool, evaluation: EvaluationContext = UNCONDITIONAL
     ) -> list[VerificationResult]:
@@ -302,9 +308,7 @@ class ArtifactVerifier:
         inv = evaluation.acquired().inventory
         results = self._verify_inventory_subset(inv, set(inv.ordered_paths), evaluation=evaluation)
         results.extend(self._verify_documents(repo_path, evaluation=evaluation))
-        repo_result = run_repository_contributions(
-            candidate=self._candidate_repo, runtime_catalogs=self._catalogs, repo_path=repo_path
-        )
+        repo_result = self._verify_repository(repo_path)
         if repo_result is not None:
             results.append(repo_result)
         return results
@@ -324,6 +328,7 @@ class ArtifactVerifier:
                 verify_full=self._verify_all_full,
                 verify_subset=self._verify_inventory_subset,
                 verify_documents=self._verify_documents,
+                verify_repository=self._verify_repository,
             ),
             repo_path,
             include_diagrams=include_diagrams,

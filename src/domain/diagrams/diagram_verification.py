@@ -51,8 +51,8 @@ class RepositoryVerificationContribution(Protocol):
     def run(self, ctx: RepositoryVerificationContext, result: Any) -> None: ...
 
 
-# Central registry for generic (non-module) repository contributions.
-# WU-0.6 will append the E335 workspace-id-uniqueness contribution here.
+# Central registry for generic (non-module) repository contributions. Each rule appends itself on
+# import: E335 (workspace-id uniqueness) and E319 (two files claiming one rename-stable identity).
 _GENERIC_REPOSITORY_CONTRIBUTIONS: list[RepositoryVerificationContribution] = []
 
 
