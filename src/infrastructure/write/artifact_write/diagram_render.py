@@ -15,8 +15,8 @@ from src.config.settings import plantuml_limit_size, render_dpi
 from src.infrastructure.rendering.native_svg import render_native_svg
 from src.infrastructure.rendering.puml_safety import strip_leading_puml_frontmatter, strip_startuml_name
 
+from .diagram_body_preparation import _prepare_diagram_puml_body
 from .diagram_confidentiality import is_confidential_diagram_source
-from .diagram_references import _prepare_diagram_puml_body
 from .parse_existing import parse_diagram_file
 
 

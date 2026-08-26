@@ -18,12 +18,14 @@ from src.domain.repository.groups import UNCATEGORIZED
 
 from ._artifact_deduplication import extract_friendly_slug, get_repository, validate_diagram_unique
 from .boundary import assert_engagement_write_root
+from .diagram_body_preparation import (
+    _prepare_diagram_puml_body,
+)
 from .diagram_confidentiality import ensure_confidential_gitignore, is_confidential_diagram_source
 from .diagram_references import (
     _collect_diagram_renderer_references,
     _infer_reference_ids_from_puml,
     _merge_reference_ids,
-    _prepare_diagram_puml_body,
 )
 from .diagram_render import (
     _render_diagram_entities_puml,

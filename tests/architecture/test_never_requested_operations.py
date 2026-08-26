@@ -31,7 +31,6 @@ import pytest
 
 from src.infrastructure.rest.route_policy import BY_OPERATION, ROUTE_POLICY, RouteRow
 from tools.quality.operation_execution import (
-    NEVER_REQUESTED_OPERATIONS,
     REGISTER_TAKEN,
     RequestedRoute,
     covers_the_register,
@@ -58,18 +57,13 @@ _FIXTURE_ROWS: tuple[RouteRow, ...] = (
 )
 
 
-def test_every_registered_operation_is_a_declared_one() -> None:
-    stranded = sorted(NEVER_REQUESTED_OPERATIONS - set(BY_OPERATION))
-    assert stranded == [], (
-        "These register entries name operations the manifest does not declare — a rename moved the "
-        f"operation and left its register entry behind: {stranded}"
-    )
+def test_an_operation_the_client_obviously_drives_is_never_measured_dark() -> None:
+    """A guard on the guard.
 
-
-def test_the_register_never_claims_a_read_that_the_client_obviously_drives() -> None:
-    # A guard on the guard: were the matcher to stop resolving anything, every operation would look
-    # dark and the register would have been populated with all 166. These four are on the first
-    # screen the GUI loads, so their presence would mean the measurement, not the product, is broken.
+    Were the matcher to stop resolving anything, every operation would measure dark and the gate below
+    would report the whole surface. These four are on the first screen the GUI loads, so finding one
+    dark means the measurement is broken, not the product.
+    """
     always_driven = {
         "entities_list_entities",
         "connections_list_connections",
@@ -80,7 +74,7 @@ def test_the_register_never_claims_a_read_that_the_client_obviously_drives() -> 
     assert declared == always_driven, (
         f"these sentinels are no longer declared — pick new ones: {sorted(always_driven - declared)}"
     )
-    assert declared - NEVER_REQUESTED_OPERATIONS == declared
+    assert declared.isdisjoint(_measured_dark_operations())
 
 
 def test_a_concrete_path_resolves_to_the_operation_that_served_it() -> None:
@@ -187,54 +181,16 @@ def test_no_operation_outside_the_register_is_dark() -> None:
     log_text = _log_text_or_skip()
     if not covers_the_register(log_text):
         pytest.skip(
-            f"the log begins at {log_begins_at(log_text)}, after the register was taken at "
-            f"{REGISTER_TAKEN} — it cannot show what was requested before it started, so absence in "
-            "it is not evidence. Re-take the register: "
-            "`uv run tools/quality/never_requested_operations.py`."
+            f"the log begins at {log_begins_at(log_text)}, after the surface was last measured "
+            f"clean at {REGISTER_TAKEN} — it cannot show what was requested before it started, so "
+            "absence in it is not evidence. Re-measure against a log that spans the window: "
+            "`uv run tools/quality/never_requested_operations.py --check`."
         )
-    grown = sorted(_measured_dark_operations() - NEVER_REQUESTED_OPERATIONS)
-    assert grown == [], (
+    dark = sorted(_measured_dark_operations())
+    assert dark == [], (
         "These operations are served and nothing has ever requested one. Drive each through the "
-        "running server — the conformance harness, the browser suite or a CLI round trip — rather "
-        f"than adding it to the register, which only shrinks: {grown}"
-    )
-
-
-def test_the_register_holds_nothing_that_has_since_been_requested() -> None:
-    covered = sorted(NEVER_REQUESTED_OPERATIONS - _measured_dark_operations())
-    assert covered == [], (
-        "These have been requested since the register was taken. Remove them from "
-        f"NEVER_REQUESTED_OPERATIONS: {covered}"
-    )
-
-
-def test_the_register_is_a_minority_of_the_surface_and_says_which_part() -> None:
-    """The register is evidence, so it has to stay legible as evidence.
-
-    This used to assert that dark *writes* outnumbered dark reads — "it is worth knowing at a glance
-    that it covers the write surface and barely touches reads". That was a description of the register's
-    composition on the day it was written, encoded as an invariant, and it inverted the moment the write
-    surface actually got covered: 24 write-shaped against 26 read-shaped. A gate that fails because the
-    work it measures succeeded is a gate that forbids finishing, so the assertion is now the property
-    that was wanted underneath it.
-    """
-    assert len(NEVER_REQUESTED_OPERATIONS) < len(ROUTE_POLICY) / 2
-
-    # Which part it covers, stated as a claim that survives progress: the write surface is dark only
-    # where a precondition is *recorded*. Every write-shaped entry belongs to a family the write walk
-    # registers in `UNWALKED` with a reason, so a newly dark write cannot hide among the ones that are
-    # dark on purpose — and when those slices land this narrows to nothing rather than needing an edit.
-    from tools.quality.rest_write_walk import UNWALKED
-
-    excused = {key.split("/", 1)[0] for key in UNWALKED}
-    unexcused = sorted(
-        operation
-        for operation in NEVER_REQUESTED_OPERATIONS
-        if BY_OPERATION[operation].is_write_shaped and operation.split("_", 1)[0] not in excused
-    )
-    assert unexcused == [], (
-        "these write operations are dark and no precondition in the write walk's UNWALKED register "
-        f"accounts for them: {unexcused}"
+        "running server — the conformance harness, the browser suite or a CLI round trip: "
+        f"{dark}"
     )
 
 

@@ -25,6 +25,20 @@ def find_diagram_type(name: str) -> DiagramTypeModule | None:
     return _registry().find_diagram_type(name)
 
 
+@lru_cache(maxsize=1)
+def suppressed_stereotype_tokens() -> frozenset[str]:
+    """The relation stereotypes an arrow style already conveys, so a label for them is noise.
+
+    Here rather than in the write path, for the reason `find_renderer` gives: it is a question about
+    what the *registry* says, and it was answered in `diagram_references` behind a second `_registry()`
+    memo of its own — a module whose subject is inferring which artifacts a body names. Its one caller
+    is the body preparation, which already asks this adapter for the renderer.
+    """
+    from src.infrastructure.app_bootstrap import build_runtime_catalogs  # noqa: PLC0415
+
+    return build_runtime_catalogs(_registry()).diagram_types.suppressed_stereotype_tokens()
+
+
 def find_renderer(name: str) -> DiagramRenderer | None:
     """The renderer for *name*, or ``None`` when no registered module provides that type.
 

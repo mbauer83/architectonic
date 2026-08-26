@@ -20,7 +20,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from src.infrastructure.diagram_type_registry import all_diagram_types, find_diagram_type, find_renderer
-from src.infrastructure.write.artifact_write.diagram_references import (
+from src.infrastructure.write.artifact_write.diagram_body_preparation import (
     _prepare_diagram_puml_body,
     _restate_generated_declarations,
 )

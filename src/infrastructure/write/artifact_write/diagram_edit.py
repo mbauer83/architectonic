@@ -13,13 +13,15 @@ from src.application.verification.artifact_verifier import ArtifactVerifier
 from ._diagram_group_move import _verification_to_dict, commit_diagram_write
 from .boundary import assert_engagement_write_root, modification_stamp
 from .coerce import as_optional_str_list
+from .diagram_body_preparation import (
+    _prepare_diagram_puml_body,
+    _restate_generated_declarations,
+)
 from .diagram_references import (
     _collect_diagram_renderer_references,
     _infer_reference_ids_from_puml,
     _merge_reference_ids,
-    _prepare_diagram_puml_body,
     _prune_unknown_references,
-    _restate_generated_declarations,
     diagram_entities_are_authoritative,
     reconcile_recorded_connections,
 )

@@ -12,7 +12,6 @@ from src.domain.artifact_id import (
 from src.domain.diagrams.recorded_references import body_contradicts_reference
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.diagram_type_registry import find_renderer
-from src.infrastructure.rendering.archimate_relation_rendering import strip_suppressed_relation_labels
 
 from ._artifact_deduplication import get_repository
 
@@ -34,13 +33,6 @@ def _symmetric_conn_types() -> frozenset[str]:
         for name, info in _registry().all_connection_types().items()
         if getattr(info, "symmetric", False)
     )
-
-
-@lru_cache(maxsize=1)
-def _suppressed_stereotype_tokens() -> frozenset[str]:
-    from src.infrastructure.app_bootstrap import build_runtime_catalogs  # noqa: PLC0415, process_runtime_catalogs
-
-    return build_runtime_catalogs(_registry()).diagram_types.suppressed_stereotype_tokens()
 
 
 def _collect_diagram_renderer_references(
@@ -246,8 +238,6 @@ def reconcile_recorded_connections(
     return _merge_reference_ids(surviving, kept)
 
 
-
-
 def diagram_entities_are_authoritative(verifier, diagram_type: str) -> bool:
     """True when *diagram_type*'s own entity types make ``diagram_entities`` its body source.
 
@@ -262,36 +252,3 @@ def diagram_entities_are_authoritative(verifier, diagram_type: str) -> bool:
     except Exception:  # noqa: BLE001
         return False
     return bool(module is not None and module.ui_config.diagram_only_types)
-
-
-def _restate_generated_declarations(puml_body: str, repo_root: Path, diagram_type: str) -> str:
-    """Bring what the *renderer* states in a stored body up to date, and nothing else.
-
-    A palette, a glyph, a relationship's line style and the label width bound are the product's
-    statements rather than the author's, so a body that keeps a copy of them has to be refreshed
-    whenever it is written — including on the edits that leave the picture alone, which is the only
-    way a hand-laid-out diagram ever hears about a change.
-
-    Deliberately not ``inject_includes``: that one *gives* a body a header when it has none, and
-    expands an ``!include`` marker in place. An edit that carries no body must not convert a
-    diagram's storage form, and `auto_include_stereotypes=False` is an author asking to keep the
-    marker. A notation whose header states nothing generated does not implement the capability, and
-    its bodies come through untouched.
-    """
-    from src.domain.ontology_representation.ontology_protocol import (  # noqa: PLC0415
-        GeneratedHeaderRefreshingRenderer,
-    )
-
-    renderer = find_renderer(diagram_type)
-    if renderer is None or not isinstance(renderer, GeneratedHeaderRefreshingRenderer):
-        return puml_body
-    return renderer.refresh_generated_header(puml_body, repo_root)
-
-
-def _prepare_diagram_puml_body(puml_body: str, repo_root: Path, diagram_type: str) -> str:
-    # Drop relation-stereotype edge labels the arrow style already conveys. This
-    # is an ontology-global normalisation (keyed on ``show_stereotype`` across all
-    # connection types), not a per-diagram-type concern, so it applies uniformly.
-    puml_body = strip_suppressed_relation_labels(puml_body, _suppressed_stereotype_tokens())
-    renderer = find_renderer(diagram_type)
-    return puml_body if renderer is None else renderer.inject_includes(puml_body, repo_root)

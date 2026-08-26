@@ -29,7 +29,7 @@ from typing import Any
 
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(prog="never_requested_operations.py", description=__doc__)
-    parser.add_argument("--check", action="store_true", help="fail when the register is stale")
+    parser.add_argument("--check", action="store_true", help="fail when any operation is dark")
     parser.add_argument(
         "--log", type=Path, action="append", default=None,
         help="access log to read; repeat to union several (dogfood backend + fixture write walk)",
@@ -39,7 +39,6 @@ def main(argv: list[str]) -> int:
     from src.infrastructure.rest.route_policy import BY_OPERATION, ROUTE_POLICY
     from tools.quality.operation_execution import (
         DEFAULT_REQUEST_LOG,
-        NEVER_REQUESTED_OPERATIONS,
         never_requested_operations,
         parse_requested_routes,
         read_request_log,
@@ -67,17 +66,17 @@ def main(argv: list[str]) -> int:
         share = measured[method] / declared[method] if declared[method] else 0.0
         print(f"{method:8} {declared[method]:8} {measured[method]:6} {share:6.0%}")
 
-    newly_covered = sorted(NEVER_REQUESTED_OPERATIONS - dark)
-    newly_dark = sorted(dark - NEVER_REQUESTED_OPERATIONS)
-    for operation in newly_covered:
-        print(f"covered now, remove from the register: {operation}")
-    for operation in newly_dark:
-        print(f"dark and not in the register: {operation}")
+    # No register to diff against. It reached empty — every operation the surface serves has been
+    # requested — and an allowlist that must stay empty is a conditional in every consumer rather than
+    # a fact, which is the lesson `route_policy/_pending.py` already paid for. What is dark is now
+    # simply what is dark.
+    for operation in sorted(dark):
+        print(f"dark: {operation}")
 
-    if args.check and (newly_covered or newly_dark):
+    if args.check and dark:
         print(
-            "The register disagrees with the log. Remove what is covered; exercise what is dark "
-            "rather than adding it.",
+            f"{len(dark)} operation(s) are served and nothing has ever requested one. Exercise each "
+            "through the running server rather than recording it.",
             file=sys.stderr,
         )
         return 1

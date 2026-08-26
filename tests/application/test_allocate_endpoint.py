@@ -58,22 +58,46 @@ def test_allocate_unknown_entity_type_returns_400(client):
     assert r.status_code == 400
 
 
-def test_allocate_diagram_scoped_entity_returns_400(client):
-    """Diagram-scoped entity types must not use this endpoint (no workspace id)."""
-    # If datatype has any diagram-scoped types, test one; otherwise skip.
-    from src.diagram_types.datatype import module as dt_module
-    diagram_scoped = [
-        oe.entity_type
-        for oe in dt_module.ui_config.diagram_only_types
-        if oe.identity_scope != "workspace"
-    ]
-    if not diagram_scoped:
-        pytest.skip("No diagram-scoped entity types to test against")
-    r = client.post(
+def test_allocate_refuses_an_entity_type_that_is_not_workspace_scoped() -> None:
+    """Only a workspace-scoped type has an id this endpoint can allocate.
+
+    Stated against a stubbed catalogue rather than against the shipped one. It used to look for a
+    diagram-scoped type among the datatype module's own, and skip when there was none — and there has
+    never been one: both of that module's diagram-owned types are workspace-scoped, so the assertion
+    below had never executed. A test whose subject is a property of the *rule* must not be conditional
+    on today's content, which is the same reason this repository forbids asserting exact counts
+    against the live model.
+    """
+    starlette_tc = pytest.importorskip("starlette.testclient")
+    from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
+
+    class _Entry:
+        entity_type = "scoped-thing"
+        identity_scope = "diagram"
+        id_prefix = "SCT"
+
+    class _Module:
+        class ui_config:  # noqa: N801
+            diagram_only_types = (_Entry(),)
+
+    class _DiagramTypes:
+        def find_diagram_type(self, name: str) -> object | None:
+            return _Module() if name == "stub" else None
+
+    class _Catalogs:
+        diagram_types = _DiagramTypes()
+
+    app = build_api_app(identifiers_router)
+    install_module_registry(app)
+    app.dependency_overrides[runtime_catalogs_dependency] = lambda: _Catalogs()
+
+    response = starlette_tc.TestClient(app).post(
         "/api/identifiers/allocate",
-        json={"diagram_type": "datatype", "entity_type": diagram_scoped[0]},
+        json={"diagram_type": "stub", "entity_type": "scoped-thing"},
     )
-    assert r.status_code == 400
+
+    assert response.status_code == 400
+    assert "identity_scope" in response.text
 
 
 def test_allocate_produces_unique_ids(client):
