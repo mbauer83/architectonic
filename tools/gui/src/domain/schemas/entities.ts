@@ -59,6 +59,18 @@ export type EntityList = typeof EntityListSchema.Type
 
 // ── Entity detail (read view) ─────────────────────────────────────────────────
 
+/** A scratchpad whose notes point at this entity.
+ *
+ * A *pad*, not a note: a note holding a model reference stops being a searchable record — the model
+ * answers for that thought instead — so the pad is both what survives indexing and what a reader
+ * navigates to. Thinner than a diagram reference because a pad has no type to weigh. */
+export const ScratchpadReferenceSchema = Schema.Struct({
+  artifact_id: Schema.String,
+  name: Schema.String,
+  status: Schema.String,
+})
+export type ScratchpadReference = typeof ScratchpadReferenceSchema.Type
+
 /** A document that cites this entity, and the link it cites it through. */
 export const DocumentReferenceSchema = Schema.Struct({
   document_id: Schema.String,
@@ -108,6 +120,7 @@ export const EntityDetailSchema = Schema.Struct({
   extra: Schema.Record({ key: Schema.String, value: Schema.Unknown }),
   referenced_in_documents: Schema.Array(DocumentReferenceSchema),
   referenced_in_diagrams: Schema.Array(DiagramRefSchema),
+  referenced_in_scratchpads: Schema.Array(ScratchpadReferenceSchema),
 })
 export type EntityDetail = typeof EntityDetailSchema.Type
 

@@ -7658,6 +7658,11 @@ export interface components {
              */
             referenced_in_documents: components["schemas"]["DocumentReference"][];
             /**
+             * Referenced In Scratchpads
+             * @default []
+             */
+            referenced_in_scratchpads: components["schemas"]["ScratchpadReference"][];
+            /**
              * Specializations
              * @default []
              */
@@ -10616,6 +10621,22 @@ export interface components {
         ScratchpadListResponse: {
             /** Scratchpads */
             scratchpads: components["schemas"]["ScratchpadSummaryWire"][];
+        };
+        /**
+         * ScratchpadReference
+         * @description One scratchpad whose notes reference the artifact asked about.
+         *
+         *     A *pad*, not a note, and that is the shape of the answer rather than a simplification: a note
+         *     holding a model reference stops being a searchable record — the model answers for that thought
+         *     instead — so the pad is both what survives indexing and what a reader navigates to.
+         */
+        ScratchpadReference: {
+            /** Artifact Id */
+            artifact_id: string;
+            /** Name */
+            name: string;
+            /** Status */
+            status: string;
         };
         /**
          * ScratchpadResponse

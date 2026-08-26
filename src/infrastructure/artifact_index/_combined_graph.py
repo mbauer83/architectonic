@@ -9,6 +9,7 @@ from src.domain.ontology_representation.artifact_types import (
     DiagramRecord,
     DocumentRecord,
     EntityRecord,
+    ScratchpadRecord,
 )
 
 from ._combined_support import dispatch_both, merge_sorted, sum_count_dicts, sum_tuple
@@ -81,6 +82,11 @@ class CombinedGraphMixin:
     def diagrams_referencing_artifact(self, artifact_id: str) -> list[DiagramRecord]:
         left = self._engagement.diagrams_referencing_artifact(artifact_id)
         right = self._enterprise.diagrams_referencing_artifact(artifact_id)
+        return merge_sorted(left, right, lambda r: r.artifact_id)
+
+    def scratchpads_referencing_artifact(self, artifact_id: str) -> list[ScratchpadRecord]:
+        left = self._engagement.scratchpads_referencing_artifact(artifact_id)
+        right = self._enterprise.scratchpads_referencing_artifact(artifact_id)
         return merge_sorted(left, right, lambda r: r.artifact_id)
 
     def grf_references_to_entity(self, artifact_id: str) -> list[EntityRecord]:

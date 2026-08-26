@@ -39,6 +39,8 @@ class _MemStore:
     connections_by_diagram: dict[str, set[str]] = field(default_factory=dict)
     """diagram_id → set of diagram-owned connection artifact_ids (artifact_id contains '#conn/')."""
     diagrams_by_reference: dict[str, set[str]] = field(default_factory=dict)
+    scratchpads_by_reference: dict[str, set[str]] = field(default_factory=dict)
+    """canonical artifact id → the scratchpads whose notes point at it."""
     """entity/connection artifact_id → set of diagram artifact_ids referencing it."""
     grf_targets_by_entity: dict[str, set[str]] = field(default_factory=dict)
     """global-artifact-id target → set of global-entity-reference entity artifact_ids."""
@@ -216,6 +218,10 @@ class _MemStore:
         for r in self.diagrams.values():
             for ref_id in _diagram_reference_ids(r):
                 self.diagrams_by_reference.setdefault(ref_id, set()).add(r.artifact_id)
+        self.scratchpads_by_reference = {}
+        for r in self.scratchpads.values():
+            for ref_id in _scratchpad_reference_ids(r):
+                self.scratchpads_by_reference.setdefault(ref_id, set()).add(r.artifact_id)
         self.document_by_path = {r.path.resolve(): r.artifact_id for r in self.documents.values()}
         notes_by_pad: dict[str, set[str]] = {}
         for r in self.scratchpad_notes.values():
@@ -265,6 +271,21 @@ class _MemStore:
         if "#conn/" in rec.artifact_id:
             _discard_from(self.connections_by_diagram, rec.artifact_id.split("#conn/")[0], rec.artifact_id)
 
+    def index_scratchpad(self, rec: ScratchpadRecord) -> None:
+        """Maintain the reverse map for one pad, as `index_diagram` does for one diagram.
+
+        Needed because a pad is re-indexed in-session: `replace_scratchpad` writes the new record
+        straight into `_mem`, so without this the reverse map would keep the references the pad held
+        when the process started and an entity page would go on linking a pad that no longer mentions
+        it.
+        """
+        for ref_id in _scratchpad_reference_ids(rec):
+            self.scratchpads_by_reference.setdefault(ref_id, set()).add(rec.artifact_id)
+
+    def unindex_scratchpad(self, rec: ScratchpadRecord) -> None:
+        for ref_id in _scratchpad_reference_ids(rec):
+            _discard_from(self.scratchpads_by_reference, ref_id, rec.artifact_id)
+
     def index_diagram(self, rec: DiagramRecord) -> None:
         self.diagram_by_path[rec.path.resolve()] = rec.artifact_id
         for ref_id in _diagram_reference_ids(rec):
@@ -274,6 +295,16 @@ class _MemStore:
         self.diagram_by_path.pop(rec.path.resolve(), None)
         for ref_id in _diagram_reference_ids(rec):
             _discard_from(self.diagrams_by_reference, ref_id, rec.artifact_id)
+
+
+def _scratchpad_reference_ids(rec: ScratchpadRecord) -> set[str]:
+    """What this scratchpad's notes refer to, keyed the way a reader will ask for it.
+
+    Canonicalised for the same reason the diagram half is: short and full spellings of an id name the
+    same artifact, and a lookup that matched the string as written would treat the two as different
+    artifacts.
+    """
+    return {canonical_reference_key(ref) for ref in rec.references if ref}
 
 
 def _diagram_reference_ids(rec: DiagramRecord) -> set[str]:

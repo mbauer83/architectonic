@@ -179,6 +179,14 @@ class ArtifactRepository:
         """
         return self._store.diagrams_referencing_artifact(artifact_id)
 
+    def scratchpads_referencing_artifact(self, artifact_id: str) -> list[ScratchpadRecord]:
+        """Every scratchpad whose notes point at this artifact, from the reverse index.
+
+        Delegated for the reason the diagram half is: the store keeps the map, and the facade simply
+        had no way through to it.
+        """
+        return self._store.scratchpads_referencing_artifact(artifact_id)
+
     def list_artifacts(
         self,
         *,

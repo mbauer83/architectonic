@@ -4,6 +4,7 @@ import type { components } from './openapi.generated'
 import type {
   DirectNeighborhoodSchema,
   DocumentReferenceSchema,
+  ScratchpadReferenceSchema,
   EntityContextSchema,
   EntityDetailSchema,
   EntityListSchema,
@@ -58,6 +59,12 @@ describe('the entity detail', () => {
   it('decodes the record, its parsed sections and its degree', () => {
     expectTypeOf<SchemaType<typeof EntityDetailSchema>>().toEqualTypeOf<
       Immutable<components['schemas']['EntityDetailResponse']>
+    >()
+  })
+
+  it('decodes each scratchpad whose notes point at the entity', () => {
+    expectTypeOf<SchemaType<typeof ScratchpadReferenceSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['ScratchpadReference']>
     >()
   })
 

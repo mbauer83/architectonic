@@ -19,8 +19,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from src.application.artifacts.entity_references import diagram_reference_dicts, references_to
-from src.domain.ontology_representation.artifact_types import DiagramRecord, EntityRecord
+from src.application.artifacts.entity_references import (
+    diagram_reference_dicts,
+    references_to,
+    scratchpad_reference_dicts,
+)
+from src.domain.ontology_representation.artifact_types import DiagramRecord, EntityRecord, ScratchpadRecord
 
 
 def _entity(artifact_id: str = "APP@1") -> EntityRecord:
@@ -57,11 +61,24 @@ def _diagram(slug: str, name: str, *, status: str = "active") -> DiagramRecord:
     )
 
 
+def _pad(slug: str, name: str, *, status: str = "active") -> ScratchpadRecord:
+    return ScratchpadRecord(
+        artifact_id=f"SCR@1.x.{slug}",
+        name=name,
+        description="",
+        version="0.1.0",
+        status=status,
+        meta_ontology="archimate-4",
+        path=Path(f"{slug}.scratchpad.yaml"),
+    )
+
+
 class _Source:
     """A source that records how it was asked, so the *manner* of the answer can be asserted."""
 
-    def __init__(self, diagrams: list[DiagramRecord]) -> None:
+    def __init__(self, diagrams: list[DiagramRecord], pads: list[ScratchpadRecord] | None = None) -> None:
         self._diagrams = diagrams
+        self._pads = pads or []
         self.asked_for: list[str] = []
         self.listed_diagrams = 0
 
@@ -76,22 +93,32 @@ class _Source:
         self.asked_for.append(artifact_id)
         return self._diagrams
 
+    def scratchpads_referencing_artifact(self, artifact_id: str) -> list[ScratchpadRecord]:
+        self.asked_for.append(artifact_id)
+        return self._pads
+
 
 class TestHowTheQuestionIsAsked:
-    def test_the_diagrams_are_looked_up_by_the_entity_rather_than_scanned_for(self) -> None:
-        """The reverse index answers this directly. Listing every diagram and reading each one's
-        recorded references would return the same rows and get slower with the repository."""
-        source = _Source([_diagram("a", "A Map")])
+    def test_the_reverse_lookups_ask_by_the_entity_rather_than_scanning(self) -> None:
+        """The reverse index answers both directly. Listing every diagram or every pad and reading
+        each one's recorded references would return the same rows and get slower with the
+        repository — which is the whole reason the index keeps the maps."""
+        source = _Source([_diagram("a", "A Map")], [_pad("p", "A Pad")])
 
         references_to(_entity("APP@7"), source)
 
-        assert source.asked_for == ["APP@7"]
+        assert source.asked_for == ["APP@7", "APP@7"]
         assert source.listed_diagrams == 0
 
-    def test_both_halves_come_back_from_the_one_call(self) -> None:
-        found = references_to(_entity(), _Source([_diagram("a", "A Map")]))
+    def test_every_kind_comes_back_from_the_one_call(self) -> None:
+        """One question, three answers. It was assembled at two call sites in two copies, and each
+        further kind would have doubled again — which is also what gives MCP the same answer as the
+        GUI, since both now ask this function."""
+        found = references_to(_entity(), _Source([_diagram("a", "A Map")], [_pad("p", "A Pad")]))
 
-        assert set(found) == {"referenced_in_documents", "referenced_in_diagrams"}
+        assert set(found) == {
+            "referenced_in_documents", "referenced_in_diagrams", "referenced_in_scratchpads",
+        }
 
 
 class TestWhatADiagramRowCarries:
@@ -124,3 +151,20 @@ class TestWhatADiagramRowCarries:
 
     def test_drawing_nothing_is_an_empty_list_rather_than_an_absence(self) -> None:
         assert diagram_reference_dicts([]) == []
+
+
+class TestWhatAScratchpadRowCarries:
+    def test_a_row_names_the_pad_a_reader_navigates_to(self) -> None:
+        """A pad, not a note. A note holding a model reference stops being a searchable record — the
+        model answers for that thought instead — so the pad is what survives and what a reader opens."""
+        rows = scratchpad_reference_dicts([_pad("q3", "Q3 platform thinking")])
+
+        assert rows == [{"artifact_id": "SCR@1.x.q3", "name": "Q3 platform thinking", "status": "active"}]
+
+    def test_the_rows_are_ordered_by_name(self) -> None:
+        rows = scratchpad_reference_dicts([_pad("z", "zebra pad"), _pad("a", "Alpha pad")])
+
+        assert [row["name"] for row in rows] == ["Alpha pad", "zebra pad"]
+
+    def test_referencing_nothing_is_an_empty_list(self) -> None:
+        assert scratchpad_reference_dicts([]) == []

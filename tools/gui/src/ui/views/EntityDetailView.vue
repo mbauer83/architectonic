@@ -16,6 +16,7 @@ import EntityEditFormCard from '../components/EntityEditFormCard.vue'
 import EntityDeletePanel from '../components/EntityDeletePanel.vue'
 import EntityDiagramReferences from '../components/EntityDiagramReferences.vue'
 import EntityDocumentReferences from '../components/EntityDocumentReferences.vue'
+import EntityScratchpadReferences from '../components/EntityScratchpadReferences.vue'
 import type { RenderedEntityContext } from '../../domain'
 import type { NotFoundError } from '../../domain'
 import type { MarkdownError } from '../../application/MarkdownService'
@@ -53,6 +54,7 @@ const incoming = computed(() => context.data.value?.connections.inbound ?? [])
 const symmetric = computed(() => context.data.value?.connections.symmetric ?? [])
 const documentReferences = computed(() => detail.value?.referenced_in_documents ?? [])
 const diagramReferences = computed(() => detail.value?.referenced_in_diagrams ?? [])
+const scratchpadReferences = computed(() => detail.value?.referenced_in_scratchpads ?? [])
 
 const load = () => {
   if (!entityId.value) return
@@ -149,6 +151,11 @@ const executeDelete = () => { void router.push(backTo.value) }
       <EntityDiagramReferences
         v-if="diagramReferences.length"
         :references="diagramReferences"
+      />
+
+      <EntityScratchpadReferences
+        v-if="scratchpadReferences.length"
+        :references="scratchpadReferences"
       />
 
       <!-- Connections: [INCOMING] [SYMMETRIC] [OUTGOING] on wide screens -->

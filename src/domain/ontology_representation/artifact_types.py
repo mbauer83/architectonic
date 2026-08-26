@@ -252,6 +252,12 @@ class ScratchpadRecord:
     path: Path
     group: str = "uncategorized"
     last_updated: str | None = None
+    #: The model content this pad's notes point at.
+    #:
+    #: On the *pad* rather than on its notes, because the pad is what a reader navigates to and because
+    #: a bound note is not a note record at all: a note stops being searchable once it holds a model
+    #: reference, so the references would be lost with exactly the notes that carry them.
+    references: frozenset[str] = frozenset()
 
     def __str__(self) -> str:
         return f"[{self.artifact_id}] {self.name}  (scratchpad)"

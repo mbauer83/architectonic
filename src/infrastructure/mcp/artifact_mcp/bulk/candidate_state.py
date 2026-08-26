@@ -16,6 +16,7 @@ from src.domain.ontology_representation.artifact_types import (
     DiagramRecord,
     DocumentRecord,
     EntityRecord,
+    ScratchpadRecord,
 )
 from src.domain.repository.repo_layout import ARTIFACT_SOURCE_SUFFIXES
 from src.infrastructure.mcp.artifact_mcp.bulk.candidate_lists import CandidateListMixin
@@ -247,6 +248,16 @@ class CandidateStore(CandidateListMixin):
             d for d in self._live.documents_referencing_entity(artifact_id)
             if d.artifact_id not in self._deleted_documents
         ]
+
+    def scratchpads_referencing_artifact(self, artifact_id: str) -> list[ScratchpadRecord]:
+        """The live answer, unchanged by anything staged.
+
+        The batch surface neither creates nor edits scratchpads — a pad is written through its own
+        tools — so nothing staged here can add a referencing pad or take one away. Stated rather than
+        left to `documents_referencing_entity`'s neighbouring reasoning, because that one *does* have a
+        deletion set to honour and this one has none.
+        """
+        return self._live.scratchpads_referencing_artifact(artifact_id)
 
     def grf_references_to_entity(self, artifact_id: str) -> list[EntityRecord]:
         live = [

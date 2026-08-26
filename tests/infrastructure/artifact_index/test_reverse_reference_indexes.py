@@ -22,6 +22,34 @@ def _write_entity(path: Path, artifact_id: str, artifact_type: str, name: str, e
     )
 
 
+def _write_scratchpad(path: Path, pad_id: str, *, bound_to: str, name: str = "Thinking") -> None:
+    """A pad with one note bound to model content.
+
+    `element-type` because the aggregate requires it — a reference without a type describes content the
+    scratchpad cannot say anything about — and `destination: element` because a note holding a model
+    reference *is* an element. A document missing either is refused and not indexed at all.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        f"artifact-id: {pad_id}\n"
+        "artifact-type: scratchpad\n"
+        f"name: {name}\n"
+        "description: a pad\n"
+        "version: 0.1.0\n"
+        "status: active\n"
+        "meta-ontology: archimate-4\n"
+        "notes:\n"
+        "  - id: n1\n"
+        "    title: A thought\n"
+        "    destination: element\n"
+        "    element-type: requirement\n"
+        "    model-ref:\n"
+        f"      artifact-id: {bound_to}\n"
+        "      kind: bound\n",
+        encoding="utf-8",
+    )
+
+
 def _write_diagram(path: Path, diagram_id: str, *, entity_id: str, connection_id: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
@@ -69,6 +97,11 @@ def _repo(tmp_path: Path) -> Path:
         entity_id=target,
         connection_id=conn,
     )
+    _write_scratchpad(
+        root / "scratchpads" / "uncategorized" / "SCR@1.pad.pad.scratchpad.yaml",
+        "SCR@1.pad.pad",
+        bound_to=target,
+    )
     return root
 
 
@@ -81,6 +114,11 @@ def test_reverse_reference_indexes_are_built_by_full_refresh(tmp_path: Path) -> 
         "REQ@1.source.source---REQ@1.target.target@@archimate-association"
     )] == ["DIA@1.probe.probe"]
     assert [e.artifact_id for e in store.grf_references_to_entity("REQ@1.target.target")] == ["GRF@1.proxy.proxy"]
+    # A scratchpad's references live on the *pad*, because the note carrying one stops being a
+    # searchable record — the model answers for that thought instead.
+    assert [p.artifact_id for p in store.scratchpads_referencing_artifact("REQ@1.target.target")] == [
+        "SCR@1.pad.pad"
+    ]
 
 
 def test_reverse_reference_indexes_update_incrementally(tmp_path: Path) -> None:
@@ -106,12 +144,21 @@ def test_reverse_reference_indexes_update_incrementally(tmp_path: Path) -> None:
         extra=f"global-artifact-id: {other}\n",
     )
 
-    store.apply_file_changes([root / "model" / "motivation" / "requirement" / f"{other}.md", diagram_path, grf_path])
+    pad_path = root / "scratchpads" / "uncategorized" / "SCR@1.pad.pad.scratchpad.yaml"
+    _write_scratchpad(pad_path, "SCR@1.pad.pad", bound_to=other)
+
+    store.apply_file_changes([
+        root / "model" / "motivation" / "requirement" / f"{other}.md", diagram_path, grf_path, pad_path,
+    ])
 
     assert store.diagrams_referencing_artifact("REQ@1.target.target") == []
     assert [d.artifact_id for d in store.diagrams_referencing_artifact(other)] == ["DIA@1.probe.probe"]
     assert store.grf_references_to_entity("REQ@1.target.target") == []
     assert [e.artifact_id for e in store.grf_references_to_entity(other)] == ["GRF@1.proxy.proxy"]
+    # The pad's note was rebound. Without the incremental half, an entity page would go on linking a
+    # pad whose thinking has moved on — for the life of the process.
+    assert store.scratchpads_referencing_artifact("REQ@1.target.target") == []
+    assert [p.artifact_id for p in store.scratchpads_referencing_artifact(other)] == ["SCR@1.pad.pad"]
 
 
 class TestASpellingIsNotAnIdentity:

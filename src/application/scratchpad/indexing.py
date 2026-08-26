@@ -57,6 +57,13 @@ def parse_scratchpad(path: Path, *, group: str) -> tuple[ScratchpadRecord | None
         meta_ontology=scratchpad.meta_ontology,
         path=path,
         group=group,
+        # Every note's reference, including the notes dropped below. `_still_a_thought` removes a
+        # bound note from the *searchable* records because the model now answers for that thought —
+        # but a bound note is precisely the one that references something, so reading the references
+        # off the note records would find none of them.
+        references=frozenset(
+            note.model_ref.artifact_id for note in scratchpad.notes if note.model_ref is not None
+        ),
     )
     notes = [
         ScratchpadNoteRecord(

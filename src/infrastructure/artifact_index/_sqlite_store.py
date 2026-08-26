@@ -250,6 +250,7 @@ class _SqliteStore:
         self.delete_scratchpad(scratchpad_id)
         if pad is not None:
             self._mem.scratchpads[pad.artifact_id] = pad
+            self._mem.index_scratchpad(pad)
         self._mem.scratchpad_notes.update({rec.artifact_id: rec for rec in notes})
         if notes:
             self._mem.notes_by_scratchpad[scratchpad_id] = {rec.artifact_id for rec in notes}
@@ -267,7 +268,11 @@ class _SqliteStore:
         addresses = self._mem.notes_by_scratchpad.pop(scratchpad_id, set())
         for address in addresses:
             self._mem.scratchpad_notes.pop(address, None)
-        self._mem.scratchpads.pop(scratchpad_id, None)
+        # Unindexed from the record being removed, before it is dropped: the reverse map is keyed by
+        # what the pad referred to, which only the record itself can say.
+        existing = self._mem.scratchpads.pop(scratchpad_id, None)
+        if existing is not None:
+            self._mem.unindex_scratchpad(existing)
         with self._conn:
             if self._fts_enabled:
                 self._conn.execute("DELETE FROM scratchpads_fts WHERE artifact_id=?", (scratchpad_id,))

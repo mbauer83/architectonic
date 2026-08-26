@@ -4,7 +4,12 @@ from typing import Any, cast
 
 from src.application.document_links import references_to_entity
 from src.domain.artifact_id import canonical_reference_key
-from src.domain.ontology_representation.artifact_types import DiagramRecord, DocumentRecord, EntityRecord
+from src.domain.ontology_representation.artifact_types import (
+    DiagramRecord,
+    DocumentRecord,
+    EntityRecord,
+    ScratchpadRecord,
+)
 
 _EntityIds = list[str] | set[str] | frozenset[str]
 
@@ -16,6 +21,21 @@ class _ReverseReferenceQueries:
         with owner._lock.reading():
             refs = owner._mem.diagrams_by_reference.get(canonical_reference_key(artifact_id), set())
             return sorted((r for did in refs if (r := owner._mem.diagrams.get(did))), key=lambda r: r.artifact_id)
+
+    def scratchpads_referencing_artifact(self, artifact_id: str) -> list[ScratchpadRecord]:
+        """Scratchpads whose notes point at this artifact.
+
+        A lookup, like the diagram half and unlike the document one: a note's reference is a recorded
+        `model_ref`, not a link in prose, so the index keeps the reverse map and there is nothing to
+        read out of the pads at query time.
+        """
+        owner = cast(Any, self)
+        owner._ensure_loaded()
+        with owner._lock.reading():
+            refs = owner._mem.scratchpads_by_reference.get(canonical_reference_key(artifact_id), set())
+            return sorted(
+                (r for pid in refs if (r := owner._mem.scratchpads.get(pid))), key=lambda r: r.artifact_id
+            )
 
     def grf_references_to_entity(self, artifact_id: str) -> list[EntityRecord]:
         owner = cast(Any, self)
