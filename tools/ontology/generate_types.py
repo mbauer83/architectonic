@@ -12,6 +12,7 @@ import sys
 from pathlib import Path
 
 from src.domain.viewpoints.viewpoint_style_values import (
+    AD_HOC_RAMP_TOKENS,
     CATEGORICAL_PALETTE,
     SCALE_ENDPOINT_ORDER,
     STYLE_TOKEN_COLORS,
@@ -91,6 +92,10 @@ def main(argv: list[str]) -> None:
     # is the assignment: a member takes the colour at its index in the declared value order, so a
     # record keyed by anything would lose the only thing this table says.
     out += _const_array("CATEGORICAL_PALETTE", "CategoricalColor", list(CATEGORICAL_PALETTE))
+    # The two endpoints an ad-hoc reading ramps between. Generated because the reading panel draws the
+    # same gradient in its colour key as the renderer draws on the picture, and a key showing one
+    # gradient beside a diagram drawn in another is worse than no key at all.
+    out += _const_array("AD_HOC_RAMP_TOKENS", "AdHocRampToken", list(AD_HOC_RAMP_TOKENS))
 
     out += _const_record(
         "ENTITY_TYPE_CORNERS", "'square' | 'rounded' | 'diagonal'",

@@ -1,6 +1,7 @@
 import { Effect, Schema, Either } from 'effect'
 import type { ModelRepository, ListParams, Direction } from '../../ports/ModelRepository'
 import { NetworkError } from '../../domain/errors'
+import { lensParams, type ReadingLens } from '../../domain/readingLens'
 import {
   StatsSchema,
   EntityListSchema,
@@ -22,6 +23,7 @@ import {
   DatatypeTypeCatalogSchema,
   DatatypeTypeUsagesSchema,
   AllocatedIdentifierSchema,
+  DiagramAttributePanelSchema,
   DiagramContextSchema,
   DiagramEntityDiscoverySchema,
   WriteResultSchema,
@@ -319,8 +321,17 @@ export const makeHttpModelRepository = (): ModelRepository => ({
       Schema.Struct({ items: Schema.Array(DiagramConnectionSchema) }),
     ).pipe(Effect.map((r) => r.items as import('../../domain').DiagramConnection[])),
 
-  getDiagramSvg: (diagramId: string) =>
-    fetchText(buildUrl(`/diagrams/${encodeIdentitySegment(diagramId)}/svg`)),
+  getDiagramSvg: (diagramId: string, lens?: ReadingLens) =>
+    fetchText(buildUrl(
+      `/diagrams/${encodeIdentitySegment(diagramId)}/svg`,
+      lens && lensParams(lens),
+    )),
+
+  getDiagramAttributePanel: (diagramId: string) =>
+    fetchJson(
+      buildUrl(`/diagrams/${encodeIdentitySegment(diagramId)}/attribute-panel`),
+      DiagramAttributePanelSchema,
+    ),
 
   getEntityDisplayItem: (artifactId: string) =>
     fetchJson(

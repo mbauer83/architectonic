@@ -237,3 +237,42 @@ export const DiagramPreviewResultSchema = Schema.Struct({
   derived_entities: Schema.NullOr(Schema.Array(DerivedEntitySchema)),
 })
 export type DiagramPreviewResult = typeof DiagramPreviewResultSchema.Type
+
+/** How a reader can be offered colour for one attribute.
+ *
+ * `ramp` interpolates between two endpoints and needs an order — a number, a date, or an ordinal,
+ * whose order the ontology declares. `palette` gives one colour per value and needs a bounded value
+ * set with no inherent order. `none` is the honest answer for free text and for a list: a ramp over
+ * prose means nothing and a palette over unbounded values is one colour per entity. */
+export const AttributeColourKindSchema = Schema.Literal('ramp', 'palette', 'none')
+export type AttributeColourKind = typeof AttributeColourKindSchema.Type
+
+/** One attribute, as a reading control can offer it. There is no `printable` flag: every attribute
+ * can be printed beside its entity whatever its colour, so a field true for every row would say
+ * nothing. */
+export const AttributeOfferSchema = Schema.Struct({
+  name: Schema.String,
+  declared_type: Schema.String,
+  colour: AttributeColourKindSchema,
+  /** The value set in declared order, for an attribute that has one. An ordinal's order *is* its
+   * rank, so this doubles as the scale a ramp reads. */
+  values: Schema.Array(Schema.String),
+  /** How many of the drawn entities of this type carry a value. Zero is reported, not hidden — a
+   * dropped row would say "this type has no such attribute", which is false. */
+  present_on: Schema.Number,
+})
+export type AttributeOffer = typeof AttributeOfferSchema.Type
+
+/** One entity type, or one specialization of it, as it occurs on this diagram. A specialization is
+ * its own row because it contributes its own attributes: two entities of one type carrying different
+ * specializations do not offer the same set. */
+export const TypeOfferSchema = Schema.Struct({
+  entity_type: Schema.String,
+  specialization: Schema.String,
+  drawn: Schema.Number,
+  attributes: Schema.Array(AttributeOfferSchema),
+})
+export type TypeOffer = typeof TypeOfferSchema.Type
+
+export const DiagramAttributePanelSchema = Schema.Struct({ types: Schema.Array(TypeOfferSchema) })
+export type DiagramAttributePanel = typeof DiagramAttributePanelSchema.Type

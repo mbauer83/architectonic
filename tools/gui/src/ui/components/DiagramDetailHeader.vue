@@ -3,15 +3,19 @@
  * promote/edit/sync/delete action row. Pure display + button clicks emitted up — the sync
  * and delete flows themselves live in DiagramSyncPanel/DiagramDeletePanel. */
 import type { DiagramDetail } from '../../domain'
+import { EMPTY_READING_LENS, type ReadingLens } from '../../domain/readingLens'
 import DiagramDownloadMenu from './DiagramDownloadMenu.vue'
 
-defineProps<{
+withDefaults(defineProps<{
   detail: DiagramDetail
   diagramId: string
   editPath: string
   isGlobalDiagram: boolean
   adminMode: boolean
-}>()
+  /** The reader's ad-hoc reading, so the download exports the picture on screen rather than the
+   * authored one. Defaulted, because the listing view mounts this header with no reading at all. */
+  lens?: ReadingLens
+}>(), { lens: () => EMPTY_READING_LENS })
 const emit = defineEmits<{ sync: []; delete: [] }>()
 </script>
 
@@ -26,7 +30,10 @@ const emit = defineEmits<{ sync: []; delete: [] }>()
     <h1 class="pg-title">
       {{ detail.name }}
     </h1>
-    <DiagramDownloadMenu :diagram-id="diagramId" />
+    <DiagramDownloadMenu
+      :diagram-id="diagramId"
+      :lens="lens"
+    />
     <RouterLink
       v-if="!isGlobalDiagram"
       :to="{ path: '/promote', query: { diagram_id: diagramId } }"

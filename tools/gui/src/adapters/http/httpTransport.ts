@@ -18,13 +18,20 @@ export const REQUEST_TIMEOUT_MS = TIMEOUT_BUDGET_MS.default ?? 10000
 
 export const buildUrl = (
   path: string,
-  params?: Readonly<Record<string, string | number | boolean | undefined>>,
+  params?: Readonly<Record<string, string | number | boolean | readonly string[] | undefined>>,
   adminPath?: boolean,
 ): string => {
   const url = new URL((adminPath ? '/admin/api' : '/api') + path, window.location.origin)
   if (params) {
     for (const [k, v] of Object.entries(params)) {
-      if (v !== undefined) url.searchParams.set(k, String(v))
+      if (v === undefined) continue
+      // An array becomes the *repeated* key FastAPI reads a `list[str]` query parameter from —
+      // `?print=a&print=b`, not one comma-joined value. Joining is what the other list-valued reads
+      // here do (`domains`, `entity_types`), and it is right for them because those routes declare a
+      // single comma-separated string; a route declaring a list would receive one member named
+      // "a,b". So the shape follows what the route declares, and both shapes are expressible.
+      if (Array.isArray(v)) v.forEach((member) => url.searchParams.append(k, member))
+      else url.searchParams.set(k, String(v as string | number | boolean))
     }
   }
   return url.toString()

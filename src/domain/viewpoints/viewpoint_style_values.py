@@ -31,6 +31,18 @@ scrambled the offer into alphabetical, which is how this came to be declared pro
 SCALE_ENDPOINT_TOKENS: frozenset[str] = frozenset(SCALE_ENDPOINT_ORDER)
 """Membership, derived from the order rather than restated beside it."""
 
+AD_HOC_RAMP_TOKENS: tuple[str, str] = ("heat-low", "heat-high")
+"""The endpoints an *ad-hoc* reading ramps between, when a reader colours a diagram by an attribute
+they picked rather than by an authored rule.
+
+The magnitude pair, because that is the question a reader asks of an attribute they chose to colour
+by — "where is this high" — and not the distance pair, which answers "how far is this from
+something".
+
+Declared here rather than in the lens that renders with it, because the reading panel has to draw the
+same two swatches in its colour key: a key showing one gradient beside a picture drawn in another
+would be worse than no key. Generated into the frontend constants for that reason."""
+
 STYLE_VALUE_TOKENS: frozenset[str] = SEMANTIC_STYLE_TOKENS | SCALE_ENDPOINT_TOKENS
 
 #: What each token is actually painted as. One table, and the reason it is here rather than in a

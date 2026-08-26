@@ -1,4 +1,6 @@
 import type { ClassificationLevelsResponse } from '../domain/schemas/ontology'
+import type { DiagramAttributePanel } from '../domain/schemas/diagrams'
+import type { ReadingLens } from '../domain/readingLens'
 import type { Effect } from 'effect'
 import type { DiagramComposition, DiagramWriteBody } from './diagramWriteBodies'
 import type { EnterpriseAdminRepository } from './EnterpriseAdminRepository'
@@ -189,7 +191,8 @@ export interface ModelRepository extends EnterpriseAdminRepository, ScratchpadRe
   readonly getEntitySchemata: (artifactType: string, specialization?: string) => Effect.Effect<EntitySchemaInfo, RepoError>
   readonly getDiagramEntities: (diagramId: string) => Effect.Effect<DiagramContextEntity[], RepoError>
   readonly getDiagramConnections: (diagramId: string) => Effect.Effect<DiagramConnection[], RepoError>
-  readonly getDiagramSvg: (diagramId: string) => Effect.Effect<string, RepoError>
+  readonly getDiagramSvg: (diagramId: string, lens?: ReadingLens) => Effect.Effect<string, RepoError>
+  readonly getDiagramAttributePanel: (diagramId: string) => Effect.Effect<DiagramAttributePanel, RepoError>
   readonly getEntityDisplayItem: (artifactId: string) => Effect.Effect<EntityDisplayInfo, RepoError>
   readonly searchEntityDisplay: (params: {
     query: string

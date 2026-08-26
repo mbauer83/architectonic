@@ -3,21 +3,37 @@
 The SVG endpoint doubles as the confidential-assurance viewer: a confidential assurance
 diagram (no on-disk image, per rule G-f) is rendered on demand in memory and served only
 when the confidential store is unlocked.
+
+It also carries the **reading lens**: `colour_by` and `print` ask for an ad-hoc colouring by an
+attribute and for attribute values printed with the elements. Those are parameters of *these* two
+addresses rather than a new operation, and that follows from what a lens is. A reader's choice is
+never persisted — it lasts as long as their visit — so the rendered bytes *are* the display, and
+"download what I am looking at" is this same render asked for as an attachment. A separate address
+would have to answer the same question twice and then keep the two answers in step.
+
+A lens forces a re-render: the on-disk image is the authored diagram, which is exactly what a lensed
+request is not asking for.
 """
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Literal
+from typing import Annotated, Literal
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import FileResponse, Response
 
 from src.application.repo_path_helpers import rendered_dir_for_diagram
+from src.application.runtime_catalogs import RuntimeCatalogs
+from src.application.viewpoints.diagram_reading_lens import ReadingLens
 from src.config.repo_paths import DIAGRAM_CATALOG, DIAGRAMS, RENDERED
 from src.domain.ontology_representation.artifact_types import DiagramRecord
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers._openapi import READ_RESPONSES, TAG_DIAGRAMS, media_response
+from src.infrastructure.rest.routers.viewpoints._freshness import (
+    fresh_viewpoints_runtime_catalogs_dependency,
+)
 
 router = APIRouter()
 
@@ -58,6 +74,55 @@ def _rendered_path(d: DiagramRecord, suffix: str) -> Path | None:
     return None
 
 
+def _lens(colour_by: str, printed: Sequence[str]) -> ReadingLens:
+    """The reader's request, normalised. Blank names are dropped and order is kept."""
+    return ReadingLens(
+        colour_by=colour_by.strip(),
+        printed=tuple(dict.fromkeys(name.strip() for name in printed if name.strip())),
+    )
+
+
+def _lensed_body(
+    artifact_id: str,
+    diagram_path: Path,
+    lens: ReadingLens,
+    catalogs: RuntimeCatalogs,
+) -> str:
+    """The diagram's body with the lens applied, or its authored body when the lens is empty.
+
+    The entities are resolved by `resolve_placed_entities` — the same function the attribute panel
+    asks — so a reader cannot be offered an attribute here that the panel would not have listed, nor
+    the other way round. The snapshot comes from `configured_registry_snapshot`, so the lens reads
+    attributes under exactly the reach the rest of the surface uses.
+
+    The catalogues are *given*, not read from process state: they arrive through the same freshness
+    dependency the attribute panel takes, which is what lets a test override them and what
+    `test_runtime_catalogs_have_one_accessor` requires of a router. It caught this module reading them
+    directly.
+    """
+    from src.application.viewpoints.diagram_reading_lens import apply_reading_lens  # noqa: PLC0415
+    from src.application.viewpoints.placed_occurrences import resolve_placed_entities  # noqa: PLC0415
+    from src.infrastructure.viewpoints_snapshot import configured_registry_snapshot  # noqa: PLC0415
+    from src.infrastructure.write.artifact_write.parse_existing import parse_diagram_file  # noqa: PLC0415
+
+    body = parse_diagram_file(diagram_path).puml_body
+    if lens.is_empty:
+        return body
+    repo = s.get_repo()
+    diag_rec = repo.get_diagram(artifact_id)
+    if diag_rec is None:
+        return body
+    _, registry, _ = s.get_write_deps(catalogs)
+    lensed = apply_reading_lens(
+        body,
+        resolve_placed_entities(dict(diag_rec.extra), registry),
+        lens=lens,
+        read_access=repo,
+        registries=configured_registry_snapshot(catalogs, repo.repo_roots),
+    )
+    return lensed.puml_body
+
+
 @router.get("/api/diagram-images/{filename}", tags=[TAG_DIAGRAMS], summary="Serve a rendered diagram image",
     response_class=FileResponse,
     responses={**READ_RESPONSES, **media_response("image/png", "The rendered image")})
@@ -82,8 +147,16 @@ def get_diagram_image(filename: str) -> FileResponse:
 @router.get("/api/diagrams/{artifact_id}/svg", tags=[TAG_DIAGRAMS], summary="Serve a diagram as SVG",
     response_class=Response,
     responses={**READ_RESPONSES, **media_response("image/svg+xml", "The rendered diagram")})
-def get_diagram_svg(artifact_id: str) -> Response:
+def get_diagram_svg(
+    artifact_id: str,
+    colour_by: Annotated[str, Query(description="Attribute to colour the drawn elements by")] = "",
+    printed: Annotated[
+        list[str], Query(alias="print", description="Attribute values to print with the elements")
+    ] = [],  # noqa: B006
+    catalogs: RuntimeCatalogs = Depends(fresh_viewpoints_runtime_catalogs_dependency),
+) -> Response:
     id = artifact_id
+    lens = _lens(colour_by, printed)
     repo_root = s.maybe_engagement_root()
     if repo_root is None:
         raise HTTPException(500, "Repository not initialized")
@@ -110,15 +183,16 @@ def get_diagram_svg(artifact_id: str) -> Response:
         if not unlocked:
             raise HTTPException(403, "Confidential assurance diagram: unlock the assurance store to view")
 
-    if diag_rec:
+    # The on-disk image is the *authored* diagram, so it answers a lensless request and only that one.
+    if diag_rec and lens.is_empty:
         svg_path = _rendered_path(diag_rec, ".svg")
         if svg_path is not None:
             return Response(content=svg_path.read_bytes(), media_type="image/svg+xml")
-    from src.infrastructure.rendering.diagram_builder import render_puml_svg
-    from src.infrastructure.write.artifact_write.parse_existing import parse_diagram_file
+    from src.infrastructure.rendering.diagram_builder import render_puml_svg  # noqa: PLC0415
 
-    parsed = parse_diagram_file(diagram_path)
-    svg, warnings = render_puml_svg(parsed.puml_body, repo_root, diagram_type)
+    svg, warnings = render_puml_svg(
+        _lensed_body(id, diagram_path, lens, catalogs), repo_root, diagram_type
+    )
     if svg is None:
         raise HTTPException(500, f"SVG render failed: {'; '.join(warnings)}")
     return Response(content=svg, media_type="image/svg+xml")
@@ -126,13 +200,30 @@ def get_diagram_svg(artifact_id: str) -> Response:
 
 @router.get("/api/diagrams/{artifact_id}/download", tags=[TAG_DIAGRAMS],
     summary="Download a diagram source file",
-    # Either image type, chosen by `format`; the attachment disposition is set by the handler.
-    response_class=FileResponse,
+    # Either image type, chosen by `format`; the attachment disposition is set by the handler. A
+    # `Response` rather than a `FileResponse` because a lensed download has no file: it renders.
+    response_class=Response,
     responses={**READ_RESPONSES,
                200: {"content": {"image/svg+xml": {}, "image/png": {}},
                      "description": "The rendered diagram, as an attachment"}})
-def download_diagram(artifact_id: str, format: Literal["png", "svg"] = "png") -> FileResponse:
+def download_diagram(
+    artifact_id: str,
+    format: Literal["png", "svg"] = "png",  # noqa: A002
+    colour_by: Annotated[str, Query(description="Attribute the current display is coloured by")] = "",
+    printed: Annotated[
+        list[str], Query(alias="print", description="Attribute values the current display prints")
+    ] = [],  # noqa: B006
+    catalogs: RuntimeCatalogs = Depends(fresh_viewpoints_runtime_catalogs_dependency),
+) -> Response:
+    """The diagram as an attachment — the authored image, or the reader's current display.
+
+    A lensed download renders rather than serving the file on disk, and it renders through the *same*
+    call the browser display uses. That is the whole reason the lens is a parameter here: "export what
+    I am looking at" and "show me this" have to be one render, or the export is a second opinion about
+    the display that will drift from it.
+    """
     id = artifact_id
+    lens = _lens(colour_by, printed)
     repo_root = s.maybe_engagement_root()
     if repo_root is None:
         raise HTTPException(500, "Repository not initialized")
@@ -141,11 +232,30 @@ def download_diagram(artifact_id: str, format: Literal["png", "svg"] = "png") ->
         raise HTTPException(404, f"Diagram '{id}' not found")
     suffix = ".svg" if format == "svg" else ".png"
     media = "image/svg+xml" if format == "svg" else "image/png"
-    path = _rendered_path(diag_rec, suffix)
-    if path is not None:
-        return FileResponse(
-            path,
-            media_type=media,
-            headers={"Content-Disposition": f'attachment; filename="{path.name}"'},
-        )
-    raise HTTPException(404, f"{format.upper()} not yet rendered — save the diagram first")
+    if lens.is_empty:
+        path = _rendered_path(diag_rec, suffix)
+        if path is not None:
+            return FileResponse(
+                path,
+                media_type=media,
+                headers={"Content-Disposition": f'attachment; filename="{path.name}"'},
+            )
+        raise HTTPException(404, f"{format.upper()} not yet rendered — save the diagram first")
+
+    diagram_path = repo_root / DIAGRAM_CATALOG / DIAGRAMS / f"{id}.puml"
+    if not diagram_path.exists() and diag_rec.path.exists():
+        diagram_path = diag_rec.path
+    if not diagram_path.exists():
+        raise HTTPException(404, f"Diagram '{id}' not found")
+    from src.infrastructure.rendering.puml_runtime import render_puml_bytes  # noqa: PLC0415
+
+    image, produced, warnings = render_puml_bytes(
+        _lensed_body(id, diagram_path, lens, catalogs), repo_root, format, diag_rec.diagram_type
+    )
+    if image is None:
+        raise HTTPException(500, f"{format.upper()} render failed: {'; '.join(warnings)}")
+    return Response(
+        content=image,
+        media_type=produced,
+        headers={"Content-Disposition": f'attachment; filename="{id}{suffix}"'},
+    )

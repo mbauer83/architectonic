@@ -246,6 +246,12 @@ export const CATEGORICAL_PALETTE = [
 ] as const
 export type CategoricalColor = typeof CATEGORICAL_PALETTE[number]
 
+export const AD_HOC_RAMP_TOKENS = [
+  "heat-low",
+  "heat-high",
+] as const
+export type AdHocRampToken = typeof AD_HOC_RAMP_TOKENS[number]
+
 export const ENTITY_TYPE_CORNERS: Record<string, 'square' | 'rounded' | 'diagonal'> = {
   "action-definition": "square",
   "action-usage": "square",

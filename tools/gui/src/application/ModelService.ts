@@ -1,4 +1,5 @@
 import type { ModelRepository, ListParams, Direction } from '../ports/ModelRepository'
+import type { ReadingLens } from '../domain/readingLens'
 
 /**
  * Application service: use-case orchestration layer.
@@ -67,7 +68,8 @@ export const makeModelService = (repo: ModelRepository) =>
       repo.getEntitySchemata(artifactType, specialization),
     getDiagramEntities: (diagramId: string) => repo.getDiagramEntities(diagramId),
     getDiagramConnections: (diagramId: string) => repo.getDiagramConnections(diagramId),
-    getDiagramSvg: (diagramId: string) => repo.getDiagramSvg(diagramId),
+    getDiagramSvg: (diagramId: string, lens?: ReadingLens) => repo.getDiagramSvg(diagramId, lens),
+    getDiagramAttributePanel: (diagramId: string) => repo.getDiagramAttributePanel(diagramId),
     getEntityDisplayItem: (artifactId: string) => repo.getEntityDisplayItem(artifactId),
     searchEntityDisplay: (params: Parameters<ModelRepository['searchEntityDisplay']>[0]) =>
       repo.searchEntityDisplay(params),

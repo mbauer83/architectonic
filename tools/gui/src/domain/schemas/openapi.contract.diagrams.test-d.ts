@@ -12,7 +12,9 @@ import type { components } from './openapi.generated'
 import type { EntityContextConnectionSchema } from './connections'
 import type { DiagramDetailSchema } from './diagrams'
 import type {
+  AttributeOfferSchema,
   DerivedEntitySchema,
+  DiagramAttributePanelSchema,
   DiagramContextConnectionSchema,
   DiagramContextEntitySchema,
   DiagramContextSchema,
@@ -20,6 +22,7 @@ import type {
   DiagramPreviewResultSchema,
   HopSuggestionGroupSchema,
   MatrixPreviewResultSchema,
+  TypeOfferSchema,
 } from './diagrams'
 import type {
   EntityAttributeDescriptorSchema,
@@ -226,6 +229,23 @@ describe('diagram references', () => {
   it('decodes which diagrams draw a given pair', () => {
     expectTypeOf<SchemaType<typeof DiagramRefListSchema>>().toEqualTypeOf<
       Immutable<components['schemas']['DiagramReferenceListResponse']>
+    >()
+  })
+})
+
+describe("what a diagram's entities can be coloured by and print", () => {
+  // Held against the document at every level rather than only the envelope: the two inner shapes
+  // carry the decisions a reader acts on — which colouring an attribute admits, and how many drawn
+  // entities have a value — and an envelope assertion alone would pass while either drifted.
+  it('decodes the panel, its type rows and its attribute rows', () => {
+    expectTypeOf<SchemaType<typeof DiagramAttributePanelSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['DiagramAttributePanelResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof TypeOfferSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['TypeOfferResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof AttributeOfferSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['AttributeOfferResponse']>
     >()
   })
 })

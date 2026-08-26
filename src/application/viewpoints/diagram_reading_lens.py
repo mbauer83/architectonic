@@ -1,0 +1,301 @@
+"""An ad-hoc reading of one diagram: colour by an attribute, print attributes with the elements.
+
+**A reading, not an edit.** What a reader chooses here lives as long as their visit to the page and is
+never written back — no frontmatter changes, no saved viewpoint, no persisted display option. The
+diagram's own body is read, restyled in memory, and rendered; the next request without a lens renders
+the diagram as it is authored. That decides the whole shape of this module: it takes a body and gives
+back a body, and it has nowhere to put state even if it wanted one.
+
+**Expressed as a viewpoint presentation, because that is what it is.** "Colour these elements by this
+attribute, interpolating between two endpoints" is a `mode="scale"` style rule, and this repository
+already has the machinery that reads one: `calculate_scale_bounds` computes deterministic bounds over
+the complete drawn set, `evaluate_item_style` resolves a per-item position, and the outcome
+classification says whether a rule engaged. A lens that computed its own bounds would be a second
+answer to "what are this attribute's extremes on this diagram" — and it would get the ordinal case
+wrong the way the first version of the pinned-scale path did, by taking the drawn extremes for a
+declared range and calling the mildest value on the diagram "worst".
+
+So the lens *synthesises a rule* and asks the existing evaluator. The reader's choice becomes a
+`StyleRule`; everything after that is the code the viewpoint surfaces already use.
+
+**Nothing here names an attribute, a type, or a diagram family.** Which attributes exist is a profile
+question (`diagram_attribute_panel` asks it), whether one has an order is a declared level of
+measurement (`attribute_scales` answers it), and what a token paints as is the style-value table's
+answer. This module knows only that a reader named something and that the machinery either read it or
+did not.
+"""
+
+from __future__ import annotations
+
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass, field
+
+from src.application.puml_alias_declarations import alias_declared_on, restyled_declaration
+from src.domain.hex_colors import readable_ink
+from src.domain.ontology_representation.artifact_types import EntityRecord
+from src.domain.viewpoints.viewpoint_condition_evaluation import read_attribute_value
+from src.domain.viewpoints.viewpoint_condition_validation import RegistrySnapshot, attribute_ordinal_scale
+from src.domain.viewpoints.viewpoint_criteria import AttributeCondition, EntityCriteriaGroup, ValueRef
+from src.domain.viewpoints.viewpoint_evaluation_context import CriteriaReadAccess, EvaluationEnvironment
+from src.domain.viewpoints.viewpoint_scale_styling import (
+    ScaleLegend,
+    ScaleStyleValue,
+    calculate_scale_bounds,
+)
+from src.domain.viewpoints.viewpoint_style_evaluation import evaluate_item_style
+from src.domain.viewpoints.viewpoint_style_values import (
+    AD_HOC_RAMP_TOKENS,
+    categorical_colors,
+    interpolate_style_colors,
+    token_color,
+)
+from src.domain.viewpoints.viewpoints import PresentationSpec, StyleRule
+
+#: The border every restyled element takes. One colour rather than a computed one: the fill carries the
+#: reading and a border that also varied would compete with it.
+_BORDER = "48391c"
+
+
+@dataclass(frozen=True)
+class ReadingLens:
+    """What a reader asked to see, for this request only.
+
+    Empty is the authored diagram. Both fields are attribute *names*, not per-type choices: an
+    attribute is one thing wherever it occurs, so colouring by `risk_score` colours every drawn entity
+    that has one, on one scale. The panel groups its offer by type because *availability* is per type —
+    which attributes a type declares — and that grouping is a fact about the menu, not about the dish.
+    """
+
+    colour_by: str = ""
+    printed: tuple[str, ...] = ()
+
+    @property
+    def is_empty(self) -> bool:
+        return not self.colour_by and not self.printed
+
+
+@dataclass(frozen=True)
+class ColorKey:
+    """One member of an unordered value set and the colour it took.
+
+    The palette's answer, reported rather than left implicit: a reader looking at four hues has no way
+    to know which value each one is, and the legend that will say so needs to be told the same
+    assignment the picture used. Computing it twice is how a legend comes to disagree with its diagram.
+    """
+
+    attribute: str
+    member: str
+    color: str
+
+
+@dataclass(frozen=True)
+class LensedDiagram:
+    """The body to render, and what the lens managed to say."""
+
+    puml_body: str
+    legends: tuple[ScaleLegend, ...] = ()
+    #: How many drawn elements took a colour. Zero with a `colour_by` set is worth reporting: it means
+    #: the attribute resolved for nothing on this diagram, which a reader otherwise reads as "the
+    #: colouring is broken".
+    coloured: int = 0
+    #: How many drawn elements had at least one printed value put on them.
+    printed_on: int = 0
+    #: Attributes the reader asked for that no drawn entity carries. Named rather than counted,
+    #: because the reader chose them by name and needs to know which of their choices said nothing.
+    silent: tuple[str, ...] = ()
+    #: The colour each member of an unordered set took, where the colouring was categorical.
+    color_keys: tuple[ColorKey, ...] = ()
+    unstyled: int = 0
+    notes: tuple[str, ...] = field(default_factory=tuple)
+
+
+def _ramp_rule(attribute: str) -> StyleRule:
+    """The reader's colour choice over an ordered attribute, as the style rule it is."""
+    return StyleRule(
+        capability="node_color",
+        mode="scale",
+        scale_attribute=attribute,
+        scale_tokens=AD_HOC_RAMP_TOKENS,
+    )
+
+
+def _member_rules(attribute: str, members: Sequence[str]) -> tuple[tuple[StyleRule, ...], tuple[ColorKey, ...]]:
+    """The reader's colour choice over an *unordered* set: one match rule per declared member.
+
+    A ramp needs an order and these values have none — an enum's members are a set, and interpolating
+    across them would put `retired` between `planned` and `active` because of where the enum happens to
+    be written. So each member gets its own colour and its own rule, which is exactly what an author
+    writing this by hand would produce.
+
+    The colour goes in as a `#rrggbb` literal rather than a token, because a token names a *meaning*
+    (`caution`, `critical`) and a member of an arbitrary value set has none. `is_valid_style_value`
+    admits a literal for every colour capability, which is what makes this expressible at all.
+    """
+    keys = tuple(
+        ColorKey(attribute=attribute, member=member, color=color)
+        for member, color in categorical_colors(members)
+    )
+    rules = tuple(
+        StyleRule(
+            capability="node_color",
+            mode="match",
+            match_criteria=EntityCriteriaGroup(
+                children=(
+                    AttributeCondition(
+                        attribute=attribute,
+                        comparator="eq",
+                        value=ValueRef(kind="literal", literal=key.member),
+                    ),
+                )
+            ),
+            value=key.color,
+        )
+        for key in keys
+    )
+    return rules, keys
+
+
+def _fill_for(value: object) -> str | None:
+    """The colour one evaluated style value paints as, or None where the item is unstyled."""
+    if isinstance(value, ScaleStyleValue):
+        return interpolate_style_colors(value.tokens[0], value.tokens[1], value.position)
+    if isinstance(value, str) and value:
+        return token_color(value)
+    return None
+
+
+def _printed_lines(
+    entity: EntityRecord,
+    printed: Sequence[str],
+    *,
+    environment: EvaluationEnvironment,
+) -> tuple[str, ...]:
+    """`name: value` for each asked-for attribute this entity actually carries.
+
+    Through `read_attribute_value`, which is the one place that knows where a value lives. An attribute
+    the entity does not carry contributes no line at all rather than `owner: —`: a diagram is short of
+    room, and a column of dashes spends it saying nothing.
+    """
+    lines: list[str] = []
+    for name in printed:
+        value, present = read_attribute_value(entity, name, context="entity", environment=environment)
+        if present and value is not None and str(value) != "":
+            lines.append(f"{name}: {value}")
+    return tuple(lines)
+
+
+def apply_reading_lens(
+    puml_body: str,
+    entities: Sequence[EntityRecord],
+    *,
+    lens: ReadingLens,
+    read_access: CriteriaReadAccess,
+    registries: RegistrySnapshot,
+    environment: EvaluationEnvironment | None = None,
+) -> LensedDiagram:
+    """*puml_body* with the reader's colouring and printing applied to the elements it declares.
+
+    Element lines are found through `alias_declared_on` and rewritten through
+    `restyled_declaration` — the module that owns reading and writing an alias declaration. A regex
+    here would be the sixth reading of that syntax, and the register row for it records what the
+    previous five cost.
+
+    An entity is matched to a line by its `display_alias`, which is the alias the renderer emitted for
+    it. A line whose alias belongs to no drawn entity — a grouping, a junction, a note — is returned
+    untouched, which is the honest answer: the lens colours by an attribute, and those elements have
+    none.
+    """
+    if lens.is_empty:
+        return LensedDiagram(puml_body=puml_body)
+
+    env = environment or EvaluationEnvironment()
+    by_alias: dict[str, EntityRecord] = {e.display_alias: e for e in entities if e.display_alias}
+
+    presentation: PresentationSpec | None = None
+    bounds: Mapping[int, object] = {}
+    legends: tuple[ScaleLegend, ...] = ()
+    color_keys: tuple[ColorKey, ...] = ()
+    notes: list[str] = []
+    if lens.colour_by:
+        # Which of the two colourings applies is the *model's* answer, not the reader's: an attribute
+        # declaring a bounded value set with no order takes one colour per member, and everything else
+        # takes a ramp. Asking the snapshot rather than guessing from the values present means the two
+        # match what `diagram_attribute_panel` offered as `palette` and `ramp`, since both read the
+        # same declaration.
+        members = registries.entity_attribute_enums.get(lens.colour_by, ())
+        ordinal = attribute_ordinal_scale(lens.colour_by, context="entity", registries=registries)
+        if members and ordinal is None:
+            rules, color_keys = _member_rules(lens.colour_by, members)
+        else:
+            rules = (_ramp_rule(lens.colour_by),)
+        presentation = PresentationSpec(representation="diagram", styling_rules=rules)
+        bounds, legends, drift = calculate_scale_bounds(
+            presentation,
+            tuple((entity, "entity") for entity in entities),
+            registries=registries,
+            environment=env,
+        )
+        if drift:
+            # The evaluator's own word for "this attribute resolves in no context". Reported rather
+            # than silently rendering the authored diagram: a reader who chose an attribute and got
+            # the plain picture back cannot tell a lens that found nothing from a lens that did not run.
+            notes.append(
+                f"{lens.colour_by!r} is not an attribute any drawn type declares, so nothing is coloured by it"
+            )
+
+    fills: dict[str, str] = {}
+    if presentation is not None and not notes:
+        for entity in entities:
+            evaluation = evaluate_item_style(
+                entity,
+                "entity",
+                presentation,
+                read_access=read_access,
+                registries=registries,
+                environment=env,
+                scale_bounds=bounds,  # type: ignore[arg-type]
+            )
+            fill = _fill_for(evaluation.style.get("node_color"))
+            if fill is not None and entity.display_alias:
+                fills[entity.display_alias] = fill
+
+    labels: dict[str, tuple[str, ...]] = {}
+    if lens.printed:
+        for entity in entities:
+            lines = _printed_lines(entity, lens.printed, environment=env)
+            if lines and entity.display_alias:
+                labels[entity.display_alias] = lines
+
+    rewritten: list[str] = []
+    for line in puml_body.splitlines():
+        declaration = alias_declared_on(line)
+        alias = declaration.alias if declaration is not None else ""
+        if alias not in by_alias:
+            rewritten.append(line)
+            continue
+        fill = fills.get(alias)
+        rewritten.append(
+            restyled_declaration(
+                line,
+                fill=fill.lstrip("#") if fill else None,
+                border=_BORDER if fill else None,
+                ink=readable_ink(fill).lstrip("#") if fill else None,
+                label_lines=labels.get(alias, ()),
+            )
+        )
+
+    silent = tuple(
+        name
+        for name in lens.printed
+        if not any(_printed_lines(entity, (name,), environment=env) for entity in entities)
+    )
+    return LensedDiagram(
+        puml_body="\n".join(rewritten) + ("\n" if puml_body.endswith("\n") else ""),
+        legends=legends,
+        coloured=len(fills),
+        printed_on=len(labels),
+        silent=silent,
+        color_keys=color_keys,
+        unstyled=max(len(by_alias) - len(fills), 0) if lens.colour_by else 0,
+        notes=tuple(notes),
+    )

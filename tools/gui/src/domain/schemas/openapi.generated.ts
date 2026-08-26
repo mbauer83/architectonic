@@ -1623,7 +1623,15 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Download a diagram source file */
+        /**
+         * Download a diagram source file
+         * @description The diagram as an attachment — the authored image, or the reader's current display.
+         *
+         *     A lensed download renders rather than serving the file on disk, and it renders through the *same*
+         *     call the browser display uses. That is the whole reason the lens is a parameter here: "export what
+         *     I am looking at" and "show me this" have to be one render, or the export is a second opinion about
+         *     the display that will drift from it.
+         */
         get: operations["diagrams_download_diagram_source"];
         put?: never;
         post?: never;
@@ -16987,7 +16995,11 @@ export interface operations {
     diagrams_download_diagram_source: {
         parameters: {
             query?: {
+                /** @description Attribute the current display is coloured by */
+                colour_by?: string;
                 format?: "png" | "svg";
+                /** @description Attribute values the current display prints */
+                print?: string[];
             };
             header?: never;
             path: {
@@ -17382,7 +17394,12 @@ export interface operations {
     };
     diagrams_read_diagram_svg: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Attribute to colour the drawn elements by */
+                colour_by?: string;
+                /** @description Attribute values to print with the elements */
+                print?: string[];
+            };
             header?: never;
             path: {
                 artifact_id: string;
