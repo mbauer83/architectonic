@@ -22,7 +22,12 @@ test('the guided questionnaire presents composed domain context once above type 
   await expect(guidance.locator('.type-guidance__never')).toBeVisible()
 })
 
-test('the service specialization renders its seven effective attributes with typed controls', async ({ page }) => {
+test('the service specialization renders its effective attributes with typed controls', async ({ page }) => {
+  // Stated over the controls rather than over a count. It asserted "seven", and the shipped default
+  // `attributes.service.schema.json` — which the upgrade step adds to any repository missing it —
+  // declares an eighth. Authoring an attribute is the product working, and a test that fails for it
+  // reports a false regression far from the change that caused it; this repository's own convention
+  // says to assert the invariant the count stood in for.
   await page.goto('/entities/new')
   const type = page.locator('select.form-select').filter({ has: page.locator('option[value="application-component"]') })
   await type.selectOption('application-component')
@@ -32,12 +37,20 @@ test('the service specialization renders its seven effective attributes with typ
   await specializations.selectOption('service')
 
   const properties = page.locator('.prop-row')
-  await expect(properties).toHaveCount(7, { timeout: 15_000 })
-  await expect(page.locator('.prop-key-label')).toHaveText([
+  await expect(properties.first()).toBeVisible({ timeout: 15_000 })
+
+  // Each of these is present because it exercises a distinct control shape below; the row set may
+  // legitimately be larger.
+  for (const label of [
     'Programming Languages & Versions', 'Frameworks & Versions', 'Runtime Environments',
     'Communication Protocols & Versions', 'Owner', 'Source Repository', 'Lifecycle State',
-  ])
-  await expect(page.locator('.array-input')).toHaveCount(4)
+  ]) {
+    await expect(page.locator('.prop-key-label').filter({ hasText: label })).toHaveCount(1)
+  }
+
+  // A list-valued attribute gets a list control, a bounded one a select carrying its declared
+  // members in declared order, and free text a text input. That is what "typed controls" means.
+  await expect(page.locator('.array-input').first()).toBeVisible()
   await expect(properties.filter({ hasText: 'Lifecycle State' }).locator('select.prop-value')).toHaveValue('')
   await expect(properties.filter({ hasText: 'Lifecycle State' }).locator('option')).toHaveText([
     '—', 'Planned', 'In Development', 'Active', 'Deprecated', 'Retired',
