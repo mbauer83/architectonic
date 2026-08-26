@@ -7,6 +7,8 @@ export default { name: 'ActivityStepItem' }
 import { computed } from 'vue'
 import ActivityEntityPicker from './ActivityEntityPicker.vue'
 import NoteSection from './NoteSection.vue'
+import StepAddRow from './StepAddRow.vue'
+import { REJOIN } from './activityStepGraph'
 import type { StepNote } from './activityElementMapping'
 
 type Lane = { id: string; label: string }
@@ -83,8 +85,28 @@ const addPartStep = (type: StepType) =>
 
 <template>
   <div :class="['step-item', `step-${step.type}`]">
+    <!-- Where the flow goes back to a step already above this one in the outline. A nested list
+         cannot draw an edge upwards, so without this the arm that loops and the arm that simply
+         ends look identical — and which arm leaves the loop is the thing an author is deciding. -->
+    <p
+      v-if="typeof step.returns_to === 'string' && step.returns_to"
+      class="returns-to"
+    >
+      ↩ then back to <strong>{{ step.returns_to }}</strong>
+    </p>
+    <!-- A branch that rejoins a step the outline has already placed. Not editable here: the step
+         itself is shown where it was first placed, and this arm only says that it goes there. Two
+         branches converging on one step is ordinary, and a nested list has nowhere to draw the
+         second arrival. -->
+    <p
+      v-if="step.type === REJOIN"
+      class="rejoin"
+    >
+      ↪ rejoins <strong>{{ String(step.label ?? step.id) }}</strong>
+    </p>
+
     <!-- ── action ──────────────────────────────────────────────────────────── -->
-    <template v-if="step.type === 'action'">
+    <template v-else-if="step.type === 'action'">
       <div class="action-row">
         <input
           class="inp label-inp"
@@ -180,36 +202,7 @@ const addPartStep = (type: StepType) =>
           @update="updateBranchStep('then_steps', i, $event)"
           @remove="removeBranchStep('then_steps', i)"
         />
-        <div class="add-row">
-          <button
-            class="add-btn"
-            type="button"
-            @click="addBranchStep('then_steps', 'action')"
-          >
-            + Action
-          </button>
-          <button
-            class="add-btn"
-            type="button"
-            @click="addBranchStep('then_steps', 'decision')"
-          >
-            + Decision
-          </button>
-          <button
-            class="add-btn"
-            type="button"
-            @click="addBranchStep('then_steps', 'fork')"
-          >
-            + Fork
-          </button>
-          <button
-            class="add-btn"
-            type="button"
-            @click="addBranchStep('then_steps', 'partition')"
-          >
-            + Partition
-          </button>
-        </div>
+        <StepAddRow @add="addBranchStep('then_steps', $event)" />
       </div>
       <div class="branch">
         <div class="branch-hdr">
@@ -230,36 +223,7 @@ const addPartStep = (type: StepType) =>
           @update="updateBranchStep('else_steps', i, $event)"
           @remove="removeBranchStep('else_steps', i)"
         />
-        <div class="add-row">
-          <button
-            class="add-btn"
-            type="button"
-            @click="addBranchStep('else_steps', 'action')"
-          >
-            + Action
-          </button>
-          <button
-            class="add-btn"
-            type="button"
-            @click="addBranchStep('else_steps', 'decision')"
-          >
-            + Decision
-          </button>
-          <button
-            class="add-btn"
-            type="button"
-            @click="addBranchStep('else_steps', 'fork')"
-          >
-            + Fork
-          </button>
-          <button
-            class="add-btn"
-            type="button"
-            @click="addBranchStep('else_steps', 'partition')"
-          >
-            + Partition
-          </button>
-        </div>
+        <StepAddRow @add="addBranchStep('else_steps', $event)" />
       </div>
     </template>
 
@@ -299,36 +263,7 @@ const addPartStep = (type: StepType) =>
           @update="updateForkStep(bi, si, $event)"
           @remove="removeForkStep(bi, si)"
         />
-        <div class="add-row">
-          <button
-            class="add-btn"
-            type="button"
-            @click="addForkStep(bi, 'action')"
-          >
-            + Action
-          </button>
-          <button
-            class="add-btn"
-            type="button"
-            @click="addForkStep(bi, 'decision')"
-          >
-            + Decision
-          </button>
-          <button
-            class="add-btn"
-            type="button"
-            @click="addForkStep(bi, 'fork')"
-          >
-            + Fork
-          </button>
-          <button
-            class="add-btn"
-            type="button"
-            @click="addForkStep(bi, 'partition')"
-          >
-            + Partition
-          </button>
-        </div>
+        <StepAddRow @add="addForkStep(bi, $event)" />
       </div>
       <button
         class="mini-btn"
@@ -360,36 +295,7 @@ const addPartStep = (type: StepType) =>
         @update="updatePartStep(i, $event)"
         @remove="removePartStep(i)"
       />
-      <div class="add-row">
-        <button
-          class="add-btn"
-          type="button"
-          @click="addPartStep('action')"
-        >
-          + Action
-        </button>
-        <button
-          class="add-btn"
-          type="button"
-          @click="addPartStep('decision')"
-        >
-          + Decision
-        </button>
-        <button
-          class="add-btn"
-          type="button"
-          @click="addPartStep('fork')"
-        >
-          + Fork
-        </button>
-        <button
-          class="add-btn"
-          type="button"
-          @click="addPartStep('partition')"
-        >
-          + Partition
-        </button>
-      </div>
+      <StepAddRow @add="addPartStep($event)" />
     </template>
 
     <button
@@ -403,6 +309,16 @@ const addPartStep = (type: StepType) =>
 </template>
 
 <style scoped>
+.rejoin {
+  margin: 2px 0 4px;
+  font-size: 12px;
+  color: #6b7280;
+}
+.returns-to {
+  margin: 2px 0 4px;
+  font-size: 12px;
+  color: #6b7280;
+}
 .step-item {
   display: flex; flex-direction: column; gap: 6px;
   padding: 6px 8px; border-radius: 6px; border: 1px solid #e2e8f0;
@@ -430,8 +346,6 @@ const addPartStep = (type: StepType) =>
 .branch-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #94a3b8; white-space: nowrap; }
 .branch-lbl-inp { flex: 1; min-width: 0; }
 
-.add-row { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 2px; }
-.add-btn { padding: 2px 7px; border: 1px solid #cbd5e1; background: #fff; border-radius: 6px; cursor: pointer; font-size: 11px; }
 .mini-btn { min-width: 28px; height: 28px; border: 1px solid #cbd5e1; background: #fff; border-radius: 6px; cursor: pointer; font-size: 13px; }
 .remove-btn { position: absolute; top: 4px; right: 4px; }
 </style>
