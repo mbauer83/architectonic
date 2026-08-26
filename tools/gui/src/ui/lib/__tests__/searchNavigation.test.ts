@@ -46,6 +46,25 @@ describe('searchHitRoute', () => {
       .toEqual(assuranceNodeDetailRoute('N1'))
   })
 
+  it('routes a scratchpad to its own page, by its own id', () => {
+    // The pad is addressable in a way a note is not, which is the whole reason it is a record of
+    // its own: it has an id, a name someone chose, and a page. A note has none of those.
+    expect(searchHitRoute({
+      record_type: 'scratchpad',
+      artifact_id: 'SCR@1.aa.q3-thinking',
+    })).toEqual(scratchpadDetailRoute('SCR@1.aa.q3-thinking'))
+  })
+
+  it('routes a scratchpad without needing a scratchpad_id', () => {
+    // The note case needs its container named because a note's own id routes nowhere. A pad is its
+    // own container, so requiring the same field would be asking it to point at itself.
+    expect(searchHitRoute({
+      record_type: 'scratchpad',
+      artifact_id: 'SCR@1.aa.q3-thinking',
+      scratchpad_id: null,
+    })).toEqual(scratchpadDetailRoute('SCR@1.aa.q3-thinking'))
+  })
+
   it('routes a scratchpad note to the canvas it sits on, not to the note', () => {
     // A note has no page: its `artifact_id` is `{scratchpad_id}#note/{note_id}`, and routing to
     // that would open nothing. The useful answer is the canvas, where it can be read in context.

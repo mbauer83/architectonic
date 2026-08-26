@@ -93,6 +93,9 @@ def search_artifacts(
         include_diagrams=include_diagrams,
         include_documents=include_documents,
         # See `_display_search`: this feeds a dropdown of things to reference, not a search.
+        # A pad is a container and even less referenceable than a note: offering one where an
+        # entity is wanted is an obvious wrong answer.
+        include_scratchpads=False,
         include_scratchpad_notes=False,
         visible_diagram_entity_types=visible_diagram_entity_types(catalogs),
     )

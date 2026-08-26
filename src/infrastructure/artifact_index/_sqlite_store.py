@@ -13,6 +13,7 @@ from src.domain.ontology_representation.artifact_types import (
     DocumentRecord,
     EntityRecord,
     ScratchpadNoteRecord,
+    ScratchpadRecord,
 )
 
 from ._diagram_fts import diagram_fts_row
@@ -26,6 +27,8 @@ from ._sqlite_rows import (
     entity_row,
     note_fts_row,
     note_row,
+    scratchpad_fts_row,
+    scratchpad_row,
 )
 from ._sqlite_schema import FTS_SQL, SCHEMA_SQL
 
@@ -74,6 +77,11 @@ _INS_NOTEFTS = (
     "(artifact_id,scratchpad_id,title,body,element_type,domain,scratchpad_name)"
     " VALUES (?,?,?,?,?,?,?)"
 )
+_INS_SCRATCHPAD = (
+    "INSERT INTO scratchpads (artifact_id,name,description,version,status,meta_ontology,"
+    "path,scope,group_name) VALUES (?,?,?,?,?,?,?,?,?)"
+)
+_INS_SCRATCHPADFTS = "INSERT INTO scratchpads_fts (artifact_id,name,description) VALUES (?,?,?)"
 _INS_ATTR_TYPE_REF = (
     "INSERT INTO attribute_type_refs (diagram_id,classifier_local_id,attr_name,type_id) VALUES (?,?,?,?)"
 )
@@ -227,31 +235,46 @@ class _SqliteStore:
             if self._fts_enabled:
                 self._conn.execute("DELETE FROM documents_fts WHERE artifact_id=?", (artifact_id,))
 
-    def replace_scratchpad_notes(self, scratchpad_id: str, notes: list[ScratchpadNoteRecord]) -> None:
-        """Re-index one scratchpad's notes, whole.
+    def replace_scratchpad(
+        self, scratchpad_id: str, pad: ScratchpadRecord | None, notes: list[ScratchpadNoteRecord]
+    ) -> None:
+        """Re-index one scratchpad, whole: the pad and its notes, in one transaction.
 
         Note-grained upsert would be the wrong seam: a scratchpad is loaded, saved and versioned
-        whole, and a note that vanished from the file has no event of its own to be deleted by. So
-        the unit of change here is the file, exactly as it is everywhere else in this feature.
+        whole, so the file is the unit of change and every note in it is re-derived together. The pad
+        joins them for the same reason and one stronger — a pad and its notes disagreeing about which
+        version of a file they came from is a state nothing should be able to produce.
+
+        `pad` is `None` where the file is gone or unreadable, which is what removes its row.
         """
-        self.delete_scratchpad_notes(scratchpad_id)
+        self.delete_scratchpad(scratchpad_id)
+        if pad is not None:
+            self._mem.scratchpads[pad.artifact_id] = pad
         self._mem.scratchpad_notes.update({rec.artifact_id: rec for rec in notes})
         if notes:
             self._mem.notes_by_scratchpad[scratchpad_id] = {rec.artifact_id for rec in notes}
         with self._conn:
+            if pad is not None:
+                self._conn.execute(_INS_SCRATCHPAD, scratchpad_row(pad, self._scope))
             self._conn.executemany(_INS_NOTE, [note_row(rec, self._scope) for rec in notes])
             if self._fts_enabled:
+                if pad is not None:
+                    self._conn.execute(_INS_SCRATCHPADFTS, scratchpad_fts_row(pad))
                 self._conn.executemany(_INS_NOTEFTS, [note_fts_row(rec) for rec in notes])
 
-    def delete_scratchpad_notes(self, scratchpad_id: str) -> None:
+    def delete_scratchpad(self, scratchpad_id: str) -> None:
+        """Remove a pad and every note it held. One call, because they arrive as one file."""
         addresses = self._mem.notes_by_scratchpad.pop(scratchpad_id, set())
         for address in addresses:
             self._mem.scratchpad_notes.pop(address, None)
+        self._mem.scratchpads.pop(scratchpad_id, None)
         with self._conn:
             if self._fts_enabled:
+                self._conn.execute("DELETE FROM scratchpads_fts WHERE artifact_id=?", (scratchpad_id,))
                 self._conn.execute(
                     "DELETE FROM scratchpad_notes_fts WHERE scratchpad_id=?", (scratchpad_id,)
                 )
+            self._conn.execute("DELETE FROM scratchpads WHERE artifact_id=?", (scratchpad_id,))
             self._conn.execute("DELETE FROM scratchpad_notes WHERE scratchpad_id=?", (scratchpad_id,))
 
     def upsert_attribute_type_refs(self, diagram_id: str, refs: list[tuple[str, str, str]]) -> None:
@@ -275,6 +298,7 @@ class _SqliteStore:
                 "connections",
                 "diagrams",
                 "documents",
+                "scratchpads",
                 "scratchpad_notes",
                 "entity_context_edges",
                 "entity_context_stats",
@@ -284,6 +308,7 @@ class _SqliteStore:
             if self._fts_enabled:
                 for t in (
                     "entities_fts", "connections_fts", "diagrams_fts", "documents_fts",
+                    "scratchpads_fts",
                     "scratchpad_notes_fts",
                 ):
                     self._conn.execute(f"DELETE FROM {t}")  # noqa: S608
@@ -293,6 +318,9 @@ class _SqliteStore:
             )
             self._conn.executemany(_INS_DIAGRAM, [diagram_row(r, self._scope) for r in self._mem.diagrams.values()])
             self._conn.executemany(_INS_DOCUMENT, [document_row(r, self._scope) for r in self._mem.documents.values()])
+            self._conn.executemany(
+                _INS_SCRATCHPAD, [scratchpad_row(r, self._scope) for r in self._mem.scratchpads.values()]
+            )
             self._conn.executemany(
                 _INS_NOTE, [note_row(r, self._scope) for r in self._mem.scratchpad_notes.values()]
             )
@@ -321,6 +349,10 @@ class _SqliteStore:
                         (r.artifact_id, r.title, r.doc_type, " ".join(r.keywords), r.content_text)
                         for r in self._mem.documents.values()
                     ],
+                )
+                self._conn.executemany(
+                    _INS_SCRATCHPADFTS,
+                    [scratchpad_fts_row(r) for r in self._mem.scratchpads.values()],
                 )
                 self._conn.executemany(
                     _INS_NOTEFTS, [note_fts_row(r) for r in self._mem.scratchpad_notes.values()]

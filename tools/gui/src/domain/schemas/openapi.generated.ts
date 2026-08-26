@@ -8608,12 +8608,20 @@ export interface components {
          *     A scratchpad note fills ``name`` with its title and ``artifact_type`` with the element type
          *     someone chose for it — empty while nothing has been chosen, which is a legitimate state here and
          *     nowhere else, because deciding late is the whole point of a scratchpad.
+         *
+         *     A scratchpad — the pad, not a note on it — fills ``name`` with its own name and ``artifact_type``
+         *     with its meta-ontology, which is the one typed thing a pad declares about itself. It carries
+         *     ``description`` where it has one. The two are separate kinds because they answer separate
+         *     questions: a pad whose notes have all been lifted has no notes left, and is the only record that
+         *     the thinking happened.
          */
         KeywordSearchHit: {
             /** Artifact Id */
             artifact_id: string;
             /** Artifact Type */
             artifact_type: string;
+            /** Description */
+            description?: string | null;
             /** Diagram Internal */
             diagram_internal?: boolean | null;
             /** Diagram Type */
@@ -8634,7 +8642,7 @@ export interface components {
              * Record Type
              * @enum {string}
              */
-            record_type: "entity" | "connection" | "diagram" | "document" | "scratchpad-note";
+            record_type: "entity" | "connection" | "diagram" | "document" | "scratchpad" | "scratchpad-note";
             /** Score */
             score: number;
             /** Scratchpad Id */

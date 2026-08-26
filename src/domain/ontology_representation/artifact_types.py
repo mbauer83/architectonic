@@ -224,6 +224,39 @@ class ScratchpadNoteRecord:
         return f"[{self.artifact_id}] {self.title}  (note on {self.scratchpad_name})"
 
 
+@dataclass(frozen=True)
+class ScratchpadRecord:
+    """One scratchpad, as the index sees it — the container, not its contents.
+
+    Its notes are indexed separately and answer a different question. A note is a thought; a pad is
+    the place someone did their thinking, with a name they chose and a description they wrote. Asking
+    for the pad and receiving one of its notes is the wrong answer 0.7.1 removed, and asking for the
+    pad and receiving nothing is what it left behind.
+
+    **A pad outlives its notes.** A note stops being searchable once it holds a model reference — the
+    model then has an artifact standing for the same thought — so a pad whose thinking has all been
+    lifted has no searchable notes at all, and this record is the only trace that the thinking
+    happened. That is the case a note-only index cannot answer, and the reason this kind exists.
+
+    Thinner than an entity, and deliberately: no keywords, no domain, no subdomain. A pad is
+    preliminary by definition, which is also why it is subordinate on similarity — though not when
+    someone types its name.
+    """
+
+    artifact_id: str
+    name: str
+    description: str
+    version: str
+    status: str
+    meta_ontology: str
+    path: Path
+    group: str = "uncategorized"
+    last_updated: str | None = None
+
+    def __str__(self) -> str:
+        return f"[{self.artifact_id}] {self.name}  (scratchpad)"
+
+
 # ── The searchable-kind vocabulary ───────────────────────────────────────────
 # Declared in `src/domain/search_records.py` and re-exported here, so no call site had to move when
 # it left. The edge runs one way only — that module names nothing here — because these two naming
@@ -246,7 +279,9 @@ from src.domain.search_records import record_title as record_title  # noqa: E402
 class SearchHit:
     score: float
     record_type: RecordType
-    record: EntityRecord | ConnectionRecord | DiagramRecord | DocumentRecord | ScratchpadNoteRecord
+    record: (
+        EntityRecord | ConnectionRecord | DiagramRecord | DocumentRecord | ScratchpadRecord | ScratchpadNoteRecord
+    )
 
     def __str__(self) -> str:
         return f"  score={self.score:.3f}  {self.record}"

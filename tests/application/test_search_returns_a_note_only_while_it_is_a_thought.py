@@ -21,7 +21,7 @@ from pathlib import Path
 import pytest
 
 from src.application.artifacts.scoring import score_scratchpad_note, tokenize
-from src.application.scratchpad.indexing import parse_scratchpad_notes
+from src.application.scratchpad.indexing import parse_scratchpad
 from src.domain.ontology_representation.artifact_types import ScratchpadNoteRecord
 
 _PAD = "SCR@1786299627.Dnc28yf.q3-platform-thinking"
@@ -75,7 +75,8 @@ class TestALiftedNoteLeavesTheIndex:
     def _records(self, tmp_path: Path, notes: list[dict[str, object]]) -> list[ScratchpadNoteRecord]:
         path = tmp_path / f"{_PAD}.scratchpad.yaml"
         path.write_text(_pad_document(notes=notes), encoding="utf-8")
-        return parse_scratchpad_notes(path, group="platform-core")
+        _pad, notes = parse_scratchpad(path, group="platform-core")
+        return notes
 
     def test_an_unlifted_note_is_indexed(self, tmp_path: Path) -> None:
         records = self._records(tmp_path, [{"id": "n1", "title": "Still thinking"}])

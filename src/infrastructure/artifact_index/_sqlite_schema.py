@@ -40,6 +40,16 @@ CREATE TABLE IF NOT EXISTS documents (
     sections_json TEXT NOT NULL, content_text TEXT NOT NULL, extra_json TEXT NOT NULL,
     group_name TEXT NOT NULL DEFAULT 'uncategorized'
 );
+-- The pad itself, as distinct from the thoughts on it. A pad outlives its notes: a note stops being
+-- searchable once it has a model counterpart, so a pad whose thinking has all been lifted has no
+-- searchable notes and this row is the only record that the thinking happened.
+CREATE TABLE IF NOT EXISTS scratchpads (
+    artifact_id TEXT PRIMARY KEY,
+    name TEXT NOT NULL, description TEXT NOT NULL, version TEXT NOT NULL,
+    status TEXT NOT NULL, meta_ontology TEXT NOT NULL,
+    path TEXT NOT NULL, scope TEXT NOT NULL,
+    group_name TEXT NOT NULL DEFAULT 'uncategorized'
+);
 -- A note has no file of its own: `path` is its scratchpad's, and `artifact_id` is composed. The
 -- only record kind whose searchable units live inside another artifact.
 CREATE TABLE IF NOT EXISTS scratchpad_notes (
@@ -88,6 +98,8 @@ CREATE INDEX IF NOT EXISTS idx_diagrams_group ON diagrams(group_name);
 CREATE INDEX IF NOT EXISTS idx_documents_doc_type ON documents(doc_type);
 CREATE INDEX IF NOT EXISTS idx_documents_status ON documents(status);
 CREATE INDEX IF NOT EXISTS idx_documents_group ON documents(group_name);
+CREATE INDEX IF NOT EXISTS idx_scratchpads_status ON scratchpads(status);
+CREATE INDEX IF NOT EXISTS idx_scratchpads_group ON scratchpads(group_name);
 CREATE INDEX IF NOT EXISTS idx_scratchpad_notes_pad ON scratchpad_notes(scratchpad_id);
 CREATE INDEX IF NOT EXISTS idx_scratchpad_notes_status ON scratchpad_notes(status);
 CREATE INDEX IF NOT EXISTS idx_scratchpad_notes_group ON scratchpad_notes(group_name);
@@ -127,6 +139,13 @@ CREATE VIRTUAL TABLE IF NOT EXISTS documents_fts USING fts5(
 -- `scratchpad_id` is carried unindexed so a scratchpad's rows can be removed without consulting
 -- anything else: an fts5 table has no foreign key, and deleting by a set read from elsewhere leaks
 -- rows the moment that elsewhere is wrong.
+-- A pad matches on its own name and its own description, and on nothing else. Matching it on its
+-- notes' text is the wrong answer 0.7.1 removed, inverted: a pad handed back because one of forty
+-- notes mentions a word reads as wrong however it was reached, and the note itself is already
+-- returned in that case.
+CREATE VIRTUAL TABLE IF NOT EXISTS scratchpads_fts USING fts5(
+    artifact_id UNINDEXED, name, description
+);
 CREATE VIRTUAL TABLE IF NOT EXISTS scratchpad_notes_fts USING fts5(
     -- `scratchpad_name` is UNINDEXED, not merely weighted at nothing. A zero bm25 weight stops a
     -- column contributing to the *rank* and not to the *match*, so with it indexed a note answered

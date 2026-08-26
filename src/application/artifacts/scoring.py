@@ -7,6 +7,7 @@ from src.domain.ontology_representation.artifact_types import (
     DocumentRecord,
     EntityRecord,
     ScratchpadNoteRecord,
+    ScratchpadRecord,
 )
 from src.domain.search_terms import expand_tokens
 
@@ -111,4 +112,26 @@ def score_scratchpad_note(rec: ScratchpadNoteRecord, query_lc: str, tokens: list
     score += token_match_score(rec.element_type, query_lc, expanded, 1.0)
     score += token_match_score(rec.domain, query_lc, expanded, 1.0)
     score += content_score(rec.body, expanded, 0.5)
+    return score
+
+
+def score_scratchpad(rec: ScratchpadRecord, query_lc: str, tokens: list[str]) -> float:
+    """A pad on its own words: the name someone chose, and the description they wrote.
+
+    **Its notes' text is not matched, and that is the decision rather than an omission.** A note is
+    not matched on its scratchpad's name for a reason recorded beside `score_scratchpad_note` — a pad
+    is a container, so answering with its contents returns notes whose own titles contain none of the
+    query. The mirror holds: handing back a *pad* because one of forty notes mentions a word reads as
+    a wrong answer however it was reached, and that note is already returned in its own right.
+
+    Weighted like a document, not like a note. A pad's name is something a person chose and typed, and
+    its description is prose they wrote about what the pad is for — both are commitments about the
+    container even where its contents are not. What keeps a pad below model content is
+    `rank_balanced`, which draws subordinate kinds last; these weights only order pads against one
+    another.
+    """
+    expanded = expand_tokens(tokens)
+    score = 0.0
+    score += token_match_score(rec.name, query_lc, expanded, 4.0)
+    score += content_score(rec.description, expanded, 1.0)
     return score

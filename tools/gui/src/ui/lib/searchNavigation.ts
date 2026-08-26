@@ -29,6 +29,10 @@ export function searchHitRoute(hit: NavigableHit): RouteLocationRaw | null {
       return diagramDetailRoute(hit.artifact_id)
     case 'document':
       return documentDetailRoute(hit.artifact_id)
+    case 'scratchpad':
+      // The pad itself: its own page, reached by its own id. A pad is addressable in a way a note
+      // is not, which is the whole reason it is a record of its own.
+      return scratchpadDetailRoute(hit.artifact_id)
     case 'scratchpad-note':
       // The canvas the thought is on. A note is not a page: it is a card, and the useful answer to
       // "where is this?" is the scratchpad it sits on, opened so the note can be read in context.

@@ -114,6 +114,13 @@ const friendlyName = (id: string) => {
               v-if="h.record_type === 'scratchpad-note'"
               class="note-chip"
             >note on {{ h.scratchpad_name || 'a scratchpad' }}</span>
+            <!-- A pad is preliminary too, and says so for the same reason — but it says something
+                 different from a note: it is where thinking happened rather than one thought, and it
+                 is the only record left once its notes have been lifted into the model. -->
+            <span
+              v-else-if="h.record_type === 'scratchpad'"
+              class="note-chip"
+            >scratchpad</span>
             <!-- Kind and type answer different questions — *a diagram* against *a C4 deployment
                  view* — and a list mixing four kinds has to say which is which. A diagram's own
                  `artifact_type` is the constant "diagram", so `hitTypeLabel` reads `diagram_type`

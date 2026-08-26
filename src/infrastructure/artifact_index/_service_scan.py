@@ -34,7 +34,7 @@ from src.application.repo_path_helpers import (
     group_fn_scratchpad,
     scratchpads_root,
 )
-from src.application.scratchpad.indexing import parse_scratchpad_notes
+from src.application.scratchpad.indexing import parse_scratchpad
 from src.config.repo_paths import RENDERED
 from src.domain.artifact_id import stable_id
 from src.domain.ontology_representation.artifact_types import (
@@ -161,7 +161,10 @@ def _scan_scratchpad_records(repo_root: Path, mem: _MemStore) -> None:
     """
     root = scratchpads_root(repo_root)
     for path in sorted(overlay_paths(root, (f"*{SCRATCHPAD_SUFFIX}",))):
-        for note in parse_scratchpad_notes(path, group=group_fn_scratchpad(path, repo_root)):
+        pad, notes = parse_scratchpad(path, group=group_fn_scratchpad(path, repo_root))
+        if pad is not None:
+            mem.scratchpads[pad.artifact_id] = pad
+        for note in notes:
             mem.scratchpad_notes[note.artifact_id] = note
 
 

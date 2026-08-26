@@ -44,6 +44,7 @@ const KIND_LABELS: Readonly<Record<string, string>> = {
   diagram: 'diagram',
   document: 'document',
   connection: 'relationship',
+  scratchpad: 'scratchpad',
   'scratchpad-note': 'note',
   'assurance-node': 'assurance',
 }

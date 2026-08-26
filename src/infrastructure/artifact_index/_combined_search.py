@@ -11,6 +11,7 @@ from src.domain.ontology_representation.artifact_types import (
     DocumentRecord,
     EntityRecord,
     ScratchpadNoteRecord,
+    ScratchpadRecord,
 )
 
 from ._combined_support import dispatch_both, first_not_none, merge_search_rows, merge_sorted
@@ -150,6 +151,19 @@ class CombinedSearchMixin:
 
         left, right = dispatch_both(call, self._engagement, self._enterprise)
         return merge_search_rows(left, right, limit=limit)
+
+    def get_scratchpad(self, artifact_id: str) -> ScratchpadRecord | None:
+        return first_not_none(
+            self._engagement.get_scratchpad(artifact_id),
+            lambda: self._enterprise.get_scratchpad(artifact_id),
+        )
+
+    def list_scratchpads_indexed(
+        self, *, status: str | None = None, group: str | None = None
+    ) -> list[ScratchpadRecord]:
+        left = self._engagement.list_scratchpads_indexed(status=status, group=group)
+        right = self._enterprise.list_scratchpads_indexed(status=status, group=group)
+        return merge_sorted(left, right, lambda record: record.artifact_id)
 
     def find_entity_by_workspace_id(
         self,

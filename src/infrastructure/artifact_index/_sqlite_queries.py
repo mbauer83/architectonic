@@ -8,7 +8,7 @@ from typing import Any, cast
 from src.application.artifacts.scoring import tokenize
 from src.domain.ontology_representation.specialization_values import applied_specialization_slugs
 
-from ._fts_weights import DIAGRAM_WEIGHTS, ENTITY_WEIGHTS, NOTE_WEIGHTS
+from ._fts_weights import DIAGRAM_WEIGHTS, ENTITY_WEIGHTS, NOTE_WEIGHTS, SCRATCHPAD_WEIGHTS
 from .types import (
     CONNECTION_DIRECTIONS,
     ConnectionDirection,
@@ -77,6 +77,7 @@ def search_fts(
         ("connections", "connection", "connections_fts", "-bm25(connections_fts)", "", ()),
         ("diagrams", "diagram", "diagrams_fts", f"-bm25(diagrams_fts, {DIAGRAM_WEIGHTS})", "", ()),
         ("documents", "document", "documents_fts", "-bm25(documents_fts)", "", ()),
+        ("scratchpads", "scratchpad", "scratchpads_fts", f"-bm25(scratchpads_fts, {SCRATCHPAD_WEIGHTS})", "", ()),
         ("scratchpad-notes", "scratchpad-note", "scratchpad_notes_fts",
          f"-bm25(scratchpad_notes_fts, {NOTE_WEIGHTS})", "", ()),
     ]

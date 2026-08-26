@@ -24,7 +24,7 @@ from src.application.repo_path_helpers import (
     group_fn_entity,
     group_fn_scratchpad,
 )
-from src.application.scratchpad.indexing import parse_scratchpad_notes
+from src.application.scratchpad.indexing import parse_scratchpad
 from src.config.repo_paths import DOCS, MODEL
 from src.domain.ontology_representation.artifact_types import (
     ConnectionRecord,
@@ -33,6 +33,7 @@ from src.domain.ontology_representation.artifact_types import (
     EntityRecord,
     RepoMount,
     ScratchpadNoteRecord,
+    ScratchpadRecord,
 )
 from src.domain.repository.repo_layout import ARTIFACT_SOURCE_SUFFIXES, SCRATCHPAD_SUFFIX, SCRATCHPADS
 
@@ -145,12 +146,18 @@ def parse_document_for_path(path: Path, mounts: list[RepoMount]) -> DocumentReco
     return replace(doc, group=group_fn_document(path, mount.root)) if mount is not None else doc
 
 
-def parse_scratchpad_for_path(path: Path, mounts: list[RepoMount]) -> list[ScratchpadNoteRecord]:
-    """Every note the file holds now — empty when it was deleted, which is what removes its rows."""
+def parse_scratchpad_for_path(
+    path: Path, mounts: list[RepoMount]
+) -> tuple[ScratchpadRecord | None, list[ScratchpadNoteRecord]]:
+    """The pad and every note the file holds now.
+
+    `(None, [])` when it was deleted, which is what removes its rows — both kinds of row, from one
+    answer, so a deleted pad cannot leave its own record behind while its notes go.
+    """
     mount = mount_for_path(path, mounts)
     if not path.exists() or mount is None:
-        return []
-    return parse_scratchpad_notes(path, group=group_fn_scratchpad(path, mount.root))
+        return None, []
+    return parse_scratchpad(path, group=group_fn_scratchpad(path, mount.root))
 
 
 def classify_path_change(
@@ -262,16 +269,22 @@ def apply_scratchpad_change(
     mem: _MemStore,
     db: _SqliteStore,
     *,
-    parsed: list[ScratchpadNoteRecord],
+    parsed: tuple[ScratchpadRecord | None, list[ScratchpadNoteRecord]],
 ) -> None:
-    """Re-index one scratchpad's notes, whole.
+    """Re-index one scratchpad, whole: the pad and its notes, in one replacement.
 
-    The scratchpad id comes from the notes when there are any and from the path when there are
-    none — a file emptied of notes, or deleted, still has to take its old rows with it, and the
-    filename carries the id because that is what the repository names it by.
+    The scratchpad id comes from the pad, then from the notes, then from the path — a file emptied of
+    notes, or made unreadable, or deleted, still has to take its old rows with it, and the filename
+    carries the id because that is what the repository names it by. Taking it from the pad first
+    matters for the case a pad exists and its notes have all been lifted: there are no notes to ask.
     """
-    scratchpad_id = parsed[0].scratchpad_id if parsed else path.name[: -len(SCRATCHPAD_SUFFIX)]
-    db.replace_scratchpad_notes(scratchpad_id, parsed)
+    pad, notes = parsed
+    scratchpad_id = (
+        pad.artifact_id if pad is not None
+        else notes[0].scratchpad_id if notes
+        else path.name[: -len(SCRATCHPAD_SUFFIX)]
+    )
+    db.replace_scratchpad(scratchpad_id, pad, notes)
 
 
 def apply_document_change(

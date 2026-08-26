@@ -11,6 +11,7 @@ from src.domain.ontology_representation.artifact_types import (
     DocumentRecord,
     EntityRecord,
     ScratchpadNoteRecord,
+    ScratchpadRecord,
 )
 
 
@@ -20,6 +21,9 @@ class _MemStore:
     connections: dict[str, ConnectionRecord] = field(default_factory=dict)
     diagrams: dict[str, DiagramRecord] = field(default_factory=dict)
     documents: dict[str, DocumentRecord] = field(default_factory=dict)
+    scratchpads: dict[str, ScratchpadRecord] = field(default_factory=dict)
+    """scratchpad artifact_id → the pad itself. Held apart from its notes because a pad outlives
+    them: a note stops being searchable once it has a model counterpart."""
     scratchpad_notes: dict[str, ScratchpadNoteRecord] = field(default_factory=dict)
     """note address → the note. Keyed by `{scratchpad_id}#note/{note_id}`; a note id is unique
     only within its own scratchpad."""
@@ -98,12 +102,18 @@ class _MemStore:
         anything produces."""
         return self.scratchpad_notes.get(artifact_id)
 
+    def scratchpad(self, artifact_id: str) -> ScratchpadRecord | None:
+        """A pad by its own id. Not canonicalized, for the reason above: a scratchpad id carries a
+        slug the repository minted and nothing produces a stale-slug form of it."""
+        return self.scratchpads.get(artifact_id)
+
     def clear(self) -> None:
         for attr in (
             "entities",
             "connections",
             "diagrams",
             "documents",
+            "scratchpads",
             "scratchpad_notes",
             "notes_by_scratchpad",
             "entity_by_path",
@@ -128,7 +138,7 @@ class _MemStore:
         entities by a slug they no longer carry.
         """
         for attr in (
-            "entities", "connections", "diagrams", "documents", "scratchpad_notes",
+            "entities", "connections", "diagrams", "documents", "scratchpads", "scratchpad_notes",
             "identity_candidates", "attribute_type_refs",
         ):
             getattr(self, attr).clear()

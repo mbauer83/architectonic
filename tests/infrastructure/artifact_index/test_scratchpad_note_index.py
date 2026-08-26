@@ -1,4 +1,5 @@
-"""Scratchpad notes are indexed, findable, and never above what someone committed to.
+"""Scratchpads and their notes are indexed, findable, and never above what someone committed to on
+similarity alone.
 
 The condition Phase C §8.4 admitted them under: *indexed and findable, ranked below model content,
 documents and diagrams*, because a note is a half-formed thought and an entity is a commitment. The
@@ -275,9 +276,16 @@ def test_a_note_is_not_findable_by_its_scratchpads_name(tmp_path: Path) -> None:
 
     found = ArtifactRepository(combined).search_artifacts("marsupial", limit=10).hits
 
-    assert [hit.record.artifact_id for hit in found] == [], (
+    # The *note* still does not answer — that is what this test was written for, and it has not
+    # changed: a note is matched on its own words, so a query only its container's name matches
+    # returns notes whose titles contain none of it.
+    assert all(hit.record_type != "scratchpad-note" for hit in found), (
         "a note answered a query only its pad's title matched"
     )
+    # And now the right answer exists. Withdrawing the pad's name from the note's match removed a
+    # wrong answer without providing a right one; the pad is a record of its own, so the query is
+    # answered by the thing it actually names.
+    assert [hit.record.artifact_id for hit in found if hit.record_type == "scratchpad"] == [_PAD_ID]
 
 
 def test_a_note_is_still_findable_by_its_own_words_in_a_combined_store(tmp_path: Path) -> None:

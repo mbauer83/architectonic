@@ -24,7 +24,11 @@ from src.infrastructure.rest.contracts.wire_shape import Closed
 #: and from the assurance surface's own search, at their own addresses. A scratchpad note is here and
 #: deliberately absent from ``DisplayRecordType``: a note is findable, but a picker offers model
 #: content, and offering a half-formed thought as something to reference would be a category error.
-KeywordRecordType = Literal["entity", "connection", "diagram", "document", "scratchpad-note"]
+#: A scratchpad is here for the same reason and absent from ``DisplayRecordType`` for a stronger one: a
+#: pad is a *container*, so offering one where an entity is wanted is an obvious wrong answer.
+KeywordRecordType = Literal[
+    "entity", "connection", "diagram", "document", "scratchpad", "scratchpad-note"
+]
 
 
 class KeywordSearchHit(Closed):
@@ -43,6 +47,12 @@ class KeywordSearchHit(Closed):
     A scratchpad note fills ``name`` with its title and ``artifact_type`` with the element type
     someone chose for it — empty while nothing has been chosen, which is a legitimate state here and
     nowhere else, because deciding late is the whole point of a scratchpad.
+
+    A scratchpad — the pad, not a note on it — fills ``name`` with its own name and ``artifact_type``
+    with its meta-ontology, which is the one typed thing a pad declares about itself. It carries
+    ``description`` where it has one. The two are separate kinds because they answer separate
+    questions: a pad whose notes have all been lifted has no notes left, and is the only record that
+    the thinking happened.
     """
 
     score: float
@@ -66,6 +76,9 @@ class KeywordSearchHit(Closed):
     #: to say where a thought lives and to navigate to it.
     scratchpad_id: str | None = None
     scratchpad_name: str | None = None
+    #: A scratchpad's own description, where it has one — what a reader needs to decide whether to
+    #: open it. Never filled for a note: a note's own body is not a summary of it.
+    description: str | None = None
 
 
 class KeywordSearchResponse(Closed):

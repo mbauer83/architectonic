@@ -45,3 +45,12 @@ NOTE_WEIGHTS = "0, 0, 4.0, 0.5, 1.0, 1.0, 0"
 # that name, and the flat default made the two indistinguishable.
 # Columns: artifact_id(UNINDEXED), name, diagram_type, artifact_type, member_names
 DIAGRAM_WEIGHTS = "0, 8.0, 2.0, 1.0, 2.0"
+
+# A pad's name is what someone typed to look for it; its description is prose they wrote about it. The
+# name is weighted as a document's title is, and the description a little above a document's body,
+# because a pad's description is two sentences of intent rather than pages of content.
+#
+# Nothing here lifts a pad above committed content — `rank_balanced` draws subordinate kinds last, and
+# these weights only order pads against one another.
+# Columns: artifact_id(UNINDEXED), name, description
+SCRATCHPAD_WEIGHTS = "0, 4.0, 1.0"

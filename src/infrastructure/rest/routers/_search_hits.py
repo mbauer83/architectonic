@@ -5,6 +5,10 @@ the write gate — and this is a mapping from a record kind to its display field
 per record kind, so it grows whenever the index learns a new one, and it grew `state.py` past the
 source-length policy doing exactly that.
 
+A scratchpad and a scratchpad *note* are two arms, because they answer two questions: the pad is where
+someone did their thinking, the note is a thought. A pad whose notes have all been lifted has no notes
+left and is still the record that the thinking happened.
+
 Mirrors `KeywordSearchHit` arm for arm: `name` and `artifact_type` are the *display* reading, not the
 stored one, because a mixed result list has one column for each and a reader does not care which
 record kind supplied it.
@@ -20,6 +24,7 @@ from src.domain.ontology_representation.artifact_types import (
     DocumentRecord,
     EntityRecord,
     ScratchpadNoteRecord,
+    ScratchpadRecord,
     SearchHit,
 )
 from src.infrastructure.rest.routers.state import is_global
@@ -61,6 +66,17 @@ def search_hit_to_dict(h: SearchHit) -> dict[str, Any]:
             return {**base, "name": rec.title, "artifact_type": rec.doc_type}
         case ConnectionRecord():
             return {**base, "name": "", "artifact_type": rec.conn_type, "source": rec.source, "target": rec.target}
+        case ScratchpadRecord():
+            # `artifact_type` is the pad's meta-ontology: the one typed thing a pad declares about
+            # itself, and what a reader needs to know before opening it. A pad has no `doc_type` or
+            # element type, and leaving the column empty would read as "undecided" — which is what a
+            # *note* legitimately says and a pad does not.
+            return {
+                **base,
+                "name": rec.name,
+                "artifact_type": rec.meta_ontology,
+                "description": rec.description or None,
+            }
         case ScratchpadNoteRecord():
             # `artifact_type` is the note's decided element type, or empty — which is the honest
             # answer for a thought nobody has typed yet, and the state the feature exists to allow.

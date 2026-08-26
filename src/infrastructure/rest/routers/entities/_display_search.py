@@ -98,6 +98,9 @@ def entity_display_search_impl(
         include_documents=False,
         # A picker offers content to reference. A note is a thought someone has not committed to,
         # so offering one as something to point at would be a category error.
+        # A pad is a container and even less referenceable than a note: offering one where an
+        # entity is wanted is an obvious wrong answer.
+        include_scratchpads=False,
         include_scratchpad_notes=False,
     ).hits
     items: list[dict[str, Any]] = []

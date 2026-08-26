@@ -6,6 +6,7 @@ from src.application.artifacts._search import ALL_SEARCHABLE_KINDS
 from src.domain.ontology_representation.artifact_types import (
     RecordType,
     ScratchpadNoteRecord,
+    ScratchpadRecord,
     SearchableKind,
 )
 from src.infrastructure.mcp.artifact_mcp.context import RepoScope, repo_cached, resolve_repo_roots, roots_key
@@ -41,10 +42,14 @@ def register_query_search_tools(mcp: FastMCP) -> None:
             "Search artifacts by text query (keyword-scored; may include semantic supplement if configured). "
             "Returns ranked hits as (score + summary record). "
             "\n\nFilters: limit, domain, artifact_type, include_record_types, prefer_record_type, strict_record_type. "
-            "Scratchpad notes are searched by default and always rank below model content, documents "
-            "and diagrams: a note is a half-formed thought, and its id is "
+            "Scratchpads and their notes are both searched by default. A pad is where thinking "
+            "happened and a note is one thought, so they answer different questions: a pad's own "
+            "name and description are matched, never its notes' text, and a note's own title and "
+            "body are matched, never its pad's name. A note's id is "
             "`{scratchpad_id}#note/{note_id}` — read the scratchpad with scratchpad_read to see it "
-            "in context. "
+            "in context. Both rank below model content, documents and diagrams on similarity, "
+            "because preliminary thinking does not outrank a commitment — but a title the caller "
+            "typed exactly, or one carrying every search term, ranks first whatever kind it is. "
             "Domain filter is case-insensitive; canonical lowercase values: "
             '"common", "motivation", "strategy", "business", "application", "technology", "implementation".'
             "\n\nRepo selection: repo_scope defaults to both (engagement + enterprise)."
@@ -77,7 +82,7 @@ def register_query_search_tools(mcp: FastMCP) -> None:
         repo = repo_cached(key)
         kinds = _included_kinds(
             include_record_types,
-            default=("entities", "diagrams", "documents", "scratchpad-notes"),
+            default=("entities", "diagrams", "documents", "scratchpads", "scratchpad-notes"),
         )
 
         result = repo.search_artifacts(
@@ -89,6 +94,7 @@ def register_query_search_tools(mcp: FastMCP) -> None:
             include_connections="connections" in kinds,
             include_diagrams="diagrams" in kinds,
             include_documents="documents" in kinds,
+            include_scratchpads="scratchpads" in kinds,
             include_scratchpad_notes="scratchpad-notes" in kinds,
             prefer_record_type=prefer_record_type,
             strict_record_type=strict_record_type,
@@ -102,7 +108,16 @@ def register_query_search_tools(mcp: FastMCP) -> None:
                 "record_type": h.record_type,
                 "artifact_id": aid,
             }
-            if isinstance(h.record, ScratchpadNoteRecord):
+            if isinstance(h.record, ScratchpadRecord):
+                # A pad is addressable and readable on its own, so the answer is the address plus
+                # what a caller needs to decide whether to open it.
+                record.update({
+                    "name": h.record.name,
+                    "description": h.record.description,
+                    "status": h.record.status,
+                    "group": h.record.group,
+                })
+            elif isinstance(h.record, ScratchpadNoteRecord):
                 # A note has no artifact summary to fetch: it is not an artifact, it is part of one.
                 # The fields here are the same questions a summary answers — what is it called, what
                 # kind is it, where does it live — asked of a note, plus the scratchpad to read next.

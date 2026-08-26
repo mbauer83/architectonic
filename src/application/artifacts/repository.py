@@ -25,6 +25,7 @@ from src.domain.ontology_representation.artifact_types import (
     RecordType,
     RepoMount,
     ScratchpadNoteRecord,
+    ScratchpadRecord,
     SearchResult,
     SemanticSearchProvider,
 )
@@ -283,6 +284,7 @@ class ArtifactRepository:
         include_connections: bool = True,
         include_diagrams: bool = True,
         include_documents: bool = True,
+        include_scratchpads: bool = True,
         include_scratchpad_notes: bool = True,
         prefer_record_type: _RecordType | None = None,
         strict_record_type: bool = False,
@@ -300,12 +302,21 @@ class ArtifactRepository:
             include_connections=include_connections,
             include_diagrams=include_diagrams,
             include_documents=include_documents,
+            include_scratchpads=include_scratchpads,
             include_scratchpad_notes=include_scratchpad_notes,
             prefer_record_type=prefer_record_type,
             strict_record_type=strict_record_type,
             excluded_entity_types=self._excluded_entity_types | excluded_entity_types,
             visible_diagram_entity_types=visible_diagram_entity_types,
         )
+
+    def get_scratchpad(self, artifact_id: str) -> ScratchpadRecord | None:
+        return self._store.get_scratchpad(artifact_id)
+
+    def list_scratchpads_indexed(
+        self, *, status: str | None = None, group: str | None = None
+    ) -> list[ScratchpadRecord]:
+        return self._store.list_scratchpads_indexed(status=status, group=group)
 
     def scope_for_path(self, path: Path) -> Literal["enterprise", "engagement", "unknown"]:
         return self._store.scope_for_path(path)

@@ -14,6 +14,7 @@ from src.domain.ontology_representation.artifact_types import (
     EntityRecord,
     RepoMount,
     ScratchpadNoteRecord,
+    ScratchpadRecord,
 )
 from src.domain.repository.repo_scope import MountScope
 
@@ -112,6 +113,12 @@ class ArtifactSearch(Protocol):
     #: A note is findable, not addressable: it belongs to the search protocol rather than the
     #: lookup one, because the verifier and the registry read artifacts and a note is not one.
     def get_scratchpad_note(self, artifact_id: str) -> ScratchpadNoteRecord | None: ...
+
+    def get_scratchpad(self, artifact_id: str) -> ScratchpadRecord | None: ...
+
+    def list_scratchpads_indexed(
+        self, *, status: str | None = None, group: str | None = None
+    ) -> list[ScratchpadRecord]: ...
 
     def list_scratchpad_notes(
         self,

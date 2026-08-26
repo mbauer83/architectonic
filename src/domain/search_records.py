@@ -35,9 +35,11 @@ from typing import Literal, Protocol, TypeAlias, runtime_checkable
 # Both were previously restated in `application/artifacts/_search.py`, in `artifacts/repository.py`,
 # on `SearchHit` below and in the REST contract — four copies of one vocabulary, which is how a fifth
 # kind becomes a hunt rather than an edit.
-RecordType: TypeAlias = Literal["entity", "connection", "diagram", "document", "scratchpad-note"]
+RecordType: TypeAlias = Literal[
+    "entity", "connection", "diagram", "document", "scratchpad", "scratchpad-note"
+]
 SearchableKind: TypeAlias = Literal[
-    "entities", "connections", "diagrams", "documents", "scratchpad-notes"
+    "entities", "connections", "diagrams", "documents", "scratchpads", "scratchpad-notes"
 ]
 
 #: Kind → the record type its hits carry. The plural is what a caller asks for; the singular is what
@@ -50,6 +52,7 @@ KIND_TO_RECORD_TYPE: Mapping[str, str] = MappingProxyType(
         "connections": "connection",
         "diagrams": "diagram",
         "documents": "document",
+        "scratchpads": "scratchpad",
         "scratchpad-notes": "scratchpad-note",
     }
 )
@@ -68,7 +71,11 @@ ALL_SEARCHABLE_KINDS: frozenset[str] = frozenset(KIND_TO_RECORD_TYPE)
 #:
 #: Everything not named here takes part in the round-robin; these are appended after it, in this
 #: order, subject to the floor that keeps them from being starved out of the window entirely.
-SUBORDINATE_RECORD_ORDER: tuple[str, ...] = ("scratchpad-note",)
+#: A pad before its notes: a pad has a name someone chose and a description someone wrote, and a note
+#: may have neither a decided type nor a domain. Container first, then its contents — which is also how
+#: a reader reads the pair. Viewpoints belong after both when they become a searchable kind; they are
+#: not one today, so the position is recorded here rather than entered as a member nothing produces.
+SUBORDINATE_RECORD_ORDER: tuple[str, ...] = ("scratchpad", "scratchpad-note")
 
 #: Membership, derived rather than restated. Kept because the predicate reads better than a scan at
 #: the three call sites that ask it, and derived because a second literal is a second declaration.

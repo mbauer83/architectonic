@@ -21,6 +21,7 @@ from src.domain.ontology_representation.artifact_types import (
     DocumentRecord,
     EntityRecord,
     ScratchpadNoteRecord,
+    ScratchpadRecord,
 )
 
 _ScopeFn = Callable[[Path], str]
@@ -94,6 +95,25 @@ def document_row(r: DocumentRecord, scope: _ScopeFn) -> tuple[str, ...]:
         json.dumps(r.extra, sort_keys=True),
         r.group,
     )
+
+def scratchpad_row(r: ScratchpadRecord, scope: _ScopeFn) -> tuple[str, ...]:
+    return (
+        r.artifact_id,
+        r.name,
+        r.description,
+        r.version,
+        r.status,
+        r.meta_ontology,
+        str(r.path),
+        scope(r.path),
+        r.group,
+    )
+
+
+def scratchpad_fts_row(r: ScratchpadRecord) -> tuple[str, ...]:
+    """A pad's own words, and only its own — not its notes'. See the DDL for why."""
+    return (r.artifact_id, r.name, r.description)
+
 
 def note_row(r: ScratchpadNoteRecord, scope: _ScopeFn) -> tuple[str, ...]:
     return (

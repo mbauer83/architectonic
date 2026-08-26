@@ -108,6 +108,12 @@ class _Store:
     def list_scratchpad_notes(self):
         return list(self._notes)
 
+
+    def list_scratchpads_indexed(self, **kwargs):  # noqa: ANN003, ARG002
+        return []
+
+    def get_scratchpad(self, artifact_id: str):  # noqa: ANN001, ARG002
+        return None
     def entity_ids(self):
         return [r.artifact_id for r in self._entities]
 

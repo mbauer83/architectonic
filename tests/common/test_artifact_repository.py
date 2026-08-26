@@ -30,6 +30,7 @@ from src.domain.ontology_representation.artifact_types import (
     EntityRecord,
     RepoMount,
     ScratchpadNoteRecord,
+    ScratchpadRecord,
     SemanticSearchProvider,
     summary_from_connection,
     summary_from_diagram,
@@ -328,6 +329,14 @@ class FakeStore:
         group: str | None = None,
     ) -> list[ScratchpadNoteRecord]:
         return []
+
+    def list_scratchpads_indexed(
+        self, *, status: str | None = None, group: str | None = None
+    ) -> list[ScratchpadRecord]:
+        return []
+
+    def get_scratchpad(self, artifact_id: str) -> ScratchpadRecord | None:
+        return None
 
     # Scope
     def scope_for_path(self, path: Path) -> Literal["enterprise", "engagement", "unknown"]:

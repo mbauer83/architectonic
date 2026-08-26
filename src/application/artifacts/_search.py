@@ -11,6 +11,7 @@ from src.application.artifacts.scoring import (
     score_diagram,
     score_document,
     score_entity,
+    score_scratchpad,
     score_scratchpad_note,
     tokenize,
 )
@@ -21,6 +22,7 @@ from src.domain.ontology_representation.artifact_types import (
     DocumentRecord,
     EntityRecord,
     ScratchpadNoteRecord,
+    ScratchpadRecord,
     SearchHit,
     SearchResult,
 )
@@ -60,6 +62,7 @@ def search_artifacts(
     include_connections: bool = True,
     include_diagrams: bool = True,
     include_documents: bool = True,
+    include_scratchpads: bool = True,
     include_scratchpad_notes: bool = True,
     prefer_record_type: RecordType | None = None,
     strict_record_type: bool = False,
@@ -80,6 +83,8 @@ def search_artifacts(
         kinds.add("diagrams")
     if include_documents:
         kinds.add("documents")
+    if include_scratchpads:
+        kinds.add("scratchpads")
     if include_scratchpad_notes:
         kinds.add("scratchpad-notes")
     # strict_record_type: restrict search to just the preferred kind.
@@ -153,7 +158,13 @@ def search(
 
     for artifact_id, record_type, score in fts_hits:
         artifact: (
-            EntityRecord | ConnectionRecord | DiagramRecord | DocumentRecord | ScratchpadNoteRecord | None
+            EntityRecord
+            | ConnectionRecord
+            | DiagramRecord
+            | DocumentRecord
+            | ScratchpadRecord
+            | ScratchpadNoteRecord
+            | None
         )
         match record_type:
             case "entity":
@@ -170,6 +181,10 @@ def search(
                     continue
             case "diagram":
                 artifact = store.get_diagram(artifact_id)
+                if artifact is None:
+                    continue
+            case "scratchpad":
+                artifact = store.get_scratchpad(artifact_id)
                 if artifact is None:
                     continue
             case "scratchpad-note":
@@ -198,6 +213,8 @@ def search(
                 scored = _search_diagrams(store, query_lc, tokens)
             case "documents":
                 scored = _search_documents(store, query_lc, tokens)
+            case "scratchpads":
+                scored = _search_scratchpads(store, query_lc, tokens)
             case "scratchpad-notes":
                 scored = _search_scratchpad_notes(store, query_lc, tokens)
             case _:
@@ -261,3 +278,13 @@ def _search_scratchpad_notes(store: ReadableArtifactStore, query_lc: str, tokens
         for r in store.list_scratchpad_notes()
         if (s := score_scratchpad_note(r, query_lc, tokens)) > 0
     ]
+
+
+def _search_scratchpads(
+    store: ReadableArtifactStore, query_lc: str, tokens: list[str]
+) -> list[SearchHit]:
+    hits = []
+    for rec in store.list_scratchpads_indexed():
+        if (score := score_scratchpad(rec, query_lc, tokens)) > 0:
+            hits.append(SearchHit(score=score, record_type="scratchpad", record=rec))
+    return hits
