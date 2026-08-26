@@ -90,3 +90,96 @@ def declared_aliases(body: str) -> list[AliasDeclaration]:
     """Every declaration in *body*, in the order declared."""
     found = [alias_declared_on(line) for line in body.splitlines()]
     return [declaration for declaration in found if declaration is not None]
+
+
+#: The colour suffix a declaration may carry after its alias — the plain `#rrggbb` form and the
+#: compound `#back:…;line:…;text:…` form, either of which this replaces whole rather than adding to.
+#:
+#: Anchored to the end because that is where a suffix is, and this is the one question for which
+#: end-anchoring is right: reading an *alias* from the end is what the five disagreeing readers got
+#: wrong, and reading a *trailing decoration* from the end is the same fact used correctly.
+_COLOUR_SUFFIX = re.compile(r"\s+#[A-Za-z0-9_:;#,-]+\s*$")
+
+#: The marker introducing appended attribute lines inside a label, and the reason there is one: a
+#: reader who changes their choice must not accumulate a line from every choice they made, so the
+#: previous appendix is found and replaced rather than added to. It sits inside the quoted label, so
+#: it can never be confused with anything structural.
+_APPENDED = "\\n<size:10>"
+
+
+def _restyled_label(label: str, label_lines: tuple[str, ...], ink: str | None) -> str:
+    """The quoted label with *label_lines* as a smaller second block, replacing any previous one."""
+    base = label.split(_APPENDED, 1)[0]
+    if not label_lines:
+        return base
+    tint = f"<color:#{ink}>" if ink else ""
+    close = "</color>" if ink else ""
+    rendered = "\\n".join(f"{tint}{line}{close}" for line in label_lines)
+    return f"{base}{_APPENDED}{rendered}</size>"
+
+
+def restyled_declaration(
+    line: str,
+    *,
+    fill: str | None = None,
+    border: str | None = None,
+    ink: str | None = None,
+    label_lines: tuple[str, ...] = (),
+) -> str:
+    """*line* with an ad-hoc colour and/or appended label lines — or unchanged if it declares nothing.
+
+    The write half of this module, and it is here rather than at its caller for the reason the reading
+    half is: **a sixth reading of what declares an alias is a defect**, and a caller rewriting a
+    declaration with its own regex would be exactly that. Its register row records what the five
+    disagreeing readings cost, and the disagreement that hurt most — whether a trailing `#colour`
+    still declares an alias — is precisely what this function writes.
+
+    So the round trip is the contract: restyle a body, read it back with `declared_aliases`, and the
+    same aliases are declared in the same order, with `opens_block` unchanged.
+    `test_a_restyled_declaration_still_declares_its_alias` asserts that over every form the docstring
+    above names, rather than over the forms the renderer happens to emit.
+
+    Deliberate refusals, both of which keep this from guessing:
+
+    * **A line that declares nothing is returned as it came.** A relation macro names two aliases and
+      declares neither, and rewriting one would put a colour on an arrow.
+    * **A declaration with no quoted label is returned as it came** when label lines are asked for.
+      There is nothing to append to, and quoting a bare alias would change what the element is called.
+
+    Colours are written as the compound `#back:…;line:…;text:…` form, which the pinned PlantUML
+    honours and which sets the element's *text* as well as its fill — so a dark heat endpoint does not
+    leave the element's own name unreadable, which the plain `#fill` form cannot avoid.
+    """
+    if alias_declared_on(line) is None:
+        return line
+    if fill is None and not label_lines:
+        return line
+
+    opens_block = line.rstrip().endswith("{")
+    stem = line.rstrip()
+    trailer = ""
+    if opens_block:
+        stem = stem[:-1].rstrip()
+        trailer = " {"
+
+    without_colour = _COLOUR_SUFFIX.sub("", stem)
+
+    if label_lines:
+        quoted = _QUOTED.search(without_colour)
+        if quoted is None:
+            return line
+        label = quoted.group(0)[1:-1]
+        replacement = f'"{_restyled_label(label, label_lines, ink)}"'
+        without_colour = without_colour[: quoted.start()] + replacement + without_colour[quoted.end() :]
+
+    suffix = ""
+    if fill is not None:
+        parts = [f"back:{fill}"]
+        if border is not None:
+            parts.append(f"line:{border}")
+        if ink is not None:
+            parts.append(f"text:{ink}")
+        suffix = " #" + ";".join(parts)
+
+    indent = line[: len(line) - len(line.lstrip())]
+    return f"{indent}{without_colour.lstrip()}{suffix}{trailer}"
