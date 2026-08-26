@@ -1,4 +1,5 @@
 import { Schema } from 'effect'
+import { DiagramRefSchema } from './diagram-types'
 import { EntityContextConnectionSchema } from './connections'
 
 // ── Neighbors ────────────────────────────────────────────────────────────────
@@ -106,6 +107,7 @@ export const EntityDetailSchema = Schema.Struct({
   display_blocks: Schema.Record({ key: Schema.String, value: Schema.String }),
   extra: Schema.Record({ key: Schema.String, value: Schema.Unknown }),
   referenced_in_documents: Schema.Array(DocumentReferenceSchema),
+  referenced_in_diagrams: Schema.Array(DiagramRefSchema),
 })
 export type EntityDetail = typeof EntityDetailSchema.Type
 

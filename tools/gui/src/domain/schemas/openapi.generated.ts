@@ -6543,13 +6543,21 @@ export interface components {
         };
         /**
          * DiagramReference
-         * @description A diagram that draws a given source/target pair.
+         * @description One diagram that draws the thing asked about.
+         *
+         *     ``diagram_type`` and ``status`` are served on both surfaces, not only the entity page: a caller
+         *     warning about a rename benefits from them equally, because a draft diagram drawing the pair is a
+         *     weaker objection than an active one.
          */
         DiagramReference: {
             /** Artifact Id */
             artifact_id: string;
+            /** Diagram Type */
+            diagram_type: string;
             /** Name */
             name: string;
+            /** Status */
+            status: string;
         };
         /**
          * DiagramReferenceListResponse
@@ -7639,6 +7647,11 @@ export interface components {
              * @constant
              */
             record_type: "entity";
+            /**
+             * Referenced In Diagrams
+             * @default []
+             */
+            referenced_in_diagrams: components["schemas"]["DiagramReference"][];
             /**
              * Referenced In Documents
              * @default []

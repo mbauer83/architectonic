@@ -50,6 +50,7 @@ const gsnNodeDetailRaw = {
   attributes: {},
   display_blocks: {},
   referenced_in_documents: [],
+  referenced_in_diagrams: [],
   extra: { gsn_type: 'goal' },
 }
 

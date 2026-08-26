@@ -18,6 +18,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from src.infrastructure.rest.contracts.connections import ConnectionSummary
+from src.infrastructure.rest.contracts.diagram_reference import DiagramReference
 from src.infrastructure.rest.contracts.entities import (
     ContextConnection,
     EntityDisplayItemResponse,
@@ -37,13 +38,6 @@ class _ModuleShaped(BaseModel):
     """
 
     model_config = ConfigDict(extra="allow")
-
-
-class DiagramReference(Closed):
-    """A diagram that draws a given source/target pair."""
-
-    artifact_id: str
-    name: str
 
 
 class DiagramReferenceListResponse(Closed):

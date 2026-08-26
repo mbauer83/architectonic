@@ -185,9 +185,18 @@ export type OntologyPair = typeof OntologyPairSchema.Type
 
 // ── Diagram refs ─────────────────────────────────────────────────────────────
 
+/** A diagram that draws a given thing — a source/target pair, or one entity.
+ *
+ * One schema for one concept, mirroring the single `DiagramReference` DTO. The entity page's "drawn in
+ * diagrams" list nearly declared a second with the same meaning and a different id field.
+ *
+ * `diagram_type` and `status` are what let a reader weigh the reference: a draft diagram drawing the
+ * thing is a weaker statement than an active one. */
 export const DiagramRefSchema = Schema.Struct({
   artifact_id: Schema.String,
   name: Schema.String,
+  diagram_type: Schema.String,
+  status: Schema.String,
 })
 export type DiagramRef = typeof DiagramRefSchema.Type
 

@@ -66,6 +66,7 @@ describe('the entity detail', () => {
       Immutable<components['schemas']['DocumentReference']>
     >()
   })
+
 })
 
 describe('the document detail', () => {

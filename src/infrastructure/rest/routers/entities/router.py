@@ -9,9 +9,9 @@ from pydantic import BaseModel, ConfigDict
 
 from src.application._diagram_entity_extraction import extract_diagram_entities
 from src.application.artifacts._query_helpers import read_entity as serialize_entity
+from src.application.artifacts.entity_references import references_to
 from src.application.artifacts.parsing import decode_entity_properties, parse_entity_content_sections
 from src.application.artifacts.schema import load_attribute_schema
-from src.application.document_links import reference_dicts_for_entity
 from src.application.entity_type_predicates import is_internal_entity_type
 from src.application.read_models import EntityContextReadModel
 from src.application.runtime_catalogs import RuntimeCatalogs
@@ -208,10 +208,7 @@ def read_entity_context(artifact_id: str) -> EntityContextReadModel:
         context["entity"]["properties"] = decode_entity_properties(raw_props, prop_schemata, attr_types)
         context["entity"]["notes"] = parsed["notes"]
         context["entity"]["is_global"] = s.is_global(entity_rec.path)
-        context["entity"]["referenced_in_documents"] = reference_dicts_for_entity(
-            documents=repo.list_documents(),
-            entity=entity_rec,
-        )
+        context["entity"].update(references_to(entity_rec, repo))
     return context
 
 

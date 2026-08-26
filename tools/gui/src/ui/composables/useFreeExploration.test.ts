@@ -54,7 +54,7 @@ const entity = (id: string) => ({
   artifact_id: id, artifact_type: 'requirement', name: id, version: '0.1.0', status: 'active',
   domain: 'motivation', subdomain: 'requirement', record_type: 'entity' as const, path: '',
   keywords: [], properties: {}, attributes: {}, specializations: [], display_blocks: {}, extra: {},
-  referenced_in_documents: [], conn_in: 0, conn_sym: 0, conn_out: 0,
+  referenced_in_documents: [], referenced_in_diagrams: [], conn_in: 0, conn_sym: 0, conn_out: 0,
 })
 
 /** Enough of `ModelService` for exploration, answering from `MODEL`. */

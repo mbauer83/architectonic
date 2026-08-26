@@ -19,6 +19,7 @@ from typing import Any, Literal
 from pydantic import ConfigDict, Field, RootModel
 
 from src.application.read_models import ConnectionDirection
+from src.infrastructure.rest.contracts.diagram_reference import DiagramReference
 from src.infrastructure.rest.contracts.wire_nulls import NullsOmitted
 from src.infrastructure.rest.contracts.wire_shape import Closed
 
@@ -140,6 +141,10 @@ class EntityDetailResponse(EntityRecordFields):
     conn_out: int | None = None
     is_global: bool | None = None
     referenced_in_documents: list[DocumentReference] = []
+    #: Every diagram that draws this entity. The other half of "where does this appear": the documents
+    #: that link to it were served here all along, and the diagrams that draw it were not, although the
+    #: index has kept the reverse mapping for as long as the delete path has needed it.
+    referenced_in_diagrams: list[DiagramReference] = []
     # Set only for a construct a diagram owns — a GSN goal, a swimlane — and the field by which a
     # display surface tells one from a model entity. The client's decoder has always declared it; the
     # server had not, so reading such a construct failed its own response contract. Absent for a model

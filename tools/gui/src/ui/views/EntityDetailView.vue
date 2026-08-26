@@ -14,6 +14,7 @@ import SignalIngestPanel from '../components/SignalIngestPanel.vue'
 import EntityDetailHeader from '../components/EntityDetailHeader.vue'
 import EntityEditFormCard from '../components/EntityEditFormCard.vue'
 import EntityDeletePanel from '../components/EntityDeletePanel.vue'
+import EntityDiagramReferences from '../components/EntityDiagramReferences.vue'
 import EntityDocumentReferences from '../components/EntityDocumentReferences.vue'
 import type { RenderedEntityContext } from '../../domain'
 import type { NotFoundError } from '../../domain'
@@ -51,6 +52,7 @@ const outgoing = computed(() => context.data.value?.connections.outbound ?? [])
 const incoming = computed(() => context.data.value?.connections.inbound ?? [])
 const symmetric = computed(() => context.data.value?.connections.symmetric ?? [])
 const documentReferences = computed(() => detail.value?.referenced_in_documents ?? [])
+const diagramReferences = computed(() => detail.value?.referenced_in_diagrams ?? [])
 
 const load = () => {
   if (!entityId.value) return
@@ -142,6 +144,11 @@ const executeDelete = () => { void router.push(backTo.value) }
       <EntityDocumentReferences
         v-if="documentReferences.length"
         :references="documentReferences"
+      />
+
+      <EntityDiagramReferences
+        v-if="diagramReferences.length"
+        :references="diagramReferences"
       />
 
       <!-- Connections: [INCOMING] [SYMMETRIC] [OUTGOING] on wide screens -->

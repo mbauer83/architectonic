@@ -9,7 +9,7 @@ from src.application.artifacts._aggregation import count_artifacts_by as _count_
 from src.application.artifacts._search import (
     search_artifacts as _search_artifacts,
 )
-from src.application.document_links import reference_dicts_for_entity
+from src.application.artifacts.entity_references import references_to
 from src.application.ports import ReadableArtifactStore
 from src.application.read_models import (
     EntityContextConnection,
@@ -169,6 +169,16 @@ class ArtifactRepository:
     ) -> list[DiagramRecord]:
         return self._store.list_diagrams(diagram_type=diagram_type, status=status, group=group)
 
+    def diagrams_referencing_artifact(self, artifact_id: str) -> list[DiagramRecord]:
+        """Every diagram that draws this artifact, straight from the reverse index.
+
+        Delegated rather than answered by scanning `list_diagrams()` and reading each one's recorded
+        references: the store keeps `diagrams_by_reference` for exactly this question, and the facade
+        simply had no way through to it. The verifier's registry has delegated it all along, which is
+        how the delete path can tell you which diagrams block a deletion.
+        """
+        return self._store.diagrams_referencing_artifact(artifact_id)
+
     def list_artifacts(
         self,
         *,
@@ -202,10 +212,7 @@ class ArtifactRepository:
             return data
         entity = self._store.get_entity(str(data["artifact_id"]))
         if entity is not None:
-            data["referenced_in_documents"] = reference_dicts_for_entity(
-                documents=self._store.list_documents(),
-                entity=entity,
-            )
+            data.update(references_to(entity, self))
         return data
 
     def summarize_artifact(self, artifact_id: str) -> ArtifactSummary | None:

@@ -6,6 +6,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
+from src.application.artifacts.entity_references import diagram_reference_dicts
 from src.application.artifacts.parsing import parse_diagram_source
 from src.application.assurance.diagrams import assurance_surface_diagram_types
 from src.application.modeling.binding_normalize import restore_diagram_shorthand
@@ -200,11 +201,9 @@ def get_diagram_refs(source_id: str, target_id: str) -> dict[str, Any]:
     if not src or not tgt or not src.display_alias or not tgt.display_alias:
         return {"items": []}
     return {
-        "items": [
-            {"artifact_id": d.artifact_id, "name": d.name}
-            for d in repo.list_diagrams()
-            if puml_contains(d, src.display_alias, tgt.display_alias)
-        ]
+        "items": diagram_reference_dicts(
+            d for d in repo.list_diagrams() if puml_contains(d, src.display_alias, tgt.display_alias)
+        )
     }
 
 
