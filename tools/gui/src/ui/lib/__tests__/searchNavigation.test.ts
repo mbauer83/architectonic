@@ -12,7 +12,7 @@ import { ROUTE_TEMPLATES, assuranceNodeDetailRoute, diagramDetailRoute, document
 import { describe, it, expect } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
-import { searchHitRoute } from '../searchNavigation'
+import { searchHitRoute, searchHitTypeLabel } from '../searchNavigation'
 
 const stub = { template: '<div/>' }
 
@@ -92,3 +92,37 @@ describe('searchHitRoute', () => {
     expect(resolved.matched.length).toBeGreaterThan(0)
   })
 })
+
+describe('searchHitTypeLabel', () => {
+  it('reads a diagram type rather than the constant "diagram"', () => {
+    // A diagram's `artifact_type` is its kind. The specific type travels beside it and one of the two
+    // readers of this question did not look.
+    expect(searchHitTypeLabel({
+      record_type: 'diagram', artifact_type: 'diagram', diagram_type: 'c4-deployment',
+    })).toBe('c4-deployment')
+  })
+
+  it('strips the ontology prefix off an entity type', () => {
+    expect(searchHitTypeLabel({ record_type: 'entity', artifact_type: 'archimate-business' }))
+      .toBe('business')
+  })
+
+  it('answers null for a kind with no type of its own', () => {
+    // A scratchpad. Its answer to "what type is it" is "a scratchpad", which the kind column already
+    // says — and it used to carry the pad's meta-ontology here, which the prefix strip above rendered
+    // as the single character `4`.
+    expect(searchHitTypeLabel({ record_type: 'scratchpad', artifact_type: '' })).toBeNull()
+  })
+
+  it('does not fall back to the record kind', () => {
+    // Echoing the kind into the type column tells a reader nothing twice, and it is what one of the
+    // two readers did.
+    expect(searchHitTypeLabel({ record_type: 'connection', artifact_type: null })).toBeNull()
+  })
+
+  it('answers null for an untyped scratchpad note rather than inventing a word', () => {
+    // The view says "untyped" in its own words; putting that wording here would put it in two places.
+    expect(searchHitTypeLabel({ record_type: 'scratchpad-note', artifact_type: '' })).toBeNull()
+  })
+})
+

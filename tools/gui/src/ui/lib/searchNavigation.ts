@@ -46,3 +46,32 @@ export function searchHitRoute(hit: NavigableHit): RouteLocationRaw | null {
       return null
   }
 }
+
+/** The fields a hit's type label reads. */
+export interface TypedHit {
+  readonly record_type: string
+  readonly artifact_type?: string | null
+  readonly diagram_type?: string | null
+}
+
+/**
+ * The type to show beside a hit, or `null` where its kind genuinely has none.
+ *
+ * One rule, for the same reason `searchHitRoute` is one: the nav-bar dropdown and the search page
+ * show the same list and must not disagree about it. **They did.** The search page read
+ * `diagram_type` for a diagram, because a diagram's `artifact_type` is the constant `"diagram"` — its
+ * kind, not its type — while the dropdown read `artifact_type` for everything and stripped a leading
+ * `archimate-`, so entity types read `business` rather than `archimate-business`. Two readers, two
+ * answers, and the prefix strip then turned a scratchpad's `archimate-4` into the single character
+ * `4`.
+ *
+ * The union of what each knew: a diagram reads `diagram_type`; everything else reads `artifact_type`;
+ * an `archimate-` prefix is display noise and comes off. `null` rather than a placeholder or a
+ * fallback to the kind — a surface that wants to say "untyped" says it in its own words, and echoing
+ * the kind into the type column tells a reader nothing twice.
+ */
+export function searchHitTypeLabel(hit: TypedHit): string | null {
+  const specific = hit.record_type === 'diagram' ? hit.diagram_type : hit.artifact_type
+  const trimmed = (specific ?? '').trim().replace(/^archimate[-_]/i, '')
+  return trimmed === '' ? null : trimmed
+}

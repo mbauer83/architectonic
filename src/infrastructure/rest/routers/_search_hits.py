@@ -67,14 +67,21 @@ def search_hit_to_dict(h: SearchHit) -> dict[str, Any]:
         case ConnectionRecord():
             return {**base, "name": "", "artifact_type": rec.conn_type, "source": rec.source, "target": rec.target}
         case ScratchpadRecord():
-            # `artifact_type` is the pad's meta-ontology: the one typed thing a pad declares about
-            # itself, and what a reader needs to know before opening it. A pad has no `doc_type` or
-            # element type, and leaving the column empty would read as "undecided" — which is what a
-            # *note* legitimately says and a pad does not.
+            # `artifact_type` is **empty**, because a pad has no type distinct from its kind. Every
+            # other row carries something about the artifact itself here — an entity's element type, a
+            # document's doc type, a diagram's diagram type — and a pad's answer to "what type is it"
+            # is "a scratchpad", which the kind column already says.
+            #
+            # It carried the pad's `meta_ontology` first, on the reasoning that this is the one typed
+            # thing a pad declares about itself. That was wrong twice. It is a fact about which
+            # ontology governs the pad rather than about what the pad is, so it answered a question
+            # nobody asked; and the nav dropdown strips an `archimate-` prefix so entity types read
+            # `business` rather than `archimate-business` — which turned `archimate-4` into the
+            # single character **4** in the type column of every pad hit.
             return {
                 **base,
                 "name": rec.name,
-                "artifact_type": rec.meta_ontology,
+                "artifact_type": "",
                 "description": rec.description or None,
             }
         case ScratchpadNoteRecord():

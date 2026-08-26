@@ -11,25 +11,12 @@
  * a pure function tested on its own rather than a fetch.
  */
 
-/** The kinds a hit may be, as the search contract declares them. */
-export interface TypedHit {
-  readonly record_type: string
-  readonly artifact_type?: string | null
-  readonly diagram_type?: string | null
-}
-
-/**
- * The type to show, or `null` where the kind genuinely has none.
- *
- * A diagram reads `diagram_type`; every other kind reads `artifact_type`, which is where its own
- * type already arrives. Null rather than a placeholder for an untyped scratchpad note: the view says
- * "untyped" in its own words, and inventing one here would put that wording in two places.
- */
-export const hitTypeLabel = (hit: TypedHit): string | null => {
-  const specific = hit.record_type === 'diagram' ? hit.diagram_type : hit.artifact_type
-  const trimmed = (specific ?? '').trim()
-  return trimmed === '' ? null : trimmed
-}
+// The type label moved to `ui/lib/searchNavigation`, beside the route rule, because the nav-bar
+// dropdown needs the same answer and a second copy is how the two came to disagree: this one read
+// `diagram_type` for a diagram and the dropdown stripped an `archimate-` prefix, so one of them was
+// wrong about diagrams and the other rendered a scratchpad's `archimate-4` as `4`.
+export { searchHitTypeLabel as hitTypeLabel } from '../lib/searchNavigation'
+export type { TypedHit } from '../lib/searchNavigation'
 
 /**
  * What kind of artifact this is, in the reader's words.

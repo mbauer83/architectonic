@@ -4,7 +4,7 @@ import { browseTarget } from './NavBar.helpers'
 import { computed, inject, onMounted, ref } from 'vue'
 import { Effect } from 'effect'
 import { modelServiceKey } from '../keys'
-import { searchHitRoute } from '../lib/searchNavigation'
+import { searchHitRoute, searchHitTypeLabel } from '../lib/searchNavigation'
 import ArchimateTypeGlyph from './ArchimateTypeGlyph.vue'
 import SyncStatusCluster from './SyncStatusCluster.vue'
 import type { EnterpriseSyncStatus, SearchHit, SyncAuthority } from '../../domain'
@@ -103,7 +103,7 @@ const onSearchBlur = () => { setTimeout(() => { showDropdown.value = false }, 18
 const onSearchFocus = () => { if (searchHits.value.length > 0) showDropdown.value = true }
 const hitGlyphType = (hit: SearchDropdownHit) =>
   (hit.record_type === 'diagram' || hit.record_type === 'connection') ? 'generic' : (hit.artifact_type ?? 'generic')
-const hitTypeLabel = (hit: SearchDropdownHit) => (hit.artifact_type || hit.record_type || '').replace(/^archimate[-_]/i, '')
+
 
 const assuranceStatus = ref<'unlocked' | 'locked' | 'not_initialised' | null>(null)
 onMounted(async () => {
@@ -201,7 +201,7 @@ onMounted(async () => {
               class="nav__search-item-glyph"
             />
             <span class="nav__search-item-name">{{ hit.name || hit.artifact_id }}</span>
-            <span class="nav__search-item-type">{{ hitTypeLabel(hit) }}</span>
+            <span class="nav__search-item-type">{{ searchHitTypeLabel(hit) }}</span>
           </button>
         </div>
       </form>
