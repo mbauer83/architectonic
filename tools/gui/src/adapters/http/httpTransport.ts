@@ -30,8 +30,12 @@ export const buildUrl = (
       // here do (`domains`, `entity_types`), and it is right for them because those routes declare a
       // single comma-separated string; a route declaring a list would receive one member named
       // "a,b". So the shape follows what the route declares, and both shapes are expressible.
-      if (Array.isArray(v)) v.forEach((member) => url.searchParams.append(k, member))
-      else url.searchParams.set(k, String(v as string | number | boolean))
+      // `typeof v === 'object'` rather than `Array.isArray(v)`: the latter narrows a
+      // `readonly string[]` to `any[]`, which makes every member an `any` and needs a cast on the
+      // other branch to put the type back. `typeof` narrows both branches of the union properly, so
+      // the members stay strings and neither branch asserts anything.
+      if (typeof v === 'object') v.forEach((member) => url.searchParams.append(k, member))
+      else url.searchParams.set(k, String(v))
     }
   }
   return url.toString()

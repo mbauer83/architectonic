@@ -16,7 +16,16 @@ export function useFullscreen(elementRef: Readonly<Ref<HTMLElement | null>>) {
   const isSupported = document.fullscreenEnabled === true
 
   const syncFromDocument = () => {
-    isFullscreen.value = document.fullscreenElement === elementRef.value
+    // The `element !== null` half is load-bearing. When the element leaves the document — a save
+    // re-renders the page and the canvas goes with it — the browser exits fullscreen and fires this,
+    // and by then the ref is `null` as well. `document.fullscreenElement === elementRef.value` was
+    // then `null === null`, so the flag latched *on* with nothing to be fullscreen in.
+    //
+    // What that cost was not the flag: `FullscreenDock` shows its slot only when it is not fullscreen
+    // or something is selected, and the same save clears the selection — so the sidebar stopped
+    // rendering and did not come back until the page was reloaded by hand.
+    const element = elementRef.value
+    isFullscreen.value = element !== null && document.fullscreenElement === element
   }
 
   const toggle = async (): Promise<void> => {

@@ -29,8 +29,16 @@ const harness = (
   define('fullscreenEnabled', enabled)
   define('fullscreenElement', current)
   define('exitFullscreen', exit)
-  const { value, unmount } = mounted(() => useFullscreen(ref(element)))
-  return { ...value, element, request, exit, unmount }
+  const elementRef = ref<HTMLElement | null>(element)
+  const { value, unmount } = mounted(() => useFullscreen(elementRef))
+  return { ...value, element, elementRef, request, exit, unmount }
+}
+
+/** What the browser does when the fullscreen element leaves the document: it exits, and says so. */
+const elementRemovedWhileFullscreen = (harnessed: ReturnType<typeof harness>) => {
+  harnessed.elementRef.value = null
+  define('fullscreenElement', null)
+  window.document.dispatchEvent(new Event('fullscreenchange'))
 }
 
 afterEach(() => {
@@ -104,5 +112,47 @@ describe('what the page believes about its own state', () => {
     window.document.dispatchEvent(new Event('fullscreenchange'))
 
     expect(isFullscreen.value).toBe(false)
+  })
+})
+
+
+describe('when the element the reader was viewing goes away', () => {
+  /**
+   * Saving an entity's metadata from a fullscreen diagram re-renders the page, which removes the
+   * canvas — so the browser exits fullscreen and fires `fullscreenchange` with no fullscreen element
+   * left. At that moment the composable's own element ref is `null` too, and `fullscreenElement ===
+   * elementRef.value` was therefore `null === null`: **true**. The flag latched on.
+   *
+   * What that cost was not the flag. `FullscreenDock` renders its slot only when it is not fullscreen
+   * *or* something is selected, and the same save clears the selection — so the sidebar stopped
+   * rendering and did not come back until the page was reloaded by hand.
+   */
+  it('is not fullscreen once there is no element to be fullscreen in', () => {
+    const harnessed = harness({ current: null })
+
+    elementRemovedWhileFullscreen(harnessed)
+
+    expect(harnessed.isFullscreen.value).toBe(false)
+  })
+
+  it('does not read two absences as a match', () => {
+    // The defect stated as the comparison that produced it.
+    const harnessed = harness()
+    harnessed.elementRef.value = null
+    define('fullscreenElement', null)
+
+    window.document.dispatchEvent(new Event('fullscreenchange'))
+
+    expect(document.fullscreenElement).toBe(harnessed.elementRef.value)
+    expect(harnessed.isFullscreen.value).toBe(false)
+  })
+
+  it('still reports fullscreen while the element is both present and fullscreen', () => {
+    const harnessed = harness()
+    define('fullscreenElement', harnessed.element)
+
+    window.document.dispatchEvent(new Event('fullscreenchange'))
+
+    expect(harnessed.isFullscreen.value).toBe(true)
   })
 })

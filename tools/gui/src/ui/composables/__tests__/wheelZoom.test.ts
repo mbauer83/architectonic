@@ -165,3 +165,75 @@ describe('the handler', () => {
     app.unmount()
   })
 })
+
+
+/**
+ * A wheel over something that scrolls belongs to that thing.
+ *
+ * The listener is on the viewport, and in fullscreen the companion sidebar is teleported *inside* it —
+ * so a reader scrolling a list of twenty entities zoomed the diagram instead, and the list refused to
+ * move. jsdom computes no layout, so `scrollHeight`/`clientHeight` are stubbed: these are about which
+ * element the composable decides the wheel belongs to, not about scrolling actually happening.
+ */
+const sized = (element: HTMLElement, { scrollHeight = 0, clientHeight = 0 }) => {
+  Object.defineProperty(element, 'scrollHeight', { value: scrollHeight, configurable: true })
+  Object.defineProperty(element, 'clientHeight', { value: clientHeight, configurable: true })
+  return element
+}
+
+/** A viewport with a companion panel inside it, as fullscreen produces. */
+const withPanel = (overflowY: string) => {
+  const { container, view, unmount } = harness()
+  window.document.body.appendChild(container)
+  const panel = container.appendChild(window.document.createElement('div'))
+  panel.style.overflowY = overflowY
+  return { container, panel, view, unmount }
+}
+
+const wheelOn = (target: HTMLElement) => {
+  const event = new WheelEvent('wheel', { deltaY: 200, bubbles: true, cancelable: true })
+  target.dispatchEvent(event)
+  return event
+}
+
+describe('a wheel over a scrollable panel inside the viewport', () => {
+  it('does not zoom the diagram', () => {
+    const { panel, view, unmount } = withPanel('auto')
+    sized(panel, { scrollHeight: 900, clientHeight: 300 })
+
+    wheelOn(panel)
+
+    expect(view.scale.value).toBe(1)
+    unmount()
+  })
+
+  it('is left uncancelled, so the panel can scroll with it', () => {
+    const { panel, unmount } = withPanel('scroll')
+    sized(panel, { scrollHeight: 900, clientHeight: 300 })
+
+    expect(wheelOn(panel).defaultPrevented).toBe(false)
+    unmount()
+  })
+
+  it('still zooms where the panel has nothing to scroll', () => {
+    // An `auto` container with no overflow is not scrolling, and letting it swallow the wheel would
+    // make the diagram unzoomable wherever such a panel sits.
+    const { panel, view, unmount } = withPanel('auto')
+    sized(panel, { scrollHeight: 300, clientHeight: 300 })
+
+    wheelOn(panel)
+
+    expect(view.scale.value).not.toBe(1)
+    unmount()
+  })
+
+  it('still zooms over a panel that does not scroll at all', () => {
+    const { panel, view, unmount } = withPanel('visible')
+    sized(panel, { scrollHeight: 900, clientHeight: 300 })
+
+    wheelOn(panel)
+
+    expect(view.scale.value).not.toBe(1)
+    unmount()
+  })
+})
