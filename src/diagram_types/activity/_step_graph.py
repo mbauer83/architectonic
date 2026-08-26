@@ -114,3 +114,119 @@ class StepGraph:
             if all(other in onward for other in dominating if other != candidate):
                 return candidate
         return None
+
+
+#: The `diagram-entities` keys that carry a step. A fork has no label of its own, which is why
+#: `_step_links` keeps its own shorter list — that one is about what can be *found* in a body.
+STEP_KEYS: tuple[str, ...] = ("action", "decision", "fork", "partition")
+
+
+def graph_from_declarations(
+    diagram_entities: Mapping[str, object], diagram_connections: list[dict[str, object]]
+) -> StepGraph:
+    """The declared graph, read from one diagram's `diagram-entities` and its connections.
+
+    **One reading, three callers.** The renderer builds the graph to walk it, a verification
+    contribution builds it to ask what cannot be drawn, and the golden-shape tests build it to state
+    what a shape is. All three reassembled it from the renderer's own privates — the tests literally
+    imported five underscored names — and a second assembly of a declaration is the defect this
+    repository's syntax register exists to prevent, arriving by the side door.
+
+    What it does *not* do is decide anything: a second `step-flow` out of one step is silently lost
+    here, exactly as it always was, and `colliding_declarations` is what reports that. Reading and
+    judging stay apart.
+    """
+    return StepGraph(
+        step_by_id=_steps_by_id(diagram_entities),
+        flow_next=target_index(diagram_connections, "step-flow"),
+        then_target=target_index(diagram_connections, "step-then"),
+        else_target=target_index(diagram_connections, "step-else"),
+        fork_branches=branch_index(diagram_connections, "step-fork-branch"),
+        contains_first=target_index(diagram_connections, "step-contains"),
+    )
+
+
+def target_index(diagram_connections: list[dict[str, object]], conn_type: str) -> dict[str, str]:
+    """One target per source for *conn_type*.
+
+    **The one place an edge type is indexed one-per-source**, which is what makes that property
+    checkable: `test_single_target_edge_types_match_the_index` reads the call sites here against the
+    list W048 checks for collisions, and a type that quietly changed builder would otherwise have the
+    diagnostic report a loss that no longer happens. The lane index is read through it too, because it
+    loses a second edge exactly the same way.
+
+    A second edge of this type out of one step is discarded, silently, before any walk runs. That is
+    reported by `colliding_declarations`, not prevented here: reading and judging stay apart.
+    """
+    return {
+        str(kc["source"]): str(kc["target"])
+        for kc in diagram_connections
+        if isinstance(kc, dict) and kc.get("conn_type") == conn_type
+        and kc.get("source") and kc.get("target")
+    }
+
+
+def branch_index(diagram_connections: list[dict[str, object]], conn_type: str) -> dict[str, list[str]]:
+    """Every target per source — the one type that does not lose a second edge."""
+    result: dict[str, list[str]] = {}
+    for kc in diagram_connections:
+        if isinstance(kc, dict) and kc.get("conn_type") == conn_type and kc.get("source") and kc.get("target"):
+            result.setdefault(str(kc["source"]), []).append(str(kc["target"]))
+    return result
+
+
+def _steps_by_id(kd: Mapping[str, object]) -> dict[str, dict[str, Any]]:
+    result: dict[str, dict[str, Any]] = {}
+    for key in STEP_KEYS:
+        raw = kd.get(key)
+        if isinstance(raw, list):
+            for item in raw:
+                if isinstance(item, dict) and item.get("id"):
+                    result[str(item["id"])] = {**item, "type": item.get("type") or key}
+    return result
+
+
+def branch_owned(graph: StepGraph) -> set[str]:
+    owned = _branch_entries(graph)
+    changed = True
+    while changed:
+        changed = False
+        for src, tgt in graph.flow_next.items():
+            if src in owned and tgt not in owned:
+                owned.add(tgt)
+                changed = True
+    return owned
+
+
+def _branch_entries(graph: StepGraph) -> set[str]:
+    entries = (
+        set(graph.then_target.values())
+        | set(graph.else_target.values())
+        | set(graph.contains_first.values())
+    )
+    for ids in graph.fork_branches.values():
+        entries.update(ids)
+    return entries
+
+
+def entry_step(graph: StepGraph) -> str | None:
+    """Where the walk starts: a step nothing flows into and no branch owns.
+
+    Derives the owned set itself rather than taking it: it is a function of the graph, so a caller
+    passing a stale or differently-built one is a mistake this signature simply does not permit.
+
+    A back edge leaves no such step — every step of a retry loop is reached from somewhere — and
+    returning None then drew `start` and `stop` with nothing between them. So a graph that loops
+    falls back to a step no branch enters, and failing that to the first declared step: an entry
+    into a cycle is a choice rather than a fact, and any of them draws the whole loop.
+    """
+    owned = branch_owned(graph)
+    has_incoming_flow = set(graph.flow_next.values())
+    for step_id in graph.step_by_id:
+        if step_id not in owned and step_id not in has_incoming_flow:
+            return step_id
+    branch_entries = _branch_entries(graph)
+    for step_id in graph.step_by_id:
+        if step_id not in branch_entries:
+            return step_id
+    return next(iter(graph.step_by_id), None)

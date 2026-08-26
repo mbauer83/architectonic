@@ -43,10 +43,8 @@ from ._emission import (
     emit_orphans,
 )
 from ._step_cycles import cycles_of
-from ._step_graph import StepGraph
+from ._step_graph import branch_owned, entry_step, graph_from_declarations, target_index
 from ._step_links import lane_header, puml_text
-
-_STEP_KEYS = ("action", "decision", "fork", "partition")
 
 
 class ActivityPumlRenderer:
@@ -69,20 +67,13 @@ class ActivityPumlRenderer:
         kd = diagram_entities or {}
         kcs = diagram_connections or []
 
-        graph = StepGraph(
-            step_by_id=_build_step_by_id(kd),
-            flow_next=_build_single_target(kcs, "step-flow"),
-            then_target=_build_single_target(kcs, "step-then"),
-            else_target=_build_single_target(kcs, "step-else"),
-            fork_branches=_build_multi_target(kcs, "step-fork-branch"),
-            contains_first=_build_single_target(kcs, "step-contains"),
-        )
-        branch_owned = _branch_owned_set(graph)
+        graph = graph_from_declarations(kd, kcs)
+        owned = branch_owned(graph)
 
         lanes = _read_lanes(kd)
-        lane_index = _build_single_target(kcs, "step-in-lane")
+        lane_index = target_index(kcs, "step-in-lane")
 
-        root_id = _find_root(graph, branch_owned)
+        root_id = entry_step(graph)
         initial_lane_id = lane_index.get(root_id) if root_id else None
         if initial_lane_id is None and lanes:
             initial_lane_id = lanes[0]["id"]
@@ -108,7 +99,7 @@ class ActivityPumlRenderer:
             emit_from(root_id, ctx, body_lines, drawn)
         # Whenever steps remain, not only when there was no root: a diagram may declare two chains
         # with no edge between them, and both are declared, so both are drawn.
-        emit_orphans(branch_owned, ctx, body_lines, drawn)
+        emit_orphans(owned, ctx, body_lines, drawn)
 
         lines: list[str] = [
             f"@startuml {diagram_name}",
@@ -173,37 +164,6 @@ class ActivityPumlRenderer:
 # ── Index builders ────────────────────────────────────────────────────────────
 
 
-def _build_step_by_id(kd: Mapping[str, object]) -> dict[str, dict[str, Any]]:
-    result: dict[str, dict[str, Any]] = {}
-    for key in _STEP_KEYS:
-        raw = kd.get(key)
-        if isinstance(raw, list):
-            for item in raw:
-                if isinstance(item, dict) and item.get("id"):
-                    result[str(item["id"])] = {**item, "type": item.get("type") or key}
-    return result
-
-
-def _build_single_target(kcs: list[dict[str, object]], conn_type: str) -> dict[str, str]:
-    """One target per source. A second edge of this type out of one step is *lost here*, before any
-    walk runs — which is what `colliding_declarations` reports, and why the type list it checks is
-    the list of types this function is called with."""
-    return {
-        str(kc["source"]): str(kc["target"])
-        for kc in kcs
-        if isinstance(kc, dict) and kc.get("conn_type") == conn_type
-        and kc.get("source") and kc.get("target")
-    }
-
-
-def _build_multi_target(kcs: list[dict[str, object]], conn_type: str) -> dict[str, list[str]]:
-    result: dict[str, list[str]] = {}
-    for kc in kcs:
-        if isinstance(kc, dict) and kc.get("conn_type") == conn_type and kc.get("source") and kc.get("target"):
-            result.setdefault(str(kc["source"]), []).append(str(kc["target"]))
-    return result
-
-
 def _build_notes_index(
     kd: Mapping[str, object], kcs: list[dict[str, object]]
 ) -> dict[str, dict[str, Any]]:
@@ -217,48 +177,6 @@ def _build_notes_index(
         if isinstance(kc, dict) and kc.get("conn_type") == "step-note-of"
         and str(kc.get("source") or "") in note_by_id and kc.get("target")
     }
-
-
-def _branch_owned_set(graph: StepGraph) -> set[str]:
-    owned = _branch_entries(graph)
-    changed = True
-    while changed:
-        changed = False
-        for src, tgt in graph.flow_next.items():
-            if src in owned and tgt not in owned:
-                owned.add(tgt)
-                changed = True
-    return owned
-
-
-def _find_root(graph: StepGraph, branch_owned: set[str]) -> str | None:
-    """Where the walk starts: a step nothing flows into and no branch owns.
-
-    A back edge leaves no such step — every step of a retry loop is reached from somewhere — and
-    returning None then drew `start` and `stop` with nothing between them. So a graph that loops
-    falls back to a step no branch enters, and failing that to the first declared step: an entry
-    into a cycle is a choice rather than a fact, and any of them draws the whole loop.
-    """
-    has_incoming_flow = set(graph.flow_next.values())
-    for step_id in graph.step_by_id:
-        if step_id not in branch_owned and step_id not in has_incoming_flow:
-            return step_id
-    branch_entries = _branch_entries(graph)
-    for step_id in graph.step_by_id:
-        if step_id not in branch_entries:
-            return step_id
-    return next(iter(graph.step_by_id), None)
-
-
-def _branch_entries(graph: StepGraph) -> set[str]:
-    entries = (
-        set(graph.then_target.values())
-        | set(graph.else_target.values())
-        | set(graph.contains_first.values())
-    )
-    for ids in graph.fork_branches.values():
-        entries.update(ids)
-    return entries
 
 
 def _read_lanes(kd: Mapping[str, object]) -> list[dict[str, Any]]:

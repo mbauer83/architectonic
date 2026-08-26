@@ -36,15 +36,12 @@ from dataclasses import dataclass, field
 import pytest
 
 from src.diagram_types.activity._step_cycles import cycles_of
-from src.diagram_types.activity._step_graph import StepGraph
-from src.diagram_types.activity._step_links import sentinel_of
-from src.diagram_types.activity.renderer import (
-    _branch_owned_set,
-    _build_multi_target,
-    _build_single_target,
-    _build_step_by_id,
-    _find_root,
+from src.diagram_types.activity._step_graph import (
+    StepGraph,
+    entry_step,
+    graph_from_declarations,
 )
+from src.diagram_types.activity._step_links import sentinel_of
 from tests.diagram_types._activity_shapes import CATALOGUE, ActivityShape, bundled_shapes
 
 _LABELLED_KINDS = ("action", "decision", "partition")
@@ -556,19 +553,16 @@ def sentinel_in_repeat_while(body: str) -> str | None:
 
 
 def _graph_of(shape: ActivityShape) -> StepGraph:
-    """The shape's declared graph, built the way the renderer builds it."""
-    return StepGraph(
-        step_by_id=_build_step_by_id(shape.entities),
-        flow_next=_build_single_target(shape.connections, "step-flow"),
-        then_target=_build_single_target(shape.connections, "step-then"),
-        else_target=_build_single_target(shape.connections, "step-else"),
-        fork_branches=_build_multi_target(shape.connections, "step-fork-branch"),
-        contains_first=_build_single_target(shape.connections, "step-contains"),
-    )
+    """The shape's declared graph, through the function the renderer itself calls.
+
+    It used to reassemble the graph out of five of the renderer's underscored privates, which meant a
+    test could state a shape the renderer never sees.
+    """
+    return graph_from_declarations(shape.entities, shape.connections)
 
 
 def _root_of(shape: ActivityShape) -> str | None:
-    return _find_root(_graph_of(shape), _branch_owned_set(_graph_of(shape)))
+    return entry_step(_graph_of(shape))
 
 
 def _drawn_in(region: Region) -> set[str]:

@@ -78,12 +78,18 @@ class _ActivityDiagramType(DiagramTypeBase):
 
     def diagram_verification_contributions(self) -> tuple:
         from src.diagram_types.activity._contributions import (  # noqa: PLC0415
+            CYCLE_REFUSAL_CONTRIBUTION,
             EDGE_COLLISION_CONTRIBUTION,
             MERGE_TARGET_CONTRIBUTION,
             STEP_COVERAGE_CONTRIBUTION,
         )
 
-        return (STEP_COVERAGE_CONTRIBUTION, MERGE_TARGET_CONTRIBUTION, EDGE_COLLISION_CONTRIBUTION)
+        return (
+            STEP_COVERAGE_CONTRIBUTION,
+            MERGE_TARGET_CONTRIBUTION,
+            EDGE_COLLISION_CONTRIBUTION,
+            CYCLE_REFUSAL_CONTRIBUTION,
+        )
 
     def write_guidance(self) -> DiagramTypeWriteGuidance:
         g: dict[str, Any] = self._config.get("guidance") or {}

@@ -1,4 +1,4 @@
-"""Activity per-diagram verification contributions (W045, W047, W048).
+"""Activity per-diagram verification contributions (W045, W047, W048, W049).
 
 Wrapped as a `DiagramVerificationContribution` so the central verifier imports no activity symbol:
 what counts as a drawn step is the activity module's question, and only this module knows that a
@@ -12,6 +12,8 @@ from typing import Any
 from src.domain.diagrams.diagram_verification import BaseDiagramVerificationContext
 
 from ._edge_collisions import colliding_declarations
+from ._step_cycles import cycles_of
+from ._step_graph import entry_step, graph_from_declarations
 from ._step_links import LABELLED_STEP_KINDS, drawn_step_ids, sentinel_target
 
 
@@ -193,6 +195,55 @@ class _EdgeCollisionContribution:
             ))
 
 
+
+class _CycleRefusalContribution:
+    """W049 — a returning flow the structured forms cannot express.
+
+    `cycles_of` already decides this: it is what lets the renderer draw a retry loop as `repeat`, and
+    it returns both halves — the loops it can draw, and the cycles it refuses with the reason. The
+    renderer reads the first and discards the second with a literal `[0]`. So a cycle one step too
+    long for a `backward:` chain is not drawn, nothing says so, and the picture asserts that the flow
+    falls through: the opposite of what the model declares, with every step still present so W045's
+    coverage rule sees nothing wrong. That silence is the whole defect; the decision was already made.
+
+    **No second opinion about what is drawable.** It calls the renderer's own function over the
+    renderer's own reading of the declarations, and carries the refusal's own words. A rule of its own
+    here could disagree with the emission in either direction, and both are worse than the silence:
+    refuse less and the picture still lies, refuse more and a correctly-drawn diagram is rejected.
+
+    A warning, for the reason the other three are: a repository holding one verifies clean today, the
+    diagram still renders, and the remedy is an authoring decision rather than a mechanical fix.
+    """
+
+    diagnostic_codes: tuple[str, ...] = ("W049",)
+
+    def run(self, candidate: Any, ctx: BaseDiagramVerificationContext, result: Any) -> None:
+        del candidate
+        from src.domain.verification_findings import Issue, Severity  # noqa: PLC0415
+
+        entities = ctx.fm.get("diagram-entities")
+        connections = ctx.fm.get("connections")
+        if not isinstance(entities, dict) or not isinstance(connections, list):
+            return
+        graph = graph_from_declarations(entities, [c for c in connections if isinstance(c, dict)])
+        if not graph.step_by_id:
+            return
+        # The same entry the renderer walks from. Which step a cycle is *entered* at is a choice, and
+        # a different choice can turn a drawable loop into a refused one — so asking with a second
+        # entry would report cycles the picture does not have.
+        _loops, refused = cycles_of(graph, start=entry_step(graph))
+        for cycle in refused:
+            result.issues.append(Issue(
+                Severity.WARNING,
+                "W049",
+                f"Steps {', '.join(cycle.steps)} form a returning flow the drawing cannot express: "
+                f"{cycle.reason}. It is drawn as though the flow falls through instead, which is the "
+                f"opposite of what is declared.",
+                ctx.loc,
+            ))
+
+
 STEP_COVERAGE_CONTRIBUTION = _StepCoverageContribution()
 MERGE_TARGET_CONTRIBUTION = _MergeTargetContribution()
 EDGE_COLLISION_CONTRIBUTION = _EdgeCollisionContribution()
+CYCLE_REFUSAL_CONTRIBUTION = _CycleRefusalContribution()
