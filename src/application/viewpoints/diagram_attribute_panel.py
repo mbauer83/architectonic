@@ -15,6 +15,10 @@ module asks the profile machinery; which of them a ramp can read is a question a
 measurement, and this module asks `attribute_scales`. Nothing here names an attribute, a type, or a
 diagram family.
 
+**Every attribute can be printed.** There is no `printable` flag, because there is no attribute a
+reader may not put on the picture — an owner's name as readily as a risk score. A field carrying one
+value for every instance is noise, and the panel does not need to be told what it can always do.
+
 **Absent is reported, not hidden.** An attribute no drawn entity carries is listed with a count of zero
 rather than dropped. A reader then learns that the attribute exists and that nothing here fills it,
 which is information; a dropped row says "this type has no such attribute", which is false.
@@ -57,10 +61,6 @@ class AttributeOffer:
     values: tuple[str, ...]
     #: How many of the drawn entities of this type carry a value. Zero is reported, not hidden.
     present_on: int
-    #: Every attribute can be printed beside its entity, whatever its type — a reader may want an
-    #: owner's name on the picture as readily as a risk score. Stated as a field rather than assumed
-    #: so the panel does not have to know the rule.
-    printable: bool = True
 
 
 @dataclass(frozen=True)

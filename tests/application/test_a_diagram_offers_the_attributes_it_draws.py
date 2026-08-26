@@ -137,11 +137,18 @@ class TestWhichColourAnAttributeCanTake:
         assert attributes["owner"].colour == "none"
         assert attributes["tags"].colour == "none"
 
-    def test_every_attribute_is_printable_whatever_its_colour(self, repo_root: Path) -> None:
-        """A reader may want an owner's name on the picture as readily as a risk score."""
-        attributes = _by_name(_offers([_entity(1)], repo_root)[0])
+    def test_an_attribute_a_colour_cannot_read_is_still_offered(self, repo_root: Path) -> None:
+        """Every attribute can be printed beside its entity — a reader may want an owner's name on the
+        picture as readily as a risk score — so there is no `printable` flag to assert. What this
+        asserts instead is that saying "no colour" does not withdraw the row: `owner` and `tags` are
+        offered with `colour == "none"` rather than left out, which is the only way a reader learns
+        they can print what they cannot colour."""
+        offered = _by_name(_offers([_entity(1)], repo_root)[0])
 
-        assert all(attribute.printable for attribute in attributes.values())
+        assert not hasattr(next(iter(offered.values())), "printable"), (
+            "a flag that is always true is not information; the offer carries no such field"
+        )
+        assert {"owner", "tags"} <= set(offered)
 
 
 class TestWhatIsActuallyThere:

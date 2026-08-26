@@ -11,6 +11,7 @@ import argparse
 import sys
 from pathlib import Path
 
+from src.domain.viewpoints.viewpoint_style_values import SCALE_ENDPOINT_ORDER, STYLE_TOKEN_COLORS
 from src.infrastructure.app_bootstrap import build_module_registry, build_runtime_catalogs
 
 _OUTPUT = Path(__file__).resolve().parents[1] / "gui" / "src" / "domain" / "types.generated.ts"
@@ -73,6 +74,16 @@ def main(argv: list[str]) -> None:
         "DOMAIN_CONTAINER_COLORS", "string",
         {name: values["container"] for name, values in appearance.items()},
     )
+    # What each style token is painted as, from the one table that declares it. Generated for the
+    # same reason `DOMAIN_COLORS` is: the diagram renderer resolves these server-side now, so a second
+    # table in the frontend is two palettes that can disagree — which is the incident `DOMAIN_COLORS`
+    # itself records.
+    out += _const_record("STYLE_TOKEN_COLORS", "string", dict(STYLE_TOKEN_COLORS))
+    # The offer order is a separate declaration because it is a separate fact: the palette is a
+    # lookup and a lookup has no order, while the endpoints an author is offered are a sequence whose
+    # order groups the pairs. `_const_record` sorts, which is right for a lookup and wrong for this.
+    out += _const_array("SCALE_ENDPOINT_ORDER", "ScaleEndpointToken", list(SCALE_ENDPOINT_ORDER))
+
     out += _const_record(
         "ENTITY_TYPE_CORNERS", "'square' | 'rounded' | 'diagonal'",
         dict(catalogs.ontology.corner_by_entity_type()),

@@ -214,6 +214,26 @@ export const DOMAIN_CONTAINER_COLORS: Record<string, string> = {
   "technology": "#E1EEDB",
 }
 
+export const STYLE_TOKEN_COLORS: Record<string, string> = {
+  "caution": "#d97706",
+  "critical": "#dc2626",
+  "emphasis": "#2563eb",
+  "heat-far": "#dc2626",
+  "heat-high": "#dc2626",
+  "heat-low": "#fbbf24",
+  "heat-near": "#0891b2",
+  "neutral": "#6b7280",
+  "positive": "#16a34a",
+}
+
+export const SCALE_ENDPOINT_ORDER = [
+  "heat-near",
+  "heat-far",
+  "heat-low",
+  "heat-high",
+] as const
+export type ScaleEndpointToken = typeof SCALE_ENDPOINT_ORDER[number]
+
 export const ENTITY_TYPE_CORNERS: Record<string, 'square' | 'rounded' | 'diagonal'> = {
   "action-definition": "square",
   "action-usage": "square",

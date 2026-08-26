@@ -1,33 +1,39 @@
 /**
  * Token-to-visual mapping convention for viewpoint style capabilities. `StyleRule.value`/
  * `RangeBand.value` are opaque tokens drawn from the fixed `STYLE_TOKENS` vocabulary
- * (`viewpointPresentation.ts`) — domain code never interprets them. This is the shared
- * surface adapter that resolves that vocabulary to a concrete visual per capability;
- * every surface (table badges, matrix cell emphasis, diagram overlay, exploration nodes)
- * reuses the same mapping so a token means the same thing everywhere.
+ * (`viewpointPresentation.ts`) — nothing interprets one except a surface adapter. This is the
+ * browser's adapter: table badges, matrix cell emphasis, exploration nodes and the execution
+ * overlay all resolve through it, so a token means the same thing on every one of them.
+ *
+ * It is no longer the *only* adapter. An ad-hoc reading lens renders diagrams server-side, so the
+ * renderer resolves tokens too — which is why the palette below is read from the generated constants
+ * instead of written here. One table, two adapters; the contract that a token is opaque to domain
+ * code is unchanged, and the table is not domain code interpreting a token but the declaration of
+ * what the token *is*.
  */
 
+import { SCALE_ENDPOINT_ORDER, STYLE_TOKEN_COLORS } from '../../domain/types.generated'
 import type { StyleValue } from '../../domain/schemas/viewpoints'
 
 export type StyleToken = 'emphasis' | 'positive' | 'caution' | 'critical' | 'neutral'
 
-const TOKEN_COLORS: Record<StyleToken, string> = {
-  emphasis: '#2563eb',
-  positive: '#16a34a',
-  caution: '#d97706',
-  critical: '#dc2626',
-  neutral: '#6b7280',
-}
+/** The token palette, read from the generated constants rather than restated here.
+ *
+ * It was a literal in this file while every renderer of a token was a browser. An ad-hoc reading lens
+ * renders server-side — it may re-layout, and it must export to SVG and PNG — so the diagram renderer
+ * resolves tokens too, and a literal here would be the second of two palettes that can disagree.
+ * That is the incident `DOMAIN_COLORS` records, and this follows the arrangement it established:
+ * declared once on the server, generated into these constants, read by every adapter. */
+const TOKEN_COLORS: Record<string, string> = STYLE_TOKEN_COLORS
 
-/** Named gradient-endpoint tokens for `mode: "scale"` rules: the distance pair
- * (`heat-near`/`heat-far`) and the magnitude pair (`heat-low`/`heat-high`) — the same
- * vocabulary `viewpoint_style_values.py` validates against. */
-const SCALE_ENDPOINT_COLORS: Record<string, string> = {
-  'heat-near': '#0891b2',
-  'heat-far': '#dc2626',
-  'heat-low': '#fbbf24',
-  'heat-high': '#dc2626',
-}
+/** The named scale endpoints — the distance pair (`heat-near`/`heat-far`) and the magnitude pair
+ * (`heat-low`/`heat-high`), the same vocabulary `viewpoint_style_values.py` validates against, from
+ * the same generated table. Kept as its own view of it because
+ * `SCALE_ENDPOINT_TOKENS` below is what the endpoint picker offers, and a scale endpoint is a
+ * different question from a semantic token even though both resolve through one palette. */
+const SCALE_ENDPOINT_COLORS: Record<string, string> = Object.fromEntries(
+  SCALE_ENDPOINT_ORDER.map((token) => [token, STYLE_TOKEN_COLORS[token]]),
+)
 
 const HEX_COLOR = /^#[0-9a-f]{6}$/i
 
@@ -43,7 +49,11 @@ export const tokenColor = (token: string): string =>
     ? token
     : TOKEN_COLORS[token as StyleToken] ?? SCALE_ENDPOINT_COLORS[token] ?? TOKEN_COLORS.neutral
 
-export const SCALE_ENDPOINT_TOKENS: readonly string[] = Object.keys(SCALE_ENDPOINT_COLORS)
+/** The endpoints an author is offered, in the order they are declared — the distance pair then the
+ * magnitude pair, each pair's near end first. Read from the generated sequence rather than from the
+ * palette's keys: a palette is a lookup and its key order is alphabetical, which scrambles the pairs.
+ */
+export const SCALE_ENDPOINT_TOKENS: readonly string[] = SCALE_ENDPOINT_ORDER
 
 const TOKEN_SHAPES: Record<StyleToken, 'circle' | 'diamond' | 'triangle' | 'square'> = {
   emphasis: 'circle',

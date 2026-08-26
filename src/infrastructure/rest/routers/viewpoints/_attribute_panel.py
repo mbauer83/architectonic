@@ -34,7 +34,6 @@ def _attribute_to_dict(attribute: AttributeOffer) -> dict[str, Any]:
         "colour": attribute.colour,
         "values": list(attribute.values),
         "present_on": attribute.present_on,
-        "printable": attribute.printable,
     }
 
 

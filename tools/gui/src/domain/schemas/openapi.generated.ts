@@ -4810,8 +4810,8 @@ export interface components {
          *     inherent order, and ``none`` for free text and lists, where a ramp would be meaningless and a
          *     palette one colour per entity.
          *
-         *     ``printable`` is true for every attribute, whatever its colour: a reader may want an owner's name
-         *     on the picture as readily as a risk score.
+         *     There is no ``printable`` flag: every attribute can be printed beside its entity, whatever its
+         *     colour, so a field carrying one value for every row would say nothing.
          *
          *     ``present_on`` is how many of the drawn entities of this type carry a value, and **zero is
          *     reported rather than hidden**. A dropped row would say "this type has no such attribute", which is
@@ -4829,8 +4829,6 @@ export interface components {
             name: string;
             /** Present On */
             present_on: number;
-            /** Printable */
-            printable: boolean;
             /** Values */
             values: string[];
         };
