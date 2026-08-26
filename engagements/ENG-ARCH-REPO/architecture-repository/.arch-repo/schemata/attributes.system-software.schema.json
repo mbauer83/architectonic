@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "attributes.system-software.schema.json",
+  "title": "System Software Attribute Schema",
+  "description": "Attribute schema for Properties table in System Software entities.",
+  "type": "object",
+  "required": [],
+  "properties": {
+    "Telemetry": {
+      "type": "string",
+      "enum": [
+        "None",
+        "Logs",
+        "Metrics and Logs",
+        "Alerting",
+        "Synthetic Probing"
+      ],
+      "x-scale": "ordinal",
+      "description": "What this element emits and whether anyone is watching: None, Logs, Metrics and Logs, Alerting, or Synthetic Probing. A general property of the element, not a judgement about any particular failure."
+    }
+  },
+  "additionalProperties": true
+}

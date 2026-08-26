@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "attributes.data-object.schema.json",
+  "title": "Data Object Attribute Schema",
+  "description": "Attribute schema for Properties table in Data Object entities.",
+  "type": "object",
+  "required": [],
+  "properties": {
+    "Provenance": {
+      "type": "string",
+      "description": "Where the data originates."
+    },
+    "Sensitivity": {
+      "type": "string",
+      "enum": [
+        "Public",
+        "Internal",
+        "Confidential",
+        "Strictly Confidential"
+      ],
+      "description": "Planner-friendly sensitivity of the object's content. Maps to TLP: Public\u2192WHITE, Internal\u2192GREEN, Confidential\u2192AMBER, Strictly Confidential\u2192RED."
+    }
+  },
+  "additionalProperties": true
+}

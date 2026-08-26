@@ -110,6 +110,7 @@ viewpoints:
     display_options:
       layout: clusters
     group_by: domain
+  selection_mode: query
 - slug: element-dependents-archimate
   version: 2
   name: ArchiMate Impact Analysis (Dependents)

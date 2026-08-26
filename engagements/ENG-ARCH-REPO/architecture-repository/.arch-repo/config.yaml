@@ -1,5 +1,8 @@
 applied_upgrade_steps:
+- d10-stale-slug-references
 - d9-multiplicity-rename
+- default-schemata-ensure
+- modification-stamp-datetime
 - viewpoint-selection-mode-stamp
-format_contract_version: '1'
+format_contract_version: '5'
 required_defaults_policy: strict

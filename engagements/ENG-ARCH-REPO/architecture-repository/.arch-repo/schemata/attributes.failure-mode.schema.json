@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "attributes.failure-mode.schema.json",
+  "title": "Failure Mode Attribute Schema",
+  "description": "Attribute schema for Properties table in Failure Mode entities.",
+  "type": "object",
+  "required": [],
+  "properties": {
+    "failure_type": {
+      "type": "string",
+      "enum": [
+        "no-function",
+        "partial-function",
+        "excessive-function",
+        "intermittent-function",
+        "unintended-function"
+      ]
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "hypothesized",
+        "observed"
+      ]
+    },
+    "concern_class": {
+      "type": "string",
+      "enum": [
+        "safety",
+        "security",
+        "operational",
+        "financial",
+        "privacy"
+      ]
+    },
+    "binding_status": {
+      "type": "string",
+      "enum": [
+        "bound",
+        "unbound-pending",
+        "out-of-scope"
+      ],
+      "default": "unbound-pending"
+    },
+    "assessment_state": {
+      "type": "string",
+      "enum": [
+        "not-credible",
+        "recorded"
+      ],
+      "default": "recorded"
+    },
+    "dismissed_by": {
+      "type": "string"
+    },
+    "dismissal_rationale": {
+      "type": "string"
+    },
+    "tlp": {
+      "type": "string",
+      "enum": [
+        "TLP:WHITE",
+        "TLP:GREEN",
+        "TLP:AMBER",
+        "TLP:RED"
+      ],
+      "x-scale": "ordinal"
+    }
+  },
+  "additionalProperties": true
+}
