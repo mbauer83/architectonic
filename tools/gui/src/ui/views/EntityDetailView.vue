@@ -14,9 +14,10 @@ import SignalIngestPanel from '../components/SignalIngestPanel.vue'
 import EntityDetailHeader from '../components/EntityDetailHeader.vue'
 import EntityEditFormCard from '../components/EntityEditFormCard.vue'
 import EntityDeletePanel from '../components/EntityDeletePanel.vue'
-import EntityDiagramReferences from '../components/EntityDiagramReferences.vue'
-import EntityDocumentReferences from '../components/EntityDocumentReferences.vue'
-import EntityScratchpadReferences from '../components/EntityScratchpadReferences.vue'
+import EntityReferenceList from '../components/EntityReferenceList.vue'
+import {
+  diagramReferenceRows, documentReferenceRows, scratchpadReferenceRows,
+} from './EntityDetailView.references'
 import type { RenderedEntityContext } from '../../domain'
 import type { NotFoundError } from '../../domain'
 import type { MarkdownError } from '../../application/MarkdownService'
@@ -52,9 +53,11 @@ const detail = computed(() => context.data.value?.entity ?? null)
 const outgoing = computed(() => context.data.value?.connections.outbound ?? [])
 const incoming = computed(() => context.data.value?.connections.inbound ?? [])
 const symmetric = computed(() => context.data.value?.connections.symmetric ?? [])
-const documentReferences = computed(() => detail.value?.referenced_in_documents ?? [])
-const diagramReferences = computed(() => detail.value?.referenced_in_diagrams ?? [])
-const scratchpadReferences = computed(() => detail.value?.referenced_in_scratchpads ?? [])
+const documentReferences = computed(() => documentReferenceRows(detail.value?.referenced_in_documents ?? []))
+const diagramReferences = computed(() => diagramReferenceRows(detail.value?.referenced_in_diagrams ?? []))
+const scratchpadReferences = computed(
+  () => scratchpadReferenceRows(detail.value?.referenced_in_scratchpads ?? []),
+)
 
 const load = () => {
   if (!entityId.value) return
@@ -143,19 +146,22 @@ const executeDelete = () => { void router.push(backTo.value) }
         @deleted="executeDelete"
       />
 
-      <EntityDocumentReferences
+      <EntityReferenceList
         v-if="documentReferences.length"
-        :references="documentReferences"
+        title="Referenced in documents"
+        :rows="documentReferences"
       />
 
-      <EntityDiagramReferences
+      <EntityReferenceList
         v-if="diagramReferences.length"
-        :references="diagramReferences"
+        title="Drawn in diagrams"
+        :rows="diagramReferences"
       />
 
-      <EntityScratchpadReferences
+      <EntityReferenceList
         v-if="scratchpadReferences.length"
-        :references="scratchpadReferences"
+        title="Thought about in scratchpads"
+        :rows="scratchpadReferences"
       />
 
       <!-- Connections: [INCOMING] [SYMMETRIC] [OUTGOING] on wide screens -->
