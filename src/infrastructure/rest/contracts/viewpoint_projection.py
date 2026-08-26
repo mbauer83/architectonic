@@ -258,3 +258,14 @@ class DiagramAttributePanelResponse(Closed):
     shared: list[SharedAttributeOfferResponse]
     disputed: list[str]
     types: list[TypeOfferResponse]
+    #: How many model entities the diagram places, whatever their types declare.
+    #:
+    #: Dropping the attribute-less rows made two very different states identical to a reader of
+    #: `types` alone: a diagram that draws no model entities, and one that draws thirteen whose types
+    #: declare no attributes. A surface with only `types` told a reader the second was the first,
+    #: which was untrue of a diagram full of processes and services.
+    drawn: int
+    #: Whether a legend for this diagram would say anything at all — whether it uses any notation
+    #: there is to explain. A surface offers the control only when this is true, because a legend
+    #: checkbox that produces nothing is indistinguishable from one that failed.
+    can_explain_notation: bool

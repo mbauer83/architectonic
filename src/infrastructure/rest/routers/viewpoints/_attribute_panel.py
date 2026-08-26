@@ -12,6 +12,7 @@ application layer's answers, and this turns them into JSON.
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -36,18 +37,20 @@ def _attribute_to_dict(attribute: AttributeOffer) -> dict[str, Any]:
     }
 
 
-def attribute_panel_to_dict(offers: DiagramAttributeOffers) -> dict[str, Any]:
+def attribute_panel_to_dict(offers: DiagramAttributeOffers, *, can_explain: bool) -> dict[str, Any]:
     """The whole panel: what reads across the diagram, then one entry per (type, specialization).
 
     The order is the application layer's and is preserved rather than re-sorted here — it sorts so the
     answer is stable, and a second sort at the edge would be a second opinion about it.
     """
     return {
+        "drawn": offers.drawn,
         "shared": [
             {"attribute": _attribute_to_dict(offer.attribute), "on_rows": list(offer.on_rows)}
             for offer in offers.shared
         ],
         "disputed": list(offers.disputed),
+        "can_explain_notation": can_explain,
         "types": [
             {
                 "entity_type": offer.entity_type,
@@ -58,6 +61,38 @@ def attribute_panel_to_dict(offers: DiagramAttributeOffers) -> dict[str, Any]:
             for offer in offers.types
         ],
     }
+
+
+def _can_explain(diag_rec: Any, repo_root: Path, catalogs: RuntimeCatalogs) -> bool:
+    """Whether a legend for this diagram would say anything.
+
+    Asked here so the surface can withhold the control rather than offer one that does nothing: a
+    diagram with no stereotypes, no glyphs and no relationships has no notation to explain, and a
+    reader cannot tell a legend that says nothing from one that failed.
+
+    Read from the body, because the body's preamble is what the renderer is handed — the same reason
+    the legend itself reads it there rather than deriving it from today's ontology.
+    """
+    from src.application.viewpoints.placed_occurrences import resolve_placed_connections  # noqa: PLC0415
+    from src.infrastructure.rendering.diagram_legend_for_reading import (  # noqa: PLC0415
+        can_explain_notation,
+        notation_in_use,
+    )
+    from src.infrastructure.write.artifact_write.parse_existing import parse_diagram_file  # noqa: PLC0415
+
+    if not diag_rec.path.exists():
+        return False
+    _, registry, _ = s.get_write_deps(catalogs)
+    notation = notation_in_use(
+        [c.conn_type for c in resolve_placed_connections(dict(diag_rec.extra), registry)],
+        repo_root=repo_root,
+        relation_notations=catalogs.connections.all_relation_notations(),
+    )
+    return can_explain_notation(
+        parse_diagram_file(diag_rec.path).puml_body,
+        declarations=notation.declarations,
+        connection_notations=notation.connection_notations,
+    )
 
 
 def register_attribute_panel_route(router: APIRouter) -> None:
@@ -92,4 +127,4 @@ def register_attribute_panel_route(router: APIRouter) -> None:
             specialization_catalog=catalogs.specializations,
             profile_registry=catalogs.profiles,
         )
-        return attribute_panel_to_dict(offers)
+        return attribute_panel_to_dict(offers, can_explain=_can_explain(diag_rec, repo_root, catalogs))

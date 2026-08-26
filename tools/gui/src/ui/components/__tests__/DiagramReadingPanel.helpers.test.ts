@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import {
-  canTakeColour, colourKey, foldSummary, hasCustomColours, lensSummary, presenceLabel, typeOfferLabel,
-  valueSetLabel, withColourBy, withPrinted,
+  canTakeColour, colourKey, foldSummary, hasCustomColours, lensSummary, panelHint, presenceLabel,
+  typeOfferLabel, valueSetLabel, withColourBy, withPrinted,
 } from '../DiagramReadingPanel.helpers'
 import { CATEGORICAL_PALETTE } from '../../../domain/types.generated'
 import {
-  EMPTY_READING_LENS, isEmptyLens, lensParams, withDeclaredColours, withLegendMark, withRampEnd,
+  EMPTY_READING_LENS, isEmptyLens, lensParams, withDeclaredColours, withLegend, withRampEnd,
   type ReadingLens,
 } from '../../../domain/readingLens'
-import type { AttributeOffer, TypeOffer } from '../../../domain/schemas/diagrams'
+import type { AttributeOffer, DiagramAttributePanel, TypeOffer } from '../../../domain/schemas/diagrams'
 
 const attribute = (over: Partial<AttributeOffer> = {}): AttributeOffer => ({
   name: 'risk_score', declared_type: 'integer', colour: 'ramp', values: [], present_on: 3, ...over,
@@ -223,7 +223,7 @@ describe('what the folded header reports', () => {
   })
 
   it('reports a legend, which is a reading with no attribute in it', () => {
-    expect(lensSummary(lens({ legends: ['colour', 'glyph'] }))).toBe('explaining colour, glyph')
+    expect(lensSummary(lens({ legend: true }))).toBe('explaining the notation')
   })
 })
 
@@ -231,29 +231,27 @@ describe('asking a diagram to explain its own notation', () => {
   it('is a request on its own, unlike a colour mapping', () => {
     // Nothing else can add a legend, so asking for one is asking for a different picture — where a
     // mapping with nothing to colour asks for nothing.
-    expect(isEmptyLens(lens({ legends: ['shape'] }))).toBe(false)
+    expect(isEmptyLens(lens({ legend: true }))).toBe(false)
     expect(isEmptyLens(lens({ ramp: ['#000000', '#ffffff'] }))).toBe(true)
   })
 
-  it('sends the marks as repeated keys', () => {
-    expect(lensParams(lens({ legends: ['colour', 'arrow'] })))
-      .toEqual({ legend: ['colour', 'arrow'] })
+  it('is one flag, so the request carries one parameter', () => {
+    // One control rather than one per mark: which marks a legend can show is the diagram's answer,
+    // and four controls of which a diagram can act on one are three dead controls.
+    expect(lensParams(lens({ legend: true }))).toEqual({ legend: 'true' })
   })
 
-  it('keeps the declared order however the marks were clicked', () => {
-    // The legend's sections are laid out in a fixed order; a reader unchecking and rechecking a mark
-    // should not find their legend rearranged.
-    const after = withLegendMark(withLegendMark(lens(), 'arrow'), 'colour')
-
-    expect(after.legends).toEqual(['colour', 'arrow'])
+  it('sends nothing about the legend when it is off', () => {
+    expect(lensParams(lens({ colourBy: 'risk_score' }))).toEqual({ colour_by: 'risk_score' })
   })
 
-  it('turns a mark off again', () => {
-    expect(withLegendMark(lens({ legends: ['colour', 'shape'] }), 'colour').legends).toEqual(['shape'])
+  it('toggles off again', () => {
+    expect(withLegend(lens({ legend: true })).legend).toBe(false)
+    expect(withLegend(lens()).legend).toBe(true)
   })
 
   it('leaves the rest of the reading alone', () => {
-    const after = withLegendMark(lens({ colourBy: 'risk_score', printed: ['owner'] }), 'glyph')
+    const after = withLegend(lens({ colourBy: 'risk_score', printed: ['owner'] }))
 
     expect(after.colourBy).toBe('risk_score')
     expect(after.printed).toEqual(['owner'])
@@ -277,5 +275,30 @@ describe('the lens as a request', () => {
 
   it('is a request when only printing is asked for', () => {
     expect(lensParams(lens({ colourBy: '', printed: ['owner'] }))).toEqual({ print: ['owner'] })
+  })
+})
+
+const panel = (over: Partial<DiagramAttributePanel> = {}): DiagramAttributePanel => ({
+  shared: [], types: [], disputed: [], drawn: 0, can_explain_notation: false, ...over,
+})
+
+describe('what the folded panel says it offers', () => {
+  it('says nothing before the offer has arrived', () => {
+    expect(panelHint(null)).toBe('')
+  })
+
+  it('offers both when the diagram has attributes and notation', () => {
+    expect(panelHint(panel({ drawn: 9, types: [offer()], can_explain_notation: true })))
+      .toBe('colour and print by attribute, explain the notation')
+  })
+
+  it('offers only the legend where no type declares an attribute', () => {
+    // A diagram can carry every relationship kind in the language and no attribute at all.
+    // Advertising the attribute controls there names the one thing this panel cannot do.
+    expect(panelHint(panel({ drawn: 13, can_explain_notation: true }))).toBe('explain the notation')
+  })
+
+  it('offers only the attributes where there is no notation to explain', () => {
+    expect(panelHint(panel({ drawn: 9, types: [offer()] }))).toBe('colour and print by attribute')
   })
 })

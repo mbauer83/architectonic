@@ -39,7 +39,10 @@ nothing to choose is a fold that opens on nothing. Which types the diagram draws
 entity list beside it already answers.
 
 That row was originally kept, on the reasoning that "this type is here and offers nothing" is
-information. It is — but not information this panel is for.
+information. It is — but not information this panel is for. What *is* needed is the count of what the
+diagram draws, so a surface can tell "nothing is drawn" from "nothing that is drawn declares
+anything" — dropping the rows without it made a diagram of thirteen processes and services report
+that it drew no model entities.
 """
 
 from __future__ import annotations
@@ -113,10 +116,52 @@ class DiagramAttributeOffers:
     #: under two specializations is one entity, not two.
     shared: tuple[SharedAttributeOffer, ...]
     types: tuple[TypeOffer, ...]
+    #: How many model entities the diagram places, whether or not their types declare anything.
+    #:
+    #: Reported because dropping the attribute-less rows made two very different states look
+    #: identical: a diagram that draws no model entities at all, and one that draws thirteen whose
+    #: types declare no attributes. A surface with only `types` to read told a reader the second was
+    #: the first, which was flatly untrue of a diagram full of processes and services.
+    drawn: int
     #: Attribute names several rows declare *differently*. Colouring by one of these is still possible
     #: and still global, and would put two meanings on one scale — which a reader can only weigh if
     #: told. Names only: there is no single definition to report.
     disputed: tuple[str, ...] = ()
+
+
+def palette_members(offers: DiagramAttributeOffers, attribute: str) -> tuple[str, ...]:
+    """The members a palette colours *attribute* by, or nothing where a ramp or no colour applies.
+
+    **The one answer to "palette or ramp".** The renderer used to decide this for itself, by asking the
+    viewpoint criteria snapshot whether the attribute declared an enum — and a comment there claimed the
+    two readings agreed "since both read the same declaration". They did not: this panel also gives a
+    boolean two members, and the criteria snapshot deliberately withholds them, because a criteria
+    condition on a boolean carries a real `bool` and its value picker is string-shaped. So the day an
+    entity attribute is declared boolean, the panel offers two swatches and the picture draws a
+    two-colour ramp instead. No such attribute exists today, which is exactly why it would have shipped.
+
+    Asking the panel closes it without a second registry: whatever the panel *offered* is what the
+    picture and the legend then draw, and `colour` is already the field that says which colouring
+    applies — including for an ordinal, whose enum is a rank and so takes a ramp rather than a palette.
+
+    Shared rows first, then the per-type rows in panel order. A shared attribute is one definition by
+    construction, so that lookup is exact. A name several types declare *differently* takes the first
+    row's definition — the panel has already told the reader the name is disputed, and one of the two
+    meanings as a palette is truer than a gradient over strings, which is what returning nothing would
+    have produced. Whichever it takes, the picture and the legend take the same one.
+
+    An attribute this diagram does not offer takes no palette. A query string can name anything, and
+    nothing drawn carries a value for it either way, so the colouring paints nothing whichever branch
+    it lands in.
+    """
+    for shared in offers.shared:
+        if shared.attribute.name == attribute:
+            return shared.attribute.values if shared.attribute.colour == "palette" else ()
+    for row in offers.types:
+        for offered in row.attributes:
+            if offered.name == attribute:
+                return offered.values if offered.colour == "palette" else ()
+    return ()
 
 
 def _colour_kind(prop: dict[str, object], declared_type: str, values: tuple[str, ...]) -> ColourKind:
@@ -250,4 +295,9 @@ def offers_for_diagram(
             TypeOffer(entity_type=entity_type, specialization=slug, drawn=len(drawn), attributes=attributes)
         )
     shared, disputed = _shared(offers, entities)
-    return DiagramAttributeOffers(shared=shared, types=tuple(offers), disputed=disputed)
+    return DiagramAttributeOffers(
+        shared=shared,
+        types=tuple(offers),
+        disputed=disputed,
+        drawn=len({entity.artifact_id for entity in entities}),
+    )

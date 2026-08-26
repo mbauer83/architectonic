@@ -8,8 +8,8 @@ container would be truer notation and would also let GraphViz place it wherever 
 **A table, because the marks are separable.** A reader turns colour, shape, glyph and arrow on and
 off independently, and one drawn element carries all of its marks at once — so the marks cannot be
 shown by drawing elements. A table's cells can each carry one mark: a background colour is a swatch,
-a sprite reference draws the real glyph, and a shape or a line style is named in words because a cell
-cannot draw either.
+a sprite reference draws the real glyph, and a line style is drawn with the characters for its markers
+and its stroke. A corner shape is the one mark named in words: no character stands for "cut corners".
 
 Vocabulary-free. It knows a row is cells and a cell may carry a colour, a sprite or text. What the
 rows *mean* is the caller's, which is where the ontology lives.
@@ -99,14 +99,13 @@ def legend_block(rows: Sequence[LegendRow], *, position: str = "bottom") -> str:
     """
     if not rows:
         return ""
-    width = max(len(row.cells) for row in rows)
     lines = [_STYLE, f"legend {position}"]
-    for index, row in enumerate(rows):
-        # A blank row before each section but the first. A creole table sets its row height from the
-        # font and offers no padding, so an empty row is the only air available — and it reads as the
-        # separator between sections that it is.
-        if row.heading and index:
-            lines.append("|" + "|".join(_PAD for _ in range(width)) + "|")
+    for row in rows:
+        # No air between sections, because there is none to be had. A blank row was tried and looked
+        # at: a creole table draws every cell border it has, so an empty row renders as an empty
+        # *row* — a band of bordered nothing that reads as a rendering fault rather than as a
+        # separator. The bold heading row is what divides the sections, and the table is tighter and
+        # easier to read without the gaps.
         separator = "|=" if row.heading else "|"
         lines.append(separator + separator.join(cell.spelled() for cell in row.cells) + "|")
     lines.append("endlegend")

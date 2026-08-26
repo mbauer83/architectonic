@@ -146,20 +146,36 @@ class TestHowTheRowsRead:
 
         assert rows[1].cells[0].sprite == "archimate_capability"
 
-    def test_an_arrow_is_described_in_words_at_both_ends(self) -> None:
-        """A table cell cannot draw a line, and `relation_notation` states the marks structurally —
-        which is why it exists: a PlantUML token has no form for a ball at the source."""
+    def test_an_arrow_is_drawn_with_both_its_ends(self) -> None:
+        """The mark itself, not a sentence about it. A reader matches a legend row to an edge by
+        looking, and "ball at the source, filled arrowhead at the target" makes them translate first.
+
+        The glyphs are what the pinned jar renders in a table cell, which is the constraint the first
+        version of this row read as "a table cell cannot draw a line" — it can, given characters the
+        font has.
+        """
         rows = arrow_rows({
             "archimate-assignment": RelationNotation(line="solid", source="ball", target="filled-arrow"),
         })
 
-        assert rows[1].cells[0].text == "assignment"
-        assert rows[1].cells[1].text == "solid line, ball at the source, filled arrowhead at the target"
+        assert rows[1].cells[0].text == "\u25cf\u2500\u2500\u2500\u25b6"
+        assert rows[1].cells[1].text == "assignment"
 
-    def test_an_end_with_no_marker_is_not_mentioned(self) -> None:
+    def test_an_end_with_no_marker_draws_the_line_alone(self) -> None:
         rows = arrow_rows({"archimate-association": RelationNotation(line="solid", target="none")})
 
-        assert rows[1].cells[1].text == "solid line"
+        assert rows[1].cells[0].text == "\u2500\u2500\u2500"
+
+    def test_a_dashed_line_is_drawn_dashed(self) -> None:
+        """The three line styles have to be distinguishable at a glance, or the column says nothing
+        beyond "there is an edge"."""
+        drawn = {
+            name: arrow_rows({"archimate-x": RelationNotation(line=name, target="hollow-triangle")})[1].cells[0].text
+            for name in ("solid", "dashed", "dotted")
+        }
+
+        assert len(set(drawn.values())) == 3
+        assert drawn["dashed"] == "\u254c\u254c\u254c\u25b7"
 
     def test_nothing_to_explain_produces_no_heading_either(self) -> None:
         assert shape_rows({}) == ()

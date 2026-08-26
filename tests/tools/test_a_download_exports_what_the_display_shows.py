@@ -28,6 +28,8 @@ from fastapi import APIRouter
 from fastapi.testclient import TestClient
 
 from src.domain.ontology_representation.artifact_types import DiagramRecord, EntityRecord
+from src.domain.ontology_representation.profile_registry import ProfileRegistry
+from src.domain.ontology_representation.specializations import SpecializationCatalog
 from src.domain.viewpoints.viewpoint_condition_validation import RegistrySnapshot
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers.diagrams import _serving
@@ -73,6 +75,12 @@ class _Connections:
 
 class _Catalogs:
     connections = _Connections()
+    # Empty, because the lens under test colours by a *continuous* attribute: the palette lookup
+    # runs and finds nothing, which is the ramp answer. They are here so the route can ask the
+    # question at all — it now resolves "palette or ramp" from the attribute panel rather than from
+    # the criteria snapshot, so both consumers get one answer.
+    specializations = SpecializationCatalog()
+    profiles = ProfileRegistry.empty()
 
 
 class _Repo:
@@ -172,7 +180,7 @@ def _get(rendered: dict, path: str, **params: object):
     return rendered["client"].get(path, params=params)  # type: ignore[index]
 
 
-_LENS = {"colour_by": "risk_score", "print": ["risk_score"], "legend": ["colour", "shape"]}
+_LENS = {"colour_by": "risk_score", "print": ["risk_score"], "legend": "true"}
 
 
 class TestTheExportIsTheDisplay:
@@ -195,7 +203,7 @@ class TestTheExportIsTheDisplay:
     def test_a_legend_alone_is_still_a_reading(self, rendered: dict) -> None:
         """It changes the picture and nothing else can add it, so it must not be served from the
         image on disk — which is the authored diagram, legend-free."""
-        response = _get(rendered, f"/api/diagrams/{_ID}/svg", legend=["shape"])
+        response = _get(rendered, f"/api/diagrams/{_ID}/svg", legend="true")
 
         assert response.text == "<svg>rendered</svg>"
         assert "legend bottom" in rendered["svg"][0]

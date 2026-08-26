@@ -93,15 +93,18 @@ def _lensed_body(
     `test_runtime_catalogs_have_one_accessor` requires of a router. It caught this module reading them
     directly.
     """
+    from src.application.viewpoints.diagram_attribute_panel import (  # noqa: PLC0415
+        offers_for_diagram,
+        palette_members,
+    )
     from src.application.viewpoints.diagram_reading_lens import apply_reading_lens  # noqa: PLC0415
     from src.application.viewpoints.placed_occurrences import (  # noqa: PLC0415
         resolve_placed_connections,
         resolve_placed_entities,
     )
-    from src.infrastructure.rendering._archimate_includes import ArchimateDeclarations  # noqa: PLC0415
     from src.infrastructure.rendering.diagram_legend_for_reading import (  # noqa: PLC0415
         body_with_reading_legend,
-        notations_for_connection_types,
+        notation_in_use,
     )
     from src.infrastructure.viewpoints_snapshot import configured_registry_snapshot  # noqa: PLC0415
     from src.infrastructure.write.artifact_write.parse_existing import parse_diagram_file  # noqa: PLC0415
@@ -116,22 +119,36 @@ def _lensed_body(
     _, registry, _ = s.get_write_deps(catalogs)
     registries = configured_registry_snapshot(catalogs, repo.repo_roots)
     entities = resolve_placed_entities(dict(diag_rec.extra), registry)
+    # The same offers the panel showed the reader, so "palette or ramp" is decided once and the
+    # picture, its legend and the controls cannot disagree about an attribute. Resolved here rather
+    # than inside either consumer because both need the answer and it is one lookup.
+    palette = palette_members(
+        offers_for_diagram(
+            entities,
+            repo_root,
+            specialization_catalog=catalogs.specializations,
+            profile_registry=catalogs.profiles,
+        ),
+        lens.colour_by,
+    ) if lens.colour_by else ()
     lensed = apply_reading_lens(
-        body, entities, lens=lens, read_access=repo, registries=registries
+        body, entities, lens=lens, read_access=repo, registries=registries, palette=palette
     )
-    if not lens.legends:
+    if not lens.legend:
         return lensed
     # The legend composes over the lensed body rather than being woven into it: it is appended, and
     # keeping it a second step is what lets a reader ask for one on an otherwise untouched diagram.
+    notation = notation_in_use(
+        [connection.conn_type for connection in resolve_placed_connections(dict(diag_rec.extra), registry)],
+        repo_root=repo_root,
+        relation_notations=catalogs.connections.all_relation_notations(),
+    )
     return body_with_reading_legend(
         lensed,
         lens=lens,
-        declarations=ArchimateDeclarations.from_repo(repo_root),
-        members=registries.entity_attribute_enums.get(lens.colour_by, ()),
-        connection_notations=notations_for_connection_types(
-            [connection.conn_type for connection in resolve_placed_connections(dict(diag_rec.extra), registry)],
-            catalogs.connections.all_relation_notations(),
-        ),
+        declarations=notation.declarations,
+        members=palette,
+        connection_notations=notation.connection_notations,
     )
 
 
@@ -172,8 +189,8 @@ def get_diagram_svg(
         list[str], Query(description="A colour for one value, as `member:#rrggbb`; repeatable")
     ] = [],  # noqa: B006
     legend: Annotated[
-        list[str], Query(description="Marks the diagram should explain: colour, shape, glyph, arrow")
-    ] = [],  # noqa: B006
+        bool, Query(description="Draw a legend explaining the notation this diagram uses")
+    ] = False,
     catalogs: RuntimeCatalogs = Depends(fresh_viewpoints_runtime_catalogs_dependency),
 ) -> Response:
     id = artifact_id
@@ -241,8 +258,8 @@ def download_diagram(
         list[str], Query(description="A colour for one value, as `member:#rrggbb`; repeatable")
     ] = [],  # noqa: B006
     legend: Annotated[
-        list[str], Query(description="Marks the diagram should explain: colour, shape, glyph, arrow")
-    ] = [],  # noqa: B006
+        bool, Query(description="Draw a legend explaining the notation this diagram uses")
+    ] = False,
     catalogs: RuntimeCatalogs = Depends(fresh_viewpoints_runtime_catalogs_dependency),
 ) -> Response:
     """The diagram as an attachment — the authored image, or the reader's current display.

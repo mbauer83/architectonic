@@ -186,7 +186,7 @@ const executeDelete = () => {
       />
 
       <DiagramReadingPanel
-        v-if="diagramNeedsSvg(detail.diagram_type)"
+        v-if="diagramNeedsSvg(detail.diagram_type) && reading.offersAnything.value"
         class="reading-panel"
         :panel="reading.panel.value"
         :lens="lens"

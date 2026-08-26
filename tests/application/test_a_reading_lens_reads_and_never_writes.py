@@ -99,9 +99,21 @@ def _registries(
     )
 
 
-def _apply(entities: list[EntityRecord], lens: ReadingLens, registries: RegistrySnapshot) -> str:
+def _apply(
+    entities: list[EntityRecord],
+    lens: ReadingLens,
+    registries: RegistrySnapshot,
+    palette: tuple[str, ...] = (),
+) -> str:
+    """*palette* is the member list a palette colouring assigns from, empty for a ramp.
+
+    Passed in rather than looked up, which is the point: which of the two colourings applies is
+    decided once, upstream, off the same offers the reader's controls were built from. The lens used
+    to ask the criteria snapshot itself, and the two readings differed on a boolean.
+    """
     return apply_reading_lens(
-        _BODY, entities, lens=lens, read_access=_NoReads(), registries=registries  # type: ignore[arg-type]
+        _BODY, entities, lens=lens, read_access=_NoReads(),  # type: ignore[arg-type]
+        registries=registries, palette=palette,
     )
 
 
@@ -148,7 +160,7 @@ class TestWhichColouringApplies:
     def test_an_unordered_value_set_gives_each_member_its_own_colour(self) -> None:
         entities = [_entity("CAP_a", lifecycle="planned"), _entity("CAP_b", lifecycle="retired")]
 
-        fills = _fills(_apply(entities, ReadingLens(colour_by="lifecycle"), _KEYED))
+        fills = _fills(_apply(entities, ReadingLens(colour_by="lifecycle"), _KEYED, _MEMBERS))
 
         assert set(fills) == {"CAP_a", "CAP_b"}
         assert fills["CAP_a"] != fills["CAP_b"]
@@ -162,10 +174,16 @@ class TestWhichColouringApplies:
                 [_entity("CAP_a", lifecycle="planned"), _entity("CAP_b", lifecycle="retired")],
                 ReadingLens(colour_by="lifecycle"),
                 _KEYED,
+                _MEMBERS,
             )
         )
         alone = _fills(
-            _apply([_entity("CAP_b", lifecycle="retired")], ReadingLens(colour_by="lifecycle"), _KEYED)
+            _apply(
+                [_entity("CAP_b", lifecycle="retired")],
+                ReadingLens(colour_by="lifecycle"),
+                _KEYED,
+                _MEMBERS,
+            )
         )
 
         assert alone["CAP_b"] == together["CAP_b"]
@@ -205,11 +223,11 @@ class TestWhichColouringApplies:
 
     def test_a_reader_s_own_member_colour_replaces_just_that_member(self) -> None:
         entities = [_entity("CAP_a", lifecycle="planned"), _entity("CAP_b", lifecycle="retired")]
-        plain = _fills(_apply(entities, ReadingLens(colour_by="lifecycle"), _KEYED))
+        plain = _fills(_apply(entities, ReadingLens(colour_by="lifecycle"), _KEYED, _MEMBERS))
 
-        fills = _fills(
-            _apply(entities, ReadingLens(colour_by="lifecycle", key={"planned": "#123456"}), _KEYED)
-        )
+        fills = _fills(_apply(
+            entities, ReadingLens(colour_by="lifecycle", key={"planned": "#123456"}), _KEYED, _MEMBERS
+        ))
 
         assert fills["CAP_a"] == "#123456"
         assert fills["CAP_b"] == plain["CAP_b"]

@@ -44,16 +44,22 @@ _CORNER_WORDS: Mapping[str, str] = {
     "diagonal": "cut corners",
 }
 
-#: What an end marker looks like, said rather than drawn — a table cell cannot draw a line.
-_MARKER_WORDS: Mapping[str, str] = {
+#: What each end marker is *drawn* as. Glyphs rather than words, because a legend that says "hollow
+#: triangle" makes a reader translate before they can match it to the picture — and the whole point of
+#: a legend is to be matched against the picture. Verified as rendered by the pinned PlantUML: every
+#: one of these appears legibly in a table cell.
+_MARKER_GLYPHS: Mapping[str, str] = {
     "none": "",
-    "open-arrow": "open arrowhead",
-    "filled-arrow": "filled arrowhead",
-    "hollow-triangle": "hollow triangle",
-    "filled-diamond": "filled diamond",
-    "hollow-diamond": "hollow diamond",
-    "ball": "ball",
+    "open-arrow": "→",
+    "filled-arrow": "▶",
+    "hollow-triangle": "▷",
+    "filled-diamond": "◆",
+    "hollow-diamond": "◇",
+    "ball": "●",
 }
+
+#: The line itself, three characters wide so the style is readable at a glance.
+_LINE_GLYPHS: Mapping[str, str] = {"solid": "───", "dashed": "╌╌╌", "dotted": "┈┈┈"}
 
 
 def readable_label(name: str) -> str:
@@ -80,14 +86,19 @@ def _heading(*labels: str) -> LegendRow:
     return LegendRow(tuple(LegendCell(text=label) for label in labels), heading=True)
 
 
-def _arrow_words(notation: RelationNotation) -> str:
-    ends = [
-        f"{_MARKER_WORDS.get(notation.source, notation.source)} at the source"
-        if notation.source != "none" else "",
-        f"{_MARKER_WORDS.get(notation.target, notation.target)} at the target"
-        if notation.target != "none" else "",
-    ]
-    return ", ".join(part for part in [f"{notation.line} line", *ends] if part)
+def _arrow_glyph(notation: RelationNotation) -> str:
+    """The relationship as it is drawn: source marker, line, target marker.
+
+    A mirrored source marker would be truer still — a filled diamond points the same way either end,
+    but an arrowhead does not — and the glyph set has no reversed arrowhead that renders reliably. The
+    markers ArchiMate puts at a *source* are the diamonds and the ball, all symmetric, so the
+    composition is faithful for every notation the ontology actually declares.
+    """
+    return (
+        f"{_MARKER_GLYPHS.get(notation.source, '')}"
+        f"{_LINE_GLYPHS.get(notation.line, '───')}"
+        f"{_MARKER_GLYPHS.get(notation.target, '')}"
+    )
 
 
 def colour_rows(fills: Mapping[str, str], *, means: str) -> tuple[LegendRow, ...]:
@@ -154,12 +165,12 @@ def glyph_rows(sprites: Sequence[str]) -> tuple[LegendRow, ...]:
 
 
 def arrow_rows(notations: Mapping[str, RelationNotation]) -> tuple[LegendRow, ...]:
-    """One row per relationship type drawn, describing its line in words."""
+    """One row per relationship type drawn, showing the line and its markers."""
     rows = tuple(
-        LegendRow((LegendCell(text=readable_label(name)), LegendCell(text=_arrow_words(notation))))
+        LegendRow((LegendCell(text=_arrow_glyph(notation)), LegendCell(text=readable_label(name))))
         for name, notation in sorted(notations.items())
     )
-    return (_heading("relationship", "drawn as"), *rows) if rows else ()
+    return (_heading("line", "relationship"), *rows) if rows else ()
 
 
 def notations_referenced_in(body: str, declarations: ArchimateDeclarations) -> dict[str, StereotypeNotation]:

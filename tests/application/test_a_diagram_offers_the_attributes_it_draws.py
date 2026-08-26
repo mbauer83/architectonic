@@ -32,7 +32,7 @@ from pathlib import Path
 
 import pytest
 
-from src.application.viewpoints.diagram_attribute_panel import offers_for_diagram
+from src.application.viewpoints.diagram_attribute_panel import offers_for_diagram, palette_members
 from src.domain.ontology_representation.artifact_types import EntityRecord
 from src.domain.ontology_representation.profile_registry import ProfileRegistry
 from src.domain.ontology_representation.specializations import SpecializationCatalog
@@ -334,3 +334,81 @@ class TestWhatReadsAcrossTheDiagram:
             "application-component",
             "application-component/module",
         )
+
+
+class TestWhichColouringThePictureThenDraws:
+    """`palette_members` is the one answer to "palette or ramp", and the picture and its legend both
+    read it.
+
+    It exists because they used to decide for themselves, by asking the viewpoint criteria snapshot
+    whether the attribute declared an enum — a different question, whose answer differs here. The
+    boolean case below is the divergence, and it was silent: two swatches offered, a two-colour ramp
+    drawn, no error anywhere. Stated over the schema's shapes rather than over the repository's
+    content, because no entity attribute is declared boolean today, which is precisely why nothing
+    caught it.
+    """
+
+    def test_a_bounded_unordered_set_is_a_palette_of_its_declared_members(
+        self, repo_root: Path
+    ) -> None:
+        panel = _panel([_entity(1)], repo_root)
+
+        assert palette_members(panel, "lifecycle") == ("planned", "active", "retired")
+
+    def test_a_boolean_is_a_palette_of_its_two_values(self, repo_root: Path) -> None:
+        """The case the criteria snapshot withholds on purpose: a criteria condition on a boolean
+        carries a real `bool` and its value picker is string-shaped, so that map has no members for it.
+        A *colour* has two members here, and the panel offers them."""
+        panel = _panel([_entity(1)], repo_root)
+
+        assert palette_members(panel, "is_external") == ("false", "true")
+
+    def test_an_ordinal_takes_no_palette_however_bounded_it_is(self, repo_root: Path) -> None:
+        """Its enum is a rank, so the colouring is a ramp over the declared range. The value set is
+        still reported by the offer — it is the scale — which is why this asks the colouring question
+        rather than reading `values`."""
+        panel = _panel([_entity(1)], repo_root)
+
+        assert palette_members(panel, "severity") == ()
+
+    def test_a_number_takes_no_palette(self, repo_root: Path) -> None:
+        panel = _panel([_entity(1)], repo_root)
+
+        assert palette_members(panel, "risk_score") == ()
+
+    def test_free_text_takes_no_palette(self, repo_root: Path) -> None:
+        panel = _panel([_entity(1)], repo_root)
+
+        assert palette_members(panel, "owner") == ()
+
+    def test_an_attribute_the_diagram_does_not_offer_takes_no_palette(self, repo_root: Path) -> None:
+        """A query string can name anything. Nothing offered means nothing to assign from, and the
+        colouring falls back to a ramp rather than to a guess."""
+        panel = _panel([_entity(1)], repo_root)
+
+        assert palette_members(panel, "not_an_attribute") == ()
+
+
+class TestWhatTheTypeRowsAccountFor:
+    def test_nothing_reads_across_a_diagram_with_no_type_rows(self, repo_root: Path) -> None:
+        """`shared` and `disputed` are both derived from the type rows, so neither can be reported
+        without them.
+
+        Worth pinning because a surface relies on it: the panel is drawn when the diagram offers
+        attributes *or* notation, and "offers attributes" is `types` being non-empty. A first version
+        of that condition also tested `shared` and `disputed`, defending against a state this cannot
+        produce — and a condition list guarding an impossible case is one that quietly parts from the
+        one beside it. If this ever fails, that condition is what has to change too.
+        """
+        panel = _panel([_entity(1, artifact_type="not-a-declared-type")], repo_root)
+
+        assert panel.types == ()
+        assert panel.shared == ()
+        assert panel.disputed == ()
+
+    def test_an_attribute_reads_across_only_where_two_rows_declare_it(self, repo_root: Path) -> None:
+        """One row is not "across the diagram", however many entities it covers."""
+        panel = _panel([_entity(1), _entity(2)], repo_root)
+
+        assert panel.types != ()
+        assert panel.shared == ()

@@ -23,7 +23,7 @@ def _lens(**over: object):
         list(over.get("printed", [])),  # type: ignore[arg-type]
         str(over.get("ramp", "")),
         list(over.get("key", [])),  # type: ignore[arg-type]
-        list(over.get("legends", [])),  # type: ignore[arg-type]
+        bool(over.get("legend", False)),
     )
 
 
@@ -109,19 +109,17 @@ class TestWhatAMappingAloneMeans:
         assert _lens(colour_by="risk_score", ramp="fbbf24:dc2626").is_empty is False
 
 
-class TestWhichMarksMayBeAskedFor:
-    def test_a_named_mark_is_accepted(self) -> None:
-        assert _lens(legends=["colour", "arrow"]).legends == frozenset({"colour", "arrow"})
-
-    def test_a_mark_nothing_declares_is_dropped(self) -> None:
-        """A closed set, checked here rather than trusted: an unrecognised name would otherwise reach
-        the legend assembly and produce nothing, leaving a reader unsure they were understood."""
-        assert _lens(legends=["colour", "sparkle"]).legends == frozenset({"colour"})
+class TestAskingForALegend:
+    def test_it_is_one_flag(self) -> None:
+        """One control rather than one per mark: which marks a legend can show is the diagram's
+        answer, so four controls of which a diagram can act on one are three dead controls."""
+        assert _lens(legend=True).legend is True
+        assert _lens(legend=False).legend is False
 
     def test_a_legend_alone_is_a_request(self) -> None:
         """Nothing else can add a legend, so asking for one is asking for a different picture — where
         a colour mapping with nothing to colour asks for nothing."""
-        assert _lens(colour_by="", legends=["shape"]).is_empty is False
+        assert _lens(colour_by="", legend=True).is_empty is False
 
 
 class TestThePrintedList:

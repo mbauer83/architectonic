@@ -1,5 +1,5 @@
-import type { AttributeOffer, TypeOffer } from '../../domain/schemas/diagrams'
-import type { ReadingLens } from '../../domain/readingLens'
+import type { AttributeOffer, DiagramAttributePanel, TypeOffer } from '../../domain/schemas/diagrams'
+import { panelOffers, type ReadingLens } from '../../domain/readingLens'
 import { CATEGORICAL_PALETTE } from '../../domain/types.generated'
 
 /**
@@ -144,6 +144,24 @@ export const lensSummary = (lens: ReadingLens): string => {
   const parts: string[] = []
   if (lens.colourBy) parts.push(`coloured by ${lens.colourBy}`)
   if (lens.printed.length) parts.push(`printing ${lens.printed.join(', ')}`)
-  if (lens.legends.length) parts.push(`explaining ${lens.legends.join(', ')}`)
+  if (lens.legend) parts.push('explaining the notation')
   return parts.join('; ')
+}
+
+/** What this diagram can be adjusted by, said while nothing is adjusted yet.
+ *
+ * Not a constant, because the panel does not always offer the same things: a diagram whose types
+ * declare no attributes still has notation a legend can explain, and greeting its reader with
+ * "colour and print by attribute" advertises the one control it does not have.
+ *
+ * Off `panelOffers`, which is also what decides whether this panel is drawn at all — so the header
+ * cannot name a control the panel withheld, or fall silent while one is on screen.
+ */
+export const panelHint = (panel: DiagramAttributePanel | null): string => {
+  const offers = panelOffers(panel)
+  const said = [
+    ...(offers.attributes ? ['colour and print by attribute'] : []),
+    ...(offers.legend ? ['explain the notation'] : []),
+  ]
+  return said.join(', ')
 }

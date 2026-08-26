@@ -1,7 +1,9 @@
 import { computed, ref, watch, type ComputedRef, type Ref } from 'vue'
 import type { ModelService } from '../../application/ModelService'
 import type { DiagramAttributePanel } from '../../domain/schemas/diagrams'
-import { EMPTY_READING_LENS, isEmptyLens, type ReadingLens } from '../../domain/readingLens'
+import {
+  EMPTY_READING_LENS, isEmptyLens, offersAnything, panelOffers, type ReadingLens,
+} from '../../domain/readingLens'
 import { sanitizeDiagramSvg } from '../lib/svgSanitize'
 import { useQuery } from './useQuery'
 import type { RepoError } from '../../ports/repositoryErrors'
@@ -27,6 +29,13 @@ export interface DiagramReading {
   readonly lens: Ref<ReadingLens>
   /** What this diagram can be read by, or `null` until it has been asked for. */
   readonly panel: ComputedRef<DiagramAttributePanel | null>
+  /** Whether the panel has anything to offer at all, so a caller knows whether to draw it.
+   *
+   * Read through `panelOffers`, the one place that answers what an offer holds — the panel's own
+   * header asks the same question to say what can be adjusted, and the two used to answer it with
+   * separate condition lists. False while the offer is still loading, so the panel appears when it
+   * has something to say. */
+  readonly offersAnything: ComputedRef<boolean>
   /** The rendered picture, sanitized for `v-html`, or `null` while there is none. */
   readonly svgHtml: ComputedRef<string | null>
   readonly loading: ComputedRef<boolean>
@@ -68,6 +77,7 @@ export const useDiagramReadingLens = (options: {
   return {
     lens,
     panel: computed(() => offer.data.value ?? null),
+    offersAnything: computed(() => offersAnything(panelOffers(offer.data.value ?? null))),
     svgHtml: computed(() => (picture.data.value ? sanitizeDiagramSvg(picture.data.value) : null)),
     loading: computed(() => picture.loading.value),
     errorMessage: computed(() => picture.errorMessage.value),

@@ -42,7 +42,7 @@ from src.application.puml_alias_declarations import alias_declared_on, restyled_
 from src.domain.hex_colors import readable_ink
 from src.domain.ontology_representation.artifact_types import EntityRecord
 from src.domain.viewpoints.viewpoint_condition_evaluation import read_attribute_value
-from src.domain.viewpoints.viewpoint_condition_validation import RegistrySnapshot, attribute_ordinal_scale
+from src.domain.viewpoints.viewpoint_condition_validation import RegistrySnapshot
 from src.domain.viewpoints.viewpoint_criteria import AttributeCondition, EntityCriteriaGroup, ValueRef
 from src.domain.viewpoints.viewpoint_evaluation_context import CriteriaReadAccess, EvaluationEnvironment
 from src.domain.viewpoints.viewpoint_scale_styling import (
@@ -83,10 +83,12 @@ class ReadingLens:
     #: keeps the colour its declared position gives it, so changing one member's colour does not mean
     #: restating the rest.
     key: Mapping[str, str] = field(default_factory=dict)
-    #: Which marks the diagram should explain about itself. A legend goes *into* the image, so asking
-    #: for one is asking for a different picture — which is why it counts as a request below even
-    #: though the elements are untouched by it.
-    legends: frozenset[str] = frozenset()
+    #: Whether the diagram should explain its own notation. One flag rather than one per mark: a
+    #: reader wants the legend or does not, and which marks it can show is the diagram's answer, not
+    #: theirs — four controls, three of which a given diagram cannot act on, is three dead controls.
+    #: A legend goes *into* the image, so asking for one is asking for a different picture, which is
+    #: why it counts as a request below even though the elements are untouched by it.
+    legend: bool = False
 
     @property
     def is_empty(self) -> bool:
@@ -97,7 +99,7 @@ class ReadingLens:
         nobody asked to have coloured. A legend is different — nothing else can add one — so it makes
         the request non-empty on its own.
         """
-        return not self.colour_by and not self.printed and not self.legends
+        return not self.colour_by and not self.printed and not self.legend
 
 
 def _ramp_rule(attribute: str, ramp: tuple[str, str] | None) -> StyleRule:
@@ -182,6 +184,7 @@ def apply_reading_lens(
     lens: ReadingLens,
     read_access: CriteriaReadAccess,
     registries: RegistrySnapshot,
+    palette: Sequence[str] = (),
     environment: EvaluationEnvironment | None = None,
 ) -> str:
     """*puml_body* with the reader's colouring and printing applied to the elements it declares.
@@ -212,17 +215,17 @@ def apply_reading_lens(
     presentation: PresentationSpec | None = None
     bounds: Mapping[int, object] = {}
     if lens.colour_by:
-        # Which of the two colourings applies is the *model's* answer, not the reader's: an attribute
-        # declaring a bounded value set with no order takes one colour per member, and everything else
-        # takes a ramp. Asking the snapshot rather than guessing from the values present means the two
-        # match what `diagram_attribute_panel` offered as `palette` and `ramp`, since both read the
-        # same declaration.
-        members = registries.entity_attribute_enums.get(lens.colour_by, ())
-        ordinal = attribute_ordinal_scale(lens.colour_by, context="entity", registries=registries)
-        if members and ordinal is None:
-            rules = _member_rules(lens.colour_by, members, lens.key)
-        else:
-            rules = (_ramp_rule(lens.colour_by, lens.ramp),)
+        # Which of the two colourings applies is the *model's* answer, not the reader's, and it is
+        # answered once — by `palette_members`, off the same offers the panel showed the reader. This
+        # asked the viewpoint criteria snapshot instead, whose enum map answers a different question:
+        # what *string* values a condition may compare an attribute against. It withholds a boolean's
+        # two members on purpose, so a boolean attribute would have been offered two swatches here and
+        # drawn as a ramp. An empty palette means a ramp, which is also what an ordinal gets: its enum
+        # is a rank, and the panel already says so.
+        rules = (
+            _member_rules(lens.colour_by, palette, lens.key) if palette
+            else (_ramp_rule(lens.colour_by, lens.ramp),)
+        )
         presentation = PresentationSpec(representation="diagram", styling_rules=rules)
         # The bounds are the whole reason to call this: an ordinal's ramp spans its *declared* range,
         # not the drawn extremes, and a lens computing its own would paint the mildest value on a

@@ -29,9 +29,14 @@ class TestHowItIsPresented:
         assert "<style>" in block
         assert "LineThickness 0" in block
 
-    def test_a_blank_row_separates_sections(self) -> None:
-        """A creole table sets its row height from the font and offers no padding, so an empty row is
-        the only air available — and it reads as the separator between sections that it is."""
+    def test_a_section_heading_is_all_that_separates_sections(self) -> None:
+        """No blank row between them. One was emitted for air, and the rendered image showed why it
+        cannot be: a creole table draws every cell border it has, so the blank arrives as a band of
+        bordered nothing that reads as a rendering fault. The heading row is bold and does the work.
+
+        Stated as "every row carries content", because that is the property — a table of this shape
+        has as many rows as it has things to say and no others.
+        """
         block = legend_block((
             LegendRow((LegendCell(text="colour"), LegendCell(text="kinds")), heading=True),
             LegendRow((LegendCell(fill="#dc2626"), LegendCell(text="a"))),
@@ -40,16 +45,9 @@ class TestHowItIsPresented:
         ))
 
         rows = [line for line in block.splitlines() if line.startswith("|")]
-        assert rows[2].replace("|", "").strip() == ""
-        assert rows[3].startswith("|=")
-
-    def test_the_first_section_gets_no_leading_blank(self) -> None:
-        block = legend_block((
-            LegendRow((LegendCell(text="colour"), LegendCell(text="kinds")), heading=True),
-            LegendRow((LegendCell(fill="#dc2626"), LegendCell(text="a"))),
-        ))
-
-        assert [line for line in block.splitlines() if line.startswith("|")][0].startswith("|=")
+        assert len(rows) == 4
+        assert [row.startswith("|=") for row in rows] == [True, False, True, False]
+        assert all(row.replace("|", "").replace("=", "").strip() for row in rows)
 
 
 class TestWhereTheBlockGoes:

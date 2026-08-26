@@ -6157,8 +6157,12 @@ export interface components {
          *     out of ``shared`` without saying why makes it look like one that simply is not shared.
          */
         DiagramAttributePanelResponse: {
+            /** Can Explain Notation */
+            can_explain_notation: boolean;
             /** Disputed */
             disputed: string[];
+            /** Drawn */
+            drawn: number;
             /** Shared */
             shared: components["schemas"]["SharedAttributeOfferResponse"][];
             /** Types */
@@ -17064,8 +17068,8 @@ export interface operations {
                 format?: "png" | "svg";
                 /** @description A colour for one value, as `member:#rrggbb`; repeatable */
                 key?: string[];
-                /** @description Marks the diagram should explain: colour, shape, glyph, arrow */
-                legend?: string[];
+                /** @description Draw a legend explaining the notation this diagram uses */
+                legend?: boolean;
                 /** @description Attribute values the current display prints */
                 print?: string[];
                 /** @description A gradient for a continuous attribute, as `near:far` in #rrggbb */
@@ -17469,8 +17473,8 @@ export interface operations {
                 colour_by?: string;
                 /** @description A colour for one value, as `member:#rrggbb`; repeatable */
                 key?: string[];
-                /** @description Marks the diagram should explain: colour, shape, glyph, arrow */
-                legend?: string[];
+                /** @description Draw a legend explaining the notation this diagram uses */
+                legend?: boolean;
                 /** @description Attribute values to print with the elements */
                 print?: string[];
                 /** @description A gradient for a continuous attribute, as `near:far` in #rrggbb */

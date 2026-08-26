@@ -12,6 +12,35 @@
  * it occurs, so colouring by `risk_score` colours every drawn entity that has one, on one scale. The
  * panel groups its offer by type because *availability* is per type.
  */
+
+import type { DiagramAttributePanel } from './schemas/diagrams'
+
+/** What a diagram's offer holds, read once.
+ *
+ * Two surfaces ask this question and asked it separately: the composable decided whether to show the
+ * panel at all, and the panel's header said in words what could be adjusted. Two condition lists over
+ * the same four fields, which agreed only because `shared` and `disputed` are derived from `types` —
+ * so they would have parted the first time a server reported one without the other. One reading, two
+ * renderings.
+ */
+export interface PanelOffers {
+  /** Whether any drawn type declares an attribute a reader could colour or print by. */
+  readonly attributes: boolean
+  /** Whether the diagram carries notation a legend could explain. */
+  readonly legend: boolean
+}
+
+/** What the offer at *panel* holds, or nothing at all while it has not arrived. */
+export const panelOffers = (panel: DiagramAttributePanel | null): PanelOffers => ({
+  attributes: panel !== null && panel.types.length > 0,
+  legend: panel !== null && panel.can_explain_notation,
+})
+
+/** Whether the panel is worth drawing. A header, dead controls and a sentence explaining that there
+ * is nothing to do is worse than no panel: an activity diagram draws steps, whose types declare no
+ * attributes, and its body carries no notation to explain. */
+export const offersAnything = (offers: PanelOffers): boolean => offers.attributes || offers.legend
+
 export interface ReadingLens {
   /** The attribute to colour by, or `''` for the diagram's authored colours. One at a time: two
    * colourings would each have to win somewhere, and a fill can only be one colour. */
@@ -26,28 +55,17 @@ export interface ReadingLens {
    * keeps the colour its declared position gives it, so changing one does not mean restating the
    * rest — and a reader who has customised nothing sends nothing. */
   readonly key: Readonly<Record<string, string>>
-  /** Which marks the diagram should explain about itself. A legend goes *into* the image, so asking
-   * for one is asking for a different picture — which is why it makes the request non-empty on its
-   * own, where a colour mapping does not. */
-  readonly legends: readonly LegendMark[]
-}
-
-/** The marks a diagram can explain. Each toggles independently, because a reader asking what the
- * colours mean is asking a different question from what the arrows mean — and one drawn element
- * carries all of its marks at once, which is why the legend is a table and not sample elements. */
-export const LEGEND_MARKS = ['colour', 'shape', 'glyph', 'arrow'] as const
-export type LegendMark = (typeof LEGEND_MARKS)[number]
-
-/** What each mark's legend tells a reader, for the checkbox label's tooltip. */
-export const LEGEND_MARK_MEANING: Readonly<Record<LegendMark, string>> = {
-  colour: 'What the fills mean — the element kinds, or the attribute being coloured by',
-  shape: 'What the corner shapes mean',
-  glyph: 'What the icons mean',
-  arrow: 'Which relationship each line is, and how it is drawn',
+  /** Whether the diagram should explain its own notation, drawn into the image.
+   *
+   * One flag, not one per mark. A reader wants the legend or does not; *which* marks it can show is
+   * the diagram's answer rather than theirs, and four controls of which a given diagram can act on
+   * one are three dead controls. Asking for a legend is asking for a different picture, which is why
+   * it makes the request non-empty on its own where a colour mapping does not. */
+  readonly legend: boolean
 }
 
 export const EMPTY_READING_LENS: ReadingLens = {
-  colourBy: '', printed: [], ramp: null, key: {}, legends: [],
+  colourBy: '', printed: [], ramp: null, key: {}, legend: false,
 }
 
 /** Whether this asks for anything.
@@ -55,7 +73,7 @@ export const EMPTY_READING_LENS: ReadingLens = {
  * A mapping alone asks for nothing: it says *how* to colour, and without `colourBy` there is nothing
  * to colour. So a mapping a reader adjusted and then switched off cannot keep forcing re-renders. */
 export const isEmptyLens = (lens: ReadingLens): boolean =>
-  lens.colourBy === '' && lens.printed.length === 0 && lens.legends.length === 0
+  lens.colourBy === '' && lens.printed.length === 0 && !lens.legend
 
 /** The lens as query parameters, or `undefined` when there is nothing to ask for.
  *
@@ -81,19 +99,12 @@ export const lensParams = (
   if (lens.ramp) params.ramp = `${lens.ramp[0]}:${lens.ramp[1]}`
   const key = Object.entries(lens.key).map(([member, colour]) => `${member}:${colour}`)
   if (key.length) params.key = key
-  if (lens.legends.length) params.legend = lens.legends
+  if (lens.legend) params.legend = 'true'
   return params
 }
 
-/** Turn one mark's legend on or off. The order is the declared one rather than the click order: the
- * legend's sections are laid out in a fixed order, and a reader who unchecks and rechecks a mark
- * should not find their legend rearranged. */
-export const withLegendMark = (lens: ReadingLens, mark: LegendMark): ReadingLens => ({
-  ...lens,
-  legends: lens.legends.includes(mark)
-    ? lens.legends.filter((existing) => existing !== mark)
-    : LEGEND_MARKS.filter((candidate) => candidate === mark || lens.legends.includes(candidate)),
-})
+/** Turn the legend on or off. */
+export const withLegend = (lens: ReadingLens): ReadingLens => ({ ...lens, legend: !lens.legend })
 
 /** The reader's colour for one member, or the declared one they have not overridden. */
 export const withMemberColour = (lens: ReadingLens, member: string, colour: string): ReadingLens => ({

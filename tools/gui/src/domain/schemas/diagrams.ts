@@ -287,6 +287,14 @@ export const SharedAttributeOfferSchema = Schema.Struct({
 export type SharedAttributeOffer = typeof SharedAttributeOfferSchema.Type
 
 export const DiagramAttributePanelSchema = Schema.Struct({
+  /** How many model entities the diagram places, whatever their types declare. Needed because
+   * dropping the attribute-less rows made "draws nothing" and "draws things that declare nothing"
+   * identical to a reader of `types` alone — and the panel said the first about a diagram doing the
+   * second. */
+  drawn: Schema.Number,
+  /** Whether a legend for this diagram would say anything. The control is offered only when it
+   * would: a checkbox producing nothing is indistinguishable from one that failed. */
+  can_explain_notation: Schema.Boolean,
   /** What reads across the diagram, listed first. Its members still appear in their own `types`
    * entries, where the per-type presence count lives — the shared row is a shortcut, not a move. */
   shared: Schema.Array(SharedAttributeOfferSchema),

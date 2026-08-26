@@ -21,6 +21,8 @@ marks come from the body, because for those the body's preamble *is* what PlantU
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
+from pathlib import Path
 
 from src.application.puml_legend import LegendRow, legend_block, with_legend
 from src.application.viewpoints.diagram_reading_lens import ReadingLens
@@ -59,16 +61,13 @@ def _colouring_in_use(
         # so one legend read `StrategyGrouping` in its colour rows and `strategy grouping` in its shape
         # rows — two labels for one thing, in one table.
         return {readable_label(name): notation.fill for name, notation in sorted(notations.items())}
+    # The attribute names itself once, in the section heading — `means` carries it. Prefixing every
+    # row with it too read "Lifecycle State | Lifecycle State: Planned" across the widest column in
+    # the table, and pushed the swatches away from the values they stand for.
     if members:
-        return {
-            f"{lens.colour_by}: {member}": lens.key.get(member, colour)
-            for member, colour in categorical_colors(members)
-        }
+        return {member: lens.key.get(member, colour) for member, colour in categorical_colors(members)}
     near, far = lens.ramp if lens.ramp is not None else AD_HOC_RAMP_TOKENS
-    return {
-        f"{lens.colour_by}: lower": token_color(near),
-        f"{lens.colour_by}: higher": token_color(far),
-    }
+    return {"lower": token_color(near), "higher": token_color(far)}
 
 
 def body_with_reading_legend(
@@ -85,22 +84,100 @@ def body_with_reading_legend(
     the same list the lens assigns member colours from, so the key and the picture agree by
     construction rather than by both being computed correctly.
     """
-    if not lens.legends:
+    if not lens.legend:
         return body
+    return with_legend(body, legend_block(_rows_for(
+        body, lens=lens, declarations=declarations, members=members,
+        connection_notations=connection_notations,
+    )))
+
+
+def _rows_for(
+    body: str,
+    *,
+    lens: ReadingLens,
+    declarations: ArchimateDeclarations,
+    members: Sequence[str] = (),
+    connection_notations: Mapping[str, RelationNotation] | None = None,
+) -> tuple[LegendRow, ...]:
+    """Every section the diagram has something to say in, in a fixed order.
+
+    Every one, because the reader asked for *the* legend rather than for a selection of marks: which
+    marks a diagram carries is the diagram's answer. A section with no rows contributes nothing, so a
+    diagram with no glyphs simply has no glyph section — the same "list what is present" convention
+    every legend in this product keeps.
+    """
     notations = notations_referenced_in(body, declarations)
-    rows: list[LegendRow] = []
-    if "colour" in lens.legends:
-        rows += colour_rows(
+    return (
+        *colour_rows(
             _colouring_in_use(lens, members, notations),
             means=lens.colour_by if lens.colour_by else "element kinds",
-        )
-    if "shape" in lens.legends:
-        rows += shape_rows(notations)
-    if "glyph" in lens.legends:
-        rows += glyph_rows(sorted(declarations.referenced_in(body).sprites))
-    if "arrow" in lens.legends:
-        rows += arrow_rows(connection_notations or {})
-    return with_legend(body, legend_block(tuple(rows)))
+        ),
+        *shape_rows(notations),
+        *glyph_rows(sorted(declarations.referenced_in(body).sprites)),
+        *arrow_rows(connection_notations or {}),
+    )
+
+
+@dataclass(frozen=True)
+class NotationInUse:
+    """What notation one diagram carries: what its stereotypes declare, and how its relationships draw.
+
+    Assembled once because two surfaces need the same pair and were building it separately — the route
+    that offers the legend control and the route that draws the legend. That is the drift
+    `can_explain_notation` was written to avoid, reappearing one level up: a control offered from one
+    reading of the notation and a legend drawn from another can disagree, and the reader sees a
+    checkbox that does nothing.
+    """
+
+    declarations: ArchimateDeclarations
+    connection_notations: dict[str, RelationNotation]
+
+
+def notation_in_use(
+    placed_connection_types: Sequence[str],
+    *,
+    repo_root: Path,
+    relation_notations: Mapping[str, Mapping[str, str]],
+) -> NotationInUse:
+    """The notation available to a diagram drawing *placed_connection_types*.
+
+    *relation_notations* is passed in rather than read here: which catalog holds them is the caller's
+    to know, and this module has no business resolving one.
+
+    The declarations are the repository's, not this diagram's — every diagram is handed the same
+    generated includes, and which of them a given body *references* is decided later, by
+    `notations_referenced_in`, off that body. Only the arrows are per-diagram here, because they come
+    from the model rather than from the picture.
+    """
+    return NotationInUse(
+        declarations=ArchimateDeclarations.from_repo(repo_root),
+        connection_notations=notations_for_connection_types(placed_connection_types, relation_notations),
+    )
+
+
+def can_explain_notation(
+    body: str,
+    *,
+    declarations: ArchimateDeclarations,
+    connection_notations: Mapping[str, RelationNotation] | None = None,
+) -> bool:
+    """Whether a legend for this body would say anything at all.
+
+    Answered by building the rows and seeing whether there are any, rather than by a second rule
+    about what counts as "having notation": the row builders already decide that, and a parallel test
+    could disagree with the legend a reader then gets.
+
+    It is what lets a surface withhold the control. A legend checkbox on a diagram with no
+    stereotypes, no glyphs and no relationships does nothing, and a reader cannot tell that from a
+    legend that failed.
+    """
+    return bool(_rows_for(
+        body,
+        lens=ReadingLens(legend=True),
+        declarations=declarations,
+        connection_notations=connection_notations,
+    ))
 
 
 def notations_for_connection_types(
