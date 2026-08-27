@@ -63,6 +63,31 @@ def _legend_of(body: str) -> list[str]:
     return [] if at == -1 else body[at:].splitlines()
 
 
+def _sections(body: str) -> dict[tuple[str, str], list[str]]:
+    """The legend's rows grouped by the `(mark, meaning)` its heading states.
+
+    Keyed on the **pair**, because neither column alone identifies a section: `colour` heads two of
+    them under an ad-hoc colouring — the attribute and the element kinds — while `element kinds` is the
+    meaning of both the `colour` and the `shape` section. An assertion looking for either alone is
+    satisfied by the wrong rows, and one of these tests passed that way before this existed.
+    """
+    out: dict[tuple[str, str], list[str]] = {}
+    current: tuple[str, str] | None = None
+    for line in _legend_of(body):
+        if line.startswith("|="):
+            cells = [c.strip() for c in line.strip().strip("|").lstrip("=").split("|=")]
+            current = (cells[0].strip(), cells[1].strip() if len(cells) > 1 else "")
+            out[current] = []
+        elif line.startswith("|") and current is not None:
+            out[current].append(line)
+    return out
+
+
+def _meanings(body: str) -> set[str]:
+    """The meaning column of every `colour` section — what a fill stands for on this picture."""
+    return {meaning for mark, meaning in _sections(body) if mark == "colour"}
+
+
 class TestWhetherThereIsOneAtAll:
     def test_a_body_is_untouched_when_no_legend_is_asked_for(self, declarations: ArchimateDeclarations) -> None:
         out = body_with_reading_legend(_BODY, lens=ReadingLens(), declarations=declarations)
@@ -353,3 +378,81 @@ rectangle "Other" <<capability>> as FNC_c
         ))
 
         assert not any("\u25a3" in line for line in lines)
+
+
+class TestBothColouringsAreExplained:
+    """An ad-hoc colouring recolours only the entities that *have* a value, so the picture carries two
+    colourings at once and the legend has to explain both.
+
+    Reported on a real diagram: colouring `repository-synchronization-git-integration` by
+    `Lifecycle State` recoloured the two elements carrying one and left six-plus showing their
+    ArchiMate stereotype fill. The rendered SVG holds both palettes — `#0891b2` from the attribute and
+    `#e5dfd3`/`#b0d0d9` from the stereotypes — and the legend named only the attribute.
+
+    The first version of this replaced the element-kind rows on the grounds that "a legend still
+    listing element kinds beside a heat map would describe colours the picture no longer uses". That
+    is false whenever any drawn entity lacks a value for the attribute, which is the ordinary case.
+
+    Only the *fill* is overridden. A recoloured element keeps its stereotype's corner shape and glyph,
+    so the shape and glyph sections are unaffected and are not touched here.
+    """
+
+    _MIXED = """\
+@startuml x
+rectangle "Has one" <<capability>> as CAP_a #back:0891b2;line:252327;text:252327
+rectangle "Has none" <<capability>> as CAP_b
+@enduml
+"""
+
+    _ALL_RECOLOURED = """\
+@startuml x
+rectangle "Has one" <<capability>> as CAP_a #back:0891b2;line:252327;text:252327
+@enduml
+"""
+
+    def test_the_attribute_and_the_element_kinds_are_both_named(
+        self, declarations: ArchimateDeclarations
+    ) -> None:
+        body = (body_with_reading_legend(
+            self._MIXED,
+            lens=ReadingLens(colour_by="Lifecycle State", legend=True),
+            declarations=declarations,
+            members=("Planned", "Active"),
+        ))
+
+        assert _meanings(body) == {"Lifecycle State", "element kinds"}
+
+    def test_the_element_kind_row_carries_the_fill_still_on_screen(
+        self, declarations: ArchimateDeclarations
+    ) -> None:
+        """Not just the heading — the swatch, so a reader can match it to the box in front of them."""
+        sections = _sections(body_with_reading_legend(
+            self._MIXED,
+            lens=ReadingLens(colour_by="Lifecycle State", legend=True),
+            declarations=declarations,
+            members=("Planned", "Active"),
+        ))
+
+        assert any("#f7e7c6" in row for row in sections[("colour", "element kinds")])
+
+    def test_an_element_kind_whose_every_element_was_recoloured_is_not_named(
+        self, declarations: ArchimateDeclarations
+    ) -> None:
+        """The original reasoning, applied where it is actually true: no element still shows that
+        stereotype's fill, so naming it would send a reader looking for a colour that is gone."""
+        body = body_with_reading_legend(
+            self._ALL_RECOLOURED,
+            lens=ReadingLens(colour_by="Lifecycle State", legend=True),
+            declarations=declarations,
+            members=("Planned", "Active"),
+        )
+
+        assert _meanings(body) == {"Lifecycle State"}
+        assert not any("#f7e7c6" in line for line in _legend_of(body))
+
+    def test_with_no_attribute_colouring_the_element_kinds_are_still_the_only_section(
+        self, declarations: ArchimateDeclarations
+    ) -> None:
+        assert _meanings(body_with_reading_legend(
+            self._MIXED, lens=ReadingLens(legend=True), declarations=declarations
+        )) == {"element kinds"}

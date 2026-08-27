@@ -107,6 +107,25 @@ _COLOUR_SUFFIX = re.compile(r"\s+#[A-Za-z0-9_:;#,-]+\s*$")
 _APPENDED = "\\n<size:10>"
 
 
+def overrides_colour(line: str) -> bool:
+    """Whether this declaration line carries a colour of its own, overriding its stereotype's fill.
+
+    Asked by the legend, which has to know which stereotype fills are *still on screen*: an ad-hoc
+    colouring recolours only the entities that carry a value for the attribute, so a diagram under one
+    shows both palettes at once. A legend naming only the attribute leaves every other box unexplained,
+    and one naming a stereotype whose every element was recoloured sends a reader looking for a colour
+    that is gone.
+
+    Here rather than at the legend, because the suffix pattern is this module's and spelling it a
+    second time is what the syntax register exists to stop.
+    """
+    declaration = alias_declared_on(line)
+    if declaration is None:
+        return False
+    stripped = line.strip().rstrip("{").rstrip()
+    return _COLOUR_SUFFIX.search(stripped) is not None
+
+
 def _restyled_label(label: str, label_lines: tuple[str, ...], ink: str | None) -> str:
     """The quoted label with *label_lines* as a smaller second block, replacing any previous one."""
     base = label.split(_APPENDED, 1)[0]

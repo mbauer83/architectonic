@@ -24,6 +24,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
+from src.application.puml_alias_declarations import overrides_colour
 from src.application.puml_legend import LegendRow, legend_block, with_legend
 from src.application.puml_relation_parsing import declared_relations
 from src.application.viewpoints.diagram_reading_lens import ReadingLens
@@ -48,28 +49,58 @@ from src.infrastructure.rendering.archimate_legend import (
 )
 
 
-def _colouring_in_use(
-    lens: ReadingLens, members: Sequence[str], notations: Mapping[str, StereotypeNotation]
-) -> dict[str, str]:
-    """What the fills mean *now*: the attribute's values, or the kinds of element.
+def _attribute_colouring(lens: ReadingLens, members: Sequence[str]) -> dict[str, str]:
+    """What the reader's own colouring means, or nothing when they set none.
 
-    Under an ad-hoc colouring the fills are the reader's own, so the legend must show those — a legend
-    still listing element kinds beside a heat map would describe colours the picture no longer uses,
-    which is worse than no legend. The colours come from the same functions the lens renders with, so
-    the two cannot drift.
+    The attribute names itself once, in the section heading — `means` carries it. Prefixing every row
+    with it too read "Lifecycle State | Lifecycle State: Planned" across the widest column in the
+    table, and pushed the swatches away from the values they stand for.
     """
     if not lens.colour_by:
-        # Through the same spelling the other sections use: this had its own `_`-to-space replacement,
-        # so one legend read `StrategyGrouping` in its colour rows and `strategy grouping` in its shape
-        # rows — two labels for one thing, in one table.
-        return {readable_label(name): notation.fill for name, notation in sorted(notations.items())}
-    # The attribute names itself once, in the section heading — `means` carries it. Prefixing every
-    # row with it too read "Lifecycle State | Lifecycle State: Planned" across the widest column in
-    # the table, and pushed the swatches away from the values they stand for.
+        return {}
     if members:
         return {member: lens.key.get(member, colour) for member, colour in categorical_colors(members)}
     near, far = lens.ramp if lens.ramp is not None else AD_HOC_RAMP_TOKENS
     return {"lower": token_color(near), "higher": token_color(far)}
+
+
+def _element_kind_colouring(
+    body: str, declarations: ArchimateDeclarations, notations: Mapping[str, StereotypeNotation]
+) -> dict[str, str]:
+    """The stereotype fills still on screen, which is not the same as the ones the body references.
+
+    **Both colourings can be present at once**, and the first version of this missed it. An ad-hoc
+    colouring recolours only the entities carrying a value for the attribute, so a diagram under one
+    shows the attribute's palette on those and each stereotype's own fill on the rest. Replacing the
+    element-kind rows with the attribute's — on the stated grounds that the picture "no longer uses"
+    them — left every unvalued box unexplained. Measured on a real view: two elements recoloured, six
+    still showing their stereotype fill, and the legend named only the attribute.
+
+    The other direction matters too, which is why this reads the body rather than assuming: where every
+    element of a stereotype *was* recoloured, that fill is genuinely gone and naming it would send a
+    reader looking for a colour that is not there.
+
+    A declaration carrying its own colour suffix is one whose fill was overridden — asked of
+    `overrides_colour`, the module that owns reading a declaration. Only the fill is overridden, so the
+    shape and glyph sections are unaffected and read every referenced stereotype as before.
+
+    Through the same spelling the other sections use: this had its own `_`-to-space replacement, so one
+    legend read `StrategyGrouping` in its colour rows and `strategy grouping` in its shape rows — two
+    labels for one thing, in one table.
+    """
+    still_showing: set[str] = set()
+    for line in body.splitlines():
+        if overrides_colour(line):
+            continue
+        # Through `referenced_in`, which owns reading a stereotype reference and works on any text —
+        # one line as readily as a whole body. Spelling the `<<name>>` pattern again here is what the
+        # syntax register exists to stop.
+        still_showing.update(declarations.referenced_in(line).stereotypes)
+    return {
+        readable_label(name): notation.fill
+        for name, notation in sorted(notations.items())
+        if name in still_showing
+    }
 
 
 def body_with_reading_legend(
@@ -113,10 +144,11 @@ def _rows_for(
     """
     notations = notations_referenced_in(body, declarations)
     return (
-        *colour_rows(
-            _colouring_in_use(lens, members, notations),
-            means=lens.colour_by if lens.colour_by else "element kinds",
-        ),
+        # Two colour sections rather than one, because a fill can mean two things at once on the same
+        # picture: the reader's attribute where a value exists, and the element's kind where it does
+        # not. Either may be empty and contribute no section.
+        *colour_rows(_attribute_colouring(lens, members), means=lens.colour_by),
+        *colour_rows(_element_kind_colouring(body, declarations, notations), means="element kinds"),
         *shape_rows(notations),
         *glyph_rows(sorted(declarations.referenced_in(body).sprites)),
         *arrow_rows(connection_notations or {}),
