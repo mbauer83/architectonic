@@ -21,9 +21,10 @@ reported.
   colour picker, for any attribute, with no rule to author first. A download exports exactly what is
   on screen.
 - **A legend, drawn into the image.** One control adds a key explaining the notation the diagram
-  actually uses — colours, corner shapes, glyphs, and relationship lines drawn as the marks
-  themselves. It exports with the SVG or PNG, and follows the display options: colour by an
-  attribute and the legend explains that instead of element kinds.
+  actually uses — colours, corner shapes, glyphs, relationship lines drawn as the marks themselves,
+  and the containment that stands for a relationship where one element is drawn inside another. It
+  covers only what the picture contains, exports with the SVG or PNG, and follows the display
+  options: colour by an attribute and the legend explains that instead of element kinds.
 - **An entity says where it appears** — the documents, diagrams and scratchpads that reference it,
   with links, on its page and through MCP alike.
 - **An activity diagram can draw a loop.** A flow that returns to an earlier step is drawn as a

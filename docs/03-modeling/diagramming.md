@@ -232,9 +232,15 @@ viewpoint, and gone when you reload. The panel is absent on diagrams that permit
   member, each a colour picker. There is no rule to author first — the mapping is yours for the
   visit. Untouched, the swatches show the declared colours, so the key and the picture agree.
 - **Explain the notation, in the image.** One checkbox adds a legend covering the marks the diagram
-  actually uses: fills, corner shapes, glyphs, and relationship lines drawn as the marks themselves.
-  It follows the display options — colour by an attribute and the legend explains that instead of
-  element kinds.
+  actually uses: fills, corner shapes, glyphs, relationship lines drawn as the marks themselves, and
+  nesting. It follows the display options — colour by an attribute and the legend explains that
+  instead of element kinds.
+
+  Only what the picture contains. A composition or an aggregation is drawn as **containment** — the
+  part inside the whole — so it gets a nesting row rather than a line, and where a relationship is
+  drawn both ways on one diagram it appears in both sections. Composition and aggregation share one
+  nesting row because the drawing is identical for them: the model distinguishes a part that cannot
+  exist without its whole from one that can and may be shared, and the picture does not.
 
 **A download exports what is on screen**, legend included, in SVG or PNG. The picture and the file
 come from the same rendered body rather than from two paths that agree by construction.
