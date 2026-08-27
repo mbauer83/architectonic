@@ -76,8 +76,8 @@ def _can_explain(diag_rec: Any, repo_root: Path, catalogs: RuntimeCatalogs) -> b
     from src.application.viewpoints.placed_occurrences import placed_connection_triples  # noqa: PLC0415
     from src.infrastructure.rendering.diagram_legend_for_reading import (  # noqa: PLC0415
         can_explain_notation,
-        notation_in_use,
     )
+    from src.infrastructure.rendering.diagram_notation_in_use import notation_in_use  # noqa: PLC0415
     from src.infrastructure.write.artifact_write.parse_existing import parse_diagram_file  # noqa: PLC0415
 
     if not diag_rec.path.exists():

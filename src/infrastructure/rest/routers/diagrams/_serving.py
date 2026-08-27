@@ -104,8 +104,8 @@ def _lensed_body(
     )
     from src.infrastructure.rendering.diagram_legend_for_reading import (  # noqa: PLC0415
         body_with_reading_legend,
-        notation_in_use,
     )
+    from src.infrastructure.rendering.diagram_notation_in_use import notation_in_use  # noqa: PLC0415
     from src.infrastructure.viewpoints_snapshot import configured_registry_snapshot  # noqa: PLC0415
     from src.infrastructure.write.artifact_write.parse_existing import parse_diagram_file  # noqa: PLC0415
 

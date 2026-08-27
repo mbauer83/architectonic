@@ -22,6 +22,8 @@ from src.infrastructure.rendering._archimate_includes import ArchimateDeclaratio
 from src.infrastructure.rendering.diagram_legend_for_reading import (
     body_with_reading_legend,
     can_explain_notation,
+)
+from src.infrastructure.rendering.diagram_notation_in_use import (
     notation_in_use,
     types_drawn_as_lines,
     types_drawn_as_nesting,
