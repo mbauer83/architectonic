@@ -209,3 +209,96 @@ class TestItReachesTheProductsOwnPath:
         }
 
         assert "W049" in declared
+
+
+class TestEveryDeclaredCycleIsSeen:
+    """A cycle the model declares is either drawn as a loop or refused with a reason — never neither.
+
+    Three shapes were neither, and all three drew a confidently wrong picture:
+
+    * a returning flow declared as the decision's **merge** edge: the return absent and the arm that
+      *was* declared rendered empty, so the picture said the flow stops there;
+    * a loop whose **body holds a decision**: the loop absent entirely, the process drawn straight
+      through to `stop`. This is the ordinary retry shape, and PlantUML draws it correctly — the
+      renderer simply never emitted it;
+    * **two decisions returning to one header**: reported as drawable, and emitted with an empty arm
+      and one return silently relocated into the body.
+
+    **One root cause for the first two.** `successors_of` excludes a decision's `step-flow` merge edge,
+    correctly — counting it would offer the walk a path around both arms, which is what makes
+    convergence work. But the cycle finder used the same traversal, so any cycle whose path runs through
+    a decision was invisible: in the second shape the successors are literally `fix: (), skip: ()`.
+
+    Stated as "seen at all" rather than "drawn" on purpose. Whether a shape *can* be drawn is a separate
+    question with its own answer; being silently dropped is the defect.
+    """
+
+    def _seen(self, entities: dict[str, Any], connections: list[dict[str, str]]) -> tuple[int, int]:
+        from src.diagram_types.activity._step_cycles import cycles_of  # noqa: PLC0415
+        from src.diagram_types.activity._step_graph import (  # noqa: PLC0415
+            entry_step,
+            graph_from_declarations,
+        )
+
+        graph = graph_from_declarations(entities, connections)
+        loops, refused = cycles_of(graph, start=entry_step(graph))
+        return len(loops), len(refused)
+
+    def test_a_return_declared_as_the_merge_edge_is_seen(self) -> None:
+        entities = {
+            "action": [_step("start"), _step("a1"), _step("a2"), _step("done")],
+            "decision": [_step("d1", "decision")],
+        }
+        connections = [
+            _edge("step-flow", "start", "a1"), _edge("step-flow", "a1", "d1"),
+            _edge("step-then", "d1", "a2"), _edge("step-flow", "d1", "a1"),
+            _edge("step-flow", "a2", "done"),
+        ]
+
+        drawn, refused = self._seen(entities, connections)
+
+        assert drawn + refused == 1, "the cycle a1 → d1 → a1 must be seen"
+
+    def test_a_loop_whose_body_holds_a_decision_is_seen(self) -> None:
+        entities = {
+            "action": [_step(i) for i in ("start", "attempt", "fix", "skip", "wait", "done")],
+            "decision": [_step("inner", "decision"), _step("ok", "decision")],
+        }
+        connections = [
+            _edge("step-flow", "start", "attempt"), _edge("step-flow", "attempt", "inner"),
+            _edge("step-then", "inner", "fix"), _edge("step-else", "inner", "skip"),
+            _edge("step-flow", "inner", "ok"),
+            _edge("step-then", "ok", "done"), _edge("step-else", "ok", "wait"),
+            _edge("step-flow", "wait", "attempt"),
+        ]
+
+        drawn, refused = self._seen(entities, connections)
+
+        assert drawn + refused == 1, "the retry loop through `inner` must be seen"
+
+    def test_two_decisions_returning_to_one_header_are_not_claimed_drawable(self) -> None:
+        """A `repeat` has one condition and one return path. Two returns cannot both be drawn, so
+        claiming the shape and emitting one of them is worse than refusing it."""
+        entities = {
+            "action": [_step(i) for i in ("start", "attempt", "w1", "w2", "done")],
+            "decision": [_step("d1", "decision"), _step("d2", "decision")],
+        }
+        connections = [
+            _edge("step-flow", "start", "attempt"), _edge("step-flow", "attempt", "d1"),
+            _edge("step-then", "d1", "d2"), _edge("step-else", "d1", "w1"),
+            _edge("step-flow", "w1", "attempt"),
+            _edge("step-then", "d2", "done"), _edge("step-else", "d2", "w2"),
+            _edge("step-flow", "w2", "attempt"),
+        ]
+
+        drawn, refused = self._seen(entities, connections)
+
+        assert (drawn, refused) == (0, 1), "two returns into one header must be refused"
+
+    def test_the_ordinary_retry_loop_is_still_drawn(self) -> None:
+        """The guard on the guard: tightening what a loop may claim must not refuse the shape the
+        feature exists for. Asserted as *drawn*, not merely as "nothing reported" — an assertion of
+        that form is what let the holes above survive a release."""
+        drawn, refused = self._seen(_RETRY_ENTITIES, _RETRY_EDGES)
+
+        assert (drawn, refused) == (1, 0)

@@ -80,7 +80,10 @@ def _cyclic_groups(graph: StepGraph) -> tuple[frozenset[str], ...]:
     """The sets of steps that can each reach the other — one per cycle in the declared graph.
 
     Strongly connected components, computed the simple way: two steps share one when each is
-    reachable from the other. These graphs hold tens of steps, so the quadratic reading is the
+    reachable from the other — through `reachable_including_merge`, because a decision's merge edge is
+    somewhere control goes even though the *walk* must not treat it as a successor. Asking with the
+    walk's reachability made every cycle running through a decision invisible, which is the ordinary
+    retry shape. These graphs hold tens of steps, so the quadratic reading is the
     readable one and Tarjan's would be cleverness bought with nothing.
 
     A single step counts only if it reaches itself, which is a self-loop — the poll-until shape.
@@ -90,11 +93,12 @@ def _cyclic_groups(graph: StepGraph) -> tuple[frozenset[str], ...]:
     for step_id in sorted(graph.step_by_id):
         if step_id in placed:
             continue
-        onward = graph.reachable_from(step_id) - {step_id}
+        onward = graph.reachable_including_merge(step_id) - {step_id}
         together = frozenset(
-            {step_id} | {other for other in onward if step_id in graph.reachable_from(other)}
+            {step_id}
+            | {other for other in onward if step_id in graph.reachable_including_merge(other)}
         )
-        if len(together) > 1 or step_id in graph.successors_of(step_id):
+        if len(together) > 1 or step_id in graph.successors_including_merge(step_id):
             groups.append(together)
             placed |= together
     return tuple(groups)
@@ -204,6 +208,21 @@ def _as_loop(
             f"drawing carries one. A second `backward:` line renders nothing at all — measured, with "
             f"a clean render and no warning — so drawing this would lose "
             f"{', '.join(list(backward)[:-1])} silently"
+        )
+    # Every step of the cycle has to be somewhere in the drawn shape, or the drawing is not of this
+    # cycle. A `repeat` shows exactly its header, its body chain, the condition and one returning step;
+    # a group holding anything else has a second return or a branch the chain does not cover, and both
+    # were being claimed as drawable. Two decisions returning to one header rendered as a `repeat` with
+    # an empty arm and one return relocated into the body — a confident wrong picture, which is worse
+    # than a refusal.
+    accounted = {header, condition, *body, *backward}
+    unaccounted = tuple(sorted(group - accounted))
+    if unaccounted:
+        return None, (
+            f"{', '.join(unaccounted)} {'is' if len(unaccounted) == 1 else 'are'} inside this loop "
+            f"and outside the shape a repeat draws — its header, one chain of body steps, the "
+            f"condition, and one step on the way back. A second returning flow or a branch off the "
+            f"body chain cannot be drawn, and drawing the rest would show a loop this is not"
         )
     return Loop(
         header=header,

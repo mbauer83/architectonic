@@ -70,6 +70,41 @@ class StepGraph:
             return tuple(target for target in (contained, onward) if target)
         return (onward,) if onward else ()
 
+    def successors_including_merge(self, step_id: str) -> tuple[str, ...]:
+        """Everywhere control can end up from *step_id*, a decision's merge edge included.
+
+        **The other half of `successors_of`, and the distinction is load-bearing.** That one omits a
+        decision's declared merge edge on purpose: the arms fall through to it, so offering it as a
+        successor would give the walk a path *around* both arms, and that omission is what makes
+        convergence work. It must stay.
+
+        But reachability is a different question, and asking it with the walk's answer made any cycle
+        whose path runs through a decision invisible — not drawn and not refused, with the picture
+        asserting the flow runs straight through. On a retry loop holding one decision the walk's
+        successors are literally `fix: (), skip: ()`: dead ends, so nothing reached the condition.
+
+        So the walk asks `successors_of` and the cycle finder asks this. Two questions, one rule about
+        what a merge edge is, in one place.
+        """
+        onward = list(self.successors_of(step_id))
+        if self.kind_of(step_id) == "decision":
+            merge = self.flow_next.get(step_id)
+            if merge and merge not in onward:
+                onward.append(merge)
+        return tuple(onward)
+
+    def reachable_including_merge(self, start: str) -> frozenset[str]:
+        """Every step reachable from *start* when a decision's merge edge counts as a successor."""
+        seen: set[str] = set()
+        pending = [start]
+        while pending:
+            step_id = pending.pop()
+            if step_id in seen:
+                continue
+            seen.add(step_id)
+            pending.extend(self.successors_including_merge(step_id))
+        return frozenset(seen)
+
     def reachable_from(self, start: str) -> frozenset[str]:
         seen: set[str] = set()
         pending = [start]
