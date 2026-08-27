@@ -125,6 +125,62 @@ repeat while ([[arch://ok did it succeed?]]) is (no) not (yes)
 stop
 @enduml
 
+### a loop whose body holds a decision
+# The ordinary retry shape: a loop whose body branches. Refused until the acceptance criterion described the region the emitter walks rather than a single-successor chain. Lanes are declared and the whole cycle sits in one of them, which is what keeps the way back off the steps it returns past.
+@startuml a-loop-whose-body-holds-a-decision
+skinparam hyperlinkColor #252327
+skinparam hyperlinkUnderline false
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
+title a loop whose body holds a decision
+
+|[[arch://lane_caller Caller]]|
+start
+
+:[[arch://receive receive the request]];
+repeat
+|[[arch://lane_service Service]]|
+:[[arch://attempt attempt the write]];
+if ([[arch://recoverable can it be repaired?]]) then (yes)
+:[[arch://repair repair the input]];
+else (no)
+:[[arch://ignore carry on regardless]];
+endif
+backward:[[arch://wait back off]];
+repeat while ([[arch://ok did it succeed?]]) is (no) not (yes)
+|[[arch://lane_caller Caller]]|
+:[[arch://accept accept it]];
+
+stop
+@enduml
+
+### a fork inside a loop body
+# The body of a loop is walked as a region, so it may hold any structured construct and not only a decision. Kept because the criterion was widened to allow it, and a shape the product newly draws needs its picture checked as much as one it always drew.
+@startuml a-fork-inside-a-loop-body
+skinparam hyperlinkColor #252327
+skinparam hyperlinkUnderline false
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
+title a fork inside a loop body
+
+|[[arch://lane_service Service]]|
+start
+
+repeat
+:[[arch://attempt attempt the write]];
+fork
+:[[arch://measure measure the result]];
+fork again
+:[[arch://sample sample the log]];
+end fork
+backward:[[arch://wait back off]];
+repeat while ([[arch://ok did it succeed?]]) is (no) not (yes)
+|[[arch://lane_caller Caller]]|
+:[[arch://accept accept it]];
+
+stop
+@enduml
+
 ### two disconnected chains
 # Two chains with no edge between them — both are declared, so both are drawn.
 @startuml two-disconnected-chains

@@ -181,6 +181,18 @@ def graph_from_declarations(
     )
 
 
+def lane_of_step(diagram_connections: list[dict[str, object]]) -> dict[str, str]:
+    """Which swimlane each step is declared in.
+
+    Named here rather than spelled at each call site because two callers must agree exactly: the
+    renderer decides which loops it draws, and the W049 contribution reports the ones it refuses. A
+    lane reading that differed between them would make the diagnostic describe a picture the product
+    does not draw — the failure the contribution's own docstring warns against. Through `target_index`,
+    which owns indexing an edge type one-per-source.
+    """
+    return target_index(diagram_connections, "step-in-lane")
+
+
 def target_index(diagram_connections: list[dict[str, object]], conn_type: str) -> dict[str, str]:
     """One target per source for *conn_type*.
 

@@ -35,6 +35,18 @@ guidance:
       `step-else` to the first step of the false branch, and a `step-flow` to the step the branches
       merge back into. Omitting the third leaves the branches dangling.
     - >-
+      A loop is closed by pointing a decision *arm* (`step-then` or `step-else`) back at an earlier
+      step. Do not use the decision's `step-flow` merge edge for this: that edge is not drawn as a
+      return, so the picture shows an empty branch and the loop disappears. The decision closing the
+      loop is drawn as the diamond at its foot — one arm goes round again, the other leaves.
+    - >-
+      What a drawn loop can hold: a body of any shape, including a decision with its own branches;
+      one step on the way back; and every step of the loop in the *same* swimlane. A loop crossing a
+      lane has its way back drawn through the steps it returns past, and a return path of two or more
+      steps loses all but the last — both measured, so both are refused with the reason (W049) rather
+      than drawn wrongly. Two steps returning to the same step cannot be drawn either: give the loop
+      one way round and let the other path leave it.
+    - >-
       Notes attach with `step-note-of`, whose *source* is the note and whose *target* is the step it
       annotates.
     - >-

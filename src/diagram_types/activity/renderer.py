@@ -43,7 +43,7 @@ from ._emission import (
     emit_orphans,
 )
 from ._step_cycles import cycles_of
-from ._step_graph import branch_owned, entry_step, graph_from_declarations, target_index
+from ._step_graph import branch_owned, entry_step, graph_from_declarations, lane_of_step
 from ._step_links import lane_header, puml_text
 
 
@@ -71,7 +71,7 @@ class ActivityPumlRenderer:
         owned = branch_owned(graph)
 
         lanes = _read_lanes(kd)
-        lane_index = target_index(kcs, "step-in-lane")
+        lane_index = lane_of_step(kcs)
 
         root_id = entry_step(graph)
         initial_lane_id = lane_index.get(root_id) if root_id else None
@@ -91,7 +91,7 @@ class ActivityPumlRenderer:
             # Computed here because the root is this function's choice, and which step a cycle is
             # entered at *is* that choice — `_find_root`'s own docstring says so. Keyed by header so
             # the walk can ask "does a loop open here" without carrying a list.
-            loops={loop.header: loop for loop in cycles_of(graph, start=root_id)[0]},
+            loops={loop.header: loop for loop in cycles_of(graph, lane_index, start=root_id)[0]},
         )
         body_lines: list[str] = []
         drawn: set[str] = set()

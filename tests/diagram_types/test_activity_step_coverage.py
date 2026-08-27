@@ -40,8 +40,9 @@ from src.diagram_types.activity._step_graph import (
     StepGraph,
     entry_step,
     graph_from_declarations,
+    lane_of_step,
 )
-from src.diagram_types.activity._step_links import sentinel_of
+from src.diagram_types.activity._step_links import LABELLED_STEP_KINDS, sentinel_of
 from tests.diagram_types._activity_shapes import CATALOGUE, ActivityShape, bundled_shapes
 
 _LABELLED_KINDS = ("action", "decision", "partition")
@@ -62,6 +63,14 @@ class Node:
     kind: str
     step_id: str | None = None
     regions: list[Region] = field(default_factory=lambda: [Region()])
+
+
+#: The node kinds that hold regions, so a walk looking for something must descend into them. Named
+#: once because it was spelled six times and three of those omitted `loop`: a decision inside a
+#: `repeat` was then invisible to `_find_construct`, `_reached_in` and `_fork_nodes` alike, and the
+#: two rules that compare a decision's arms silently had nothing to compare. It surfaced the moment a
+#: loop body was allowed to hold a decision, which is exactly when those rules matter most.
+_HOLDS_REGIONS = ("decision", "fork", "partition", "loop")
 
 
 def _parse(body: str) -> Node:
@@ -118,7 +127,7 @@ def _drawn_steps(node: Node) -> list[str]:
                 found.append(child.step_id)
             if child.kind == "step" and child.step_id:
                 found.append(child.step_id)
-            elif child.kind in ("decision", "fork", "partition", "loop"):
+            elif child.kind in _HOLDS_REGIONS:
                 found.extend(_drawn_steps(child))
     return found
 
@@ -129,7 +138,7 @@ def _reached_in(region: Region) -> set[str]:
     for child in region.nodes:
         if child.step_id and child.kind in ("step", "decision", "partition"):
             reached.add(child.step_id)
-        if child.kind in ("decision", "fork", "partition"):
+        if child.kind in _HOLDS_REGIONS:
             for inner in child.regions:
                 reached |= _reached_in(inner)
     return reached
@@ -141,7 +150,7 @@ def _find_construct(node: Node, kind: str, step_id: str | None) -> tuple[Node, R
         for child in region.nodes:
             if child.kind == kind and child.step_id == step_id:
                 return child, region
-            if child.kind in ("decision", "fork", "partition"):
+            if child.kind in _HOLDS_REGIONS:
                 found = _find_construct(child, kind, step_id)
                 if found:
                     return found
@@ -154,7 +163,7 @@ def _fork_nodes(node: Node) -> list[Node]:
         for child in region.nodes:
             if child.kind == "fork":
                 found.append(child)
-            if child.kind in ("decision", "fork", "partition"):
+            if child.kind in _HOLDS_REGIONS:
                 found.extend(_fork_nodes(child))
     return found
 
@@ -326,7 +335,7 @@ def _loop_conditions(tree: Node) -> set[str]:
                 # Only the last node of a loop is its condition; the rest are body steps.
                 body_nodes = [n for n in child.regions[-1].nodes if n.kind == "step" and n.step_id]
                 found = (found - {n.step_id for n in body_nodes[:-1] if n.step_id}) if body_nodes else found
-            if child.kind in ("decision", "fork", "partition", "loop"):
+            if child.kind in _HOLDS_REGIONS:
                 found |= _loop_conditions(child)
     return found
 
@@ -425,7 +434,7 @@ def _region_holding(node: Node, wanted: Node) -> Region | None:
         if wanted in region.nodes:
             return region
         for child in region.nodes:
-            if child.kind in ("decision", "fork", "partition"):
+            if child.kind in _HOLDS_REGIONS:
                 found = _region_holding(child, wanted)
                 if found is not None:
                     return found
@@ -479,7 +488,7 @@ class TestALoopIsDrawnAsALoop:
 
     def test_a_declared_cycle_is_drawn_as_a_repeat(self, shape: ActivityShape) -> None:
         body = shape.render()
-        loops, _refused = cycles_of(_graph_of(shape), start=_root_of(shape))
+        loops, _refused = cycles_of(_graph_of(shape), lane_of_step(shape.connections), start=_root_of(shape))
         if not loops:
             return
 
@@ -497,13 +506,19 @@ class TestALoopIsDrawnAsALoop:
         """The whole shape of a `repeat`: what runs each time is above the diamond, and what runs once
         the loop ends is below it. Reversing them is a picture that reads backwards."""
         body = shape.render()
-        loops, _refused = cycles_of(_graph_of(shape), start=_root_of(shape))
+        graph = _graph_of(shape)
+        loops, _refused = cycles_of(graph, lane_of_step(shape.connections), start=_root_of(shape))
         lines = body.splitlines()
 
         for loop in loops:
             condition_at = next(i for i, line in enumerate(lines) if line.startswith("repeat while ("))
             opened_at = next(i for i, line in enumerate(lines) if line.strip() == "repeat")
             for step_id in loop.body:
+                # A fork emits the bare `fork` keyword, which carries no label and no link, so there
+                # is no sentinel to find it by. Read through `LABELLED_STEP_KINDS` rather than naming
+                # the exception again here.
+                if graph.kind_of(step_id) not in LABELLED_STEP_KINDS:
+                    continue
                 drawn_at = next(
                     (i for i, line in enumerate(lines) if sentinel_of(line) == step_id), None
                 )
@@ -524,7 +539,7 @@ class TestALoopIsDrawnAsALoop:
         """`backward:` is what puts it on the returning arrow rather than in the forward chain, where
         it would read as running before the condition instead of after it."""
         body = shape.render()
-        loops, _refused = cycles_of(_graph_of(shape), start=_root_of(shape))
+        loops, _refused = cycles_of(_graph_of(shape), lane_of_step(shape.connections), start=_root_of(shape))
 
         for loop in loops:
             for step_id in loop.backward:
@@ -537,7 +552,7 @@ class TestALoopIsDrawnAsALoop:
         """It is consumed by the `repeat while` line. Drawing it as an `if` as well would put the same
         diamond in the picture twice — which the pass over unemitted steps would happily do."""
         body = shape.render()
-        loops, _refused = cycles_of(_graph_of(shape), start=_root_of(shape))
+        loops, _refused = cycles_of(_graph_of(shape), lane_of_step(shape.connections), start=_root_of(shape))
 
         for loop in loops:
             drawn = [line for line in body.splitlines() if sentinel_of(line) == loop.condition]

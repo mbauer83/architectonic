@@ -122,7 +122,11 @@ class TestItIsTheRenderersOwnDecision:
         more would reject diagrams the renderer draws correctly.
         """
         from src.diagram_types.activity._step_cycles import cycles_of  # noqa: PLC0415
-        from src.diagram_types.activity._step_graph import entry_step, graph_from_declarations  # noqa: PLC0415
+        from src.diagram_types.activity._step_graph import (  # noqa: PLC0415
+            entry_step,
+            graph_from_declarations,
+            lane_of_step,
+        )
 
         entities = {**_RETRY_ENTITIES, "action": [*_RETRY_ENTITIES["action"], _step("log")]}
         edges = [
@@ -131,7 +135,7 @@ class TestItIsTheRenderersOwnDecision:
             _edge("step-flow", "log", "wait"),
         ]
         graph = graph_from_declarations(entities, edges)
-        _loops, refused = cycles_of(graph, start=entry_step(graph))
+        _loops, refused = cycles_of(graph, lane_of_step(edges), start=entry_step(graph))
 
         issues = _run(entities, edges)
 
@@ -238,10 +242,11 @@ class TestEveryDeclaredCycleIsSeen:
         from src.diagram_types.activity._step_graph import (  # noqa: PLC0415
             entry_step,
             graph_from_declarations,
+            lane_of_step,
         )
 
         graph = graph_from_declarations(entities, connections)
-        loops, refused = cycles_of(graph, start=entry_step(graph))
+        loops, refused = cycles_of(graph, lane_of_step(connections), start=entry_step(graph))
         return len(loops), len(refused)
 
     def test_a_return_declared_as_the_merge_edge_is_seen(self) -> None:

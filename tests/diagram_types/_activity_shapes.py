@@ -154,6 +154,59 @@ A_LOOP_DECLARED_FROM_ITS_MIDDLE = ActivityShape(
     connections=[flow("attempt", "ok"), then("ok", "accept"), otherwise("ok", "wait"), flow("wait", "attempt")],
 )
 
+A_LOOP_WHOSE_BODY_HOLDS_A_DECISION = ActivityShape(
+    name="a loop whose body holds a decision",
+    exercises=(
+        "The ordinary retry shape: a loop whose body branches. Refused until the acceptance "
+        "criterion described the region the emitter walks rather than a single-successor chain. "
+        "Lanes are declared and the whole cycle sits in one of them, which is what keeps the way "
+        "back off the steps it returns past."
+    ),
+    entities={
+        "action": actions(receive="receive the request", attempt="attempt the write",
+                          repair="repair the input", ignore="carry on regardless",
+                          wait="back off", accept="accept it"),
+        "decision": [decision("recoverable", "can it be repaired"),
+                     decision("ok", "did it succeed")],
+        "swimlane": [{"id": "lane_caller", "label": "Caller"},
+                     {"id": "lane_service", "label": "Service"}],
+    },
+    connections=[
+        flow("receive", "attempt"), flow("attempt", "recoverable"),
+        then("recoverable", "repair"), otherwise("recoverable", "ignore"),
+        flow("recoverable", "ok"),
+        then("ok", "accept"), otherwise("ok", "wait"), flow("wait", "attempt"),
+        in_lane("receive", "lane_caller"), in_lane("accept", "lane_caller"),
+        *[in_lane(step, "lane_service")
+          for step in ("attempt", "recoverable", "repair", "ignore", "ok", "wait")],
+    ],
+)
+
+A_FORK_INSIDE_A_LOOP_BODY = ActivityShape(
+    name="a fork inside a loop body",
+    exercises=(
+        "The body of a loop is walked as a region, so it may hold any structured construct and not "
+        "only a decision. Kept because the criterion was widened to allow it, and a shape the "
+        "product newly draws needs its picture checked as much as one it always drew."
+    ),
+    entities={
+        "action": actions(attempt="attempt the write", measure="measure the result",
+                          sample="sample the log", wait="back off", accept="accept it"),
+        "decision": [decision("ok", "did it succeed")],
+        "fork": [{"id": "split"}],
+        "swimlane": [{"id": "lane_caller", "label": "Caller"},
+                     {"id": "lane_service", "label": "Service"}],
+    },
+    connections=[
+        branch("split", "measure"), branch("split", "sample"),
+        flow("attempt", "split"), flow("measure", "ok"), flow("sample", "ok"),
+        then("ok", "accept"), otherwise("ok", "wait"), flow("wait", "attempt"),
+        in_lane("accept", "lane_caller"),
+        *[in_lane(step, "lane_service")
+          for step in ("attempt", "split", "measure", "sample", "ok", "wait")],
+    ],
+)
+
 TWO_DISCONNECTED_CHAINS = ActivityShape(
     name="two disconnected chains",
     exercises="Two chains with no edge between them — both are declared, so both are drawn.",
@@ -327,6 +380,8 @@ CATALOGUE: tuple[ActivityShape, ...] = (
     FORK_CONVERGES_ON_AN_ACTION,
     A_STEP_GRAPH_THAT_LOOPS,
     A_LOOP_DECLARED_FROM_ITS_MIDDLE,
+    A_LOOP_WHOSE_BODY_HOLDS_A_DECISION,
+    A_FORK_INSIDE_A_LOOP_BODY,
     TWO_DISCONNECTED_CHAINS,
     CROSS_LEVEL_CONVERGENCE,
     CROSS_LEVEL_CONVERGENCE_ACROSS_LANES,

@@ -22,7 +22,7 @@ from typing import Any
 import pytest
 
 from src.diagram_types.activity._step_cycles import cycles_of
-from src.diagram_types.activity._step_graph import entry_step, graph_from_declarations
+from src.diagram_types.activity._step_graph import entry_step, graph_from_declarations, lane_of_step
 
 
 def _step(step_id: str, kind: str = "action") -> dict[str, Any]:
@@ -38,12 +38,20 @@ def _edge(conn_type: str, source: str, target: str) -> dict[str, str]:
 
 
 def _declare(actions: tuple[str, ...] = (), decisions: tuple[str, ...] = (),
-             edges: tuple[dict[str, str], ...] = ()) -> tuple[dict[str, Any], list[dict[str, str]]]:
-    return (
-        {"action": [_step(i) for i in actions],
-         "decision": [_step(i, "decision") for i in decisions]},
-        list(edges),
-    )
+             edges: tuple[dict[str, str], ...] = (),
+             lanes: tuple[str, ...] = (),
+             forks: tuple[str, ...] = ()) -> tuple[dict[str, Any], list[dict[str, str]]]:
+    """The declarations for one shape. *lanes* names the swimlanes; a step's lane is declared by a
+    `step-in-lane` edge in *edges*, like any other placement."""
+    entities: dict[str, Any] = {
+        "action": [_step(i) for i in actions],
+        "decision": [_step(i, "decision") for i in decisions],
+    }
+    if lanes:
+        entities["swimlane"] = [{"id": i, "label": i} for i in lanes]
+    if forks:
+        entities["fork"] = [{"id": i} for i in forks]
+    return (entities, list(edges))
 
 
 #: `(name, exercises, declarations, expected)` where expected is `"drawn"` or `"refused"`.
@@ -112,13 +120,81 @@ SHAPES: tuple[tuple[str, str, tuple[dict[str, Any], list[dict[str, str]]], str],
     ),
     (
         "a loop whose body holds a decision",
-        "the ordinary retry shape, and the one PlantUML draws correctly while we did not",
+        "the ordinary retry shape. Refused until the criterion described the region the emitter "
+        "walks rather than a single-successor chain; PlantUML draws it correctly",
         _declare(("start", "attempt", "fix", "skip", "wait", "done"), ("inner", "ok"), (
             _edge("step-flow", "start", "attempt"), _edge("step-flow", "attempt", "inner"),
             _edge("step-then", "inner", "fix"), _edge("step-else", "inner", "skip"),
             _edge("step-flow", "inner", "ok"),
             _edge("step-then", "ok", "done"), _edge("step-else", "ok", "wait"),
             _edge("step-flow", "wait", "attempt"))),
+        "drawn",
+    ),
+    (
+        "a loop whose body holds a decision, all of it in one lane",
+        "the same shape with lanes declared: confined to one lane it still draws",
+        _declare(("start", "attempt", "fix", "skip", "wait", "done"), ("inner", "ok"), (
+            _edge("step-flow", "start", "attempt"), _edge("step-flow", "attempt", "inner"),
+            _edge("step-then", "inner", "fix"), _edge("step-else", "inner", "skip"),
+            _edge("step-flow", "inner", "ok"),
+            _edge("step-then", "ok", "done"), _edge("step-else", "ok", "wait"),
+            _edge("step-flow", "wait", "attempt"),
+            _edge("step-in-lane", "start", "lane_a"), _edge("step-in-lane", "done", "lane_a"),
+            _edge("step-in-lane", "attempt", "lane_b"), _edge("step-in-lane", "inner", "lane_b"),
+            _edge("step-in-lane", "fix", "lane_b"), _edge("step-in-lane", "skip", "lane_b"),
+            _edge("step-in-lane", "ok", "lane_b"), _edge("step-in-lane", "wait", "lane_b")),
+            lanes=("lane_a", "lane_b")),
+        "drawn",
+    ),
+    (
+        "a loop inside a loop",
+        "two nested loops are ONE strongly connected component, so every step is accounted for "
+        "inside the outer shape and the inner way back is drawn nowhere. Found by auditing what the "
+        "region-walk criterion newly accepted, not by a failing test",
+        _declare(("start", "outer", "inner_a", "wait_i", "wait_o", "done"), ("ci", "co"), (
+            _edge("step-flow", "start", "outer"), _edge("step-flow", "outer", "inner_a"),
+            _edge("step-flow", "inner_a", "ci"),
+            _edge("step-else", "ci", "wait_i"), _edge("step-flow", "wait_i", "inner_a"),
+            _edge("step-then", "ci", "co"),
+            _edge("step-then", "co", "done"), _edge("step-else", "co", "wait_o"),
+            _edge("step-flow", "wait_o", "outer"))),
+        "refused",
+    ),
+    (
+        "a body arm reaching the step after the loop",
+        "the region walk follows the arm out and draws what comes after the loop inside it, so the "
+        "picture runs those steps on every pass and shows no exit. Also found by audit",
+        _declare(("start", "attempt", "fix", "bail", "wait", "done"), ("inner", "ok"), (
+            _edge("step-flow", "start", "attempt"), _edge("step-flow", "attempt", "inner"),
+            _edge("step-then", "inner", "fix"), _edge("step-else", "inner", "bail"),
+            _edge("step-flow", "inner", "ok"), _edge("step-flow", "bail", "done"),
+            _edge("step-then", "ok", "done"), _edge("step-else", "ok", "wait"),
+            _edge("step-flow", "wait", "attempt"))),
+        "refused",
+    ),
+    (
+        "a fork inside a loop body",
+        "the body region may hold any structured construct, not only a decision",
+        _declare(("start", "attempt", "p1", "p2", "wait", "done"), ("ok",), (
+            _edge("step-flow", "start", "attempt"), _edge("step-flow", "attempt", "split"),
+            _edge("step-fork-branch", "split", "p1"), _edge("step-fork-branch", "split", "p2"),
+            _edge("step-flow", "p1", "ok"), _edge("step-flow", "p2", "ok"),
+            _edge("step-then", "ok", "done"), _edge("step-else", "ok", "wait"),
+            _edge("step-flow", "wait", "attempt")), forks=("split",)),
+        "drawn",
+    ),
+    (
+        "a loop spanning two swimlanes",
+        "measured: a repeat crossing a lane draws its way back through the boxes it returns past, "
+        "terminating inside the header instead of at its edge. The same shape in one lane is clean",
+        _declare(("start", "attempt", "wait", "done"), ("ok",), (
+            _edge("step-flow", "start", "attempt"), _edge("step-flow", "attempt", "ok"),
+            _edge("step-then", "ok", "done"), _edge("step-else", "ok", "wait"),
+            _edge("step-flow", "wait", "attempt"),
+            _edge("step-in-lane", "start", "lane_a"), _edge("step-in-lane", "attempt", "lane_a"),
+            _edge("step-in-lane", "ok", "lane_b"), _edge("step-in-lane", "wait", "lane_a"),
+            _edge("step-in-lane", "done", "lane_b")),
+            lanes=("lane_a", "lane_b")),
         "refused",
     ),
 )
@@ -150,7 +226,7 @@ ACYCLIC: tuple[tuple[str, tuple[dict[str, Any], list[dict[str, str]]]], ...] = (
 def _outcome(declarations: tuple[dict[str, Any], list[dict[str, str]]]) -> tuple[int, int]:
     entities, connections = declarations
     graph = graph_from_declarations(entities, connections)
-    loops, refused = cycles_of(graph, start=entry_step(graph))
+    loops, refused = cycles_of(graph, lane_of_step(connections), start=entry_step(graph))
     return len(loops), len(refused)
 
 
@@ -179,7 +255,7 @@ def test_a_refusal_says_why(
         pytest.skip("this shape is drawn")
     entities, connections = declarations
     graph = graph_from_declarations(entities, connections)
-    _loops, refused = cycles_of(graph, start=entry_step(graph))
+    _loops, refused = cycles_of(graph, lane_of_step(connections), start=entry_step(graph))
 
     assert refused[0].reason.strip(), name
     assert refused[0].steps, f"{name}: a refusal names the steps it is about"

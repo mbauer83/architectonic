@@ -13,7 +13,7 @@ from src.domain.diagrams.diagram_verification import BaseDiagramVerificationCont
 
 from ._edge_collisions import colliding_declarations
 from ._step_cycles import cycles_of
-from ._step_graph import STEP_KEYS, entry_step, graph_from_declarations
+from ._step_graph import STEP_KEYS, entry_step, graph_from_declarations, lane_of_step
 from ._step_links import (
     LABELLED_STEP_KINDS,
     drawn_step_counts,
@@ -230,13 +230,14 @@ class _CycleRefusalContribution:
         connections = ctx.fm.get("connections")
         if not isinstance(entities, dict) or not isinstance(connections, list):
             return
-        graph = graph_from_declarations(entities, [c for c in connections if isinstance(c, dict)])
+        declared = [c for c in connections if isinstance(c, dict)]
+        graph = graph_from_declarations(entities, declared)
         if not graph.step_by_id:
             return
         # The same entry the renderer walks from. Which step a cycle is *entered* at is a choice, and
         # a different choice can turn a drawable loop into a refused one — so asking with a second
         # entry would report cycles the picture does not have.
-        _loops, refused = cycles_of(graph, start=entry_step(graph))
+        _loops, refused = cycles_of(graph, lane_of_step(declared), start=entry_step(graph))
         for cycle in refused:
             result.issues.append(Issue(
                 Severity.WARNING,
