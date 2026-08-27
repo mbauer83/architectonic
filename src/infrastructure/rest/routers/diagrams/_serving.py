@@ -99,7 +99,7 @@ def _lensed_body(
     )
     from src.application.viewpoints.diagram_reading_lens import apply_reading_lens  # noqa: PLC0415
     from src.application.viewpoints.placed_occurrences import (  # noqa: PLC0415
-        resolve_placed_connections,
+        placed_connection_triples,
         resolve_placed_entities,
     )
     from src.infrastructure.rendering.diagram_legend_for_reading import (  # noqa: PLC0415
@@ -139,7 +139,8 @@ def _lensed_body(
     # The legend composes over the lensed body rather than being woven into it: it is appended, and
     # keeping it a second step is what lets a reader ask for one on an otherwise untouched diagram.
     notation = notation_in_use(
-        [connection.conn_type for connection in resolve_placed_connections(dict(diag_rec.extra), registry)],
+        body,
+        placed_connection_triples(dict(diag_rec.extra), registry),
         repo_root=repo_root,
         relation_notations=catalogs.connections.all_relation_notations(),
     )
@@ -149,6 +150,7 @@ def _lensed_body(
         declarations=notation.declarations,
         members=palette,
         connection_notations=notation.connection_notations,
+        nested_types=notation.nested_types,
     )
 
 

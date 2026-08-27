@@ -61,6 +61,11 @@ _MARKER_GLYPHS: Mapping[str, str] = {
 #: The line itself, three characters wide so the style is readable at a glance.
 _LINE_GLYPHS: Mapping[str, str] = {"solid": "───", "dashed": "╌╌╌", "dotted": "┈┈┈"}
 
+#: One element drawn inside another. Chosen by rendering the candidates and looking: a filled square
+#: within a square reads as containment, where two adjacent squares read as two elements and an
+#: overlap glyph reads as overlap.
+_NESTING_GLYPH = "▣"
+
 
 def readable_label(name: str) -> str:
     """A declaration's key as a reader reads it.
@@ -182,3 +187,23 @@ def notations_referenced_in(body: str, declarations: ArchimateDeclarations) -> d
     referenced = declarations.referenced_in(body)
     found = ((name, declarations.notation_of(name)) for name in referenced.stereotypes)
     return {name: notation for name, notation in found if notation is not None}
+
+
+def nesting_rows(nested_types: Sequence[str]) -> tuple[LegendRow, ...]:
+    """The containment section: what an element drawn inside another means.
+
+    **One row, whatever is nested.** PlantUML draws composition and aggregation identically as
+    containment, so the picture gives a reader no way to tell which of them a nesting is. A row per
+    type would put the same mark twice against different meanings and imply a distinction the drawing
+    does not carry, so the mark is stated once and the row names what it may be.
+
+    That is also the honest answer to "why both": the *model* distinguishes them — a composed part
+    cannot exist without its whole, an aggregated one can — and the *drawing* does not.
+    """
+    if not nested_types:
+        return ()
+    meanings = ", ".join(sorted(readable_label(name) for name in set(nested_types)))
+    return (
+        _heading("nesting", "relationship"),
+        LegendRow((LegendCell(text=_NESTING_GLYPH), LegendCell(text=meanings))),
+    )

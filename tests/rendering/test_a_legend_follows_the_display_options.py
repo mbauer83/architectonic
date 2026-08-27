@@ -23,6 +23,8 @@ from src.infrastructure.rendering.diagram_legend_for_reading import (
     body_with_reading_legend,
     can_explain_notation,
     notation_in_use,
+    types_drawn_as_lines,
+    types_drawn_as_nesting,
 )
 
 _STEREOTYPES = """\
@@ -36,6 +38,16 @@ skinparam rectangle<<capability>> {
 _BODY = """\
 @startuml
 rectangle "Plan" <<capability>> as plan
+@enduml
+"""
+
+#: The same, drawing one edge — `notation_in_use` reads the body to decide which types are lines, so a
+#: body with no edge legitimately yields no relationship rows.
+_BODY_WITH_EDGE = """\
+@startuml
+rectangle "Plan" <<capability>> as plan
+rectangle "Build" <<capability>> as build
+plan --> build
 @enduml
 """
 
@@ -153,18 +165,19 @@ class TestTheOfferAndTheLegendReadOneNotation:
 
     def test_a_diagram_offered_the_control_gets_a_legend_with_rows(self, tmp_path: Path) -> None:
         notation = notation_in_use(
-            ["archimate-triggering"],
+            _BODY_WITH_EDGE,
+            (("archimate-triggering", "plan", "build"),),
             repo_root=tmp_path,
             relation_notations={"archimate-triggering": {"line": "solid", "target": "filled-arrow"}},
         )
 
         offered = can_explain_notation(
-            _BODY,
+            _BODY_WITH_EDGE,
             declarations=notation.declarations,
             connection_notations=notation.connection_notations,
         )
         lines = _legend_of(body_with_reading_legend(
-            _BODY,
+            _BODY_WITH_EDGE,
             lens=ReadingLens(legend=True),
             declarations=notation.declarations,
             connection_notations=notation.connection_notations,
@@ -176,8 +189,8 @@ class TestTheOfferAndTheLegendReadOneNotation:
     def test_a_diagram_with_no_notation_is_offered_nothing_and_gets_nothing(self, tmp_path: Path) -> None:
         """An empty repository declares no stereotypes, and no connection is placed — which is the
         activity diagram's case, and the one that must withhold the control."""
-        notation = notation_in_use([], repo_root=tmp_path, relation_notations={})
         bare = "@startuml\n:step;\n@enduml\n"
+        notation = notation_in_use(bare, (), repo_root=tmp_path, relation_notations={})
 
         offered = can_explain_notation(
             bare, declarations=notation.declarations, connection_notations=notation.connection_notations
@@ -196,9 +209,147 @@ class TestTheOfferAndTheLegendReadOneNotation:
         """Passed in, not resolved here. A connection type the caller does not describe gets no row,
         rather than this module reaching for a catalog it has no business knowing about."""
         notation = notation_in_use(
-            ["archimate-triggering", "archimate-flow"],
+            _BODY_WITH_EDGE,
+            (("archimate-triggering", "plan", "build"), ("archimate-flow", "plan", "build")),
             repo_root=tmp_path,
             relation_notations={"archimate-triggering": {"line": "solid", "target": "filled-arrow"}},
         )
 
         assert set(notation.connection_notations) == {"archimate-triggering"}
+
+
+class TestOnlyTheMarksThePictureUses:
+    """A relationship the body draws by *nesting* is not a line, and must not be given a line row.
+
+    PlantUML draws composition and aggregation as containment, and this project's ontology classes
+    both as `nesting`, so the renderer puts the child inside the parent and emits no arrow at all. The
+    legend read its relationship rows from the **model's** recorded connections, so it drew a filled
+    diamond for composition and a hollow one for aggregation beside a picture containing neither —
+    which is worse than omitting them, because a reader looks for a mark that is not there.
+
+    Reported on `promote-artifacts`, whose body nests eight functions inside one process and draws
+    exactly two arrow shapes: eleven `-->` and one `..|>`.
+
+    **Nesting is a proposal, not an instruction** — `build_visual_nesting` honours a structural edge
+    only where it keeps the drawing a forest, and the rest stay arrows. So the answer cannot be "drop
+    the nesting-class types": it has to be what this body did, which is why it is read from the body.
+    """
+
+    _NESTED = """\
+@startuml x
+rectangle "Whole" <<capability>> as PRC_a {
+rectangle "Part" <<capability>> as FNC_b
+}
+' Connections
+PRC_a --> FNC_c
+@enduml
+"""
+
+    def test_a_relationship_drawn_only_by_nesting_gets_no_line_row(self) -> None:
+        drawn = types_drawn_as_lines(
+            self._NESTED,
+            connections=(("archimate-composition", "PRC_a", "FNC_b"),),
+        )
+
+        assert drawn == frozenset()
+
+    def test_a_relationship_drawn_as_an_arrow_keeps_its_line_row(self) -> None:
+        drawn = types_drawn_as_lines(
+            self._NESTED,
+            connections=(("archimate-triggering", "PRC_a", "FNC_c"),),
+        )
+
+        assert drawn == frozenset({"archimate-triggering"})
+
+    def test_a_type_with_one_nested_and_one_drawn_connection_keeps_its_row(self) -> None:
+        """Because nesting is a proposal: a second parent cannot be nested and stays an arrow, so the
+        type *is* in the picture as a line and a reader needs to know what it looks like."""
+        drawn = types_drawn_as_lines(
+            self._NESTED,
+            connections=(
+                ("archimate-composition", "PRC_a", "FNC_b"),
+                ("archimate-composition", "PRC_a", "FNC_c"),
+            ),
+        )
+
+        assert drawn == frozenset({"archimate-composition"})
+
+    def test_a_connection_the_body_draws_nowhere_gets_no_row(self) -> None:
+        """Silence is not a line. An undrawn connection is a verification concern, and giving it a
+        legend row would explain a mark the reader cannot find."""
+        drawn = types_drawn_as_lines(
+            self._NESTED,
+            connections=(("archimate-serving", "PRC_a", "FNC_zzz"),),
+        )
+
+        assert drawn == frozenset()
+
+    def test_a_layout_link_is_not_a_line(self) -> None:
+        body = "@startuml x\nrectangle A as A\nrectangle B as B\nA -[hidden]down- B\n@enduml\n"
+
+        drawn = types_drawn_as_lines(body, connections=(("archimate-triggering", "A", "B"),))
+
+        assert drawn == frozenset()
+
+
+class TestNestingIsExplainedToo:
+    """Nesting is a mark the picture uses, so a legend that omits it is incomplete.
+
+    Dropping the false line rows for composition and aggregation left the containment they are actually
+    drawn as unexplained — the reader now sees no wrong mark and still has nothing telling them that a
+    box inside a box *is* a relationship.
+
+    **One row, not one per type.** The drawing is identical for both: `promote-artifacts` composes
+    seven of its functions and aggregates the eighth, and nothing in the picture distinguishes them. A
+    row each would imply a reader could tell which is which, so the mark is stated once and names what
+    it may be.
+    """
+
+    _NESTED = """\
+@startuml x
+rectangle "Whole" <<capability>> as PRC_a {
+rectangle "Part" <<capability>> as FNC_b
+rectangle "Other" <<capability>> as FNC_c
+}
+@enduml
+"""
+
+    def test_a_nested_relationship_is_reported_as_nesting(self) -> None:
+        assert types_drawn_as_nesting(
+            self._NESTED, connections=(("archimate-composition", "PRC_a", "FNC_b"),)
+        ) == frozenset({"archimate-composition"})
+
+    def test_a_relationship_drawn_as_a_line_is_not_nesting(self) -> None:
+        body = "@startuml x\nrectangle A as A\nrectangle B as B\nA --> B\n@enduml\n"
+
+        assert types_drawn_as_nesting(
+            body, connections=(("archimate-triggering", "A", "B"),)
+        ) == frozenset()
+
+    def test_a_connection_drawn_nowhere_is_not_nesting(self) -> None:
+        assert types_drawn_as_nesting(
+            self._NESTED, connections=(("archimate-serving", "PRC_a", "FNC_zzz"),)
+        ) == frozenset()
+
+    def test_the_legend_names_both_types_on_one_row_where_both_are_nested(
+        self, declarations: ArchimateDeclarations
+    ) -> None:
+        lines = _legend_of(body_with_reading_legend(
+            self._NESTED,
+            lens=ReadingLens(legend=True),
+            declarations=declarations,
+            nested_types=("archimate-composition", "archimate-aggregation"),
+        ))
+
+        nesting = [line for line in lines if "\u25a3" in line]
+        assert len(nesting) == 1
+        assert "composition" in nesting[0] and "aggregation" in nesting[0]
+
+    def test_a_diagram_that_nests_nothing_gets_no_nesting_section(
+        self, declarations: ArchimateDeclarations
+    ) -> None:
+        lines = _legend_of(body_with_reading_legend(
+            _BODY, lens=ReadingLens(legend=True), declarations=declarations, nested_types=()
+        ))
+
+        assert not any("\u25a3" in line for line in lines)

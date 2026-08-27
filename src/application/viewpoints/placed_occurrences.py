@@ -40,3 +40,27 @@ def resolve_placed_connections(fm: dict, registry: ArtifactRegistry) -> tuple[Co
         if registry.get_entity(connection.source) is not None and registry.get_entity(connection.target) is not None:
             resolved.append(connection)
     return tuple(resolved)
+
+
+def placed_connection_triples(
+    fm: dict, registry: ArtifactRegistry
+) -> tuple[tuple[str, str, str], ...]:
+    """Each recorded connection as `(connection_type, source_alias, target_alias)`.
+
+    The aliases are what a PUML body names its endpoints by, so this is the form anything comparing a
+    recorded connection against a drawn one needs — which is how the legend decides whether a
+    relationship is drawn as a line or as containment.
+
+    Assembled here, beside `resolve_placed_connections`, because both answer "what does this diagram
+    record" and the alias is the endpoint entity's own `display_alias`. A caller pairing the two by
+    hand would be a second reading of that correspondence.
+    """
+    triples: list[tuple[str, str, str]] = []
+    for connection in resolve_placed_connections(fm, registry):
+        source = registry.get_entity(connection.source)
+        target = registry.get_entity(connection.target)
+        source_alias = getattr(source, "display_alias", "") or ""
+        target_alias = getattr(target, "display_alias", "") or ""
+        if source_alias and target_alias:
+            triples.append((connection.conn_type, source_alias, target_alias))
+    return tuple(triples)

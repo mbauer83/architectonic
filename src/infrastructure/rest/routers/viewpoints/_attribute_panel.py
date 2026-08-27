@@ -73,7 +73,7 @@ def _can_explain(diag_rec: Any, repo_root: Path, catalogs: RuntimeCatalogs) -> b
     Read from the body, because the body's preamble is what the renderer is handed — the same reason
     the legend itself reads it there rather than deriving it from today's ontology.
     """
-    from src.application.viewpoints.placed_occurrences import resolve_placed_connections  # noqa: PLC0415
+    from src.application.viewpoints.placed_occurrences import placed_connection_triples  # noqa: PLC0415
     from src.infrastructure.rendering.diagram_legend_for_reading import (  # noqa: PLC0415
         can_explain_notation,
         notation_in_use,
@@ -83,15 +83,18 @@ def _can_explain(diag_rec: Any, repo_root: Path, catalogs: RuntimeCatalogs) -> b
     if not diag_rec.path.exists():
         return False
     _, registry, _ = s.get_write_deps(catalogs)
+    body = parse_diagram_file(diag_rec.path).puml_body
     notation = notation_in_use(
-        [c.conn_type for c in resolve_placed_connections(dict(diag_rec.extra), registry)],
+        body,
+        placed_connection_triples(dict(diag_rec.extra), registry),
         repo_root=repo_root,
         relation_notations=catalogs.connections.all_relation_notations(),
     )
     return can_explain_notation(
-        parse_diagram_file(diag_rec.path).puml_body,
+        body,
         declarations=notation.declarations,
         connection_notations=notation.connection_notations,
+        nested_types=notation.nested_types,
     )
 
 
