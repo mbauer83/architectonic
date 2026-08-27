@@ -1,4 +1,4 @@
-"""Activity per-diagram verification contributions (W045, W047, W048, W049).
+"""Activity per-diagram verification contributions (W045, W047, W048, W049, W050).
 
 Wrapped as a `DiagramVerificationContribution` so the central verifier imports no activity symbol:
 what counts as a drawn step is the activity module's question, and only this module knows that a
@@ -13,8 +13,13 @@ from src.domain.diagrams.diagram_verification import BaseDiagramVerificationCont
 
 from ._edge_collisions import colliding_declarations
 from ._step_cycles import cycles_of
-from ._step_graph import entry_step, graph_from_declarations
-from ._step_links import LABELLED_STEP_KINDS, drawn_step_ids, sentinel_target
+from ._step_graph import STEP_KEYS, entry_step, graph_from_declarations
+from ._step_links import (
+    LABELLED_STEP_KINDS,
+    drawn_step_counts,
+    drawn_step_ids,
+    sentinel_target,
+)
 
 
 class _StepCoverageContribution:
@@ -243,7 +248,92 @@ class _CycleRefusalContribution:
             ))
 
 
+
+class _OverDrawnStepContribution:
+    """W050 — a step the picture draws more often than the model gives it ways in.
+
+    Repetition is not by itself wrong. Where two arms reach a step at different nesting depths and no
+    single structured placement covers both, the walk draws it in each: that is how a reader sees that
+    both paths reach it, and the connector alternative was rejected because an unlabelled circle
+    resolves to no artifact. What is wrong is repetition **beyond the arrivals**.
+
+    A *partition* reached from several decision arms is inlined once per arm, and inlining a block
+    multiplies its contents: each contained step has one arrival — the chain inside the block — and is
+    drawn once per arm. Measured on a three-step block reached from three arms: 21 steps drawn for 13
+    declared, and every existing rule passed.
+
+    **The bound already existed and could not see this.** The golden-shape tests state exactly it — a
+    step is drawn no more often than the model gives it ways in — over a fixed catalogue of shapes.
+    That catalogue holds nothing converging on a partition, so the bound was true of everything it was
+    asked about and blind to everything else. Here it is asked of any diagram.
+
+    Counts come from `drawn_step_counts`, the one reader of a drawn line's sentinel, so "is it drawn"
+    and "how often" cannot disagree. A step with no arrival is still drawn once legitimately — it heads
+    an orphan chain, which the coverage contract permits — so the bound is `max(arrivals, 1)`.
+
+    A warning: a repository holding one verifies clean today, the diagram renders, and the remedy is an
+    authoring or layout decision rather than a mechanical fix.
+    """
+
+    diagnostic_codes: tuple[str, ...] = ("W050",)
+
+    def run(self, candidate: Any, ctx: BaseDiagramVerificationContext, result: Any) -> None:
+        del candidate
+        if not ctx.body:
+            return
+        from src.domain.verification_findings import Issue, Severity  # noqa: PLC0415
+
+        entities = ctx.fm.get("diagram-entities")
+        if not isinstance(entities, dict):
+            return
+        declared = {
+            str(step.get("id"))
+            for key in STEP_KEYS
+            for step in (entities.get(key) or [])
+            if isinstance(step, dict) and step.get("id")
+        }
+        arrivals = _arrivals_per_step(ctx.fm)
+        drawn = drawn_step_counts(ctx.body)
+        for step_id in sorted(declared):
+            times = drawn.get(step_id, 0)
+            allowed = max(arrivals.get(step_id, 0), 1)
+            if times <= allowed:
+                continue
+            result.issues.append(Issue(
+                Severity.WARNING,
+                "W050",
+                f"Step '{step_id}' is drawn {times} times and the model reaches it {allowed} "
+                f"{'way' if allowed == 1 else 'ways'}. A step is drawn once per arrival the drawing "
+                f"cannot converge; more than that means a block was inlined per arrival, so its whole "
+                f"contents repeat. Give the arrivals one convergence point, or take the shared steps "
+                f"out of the block.",
+                ctx.loc,
+            ))
+
+
+#: The connection types by which control arrives at a step. `step-in-lane` and `step-note-of` are
+#: absent because neither carries control: a lane assignment says where a step is drawn and a note
+#: says what annotates it.
+_ARRIVING_TYPES = ("step-flow", "step-then", "step-else", "step-fork-branch", "step-contains")
+
+
+def _arrivals_per_step(fm: dict[str, Any]) -> dict[str, int]:
+    """How many ways the model gives control into each step."""
+    connections = fm.get("connections")
+    if not isinstance(connections, list):
+        return {}
+    counts: dict[str, int] = {}
+    for item in connections:
+        if not isinstance(item, dict) or item.get("conn_type") not in _ARRIVING_TYPES:
+            continue
+        target = str(item.get("target") or "")
+        if target:
+            counts[target] = counts.get(target, 0) + 1
+    return counts
+
+
 STEP_COVERAGE_CONTRIBUTION = _StepCoverageContribution()
 MERGE_TARGET_CONTRIBUTION = _MergeTargetContribution()
 EDGE_COLLISION_CONTRIBUTION = _EdgeCollisionContribution()
 CYCLE_REFUSAL_CONTRIBUTION = _CycleRefusalContribution()
+OVER_DRAWN_STEP_CONTRIBUTION = _OverDrawnStepContribution()

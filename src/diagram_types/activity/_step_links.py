@@ -10,6 +10,7 @@ Extracted from ``renderer.py`` to keep it under the project's LoC limit.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any
 
 from src.infrastructure.rendering.puml_text_escaping import puml_line_text
@@ -130,24 +131,38 @@ def _is_lane_header(line: str) -> bool:
     return len(stripped) > 1 and stripped.startswith("|") and stripped.endswith("|")
 
 
+def drawn_step_counts(body: str) -> Mapping[str, int]:
+    """How many times the body draws each **step**, read off the sentinel each drawn line carries.
+
+    Counts rather than presence, because the two answer different questions and only one of them was
+    being asked. W045 asks whether a declared step is drawn *at all*; nothing asked whether it is drawn
+    more often than the model gives it ways in — and a partition reached from three decision arms is
+    inlined three times, so a three-step block became nine drawn steps with nothing reporting it.
+
+    Lane headers are excluded, and the exclusion is the point: since a bound lane became selectable it
+    carries a sentinel too, and counting a lane as a step would make the step question unanswerable.
+    Read apart here rather than by each caller, because one syntax gets one reader.
+    """
+    counts: dict[str, int] = {}
+    for line in body.splitlines():
+        if _is_lane_header(line):
+            continue
+        sentinel = sentinel_of(line)
+        if sentinel:
+            counts[sentinel] = counts.get(sentinel, 0) + 1
+    return counts
+
+
 def drawn_step_ids(body: str) -> frozenset[str]:
-    """Every **step** the body draws, read off the sentinel each drawn line carries.
+    """Every **step** the body draws.
 
     A step drawn once and reached from elsewhere by a connector appears once: the connector line
     carries no sentinel of its own, only the line that draws the step does.
 
-    Lane headers are excluded, and the exclusion is the point: since a bound lane became selectable
-    it carries a sentinel too, and W045 asks whether every declared *step* is drawn. Counting a lane
-    as a step would make that question unanswerable — the two are read apart here rather than by each
-    caller, because one syntax gets one reader.
+    Derived from `drawn_step_counts` so the sentinel reading has one implementation; a caller asking
+    "is it drawn" and one asking "how often" must not be able to disagree.
     """
-    return frozenset(
-        sentinel
-        for line in body.splitlines()
-        if not _is_lane_header(line)
-        for sentinel in (sentinel_of(line),)
-        if sentinel
-    )
+    return frozenset(drawn_step_counts(body))
 
 
 def drawn_lane_ids(body: str) -> frozenset[str]:

@@ -81,6 +81,7 @@ class _ActivityDiagramType(DiagramTypeBase):
             CYCLE_REFUSAL_CONTRIBUTION,
             EDGE_COLLISION_CONTRIBUTION,
             MERGE_TARGET_CONTRIBUTION,
+            OVER_DRAWN_STEP_CONTRIBUTION,
             STEP_COVERAGE_CONTRIBUTION,
         )
 
@@ -89,6 +90,7 @@ class _ActivityDiagramType(DiagramTypeBase):
             MERGE_TARGET_CONTRIBUTION,
             EDGE_COLLISION_CONTRIBUTION,
             CYCLE_REFUSAL_CONTRIBUTION,
+            OVER_DRAWN_STEP_CONTRIBUTION,
         )
 
     def write_guidance(self) -> DiagramTypeWriteGuidance:
