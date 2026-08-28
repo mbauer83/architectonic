@@ -144,6 +144,83 @@ def token_color(token: str) -> str:
     return STYLE_TOKEN_COLORS.get(token, STYLE_TOKEN_COLORS["neutral"])
 
 
+#: The colour an *unset* member takes: the value a schema declares as its `default`, which is what a
+#: reader sees on an entity nobody has assessed. White rather than a point on the gradient, because
+#: "not assessed" is not a low reading — placing it at the bottom of a red-to-green ramp would paint
+#: an unknown as the worst case, and a reader cannot tell the two apart once it is coloured.
+UNSET_MEMBER_COLOR = "#ffffff"
+
+#: The gradients a reader can spread an ordered value set along, keyed by the name a request states.
+#: Each is a run of **stops**, and the stops in the middle are the point of them.
+#:
+#: Interpolating red to green directly runs through brown, because the two channels cross over at the
+#: middle and the values a reader most needs to tell apart come out as mud. Going through amber is
+#: what every traffic-light scale a reader has seen already does. A single amber stop is still not
+#: enough: the segment from amber to green passes through olive, so the upper half reads as neither.
+#: The lime stop is what keeps the top of the scale green.
+#:
+#: **No stop is a neutral.** White means "not assessed", and a grey or near-white stop in the middle
+#: of a scale says the same thing in the same picture — a reader cannot then tell an unassessed
+#: element from a middling one. That rules out the obvious colour-blind-safe schemes, which are
+#: diverging and pivot on a neutral.
+#:
+#: `red-green` is the default because it carries the meaning most of these value sets have, a ladder
+#: from bad to good, with no legend needed. It is also the one pair a red/green colour-blind reader
+#: cannot separate, which is why the second is not an afterthought. `yellow-blue` is that second one:
+#: yellow and blue are the poles every common form of colour blindness preserves, it runs light to
+#: dark so it survives greyscale, and it reaches neither grey nor white on the way.
+ATTRIBUTE_GRADIENTS: dict[str, tuple[str, ...]] = {
+    "red-green": ("#dc2626", "#fb923c", "#fde047", "#a3e635", "#22c55e"),
+    "yellow-blue": ("#facc15", "#4ade80", "#06b6d4", "#2563eb", "#1e3a8a"),
+}
+
+DEFAULT_ATTRIBUTE_GRADIENT = "red-green"
+
+
+def graded_colors(
+    members: Sequence[str], *, unset: str | None = None, gradient: str = DEFAULT_ATTRIBUTE_GRADIENT
+) -> tuple[tuple[str, str], ...]:
+    """Each member paired with its colour: *unset* white, the rest spread along *gradient*.
+
+    In **declared** order, which for a value set that means something — a maturity ladder, a risk
+    band — is the order a reader expects to see. The unset member is taken out of the spread rather
+    than given an end of it, so the remaining members still use the gradient's full range: with six
+    members of which one is unset, five are spread, not five squeezed into four fifths of the ramp.
+
+    A single graded member takes the gradient's far end. There is no position to interpolate to, and
+    the far end is the one a reader reads as "arrived".
+    """
+    stops = ATTRIBUTE_GRADIENTS.get(gradient, ATTRIBUTE_GRADIENTS[DEFAULT_ATTRIBUTE_GRADIENT])
+    graded = [member for member in members if member != unset]
+    last = len(graded) - 1
+    positions = {
+        member: (1.0 if last <= 0 else index / last) for index, member in enumerate(graded)
+    }
+    return tuple(
+        (
+            member,
+            UNSET_MEMBER_COLOR if member == unset else color_along_stops(stops, positions[member]),
+        )
+        for member in members
+    )
+
+
+def color_along_stops(stops: Sequence[str], position: float) -> str:
+    """The colour at *position* through a run of stops, interpolating within the segment it falls in.
+
+    The one place a scale becomes a colour. `scale_tokens` has always been a variable-length tuple
+    and the served contract a list, so a gradient with a middle stop was representable before this —
+    the adapter simply read the first two and interpolated between them, which is what ran a
+    red-to-green scale through brown.
+    """
+    if len(stops) == 1:
+        return interpolate_style_colors(stops[0], stops[0], 0.0)
+    segments = len(stops) - 1
+    scaled = max(0.0, min(1.0, position)) * segments
+    index = min(int(scaled), segments - 1)
+    return interpolate_style_colors(stops[index], stops[index + 1], scaled - index)
+
+
 def interpolate_style_colors(near: str, far: str, position: float) -> str:
     """A point on a two-endpoint ramp, resolving each endpoint through the token table first.
 

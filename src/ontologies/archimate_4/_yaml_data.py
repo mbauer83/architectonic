@@ -95,6 +95,7 @@ def load_entity_types(
             create_when=create_when,
             never_create_when=never_create_when,
             internal=bool(info.get("internal", False)),
+            label=str(info["label"]) if info.get("label") else None,
         )
     return out
 

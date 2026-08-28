@@ -243,6 +243,8 @@ entity_types:
     prefix: VS
     hierarchy: [strategy]
     classes: [behavior-element, strategy-behavior-element]
+    # A value stream is drawn as its stages, so a box in one is a stage rather than the stream.
+    label: Value Stream (Stage)
     create_when: ""
     never_create_when: ""
 

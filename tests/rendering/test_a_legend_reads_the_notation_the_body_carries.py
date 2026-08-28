@@ -139,7 +139,7 @@ class TestHowTheRowsRead:
         rows = shape_rows(notations_referenced_in(_BODY, _declarations()))
 
         by_shape = {row.cells[0].text: row.cells[1].text for row in rows[1:]}
-        assert by_shape == {"rounded corners": "capability", "square corners": "resource"}
+        assert by_shape == {"rounded corners": "Capability", "square corners": "Resource"}
 
     def test_a_glyph_row_references_the_sprite_the_body_defines(self) -> None:
         rows = glyph_rows(["capability"])
@@ -159,7 +159,7 @@ class TestHowTheRowsRead:
         })
 
         assert rows[1].cells[0].text == "\u25cf\u2500\u2500\u2500\u25b6"
-        assert rows[1].cells[1].text == "assignment"
+        assert rows[1].cells[1].text == "Assignment"
 
     def test_an_end_with_no_marker_draws_the_line_alone(self) -> None:
         rows = arrow_rows({"archimate-association": RelationNotation(line="solid", target="none")})
@@ -188,10 +188,10 @@ class TestHowALabelReads:
     def test_the_ontology_prefix_is_dropped(self) -> None:
         """It says which modelling language this is, which a reader of the diagram already knows —
         the same thing the search result labels do with it."""
-        assert readable_label("archimate-assignment") == "assignment"
+        assert readable_label("archimate-assignment") == "Assignment"
 
     def test_a_sprite_key_reads_as_words(self) -> None:
-        assert readable_label("application_component") == "application component"
+        assert readable_label("application_component") == "Application Component"
 
     def test_a_generated_container_stereotype_reads_as_words(self) -> None:
-        assert readable_label("StrategyGrouping") == "strategy grouping"
+        assert readable_label("StrategyGrouping") == "Strategy Grouping"

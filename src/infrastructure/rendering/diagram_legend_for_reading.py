@@ -28,7 +28,7 @@ from src.application.viewpoints.diagram_reading_lens import ReadingLens
 from src.domain.ontology_representation.relation_notation import RelationNotation
 from src.domain.viewpoints.viewpoint_style_values import (
     AD_HOC_RAMP_TOKENS,
-    categorical_colors,
+    graded_colors,
     token_color,
 )
 from src.infrastructure.rendering._archimate_includes import (
@@ -46,7 +46,9 @@ from src.infrastructure.rendering.archimate_legend import (
 )
 
 
-def _attribute_colouring(lens: ReadingLens, members: Sequence[str]) -> dict[str, str]:
+def _attribute_colouring(
+    lens: ReadingLens, members: Sequence[str], unset: str | None
+) -> dict[str, str]:
     """What the reader's own colouring means, or nothing when they set none.
 
     The attribute names itself once, in the section heading — `means` carries it. Prefixing every row
@@ -56,13 +58,19 @@ def _attribute_colouring(lens: ReadingLens, members: Sequence[str]) -> dict[str,
     if not lens.colour_by:
         return {}
     if members:
-        return {member: lens.key.get(member, colour) for member, colour in categorical_colors(members)}
+        return {
+            member: lens.key.get(member, colour)
+            for member, colour in graded_colors(members, unset=unset, gradient=lens.gradient)
+        }
     near, far = lens.ramp if lens.ramp is not None else AD_HOC_RAMP_TOKENS
     return {"lower": token_color(near), "higher": token_color(far)}
 
 
 def _element_kind_colouring(
-    body: str, declarations: ArchimateDeclarations, notations: Mapping[str, StereotypeNotation]
+    body: str,
+    declarations: ArchimateDeclarations,
+    notations: Mapping[str, StereotypeNotation],
+    declared_labels: Mapping[str, str] | None = None,
 ) -> dict[str, str]:
     """The stereotype fills still on screen, which is not the same as the ones the body references.
 
@@ -94,7 +102,7 @@ def _element_kind_colouring(
         # syntax register exists to stop.
         still_showing.update(declarations.referenced_in(line).stereotypes)
     return {
-        readable_label(name): notation.fill
+        readable_label(name, declared_labels): notation.fill
         for name, notation in sorted(notations.items())
         if name in still_showing
     }
@@ -106,6 +114,8 @@ def body_with_reading_legend(
     lens: ReadingLens,
     declarations: ArchimateDeclarations,
     members: Sequence[str] = (),
+    unset: str | None = None,
+    declared_labels: Mapping[str, str] | None = None,
     connection_notations: Mapping[str, RelationNotation] | None = None,
     nested_types: Sequence[str] = (),
 ) -> str:
@@ -118,8 +128,9 @@ def body_with_reading_legend(
     if not lens.legend:
         return body
     return with_legend(body, legend_block(_rows_for(
-        body, lens=lens, declarations=declarations, members=members,
+        body, lens=lens, declarations=declarations, members=members, unset=unset,
         connection_notations=connection_notations, nested_types=nested_types,
+        declared_labels=declared_labels,
     )))
 
 
@@ -129,6 +140,8 @@ def _rows_for(
     lens: ReadingLens,
     declarations: ArchimateDeclarations,
     members: Sequence[str] = (),
+    unset: str | None = None,
+    declared_labels: Mapping[str, str] | None = None,
     connection_notations: Mapping[str, RelationNotation] | None = None,
     nested_types: Sequence[str] = (),
 ) -> tuple[LegendRow, ...]:
@@ -144,12 +157,14 @@ def _rows_for(
         # Two colour sections rather than one, because a fill can mean two things at once on the same
         # picture: the reader's attribute where a value exists, and the element's kind where it does
         # not. Either may be empty and contribute no section.
-        *colour_rows(_attribute_colouring(lens, members), means=lens.colour_by),
-        *colour_rows(_element_kind_colouring(body, declarations, notations), means="element kinds"),
-        *shape_rows(notations),
-        *glyph_rows(sorted(declarations.referenced_in(body).sprites)),
-        *arrow_rows(connection_notations or {}),
-        *nesting_rows(nested_types),
+        *colour_rows(_attribute_colouring(lens, members, unset), means=lens.colour_by),
+        *colour_rows(
+            _element_kind_colouring(body, declarations, notations, declared_labels), means="element kinds"
+        ),
+        *shape_rows(notations, declared_labels),
+        *glyph_rows(sorted(declarations.referenced_in(body).sprites), declared_labels),
+        *arrow_rows(connection_notations or {}, declared_labels),
+        *nesting_rows(nested_types, declared_labels),
     )
 
 

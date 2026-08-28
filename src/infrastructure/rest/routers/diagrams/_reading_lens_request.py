@@ -19,6 +19,10 @@ from collections.abc import Sequence
 
 from src.application.viewpoints.diagram_reading_lens import ReadingLens
 from src.domain.hex_colors import is_hex_color
+from src.domain.viewpoints.viewpoint_style_values import (
+    ATTRIBUTE_GRADIENTS,
+    DEFAULT_ATTRIBUTE_GRADIENT,
+)
 
 
 def _colour(value: str) -> str | None:
@@ -70,8 +74,18 @@ def _key(pairs: Sequence[str]) -> dict[str, str]:
     return key
 
 
+def _gradient(value: str) -> str:
+    """The named gradient a request asks for, or the default where it names none this product has.
+
+    An unknown name falls back rather than failing: a gradient is a reading preference carried in a
+    URL, and a stale or mistyped one should still draw the diagram.
+    """
+    return value if value in ATTRIBUTE_GRADIENTS else DEFAULT_ATTRIBUTE_GRADIENT
+
+
 def lens_from_query(
-    colour_by: str, printed: Sequence[str], ramp: str, key: Sequence[str], legend: bool
+    colour_by: str, printed: Sequence[str], ramp: str, key: Sequence[str], legend: bool,
+    gradient: str = DEFAULT_ATTRIBUTE_GRADIENT,
 ) -> ReadingLens:
     """The reader's request, normalised. Blank names are dropped and order is kept."""
     return ReadingLens(
@@ -79,5 +93,6 @@ def lens_from_query(
         printed=tuple(dict.fromkeys(name.strip() for name in printed if name.strip())),
         ramp=_ramp(ramp) if ramp else None,
         key=_key(key),
+        gradient=_gradient(gradient),
         legend=legend,
     )

@@ -211,7 +211,7 @@ class TestTheOfferAndTheLegendReadOneNotation:
         ))
 
         assert offered is True
-        assert any("triggering" in line for line in lines)
+        assert any("Triggering" in line for line in lines)
 
     def test_a_diagram_with_no_notation_is_offered_nothing_and_gets_nothing(self, tmp_path: Path) -> None:
         """An empty repository declares no stereotypes, and no connection is placed — which is the
@@ -370,7 +370,7 @@ rectangle "Other" <<capability>> as FNC_c
 
         nesting = [line for line in lines if "\u25a3" in line]
         assert len(nesting) == 1
-        assert "composition" in nesting[0] and "aggregation" in nesting[0]
+        assert "Composition" in nesting[0] and "Aggregation" in nesting[0]
 
     def test_a_diagram_that_nests_nothing_gets_no_nesting_section(
         self, declarations: ArchimateDeclarations

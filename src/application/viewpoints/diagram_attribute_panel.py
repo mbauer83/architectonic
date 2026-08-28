@@ -82,6 +82,10 @@ class AttributeOffer:
     values: tuple[str, ...]
     #: How many of the drawn entities of this type carry a value. Zero is reported, not hidden.
     present_on: int
+    #: The member a schema declares as its `default`, where it declares one. That member is what a
+    #: reader sees on an entity nobody has assessed, so a colouring shows it as unset rather than
+    #: giving it a place on the scale.
+    unset_value: str | None = None
 
 
 @dataclass(frozen=True)
@@ -164,6 +168,23 @@ def palette_members(offers: DiagramAttributeOffers, attribute: str) -> tuple[str
     return ()
 
 
+def palette_unset(offers: DiagramAttributeOffers, attribute: str) -> str | None:
+    """The member *attribute* declares as unset, read off the same offers the panel showed.
+
+    Beside `palette_members` rather than folded into it: both consumers of the palette need this and
+    neither needs a second lookup, but the member list is what decides *whether* a palette applies at
+    all, and a function answering two questions at once would be asked for one and given both.
+    """
+    for shared in offers.shared:
+        if shared.attribute.name == attribute:
+            return shared.attribute.unset_value
+    for row in offers.types:
+        for offered in row.attributes:
+            if offered.name == attribute:
+                return offered.unset_value
+    return None
+
+
 def _colour_kind(prop: dict[str, object], declared_type: str, values: tuple[str, ...]) -> ColourKind:
     if declares_ordinal(prop):
         return "ramp"
@@ -178,6 +199,16 @@ def _colour_kind(prop: dict[str, object], declared_type: str, values: tuple[str,
 
 def _declared_type(prop: dict[str, object]) -> str:
     return "ordinal" if declares_ordinal(prop) else str(prop.get("type", "string"))
+
+
+def _unset_value(prop: dict[str, object]) -> str | None:
+    """The declared `default`, where it is one of the declared values.
+
+    A default naming something outside the value set is a schema defect and not this module's to
+    report, so it is ignored here rather than coloured as a member that cannot occur.
+    """
+    default = prop.get("default")
+    return str(default) if isinstance(default, str) and str(default) in _values(prop) else None
 
 
 def _values(prop: dict[str, object]) -> tuple[str, ...]:
@@ -285,6 +316,7 @@ def offers_for_diagram(
                 colour=_colour_kind(prop, _declared_type(prop), _values(prop)),
                 values=_values(prop),
                 present_on=sum(1 for entity in drawn if _carries(entity, str(name))),
+                unset_value=_unset_value(prop),
             )
             for name, prop in sorted(properties.items())
             if isinstance(prop, dict)

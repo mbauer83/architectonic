@@ -51,9 +51,10 @@ from src.domain.viewpoints.viewpoint_scale_styling import (
 )
 from src.domain.viewpoints.viewpoint_style_evaluation import evaluate_item_style
 from src.domain.viewpoints.viewpoint_style_values import (
-    AD_HOC_RAMP_TOKENS,
-    categorical_colors,
-    interpolate_style_colors,
+    ATTRIBUTE_GRADIENTS,
+    DEFAULT_ATTRIBUTE_GRADIENT,
+    color_along_stops,
+    graded_colors,
     token_color,
 )
 from src.domain.viewpoints.viewpoints import PresentationSpec, StyleRule
@@ -83,6 +84,9 @@ class ReadingLens:
     #: keeps the colour its declared position gives it, so changing one member's colour does not mean
     #: restating the rest.
     key: Mapping[str, str] = field(default_factory=dict)
+    #: Which named gradient an ordered value set is spread along. The reader's `key` still overrides
+    #: any individual member, so this sets the starting point rather than replacing the choice.
+    gradient: str = DEFAULT_ATTRIBUTE_GRADIENT
     #: Whether the diagram should explain its own notation. One flag rather than one per mark: a
     #: reader wants the legend or does not, and which marks it can show is the diagram's answer, not
     #: theirs — four controls, three of which a given diagram cannot act on, is three dead controls.
@@ -102,7 +106,7 @@ class ReadingLens:
         return not self.colour_by and not self.printed and not self.legend
 
 
-def _ramp_rule(attribute: str, ramp: tuple[str, str] | None) -> StyleRule:
+def _ramp_rule(attribute: str, ramp: tuple[str, str] | None, gradient: str) -> StyleRule:
     """The reader's colour choice over an ordered attribute, as the style rule it is.
 
     An overridden gradient goes in as two `#rrggbb` literals where the default goes in as two tokens,
@@ -113,11 +117,15 @@ def _ramp_rule(attribute: str, ramp: tuple[str, str] | None) -> StyleRule:
         capability="node_color",
         mode="scale",
         scale_attribute=attribute,
-        scale_tokens=ramp if ramp is not None else AD_HOC_RAMP_TOKENS,
+        scale_tokens=ramp if ramp is not None else ATTRIBUTE_GRADIENTS.get(
+            gradient, ATTRIBUTE_GRADIENTS[DEFAULT_ATTRIBUTE_GRADIENT]
+        ),
     )
 
 
-def _member_rules(attribute: str, members: Sequence[str], key: Mapping[str, str]) -> tuple[StyleRule, ...]:
+def _member_rules(
+    attribute: str, members: Sequence[str], key: Mapping[str, str], unset: str | None, gradient: str
+) -> tuple[StyleRule, ...]:
     """The reader's colour choice over an *unordered* set: one match rule per declared member.
 
     A ramp needs an order and these values have none — an enum's members are a set, and interpolating
@@ -144,14 +152,16 @@ def _member_rules(attribute: str, members: Sequence[str], key: Mapping[str, str]
             ),
             value=key.get(member, colour),
         )
-        for member, colour in categorical_colors(members)
+        for member, colour in graded_colors(members, unset=unset, gradient=gradient)
     )
 
 
 def _fill_for(value: object) -> str | None:
     """The colour one evaluated style value paints as, or None where the item is unstyled."""
     if isinstance(value, ScaleStyleValue):
-        return interpolate_style_colors(value.tokens[0], value.tokens[1], value.position)
+        # Every stop, not the first two: a gradient with a middle stop is what keeps a red-to-green
+        # scale out of the brown its two endpoints cross through.
+        return color_along_stops(value.tokens, value.position)
     if isinstance(value, str) and value:
         return token_color(value)
     return None
@@ -185,6 +195,7 @@ def apply_reading_lens(
     read_access: CriteriaReadAccess,
     registries: RegistrySnapshot,
     palette: Sequence[str] = (),
+    unset: str | None = None,
     environment: EvaluationEnvironment | None = None,
 ) -> str:
     """*puml_body* with the reader's colouring and printing applied to the elements it declares.
@@ -223,8 +234,8 @@ def apply_reading_lens(
         # drawn as a ramp. An empty palette means a ramp, which is also what an ordinal gets: its enum
         # is a rank, and the panel already says so.
         rules = (
-            _member_rules(lens.colour_by, palette, lens.key) if palette
-            else (_ramp_rule(lens.colour_by, lens.ramp),)
+            _member_rules(lens.colour_by, palette, lens.key, unset, lens.gradient) if palette
+            else (_ramp_rule(lens.colour_by, lens.ramp, lens.gradient),)
         )
         presentation = PresentationSpec(representation="diagram", styling_rules=rules)
         # The bounds are the whole reason to call this: an ordinal's ramp spans its *declared* range,

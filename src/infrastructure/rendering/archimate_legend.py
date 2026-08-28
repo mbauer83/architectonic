@@ -67,7 +67,7 @@ _LINE_GLYPHS: Mapping[str, str] = {"solid": "───", "dashed": "╌╌╌", 
 _NESTING_GLYPH = "▣"
 
 
-def readable_label(name: str) -> str:
+def readable_label(name: str, declared: Mapping[str, str] | None = None) -> str:
     """A declaration's key as a reader reads it.
 
     Three spellings arrive here and a legend is read by a human: a sprite key is
@@ -84,7 +84,31 @@ def readable_label(name: str) -> str:
     """
     stripped = _ONTOLOGY_PREFIX.sub("", name, count=1)
     spaced = re.sub(r"(?<=[a-z])(?=[A-Z])", " ", stripped)
-    return spaced.replace("_", " ").replace("-", " ").lower()
+    words = spaced.replace("_", " ").replace("-", " ").lower()
+    # A type whose own name is not what a reader of the picture is looking at says so in the
+    # ontology, and that declaration wins over the spelling derived here. Injected rather than read:
+    # this module takes what it presents from its caller, as the rest of `rendering/` does.
+    stated = (declared or {}).get(words)
+    return stated if stated else _title_case(words)
+
+
+#: Words a title case leaves alone, because they are not read as words: an ontology's own initialisms.
+#: Kept as a named set rather than a rule about length, since `IT` and `SLA` are two letters and three
+#: and `Data` is four — nothing about the shape of a word says which it is.
+_INITIALISMS: frozenset[str] = frozenset({"it", "api", "ui", "sla", "kpi", "crm", "erp", "sql", "url"})
+
+
+def _title_case(label: str) -> str:
+    """A label as a proper name, which is what an element kind and a relationship are.
+
+    An ArchiMate element type is a term of the language — Application Component, Value Stream — and a
+    legend naming it in lower case reads as prose about the diagram rather than as the vocabulary it
+    is. Word by word, so a multi-word type capitalises throughout.
+    """
+    return " ".join(
+        word.upper() if word in _INITIALISMS else word[:1].upper() + word[1:]
+        for word in label.split(" ")
+    )
 
 
 def _heading(*labels: str) -> LegendRow:
@@ -132,7 +156,9 @@ def colour_rows(fills: Mapping[str, str], *, means: str) -> tuple[LegendRow, ...
     ))
 
 
-def shape_rows(notations: Mapping[str, StereotypeNotation]) -> tuple[LegendRow, ...]:
+def shape_rows(
+    notations: Mapping[str, StereotypeNotation], declared: Mapping[str, str] | None = None
+) -> tuple[LegendRow, ...]:
     """One row per corner shape in use, naming the stereotypes drawn with it.
 
     Grouped by shape rather than listed per stereotype: a corner shape says what *kind* of thing an
@@ -140,7 +166,7 @@ def shape_rows(notations: Mapping[str, StereotypeNotation]) -> tuple[LegendRow, 
     """
     grouped: dict[str, list[str]] = {}
     for name, notation in sorted(notations.items()):
-        grouped.setdefault(notation.corner, []).append(readable_label(name))
+        grouped.setdefault(notation.corner, []).append(readable_label(name, declared))
     rows = tuple(
         LegendRow((
             LegendCell(text=_CORNER_WORDS.get(corner, corner)),
@@ -152,7 +178,9 @@ def shape_rows(notations: Mapping[str, StereotypeNotation]) -> tuple[LegendRow, 
     return (_heading("shape", "element kinds"), *rows) if rows else ()
 
 
-def glyph_rows(sprites: Sequence[str]) -> tuple[LegendRow, ...]:
+def glyph_rows(
+    sprites: Sequence[str], declared: Mapping[str, str] | None = None
+) -> tuple[LegendRow, ...]:
     """One row per glyph the body draws, showing the glyph itself.
 
     The sprite is referenced by the same name the element labels reference, so the legend cannot show
@@ -162,17 +190,19 @@ def glyph_rows(sprites: Sequence[str]) -> tuple[LegendRow, ...]:
     rows = tuple(
         LegendRow((
             LegendCell(sprite=f"archimate_{name}"),
-            LegendCell(text=readable_label(name)),
+            LegendCell(text=readable_label(name, declared)),
         ))
         for name in sorted(sprites)
     )
     return (_heading("glyph", "element kind"), *rows) if rows else ()
 
 
-def arrow_rows(notations: Mapping[str, RelationNotation]) -> tuple[LegendRow, ...]:
+def arrow_rows(
+    notations: Mapping[str, RelationNotation], declared: Mapping[str, str] | None = None
+) -> tuple[LegendRow, ...]:
     """One row per relationship type drawn, showing the line and its markers."""
     rows = tuple(
-        LegendRow((LegendCell(text=_arrow_glyph(notation)), LegendCell(text=readable_label(name))))
+        LegendRow((LegendCell(text=_arrow_glyph(notation)), LegendCell(text=readable_label(name, declared))))
         for name, notation in sorted(notations.items())
     )
     return (_heading("line", "relationship"), *rows) if rows else ()
@@ -189,7 +219,9 @@ def notations_referenced_in(body: str, declarations: ArchimateDeclarations) -> d
     return {name: notation for name, notation in found if notation is not None}
 
 
-def nesting_rows(nested_types: Sequence[str]) -> tuple[LegendRow, ...]:
+def nesting_rows(
+    nested_types: Sequence[str], declared: Mapping[str, str] | None = None
+) -> tuple[LegendRow, ...]:
     """The containment section: what an element drawn inside another means.
 
     **One row, whatever is nested.** PlantUML draws composition and aggregation identically as
@@ -202,7 +234,7 @@ def nesting_rows(nested_types: Sequence[str]) -> tuple[LegendRow, ...]:
     """
     if not nested_types:
         return ()
-    meanings = ", ".join(sorted(readable_label(name) for name in set(nested_types)))
+    meanings = ", ".join(sorted(readable_label(name, declared) for name in set(nested_types)))
     return (
         _heading("nesting", "relationship"),
         LegendRow((LegendCell(text=_NESTING_GLYPH), LegendCell(text=meanings))),

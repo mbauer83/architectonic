@@ -28,6 +28,7 @@ from src.application.runtime_catalogs import RuntimeCatalogs
 from src.application.viewpoints.diagram_reading_lens import ReadingLens
 from src.config.repo_paths import DIAGRAM_CATALOG, DIAGRAMS, RENDERED
 from src.domain.ontology_representation.artifact_types import DiagramRecord
+from src.domain.viewpoints.viewpoint_style_values import DEFAULT_ATTRIBUTE_GRADIENT
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers._openapi import READ_RESPONSES, TAG_DIAGRAMS, media_response
 from src.infrastructure.rest.routers.diagrams._reading_lens_request import lens_from_query
@@ -74,6 +75,20 @@ def _rendered_path(d: DiagramRecord, suffix: str) -> Path | None:
     return None
 
 
+def _declared_type_labels(catalogs: RuntimeCatalogs) -> dict[str, str]:
+    """What each element type is called, where its own name is not it — keyed as a legend spells it.
+
+    The ontology states this (`EntityTypeInfo.label`) so that every surface naming a type for a reader
+    says the same thing; the legend takes it rather than deriving a second answer. Keyed on the spaced
+    lower-case form because that is what `readable_label` has in hand at the point it decides.
+    """
+    return {
+        info.artifact_type.replace("-", " "): info.label
+        for info in catalogs.ontology.all_entity_types().values()
+        if info.label
+    }
+
+
 def _lensed_body(
     artifact_id: str,
     diagram_path: Path,
@@ -96,6 +111,7 @@ def _lensed_body(
     from src.application.viewpoints.diagram_attribute_panel import (  # noqa: PLC0415
         offers_for_diagram,
         palette_members,
+        palette_unset,
     )
     from src.application.viewpoints.diagram_reading_lens import apply_reading_lens  # noqa: PLC0415
     from src.application.viewpoints.placed_occurrences import (  # noqa: PLC0415
@@ -122,17 +138,19 @@ def _lensed_body(
     # The same offers the panel showed the reader, so "palette or ramp" is decided once and the
     # picture, its legend and the controls cannot disagree about an attribute. Resolved here rather
     # than inside either consumer because both need the answer and it is one lookup.
-    palette = palette_members(
-        offers_for_diagram(
-            entities,
-            repo_root,
-            specialization_catalog=catalogs.specializations,
-            profile_registry=catalogs.profiles,
-        ),
-        lens.colour_by,
-    ) if lens.colour_by else ()
+    offers = offers_for_diagram(
+        entities,
+        repo_root,
+        specialization_catalog=catalogs.specializations,
+        profile_registry=catalogs.profiles,
+    ) if lens.colour_by else None
+    palette = palette_members(offers, lens.colour_by) if offers is not None else ()
+    # The member a schema declares as its default: what a reader sees on an entity nobody has
+    # assessed, so it is drawn as unset rather than given a place on the scale.
+    unset = palette_unset(offers, lens.colour_by) if offers is not None else None
     lensed = apply_reading_lens(
-        body, entities, lens=lens, read_access=repo, registries=registries, palette=palette
+        body, entities, lens=lens, read_access=repo, registries=registries, palette=palette,
+        unset=unset
     )
     if not lens.legend:
         return lensed
@@ -149,6 +167,8 @@ def _lensed_body(
         lens=lens,
         declarations=notation.declarations,
         members=palette,
+        unset=unset,
+        declared_labels=_declared_type_labels(catalogs),
         connection_notations=notation.connection_notations,
         nested_types=notation.nested_types,
     )
@@ -193,10 +213,16 @@ def get_diagram_svg(
     legend: Annotated[
         bool, Query(description="Draw a legend explaining the notation this diagram uses")
     ] = False,
+    gradient: Annotated[
+        str,
+        Query(description="Which named gradient an ordered value set is spread along: "
+                          "`red-green` (the default) or `orange-blue`, which a red/green "
+                          "colour-blind reader can separate"),
+    ] = DEFAULT_ATTRIBUTE_GRADIENT,
     catalogs: RuntimeCatalogs = Depends(fresh_viewpoints_runtime_catalogs_dependency),
 ) -> Response:
     id = artifact_id
-    lens = lens_from_query(colour_by, printed, ramp, key, legend)
+    lens = lens_from_query(colour_by, printed, ramp, key, legend, gradient)
     repo_root = s.maybe_engagement_root()
     if repo_root is None:
         raise HTTPException(500, "Repository not initialized")
@@ -262,6 +288,12 @@ def download_diagram(
     legend: Annotated[
         bool, Query(description="Draw a legend explaining the notation this diagram uses")
     ] = False,
+    gradient: Annotated[
+        str,
+        Query(description="Which named gradient an ordered value set is spread along: "
+                          "`red-green` (the default) or `orange-blue`, which a red/green "
+                          "colour-blind reader can separate"),
+    ] = DEFAULT_ATTRIBUTE_GRADIENT,
     catalogs: RuntimeCatalogs = Depends(fresh_viewpoints_runtime_catalogs_dependency),
 ) -> Response:
     """The diagram as an attachment — the authored image, or the reader's current display.
@@ -272,7 +304,7 @@ def download_diagram(
     the display that will drift from it.
     """
     id = artifact_id
-    lens = lens_from_query(colour_by, printed, ramp, key, legend)
+    lens = lens_from_query(colour_by, printed, ramp, key, legend, gradient)
     repo_root = s.maybe_engagement_root()
     if repo_root is None:
         raise HTTPException(500, "Repository not initialized")

@@ -124,6 +124,12 @@ class EntityTypeInfo:
     create_when: str
     never_create_when: str
     internal: bool = False
+    #: What a reader calls an element of this type, where the type's own name is not it. An ArchiMate
+    #: value stream is drawn as the stages that make it up, so a box in one is a stage — and every
+    #: surface that names the type for a reader has to say the same thing, which is why this is
+    #: declared by the ontology rather than spelled by whichever surface is doing the naming.
+    #: Absent for the types whose name reads correctly on its own, which is nearly all of them.
+    label: str | None = None
     required_connections: tuple[RequiredConnection, ...] = ()
     min: int = 0
     max: int | None = None
