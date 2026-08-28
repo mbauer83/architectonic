@@ -148,7 +148,10 @@ def _cascade_preflight(repo_root: Path, project_slug: str) -> dict:
 
 def _rewrite_foreign_diagram(diagram_path: Path, drec: dict, repo_root: Path, warnings: list[str]) -> str:
     """Compute the new .puml content for a foreign diagram after removing owned entities/connections."""
-    from src.application.modeling.artifact_write_formatting import format_diagram_puml  # noqa: PLC0415
+    from src.application.modeling.artifact_write_formatting import (  # noqa: PLC0415
+        carried_diagram_fields,
+        format_diagram_puml,
+    )
     from src.infrastructure.write.artifact_write.boundary import modification_stamp  # noqa: PLC0415
     from src.infrastructure.write.artifact_write.diagram_render import _render_diagram_entities_puml  # noqa: PLC0415
     from src.infrastructure.write.artifact_write.parse_existing import parse_diagram_file  # noqa: PLC0415
@@ -179,6 +182,8 @@ def _rewrite_foreign_diagram(diagram_path: Path, drec: dict, repo_root: Path, wa
         )
     else:
         new_body = parsed.puml_body
+    # Everything this rewrite is not changing is handed back: the formatter writes only what it is
+    # given, so an omitted field is a deleted one, and nine were being omitted here.
     return format_diagram_puml(
         artifact_id=str(fm.get("artifact-id", "")),
         diagram_type=str(fm.get("diagram-type", "archimate")),
@@ -186,6 +191,7 @@ def _rewrite_foreign_diagram(diagram_path: Path, drec: dict, repo_root: Path, wa
         status=str(fm.get("status", "draft")), last_updated=modification_stamp(),
         entity_ids_used=new_eids or None, connection_ids_used=new_cids or None,
         diagram_entities=new_de, diagram_connections=new_dc, puml_body=new_body,
+        **carried_diagram_fields(fm),
     )
 
 

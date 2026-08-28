@@ -488,3 +488,65 @@ class TestAReconcileSaysWhatItIsNotDrawing:
         result = self._sync(repo, diagram_id)
 
         assert [w for w in result.warnings if "does not draw" in w] == []
+
+
+class TestNestedGroupingsSurviveReconciliation:
+    """Boxes nest to any depth — the served contract says so — and the reconcile discarded the nesting.
+
+    Measured before the fix: `Outer[alpha] > Inner[beta, gamma]` came back from `auto-sync` as
+    `Outer[alpha]` alone, with no warning, so two members lost their grouping silently. Each group
+    was rebuilt from three keys, and `groups` was not one of them.
+    """
+
+    def _reconcile(self, fm: dict, records: list) -> tuple[list[dict], list[str]]:
+        from src.infrastructure.write.artifact_write.diagram_sync import (
+            _reconciled_authored_groupings,
+        )
+
+        return _reconciled_authored_groupings(fm, "@startuml\n@enduml\n", records)
+
+    def _record(self, artifact_id: str):
+        from dataclasses import make_dataclass
+
+        return make_dataclass("R", ["artifact_id", "display_alias"])(artifact_id, artifact_id)
+
+    def test_a_nested_box_keeps_its_members(self) -> None:
+        records = [self._record(f"APP@1.{n}") for n in ("alpha", "beta", "gamma")]
+        fm = {"authored-groupings": [{
+            "label": "Outer", "entity-ids": ["APP@1.alpha"],
+            "groups": [{"label": "Inner", "entity-ids": ["APP@1.beta", "APP@1.gamma"]}],
+        }]}
+
+        reconciled, warnings = self._reconcile(fm, records)
+
+        assert reconciled == [{
+            "label": "Outer", "entity-ids": ["APP@1.alpha"],
+            "groups": [{"label": "Inner", "entity-ids": ["APP@1.beta", "APP@1.gamma"]}],
+        }]
+        assert warnings == []
+
+    def test_a_box_that_only_nests_others_is_kept(self) -> None:
+        """A box holds members, or holds boxes, or both — so having no members of its own is not
+        the same as being empty."""
+        records = [self._record("APP@1.beta")]
+        fm = {"authored-groupings": [{
+            "label": "Outer", "groups": [{"label": "Inner", "entity-ids": ["APP@1.beta"]}],
+        }]}
+
+        reconciled, _warnings = self._reconcile(fm, records)
+
+        assert reconciled == [{
+            "label": "Outer", "groups": [{"label": "Inner", "entity-ids": ["APP@1.beta"]}],
+        }]
+
+    def test_a_member_that_left_the_diagram_is_still_dropped_with_a_warning(self) -> None:
+        records = [self._record("APP@1.alpha")]
+        fm = {"authored-groupings": [{
+            "label": "Outer", "entity-ids": ["APP@1.alpha"],
+            "groups": [{"label": "Inner", "entity-ids": ["APP@1.gone"]}],
+        }]}
+
+        reconciled, warnings = self._reconcile(fm, records)
+
+        assert reconciled == [{"label": "Outer", "entity-ids": ["APP@1.alpha"]}]
+        assert any("APP@1.gone" in warning for warning in warnings)

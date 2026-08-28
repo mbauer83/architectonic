@@ -462,3 +462,70 @@ class TestCascadePreflight:
         (proj_dir / "ENT@9.abc.md").write_text(_entity_md("ENT@9.abc", "ABC"))
         result = _cascade_preflight(repo, "my-proj")
         assert len(result["owned"]["entities"]) == 1
+
+
+class TestARewriteKeepsWhatItWasNotAskedToChange:
+    """`format_diagram_puml` writes only what it is given, so an omitted field is a deleted one.
+
+    This rewrite passed eleven arguments and dropped nine, so deleting a model project stripped
+    every foreign diagram of its keywords, authored groupings, bindings, edge labels, viewpoint,
+    view derivations, format version, `manual-layout` — which is what stops a hand-laid body being
+    regenerated — and `tlp`, a confidentiality classification. Measured before the fix on a fixture
+    repository: two keywords and one authored grouping present before the delete, both absent after,
+    with the operation reporting `applied: true` and no warning.
+    """
+
+    def _diagram_with_everything(self, repo: Path, owned_id: str, kept_id: str) -> Path:
+        diag_dir = repo / "diagram-catalog" / "diagrams"
+        diag_dir.mkdir(parents=True, exist_ok=True)
+        path = diag_dir / "rich.puml"
+        path.write_text(
+            "---\n"
+            "artifact-id: ARC@1.rich\n"
+            "artifact-type: diagram\n"
+            "name: Rich\n"
+            "version: 0.1.0\n"
+            "status: draft\n"
+            "keywords:\n  - alpha\n  - beta\n"
+            "diagram-type: archimate\n"
+            "diagram-format-version: 2\n"
+            "manual-layout: true\n"
+            "tlp: amber\n"
+            "viewpoint:\n  slug: layered\n"
+            f"entity-ids-used:\n  - {owned_id}\n  - {kept_id}\n"
+            "bindings:\n"
+            "  - id: b1\n"
+            "    subject:\n      kind: entity\n      id: lane_x\n"
+            "    correspondence_kind: represents\n"
+            f"    target:\n      entity_id: {kept_id}\n"
+            "edge-labels:\n  e1: REST\n"
+            f"authored-groupings:\n  - label: Outer\n    entity-ids:\n      - {kept_id}\n"
+            "---\n@startuml\n@enduml\n",
+            encoding="utf-8",
+        )
+        return path
+
+    def test_every_field_the_delete_does_not_touch_survives_it(self, repo: Path) -> None:
+        from src.domain.repository.frontmatter import parse_frontmatter
+        from src.infrastructure.write.artifact_write.cascade_delete import _rewrite_foreign_diagram
+
+        owned_id, kept_id = "APP@1.owned", "APP@1.kept"
+        path = self._diagram_with_everything(repo, owned_id, kept_id)
+        drec = {
+            "name": "Rich", "entities_removed": [owned_id], "connections_removed": [],
+            "puml_customised": True,
+        }
+
+        rewritten = _rewrite_foreign_diagram(path, drec, repo, [])
+        fm = parse_frontmatter(rewritten)
+
+        assert fm.get("keywords") == ["alpha", "beta"]
+        assert fm.get("tlp") == "amber"
+        assert fm.get("manual-layout") is True
+        assert fm.get("diagram-format-version") == 2
+        assert fm.get("viewpoint") == {"slug": "layered"}
+        assert [b.get("id") for b in (fm.get("bindings") or [])] == ["b1"]
+        assert fm.get("edge-labels") == {"e1": "REST"}
+        assert fm.get("authored-groupings") == [{"label": "Outer", "entity-ids": [kept_id]}]
+        # And it still did the job it was called for.
+        assert fm.get("entity-ids-used") == [kept_id]

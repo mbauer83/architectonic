@@ -1,7 +1,7 @@
 import re
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import Any
+from typing import Any, TypedDict
 
 import yaml  # type: ignore[import-untyped]
 
@@ -202,6 +202,57 @@ def format_outgoing_markdown(
         sections.append(format_connection_declaration(decl))
 
     return "---\n" + frontmatter_text + "\n---\n\n" + "\n".join(sections) + "\n"
+
+
+class CarriedDiagramFields(TypedDict, total=False):
+    """The `format_diagram_puml` arguments a rewrite must hand back unchanged."""
+
+    keywords: list[str]
+    diagram_format_version: int
+    manual_layout: bool
+    tlp: str
+    viewpoint: dict[str, object]
+    view_derivations: list[dict[str, object]]
+    bindings: list[dict[str, object]]
+    edge_labels: dict[str, str]
+    authored_groupings: list[dict[str, object]]
+
+
+def carried_diagram_fields(frontmatter: Mapping[str, object]) -> CarriedDiagramFields:
+    """The fields a caller rewriting part of a diagram must pass back, read from its frontmatter.
+
+    **`format_diagram_puml` writes only what it is given, so a field omitted is a field deleted.**
+    Enumerating them at each call site is what went wrong: the project cascade delete passed eleven
+    arguments and silently dropped nine, so deleting a model project stripped every foreign diagram's
+    `keywords`, `authored-groupings`, `bindings`, `edge-labels`, `viewpoint`, `view_derivations`,
+    `diagram-format-version`, `manual-layout` — which is what stops a hand-laid body being
+    regenerated — and `tlp`, a confidentiality classification. Measured on a fixture repository:
+    two keywords and one authored grouping present before the delete, both absent after, with the
+    operation reporting `applied: true` and no warning.
+
+    Named here because this module owns the mapping between a diagram's frontmatter keys and these
+    arguments; a second reading of that mapping is how the nine went missing in the first place.
+    """
+    carried: CarriedDiagramFields = {}
+    if isinstance(keywords := frontmatter.get("keywords"), list):
+        carried["keywords"] = [str(k) for k in keywords]
+    if isinstance(version := frontmatter.get("diagram-format-version"), int):
+        carried["diagram_format_version"] = version
+    if frontmatter.get("manual-layout") is True:
+        carried["manual_layout"] = True
+    if isinstance(tlp := frontmatter.get("tlp"), str) and tlp:
+        carried["tlp"] = tlp
+    if isinstance(viewpoint := frontmatter.get("viewpoint"), dict):
+        carried["viewpoint"] = dict(viewpoint)
+    if isinstance(derivations := frontmatter.get("view_derivations"), list):
+        carried["view_derivations"] = [dict(d) for d in derivations if isinstance(d, dict)]
+    if isinstance(bindings := frontmatter.get("bindings"), list):
+        carried["bindings"] = [dict(b) for b in bindings if isinstance(b, dict)]
+    if isinstance(labels := frontmatter.get("edge-labels"), dict):
+        carried["edge_labels"] = {str(k): str(v) for k, v in labels.items()}
+    if isinstance(groupings := frontmatter.get("authored-groupings"), list):
+        carried["authored_groupings"] = [dict(g) for g in groupings if isinstance(g, dict)]
+    return carried
 
 
 def format_diagram_puml(
