@@ -34,6 +34,16 @@ class _ConfiguredArchimateDiagramType(_ConfiguredOntologyDiagramType):
                 " Explicit arrows are selectable based on endpoint alias matching regardless of label text"
                 " — stereotype prefixes like <<serving>> are not required and should be omitted for cleaner diagrams."
                 " Use --> for serving relations and -- for association relations.",
+                "Correcting what a diagram claims to draw: entity_ids and connection_ids passed"
+                " TOGETHER WITH puml replace the recorded lists — passing them states the set. Omit"
+                " them and the lists are inferred from the body, and that inference is deliberately"
+                " conservative: a stored reference is dropped only where the body positively"
+                " contradicts it. A hand-laid body draws plain arrows with no stereotype, so no arrow"
+                " can be attributed to one relation, so nothing is contradicted and nothing is"
+                " dropped. That is why a view re-cut to a narrower scope keeps the wider view's"
+                " references until you state the new set. artifact_verify names each wrong entry"
+                " (W307). puml='auto-sync' will not fix them on a manual-layout diagram: it"
+                " reconciles bindings and reference spellings and keeps the body and the lists.",
                 "For ArchiMate diagrams, diagram_connections may be used as per-diagram connection annotation"
                 " metadata keyed by model connection artifact_id. Supported opt-in keys are artifact_id"
                 " (or connection_id), include_description, include_multiplicity, and label."

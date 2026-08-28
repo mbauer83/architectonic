@@ -550,3 +550,48 @@ class TestNestedGroupingsSurviveReconciliation:
 
         assert reconciled == [{"label": "Outer", "entity-ids": ["APP@1.alpha"]}]
         assert any("APP@1.gone" in warning for warning in warnings)
+
+
+class TestAStaleSlugIsCorrectedByASync:
+    """A reference that resolves but names its target by a slug it no longer has.
+
+    W305 reports it and tells the author to rewrite it, and the write-up on file says nothing does —
+    that no operation clears it short of resending a manual-layout diagram's whole body. Re-measured
+    here: `auto-sync` corrects it, on a manual-layout diagram, without touching the body. The
+    diagnosis was true of an earlier release and is kept as a test rather than a claim, because that
+    is the difference between the two.
+    """
+
+    def test_auto_sync_rewrites_a_stale_but_resolvable_slug(self, repo: Path) -> None:
+        from src.domain.repository.frontmatter import parse_frontmatter
+        from src.infrastructure.mcp import mcp_artifact_server as mcp
+        from src.infrastructure.workspace.engagement_repo_template import ensure_arch_repo_defaults
+
+        ensure_arch_repo_defaults(repo)
+        made = [
+            str(mcp.artifact_create_entity(
+                artifact_type="application-component", name=name, summary=f"Summary for {name}",
+                dry_run=False, repo_root=str(repo),
+            )["artifact_id"])
+            for name in ("Planning Runs", "Keeper")
+        ]
+        created = mcp.artifact_create_diagram(
+            name="Hand laid", diagram_type="archimate-application", entity_ids=made,
+            dry_run=False, repo_root=str(repo),
+        )
+        diagram_id, path = str(created["artifact_id"]), Path(str(created["path"]))
+        body = "@startuml" + path.read_text(encoding="utf-8").split("@startuml", 1)[1]
+        mcp.artifact_edit_diagram(artifact_id=diagram_id, puml=body, manual_layout=True,
+                                 dry_run=False, repo_root=str(repo))
+
+        # The state the report found: a slug the artifact has dropped, still resolvable by short id.
+        stale = made[0].rsplit(".", 1)[0] + ".a-slug-it-no-longer-has"
+        path.write_text(path.read_text(encoding="utf-8").replace(made[0], stale, 1), encoding="utf-8")
+        assert stale in (parse_frontmatter(path.read_text(encoding="utf-8")).get("entity-ids-used") or [])
+
+        mcp.artifact_edit_diagram(artifact_id=diagram_id, puml="auto-sync",
+                                  dry_run=False, repo_root=str(repo))
+
+        recorded = parse_frontmatter(path.read_text(encoding="utf-8")).get("entity-ids-used") or []
+        assert stale not in recorded, "auto-sync left the stale slug in place"
+        assert sorted(recorded) == sorted(made)

@@ -302,8 +302,34 @@ showing something else:
 | Standalone (has `diagram-entities`) | `diagram-entities` | `diagram_entities=…` |
 | `manual-layout: true` | the author's body, kept verbatim by sync | `puml=…` in the same call, or `manual_layout=false` |
 
-Passing `puml` alongside `entity_ids` is a different request and behaves as it always has: the caller
-supplies the body, and the recorded references are reconciled against what it draws.
+Passing `puml` alongside `entity_ids` is a different request: the caller supplies the body, and the
+recorded references are reconciled against what it draws.
+
+### Correcting what a diagram claims to draw
+
+`entity-ids-used` and `connection-ids-used` answer *which views show this element*, so a wrong entry
+is a wrong answer about the model — and impact analysis reads it. Two rules decide what a write leaves
+behind, and knowing which one is in play is the whole of the flow:
+
+- **You state the set.** Pass `entity_ids` or `connection_ids` **together with `puml`** and the
+  recorded list becomes exactly what you passed. Use this to correct a diagram — most often a view
+  re-cut to a narrower scope, which keeps the wider view's references.
+- **The body is read.** Omit them and the references are inferred from the body, deliberately
+  conservatively: a stored entry is dropped only where the body *positively contradicts* it. A
+  hand-laid ArchiMate body draws plain arrows with no stereotype, so no arrow can be attributed to a
+  particular relation, so nothing is contradicted and nothing is dropped.
+
+That conservatism is why a re-cut diagram does not clean itself up, and why the first rule exists.
+`artifact_verify` names each wrong entry as **W307**, and the message says to pass `connection_ids`
+alongside `puml`. It reports an entry on either of two grounds: the body declares both endpoints and
+draws no relation between them, or an endpoint appears in neither the body nor `entity-ids-used`, so
+nothing in that body could reach it.
+
+A diagram whose layout is hand-tuned needs no exception here. `manual_layout=true` keeps the body
+verbatim, and `connection_ids` beside it corrects the references without touching a line of the
+picture — which is what you want, since the layout is the reason the diagram is manual. What does not
+work is `puml="auto-sync"` on such a diagram: it reconciles bindings and spellings and leaves the
+reference lists alone, by design, because it has no attribution to work from.
 
 ### Grouping what a diagram draws
 
