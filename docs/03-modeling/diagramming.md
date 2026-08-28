@@ -325,11 +325,15 @@ alongside `puml`. It reports an entry on either of two grounds: the body declare
 draws no relation between them, or an endpoint appears in neither the body nor `entity-ids-used`, so
 nothing in that body could reach it.
 
-A diagram whose layout is hand-tuned needs no exception here. `manual_layout=true` keeps the body
-verbatim, and `connection_ids` beside it corrects the references without touching a line of the
-picture — which is what you want, since the layout is the reason the diagram is manual. What does not
-work is `puml="auto-sync"` on such a diagram: it reconciles bindings and spellings and leaves the
-reference lists alone, by design, because it has no attribution to work from.
+A diagram whose layout is hand-tuned needs no exception here, and it has the shortest route of all.
+`connection_ids` beside `puml="auto-sync"` corrects the references and keeps the body exactly as it
+is — no layout resent, nothing in the picture moved. That matters because a hand-laid body runs to
+tens of kilobytes, and restating it to fix a reference list is the kind of edit that does not fit in
+a tool call.
+
+A sync that *regenerates* the body refuses a stated set instead: there the body decides what it
+draws and therefore what it records, so a stated set would be computed over and lost. Omit it and
+the sync records what it drew.
 
 ### Grouping what a diagram draws
 

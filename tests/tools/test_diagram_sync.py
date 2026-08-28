@@ -595,3 +595,86 @@ class TestAStaleSlugIsCorrectedByASync:
         recorded = parse_frontmatter(path.read_text(encoding="utf-8")).get("entity-ids-used") or []
         assert stale not in recorded, "auto-sync left the stale slug in place"
         assert sorted(recorded) == sorted(made)
+
+
+class TestAStatedReferenceSetBesideASync:
+    """Correcting a hand-laid diagram's reference lists without resending its drawing.
+
+    W307 names a wrong entry and says to pass `connection_ids` alongside `puml`. On a hand-laid
+    diagram that means a *literal* body — 13 to 22 KB of layout on the views this was reported from,
+    past what a tool call carries. A sync keeps such a body verbatim and already rewrites those two
+    fields' spellings, so a stated set belongs there: it is a claim about the body rather than an edit
+    to it.
+
+    Where a sync *regenerates* the body, the body decides the lists and a stated set is refused
+    instead of being computed over.
+    """
+
+    def _repo(self, repo: Path) -> tuple[str, Path, list[str], str]:
+        from src.application.puml_alias_declarations import alias_declared_on
+        from src.infrastructure.mcp import mcp_artifact_server as mcp
+        from src.infrastructure.workspace.engagement_repo_template import ensure_arch_repo_defaults
+
+        ensure_arch_repo_defaults(repo)
+        made = [
+            str(mcp.artifact_create_entity(
+                artifact_type="application-component", name=name, summary=f"Summary for {name}",
+                dry_run=False, repo_root=str(repo))["artifact_id"])
+            for name in ("Alpha", "Beta", "Gamma")
+        ]
+        drawn = str(mcp.artifact_add_connection(
+            source_entity=made[0], target_entity=made[1], connection_type="archimate-serving",
+            dry_run=False, repo_root=str(repo))["artifact_id"])
+        for source, target, kind in (
+            (made[0], made[2], "archimate-serving"), (made[1], made[2], "archimate-association"),
+        ):
+            mcp.artifact_add_connection(source_entity=source, target_entity=target,
+                                        connection_type=kind, dry_run=False, repo_root=str(repo))
+        created = mcp.artifact_create_diagram(
+            name="Narrow", diagram_type="archimate-application", entity_ids=made,
+            dry_run=False, repo_root=str(repo))
+        diagram_id, path = str(created["artifact_id"]), Path(str(created["path"]))
+        lines = ("@startuml" + path.read_text(encoding="utf-8").split("@startuml", 1)[1]).splitlines()
+        gamma = next(
+            d.alias for line in lines
+            if "Gamma" in line and (d := alias_declared_on(line)) is not None
+        )
+        narrowed = "\n".join(
+            line for line in lines
+            if gamma not in line and "-[hidden]" not in line
+            and "-->" not in line and " -- " not in line
+        )
+        mcp.artifact_edit_diagram(artifact_id=diagram_id, puml=narrowed, manual_layout=True,
+                                  entity_ids=made[:2], dry_run=False, repo_root=str(repo))
+        return diagram_id, path, made, drawn
+
+    def test_a_hand_laid_diagram_takes_the_stated_set_without_its_body(self, repo: Path) -> None:
+        from src.domain.repository.frontmatter import parse_frontmatter
+        from src.infrastructure.mcp.artifact_mcp.edit_tools import artifact_edit_diagram
+
+        diagram_id, path, _made, drawn = self._repo(repo)
+        stale = parse_frontmatter(path.read_text(encoding="utf-8")).get("connection-ids-used") or []
+        assert len(stale) > 1 and drawn not in stale
+
+        result = artifact_edit_diagram(artifact_id=diagram_id, puml="auto-sync",
+                                      connection_ids=[drawn], dry_run=False, repo_root=str(repo))
+
+        assert result["wrote"] is True
+        recorded = parse_frontmatter(path.read_text(encoding="utf-8")).get("connection-ids-used")
+        assert recorded == [drawn]
+
+    def test_a_regenerating_sync_refuses_a_stated_set(self, repo: Path) -> None:
+        """The body decides its own references there, so a stated set would be computed over."""
+        from src.infrastructure.mcp import mcp_artifact_server as mcp
+        from src.infrastructure.mcp.artifact_mcp.edit_tools import artifact_edit_diagram
+
+        diagram_id, _path, _made, drawn = self._repo(repo)
+        # Hand the picture back to the generator: no longer hand-laid.
+        mcp.artifact_edit_diagram(artifact_id=diagram_id, manual_layout=False,
+                                  dry_run=False, repo_root=str(repo))
+
+        # Raised, like the sibling refusal for the other fields auto-sync will not carry: a
+        # refusal is actionable and a false success is not.
+        with pytest.raises(ValueError, match="regenerates its body"):
+            artifact_edit_diagram(artifact_id=diagram_id, puml="auto-sync",
+                                  connection_ids=[drawn], dry_run=False, repo_root=str(repo))

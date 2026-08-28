@@ -42,8 +42,11 @@ class _ConfiguredArchimateDiagramType(_ConfiguredOntologyDiagramType):
                 " can be attributed to one relation, so nothing is contradicted and nothing is"
                 " dropped. That is why a view re-cut to a narrower scope keeps the wider view's"
                 " references until you state the new set. artifact_verify names each wrong entry"
-                " (W307). puml='auto-sync' will not fix them on a manual-layout diagram: it"
-                " reconciles bindings and reference spellings and keeps the body and the lists.",
+                " (W307). On a manual-layout diagram, pass connection_ids beside"
+                " puml='auto-sync': the body is kept exactly as it is and only the lists change,"
+                " which is the way to correct them without resending a hand-laid layout. A sync"
+                " that regenerates the body refuses a stated set, because that body decides its"
+                " own references.",
                 "For ArchiMate diagrams, diagram_connections may be used as per-diagram connection annotation"
                 " metadata keyed by model connection artifact_id. Supported opt-in keys are artifact_id"
                 " (or connection_id), include_description, include_multiplicity, and label."

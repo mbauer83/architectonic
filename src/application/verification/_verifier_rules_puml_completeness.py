@@ -224,7 +224,8 @@ def _check_recorded_connections_are_drawn(
             "declares both endpoints and draws no relation between them, or an endpoint is in "
             "neither the body nor entity-ids-used, so nothing here could reach it. The claim that "
             "this view shows the connection is wrong, and impact analysis reads it. Correct it by "
-            "passing connection_ids alongside puml on artifact_edit_diagram",
+            "passing connection_ids to artifact_edit_diagram — alongside puml, or alongside "
+            "puml='auto-sync' on a hand-laid diagram, which keeps the body as it is",
             loc,
         ))
 

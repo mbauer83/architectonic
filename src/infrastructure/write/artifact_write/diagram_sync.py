@@ -50,8 +50,30 @@ from .boundary import assert_engagement_write_root
 from .coerce import as_optional_str_list
 from .diagram_edit import edit_diagram
 from .diagram_membership import is_scope_bound, is_standalone
-from .parse_existing import parse_diagram_file
+from .parse_existing import ParsedDiagram, parse_diagram_file
 from .types import SyncDiagramToModelResult
+
+
+def _refuse_stated_references_unless_body_is_kept(parsed: ParsedDiagram) -> None:
+    """Refuse a stated reference set where a refresh will regenerate the body.
+
+    A regenerated body decides its own references, so a stated set would be computed over and
+    silently lost. Only a hand-laid diagram keeps its body verbatim, and there a stated set is the
+    one way to correct the lists without resending the drawing.
+    """
+    if parsed.frontmatter.get("manual-layout") is True:
+        return
+    if is_scope_bound(parsed):
+        raise ValueError(
+            "entity_ids/connection_ids cannot be stated for a sync of a model-backed diagram: it is "
+            "re-projected from its scope binding, which decides what it draws and therefore what it "
+            "records. Change the binding's target instead."
+        )
+    raise ValueError(
+        "entity_ids/connection_ids cannot be stated for a sync of this diagram: the sync regenerates "
+        "its body, and the reference lists follow what that body draws. Omit them and the sync "
+        "records what it drew, or pass entity_ids/connection_ids with a literal puml to state both."
+    )
 
 
 def refresh_diagram(
@@ -62,8 +84,16 @@ def refresh_diagram(
     clear_repo_caches: Callable[[Path], None],
     artifact_id: str,
     dry_run: bool,
+    entity_ids: list[str] | None = None,
+    connection_ids: list[str] | None = None,
 ) -> SyncDiagramToModelResult:
     """Refresh a diagram according to its ownership kind (see module-level dispatch matrix).
+
+    *entity_ids* / *connection_ids* state what the diagram's reference lists should hold. They are
+    honoured only where a refresh keeps the body verbatim, which is a hand-laid diagram: there the
+    body is the truth and the lists are a claim about it, so a caller can correct the claim without
+    resending the drawing. Where a refresh regenerates the body, the lists follow what it draws and
+    the request is refused rather than overridden.
 
     Model-backed (scope-bound) diagrams are re-projected from the model — they are
     NEVER deleted.  ArchiMate-reconcile diagrams are delegated to sync_diagram_to_model.
@@ -76,6 +106,8 @@ def refresh_diagram(
 
     parsed = parse_diagram_file(diagram_path)
 
+    if entity_ids is not None or connection_ids is not None:
+        _refuse_stated_references_unless_body_is_kept(parsed)
     if is_scope_bound(parsed) or is_standalone(parsed):
         # Both scope-bound and standalone diagrams are re-rendered from stored state.
         # Neither is ever deleted by a refresh — deletion requires an explicit call.
@@ -119,6 +151,8 @@ def refresh_diagram(
         )
 
     return sync_diagram_to_model(
+        entity_ids=entity_ids,
+        connection_ids=connection_ids,
         repo_root=repo_root,
         store=store,
         verifier=verifier,
@@ -239,6 +273,8 @@ def sync_diagram_to_model(
     clear_repo_caches: Callable[[Path], None],
     artifact_id: str,
     dry_run: bool,
+    entity_ids: list[str] | None = None,
+    connection_ids: list[str] | None = None,
 ) -> SyncDiagramToModelResult:
     """Reconcile an ArchiMate-reconcile diagram against the current model state.
 
@@ -315,8 +351,12 @@ def sync_diagram_to_model(
             verifier=verifier,
             clear_repo_caches=clear_repo_caches,
             artifact_id=artifact_id,
-            entity_ids_used=[e.artifact_id for e in entity_records],
-            connection_ids_used=[c.artifact_id for c in conn_records],
+            # A stated set wins here, and only here: the body is kept verbatim, so the lists are a
+            # claim about a drawing this call does not touch. Correcting them otherwise means
+            # resending the whole body — 13 to 22 KB of hand-laid layout on the diagrams this was
+            # reported from, which is past what a tool call carries.
+            entity_ids_used=entity_ids or [e.artifact_id for e in entity_records],
+            connection_ids_used=connection_ids or [c.artifact_id for c in conn_records],
             authored_groupings=authored_groupings,
             dry_run=dry_run,
         )

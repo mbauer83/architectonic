@@ -210,7 +210,8 @@ def artifact_edit_diagram(
 
     if puml == PUML_AUTO_SYNC:
         # `auto-sync` regenerates the body from what is already stored, so it can carry no other
-        # edit — and it used to accept them silently and drop them. `authored_groupings=[]` with
+        # edit — with one exception, below. It used to accept them silently and drop them.
+        # `authored_groupings=[]` with
         # `puml="auto-sync"` answered `wrote: true` while the regenerated body still held every box
         # it was asked to remove, which is the worst available answer: a refusal is actionable and a
         # false success is not. Refused rather than applied-then-refreshed for the same reason a
@@ -233,12 +234,20 @@ def artifact_edit_diagram(
                 f"call and re-sync in a second."
             )
         store = repo_cached(key)
+        # The exception: a stated reference set. `entity_ids`/`connection_ids` are a claim about the
+        # body rather than an edit to it, and a sync already rewrites those two fields' spellings —
+        # so on a hand-laid diagram, whose body a sync keeps verbatim, this is the only way to
+        # correct the lists without resending the drawing. W307 names this route. Where the sync
+        # regenerates the body it decides the lists, and the sync refuses a stated set instead of
+        # computing over it.
         result = artifact_write_ops.refresh_diagram(
             repo_root=root,
             store=store,
             verifier=verifier,
             clear_repo_caches=clear_repo_caches,
             artifact_id=artifact_id,
+            entity_ids=entity_ids,
+            connection_ids=connection_ids,
             dry_run=dry_run,
         )
         out = _finalize_authoritative_write(dry_run, result, mutation_context)
