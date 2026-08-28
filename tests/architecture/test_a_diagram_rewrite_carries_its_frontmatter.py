@@ -91,10 +91,12 @@ CALL_SITES: tuple[FormatterCallSite, ...] = (
 )
 
 
-def _calls_in(module: Path) -> list[tuple[str, ast.Call]]:
+def _calls_in(
+    module: Path,
+) -> list[tuple[str, ast.Call, ast.FunctionDef | ast.AsyncFunctionDef]]:
     """Every `format_diagram_puml(...)` call in *module*, with the function that encloses it."""
     tree = ast.parse((REPO_ROOT / module).read_text(encoding="utf-8"))
-    found: list[tuple[str, ast.Call]] = []
+    found: list[tuple[str, ast.Call, ast.FunctionDef | ast.AsyncFunctionDef]] = []
     for node in ast.walk(tree):
         if not isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
             continue
@@ -104,7 +106,7 @@ def _calls_in(module: Path) -> list[tuple[str, ast.Call]]:
                 and isinstance(inner.func, ast.Name)
                 and inner.func.id == "format_diagram_puml"
             ):
-                found.append((node.name, inner))
+                found.append((node.name, inner, node))
     return found
 
 
@@ -112,13 +114,42 @@ def _named_arguments(call: ast.Call) -> set[str]:
     return {keyword.arg for keyword in call.keywords if keyword.arg is not None}
 
 
-def _unpacks_the_carry_over(call: ast.Call) -> bool:
-    """Does this call spread `carried_diagram_fields(...)` into itself?"""
+def _carry_over_names(enclosing: ast.FunctionDef | ast.AsyncFunctionDef) -> set[str]:
+    """Locals assigned from `carried_diagram_fields(...)` anywhere in this function."""
+    names: set[str] = set()
+    for node in ast.walk(enclosing):
+        if not isinstance(node, ast.Assign):
+            continue
+        value = node.value
+        if (
+            isinstance(value, ast.Call)
+            and isinstance(value.func, ast.Name)
+            and value.func.id == "carried_diagram_fields"
+        ):
+            names |= {target.id for target in node.targets if isinstance(target, ast.Name)}
+    return names
+
+
+def _unpacks_the_carry_over(
+    call: ast.Call, enclosing: ast.FunctionDef | ast.AsyncFunctionDef
+) -> bool:
+    """Does this call spread the carry-over into itself?
+
+    Directly, or through a local assigned from it — which a caller needs when it must adjust one
+    carried field before passing it on. The delete does exactly that: it carries every field and
+    prunes the groupings, because a grouping *does* name entities being removed.
+    """
+    derived = _carry_over_names(enclosing)
     return any(
         keyword.arg is None
-        and isinstance(keyword.value, ast.Call)
-        and isinstance(keyword.value.func, ast.Name)
-        and keyword.value.func.id == "carried_diagram_fields"
+        and (
+            (
+                isinstance(keyword.value, ast.Call)
+                and isinstance(keyword.value.func, ast.Name)
+                and keyword.value.func.id == "carried_diagram_fields"
+            )
+            or (isinstance(keyword.value, ast.Name) and keyword.value.id in derived)
+        )
         for keyword in call.keywords
     )
 
@@ -131,7 +162,7 @@ def test_every_call_site_has_a_row() -> None:
         module = path.relative_to(REPO_ROOT)
         if "format_diagram_puml(" not in path.read_text(encoding="utf-8"):
             continue
-        for function, _call in _calls_in(module):
+        for function, _call, _enclosing in _calls_in(module):
             found.add((module, function))
 
     assert found == registered, (
@@ -146,12 +177,15 @@ def test_every_call_site_has_a_row() -> None:
     "site", [s for s in CALL_SITES if s.kind == "rewrite"], ids=lambda s: s.function
 )
 def test_a_rewrite_hands_back_what_it_is_not_changing(site: FormatterCallSite) -> None:
-    calls = [call for function, call in _calls_in(site.module) if function == site.function]
+    calls = [
+        (call, enclosing) for function, call, enclosing in _calls_in(site.module)
+        if function == site.function
+    ]
     assert calls, f"{site.function} no longer calls the formatter"
-    for call in calls:
+    for call, enclosing in calls:
         named = _named_arguments(call)
         missing = CARRIED - named
-        assert not missing or _unpacks_the_carry_over(call), (
+        assert not missing or _unpacks_the_carry_over(call, enclosing), (
             f"{site.module}:{site.function} rewrites a stored diagram ({site.because}) and omits "
             f"{sorted(missing)}. The formatter writes only what it is given, so each of those is "
             f"deleted from a file that had it. Pass `**carried_diagram_fields(frontmatter)`."
@@ -177,12 +211,15 @@ def test_a_create_cannot_be_told_a_field_it_then_drops(site: FormatterCallSite) 
         argument.arg
         for argument in [*enclosing.args.args, *enclosing.args.kwonlyargs]
     }
-    calls = [call for function, call in _calls_in(site.module) if function == site.function]
+    calls = [
+        (call, enclosing) for function, call, enclosing in _calls_in(site.module)
+        if function == site.function
+    ]
     assert calls, f"{site.function} no longer calls the formatter"
-    for call in calls:
+    for call, enclosing in calls:
         passed = _named_arguments(call)
         accepted_but_dropped = (accepted & CARRIED) - passed
-        assert not accepted_but_dropped or _unpacks_the_carry_over(call), (
+        assert not accepted_but_dropped or _unpacks_the_carry_over(call, enclosing), (
             f"{site.module}:{site.function} is registered as a create ({site.because}) but takes "
             f"{sorted(accepted_but_dropped)} from its caller and does not pass it on, so the caller's "
             f"value is silently discarded."

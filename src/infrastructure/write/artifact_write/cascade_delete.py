@@ -10,6 +10,7 @@ from collections.abc import Callable, Iterator
 from pathlib import Path
 
 from src.application.repo_path_helpers import all_model_roots, diagram_source_root, docs_root
+from src.domain.diagrams.recorded_references import grouping_member_ids
 from src.infrastructure.mutation_adapters import run_git
 from src.infrastructure.write.artifact_write._cascade_helpers import (
     conn_row_touches,
@@ -82,9 +83,15 @@ def _scan_foreign_diagrams(repo_root: Path, owned_entity_ids: set[str]) -> list[
         if fm is None:
             continue
         ids_used = fm.get("entity-ids-used")
-        if not isinstance(ids_used, list):
-            continue
-        entities_removed = [eid for eid in ids_used if eid in owned_entity_ids]
+        listed = ids_used if isinstance(ids_used, list) else []
+        # A grouping member names an entity exactly as an `entity-ids-used` entry does, and boxes
+        # nest to any depth. Reading only the top list is why deleting an entity referenced *only*
+        # through a grouping was neither blocked nor reported: the id survived in the file pointing
+        # at nothing, with `artifact_verify` reporting 0 errors over the whole repository.
+        in_groupings = grouping_member_ids(fm.get("authored-groupings"))
+        entities_removed = [
+            eid for eid in dict.fromkeys([*listed, *in_groupings]) if eid in owned_entity_ids
+        ]
         if not entities_removed:
             continue
         conn_ids_used = fm.get("connection-ids-used")
@@ -152,6 +159,7 @@ def _rewrite_foreign_diagram(diagram_path: Path, drec: dict, repo_root: Path, wa
         carried_diagram_fields,
         format_diagram_puml,
     )
+    from src.domain.diagrams.recorded_references import pruned_groupings  # noqa: PLC0415
     from src.infrastructure.write.artifact_write.boundary import modification_stamp  # noqa: PLC0415
     from src.infrastructure.write.artifact_write.diagram_render import _render_diagram_entities_puml  # noqa: PLC0415
     from src.infrastructure.write.artifact_write.parse_existing import parse_diagram_file  # noqa: PLC0415
@@ -184,6 +192,15 @@ def _rewrite_foreign_diagram(diagram_path: Path, drec: dict, repo_root: Path, wa
         new_body = parsed.puml_body
     # Everything this rewrite is not changing is handed back: the formatter writes only what it is
     # given, so an omitted field is a deleted one, and nine were being omitted here.
+    # The carried fields keep everything this rewrite is not changing — but a grouping *does* name
+    # entities being removed, so it is the one carried field the delete has to prune.
+    carried = carried_diagram_fields(fm)
+    if "authored_groupings" in carried:
+        pruned = pruned_groupings(carried["authored_groupings"], lambda m: m not in remove_eids)
+        if pruned.groupings:
+            carried["authored_groupings"] = pruned.groupings
+        else:
+            del carried["authored_groupings"]
     return format_diagram_puml(
         artifact_id=str(fm.get("artifact-id", "")),
         diagram_type=str(fm.get("diagram-type", "archimate")),
@@ -191,7 +208,7 @@ def _rewrite_foreign_diagram(diagram_path: Path, drec: dict, repo_root: Path, wa
         status=str(fm.get("status", "draft")), last_updated=modification_stamp(),
         entity_ids_used=new_eids or None, connection_ids_used=new_cids or None,
         diagram_entities=new_de, diagram_connections=new_dc, puml_body=new_body,
-        **carried_diagram_fields(fm),
+        **carried,
     )
 
 

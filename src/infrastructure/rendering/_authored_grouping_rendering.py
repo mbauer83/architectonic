@@ -26,6 +26,10 @@ from dataclasses import dataclass, field
 
 from src.application.artifacts.parsing import normalize_puml_alias
 from src.domain.artifact_id import stable_id
+from src.domain.diagrams.recorded_references import (
+    GROUPING_MEMBERS_KEY,
+    GROUPING_SUBGROUPS_KEY,
+)
 from src.domain.ontology_representation.artifact_types import EntityRecord
 from src.infrastructure.rendering._diagram_layout import wrapped_grid_lines
 
@@ -278,7 +282,7 @@ def _resolve(
         if not isinstance(group, dict):
             continue
         member_records: list[tuple[EntityRecord, str]] = []
-        raw_members = group.get("entity-ids")
+        raw_members = group.get(GROUPING_MEMBERS_KEY)
         for raw_id in raw_members if isinstance(raw_members, list) else []:
             named = str(raw_id).strip()
             record = index.get(named) or index.get(stable_id(named))
@@ -287,7 +291,7 @@ def _resolve(
                 continue
             member_records.append((record, alias))
             claimed.add(alias)
-        raw_subgroups = group.get("groups")
+        raw_subgroups = group.get(GROUPING_SUBGROUPS_KEY)
         subgroups = (
             _resolve([g for g in raw_subgroups if isinstance(g, dict)], index, claimed=claimed)
             if isinstance(raw_subgroups, list)

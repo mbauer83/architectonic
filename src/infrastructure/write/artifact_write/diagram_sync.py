@@ -144,6 +144,7 @@ def _reconciled_authored_groupings(
     """
     from src.application.puml_grouping_parsing import parse_labeled_groupings  # noqa: PLC0415
     from src.domain.artifact_id import stable_id  # noqa: PLC0415
+    from src.domain.diagrams.recorded_references import pruned_groupings  # noqa: PLC0415
 
     raw = fm.get("authored-groupings")
     if isinstance(raw, list):
@@ -152,56 +153,21 @@ def _reconciled_authored_groupings(
         source = _captured_authored_groupings(puml_body, entity_records, parse_labeled_groupings)
 
     surviving_short = {stable_id(record.artifact_id) for record in entity_records}
-    warnings: list[str] = []
-    return _reconciled_level(source, surviving_short, warnings), warnings
-
-
-def _reconciled_level(
-    source: list[dict[str, object]], surviving_short: set[str], warnings: list[str]
-) -> list[dict[str, object]]:
-    """One level of groupings, reconciled, with its nested levels reconciled the same way.
-
-    **Boxes nest to any depth** — the served contract says so, and a diagram whose groupings nest
-    was rendering and verifying cleanly. Rebuilding each group from three keys discarded the nested
-    ones outright: measured on a fixture, `Outer[alpha] > Inner[beta, gamma]` came back from
-    `auto-sync` as `Outer[alpha]` alone, with no warning, so two members lost their grouping
-    silently. A box survives if it keeps a member or keeps a box.
-    """
-    from src.domain.artifact_id import stable_id  # noqa: PLC0415
-
-    reconciled: list[dict[str, object]] = []
-    for group in source:
-        label = str(group.get("label", ""))
-        raw_members = group.get("entity-ids")
-        member_ids = [str(member) for member in raw_members] if isinstance(raw_members, list) else []
-        kept = [member for member in member_ids if stable_id(member) in surviving_short]
-        for member in member_ids:
-            if stable_id(member) not in surviving_short:
-                warnings.append(f"authored grouping '{label}': member {member} left the diagram and was dropped")
-        raw_subgroups = group.get("groups")
-        subgroups = _reconciled_level(
-            [g for g in raw_subgroups if isinstance(g, dict)], surviving_short, warnings
-        ) if isinstance(raw_subgroups, list) else []
-        if not kept and not subgroups:
-            if member_ids:
-                warnings.append(f"authored grouping '{label}' removed — all its members left the diagram")
-            continue
-        rebuilt: dict[str, object] = {"label": label}
-        # An empty stereotype was being written where the source declared none, which is noise in
-        # every rewritten file; a nested box carries its own.
-        if stereotype := str(group.get("stereotype", "")):
-            rebuilt["stereotype"] = stereotype
-        if kept:
-            rebuilt["entity-ids"] = kept
-        if subgroups:
-            rebuilt["groups"] = subgroups
-        reconciled.append(rebuilt)
-    return reconciled
+    pruned = pruned_groupings(source, lambda member: stable_id(member) in surviving_short)
+    warnings = [
+        f"authored grouping '{label}': member {member} left the diagram and was dropped"
+        for label, member in pruned.dropped_members
+    ] + [
+        f"authored grouping '{label}' removed — all its members left the diagram"
+        for label in pruned.emptied_labels
+    ]
+    return pruned.groupings, warnings
 
 
 def _captured_authored_groupings(puml_body: str, entity_records: list, parse) -> list[dict[str, object]]:
     """Migrate hand-authored grouping rectangles from a body into structured form."""
     from src.application.artifacts.parsing import normalize_puml_alias  # noqa: PLC0415
+    from src.domain.diagrams.recorded_references import GROUPING_MEMBERS_KEY  # noqa: PLC0415
     from src.infrastructure.app_bootstrap import get_module_registry  # noqa: PLC0415
     from src.infrastructure.rendering.archimate_entity_declarations import (  # noqa: PLC0415
         ordered_entity_type_groups,
@@ -221,7 +187,8 @@ def _captured_authored_groupings(puml_body: str, entity_records: list, parse) ->
         member_ids = [id_by_alias[alias] for alias in grouping.member_aliases if alias in id_by_alias]
         if member_ids:
             captured.append(
-                {"label": grouping.label, "stereotype": grouping.stereotype, "entity-ids": member_ids}
+                {"label": grouping.label, "stereotype": grouping.stereotype,
+                 GROUPING_MEMBERS_KEY: member_ids}
             )
     return captured
 

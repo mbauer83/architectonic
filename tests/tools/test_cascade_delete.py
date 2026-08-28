@@ -529,3 +529,68 @@ class TestARewriteKeepsWhatItWasNotAskedToChange:
         assert fm.get("authored-groupings") == [{"label": "Outer", "entity-ids": [kept_id]}]
         # And it still did the job it was called for.
         assert fm.get("entity-ids-used") == [kept_id]
+
+
+class TestAGroupingMemberIsAReferenceToo:
+    """A grouping member names an entity exactly as an `entity-ids-used` entry does.
+
+    The guard read only the top list, so deleting an entity referenced *only* through an
+    `authored-groupings` member was neither blocked nor reported: the delete proceeded, the id
+    survived in the file pointing at nothing, and `artifact_verify` reported 0 errors over the whole
+    repository. Boxes nest to any depth, so the reference can sit at any level.
+    """
+
+    def _diagram(self, repo: Path, grouped_id: str, *, listed: list[str]) -> Path:
+        diag_dir = repo / "diagram-catalog" / "diagrams"
+        diag_dir.mkdir(parents=True, exist_ok=True)
+        path = diag_dir / "grouped.puml"
+        listed_block = "".join(f"  - {eid}\n" for eid in listed)
+        path.write_text(
+            "---\n"
+            "artifact-id: ARC@1.grouped\n"
+            "artifact-type: diagram\n"
+            "name: Grouped\n"
+            "version: 0.1.0\n"
+            "status: draft\n"
+            "diagram-type: archimate\n"
+            + (f"entity-ids-used:\n{listed_block}" if listed else "")
+            + "authored-groupings:\n"
+            "  - label: Outer\n"
+            "    groups:\n"
+            "      - label: Inner\n"
+            f"        entity-ids:\n          - {grouped_id}\n"
+            "---\n@startuml\n@enduml\n",
+            encoding="utf-8",
+        )
+        return path
+
+    def test_a_nested_grouping_member_makes_the_diagram_a_dependent(self, repo: Path) -> None:
+        from src.infrastructure.write.artifact_write.cascade_delete import _scan_foreign_diagrams
+
+        grouped_id = "APP@1.grouped"
+        self._diagram(repo, grouped_id, listed=[])
+
+        found = _scan_foreign_diagrams(repo, {grouped_id})
+
+        assert len(found) == 1, "a grouping-only reference left the diagram invisible to the guard"
+        assert grouped_id in found[0]["entities_removed"]
+
+    def test_the_delete_prunes_the_member_it_removed(self, repo: Path) -> None:
+        """The references are carried across the rewrite now, so the prune is what stops a deleted
+        entity's id surviving inside a grouping instead of inside `entity-ids-used`."""
+        from src.domain.repository.frontmatter import parse_frontmatter
+        from src.infrastructure.write.artifact_write.cascade_delete import _rewrite_foreign_diagram
+
+        grouped_id, kept_id = "APP@1.grouped", "APP@1.kept"
+        path = self._diagram(repo, grouped_id, listed=[grouped_id, kept_id])
+        drec = {
+            "name": "Grouped", "entities_removed": [grouped_id], "connections_removed": [],
+            "puml_customised": True,
+        }
+
+        fm = parse_frontmatter(_rewrite_foreign_diagram(path, drec, repo, []))
+
+        assert fm.get("entity-ids-used") == [kept_id]
+        assert fm.get("authored-groupings") is None, (
+            "the grouping held only the deleted entity, so it should not survive as an empty box"
+        )
