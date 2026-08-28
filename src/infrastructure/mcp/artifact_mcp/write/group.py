@@ -13,7 +13,7 @@ from src.infrastructure.mcp.tool_annotations import DESTRUCTIVE_LOCAL_WRITE
 def artifact_group(
     *,
     kind: Literal["model-project", "diagram-collection", "document-collection"],
-    action: Literal["create", "rename", "archive", "unarchive", "delete"],
+    action: Literal["create", "rename", "archive", "unarchive", "delete", "update"],
     target: str | None = None,
     name: str | None = None,
     new_slug: str | None = None,
@@ -23,7 +23,7 @@ def artifact_group(
     dry_run: bool = True,
     repo_root: str | None = None,
 ) -> dict[str, object]:
-    """Manage group containers (create / rename / archive / unarchive / delete).
+    """Manage group containers (create / rename / archive / unarchive / delete / update).
 
     kind — the grouping axis:
       model-project       : groups of entities + connections (cascade delete supported)
@@ -35,6 +35,10 @@ def artifact_group(
       rename     : change display name (name=) and/or slug (new_slug=); target = existing slug
       archive    : hide from default pickers; typed confirm required when non-empty
       unarchive  : restore archived group to default pickers
+      update     : change display metadata in place — description, name, meta_ontology,
+                   type_filter. `rename` changes the name and the slug and nothing else, so a
+                   description could be set at create and never afterwards: six diagram
+                   collections in the reference repository have none for that reason.
       delete     : remove folder + contents; typed confirm required
                    For model-project, the impact report lists what the cascade would remove.
 
@@ -87,9 +91,10 @@ def register(mcp: FastMCP) -> None:
         description=(
             "Manage artifact group containers across all three grouping axes. "
             "kind: 'model-project' | 'diagram-collection' | 'document-collection'. "
-            "action: create | rename | archive | unarchive | delete. "
+            "action: create | rename | archive | unarchive | delete | update. "
             "target: the group slug (directory name) to act on. "
-            "name: display name (for create/rename). "
+            "name: display name (for create/rename/update). "
+            "description: only create and update store it — rename does not. "
             "new_slug: new directory name (rename only). "
             "confirm: echo the target slug back for destructive/non-empty ops. "
             "dry_run: True (the default) reports what the action would do and changes nothing; "

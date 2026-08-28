@@ -506,3 +506,73 @@ class TestGroupFsHelpers:
         (d / "file.txt").write_text("x")
         _safe_rmdir(d)
         assert d.exists()  # rmdir on non-empty dir raises OSError, which is swallowed
+
+
+class TestADescriptionCanBeSetAfterCreation:
+    """`update` is the action that sets display metadata in place, and MCP could not reach it.
+
+    `group_ops` has always had it and REST has always called it, but the MCP tool's action list
+    omitted it — so an agent authoring a collection could give it a description at create and never
+    afterwards. Six diagram collections in the reference repository have none for that reason.
+    `rename` changes the name and the slug and has never stored a description; accepting one and
+    ignoring it is what made the gap invisible.
+    """
+
+    def _description(self, repo: Path, slug: str) -> str | None:
+        import yaml
+
+        registry = yaml.safe_load((repo / ".arch-repo" / "groups.yaml").read_text(encoding="utf-8"))
+        for entries in (registry or {}).values():
+            for entry in entries if isinstance(entries, list) else []:
+                if isinstance(entry, dict) and entry.get("slug") == slug:
+                    return entry.get("description")
+        return None
+
+    def test_update_is_reachable_through_the_mcp_tool(self, tmp_path: Path) -> None:
+        from src.infrastructure.mcp.artifact_mcp.write.group import artifact_group
+        from src.infrastructure.workspace.engagement_repo_template import ensure_arch_repo_defaults
+
+        repo = tmp_path / "engagements" / "ENG-T" / "architecture-repository"
+        (repo / "model").mkdir(parents=True)
+        (repo / "diagram-catalog" / "diagrams").mkdir(parents=True)
+        ensure_arch_repo_defaults(repo)
+        artifact_group(kind="diagram-collection", action="create", target="views", name="Views",
+                       dry_run=False, repo_root=str(repo))
+        assert self._description(repo, "views") in (None, "")
+
+        result = artifact_group(kind="diagram-collection", action="update", target="views",
+                                description="Every view of the platform",
+                                dry_run=False, repo_root=str(repo))
+
+        assert result["wrote"] is True
+        assert self._description(repo, "views") == "Every view of the platform"
+
+    def test_rename_refuses_a_description_and_names_the_action_that_stores_one(
+        self, tmp_path: Path
+    ) -> None:
+        from src.infrastructure.mcp.artifact_mcp.write.group import artifact_group
+        from src.infrastructure.workspace.engagement_repo_template import ensure_arch_repo_defaults
+
+        repo = tmp_path / "engagements" / "ENG-T" / "architecture-repository"
+        (repo / "model").mkdir(parents=True)
+        (repo / "diagram-catalog" / "diagrams").mkdir(parents=True)
+        ensure_arch_repo_defaults(repo)
+        artifact_group(kind="diagram-collection", action="create", target="views", name="Views",
+                       dry_run=False, repo_root=str(repo))
+
+        result = artifact_group(kind="diagram-collection", action="rename", target="views",
+                                name="All Views", description="silently dropped before",
+                                dry_run=False, repo_root=str(repo))
+
+        assert "update" in str(result.get("error", "")), result
+        # and the rename did not half-happen
+        assert self._description(repo, "views") in (None, "")
+        registry = __import__("yaml").safe_load(
+            (repo / ".arch-repo" / "groups.yaml").read_text(encoding="utf-8")
+        )
+        names = [
+            entry.get("name")
+            for entries in (registry or {}).values() if isinstance(entries, list)
+            for entry in entries if isinstance(entry, dict)
+        ]
+        assert names == ["Views"], f"the refused rename still changed the name: {names}"

@@ -54,6 +54,8 @@ of each written item rather than of the write.
 
 - `create` — register a new group (target = slug)
 - `rename` — change display name or slug (safe subtree `git mv`)
+- `update` — change display metadata in place: description, name, and the type filter or meta
+  ontology the axis allows. This is the only action that sets a description after creation
 - `archive` / `unarchive` — hide or restore from default pickers
 - `delete` (diagram / document collections) — remove folder + contents; typed confirmation
   required

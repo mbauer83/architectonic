@@ -281,6 +281,15 @@ def group_op(
     slug = target or ""
     tf = tuple(type_filter) if type_filter is not None else None
     effects = PREVIEWED if dry_run else APPLIED
+    # `rename` changes the name and the slug; it has never stored a description, and accepting one
+    # silently meant a collection could be given a description at create and never afterwards — six
+    # in the reference repository have none for that reason. Refused rather than ignored, and the
+    # refusal names the action that does it.
+    if action == "rename" and description:
+        raise GroupOpError(
+            "rename changes a group's name and slug and does not store a description. "
+            "Use action='update' to set the description (it also sets the name)."
+        )
     handlers: dict[str, Callable[[], dict[str, object]]] = {
         "create": lambda: group_create(
             repo_root, axis=axis, slug=slug, name=name or slug, description=description,
