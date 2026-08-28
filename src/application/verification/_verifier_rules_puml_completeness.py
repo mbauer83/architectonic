@@ -200,21 +200,31 @@ def _check_recorded_connections_are_drawn(
         if (entity_id := resolve(alias)) is not None
     }
     drawn = _drawn_connection_ids(content, registry, resolve, stereotype_map)
+    # The diagram's own entity list, as the second ground for a contradiction: an endpoint in
+    # neither the body nor here is one no arrow in this body can reach. Supplied only where the
+    # frontmatter states it — an absent list is no evidence, not an empty one.
+    raw_entities = fm.get("entity-ids-used")
+    recorded_entities = (
+        {str(entity) for entity in raw_entities} if isinstance(raw_entities, list) else None
+    )
     reported: set[str] = set()
     for reference in raw:
         text = str(reference)
         if stable_conn_id(text) in reported:
             continue
         if not body_contradicts_reference(
-            text, declared_entities=declared_entities, drawn_stable=drawn
+            text, declared_entities=declared_entities, drawn_stable=drawn,
+            recorded_entities=recorded_entities,
         ):
             continue
         reported.add(stable_conn_id(text))
         result.issues.append(Issue(
             Severity.WARNING, "W307",
-            f"connection-ids-used lists '{text}' but the diagram body draws no relation between "
-            "the pair, and declares both of its endpoints — so the claim that this view shows the "
-            "connection is wrong, and impact analysis reads it",
+            f"connection-ids-used lists '{text}' but this view does not draw it — either the body "
+            "declares both endpoints and draws no relation between them, or an endpoint is in "
+            "neither the body nor entity-ids-used, so nothing here could reach it. The claim that "
+            "this view shows the connection is wrong, and impact analysis reads it. Correct it by "
+            "passing connection_ids alongside puml on artifact_edit_diagram",
             loc,
         ))
 

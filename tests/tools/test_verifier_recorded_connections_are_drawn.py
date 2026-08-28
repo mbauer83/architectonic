@@ -174,6 +174,54 @@ class TestAListedConnectionTheBodyDoesNotDraw:
         assert _codes(issues) == ["W307", "W307"]
 
 
+class TestAnEndpointTheDiagramDoesNotHaveAtAll:
+    """The second ground: an endpoint in neither the body nor `entity-ids-used`.
+
+    The first ground asks whether the body had the vocabulary and declined to draw the relation, so
+    it is silent exactly when an endpoint is missing — and a view re-cut to a narrower scope keeps
+    every reference to the entities it dropped for that reason. Measured on the diagram this came
+    from: it drew 11 relations, listed 108, and `artifact_verify` reported nothing.
+
+    An entity a body draws must appear in `entity-ids-used` (E309/E315), so an endpoint absent from
+    both is absent in fact rather than merely unresolved — which is what makes this sound rather than
+    a guess.
+    """
+
+    def test_an_endpoint_in_neither_the_body_nor_the_entity_list_is_reported(
+        self, repo: Path
+    ) -> None:
+        stranger = "REQ@1000000003.DddDdd.delta"
+        reference = f"{ALPHA}---{stranger}@@archimate-influence"
+
+        issues = _issues(
+            repo, _declaring("REQ_AaaAaa"),
+            _fm(connection_ids=[reference], **{"entity-ids-used": [ALPHA, BETA]}),
+        )
+
+        assert _codes(issues) == ["W307"]
+
+    def test_an_endpoint_the_entity_list_still_records_is_not_reported(self, repo: Path) -> None:
+        """The false positive the first ground was protecting against: an endpoint can be missing
+        from the body's resolved aliases without being missing from the diagram."""
+        reference = f"{ALPHA}---{GAMMA}@@archimate-composition"
+
+        issues = _issues(
+            repo, _declaring("REQ_AaaAaa"),
+            _fm(connection_ids=[reference], **{"entity-ids-used": [ALPHA, GAMMA]}),
+        )
+
+        assert _codes(issues) == []
+
+    def test_a_diagram_that_states_no_entity_list_offers_no_evidence(self, repo: Path) -> None:
+        """An absent list is not an empty one. With nothing to compare against, the rule keeps to
+        its first ground and stays quiet."""
+        stranger = "REQ@1000000003.DddDdd.delta"
+        frontmatter = _fm(connection_ids=[f"{ALPHA}---{stranger}@@archimate-influence"])
+        del frontmatter["entity-ids-used"]
+
+        assert _issues(repo, _declaring("REQ_AaaAaa"), frontmatter) == []
+
+
 class TestWhatIsNotContradicted:
     def test_a_drawn_relation_raises_nothing(self, repo: Path) -> None:
         assert _issues(repo, "REQ_AaaAaa ..> REQ_BbbBbb\n", _fm(connection_ids=[INFLUENCE])) == []

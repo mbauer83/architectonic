@@ -22,7 +22,12 @@ from collections.abc import Callable
 from collections.abc import Set as AbstractSet
 from dataclasses import dataclass
 
-from src.domain.artifact_id import MalformedArtifactIdError, parse_connection_id, stable_conn_id
+from src.domain.artifact_id import (
+    MalformedArtifactIdError,
+    parse_connection_id,
+    stable_conn_id,
+    stable_id,
+)
 
 
 def reference_endpoints(reference: str) -> set[str] | None:
@@ -46,19 +51,42 @@ def body_contradicts_reference(
     declared_entities: AbstractSet[str],
     drawn_stable: AbstractSet[str],
     undecided_pairs: AbstractSet[frozenset[str]] = frozenset(),
+    recorded_entities: AbstractSet[str] | None = None,
 ) -> bool:
     """Whether the body positively says it does not draw this connection.
 
     *declared_entities* and *drawn_stable* are in stable form — `stable_id` for entities,
     `stable_conn_id` for connections. *undecided_pairs* are the endpoint pairs where a drawn glyph
     fits more than one connection, so the reader could not name which.
+
+    **Two independent grounds, and the second needs the diagram's own entity list.** The first is
+    that the body had the vocabulary and did not draw the relation: both endpoints among the entities
+    it declares. The second is that the diagram has no vocabulary for an endpoint at all — it is
+    neither declared in the body nor recorded in `entity-ids-used`, so no arrow in that body can
+    reach it. Without the second, a view re-cut to a narrower scope kept every reference to the
+    entities it dropped: 97 wrong entries on the diagram this was measured against, with
+    `artifact_verify` reporting nothing, because each one failed the *first* test for the very reason
+    it was wrong.
+
+    *recorded_entities* is what closes the false positive the first ground was protecting against.
+    An endpoint can look absent because its alias did not resolve, not because the diagram lacks it —
+    but an entity a body draws is required to appear in `entity-ids-used` (E309/E315), so an endpoint
+    missing from both is missing in fact. Left None where a caller has no entity list to offer, and
+    then this ground is not used, because silence beats a guess.
     """
     if stable_conn_id(reference) in drawn_stable:
         return False
     endpoints = reference_endpoints(reference)
-    if endpoints is None or not endpoints <= set(declared_entities):
+    if endpoints is None:
+        return False
+    if recorded_entities is not None:
+        vocabulary = set(declared_entities) | {stable_id(entity) for entity in recorded_entities}
+        if not endpoints <= vocabulary:
+            return True
+    if not endpoints <= set(declared_entities):
         return False
     return frozenset(endpoints) not in undecided_pairs
+
 
 #: The keys an authored grouping uses for its own members and for the boxes it nests. Named here
 #: because four places read them — the renderer resolving records, the sync reconciling membership,
