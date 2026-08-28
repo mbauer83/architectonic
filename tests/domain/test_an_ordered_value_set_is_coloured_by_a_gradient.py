@@ -181,6 +181,35 @@ class TestAdjacentMembersCanBeToldApart:
         assert min(_delta_e(unset, colour) for colour in colours.values()) >= MINIMUM_ADJACENT_DELTA_E
 
 
+class TestAScaleThatRunsTheOtherWay:
+    """A gradient's direction belongs to the reader. These run bad to good, which is a maturity
+    ladder; a risk band is the same shape upside down, with its high end the bad one. Rather than a
+    second table of stops that would drift from the first, each gradient is offered reversed."""
+
+    def test_every_gradient_is_offered_in_both_directions(self) -> None:
+        for name in ("red-green", "yellow-blue"):
+            assert name in ATTRIBUTE_GRADIENTS
+            assert "-".join(reversed(name.split("-"))) in ATTRIBUTE_GRADIENTS
+
+    @pytest.mark.parametrize(("forwards", "backwards"),
+                            [("red-green", "green-red"), ("yellow-blue", "blue-yellow")])
+    def test_a_reverse_is_its_gradient_read_from_the_other_end(
+        self, forwards: str, backwards: str
+    ) -> None:
+        assert ATTRIBUTE_GRADIENTS[backwards] == tuple(reversed(ATTRIBUTE_GRADIENTS[forwards]))
+
+    @pytest.mark.parametrize(("forwards", "backwards"),
+                            [("red-green", "green-red"), ("yellow-blue", "blue-yellow")])
+    def test_the_members_come_out_in_the_opposite_order(self, forwards: str, backwards: str) -> None:
+        """And the unset member stays white in both: it is not on the scale, so it has no direction."""
+        ahead = dict(graded_colors(MATURITY, unset="Not Assessed", gradient=forwards))
+        behind = dict(graded_colors(MATURITY, unset="Not Assessed", gradient=backwards))
+
+        graded = [member for member in MATURITY if member != "Not Assessed"]
+        assert [ahead[member] for member in graded] == [behind[member] for member in reversed(graded)]
+        assert ahead["Not Assessed"] == behind["Not Assessed"] == UNSET_MEMBER_COLOR
+
+
 class TestTheStopsAvoidMud:
     def test_red_to_green_does_not_run_through_brown(self) -> None:
         """The two-stop version of this ramp put olive and brown across the middle of the scale.

@@ -17076,7 +17076,7 @@ export interface operations {
                 /** @description Attribute the current display is coloured by */
                 colour_by?: string;
                 format?: "png" | "svg";
-                /** @description Which named gradient an ordered value set is spread along: `red-green` (the default) or `orange-blue`, which a red/green colour-blind reader can separate */
+                /** @description Which named gradient an ordered value set is spread along — `red-green`, `yellow-blue` for a red/green colour-blind reader, or either reversed (`green-red`, `blue-yellow`) for a scale whose high end is the bad one. Absent leaves a graded set on the default and a ramp on its magnitude pair */
                 gradient?: string;
                 /** @description A colour for one value, as `member:#rrggbb`; repeatable */
                 key?: string[];
@@ -17483,7 +17483,7 @@ export interface operations {
             query?: {
                 /** @description Attribute to colour the drawn elements by */
                 colour_by?: string;
-                /** @description Which named gradient an ordered value set is spread along: `red-green` (the default) or `orange-blue`, which a red/green colour-blind reader can separate */
+                /** @description Which named gradient an ordered value set is spread along — `red-green`, `yellow-blue` for a red/green colour-blind reader, or either reversed (`green-red`, `blue-yellow`) for a scale whose high end is the bad one. Absent leaves a graded set on the default and a ramp on its magnitude pair */
                 gradient?: string;
                 /** @description A colour for one value, as `member:#rrggbb`; repeatable */
                 key?: string[];

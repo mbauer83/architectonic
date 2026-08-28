@@ -277,3 +277,46 @@ class TestWhatIsPrinted:
     def test_an_empty_value_prints_nothing(self, value: object) -> None:
         """A column of `owner: —` spends the diagram's room saying nothing."""
         assert "owner" not in _apply([_entity("CAP_a", owner=value)], ReadingLens(printed=("owner",)), _RAMPED)
+
+
+class TestAGradientOnARamp:
+    """A named gradient reaches a ramp only when a reader names one.
+
+    The gradients run bad to good. A number a reader colours by is as often a risk score, where high
+    is the bad end, so defaulting a ramp to one would paint a large risk green — the opposite of what
+    the model says. The reader who wants a scale's own direction picks the gradient that runs that
+    way, which is why each is offered reversed.
+    """
+
+    def test_a_number_keeps_the_magnitude_pair_when_no_gradient_is_named(self) -> None:
+        from src.domain.viewpoints.viewpoint_style_values import AD_HOC_RAMP_TOKENS, STYLE_TOKEN_COLORS
+
+        entities = [_entity("CAP_a", risk_score=2), _entity("CAP_b", risk_score=8)]
+
+        fills = _fills(_apply(entities, ReadingLens(colour_by="risk_score"), _RAMPED))
+
+        assert fills["CAP_a"] == STYLE_TOKEN_COLORS[AD_HOC_RAMP_TOKENS[0]]
+
+    def test_a_named_gradient_runs_the_ramp(self) -> None:
+        from src.domain.viewpoints.viewpoint_style_values import ATTRIBUTE_GRADIENTS
+
+        entities = [_entity("CAP_a", risk_score=2), _entity("CAP_b", risk_score=8)]
+
+        fills = _fills(_apply(
+            entities, ReadingLens(colour_by="risk_score", gradient="green-red"), _RAMPED
+        ))
+
+        assert fills["CAP_a"] == ATTRIBUTE_GRADIENTS["green-red"][0]
+        assert fills["CAP_b"] == ATTRIBUTE_GRADIENTS["green-red"][-1]
+
+    def test_the_reverse_puts_the_high_end_where_the_reader_asked(self) -> None:
+        """The whole point: a risk score coloured `green-red` reads high as red."""
+        entities = [_entity("CAP_a", risk_score=2), _entity("CAP_b", risk_score=8)]
+
+        forwards = _fills(_apply(
+            entities, ReadingLens(colour_by="risk_score", gradient="red-green"), _RAMPED))
+        backwards = _fills(_apply(
+            entities, ReadingLens(colour_by="risk_score", gradient="green-red"), _RAMPED))
+
+        assert forwards["CAP_a"] == backwards["CAP_b"]
+        assert forwards["CAP_b"] == backwards["CAP_a"]

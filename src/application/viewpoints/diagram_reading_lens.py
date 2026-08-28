@@ -51,6 +51,7 @@ from src.domain.viewpoints.viewpoint_scale_styling import (
 )
 from src.domain.viewpoints.viewpoint_style_evaluation import evaluate_item_style
 from src.domain.viewpoints.viewpoint_style_values import (
+    AD_HOC_RAMP_TOKENS,
     ATTRIBUTE_GRADIENTS,
     DEFAULT_ATTRIBUTE_GRADIENT,
     color_along_stops,
@@ -84,9 +85,13 @@ class ReadingLens:
     #: keeps the colour its declared position gives it, so changing one member's colour does not mean
     #: restating the rest.
     key: Mapping[str, str] = field(default_factory=dict)
-    #: Which named gradient an ordered value set is spread along. The reader's `key` still overrides
-    #: any individual member, so this sets the starting point rather than replacing the choice.
-    gradient: str = DEFAULT_ATTRIBUTE_GRADIENT
+    #: Which named gradient an ordered value set is spread along, or None for the product's default.
+    #: The reader's `key` still overrides any individual member, so this sets the starting point.
+    #:
+    #: None and the default name are **not** the same request. A graded value set is coloured by the
+    #: default either way; a *ramp* keeps the magnitude pair unless a reader names a gradient, because
+    #: the gradients run bad to good and a number is as often a risk score, where high is the bad end.
+    gradient: str | None = None
     #: Whether the diagram should explain its own notation. One flag rather than one per mark: a
     #: reader wants the legend or does not, and which marks it can show is the diagram's answer, not
     #: theirs — four controls, three of which a given diagram cannot act on, is three dead controls.
@@ -106,8 +111,15 @@ class ReadingLens:
         return not self.colour_by and not self.printed and not self.legend
 
 
-def _ramp_rule(attribute: str, ramp: tuple[str, str] | None, gradient: str) -> StyleRule:
+def _ramp_rule(attribute: str, ramp: tuple[str, str] | None, gradient: str | None) -> StyleRule:
     """The reader's colour choice over an ordered attribute, as the style rule it is.
+
+    **A named gradient applies here only when a reader names one.** The gradients run bad to good,
+    which is a maturity ladder; a number a reader colours by is as often a risk score, where high is
+    the bad end, and painting one green because it is large inverts what the picture says. So the
+    default stays `AD_HOC_RAMP_TOKENS`, the magnitude pair, which answers the question a reader asks
+    of a number they chose — where is this high. A reader who wants a scale's own direction picks the
+    gradient that runs that way, `green-red` as readily as `red-green`.
 
     An overridden gradient goes in as two `#rrggbb` literals where the default goes in as two tokens,
     and `token_color` passes a literal through — so the endpoints are interchangeable and the
@@ -117,8 +129,9 @@ def _ramp_rule(attribute: str, ramp: tuple[str, str] | None, gradient: str) -> S
         capability="node_color",
         mode="scale",
         scale_attribute=attribute,
-        scale_tokens=ramp if ramp is not None else ATTRIBUTE_GRADIENTS.get(
-            gradient, ATTRIBUTE_GRADIENTS[DEFAULT_ATTRIBUTE_GRADIENT]
+        scale_tokens=(
+            ramp if ramp is not None
+            else ATTRIBUTE_GRADIENTS.get(gradient or "", AD_HOC_RAMP_TOKENS)
         ),
     )
 
@@ -234,7 +247,10 @@ def apply_reading_lens(
         # drawn as a ramp. An empty palette means a ramp, which is also what an ordinal gets: its enum
         # is a rank, and the panel already says so.
         rules = (
-            _member_rules(lens.colour_by, palette, lens.key, unset, lens.gradient) if palette
+            _member_rules(
+                lens.colour_by, palette, lens.key, unset,
+                lens.gradient or DEFAULT_ATTRIBUTE_GRADIENT,
+            ) if palette
             else (_ramp_rule(lens.colour_by, lens.ramp, lens.gradient),)
         )
         presentation = PresentationSpec(representation="diagram", styling_rules=rules)

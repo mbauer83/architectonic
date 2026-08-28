@@ -1,5 +1,5 @@
 import type { AttributeOffer, DiagramAttributePanel, TypeOffer } from '../../domain/schemas/diagrams'
-import { panelOffers, type ReadingLens } from '../../domain/readingLens'
+import { DEFAULT_GRADIENT, panelOffers, type ReadingLens } from '../../domain/readingLens'
 
 /**
  * The pure part of the reading panel: what each row says, and what a click does to the lens.
@@ -123,7 +123,7 @@ export const colourKey = (
     // The server's answer for the gradient in effect, not a second derivation of it. The swatches
     // are the key to the picture, so deriving them here would be two chances to disagree about one
     // colouring — and the gradients' stops live in the ontology's own module, not in the browser.
-    const graded = attribute.colour_by_gradient?.[lens.gradient] ?? {}
+    const graded = attribute.colour_by_gradient?.[lens.gradient ?? DEFAULT_GRADIENT] ?? {}
     return attribute.values.map((member) => ({
       kind: 'member' as const,
       member,

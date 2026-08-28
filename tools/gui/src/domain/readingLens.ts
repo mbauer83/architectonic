@@ -55,10 +55,14 @@ export interface ReadingLens {
    * keeps the colour its declared position gives it, so changing one does not mean restating the
    * rest — and a reader who has customised nothing sends nothing. */
   readonly key: Readonly<Record<string, string>>
-  /** Which named gradient an ordered value set is spread along. The panel offers what the server
-   * serves, so a control cannot name one the renderer will not accept. A member the reader has
-   * coloured by hand still wins: `key` is applied over whatever the gradient gives. */
-  readonly gradient: string
+  /** Which named gradient an ordered value set is spread along, or `null` for the product's default.
+   *
+   * The panel offers what the server serves, so a control cannot name one the renderer will not
+   * accept. A member the reader has coloured by hand still wins: `key` applies over whatever the
+   * gradient gives. `null` and the default name are different requests — a graded set is coloured
+   * the same by both, and a *ramp* keeps its magnitude pair until a reader names one, because the
+   * gradients run bad to good and a number is as often a risk score. */
+  readonly gradient: string | null
   /** Whether the diagram should explain its own notation, drawn into the image.
    *
    * One flag, not one per mark. A reader wants the legend or does not; *which* marks it can show is
@@ -72,7 +76,7 @@ export interface ReadingLens {
 export const DEFAULT_GRADIENT = 'red-green'
 
 export const EMPTY_READING_LENS: ReadingLens = {
-  colourBy: '', printed: [], ramp: null, key: {}, legend: false, gradient: DEFAULT_GRADIENT,
+  colourBy: '', printed: [], ramp: null, key: {}, legend: false, gradient: null,
 }
 
 /** Whether this asks for anything.
@@ -107,14 +111,14 @@ export const lensParams = (
   const key = Object.entries(lens.key).map(([member, colour]) => `${member}:${colour}`)
   if (key.length) params.key = key
   if (lens.legend) params.legend = 'true'
-  // Only when it is not the default: a parameter restating the fallback describes a choice the
-  // reader did not make, and it would put every ordinary reading through a distinct URL.
-  if (lens.gradient !== DEFAULT_GRADIENT) params.gradient = lens.gradient
+  // Only when the reader chose one: a parameter restating the fallback describes a choice nobody
+  // made, and it would put every ordinary reading through a distinct URL.
+  if (lens.gradient !== null) params.gradient = lens.gradient
   return params
 }
 
 /** The gradient an ordered value set is spread along. */
-export const withGradient = (lens: ReadingLens, gradient: string): ReadingLens => ({
+export const withGradient = (lens: ReadingLens, gradient: string | null): ReadingLens => ({
   ...lens, gradient,
 })
 

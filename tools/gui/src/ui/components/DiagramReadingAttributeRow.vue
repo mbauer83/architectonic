@@ -13,7 +13,9 @@
  * fill, not a rule about the control, which is why it is not a radio group.
  */
 import type { AttributeOffer } from '../../domain/schemas/diagrams'
-import { withDeclaredColours, withGradient, type ReadingLens } from '../../domain/readingLens'
+import {
+  DEFAULT_GRADIENT, withDeclaredColours, withGradient, type ReadingLens,
+} from '../../domain/readingLens'
 import {
   canTakeColour, hasCustomColours, presenceLabel, valueSetLabel, withColourBy, withPrinted,
   type ColourStep,
@@ -51,7 +53,9 @@ const previewOf = (attribute: AttributeOffer, gradient: string): string => {
   return colours.length ? `linear-gradient(to right, ${colours.join(', ')})` : 'none'
 }
 
-/** A gradient's name as a reader reads it: `red-green` is a description, not an identifier. */
+/** A gradient's name as a reader reads it: `red-green` is a description, not an identifier, and its
+ * two halves are the direction — which is what makes `green-red` a real choice rather than a
+ * setting. */
 const gradientLabel = (gradient: string): string =>
   gradient.split('-').map((word) => word[0].toUpperCase() + word.slice(1)).join(' to ')
 </script>
@@ -116,8 +120,8 @@ const gradientLabel = (gradient: string): string =>
         :key="gradient"
         class="grad__choice"
         type="button"
-        :class="{ 'grad__choice--on': lens.gradient === gradient }"
-        :aria-pressed="lens.gradient === gradient"
+        :class="{ 'grad__choice--on': (lens.gradient ?? DEFAULT_GRADIENT) === gradient }"
+        :aria-pressed="(lens.gradient ?? DEFAULT_GRADIENT) === gradient"
         :title="`Spread ${attribute.name} along ${gradientLabel(gradient)}`"
         @click="emit('update:lens', withGradient(lens, gradient))"
       >

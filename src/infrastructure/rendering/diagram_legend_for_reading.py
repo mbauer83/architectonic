@@ -28,6 +28,7 @@ from src.application.viewpoints.diagram_reading_lens import ReadingLens
 from src.domain.ontology_representation.relation_notation import RelationNotation
 from src.domain.viewpoints.viewpoint_style_values import (
     AD_HOC_RAMP_TOKENS,
+    DEFAULT_ATTRIBUTE_GRADIENT,
     graded_colors,
     token_color,
 )
@@ -60,7 +61,9 @@ def _attribute_colouring(
     if members:
         return {
             member: lens.key.get(member, colour)
-            for member, colour in graded_colors(members, unset=unset, gradient=lens.gradient)
+            for member, colour in graded_colors(
+                members, unset=unset, gradient=lens.gradient or DEFAULT_ATTRIBUTE_GRADIENT
+            )
         }
     near, far = lens.ramp if lens.ramp is not None else AD_HOC_RAMP_TOKENS
     return {"lower": token_color(near), "higher": token_color(far)}

@@ -169,9 +169,27 @@ UNSET_MEMBER_COLOR = "#ffffff"
 #: cannot separate, which is why the second is not an afterthought. `yellow-blue` is that second one:
 #: yellow and blue are the poles every common form of colour blindness preserves, it runs light to
 #: dark so it survives greyscale, and it reaches neither grey nor white on the way.
-ATTRIBUTE_GRADIENTS: dict[str, tuple[str, ...]] = {
+_BASE_GRADIENTS: dict[str, tuple[str, ...]] = {
     "red-green": ("#dc2626", "#fb923c", "#fde047", "#a3e635", "#22c55e"),
     "yellow-blue": ("#facc15", "#4ade80", "#06b6d4", "#2563eb", "#1e3a8a"),
+}
+
+
+def _reversed_name(name: str) -> str:
+    """`red-green` reversed is `green-red`. The name *is* the direction, which is why it reverses."""
+    return "-".join(reversed(name.split("-")))
+
+
+#: Each gradient and its reverse. **A scale's direction belongs to the reader, not to the attribute.**
+#: These run bad to good, which is a maturity ladder — and a risk score is the same shape upside down,
+#: with its high end the bad one. Offering the reverse is what lets one set of stops serve both,
+#: instead of a second table that would drift from this one.
+#:
+#: Generated rather than written out, so a stop edited here is edited for both directions, and so the
+#: gates below — separation, neutrality, lightness — cover a reversed gradient without naming it.
+ATTRIBUTE_GRADIENTS: dict[str, tuple[str, ...]] = {
+    **_BASE_GRADIENTS,
+    **{_reversed_name(name): tuple(reversed(stops)) for name, stops in _BASE_GRADIENTS.items()},
 }
 
 DEFAULT_ATTRIBUTE_GRADIENT = "red-green"

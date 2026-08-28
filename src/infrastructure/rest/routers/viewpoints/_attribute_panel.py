@@ -21,7 +21,6 @@ from src.application.runtime_catalogs import RuntimeCatalogs
 from src.application.viewpoints.diagram_attribute_panel import AttributeOffer, DiagramAttributeOffers
 from src.domain.viewpoints.viewpoint_style_values import (
     ATTRIBUTE_GRADIENTS,
-    DEFAULT_ATTRIBUTE_GRADIENT,
     graded_colors,
 )
 from src.infrastructure.rest.contracts.viewpoint_projection import DiagramAttributePanelResponse
@@ -52,9 +51,12 @@ def _attribute_to_dict(attribute: AttributeOffer) -> dict[str, Any]:
 
 
 def _offered_gradients() -> list[str]:
-    """The gradient names, the default first — the order a control offers them in."""
-    rest = sorted(name for name in ATTRIBUTE_GRADIENTS if name != DEFAULT_ATTRIBUTE_GRADIENT)
-    return [DEFAULT_ATTRIBUTE_GRADIENT, *rest]
+    """The gradient names in declared order — each base gradient, then each reverse.
+
+    Declared order rather than sorted: it groups a gradient with its own reverse and puts the default
+    first, which alphabetical does neither of.
+    """
+    return list(ATTRIBUTE_GRADIENTS)
 
 
 def attribute_panel_to_dict(offers: DiagramAttributeOffers, *, can_explain: bool) -> dict[str, Any]:

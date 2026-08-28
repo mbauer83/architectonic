@@ -28,7 +28,6 @@ from src.application.runtime_catalogs import RuntimeCatalogs
 from src.application.viewpoints.diagram_reading_lens import ReadingLens
 from src.config.repo_paths import DIAGRAM_CATALOG, DIAGRAMS, RENDERED
 from src.domain.ontology_representation.artifact_types import DiagramRecord
-from src.domain.viewpoints.viewpoint_style_values import DEFAULT_ATTRIBUTE_GRADIENT
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers._openapi import READ_RESPONSES, TAG_DIAGRAMS, media_response
 from src.infrastructure.rest.routers.diagrams._reading_lens_request import lens_from_query
@@ -215,10 +214,12 @@ def get_diagram_svg(
     ] = False,
     gradient: Annotated[
         str,
-        Query(description="Which named gradient an ordered value set is spread along: "
-                          "`red-green` (the default) or `orange-blue`, which a red/green "
-                          "colour-blind reader can separate"),
-    ] = DEFAULT_ATTRIBUTE_GRADIENT,
+        Query(description="Which named gradient an ordered value set is spread along — "
+                          "`red-green`, `yellow-blue` for a red/green colour-blind reader, or "
+                          "either reversed (`green-red`, `blue-yellow`) for a scale whose high end "
+                          "is the bad one. Absent leaves a graded set on the default and a ramp on "
+                          "its magnitude pair"),
+    ] = "",
     catalogs: RuntimeCatalogs = Depends(fresh_viewpoints_runtime_catalogs_dependency),
 ) -> Response:
     id = artifact_id
@@ -290,10 +291,12 @@ def download_diagram(
     ] = False,
     gradient: Annotated[
         str,
-        Query(description="Which named gradient an ordered value set is spread along: "
-                          "`red-green` (the default) or `orange-blue`, which a red/green "
-                          "colour-blind reader can separate"),
-    ] = DEFAULT_ATTRIBUTE_GRADIENT,
+        Query(description="Which named gradient an ordered value set is spread along — "
+                          "`red-green`, `yellow-blue` for a red/green colour-blind reader, or "
+                          "either reversed (`green-red`, `blue-yellow`) for a scale whose high end "
+                          "is the bad one. Absent leaves a graded set on the default and a ramp on "
+                          "its magnitude pair"),
+    ] = "",
     catalogs: RuntimeCatalogs = Depends(fresh_viewpoints_runtime_catalogs_dependency),
 ) -> Response:
     """The diagram as an attachment — the authored image, or the reader's current display.
