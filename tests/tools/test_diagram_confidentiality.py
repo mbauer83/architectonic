@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from src.application.modeling.artifact_write_formatting import format_diagram_puml
+from src.application.modeling.diagram_file_format import format_diagram_puml
 from src.infrastructure.write.artifact_write.diagram_confidentiality import (
     ensure_confidential_gitignore,
     is_assurance_diagram_type,

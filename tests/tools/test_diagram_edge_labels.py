@@ -20,7 +20,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from src.application.modeling.artifact_write_formatting import format_diagram_puml
+from src.application.modeling.diagram_file_format import format_diagram_puml
 from src.application.verification._verifier_rules_edge_labels import check_edge_label_overrides
 from src.application.verification.artifact_verifier_types import Severity, VerificationResult
 from src.diagram_types.c4.renderer import C4PumlRenderer

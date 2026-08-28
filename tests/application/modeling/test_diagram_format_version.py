@@ -1,4 +1,4 @@
-from src.application.modeling.artifact_write_formatting import format_diagram_puml
+from src.application.modeling.diagram_file_format import format_diagram_puml
 
 
 def test_diagram_formatter_emits_format_version_when_supplied() -> None:

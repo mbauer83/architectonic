@@ -16,11 +16,11 @@ import string
 from collections.abc import Mapping
 
 from src.application.modeling.artifact_write_formatting import (
-    format_diagram_puml,
     format_entity_markdown,
     format_matrix_markdown,
     format_outgoing_markdown,
 )
+from src.application.modeling.diagram_file_format import format_diagram_puml
 from src.application.modeling.types import (
     DiagramConnectionInferenceMode,
 )

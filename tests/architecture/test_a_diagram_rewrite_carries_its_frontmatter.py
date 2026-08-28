@@ -30,7 +30,7 @@ from pathlib import Path
 
 import pytest
 
-from src.application.modeling.artifact_write_formatting import (
+from src.application.modeling.diagram_file_format import (
     CarriedDiagramFields,
     format_diagram_puml,
 )

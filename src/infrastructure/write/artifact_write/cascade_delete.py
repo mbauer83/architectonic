@@ -155,7 +155,7 @@ def _cascade_preflight(repo_root: Path, project_slug: str) -> dict:
 
 def _rewrite_foreign_diagram(diagram_path: Path, drec: dict, repo_root: Path, warnings: list[str]) -> str:
     """Compute the new .puml content for a foreign diagram after removing owned entities/connections."""
-    from src.application.modeling.artifact_write_formatting import (  # noqa: PLC0415
+    from src.application.modeling.diagram_file_format import (  # noqa: PLC0415
         carried_diagram_fields,
         format_diagram_puml,
     )

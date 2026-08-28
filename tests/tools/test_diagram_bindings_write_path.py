@@ -16,8 +16,8 @@ from pathlib import Path
 
 import yaml
 
-from src.application.modeling.artifact_write_formatting import format_diagram_puml
 from src.application.modeling.binding_normalize import normalize_bindings, strip_diagram_shorthand
+from src.application.modeling.diagram_file_format import format_diagram_puml
 from src.application.verification.artifact_verifier import ArtifactRegistry, ArtifactVerifier
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.write.artifact_write.diagram import create_diagram
