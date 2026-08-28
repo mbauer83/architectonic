@@ -3,6 +3,49 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [0.8.1] — 2026-08-28
+
+**[Full detail → `changelog-assets/0.8.1-detail.md`](changelog-assets/0.8.1-detail.md)**
+
+**A diagram keeps what you did not ask it to change, and an activity loop is either drawn or refused
+with a reason.** The fixes below share a shape: something the product knew was dropped without
+saying so — a field, a nested grouping, a returning flow, or a reference no operation could correct.
+
+### Fixed
+
+- **An activity loop whose body branches is drawn.** A retry whose body holds a decision, a fork, a
+  partition or a note is now rendered as a loop. So are two loops in sequence.
+- **A loop the notation cannot carry is refused, with the reason and the remedy.** Nested loops, a
+  body arm reaching a step that belongs after the loop, a loop crossing a swimlane, a return path of
+  more than one step, and two flows returning to the same step each say what cannot be drawn and what
+  to change. A loop is drawn only when its whole cycle sits in one swimlane, because a loop crossing
+  a lane has its way back drawn through the steps it returns past.
+- **A diagram rewrite keeps the frontmatter it was not asked to change.** Deleting a model project no
+  longer strips a referencing diagram's keywords, groupings, bindings, edge labels, viewpoint, format
+  version, hand-layout flag or classification.
+- **A nested grouping survives a sync.** A box nested inside another kept its members instead of
+  being discarded.
+- **A grouping member counts as a reference.** Deleting an entity that a diagram places in a grouping
+  is reported before the delete and cleaned up by it, instead of leaving an id pointing at nothing.
+- **A diagram's recorded connections can be corrected.** Pass `connection_ids` alongside `puml` and
+  the recorded list becomes exactly that — which is how a view re-cut to a narrower scope drops the
+  wider view's references without regenerating a hand-laid body.
+- **A reference no arrow in the body could reach is reported.** `artifact_verify` names it (W307)
+  when an endpoint appears in neither the body nor `entity-ids-used`, and says how to correct it.
+- **A group's description can be set after it is created**, through `artifact_group`'s `update`
+  action. `rename` now refuses a description and names the action that stores one, rather than
+  accepting it and doing nothing.
+
+### Changed
+
+- **Diagram guidance explains how recorded references are decided** — that passing `entity_ids` or
+  `connection_ids` with a body states the set, that omitting them reads the body conservatively, and
+  why a hand-laid ArchiMate body cannot be read that way. Available through
+  `artifact_authoring_guidance`, the write tool's own description, and the diagramming
+  documentation.
+- **Activity guidance says what a drawn loop may hold** — how a loop is closed, and the three limits
+  a repeat imposes.
+
 ## [0.8.0] — 2026-08-26
 
 **[Full detail → `changelog-assets/0.8.0-detail.md`](changelog-assets/0.8.0-detail.md)**
@@ -847,6 +890,7 @@ never-requested operations is empty — the reason to trust a release which rena
 - Confidential assurance tier (STPA/CAST/GRC/FMEA/GSN) on an encrypted store with tamper-evident history
 - Viewpoint query engine with diagram/matrix/table representations
 
+[0.8.1]: https://github.com/mbauer83/architectonic/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/mbauer83/architectonic/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/mbauer83/architectonic/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/mbauer83/architectonic/compare/v0.6.0...v0.7.0
