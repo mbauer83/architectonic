@@ -9,7 +9,10 @@ import type { NotFoundError } from '../../domain'
 import { useQuery } from '../composables/useQuery'
 import { renderMatrixMarkdown } from '../lib/matrixMarkdown'
 import type { C4Navigation } from '../../domain'
-import { buildDrilldownByEntityId, c4NavigationOf, diagramNeedsSvg, matrixBodyOf } from './DiagramDetailView.helpers'
+import {
+  buildDrilldownByEntityId, c4NavigationOf, diagramNeedsSvg, editRouteFor,
+  editableMetadataByEntityType, isADifferentDiagram, matrixHtmlOf,
+} from './DiagramDetailView.helpers'
 import DrilldownMenu from '../components/DrilldownMenu.vue'
 import DiagramReadingPanel from '../components/DiagramReadingPanel.vue'
 import { useDiagramReadingLens } from '../composables/useDiagramReadingLens'
@@ -51,23 +54,25 @@ const diagramEntities = computed(() =>
 )
 const diagramConnections = computed(() => contextQuery.data.value?.connections ?? [])
 
-const matrixHtml = computed(() => {
-  const body = matrixBodyOf(detail.value?.type_extras)
-  if (body === null || detail.value?.diagram_type !== 'matrix') return null
-  return renderMatrixMarkdown(body)
-})
-const editPath = computed(() => detail.value?.diagram_type === 'matrix'
-  ? matrixEditRoute(diagramId.value)
-  : diagramEditRoute(diagramId.value))
+const matrixHtml = computed(() =>
+  matrixHtmlOf(detail.value?.diagram_type, detail.value?.type_extras, renderMatrixMarkdown))
+const editPath = computed(() =>
+  editRouteFor(detail.value?.diagram_type, diagramId.value, matrixEditRoute, diagramEditRoute))
 const isGlobalDiagram = computed(() => detail.value?.is_global ?? false)
 
 const showSource = ref(false)
 
+// The diagram the query currently holds, so a reload can tell a refresh from a fresh load.
+let loadedDiagramId: string | null = null
+
 const load = () => {
   if (!diagramId.value) return
-  selection.selectedId.value = null
-  contextQuery.reset()
-  reading.reset()
+  if (isADifferentDiagram(loadedDiagramId, diagramId.value)) {
+    selection.selectedId.value = null
+    contextQuery.reset()
+    reading.reset()
+  }
+  loadedDiagramId = diagramId.value
   contextQuery.run(svc.getDiagramContext(diagramId.value))
 }
 
@@ -112,13 +117,8 @@ watch(detail, (next) => {
     .then((config) => { uiConfig.value = config })
     .catch(() => { uiConfig.value = null })
 })
-const editableMetadataByType = computed<Record<string, EditableMetadataSpec>>(() => {
-  const out: Record<string, EditableMetadataSpec> = {}
-  for (const own of uiConfig.value?.diagram_only_types ?? []) {
-    if (own.editable_metadata) out[own.entity_type] = own.editable_metadata
-  }
-  return out
-})
+const editableMetadataByType = computed<Record<string, EditableMetadataSpec>>(() =>
+  editableMetadataByEntityType(uiConfig.value))
 
 const executeDelete = () => {
   void router.push(isGlobalDiagram.value ? { path: '/diagrams', query: { tier: 'enterprise' } } : '/diagrams')
@@ -157,8 +157,10 @@ const executeDelete = () => {
       @delete="deletePanel?.requestDelete()"
     />
 
+    <!-- Only while there is nothing to show. A refresh keeps the rendered canvas mounted, because
+         replacing it detaches the browser's fullscreen element and drops the reader out of it. -->
     <div
-      v-if="contextQuery.loading.value"
+      v-if="contextQuery.loading.value && !detail"
       class="state"
     >
       Loading…

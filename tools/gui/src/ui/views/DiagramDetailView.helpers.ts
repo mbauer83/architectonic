@@ -134,3 +134,52 @@ export function resolveConnection(
     ?? fallback.get(rev)
   )
 }
+
+/** Whether a load is arriving at a *different* diagram, and must therefore discard what is on screen.
+ *
+ * A reload of the diagram already shown is a refresh, and a refresh must keep the canvas mounted:
+ * the browser ends fullscreen when its fullscreen element leaves the document, so replacing the
+ * canvas drops the reader out of a fullscreen diagram. Every reload path reaches this — a save from
+ * the sidebar, a sync, a write from the selection — and only a change of diagram is a reason to throw
+ * the picture away, where the old one must not show under the new id.
+ *
+ * The query keeps its data across a refetch on its own; `reset()` is the only thing that discards it,
+ * which is why the question is asked before calling that rather than inside it.
+ */
+export const isADifferentDiagram = (loaded: string | null, arriving: string): boolean =>
+  loaded !== arriving
+
+/** The matrix body rendered to HTML, or `null` when this diagram is not a matrix or carries none.
+ *
+ * Both halves are the condition: a `type_extras` body on a non-matrix diagram is not a matrix to
+ * render, and a matrix with no body has nothing to show. */
+export const matrixHtmlOf = (
+  diagramType: string | undefined,
+  typeExtras: TypeExtras,
+  render: (body: string) => string,
+): string | null => {
+  const body = matrixBodyOf(typeExtras)
+  return body === null || diagramType !== 'matrix' ? null : render(body)
+}
+
+/** Where "Edit" goes: a matrix is edited in its own view, everything else in the diagram editor. */
+export const editRouteFor = <T>(
+  diagramType: string | undefined,
+  diagramId: string,
+  matrixRoute: (id: string) => T,
+  diagramRoute: (id: string) => T,
+): T => (diagramType === 'matrix' ? matrixRoute(diagramId) : diagramRoute(diagramId))
+
+/** The editable-metadata spec for each diagram-only entity type the config declares.
+ *
+ * Keyed by entity type so a detail panel resolves its own without the generic view knowing any type
+ * names — the config is the only place those names live. */
+export const editableMetadataByEntityType = <Spec>(
+  config: { diagram_only_types?: readonly { entity_type: string; editable_metadata?: Spec }[] } | null,
+): Record<string, Spec> => {
+  const out: Record<string, Spec> = {}
+  for (const own of config?.diagram_only_types ?? []) {
+    if (own.editable_metadata) out[own.entity_type] = own.editable_metadata
+  }
+  return out
+}
