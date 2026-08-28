@@ -237,6 +237,20 @@ class TestTheReconcileItself:
 
         assert kept == ["A@1.a---B@1.b@@archimate-composition"]
 
+    def test_a_caller_who_states_the_set_replaces_the_stored_one(self) -> None:
+        """The correctable path. Nothing here contradicts the stored reference — its endpoints are
+        not both declared — so the conservative rule would carry it, and on a body that cannot be
+        attributed at all *every* stored reference takes that branch. An explicit argument is a
+        statement rather than an inference, so it stands on its own."""
+        kept = self._reconcile(
+            caller_supplied=["A@1.a---B@1.b@@archimate-serving"],
+            stored=["A@1.a---C@1.c@@archimate-serving", "A@1.a---D@1.d@@archimate-flow"],
+            drawn=None,
+            drawn_entity_ids=None,
+        )
+
+        assert kept == ["A@1.a---B@1.b@@archimate-serving"]
+
     def test_a_pair_the_reader_could_not_decide_keeps_its_references(self) -> None:
         """An ambiguous untyped relation stays uninferred on purpose, and says so."""
         kept = self._reconcile(
@@ -276,3 +290,62 @@ class TestTheReconcileItself:
         assert kept == [
             "A@1.a---B@1.b@@archimate-serving", "A@1.a---B@1.b@@archimate-composition",
         ]
+
+
+class TestAManualLayoutBodyIsCorrectable:
+    """The case the report was written from: a diagram re-cut into a narrower view.
+
+    A manual-layout ArchiMate body draws its relations as plain PlantUML arrows with no stereotype,
+    so nothing in it can be attributed to a model connection and nothing is ever *contradicted*. The
+    conservative rule that protects an inference then protected every stale reference: the diagram
+    drew 11 relations, listed 108, and passing the 11 alongside the body left all 108. The remaining
+    routes were worse — `auto-sync` reconciles bindings only, and `manual_layout=false` regenerates
+    the body, discarding the hand layout that is the reason the diagram is manual at all.
+    """
+
+    def test_passing_the_connections_beside_the_body_replaces_the_stale_set(self, repo: Path) -> None:
+        from src.application.puml_alias_declarations import (  # noqa: PLC0415
+            alias_declared_on,
+            declared_aliases,
+        )
+
+        a, b, c = (_entity(repo, name) for name in ("Alpha", "Beta", "Gamma"))
+        drawn = _connect(repo, a, b, "archimate-serving")
+        stale_one = _connect(repo, a, c, "archimate-serving")
+        stale_two = _connect(repo, b, c, "archimate-association")
+
+        created = mcp.artifact_create_diagram(
+            name="Part analysis", diagram_type="archimate-application",
+            entity_ids=[a, b, c], dry_run=False, repo_root=str(repo),
+        )
+        assert created["wrote"], created
+        diagram_id, path = str(created["artifact_id"]), Path(str(created["path"]))
+        # The wide view: every relation among the three, recorded from the model.
+        assert sorted(_recorded_connections(path)) == sorted([drawn, stale_one, stale_two])
+
+        # Re-cut to a narrower view by hand: the two entities and the one relation between them.
+        # The aliases are read through their one owner rather than spelled here a second time.
+        stored = path.read_text(encoding="utf-8")
+        body_lines = ("@startuml" + stored.split("@startuml", 1)[1]).splitlines()
+        aliases = {d.alias for d in declared_aliases(stored)}
+        assert len(aliases) == 3, aliases
+        gamma_alias = next(
+            declaration.alias for line in body_lines
+            if "Gamma" in line and (declaration := alias_declared_on(line)) is not None
+        )
+        narrowed = "\n".join(
+            line for line in body_lines
+            if gamma_alias not in line and "-[hidden]" not in line
+        )
+
+        result = mcp.artifact_edit_diagram(
+            artifact_id=diagram_id, puml=narrowed, manual_layout=True,
+            connection_ids=[drawn], entity_ids=[a, b],
+            dry_run=False, repo_root=str(repo),
+        )
+        assert result["wrote"], result
+
+        assert _recorded_connections(path) == [drawn], (
+            "the caller stated the reference set beside the body and it was merged into the stale "
+            "one instead of replacing it"
+        )

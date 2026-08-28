@@ -220,9 +220,19 @@ def reconcile_recorded_connections(
     What counts as a contradiction is `body_contradicts_reference`, in the domain, because
     verification asks the same question of a stored body and the two must not answer it
     differently. A stored reference is dropped only where the body positively contradicts it.
+
+    **A caller who passes the set is stating it, so the stored value is not carried.** Reading a body
+    is an inference and the conservative rule above is right for it; an explicit argument is not an
+    inference and needs none. Without this, a diagram whose body cannot be attributed at all had no
+    correctable path: a manual-layout ArchiMate body draws its relations as plain arrows with no
+    stereotype, so nothing is ever contradicted, so every stored reference survived and the caller's
+    list was merged *into* the wrong set rather than replacing it. Measured on a diagram re-cut from
+    a landscape into a part analysis: it drew 11 relations, listed 108, and passing the 11 alongside
+    the body left all 108 in place. `entity_ids` is already honoured in exactly this position, which
+    is what made the asymmetry look unintended rather than chosen.
     """
     kept = _merge_reference_ids(caller_supplied, drawn)
-    if stored is None:
+    if stored is None or caller_supplied is not None:
         return kept
     declared_entities = {stable_id(e) for e in (drawn_entity_ids or [])}
     drawn_stable = {stable_conn_id(c) for c in (kept or [])}
