@@ -233,8 +233,12 @@ def _validate_scale_rule(
                 "scale attributes must be numeric, date, or ordinal values",
             )
         ]
-    if len(rule.scale_tokens) != 2:
-        return [issue("error", "scale-token-count", f"{path}/scale_tokens", "scale mode requires exactly two tokens")]
+    if len(rule.scale_tokens) < 2:
+        return [issue(
+            "error", "scale-token-count", f"{path}/scale_tokens",
+            "scale mode requires at least two tokens: the ends of the gradient, and any stop between "
+            "them the scale should pass through",
+        )]
     return []
 
 

@@ -73,6 +73,12 @@ class _Connections:
         return {"archimate-realization": {"line": "dashed", "source": "none", "target": "hollow-triangle"}}
 
 
+class _Ontology:
+    @staticmethod
+    def all_entity_types() -> dict[str, object]:
+        return {}
+
+
 class _Catalogs:
     connections = _Connections()
     # Empty, because the lens under test colours by a *continuous* attribute: the palette lookup
@@ -81,6 +87,10 @@ class _Catalogs:
     # the criteria snapshot, so both consumers get one answer.
     specializations = SpecializationCatalog()
     profiles = ProfileRegistry.empty()
+    # The legend asks the ontology what a reader calls each element type, where the type's own name
+    # is not it. No type here declares one, which is the ordinary answer — the stub carries the
+    # accessor so the route can ask.
+    ontology = _Ontology()
 
 
 class _Repo:

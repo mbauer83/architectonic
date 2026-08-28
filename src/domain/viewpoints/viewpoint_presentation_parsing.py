@@ -132,7 +132,10 @@ def _style_rule_from_mapping(raw: object, *, label: str) -> StyleRule:
             scale_attribute=str(raw["scale_attribute"]) if raw.get("scale_attribute") else None,
             scale_min=_scale_bound(raw.get("scale_min")),
             scale_max=_scale_bound(raw.get("scale_max")),
-            scale_tokens=tokens if len(tokens) == 2 else (),
+            # Two or more. A pair is the common case and a gradient with middle stops is the reason
+            # this is not `== 2`: a scale declaring five was silently reduced to none, so nothing was
+            # coloured at all.
+            scale_tokens=tokens if len(tokens) >= 2 else (),
             source_criteria=source_criteria,
             target_criteria=target_criteria,
             disabled=disabled,

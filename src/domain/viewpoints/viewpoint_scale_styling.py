@@ -41,7 +41,10 @@ class ScaleStyleValue:
     """Adapter-facing scale result: interpolate between tokens at ``position``."""
 
     position: float
-    tokens: tuple[str, str]
+    #: The stops to interpolate between, in order. Two or more: a gradient's middle stops are what
+    #: keep a scale out of the mud its endpoints cross through, and an adapter reading only the first
+    #: two would draw a ramp nobody chose.
+    tokens: tuple[str, ...]
 
 
 StyleValue = str | ScaleStyleValue
@@ -137,7 +140,7 @@ def calculate_scale_bounds(
     legends: list[ScaleLegend] = []
     drift: set[str] = set()
     for index, rule in enumerate(presentation.styling_rules):
-        if rule.disabled or rule.mode != "scale" or rule.scale_attribute is None or len(rule.scale_tokens) != 2:
+        if rule.disabled or rule.mode != "scale" or rule.scale_attribute is None or len(rule.scale_tokens) < 2:
             continue
         # Drift is a rule-level statement ("this attribute resolves nowhere"), not a
         # per-item one: a mixed entity+connection population must not report drift
@@ -215,7 +218,9 @@ def _scale_value(
     environment: EvaluationEnvironment,
     bounds: Mapping[int, ScaleBounds],
 ) -> ScaleStyleValue | None:
-    if rule.scale_attribute is None or len(rule.scale_tokens) != 2 or index not in bounds:
+    # Two or more stops. A rule declaring a gradient's middle stops was treated as declaring none,
+    # so nothing on the diagram was coloured at all — the failure of a scale is silence.
+    if rule.scale_attribute is None or len(rule.scale_tokens) < 2 or index not in bounds:
         return None
     # Same schema-drift contract as every other comparator/style path: an attribute path
     # the registries don't know (and isn't a derived. path, which bypasses schema lookup
@@ -236,6 +241,6 @@ def _scale_value(
     # still reads as "far"/"near", never as unstyled.
     clamped = min(max(numeric, scale.minimum), scale.maximum)
     position = 0.0 if scale.maximum == scale.minimum else (clamped - scale.minimum) / (scale.maximum - scale.minimum)
-    return ScaleStyleValue(position=position, tokens=(rule.scale_tokens[0], rule.scale_tokens[1]))
+    return ScaleStyleValue(position=position, tokens=tuple(rule.scale_tokens))
 
 
