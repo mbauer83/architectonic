@@ -13,7 +13,7 @@
  * fill, not a rule about the control, which is why it is not a radio group.
  */
 import type { AttributeOffer } from '../../domain/schemas/diagrams'
-import { withDeclaredColours, type ReadingLens } from '../../domain/readingLens'
+import { withDeclaredColours, withGradient, type ReadingLens } from '../../domain/readingLens'
 import {
   canTakeColour, hasCustomColours, presenceLabel, valueSetLabel, withColourBy, withPrinted,
   type ColourStep,
@@ -28,6 +28,8 @@ defineProps<{
    * passes none: the key belongs beside one control, and showing it twice would invite a reader to
    * wonder which of the two the picture used. */
   colourKey?: readonly ColourStep[]
+  /** The gradients a reader may pick, the default first, exactly as the server offers them. */
+  gradients?: readonly string[]
 }>()
 const emit = defineEmits<{ 'update:lens': [ReadingLens]; pick: [ColourStep, string] }>()
 
@@ -35,6 +37,23 @@ const emit = defineEmits<{ 'update:lens': [ReadingLens]; pick: [ColourStep, stri
  * a reader who already knows that a ramp needs an order and a palette a bounded set. */
 const NO_COLOUR_REASON =
   'A ramp needs an order and a palette needs a bounded set of values; this attribute declares neither.'
+
+/** A gradient shown as itself: the colours it actually gives this attribute's graded members, left to
+ * right. Built from what the server served rather than from a table repeated here, so the preview, the
+ * swatches and the picture are the same answer. The unset member is left out — it takes no place on
+ * the scale, which is the whole point of it. */
+const previewOf = (attribute: AttributeOffer, gradient: string): string => {
+  const graded = attribute.colour_by_gradient?.[gradient] ?? {}
+  const colours = attribute.values
+    .filter((member) => member !== attribute.unset_value)
+    .map((member) => graded[member])
+    .filter((colour): colour is string => Boolean(colour))
+  return colours.length ? `linear-gradient(to right, ${colours.join(', ')})` : 'none'
+}
+
+/** A gradient's name as a reader reads it: `red-green` is a description, not an identifier. */
+const gradientLabel = (gradient: string): string =>
+  gradient.split('-').map((word) => word[0].toUpperCase() + word.slice(1)).join(' to ')
 </script>
 
 <template>
@@ -87,6 +106,30 @@ const NO_COLOUR_REASON =
     </div>
 
     <div
+      v-if="colourKey && lens.colourBy === attribute.name && (gradients?.length ?? 0) > 1
+        && attribute.colour === 'palette'"
+      class="grad"
+    >
+      <span class="grad__label">Spread along</span>
+      <button
+        v-for="gradient in gradients"
+        :key="gradient"
+        class="grad__choice"
+        type="button"
+        :class="{ 'grad__choice--on': lens.gradient === gradient }"
+        :aria-pressed="lens.gradient === gradient"
+        :title="`Spread ${attribute.name} along ${gradientLabel(gradient)}`"
+        @click="emit('update:lens', withGradient(lens, gradient))"
+      >
+        <span
+          class="grad__bar"
+          :style="{ background: previewOf(attribute, gradient) }"
+        />
+        {{ gradientLabel(gradient) }}
+      </button>
+    </div>
+
+    <div
       v-if="colourKey && lens.colourBy === attribute.name"
       class="key"
     >
@@ -97,9 +140,12 @@ const NO_COLOUR_REASON =
       >
         <input
           class="key__swatch"
+          :class="{ 'key__swatch--unset': step.unset }"
           type="color"
           :value="step.colour"
-          :title="`Pick the colour for ${step.label}`"
+          :title="step.unset
+            ? `${step.label} is the declared default, so it is drawn unset rather than on the scale`
+            : `Pick the colour for ${step.label}`"
           @input="emit('pick', step, ($event.target as HTMLInputElement).value)"
         >
         {{ step.label }}
@@ -134,6 +180,22 @@ const NO_COLOUR_REASON =
 .attr__control--absent { color: #9ca3af; cursor: default; font-size: 0.8rem; }
 .key { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; padding: 0.1rem 0 0.3rem; }
 .key__step { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.8rem; }
+/* The gradient choice sits above the swatches it produces, so a reader sees the cause over the
+   effect. Each choice previews itself — a name alone ("yellow to blue") asks a reader to imagine
+   what the picture will do. */
+.grad { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin: 0.35rem 0 0.15rem 1.4rem; }
+.grad__label { font-size: 0.75rem; opacity: 0.7; }
+.grad__choice {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  font: inherit; font-size: 0.75rem; cursor: pointer;
+  background: none; border: 1px solid transparent; border-radius: 3px;
+  padding: 0.1rem 0.35rem 0.1rem 0.15rem;
+}
+.grad__choice:hover { border-color: currentcolor; }
+/* The chosen one is bordered rather than filled: a fill behind a gradient bar competes with the bar. */
+.grad__choice--on { border-color: currentcolor; font-weight: 600; }
+.grad__bar { width: 3.2rem; height: 0.7rem; border-radius: 2px; border: 1px solid rgb(0 0 0 / 0.25); }
+
 /* A colour input rather than a plain swatch: it *is* the picker, and the browser's own is the one a
    reader already knows. Sized down to a swatch, with the platform chrome stripped so a row of them
    reads as a key rather than as a row of form controls. */
@@ -144,6 +206,9 @@ const NO_COLOUR_REASON =
 .key__swatch::-webkit-color-swatch-wrapper { padding: 0; }
 .key__swatch::-webkit-color-swatch { border: none; border-radius: 1px; }
 .key__swatch::-moz-color-swatch { border: none; border-radius: 1px; }
+/* White on a light panel is invisible, and this swatch is white by definition — the unset member is
+   the one value that takes no place on the scale, so it is outlined to be seen at all. */
+.key__swatch--unset { outline: 1px dashed currentcolor; outline-offset: 1px; }
 .key__note { color: #9ca3af; font-size: 0.75rem; }
 .key__revert {
   font: inherit; font-size: 0.75rem; color: #6b7280; background: none; border: none;

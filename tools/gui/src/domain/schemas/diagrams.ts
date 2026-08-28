@@ -260,6 +260,16 @@ export const AttributeOfferSchema = Schema.Struct({
   /** How many of the drawn entities of this type carry a value. Zero is reported, not hidden — a
    * dropped row would say "this type has no such attribute", which is false. */
   present_on: Schema.Number,
+  /** The member a schema declares as its `default` — what a reader sees on an element nobody has
+   * assessed. It takes no place on the scale, so a control shows it apart from the graded members. */
+  unset_value: Schema.optional(Schema.NullOr(Schema.String)),
+  /** `{gradient: {member: '#rrggbb'}}` — each member's colour under each gradient a reader may pick.
+   * Served rather than derived here: these swatches are the key to the picture, and two derivations
+   * of one gradient are two chances to disagree. Every gradient at once, so switching costs no
+   * round trip. */
+  colour_by_gradient: Schema.optional(
+    Schema.Record({ key: Schema.String, value: Schema.Record({ key: Schema.String, value: Schema.String }) }),
+  ),
 })
 export type AttributeOffer = typeof AttributeOfferSchema.Type
 
@@ -304,5 +314,8 @@ export const DiagramAttributePanelSchema = Schema.Struct({
    * else declares this". */
   disputed: Schema.Array(Schema.String),
   types: Schema.Array(TypeOfferSchema),
+  /** The gradients a reader may spread an ordered value set along, the default first. Served so a
+   * control offers exactly what the renderer accepts, rather than a list kept in step by hand. */
+  gradients: Schema.optional(Schema.Array(Schema.String)),
 })
 export type DiagramAttributePanel = typeof DiagramAttributePanelSchema.Type

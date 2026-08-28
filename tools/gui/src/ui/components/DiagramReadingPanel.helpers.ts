@@ -1,6 +1,5 @@
 import type { AttributeOffer, DiagramAttributePanel, TypeOffer } from '../../domain/schemas/diagrams'
 import { panelOffers, type ReadingLens } from '../../domain/readingLens'
-import { CATEGORICAL_PALETTE } from '../../domain/types.generated'
 
 /**
  * The pure part of the reading panel: what each row says, and what a click does to the lens.
@@ -101,7 +100,13 @@ export type ColourSubject =
 export type ColourStep = ColourSubject & {
   readonly label: string
   readonly colour: string
+  /** The member a schema declares as its default: what a reader sees on an element nobody has
+   * assessed. It takes no place on the scale, so a control can set it apart from the graded ones. */
+  readonly unset?: boolean
 }
+
+/** What an unset member is coloured, and the one colour no gradient reaches. */
+export const UNSET_MEMBER_COLOUR = '#ffffff' 
 
 /** The mapping for the attribute currently coloured by, or `[]` when nothing is.
  *
@@ -115,11 +120,16 @@ export const colourKey = (
   lens: ReadingLens,
 ): ColourStep[] => {
   if (attribute.colour === 'palette') {
-    return attribute.values.map((member, index) => ({
+    // The server's answer for the gradient in effect, not a second derivation of it. The swatches
+    // are the key to the picture, so deriving them here would be two chances to disagree about one
+    // colouring — and the gradients' stops live in the ontology's own module, not in the browser.
+    const graded = attribute.colour_by_gradient?.[lens.gradient] ?? {}
+    return attribute.values.map((member) => ({
       kind: 'member' as const,
       member,
       label: member,
-      colour: lens.key[member] ?? CATEGORICAL_PALETTE[index % CATEGORICAL_PALETTE.length],
+      colour: lens.key[member] ?? graded[member] ?? UNSET_MEMBER_COLOUR,
+      unset: member === attribute.unset_value,
     }))
   }
   if (attribute.colour !== 'ramp') return []

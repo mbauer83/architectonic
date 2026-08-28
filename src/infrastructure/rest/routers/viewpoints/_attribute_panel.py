@@ -19,6 +19,11 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.application.viewpoints.diagram_attribute_panel import AttributeOffer, DiagramAttributeOffers
+from src.domain.viewpoints.viewpoint_style_values import (
+    ATTRIBUTE_GRADIENTS,
+    DEFAULT_ATTRIBUTE_GRADIENT,
+    graded_colors,
+)
 from src.infrastructure.rest.contracts.viewpoint_projection import DiagramAttributePanelResponse
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers._openapi import READ_RESPONSES, TAG_VIEWPOINTS
@@ -34,7 +39,22 @@ def _attribute_to_dict(attribute: AttributeOffer) -> dict[str, Any]:
         "colour": attribute.colour,
         "values": list(attribute.values),
         "present_on": attribute.present_on,
+        "unset_value": attribute.unset_value,
+        # Every gradient's answer, from the one derivation the picture also uses. A control deriving
+        # its own swatches is a second opinion about the colouring it is the key to.
+        "colour_by_gradient": {
+            gradient: dict(
+                graded_colors(attribute.values, unset=attribute.unset_value, gradient=gradient)
+            )
+            for gradient in ATTRIBUTE_GRADIENTS
+        } if attribute.values else {},
     }
+
+
+def _offered_gradients() -> list[str]:
+    """The gradient names, the default first — the order a control offers them in."""
+    rest = sorted(name for name in ATTRIBUTE_GRADIENTS if name != DEFAULT_ATTRIBUTE_GRADIENT)
+    return [DEFAULT_ATTRIBUTE_GRADIENT, *rest]
 
 
 def attribute_panel_to_dict(offers: DiagramAttributeOffers, *, can_explain: bool) -> dict[str, Any]:
@@ -51,6 +71,7 @@ def attribute_panel_to_dict(offers: DiagramAttributeOffers, *, can_explain: bool
         ],
         "disputed": list(offers.disputed),
         "can_explain_notation": can_explain,
+        "gradients": _offered_gradients(),
         "types": [
             {
                 "entity_type": offer.entity_type,

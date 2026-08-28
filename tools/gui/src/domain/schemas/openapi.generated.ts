@@ -4831,12 +4831,20 @@ export interface components {
              * @enum {string}
              */
             colour: "ramp" | "palette" | "none";
+            /** Colour By Gradient */
+            colour_by_gradient?: {
+                [key: string]: {
+                    [key: string]: string;
+                };
+            };
             /** Declared Type */
             declared_type: string;
             /** Name */
             name: string;
             /** Present On */
             present_on: number;
+            /** Unset Value */
+            unset_value?: string | null;
             /** Values */
             values: string[];
         };
@@ -6163,6 +6171,8 @@ export interface components {
             disputed: string[];
             /** Drawn */
             drawn: number;
+            /** Gradients */
+            gradients?: string[];
             /** Shared */
             shared: components["schemas"]["SharedAttributeOfferResponse"][];
             /** Types */
@@ -17066,6 +17076,8 @@ export interface operations {
                 /** @description Attribute the current display is coloured by */
                 colour_by?: string;
                 format?: "png" | "svg";
+                /** @description Which named gradient an ordered value set is spread along: `red-green` (the default) or `orange-blue`, which a red/green colour-blind reader can separate */
+                gradient?: string;
                 /** @description A colour for one value, as `member:#rrggbb`; repeatable */
                 key?: string[];
                 /** @description Draw a legend explaining the notation this diagram uses */
@@ -17471,6 +17483,8 @@ export interface operations {
             query?: {
                 /** @description Attribute to colour the drawn elements by */
                 colour_by?: string;
+                /** @description Which named gradient an ordered value set is spread along: `red-green` (the default) or `orange-blue`, which a red/green colour-blind reader can separate */
+                gradient?: string;
                 /** @description A colour for one value, as `member:#rrggbb`; repeatable */
                 key?: string[];
                 /** @description Draw a legend explaining the notation this diagram uses */

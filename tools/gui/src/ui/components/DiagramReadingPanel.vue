@@ -191,6 +191,7 @@ const pick = (step: ColourStep, colour: string) => emit(
               :lens="lens"
               :on-rows="offer.on_rows"
               :colour-key="keyFor(offer.attribute)"
+              :gradients="panel.gradients ?? []"
               @update:lens="emit('update:lens', $event)"
               @pick="pick"
             />
@@ -235,6 +236,7 @@ const pick = (step: ColourStep, colour: string) => emit(
               :attribute="attribute"
               :lens="lens"
               :colour-key="keyFor(attribute)"
+              :gradients="panel.gradients ?? []"
               @update:lens="emit('update:lens', $event)"
               @pick="pick"
             />

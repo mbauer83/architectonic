@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import RootModel
+from pydantic import Field, RootModel
 
 from src.infrastructure.rest.contracts.wire_shape import Closed
 
@@ -206,6 +206,16 @@ class AttributeOfferResponse(Closed):
     colour: Literal["ramp", "palette", "none"]
     values: list[str]
     present_on: int
+    #: The member a schema declares as its ``default`` — what a reader sees on an element nobody has
+    #: assessed. Coloured as unset rather than given a place on the scale, so a control shows it apart
+    #: from the graded members. ``null`` where the attribute declares no default.
+    unset_value: str | None = None
+    #: ``{gradient: {member: "#rrggbb"}}`` — what each member is coloured as under each gradient a
+    #: reader may pick. Served rather than derived by the caller: the swatches a control shows and the
+    #: fills the picture carries have to be the same answer, and two derivations of one gradient are
+    #: two chances to disagree. Every gradient at once so switching needs no round trip. Empty for an
+    #: attribute with no bounded value set.
+    colour_by_gradient: dict[str, dict[str, str]] = Field(default_factory=dict)
 
 
 class TypeOfferResponse(Closed):
@@ -258,6 +268,9 @@ class DiagramAttributePanelResponse(Closed):
     shared: list[SharedAttributeOfferResponse]
     disputed: list[str]
     types: list[TypeOfferResponse]
+    #: The gradients a reader may spread an ordered value set along, the default first. Served so a
+    #: control offers exactly what the renderer accepts, rather than a list kept in step by hand.
+    gradients: list[str] = Field(default_factory=list)
     #: How many model entities the diagram places, whatever their types declare.
     #:
     #: Dropping the attribute-less rows made two very different states identical to a reader of
