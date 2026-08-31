@@ -13,7 +13,6 @@ import pytest
 
 from src.domain.assurance.signals_schema import (
     SIGNALS_MIGRATIONS,
-    SIGNALS_PRAGMAS_SQL,
     SNAPSHOT_TABLES_VERSION,
     signals_migration_statements,
 )
@@ -21,6 +20,7 @@ from src.infrastructure.assurance._signals_migrations import (
     SIGNALS_SCHEMA_VERSION,
     SignalsSchemaUnsupportedError,
     apply_signals_migrations,
+    apply_signals_pragmas,
     signals_schema_version,
 )
 
@@ -51,7 +51,7 @@ def _dict_row(cursor: sqlite3.Cursor, row: tuple) -> dict[str, Any]:  # type: ig
 def _sqlite_conn(tmp_path: Path) -> sqlite3.Connection:
     conn = sqlite3.connect(str(tmp_path / "signals.db"))
     conn.row_factory = _dict_row  # type: ignore[assignment]
-    conn.executescript(SIGNALS_PRAGMAS_SQL)
+    apply_signals_pragmas(conn)
     conn.commit()
     return conn
 
@@ -66,7 +66,7 @@ def _sqlcipher_conn(tmp_path: Path) -> Any:
     store = SQLCipherAssuranceStore(db_path)
     store.unlock()
     conn = store._thread_conn_or_none()  # noqa: SLF001 — the factory the store receives in production
-    conn.executescript(SIGNALS_PRAGMAS_SQL)
+    apply_signals_pragmas(conn)
     conn.commit()
     return conn
 
@@ -149,6 +149,59 @@ class TestMigrationApplication:
 
         assert apply_signals_migrations(conn) == SIGNALS_SCHEMA_VERSION
 
+    def test_opening_while_another_connection_holds_the_write_lock(self, tmp_path: Path) -> None:
+        """Configuring a connection must not fail because another one is mid-write.
+
+        **This is the regression test for the defect the concurrency test above could only
+        find by luck.** `PRAGMA journal_mode` changes the database *file* and needs an
+        exclusive lock, and SQLite does not run the busy handler for it — SQLITE_BUSY comes
+        back immediately, however long the connection is willing to wait. Applying it on
+        every open therefore made a concurrent open fail with "database is locked" and no
+        way to wait it out. CI found it on a slow runner; three local full-suite runs never
+        did, because it is load-shaped.
+
+        Stated deterministically instead: hold a write transaction open, then configure a
+        second connection. No threads, no timing, no patience constant. It fails against
+        the old one-script open and passes against `apply_signals_pragmas`.
+        """
+        # The file must still be in its *default* journal mode, because that is the only
+        # moment the exclusive lock is contended: setting WAL on a file already in WAL
+        # succeeds in 0.000s even mid-write, since SQLite short-circuits a no-op mode change.
+        # So this models the real case — a threadpool opening connections on a store nobody
+        # has configured yet, which is exactly what the concurrency test below sets up.
+        db = tmp_path / "signals.db"
+        held = sqlite3.connect(str(db), timeout=1.0)
+        held.row_factory = _dict_row  # type: ignore[assignment]
+        held.execute("CREATE TABLE probe (x INTEGER)")
+        held.commit()
+        assert str(held.execute("PRAGMA journal_mode").fetchone()["journal_mode"]).lower() != "wal"
+        held.execute("BEGIN IMMEDIATE")
+        held.execute("INSERT INTO probe VALUES (1)")
+        try:
+            other = sqlite3.connect(str(db), timeout=1.0)
+            other.row_factory = _dict_row  # type: ignore[assignment]
+            try:
+                apply_signals_pragmas(other)  # must not raise
+                assert other.execute("PRAGMA foreign_keys").fetchone() is not None
+            finally:
+                other.close()
+        finally:
+            held.rollback()
+            held.close()
+
+    def test_a_failure_that_is_not_a_lock_refusal_still_propagates(self, tmp_path: Path) -> None:
+        """The tolerance is for one condition, not for anything that goes wrong.
+
+        Swallowing every exception here would hide a corrupt or unreadable store behind a
+        connection that looks configured, so the narrowing is asserted rather than trusted.
+        """
+        class _Broken:
+            def executescript(self, sql: str) -> None:
+                raise sqlite3.OperationalError("disk I/O error")
+
+        with pytest.raises(sqlite3.OperationalError, match="disk I/O error"):
+            apply_signals_pragmas(_Broken())
+
     def test_several_connections_may_migrate_the_same_store_at_once(self, tmp_path: Path) -> None:
         """The threadpool opens a connection per thread and each migrates on open.
 
@@ -175,10 +228,19 @@ class TestMigrationApplication:
         barrier = threading.Barrier(4)
 
         def _migrate() -> None:
-            conn = sqlite3.connect(str(db), timeout=patience_seconds)
-            conn.row_factory = _dict_row  # type: ignore[assignment]
-            conn.executescript(SIGNALS_PRAGMAS_SQL)
+            # **Every step inside the try, and the barrier aborted on the way out.** The
+            # pragma call used to sit above it, which turned one transient failure into three
+            # separate ones: the exception escaped the thread (an unhandled-thread warning,
+            # which `filterwarnings` makes an error), the connection leaked unclosed while
+            # still holding its lock, and — worst — the barrier lost a participant, so the
+            # other three waited out the full `patience_seconds` and the join timed out. CI
+            # reported "migration threads did not finish within 300.0s", which describes the
+            # symptom three layers away from the cause.
+            conn = None
             try:
+                conn = sqlite3.connect(str(db), timeout=patience_seconds)
+                conn.row_factory = _dict_row  # type: ignore[assignment]
+                apply_signals_pragmas(conn)
                 try:
                     barrier.wait(timeout=patience_seconds)
                 except threading.BrokenBarrierError:
@@ -186,8 +248,12 @@ class TestMigrationApplication:
                 apply_signals_migrations(conn)
             except Exception as exc:  # noqa: BLE001
                 errors.append(f"{type(exc).__name__}: {exc}")
+                # A participant that will never arrive releases the others now rather than
+                # letting them wait out a timeout it has already failed.
+                barrier.abort()
             finally:
-                conn.close()
+                if conn is not None:
+                    conn.close()
 
         threads = [threading.Thread(target=_migrate) for _ in range(4)]
         for thread in threads:

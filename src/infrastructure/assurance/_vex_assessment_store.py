@@ -11,10 +11,12 @@ from __future__ import annotations
 import hashlib
 from typing import Any, Callable
 
-from src.domain.assurance.signals_schema import SIGNALS_PRAGMAS_SQL
 from src.domain.clock import utc_now_iso as _now_iso
 from src.infrastructure.assurance._archive import append_audit_row
-from src.infrastructure.assurance._signals_migrations import apply_signals_migrations
+from src.infrastructure.assurance._signals_migrations import (
+    apply_signals_migrations,
+    apply_signals_pragmas,
+)
 
 
 def _stable_id(prefix: str, *parts: str) -> str:
@@ -30,7 +32,7 @@ class SQLCipherVexAssessmentStore:
         conn = self._conn_factory()
         if conn is None:
             raise RuntimeError("Assurance store is locked — cannot access VEX assessments.")
-        conn.executescript(SIGNALS_PRAGMAS_SQL)
+        apply_signals_pragmas(conn)
         apply_signals_migrations(conn)
         return conn
 

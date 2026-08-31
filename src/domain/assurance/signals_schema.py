@@ -16,11 +16,31 @@ precedent once any store holds real data.
 
 from __future__ import annotations
 
-# Connection PRAGMAs applied on every signals-store open: WAL durability and FK
-# enforcement. Kept separate from the table DDL so opening a store never depends on
-# any particular table definition.
-SIGNALS_PRAGMAS_SQL = """
+# PRAGMAs for a signals-store connection, split by *scope* rather than kept as one
+# script — because the two scopes have different failure modes and one of them cannot
+# be retried.
+#
+# `journal_mode` is a property of the **database file**, persists once set, and needs an
+# exclusive lock to change. Crucially, **SQLite does not run the busy handler for a
+# journal-mode change**: it returns SQLITE_BUSY immediately, however generous the
+# connection's timeout. Measured on sqlite 3.45.3 — a second connection asking for WAL
+# while a first holds a write transaction fails in 0.000s against a 10s timeout.
+#
+# Applying both on every open therefore made a concurrent open fail with "database is
+# locked" and no way to wait it out, which is a defect in the *open*, not in the caller.
+# `apply_signals_pragmas` is the one place that knows this; see its docstring.
+#
+# Kept separate from the table DDL so opening a store never depends on any particular
+# table definition.
+
+#: Durable and file-wide. Set once on the file; every later open finds it already set.
+SIGNALS_DURABLE_PRAGMAS_SQL = """
 PRAGMA journal_mode = WAL;
+"""
+
+#: Per-connection, and free: neither takes a lock, so both are safe on every open even
+#: while another connection is mid-write.
+SIGNALS_CONNECTION_PRAGMAS_SQL = """
 PRAGMA synchronous = NORMAL;
 PRAGMA foreign_keys = ON;
 """

@@ -16,6 +16,8 @@ from __future__ import annotations
 from typing import Any
 
 from src.domain.assurance.signals_schema import (
+    SIGNALS_CONNECTION_PRAGMAS_SQL,
+    SIGNALS_DURABLE_PRAGMAS_SQL,
     SIGNALS_MIGRATIONS,
     SIGNALS_SCHEMA_VERSION,
     SNAPSHOT_TABLES_VERSION,
@@ -73,6 +75,46 @@ def signals_schema_version(conn: Any) -> int:
     if row is None:
         return _BASELINE_VERSION
     return int(row["value"] if isinstance(row, dict) or hasattr(row, "keys") else row[0])
+
+
+def apply_signals_pragmas(conn: Any) -> None:
+    """Configure a freshly opened signals connection. **The only place that does.**
+
+    Both call sites used to run one script carrying `journal_mode` alongside the
+    per-connection pragmas, on every open. That is unsafe, and not in a way a timeout can
+    fix: `journal_mode` changes the *file*, needs an exclusive lock, and **SQLite does not
+    invoke the busy handler for it** — SQLITE_BUSY comes back immediately however long the
+    connection is willing to wait. Measured on sqlite 3.45.3: a second connection asking
+    for WAL while a first holds a write transaction fails in 0.000s against a 10s timeout.
+
+    So a threadpool opening a connection per thread could fail with "database is locked" on
+    the open itself. That is what CI reported after 0.8.2 and what the local suite never
+    reproduced: it is load-shaped, and a slower runner is what makes it likely.
+
+    **A lock refusal here is benign, and that is the whole fix.** Two measured facts make it
+    so. Setting WAL on a file *already* in WAL succeeds in 0.000s even while another
+    connection holds a write transaction — SQLite short-circuits a no-op mode change — so
+    the exclusive lock is only ever contended on the first open of a new file. And a
+    refusal on that one attempt means another connection holds the lock, which is a
+    connection setting the very mode being asked for. The mode belongs to the file, not to
+    this connection, so there is nothing left for this caller to do.
+
+    Any other failure propagates.
+
+    The per-connection pragmas go first and unconditionally: neither takes a lock, so both
+    are safe mid-write, and a store that somehow ends up without WAL still enforces its
+    foreign keys.
+    """
+    conn.executescript(SIGNALS_CONNECTION_PRAGMAS_SQL)
+    try:
+        conn.executescript(SIGNALS_DURABLE_PRAGMAS_SQL)
+    except Exception as exc:  # noqa: BLE001 — narrowed on the message, deliberately
+        # On the message rather than the type, because these stores are opened over
+        # SQLCipher in production and plain sqlite3 elsewhere, and the two raise different
+        # `OperationalError` classes for one condition. A lock refusal is the only benign
+        # one; anything else is a real fault.
+        if "locked" not in str(exc).lower() and "busy" not in str(exc).lower():
+            raise
 
 
 def apply_signals_migrations(conn: Any) -> int:

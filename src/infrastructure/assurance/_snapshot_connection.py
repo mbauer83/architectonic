@@ -13,8 +13,10 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
-from src.domain.assurance.signals_schema import SIGNALS_PRAGMAS_SQL
-from src.infrastructure.assurance._signals_migrations import apply_signals_migrations
+from src.infrastructure.assurance._signals_migrations import (
+    apply_signals_migrations,
+    apply_signals_pragmas,
+)
 
 
 class SnapshotConnection:
@@ -29,7 +31,7 @@ class SnapshotConnection:
         conn = self._conn_factory()
         if conn is None:
             raise RuntimeError("Assurance store is locked — cannot access signal snapshots.")
-        conn.executescript(SIGNALS_PRAGMAS_SQL)
+        apply_signals_pragmas(conn)
         apply_signals_migrations(conn)
         return conn
 
