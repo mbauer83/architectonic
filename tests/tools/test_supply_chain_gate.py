@@ -96,6 +96,24 @@ def test_the_scanner_enforcing_the_supply_chain_is_inside_it() -> None:
     assert "pip-audit" in development_closure().pins
 
 
+def test_the_recorded_evidence_names_the_committed_lock_and_nothing_else() -> None:
+    """A version the lock has dropped leaves the record with it.
+
+    Keeping it would not change a verdict — nothing asks about a pin that is gone — which is exactly
+    why it would never be noticed. Evidence nothing reads is evidence nobody maintains, and the file
+    would grow by the size of every upgrade forever.
+    """
+    named = {
+        pin(package.name, package.version)
+        for package in npm_lock.locked_packages(_offline_times())
+    }
+    recorded = set(npm_release_evidence.recorded_times())
+    assert recorded - named == set(), (
+        "publish times recorded for pins the lock no longer names. Run "
+        "`uv run tools/supplychain/check_supply_chain.py --ecosystem npm --write` and commit."
+    )
+
+
 def test_the_npm_resolution_floor_states_the_same_number_as_the_gate() -> None:
     """One floor, two spellings: npm counts days in `.npmrc`, the gate counts hours in `FLOOR`.
 

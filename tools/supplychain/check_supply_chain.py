@@ -118,9 +118,9 @@ def _write(ecosystem: str) -> int:
     times = PublishTimes(recorded_times())
     npm_lock.locked_packages(times)
     EVIDENCE.parent.mkdir(parents=True, exist_ok=True)
-    observed = times.observed()
-    EVIDENCE.write_text(render(observed), encoding="utf-8")
-    print(f"wrote {EVIDENCE.relative_to(REPO_ROOT)} ({len(observed)} publish times)")
+    asked = times.asked()
+    EVIDENCE.write_text(render(asked), encoding="utf-8")
+    print(f"wrote {EVIDENCE.relative_to(REPO_ROOT)} ({len(asked)} publish times)")
     return 0
 
 

@@ -72,15 +72,21 @@ class PublishTimes:
         self._fetch = fetch if fetch is not None else fetch_package_times
         self._fetched: dict[str, Mapping[str, str]] = {}
         self._queried: set[str] = set()
+        self._asked: dict[str, str] = {}
 
     @property
     def queried(self) -> frozenset[str]:
         """The pins this run had to ask the registry about — what `--write` would record."""
         return frozenset(self._queried)
 
-    def observed(self) -> Mapping[str, str]:
-        """Everything known after the run: what was recorded, plus what was answered live."""
-        return {**self._recorded, **{key: self._live(key) for key in sorted(self._queried)}}
+    def asked(self) -> Mapping[str, str]:
+        """The publish time of every pin this run was asked about, and of nothing else.
+
+        A record is written from this rather than from everything known, so a version the lock no
+        longer names leaves the file when it leaves the lock. Carrying it would be harmless to the
+        verdict and corrosive to the file: evidence nothing reads is evidence nobody maintains.
+        """
+        return dict(self._asked)
 
     def of(self, name: str, version: str) -> datetime:
         key = pin(name, version)
@@ -88,6 +94,7 @@ class PublishTimes:
         parsed = _parsed(stamp)
         if parsed is None:
             raise RegistryUnavailable(f"{key}: publish time {stamp!r} is not a timestamp")
+        self._asked[key] = stamp
         return parsed
 
     def _live(self, key: str) -> str:
