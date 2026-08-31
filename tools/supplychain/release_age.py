@@ -29,6 +29,8 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Iterable
 
+from tools.supplychain.emergency_exceptions import EmergencyException, admitting
+
 #: How old every locked artifact must be. A day is long enough for a compromised or withdrawn
 #: release to be noticed and yanked, and short enough that a security fix is not held for a week.
 FLOOR = timedelta(hours=24)
@@ -114,6 +116,29 @@ class LockedPackage:
 
     def __str__(self) -> str:
         return f"{self.name} {self.version}"
+
+
+def judge(
+    package: LockedPackage,
+    *,
+    now: datetime,
+    workspace: Path,
+    register: tuple[EmergencyException, ...] = (),
+    floor: timedelta = FLOOR,
+) -> Verdict:
+    """The verdict a lock entry earns, including the one way past the floor.
+
+    An emergency exception waives the **age** of a registry artifact and nothing else. A
+    version-control or direct-archive pin stays refused: over a permanent git dependency an expiring
+    exception becomes a build that breaks on a schedule, which is the wrong instrument for it.
+    """
+    verdict = assess(package.source, now=now, workspace=workspace, floor=floor)
+    if isinstance(verdict, Admitted) or not isinstance(package.source, RegistryArtifacts):
+        return verdict
+    waiver = admitting(register, package.name, package.version, on=now.date())
+    if waiver is None:
+        return verdict
+    return Admitted(f"{verdict.reason}; admitted by an emergency exception — {waiver.justification}")
 
 
 def assess(source: Source, *, now: datetime, workspace: Path, floor: timedelta = FLOOR) -> Verdict:

@@ -29,6 +29,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from tools.supplychain import npm_lock, python_lock  # noqa: E402
+from tools.supplychain.emergency_exceptions import REGISTER, expired  # noqa: E402
 from tools.supplychain.npm_release_evidence import (  # noqa: E402
     EVIDENCE,
     PublishTimes,
@@ -40,7 +41,7 @@ from tools.supplychain.release_age import (  # noqa: E402
     FLOOR,
     LockedPackage,
     Refused,
-    assess,
+    judge,
 )
 from tools.supplychain.vulnerabilities import (  # noqa: E402
     AuditReport,
@@ -54,10 +55,19 @@ _ECOSYSTEMS = ("npm", "python")
 def _too_young(packages: tuple[LockedPackage, ...], now: datetime) -> list[str]:
     refusals = []
     for package in packages:
-        verdict = assess(package.source, now=now, workspace=REPO_ROOT)
+        verdict = judge(package, now=now, workspace=REPO_ROOT, register=REGISTER)
         if isinstance(verdict, Refused):
             refusals.append(f"{package}: {verdict.reason}")
     return refusals
+
+
+def _spent_exceptions(now: datetime) -> list[str]:
+    """A spent exception admits nothing, and stays a failure until it is taken out of the register."""
+    return [
+        f"{entry}: this emergency exception has expired — remove it from "
+        "`tools/supplychain/emergency_exceptions.py`"
+        for entry in expired(REGISTER, on=now.date())
+    ]
 
 
 def _python_age(now: datetime) -> tuple[int, list[str]]:
@@ -88,9 +98,10 @@ def _report(ecosystem: str, entries: int, refusals: list[str], audits: tuple[Aud
 def _check(ecosystem: str, now: datetime) -> int:
     if ecosystem == "python":
         entries, refusals = _python_age(now)
-        return _report(ecosystem, entries, refusals, audit_python_closures())
+        return _report(ecosystem, entries, refusals + _spent_exceptions(now), audit_python_closures())
     times = PublishTimes(recorded_times())
     entries, refusals = _npm_age(now, times)
+    refusals += _spent_exceptions(now)
     if times.queried:
         print(
             f"note: {len(times.queried)} pin(s) had no recorded publish time and were queried live. "

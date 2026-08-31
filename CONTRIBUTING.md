@@ -44,3 +44,9 @@ uv run tools/supplychain/check_supply_chain.py --ecosystem npm --write
 
 `uv.lock` records an upload time on every artifact it pins, so the Python half needs no
 such file and no registry call.
+
+When the two controls conflict — the only fix for a known vulnerability is younger than
+the floor — the way through is a dated entry in
+`tools/supplychain/emergency_exceptions.py`, naming one package at one version with a
+justification and the day it stops applying. It refuses to be constructed without those,
+it admits nothing after that day, and it fails the gate until it is removed.
