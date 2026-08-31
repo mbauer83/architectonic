@@ -85,9 +85,9 @@ export const withPrinted = (lens: ReadingLens, name: string): ReadingLens => ({
 /** One step of an attribute's colour mapping: a swatch and what it means.
  *
  * Shown when a colouring is on, because a colour a reader cannot decode is decoration. A ramp gives
- * its two endpoints; a value set gives one step per member, in the declared order the server sent —
- * which is the same order the position in `CATEGORICAL_PALETTE` is taken from, so this key and the
- * picture cannot disagree about which member is which colour. */
+ * its two endpoints; a value set gives one step per member, in the declared order the server sent,
+ * each carrying the colour *the server* gave that member — so this key and the picture cannot
+ * disagree about which member is which colour. */
 /** What a reader's chosen colour would be keyed by: a member of a value set, or one end of a gradient.
  *
  * A discriminated union rather than two optional fields on one shape. As optionals it was possible to

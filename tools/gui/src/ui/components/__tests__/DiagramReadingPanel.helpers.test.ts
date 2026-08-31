@@ -1,18 +1,27 @@
 import { describe, expect, it } from 'vitest'
 import {
-  canTakeColour, colourKey, foldSummary, hasCustomColours, lensSummary, panelHint, presenceLabel,
-  typeOfferLabel, valueSetLabel, withColourBy, withPrinted,
+  UNSET_MEMBER_COLOUR, canTakeColour, colourKey, foldSummary, hasCustomColours, lensSummary,
+  panelHint, presenceLabel, typeOfferLabel, valueSetLabel, withColourBy, withPrinted,
 } from '../DiagramReadingPanel.helpers'
-import { CATEGORICAL_PALETTE } from '../../../domain/types.generated'
 import {
-  EMPTY_READING_LENS, isEmptyLens, lensParams, withDeclaredColours, withLegend, withRampEnd,
-  type ReadingLens,
+  DEFAULT_GRADIENT, EMPTY_READING_LENS, isEmptyLens, lensParams, withDeclaredColours, withLegend,
+  withRampEnd, type ReadingLens,
 } from '../../../domain/readingLens'
 import type { AttributeOffer, DiagramAttributePanel, TypeOffer } from '../../../domain/schemas/diagrams'
 
 const attribute = (over: Partial<AttributeOffer> = {}): AttributeOffer => ({
   name: 'risk_score', declared_type: 'integer', colour: 'ramp', values: [], present_on: 3, ...over,
 })
+
+/** The graded colours a server sends for one gradient, keyed as the offer keys them.
+ *
+ * Every swatch in a value set's key comes from here rather than from a table in the browser: the
+ * gradients' stops live in the ontology's module, and a second derivation beside them is two chances
+ * to disagree about one colouring. So a fixture that omits this is a fixture describing a stale
+ * offer, and the key falls back to the unset colour for the members it cannot answer for. */
+const graded = (
+  colours: Readonly<Record<string, string>>, gradient = DEFAULT_GRADIENT,
+): Pick<AttributeOffer, 'colour_by_gradient'> => ({ colour_by_gradient: { [gradient]: colours } })
 
 /** A lens literal, so a test states only the part it is about. */
 const lens = (over: Partial<ReadingLens> = {}): ReadingLens => ({ ...EMPTY_READING_LENS, ...over })
@@ -124,24 +133,59 @@ describe('the colour key a colouring unfolds', () => {
   })
 
   it('gives an unordered value set one swatch per member, in the declared order', () => {
-    const lifecycle = attribute({ colour: 'palette', values: ['planned', 'active', 'retired'] })
+    // Each swatch is the colour the *server* gave that member for the gradient in effect. The order
+    // is the declared one the offer sent, so the key and the picture agree about which is which.
+    const lifecycle = attribute({
+      colour: 'palette',
+      values: ['planned', 'active', 'retired'],
+      ...graded({ planned: '#dc2626', active: '#fde047', retired: '#22c55e' }),
+    })
 
     expect(colourKey(lifecycle, ends, EMPTY_READING_LENS)).toEqual([
-      { kind: 'member', member: 'planned', label: 'planned', colour: CATEGORICAL_PALETTE[0] },
-      { kind: 'member', member: 'active', label: 'active', colour: CATEGORICAL_PALETTE[1] },
-      { kind: 'member', member: 'retired', label: 'retired', colour: CATEGORICAL_PALETTE[2] },
+      { kind: 'member', member: 'planned', label: 'planned', colour: '#dc2626', unset: false },
+      { kind: 'member', member: 'active', label: 'active', colour: '#fde047', unset: false },
+      { kind: 'member', member: 'retired', label: 'retired', colour: '#22c55e', unset: false },
     ])
   })
 
-  it('cycles the palette rather than running out of colours', () => {
+  it('reads the swatches for the gradient the reader chose', () => {
+    const lifecycle = attribute({
+      colour: 'palette',
+      values: ['planned', 'active'],
+      colour_by_gradient: {
+        'red-green': { planned: '#dc2626', active: '#22c55e' },
+        'green-red': { planned: '#22c55e', active: '#dc2626' },
+      },
+    })
+
+    expect(colourKey(lifecycle, ends, lens({ gradient: 'green-red' })).map((step) => step.colour))
+      .toEqual(['#22c55e', '#dc2626'])
+  })
+
+  it('gives every member a step even where the offer colours none of them', () => {
+    // A stale offer must still unfold a readable key: one step per member, each falling back to the
+    // unset colour rather than to `undefined`, which would render a swatch with no value at all.
     const many = attribute({
       colour: 'palette',
-      values: Array.from({ length: CATEGORICAL_PALETTE.length + 1 }, (_v, i) => `m${i}`),
+      values: Array.from({ length: 9 }, (_v, i) => `m${i}`),
     })
 
     const steps = colourKey(many, ends, EMPTY_READING_LENS)
-    expect(steps).toHaveLength(CATEGORICAL_PALETTE.length + 1)
-    expect(steps[steps.length - 1].colour).toBe(CATEGORICAL_PALETTE[0])
+
+    expect(steps).toHaveLength(9)
+    expect(steps.every((step) => step.colour === UNSET_MEMBER_COLOUR)).toBe(true)
+  })
+
+  it('marks the member the schema declares as its default', () => {
+    const maturity = attribute({
+      colour: 'palette',
+      values: ['Not Assessed', 'Initial'],
+      unset_value: 'Not Assessed',
+      ...graded({ 'Not Assessed': UNSET_MEMBER_COLOUR, Initial: '#dc2626' }),
+    })
+
+    expect(colourKey(maturity, ends, EMPTY_READING_LENS).map((step) => step.unset))
+      .toEqual([true, false])
   })
 
   it('has no key for an attribute no colour can read', () => {
@@ -153,20 +197,26 @@ describe('the colours a reader chooses for themselves', () => {
   const ends: readonly [string, string] = ['#fbbf24', '#dc2626']
 
   it("shows a member's chosen colour in place of its declared one", () => {
-    const lifecycle = attribute({ colour: 'palette', values: ['planned', 'active'] })
+    const lifecycle = attribute({
+      colour: 'palette', values: ['planned', 'active'],
+      ...graded({ planned: '#dc2626', active: '#22c55e' }),
+    })
     const chosen = lens({ colourBy: 'lifecycle', key: { active: '#111111' } })
 
     expect(colourKey(lifecycle, ends, chosen).map((step) => step.colour))
-      .toEqual([CATEGORICAL_PALETTE[0], '#111111'])
+      .toEqual(['#dc2626', '#111111'])
   })
 
   it('leaves every other member on its declared colour', () => {
     // Partial by design: changing one colour must not mean restating the rest.
-    const lifecycle = attribute({ colour: 'palette', values: ['a', 'b', 'c'] })
+    const lifecycle = attribute({
+      colour: 'palette', values: ['a', 'b', 'c'],
+      ...graded({ a: '#dc2626', b: '#fde047', c: '#22c55e' }),
+    })
     const chosen = lens({ key: { b: '#111111' } })
 
     expect(colourKey(lifecycle, ends, chosen).map((step) => step.colour))
-      .toEqual([CATEGORICAL_PALETTE[0], '#111111', CATEGORICAL_PALETTE[2]])
+      .toEqual(['#dc2626', '#111111', '#22c55e'])
   })
 
   it("shows a chosen gradient in place of the declared endpoints", () => {
@@ -275,6 +325,21 @@ describe('the lens as a request', () => {
 
   it('is a request when only printing is asked for', () => {
     expect(lensParams(lens({ colourBy: '', printed: ['owner'] }))).toEqual({ print: ['owner'] })
+  })
+
+  it('names the element-kind treatment only when it is not the one that changes nothing', () => {
+    // A parameter restating the fallback describes a choice nobody made, and it gives every
+    // ordinary reading a URL of its own — which is what the image-on-disk address depends on.
+    expect(lensParams(lens({ colourBy: 'maturity', elementKindColouring: 'keep' })))
+      .toEqual({ colour_by: 'maturity' })
+    expect(lensParams(lens({ colourBy: 'maturity', elementKindColouring: 'drop' })))
+      .toEqual({ colour_by: 'maturity', element_kind_colouring: 'drop' })
+  })
+
+  it('does not become a request on the treatment alone', () => {
+    // It qualifies an attribute colouring rather than being one. The server ignores it without
+    // `colour_by`, and a URL that carried it anyway would misdescribe the request.
+    expect(lensParams(lens({ elementKindColouring: 'drop' }))).toBeUndefined()
   })
 })
 
