@@ -18,7 +18,7 @@ half would be slower and no truer.
 from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
-from typing import Any, Protocol
+from typing import Protocol
 
 from src.application.document_links import reference_dicts_for_entity
 from src.domain.ontology_representation.artifact_types import (
@@ -30,9 +30,16 @@ from src.domain.ontology_representation.artifact_types import (
 
 
 class ReferenceSource(Protocol):
-    """What answering the question needs. Both the store and the repository facade satisfy it."""
+    """What answering the question needs. Both the store and the repository facade satisfy it.
 
-    def list_documents(self, **kwargs: Any) -> list[DocumentRecord]: ...
+    `list_documents` is declared with no parameters because this is the only thing asked of it: every
+    document, filtered here rather than by the source. It read `**kwargs: Any` while both callers
+    passed nothing, which demanded that an implementation accept arbitrary keywords — so the two real
+    implementations, which take named keyword-only filters, did not satisfy the port they were
+    passed to. A port states what the caller needs; anything wider is a claim nobody checked.
+    """
+
+    def list_documents(self) -> list[DocumentRecord]: ...
 
     def diagrams_referencing_artifact(self, artifact_id: str) -> list[DiagramRecord]: ...
 
