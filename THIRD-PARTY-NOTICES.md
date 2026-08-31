@@ -125,7 +125,7 @@ What follows is a disclosure inventory, for two purposes: to say what a build as
 | uvicorn | 0.52.4 | BSD-3-Clause |
 | uvloop | 0.22.1 | Apache Software License; MIT License |
 | watchfiles | 1.2.0 | MIT License |
-| websockets | 16.0 | BSD-3-Clause |
+| websockets | 17.1 | BSD-3-Clause |
 
 ## Frontend (npm) dependencies (57)
 

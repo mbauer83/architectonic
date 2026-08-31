@@ -436,7 +436,7 @@
     },
     {
       "name": "websockets",
-      "version": "16.0",
+      "version": "17.1",
       "license": "BSD-3-Clause",
       "bucket": "allow"
     }
