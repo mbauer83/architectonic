@@ -3,6 +3,21 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [0.8.3] — 2026-08-31
+
+**[Full detail → `changelog-assets/0.8.3-detail.md`](changelog-assets/0.8.3-detail.md)**
+
+**Opening a signals-store connection no longer fails because another one is writing.**
+
+### Fixed
+
+- **A concurrent open of the security-signals store no longer reports "database is locked".** Each
+  open set the store's journal mode, which changes the database file and needs an exclusive lock —
+  and SQLite refuses that lock immediately rather than waiting, so no timeout could absorb it. A
+  process opening a connection per thread could therefore fail on the open itself. The mode is now
+  set on the file rather than on every connection, and the per-connection settings, which need no
+  lock, are applied first and always.
+
 ## [0.8.2] — 2026-08-31
 
 **[Full detail → `changelog-assets/0.8.2-detail.md`](changelog-assets/0.8.2-detail.md)**
@@ -934,6 +949,7 @@ never-requested operations is empty — the reason to trust a release which rena
 - Confidential assurance tier (STPA/CAST/GRC/FMEA/GSN) on an encrypted store with tamper-evident history
 - Viewpoint query engine with diagram/matrix/table representations
 
+[0.8.3]: https://github.com/mbauer83/architectonic/compare/v0.8.2...v0.8.3
 [0.8.2]: https://github.com/mbauer83/architectonic/compare/v0.8.1...v0.8.2
 [0.8.1]: https://github.com/mbauer83/architectonic/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/mbauer83/architectonic/compare/v0.7.1...v0.8.0
