@@ -175,6 +175,10 @@ files = [
     # list said `src`. Named here instead, so a dev-only module need not ship in the wheel to be
     # type-checked. The rest of `tools/` is not yet clean under zuban.
     "tools/quality",
+    # The supply-chain closures: one module deciding which pins ship and which CI executes, called
+    # by every gate that has to agree on that. Type-checked from the first commit rather than added
+    # to the backlog of what is not yet clean.
+    "tools/supplychain",
 ]
 exclude = "(^|/)(\\.arch|\\.venv|engagements|enterprise-repository|tools/gui)(/|$)"
 ignore_missing_imports = true

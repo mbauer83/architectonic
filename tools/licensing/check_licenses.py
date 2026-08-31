@@ -21,12 +21,17 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import re
 import subprocess
+import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 LICENSES_DIR = REPO_ROOT / "licenses"
+
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from tools.supplychain.closures import shipped_closure  # noqa: E402
 
 # Buckets that PASS the gate: allow (permissive) + notice (permissive, must ship
 # attribution — every permissive license needs its notice anyway). review and
@@ -96,43 +101,19 @@ def _license_of(dist: object) -> str:
     return "UNKNOWN"
 
 
-#: ANSI escape sequences, stripped before any tool output is parsed as data.
-_ANSI = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
-
-
 def collect_python() -> list[dict[str, str]]:
-    """Inventory the full SHIPPED runtime closure (non-dev: main + gui + cloud-archive).
+    """Inventory the shipped runtime closure, as `tools.supplychain.closures` defines it.
 
-    Covers every resolved dependency, including platform-specific ones not installed
-    on the generation platform (e.g. the Windows-only pywin32/colorama when generating
-    on Linux): their license comes from _PLATFORM_OVERRIDES so the closure is complete
-    rather than dropped. Version is read from the lock export (available even when the
-    package is not installed locally).
+    Which pins ship is that module's decision, not this gate's: the vulnerability gate audits the
+    same set, and two spellings of one selection is how a gate ends up confident about the wrong
+    packages. Covers every resolved dependency, including platform-specific ones not installed on the
+    generation platform (e.g. the Windows-only pywin32/colorama when generating on Linux): their
+    license comes from _PLATFORM_OVERRIDES so the closure is complete rather than dropped. Version is
+    read from the lock export, available even when the package is not installed locally.
     """
     import importlib.metadata as im
 
-    export = subprocess.run(
-        ["uv", "export", "--no-dev", "--group", "gui", "--extra", "cloud-archive",
-         "--no-hashes", "--no-emit-project", "--no-annotate"],
-        cwd=REPO_ROOT, capture_output=True, text=True, check=True,
-        # Colour off, deterministically. With it on, an escape sequence reaches stdout and parses as
-        # a package named "\x1b" with an UNKNOWN license — which fails this gate for a reason that
-        # has nothing to do with licensing, and only on machines where the output is a terminal.
-        env={**os.environ, "NO_COLOR": "1", "TERM": "dumb"},
-    ).stdout
-    versions: dict[str, str] = {}
-    for line in export.splitlines():
-        line = _ANSI.sub("", line).strip()
-        if not line or line.startswith(("#", "-e", "-")):
-            continue
-        spec = line.partition(";")[0].strip()
-        name, _, version = spec.partition("==")
-        name = name.split("[")[0].strip()
-        # A requirement line always names a package; anything else is noise from the tool that
-        # produced it, and inventing an UNKNOWN-licensed entry from noise is worse than skipping it.
-        if not name or not name[0].isalnum():
-            continue
-        versions.setdefault(name, version.strip())
+    versions = shipped_closure().pins
     rows: list[dict[str, str]] = []
     for name in sorted(versions, key=str.lower):
         try:
