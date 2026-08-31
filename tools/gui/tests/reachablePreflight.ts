@@ -180,7 +180,7 @@ export default async function preflight(config: FullConfig): Promise<void> {
   if (!baseURL) return
 
   let reachable = false
-  let detail = ''
+  let detail: string
   try {
     const response = await fetch(baseURL, {
       signal: AbortSignal.timeout(PROBE_TIMEOUT_MS),

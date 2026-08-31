@@ -67,7 +67,10 @@ export function useFittedPanZoom(containerRef: Ref<HTMLElement | null>, svgConta
     const svgEl = svgContainer.value?.querySelector('svg') as SVGSVGElement | null
     if (!container || !svgEl) return
 
-    let contentWidth = 0, contentHeight = 0, contentX = 0, contentY = 0
+    // The origin keeps a default because the last fallback below does not measure one; the
+    // extent never does, because all three paths assign it before it is read.
+    let contentX = 0, contentY = 0
+    let contentWidth: number, contentHeight: number
     try {
       const graphRoot = svgEl.querySelector('g')
       const bbox = (graphRoot ?? svgEl).getBBox()
