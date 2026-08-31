@@ -180,8 +180,8 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-  licenses:
-    name: Licenses · third-party inventory gate
+  supply-chain:
+    name: Supply chain · licences · release age · vulnerabilities
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -218,6 +218,12 @@ jobs:
 
       - name: THIRD-PARTY-NOTICES is regenerated from the inventories
         run: uv run python tools/licensing/generate_notices.py --check
+
+      - name: Supply-chain gate (Python) — release age floor + known vulnerabilities
+        run: uv run tools/supplychain/check_supply_chain.py --ecosystem python --check
+
+      - name: Supply-chain gate (npm) — release age floor + known vulnerabilities
+        run: uv run tools/supplychain/check_supply_chain.py --ecosystem npm --check
 
   frontend:
     name: Frontend · lint · types · tests

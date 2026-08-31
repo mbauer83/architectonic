@@ -124,6 +124,19 @@ def test_every_ci_gate_is_named_in_agents_md(gates: dict[str, list[str]]) -> Non
     )
 
 
+def test_the_supply_chain_gate_is_reachable_by_hand(gates: dict[str, list[str]]) -> None:
+    """The gate had to be spelled as an entry point to be seen here at all — pinned so it stays one.
+
+    `_GATE_PREFIXES` recognises `uv run`, `npm run` and `coverage report`. A supply-chain gate added
+    to CI as a bare `uvx pip-audit` or `npm audit` line yields no token, never reaches the comparison
+    above, and lands with no gate-list entry and nothing failing — which is the exact condition this
+    module exists to forbid. Naming the token here is what stops it being respelled that way later.
+    """
+    token = "tools/supplychain/check_supply_chain.py"
+    assert token in gates, sorted(gates)
+    assert token in _AGENTS.read_text(encoding="utf-8")
+
+
 def test_the_frontend_coverage_gate_is_the_documented_one(gates: dict[str, list[str]]) -> None:
     """The specific confusion that cost a release, pinned so it cannot come back.
 

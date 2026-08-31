@@ -73,10 +73,10 @@ never concurrently.
 
 - the ontology → 7, then `git diff --exit-code` on the committed frontend types, and 8 for the
   generated diagram includes
-- a route, its response contract or its parameter descriptions → 12; and 4 when the route-policy
+- a route, its response contract or its parameter descriptions → 13; and 4 when the route-policy
   manifest moved with it
 - an MCP tool's registration, name, arguments or description → 5
-- a dependency added, removed or re-locked → 9
+- a dependency added, removed or re-locked → 9 and 10
 - a documentation link, anchor or media reference → 6
 
 **Three standing exceptions, because they are cheap and they have each cost a release:**
@@ -119,6 +119,12 @@ never concurrently.
 9. `uv run python tools/licensing/check_licenses.py --ecosystem python --check`, the same with
    `--ecosystem npm`, and `uv run python tools/licensing/generate_notices.py --check` — no denied,
    unknown or unacknowledged licence, and `THIRD-PARTY-NOTICES.md` regenerates identically
+10. `uv run tools/supplychain/check_supply_chain.py --ecosystem python --check`, and the same with
+   `--ecosystem npm` — no locked pin younger than 24 hours, and no known vulnerability in either the
+   shipped closure or the one CI executes. Both fail closed: an unrecognised lock source is refused
+   rather than skipped, and a registry that cannot say when a version was published fails the run.
+   The npm half reads `supplychain/npm-publish-times.json`; after a re-lock, refresh it with
+   `--ecosystem npm --write` and commit it, or the gate queries the registry for what it lacks.
 
 CI enforces the backend coverage ratchet over the *combined* shards (`coverage report`), which a
 single local run already satisfies because it covers everything at once.
@@ -126,19 +132,19 @@ single local run already satisfies because it covers everything at once.
 From `tools/gui/`, for a stage that touched the GUI, its API payloads, or model content the GUI
 renders:
 
-10. `npm run typecheck` and `npm run build`
-11. `npm run test:coverage` — **not** `npm test`. Both run the same 1600 tests; only this one applies
+11. `npm run typecheck` and `npm run build`
+12. `npm run test:coverage` — **not** `npm test`. Both run the same 1600 tests; only this one applies
     the per-directory thresholds in `vite.config.ts`, which is what CI runs. Running the bare form is
     how a `src/domain/**` floor breach reached CI after the tag: six type-level `*.test-d.ts` contract
     files counted as 0%-covered source and took the directory from ~90% to 71.9%.
-12. `npm run contracts:check` — the committed `openapi.generated.ts` matches the backend, and the
+13. `npm run contracts:check` — the committed `openapi.generated.ts` matches the backend, and the
     hand-written effect schemas match it. Self-contained: it builds the application in-process, so it
     needs no running backend and writes nothing. When it reports staleness, run
     `npm run contracts:generate` and commit the result.
-13. `npm run test:e2e` — run `npm run build` first: the default base URL is `http://localhost:8000`,
+14. `npm run test:e2e` — run `npm run build` first: the default base URL is `http://localhost:8000`,
     where `arch-backend` serves the built SPA, which is what CI drives and what ships. Pass
     `E2E_BASE_URL=http://localhost:5173` to iterate against a Vite dev server instead.
-14. `npm run lint` — read the output in full; never pipe it through `tail` or `grep`, which masks the
+15. `npm run lint` — read the output in full; never pipe it through `tail` or `grep`, which masks the
     exit code. It takes ~10 minutes; run `npm run lint:fast` while iterating and the full one once at
     the end. CI passes `-- --concurrency auto`, which changes only how long it takes.
 

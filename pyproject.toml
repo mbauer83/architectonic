@@ -204,6 +204,7 @@ dev = [
     "boto3>=1.34",
     "cyclonedx-bom>=7.3.0",
     "pytest-split>=0.11.0",
+    "pip-audit>=2.9",
 ]
 gui = [
     "fastapi>=0.115.0",
