@@ -34,7 +34,7 @@ jobs:
           enable-cache: true
 
       - name: Install dependencies (all groups)
-        run: uv sync --all-groups
+        run: uv sync --locked --all-groups
 
       - name: Verify generated frontend types are in sync with the ontology
         run: |
@@ -121,7 +121,7 @@ jobs:
           enable-cache: true
 
       - name: Install dependencies (all groups)
-        run: uv sync --all-groups
+        run: uv sync --locked --all-groups
 
       - name: Fetch the PlantUML runtime
         run: uv run get-plantuml
@@ -204,7 +204,7 @@ jobs:
           cache-dependency-path: tools/gui/package-lock.json
 
       - name: Install Python dependencies (need uv export + installed metadata)
-        run: uv sync --all-groups --extra cloud-archive
+        run: uv sync --locked --all-groups --extra cloud-archive
 
       - name: Install frontend production deps (need node_modules for `npm ls`)
         working-directory: tools/gui
@@ -318,7 +318,7 @@ jobs:
           cache-dependency-path: tools/gui/package-lock.json
 
       - name: Install Python dependencies
-        run: uv sync --all-groups
+        run: uv sync --locked --all-groups
 
       - name: Fetch the PlantUML runtime
         run: uv run get-plantuml
