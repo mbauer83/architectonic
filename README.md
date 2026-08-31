@@ -267,16 +267,19 @@ Under consideration:
 
 ## Development & Quality Gates
 
-Before committing, run the gates from the workspace root:
+Gates run in tiers rather than all at once, from the workspace root:
 
 ```bash
-uv run pytest --tb=short -q
-uv run ruff check src
-uv run zuban check
+uv run ruff check src          # every commit, with the focused tests for what changed
+uv run zuban check             # end of a stage of related work
+uv run pytest --tb=short -q    # end of a stage of related work
 ```
 
-Frontend checks (`npm run lint`, `npm run typecheck`) run from `tools/gui`. CI runs all of
-these on every push and pull request.
+The whole set — the browser suite, the generated-artefact checks and the licence inventories
+among them — runs at release closure. Frontend checks (`npm run typecheck`,
+`npm run test:coverage`, `npm run lint`) run from `tools/gui`, for stages that touch it.
+[AGENTS.md](AGENTS.md) carries the complete list and the cadence. CI runs all of these on every
+push and pull request.
 
 &nbsp;
 

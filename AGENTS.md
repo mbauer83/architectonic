@@ -50,14 +50,47 @@ paid for:
 - verify the new test fails against the old behaviour before trusting it. Neuter the fix, re-run, and
   read the count.
 
-## Quality gates (every change)
+## Quality gates
 
 **This list is CI.** `tests/architecture/test_local_gates_match_ci.py` fails when
 `.github/workflows/ci.yml` runs a command this section does not name, so "green locally, red in CI"
 cannot be a surprise about *which* commands exist. It went unchecked once and CI caught two real
 defects — a coverage floor and an IPv4/IPv6 bind — after a release was tagged.
 
-Run one at a time, never concurrently, before committing:
+**The list is complete; the tier is when you run it.** Every gate before every commit costs more than
+the work it guards — on a developer box the backend suite is ~3.5 minutes and `npm run lint` 10 to 20
+— and a cadence nobody can afford is one that gets skipped without saying so. Run one at a time,
+never concurrently.
+
+| Tier | When | What |
+| --- | --- | --- |
+| **1** | every commit | `ruff check src/ tests/`, and the focused test file(s) for what changed. For a commit touching the GUI, `npm run typecheck` and the focused `vitest` file. Seconds. |
+| **2** | a commit that can invalidate a generated artefact | that generator's `--check`, and only that one. What invalidates what is below. |
+| **3** | the end of a stage of related work | `uv run zuban check` and the full `uv run pytest`, always. The frontend gates — `npm run test:coverage` and `npm run lint:fast` — only when the stage touched the GUI, its API payloads, or model content the GUI renders. |
+| **4** | release closure | the whole list, including the full `npm run lint`, `npm run test:e2e`, every `--check` generator, both licence ecosystems with the notices, and the media re-shoot. |
+
+**Tier 2 — what invalidates what.** Run the one generator the change can break, by its number below:
+
+- the ontology → 7, then `git diff --exit-code` on the committed frontend types, and 8 for the
+  generated diagram includes
+- a route, its response contract or its parameter descriptions → 12; and 4 when the route-policy
+  manifest moved with it
+- an MCP tool's registration, name, arguments or description → 5
+- a dependency added, removed or re-locked → 9
+- a documentation link, anchor or media reference → 6
+
+**Three standing exceptions, because they are cheap and they have each cost a release:**
+
+- **A capability-sensitive file runs alone** whenever it is touched, as well as in the suite — MCP
+  registration, the assurance capability gate, a stored diagram's type. Gate 1 says why a green
+  sharded run is not proof.
+- **The suspect-file rule.** A file whose test passed in the suite but which you have reason to doubt
+  gets run on its own before you believe it.
+- **Never truncate a gate's output.** `tail` or `grep` masks the exit code. Redirect to a file, take
+  the status from the command, and read it whole.
+
+### The gates
+
 1. `uv run pytest --tb=short -q` — must be 0 failures, and 0 warnings: `filterwarnings` makes an
    unrecognised warning an error, with each exception narrowed to one message and a reason. Not
    `python -m pytest`: `pyproject.toml` sets `addopts = "-n auto"`, and only `uv run` resolves
@@ -90,7 +123,8 @@ Run one at a time, never concurrently, before committing:
 CI enforces the backend coverage ratchet over the *combined* shards (`coverage report`), which a
 single local run already satisfies because it covers everything at once.
 
-For any change touching the GUI, its API payloads, or model content the GUI renders, add from `tools/gui/`:
+From `tools/gui/`, for a stage that touched the GUI, its API payloads, or model content the GUI
+renders:
 
 10. `npm run typecheck` and `npm run build`
 11. `npm run test:coverage` — **not** `npm test`. Both run the same 1600 tests; only this one applies
@@ -108,7 +142,9 @@ For any change touching the GUI, its API payloads, or model content the GUI rend
     exit code. It takes ~10 minutes; run `npm run lint:fast` while iterating and the full one once at
     the end. CI passes `-- --concurrency auto`, which changes only how long it takes.
 
-The browser suite is the only one that exercises the real application, so leaving it to CI means UI and content regressions are discovered after the fact rather than before the commit.
+The browser suite is the only one that exercises the real application, so leaving it to CI means UI
+and content regressions are discovered after the fact rather than at the stage that caused them.
+Run it at the end of a stage whose risk is in the read path, and at release closure.
 
 ## Public prose: `CHANGELOG.md`, `changelog-assets/`, `README.md`, `docs/`
 
