@@ -2,14 +2,14 @@
 
 Three things are asserted here that no fixture over the policy alone can reach:
 
-* **A registry that cannot answer fails the run.** A supply-chain control that passes when it could
-  not check is the same confident non-answer as the audit that ran over 29 packages of the scanner's
-  own environment and reported them clean.
-* **A lock source the reader does not recognise is refused**, not skipped.
+* **A lock source the reader does not recognise is refused**, not skipped. A gate that passes what it
+  does not understand is the same confident non-answer as an audit run against the wrong environment.
 * **The vulnerability gate audits `shipped_closure()` and `development_closure()`** — the same two
   answers the licence gate consumes — so the two gates cannot drift onto different package sets.
+* **The npm floor and the Python floor state one number.** npm enforces its own at resolution time and
+  writes nothing into the lock to prove it, so the two spellings can only be held together here.
 
-The assertions over the real lockfiles state relations, never counts: the locks change whenever a
+The assertions over the real lockfile state relations, never counts: the lock changes whenever a
 dependency does, and a test that fails for that is reporting a false regression.
 """
 
@@ -20,52 +20,22 @@ from pathlib import Path
 
 import pytest
 
-from tools.supplychain import check_supply_chain, npm_lock, npm_release_evidence, python_lock
+from tools.supplychain import python_lock
 from tools.supplychain import vulnerabilities as vuln
 from tools.supplychain.closures import development_closure, shipped_closure
-from tools.supplychain.npm_release_evidence import PublishTimes, RegistryUnavailable, pin
 from tools.supplychain.release_age import FLOOR, Refused, assess
 
 _ROOT = Path(__file__).resolve().parents[2]
 
 
-def _refusals(packages: tuple[object, ...]) -> list[str]:
-    now = datetime.now(timezone.utc)
-    return [
-        f"{package}: {verdict.reason}"
-        for package in packages
-        if isinstance(verdict := assess(package.source, now=now, workspace=_ROOT), Refused)  # type: ignore[attr-defined]
-    ]
-
-
-def _offline_times() -> PublishTimes:
-    """Recorded evidence only. A pin with none is a missing `--write`, not a reason to go online."""
-
-    def refuse(name: str) -> dict[str, str]:
-        raise RegistryUnavailable(
-            f"{name}: no recorded publish time. Run "
-            "`uv run tools/supplychain/check_supply_chain.py --ecosystem npm --write` and commit."
-        )
-
-    return PublishTimes(npm_release_evidence.recorded_times(), fetch=refuse)
-
-
 def test_every_python_pin_clears_the_floor() -> None:
-    assert _refusals(python_lock.locked_packages()) == []
-
-
-def test_every_npm_pin_clears_the_floor_from_recorded_evidence_alone() -> None:
-    """Offline on purpose: the committed evidence must cover the committed lock."""
-    assert _refusals(npm_lock.locked_packages(_offline_times())) == []
-
-
-def test_the_gate_fails_when_the_registry_cannot_answer(monkeypatch: pytest.MonkeyPatch) -> None:
-    def unreachable(name: str) -> dict[str, str]:
-        raise RegistryUnavailable(f"{name}: connection refused")
-
-    monkeypatch.setattr(check_supply_chain, "recorded_times", dict)
-    monkeypatch.setattr(npm_release_evidence, "fetch_package_times", unreachable)
-    assert check_supply_chain.main(["--ecosystem", "npm", "--check"]) == 1
+    now = datetime.now(timezone.utc)
+    refused = [
+        f"{package}: {verdict.reason}"
+        for package in python_lock.locked_packages()
+        if isinstance(verdict := assess(package.source, now=now, workspace=_ROOT), Refused)
+    ]
+    assert refused == []
 
 
 def test_an_unrecognised_lock_source_is_refused_rather_than_skipped() -> None:
@@ -96,30 +66,12 @@ def test_the_scanner_enforcing_the_supply_chain_is_inside_it() -> None:
     assert "pip-audit" in development_closure().pins
 
 
-def test_the_recorded_evidence_names_the_committed_lock_and_nothing_else() -> None:
-    """A version the lock has dropped leaves the record with it.
+def test_the_npm_resolution_floor_states_the_same_number_as_the_python_one() -> None:
+    """One floor, two mechanisms: npm counts days at resolution, the gate counts hours over the lock.
 
-    Keeping it would not change a verdict — nothing asks about a pin that is gone — which is exactly
-    why it would never be noticed. Evidence nothing reads is evidence nobody maintains, and the file
-    would grow by the size of every upgrade forever.
-    """
-    named = {
-        pin(package.name, package.version)
-        for package in npm_lock.locked_packages(_offline_times())
-    }
-    recorded = set(npm_release_evidence.recorded_times())
-    assert recorded - named == set(), (
-        "publish times recorded for pins the lock no longer names. Run "
-        "`uv run tools/supplychain/check_supply_chain.py --ecosystem npm --write` and commit."
-    )
-
-
-def test_the_npm_resolution_floor_states_the_same_number_as_the_gate() -> None:
-    """One floor, two spellings: npm counts days in `.npmrc`, the gate counts hours in `FLOOR`.
-
-    The `.npmrc` setting is ergonomics — it stops a fresh version being picked during an install —
-    and the gate is the enforcement. They are only one control while they agree on the number, and
-    nothing else would notice them drifting apart.
+    npm enforces `min-release-age` when it builds the tree and records nothing in
+    `package-lock.json`, so there is no committed evidence to check afterwards and no second gate to
+    write. What can drift is the number, and this is the only place the two spellings meet.
     """
     declared = [
         line.split("=", 1)[1].strip()
@@ -127,13 +79,3 @@ def test_the_npm_resolution_floor_states_the_same_number_as_the_gate() -> None:
         if line.strip().startswith("min-release-age")
     ]
     assert declared == [str(int(FLOOR.total_seconds() // 86400))]
-
-
-def test_the_recorded_evidence_is_keyed_the_way_the_reader_asks_for_it() -> None:
-    """The writer and the reader spell a pin once, in `pin()`; a scoped name has two `@`."""
-    recorded = npm_release_evidence.recorded_times()
-    assert recorded, "no committed publish times — every offline assertion above would be vacuous"
-    scoped = [key for key in recorded if key.startswith("@")]
-    assert scoped, "no scoped package in the evidence; the two-`@` key shape would be untested"
-    name, _, version = scoped[0].rpartition("@")
-    assert pin(name, version) == scoped[0]

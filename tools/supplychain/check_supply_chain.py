@@ -1,19 +1,26 @@
 #!/usr/bin/env python
-"""Supply-chain gate: nothing enters a committed lock that is too young or known to be vulnerable.
+"""Supply-chain gate: nothing enters a committed lock that is known to be vulnerable or too young.
 
-Two controls, one entry point per ecosystem, shaped like the licence gate beside it so that "run the
-supply-chain gate" means the same thing in both:
+    check-supply-chain --ecosystem python --check
+    check-supply-chain --ecosystem npm --check
 
-    check-supply-chain --ecosystem python --check   # CI gate: release age + known vulnerabilities
-    check-supply-chain --ecosystem npm --write      # record the publish times the npm half needs
+Shaped like the licence gate beside it, so "run the supply-chain gate" means the same thing in both.
 
-The age control reads **every** lock entry, not a closure: the shipped export omits the editable
-project, and the floor has to have an answer for the project's own entry rather than a hole where
-one would be. The vulnerability control reads the closures, because which pins ship and which pins
-CI executes are two different obligations — `tools.supplychain.closures` owns both answers.
+**The two ecosystems get different controls, because their tooling differs — not for symmetry.**
+Both are audited for known vulnerabilities. Only Python has its release-age floor checked here, and
+that is the whole asymmetry: npm enforces its floor at the moment a version could enter the lock,
+through `min-release-age` in `tools/gui/.npmrc`, and writes nothing into the lock to prove it. uv has
+no equivalent that is safe to leave switched on — both forms of `--exclude-newer` put a moving
+timestamp into the committed lock — so for Python the gate over the lock is the only place the floor
+can live. It costs nothing to run: `uv.lock` records an `upload-time` on every artifact it pins, so
+the check reads the committed file and asks no registry anything.
 
-Both controls fail closed. An unrecognised lock source is refused rather than skipped, and a registry
-that cannot say when a version was published fails the run rather than passing it.
+The age check reads **every** lock entry, not a closure: the shipped export omits the editable
+project, and the floor needs an answer for the project's own entry rather than a hole where one would
+be. The vulnerability check reads the closures, because which pins ship and which pins CI executes
+are two different obligations — `tools.supplychain.closures` owns both answers.
+
+Both fail closed. A lock source the reader does not recognise is refused rather than skipped.
 """
 
 from __future__ import annotations
@@ -28,21 +35,9 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from tools.supplychain import npm_lock, python_lock  # noqa: E402
+from tools.supplychain import python_lock  # noqa: E402
 from tools.supplychain.emergency_exceptions import REGISTER, expired  # noqa: E402
-from tools.supplychain.npm_release_evidence import (  # noqa: E402
-    EVIDENCE,
-    PublishTimes,
-    RegistryUnavailable,
-    recorded_times,
-    render,
-)
-from tools.supplychain.release_age import (  # noqa: E402
-    FLOOR,
-    LockedPackage,
-    Refused,
-    judge,
-)
+from tools.supplychain.release_age import FLOOR, Refused, judge  # noqa: E402
 from tools.supplychain.vulnerabilities import (  # noqa: E402
     AuditReport,
     audit_npm,
@@ -52,13 +47,17 @@ from tools.supplychain.vulnerabilities import (  # noqa: E402
 _ECOSYSTEMS = ("npm", "python")
 
 
-def _too_young(packages: tuple[LockedPackage, ...], now: datetime) -> list[str]:
-    refusals = []
-    for package in packages:
-        verdict = judge(package, now=now, workspace=REPO_ROOT, register=REGISTER)
-        if isinstance(verdict, Refused):
-            refusals.append(f"{package}: {verdict.reason}")
-    return refusals
+def _too_young(now: datetime) -> tuple[int, list[str]]:
+    """Every entry of `uv.lock`, judged against the floor and the emergency register."""
+    packages = python_lock.locked_packages()
+    refusals = [
+        f"{package}: {verdict.reason}"
+        for package in packages
+        if isinstance(
+            verdict := judge(package, now=now, workspace=REPO_ROOT, register=REGISTER), Refused
+        )
+    ]
+    return len(packages), refusals
 
 
 def _spent_exceptions(now: datetime) -> list[str]:
@@ -70,58 +69,31 @@ def _spent_exceptions(now: datetime) -> list[str]:
     ]
 
 
-def _python_age(now: datetime) -> tuple[int, list[str]]:
-    packages = python_lock.locked_packages()
-    return len(packages), _too_young(packages, now)
-
-
-def _npm_age(now: datetime, times: PublishTimes) -> tuple[int, list[str]]:
-    packages = npm_lock.locked_packages(times)
-    return len(packages), _too_young(packages, now)
-
-
-def _report(ecosystem: str, entries: int, refusals: list[str], audits: tuple[AuditReport, ...]) -> int:
-    problems = list(refusals) + [f"{report.audience}:\n{report.output}" for report in audits if not report.clean]
+def _report(ecosystem: str, age: str, refusals: list[str], audits: tuple[AuditReport, ...]) -> int:
+    problems = list(refusals) + [
+        f"{report.audience}:\n{report.output}" for report in audits if not report.clean
+    ]
     if problems:
         print(f"supply-chain gate FAILED ({ecosystem}):")
         for problem in problems:
             print(f"  {problem}")
         return 1
     audited = ", ".join(str(report) for report in audits)
-    print(
-        f"supply-chain gate OK ({ecosystem}): {entries} locked entries all at least "
-        f"{int(FLOOR.total_seconds() // 3600)}h old; {audited}"
-    )
+    print(f"supply-chain gate OK ({ecosystem}): {age}{audited}")
     return 0
 
 
 def _check(ecosystem: str, now: datetime) -> int:
-    if ecosystem == "python":
-        entries, refusals = _python_age(now)
-        return _report(ecosystem, entries, refusals + _spent_exceptions(now), audit_python_closures())
-    times = PublishTimes(recorded_times())
-    entries, refusals = _npm_age(now, times)
-    refusals += _spent_exceptions(now)
-    if times.queried:
-        print(
-            f"note: {len(times.queried)} pin(s) had no recorded publish time and were queried live. "
-            f"Run --write and commit {EVIDENCE.relative_to(REPO_ROOT)}."
-        )
-    return _report(ecosystem, entries, refusals, audit_npm())
-
-
-def _write(ecosystem: str) -> int:
-    """Record the evidence the npm half needs. `uv.lock` carries its own, so Python has none to write."""
-    if ecosystem == "python":
-        print("nothing to record for python: uv.lock carries an upload-time on every locked artifact")
-        return 0
-    times = PublishTimes(recorded_times())
-    npm_lock.locked_packages(times)
-    EVIDENCE.parent.mkdir(parents=True, exist_ok=True)
-    asked = times.asked()
-    EVIDENCE.write_text(render(asked), encoding="utf-8")
-    print(f"wrote {EVIDENCE.relative_to(REPO_ROOT)} ({len(asked)} publish times)")
-    return 0
+    if ecosystem == "npm":
+        return _report(ecosystem, "release age enforced at resolution by .npmrc; ", [], audit_npm())
+    entries, refusals = _too_young(now)
+    hours = int(FLOOR.total_seconds() // 3600)
+    return _report(
+        ecosystem,
+        f"{entries} locked entries all at least {hours}h old; ",
+        refusals + _spent_exceptions(now),
+        audit_python_closures(),
+    )
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -129,17 +101,16 @@ def main(argv: list[str] | None = None) -> int:
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     parser.add_argument("--ecosystem", choices=_ECOSYSTEMS, required=True)
-    mode = parser.add_mutually_exclusive_group(required=True)
-    mode.add_argument("--check", action="store_true", help="CI gate: fail on a young pin or a known vulnerability")
-    mode.add_argument("--write", action="store_true", help="record the publish times the npm age check reads")
+    parser.add_argument(
+        "--check", action="store_true", required=True,
+        help="CI gate: fail on a known vulnerability, or on a pin under the release-age floor",
+    )
     args = parser.parse_args(argv)
 
     try:
-        if args.write:
-            return _write(args.ecosystem)
         return _check(args.ecosystem, datetime.now(timezone.utc))
-    except (RegistryUnavailable, python_lock.UnreadableLockEntry) as unanswerable:
-        print(f"supply-chain gate FAILED ({args.ecosystem}): {unanswerable}")
+    except python_lock.UnreadableLockEntry as unjudgeable:
+        print(f"supply-chain gate FAILED ({args.ecosystem}): {unjudgeable}")
         return 1
 
 

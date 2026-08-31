@@ -120,11 +120,11 @@ never concurrently.
    `--ecosystem npm`, and `uv run python tools/licensing/generate_notices.py --check` — no denied,
    unknown or unacknowledged licence, and `THIRD-PARTY-NOTICES.md` regenerates identically
 10. `uv run tools/supplychain/check_supply_chain.py --ecosystem python --check`, and the same with
-   `--ecosystem npm` — no locked pin younger than 24 hours, and no known vulnerability in either the
-   shipped closure or the one CI executes. Both fail closed: an unrecognised lock source is refused
-   rather than skipped, and a registry that cannot say when a version was published fails the run.
-   The npm half reads `supplychain/npm-publish-times.json`; after a re-lock, refresh it with
-   `--ecosystem npm --write` and commit it, or the gate queries the registry for what it lacks.
+   `--ecosystem npm` — no known vulnerability in the shipped closure or in the one CI executes, and
+   for Python no locked pin younger than 24 hours. npm's floor is enforced at resolution by
+   `min-release-age` in `tools/gui/.npmrc`, so there is nothing to re-check over its lock; uv has no
+   setting that is safe to leave on, so the Python floor lives here. It fails closed: a lock source
+   the reader does not recognise is refused rather than skipped.
 
 CI enforces the backend coverage ratchet over the *combined* shards (`coverage report`), which a
 single local run already satisfies because it covers everything at once.

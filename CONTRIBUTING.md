@@ -15,10 +15,9 @@ Architectonic is a single-maintainer project.
 
 ## Changing a dependency
 
-Every pin in a committed lockfile must be at least 24 hours old, and free of known
-vulnerabilities. Both are checked by
-`uv run tools/supplychain/check_supply_chain.py --ecosystem {python,npm} --check`, over
-`uv.lock` and `tools/gui/package-lock.json`.
+Every pin must be at least 24 hours old and free of known vulnerabilities.
+`uv run tools/supplychain/check_supply_chain.py --ecosystem {python,npm} --check` audits
+both ecosystems for vulnerabilities and checks the age of every entry in `uv.lock`.
 
 The floor is enforced as a gate over the lock rather than as a resolver setting, because
 "no pin younger than 24 hours" only ever becomes more true: once a lock passes it passes
@@ -38,18 +37,11 @@ uv run tools/supplychain/check_supply_chain.py --ecosystem python --check
 If the gate refuses a pin for its age, wait for it to age or take an emergency exception —
 the answer is not to make the resolver keep a date.
 
-npm's floor is different in kind and does belong at resolution time: `tools/gui/.npmrc` sets
-`min-release-age=1`, npm writes nothing into the lock for it, and `npm ci` installs from the
-lock without resolving at all.
-
-After any npm re-lock, refresh the publish-time evidence the age gate reads and commit it:
-
-```bash
-uv run tools/supplychain/check_supply_chain.py --ecosystem npm --write
-```
-
-`uv.lock` records an upload time on every artifact it pins, so the Python half needs no
-such file and no registry call.
+npm needs none of this, because it has the setting uv lacks. `tools/gui/.npmrc` sets
+`min-release-age=1`, which makes npm refuse to build a tree from a version published in the
+last day — at resolution, which is the only moment a young version could enter the lock. It
+writes nothing into `package-lock.json`, and `npm ci` installs from the lock without
+resolving at all, so there is nothing to re-check afterwards.
 
 When the two controls conflict — the only fix for a known vulnerability is younger than
 the floor — the way through is a dated entry in
