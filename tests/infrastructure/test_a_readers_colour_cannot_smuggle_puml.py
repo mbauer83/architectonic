@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import pytest
 
+from src.application.viewpoints.diagram_reading_lens import ElementKindColouring
 from src.infrastructure.rest.routers.diagrams._reading_lens_request import lens_from_query
 
 
@@ -24,6 +25,8 @@ def _lens(**over: object):
         str(over.get("ramp", "")),
         list(over.get("key", [])),  # type: ignore[arg-type]
         bool(over.get("legend", False)),
+        str(over.get("gradient", "")),
+        str(over.get("element_kind_colouring", "")),
     )
 
 
@@ -125,3 +128,29 @@ class TestAskingForALegend:
 class TestThePrintedList:
     def test_blank_names_are_dropped_and_order_is_kept(self) -> None:
         assert _lens(printed=["owner", " ", "risk_score", "owner"]).printed == ("owner", "risk_score")
+
+
+class TestWhatBecomesOfTheElementKindColouring:
+    """The one query parameter whose fallback direction matters.
+
+    A name nobody recognises must fall back to *keeping* the element-kind colouring. Falling the other
+    way would repaint every element a reader did not ask about, off a stale or mistyped URL — the
+    difference between a preference that did not take and a picture that says something else.
+    """
+
+    @pytest.mark.parametrize("asked", ["drop", "DROP", " drop "])
+    def test_dropping_is_recognised_however_it_is_spelled(self, asked: str) -> None:
+        assert _lens(element_kind_colouring=asked).element_kind_colouring is (
+            ElementKindColouring.DROPPED
+        )
+
+    @pytest.mark.parametrize("asked", ["", "dim", "keeep", "0", "true", "none"])
+    def test_anything_else_keeps_it(self, asked: str) -> None:
+        assert _lens(element_kind_colouring=asked).element_kind_colouring is (
+            ElementKindColouring.KEPT
+        )
+
+    def test_asking_for_it_alone_still_asks_for_nothing(self) -> None:
+        """It qualifies an attribute colouring rather than being one, so it cannot make a request
+        non-empty on its own — the same rule a `key` with nothing to colour follows."""
+        assert _lens(colour_by="", element_kind_colouring="drop").is_empty

@@ -37,6 +37,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
+from enum import StrEnum
 
 from src.application.puml_alias_declarations import alias_declared_on, restyled_declaration
 from src.domain.hex_colors import readable_ink
@@ -54,6 +55,7 @@ from src.domain.viewpoints.viewpoint_style_values import (
     AD_HOC_RAMP_TOKENS,
     ATTRIBUTE_GRADIENTS,
     DEFAULT_ATTRIBUTE_GRADIENT,
+    UNSET_MEMBER_COLOR,
     color_along_stops,
     graded_colors,
     token_color,
@@ -63,6 +65,30 @@ from src.domain.viewpoints.viewpoints import PresentationSpec, StyleRule
 #: The border every restyled element takes. One colour rather than a computed one: the fill carries the
 #: reading and a border that also varied would compete with it.
 _BORDER = "48391c"
+
+
+class ElementKindColouring(StrEnum):
+    """What becomes of the colour an element has for *being what it is*, while an attribute is read.
+
+    A diagram normally carries two colourings at once. An element is filled by its kind — the
+    stereotype fill its ontology declares — and colouring by an attribute repaints only the elements
+    that carry a value for it, so a reader looks at the attribute's palette on some boxes and each
+    kind's own fill on the rest. That is honest and often what a reader wants: the kind is still true,
+    and it is what they navigate by.
+
+    It is also one fill channel carrying two meanings, and a reader asking "is that green a high
+    maturity or a business-layer element" is asking a fair question. So the choice is theirs.
+
+    One enum rather than a flag per treatment, because these are alternatives: an element's kind
+    colouring is kept or it is not, and two booleans would admit a state that means nothing.
+    """
+
+    #: Both colourings at once — the authored fill stays wherever the attribute says nothing.
+    KEPT = "keep"
+    #: One colouring. Every element the attribute says nothing about takes the neutral, which is the
+    #: same neutral the unset member takes, because they are the same state: a value nobody recorded
+    #: and a value declared "not assessed" tell a reader the same thing.
+    DROPPED = "drop"
 
 
 @dataclass(frozen=True)
@@ -98,6 +124,10 @@ class ReadingLens:
     #: A legend goes *into* the image, so asking for one is asking for a different picture, which is
     #: why it counts as a request below even though the elements are untouched by it.
     legend: bool = False
+    #: What happens to the element-kind colouring while an attribute is read. Acts only alongside
+    #: `colour_by`: dropping the kind colouring with no attribute colouring to replace it leaves every
+    #: element the same neutral, which is a blank diagram rather than a reading.
+    element_kind_colouring: ElementKindColouring = ElementKindColouring.KEPT
 
     @property
     def is_empty(self) -> bool:
@@ -287,6 +317,20 @@ def apply_reading_lens(
             if lines and entity.display_alias:
                 labels[entity.display_alias] = lines
 
+    # The colour an element takes when the attribute says nothing about it and the reader asked for
+    # its kind colouring to go. The *same* colour the unset member takes, resolved through the same
+    # `key` override, because a value nobody recorded and a value declared unset are one state to a
+    # reader — so a reader who recolours "Not Assessed" moves both, and one neutral stays one neutral.
+    #
+    # `None` unless a reader asked, and unless there is an attribute colouring for it to make room
+    # for: dropping the kind colouring on its own paints every element the neutral, which draws a
+    # blank diagram out of a request that meant to draw a clearer one.
+    neutral = (
+        lens.key.get(unset or "", UNSET_MEMBER_COLOR)
+        if lens.colour_by and lens.element_kind_colouring is ElementKindColouring.DROPPED
+        else None
+    )
+
     rewritten: list[str] = []
     for line in puml_body.splitlines():
         declaration = alias_declared_on(line)
@@ -294,7 +338,10 @@ def apply_reading_lens(
         if alias not in by_alias:
             rewritten.append(line)
             continue
-        fill = fills.get(alias)
+        # A grouping, a junction or a note is not in `by_alias` and so never reaches here — the
+        # neutral applies to *drawn model entities*, which are the things an attribute could have
+        # spoken about. A neutral container would erase the layout a reader navigates by.
+        fill = fills.get(alias, neutral)
         rewritten.append(
             restyled_declaration(
                 line,

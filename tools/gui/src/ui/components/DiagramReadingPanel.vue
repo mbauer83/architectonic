@@ -43,7 +43,8 @@
 import { computed, ref } from 'vue'
 import type { AttributeOffer, DiagramAttributePanel, TypeOffer } from '../../domain/schemas/diagrams'
 import {
-  isEmptyLens, withLegend, withMemberColour, withRampEnd, type ReadingLens,
+  isEmptyLens, withElementKindColouring, withLegend, withMemberColour, withRampEnd,
+  type ElementKindColouring, type ReadingLens,
 } from '../../domain/readingLens'
 import { AD_HOC_RAMP_TOKENS } from '../../domain/types.generated'
 import { tokenColor } from '../lib/viewpointStyleTokens'
@@ -53,6 +54,29 @@ import {
 } from './DiagramReadingPanel.helpers'
 
 const props = defineProps<{ panel: DiagramAttributePanel | null; lens: ReadingLens; busy?: boolean }>()
+/** What each treatment of the element-kind colouring is called, and what it does on hover.
+ *
+ * "Keep" and "Remove" rather than the wire's `keep`/`drop`: a reader is choosing what happens to the
+ * colours in front of them, not naming a mode. The consequence — one fill channel carrying this
+ * attribute, or two carrying it and the element kind — is the whole basis for choosing, so it is on
+ * the control rather than in a paragraph above it. */
+const KIND_COLOURING_CHOICES: readonly {
+  value: ElementKindColouring; label: string; title: string
+}[] = [
+  {
+    value: 'keep',
+    label: 'Keep',
+    title: 'Elements this attribute says nothing about keep the colour of their kind, so the diagram '
+      + 'shows both colourings at once',
+  },
+  {
+    value: 'drop',
+    label: 'Remove',
+    title: 'Elements this attribute says nothing about take the same colour as its unset value, so '
+      + 'the fill shows this attribute and nothing else',
+  },
+]
+
 const emit = defineEmits<{ 'update:lens': [ReadingLens] }>()
 
 const open = ref(false)
@@ -152,6 +176,30 @@ const pick = (step: ColourStep, colour: string) => emit(
           >
           Explain the notation, in the image
         </label>
+
+        <!-- A diagram-level choice, like the legend, and for the same reason: there is one colouring
+             at a time, so what happens to the element-kind colours is a fact about the picture rather
+             than about an attribute. Offered only while an attribute colouring is on, because without
+             one there is nothing to make room for and removing the kind colours would blank the
+             diagram. -->
+        <div
+          v-if="lens.colourBy"
+          class="kinds"
+        >
+          <span class="kinds__label">Element-kind colours</span>
+          <button
+            v-for="choice in KIND_COLOURING_CHOICES"
+            :key="choice.value"
+            class="kinds__choice"
+            type="button"
+            :class="{ 'kinds__choice--on': lens.elementKindColouring === choice.value }"
+            :aria-pressed="lens.elementKindColouring === choice.value"
+            :title="choice.title"
+            @click="emit('update:lens', withElementKindColouring(lens, choice.value))"
+          >
+            {{ choice.label }}
+          </button>
+        </div>
 
         <!-- Two messages, because dropping the attribute-less rows made one sentence cover two
              different facts. "Draws no model entities" was said of a diagram placing thirteen of
@@ -266,6 +314,15 @@ const pick = (step: ColourStep, colour: string) => emit(
   display: inline-flex; align-items: baseline; gap: 0.3rem; padding: 0.35rem 0 0.4rem;
   cursor: pointer; font-size: 0.8rem; color: #374151;
 }
+/* A labelled pair rather than a checkbox: "keep" and "remove" are both positive descriptions of a
+   picture, and a checkbox would have to name one of them as the absence of the other. */
+.kinds { display: flex; align-items: center; gap: 0.35rem; padding: 0 0 0.45rem; flex-wrap: wrap; }
+.kinds__label { color: #6b7280; font-size: 0.8rem; }
+.kinds__choice {
+  padding: 0.15rem 0.45rem; font: inherit; font-size: 0.78rem; color: #374151; cursor: pointer;
+  background: #fff; border: 1px solid #e5e7eb; border-radius: 4px;
+}
+.kinds__choice--on { border-color: #2563eb; color: #1d4ed8; background: #eff6ff; }
 .across { border-top: 1px solid #f3f4f6; padding-bottom: 0.2rem; }
 .across__head { margin: 0.35rem 0 0.1rem; font-size: 0.8rem; color: #6b7280; }
 .across__disputed { margin: 0.2rem 0 0 1.2rem; font-size: 0.75rem; color: #d97706; }

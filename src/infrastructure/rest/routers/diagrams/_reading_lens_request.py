@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from src.application.viewpoints.diagram_reading_lens import ReadingLens
+from src.application.viewpoints.diagram_reading_lens import ElementKindColouring, ReadingLens
 from src.domain.hex_colors import is_hex_color
 from src.domain.viewpoints.viewpoint_style_values import (
     ATTRIBUTE_GRADIENTS,
@@ -84,9 +84,23 @@ def _gradient(value: str) -> str | None:
     return value if value in ATTRIBUTE_GRADIENTS else None
 
 
+def _element_kind_colouring(value: str) -> ElementKindColouring:
+    """The treatment a request asks for, or the one that changes nothing where it names none.
+
+    Falling back rather than refusing, for the reason `_gradient` falls back: this travels in a URL,
+    and a stale or mistyped name should still draw the diagram. Keeping is the safe fallback because
+    it is what the diagram already does — a name nobody recognises must not silently repaint every
+    element the reader did not ask about.
+    """
+    try:
+        return ElementKindColouring(value.strip().lower())
+    except ValueError:
+        return ElementKindColouring.KEPT
+
+
 def lens_from_query(
     colour_by: str, printed: Sequence[str], ramp: str, key: Sequence[str], legend: bool,
-    gradient: str = "",
+    gradient: str = "", element_kind_colouring: str = "",
 ) -> ReadingLens:
     """The reader's request, normalised. Blank names are dropped and order is kept."""
     return ReadingLens(
@@ -96,4 +110,5 @@ def lens_from_query(
         key=_key(key),
         gradient=_gradient(gradient),
         legend=legend,
+        element_kind_colouring=_element_kind_colouring(element_kind_colouring),
     )

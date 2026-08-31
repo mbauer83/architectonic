@@ -10,7 +10,7 @@
 import { describe, expect, it } from 'vitest'
 import { createApp, h, type App } from 'vue'
 import DiagramReadingPanel from '../DiagramReadingPanel.vue'
-import { EMPTY_READING_LENS } from '../../../domain/readingLens'
+import { EMPTY_READING_LENS, type ReadingLens } from '../../../domain/readingLens'
 import type { AttributeOffer, DiagramAttributePanel, TypeOffer } from '../../../domain/schemas/diagrams'
 
 const attribute: AttributeOffer = {
@@ -26,11 +26,13 @@ const panel = (over: Partial<DiagramAttributePanel> = {}): DiagramAttributePanel
 })
 
 /** Mount the panel with its fold open, and return the text and the controls a reader would see. */
-const opened = (offer: DiagramAttributePanel): { text: string; labels: string[]; app: App } => {
+const opened = (
+  offer: DiagramAttributePanel, lens: ReadingLens = EMPTY_READING_LENS,
+): { text: string; labels: string[]; kinds: string[]; app: App } => {
   const host = document.createElement('div')
   document.body.appendChild(host)
   const app = createApp({
-    render: () => h(DiagramReadingPanel, { panel: offer, lens: EMPTY_READING_LENS }),
+    render: () => h(DiagramReadingPanel, { panel: offer, lens }),
   })
   app.mount(host)
   host.querySelector<HTMLButtonElement>('.reading__toggle')?.click()
@@ -39,6 +41,9 @@ const opened = (offer: DiagramAttributePanel): { text: string; labels: string[];
     get labels() {
       return [...host.querySelectorAll('input[type=checkbox]')]
         .map((box) => (box.closest('label')?.textContent ?? '').trim())
+    },
+    get kinds() {
+      return [...host.querySelectorAll('.kinds__choice')].map((b) => (b.textContent ?? '').trim())
     },
     app,
   }
@@ -94,6 +99,44 @@ describe('a diagram with attributes', () => {
     await Promise.resolve()
 
     expect(view.labels).not.toContain('Explain the notation, in the image')
+    view.app.unmount()
+  })
+})
+
+describe('what happens to the element-kind colours', () => {
+  // A diagram-level control, like the legend, because there is one colouring at a time: what becomes
+  // of the element-kind colours is a fact about the picture rather than about an attribute. It lived
+  // on the attribute row first, where a reader could reasonably ask which attribute's copy won.
+  const withAttributes = panel({ drawn: 4, types: [typeOffer] })
+
+  it('is not offered while nothing is being coloured by', async () => {
+    // With no attribute colouring there is nothing to make room for, and removing the kind colours
+    // would leave every element the same neutral — a blank diagram, not a clearer one.
+    const view = opened(withAttributes)
+    await Promise.resolve()
+
+    expect(view.kinds).toEqual([])
+    view.app.unmount()
+  })
+
+  it('is offered once, at the panel level, as soon as a colouring is on', async () => {
+    const view = opened(withAttributes, { ...EMPTY_READING_LENS, colourBy: 'risk_score' })
+    await Promise.resolve()
+
+    expect(view.kinds).toEqual(['Keep', 'Remove'])
+    view.app.unmount()
+  })
+
+  it('shows which treatment is in effect', async () => {
+    const view = opened(
+      withAttributes,
+      { ...EMPTY_READING_LENS, colourBy: 'risk_score', elementKindColouring: 'drop' },
+    )
+    await Promise.resolve()
+
+    const pressed = [...document.querySelectorAll('.kinds__choice[aria-pressed=true]')]
+      .map((b) => (b.textContent ?? '').trim())
+    expect(pressed).toEqual(['Remove'])
     view.app.unmount()
   })
 })

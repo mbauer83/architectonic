@@ -220,10 +220,19 @@ def get_diagram_svg(
                           "is the bad one. Absent leaves a graded set on the default and a ramp on "
                           "its magnitude pair"),
     ] = "",
+    element_kind_colouring: Annotated[
+        str,
+        Query(description="What becomes of the colour an element has for being what it is, while an "
+                          "attribute is read — `keep` for both colourings at once, `drop` to give "
+                          "every element the attribute says nothing about the same neutral the unset "
+                          "member takes. Acts only alongside `colour_by`"),
+    ] = "keep",
     catalogs: RuntimeCatalogs = Depends(fresh_viewpoints_runtime_catalogs_dependency),
 ) -> Response:
     id = artifact_id
-    lens = lens_from_query(colour_by, printed, ramp, key, legend, gradient)
+    lens = lens_from_query(
+        colour_by, printed, ramp, key, legend, gradient, element_kind_colouring
+    )
     repo_root = s.maybe_engagement_root()
     if repo_root is None:
         raise HTTPException(500, "Repository not initialized")
@@ -297,6 +306,13 @@ def download_diagram(
                           "is the bad one. Absent leaves a graded set on the default and a ramp on "
                           "its magnitude pair"),
     ] = "",
+    element_kind_colouring: Annotated[
+        str,
+        Query(description="What becomes of the colour an element has for being what it is, while an "
+                          "attribute is read — `keep` for both colourings at once, `drop` to give "
+                          "every element the attribute says nothing about the same neutral the unset "
+                          "member takes. Acts only alongside `colour_by`"),
+    ] = "keep",
     catalogs: RuntimeCatalogs = Depends(fresh_viewpoints_runtime_catalogs_dependency),
 ) -> Response:
     """The diagram as an attachment — the authored image, or the reader's current display.
@@ -307,7 +323,9 @@ def download_diagram(
     the display that will drift from it.
     """
     id = artifact_id
-    lens = lens_from_query(colour_by, printed, ramp, key, legend, gradient)
+    lens = lens_from_query(
+        colour_by, printed, ramp, key, legend, gradient, element_kind_colouring
+    )
     repo_root = s.maybe_engagement_root()
     if repo_root is None:
         raise HTTPException(500, "Repository not initialized")

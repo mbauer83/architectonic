@@ -70,13 +70,30 @@ export interface ReadingLens {
    * one are three dead controls. Asking for a legend is asking for a different picture, which is why
    * it makes the request non-empty on its own where a colour mapping does not. */
   readonly legend: boolean
+  /** What becomes of the colour an element has for *being what it is*, while an attribute is read.
+   *
+   * A diagram normally carries two colourings at once: an element is filled by its kind, and
+   * colouring by an attribute repaints only the elements carrying a value for it. That is honest and
+   * often wanted — the kind is still true, and it is what a reader navigates by — but it is one fill
+   * channel with two meanings, so the choice is the reader's.
+   *
+   * `'drop'` gives every element the attribute says nothing about the **unset member's** colour, not
+   * a colour of its own: a value nobody recorded and a value declared "not assessed" are one state,
+   * and a second neutral would put a third meaning in the channel this exists to clear. It qualifies
+   * an attribute colouring rather than being one, so it does nothing without `colourBy`. */
+  readonly elementKindColouring: ElementKindColouring
 }
 
 /** The gradient a reading starts from, and the one the server falls back to for an unknown name. */
 export const DEFAULT_GRADIENT = 'red-green'
 
+/** Both colourings at once, or the attribute's alone. Spelled as the server's own two values, so a
+ * control cannot offer a treatment the renderer would fall back out of. */
+export type ElementKindColouring = 'keep' | 'drop'
+
 export const EMPTY_READING_LENS: ReadingLens = {
   colourBy: '', printed: [], ramp: null, key: {}, legend: false, gradient: null,
+  elementKindColouring: 'keep',
 }
 
 /** Whether this asks for anything.
@@ -114,6 +131,11 @@ export const lensParams = (
   // Only when the reader chose one: a parameter restating the fallback describes a choice nobody
   // made, and it would put every ordinary reading through a distinct URL.
   if (lens.gradient !== null) params.gradient = lens.gradient
+  // Same rule, same reason: `keep` is what the diagram already does, so naming it would describe a
+  // choice nobody made and give every ordinary reading its own URL.
+  if (lens.elementKindColouring !== 'keep') {
+    params.element_kind_colouring = lens.elementKindColouring
+  }
   return params
 }
 
@@ -121,6 +143,11 @@ export const lensParams = (
 export const withGradient = (lens: ReadingLens, gradient: string | null): ReadingLens => ({
   ...lens, gradient,
 })
+
+/** What becomes of the element-kind colouring while an attribute is read. */
+export const withElementKindColouring = (
+  lens: ReadingLens, elementKindColouring: ElementKindColouring,
+): ReadingLens => ({ ...lens, elementKindColouring })
 
 /** Turn the legend on or off. */
 export const withLegend = (lens: ReadingLens): ReadingLens => ({ ...lens, legend: !lens.legend })

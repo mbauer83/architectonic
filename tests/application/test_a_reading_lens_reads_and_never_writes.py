@@ -20,8 +20,11 @@ the round trip this project asks of a syntax it writes: the fills are found with
   a lens that computed its own bounds would silently lose it.
 * **Every element still declares its alias.** The lens rewrites declaration lines, so the round trip
   the register demands is stated at this layer too: same aliases, same order.
-* **An element with no value keeps its authored appearance.** Painting it neutral grey would say "this
-  is low", which is a claim the model does not make.
+* **An element with no value keeps its authored appearance** unless the reader asks otherwise. That
+  default is the older rule and it stands: painting an unvalued element neutral *grey* would say "this
+  is low", which is a claim the model does not make. What a reader may now ask for is the neutral the
+  unset member already takes — white, which says "not assessed" — and the two states are one, so the
+  same colour on both is the accurate picture rather than a guess.
 """
 
 from __future__ import annotations
@@ -32,10 +35,18 @@ from pathlib import Path
 import pytest
 
 from src.application.puml_alias_declarations import alias_declared_on, declared_aliases
-from src.application.viewpoints.diagram_reading_lens import ReadingLens, apply_reading_lens
+from src.application.viewpoints.diagram_reading_lens import (
+    ElementKindColouring,
+    ReadingLens,
+    apply_reading_lens,
+)
 from src.domain.ontology_representation.artifact_types import EntityRecord
 from src.domain.viewpoints.viewpoint_condition_validation import RegistrySnapshot
-from src.domain.viewpoints.viewpoint_style_values import AD_HOC_RAMP_TOKENS, STYLE_TOKEN_COLORS
+from src.domain.viewpoints.viewpoint_style_values import (
+    AD_HOC_RAMP_TOKENS,
+    STYLE_TOKEN_COLORS,
+    UNSET_MEMBER_COLOR,
+)
 
 _BODY = """@startuml lens-fixture
 skinparam linetype ortho
@@ -104,6 +115,7 @@ def _apply(
     lens: ReadingLens,
     registries: RegistrySnapshot,
     palette: tuple[str, ...] = (),
+    unset: str | None = None,
 ) -> str:
     """*palette* is the member list a palette colouring assigns from, empty for a ramp.
 
@@ -113,7 +125,7 @@ def _apply(
     """
     return apply_reading_lens(
         _BODY, entities, lens=lens, read_access=_NoReads(),  # type: ignore[arg-type]
-        registries=registries, palette=palette,
+        registries=registries, palette=palette, unset=unset,
     )
 
 
@@ -320,3 +332,103 @@ class TestAGradientOnARamp:
 
         assert forwards["CAP_a"] == backwards["CAP_b"]
         assert forwards["CAP_b"] == backwards["CAP_a"]
+
+
+class TestWhatBecomesOfTheElementKindColouring:
+    """A diagram normally carries two colourings at once, and a reader may now ask for one.
+
+    Colouring by an attribute repaints only the elements carrying a value for it, so the rest keep
+    the fill their kind gives them. That is honest — the kind is still true — but it is one fill
+    channel with two meanings, and a reader looking at a green box has to ask which it is.
+
+    The neutral for the elements the attribute says nothing about is the **unset member's** colour,
+    not a colour of its own. A value nobody recorded and a value declared "not assessed" are one
+    state to a reader, so a second neutral beside the first would be a third meaning in the channel
+    the choice exists to clear.
+    """
+
+    _DROP = ReadingLens(colour_by="lifecycle", element_kind_colouring=ElementKindColouring.DROPPED)
+
+    def test_keeping_it_is_the_default_and_leaves_an_unvalued_element_alone(self) -> None:
+        """Stated here as well as in `TestWhatIsLeftAlone`, because it is now a *choice* rather than
+        the only behaviour, and a default that changed by accident is what this catches."""
+        assert ReadingLens().element_kind_colouring is ElementKindColouring.KEPT
+
+        fills = _fills(_apply(
+            [_entity("CAP_a", lifecycle="active"), _entity("CAP_b")],
+            ReadingLens(colour_by="lifecycle"), _KEYED, _MEMBERS,
+        ))
+
+        assert set(fills) == {"CAP_a"}
+
+    def test_dropping_it_gives_every_element_the_attribute_says_nothing_about_the_neutral(
+        self,
+    ) -> None:
+        fills = _fills(_apply(
+            [_entity("CAP_a", lifecycle="active"), _entity("CAP_b"), _entity("CAP_c")],
+            self._DROP, _KEYED, _MEMBERS,
+        ))
+
+        assert set(fills) == {"CAP_a", "CAP_b", "CAP_c"}
+        assert fills["CAP_b"] == fills["CAP_c"] == UNSET_MEMBER_COLOR
+        assert fills["CAP_a"] != UNSET_MEMBER_COLOR
+
+    def test_an_element_with_no_value_takes_the_same_colour_as_the_declared_unset_member(
+        self,
+    ) -> None:
+        """The one property that makes this a reading rather than a blanking: the two states look
+        alike because they *are* alike, so a reader counts one neutral and not two."""
+        fills = _fills(_apply(
+            [_entity("CAP_a", lifecycle="planned"), _entity("CAP_b")],
+            self._DROP, _KEYED, _MEMBERS, unset="planned",
+        ))
+
+        assert fills["CAP_a"] == fills["CAP_b"]
+
+    def test_a_reader_s_own_colour_for_the_unset_member_moves_both(self) -> None:
+        """And through the same `key` lookup, so the two cannot drift apart."""
+        lens = ReadingLens(
+            colour_by="lifecycle", key={"planned": "#123456"},
+            element_kind_colouring=ElementKindColouring.DROPPED,
+        )
+
+        fills = _fills(_apply(
+            [_entity("CAP_a", lifecycle="planned"), _entity("CAP_b")],
+            lens, _KEYED, _MEMBERS, unset="planned",
+        ))
+
+        assert fills["CAP_a"] == fills["CAP_b"] == "#123456"
+
+    def test_it_asks_for_nothing_without_an_attribute_colouring(self) -> None:
+        """Dropping the kind colouring with nothing to replace it paints every element the neutral,
+        which is a blank diagram out of a request that meant to draw a clearer one. A stale choice
+        left in a URL must not do that on a diagram nobody asked to have coloured."""
+        lens = ReadingLens(
+            printed=("lifecycle",), element_kind_colouring=ElementKindColouring.DROPPED
+        )
+
+        assert _fills(_apply([_entity("CAP_a", lifecycle="active")], lens, _KEYED, _MEMBERS)) == {}
+
+    def test_a_container_keeps_its_colour(self) -> None:
+        """A grouping is not something the attribute could have spoken about, and a neutral plane
+        behind the elements would erase the structure a reader navigates by."""
+        body = _apply([_entity("CAP_a", lifecycle="active")], self._DROP, _KEYED, _MEMBERS)
+
+        assert 'rectangle "Capabilities" as GRP_1 {' in body
+
+    def test_an_element_the_model_does_not_place_is_still_untouched(self) -> None:
+        """The neutral reaches drawn *model entities*. A body may declare an alias the diagram does
+        not place — and the lens has never had anything to say about those."""
+        body = _apply([_entity("CAP_a", lifecycle="active")], self._DROP, _KEYED, _MEMBERS)
+
+        assert 'rectangle "Beta" <<capability>> as CAP_b' in body
+
+    def test_every_element_still_declares_its_alias(self) -> None:
+        """The round trip the syntax register demands, restated for the path that now rewrites every
+        declaration rather than a few of them."""
+        body = _apply(
+            [_entity(alias, lifecycle="active") for alias in ("CAP_a", "CAP_b", "CAP_c")],
+            self._DROP, _KEYED, _MEMBERS,
+        )
+
+        assert [d.alias for d in declared_aliases(body)] == [d.alias for d in declared_aliases(_BODY)]
