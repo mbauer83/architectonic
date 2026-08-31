@@ -49,83 +49,82 @@ What follows is a disclosure inventory, for two purposes: to say what a build as
 - License text: licenses/texts/LGPL-3.0-or-later.txt + licenses/texts/GPL-3.0-or-later.txt
 - Obligation: Not conveyed by this project: it is a declared dependency that pip/uv installs from PyPI, so upstream is the distributor. Nothing is vendored and nothing is statically combined — cvss is an ordinary runtime import from site-packages, replaceable with a modified build by `pip install` alone. LGPLv3 §4's duties fall on whoever conveys a work containing the library; a redistributor who vendors or bundles it takes those on, including §4(a)-(b) notice and license texts.
 
-## Python dependencies (74)
+## Python dependencies (73)
 
 | Component | Version | License |
 |---|---|---|
 | aiosqlite | 0.22.1 | MIT License |
-| alembic | 1.18.4 | MIT |
-| annotated-doc | 0.0.4 | MIT |
-| annotated-types | 0.7.0 | MIT License |
-| anyio | 4.13.0 | MIT |
+| alembic | 1.19.1 | MIT |
+| annotated-doc | 0.0.5 | MIT |
+| annotated-types | 0.8.0 | MIT |
+| anyio | 4.14.2 | MIT |
 | attrs | 26.1.0 | MIT |
 | azure-core | 1.41.0 | MIT |
 | azure-identity | 1.25.3 | MIT |
-| azure-storage-blob | 12.30.0 | MIT License |
-| boto3 | 1.43.25 | Apache-2.0 |
-| botocore | 1.43.25 | Apache-2.0 |
-| certifi | 2026.2.25 | Mozilla Public License 2.0 (MPL 2.0) |
-| cffi | 2.0.0 | MIT |
-| charset-normalizer | 3.4.7 | MIT |
-| click | 8.4.2 | BSD-3-Clause |
-| colorama | 0.4.6 | BSD-3-Clause |
-| cryptography | 50.0.0 | Apache-2.0 OR BSD-3-Clause |
+| azure-storage-blob | 12.30.1 | MIT License |
+| boto3 | 1.43.83 | Apache-2.0 |
+| botocore | 1.43.83 | Apache-2.0 |
+| certifi | 2026.7.22 | Mozilla Public License 2.0 (MPL 2.0) |
+| cffi | 2.1.1 | MIT-0 |
+| charset-normalizer | 3.5.1 | MIT |
+| click | 8.5.0 | BSD-3-Clause |
+| cryptography | 50.0.1 | Apache-2.0 OR BSD-3-Clause |
 | cvss | 3.6 | GNU Lesser General Public License v3 or later (LGPLv3+) |
 | defusedxml | 0.7.1 | Python Software Foundation License |
-| fastapi | 0.139.2 | MIT |
-| greenlet | 3.4.0 | MIT AND PSF-2.0 |
+| fastapi | 0.141.1 | MIT |
+| greenlet | 3.5.5 | MIT AND PSF-2.0 |
 | h11 | 0.16.0 | MIT License |
 | httpcore | 1.0.9 | BSD-3-Clause |
 | httptools | 0.8.0 | MIT |
 | httpx | 0.28.1 | BSD License |
 | httpx-sse | 0.4.3 | MIT |
-| idna | 3.18 | BSD-3-Clause |
+| idna | 3.19 | BSD-3-Clause |
 | isodate | 0.7.2 | BSD License |
 | jaraco-classes | 3.4.0 | MIT License |
 | jaraco-context | 6.1.2 | MIT |
-| jaraco-functools | 4.5.0 | MIT |
+| jaraco-functools | 4.6.0 | MIT |
 | jeepney | 0.9.0 | MIT |
 | jmespath | 1.1.0 | MIT License |
 | jsonschema | 4.26.0 | MIT |
 | jsonschema-specifications | 2025.9.1 | MIT |
 | keyring | 25.7.0 | MIT |
 | keyrings-alt | 5.0.2 | MIT License |
-| lxml | 6.1.1 | BSD-3-Clause |
-| mako | 1.3.12 | MIT License |
+| lxml | 6.1.2 | BSD-3-Clause |
+| mako | 1.4.1 | MIT |
 | markupsafe | 3.0.3 | BSD-3-Clause |
 | mcp | 1.28.1 | MIT License |
 | more-itertools | 11.1.0 | MIT |
-| msal | 1.37.0 | MIT License |
+| msal | 1.38.0 | MIT License |
 | msal-extensions | 1.3.1 | MIT License |
 | packageurl-python | 0.17.6 | MIT License |
 | pycparser | 3.0 | BSD-3-Clause |
-| pydantic | 2.12.5 | MIT |
-| pydantic-core | 2.41.5 | MIT |
+| pydantic | 2.13.5 | MIT |
+| pydantic-core | 2.46.5 | MIT |
 | pydantic-settings | 2.14.2 | MIT |
 | pyjwt | 2.13.0 | MIT |
 | python-dateutil | 2.9.0.post0 | Apache Software License; BSD License |
-| python-dotenv | 1.2.2 | BSD-3-Clause |
-| python-frontmatter | 1.1.0 | MIT License |
+| python-dotenv | 1.2.3 | BSD-3-Clause |
+| python-frontmatter | 1.3.0 | MIT |
 | python-multipart | 0.0.32 | Apache-2.0 |
-| pywin32 | 311 | PSF-2.0 |
+| pywin32 | 312 | PSF-2.0 |
 | pywin32-ctypes | 0.2.3 | BSD-3-Clause |
 | pyyaml | 6.0.3 | MIT License |
 | referencing | 0.37.0 | MIT |
 | requests | 2.34.2 | Apache Software License |
-| rpds-py | 0.30.0 | MIT |
-| s3transfer | 0.18.0 | Apache Software License |
+| rpds-py | 2026.6.3 | MIT |
+| s3transfer | 0.19.2 | Apache Software License |
 | secretstorage | 3.5.0 | BSD-3-Clause |
 | six | 1.17.0 | MIT License |
-| sqlalchemy | 2.0.49 | MIT |
+| sqlalchemy | 2.0.52 | MIT |
 | sqlcipher3 | 0.6.2 | MIT |
-| sse-starlette | 3.3.4 | BSD-3-Clause |
-| starlette | 1.3.1 | BSD-3-Clause |
-| typing-extensions | 4.15.0 | PSF-2.0 |
-| typing-inspection | 0.4.2 | MIT |
+| sse-starlette | 3.4.8 | BSD-3-Clause |
+| starlette | 1.6.0 | BSD-3-Clause |
+| typing-extensions | 4.16.0 | PSF-2.0 |
+| typing-inspection | 0.4.4 | MIT |
 | urllib3 | 2.7.0 | MIT |
-| uvicorn | 0.51.0 | BSD-3-Clause |
+| uvicorn | 0.52.4 | BSD-3-Clause |
 | uvloop | 0.22.1 | Apache Software License; MIT License |
-| watchfiles | 1.1.1 | MIT License |
+| watchfiles | 1.2.0 | MIT License |
 | websockets | 16.0 | BSD-3-Clause |
 
 ## Frontend (npm) dependencies (57)
