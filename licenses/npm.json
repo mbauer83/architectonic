@@ -16,13 +16,13 @@
     },
     {
       "name": "@babel/parser",
-      "version": "7.29.7",
+      "version": "7.29.8",
       "license": "MIT",
       "bucket": "allow"
     },
     {
       "name": "@babel/types",
-      "version": "7.29.7",
+      "version": "7.29.8",
       "license": "MIT",
       "bucket": "allow"
     },
@@ -34,7 +34,7 @@
     },
     {
       "name": "@codemirror/commands",
-      "version": "6.10.4",
+      "version": "6.11.0",
       "license": "MIT",
       "bucket": "allow"
     },
@@ -58,7 +58,7 @@
     },
     {
       "name": "@codemirror/lang-markdown",
-      "version": "6.5.1",
+      "version": "6.5.2",
       "license": "MIT",
       "bucket": "allow"
     },
@@ -88,7 +88,7 @@
     },
     {
       "name": "@codemirror/view",
-      "version": "6.43.6",
+      "version": "6.43.9",
       "license": "MIT",
       "bucket": "allow"
     },
@@ -160,25 +160,25 @@
     },
     {
       "name": "@vue/compiler-core",
-      "version": "3.5.40",
+      "version": "3.5.42",
       "license": "MIT",
       "bucket": "allow"
     },
     {
       "name": "@vue/compiler-dom",
-      "version": "3.5.40",
+      "version": "3.5.42",
       "license": "MIT",
       "bucket": "allow"
     },
     {
       "name": "@vue/compiler-sfc",
-      "version": "3.5.40",
+      "version": "3.5.42",
       "license": "MIT",
       "bucket": "allow"
     },
     {
       "name": "@vue/compiler-ssr",
-      "version": "3.5.40",
+      "version": "3.5.42",
       "license": "MIT",
       "bucket": "allow"
     },
@@ -190,31 +190,31 @@
     },
     {
       "name": "@vue/reactivity",
-      "version": "3.5.40",
+      "version": "3.5.42",
       "license": "MIT",
       "bucket": "allow"
     },
     {
       "name": "@vue/runtime-core",
-      "version": "3.5.40",
+      "version": "3.5.42",
       "license": "MIT",
       "bucket": "allow"
     },
     {
       "name": "@vue/runtime-dom",
-      "version": "3.5.40",
+      "version": "3.5.42",
       "license": "MIT",
       "bucket": "allow"
     },
     {
       "name": "@vue/server-renderer",
-      "version": "3.5.40",
+      "version": "3.5.42",
       "license": "MIT",
       "bucket": "allow"
     },
     {
       "name": "@vue/shared",
-      "version": "3.5.40",
+      "version": "3.5.42",
       "license": "MIT",
       "bucket": "allow"
     },
@@ -244,13 +244,13 @@
     },
     {
       "name": "dompurify",
-      "version": "3.4.13",
+      "version": "3.4.14",
       "license": "(MPL-2.0 OR Apache-2.0)",
       "bucket": "allow"
     },
     {
       "name": "effect",
-      "version": "3.22.0",
+      "version": "3.22.1",
       "license": "MIT",
       "bucket": "allow"
     },
@@ -280,7 +280,7 @@
     },
     {
       "name": "marked",
-      "version": "18.0.7",
+      "version": "18.0.11",
       "license": "MIT",
       "bucket": "allow"
     },
@@ -328,7 +328,7 @@
     },
     {
       "name": "vue",
-      "version": "3.5.40",
+      "version": "3.5.42",
       "license": "MIT",
       "bucket": "allow"
     },

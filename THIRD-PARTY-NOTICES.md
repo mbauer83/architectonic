@@ -134,19 +134,19 @@ What follows is a disclosure inventory, for two purposes: to say what a build as
 |---|---|---|
 | @babel/helper-string-parser | 7.29.7 | MIT |
 | @babel/helper-validator-identifier | 7.29.7 | MIT |
-| @babel/parser | 7.29.7 | MIT |
-| @babel/types | 7.29.7 | MIT |
+| @babel/parser | 7.29.8 | MIT |
+| @babel/types | 7.29.8 | MIT |
 | @codemirror/autocomplete | 6.20.3 | MIT |
-| @codemirror/commands | 6.10.4 | MIT |
+| @codemirror/commands | 6.11.0 | MIT |
 | @codemirror/lang-css | 6.3.1 | MIT |
 | @codemirror/lang-html | 6.4.11 | MIT |
 | @codemirror/lang-javascript | 6.2.5 | MIT |
-| @codemirror/lang-markdown | 6.5.1 | MIT |
+| @codemirror/lang-markdown | 6.5.2 | MIT |
 | @codemirror/language | 6.12.4 | MIT |
 | @codemirror/lint | 6.9.7 | MIT |
 | @codemirror/search | 6.7.1 | MIT |
 | @codemirror/state | 6.7.1 | MIT |
-| @codemirror/view | 6.43.6 | MIT |
+| @codemirror/view | 6.43.9 | MIT |
 | @jridgewell/sourcemap-codec | 1.5.5 | MIT |
 | @lezer/common | 1.5.2 | MIT |
 | @lezer/css | 1.3.4 | MIT |
@@ -158,27 +158,27 @@ What follows is a disclosure inventory, for two purposes: to say what a build as
 | @marijn/find-cluster-break | 1.0.3 | MIT |
 | @standard-schema/spec | 1.1.0 | MIT |
 | @types/trusted-types | 2.0.7 | MIT |
-| @vue/compiler-core | 3.5.40 | MIT |
-| @vue/compiler-dom | 3.5.40 | MIT |
-| @vue/compiler-sfc | 3.5.40 | MIT |
-| @vue/compiler-ssr | 3.5.40 | MIT |
+| @vue/compiler-core | 3.5.42 | MIT |
+| @vue/compiler-dom | 3.5.42 | MIT |
+| @vue/compiler-sfc | 3.5.42 | MIT |
+| @vue/compiler-ssr | 3.5.42 | MIT |
 | @vue/devtools-api | 6.6.4 | MIT |
-| @vue/reactivity | 3.5.40 | MIT |
-| @vue/runtime-core | 3.5.40 | MIT |
-| @vue/runtime-dom | 3.5.40 | MIT |
-| @vue/server-renderer | 3.5.40 | MIT |
-| @vue/shared | 3.5.40 | MIT |
+| @vue/reactivity | 3.5.42 | MIT |
+| @vue/runtime-core | 3.5.42 | MIT |
+| @vue/runtime-dom | 3.5.42 | MIT |
+| @vue/server-renderer | 3.5.42 | MIT |
+| @vue/shared | 3.5.42 | MIT |
 | codemirror | 6.0.2 | MIT |
 | crelt | 1.0.7 | MIT |
 | csstype | 3.2.3 | MIT |
 | d3-hierarchy | 3.1.2 | ISC |
-| dompurify | 3.4.13 | (MPL-2.0 OR Apache-2.0) |
-| effect | 3.22.0 | MIT |
+| dompurify | 3.4.14 | (MPL-2.0 OR Apache-2.0) |
+| effect | 3.22.1 | MIT |
 | entities | 7.0.1 | BSD-2-Clause |
 | estree-walker | 2.0.2 | MIT |
 | fast-check | 3.23.2 | MIT |
 | magic-string | 0.30.21 | MIT |
-| marked | 18.0.7 | MIT |
+| marked | 18.0.11 | MIT |
 | nanoid | 3.3.18 | MIT |
 | picocolors | 1.1.1 | ISC |
 | postcss | 8.5.23 | MIT |
@@ -186,7 +186,7 @@ What follows is a disclosure inventory, for two purposes: to say what a build as
 | source-map-js | 1.2.1 | BSD-3-Clause |
 | style-mod | 4.1.3 | MIT |
 | typescript | 5.9.3 | Apache-2.0 |
-| vue | 3.5.40 | MIT |
+| vue | 3.5.42 | MIT |
 | vue-router | 4.6.4 | MIT |
 | w3c-keyname | 2.2.8 | MIT |
 
