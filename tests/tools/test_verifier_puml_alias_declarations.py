@@ -196,7 +196,8 @@ class TestTheRealRepositorySatisfiesIt:
     """Stated as an invariant over whatever the repository holds, not over a count of files."""
 
     @pytest.fixture(scope="class")
-    def archimate_bodies(self) -> list[tuple[Path, str]]:
+    @staticmethod
+    def archimate_bodies() -> list[tuple[Path, str]]:
         roots = [Path("engagements"), Path("enterprise-repository")]
         return [
             (path, text)

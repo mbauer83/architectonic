@@ -120,6 +120,16 @@ filterwarnings = [
     # directions locally, so neither the fix nor the leak can be silently reversed behind these.
     "ignore:unclosed database:ResourceWarning",
     "ignore:Exception ignored while finalizing database connection:pytest.PytestUnraisableExceptionWarning",
+    # pytest 9.1 deprecated fixture registration by id — `_register_fixture(nodeid=...)` and the
+    # `FixtureDef(baseid=...)` it forwards to — in favour of passing the node. The caller is
+    # `pytest_bdd.compat.inject_fixture`, which every scenario goes through, so with `error` above a
+    # third-party call fails our own BDD tests. 8.1.0 is the latest pytest-bdd and no release of it
+    # uses the new argument, so there is nothing to upgrade to. Two messages because the second is
+    # raised a frame deeper, inside pytest's own module; each is narrowed to its message and to the
+    # module it is attributed to, so the same deprecation from anything of ours stays an error.
+    # Remove both when pytest-bdd ships the change.
+    "ignore:Passing nodeid to _register_fixture is deprecated:pytest.PytestRemovedIn10Warning:pytest_bdd.compat",
+    "ignore:Passing baseid to FixtureDef is deprecated:pytest.PytestRemovedIn10Warning:_pytest.fixtures",
 ]
 # Coverage is opt-in to keep the default quality-gate run fast. Enable with:
 #   uv run pytest --cov            (terminal summary with missing lines)

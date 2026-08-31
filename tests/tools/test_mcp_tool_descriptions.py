@@ -38,7 +38,8 @@ def _param_names(tool) -> set[str]:
 
 class TestEditDiagramToolSchema:
     @pytest.fixture(scope="class")
-    def tool(self):
+    @staticmethod
+    def tool():
         tools = _get_write_tools()
         assert "artifact_edit_diagram" in tools, "artifact_edit_diagram not registered"
         return tools["artifact_edit_diagram"]
@@ -109,7 +110,8 @@ class TestEditDiagramToolSchema:
 
 class TestCreateDiagramToolSchema:
     @pytest.fixture(scope="class")
-    def tool(self):
+    @staticmethod
+    def tool():
         tools = _get_write_tools()
         assert "artifact_create_diagram" in tools, "artifact_create_diagram not registered"
         return tools["artifact_create_diagram"]
@@ -134,7 +136,8 @@ class TestCreateDiagramToolSchema:
 
 class TestAuthoringGuidanceToolSchema:
     @pytest.fixture(scope="class")
-    def tool(self):
+    @staticmethod
+    def tool():
         tools = _get_write_tools()
         assert "artifact_authoring_guidance" in tools, "artifact_authoring_guidance not registered"
         return tools["artifact_authoring_guidance"]
