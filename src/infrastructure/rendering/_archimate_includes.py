@@ -24,14 +24,26 @@ from typing import Any, Literal, Mapping
 from src.config.repo_paths import DIAGRAM_CATALOG
 from src.domain.yaml_documents import parse_yaml
 
+#: How a stereotype *styling* declaration begins: it names a stereotype without drawing anything with
+#: it. One spelling, because both questions asked of this syntax are asked here and a second spelling
+#: of the head is how the two would come to disagree about what counts as one.
+_STEREOTYPE_STYLING = r"skinparam\s+rectangle<<(\w+)>>"
 #: A `skinparam rectangle<<Type>> { … }` block, whichever file it sits in.
-_STEREOTYPE_BLOCK = re.compile(r"skinparam rectangle<<(\w+)>>\s*\{[^}]+\}")
+_STEREOTYPE_BLOCK = re.compile(_STEREOTYPE_STYLING + r"\s*\{[^}]+\}")
+#: The head alone, for blanking a styling declaration out of text before element references are read.
+_STEREOTYPE_STYLING_HEAD = re.compile(_STEREOTYPE_STYLING)
 #: A relationship macro definition. The parameter names are the macro's own, so a stale body that
 #: spells them differently is still the same declaration and is still restated.
 _RELATION_MACRO = re.compile(r"^!define\s+(Rel_\w+)\([^)]*\).*$", re.MULTILINE)
 #: A glyph sprite definition, which carries its SVG on the same line.
 _SPRITE = re.compile(r"^sprite \$archimate_(\w+)\s.*$", re.MULTILINE)
 #: A `<<stereotype>>` reference on an element line — a body saying it uses that notation.
+#:
+#: "On an element line" is what this has always claimed and what the pattern alone cannot tell: a
+#: styling declaration names a stereotype in the same glyph. Every stored diagram inlines its own
+#: skinparam blocks, so every stereotype a body *styles* was reported as one it *draws* — and the
+#: legend, reading that as "this fill is still on screen", named a colour no element carried. Hence
+#: the blanking in `referenced_in`, which is where the distinction belongs.
 _STEREOTYPE_REFERENCE = re.compile(r"<<(\w+)>>")
 #: A `<$archimate_sprite>` reference inside a label — a body saying it draws that glyph.
 _SPRITE_REFERENCE = re.compile(r"<\$archimate_(\w+)")
@@ -126,9 +138,15 @@ class ArchimateDeclarations:
         )
 
     def referenced_in(self, body: str) -> ReferencedDeclarations:
-        """Which of these declarations *body* refers to."""
+        """Which of these declarations *body* refers to.
+
+        **Styling a stereotype is not drawing one.** A `skinparam rectangle<<goal>>` block says how a
+        goal would be drawn; whether any element takes it is the separate question every caller here
+        is actually asking, so the styling declarations are blanked before the references are read.
+        """
+        drawn = _STEREOTYPE_STYLING_HEAD.sub("", body)
         return ReferencedDeclarations(
-            stereotypes=frozenset(_STEREOTYPE_REFERENCE.findall(body)),
+            stereotypes=frozenset(_STEREOTYPE_REFERENCE.findall(drawn)),
             sprites=frozenset(_SPRITE_REFERENCE.findall(body)),
             inlined_sprites=frozenset(match.group(1) for match in _SPRITE.finditer(body)),
         )

@@ -8,10 +8,16 @@ picture that was drawn.
 
 The other half is that only *referenced* declarations count. `ArchimateDeclarations` holds the whole
 catalogue; a body uses a handful of it, and the handful is what a reader needs explained.
+
+**Styling a stereotype is not drawing one**, and the two are spelled with the same `<<name>>`. Since
+every stored body carries its own skinparam blocks inlined, reading the glyph anywhere reported each
+kind a body styles as a kind it draws — which the legend turned into a row for a fill no element on the
+picture carried.
 """
 
 from __future__ import annotations
 
+from src.application.puml_alias_declarations import overrides_colour
 from src.domain.ontology_representation.relation_notation import RelationNotation
 from src.infrastructure.rendering._archimate_includes import ArchimateDeclarations
 from src.infrastructure.rendering.archimate_legend import (
@@ -105,6 +111,35 @@ class TestOnlyWhatIsReferenced:
         referenced = _declarations().referenced_in(_BODY)
 
         assert referenced.sprites == frozenset({"capability"})
+
+    def test_styling_a_stereotype_is_not_drawing_one(self) -> None:
+        """The distinction that cost a wrong legend row on every stored diagram.
+
+        A stored body carries its own `skinparam rectangle<<name>>` blocks inlined, and that glyph
+        names a stereotype without drawing anything with it. Read as a reference, a body reported
+        every kind it *styles* as a kind it *draws* — so the legend named a fill for a kind no
+        element on the picture carried.
+        """
+        body = "@startuml\n" + _STEREOTYPES + "@enduml\n"
+
+        found = notations_referenced_in(body, _declarations())
+
+        assert found == {}
+
+    def test_an_inlined_block_does_not_keep_a_recoloured_kind_in_the_legend(self) -> None:
+        """The case it showed up in. Every `capability` on this body carries its own fill, so the
+        kind's declared colour is genuinely off the picture — and the inlined block that styles it is
+        not evidence to the contrary."""
+        body = (
+            "@startuml\n" + _STEREOTYPES
+            + 'rectangle "Alpha" <<capability>> as CAP_a #back:ffffff;line:48391c;text:252327\n'
+            + "@enduml\n"
+        )
+
+        found = notations_referenced_in(body, _declarations())
+
+        assert set(found) == {"capability"}
+        assert all(overrides_colour(line) for line in body.splitlines() if " as " in line)
 
     def test_a_sprite_already_inlined_is_not_injected_twice(self) -> None:
         """The distinction the expansion path depends on, asked through the same reader."""

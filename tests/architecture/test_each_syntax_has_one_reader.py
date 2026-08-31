@@ -102,6 +102,16 @@ _MARKDOWN_LINK = re.compile(r"\]\\?\(")
 #: a literal carrying `arch://` handed to a locating call is deciding where a step's id begins.
 _SENTINEL_LINK = re.compile(r"arch://")
 
+#: The head of a stereotype styling declaration. Anchored to `rectangle<<` with nothing between,
+#: which is what PlantUML's skinparam form spells and what a reading of one cannot avoid.
+#:
+#: **Not the bare `<<Name>>`**, deliberately. That glyph is also how an arrow names its relation type
+#: and how an element line names its stereotype, and those have several readers doing genuinely
+#: different jobs — the grouping parser, the relation parsers, the verifier's rules. Probing for it
+#: would report five modules that are not deciding *this* question, and a register that cries wolf is
+#: the register nobody keeps. What has one owner, and is registered here, is the declaration.
+_STEREOTYPE_STYLING_HEAD = re.compile(r"rectangle<<")
+
 #: The kind prefix on a required-/suggested-reference term. Anchored to the whole literal, because
 #: `doc:` and `diagram:` are short enough to appear inside prose that is not deciding anything; a
 #: reader hands the prefix to `startswith` or `split` as exactly this string and nothing else.
@@ -284,6 +294,25 @@ SYNTAX_READERS: tuple[SyntaxReader, ...] = (
             "every step of a partition undrawn and nobody would have known which side was wrong"
         ),
         literal_probe=_SENTINEL_LINK,
+    ),
+    SyntaxReader(
+        syntax="how a stereotype's own styling is declared, and whether a body is using it",
+        owners=(Path("src/infrastructure/rendering/_archimate_includes.py"),),
+        instead=(
+            "`src.infrastructure.rendering._archimate_includes.ArchimateDeclarations`: "
+            "`referenced_in` for which declarations a body *uses*, `notation_of` for how one kind is "
+            "drawn, `are_inlined_in` and `restated_in` for a body that carries its own copies"
+        ),
+        incident=(
+            "a row written after the two questions this syntax answers were read as one. Styling a "
+            "stereotype and drawing one are spelled with the same `<<Name>>`, and `referenced_in` "
+            "matched it anywhere — so every stored diagram, which inlines its own skinparam blocks, "
+            "reported each kind it styles as a kind it draws. The legend read that as \"this fill is "
+            "still on screen\" and named a colour no element carried: with the element-kind colouring "
+            "removed, every box was neutral and the legend still sent a reader looking for purple. "
+            "The comment on the pattern had claimed \"on an element line\" since it was written"
+        ),
+        literal_probe=_STEREOTYPE_STYLING_HEAD,
     ),
 )
 
