@@ -1,6 +1,6 @@
 [project]
 name = "architectonic"
-version = "0.8.1"
+version = "0.8.2"
 description = "Architectonic — architecture as code for humans and AI: a typed, verifiable, git-versioned model with MCP, REST, CLI, and GUI access, plus safety/security/GRC assurance."
 requires-python = ">=3.13"
 license = "MIT"

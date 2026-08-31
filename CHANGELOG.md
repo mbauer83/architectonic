@@ -3,6 +3,50 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [0.8.2] — 2026-08-31
+
+**[Full detail → `changelog-assets/0.8.2-detail.md`](changelog-assets/0.8.2-detail.md)**
+
+**Colour a diagram by a value set that has an order, and read the result.** An attribute whose values
+run from one end to another is now coloured along a gradient rather than from a palette of unrelated
+hues, the element-kind colours can step out of the way while you read one, and the legend names element
+kinds the way the modelling language does.
+
+### Added
+
+- **A gradient for an ordered value set.** Colouring by an attribute like a maturity level spreads its
+  members along a gradient in declared order, so a picture shows which elements are further along and
+  not merely that they differ. Choose between a red-to-green gradient and a yellow-to-blue one that a
+  red/green colour-blind reader can separate; the choice sits beside the per-member colour pickers and
+  previews itself. Setting a member's colour by hand still overrides the gradient.
+- **A gradient can run the other way.** `green-red` and `blue-yellow` are offered beside the two
+  above, for a scale whose high end is the bad one — a risk band rather than a maturity ladder.
+- **An unassessed element is drawn white.** The value a schema declares as its `default` takes no
+  place on the scale — it is what appears on something nobody has assessed, and putting it at the
+  bottom of a scale would paint an unknown as the worst case.
+- **The element-kind colours can be removed while an attribute is read.** A diagram normally shows
+  both colourings at once: the attribute's palette on the elements that carry a value, each element
+  kind's own fill on the rest. `Element-kind colours → Remove` gives every element the attribute says
+  nothing about the same colour as its unset value, so the fill shows one thing. Available whenever a
+  colouring is on, beside the legend control.
+
+### Fixed
+
+- **A hand-laid diagram's reference lists can be corrected without resending it.** Pass
+  `connection_ids` or `entity_ids` alongside `puml="auto-sync"` and the recorded lists become what you
+  passed, with the body untouched. Previously the correction W307 named required restating the whole
+  body, which for a hand-laid diagram is tens of kilobytes. A sync that regenerates the body refuses a
+  stated set, since that body decides what it records.
+- **Saving from a fullscreen diagram's sidebar stays fullscreen.** Editing an element's metadata
+  reloaded the diagram, which replaced the canvas and dropped the reader back to the page.
+- **The legend names element kinds as the language does** — Application Component, Strategy Grouping,
+  Assignment — and a value stream's boxes are named as the stages they are.
+- **The legend no longer names a fill that is off the picture.** A diagram whose every element of one
+  kind was recoloured by an attribute still got a row for that kind's own colour, sending a reader to
+  look for something that was not there.
+- **A scale with stops between its ends colours the diagram.** A gradient declaring more than two
+  colours was read as declaring none, so nothing on the diagram was coloured and nothing said why.
+
 ## [0.8.1] — 2026-08-28
 
 **[Full detail → `changelog-assets/0.8.1-detail.md`](changelog-assets/0.8.1-detail.md)**
@@ -890,6 +934,7 @@ never-requested operations is empty — the reason to trust a release which rena
 - Confidential assurance tier (STPA/CAST/GRC/FMEA/GSN) on an encrypted store with tamper-evident history
 - Viewpoint query engine with diagram/matrix/table representations
 
+[0.8.2]: https://github.com/mbauer83/architectonic/compare/v0.8.1...v0.8.2
 [0.8.1]: https://github.com/mbauer83/architectonic/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/mbauer83/architectonic/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/mbauer83/architectonic/compare/v0.7.0...v0.7.1
