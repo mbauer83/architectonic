@@ -24,7 +24,7 @@ from tools.supplychain import check_supply_chain, npm_lock, npm_release_evidence
 from tools.supplychain import vulnerabilities as vuln
 from tools.supplychain.closures import development_closure, shipped_closure
 from tools.supplychain.npm_release_evidence import PublishTimes, RegistryUnavailable, pin
-from tools.supplychain.release_age import Refused, assess
+from tools.supplychain.release_age import FLOOR, Refused, assess
 
 _ROOT = Path(__file__).resolve().parents[2]
 
@@ -94,6 +94,21 @@ def test_the_vulnerability_gate_audits_exactly_the_two_closures(
 def test_the_scanner_enforcing_the_supply_chain_is_inside_it() -> None:
     """A tool that audits the closure and is not in it resolves outside the floor at every run."""
     assert "pip-audit" in development_closure().pins
+
+
+def test_the_npm_resolution_floor_states_the_same_number_as_the_gate() -> None:
+    """One floor, two spellings: npm counts days in `.npmrc`, the gate counts hours in `FLOOR`.
+
+    The `.npmrc` setting is ergonomics — it stops a fresh version being picked during an install —
+    and the gate is the enforcement. They are only one control while they agree on the number, and
+    nothing else would notice them drifting apart.
+    """
+    declared = [
+        line.split("=", 1)[1].strip()
+        for line in (_ROOT / "tools" / "gui" / ".npmrc").read_text(encoding="utf-8").splitlines()
+        if line.strip().startswith("min-release-age")
+    ]
+    assert declared == [str(int(FLOOR.total_seconds() // 86400))]
 
 
 def test_the_recorded_evidence_is_keyed_the_way_the_reader_asks_for_it() -> None:
