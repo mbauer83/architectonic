@@ -22,19 +22,25 @@ vulnerabilities. Both are checked by
 
 The floor is enforced as a gate over the lock rather than as a resolver setting, because
 "no pin younger than 24 hours" only ever becomes more true: once a lock passes it passes
-for good. A rolling `exclude-newer` in `[tool.uv]` would do the opposite — uv resolves it
-to a moving timestamp, so every `uv sync` re-resolves and rewrites the committed lock.
+for good. A resolver setting does the opposite. Measured with uv 0.11.7, both forms of
+`exclude-newer` put a moving timestamp into the committed lock — the `[tool.uv]` form makes
+every `uv sync` re-resolve, and the command-line form writes an `[options]` block naming
+the moment it ran, after which `uv sync --locked` fails until someone repeats the flag.
 
-So pass the window on the commands that *change* the lock, and nowhere else:
+So **re-lock plainly**, and let the gate decide:
 
 ```bash
-uv lock --exclude-newer "24 hours"
-uv lock --upgrade --exclude-newer "24 hours"
-uv add <package> --exclude-newer "24 hours"
+uv lock                                # or --upgrade-package <name> ... for a chosen set
+uv add <package>
+uv run tools/supplychain/check_supply_chain.py --ecosystem python --check
 ```
 
-npm has its own resolution-time floor in `tools/gui/.npmrc`, and `npm ci` installs from the
-lock without resolving, so nothing extra is needed there.
+If the gate refuses a pin for its age, wait for it to age or take an emergency exception —
+the answer is not to make the resolver keep a date.
+
+npm's floor is different in kind and does belong at resolution time: `tools/gui/.npmrc` sets
+`min-release-age=1`, npm writes nothing into the lock for it, and `npm ci` installs from the
+lock without resolving at all.
 
 After any npm re-lock, refresh the publish-time evidence the age gate reads and commit it:
 

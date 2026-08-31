@@ -41,11 +41,14 @@ _SELECTION: Mapping[ClosureName, tuple[str, ...]] = {
 }
 
 #: Shape of the export, shared by both closures and required by their consumers:
-#: ``--no-emit-project`` drops the editable project itself, which is neither a licensed third party
-#: nor a registry artifact anything can audit; ``--no-hashes`` because ``pip-audit --no-deps`` refuses
-#: a hashed requirement file; ``--no-annotate`` so every non-comment line is a pin. Environment
-#: markers are deliberately kept — stripping them makes an installer try ``pywin32`` on Linux.
-_SHAPE = ("--no-hashes", "--no-emit-project", "--no-annotate")
+#: ``--frozen`` because a gate must never rewrite what it judges — without it ``uv export``
+#: re-resolves and silently updates ``uv.lock``, which was measured here: a licence-gate run
+#: rewrote the lock a preceding command had just written; ``--no-emit-project`` drops the editable
+#: project itself, which is neither a licensed third party nor a registry artifact anything can
+#: audit; ``--no-hashes`` because ``pip-audit --no-deps`` refuses a hashed requirement file;
+#: ``--no-annotate`` so every non-comment line is a pin. Environment markers are deliberately kept
+#: — stripping them makes an installer try ``pywin32`` on Linux.
+_SHAPE = ("--frozen", "--no-hashes", "--no-emit-project", "--no-annotate")
 
 #: ANSI escape sequences, stripped before the export is parsed as data. With colour on, an escape
 #: sequence reaches stdout and parses as a package named "\x1b" with an unknown licence — failing a
