@@ -3133,6 +3133,10 @@ export interface components {
         };
         /** AdminEditEntityBody */
         AdminEditEntityBody: {
+            /** Attribute Types */
+            attribute_types?: {
+                [key: string]: string;
+            } | null;
             /**
              * Dry Run
              * @default true
@@ -3148,6 +3152,8 @@ export interface components {
             properties?: {
                 [key: string]: string | null;
             } | null;
+            /** Specializations */
+            specializations?: string[] | null;
             /** Status */
             status?: string | null;
             /** Summary */

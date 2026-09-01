@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import re
 from collections.abc import Callable
 from pathlib import Path
 
@@ -12,7 +11,7 @@ from src.application.verification.artifact_verifier import ArtifactRegistry, Art
 from src.domain.modules.module_types import EntityTypeName
 
 from ._admin_commit import commit_with_verification, dry_result
-from ._entity_edit_support import _UNSET, merge_fields
+from ._entity_edit_support import _UNSET, merge_fields, render_entity, subject_of
 from .boundary import assert_enterprise_write_root, modification_stamp
 from .entity import verification_to_entity_dict
 from .entity_delete import _delete_entity_core
@@ -85,12 +84,22 @@ def admin_edit_entity(
     name: str | None = None,
     summary: object = _UNSET,
     properties: object = _UNSET,
+    attribute_types: object = _UNSET,
     notes: object = _UNSET,
     keywords: object = _UNSET,
+    specializations: object = _UNSET,
     version: str | None = None,
     status: str | None = None,
     dry_run: bool,
 ) -> WriteResult:
+    """Edit an enterprise entity, over the same field vocabulary an engagement edit has.
+
+    `attribute_types` and `specializations` were absent here — not refused, just never given. The
+    merge call had them wired to "keep whatever is there", so an enterprise entity's declared
+    attribute types and specializations could be read and written back but never changed, through
+    either of the two authorised paths into this repository. Nothing said so: no refusal, no comment,
+    no test. Promotion, the other path, carries both.
+    """
     assert_enterprise_write_root(repo_root)
 
     entity_file = registry.find_file_by_id(artifact_id)
@@ -98,31 +107,19 @@ def admin_edit_entity(
         raise ValueError(f"Entity '{artifact_id}' not found in model")
 
     parsed = parse_entity_file(entity_file)
-    # The address used to reach the file is not the file's identity. Both the full and the short
-    # form resolve, and writing the short one back produced an `artifact-id` with no slug, which
-    # fails its own id pattern (E101) — so the edit verified false and refused, for an entity that
-    # was fine. The file declares what it is.
-    artifact_id = str(parsed.frontmatter.get("artifact-id") or artifact_id)
-    artifact_type = str(parsed.frontmatter.get("artifact-type", ""))
-    from src.infrastructure.app_bootstrap import get_module_registry  # noqa: PLC0415
-
-    get_module_registry().get_entity_type(EntityTypeName(artifact_type))
+    subject = subject_of(parsed, addressed_as=artifact_id)
+    artifact_id, artifact_type = subject.artifact_id, subject.artifact_type
 
     merged = merge_fields(
         parsed, name=name, version=version, status=status,
-        keywords=keywords, summary=summary, properties=properties,
-        attribute_types=_UNSET, notes=notes,
+        keywords=keywords, specializations=specializations, summary=summary, properties=properties,
+        attribute_types=attribute_types, notes=notes,
     )
-    display_content = parsed.display_content
-    if name is not None and display_content:
-        display_content = re.sub(r"(?m)^(label:\s*).*$", rf"\g<1>{merged.name}", display_content, count=1)
-
-    content = format_entity_markdown(
-        artifact_id=artifact_id, artifact_type=artifact_type, name=merged.name, version=merged.version,
-        status=merged.status, last_updated=modification_stamp(), keywords=merged.keywords, summary=merged.summary,
-        specializations=merged.specializations,
-        properties=merged.properties, attribute_types=merged.attribute_types, notes=merged.notes,
-        display_section_id=parsed.display_section_id, display_content=display_content, repo_root=repo_root,
+    content = render_entity(
+        parsed=parsed, merged=merged, artifact_type=artifact_type,
+        # No relocation: an enterprise edit renames nothing and moves nothing, so the effective id is
+        # the one the file already declares.
+        effective_artifact_id=artifact_id, name_changed=name is not None, repo_root=repo_root,
     )
 
     if dry_run:

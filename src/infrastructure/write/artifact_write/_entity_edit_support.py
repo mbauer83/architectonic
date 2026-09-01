@@ -7,12 +7,14 @@ and reason about.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 from src.application.repo_path_helpers import all_model_roots
+from src.domain.modules.module_types import EntityTypeName
 from src.domain.ontology_representation.specialization_values import (
     applied_specialization_slugs,
 )
@@ -140,3 +142,77 @@ def count_rename_referrers(repo_root: Path, artifact_id: str, own_outgoing: Path
             except OSError:
                 continue
     return impacted
+
+
+@dataclass(frozen=True, slots=True)
+class EditSubject:
+    """What an edit is about: the entity's own id and type, read from the file rather than the call.
+
+    The address a caller reached the file by is not the file's identity. `find_file_by_id` accepts the
+    short form (`PREFIX@epoch.random`) as well as the full one, and writing the short form back
+    produced an `artifact-id` with no slug — which fails its own id pattern, so an edit verified false
+    and refused for an entity that was fine. The frontmatter is the authority for its own id.
+    """
+
+    artifact_id: str
+    artifact_type: str
+
+
+def subject_of(parsed: ParsedEntity, *, addressed_as: str) -> EditSubject:
+    """Canonicalise the edit's subject and refuse a type the ontology does not declare.
+
+    Shared by both authorities. An entity's identity and type do not depend on which repository it
+    lives in, and while this was written twice the enterprise copy silently drifted: it could not
+    change `attribute_types` or `specializations` because its own copy of the merge call had them
+    wired to "keep whatever is there", which reads as a refusal and was never decided as one.
+    """
+    from src.infrastructure.app_bootstrap import get_module_registry  # noqa: PLC0415
+
+    frontmatter = parsed.frontmatter
+    artifact_type = str(frontmatter.get("artifact-type", ""))
+    get_module_registry().get_entity_type(EntityTypeName(artifact_type))
+    return EditSubject(
+        artifact_id=str(frontmatter.get("artifact-id", "")) or addressed_as,
+        artifact_type=artifact_type,
+    )
+
+
+def render_entity(
+    *,
+    parsed: ParsedEntity,
+    merged: MergedFields,
+    artifact_type: str,
+    effective_artifact_id: str,
+    name_changed: bool,
+    repo_root: Path,
+) -> str:
+    """Format the entity markdown, relabelling the display block when the name changed.
+
+    `effective_artifact_id` is a parameter rather than a flag about relocation: an engagement edit may
+    rename or move the entity and passes the id that implies, and an admin edit passes the one it
+    already has. Neither authority needs to know what the other does.
+    """
+    from src.application.modeling.artifact_write import format_entity_markdown  # noqa: PLC0415
+
+    from .boundary import modification_stamp  # noqa: PLC0415
+
+    display_content = parsed.display_content
+    if name_changed and display_content:
+        display_content = re.sub(r"(?m)^(label:\s*).*$", rf"\g<1>{merged.name}", display_content, count=1)
+    return format_entity_markdown(
+        artifact_id=effective_artifact_id,
+        artifact_type=artifact_type,
+        name=merged.name,
+        version=merged.version,
+        status=merged.status,
+        last_updated=modification_stamp(),
+        keywords=merged.keywords,
+        specializations=merged.specializations,
+        summary=merged.summary,
+        properties=merged.properties,
+        attribute_types=merged.attribute_types,
+        notes=merged.notes,
+        display_section_id=parsed.display_section_id,
+        display_content=display_content,
+        repo_root=repo_root,
+    )

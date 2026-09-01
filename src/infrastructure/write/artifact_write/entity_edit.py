@@ -1,10 +1,9 @@
 """Entity editing and promotion operations."""
 
-import re
 from collections.abc import Callable
 from pathlib import Path
 
-from src.application.modeling.artifact_write import format_entity_markdown, slugify
+from src.application.modeling.artifact_write import slugify
 from src.application.profile_quarantine import assert_not_quarantined
 from src.application.rename_followers import ArtifactRenamed, announce_rename
 from src.application.verification.artifact_verifier import ArtifactRegistry, ArtifactVerifier
@@ -14,9 +13,10 @@ from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from ._artifact_deduplication import get_repository, validate_entity_unique
 from ._entity_edit_support import (
     _UNSET,
-    MergedFields,
     count_rename_referrers,
     merge_fields,
+    render_entity,
+    subject_of,
 )
 from ._entity_rename import (
     apply_referrer_rewrites,
@@ -24,9 +24,9 @@ from ._entity_rename import (
     rename_entity_via_m4,
     rewrite_document_links_for_moved_artifact,
 )
-from .boundary import assert_engagement_write_root, modification_stamp
+from .boundary import assert_engagement_write_root
 from .entity import entity_path, verification_to_entity_dict
-from .parse_existing import ParsedEntity, parse_entity_file
+from .parse_existing import parse_entity_file
 from .types import WriteResult
 from .verify import verify_content_in_temp_path
 
@@ -74,38 +74,6 @@ def _resolve_target_identity(
     return effective_artifact_id, target_entity_file
 
 
-def _render_entity(
-    *,
-    parsed: ParsedEntity,
-    merged: MergedFields,
-    artifact_type: str,
-    effective_artifact_id: str,
-    name_changed: bool,
-    repo_root: Path,
-) -> str:
-    """Format the entity markdown, relabelling the display block when the name changed."""
-    display_content = parsed.display_content
-    if name_changed and display_content:
-        display_content = re.sub(r"(?m)^(label:\s*).*$", rf"\g<1>{merged.name}", display_content, count=1)
-    return format_entity_markdown(
-        artifact_id=effective_artifact_id,
-        artifact_type=artifact_type,
-        name=merged.name,
-        version=merged.version,
-        status=merged.status,
-        last_updated=modification_stamp(),
-        keywords=merged.keywords,
-        specializations=merged.specializations,
-        summary=merged.summary,
-        properties=merged.properties,
-        attribute_types=merged.attribute_types,
-        notes=merged.notes,
-        display_section_id=parsed.display_section_id,
-        display_content=display_content,
-        repo_root=repo_root,
-    )
-
-
 def _entity_result(
     *, wrote: bool, path: Path, artifact_id: str, content: str | None, warnings: list[str], verification: object
 ) -> WriteResult:
@@ -150,17 +118,8 @@ def edit_entity(
         raise ValueError(f"Entity '{artifact_id}' not found in model")
 
     parsed = parse_entity_file(entity_file)
-    # find_file_by_id() accepts the short form (PREFIX@epoch.random) as well as the full one,
-    # so canonicalize before anything downstream consumes the id: the frontmatter it renders
-    # must carry the full form the verifier requires, and _resolve_target_identity() rsplits
-    # the slug off to build a rename target. The frontmatter is the authority for its own id.
-    artifact_id = str(parsed.frontmatter.get("artifact-id", "")) or artifact_id
-    artifact_type = str(parsed.frontmatter.get("artifact-type", ""))
-    from src.infrastructure.app_bootstrap import (  # noqa: PLC0415, process_runtime_catalogs
-        get_module_registry,
-    )
-
-    get_module_registry().get_entity_type(EntityTypeName(artifact_type))
+    subject = subject_of(parsed, addressed_as=artifact_id)
+    artifact_id, artifact_type = subject.artifact_id, subject.artifact_type
 
     merged = merge_fields(
         parsed,
@@ -190,7 +149,7 @@ def edit_entity(
         eff_name=merged.name,
         group=group,
     )
-    content = _render_entity(
+    content = render_entity(
         parsed=parsed,
         merged=merged,
         artifact_type=artifact_type,

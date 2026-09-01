@@ -107,8 +107,14 @@ class AdminEditEntityBody(BaseModel):
     #: deletion, and what `artifact_edit_entity` accepts. Typed `str` here, an enterprise entity
     #: could never have an attribute removed once the ontology stopped declaring it.
     properties: dict[str, str | None] | None = None
+    #: The declared type of each attribute, patched the same way. Absent from this body until the
+    #: field vocabularies were reconciled — an enterprise entity's attribute types could be written
+    #: by promotion and never afterwards changed.
+    attribute_types: dict[str, str] | None = None
     notes: str | None = None
     keywords: list[str] | None = None
+    #: Replaces the applied set; `[]` clears it. Absent here for the same reason as above.
+    specializations: list[str] | None = None
     version: str | None = None
     status: str | None = None
     dry_run: bool = True
@@ -173,8 +179,10 @@ def admin_edit_entity(artifact_id: str, body: AdminEditEntityBody,
             name=body.name,
             summary=body.summary if "summary" in provided else _UNSET,
             properties=body.properties if "properties" in provided else _UNSET,
+            attribute_types=body.attribute_types if "attribute_types" in provided else _UNSET,
             notes=body.notes if "notes" in provided else _UNSET,
             keywords=body.keywords if "keywords" in provided else _UNSET,
+            specializations=body.specializations if "specializations" in provided else _UNSET,
             version=body.version,
             status=body.status,
             dry_run=body.dry_run,
