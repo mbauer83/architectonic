@@ -1,8 +1,8 @@
-"""FastMCP registration for bulk write/delete tools."""
+"""MCPServer registration for bulk write/delete tools."""
 
 from __future__ import annotations
 
-from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
+from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
 from src.infrastructure.mcp.tool_annotations import (
     DESTRUCTIVE_LOCAL_WRITE,
@@ -14,7 +14,7 @@ from .operations import artifact_get_operation
 from .write import artifact_bulk_write
 
 
-def register(mcp: FastMCP) -> None:
+def register(mcp: MCPServer) -> None:
     from src.infrastructure.mcp.artifact_mcp.mutation_registration import register_mutation_tool  # noqa: PLC0415
 
     register_mutation_tool(

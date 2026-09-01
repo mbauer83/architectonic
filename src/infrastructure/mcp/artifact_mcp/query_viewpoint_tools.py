@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import asdict
 from typing import Literal
 
-from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
+from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
 from src.application.viewpoints.evaluate_viewpoint import (
     UnknownViewpointSlugError,
@@ -90,7 +90,7 @@ def _list_entry(
     }
 
 
-def register_query_viewpoint_tools(mcp: FastMCP) -> None:
+def register_query_viewpoint_tools(mcp: MCPServer) -> None:
     @mcp.tool(
         name="artifact_query_viewpoint",
         title="Artifact Query: Viewpoints",

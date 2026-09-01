@@ -225,7 +225,7 @@ class TestCrossSurfaceParity:
     def test_rest_and_mcp_agree_on_the_response_body(
         self, ctx: Any, monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        from mcp.server.fastmcp import FastMCP
+        from mcp.server.mcpserver import MCPServer
 
         from src.infrastructure.mcp.assurance_mcp import security_write_tools
 
@@ -235,7 +235,7 @@ class TestCrossSurfaceParity:
         ).json()
 
         monkeypatch.setattr(security_write_tools, "get_assurance_context", lambda: ctx)
-        server = FastMCP("parity")
+        server = MCPServer("parity")
         security_write_tools.register_security_write_tools(server)
         tool = server._tool_manager._tools["assurance_ingest_security_signals"].fn  # noqa: SLF001
         mcp = tool("APP@MCP", _BOM, [_ADVISORY], "p1")

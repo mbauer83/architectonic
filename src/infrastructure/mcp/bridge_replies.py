@@ -4,6 +4,10 @@ Pure JSON-RPC bookkeeping, kept apart from the transport wiring in `arch_mcp_std
 the obligation it forwards — every request id it accepts from the client is answered exactly once —
 and the only moment that obligation becomes visible is the moment the backend can no longer meet it.
 Without it a lost connection is indistinguishable, from the client's side, from a call still running.
+
+`JSONRPCMessage` is a plain union of the four JSON-RPC shapes, so a message *is* one of them and is
+matched directly. It was a `RootModel` wrapper until `mcp` 2.x, which is why this used to reach for
+`.root` and to wrap an error before returning it.
 """
 
 from __future__ import annotations
@@ -27,14 +31,18 @@ class OutstandingReplies:
 
     def accept(self, message: JSONRPCMessage) -> None:
         """Take responsibility for a request being forwarded. Notifications expect no reply."""
-        match message.root:
+        match message:
             case JSONRPCRequest(id=request_id, method=method):
                 self._methods[request_id] = method
 
     def settle(self, message: JSONRPCMessage) -> None:
-        """Release a request the backend has answered, whether with a result or with an error."""
-        match message.root:
-            case JSONRPCResponse(id=request_id) | JSONRPCError(id=request_id):
+        """Release a request the backend has answered, whether with a result or with an error.
+
+        An error may carry a null id — JSON-RPC's way of reporting a message it could not even parse
+        an id from. It answers no particular request, so there is nothing here to release.
+        """
+        match message:
+            case JSONRPCResponse(id=request_id) | JSONRPCError(id=request_id) if request_id is not None:
                 self._methods.pop(request_id, None)
 
     def as_connection_closed(self, reason: str) -> tuple[JSONRPCMessage, ...]:
@@ -44,15 +52,13 @@ class OutstandingReplies:
         classifies these the same way it classifies a server it lost — which is what happened.
         """
         return tuple(
-            JSONRPCMessage(
-                JSONRPCError(
-                    jsonrpc="2.0",
-                    id=request_id,
-                    error=ErrorData(
-                        code=CONNECTION_CLOSED,
-                        message=f"{method} went unanswered: {reason}",
-                    ),
-                )
+            JSONRPCError(
+                jsonrpc="2.0",
+                id=request_id,
+                error=ErrorData(
+                    code=CONNECTION_CLOSED,
+                    message=f"{method} went unanswered: {reason}",
+                ),
             )
             for request_id, method in self._methods.items()
         )

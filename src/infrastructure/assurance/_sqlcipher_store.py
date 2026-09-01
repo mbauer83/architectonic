@@ -5,7 +5,7 @@ Key management: the encryption key is retrieved from the secure credential store
 time (typically .arch-assurance/store.db, gitignored).
 
 Thread-safety: the store is a process singleton served by the backend from a pool
-of OS threads (the FastAPI/anyio threadpool for sync REST handlers and FastMCP
+of OS threads (the FastAPI/anyio threadpool for sync REST handlers and MCPServer
 tool execution). SQLite/SQLCipher connection objects are bound to the thread that
 created them, so each accessing thread gets its **own** connection, opened lazily
 and cached thread-locally. Connections run in **WAL** mode with a busy timeout, so

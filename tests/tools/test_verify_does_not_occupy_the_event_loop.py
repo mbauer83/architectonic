@@ -1,6 +1,6 @@
 """A verification pass must not be what the backend is doing.
 
-FastMCP calls a synchronous tool directly on the event loop, so a pass measured in minutes made
+MCPServer calls a synchronous tool directly on the event loop, so a pass measured in minutes made
 every other request wait for it — identity, health, the event stream, all of it. The tool is a
 coroutine now and its pass runs on a worker of its own.
 """

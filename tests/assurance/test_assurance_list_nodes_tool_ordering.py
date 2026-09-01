@@ -14,7 +14,7 @@ import pytest
 
 from src.application.assurance.node_sorting import sorted_node_dicts
 
-mcp_server = pytest.importorskip("mcp.server.fastmcp", reason="mcp package not installed")
+mcp_server = pytest.importorskip("mcp.server.mcpserver", reason="mcp package not installed")
 
 _SECRET_NAME = "SECRET HAZARD NAME"
 
@@ -67,7 +67,7 @@ def _list_nodes_tool(ceiling: str, monkeypatch) -> tuple[Any, _RecordingStore]:
 
     store = _RecordingStore()
     monkeypatch.setattr(ctx_module, "_CTX", _Context(store, ceiling))
-    server = mcp_server.FastMCP("assurance-read-under-test")
+    server = mcp_server.MCPServer("assurance-read-under-test")
     read_tools.register_read_tools(server)
     return server._tool_manager._tools["assurance_list_nodes"].fn, store  # noqa: SLF001
 

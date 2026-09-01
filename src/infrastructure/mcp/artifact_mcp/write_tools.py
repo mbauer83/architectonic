@@ -3,7 +3,7 @@
 Logic lives in src/infrastructure/mcp/artifact_mcp/write/*.
 """
 
-from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
+from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
 from src.infrastructure.mcp.artifact_mcp.admin_tools import artifact_admin_reindex
 from src.infrastructure.mcp.artifact_mcp.bulk_tools import artifact_bulk_delete
@@ -42,7 +42,7 @@ __all__ = [
 ]
 
 
-def register_write_tools(mcp: FastMCP) -> None:
+def register_write_tools(mcp: MCPServer) -> None:
     from src.infrastructure.mcp.artifact_mcp import admin_tools, bulk_tools
     from src.infrastructure.mcp.artifact_mcp.write import (
         connection,

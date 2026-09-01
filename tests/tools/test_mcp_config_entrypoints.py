@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[2]
 #: The four hints MCP defines. A host warns a user with these before invoking a tool, so a hint
 #: left unset is one a host cannot warn about — which is why the check below is `isinstance(bool)`
 #: rather than truthiness: `None` is what an unannotated tool answers, and it reads as "false".
-SAFETY_HINTS = ("readOnlyHint", "destructiveHint", "idempotentHint", "openWorldHint")
+SAFETY_HINTS = ("read_only_hint", "destructive_hint", "idempotent_hint", "open_world_hint")
 
 READ_MOUNTS = (("arch-repo-read", mcp_read), ("arch-assurance-read", mcp_assurance_read))
 WRITE_MOUNTS = (("arch-repo-write", mcp_write), ("arch-assurance-write", mcp_assurance_write))
@@ -94,7 +94,7 @@ def test_every_tool_on_every_mount_declares_all_four_safety_hints(mount: str, se
 def test_every_tool_on_every_mount_serves_an_object_input_schema(
     mount: str, server: Any
 ) -> None:
-    """FastMCP derives JSON Schema from each Python signature and serves it as ``inputSchema``.
+    """MCPServer derives JSON Schema from each Python signature and serves it as ``inputSchema``.
 
     The schema belongs to the protocol surface, not to a JavaScript-specific zod/joi/yup call at
     each registration site. Assert the object a client receives so a framework or registration
@@ -104,9 +104,9 @@ def test_every_tool_on_every_mount_serves_an_object_input_schema(
     assert tools, f"{mount} served no tools, which would make every assertion below vacuous"
 
     for name, tool in tools.items():
-        schema = tool.inputSchema
-        assert isinstance(schema, dict), f"{mount}/{name}.inputSchema is not an object"
-        assert schema.get("type") == "object", f"{mount}/{name}.inputSchema: {schema}"
+        schema = tool.input_schema
+        assert isinstance(schema, dict), f"{mount}/{name}.input_schema is not an object"
+        assert schema.get("type") == "object", f"{mount}/{name}.input_schema: {schema}"
 
 
 def test_only_the_genuinely_nullary_tools_serve_an_empty_input_schema() -> None:
@@ -147,7 +147,7 @@ def test_only_the_genuinely_nullary_tools_serve_an_empty_input_schema() -> None:
         name
         for _mount, server in ALL_MOUNTS
         for name, tool in _served_tools(server).items()
-        if not (tool.inputSchema.get("properties") or {})
+        if not (tool.input_schema.get("properties") or {})
     }
 
     assert served_empty == set(nullary_by_design), (
@@ -173,10 +173,10 @@ def test_read_server_tools_are_marked_read_only(mount: str, server: Any) -> None
     for name, tool in tools.items():
         ann = tool.annotations
         assert ann is not None, name
-        assert ann.readOnlyHint is True, f"{mount}/{name}"
-        assert ann.destructiveHint is False, f"{mount}/{name}"
-        assert ann.idempotentHint is True, f"{mount}/{name}"
-        assert ann.openWorldHint is False, f"{mount}/{name}"
+        assert ann.read_only_hint is True, f"{mount}/{name}"
+        assert ann.destructive_hint is False, f"{mount}/{name}"
+        assert ann.idempotent_hint is True, f"{mount}/{name}"
+        assert ann.open_world_hint is False, f"{mount}/{name}"
 
 
 def test_write_server_catalog_and_guidance_are_read_only_yaml_tools() -> None:
@@ -186,10 +186,10 @@ def test_write_server_catalog_and_guidance_are_read_only_yaml_tools() -> None:
         tool = tools[name]
         ann = tool.annotations
         assert ann is not None, name
-        assert ann.readOnlyHint is True, name
-        assert ann.destructiveHint is False, name
-        assert ann.idempotentHint is True, name
-        assert ann.openWorldHint is False, name
+        assert ann.read_only_hint is True, name
+        assert ann.destructive_hint is False, name
+        assert ann.idempotent_hint is True, name
+        assert ann.open_world_hint is False, name
         if name != "artifact_get_operation":
             assert tool.fn_metadata.output_schema is None, name
 
@@ -225,7 +225,7 @@ def test_architecture_write_mount_annotations_match_expected_intent() -> None:
         "artifact_help": (True, False, True, False),
         "artifact_get_operation": (True, False, True, False),
         # Rebuilds a derived index by deleting and recreating rows. Model content is untouched,
-        # but MCP defines destructiveHint=false as *only* additive updates.
+        # but MCP defines destructive_hint=false as *only* additive updates.
         "artifact_admin_reindex": (False, True, False, False),
         # One lifecycle tool spans create through edit/delete.
         "artifact_viewpoint": (False, True, False, False),
@@ -249,10 +249,10 @@ def test_architecture_write_mount_annotations_match_expected_intent() -> None:
         tool = tools[name]
         ann = tool.annotations
         assert ann is not None, name
-        assert ann.readOnlyHint is read_only, name
-        assert ann.destructiveHint is destructive, name
-        assert ann.idempotentHint is idempotent, name
-        assert ann.openWorldHint is open_world, name
+        assert ann.read_only_hint is read_only, name
+        assert ann.destructive_hint is destructive, name
+        assert ann.idempotent_hint is idempotent, name
+        assert ann.open_world_hint is open_world, name
 
 
 def test_assurance_write_mount_annotations_match_expected_intent() -> None:
@@ -306,7 +306,7 @@ def test_assurance_write_mount_annotations_match_expected_intent() -> None:
     for name, (read_only, destructive, idempotent, open_world) in expected.items():
         ann = tools[name].annotations
         assert ann is not None, name
-        assert ann.readOnlyHint is read_only, name
-        assert ann.destructiveHint is destructive, name
-        assert ann.idempotentHint is idempotent, name
-        assert ann.openWorldHint is open_world, name
+        assert ann.read_only_hint is read_only, name
+        assert ann.destructive_hint is destructive, name
+        assert ann.idempotent_hint is idempotent, name
+        assert ann.open_world_hint is open_world, name

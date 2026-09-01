@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from src.infrastructure.mcp.artifact_mcp.scratchpad_tools import (
     register_scratchpad_read_tools,
@@ -31,7 +31,7 @@ def tools(tmp_path: Path) -> dict[str, Any]:
     repo_root.mkdir()
     registry: dict[str, Any] = {}
 
-    class _Capturing(FastMCP):
+    class _Capturing(MCPServer):
         def tool(self, **kwargs: Any):  # type: ignore[override]
             def decorate(fn):
                 registry[str(kwargs["name"])] = fn

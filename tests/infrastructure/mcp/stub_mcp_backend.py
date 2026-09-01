@@ -15,14 +15,14 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 import uvicorn
-from mcp.server.fastmcp import FastMCP
-from mcp.server.fastmcp.server import StreamableHTTPASGIApp
+from mcp.server.mcpserver import MCPServer
+from mcp.server.streamable_http_manager import StreamableHTTPASGIApp
 from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 from starlette.routing import Route
 
-server = FastMCP("stub-read")
+server = MCPServer("stub-read")
 
 
 @server.tool()

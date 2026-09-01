@@ -20,7 +20,7 @@ which enforce the three-step protocol: unlock-check → write → audit → post
 
 from __future__ import annotations
 
-from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
+from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
 from src.infrastructure.mcp.assurance_mcp.analysis_write_tools import register_analysis_write_tools
 from src.infrastructure.mcp.assurance_mcp.baseline_write_tools import register_baseline_write_tools
@@ -33,7 +33,7 @@ from src.infrastructure.mcp.assurance_mcp.provenance_write_tools import (
 from src.infrastructure.mcp.assurance_mcp.security_write_tools import register_security_write_tools
 
 
-def register_write_tools(server: FastMCP) -> None:
+def register_write_tools(server: MCPServer) -> None:
     register_security_write_tools(server)
     register_fmea_write_tools(server)
     register_grouping_write_tools(server)

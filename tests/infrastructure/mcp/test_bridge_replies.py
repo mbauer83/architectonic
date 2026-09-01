@@ -22,17 +22,15 @@ from src.infrastructure.mcp.bridge_replies import OutstandingReplies, failure_re
 
 
 def _request(request_id: int | str, method: str = "tools/list") -> JSONRPCMessage:
-    return JSONRPCMessage(JSONRPCRequest(jsonrpc="2.0", id=request_id, method=method))
+    return JSONRPCRequest(jsonrpc="2.0", id=request_id, method=method)
 
 
 def _response(request_id: int | str) -> JSONRPCMessage:
-    return JSONRPCMessage(JSONRPCResponse(jsonrpc="2.0", id=request_id, result={}))
+    return JSONRPCResponse(jsonrpc="2.0", id=request_id, result={})
 
 
 def _error(request_id: int | str) -> JSONRPCMessage:
-    return JSONRPCMessage(
-        JSONRPCError(jsonrpc="2.0", id=request_id, error=ErrorData(code=-32603, message="no"))
-    )
+    return JSONRPCError(jsonrpc="2.0", id=request_id, error=ErrorData(code=-32603, message="no"))
 
 
 def test_a_forwarded_request_is_owed_an_answer() -> None:
@@ -40,12 +38,12 @@ def test_a_forwarded_request_is_owed_an_answer() -> None:
     outstanding.accept(_request(7, "artifact_verify"))
 
     (reply,) = outstanding.as_connection_closed("ConnectError: refused")
-    assert isinstance(reply.root, JSONRPCError)
-    assert reply.root.id == 7
-    assert reply.root.error.code == CONNECTION_CLOSED
+    assert isinstance(reply, JSONRPCError)
+    assert reply.id == 7
+    assert reply.error.code == CONNECTION_CLOSED
     # Both halves are needed to act on it: which call died, and why.
-    assert "artifact_verify" in reply.root.error.message
-    assert "ConnectError: refused" in reply.root.error.message
+    assert "artifact_verify" in reply.error.message
+    assert "ConnectError: refused" in reply.error.message
 
 
 def test_an_answered_request_is_owed_nothing() -> None:
@@ -71,7 +69,7 @@ def test_only_the_unanswered_ids_are_answered() -> None:
         outstanding.accept(_request(request_id, f"call_{request_id}"))
     outstanding.settle(_response(2))
 
-    answered = {reply.root.id for reply in outstanding.as_connection_closed("gone")}
+    answered = {reply.id for reply in outstanding.as_connection_closed("gone")}
     assert answered == {1, 3}
 
 
@@ -81,12 +79,12 @@ def test_string_ids_are_kept_as_given() -> None:
     outstanding.accept(_request("call-abc"))
 
     (reply,) = outstanding.as_connection_closed("gone")
-    assert reply.root.id == "call-abc"
+    assert reply.id == "call-abc"
 
 
 def test_a_notification_is_owed_nothing() -> None:
     outstanding = OutstandingReplies()
-    outstanding.accept(JSONRPCMessage(JSONRPCNotification(jsonrpc="2.0", method="notifications/initialized")))
+    outstanding.accept(JSONRPCNotification(jsonrpc="2.0", method="notifications/initialized"))
 
     assert outstanding.as_connection_closed("gone") == ()
 

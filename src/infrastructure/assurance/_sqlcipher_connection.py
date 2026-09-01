@@ -2,7 +2,7 @@
 
 SQLite/SQLCipher connection objects are bound to the thread that created them, but
 the store is a process singleton served from a pool of OS threads (the anyio
-threadpool for sync REST handlers + FastMCP tool execution). This manager gives
+threadpool for sync REST handlers + MCPServer tool execution). This manager gives
 each accessing thread its own lazily-opened, cached connection, opened in **WAL**
 mode with a busy timeout so concurrent readers do not block one another or the
 writer, and with the store's PRAGMAs applied — they are per-connection settings,

@@ -176,7 +176,7 @@ class TestCrossSurfaceParity:
     ) -> None:
         """REST and MCP are sibling adapters on one backend, not a caller/callee
         chain, so parity can only be enforced by test."""
-        from mcp.server.fastmcp import FastMCP
+        from mcp.server.mcpserver import MCPServer
 
         from src.infrastructure.mcp.assurance_mcp import security_write_tools
 
@@ -185,7 +185,7 @@ class TestCrossSurfaceParity:
 
         _activated(ctx, "SNAP@1", anchor="APP@1.aaa", request_id="r1")
         monkeypatch.setattr(security_write_tools, "get_assurance_context", lambda: ctx)
-        server = FastMCP("test-assurance-write")
+        server = MCPServer("test-assurance-write")
         security_write_tools.register_security_write_tools(server)
         tool = server._tool_manager._tools["assurance_delete_security_snapshot"].fn  # noqa: SLF001
         mcp = tool(snapshot_id="SNAP@1")

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
+from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
 from src.infrastructure.mcp.artifact_mcp._diagram_scaffold import build_diagram_scaffold
 from src.infrastructure.mcp.artifact_mcp.context import RepoScope
@@ -28,7 +28,7 @@ def artifact_diagram_scaffold(
     )
 
 
-def register_query_scaffold_tools(mcp: FastMCP) -> None:
+def register_query_scaffold_tools(mcp: MCPServer) -> None:
     mcp.tool(
         name="artifact_diagram_scaffold",
         title="Artifact Query: Diagram Scaffold",

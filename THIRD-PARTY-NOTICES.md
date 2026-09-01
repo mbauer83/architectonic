@@ -49,7 +49,7 @@ What follows is a disclosure inventory, for two purposes: to say what a build as
 - License text: licenses/texts/LGPL-3.0-or-later.txt + licenses/texts/GPL-3.0-or-later.txt
 - Obligation: Not conveyed by this project: it is a declared dependency that pip/uv installs from PyPI, so upstream is the distributor. Nothing is vendored and nothing is statically combined — cvss is an ordinary runtime import from site-packages, replaceable with a modified build by `pip install` alone. LGPLv3 §4's duties fall on whoever conveys a work containing the library; a redistributor who vendors or bundles it takes those on, including §4(a)-(b) notice and license texts.
 
-## Python dependencies (73)
+## Python dependencies (77)
 
 | Component | Version | License |
 |---|---|---|
@@ -75,9 +75,11 @@ What follows is a disclosure inventory, for two purposes: to say what a build as
 | greenlet | 3.5.5 | MIT AND PSF-2.0 |
 | h11 | 0.16.0 | MIT License |
 | httpcore | 1.0.9 | BSD-3-Clause |
+| httpcore2 | 2.12.0 | BSD-3-Clause |
 | httptools | 0.8.0 | MIT |
 | httpx | 0.28.1 | BSD License |
-| httpx-sse | 0.4.3 | MIT |
+| httpx2 | 2.12.0 | BSD-3-Clause |
+| httpx2-jsfetch | 1.0 | BSD-3-Clause |
 | idna | 3.19 | BSD-3-Clause |
 | isodate | 0.7.2 | BSD License |
 | jaraco-classes | 3.4.0 | MIT License |
@@ -92,15 +94,16 @@ What follows is a disclosure inventory, for two purposes: to say what a build as
 | lxml | 6.1.2 | BSD-3-Clause |
 | mako | 1.4.1 | MIT |
 | markupsafe | 3.0.3 | BSD-3-Clause |
-| mcp | 1.28.1 | MIT License |
+| mcp | 2.1.1 | MIT License |
+| mcp-types | 2.1.1 | MIT License |
 | more-itertools | 11.1.0 | MIT |
 | msal | 1.38.0 | MIT License |
 | msal-extensions | 1.3.1 | MIT License |
+| opentelemetry-api | 1.44.0 | Apache-2.0 |
 | packageurl-python | 0.17.6 | MIT License |
 | pycparser | 3.0 | BSD-3-Clause |
 | pydantic | 2.13.5 | MIT |
 | pydantic-core | 2.46.5 | MIT |
-| pydantic-settings | 2.14.2 | MIT |
 | pyjwt | 2.13.0 | MIT |
 | python-dateutil | 2.9.0.post0 | Apache Software License; BSD License |
 | python-dotenv | 1.2.3 | BSD-3-Clause |
@@ -119,6 +122,7 @@ What follows is a disclosure inventory, for two purposes: to say what a build as
 | sqlcipher3 | 0.6.2 | MIT |
 | sse-starlette | 3.4.8 | BSD-3-Clause |
 | starlette | 1.6.0 | BSD-3-Clause |
+| truststore | 0.10.4 | MIT |
 | typing-extensions | 4.16.0 | PSF-2.0 |
 | typing-inspection | 0.4.4 | MIT |
 | urllib3 | 2.7.0 | MIT |

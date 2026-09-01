@@ -1,7 +1,7 @@
 from dataclasses import asdict
 from typing import Literal
 
-from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
+from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
 from src.application.artifacts._search import ALL_SEARCHABLE_KINDS
 from src.infrastructure.mcp.artifact_mcp.context import (
@@ -57,7 +57,7 @@ def _include_flags(
     )
 
 
-def register_query_list_read_tools(mcp: FastMCP) -> None:
+def register_query_list_read_tools(mcp: MCPServer) -> None:
     @mcp.tool(
         name="artifact_query_list_artifacts",
         title="Artifact Query: List Artifacts",

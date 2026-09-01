@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
+from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
 from src.infrastructure.mcp.artifact_mcp.write._common import resolve_repo_roots
 from src.infrastructure.mcp.tool_annotations import DESTRUCTIVE_LOCAL_WRITE
@@ -80,7 +80,7 @@ def artifact_group(
     return result
 
 
-def register(mcp: FastMCP) -> None:
+def register(mcp: MCPServer) -> None:
     from src.infrastructure.mcp.artifact_mcp.mutation_registration import register_mutation_tool  # noqa: PLC0415
 
     register_mutation_tool(

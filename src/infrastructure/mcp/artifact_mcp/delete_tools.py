@@ -5,7 +5,7 @@ these two are the only mutations annotated ``DESTRUCTIVE_LOCAL_WRITE``, and a re
 server can destroy should not have to read past six ways of changing something in place.
 """
 
-from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
+from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
 from src.infrastructure.mcp.artifact_mcp import edit_tool_descriptions as descriptions
 from src.infrastructure.mcp.artifact_mcp.context import (
@@ -67,7 +67,7 @@ def artifact_delete_diagram(
     return _finalize_authoritative_write(dry_run, result, mutation_context)
 
 
-def register_delete_tools(mcp: FastMCP) -> None:
+def register_delete_tools(mcp: MCPServer) -> None:
     from src.infrastructure.mcp.artifact_mcp.mutation_registration import register_mutation_tool  # noqa: PLC0415
 
     register_mutation_tool(

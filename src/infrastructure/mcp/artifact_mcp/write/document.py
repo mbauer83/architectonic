@@ -1,6 +1,6 @@
 """MCP write tools: document create, edit, delete."""
 
-from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
+from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
 from src.infrastructure.mcp.artifact_mcp.write._common import (
     _out,
@@ -121,7 +121,7 @@ def artifact_delete_document(
     return _out(result, dry_run=dry_run)
 
 
-def register(mcp: FastMCP) -> None:
+def register(mcp: MCPServer) -> None:
     from src.infrastructure.mcp.artifact_mcp.mutation_registration import register_mutation_tool  # noqa: PLC0415
 
     register_mutation_tool(

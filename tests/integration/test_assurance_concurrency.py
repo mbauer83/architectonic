@@ -3,7 +3,7 @@
 Why this exists (regression guard for a production-only failure):
     The assurance store is a *process singleton* unlocked once, then served by the
     backend from a pool of OS threads (FastAPI/anyio threadpool for sync REST
-    handlers + FastMCP tool execution). The original SQLCipher adapter opened a
+    handlers + MCPServer tool execution). The original SQLCipher adapter opened a
     single connection bound to the *unlock* thread, so any call landing on another
     thread raised "SQLite objects created in a thread can only be used in that same
     thread" — the intermittent 500s users saw.

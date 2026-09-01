@@ -24,7 +24,6 @@ import argparse
 import sys
 from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass, field
-from datetime import timedelta
 from pathlib import Path
 from typing import Any
 
@@ -204,7 +203,7 @@ async def _walk_reads(url: str, report: Report) -> None:
     report.notes.append(f"write mounts not walked here: {list(WRITE_MOUNTS)} (pass --fixture)")
 
     for mount in READ_MOUNTS:
-        async with streamable_http_client(f"{url}/mcp/{mount}") as (reader, writer, _):
+        async with streamable_http_client(f"{url}/mcp/{mount}") as (reader, writer):
             async with ClientSession(reader, writer) as session:
                 await session.initialize()
                 names = [tool.name for tool in (await session.list_tools()).tools]
@@ -224,7 +223,7 @@ async def _walk_reads(url: str, report: Report) -> None:
                 )
 
                 declared = {
-                    tool.name: set((tool.inputSchema or {}).get("properties") or {})
+                    tool.name: set((tool.input_schema or {}).get("properties") or {})
                     for tool in (await session.list_tools()).tools
                 }
 
@@ -319,7 +318,7 @@ async def _walk_one_write_mount(
     by_name = {call.tool: call for call in calls}
     report.mounts.append(mount)
     report.notes.append(f"{mount}: not invoked, registered with a reason: {len(unexercised)}")
-    async with streamable_http_client(f"{url}/mcp/{mount}") as (reader, writer, _):
+    async with streamable_http_client(f"{url}/mcp/{mount}") as (reader, writer):
         async with ClientSession(reader, writer) as session:
             await session.initialize()
             tools = (await session.list_tools()).tools
@@ -337,7 +336,7 @@ async def _walk_one_write_mount(
                 )
 
             declared = {
-                tool.name: set((tool.inputSchema or {}).get("properties") or {}) for tool in tools
+                tool.name: set((tool.input_schema or {}).get("properties") or {}) for tool in tools
             }
             invoked, failures = await write_walk.walk(session, context, declared, calls)
             report.called += len(invoked)
@@ -376,13 +375,13 @@ async def _fmea_basis_digest(url: str, workspace: Any) -> str:
     from tools.mcp._answers import decoded, text_of
 
     failure_mode = workspace.assurance.failure_mode
-    async with streamable_http_client(f"{url}/mcp/assurance-read") as (reader, writer, _):
+    async with streamable_http_client(f"{url}/mcp/assurance-read") as (reader, writer):
         async with ClientSession(reader, writer) as session:
             await session.initialize()
             result = await session.call_tool(
                 "assurance_fmea_matrix",
                 {"analysis_id": workspace.assurance.analysis},
-                read_timeout_seconds=timedelta(seconds=write_walk.CALL_TIMEOUT_SECONDS),
+                read_timeout_seconds=write_walk.CALL_TIMEOUT_SECONDS,
             )
     # YAML, not JSON: `decoded` says why, and it takes the text rather than the result object.
     payload = decoded(text_of(result))

@@ -68,6 +68,10 @@ _PLATFORM_OVERRIDES: dict[str, str] = {
     "colorama": "BSD-3-Clause",        # PyPI classifier: OSI Approved :: BSD License
     "pywin32": "PSF-2.0",              # PyPI license field 'PSF' + PSF-2.0 classifier
     "pywin32-ctypes": "BSD-3-Clause",  # PyPI license field 'BSD-3-Clause'
+    # `httpx2`'s Emscripten/Pyodide transport, required only under
+    # `sys_platform == 'emscripten'`, so it installs on no platform this product ships to.
+    # PyPI license_expression 'BSD-3-Clause' + classifier 'OSI Approved :: BSD License'.
+    "httpx2-jsfetch": "BSD-3-Clause",
 }
 
 

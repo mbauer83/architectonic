@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
+from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
 from src.infrastructure.mcp.artifact_mcp.context import (
     RepoScope,
@@ -13,7 +13,7 @@ from src.infrastructure.mcp.artifact_mcp.context import (
 from src.infrastructure.mcp.tool_annotations import READ_ONLY
 
 
-def register_query_datatype_tools(mcp: FastMCP) -> None:
+def register_query_datatype_tools(mcp: MCPServer) -> None:
     @mcp.tool(
         name="artifact_query_datatype_types",
         title="Datatype: Type Catalog",

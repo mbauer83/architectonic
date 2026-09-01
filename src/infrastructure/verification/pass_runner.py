@@ -1,6 +1,6 @@
 """Where a whole-repository verification pass runs, and what stops it.
 
-FastMCP dispatches a synchronous tool directly on the event loop — `func_metadata` awaits an async
+MCPServer dispatches a synchronous tool directly on the event loop — `func_metadata` awaits an async
 function and *calls* a sync one — so a pass that takes minutes takes the whole backend with it: no
 identity check, no health probe, no event stream, until it returns. The pass therefore runs on a
 worker of its own and the tool awaits it.

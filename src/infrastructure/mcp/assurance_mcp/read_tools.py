@@ -18,7 +18,7 @@ Dashboard/case tools are in dashboard_tools.py (registered via register_dashboar
 
 from __future__ import annotations
 
-from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
+from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
 from src.application.assurance.exposure import AssuranceExposurePolicy
 from src.application.assurance.node_sorting import MOST_RECENTLY_UPDATED_FIRST
@@ -45,7 +45,7 @@ _SCOPED_TO_ONE_ANALYSIS = (
 FAILURE_MODE_NODE_TYPE = "failure-mode"
 
 
-def register_read_tools(server: FastMCP) -> None:
+def register_read_tools(server: MCPServer) -> None:
     register_security_read_tools(server)
     register_dashboard_tools(server)
     register_fmea_read_tools(server)

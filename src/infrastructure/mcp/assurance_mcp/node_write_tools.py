@@ -11,7 +11,7 @@ unlock-check → write → audit → post-write verify.
 
 from __future__ import annotations
 
-from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
+from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
 from src.application.assurance import mutations as mutations
 from src.infrastructure.assurance.edge_legality import legal_connection_types
@@ -22,7 +22,7 @@ from src.infrastructure.mcp.assurance_mcp.context import get_assurance_context
 from src.infrastructure.mcp.tool_annotations import DESTRUCTIVE_LOCAL_WRITE, LOCAL_WRITE
 
 
-def register_node_write_tools(server: FastMCP) -> None:
+def register_node_write_tools(server: MCPServer) -> None:
     ctx = get_assurance_context()
 
     @server.tool(

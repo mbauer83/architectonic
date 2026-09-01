@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
+from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
 from src.application.viewpoints.persist_definition import (
     delete_viewpoint_definition,
@@ -88,7 +88,7 @@ def artifact_viewpoint(
     return result.as_answer(dry_run=dry_run)
 
 
-def register(mcp: FastMCP) -> None:
+def register(mcp: MCPServer) -> None:
     from src.infrastructure.mcp.artifact_mcp.mutation_registration import register_mutation_tool  # noqa: PLC0415
 
     register_mutation_tool(

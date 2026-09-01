@@ -10,8 +10,9 @@ from __future__ import annotations
 import asyncio
 
 import yaml
-from mcp.server.fastmcp import FastMCP
-from mcp.types import CallToolRequest, CallToolRequestParams, TextContent
+from mcp.server.context import ServerRequestContext
+from mcp.server.mcpserver import MCPServer
+from mcp.types import CallToolRequestParams, TextContent
 
 from src.infrastructure.mcp.artifact_mcp.name_normalization import (
     _dump_yaml_text,
@@ -85,8 +86,8 @@ class TestNormalizeToolName:
 # ---------------------------------------------------------------------------
 
 
-def _build_test_mcp() -> FastMCP:
-    m = FastMCP(name="test-normalizer")
+def _build_test_mcp() -> MCPServer:
+    m = MCPServer(name="test-normalizer")
 
     @m.tool(name="returns_dict")
     def returns_dict() -> dict:
@@ -108,39 +109,40 @@ def _build_test_mcp() -> FastMCP:
     return m
 
 
-def _invoke(m: FastMCP, tool_name: str, arguments: dict | None = None):
-    handler = m._mcp_server.request_handlers[CallToolRequest]
-    req = CallToolRequest(
-        method="tools/call",
-        params=CallToolRequestParams(name=tool_name, arguments=arguments or {}),
+def _invoke(m: MCPServer, tool_name: str, arguments: dict | None = None):
+    entry = m._lowlevel_server.get_request_handler("tools/call")
+    params = CallToolRequestParams(name=tool_name, arguments=arguments or {})
+    context = ServerRequestContext(
+        session=None, lifespan_context=None, protocol_version=None,
+        method="tools/call", params=params, request_id=1,
     )
-    return asyncio.run(handler(req)).root
+    return asyncio.run(entry.handler(context, params))
 
 
 class TestNormalizerEndToEnd:
     def test_dict_result_becomes_yaml_text_content(self):
         result = _invoke(_build_test_mcp(), "returns_dict")
-        assert not result.isError
+        assert not result.is_error
         assert isinstance(result.content[0], TextContent)
         parsed = yaml.safe_load(result.content[0].text)
         assert parsed == {"status": "ok", "items": [1, 2]}
 
     def test_list_result_becomes_yaml_text_content(self):
         result = _invoke(_build_test_mcp(), "returns_list")
-        assert not result.isError
+        assert not result.is_error
         assert isinstance(result.content[0], TextContent)
         assert yaml.safe_load(result.content[0].text) == [{"a": 1}, {"b": 2}]
 
     def test_string_result_passed_through_as_text_content(self):
         result = _invoke(_build_test_mcp(), "returns_str")
-        assert not result.isError
+        assert not result.is_error
         text = next(c.text for c in result.content if isinstance(c, TextContent))
         assert "plain string" in text
 
     def test_prefixed_tool_name_normalized_before_dispatch(self):
         """A namespaced tool name like 'arch-returns_dict' resolves to 'returns_dict'."""
         result = _invoke(_build_test_mcp(), "arch-returns_dict")
-        assert not result.isError
+        assert not result.is_error
         parsed = yaml.safe_load(result.content[0].text)
         assert parsed["status"] == "ok"
 
@@ -154,8 +156,9 @@ class TestNormalizerEndToEnd:
         """The production read server should respond with YAML text for dict-returning tools."""
         from src.infrastructure.mcp import mcp_artifact_server
 
-        srv = mcp_artifact_server.mcp_read._mcp_server
-        assert CallToolRequest in srv.request_handlers
+        entry = mcp_artifact_server.mcp_read._lowlevel_server.get_request_handler("tools/call")
+        assert entry is not None
+        assert entry.handler.__name__ == "_call_tool_handler"
 
 
 class TestUnknownParameterRejection:
@@ -164,16 +167,16 @@ class TestUnknownParameterRejection:
 
     def test_known_parameter_is_accepted(self):
         result = _invoke(_build_test_mcp(), "takes_params", {"only_filter": "x"})
-        assert not result.isError
+        assert not result.is_error
         assert yaml.safe_load(result.content[0].text) == {"only_filter": "x"}
 
     def test_no_arguments_is_accepted(self):
         result = _invoke(_build_test_mcp(), "takes_params", {})
-        assert not result.isError
+        assert not result.is_error
 
     def test_unknown_parameter_errors(self):
         result = _invoke(_build_test_mcp(), "takes_params", {"topic": "x"})
-        assert result.isError
+        assert result.is_error
         text = next(c.text for c in result.content if isinstance(c, TextContent))
         assert "Unknown parameter" in text
         assert "topic" in text
@@ -185,10 +188,10 @@ class TestUnknownParameterRejection:
 
     def test_unknown_parameter_alongside_valid_one_still_errors(self):
         result = _invoke(_build_test_mcp(), "takes_params", {"only_filter": "x", "tpoic": "y"})
-        assert result.isError
+        assert result.is_error
         text = next(c.text for c in result.content if isinstance(c, TextContent))
         assert "tpoic" in text
 
     def test_extra_arg_to_zero_param_tool_errors(self):
         result = _invoke(_build_test_mcp(), "returns_dict", {"surprise": 1})
-        assert result.isError
+        assert result.is_error

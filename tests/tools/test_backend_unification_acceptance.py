@@ -43,7 +43,7 @@ def test_assurance_list_nodes_tool_returns_locked_when_store_unavailable(monkeyp
     monkeypatch.setattr(ctx_module, "_CTX", _LockedCtx())
 
     # Re-import the tool function after monkeypatching the context singleton.
-    # We drive it directly rather than going through FastMCP transport.
+    # We drive it directly rather than going through MCPServer transport.
     from src.infrastructure.mcp.mcp_assurance_server import mcp_assurance_read  # noqa: PLC0415
 
     tools = {t.name: t for t in mcp_assurance_read._tool_manager.list_tools()}  # type: ignore[attr-defined]

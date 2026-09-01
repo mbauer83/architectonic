@@ -29,7 +29,7 @@ from pathlib import Path
 import anyio
 import pytest
 from mcp.shared.message import SessionMessage
-from mcp.types import CONNECTION_CLOSED, JSONRPCMessage, JSONRPCRequest, JSONRPCResponse
+from mcp.types import CONNECTION_CLOSED, JSONRPCRequest, JSONRPCResponse
 
 from src.infrastructure.mcp.arch_mcp_stdio import (
     EXIT_CONNECTION_LOST,
@@ -47,18 +47,18 @@ _STARTUP_DEADLINE_SECONDS = 60.0
 
 
 def _request(request_id: int, method: str = "tools/list") -> SessionMessage:
-    return SessionMessage(JSONRPCMessage(JSONRPCRequest(jsonrpc="2.0", id=request_id, method=method)))
+    return SessionMessage(JSONRPCRequest(jsonrpc="2.0", id=request_id, method=method))
 
 
 def _response(request_id: int) -> SessionMessage:
-    return SessionMessage(JSONRPCMessage(JSONRPCResponse(jsonrpc="2.0", id=request_id, result={})))
+    return SessionMessage(JSONRPCResponse(jsonrpc="2.0", id=request_id, result={}))
 
 
 def _ids(messages: list[SessionMessage]) -> list[int | str]:
     """The request ids a pump passed on, so a test can name what crossed it."""
     addressed = []
     for message in messages:
-        root = message.message.root
+        root = message.message
         assert isinstance(root, JSONRPCRequest | JSONRPCResponse), root
         addressed.append(root.id)
     return addressed

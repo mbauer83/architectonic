@@ -7,7 +7,7 @@ enforces, through the same use case: provenance is set once, by a person, for a 
 
 from __future__ import annotations
 
-from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
+from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
 from src.application.assurance.provenance_assignment import (
     ProvenanceAnalysisNotFound,
@@ -22,7 +22,7 @@ from src.infrastructure.mcp.assurance_mcp.context import get_assurance_context
 from src.infrastructure.mcp.tool_annotations import IDEMPOTENT_LOCAL_WRITE
 
 
-def register_provenance_write_tools(server: FastMCP) -> None:
+def register_provenance_write_tools(server: MCPServer) -> None:
     ctx = get_assurance_context()
 
     @server.tool(

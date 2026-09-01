@@ -5,7 +5,7 @@ Shared context helpers for the artifact MCP servers by factoring out:
 - cache keys and cached ArtifactRepository/ArtifactRegistry
 - verifier construction and cache clearing
 
-This module contains no FastMCP tool registrations.
+This module contains no MCPServer tool registrations.
 """
 
 import threading

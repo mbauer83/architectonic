@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
+from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.mcp.artifact_mcp.admin_tools import (
@@ -103,7 +103,7 @@ def test_entity_scope_requires_short_id(tmp_path: Path) -> None:
 
 
 def test_admin_reindex_tool_is_registered() -> None:
-    server = FastMCP(name="reindex-test")
+    server = MCPServer(name="reindex-test")
     register_admin_tools(server)
 
     names = {tool.name for tool in server._tool_manager.list_tools()}  # type: ignore[attr-defined]

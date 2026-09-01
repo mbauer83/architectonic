@@ -1,4 +1,4 @@
-"""Generate MCP tool reference tables from registered FastMCP servers."""
+"""Generate MCP tool reference tables from registered MCPServer servers."""
 
 from __future__ import annotations
 
@@ -57,8 +57,8 @@ class GeneratedDocument:
 class SafetyHints(Protocol):
     """The subset of ``ToolAnnotations`` the published Access column is derived from."""
 
-    readOnlyHint: bool | None  # noqa: N815 - the wire name, fixed by the MCP specification
-    destructiveHint: bool | None  # noqa: N815 - as above
+    read_only_hint: bool | None  # noqa: N815 - the wire name, fixed by the MCP specification
+    destructive_hint: bool | None  # noqa: N815 - as above
 
 
 class RegisteredTool(Protocol):
@@ -191,8 +191,8 @@ def collect_tools(server: object) -> list[ToolInfo]:
         ToolInfo(
             name=tool.name,
             description=first_sentence(tool.description or ""),
-            read_only=bool(tool.annotations and tool.annotations.readOnlyHint),
-            destructive=bool(tool.annotations and tool.annotations.destructiveHint),
+            read_only=bool(tool.annotations and tool.annotations.read_only_hint),
+            destructive=bool(tool.annotations and tool.annotations.destructive_hint),
         )
         for tool in sorted(typed_server._tool_manager.list_tools(), key=lambda item: item.name)
     ]

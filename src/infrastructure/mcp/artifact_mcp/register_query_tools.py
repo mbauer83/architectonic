@@ -1,4 +1,4 @@
-from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
+from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
 from .aibom_read_tools import register_aibom_read_tools
 from .install_read_cache import install_read_result_cache
@@ -15,7 +15,7 @@ from .read_result_cache import ReadResultCache
 READ_RESULT_CACHE = ReadResultCache()
 
 
-def register_query_tools(mcp: FastMCP) -> None:
+def register_query_tools(mcp: MCPServer) -> None:
     """Register all model query tools."""
 
     register_query_stats_tools(mcp)

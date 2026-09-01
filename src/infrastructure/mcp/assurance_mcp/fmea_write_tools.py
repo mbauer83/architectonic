@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
+from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
 from src.application.assurance.fmea_factors import (
     FactorInvalid,
@@ -35,7 +35,7 @@ def _scale_help() -> str:
     return "; ".join(f"{factor}: {' < '.join(FACTOR_SCALES[factor])}" for factor in FMEA_FACTORS)
 
 
-def register_fmea_write_tools(server: FastMCP) -> None:
+def register_fmea_write_tools(server: MCPServer) -> None:
     ctx = get_assurance_context()
 
     @server.tool(

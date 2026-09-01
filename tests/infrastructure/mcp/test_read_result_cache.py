@@ -131,11 +131,11 @@ class TestInstallation:
     """Wrapping happens over the registered tools, and only the ones that qualify."""
 
     def _registered(self):  # type: ignore[no-untyped-def]
-        from mcp.server.fastmcp import FastMCP
+        from mcp.server.mcpserver import MCPServer
 
         from src.infrastructure.mcp.artifact_mcp.register_query_tools import register_query_tools
 
-        mcp = FastMCP("test")
+        mcp = MCPServer("test")
         register_query_tools(mcp)
         return mcp
 

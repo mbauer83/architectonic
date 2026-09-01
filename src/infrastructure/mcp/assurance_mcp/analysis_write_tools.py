@@ -7,7 +7,7 @@ is the question an analysis is asked before its work leaves the tier it was done
 
 from __future__ import annotations
 
-from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
+from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
 from src.infrastructure.assurance.write_serialization import run_write
 from src.infrastructure.mcp.assurance_mcp._write_envelopes import _analysis_result
@@ -15,7 +15,7 @@ from src.infrastructure.mcp.assurance_mcp.context import get_assurance_context
 from src.infrastructure.mcp.tool_annotations import DESTRUCTIVE_LOCAL_WRITE, LOCAL_WRITE, READ_ONLY
 
 
-def register_analysis_write_tools(server: FastMCP) -> None:
+def register_analysis_write_tools(server: MCPServer) -> None:
     ctx = get_assurance_context()
 
     @server.tool(

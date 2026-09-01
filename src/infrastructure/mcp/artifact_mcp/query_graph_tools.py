@@ -1,6 +1,6 @@
 from typing import Literal
 
-from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
+from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
 from src.config.viewpoints_settings import (
     viewpoints_derivation_max_relationships,
@@ -37,7 +37,7 @@ def _allowed_bindings_for(diagram_type: str | None):  # type: ignore[return]
     return ab if (ab is not None and not ab.is_empty()) else None
 
 
-def register_query_graph_tools(mcp: FastMCP) -> None:
+def register_query_graph_tools(mcp: MCPServer) -> None:
     @mcp.tool(
         name="artifact_query_find_connections_for",
         title="Artifact Query: Find Connections",

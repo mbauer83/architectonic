@@ -1,6 +1,6 @@
 """Env-driven MCP transport security (DNS-rebinding protection).
 
-The MCP SDK auto-enables DNS-rebinding protection whenever a FastMCP server's
+The MCP SDK auto-enables DNS-rebinding protection whenever a MCPServer server's
 ``host`` is localhost, seeding ``allowed_hosts`` with ``127.0.0.1``/``localhost``
 only. A server reached over its LAN/VPN address (e.g. ``10.20.20.34:8000``) then
 gets ``421 Invalid Host header`` for every MCP client — even though the GUI/REST

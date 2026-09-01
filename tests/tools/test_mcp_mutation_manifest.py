@@ -47,7 +47,7 @@ class TestRegistryManifestEquality:
             assert hasattr(fn, "__wrapped__"), name
 
     def test_wrapper_preserves_tool_signature(self) -> None:
-        """FastMCP derives schemas from the wrapper signature: it must equal the body's."""
+        """MCPServer derives schemas from the wrapper signature: it must equal the body's."""
         for name in MUTATION_TOOL_MANIFEST:
             fn = _registered_write_tools()[name].fn  # type: ignore[attr-defined]
             assert inspect.signature(fn) == inspect.signature(fn.__wrapped__), name

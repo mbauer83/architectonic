@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Literal
 
-from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
+from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
 from src.domain.artifact_id import parse_entity_id
 from src.infrastructure.artifact_index import shared_artifact_index
@@ -64,7 +64,7 @@ def _reindex_locked(
     }
 
 
-def register_admin_tools(mcp: FastMCP) -> None:
+def register_admin_tools(mcp: MCPServer) -> None:
     from src.infrastructure.mcp.artifact_mcp.mutation_registration import register_mutation_tool  # noqa: PLC0415
 
     register_mutation_tool(

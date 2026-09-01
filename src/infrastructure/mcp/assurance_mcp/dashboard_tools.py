@@ -9,14 +9,14 @@ Tools registered on arch-assurance-read:
 
 from __future__ import annotations
 
-from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
+from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
 from src.application.assurance.queries import coverage_gaps, risk_register
 from src.infrastructure.mcp.assurance_mcp.context import ANALYSIS_SCOPE_HINT, get_assurance_context
 from src.infrastructure.mcp.tool_annotations import READ_ONLY
 
 
-def register_dashboard_tools(server: FastMCP) -> None:
+def register_dashboard_tools(server: MCPServer) -> None:
     ctx = get_assurance_context()
 
     @server.tool(

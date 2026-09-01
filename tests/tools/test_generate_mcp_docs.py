@@ -64,7 +64,7 @@ class TestTheAccessColumnComesFromTheAnnotations:
         assert tool.access == "Read-only"
 
     def test_read_only_wins_over_destructive(self) -> None:
-        """MCP declares destructiveHint meaningful only when readOnlyHint is false."""
+        """MCP declares destructive_hint meaningful only when read_only_hint is false."""
         tool = ToolInfo("assurance_model_this", "Proposes.", read_only=True, destructive=True)
 
         assert tool.access == "Read-only"

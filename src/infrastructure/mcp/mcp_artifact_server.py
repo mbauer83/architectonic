@@ -12,7 +12,7 @@ Tool logic lives in:
 
 import os
 
-from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
+from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
 from src.infrastructure.mcp.artifact_mcp import (
     register_edit_tools,
@@ -56,15 +56,10 @@ from src.infrastructure.mcp.artifact_mcp.write_tools import (  # noqa: F401
     artifact_promote_to_enterprise,
     artifact_viewpoint,
 )
-from src.infrastructure.mcp.transport_security import build_transport_security
+from src.infrastructure.mcp.streamable_http_mount import log_level
 
-_HOST = os.getenv("ARCH_MCP_HOST", "127.0.0.1")
-_PORT = int(os.getenv("ARCH_MCP_PORT", "8000"))
-_LOG_LEVEL = os.getenv("ARCH_MCP_LOG_LEVEL", "INFO")
 _READ_SERVER_NAME = os.getenv("ARCH_MCP_READ_SERVER_NAME", "arch_artifacts_read")
 _WRITE_SERVER_NAME = os.getenv("ARCH_MCP_WRITE_SERVER_NAME", "arch_artifacts_write")
-_JSON_RESPONSE = os.getenv("ARCH_MCP_JSON_RESPONSE", "0") in {"1", "true", "TRUE", "yes", "YES"}
-_STATELESS_HTTP = os.getenv("ARCH_MCP_STATELESS_HTTP", "1") in {"1", "true", "TRUE", "yes", "YES"}
 
 _READ_INSTRUCTIONS = (
     "Architecture repository read-only tools (explore, query + verify). "
@@ -75,16 +70,10 @@ _WRITE_INSTRUCTIONS = (
     "Requires write access to the engagement repository."
 )
 
-mcp_read = FastMCP(
+mcp_read = MCPServer(
     name=_READ_SERVER_NAME,
     instructions=_READ_INSTRUCTIONS,
-    host=_HOST,
-    port=_PORT,
-    streamable_http_path="/mcp/read",
-    json_response=_JSON_RESPONSE,
-    stateless_http=_STATELESS_HTTP,
-    log_level=_LOG_LEVEL,  # type: ignore[arg-type]
-    transport_security=build_transport_security(),
+    log_level=log_level(),  # type: ignore[arg-type]
 )
 
 register_query_tools(mcp_read)
@@ -93,16 +82,10 @@ register_scratchpad_read_tools(mcp_read)
 install_call_tool_normalizer(mcp_read)
 
 
-mcp_write = FastMCP(
+mcp_write = MCPServer(
     name=_WRITE_SERVER_NAME,
     instructions=_WRITE_INSTRUCTIONS,
-    host=_HOST,
-    port=_PORT,
-    streamable_http_path="/mcp/write",
-    json_response=_JSON_RESPONSE,
-    stateless_http=_STATELESS_HTTP,
-    log_level=_LOG_LEVEL,  # type: ignore[arg-type]
-    transport_security=build_transport_security(),
+    log_level=log_level(),  # type: ignore[arg-type]
 )
 
 register_write_tools(mcp_write)

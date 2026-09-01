@@ -12,8 +12,6 @@ from contextlib import AsyncExitStack, asynccontextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
-from mcp.server.fastmcp.server import StreamableHTTPASGIApp
-
 from src.config.settings import request_thread_dump_seconds, slow_request_warning_seconds
 from src.infrastructure.artifact_index.coordination import get_write_queue_state_snapshot
 from src.infrastructure.backend._teardown import teardown_steps
@@ -23,6 +21,7 @@ from src.infrastructure.backend.shutdown import run_teardown
 from src.infrastructure.mcp.artifact_mcp import auto_start_default_watcher
 from src.infrastructure.mcp.mcp_artifact_server import mcp_read, mcp_write
 from src.infrastructure.mcp.mcp_assurance_server import mcp_assurance_read, mcp_assurance_write
+from src.infrastructure.mcp.streamable_http_mount import mounted
 from src.infrastructure.rest.routers import state as gui_state
 
 logger = logging.getLogger(__name__)
@@ -238,15 +237,10 @@ def _build_app(credentials: "GitCredentials | None" = None):  # type: ignore[no-
     from src.infrastructure.rest.routers.viewpoints.authoring import router as viewpoint_authoring_router
     from src.infrastructure.rest.routers.viewpoints.router import router as viewpoints_router
 
-    mcp_read.streamable_http_app()
-    mcp_write.streamable_http_app()
-    mcp_assurance_read.streamable_http_app()
-    mcp_assurance_write.streamable_http_app()
-
-    read_app = StreamableHTTPASGIApp(mcp_read.session_manager)
-    write_app = StreamableHTTPASGIApp(mcp_write.session_manager)
-    assurance_read_app = StreamableHTTPASGIApp(mcp_assurance_read.session_manager)
-    assurance_write_app = StreamableHTTPASGIApp(mcp_assurance_write.session_manager)
+    read_app = mounted(mcp_read, "/mcp/read")
+    write_app = mounted(mcp_write, "/mcp/write")
+    assurance_read_app = mounted(mcp_assurance_read, "/mcp/assurance-read")
+    assurance_write_app = mounted(mcp_assurance_write, "/mcp/assurance-write")
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI):

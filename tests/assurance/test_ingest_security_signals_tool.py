@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from src.application.security_signals.capability import (
     SignalMutationAllowed,
@@ -92,7 +92,7 @@ class _StubContext:
 
 def _ingest_tool(ctx: _StubContext, monkeypatch: pytest.MonkeyPatch):  # type: ignore[no-untyped-def]
     monkeypatch.setattr(security_write_tools, "get_assurance_context", lambda: ctx)
-    server = FastMCP("test-assurance-write")
+    server = MCPServer("test-assurance-write")
     register_security_write_tools(server)
     return server._tool_manager._tools["assurance_ingest_security_signals"].fn  # noqa: SLF001
 

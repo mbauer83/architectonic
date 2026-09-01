@@ -5,7 +5,7 @@ that qualify is a policy statement, and keeping it in one list makes it reviewab
 that reads git state, the assurance store, or the clock must never appear here — the
 generation does not describe those, so a hit would serve something the stamp does not cover.
 
-Degrades to no caching if FastMCP's internals move. The cache is an optimisation; losing it
+Degrades to no caching if MCPServer's internals move. The cache is an optimisation; losing it
 must never take the read surface with it.
 """
 

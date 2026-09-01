@@ -26,7 +26,7 @@ from src.infrastructure.mcp.mcp_assurance_server import mcp_assurance_read
 
 
 def _call(server: Any, tool: str, **arguments: object) -> dict[str, Any]:
-    _unstructured, structured = asyncio.run(server.call_tool(tool, arguments))
+    structured = asyncio.run(server.call_tool(tool, arguments)).structured_content
     return structured
 
 

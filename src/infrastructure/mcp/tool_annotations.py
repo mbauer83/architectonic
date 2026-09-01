@@ -15,17 +15,17 @@ site; the words it is spelled with belong here.
 from mcp.types import ToolAnnotations
 
 READ_ONLY = ToolAnnotations(
-    readOnlyHint=True,
-    destructiveHint=False,
-    idempotentHint=True,
-    openWorldHint=False,
+    read_only_hint=True,
+    destructive_hint=False,
+    idempotent_hint=True,
+    open_world_hint=False,
 )
 
 LOCAL_WRITE = ToolAnnotations(
-    readOnlyHint=False,
-    destructiveHint=False,
-    idempotentHint=False,
-    openWorldHint=False,
+    read_only_hint=False,
+    destructive_hint=False,
+    idempotent_hint=False,
+    open_world_hint=False,
 )
 
 #: An additive write that a caller may safely repeat. Distinct from `LOCAL_WRITE` because the
@@ -33,29 +33,29 @@ LOCAL_WRITE = ToolAnnotations(
 #: is set-once by construction, so re-asserting the same analysis genuinely changes nothing, and
 #: saying otherwise would make a host warn about the one write it never needs to warn about.
 IDEMPOTENT_LOCAL_WRITE = ToolAnnotations(
-    readOnlyHint=False,
-    destructiveHint=False,
-    idempotentHint=True,
-    openWorldHint=False,
+    read_only_hint=False,
+    destructive_hint=False,
+    idempotent_hint=True,
+    open_world_hint=False,
 )
 
 DESTRUCTIVE_LOCAL_WRITE = ToolAnnotations(
-    readOnlyHint=False,
-    destructiveHint=True,
-    idempotentHint=False,
-    openWorldHint=False,
+    read_only_hint=False,
+    destructive_hint=True,
+    idempotent_hint=False,
+    open_world_hint=False,
 )
 
 OPEN_WORLD_WRITE = ToolAnnotations(
-    readOnlyHint=False,
-    destructiveHint=False,
-    idempotentHint=False,
-    openWorldHint=True,
+    read_only_hint=False,
+    destructive_hint=False,
+    idempotent_hint=False,
+    open_world_hint=True,
 )
 
 DESTRUCTIVE_OPEN_WORLD_WRITE = ToolAnnotations(
-    readOnlyHint=False,
-    destructiveHint=True,
-    idempotentHint=False,
-    openWorldHint=True,
+    read_only_hint=False,
+    destructive_hint=True,
+    idempotent_hint=False,
+    open_world_hint=True,
 )

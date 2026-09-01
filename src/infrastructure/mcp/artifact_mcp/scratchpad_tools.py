@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 from pydantic import BaseModel, ValidationError  # type: ignore[import-not-found]
 
 from src.application.modeling.artifact_write import generate_entity_id
@@ -75,7 +75,7 @@ def _shaped[T: BaseModel](model: type[T], sent: object) -> T:
 
     The annotation is what puts `destination`'s four values into the tool's published schema, so an
     agent reads them instead of discovering them by being refused. Validating here as well is not
-    belt-and-braces: FastMCP builds the model when it invokes a tool, but these functions are plain
+    belt-and-braces: MCPServer builds the model when it invokes a tool, but these functions are plain
     callables that the write queue — and every test — calls directly, and a contract that only holds
     on one of its two entry paths is not a contract.
 
@@ -105,7 +105,7 @@ def _failure(exc: Exception) -> dict[str, Any]:
     return {"ok": False, "error": kind, "message": str(exc)}
 
 
-def register_scratchpad_read_tools(mcp: FastMCP) -> None:
+def register_scratchpad_read_tools(mcp: MCPServer) -> None:
     @mcp.tool(
         name="scratchpad_list",
         title="Scratchpad: List",
@@ -330,7 +330,7 @@ def scratchpad_delete(*, artifact_id: str, repo_root: str | None = None) -> dict
     return {"ok": True, "deleted": artifact_id}
 
 
-def register_scratchpad_write_tools(mcp: FastMCP) -> None:
+def register_scratchpad_write_tools(mcp: MCPServer) -> None:
     """Through `register_mutation_tool`, not `@mcp.tool`.
 
     A mutating tool registered directly never reaches the write queue or the authorization gate:
@@ -359,7 +359,7 @@ def register_scratchpad_write_tools(mcp: FastMCP) -> None:
         title="Scratchpad: Replace",
         description=_REPLACE_DESCRIPTION,
         # Destructive, not merely a write: the aggregate is replaced whole, so a document that
-        # omits a note deletes it. MCP reserves `destructiveHint=False` for additive updates, and
+        # omits a note deletes it. MCP reserves `destructive_hint=False` for additive updates, and
         # a host warning about this one is warning about the right thing.
         annotations=DESTRUCTIVE_LOCAL_WRITE,
         structured_output=True,

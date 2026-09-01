@@ -1,6 +1,6 @@
 from dataclasses import asdict
 
-from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
+from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
 from src.application.artifacts._search import ALL_SEARCHABLE_KINDS
 from src.domain.ontology_representation.artifact_types import (
@@ -34,7 +34,7 @@ def _included_kinds(
     return frozenset(include_record_types or default) & ALL_SEARCHABLE_KINDS
 
 
-def register_query_search_tools(mcp: FastMCP) -> None:
+def register_query_search_tools(mcp: MCPServer) -> None:
     @mcp.tool(
         name="artifact_query_search_artifacts",
         title="Artifact Query: Search Artifacts",

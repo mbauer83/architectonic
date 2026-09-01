@@ -62,7 +62,7 @@ def store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
 
 
 def _call(tool: str, **arguments: object) -> dict[str, Any]:
-    _unstructured, structured = asyncio.run(mcp_assurance_read.call_tool(tool, arguments))
+    structured = asyncio.run(mcp_assurance_read.call_tool(tool, arguments)).structured_content
     return structured
 
 

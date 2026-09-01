@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from functools import wraps
 from pathlib import Path
 
-from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
+from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
 from src.application.mutation_authorization import (
     DiscardWrite,
@@ -152,7 +152,7 @@ NON_MUTATING_WRITE_TOOLS: frozenset[str] = frozenset(
 
 
 def register_mutation_tool(
-    mcp: FastMCP,
+    mcp: MCPServer,
     fn: Callable[..., object],
     *,
     name: str,

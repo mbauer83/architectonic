@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any, Literal
 
-from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
+from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
 from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.application.verification.artifact_verifier_types import VerificationResult
@@ -217,7 +217,7 @@ async def artifact_verify_all(
     )
 
 
-def register_verify_tools(mcp: FastMCP) -> None:
+def register_verify_tools(mcp: MCPServer) -> None:
     mcp.tool(
         name="artifact_verify",
         title="Artifact Verifier",

@@ -12,7 +12,7 @@ resolved at startup; no explicit repo-path arguments are required.
 
 from __future__ import annotations
 
-from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
+from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
 from src.infrastructure.mcp.tool_annotations import (
     DESTRUCTIVE_OPEN_WORLD_WRITE,
@@ -188,7 +188,7 @@ def artifact_withdraw_changes(*, confirm: bool = False) -> dict[str, object]:
         return {"ok": False, "error": str(exc)}
 
 
-def register(mcp: FastMCP) -> None:
+def register(mcp: MCPServer) -> None:
     from src.infrastructure.mcp.artifact_mcp.mutation_registration import register_mutation_tool  # noqa: PLC0415
 
     register_mutation_tool(

@@ -9,14 +9,14 @@ service the REST endpoints call, so a request seeing the same repo yields the sa
 
 from __future__ import annotations
 
-from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
+from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.mcp.artifact_mcp.context import repo_cached, resolve_repo_roots, roots_key
 from src.infrastructure.mcp.tool_annotations import READ_ONLY
 
 
-def register_aibom_read_tools(mcp: FastMCP) -> None:
+def register_aibom_read_tools(mcp: MCPServer) -> None:
     @mcp.tool(
         name="artifact_aibom_export",
         title="Artifact AIBOM: Export ML-BOM",

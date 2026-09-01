@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
+from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
 from src.infrastructure.mcp.assurance_mcp import _refusals
 from src.infrastructure.mcp.assurance_mcp.context import get_assurance_context
@@ -27,7 +27,7 @@ from src.infrastructure.mcp.tool_annotations import (
 )
 
 
-def register_security_write_tools(server: FastMCP) -> None:
+def register_security_write_tools(server: MCPServer) -> None:
     ctx = get_assurance_context()
 
     @server.tool(

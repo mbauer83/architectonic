@@ -9,7 +9,7 @@ and `model_this` returns a task spec precisely so that separation of duties surv
 
 from __future__ import annotations
 
-from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
+from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
 from src.application.assurance import mutations as mutations
 from src.infrastructure.assurance.write_serialization import run_write
@@ -19,7 +19,7 @@ from src.infrastructure.mcp.assurance_mcp.context import get_assurance_context
 from src.infrastructure.mcp.tool_annotations import LOCAL_WRITE, READ_ONLY
 
 
-def register_baseline_write_tools(server: FastMCP) -> None:
+def register_baseline_write_tools(server: MCPServer) -> None:
     ctx = get_assurance_context()
 
     @server.tool(

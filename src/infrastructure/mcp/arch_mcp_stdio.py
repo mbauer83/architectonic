@@ -21,14 +21,20 @@ from pathlib import Path
 from typing import NoReturn
 
 import anyio
-from anyio.streams.memory import MemoryObjectReceiveStream, MemoryObjectSendStream
-from mcp.client.streamable_http import streamablehttp_client
+import httpx2
+from mcp.client.streamable_http import create_mcp_http_client, streamable_http_client
 from mcp.server.stdio import stdio_server
+from mcp.shared._stream_protocols import ReadStream, WriteStream
 from mcp.shared.message import SessionMessage
 
 from src.infrastructure.backend.backend_launch import ensure_backend_running
 from src.infrastructure.backend.backend_probe import backend_url, configured_backend_url
 from src.infrastructure.mcp.bridge_replies import OutstandingReplies, failure_reason
+
+# `ReadStream` / `WriteStream` are the SDK's own stream protocols. Both ends of this bridge are typed
+# by them in `mcp` 2.x — `stdio_server` and `streamable_http_client` hand over context-carrying
+# streams rather than the anyio memory pair they used to be — and the public re-exports cover only
+# the reading half, so the definitions are taken from where the SDK states them.
 
 logger = logging.getLogger(__name__)
 
@@ -51,8 +57,8 @@ def _workspace_directory(explicit: str | None) -> Path:
 
 
 async def _forward_client_requests(
-    local_read: MemoryObjectReceiveStream[SessionMessage | Exception],
-    remote_write: MemoryObjectSendStream[SessionMessage],
+    local_read: ReadStream[SessionMessage | Exception],
+    remote_write: WriteStream[SessionMessage],
     outstanding: OutstandingReplies,
 ) -> None:
     """Client → backend, recording each request id so the bridge can answer it if the backend cannot.
@@ -70,8 +76,8 @@ async def _forward_client_requests(
 
 
 async def _forward_backend_replies(
-    remote_read: MemoryObjectReceiveStream[SessionMessage | Exception],
-    local_write: MemoryObjectSendStream[SessionMessage],
+    remote_read: ReadStream[SessionMessage | Exception],
+    local_write: WriteStream[SessionMessage],
     outstanding: OutstandingReplies,
 ) -> None:
     """Backend → client, ending the session when the transport hands over a failure instead of a reply.
@@ -88,38 +94,66 @@ async def _forward_backend_replies(
             await local_write.send(message)
 
 
-def _answer_and_stop(outstanding: OutstandingReplies, failure: BaseException) -> NoReturn:
+def _answer_and_stop(outstanding: OutstandingReplies, failure: BaseException, *, channel: int) -> NoReturn:
     """Answer what the backend no longer can, name the reason, and end the process.
 
     Ending it is what lets the client recover: a relaunched bridge re-runs the autostart with its
     health and workspace-identity checks, while this process holds a transport that will never carry
     another message.
 
+    `channel` is a duplicate of the process's real stdout, taken before `stdio_server()` started.
+    While it serves, `stdio_server` points file descriptor 1 at stderr so that stray output from a
+    handler or a child cannot corrupt the protocol stream. These replies are not stray output — they
+    are the answers this bridge owes — so writing them through `sys.stdout` would send the client's
+    last word to a log instead of to the client, which is the whole failure this function exists to
+    prevent. Written with `os.write` for the same reason: the descriptor is the channel.
+
     `os._exit`, deliberately. Returning cannot end the process here: `stdio_server` reads the client's
     stdin in an AnyIO worker thread, a thread blocked in `readline()` cannot be cancelled, and so the
     teardown around this handler waits for a line that a client waiting for a reply will never send —
     the observed failure was a bridge parked for five hours on one second of CPU. The replies are
-    written and flushed before exiting, and the pumps are already torn down by the time this runs, so
-    nothing else is queued to lose.
+    written before exiting, and the pumps are already torn down by the time this runs, so nothing
+    else is queued to lose.
     """
     reason = failure_reason(failure)
-    for message in outstanding.as_connection_closed(reason):
-        sys.stdout.write(message.model_dump_json(by_alias=True, exclude_none=True) + "\n")
-    sys.stdout.flush()
+    payload = "".join(
+        message.model_dump_json(by_alias=True, exclude_none=True) + "\n"
+        for message in outstanding.as_connection_closed(reason)
+    ).encode("utf-8")
+    while payload:
+        payload = payload[os.write(channel, payload):]
     print(f"arch-mcp-stdio: the backend connection failed ({reason}); exiting.", file=sys.stderr, flush=True)
     os._exit(EXIT_CONNECTION_LOST)
 
 
+#: How long the bridge will spend trying to *reach* a backend before it answers what it owes.
+#: The SDK's default is 30 seconds, which is a reasonable budget for a remote server and a poor one
+#: for a process on this machine: a client asking a bridge whose backend has gone waits out the whole
+#: budget for a reply that was never coming. Reading is left long, because a tool call legitimately
+#: takes a while and cutting one short would be a worse answer than a slow one.
+CONNECT_TIMEOUT_SECONDS = 5.0
+READ_TIMEOUT_SECONDS = 300.0
+
+
 async def _run_bridge(url: str) -> None:
     outstanding = OutstandingReplies()
+    # Taken before `stdio_server()` claims file descriptor 1 — see `_answer_and_stop`.
+    channel = os.dup(1)
     async with stdio_server() as (local_read, local_write):
         try:
-            async with streamablehttp_client(url) as (remote_read, remote_write, _get_session_id):
-                async with anyio.create_task_group() as tg:
-                    tg.start_soon(_forward_client_requests, local_read, remote_write, outstanding)
-                    tg.start_soon(_forward_backend_replies, remote_read, local_write, outstanding)
+            timeout = httpx2.Timeout(
+                CONNECT_TIMEOUT_SECONDS, read=READ_TIMEOUT_SECONDS, write=CONNECT_TIMEOUT_SECONDS,
+                pool=CONNECT_TIMEOUT_SECONDS,
+            )
+            # Two streams, not three: `mcp` 2.x dropped the session-id accessor, which this
+            # bridge never used — it forwards messages without reading their session.
+            async with create_mcp_http_client(timeout=timeout) as http_client:
+                async with streamable_http_client(url, http_client=http_client) as (remote_read, remote_write):
+                    async with anyio.create_task_group() as tg:
+                        tg.start_soon(_forward_client_requests, local_read, remote_write, outstanding)
+                        tg.start_soon(_forward_backend_replies, remote_read, local_write, outstanding)
         except* Exception as failure:
-            _answer_and_stop(outstanding, failure)
+            _answer_and_stop(outstanding, failure, channel=channel)
 
 
 def main(argv: list[str] | None = None) -> None:

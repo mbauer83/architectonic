@@ -18,7 +18,7 @@ cannot disagree.
 
 from __future__ import annotations
 
-from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
+from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
 from src.application.assurance.exposure import AssuranceExposurePolicy
 from src.application.assurance.fmea_rows import matrix_rows
@@ -30,7 +30,7 @@ from src.infrastructure.mcp.tool_annotations import READ_ONLY
 FAILURE_MODE = "failure-mode"
 
 
-def register_fmea_read_tools(server: FastMCP) -> None:
+def register_fmea_read_tools(server: MCPServer) -> None:
     ctx = get_assurance_context()
 
     @server.tool(

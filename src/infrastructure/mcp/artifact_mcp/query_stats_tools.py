@@ -1,6 +1,6 @@
 from typing import Literal
 
-from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
+from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
 from src.infrastructure.mcp.artifact_mcp.context import RepoScope, repo_cached, resolve_repo_roots, roots_key
 from src.infrastructure.mcp.tool_annotations import READ_ONLY
@@ -17,7 +17,7 @@ def _include_flags(
     )
 
 
-def register_query_stats_tools(mcp: FastMCP) -> None:
+def register_query_stats_tools(mcp: MCPServer) -> None:
     @mcp.tool(
         name="artifact_query_stats",
         title="Artifact Query: Stats",

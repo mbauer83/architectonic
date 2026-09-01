@@ -3,7 +3,7 @@
 from pathlib import Path
 from typing import Any, Final, Literal
 
-from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
+from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
 from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
@@ -326,7 +326,7 @@ def artifact_edit_connection_associations(
     return _finalize_authoritative_write(dry_run, result, mutation_context)
 
 
-def register_edit_tools(mcp: FastMCP) -> None:
+def register_edit_tools(mcp: MCPServer) -> None:
     from src.infrastructure.mcp.artifact_mcp.delete_tools import register_delete_tools  # noqa: PLC0415
     from src.infrastructure.mcp.artifact_mcp.mutation_registration import register_mutation_tool  # noqa: PLC0415
 

@@ -25,7 +25,6 @@ from __future__ import annotations
 import sys
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
-from datetime import timedelta
 from pathlib import Path
 from typing import Any
 
@@ -725,7 +724,7 @@ async def walk(
         print(f"  → {call.tool}", file=sys.stderr, flush=True)
         try:
             result = await session.call_tool(
-                call.tool, arguments, read_timeout_seconds=timedelta(seconds=CALL_TIMEOUT_SECONDS)
+                call.tool, arguments, read_timeout_seconds=CALL_TIMEOUT_SECONDS
             )
         except Exception as exc:  # noqa: BLE001 - any transport error is this tool's failure
             failures.append(f"{call.tool}: TOOL raised {type(exc).__name__}: {exc}")

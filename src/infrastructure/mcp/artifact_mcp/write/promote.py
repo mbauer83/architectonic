@@ -2,7 +2,7 @@
 
 from typing import TYPE_CHECKING
 
-from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
+from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
 if TYPE_CHECKING:
     from src.infrastructure.write.artifact_write._promote_viewpoints import ViewpointResolution
@@ -202,7 +202,7 @@ def artifact_promote_to_enterprise(
     return out
 
 
-def register(mcp: FastMCP) -> None:
+def register(mcp: MCPServer) -> None:
     from src.infrastructure.mcp.artifact_mcp.mutation_registration import register_mutation_tool  # noqa: PLC0415
 
     register_mutation_tool(

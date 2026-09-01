@@ -1,6 +1,6 @@
 """Assurance MCP servers (arch-assurance-read / arch-assurance-write).
 
-Two separate FastMCP servers sharing the same assurance store:
+Two separate MCPServer servers sharing the same assurance store:
   mcp_assurance_read  → /mcp/assurance-read  (query, verify, guidance)
   mcp_assurance_write → /mcp/assurance-write (create, edit, delete, seal)
 
@@ -10,21 +10,13 @@ every tool returns a structured locked error rather than raising.
 
 from __future__ import annotations
 
-import os
-
-from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
+from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
 from src.infrastructure.mcp.artifact_mcp.name_normalization import install_call_tool_normalizer
 from src.infrastructure.mcp.assurance_mcp.context import get_assurance_context
 from src.infrastructure.mcp.assurance_mcp.read_tools import register_read_tools
 from src.infrastructure.mcp.assurance_mcp.write_tools import register_write_tools
-from src.infrastructure.mcp.transport_security import build_transport_security
-
-_HOST = os.getenv("ARCH_MCP_HOST", "127.0.0.1")
-_PORT = int(os.getenv("ARCH_MCP_PORT", "8000"))
-_LOG_LEVEL = os.getenv("ARCH_MCP_LOG_LEVEL", "INFO")
-_JSON_RESPONSE = os.getenv("ARCH_MCP_JSON_RESPONSE", "0") in {"1", "true", "TRUE"}
-_STATELESS = os.getenv("ARCH_MCP_STATELESS_HTTP", "1") in {"1", "true", "TRUE"}
+from src.infrastructure.mcp.streamable_http_mount import log_level
 
 _READ_INSTRUCTIONS = (
     "Assurance read-only tools (STPA/CAST/GRC query, verify, guidance). "
@@ -37,28 +29,16 @@ _WRITE_INSTRUCTIONS = (
     "Write scope: assurance only — use arch-repo-write for architecture edits."
 )
 
-mcp_assurance_read = FastMCP(
+mcp_assurance_read = MCPServer(
     name="arch_assurance_read",
     instructions=_READ_INSTRUCTIONS,
-    host=_HOST,
-    port=_PORT,
-    streamable_http_path="/mcp/assurance-read",
-    json_response=_JSON_RESPONSE,
-    stateless_http=_STATELESS,
-    log_level=_LOG_LEVEL,  # type: ignore[arg-type]
-    transport_security=build_transport_security(),
+    log_level=log_level(),  # type: ignore[arg-type]
 )
 
-mcp_assurance_write = FastMCP(
+mcp_assurance_write = MCPServer(
     name="arch_assurance_write",
     instructions=_WRITE_INSTRUCTIONS,
-    host=_HOST,
-    port=_PORT,
-    streamable_http_path="/mcp/assurance-write",
-    json_response=_JSON_RESPONSE,
-    stateless_http=_STATELESS,
-    log_level=_LOG_LEVEL,  # type: ignore[arg-type]
-    transport_security=build_transport_security(),
+    log_level=log_level(),  # type: ignore[arg-type]
 )
 
 register_read_tools(mcp_assurance_read)
