@@ -63,6 +63,12 @@ def test_an_operation_the_client_obviously_drives_is_never_measured_dark() -> No
     Were the matcher to stop resolving anything, every operation would measure dark and the gate below
     would report the whole surface. These four are on the first screen the GUI loads, so finding one
     dark means the measurement is broken, not the product.
+
+    It rests on the same evidence as the gate it guards, so it needs the same precondition. A log that
+    begins after the register was taken cannot show what was requested before it started, and reading
+    absence from it as a dark operation is the mistake `covers_the_register` exists to prevent — for
+    the sentinels exactly as much as for the surface. Without the check this failed for no reason
+    better than a log rotating mid-session.
     """
     always_driven = {
         "entities_list_entities",
@@ -74,6 +80,12 @@ def test_an_operation_the_client_obviously_drives_is_never_measured_dark() -> No
     assert declared == always_driven, (
         f"these sentinels are no longer declared — pick new ones: {sorted(always_driven - declared)}"
     )
+    log_text = _log_text_or_skip()
+    if not covers_the_register(log_text):
+        pytest.skip(
+            f"the log begins at {log_begins_at(log_text)}, after the surface was last measured clean "
+            f"at {REGISTER_TAKEN} — the sentinels' absence from it is not evidence either."
+        )
     assert declared.isdisjoint(_measured_dark_operations())
 
 
