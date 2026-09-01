@@ -18,6 +18,7 @@ from src.application.mutation_authorization import (
     MutationDenied,
     MutationRequest,
     PromotionWrite,
+    ProposalWrite,
     RepositoryWrite,
 )
 from src.application.mutation_policy import authorize
@@ -32,6 +33,7 @@ WORKFLOW_ACTIONS = (
     "enterprise_submit",
     "enterprise_discard_local",
     "enterprise_discard_pending",
+    "enterprise_proposal",
     "maintenance",
 )
 
@@ -60,6 +62,10 @@ def _request_for(action: str, snapshot: AuthorizationSnapshot) -> MutationReques
             if enterprise is None:
                 return None
             return MutationRequest("enterprise_discard", DiscardWrite(enterprise, pending_remote=True))
+        case "enterprise_proposal":
+            if engagement is None or enterprise is None:
+                return None
+            return MutationRequest("enterprise_proposal", ProposalWrite(engagement, enterprise))
         case "maintenance":
             return MutationRequest("maintenance", RepositoryWrite(engagement)) if engagement else None
     return None

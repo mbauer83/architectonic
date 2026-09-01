@@ -27,6 +27,7 @@ MutationIntent = Literal[
     "enterprise_save",
     "enterprise_submit",
     "enterprise_discard",
+    "enterprise_proposal",
     "maintenance",
 ]
 
@@ -119,7 +120,29 @@ class DiscardWrite:
     pending_remote: bool
 
 
-MutationTarget = RepositoryWrite | PromotionWrite | DiscardWrite
+@dataclass(frozen=True)
+class ProposalWrite:
+    """A proposed change to a promoted artifact, which touches both repositories at once.
+
+    The proposal's own state is recorded in the engagement repository — the only one a non-admin
+    deployment may write — while the branch carrying it is pushed to, or deleted from, the
+    enterprise one. Both roots are named in a single target for the same reason `PromotionWrite`
+    names two: one authorisation over one root cannot cover both, and splitting it into two requests
+    invites the wrong order. Withdrawing a submitted proposal under a remote fault would mark it
+    terminal locally and then fail to delete the pushed branch, leaving a review branch alive that
+    nothing observes, because the proposal is terminal and the branch is the reviewer's.
+
+    Not `PromotionWrite` widened. Promotion means "copy an engagement artifact into enterprise"; a
+    proposal writes no enterprise artifact at all. One shape meaning two things would pass every
+    policy test there is, because those assert that the intents behave, not that a wrong one is
+    refused.
+    """
+
+    source_root: Path
+    destination_root: Path
+
+
+MutationTarget = RepositoryWrite | PromotionWrite | DiscardWrite | ProposalWrite
 
 
 @dataclass(frozen=True)

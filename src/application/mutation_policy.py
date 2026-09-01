@@ -29,6 +29,7 @@ from src.application.mutation_authorization import (
     MutationRequest,
     MutationTarget,
     PromotionWrite,
+    ProposalWrite,
     RepositoryWrite,
     SyncHealthReason,
 )
@@ -47,7 +48,7 @@ _AGGREGATE_FAULTS: frozenset[SyncHealthReason] = frozenset(
 )
 
 _ENTERPRISE_WORKFLOW_INTENTS: frozenset[MutationIntent] = frozenset(
-    {"promotion", "enterprise_save", "enterprise_submit", "enterprise_discard"}
+    {"promotion", "enterprise_save", "enterprise_submit", "enterprise_discard", "enterprise_proposal"}
 )
 
 
@@ -59,7 +60,12 @@ def denied_intents(reason: SyncHealthReason, target: MutationTarget) -> frozense
     its pending-remote variant.
     """
     if reason in _REMOTE_RELATIONSHIP_FAULTS:
-        denied: set[MutationIntent] = {"promotion", "enterprise_submit"}
+        # `enterprise_proposal` is here because every operation carrying it touches the remote:
+        # submitting a proposal, rebasing one onto a moved head, and withdrawing one that has
+        # already been pushed. Drafting does not — `propose`, `revise` and withdrawing a draft take
+        # `engagement_authoring`, which this function never denies, so an author keeps their draft
+        # through a fetch failure the way local commits stay available as the recovery path.
+        denied: set[MutationIntent] = {"promotion", "enterprise_submit", "enterprise_proposal"}
         if isinstance(target, DiscardWrite) and target.pending_remote:
             denied.add("enterprise_discard")
         return frozenset(denied)
@@ -107,6 +113,15 @@ def _authorize_target(snapshot: AuthorizationSnapshot, request: MutationRequest)
             return _check_enterprise_root(snapshot, root)
         case "enterprise_discard", DiscardWrite(root=root):
             return _check_enterprise_root(snapshot, root)
+        case "enterprise_proposal", ProposalWrite(source_root=source, destination_root=destination):
+            # The proposal's record is written where a non-admin deployment may write, and the
+            # branch goes to the repository the artifact was promoted into. Deliberately no
+            # `admin_mode` check: an admin deployment can already edit enterprise content directly,
+            # so requiring it here would remove the reason this intent exists.
+            source_decision = _check_engagement_root(snapshot, source)
+            if isinstance(source_decision, MutationDenied):
+                return source_decision
+            return _check_enterprise_root(snapshot, destination)
         case _:
             return MutationDenied(
                 code="target_shape_mismatch",

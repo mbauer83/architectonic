@@ -22,6 +22,7 @@ from src.application.mutation_authorization import (
     MutationDenied,
     MutationRequest,
     PromotionWrite,
+    ProposalWrite,
     RepositoryWrite,
     SyncHealth,
     SyncHealthReason,
@@ -40,6 +41,7 @@ ACTIONS = (
     "enterprise_submit",
     "enterprise_discard_local",
     "enterprise_discard_pending",
+    "enterprise_proposal",
     "maintenance",
 )
 
@@ -70,6 +72,8 @@ def _request(action: str, roots: tuple[Path, Path]) -> MutationRequest:
             return MutationRequest("enterprise_discard", DiscardWrite(enterprise, pending_remote=False))
         case "enterprise_discard_pending":
             return MutationRequest("enterprise_discard", DiscardWrite(enterprise, pending_remote=True))
+        case "enterprise_proposal":
+            return MutationRequest("enterprise_proposal", ProposalWrite(engagement, enterprise))
         case "maintenance":
             return MutationRequest("maintenance", RepositoryWrite(enterprise))
     raise AssertionError(f"unknown action {action}")
@@ -107,6 +111,7 @@ _HEALTHY_NORMAL = {
     "enterprise_submit": True,
     "enterprise_discard_local": True,
     "enterprise_discard_pending": True,
+    "enterprise_proposal": True,
     "maintenance": True,
 }
 _HEALTHY_ADMIN = {**_HEALTHY_NORMAL, "enterprise_admin_authoring": True}
@@ -116,6 +121,9 @@ _REMOTE_FAULT_NORMAL = {
     "promotion": False,
     "enterprise_submit": False,
     "enterprise_discard_pending": False,
+    # Every operation carrying this intent touches the remote — submit, rebase, and withdrawing a
+    # proposal that has already been pushed. Drafting takes `engagement_authoring` and stays open.
+    "enterprise_proposal": False,
 }
 _AGGREGATE_FAULT_NORMAL = {
     **_HEALTHY_NORMAL,
@@ -124,6 +132,9 @@ _AGGREGATE_FAULT_NORMAL = {
     "enterprise_submit": False,
     "enterprise_discard_local": False,
     "enterprise_discard_pending": False,
+    # An unusable sync aggregate denies every enterprise workflow intent, this one included: there
+    # is nothing to submit a proposal against until maintenance repairs it.
+    "enterprise_proposal": False,
 }
 
 
@@ -189,15 +200,20 @@ class TestDeniedIntentsProjection:
         _, enterprise = roots
         local = denied_intents(reason, DiscardWrite(enterprise, pending_remote=False))
         pending = denied_intents(reason, DiscardWrite(enterprise, pending_remote=True))
-        assert local == frozenset({"promotion", "enterprise_submit"})
-        assert pending == frozenset({"promotion", "enterprise_submit", "enterprise_discard"})
+        assert local == frozenset({"promotion", "enterprise_submit", "enterprise_proposal"})
+        assert pending == frozenset(
+            {"promotion", "enterprise_submit", "enterprise_proposal", "enterprise_discard"}
+        )
 
     @pytest.mark.parametrize("reason", AGGREGATE_FAULTS)
     def test_aggregate_faults_deny_every_workflow_intent(self, roots, reason: SyncHealthReason) -> None:
         _, enterprise = roots
         denied = denied_intents(reason, RepositoryWrite(enterprise))
         assert denied == frozenset(
-            {"promotion", "enterprise_save", "enterprise_submit", "enterprise_discard"}
+            {
+                "promotion", "enterprise_save", "enterprise_submit", "enterprise_discard",
+                "enterprise_proposal",
+            }
         )
 
     @pytest.mark.parametrize("reason", ALL_REASONS)
