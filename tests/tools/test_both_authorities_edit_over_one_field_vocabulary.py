@@ -32,16 +32,19 @@ from pathlib import Path
 
 import pytest
 
+from src.application.modeling import edit_field_catalogue as catalogue
+from src.infrastructure.mcp.artifact_mcp.bulk.common import KNOWN_ITEM_FIELDS
 from src.infrastructure.write.artifact_write.admin_ops import admin_edit_entity
+from src.infrastructure.write.artifact_write.connection_edit import edit_connection
 from src.infrastructure.write.artifact_write.entity_edit import edit_entity
 
 #: Parameters that are about *where* an entity lives rather than what it says. See the docstring.
 _RELOCATION = frozenset({"group"})
 
-#: Parameters every write takes: the repository, the machinery to verify against, and the subject.
-_PLUMBING = frozenset({
-    "repo_root", "registry", "verifier", "clear_repo_caches", "artifact_id", "dry_run",
-})
+#: Parameters every write takes whatever it is writing: the repository, the machinery to verify
+#: against, and whether to commit. Deliberately not `artifact_id` — that addresses the subject, which
+#: is part of the vocabulary and is where `edit_field_catalogue` puts it.
+_PLUMBING = frozenset({"repo_root", "registry", "verifier", "clear_repo_caches", "dry_run"})
 
 
 @pytest.fixture()
@@ -78,6 +81,38 @@ def test_neither_authority_has_quietly_taken_on_relocation() -> None:
     assert _RELOCATION.isdisjoint(_fields(admin_edit_entity))
 
 
+class TestTheCatalogueIsTheOneSpellingOfTheVocabulary:
+    """`edit_field_catalogue` and the write functions describe the same fields.
+
+    The catalogue exists because this vocabulary was written down three times — the signatures, the
+    REST bodies and the MCP bulk decoder — with no way to disagree out loud. Making the decoder a
+    projection removes one spelling; this is what stops the remaining two drifting apart, in either
+    direction, which is the direction the last drift went.
+    """
+
+    def test_the_entity_row_matches_the_write_function(self) -> None:
+        assert catalogue.editable("entity") == _fields(edit_entity)
+
+    def test_the_connection_row_matches_the_write_function(self) -> None:
+        assert catalogue.editable("connection") == _fields(edit_connection)
+
+    def test_the_decoder_projects_the_catalogue_rather_than_restating_it(self) -> None:
+        """The envelope is the decoder's own; everything else it accepts comes from the catalogue."""
+        envelope = frozenset({"op", "_ref"})
+        assert KNOWN_ITEM_FIELDS["edit_entity"] == envelope | catalogue.editable("entity")
+        assert KNOWN_ITEM_FIELDS["edit_connection"] - {"operation"} == (
+            envelope | catalogue.editable("connection")
+        )
+
+    def test_the_envelope_is_not_in_the_catalogue(self) -> None:
+        """`op` and `_ref` are properties of a batch request, and no write function has heard of them.
+
+        Keeping them out is what makes the two assertions above checkable at all.
+        """
+        for kind in ("entity", "connection"):
+            assert {"op", "_ref"}.isdisjoint(catalogue.editable(kind))  # type: ignore[arg-type]
+
+
 class TestAnEnterpriseEntityCanHaveItsAttributeTypesChanged:
     """The regression, over the write path rather than the signature.
 
@@ -89,7 +124,6 @@ class TestAnEnterpriseEntityCanHaveItsAttributeTypesChanged:
         from src.application.verification.artifact_verifier import ArtifactVerifier
         from src.application.verification.artifact_verifier_registry import ArtifactRegistry
         from src.infrastructure.artifact_index import shared_artifact_index
-
         from tests.tools.test_admin_mode import _catalogs, _entity_md, _write
 
         full = "REQ@1786120500.FieldVo1.an-enterprise-requirement"

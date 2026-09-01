@@ -6,6 +6,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Literal
 
+from src.application.modeling import edit_field_catalogue as catalogue
 from src.application.verification.artifact_verifier import ArtifactRegistry
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.artifact_index import shared_artifact_index
@@ -20,16 +21,22 @@ KNOWN_OPS = frozenset({
     "create_entity", "create_document", "add_connection", "edit_entity", "edit_connection",
 })
 
+#: The wire envelope: what an item is, and what the caller calls it. Accepted on every op, and
+#: deliberately absent from the field catalogue — both are properties of a batch request rather than
+#: of an artifact, which is what lets the catalogue be checked against the write functions.
+_ENVELOPE = frozenset({"op", "_ref"})
+
 #: The fields each op accepts, so an item carrying anything else is refused rather than performed
 #: differently. A field this table does not name is a caller error — a misspelling, or a field
 #: borrowed from a sibling tool — and ignoring it silently is how `edit_connection` with `mode:
 #: "remove"` (the field is `operation`) ran as an *update* and reported `wrote: true` for a removal
-#: that never happened. `_ref` is accepted everywhere: it is the caller's own alias for the item.
+#: that never happened.
+#:
+#: The edit rows are projections of `edit_field_catalogue`, not a fourth spelling of it. This table
+#: was the third, and while the vocabulary was written three times the enterprise entity edit lost
+#: `attribute_types` and `specializations` without anything failing.
 KNOWN_ITEM_FIELDS: dict[str, frozenset[str]] = {
-    "create_entity": frozenset({
-        "op", "_ref", "artifact_type", "name", "summary", "properties", "attribute_types", "notes",
-        "keywords", "specializations", "artifact_id", "version", "status", "group",
-    }),
+    "create_entity": _ENVELOPE | catalogue.editable("entity") | frozenset({"artifact_type"}),
     "create_document": frozenset({
         "op", "_ref", "doc_type", "title", "body", "keywords", "artifact_id", "version", "status",
         "group",
@@ -38,18 +45,13 @@ KNOWN_ITEM_FIELDS: dict[str, frozenset[str]] = {
         # is recorded on the document, so no entity is edited to say it is referred to.
         "entity_refs",
     }),
-    "add_connection": frozenset({
-        "op", "_ref", "source_entity", "target_entity", "connection_type", "description",
-        "src_multiplicity", "tgt_multiplicity", "specializations", "metadata", "version", "status",
-    }),
-    "edit_entity": frozenset({
-        "op", "_ref", "artifact_id", "name", "summary", "properties", "attribute_types", "notes",
-        "keywords", "specializations", "version", "status", "group",
-    }),
-    "edit_connection": frozenset({
-        "op", "_ref", "source_entity", "target_entity", "connection_type", "operation",
-        "description", "src_multiplicity", "tgt_multiplicity", "specializations", "metadata",
-    }),
+    "add_connection": (
+        _ENVELOPE | catalogue.editable("connection") | frozenset({"version", "status"})
+    ),
+    "edit_entity": _ENVELOPE | catalogue.editable("entity"),
+    # `operation` selects update or removal. It is a mode on the request, not a field of the
+    # connection, so it stays with the decoder alongside the envelope.
+    "edit_connection": _ENVELOPE | catalogue.editable("connection") | frozenset({"operation"}),
 }
 
 
