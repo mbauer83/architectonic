@@ -180,7 +180,7 @@ What follows is a disclosure inventory, for two purposes: to say what a build as
 | marked | 18.0.11 | MIT |
 | nanoid | 3.3.18 | MIT |
 | picocolors | 1.1.1 | ISC |
-| postcss | 8.5.23 | MIT |
+| postcss | 8.5.26 | MIT |
 | pure-rand | 6.1.0 | MIT |
 | source-map-js | 1.2.1 | BSD-3-Clause |
 | style-mod | 4.1.3 | MIT |
