@@ -96,6 +96,30 @@ class TestTheCatalogueIsTheOneSpellingOfTheVocabulary:
     def test_the_connection_row_matches_the_write_function(self) -> None:
         assert catalogue.editable("connection") == _fields(edit_connection)
 
+    @pytest.mark.parametrize(
+        ("kind", "writer"),
+        [("document", "edit_document"), ("diagram", "edit_diagram")],
+    )
+    def test_every_other_kind_matches_its_write_function_too(self, kind: str, writer: str) -> None:
+        """The two kinds a proposal can also address. `accepted` rather than `editable`, because a
+        diagram's write function takes mechanics — `rebuild_layout`, `replace_bindings`, the
+        committed repository — that tell an applier how to behave rather than what the artifact
+        should say. The catalogue keeps them apart, and a proposal records only the second kind.
+        """
+        import importlib
+
+        module = {
+            "document": "src.infrastructure.write.artifact_write.document",
+            "diagram": "src.infrastructure.write.artifact_write.diagram_edit",
+        }[kind]
+        function = getattr(importlib.import_module(module), writer)
+        assert catalogue.accepted(kind) == _fields(function) - {"authority"}  # type: ignore[arg-type]
+
+    def test_mechanics_are_never_proposable(self) -> None:
+        """A proposal says what the artifact should say; how a replay applies it is the replay's."""
+        for kind in catalogue.PROPOSABLE:
+            assert catalogue.MECHANICS[kind].isdisjoint(catalogue.editable(kind))
+
     def test_the_decoder_projects_the_catalogue_rather_than_restating_it(self) -> None:
         """The envelope is the decoder's own; everything else it accepts comes from the catalogue."""
         envelope = frozenset({"op", "_ref"})

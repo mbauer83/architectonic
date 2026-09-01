@@ -11,10 +11,13 @@ layer rather than in the domain because it describes what the write path accepts
 ontology declares — and because a domain module may import only the domain, so nothing outside it
 could derive from a catalogue kept there.
 
-**Two kinds of field, kept apart.** `ADDRESSING` names what identifies the subject: an entity is
+**Three kinds of field, kept apart.** `ADDRESSING` names what identifies the subject: an entity is
 reached by its id, a connection by its (source, target, type) triple. `CONTENT` names what an edit
-may change. A surface needs both and needs to tell them apart — a connection edit takes
-`source_entity` to find the connection, never to move it.
+may change. `MECHANICS` names what tells the *applier* how to behave — whether to rebuild a layout,
+whether to replace bindings rather than merge them, which committed repository to resolve candidates
+against. A surface needs all three and needs to tell them apart: a connection edit takes
+`source_entity` to find the connection and never to move it, and a proposal records what to change
+without dictating how a future replay should apply it.
 
 **The wire envelope is not here.** `op` and `_ref` belong to the MCP bulk decoder: they say which
 operation an item is and what the caller calls it, which is a property of a batch request rather
@@ -29,7 +32,11 @@ from typing import Literal
 
 #: The artifact kinds the write path edits. Closed, because a new kind is a decision about the
 #: model rather than a key someone can add in passing.
-ArtifactKind = Literal["entity", "connection"]
+ArtifactKind = Literal["entity", "connection", "document", "diagram"]
+
+#: The kinds a global artifact reference can stand for, and so the kinds a change can be proposed
+#: against. A connection has no GAR, so a connection edit has nothing to be proposed about.
+PROPOSABLE: tuple[ArtifactKind, ...] = ("entity", "document", "diagram")
 
 #: What identifies the subject of an edit.
 ADDRESSING: Mapping[ArtifactKind, frozenset[str]] = {
@@ -37,6 +44,8 @@ ADDRESSING: Mapping[ArtifactKind, frozenset[str]] = {
     # A connection has no id of its own: the triple is its identity, and an edit that changed one of
     # these would be describing a different connection.
     "connection": frozenset({"source_entity", "target_entity", "connection_type"}),
+    "document": frozenset({"artifact_id"}),
+    "diagram": frozenset({"artifact_id"}),
 }
 
 #: What an edit may change. `group` is included for the entity because the engagement authority takes
@@ -49,9 +58,32 @@ CONTENT: Mapping[ArtifactKind, frozenset[str]] = {
     "connection": frozenset({
         "description", "src_multiplicity", "tgt_multiplicity", "specializations", "metadata",
     }),
+    "document": frozenset({
+        "title", "body", "keywords", "extra_frontmatter", "status", "version", "last_updated",
+        "group",
+    }),
+    "diagram": frozenset({
+        "puml", "name", "keywords", "diagram_entities", "diagram_connections", "entity_ids_used",
+        "connection_ids_used", "view_derivations", "bindings", "version", "status", "tlp",
+        "viewpoint", "edge_labels", "group", "authored_groupings", "manual_layout",
+    }),
+}
+
+#: What tells the applier how to behave rather than what the artifact should say. Never part of a
+#: proposal: a proposal records the change, and how a replay applies it is the replay's decision.
+MECHANICS: Mapping[ArtifactKind, frozenset[str]] = {
+    "entity": frozenset(),
+    "connection": frozenset(),
+    "document": frozenset(),
+    "diagram": frozenset({"replace_bindings", "rebuild_layout", "committed_repo"}),
 }
 
 
 def editable(kind: ArtifactKind) -> frozenset[str]:
     """Everything an edit of *kind* may name: what addresses the subject, and what it may change."""
     return ADDRESSING[kind] | CONTENT[kind]
+
+
+def accepted(kind: ArtifactKind) -> frozenset[str]:
+    """Everything the write function for *kind* takes, mechanics included."""
+    return editable(kind) | MECHANICS[kind]
