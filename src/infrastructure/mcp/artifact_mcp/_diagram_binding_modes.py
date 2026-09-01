@@ -14,6 +14,7 @@ from pathlib import Path
 from src.application.repo_path_helpers import diagram_source_root, resolve_diagram_source_path
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.mcp.artifact_mcp.write._common import _out
+from src.infrastructure.write.artifact_write.boundary import ENGAGEMENT
 from src.infrastructure.write.artifact_write.diagram_edit import edit_diagram
 from src.infrastructure.write.artifact_write.parse_existing import parse_diagram_file
 
@@ -161,6 +162,7 @@ def _apply_diff(
     mutation_context, clear_repo_caches = authoritative_callbacks_for(root)
 
     result = edit_diagram(
+        authority=ENGAGEMENT,
         repo_root=root,
         verifier=verifier,
         clear_repo_caches=clear_repo_caches,
@@ -260,6 +262,7 @@ def _detach_binding(
     mutation_context, clear_repo_caches = authoritative_callbacks_for(root)
 
     result = edit_diagram(
+        authority=ENGAGEMENT,
         repo_root=root,
         verifier=verifier,
         clear_repo_caches=clear_repo_caches,

@@ -11,7 +11,7 @@ from src.application.repo_path_helpers import diagram_source_root, resolve_diagr
 from src.application.verification.artifact_verifier import ArtifactVerifier
 
 from ._diagram_group_move import _verification_to_dict, commit_diagram_write
-from .boundary import assert_engagement_write_root, modification_stamp
+from .boundary import WriteAuthority, modification_stamp
 from .coerce import as_optional_str_list
 from .diagram_body_preparation import (
     _prepare_diagram_puml_body,
@@ -56,6 +56,7 @@ _VIEWPOINT_UNSET = object()
 
 def edit_diagram(
     *,
+    authority: WriteAuthority,
     repo_root: Path,
     verifier: ArtifactVerifier,
     clear_repo_caches: Callable[[Path], None],
@@ -105,7 +106,7 @@ def edit_diagram(
     from src.application.modeling.binding_normalize import normalize_bindings, strip_diagram_shorthand
     from src.domain.diagrams.bindings import bindings_to_raw
 
-    assert_engagement_write_root(repo_root)
+    authority.authorize(repo_root)
     warnings: list[str] = []
 
     _find = verifier.registry.find_file_by_id if verifier.registry is not None else None

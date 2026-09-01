@@ -14,6 +14,7 @@ import pytest
 
 from src.application.verification.artifact_verifier import ArtifactRegistry, ArtifactVerifier
 from src.infrastructure.artifact_index import shared_artifact_index
+from src.infrastructure.write.artifact_write.boundary import ENGAGEMENT
 from src.infrastructure.write.artifact_write.document import create_document, delete_document, edit_document
 
 
@@ -74,6 +75,7 @@ def test_edit_document_resolves_short_form_id(tmp_path: Path) -> None:
     short_id = "ADR@1000000010.ShortEd"
 
     result = edit_document(
+        authority=ENGAGEMENT,
         repo_root=repo,
         verifier=_verifier(repo),
         clear_repo_caches=lambda _path: None,
@@ -128,6 +130,7 @@ def test_edit_document_ambiguous_short_id_raises_not_found(tmp_path: Path) -> No
 
     with pytest.raises(ValueError, match="not found"):
         edit_document(
+            authority=ENGAGEMENT,
             repo_root=repo,
             verifier=_verifier(repo),
             clear_repo_caches=lambda _path: None,

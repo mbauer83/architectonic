@@ -29,6 +29,7 @@ from src.infrastructure.rest.routers._openapi import (
     WRITE_RESPONSES,
     WriteResultResponse,
 )
+from src.infrastructure.write.artifact_write.boundary import ENGAGEMENT
 
 router = APIRouter()
 
@@ -234,6 +235,7 @@ def edit_document(artifact_id: str, req: EditDocumentRequest,
         result = s.authorized_write(
             "documents_update_document",
             _edit,
+            authority=ENGAGEMENT,
             repo_root=repo_root,
             verifier=verifier,
             clear_repo_caches=s.clear_caches,

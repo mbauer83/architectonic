@@ -20,6 +20,7 @@ from src.infrastructure.mcp.artifact_mcp.context import (
 from src.infrastructure.mcp.artifact_mcp.write._common import _out
 from src.infrastructure.mcp.tool_annotations import DESTRUCTIVE_LOCAL_WRITE
 from src.infrastructure.write import artifact_write_ops
+from src.infrastructure.write.artifact_write.boundary import ENGAGEMENT
 
 PUML_AUTO_SYNC: Final[Literal["auto-sync"]] = "auto-sync"
 
@@ -282,6 +283,7 @@ def artifact_edit_diagram(
         kwargs["edge_labels"] = edge_labels
 
     result = artifact_write_ops.edit_diagram(
+        authority=ENGAGEMENT,
         repo_root=root,
         verifier=verifier,
         clear_repo_caches=clear_repo_caches,

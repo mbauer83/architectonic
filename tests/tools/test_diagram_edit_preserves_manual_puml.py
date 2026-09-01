@@ -19,6 +19,7 @@ from pathlib import Path
 
 from src.application.verification.artifact_verifier import ArtifactRegistry, ArtifactVerifier
 from src.infrastructure.artifact_index import shared_artifact_index
+from src.infrastructure.write.artifact_write.boundary import ENGAGEMENT
 from src.infrastructure.write.artifact_write.diagram_edit import edit_diagram
 
 
@@ -107,6 +108,7 @@ def test_status_only_edit_preserves_hand_authored_puml_with_occurrence(tmp_path:
     _make_archimate_diagram_with_occurrence(repo_root, artifact_id)
 
     result = edit_diagram(
+        authority=ENGAGEMENT,
         repo_root=repo_root,
         verifier=_verifier(repo_root),
         clear_repo_caches=_noop_caches,
@@ -128,6 +130,7 @@ def test_group_move_preserves_hand_authored_puml_with_occurrence(tmp_path: Path)
     _make_archimate_diagram_with_occurrence(repo_root, artifact_id)
 
     result = edit_diagram(
+        authority=ENGAGEMENT,
         repo_root=repo_root,
         verifier=_verifier(repo_root),
         clear_repo_caches=_noop_caches,

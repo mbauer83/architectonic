@@ -1,5 +1,7 @@
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal
 
 from src.config.workspace_paths import infer_repo_scope
 from src.domain.clock import utc_now_iso
@@ -45,6 +47,34 @@ def assert_enterprise_write_root(repo_root: Path) -> None:
     p = repo_root.resolve()
     if infer_repo_scope(p) != "enterprise":
         raise ValueError(f"Admin write expected enterprise repository root, got: {p}")
+
+
+@dataclass(frozen=True, slots=True)
+class WriteAuthority:
+    """Which repository a write is authorised against — the one thing that differs between the two.
+
+    An edit's computation does not depend on where the artifact lives: it reads the file, merges the
+    fields it was given, renders the result and verifies it, all from a `repo_root` it is handed.
+    What differs is which root the caller is allowed to name. Passing that in, rather than writing
+    the whole computation twice with a different first line, is what stopped the two entity edits
+    drifting — one of them had silently lost two editable fields.
+
+    Required at every call site rather than defaulted. A default here would be a default about which
+    repository may be written, and the wrong one is not an error anything downstream could catch.
+    """
+
+    name: Literal["engagement", "enterprise"]
+    assert_write_root: Callable[[Path], None]
+
+    def authorize(self, repo_root: Path) -> None:
+        self.assert_write_root(repo_root)
+
+
+#: Writes to an engagement repository — every standard MCP write tool and GUI endpoint.
+ENGAGEMENT = WriteAuthority(name="engagement", assert_write_root=assert_engagement_write_root)
+
+#: Writes to the enterprise repository — admin mode only.
+ENTERPRISE = WriteAuthority(name="enterprise", assert_write_root=assert_enterprise_write_root)
 
 
 def engagement_id_from_repo_root(repo_root: Path) -> str:

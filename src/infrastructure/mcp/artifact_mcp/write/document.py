@@ -11,6 +11,7 @@ from src.infrastructure.mcp.artifact_mcp.write._common import (
     verifier_for,
 )
 from src.infrastructure.mcp.tool_annotations import DESTRUCTIVE_LOCAL_WRITE, LOCAL_WRITE
+from src.infrastructure.write.artifact_write.boundary import ENGAGEMENT
 
 
 def artifact_create_document(
@@ -78,6 +79,7 @@ def artifact_edit_document(
     )
     mutation_context, clear_repo_caches = authoritative_callbacks_for(roots)
     result = artifact_write_ops.edit_document(
+        authority=ENGAGEMENT,
         repo_root=roots[0],
         verifier=verifier_for(roots_key(roots), include_registry=False),
         clear_repo_caches=clear_repo_caches,

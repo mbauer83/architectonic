@@ -9,11 +9,11 @@ from src.application.verification.artifact_verifier import ArtifactVerifier, Ver
 from src.config.repo_paths import DIAGRAM_CATALOG, DIAGRAMS
 
 from ._admin_commit import commit_with_verification, dry_result
-from .boundary import assert_enterprise_write_root, modification_stamp
+from .boundary import ENTERPRISE, assert_enterprise_write_root, modification_stamp
 from .diagram_delete import _delete_diagram_core
 from .types import WriteResult
 
-__all__ = ["_write_diagram_to_enterprise", "admin_delete_diagram"]
+__all__ = ["_write_diagram_to_enterprise", "admin_delete_diagram", "admin_edit_diagram"]
 
 
 def _diagram_verification(_path: Path, res: VerificationResult) -> dict[str, object]:
@@ -92,4 +92,47 @@ def admin_delete_diagram(
     assert_enterprise_write_root(repo_root)
     return _delete_diagram_core(
         repo_root=repo_root, clear_repo_caches=clear_repo_caches, artifact_id=artifact_id, dry_run=dry_run
+    )
+
+
+def admin_edit_diagram(
+    *,
+    repo_root: Path,
+    verifier: ArtifactVerifier,
+    clear_repo_caches: Callable[[Path], None],
+    artifact_id: str,
+    puml: str | None = None,
+    name: str | None = None,
+    keywords: list[str] | None = None,
+    version: str | None = None,
+    status: str | None = None,
+    dry_run: bool,
+) -> WriteResult:
+    """Edit a diagram in the enterprise repository, composed from the engagement computation.
+
+    `edit_diagram` never depended on which repository it was writing — every path it touches comes
+    from the `repo_root` it is handed, and its one engagement-specific line was the root assertion,
+    which is now a parameter. So this is that computation under the other authority rather than a
+    second copy of it.
+
+    The offered fields are the ones an enterprise diagram has: its body, its name, its keywords and
+    its lifecycle. Not offered, each for a reason that is about this repository rather than about
+    the computation — bindings, viewpoints and view derivations describe a diagram derived from a
+    *live* model, which a promoted diagram is not; `group` is a relocation the admin surface cannot
+    perform for any kind; and confidentiality is the assurance store's to decide, not an editor's.
+    """
+    from .diagram_edit import edit_diagram  # noqa: PLC0415
+
+    return edit_diagram(
+        authority=ENTERPRISE,
+        repo_root=repo_root,
+        verifier=verifier,
+        clear_repo_caches=clear_repo_caches,
+        artifact_id=artifact_id,
+        puml=puml,
+        name=name,
+        keywords=keywords,
+        version=version,
+        status=status,
+        dry_run=dry_run,
     )

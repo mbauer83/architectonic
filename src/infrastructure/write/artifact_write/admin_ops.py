@@ -12,15 +12,26 @@ directly — the same layer those functions use — keeping the boundary check
 entirely at the callsite level.
 
 Implementations are grouped by artifact family in admin_entity_ops,
-admin_connection_ops, and admin_diagram_ops; this module re-exports them as the
-stable import surface.
+admin_connection_ops, admin_diagram_ops and admin_document_ops; this module
+re-exports them as the stable import surface.
+
+The document and diagram edits are *composed* from the engagement ones rather than
+written again: those computations never depended on which repository they wrote,
+and their one engagement-specific line — the root assertion — is now a parameter.
+The entity edit is the reason. It was written twice, and the second copy silently
+lost two of the fields the first accepted.
 """
 
 from __future__ import annotations
 
 from ._entity_edit_support import _UNSET
 from .admin_connection_ops import admin_add_connection, admin_remove_connection
-from .admin_diagram_ops import _write_diagram_to_enterprise, admin_delete_diagram
+from .admin_diagram_ops import (
+    _write_diagram_to_enterprise,
+    admin_delete_diagram,
+    admin_edit_diagram,
+)
+from .admin_document_ops import admin_edit_document
 from .admin_entity_ops import admin_create_entity, admin_delete_entity, admin_edit_entity
 
 __all__ = [
@@ -30,6 +41,8 @@ __all__ = [
     "admin_create_entity",
     "admin_delete_entity",
     "admin_delete_diagram",
+    "admin_edit_diagram",
+    "admin_edit_document",
     "admin_edit_entity",
     "admin_remove_connection",
 ]

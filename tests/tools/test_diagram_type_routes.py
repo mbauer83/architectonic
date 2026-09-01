@@ -26,6 +26,7 @@ from src.infrastructure.rest.routers.diagrams.types import (
     list_diagram_types,
     read_diagram_kind_ui_config,
 )
+from src.infrastructure.write.artifact_write.boundary import ENGAGEMENT
 from src.infrastructure.write.artifact_write.connection import add_connection
 from src.infrastructure.write.artifact_write.diagram import create_diagram
 from src.infrastructure.write.artifact_write.diagram_edit import edit_diagram
@@ -303,6 +304,7 @@ def test_diagram_entities_round_trips_create_read_edit_read(repo_root: Path) -> 
         "steps": [{"type": "action", "id": "act-2", "label": "Validate", "lane_id": "sw-2"}],
     }
     edit_result = edit_diagram(
+        authority=ENGAGEMENT,
         repo_root=repo_root,
         verifier=_verifier(repo_root),
         clear_repo_caches=lambda _path: None,

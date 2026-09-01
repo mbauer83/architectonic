@@ -13,6 +13,7 @@ from pathlib import Path
 from src.application.verification.artifact_verifier import ArtifactRegistry, ArtifactVerifier
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.mcp import mcp_artifact_server as mcp
+from src.infrastructure.write.artifact_write.boundary import ENGAGEMENT
 from src.infrastructure.write.artifact_write.document import create_document, edit_document
 
 
@@ -66,6 +67,7 @@ def test_edit_document_group_relocates_file(tmp_path: Path) -> None:
     old_path = _make_adr(repo, artifact_id)
 
     result = edit_document(
+        authority=ENGAGEMENT,
         repo_root=repo,
         verifier=_verifier(repo),
         clear_repo_caches=lambda _: None,
@@ -95,6 +97,7 @@ def test_edit_document_group_dry_run_previews_without_moving(tmp_path: Path) -> 
     old_path = _make_adr(repo, artifact_id)
 
     result = edit_document(
+        authority=ENGAGEMENT,
         repo_root=repo,
         verifier=_verifier(repo),
         clear_repo_caches=lambda _: None,
@@ -124,6 +127,7 @@ def test_edit_document_omitting_group_preserves_current_location(tmp_path: Path)
     old_path = _make_adr(repo, artifact_id)
 
     result = edit_document(
+        authority=ENGAGEMENT,
         repo_root=repo,
         verifier=_verifier(repo),
         clear_repo_caches=lambda _: None,
