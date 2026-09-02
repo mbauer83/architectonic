@@ -69,7 +69,10 @@ def _spent_exceptions(now: datetime) -> list[str]:
     ]
 
 
-def _report(ecosystem: str, age: str, refusals: list[str], audits: tuple[AuditReport, ...]) -> int:
+def _report(
+    ecosystem: str, refusals: list[str], audits: tuple[AuditReport, ...], *, age: str
+) -> int:
+    """Say what the gate found. Composes its own separators, so no caller carries a trailing one."""
     problems = list(refusals) + [
         f"{report.audience}:\n{report.output}" for report in audits if not report.clean
     ]
@@ -78,21 +81,22 @@ def _report(ecosystem: str, age: str, refusals: list[str], audits: tuple[AuditRe
         for problem in problems:
             print(f"  {problem}")
         return 1
-    audited = ", ".join(str(report) for report in audits)
-    print(f"supply-chain gate OK ({ecosystem}): {age}{audited}")
+    print(f"supply-chain gate OK ({ecosystem}): " + "; ".join((age, *(str(r) for r in audits))))
     return 0
 
 
 def _check(ecosystem: str, now: datetime) -> int:
     if ecosystem == "npm":
-        return _report(ecosystem, "release age enforced at resolution by .npmrc; ", [], audit_npm())
+        return _report(
+            ecosystem, [], audit_npm(), age="release age enforced at resolution by .npmrc"
+        )
     entries, refusals = _too_young(now)
     hours = int(FLOOR.total_seconds() // 3600)
     return _report(
         ecosystem,
-        f"{entries} locked entries all at least {hours}h old; ",
         refusals + _spent_exceptions(now),
         audit_python_closures(),
+        age=f"{entries} locked entries all at least {hours}h old",
     )
 
 
