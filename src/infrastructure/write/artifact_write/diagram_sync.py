@@ -46,7 +46,7 @@ from ._sync_helpers import (
     resolve_connections,
     resolve_entities,
 )
-from .boundary import ENGAGEMENT, assert_engagement_write_root
+from .boundary import assert_engagement_write_root
 from .coerce import as_optional_str_list
 from .diagram_edit import edit_diagram
 from .diagram_membership import is_scope_bound, is_standalone
@@ -122,7 +122,7 @@ def refresh_diagram(
         # this adds no membership and removes none, which a refresh must never do.
         fm = parsed.frontmatter
         write_result = edit_diagram(
-        authority=ENGAGEMENT,
+        assert_write_root=assert_engagement_write_root,
             repo_root=repo_root,
             verifier=verifier,
             clear_repo_caches=clear_repo_caches,
@@ -348,7 +348,7 @@ def sync_diagram_to_model(
         # A hand-tuned picture the user has ruled better than any regeneration:
         # reconcile the BINDINGS against the model, keep the body verbatim.
         write_result = edit_diagram(
-        authority=ENGAGEMENT,
+        assert_write_root=assert_engagement_write_root,
             repo_root=repo_root,
             verifier=verifier,
             clear_repo_caches=clear_repo_caches,
@@ -385,7 +385,7 @@ def sync_diagram_to_model(
     )
 
     write_result = edit_diagram(
-        authority=ENGAGEMENT,
+        assert_write_root=assert_engagement_write_root,
         repo_root=repo_root,
         verifier=verifier,
         clear_repo_caches=clear_repo_caches,

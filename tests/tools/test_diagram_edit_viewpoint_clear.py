@@ -21,7 +21,7 @@ import yaml
 
 from src.application.verification.artifact_verifier import ArtifactRegistry, ArtifactVerifier
 from src.infrastructure.artifact_index import shared_artifact_index
-from src.infrastructure.write.artifact_write.boundary import ENGAGEMENT
+from src.infrastructure.write.artifact_write.boundary import assert_engagement_write_root
 from src.infrastructure.write.artifact_write.diagram_edit import edit_diagram
 
 
@@ -79,7 +79,7 @@ def test_omitting_viewpoint_keeps_existing_application(tmp_path: Path) -> None:
     _make_diagram_with_viewpoint(repo_root, artifact_id)
 
     result = edit_diagram(
-        authority=ENGAGEMENT,
+        assert_write_root=assert_engagement_write_root,
         repo_root=repo_root, verifier=_verifier(repo_root), clear_repo_caches=_noop_caches,
         artifact_id=artifact_id, status="active", dry_run=True,
     )
@@ -95,7 +95,7 @@ def test_explicit_none_clears_existing_application(tmp_path: Path) -> None:
     _make_diagram_with_viewpoint(repo_root, artifact_id)
 
     result = edit_diagram(
-        authority=ENGAGEMENT,
+        assert_write_root=assert_engagement_write_root,
         repo_root=repo_root, verifier=_verifier(repo_root), clear_repo_caches=_noop_caches,
         artifact_id=artifact_id, viewpoint=None, dry_run=True,
     )
@@ -111,7 +111,7 @@ def test_mapping_replaces_existing_application(tmp_path: Path) -> None:
     _make_diagram_with_viewpoint(repo_root, artifact_id)
 
     result = edit_diagram(
-        authority=ENGAGEMENT,
+        assert_write_root=assert_engagement_write_root,
         repo_root=repo_root, verifier=_verifier(repo_root), clear_repo_caches=_noop_caches,
         artifact_id=artifact_id, viewpoint={"slug": "layered", "version": 2}, dry_run=True,
     )

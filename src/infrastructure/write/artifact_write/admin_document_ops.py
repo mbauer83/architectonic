@@ -7,10 +7,10 @@ thing you promoted" had no answer for two of the three kinds.
 
 **Composed, not written again.** `edit_document` and `edit_diagram` never depended on which
 repository they were writing: every path they touch is derived from a `repo_root` they are handed,
-and the single engagement-specific line was the root assertion. That assertion is now a parameter —
-`WriteAuthority` — so these are the same computation under the other authority rather than a second
-copy of it. The second copy is what this stage exists to stop: the entity edit had one, and it had
-silently lost two editable fields.
+and the single engagement-specific line was the root assertion. That assertion is now a parameter,
+so these are the same computation under the other authority rather than a second copy of it. The
+second copy is what this stage exists to stop: the entity edit had one, and it had silently lost two
+editable fields.
 
 `group` is deliberately not offered. It is a relocation — for a document it moves the file between
 `docs/<type>/<group>/` directories — and the admin surface can neither create into a group nor move
@@ -24,7 +24,7 @@ from pathlib import Path
 
 from src.application.verification.artifact_verifier import ArtifactVerifier
 
-from .boundary import ENTERPRISE
+from .boundary import assert_enterprise_write_root
 from .document import edit_document
 from .types import WriteResult
 
@@ -48,7 +48,7 @@ def admin_edit_document(
 ) -> WriteResult:
     """Edit a document in the enterprise repository, over the vocabulary an engagement edit has."""
     return edit_document(
-        authority=ENTERPRISE,
+        assert_write_root=assert_enterprise_write_root,
         repo_root=repo_root,
         verifier=verifier,
         clear_repo_caches=clear_repo_caches,

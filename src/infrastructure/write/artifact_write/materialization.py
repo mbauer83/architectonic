@@ -13,7 +13,7 @@ from pathlib import Path
 from src.config.repo_paths import DIAGRAM_CATALOG, DIAGRAMS
 from src.domain.diagrams.bindings import Binding, BindingSubject, Target, bindings_to_raw
 
-from .boundary import ENGAGEMENT
+from .boundary import assert_engagement_write_root
 
 
 @dataclass(frozen=True)
@@ -201,7 +201,7 @@ def materialize_entity(
 
     try:
         dgr_result = edit_diagram(
-        authority=ENGAGEMENT,
+        assert_write_root=assert_engagement_write_root,
             repo_root=repo_root, verifier=verifier, clear_repo_caches=clear_repo_caches,  # type: ignore[arg-type]
             artifact_id=ref.diagram_id, bindings=final_raw, replace_bindings=True, dry_run=False,
         )
@@ -317,7 +317,7 @@ def materialize_connection(
 
     try:
         dgr_result = edit_diagram(
-        authority=ENGAGEMENT,
+        assert_write_root=assert_engagement_write_root,
             repo_root=repo_root, verifier=verifier, clear_repo_caches=clear_repo_caches,  # type: ignore[arg-type]
             artifact_id=ref.diagram_id, bindings=final_raw, replace_bindings=True, dry_run=False,
         )

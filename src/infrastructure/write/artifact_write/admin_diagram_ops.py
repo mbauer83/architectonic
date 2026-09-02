@@ -9,7 +9,7 @@ from src.application.verification.artifact_verifier import ArtifactVerifier, Ver
 from src.config.repo_paths import DIAGRAM_CATALOG, DIAGRAMS
 
 from ._admin_commit import commit_with_verification, dry_result
-from .boundary import ENTERPRISE, assert_enterprise_write_root, modification_stamp
+from .boundary import assert_enterprise_write_root, modification_stamp
 from .diagram_delete import _delete_diagram_core
 from .types import WriteResult
 
@@ -124,7 +124,7 @@ def admin_edit_diagram(
     from .diagram_edit import edit_diagram  # noqa: PLC0415
 
     return edit_diagram(
-        authority=ENTERPRISE,
+        assert_write_root=assert_enterprise_write_root,
         repo_root=repo_root,
         verifier=verifier,
         clear_repo_caches=clear_repo_caches,

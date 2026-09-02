@@ -16,7 +16,7 @@ from src.infrastructure.atomic_file import write_atomic
 from ._artifact_deduplication import extract_friendly_slug, get_repository, validate_document_unique
 from ._document_group_move import _doc_dir, _resolve_document_group_path
 from ._document_placeholder import _build_placeholder_body, _validate_section_templates
-from .boundary import WriteAuthority, assert_engagement_write_root, modification_stamp
+from .boundary import assert_engagement_write_root, modification_stamp
 from .coerce import as_optional_str_list
 from .file_transaction import FileChange, commit_file_changes
 from .types import WriteResult
@@ -277,7 +277,7 @@ def _resolve_document_path(docs_root: Path, artifact_id: str) -> Path | None:
 
 def edit_document(
     *,
-    authority: WriteAuthority,
+    assert_write_root: Callable[[Path], None],
     repo_root: Path,
     verifier: ArtifactVerifier,
     clear_repo_caches: Callable[[Path], None],
@@ -292,7 +292,7 @@ def edit_document(
     group: str | None = None,
     dry_run: bool,
 ) -> WriteResult:
-    authority.authorize(repo_root)
+    assert_write_root(repo_root)
 
     docs_root = repo_root / DOCS
     path = _resolve_document_path(docs_root, artifact_id)

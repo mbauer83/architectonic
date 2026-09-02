@@ -113,7 +113,7 @@ class TestTheCatalogueIsTheOneSpellingOfTheVocabulary:
             "diagram": "src.infrastructure.write.artifact_write.diagram_edit",
         }[kind]
         function = getattr(importlib.import_module(module), writer)
-        assert catalogue.accepted(kind) == _fields(function) - {"authority"}  # type: ignore[arg-type]
+        assert catalogue.accepted(kind) == _fields(function) - {"assert_write_root"}  # type: ignore[arg-type]
 
     def test_mechanics_are_never_proposable(self) -> None:
         """A proposal says what the artifact should say; how a replay applies it is the replay's."""

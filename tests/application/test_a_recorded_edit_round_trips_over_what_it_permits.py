@@ -105,7 +105,5 @@ class TestTheReaderRefusesWhatTheUnionDoesNot:
 
 def test_the_union_admits_exactly_the_three_referenceable_kinds() -> None:
     """A fourth arm is a decision about what a global artifact reference stands for."""
-    from src.application.modeling.proposal_edit import arms
-
-    assert arms() == ("entity", "document", "diagram")
-    assert "connection" not in arms()
+    assert PROPOSABLE == ("entity", "document", "diagram")
+    assert "connection" not in PROPOSABLE

@@ -25,7 +25,7 @@ from src.application.verification._verifier_rules_edge_labels import check_edge_
 from src.application.verification.artifact_verifier_types import Severity, VerificationResult
 from src.diagram_types.c4.renderer import C4PumlRenderer
 from src.infrastructure.mcp import mcp_artifact_server as mcp
-from src.infrastructure.write.artifact_write.boundary import ENGAGEMENT
+from src.infrastructure.write.artifact_write.boundary import assert_engagement_write_root
 
 
 @lru_cache(maxsize=1)
@@ -489,7 +489,7 @@ def test_mcp_edge_labels_null_value_clears_key(repo: Path) -> None:
     # Seed the diagram with two labels (dry_run=True only checks content, no file write)
     # We simulate the merged state by writing the map directly via edit_diagram
     r1 = edit_diagram(
-        authority=ENGAGEMENT,
+        assert_write_root=assert_engagement_write_root,
         repo_root=repo,
         verifier=verifier,
         clear_repo_caches=lambda _: None,
@@ -520,7 +520,7 @@ def test_mcp_edge_labels_merges_with_existing(repo: Path) -> None:
 
     # Set two labels by building the full map in a single dry_run call
     r1 = edit_diagram(
-        authority=ENGAGEMENT,
+        assert_write_root=assert_engagement_write_root,
         repo_root=repo,
         verifier=verifier,
         clear_repo_caches=lambda _: None,

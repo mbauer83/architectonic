@@ -37,7 +37,7 @@ from src.infrastructure.rest.routers.diagrams._write_responses import (
     SyncDiagramToModelResponse,
     created,
 )
-from src.infrastructure.write.artifact_write.boundary import ENGAGEMENT
+from src.infrastructure.write.artifact_write.boundary import assert_engagement_write_root
 
 router = APIRouter(responses=WRITE_RESPONSES)
 
@@ -221,7 +221,7 @@ def edit_diagram_gui(artifact_id: str, body: EditDiagramGuiBody,
         result = s.authorized_write(
             "diagrams_replace_diagram", 
             edit_diagram,
-            authority=ENGAGEMENT,
+            assert_write_root=assert_engagement_write_root,
             repo_root=repo_root,
             verifier=verifier,
             clear_repo_caches=s.clear_caches,

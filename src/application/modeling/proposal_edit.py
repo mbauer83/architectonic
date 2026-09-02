@@ -84,10 +84,6 @@ class ProposalEdit:
             raise UnproposableEdit("a proposed edit that changes nothing is not a change")
 
 
-def arms() -> tuple[ArtifactKind, ...]:
-    """The union's members. One derivation, so a fourth arm is a decision about GAR scope."""
-    return PROPOSABLE
-
 
 #: The recorded form's keys. Hyphenated to match the frontmatter vocabulary the rest of the model
 #: uses, and named once so the writer and the reader cannot spell them differently.

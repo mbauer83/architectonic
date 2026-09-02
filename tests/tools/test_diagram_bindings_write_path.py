@@ -20,7 +20,7 @@ from src.application.modeling.binding_normalize import normalize_bindings, strip
 from src.application.modeling.diagram_file_format import format_diagram_puml
 from src.application.verification.artifact_verifier import ArtifactRegistry, ArtifactVerifier
 from src.infrastructure.artifact_index import shared_artifact_index
-from src.infrastructure.write.artifact_write.boundary import ENGAGEMENT
+from src.infrastructure.write.artifact_write.boundary import assert_engagement_write_root
 from src.infrastructure.write.artifact_write.diagram import create_diagram
 from src.infrastructure.write.artifact_write.diagram_edit import edit_diagram
 from src.infrastructure.write.artifact_write.parse_existing import parse_diagram_file
@@ -488,7 +488,7 @@ def test_edit_diagram_merges_existing_and_new_bindings(tmp_path):
          "target": {"entity_id": "APP@1.a.app"}}
     ]
     result = edit_diagram(
-        authority=ENGAGEMENT,
+        assert_write_root=assert_engagement_write_root,
         repo_root=repo_root,
         verifier=_verifier(repo_root),
         clear_repo_caches=_noop_caches,
@@ -513,7 +513,7 @@ def test_edit_diagram_normalizes_shorthand_in_new_entities(tmp_path):
 
     de = {"container": [{"id": "c1", "label": "X", "entity_id": "APP@1.a.app"}]}
     result = edit_diagram(
-        authority=ENGAGEMENT,
+        assert_write_root=assert_engagement_write_root,
         repo_root=repo_root,
         verifier=_verifier(repo_root),
         clear_repo_caches=_noop_caches,

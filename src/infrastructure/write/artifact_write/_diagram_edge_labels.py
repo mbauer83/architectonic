@@ -11,7 +11,7 @@ from pathlib import Path
 from src.application.repo_path_helpers import diagram_source_root, resolve_diagram_source_path
 from src.application.verification.artifact_verifier import ArtifactVerifier
 
-from .boundary import ENGAGEMENT
+from .boundary import assert_engagement_write_root
 from .parse_existing import parse_diagram_file
 from .types import WriteResult
 
@@ -48,7 +48,7 @@ def set_diagram_edge_label(
         current[edge_key] = label
 
     return edit_diagram(
-        authority=ENGAGEMENT,
+        assert_write_root=assert_engagement_write_root,
         repo_root=repo_root,
         verifier=verifier,
         clear_repo_caches=clear_repo_caches,

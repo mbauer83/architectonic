@@ -5,7 +5,7 @@ from pathlib import Path
 
 from src.application.verification.artifact_verifier import ArtifactRegistry, ArtifactVerifier
 from src.infrastructure.artifact_index import shared_artifact_index
-from src.infrastructure.write.artifact_write.boundary import ENGAGEMENT
+from src.infrastructure.write.artifact_write.boundary import assert_engagement_write_root
 from src.infrastructure.write.artifact_write.document import create_document, edit_document
 
 
@@ -242,7 +242,7 @@ def test_edit_document_refuses_invalid_update(tmp_path: Path) -> None:
 
     original = created.path.read_text(encoding="utf-8")
     result = edit_document(
-        authority=ENGAGEMENT,
+        assert_write_root=assert_engagement_write_root,
         repo_root=repo,
         verifier=_verifier(repo),
         clear_repo_caches=lambda _path: None,

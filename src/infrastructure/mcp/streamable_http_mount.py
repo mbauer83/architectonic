@@ -33,7 +33,7 @@ def _flag(name: str, default: str) -> bool:
     return os.getenv(name, default) in _TRUE
 
 
-def host() -> str:
+def _host() -> str:
     """The host the transport answers on. Seeds the SDK's DNS-rebinding defaults."""
     return os.getenv("ARCH_MCP_HOST", "127.0.0.1")
 
@@ -50,6 +50,6 @@ def mounted(server: MCPServer, path: str) -> StreamableHTTPASGIApp:
         json_response=_flag("ARCH_MCP_JSON_RESPONSE", "0"),
         stateless_http=_flag("ARCH_MCP_STATELESS_HTTP", "1"),
         transport_security=build_transport_security(),
-        host=host(),
+        host=_host(),
     )
     return StreamableHTTPASGIApp(server.session_manager)
