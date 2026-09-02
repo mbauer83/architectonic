@@ -6,6 +6,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from src.application.modeling.edit_field_catalogue import CONTENT, ArtifactKind
 from src.application.verification.artifact_verifier import ArtifactRegistry, ArtifactVerifier
 from src.domain.repository.groups import UNCATEGORIZED
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
@@ -13,8 +14,6 @@ from src.infrastructure.mcp.artifact_mcp.context import expand_artifact_id
 from src.infrastructure.mcp.artifact_mcp.write._common import _out
 from src.infrastructure.verification.verifier_factory import build_artifact_verifier
 from src.infrastructure.write import artifact_write_ops
-from src.infrastructure.write.artifact_write.connection_edit import _UNSET as _CONN_UNSET
-from src.infrastructure.write.artifact_write.entity_edit import _UNSET as _ENTITY_UNSET
 
 from .common import resolve_ref, strip_content
 
@@ -183,6 +182,18 @@ def apply_edits(
     return skipped
 
 
+def _changes(item: dict[str, Any], kind: ArtifactKind) -> dict[str, Any]:
+    """The fields *item* asks to change, taken from the catalogue rather than listed again here.
+
+    An absent field is omitted rather than passed as a sentinel, so each write parameter takes its
+    own default — which is what distinguishes "not provided" from "set to nothing", and differs per
+    parameter. Listing them here meant knowing which sentinel each one used, and the list drifted:
+    `edit_connection` accepted `specializations` and `metadata`, and passed neither, so a caller
+    setting a connection's specializations was told `wrote: true` and got no change.
+    """
+    return {field: item[field] for field in CONTENT[kind] if field in item}
+
+
 def _apply_single_edit(
     *,
     item: dict[str, Any],
@@ -199,17 +210,8 @@ def _apply_single_edit(
             verifier=verifier,
             clear_repo_caches=clear_repo_caches,
             artifact_id=expand_artifact_id(registry, str(item["artifact_id"])),
-            name=item.get("name"),
-            summary=item["summary"] if "summary" in item else _ENTITY_UNSET,
-            properties=item["properties"] if "properties" in item else _ENTITY_UNSET,
-            attribute_types=item["attribute_types"] if "attribute_types" in item else _ENTITY_UNSET,
-            notes=item["notes"] if "notes" in item else _ENTITY_UNSET,
-            keywords=item["keywords"] if "keywords" in item else _ENTITY_UNSET,
-            specializations=item["specializations"] if "specializations" in item else _ENTITY_UNSET,
-            version=item.get("version"),
-            status=item.get("status"),
-            group=item.get("group"),
             dry_run=False,
+            **_changes(item, "entity"),
         )
     source_entity = expand_artifact_id(registry, str(item["source_entity"]))
     target_entity = expand_artifact_id(registry, str(item["target_entity"]))
@@ -232,10 +234,8 @@ def _apply_single_edit(
         source_entity=source_entity,
         target_entity=target_entity,
         connection_type=item["connection_type"],
-        description=item.get("description"),
-        src_multiplicity=item["src_multiplicity"] if "src_multiplicity" in item else _CONN_UNSET,
-        tgt_multiplicity=item["tgt_multiplicity"] if "tgt_multiplicity" in item else _CONN_UNSET,
         dry_run=False,
+        **_changes(item, "connection"),
     )
 
 
