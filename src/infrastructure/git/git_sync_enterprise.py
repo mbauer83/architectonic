@@ -44,6 +44,32 @@ class ReconcileOutcome:
     completed: bool
 
 
+def _close_changes_the_fetch_may_have_brought_in() -> None:
+    """Close proposed changes the fetch just brought in, if any.
+
+    Here rather than only at startup because this is the moment the enterprise repository moves while
+    the process is running: a reviewer merges a change, the next poll fetches it, and until the sweep
+    runs the author still sees their own accepted work as pending — and a rebase would report it as a
+    conflict against itself.
+
+    Every failure is swallowed and logged. This is a background poll whose job is to keep sync state
+    truthful; a sweep fault must not make the poll look like a sync failure, which would block writes
+    on a health record about something else entirely.
+    """
+    from src.infrastructure.rest.routers.state import maybe_get_repo  # noqa: PLC0415
+    from src.infrastructure.write.artifact_write.integration_cleanup import (  # noqa: PLC0415
+        close_integrated_changes,
+    )
+
+    repo = maybe_get_repo()
+    if repo is None:
+        return
+    try:
+        close_integrated_changes(repo)
+    except Exception:  # noqa: BLE001 — a poll must not fail over a sweep
+        logger.exception("Could not sweep integrated changes after fetch")
+
+
 async def sync_enterprise(sync: GitSyncManager, root: Path) -> None:
     if not await sync._is_git_repo(root):
         return
@@ -59,6 +85,8 @@ async def sync_enterprise(sync: GitSyncManager, root: Path) -> None:
             return
         case Fetched():
             pass
+
+    _close_changes_the_fetch_may_have_brought_in()
 
     outcome = await reconcile_state(sync, root)
     state = outcome.lifecycle

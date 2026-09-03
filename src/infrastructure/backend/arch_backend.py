@@ -350,6 +350,31 @@ def _reconcile_submission_in_flight(enterprise_root: "Path | None") -> None:
         logger.warning("Submission reconciliation on startup: %s", outcome.summary)
 
 
+def _close_changes_already_integrated(repo: "ArtifactRepository") -> None:
+    """Close proposed changes the enterprise repository already carries.
+
+    After the repository is built, because the sweep spans both mounts: the proposals are in the
+    engagement repository and their targets in the enterprise one. Before the duplicate scans, so a
+    served request never sees a change reported as pending against an artifact that already carries
+    it.
+
+    Like the submission reconciliation above, it may never prevent the backend from starting — it
+    reads and writes files, and a fault in one proposal is not a reason to refuse to serve the rest
+    of the repository.
+    """
+    from src.infrastructure.write.artifact_write.integration_cleanup import (  # noqa: PLC0415
+        close_integrated_changes,
+    )
+
+    try:
+        report = close_integrated_changes(repo)
+    except Exception:  # noqa: BLE001 — startup must survive any sweep fault
+        logger.exception("Could not sweep integrated changes; continuing startup")
+        return
+    if report.changed_anything:
+        logger.info("Integration sweep on startup: %s", report.summary())
+
+
 def _initialise_repo(
     repo_root_path: Path, enterprise_root_path: Path | None, args: argparse.Namespace
 ) -> "ArtifactRepository":
@@ -389,6 +414,7 @@ def _initialise_repo(
         ),
     )
     repo.refresh()
+    _close_changes_already_integrated(repo)
     assert_no_duplicate_short_ids(index)
     assert_no_cross_repo_id_collisions(index)
     return repo
