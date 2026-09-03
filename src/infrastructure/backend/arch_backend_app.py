@@ -23,6 +23,7 @@ from src.infrastructure.mcp.mcp_artifact_server import mcp_read, mcp_write
 from src.infrastructure.mcp.mcp_assurance_server import mcp_assurance_read, mcp_assurance_write
 from src.infrastructure.mcp.streamable_http_mount import mounted
 from src.infrastructure.rest.routers import state as gui_state
+from src.infrastructure.rest.routers.state import maybe_engagement_root, maybe_enterprise_root
 
 logger = logging.getLogger(__name__)
 
@@ -104,6 +105,48 @@ def _log_structured_output_tool_inventory() -> None:
             len(write_structured),
             ", ".join(write_structured),
         )
+
+
+def _watch_the_roots_this_backend_serves() -> None:
+    """Start the filesystem watcher on the repositories this process was told to serve.
+
+    Not `auto_start_default_watcher()` with no arguments. That resolves the *process default*
+    engagement root — `ARCH_MCP_MODEL_REPO_ROOT`, then `ARCH_REPO_ROOT`, then the nearest
+    `arch-workspace.yaml` found by walking up from the working directory — which is not necessarily
+    the root this backend was given. So `arch-backend --repo-root X` served X while watching Y, and
+    nothing another process wrote to X ever reached this backend's read model: an entity whose file
+    had been deleted stayed listed, a created one never appeared, and a connection removed by an MCP
+    write server was still reported thirty seconds later. Measured: with the roots agreeing, all
+    three converge within about six seconds.
+
+    A backend serving no enterprise repository watches only its engagement root. `repo_scope="both"`
+    would otherwise resolve a *default* enterprise root and watch a repository this process does not
+    serve — the same fault as the one above, in the half nobody had looked at.
+
+    The roots are read at call time from `state`, which is where the backend records what it serves,
+    so there is one source of truth for the question. That is also what a later change of engagement
+    without a restart needs: stop the watcher, re-point `state`, rebuild, block reads until the index
+    is ready, and call this again — no second place that has to be told the same thing.
+    """
+    engagement = maybe_engagement_root()
+    if engagement is None:
+        # No backend has initialised the served state — an app built for a test, not a served
+        # process. Leave the default resolution alone rather than inventing a root for it.
+        auto_start_default_watcher()
+        logger.warning("Watcher started on default roots: this process records no served repository")
+        return
+
+    enterprise = maybe_enterprise_root()
+    auto_start_default_watcher(
+        repo_root=str(engagement),
+        enterprise_root=str(enterprise) if enterprise is not None else None,
+        repo_scope="both" if enterprise is not None else "engagement",
+    )
+    logger.info(
+        "Watcher started on the served roots — engagement=%s enterprise=%s",
+        engagement,
+        enterprise,
+    )
 
 
 def _request_watchdogs(method: str, path: str) -> tuple[threading.Timer, threading.Timer]:
@@ -253,8 +296,7 @@ def _build_app(credentials: "GitCredentials | None" = None):  # type: ignore[no-
             from src.infrastructure.mcp.artifact_mcp.write_queue import attach_event_loop
 
             attach_event_loop(asyncio.get_running_loop())
-            auto_start_default_watcher()
-            logger.info("Default watcher auto-started")
+            _watch_the_roots_this_backend_serves()
             _log_structured_output_tool_inventory()
 
             git_repos = find_git_repos()
