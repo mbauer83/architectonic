@@ -12,7 +12,7 @@ this file no matter what the tool did.
 
 The last two tests are the ones that keep the preview honest. A preview is only useful if it refuses
 exactly what the live call refuses, so the checks live in one function
-(``enterprise_git_ops.submission_preflight``) that the push itself calls — and one test pins the
+(``enterprise_branch_lifecycle.submission_preflight``) that the push itself calls — and one test pins the
 messages to each other rather than to a literal, while the other proves the push still routes
 through it and has not grown a second copy.
 """
@@ -24,7 +24,7 @@ from pathlib import Path
 
 import pytest
 
-from src.infrastructure.git import enterprise_git_ops, enterprise_sync_state
+from src.infrastructure.git import enterprise_branch_lifecycle, enterprise_sync_state, git_work_commits
 from src.infrastructure.mcp.artifact_mcp.write.sync_ops import artifact_submit_for_review
 from tests.support.git_workflow_fixtures import build_workflow_pair, git, write_entity
 
@@ -36,9 +36,9 @@ def enterprise(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(
         "src.infrastructure.rest.routers.state.maybe_enterprise_root", lambda: enterprise_root
     )
-    enterprise_git_ops.ensure_working_branch(enterprise_root)
+    enterprise_branch_lifecycle.ensure_working_branch(enterprise_root)
     write_entity(enterprise_root, "REQ@1000001102.SubRvw.submit-work", "Submit Work")
-    enterprise_git_ops.commit_enterprise_work(enterprise_root, "work to submit")
+    git_work_commits.commit_enterprise_work(enterprise_root, "work to submit")
     return enterprise_root
 
 
@@ -120,10 +120,10 @@ def test_the_submission_still_routes_through_the_preflight(
     def refuse(_root: Path) -> str:
         raise sentinel
 
-    monkeypatch.setattr(enterprise_git_ops, "submission_preflight", refuse)
+    monkeypatch.setattr(enterprise_branch_lifecycle, "submission_preflight", refuse)
 
     with pytest.raises(RuntimeError) as raised:
-        enterprise_git_ops.push_enterprise_branch(enterprise)
+        enterprise_branch_lifecycle.push_enterprise_branch(enterprise)
 
     assert raised.value is sentinel
 

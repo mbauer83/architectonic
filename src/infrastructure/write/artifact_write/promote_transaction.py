@@ -66,18 +66,18 @@ class GitWorktreeTransaction:
     _checkpoint: str | None = None
 
     def begin(self) -> None:
-        from src.infrastructure.git.enterprise_git_ops import checkpoint_worktree  # noqa: PLC0415
+        from src.infrastructure.git.git_worktree_checkpoint import checkpoint_worktree  # noqa: PLC0415
 
         self._head, self._checkpoint = checkpoint_worktree(self.enterprise_root)
 
     def commit(self) -> None:
-        from src.infrastructure.git.enterprise_git_ops import release_worktree_checkpoint  # noqa: PLC0415
+        from src.infrastructure.git.git_worktree_checkpoint import release_worktree_checkpoint  # noqa: PLC0415
 
         if self._head is not None and self._checkpoint is not None:
             release_worktree_checkpoint(self.enterprise_root, head=self._head, checkpoint=self._checkpoint)
 
     def abort(self) -> None:
-        from src.infrastructure.git.enterprise_git_ops import restore_worktree_checkpoint  # noqa: PLC0415
+        from src.infrastructure.git.git_worktree_checkpoint import restore_worktree_checkpoint  # noqa: PLC0415
 
         if self._head is None or self._checkpoint is None:
             raise RuntimeError("GitWorktreeTransaction.abort called before begin")

@@ -212,7 +212,7 @@ def promotion_execute(
             "rolled_back": False,
         }
 
-    from src.infrastructure.git.enterprise_git_ops import ensure_working_branch
+    from src.infrastructure.git.enterprise_branch_lifecycle import ensure_working_branch
     from src.infrastructure.write.artifact_write.promote_transaction import GitWorktreeTransaction
 
     resolutions = [

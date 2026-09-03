@@ -27,7 +27,8 @@ _dirty = True
 
 async def _measure() -> dict[str, Any]:
     """Expensive git probes only — the cacheable part of the status."""
-    from src.infrastructure.git import enterprise_git_ops
+
+    from src.infrastructure.git import git_repository_state
     from src.infrastructure.rest.routers import state as s
 
     measurements: dict[str, Any] = {"engagement_dirty": None, "enterprise_dirty": None, "commits_ahead": None}
@@ -35,16 +36,16 @@ async def _measure() -> dict[str, Any]:
     eng_root = s.maybe_engagement_root()
     if eng_root is not None:
         measurements["engagement_dirty"] = await asyncio.to_thread(
-            enterprise_git_ops.has_uncommitted_changes, eng_root, MODEL, DOCS, DIAGRAM_CATALOG
+            git_repository_state.has_uncommitted_changes, eng_root, MODEL, DOCS, DIAGRAM_CATALOG
         )
 
     ent_root = s.maybe_enterprise_root()
     if ent_root is not None:
         measurements["enterprise_dirty"] = await asyncio.to_thread(
-            enterprise_git_ops.has_uncommitted_changes, ent_root
+            git_repository_state.has_uncommitted_changes, ent_root
         )
         # Live ahead-count in every mode (including read-only): behind-state must be truthful.
-        measurements["commits_ahead"] = await asyncio.to_thread(enterprise_git_ops.commits_ahead_of_main, ent_root)
+        measurements["commits_ahead"] = await asyncio.to_thread(git_repository_state.commits_ahead_of_main, ent_root)
 
     return measurements
 

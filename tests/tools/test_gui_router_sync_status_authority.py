@@ -13,7 +13,7 @@ import pytest
 
 from src.application.artifacts.query import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
-from src.infrastructure.git import enterprise_git_ops, enterprise_sync_state
+from src.infrastructure.git import enterprise_branch_lifecycle, enterprise_sync_state, git_work_commits
 from src.infrastructure.rest.routers import state as gui_state
 from src.infrastructure.rest.routers.sync import status_cache as sync_status_cache
 from src.infrastructure.rest.routers.sync.router import router as sync_router
@@ -110,7 +110,7 @@ class TestAuthorityFreshness:
 class TestLifecycleRows:
     def test_accumulating_clean_ahead_zero(self, workspace) -> None:
         client, _, enterprise = workspace
-        enterprise_git_ops.ensure_working_branch(enterprise)
+        enterprise_branch_lifecycle.ensure_working_branch(enterprise)
         sync_status_cache.reset_sync_status_cache()
         payload = client.get("/api/sync/status").json()["enterprise"]
         assert payload["status"] == "accumulating"
@@ -119,10 +119,10 @@ class TestLifecycleRows:
 
     def test_pending_dirty_is_reported_truthfully(self, workspace) -> None:
         client, _, enterprise = workspace
-        enterprise_git_ops.ensure_working_branch(enterprise)
+        enterprise_branch_lifecycle.ensure_working_branch(enterprise)
         write_entity(enterprise, "REQ@1000001001.StaPen.pending-probe", "Pending Probe")
-        enterprise_git_ops.commit_enterprise_work(enterprise, "work")
-        enterprise_git_ops.push_enterprise_branch(enterprise)
+        git_work_commits.commit_enterprise_work(enterprise, "work")
+        enterprise_branch_lifecycle.push_enterprise_branch(enterprise)
         write_entity(enterprise, "REQ@1000001002.StaDrt.dirty-probe", "Dirty Probe")
         sync_status_cache.reset_sync_status_cache()
         payload = client.get("/api/sync/status").json()["enterprise"]
@@ -131,9 +131,9 @@ class TestLifecycleRows:
 
     def test_read_only_mode_still_measures_ahead_counts(self, workspace) -> None:
         client, engagement, enterprise = workspace
-        enterprise_git_ops.ensure_working_branch(enterprise)
+        enterprise_branch_lifecycle.ensure_working_branch(enterprise)
         write_entity(enterprise, "REQ@1000001003.StaAhd.ahead-probe", "Ahead Probe")
-        enterprise_git_ops.commit_enterprise_work(enterprise, "ahead work")
+        git_work_commits.commit_enterprise_work(enterprise, "ahead work")
         _install(engagement, enterprise, read_only=True)
         sync_status_cache.reset_sync_status_cache()
         payload = client.get("/api/sync/status").json()["enterprise"]

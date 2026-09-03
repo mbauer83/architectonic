@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from src.infrastructure.git.enterprise_git_ops import commit_engagement_work
+from src.infrastructure.git.git_work_commits import commit_engagement_work
 
 
 def _git(repo: Path, *args: str) -> str:

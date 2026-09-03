@@ -99,7 +99,7 @@ def _status_label(status: str) -> str:
     response_model_exclude_none=True)
 async def save_engagement(body: SaveBody) -> dict:
     """Commit (and optionally push) all engagement repository changes."""
-    from src.infrastructure.git import enterprise_git_ops
+    from src.infrastructure.git import git_work_commits
     from src.infrastructure.rest.routers import state as s
     from src.infrastructure.rest.routers.events import event_bus
 
@@ -108,14 +108,14 @@ async def save_engagement(body: SaveBody) -> dict:
         raise HTTPException(400, "Engagement repository is not configured")
 
     def _save_and_push() -> str:
-        commit = enterprise_git_ops.commit_engagement_work(
+        commit = git_work_commits.commit_engagement_work(
             eng_root,
             body.message,
             author_name=body.author_name,
             author_email=body.author_email,
         )
         if body.push:
-            enterprise_git_ops.push_engagement(eng_root)
+            git_work_commits.push_engagement(eng_root)
         return commit
 
     try:
@@ -146,7 +146,7 @@ async def save_engagement(body: SaveBody) -> dict:
     response_model_exclude_none=True)
 async def save_enterprise(body: SaveBody) -> dict:
     """Commit enterprise working-branch changes."""
-    from src.infrastructure.git import enterprise_git_ops, enterprise_sync_state
+    from src.infrastructure.git import enterprise_branch_lifecycle, enterprise_sync_state, git_work_commits
     from src.infrastructure.rest.routers import state as s
     from src.infrastructure.rest.routers.events import event_bus
 
@@ -156,8 +156,8 @@ async def save_enterprise(body: SaveBody) -> dict:
 
     def _branch_and_commit() -> str:
         # One write lease for the whole transaction: working branch + commit + state.
-        enterprise_git_ops.ensure_working_branch(ent_root)
-        return enterprise_git_ops.commit_enterprise_work(
+        enterprise_branch_lifecycle.ensure_working_branch(ent_root)
+        return git_work_commits.commit_enterprise_work(
             ent_root,
             body.message,
             author_name=body.author_name,
@@ -188,7 +188,7 @@ async def save_enterprise(body: SaveBody) -> dict:
     response_model_exclude_none=True)
 async def submit_enterprise() -> dict:
     """Push the enterprise working branch for team review."""
-    from src.infrastructure.git import enterprise_git_ops
+    from src.infrastructure.git import enterprise_branch_lifecycle
     from src.infrastructure.git import enterprise_sync_state as es
     from src.infrastructure.rest.routers import state as s
     from src.infrastructure.rest.routers.events import event_bus
@@ -210,7 +210,7 @@ async def submit_enterprise() -> dict:
 
     try:
         branch = await s.authorized_write_async(
-            "sync_submit_enterprise", enterprise_git_ops.push_enterprise_branch, ent_root
+            "sync_submit_enterprise", enterprise_branch_lifecycle.push_enterprise_branch, ent_root
         )
         sync_status_cache.invalidate_sync_status_cache(repo=ent_root)
         await event_bus.publish(
@@ -234,7 +234,7 @@ async def submit_enterprise() -> dict:
     response_model_exclude_none=True)
 async def withdraw_enterprise(body: WithdrawBody) -> dict:
     """Discard all pending enterprise changes and return the repo to main."""
-    from src.infrastructure.git import enterprise_git_ops
+    from src.infrastructure.git import enterprise_branch_lifecycle
     from src.infrastructure.rest.routers import state as s
     from src.infrastructure.rest.routers.events import event_bus
 
@@ -250,7 +250,7 @@ async def withdraw_enterprise(body: WithdrawBody) -> dict:
 
     try:
         branch = await s.authorized_write_async(
-            "sync_withdraw_enterprise", enterprise_git_ops.abandon_enterprise_branch, ent_root
+            "sync_withdraw_enterprise", enterprise_branch_lifecycle.abandon_enterprise_branch, ent_root
         )
         sync_status_cache.invalidate_sync_status_cache(repo=ent_root)
         await event_bus.publish(

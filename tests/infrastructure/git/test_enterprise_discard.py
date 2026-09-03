@@ -13,8 +13,8 @@ from pathlib import Path
 
 import pytest
 
-from src.infrastructure.git import enterprise_git_ops, enterprise_sync_state
-from src.infrastructure.git.enterprise_git_ops import abandon_enterprise_branch
+from src.infrastructure.git import enterprise_branch_lifecycle, enterprise_sync_state, git_work_commits
+from src.infrastructure.git.enterprise_branch_lifecycle import abandon_enterprise_branch
 from tests.support.git_workflow_fixtures import build_workflow_pair, git, write_entity
 
 UNRELATED = "unrelated-keepsake.md"
@@ -32,14 +32,14 @@ def pair(tmp_path: Path) -> tuple[Path, Path, Path]:
 
 
 def _accumulate(enterprise: Path) -> str:
-    branch = enterprise_git_ops.ensure_working_branch(enterprise)
+    branch = enterprise_branch_lifecycle.ensure_working_branch(enterprise)
     write_entity(enterprise, "REQ@1000001101.DisWrk.discard-work", "Discard Work")
-    enterprise_git_ops.commit_enterprise_work(enterprise, "work to discard")
+    git_work_commits.commit_enterprise_work(enterprise, "work to discard")
     return branch
 
 def _submit(enterprise: Path) -> str:
     branch = _accumulate(enterprise)
-    enterprise_git_ops.push_enterprise_branch(enterprise)
+    enterprise_branch_lifecycle.push_enterprise_branch(enterprise)
     return branch
 
 
@@ -94,14 +94,14 @@ class TestPendingDiscard:
         """Ref still present after a failed deletion: report, no claimed withdrawal."""
         _, enterprise, origin = pair
         branch = _submit(enterprise)
-        real_run = enterprise_git_ops._run
+        real_run = enterprise_branch_lifecycle.run_repo_git
 
         def failing_delete(repo: Path, *args: str, **kwargs: object):
             if args[:3] == ("push", "origin", "--delete"):
                 return (1, "", "injected remote failure")
             return real_run(repo, *args, **kwargs)
 
-        monkeypatch.setattr(enterprise_git_ops, "_run", failing_delete)
+        monkeypatch.setattr(enterprise_branch_lifecycle, "run_repo_git", failing_delete)
         with pytest.raises(RuntimeError, match="delete remote branch"):
             abandon_enterprise_branch(enterprise)
         assert branch in _remote_heads(origin)
@@ -110,7 +110,7 @@ class TestPendingDiscard:
     def _converges_after(self, pair, monkeypatch, *, fail_step: Callable[[tuple[str, ...]], bool]) -> None:
         _, enterprise, origin = pair
         branch = _submit(enterprise)
-        real_run = enterprise_git_ops._run
+        real_run = enterprise_branch_lifecycle.run_repo_git
         state = {"failed": False}
 
         def inject(repo: Path, *args: str, **kwargs: object):
@@ -119,7 +119,7 @@ class TestPendingDiscard:
                 return (1, "", "injected failure")
             return real_run(repo, *args, **kwargs)
 
-        monkeypatch.setattr(enterprise_git_ops, "_run", inject)
+        monkeypatch.setattr(enterprise_branch_lifecycle, "run_repo_git", inject)
         with pytest.raises(RuntimeError):
             abandon_enterprise_branch(enterprise)
         # Retry converges: already-satisfied steps (absent ref, on main) are successes.
@@ -144,7 +144,7 @@ class TestPendingDiscard:
                 raise OSError("injected persistence failure")
             return real_clear(root)
 
-        monkeypatch.setattr(enterprise_git_ops.enterprise_sync_state, "clear_lifecycle", failing_clear)
+        monkeypatch.setattr(enterprise_branch_lifecycle.enterprise_sync_state, "clear_lifecycle", failing_clear)
         with pytest.raises(OSError):
             abandon_enterprise_branch(enterprise)
         # Aggregate is still pending: the transition is not claimed complete.

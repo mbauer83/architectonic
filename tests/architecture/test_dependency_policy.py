@@ -20,7 +20,7 @@ _SRC_ROOT = _PROJECT_ROOT / "src"
 _MUTATION_ADAPTER = "src.infrastructure.mutation_adapters"
 _MUTATION_ADAPTER_IMPORTERS = frozenset(
     {
-        "src/infrastructure/git/enterprise_git_ops.py",
+        "src/infrastructure/git/_git_command.py",
         "src/infrastructure/git/git_sync_m4.py",
         "src/infrastructure/git/repair_adapter.py",
         "src/infrastructure/repository_upgrade/guard.py",
@@ -113,7 +113,7 @@ def _mutation_boundary_violations(rel: str, tree: ast.AST) -> list[str]:
     )
     if imports_adapter and rel not in _MUTATION_ADAPTER_IMPORTERS:
         violations.append(f"{rel}::unauthorized-mutation-adapter-import")
-    if rel.startswith("src/infrastructure/write/") or rel == "src/infrastructure/git/enterprise_git_ops.py":
+    if rel.startswith("src/infrastructure/write/") or rel == "src/infrastructure/git/_git_command.py":
         for node in ast.walk(tree):
             if _is_direct_subprocess_git_call(node):
                 violations.append(f"{rel}:{getattr(node, 'lineno', 0)}::direct-subprocess-git")

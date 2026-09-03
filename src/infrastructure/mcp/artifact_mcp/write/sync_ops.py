@@ -36,7 +36,7 @@ def artifact_save_changes(
     push=True (default) pushes the engagement repo after committing; has no
     effect for the enterprise target.
     """
-    from src.infrastructure.git import enterprise_git_ops
+    from src.infrastructure.git import enterprise_branch_lifecycle, git_work_commits
     from src.infrastructure.rest.routers.state import maybe_engagement_root, maybe_enterprise_root
 
     if target not in ("engagement", "enterprise"):
@@ -47,14 +47,14 @@ def artifact_save_changes(
             eng_root = maybe_engagement_root()
             if eng_root is None:
                 return {"ok": False, "error": "Engagement repository is not initialised"}
-            commit = enterprise_git_ops.commit_engagement_work(
+            commit = git_work_commits.commit_engagement_work(
                 eng_root,
                 message,
                 author_name=author_name,
                 author_email=author_email,
             )
             if push:
-                enterprise_git_ops.push_engagement(eng_root)
+                git_work_commits.push_engagement(eng_root)
             return {
                 "ok": True,
                 "target": "engagement",
@@ -66,8 +66,8 @@ def artifact_save_changes(
             ent_root = maybe_enterprise_root()
             if ent_root is None:
                 return {"ok": False, "error": "Enterprise repository is not configured"}
-            enterprise_git_ops.ensure_working_branch(ent_root)
-            commit = enterprise_git_ops.commit_enterprise_work(
+            enterprise_branch_lifecycle.ensure_working_branch(ent_root)
+            commit = git_work_commits.commit_enterprise_work(
                 ent_root,
                 message,
                 author_name=author_name,
@@ -98,7 +98,7 @@ def artifact_submit_for_review(*, dry_run: bool = True) -> dict[str, object]:
     The system automatically detects when the branch is merged into main and
     updates the enterprise repository view accordingly.
     """
-    from src.infrastructure.git import enterprise_git_ops
+    from src.infrastructure.git import enterprise_branch_lifecycle
     from src.infrastructure.git.enterprise_sync_state import load as load_state
     from src.infrastructure.rest.routers.state import maybe_enterprise_root
 
@@ -127,7 +127,7 @@ def artifact_submit_for_review(*, dry_run: bool = True) -> dict[str, object]:
 
     try:
         if dry_run:
-            branch = enterprise_git_ops.submission_preflight(ent_root)
+            branch = enterprise_branch_lifecycle.submission_preflight(ent_root)
             return {
                 "ok": True,
                 "dry_run": True,
@@ -138,7 +138,7 @@ def artifact_submit_for_review(*, dry_run: bool = True) -> dict[str, object]:
                     "Nothing was pushed. Call again with dry_run=false to submit."
                 ),
             }
-        branch = enterprise_git_ops.push_enterprise_branch(ent_root)
+        branch = enterprise_branch_lifecycle.push_enterprise_branch(ent_root)
         return {
             "ok": True,
             "dry_run": False,
@@ -162,7 +162,7 @@ def artifact_withdraw_changes(*, confirm: bool = False) -> dict[str, object]:
     This cannot be undone. Pass confirm=True to confirm. Only the enterprise
     repository is affected; engagement repository changes are never discarded.
     """
-    from src.infrastructure.git import enterprise_git_ops
+    from src.infrastructure.git import enterprise_branch_lifecycle
     from src.infrastructure.rest.routers.state import maybe_enterprise_root
 
     if not confirm:
@@ -176,7 +176,7 @@ def artifact_withdraw_changes(*, confirm: bool = False) -> dict[str, object]:
         return {"ok": False, "error": "Enterprise repository is not configured"}
 
     try:
-        branch = enterprise_git_ops.abandon_enterprise_branch(ent_root)
+        branch = enterprise_branch_lifecycle.abandon_enterprise_branch(ent_root)
         return {
             "ok": True,
             "discarded_branch": branch,

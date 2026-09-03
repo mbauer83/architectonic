@@ -156,7 +156,7 @@ def test_the_walk_runs_green_against_a_fixture_backend() -> None:
     # count so a mount that stopped listing tools altogether cannot pass by serving nothing.
     #
     # *Distinct* tools, not calls: `artifact_save_changes` is invoked twice, once per repository target,
-    # because the two take different paths through `enterprise_git_ops` and covering only the default
+    # because the two take different paths through the git package and covering only the default
     # would report the tool covered on half its contract.
     covered = {call.tool for call in write_walk.WRITE_CALLS}
     covered |= {call.tool for call in write_walk.ASSURANCE_WRITE_CALLS}

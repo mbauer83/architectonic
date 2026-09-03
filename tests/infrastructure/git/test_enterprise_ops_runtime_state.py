@@ -10,7 +10,8 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-from src.infrastructure.git.enterprise_git_ops import commit_enterprise_work, has_uncommitted_changes
+from src.infrastructure.git.git_repository_state import has_uncommitted_changes
+from src.infrastructure.git.git_work_commits import commit_enterprise_work
 
 
 def _git(repo: Path, *args: str) -> str:

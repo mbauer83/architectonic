@@ -1,7 +1,7 @@
 """Shared git SSH environment, populated by GitSyncManager on startup.
 
 Both the async background sync (git_sync.py) and the synchronous enterprise
-git operations (enterprise_git_ops.py) read from this module so they use the
+git operations read from this module through `_git_command.run_repo_git` so they use the
 same askpass credentials without duplicating the setup logic.
 """
 
