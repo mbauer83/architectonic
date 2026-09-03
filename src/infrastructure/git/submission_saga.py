@@ -31,9 +31,11 @@ from pathlib import Path
 
 from src.domain.clock import utc_now_iso
 from src.domain.submission_phase import (
+    CompletedSubmission,
     PreparedSubmission,
     PushedSubmission,
     SubmissionIntent,
+    SubmissionPhase,
 )
 from src.infrastructure.git import enterprise_sync_state
 from src.infrastructure.git._git_command import PUSH_TIMEOUT, run_repo_git
@@ -144,3 +146,83 @@ def _persist(enterprise_root: Path, phase: PreparedSubmission | PushedSubmission
     """Write the phase onto the aggregate, leaving the rest of the lifecycle alone."""
     current = enterprise_sync_state.load(enterprise_root)
     enterprise_sync_state.replace_submission(enterprise_root, phase, status=current.status)
+
+
+@dataclass(frozen=True, slots=True)
+class Reconciliation:
+    """What a startup reconciliation concluded about a submission it found.
+
+    `resolved` is the phase now recorded — unchanged where the remote could not be reached, because
+    "we could not ask" is not evidence of anything. `summary` is what an operator reads.
+    """
+
+    resolved: SubmissionPhase | None
+    summary: str
+    advanced: bool
+
+
+def reconcile_submission(enterprise_root: Path) -> Reconciliation:
+    """Resolve a submission left in flight by a previous process, against the remote.
+
+    Called at startup, beside the durable-transaction recovery, because a prepared submission is the
+    same kind of thing: a step that was recorded before an irreversible action and has to be settled
+    before anything reports a status.
+
+    **A remote that cannot be reached changes nothing.** The record stays as it is and the summary
+    says the remote was unreachable. Resolving it either way would be a guess: absence of evidence
+    about a branch is equally consistent with a push that never landed, a reviewer's deletion and a
+    network fault, and each wants a different response.
+    """
+    found = enterprise_sync_state.load(enterprise_root).submission
+    match found:
+        case None:
+            return Reconciliation(None, "no submission in flight", advanced=False)
+        case CompletedSubmission():
+            return Reconciliation(found, "submission already complete", advanced=False)
+        case PushedSubmission():
+            return Reconciliation(
+                found,
+                f"submission on '{found.intent.branch}' is published and awaiting its changes "
+                "being marked",
+                advanced=False,
+            )
+        case PreparedSubmission():
+            return _resolve_prepared(enterprise_root, found)
+
+
+def _resolve_prepared(enterprise_root: Path, prepared: PreparedSubmission) -> Reconciliation:
+    intent = prepared.intent
+    try:
+        published = remote_ref_commit(enterprise_root, intent.branch)
+    except RuntimeError as unreachable:
+        return Reconciliation(
+            prepared,
+            f"cannot reach the remote to resolve the submission on '{intent.branch}': {unreachable}",
+            advanced=False,
+        )
+
+    if published == intent.expected_commit:
+        # The push landed and the previous process died before recording it. This is the window the
+        # saga exists for, and settling it here is what stops the next attempt opening a second branch.
+        pushed = prepared.pushed(at=utc_now_iso())
+        _persist(enterprise_root, pushed)
+        logger.warning(
+            "Recovered a submission that had been pushed but not recorded: %s at %.7s",
+            intent.branch,
+            intent.expected_commit,
+        )
+        return Reconciliation(pushed, f"recovered a completed push on '{intent.branch}'", advanced=True)
+
+    if published is None:
+        return Reconciliation(
+            prepared,
+            f"submission on '{intent.branch}' was never published; it can be retried",
+            advanced=False,
+        )
+
+    return Reconciliation(
+        prepared,
+        f"submission on '{intent.branch}' expected {intent.expected_commit} but origin holds "
+        f"{published}; it must be resolved by hand rather than retried",
+        advanced=False,
+    )

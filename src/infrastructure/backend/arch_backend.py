@@ -329,6 +329,27 @@ def _run_foreground(args: argparse.Namespace, parser: argparse.ArgumentParser, r
         remove_own_backend_state()
 
 
+def _reconcile_submission_in_flight(enterprise_root: "Path | None") -> None:
+    """Settle a submission a previous process left in flight, beside the transaction recovery.
+
+    A prepared submission is the same kind of durable record: written before an irreversible action,
+    and needing to be settled before anything reports a status. It reaches the network, so **it may
+    never prevent the backend from starting** — an unreachable remote leaves the record untouched and
+    logs, which is also what the reconciliation itself concludes rather than guessing.
+    """
+    if enterprise_root is None:
+        return
+    from src.infrastructure.git.submission_saga import reconcile_submission  # noqa: PLC0415
+
+    try:
+        outcome = reconcile_submission(enterprise_root)
+    except Exception:  # noqa: BLE001 — startup must survive any submission-state fault
+        logger.exception("Could not reconcile the submission state in %s; continuing startup", enterprise_root)
+        return
+    if outcome.advanced:
+        logger.warning("Submission reconciliation on startup: %s", outcome.summary)
+
+
 def _initialise_repo(
     repo_root_path: Path, enterprise_root_path: Path | None, args: argparse.Namespace
 ) -> "ArtifactRepository":
@@ -355,6 +376,7 @@ def _initialise_repo(
         recovered = recover_transactions(root, rebuild_index=index.refresh)
         if recovered:
             logger.warning("Recovered %s durable transaction(s) in %s", recovered, root)
+    _reconcile_submission_in_flight(enterprise_root_path)
     repair_group_registries(repo_root_path, enterprise_root_path)
     # Class A profile-registry validation before the index build: a malformed registry or an
     # undefined binding makes the profile subsystem untrustworthy (engagement aborts,
