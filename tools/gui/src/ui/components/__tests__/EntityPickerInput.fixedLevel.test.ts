@@ -138,6 +138,9 @@ describe('entityDisplayInfoToHit', () => {
       artifact_type: 'application-component',
       domain: 'application',
       diagram_internal: false,
+      // The display item the picker adapts reports no proposal state, so the adapter states the
+      // plain reading rather than leaving the required field to be defaulted downstream.
+      baseline_standing: { kind: 'enterprise-baseline' },
     })
   })
 })

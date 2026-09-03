@@ -18,6 +18,7 @@ const SEARCH_RESPONSE = {
   hits: [{
     score: 1.0030534374868902,
     record_type: 'document',
+    baseline_standing: { kind: 'enterprise-baseline' as const },
     artifact_id: 'ADR@1780761609.GQWvwi.markdown-file-based-architecture-repository',
     name: 'Markdown File-Based Architecture Repository',
     status: 'accepted',
@@ -69,6 +70,7 @@ const C4_CONTEXT_RESPONSE = {
     version: '0.1.0',
     status: 'draft',
     record_type: 'diagram',
+    baseline_standing: { kind: 'enterprise-baseline' as const },
     path: '/diagram-catalog/diagrams/amp-containers.puml',
     is_global: false,
     content_snippet: '',
@@ -84,6 +86,7 @@ const C4_CONTEXT_RESPONSE = {
     subdomain: 'role',
     path: '/model/common/role/ai-agent.md',
     is_global: false,
+    baseline_standing: { kind: 'enterprise-baseline' as const },
     group: 'uncategorized',
     display_alias: 'ROL_udXPfB',
     specializations: [],

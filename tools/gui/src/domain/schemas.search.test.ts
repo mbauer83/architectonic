@@ -5,6 +5,7 @@ import { ArtifactSearchHitSchema, SearchHitSchema, SearchResultSchema } from './
 const ENTITY_HIT = {
   score: 1.5,
   record_type: 'entity',
+  baseline_standing: { kind: 'enterprise-baseline' as const },
   artifact_id: 'ENT@123.foo',
   name: 'Foo',
   artifact_type: 'archimate-application-component',
@@ -18,6 +19,7 @@ const ENTITY_HIT = {
 const DOCUMENT_HIT = {
   score: 0.9,
   record_type: 'document',
+  baseline_standing: { kind: 'enterprise-baseline' as const },
   artifact_id: 'STD@456.general-coding-guidelines',
   name: 'General Coding Guidelines',
   artifact_type: 'document',
@@ -29,6 +31,7 @@ const DOCUMENT_HIT = {
 const DIAGRAM_HIT = {
   score: 0.7,
   record_type: 'diagram',
+  baseline_standing: { kind: 'enterprise-baseline' as const },
   artifact_id: 'DIA@789.my-diagram',
   name: 'My Diagram',
   artifact_type: 'c4',
@@ -40,6 +43,7 @@ const DIAGRAM_HIT = {
 const CONNECTION_HIT = {
   score: 0.5,
   record_type: 'connection',
+  baseline_standing: { kind: 'enterprise-baseline' as const },
   artifact_id: 'CONN@abc.conn',
   name: '',
   artifact_type: 'archimate-serving',

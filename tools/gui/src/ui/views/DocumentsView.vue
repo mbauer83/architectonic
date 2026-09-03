@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { inject } from 'vue'
+import ProposedBadge from '../components/ProposedBadge.vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { modelServiceKey } from '../keys'
 import { LIST_TIERS } from '../lib/tierUrlState'
@@ -143,7 +144,10 @@ const {
                   </RouterLink>
                 </td>
                 <td><span class="doc-type">{{ doc.doc_type }}</span></td>
-                <td><TierBadge :tier="tierFromIsGlobal(doc.is_global)" /></td>
+                <td>
+                  <TierBadge :tier="tierFromIsGlobal(doc.is_global)" />
+                  <ProposedBadge :standing="doc.baseline_standing" />
+                </td>
                 <td>
                   <span
                     class="status-badge"

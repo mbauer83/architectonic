@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { diagramCreateRoute, diagramDetailRoute, matrixCreateRoute } from '../router/artifactRoutes'
+import ProposedBadge from '../components/ProposedBadge.vue'
 import { computed, inject, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import type { DiagramTypeSummary } from '../../domain'
@@ -176,6 +177,7 @@ const diagramTypeLabel = (diagramType: string): string => {
               <div class="diagram-meta">
                 <span class="diagram-type-badge">{{ diagramTypeLabel(d.diagram_type) }}</span>
                 <TierBadge :tier="tierFromIsGlobal(d.is_global)" />
+                <ProposedBadge :standing="d.baseline_standing" />
                 <span
                   class="status-badge"
                   :class="`status--${d.status}`"

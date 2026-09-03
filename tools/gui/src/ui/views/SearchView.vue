@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { inject, ref, watch } from 'vue'
+import ProposedBadge from '../components/ProposedBadge.vue'
 import { hitKindLabel, hitTypeLabel } from './SearchView.helpers'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { modelServiceKey } from '../keys'
@@ -138,6 +139,7 @@ const friendlyName = (id: string) => {
               v-if="h.is_global"
               class="global-chip"
             >enterprise</span>
+            <ProposedBadge :standing="h.baseline_standing" />
             <span
               v-if="h.domain"
               class="domain-badge"

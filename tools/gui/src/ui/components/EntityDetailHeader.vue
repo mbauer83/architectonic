@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { entityGraphRoute } from '../router/artifactRoutes'
+import ProposedBadge from './ProposedBadge.vue'
 /**
  * Entity detail's top bar (back link, tier badge, graph/promote links, edit/delete/
  * cancel/preview/save actions) and header block (name/status — editable in place — plus
@@ -41,6 +42,7 @@ const edit = inject(entityEditFormKey)!
           class="global-badge"
           title="From the enterprise repository"
         >Enterprise</span>
+        <ProposedBadge :standing="detail.baseline_standing" />
         <RouterLink
           :to="entityGraphRoute(entityId)"
           class="graph-btn"

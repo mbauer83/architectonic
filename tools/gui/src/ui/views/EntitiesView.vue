@@ -15,6 +15,7 @@ import {
 } from '../lib/tierUrlState'
 import { entityListScope, groupFromQuery, savedGroupToMerge } from '../composables/listRequestParams'
 import TierBadge from '../components/TierBadge.vue'
+import ProposedBadge from '../components/ProposedBadge.vue'
 import TierFacet from '../components/TierFacet.vue'
 import { tierFromIsGlobal } from '../components/TierBadge.helpers'
 import EntitiesTreemap from '../components/EntitiesTreemap.vue'
@@ -430,6 +431,10 @@ const displayCount = computed(() => {
                   v-if="entity.is_global && !isGlobal"
                   class="row-tier-badge"
                   :tier="tierFromIsGlobal(entity.is_global)"
+                />
+                <ProposedBadge
+                  class="row-tier-badge"
+                  :standing="entity.baseline_standing"
                 />
                 <button
                   v-if="!activeGroup && groupOptions.length > 1 && entity.group && entity.group !== 'uncategorized'"

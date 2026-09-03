@@ -8,6 +8,11 @@ import { DiagramSummarySchema } from './diagram-types'
  * List-summary contracts: `is_global` is REQUIRED on entity, document and diagram list rows — the
  * backend always emits it, and a row without it must fail the decode rather than render a default.
  *
+ * `baseline_standing` is required for the same reason and a sharper one: the backend emits it on
+ * every artifact row, and a row decoded without it would have to default to *something* — the only
+ * available default being the enterprise baseline, which reads as "no local changes" and so hides a
+ * pending one.
+ *
  * What the badge *derives* from it is asserted in `ui/components/__tests__/TierBadge.helpers.test.ts`,
  * which owns that helper. Re-asserting it here duplicated a covered rule and reached from the domain
  * into the delivery layer to do it — the layering rule in `eslint.config.js` now refuses that.
@@ -23,6 +28,7 @@ const ENTITY_ROW = {
   subdomain: 'requirement',
   path: '/repo/model/motivation/requirement/row.md',
   specializations: [],
+  baseline_standing: { kind: 'enterprise-baseline' as const },
 }
 
 const DOCUMENT_ROW = {
@@ -34,6 +40,7 @@ const DOCUMENT_ROW = {
   keywords: [],
   sections: [],
   group: 'decisions',
+  baseline_standing: { kind: 'enterprise-baseline' as const },
 }
 
 const DIAGRAM_ROW = {
@@ -44,6 +51,7 @@ const DIAGRAM_ROW = {
   status: 'draft',
   path: '/repo/diagram-catalog/diagrams/contract-diagram.puml',
   group: 'views',
+  baseline_standing: { kind: 'enterprise-baseline' as const },
 }
 
 describe('entity list summary contract', () => {
@@ -117,5 +125,39 @@ describe('last-modified stamp on list summaries', () => {
     expect(Schema.decodeUnknownSync(DiagramSummarySchema)({ ...row, last_updated: STAMP }).last_updated).toBe(STAMP)
     expect(Schema.decodeUnknownSync(DiagramSummarySchema)({ ...row, last_updated: null }).last_updated).toBeNull()
     expect(Schema.decodeUnknownSync(DiagramSummarySchema)(row).last_updated).toBeUndefined()
+  })
+})
+
+
+describe('the baseline standing is required on every list row', () => {
+  it.each([
+    ['entity', EntitySummarySchema, ENTITY_ROW],
+    ['document', DocumentSummarySchema, DOCUMENT_ROW],
+    ['diagram', DiagramSummarySchema, DIAGRAM_ROW],
+  ])('rejects a %s row without it — a default would read as "no local changes"', (_kind, schema, row) => {
+    const { baseline_standing: _dropped, ...without } = row
+
+    expect(() => Schema.decodeUnknownSync(schema as never)({ ...without, is_global: false })).toThrow()
+  })
+
+  it.each([
+    ['entity', EntitySummarySchema, ENTITY_ROW],
+    ['document', DocumentSummarySchema, DOCUMENT_ROW],
+    ['diagram', DiagramSummarySchema, DIAGRAM_ROW],
+  ])('decodes a proposed %s row, carrying which fields differ', (_kind, schema, row) => {
+    const decoded = Schema.decodeUnknownSync(schema as never)({
+      ...row,
+      is_global: true,
+      baseline_standing: {
+        kind: 'proposed',
+        proposal_ids: ['PCH@1780000000.aaaaaaa.rename'],
+        changed_fields: ['name', 'summary'],
+        base_revision: '0f1e2d3c4b5a6978',
+        condition: 'stale',
+      },
+    }) as { baseline_standing: { kind: string; changed_fields?: readonly string[] } }
+
+    expect(decoded.baseline_standing.kind).toBe('proposed')
+    expect(decoded.baseline_standing.changed_fields).toEqual(['name', 'summary'])
   })
 })
