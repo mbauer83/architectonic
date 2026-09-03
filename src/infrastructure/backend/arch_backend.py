@@ -329,58 +329,13 @@ def _run_foreground(args: argparse.Namespace, parser: argparse.ArgumentParser, r
         remove_own_backend_state()
 
 
-def _reconcile_submission_in_flight(enterprise_root: "Path | None") -> None:
-    """Settle a submission a previous process left in flight, beside the transaction recovery.
-
-    A prepared submission is the same kind of durable record: written before an irreversible action,
-    and needing to be settled before anything reports a status. It reaches the network, so **it may
-    never prevent the backend from starting** — an unreachable remote leaves the record untouched and
-    logs, which is also what the reconciliation itself concludes rather than guessing.
-    """
-    if enterprise_root is None:
-        return
-    from src.infrastructure.git.submission_saga import reconcile_submission  # noqa: PLC0415
-
-    try:
-        outcome = reconcile_submission(enterprise_root)
-    except Exception:  # noqa: BLE001 — startup must survive any submission-state fault
-        logger.exception("Could not reconcile the submission state in %s; continuing startup", enterprise_root)
-        return
-    if outcome.advanced:
-        logger.warning("Submission reconciliation on startup: %s", outcome.summary)
-
-
-def _close_changes_already_integrated(repo: "ArtifactRepository") -> None:
-    """Close proposed changes the enterprise repository already carries.
-
-    After the repository is built, because the sweep spans both mounts: the proposals are in the
-    engagement repository and their targets in the enterprise one. Before the duplicate scans, so a
-    served request never sees a change reported as pending against an artifact that already carries
-    it.
-
-    Like the submission reconciliation above, it may never prevent the backend from starting — it
-    reads and writes files, and a fault in one proposal is not a reason to refuse to serve the rest
-    of the repository.
-    """
-    from src.infrastructure.write.artifact_write.integration_cleanup import (  # noqa: PLC0415
-        close_integrated_changes,
-    )
-
-    try:
-        report = close_integrated_changes(repo)
-    except Exception:  # noqa: BLE001 — startup must survive any sweep fault
-        logger.exception("Could not sweep integrated changes; continuing startup")
-        return
-    if report.changed_anything:
-        logger.info("Integration sweep on startup: %s", report.summary())
-
-
 def _initialise_repo(
     repo_root_path: Path, enterprise_root_path: Path | None, args: argparse.Namespace
 ) -> "ArtifactRepository":
     from src.application.artifacts.query import ArtifactRepository
     from src.infrastructure.app_bootstrap import process_runtime_catalogs
     from src.infrastructure.artifact_index import combined_artifact_index, shared_artifact_index
+    from src.infrastructure.backend import startup_reconciliation
     from src.infrastructure.backend._group_registry_startup import repair_group_registries
     from src.infrastructure.backend._profile_registry_startup import validate_profile_registries
     from src.infrastructure.write.artifact_write.m4_transaction import recover_transactions
@@ -401,7 +356,7 @@ def _initialise_repo(
         recovered = recover_transactions(root, rebuild_index=index.refresh)
         if recovered:
             logger.warning("Recovered %s durable transaction(s) in %s", recovered, root)
-    _reconcile_submission_in_flight(enterprise_root_path)
+    startup_reconciliation.settle_submissions_in_flight(enterprise_root_path)
     repair_group_registries(repo_root_path, enterprise_root_path)
     # Class A profile-registry validation before the index build: a malformed registry or an
     # undefined binding makes the profile subsystem untrustworthy (engagement aborts,
@@ -414,7 +369,7 @@ def _initialise_repo(
         ),
     )
     repo.refresh()
-    _close_changes_already_integrated(repo)
+    startup_reconciliation.close_changes_already_integrated(repo)
     assert_no_duplicate_short_ids(index)
     assert_no_cross_repo_id_collisions(index)
     return repo
