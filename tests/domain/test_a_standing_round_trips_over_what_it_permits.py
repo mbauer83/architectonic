@@ -83,7 +83,8 @@ def test_an_unrecognised_kind_is_refused_rather_than_read_as_baseline(payload) -
         {"kind": PROPOSED_KIND, "proposal_ids": ["p"], "changed_fields": [], "base_revision": "r"},
         {"kind": PROPOSED_KIND, "proposal_ids": ["p"], "changed_fields": ["name"], "base_revision": ""},
         {"kind": PROPOSED_KIND, "proposal_ids": "p", "changed_fields": ["name"], "base_revision": "r"},
-        {"kind": PROPOSED_KIND, "proposal_ids": ["p"], "changed_fields": ["name"], "base_revision": "r", "condition": "fine"},
+        {"kind": PROPOSED_KIND, "proposal_ids": ["p"], "changed_fields": ["name"],
+         "base_revision": "r", "condition": "fine"},
     ],
 )
 def test_a_proposed_encoding_missing_what_makes_it_reviewable_is_refused(payload) -> None:
