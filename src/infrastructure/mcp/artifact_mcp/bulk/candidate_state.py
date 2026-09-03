@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Literal
 
 from src.application.artifacts.parsing import parse_diagram, parse_document, parse_entity, parse_outgoing_file
+from src.application.modeling.enterprise_reference import enterprise_target
 from src.application.ports import ArtifactStorePort, Candidate
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.application.verification.artifact_verifier_types import entity_id_from_path
@@ -266,7 +267,7 @@ class CandidateStore(CandidateListMixin):
         ]
         mapped = [self._map_entity(e) for e in live]
         return [e for e in mapped if e is not None] + [
-            e for e in self._entities.values() if e.extra.get("global-artifact-id") == artifact_id
+            e for e in self._entities.values() if enterprise_target(e.extra) == artifact_id
         ]
 
     def scope_for_path(self, path: Path) -> Literal["enterprise", "engagement", "unknown"]:

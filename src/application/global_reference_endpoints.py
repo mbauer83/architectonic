@@ -12,15 +12,16 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from src.application.modeling.enterprise_reference import (
+    GLOBAL_ARTIFACT_ENTITY_TYPE,
+    GLOBAL_ARTIFACT_ID,
+    GLOBAL_ARTIFACT_REFERENCE_TYPE,
+)
 from src.application.verification.artifact_verifier_parsing import parse_frontmatter_from_path
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.domain.ontology_representation.specialization_values import (
     applied_specialization_slugs,
 )
-
-GLOBAL_ARTIFACT_REFERENCE_TYPE = "global-artifact-reference"
-_GLOBAL_ID_KEY = "global-artifact-id"
-_GLOBAL_ENTITY_TYPE_KEY = "global-artifact-entity-type"
 
 
 @dataclass(frozen=True)
@@ -66,7 +67,7 @@ def effective_endpoint(registry: ArtifactRegistry, entity_id: str) -> EffectiveE
             specializations=applied_specialization_slugs(fm.get('specialization')),
             is_global_reference=False,
         )
-    referenced_id = str(fm.get(_GLOBAL_ID_KEY, "") or "")
+    referenced_id = str(fm.get(GLOBAL_ARTIFACT_ID, "") or "")
     referenced_fm = _frontmatter(registry, referenced_id) if referenced_id else None
     if referenced_fm is not None:
         return EffectiveEndpoint(
@@ -74,7 +75,7 @@ def effective_endpoint(registry: ArtifactRegistry, entity_id: str) -> EffectiveE
             specializations=applied_specialization_slugs(referenced_fm.get('specialization')),
             is_global_reference=True,
         )
-    cached_type = str(fm.get(_GLOBAL_ENTITY_TYPE_KEY, "") or "")
+    cached_type = str(fm.get(GLOBAL_ARTIFACT_ENTITY_TYPE, "") or "")
     return EffectiveEndpoint(
         entity_type=cached_type or None, specializations=(), is_global_reference=True
     )

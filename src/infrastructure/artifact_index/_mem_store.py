@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 
+from src.application.modeling.enterprise_reference import enterprise_target
 from src.application.ports import Candidate
 from src.domain.artifact_id import canonical_reference_key, stable_conn_id, stable_id
 from src.domain.ontology_representation.artifact_types import (
@@ -43,7 +44,8 @@ class _MemStore:
     """canonical artifact id → the scratchpads whose notes point at it."""
     """entity/connection artifact_id → set of diagram artifact_ids referencing it."""
     grf_targets_by_entity: dict[str, set[str]] = field(default_factory=dict)
-    """global-artifact-id target → set of global-entity-reference entity artifact_ids."""
+    """Enterprise target id → the reference entities naming it. Keyed by `enterprise_target`,
+    which is the one reading of that field; see `application/modeling/enterprise_reference.py`."""
     attribute_type_refs: dict[str, list[tuple[str, str, str]]] = field(default_factory=dict)
     """diagram_id → [(classifier_local_id, attr_name, type_id)] for classifier-typed attributes."""
     identity_candidates: dict[str, list[Candidate]] = field(default_factory=dict)
@@ -210,9 +212,8 @@ class _MemStore:
         for r in self.entities.values():
             if r.host_diagram_id is not None:
                 self.entities_by_diagram.setdefault(r.host_diagram_id, set()).add(r.artifact_id)
-            target = r.extra.get("global-artifact-id")
-            if isinstance(target, str) and target.strip():
-                self.grf_targets_by_entity.setdefault(target.strip(), set()).add(r.artifact_id)
+            if (target := enterprise_target(r.extra)) is not None:
+                self.grf_targets_by_entity.setdefault(target, set()).add(r.artifact_id)
         self.diagram_by_path = {r.path.resolve(): r.artifact_id for r in self.diagrams.values()}
         self.diagrams_by_reference = {}
         for r in self.diagrams.values():
@@ -246,11 +247,11 @@ class _MemStore:
             self.entity_by_path[rec.path.resolve()] = rec.artifact_id
         else:
             self.entities_by_diagram.setdefault(rec.host_diagram_id, set()).add(rec.artifact_id)
-        if (target := _entity_global_target(rec)) is not None:
+        if (target := enterprise_target(rec.extra)) is not None:
             self.grf_targets_by_entity.setdefault(target, set()).add(rec.artifact_id)
 
     def unindex_entity(self, rec: EntityRecord) -> None:
-        if (target := _entity_global_target(rec)) is not None:
+        if (target := enterprise_target(rec.extra)) is not None:
             _discard_from(self.grf_targets_by_entity, target, rec.artifact_id)
         if rec.host_diagram_id is None:
             self.entity_by_path.pop(rec.path.resolve(), None)
@@ -322,11 +323,6 @@ def _diagram_reference_ids(rec: DiagramRecord) -> set[str]:
         for item in raw
         if str(item)
     }
-
-
-def _entity_global_target(rec: EntityRecord) -> str | None:
-    target = rec.extra.get("global-artifact-id")
-    return target.strip() if isinstance(target, str) and target.strip() else None
 
 
 def _discard_from(d: dict, key: object, val: str) -> None:

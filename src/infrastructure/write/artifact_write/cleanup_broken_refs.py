@@ -25,10 +25,13 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from src.application.artifacts.query import ArtifactRepository
+from src.application.modeling.enterprise_reference import (
+    GLOBAL_ARTIFACT_ID,
+    GLOBAL_ARTIFACT_REFERENCE_TYPE,
+)
 from src.config.repo_paths import MODEL
 from src.infrastructure.artifact_index import shared_artifact_index
 
-_GRF_FRONTMATTER_KEY = "global-artifact-id"
 _GRF_CONN_HEADER = re.compile(r"^### .+ → (.+)$", re.MULTILINE)
 
 
@@ -54,8 +57,8 @@ def find_broken_grfs(
 ) -> list[tuple[str, Path]]:
     """Return [(grf_artifact_id, grf_path)] for GRFs whose global-entity-id is missing."""
     broken: list[tuple[str, Path]] = []
-    for rec in engagement_repo.list_entities(artifact_type="global-artifact-reference"):
-        geid = rec.extra.get(_GRF_FRONTMATTER_KEY)
+    for rec in engagement_repo.list_entities(artifact_type=GLOBAL_ARTIFACT_REFERENCE_TYPE):
+        geid = rec.extra.get(GLOBAL_ARTIFACT_ID)
         if not isinstance(geid, str) or not geid:
             broken.append((rec.artifact_id, rec.path))
         elif geid not in enterprise_entity_ids:

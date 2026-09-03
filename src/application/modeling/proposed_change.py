@@ -15,8 +15,10 @@ the propose operation, never authored directly — and carries four things and n
 **Declared once, here, because both the writer and the verifier need it and they sit on opposite
 sides of the layering.** The verifier is application code and may not import the infrastructure that
 writes these files, so a key declared beside the writer would have to be spelled again beside the
-rule. That is not hypothetical: `global-artifact-id` is spelled in six places under four different
-constant names, and this module exists so its successor is not.
+rule. That is not hypothetical: `global-artifact-id` was spelled at eight sites under four constant
+names before `enterprise_reference.py` gave it one owner, and the copies had drifted — the index
+bucketed a reference under its stripped target while the duplicate check compared the raw value. This
+module is the same shape, written that way from the start.
 
 **`rejected` is not a state.** Nothing could enter it: there is no reject operation, and the reviewer
 works in the enterprise repository with no account on this deployment. A rejection reaches the author

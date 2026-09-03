@@ -15,7 +15,7 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping
 from typing import TYPE_CHECKING
 
-from src.application.global_reference_endpoints import GLOBAL_ARTIFACT_REFERENCE_TYPE
+from src.application.modeling.enterprise_reference import GLOBAL_ARTIFACT_REFERENCE_TYPE
 from src.application.modeling.proposed_change import PROPOSED_CHANGE_TYPE
 from src.application.verification._verifier_rules_grf import check_global_artifact_reference
 from src.application.verification._verifier_rules_proposed_change import check_proposed_change

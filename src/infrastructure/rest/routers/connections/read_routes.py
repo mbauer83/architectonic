@@ -7,6 +7,10 @@ from typing import Any, Literal
 from fastapi import APIRouter, Depends, HTTPException
 
 from src.application.entity_type_predicates import is_internal_entity_type
+from src.application.modeling.enterprise_reference import (
+    GLOBAL_ARTIFACT_ENTITY_TYPE,
+    proxies_an_entity,
+)
 from src.application.ontology_views import (
     classification_levels_payload,
     element_appearance_payload,
@@ -301,7 +305,7 @@ def _resolve_effective_type(
     record = repo.get_entity(artifact_id)
     if record is None or not is_internal_entity_type(record.artifact_type, catalogs.ontology):
         return declared_type, False
-    if record.extra.get("global-artifact-type") != "entity":
+    if not proxies_an_entity(record.extra):
         return declared_type, True
-    entity_type = record.extra.get("global-artifact-entity-type")
+    entity_type = record.extra.get(GLOBAL_ARTIFACT_ENTITY_TYPE)
     return (entity_type if isinstance(entity_type, str) and entity_type else declared_type), False

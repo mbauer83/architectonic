@@ -6,6 +6,8 @@ import threading
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from src.application.modeling.enterprise_reference import enterprise_target
+
 if TYPE_CHECKING:
     from fastapi import HTTPException
 else:
@@ -158,8 +160,7 @@ def resolve_gar(artifact_id: str) -> tuple[str, bool]:
         return artifact_id, False
     rec = repo.get_entity(artifact_id)
     if rec is not None and is_internal_entity_type(rec.artifact_type, process_runtime_catalogs().ontology):
-        gaid = rec.extra.get("global-artifact-id")
-        if isinstance(gaid, str) and gaid:
+        if (gaid := enterprise_target(rec.extra)) is not None:
             return gaid, True
     return artifact_id, False
 

@@ -15,22 +15,24 @@ from pathlib import Path
 from src.application.artifacts.query import ArtifactRepository
 from src.application.identifier_allocator import get_default_allocator
 from src.application.modeling.artifact_write_formatting import format_entity_markdown
+from src.application.modeling.enterprise_reference import (
+    GLOBAL_ARTIFACT_ENTITY_TYPE,
+    GLOBAL_ARTIFACT_ID,
+    GLOBAL_ARTIFACT_KIND,
+    GLOBAL_ARTIFACT_REFERENCE_TYPE,
+    enterprise_target,
+)
 from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.domain.modules.module_types import EntityTypeName
 
 from .boundary import assert_engagement_write_root, modification_stamp
 from .types import WriteResult
 
-_GAR_TYPE = "global-artifact-reference"
-_GAR_ID_KEY = "global-artifact-id"
-_GAR_TYPE_KEY = "global-artifact-type"
-_GAR_ENTITY_TYPE_KEY = "global-artifact-entity-type"  # original artifact_type for entity GARs
-
 
 def find_existing_gar(repo: ArtifactRepository, global_artifact_id: str) -> str | None:
     """Return the artifact_id of an existing GAR for *global_artifact_id*, or None."""
-    for rec in repo.list_entities(artifact_type=_GAR_TYPE):
-        if rec.extra.get(_GAR_ID_KEY) == global_artifact_id:
+    for rec in repo.list_entities(artifact_type=GLOBAL_ARTIFACT_REFERENCE_TYPE):
+        if enterprise_target(rec.extra) == global_artifact_id:
             return rec.artifact_id
     return None
 
@@ -55,7 +57,7 @@ def ensure_global_artifact_reference(
         from src.infrastructure.app_bootstrap import get_module_registry  # noqa: PLC0415
         from src.infrastructure.write.artifact_write.entity import entity_path  # noqa: PLC0415
 
-        gar_info = get_module_registry().get_entity_type(EntityTypeName(_GAR_TYPE))
+        gar_info = get_module_registry().get_entity_type(EntityTypeName(GLOBAL_ARTIFACT_REFERENCE_TYPE))
         path = entity_path(engagement_root, gar_info, existing)
         return WriteResult(
             wrote=False,
@@ -68,7 +70,7 @@ def ensure_global_artifact_reference(
 
     from src.infrastructure.app_bootstrap import get_module_registry  # noqa: PLC0415
 
-    info = get_module_registry().get_entity_type(EntityTypeName(_GAR_TYPE))
+    info = get_module_registry().get_entity_type(EntityTypeName(GLOBAL_ARTIFACT_REFERENCE_TYPE))
     eid = get_default_allocator().allocate(prefix=info.prefix, name_hint=global_artifact_name)
     from src.infrastructure.write.artifact_write.entity import (  # noqa: PLC0415
         _alias_for,
@@ -80,7 +82,7 @@ def ensure_global_artifact_reference(
 
     content = format_entity_markdown(
         artifact_id=eid,
-        artifact_type=_GAR_TYPE,
+        artifact_type=GLOBAL_ARTIFACT_REFERENCE_TYPE,
         name=global_artifact_name,
         version="0.1.0",
         status="active",
@@ -92,9 +94,9 @@ def ensure_global_artifact_reference(
         display_content=f"label: {global_artifact_name}\nalias: {alias}",
         repo_root=engagement_root,
         extra_frontmatter={
-            _GAR_ID_KEY: global_artifact_id,
-            _GAR_TYPE_KEY: global_artifact_type,
-            **({_GAR_ENTITY_TYPE_KEY: global_artifact_entity_type} if global_artifact_entity_type else {}),
+            GLOBAL_ARTIFACT_ID: global_artifact_id,
+            GLOBAL_ARTIFACT_KIND: global_artifact_type,
+            **({GLOBAL_ARTIFACT_ENTITY_TYPE: global_artifact_entity_type} if global_artifact_entity_type else {}),
         },
     )
 
@@ -144,8 +146,8 @@ def ensure_global_artifact_reference(
 def build_gar_map(engagement_repo: ArtifactRepository) -> dict[str, str]:
     """Return {gar_artifact_id: global_artifact_id} for all GARs in the engagement repo."""
     result: dict[str, str] = {}
-    for rec in engagement_repo.list_entities(artifact_type=_GAR_TYPE):
-        gaid = rec.extra.get(_GAR_ID_KEY)
+    for rec in engagement_repo.list_entities(artifact_type=GLOBAL_ARTIFACT_REFERENCE_TYPE):
+        gaid = rec.extra.get(GLOBAL_ARTIFACT_ID)
         if isinstance(gaid, str) and gaid:
             result[rec.artifact_id] = gaid
     return result

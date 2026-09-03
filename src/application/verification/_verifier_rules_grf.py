@@ -4,15 +4,16 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from src.application.modeling.enterprise_reference import (
+    GLOBAL_ARTIFACT_ID,
+    GLOBAL_ARTIFACT_KIND,
+)
 from src.application.verification.artifact_verifier_types import Issue, Severity, VerificationResult
 from src.domain.artifact_id import stable_id
 
 if TYPE_CHECKING:
     from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 
-_GAR_TYPE = "global-artifact-reference"
-_GAR_ID_KEY = "global-artifact-id"
-_GAR_TYPE_KEY = "global-artifact-type"
 
 
 def check_global_artifact_reference(
@@ -30,25 +31,25 @@ def check_global_artifact_reference(
     E144: referenced enterprise diagram does not exist (artifact_type=diagram).
     W141/W143/W144: cannot verify because enterprise repo is not loaded.
     """
-    global_id = fm.get(_GAR_ID_KEY)
+    global_id = fm.get(GLOBAL_ARTIFACT_ID)
     if not global_id:
         result.issues.append(
             Issue(
                 Severity.ERROR,
                 "E140",
-                f"global-artifact-reference is missing required '{_GAR_ID_KEY}' field",
+                f"global-artifact-reference is missing required '{GLOBAL_ARTIFACT_ID}' field",
                 loc,
             )
         )
         return
 
-    artifact_type = fm.get(_GAR_TYPE_KEY)
+    artifact_type = fm.get(GLOBAL_ARTIFACT_KIND)
     if not artifact_type:
         result.issues.append(
             Issue(
                 Severity.ERROR,
                 "E142",
-                f"global-artifact-reference is missing required '{_GAR_TYPE_KEY}' field",
+                f"global-artifact-reference is missing required '{GLOBAL_ARTIFACT_KIND}' field",
                 loc,
             )
         )

@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from pydantic import BaseModel, ConfigDict, field_validator
 
 from src.application.entity_type_predicates import is_internal_entity_type
+from src.application.modeling.enterprise_reference import proxies_an_entity
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.domain.artifact_id import ConnectionKey, MalformedArtifactIdError, parse_connection_id
 from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
@@ -101,7 +102,7 @@ def _reject_if_non_entity_gar(artifact_id: str, role: str, catalogs: RuntimeCata
         return
     is_non_entity_gar = (
         is_internal_entity_type(rec.artifact_type, catalogs.ontology)
-        and rec.extra.get("global-artifact-type") != "entity"
+        and not proxies_an_entity(rec.extra)
     )
     if is_non_entity_gar:
         raise HTTPException(400, f"Cannot use a document/diagram global-artifact-reference as a connection {role}")
