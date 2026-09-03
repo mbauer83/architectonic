@@ -58,3 +58,9 @@ PROPOSAL_STATE = "proposal-state"
 ProposalState = Literal["draft", "submitted", "integrated", "abandoned"]
 
 STATES: tuple[str, ...] = get_args(ProposalState)
+
+#: The states in which a change still makes its target differ from the enterprise baseline. An
+#: integrated change *is* the baseline now, and an abandoned one never will be, so neither is a local
+#: difference a reader needs told about. Declared here rather than beside the resolver because the
+#: same partition decides what a transition may leave, and two spellings of it would drift.
+PENDING_STATES: frozenset[str] = frozenset({"draft", "submitted"})

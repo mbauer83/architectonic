@@ -109,7 +109,7 @@ class TestTheRecordedEdit:
         broken = {"kind": "entity", "artifact-id": "CAP@1.aaaaaa.x", "fields": {"invented": 1}}
         result = _check(_frontmatter(**{RECORDED_EDIT: broken}))
         assert _codes(result) == ["E147"]
-        assert "not editable" in result.issues[0].message
+        assert "not proposable" in result.issues[0].message
 
     def test_an_edit_against_a_kind_with_no_reference_is_refused(self) -> None:
         """A connection has no global artifact reference, so it cannot be proposed against."""

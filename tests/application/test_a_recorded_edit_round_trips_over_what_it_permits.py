@@ -73,7 +73,7 @@ class TestTheReaderRefusesWhatTheUnionDoesNot:
 
     def test_a_field_outside_the_vocabulary_is_refused_on_the_way_in(self) -> None:
         recorded = {"kind": "entity", "artifact-id": "ENT@1.aaaaaa.x", "fields": {"invented": 1}}
-        with pytest.raises(UnproposableEdit, match="not editable"):
+        with pytest.raises(UnproposableEdit, match="not proposable"):
             from_mapping(recorded)
 
     def test_a_kind_with_no_global_artifact_reference_is_refused(self) -> None:
@@ -95,12 +95,28 @@ class TestTheReaderRefusesWhatTheUnionDoesNot:
             from_mapping({"kind": "entity", "artifact-id": "x", "fields": ["name"]})
 
     def test_the_subject_cannot_be_set_as_a_field(self) -> None:
+        """The subject is `artifact-id` on the edit. Setting it as a field would name a *second*
+        artifact, and a change that addresses two is not one change.
+
+        Refused by the vocabulary rather than by a rule of its own: a proposal's fields are the
+        catalogue's `CONTENT`, and what addresses the subject is `ADDRESSING`. The two were checked
+        separately, which is why the refusal used to list `artifact_id` among the accepted fields in
+        the same sentence that rejected it."""
         recorded = {
             "kind": "entity", "artifact-id": "ENT@1.aaaaaa.x",
             "fields": {"artifact_id": "ENT@1.bbbbbb.y"},
         }
-        with pytest.raises(UnproposableEdit, match="not a field it sets"):
+        with pytest.raises(UnproposableEdit, match="not proposable"):
             from_mapping(recorded)
+
+    def test_the_refusal_does_not_list_the_field_it_is_refusing(self) -> None:
+        """It did. `editable` is `ADDRESSING | CONTENT`, so the accepted list named `artifact_id`
+        while the next line rejected it."""
+        with pytest.raises(UnproposableEdit) as refusal:
+            from_mapping({"kind": "entity", "artifact-id": "ENT@1.a.x", "fields": {"artifact_id": "y"}})
+
+        _, _, accepted = str(refusal.value).partition("Accepted:")
+        assert "artifact_id" not in accepted
 
 
 def test_the_union_admits_exactly_the_three_referenceable_kinds() -> None:

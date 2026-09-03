@@ -39,9 +39,9 @@ from dataclasses import dataclass
 from typing import Any
 
 from src.application.modeling.edit_field_catalogue import (
+    CONTENT,
     PROPOSABLE,
     ArtifactKind,
-    editable,
 )
 
 
@@ -56,6 +56,11 @@ class ProposalEdit:
     Refuses to exist malformed. A field outside the kind's vocabulary is rejected here — at propose
     time, where the author is present to correct it — rather than at replay, where the failure lands
     in front of whoever is reviewing a branch.
+
+    The vocabulary is the catalogue's `CONTENT` half, not `editable`. `editable` adds `ADDRESSING` —
+    what names the subject — and the subject is already named by `artifact_id` on the edit itself. The
+    two were checked separately here: the whole vocabulary, then `artifact_id` refused by name. So the
+    refusal listed `artifact_id` among the accepted fields in the same sentence that rejected it.
     """
 
     kind: ArtifactKind
@@ -70,15 +75,11 @@ class ProposalEdit:
             )
         if not self.artifact_id:
             raise UnproposableEdit("a proposed edit names the artifact it changes")
-        unknown = sorted(set(self.fields) - editable(self.kind))
+        unknown = sorted(set(self.fields) - CONTENT[self.kind])
         if unknown:
             raise UnproposableEdit(
-                f"{unknown} {'is' if len(unknown) == 1 else 'are'} not editable on a {self.kind}. "
-                f"Accepted: {', '.join(sorted(editable(self.kind)))}."
-            )
-        if "artifact_id" in self.fields:
-            raise UnproposableEdit(
-                "the artifact an edit changes is `artifact_id` on the edit, not a field it sets"
+                f"{unknown} {'is' if len(unknown) == 1 else 'are'} not proposable on a {self.kind}. "
+                f"Accepted: {', '.join(sorted(CONTENT[self.kind]))}."
             )
         if not self.fields:
             raise UnproposableEdit("a proposed edit that changes nothing is not a change")
