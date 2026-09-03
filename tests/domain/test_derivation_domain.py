@@ -46,6 +46,7 @@ def test_every_shipped_entity_type_has_the_expected_derivation_domain() -> None:
             "path",
             "process",
             "product",
+            "proposed-change",
             "role",
             "service",
             "system-software",

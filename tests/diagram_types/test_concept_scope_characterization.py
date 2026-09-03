@@ -151,8 +151,9 @@ C4_ACCEPTS_CONNECTION_TYPES = (
     "usecase-include",
 )
 
-EXPECTED_ENTITY_TYPES = {
-    "activity": (),
+EXPECTED_ENTITY_TYPES: dict[str, tuple[str, ...]] = {
+    "activity": (
+    ),
     "archimate-application": (
         "and-junction",
         "application-component",
@@ -167,6 +168,7 @@ EXPECTED_ENTITY_TYPES = {
         "or-junction",
         "path",
         "process",
+        "proposed-change",
         "role",
         "service",
     ),
@@ -185,6 +187,7 @@ EXPECTED_ENTITY_TYPES = {
         "path",
         "process",
         "product",
+        "proposed-change",
         "role",
         "service",
     ),
@@ -228,6 +231,7 @@ EXPECTED_ENTITY_TYPES = {
         "principle",
         "process",
         "product",
+        "proposed-change",
         "requirement",
         "resource",
         "role",
@@ -264,6 +268,7 @@ EXPECTED_ENTITY_TYPES = {
         "or-junction",
         "path",
         "process",
+        "proposed-change",
         "resource",
         "role",
         "service",
@@ -287,13 +292,15 @@ EXPECTED_ENTITY_TYPES = {
         "or-junction",
         "path",
         "process",
+        "proposed-change",
         "role",
         "service",
         "system-software",
         "technology-interface",
         "technology-node",
     ),
-    "bowtie": (),
+    "bowtie": (
+    ),
     "c4-component": (
         "application-component",
         "business-actor",
@@ -331,9 +338,12 @@ EXPECTED_ENTITY_TYPES = {
         "role",
         "service",
     ),
-    "control-structure": (),
-    "datatype": (),
-    "gsn": (),
+    "control-structure": (
+    ),
+    "datatype": (
+    ),
+    "gsn": (
+    ),
     "matrix": (
         "action-definition",
         "action-usage",
@@ -388,6 +398,7 @@ EXPECTED_ENTITY_TYPES = {
         "principle",
         "process",
         "product",
+        "proposed-change",
         "requirement",
         "requirement-definition",
         "requirement-usage",
@@ -404,9 +415,12 @@ EXPECTED_ENTITY_TYPES = {
         "value-stream",
         "work-package",
     ),
-    "sequence": (),
-    "uca-matrix": (),
-    "fmea-matrix": (),
+    "sequence": (
+    ),
+    "uca-matrix": (
+    ),
+    "fmea-matrix": (
+    ),
 }
 
 EXPECTED_CONNECTION_TYPES = {

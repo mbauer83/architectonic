@@ -164,10 +164,16 @@ def _connection_types() -> list[str]:
     return list(data["connection_types"]["archimate"])
 
 
+#: Types the platform manages rather than models: a reference standing for a promoted artifact, and
+#: a proposed change to one. Neither is an ArchiMate concept, so neither has an exchange mapping —
+#: named as a set rather than one literal, because there is now more than one of them.
+_INTERNAL_TYPES = frozenset({"global-artifact-reference", "proposed-change"})
+
+
 def test_every_shipped_entity_type_has_some_export_mapping(mapper: DeclarativeConceptMapper) -> None:
     for entity_type in _entity_types():
-        if entity_type == "global-artifact-reference":
-            continue  # internal type, never exchanged
+        if entity_type in _INTERNAL_TYPES:
+            continue
         mapper.element_to_exchange(entity_type)  # raises on any real gap
 
 

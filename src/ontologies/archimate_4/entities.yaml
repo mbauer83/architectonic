@@ -503,3 +503,18 @@ entity_types:
     classes: [internal]
     create_when: ""
     never_create_when: ""
+
+  # A change proposed against a promoted artifact, from a deployment that may not write the
+  # enterprise repository. Like a GAR it is system-managed — created by the propose operation,
+  # never authored directly — and it names a GAR rather than the enterprise artifact itself,
+  # because a non-admin deployment holds no enterprise content to point at.
+  #
+  # Connection surface: none. A proposal is a record about an artifact, not a participant in the
+  # model, so nothing may attach to it in either direction.
+  proposed-change:
+    prefix: PCH
+    hierarchy: [common]
+    internal: true              # not a modelling element — skipped by domain display
+    classes: [internal]
+    create_when: ""
+    never_create_when: ""

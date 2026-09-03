@@ -175,6 +175,10 @@ skinparam rectangle<<process>> {
   BorderColor #45433F
   RoundCorner 14
 }
+skinparam rectangle<<proposed_change>> {
+  BackgroundColor #E5DFD3
+  BorderColor #45433F
+}
 skinparam rectangle<<role>> {
   BackgroundColor #E5DFD3
   BorderColor #45433F

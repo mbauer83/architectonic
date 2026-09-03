@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 
 from src.application.entity_type_predicates import is_internal_entity_type
 from src.application.runtime_catalogs import RuntimeCatalogs
-from src.application.verification._verifier_rules_grf import check_global_artifact_reference
+from src.application.verification._verifier_rules_internal_types import check_internal_entity
 from src.application.verification._verifier_rules_schema import (
     check_attribute_schema,
     check_frontmatter_schema,
@@ -69,7 +69,7 @@ def verify_entity(
     check_section(content, "§display", required=True, result=result, loc=loc)
 
     if is_internal_entity_type(str(fm.get("artifact-type", "")), catalogs.ontology):
-        check_global_artifact_reference(fm, registry, result, loc)
+        check_internal_entity(fm, registry, result, loc)
 
     if repo_root is not None:
         check_frontmatter_schema(fm, repo_root, "entity", result, loc)
