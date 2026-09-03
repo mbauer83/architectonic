@@ -1,6 +1,6 @@
 """Connection editing and removal operations."""
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 
 from src.application.modeling.artifact_write import format_outgoing_markdown
@@ -70,8 +70,7 @@ def edit_connection(
     # Find the target connection
     found = False
     for conn in parsed.connections:
-        if (conn["connection_type"] == connection_type
-                and stable_id(str(conn["target_entity"])) == stable_id(target_entity)):
+        if _is_the_connection(conn, connection_type, target_entity):
             if description is not _UNSET:
                 conn["description"] = str(description) if description else ""
             if src_multiplicity is not _UNSET:
@@ -145,6 +144,60 @@ def edit_connection(
     )
 
 
+def _is_the_connection(conn: Mapping[str, object], connection_type: str, target_entity: str) -> bool:
+    """Whether a recorded connection is the one a caller named.
+
+    The type must match exactly; the target matches on its stable id, so an address that omits the
+    slug — or carries a stale one after a rename — still names the same artifact. Written once
+    because it was written four times in this module, and a predicate spelled four ways is how one
+    of the spellings ends up meaning something slightly different.
+    """
+    return (
+        conn["connection_type"] == connection_type
+        and stable_id(str(conn["target_entity"])) == stable_id(target_entity)
+    )
+
+
+def _records_it(path: Path, connection_type: str, target_entity: str) -> bool:
+    if not path.exists():
+        return False
+    from .parse_existing import parse_outgoing_file  # noqa: PLC0415
+
+    return any(
+        _is_the_connection(c, connection_type, target_entity)
+        for c in parse_outgoing_file(path).connections
+    )
+
+
+def _endpoint_that_records_it(
+    registry: ArtifactRegistry, source_entity: str, target_entity: str, connection_type: str
+) -> tuple[str, str, Path]:
+    """Which endpoint's file actually holds this connection, and the endpoints in that order.
+
+    A symmetric relationship has no direction — the ontology says so, the index buckets it as
+    `symmetric` under *both* endpoints, and creation admits it from either side. It is still written
+    down once, in one endpoint's `.outgoing.md`, so naming it from the other end found nothing and
+    reported it missing. An author deleting `B —— A` was told no such connection existed while it sat
+    in A's file, and the only way through was to know which end had happened to record it.
+
+    Directed relationships are untouched: `A -> B` and `B -> A` are different connections, and
+    looking for one under the other would delete the wrong thing.
+    """
+    named = _resolve_outgoing_path(registry, source_entity)
+    if _records_it(named, connection_type, target_entity):
+        return source_entity, target_entity, named
+
+    from src.infrastructure.app_bootstrap import process_runtime_catalogs  # noqa: PLC0415
+
+    if not process_runtime_catalogs().connections.is_symmetric(connection_type):
+        return source_entity, target_entity, named
+
+    other = _resolve_outgoing_path(registry, target_entity)
+    if _records_it(other, connection_type, source_entity):
+        return target_entity, source_entity, other
+    return source_entity, target_entity, named
+
+
 def remove_connection(
     *,
     repo_root: Path,
@@ -161,7 +214,9 @@ def remove_connection(
     If this was the last connection, the .outgoing.md file is deleted.
     """
     assert_engagement_write_root(repo_root)
-    outgoing_path = _resolve_outgoing_path(registry, source_entity)
+    source_entity, target_entity, outgoing_path = _endpoint_that_records_it(
+        registry, source_entity, target_entity, connection_type
+    )
 
     if not outgoing_path.exists():
         raise ValueError(f"No outgoing file for '{source_entity}'")
@@ -175,10 +230,7 @@ def remove_connection(
     remaining = [
         c
         for c in parsed.connections
-        if not (
-            c["connection_type"] == connection_type
-            and stable_id(str(c["target_entity"])) == stable_id(target_entity)
-        )
+        if not _is_the_connection(c, connection_type, target_entity)
     ]
 
     if len(remaining) == original_count:
@@ -278,8 +330,7 @@ def edit_connection_associations(
 
     found = False
     for conn in parsed.connections:
-        if (conn["connection_type"] == connection_type
-                and stable_id(str(conn["target_entity"])) == stable_id(target_entity)):
+        if _is_the_connection(conn, connection_type, target_entity):
             existing = as_optional_str_list(conn.get("associated_entities")) or []
             for eid in add_entities or []:
                 if eid not in existing:

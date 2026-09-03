@@ -5,13 +5,16 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.mcp.artifact_mcp.context import expand_artifact_id
 from src.infrastructure.mcp.artifact_mcp.edit_tools import _require_registry, _resolve
 
 from .common import KNOWN_DELETE_OPS
 from .delete_plan import (
-    ConnectionKey,
+    BatchKey,
+    KeyOf,
     collect_requests,
+    key_function,
     planned_steps,
     validation_error,
 )
@@ -29,7 +32,7 @@ def preflight_bulk_delete(
 ) -> tuple[
     dict[int, dict[str, object]],
     list[dict[str, Any]],
-    list[ConnectionKey],
+    list[BatchKey],
     list[str],
     list[str],
 ]:
@@ -50,8 +53,9 @@ def preflight_bulk_delete(
     registry = _require_registry(registry)
     _expand_item_ids(items, registry)
 
+    key_of = key_function(process_runtime_catalogs().connections.is_symmetric)
     explicit_connection_deletes, entity_deletes, document_deletes, diagram_deletes, duplicate_errors = collect_requests(
-        indexed
+        indexed, key_of=key_of
     )
     if duplicate_errors:
         for index, op, message in duplicate_errors:
@@ -61,7 +65,7 @@ def preflight_bulk_delete(
     entity_delete_set = set(entity_deletes)
     diagram_delete_set = set(diagram_deletes)
     explicit_connection_delete_set = set(explicit_connection_deletes)
-    implicit_connection_deletes: set[ConnectionKey] = set()
+    implicit_connection_deletes: set[BatchKey] = set()
     auto_sync_diagram_ids: set[str] = set()
     grf_refs = {
         artifact_id: [rec.artifact_id for rec in registry.grf_references_to_entity(artifact_id)]
@@ -69,6 +73,7 @@ def preflight_bulk_delete(
     }
 
     _validate_entity_deletes(
+        key_of=key_of,
         entity_deletes=entity_deletes,
         entity_delete_set=entity_delete_set,
         diagram_delete_set=diagram_delete_set,
@@ -81,6 +86,7 @@ def preflight_bulk_delete(
         auto_sync_diagram_ids=auto_sync_diagram_ids,
     )
     _validate_connection_deletes(
+        key_of=key_of,
         explicit_connection_deletes=explicit_connection_deletes,
         diagram_delete_set=diagram_delete_set,
         registry=registry,
@@ -116,19 +122,21 @@ def preflight_bulk_delete(
 
 def _validate_entity_deletes(
     *,
+    key_of: KeyOf,
     entity_deletes: dict[str, int],
     entity_delete_set: set[str],
     diagram_delete_set: set[str],
-    explicit_connection_delete_set: set[ConnectionKey],
+    explicit_connection_delete_set: set[BatchKey],
     registry: Any,
     root: Path,
     auto_sync_diagrams: bool,
     results: dict[int, dict[str, object]],
-    implicit_connection_deletes: set[ConnectionKey],
+    implicit_connection_deletes: set[BatchKey],
     auto_sync_diagram_ids: set[str],
 ) -> None:
     for artifact_id, index in entity_deletes.items():
         blockers = _entity_delete_blockers(
+            key_of=key_of,
             artifact_id=artifact_id,
             index=index,
             entity_delete_set=entity_delete_set,
@@ -153,16 +161,17 @@ def _validate_entity_deletes(
 
 def _entity_delete_blockers(
     *,
+    key_of: KeyOf,
     artifact_id: str,
     index: int,
     entity_delete_set: set[str],
     diagram_delete_set: set[str],
-    explicit_connection_delete_set: set[ConnectionKey],
+    explicit_connection_delete_set: set[BatchKey],
     registry: Any,
     root: Path,
     auto_sync_diagrams: bool,
     results: dict[int, dict[str, object]],
-    implicit_connection_deletes: set[ConnectionKey],
+    implicit_connection_deletes: set[BatchKey],
     auto_sync_diagram_ids: set[str],
 ) -> list[str]:
     entity_file = registry.find_file_by_id(artifact_id)
@@ -180,7 +189,7 @@ def _entity_delete_blockers(
 
     blockers: list[str] = []
     for rec in registry.find_connections_for(artifact_id, direction="inbound"):
-        key = (rec.source, rec.conn_type, rec.target)
+        key = key_of(rec.source, rec.conn_type, rec.target)
         if key in explicit_connection_delete_set:
             continue
         if rec.source in entity_delete_set:
@@ -230,7 +239,8 @@ def _collect_entity_diagram_effects(
 
 def _validate_connection_deletes(
     *,
-    explicit_connection_deletes: dict[ConnectionKey, int],
+    key_of: KeyOf,
+    explicit_connection_deletes: dict[BatchKey, int],
     diagram_delete_set: set[str],
     registry: Any,
     auto_sync_diagrams: bool,
@@ -238,7 +248,7 @@ def _validate_connection_deletes(
     auto_sync_diagram_ids: set[str],
 ) -> None:
     for key, index in explicit_connection_deletes.items():
-        if _connection_for_key(registry, key) is None:
+        if _connection_for_key(registry, key, key_of=key_of) is None:
             results[index] = validation_error(
                 "delete_connection",
                 f"Connection '{key[1]} -> {key[2]}' not found for source '{key[0]}'",
@@ -286,9 +296,20 @@ def _artifact_path_in_root(registry: Any, artifact_id: str, root: Path) -> bool:
     return True
 
 
-def _connection_for_key(registry: Any, key: ConnectionKey):
+def _connection_for_key(registry: Any, key: BatchKey, *, key_of: KeyOf):
+    """The connection a batch key names, whichever endpoint records it.
+
+    `direction="any"` rather than `"outbound"`: a symmetric relationship is indexed under both of its
+    endpoints and belongs to neither direction, so asking one endpoint for its outbound connections
+    does not find one recorded at the other.
+
+    Candidates are compared by their *key*, not by their endpoints. Endpoint-set equality would make
+    a directed `B -> A` answer a request to delete `A -> B` — the wrong connection, deleted with a
+    success report. Comparing keys is direction-blind exactly when the relationship is, because it
+    is the same question the rest of the batch was built on.
+    """
     source, conn_type, target = key
-    for rec in registry.find_connections_for(source, direction="outbound", conn_type=conn_type):
-        if rec.target == target:
+    for rec in registry.find_connections_for(source, direction="any", conn_type=conn_type):
+        if key_of(rec.source, rec.conn_type, rec.target) == key:
             return rec
     return None

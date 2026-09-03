@@ -2,9 +2,40 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any
 
-ConnectionKey = tuple[str, str, str]
+from src.domain.artifact_id import ConnectionKey
+
+#: How a connection is identified within one delete batch: source, type, target — normalised, so a
+#: symmetric relationship has one key whichever endpoint names it. The tuple is what the batch's
+#: sets and dicts are keyed on; `ConnectionKey` is the domain value that knows the normalisation.
+BatchKey = tuple[str, str, str]
+
+
+#: How a batch names a connection: `(source, type, target)` -> its key.
+KeyOf = Callable[[str, str, str], BatchKey]
+
+
+def key_function(is_symmetric: Callable[[str], bool]) -> KeyOf:
+    """The key both sides of a batch compare on, bound to one answer about symmetry.
+
+    A symmetric relationship has no direction, so `(A, type, B)` and `(B, type, A)` name the same
+    connection and must produce the same key. Comparing the raw triples meant a batch could not
+    recognise its own connection delete when the entity delete named the other endpoint, and the
+    author had to run the two deletes in separate passes to get past a blocker that was already
+    satisfied.
+
+    Bound once and passed, rather than each side asking for itself: the whole failure was two places
+    answering the same question differently.
+    """
+
+    def key_of(source: str, conn_type: str, target: str) -> BatchKey:
+        endpoints = ConnectionKey(src_short=source, type=conn_type, tgt_short=target)
+        normalised = endpoints.normalized(symmetric=is_symmetric(conn_type))
+        return (normalised.src_short, normalised.type, normalised.tgt_short)
+
+    return key_of
 
 
 def validation_error(op: str, message: str) -> dict[str, object]:
@@ -13,14 +44,16 @@ def validation_error(op: str, message: str) -> dict[str, object]:
 
 def collect_requests(
     indexed: list[tuple[int, dict[str, Any]]],
+    *,
+    key_of: KeyOf,
 ) -> tuple[
-    dict[ConnectionKey, int],
+    dict[BatchKey, int],
     dict[str, int],
     dict[str, int],
     dict[str, int],
     list[tuple[int, str, str]],
 ]:
-    explicit_connection_deletes: dict[ConnectionKey, int] = {}
+    explicit_connection_deletes: dict[BatchKey, int] = {}
     entity_deletes: dict[str, int] = {}
     document_deletes: dict[str, int] = {}
     diagram_deletes: dict[str, int] = {}
@@ -35,7 +68,7 @@ def collect_requests(
         op = str(item.get("op", ""))
         if op == "delete_connection":
             try:
-                key = (
+                key = key_of(
                     str(item["source_entity"]),
                     str(item["connection_type"]),
                     str(item["target_entity"]),
