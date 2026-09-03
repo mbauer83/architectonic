@@ -14,7 +14,9 @@ from src.application.artifacts.document_schema import (
     get_document_subdirectory,
     load_document_schemata,
 )
+from src.application.modeling.proposal_standing import standing_subject
 from src.application.runtime_catalogs import RuntimeCatalogs
+from src.domain.baseline_standing import BASELINE_STANDING
 from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
 from src.infrastructure.rest.contracts.authoring_catalogs import DocumentTypeListResponse
 from src.infrastructure.rest.contracts.documents import (
@@ -139,6 +141,7 @@ def list_documents(
     elif scope == "engagement":
         docs = [d for d in docs if not s.is_global(d.path)]
     page = docs[offset : offset + limit]
+    standing_of = s.baseline_standing_reader()
     return {
         "total": len(docs),
         "items": [
@@ -153,6 +156,7 @@ def list_documents(
                 "group": d.group,
                 "is_global": s.is_global(d.path),
                 "last_updated": d.last_updated,
+                BASELINE_STANDING: standing_of(standing_subject(d)).to_mapping(),
             }
             for d in page
         ],
@@ -168,6 +172,7 @@ def read_document(artifact_id: str) -> dict[str, Any]:
     if result is None or doc is None:
         raise HTTPException(404, f"Not found: {artifact_id!r}")
     result["is_global"] = s.is_global(doc.path)
+    result[BASELINE_STANDING] = s.baseline_standing_reader()(standing_subject(doc)).to_mapping()
     return result
 
 

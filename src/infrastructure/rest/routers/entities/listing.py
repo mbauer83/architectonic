@@ -11,6 +11,7 @@ from typing import Any
 
 from src.application.artifacts.query import ArtifactRepository
 from src.application.entity_type_predicates import is_assurance_entity_type, is_internal_entity_type
+from src.application.modeling.proposal_standing import standing_subject
 from src.application.record_sorting import sort_entity_records
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.domain.ontology_representation.artifact_types import EntityRecord
@@ -87,4 +88,8 @@ def select_entity_population(
 
 def build_entity_list_rows(entities: list[EntityRecord], repo: ArtifactRepository) -> list[dict[str, Any]]:
     counts = s.build_conn_counts_for_entities(repo, [e.artifact_id for e in entities])
-    return [s.entity_to_summary(e, counts) for e in entities]
+    standing_of = s.baseline_standing_reader()
+    return [
+        s.entity_to_summary(e, counts, standing=standing_of(standing_subject(e)))
+        for e in entities
+    ]

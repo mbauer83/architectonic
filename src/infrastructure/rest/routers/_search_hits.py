@@ -18,6 +18,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from src.domain.baseline_standing import BASELINE_STANDING, BaselineStanding
 from src.domain.ontology_representation.artifact_types import (
     ConnectionRecord,
     DiagramRecord,
@@ -30,7 +31,7 @@ from src.domain.ontology_representation.artifact_types import (
 from src.infrastructure.rest.routers.state import is_global
 
 
-def search_hit_to_dict(h: SearchHit) -> dict[str, Any]:
+def search_hit_to_dict(h: SearchHit, *, standing: BaselineStanding) -> dict[str, Any]:
     """Serialize a search hit, mapping each record kind to its proper display fields.
 
     Documents expose ``title``/``doc_type`` (not ``name``/``artifact_type``); diagrams
@@ -45,6 +46,9 @@ def search_hit_to_dict(h: SearchHit) -> dict[str, Any]:
         "status": rec.status,
         "path": str(rec.path),
         "last_updated": rec.last_updated,
+        # In `base`, so every arm of the match below carries it. The alternative — adding it per case
+        # — is exactly how `is_global` came to be emitted by one hit serialiser and omitted by two.
+        BASELINE_STANDING: standing.to_mapping(),
     }
     match rec:
         case EntityRecord():

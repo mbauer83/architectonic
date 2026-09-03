@@ -17,6 +17,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from src.infrastructure.rest.contracts.baseline_standing import BaselineStandingContract
 from src.infrastructure.rest.contracts.connections import ConnectionSummary
 from src.infrastructure.rest.contracts.diagram_reference import DiagramReference
 from src.infrastructure.rest.contracts.entities import (
@@ -78,6 +79,9 @@ class DiagramSummary(Closed):
     status: str
     path: str
     is_global: bool
+    #: How this artifact stands relative to the enterprise baseline. Required, not optional: absence
+    #: would read as the baseline, which is exactly the reading that hides a pending local change.
+    baseline_standing: BaselineStandingContract
     group: str | None = None
     last_updated: str | None = None
 
@@ -322,6 +326,9 @@ class DiagramDetailResponse(NullsOmitted):
     status: str
     path: str
     is_global: bool
+    #: How this artifact stands relative to the enterprise baseline. Required, not optional: absence
+    #: would read as the baseline, which is exactly the reading that hides a pending local change.
+    baseline_standing: BaselineStandingContract
     group: str | None = None
     last_updated: str | None = None
     content_snippet: str

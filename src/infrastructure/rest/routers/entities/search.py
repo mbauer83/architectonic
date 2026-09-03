@@ -8,7 +8,9 @@ from typing import Any
 from fastapi import APIRouter, Depends, Query, Request
 
 from src.application.entity_type_predicates import is_assurance_entity_type, is_internal_entity_type
+from src.application.modeling.proposal_standing import standing_subject
 from src.application.runtime_catalogs import RuntimeCatalogs
+from src.domain.baseline_standing import BASELINE_STANDING
 from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
 from src.infrastructure.rest.contracts.catalog import EntityTaxonomyResponse
 from src.infrastructure.rest.contracts.search import (
@@ -131,6 +133,7 @@ def search_reference_artifacts(
     q_lc = q.strip().lower()
     hits: list[dict[str, Any]] = []
 
+    standing_of = s.baseline_standing_reader()
     if kind in (None, "entity"):
         for entity in repo.list_entities():
             if not entity_filter.matches(entity, ontology=catalogs.ontology):
@@ -146,6 +149,7 @@ def search_reference_artifacts(
                 "domain": entity.domain,
                 "artifact_type": entity.artifact_type,
                 "is_global": s.is_global(entity.path),
+                BASELINE_STANDING: standing_of(standing_subject(entity)).to_mapping(),
             })
 
     if kind in (None, "diagram"):
@@ -163,6 +167,7 @@ def search_reference_artifacts(
                 "path": str(diagram.path),
                 "diagram_type": diagram.diagram_type,
                 "domain": domain,
+                BASELINE_STANDING: standing_of(standing_subject(diagram)).to_mapping(),
             })
 
     if kind in (None, "document"):
@@ -179,6 +184,7 @@ def search_reference_artifacts(
                 "path": str(document.path),
                 "doc_type": document.doc_type,
                 "sections": list(document.sections),
+                BASELINE_STANDING: standing_of(standing_subject(document)).to_mapping(),
             })
 
     hits.sort(key=lambda h: _score_reference_hit(str(h["name"]), str(h["artifact_id"]), q))

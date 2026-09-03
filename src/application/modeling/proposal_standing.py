@@ -22,7 +22,9 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
+from typing import TypeAlias
 
+from src.application.modeling.enterprise_reference import enterprise_target
 from src.application.modeling.proposal_edit import UnproposableEdit, from_mapping
 from src.application.modeling.proposed_change import (
     BASE_REVISION,
@@ -33,7 +35,14 @@ from src.application.modeling.proposed_change import (
     RECORDED_EDIT,
 )
 from src.domain.baseline_standing import BASELINE, BaselineStanding, ChangeCondition, Proposed
-from src.domain.ontology_representation.artifact_types import EntityRecord
+from src.domain.ontology_representation.artifact_types import (
+    ConnectionRecord,
+    DiagramRecord,
+    DocumentRecord,
+    EntityRecord,
+    ScratchpadNoteRecord,
+    ScratchpadRecord,
+)
 
 #: What the resolver is given for one artifact's current content. `None` where the artifact cannot be
 #: read — an enterprise repository that is not mounted, or a target that no longer exists. A revision
@@ -41,6 +50,13 @@ from src.domain.ontology_representation.artifact_types import EntityRecord
 #: in the alarming direction: telling an author their work is stale when the evidence is missing costs
 #: them a rebase they did not need.
 RevisionReader = Callable[[str], str | None]
+
+#: Every record kind a read can hand back. Only an entity can proxy an enterprise artifact, so only
+#: an entity has a subject different from itself — but the others still need an answer, because a
+#: search returns them beside entities and every hit carries a standing.
+StandingBearer: TypeAlias = (
+    EntityRecord | ConnectionRecord | DiagramRecord | DocumentRecord | ScratchpadRecord | ScratchpadNoteRecord
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -126,3 +142,21 @@ def _decode(record: EntityRecord) -> PendingProposal | None:
         changed_fields=tuple(sorted(recorded.fields)),
         base_revision=base.strip(),
     )
+
+
+def standing_subject(record: StandingBearer) -> str:
+    """The artifact whose standing this record shows.
+
+    A change is proposed against an *enterprise* artifact, which an engagement repository holds as a
+    reference proxying it. So a reference reports the standing of what it stands for, and everything
+    else reports its own — which for an ordinary engagement entity is the baseline, since nothing can
+    be proposed against it, and for an enterprise artifact read directly is its own pending changes.
+
+    Every record kind a read can return, in one place: a search answers over five of them, and each
+    serialiser working the subject out for itself is how one of them would come to disagree.
+    """
+    match record:
+        case EntityRecord():
+            return enterprise_target(record.extra) or record.artifact_id
+        case _:
+            return record.artifact_id

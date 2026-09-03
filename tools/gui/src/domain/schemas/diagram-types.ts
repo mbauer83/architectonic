@@ -1,4 +1,5 @@
 import { Schema } from 'effect'
+import { BaselineStandingSchema } from './baselineStanding'
 
 export const DiagramSummarySchema = Schema.Struct({
   artifact_id: Schema.String,
@@ -11,6 +12,7 @@ export const DiagramSummarySchema = Schema.Struct({
   // diagram arrives as `group: null` and a decoder accepting only absence dropped the row.
   group: Schema.optional(Schema.NullOr(Schema.String)),
   is_global: Schema.Boolean,
+  baseline_standing: BaselineStandingSchema,
   last_updated: Schema.optional(Schema.NullOr(Schema.String)),
 })
 export type DiagramSummary = typeof DiagramSummarySchema.Type

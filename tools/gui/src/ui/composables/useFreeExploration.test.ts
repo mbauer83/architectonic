@@ -55,6 +55,7 @@ const entity = (id: string) => ({
   domain: 'motivation', subdomain: 'requirement', record_type: 'entity' as const, path: '',
   keywords: [], properties: {}, attributes: {}, specializations: [], display_blocks: {}, extra: {},
   referenced_in_documents: [], referenced_in_diagrams: [], referenced_in_scratchpads: [], conn_in: 0, conn_sym: 0, conn_out: 0,
+  baseline_standing: { kind: 'enterprise-baseline' as const },
 })
 
 /** Enough of `ModelService` for exploration, answering from `MODEL`. */

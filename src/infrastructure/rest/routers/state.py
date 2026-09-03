@@ -3,10 +3,15 @@
 from __future__ import annotations
 
 import threading
+from collections.abc import Callable
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from src.application.derivation.refresh import compute_revision
 from src.application.modeling.enterprise_reference import enterprise_target
+from src.application.modeling.proposal_standing import pending_proposals, standing_for
+from src.application.modeling.proposed_change import PROPOSED_CHANGE_TYPE
+from src.domain.baseline_standing import BASELINE, BASELINE_STANDING, BaselineStanding
 
 if TYPE_CHECKING:
     from fastapi import HTTPException
@@ -116,9 +121,38 @@ def is_global(path: Path) -> bool:
     return ent is not None and path.is_relative_to(ent)
 
 
+def baseline_standing_reader() -> Callable[[str], BaselineStanding]:
+    """A reader answering how any artifact stands relative to the enterprise baseline.
+
+    The pending changes are gathered **once** and closed over, so a list read of several hundred rows
+    derives them once rather than per row. Callers hold the reader for one response and discard it;
+    it is a snapshot, which is what a single response should be answering from anyway.
+
+    Staleness is decided against `compute_revision` — the content hash the stale-write contract
+    already uses — so there is one notion of "what the artifact was" rather than a second one grown
+    for this.
+    """
+    repo = maybe_get_repo()
+    if repo is None:
+        return lambda _artifact_id: BASELINE
+    pending = pending_proposals(repo.list_entities(artifact_type=PROPOSED_CHANGE_TYPE))
+    if not pending:
+        # Nothing is proposed anywhere, which is the ordinary state of a repository. Skip the
+        # per-artifact revision reads entirely rather than hashing files to confirm it.
+        return lambda _artifact_id: BASELINE
+
+    def revision_of(artifact_id: str) -> str | None:
+        record = repo.get_entity(artifact_id)
+        return compute_revision(record.path) if record is not None and record.path.exists() else None
+
+    return lambda artifact_id: standing_for(artifact_id, pending, revision_of=revision_of)
+
+
 def entity_to_summary(
     e: EntityRecord,
     conn_counts: dict[str, tuple[int, int, int]] | None = None,
+    *,
+    standing: BaselineStanding,
 ) -> dict[str, Any]:
     d: dict[str, Any] = {
         "artifact_id": e.artifact_id,
@@ -133,6 +167,10 @@ def entity_to_summary(
         "group": e.group,
         "specializations": list(e.specializations),
         "last_updated": e.last_updated,
+        # Keyword-only and required above, so a caller cannot build a summary that stays silent about
+        # local changes. `is_global` sits two lines up as the counter-example: declared optional, and
+        # two of its three serialisers omit it.
+        BASELINE_STANDING: standing.to_mapping(),
     }
     if e.host_diagram_id is not None:
         d["host_diagram_id"] = e.host_diagram_id
@@ -200,7 +238,7 @@ def connection_to_dict(c: ConnectionRecord) -> dict[str, Any]:
     return d
 
 
-def diagram_to_summary(d: DiagramRecord) -> dict[str, Any]:
+def diagram_to_summary(d: DiagramRecord, *, standing: BaselineStanding) -> dict[str, Any]:
     return {
         "artifact_id": d.artifact_id,
         "name": d.name,
@@ -211,6 +249,7 @@ def diagram_to_summary(d: DiagramRecord) -> dict[str, Any]:
         "group": d.group,
         "is_global": is_global(d.path),
         "last_updated": d.last_updated,
+        BASELINE_STANDING: standing.to_mapping(),
     }
 
 

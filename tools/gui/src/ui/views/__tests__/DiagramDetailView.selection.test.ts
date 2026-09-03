@@ -49,6 +49,7 @@ const makeEntity = (id: string, alias: string, hostDiagramId?: string): DiagramC
   subdomain: '',
   path: '/tmp/x.md',
   is_global: false,
+  baseline_standing: { kind: 'enterprise-baseline' },
   group: 'uncategorized',
   display_alias: alias,
   host_diagram_id: hostDiagramId,

@@ -12,6 +12,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from src.domain.baseline_standing import BASELINE
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, DiagramRecord, EntityRecord
 from src.infrastructure.rest.routers import state as s
 
@@ -188,7 +189,7 @@ class TestEntityToSummary:
         repo = ArtifactRepository(shared_artifact_index([eng]))
         s.init_state(repo, eng, None)
         entity = _make_entity()
-        result = s.entity_to_summary(entity)
+        result = s.entity_to_summary(entity, standing=BASELINE)
         assert result["artifact_id"] == entity.artifact_id
         assert "conn_in" not in result
 
@@ -202,7 +203,7 @@ class TestEntityToSummary:
         s.init_state(repo, eng, None)
         entity = _make_entity()
         counts = {entity.artifact_id: (2, 1, 3)}
-        result = s.entity_to_summary(entity, conn_counts=counts)
+        result = s.entity_to_summary(entity, conn_counts=counts, standing=BASELINE)
         assert result["conn_in"] == 2
         assert result["conn_sym"] == 1
         assert result["conn_out"] == 3
@@ -234,7 +235,7 @@ class TestConnectionToDict:
 class TestDiagramToSummary:
     def test_basic(self) -> None:
         diag = _make_diagram()
-        result = s.diagram_to_summary(diag)
+        result = s.diagram_to_summary(diag, standing=BASELINE)
         assert result["artifact_id"] == diag.artifact_id
         assert result["name"] == diag.name
         assert result["diagram_type"] == "component"

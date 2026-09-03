@@ -23,7 +23,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Literal, TypeAlias, get_args
+from typing import Final, Literal, TypeAlias, get_args
 
 #: Whether a proposal still applies cleanly to the baseline it names. Derived on every read from the
 #: proposal and the current enterprise state; never persisted.
@@ -31,9 +31,15 @@ ChangeCondition: TypeAlias = Literal["current", "stale", "conflicting"]
 
 CHANGE_CONDITIONS: tuple[str, ...] = get_args(ChangeCondition)
 
+#: The field a payload carries the standing under. Named here, with the value, so a serialiser and a
+#: client cannot spell it differently.
+BASELINE_STANDING = "baseline_standing"
+
 #: The discriminator a payload carries, so a client can match on the same two arms.
-BASELINE_KIND = "enterprise-baseline"
-PROPOSED_KIND = "proposed"
+#: `Final[Literal[...]]` rather than `str`, so the wire contract can declare its discriminator as
+#: these exact values and a type checker holds the two together. The same idiom `Severity` uses.
+BASELINE_KIND: Final[Literal["enterprise-baseline"]] = "enterprise-baseline"
+PROPOSED_KIND: Final[Literal["proposed"]] = "proposed"
 
 
 class ImpossibleStanding(ValueError):

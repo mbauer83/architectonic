@@ -10,7 +10,9 @@ from src.application.artifacts.entity_references import diagram_reference_dicts
 from src.application.artifacts.parsing import parse_diagram_source
 from src.application.assurance.diagrams import assurance_surface_diagram_types
 from src.application.modeling.binding_normalize import restore_diagram_shorthand
+from src.application.modeling.proposal_standing import standing_subject
 from src.application.runtime_catalogs import RuntimeCatalogs
+from src.domain.baseline_standing import BASELINE_STANDING
 from src.infrastructure.app_bootstrap import (
     complete_diagram_type_catalog,
     runtime_catalogs_dependency,
@@ -71,6 +73,7 @@ def _read_diagram_impl(id: str, catalogs: RuntimeCatalogs) -> dict[str, Any]:
         _png = _rendered_path(diag_rec, ".png")
         result["rendered_filename"] = _png.name if _png is not None else None
         result["is_global"] = s.is_global(diag_rec.path)
+        result[BASELINE_STANDING] = s.baseline_standing_reader()(standing_subject(diag_rec)).to_mapping()
         parsed = parse_diagram_source(str(result.get("puml_source", "")))
         frontmatter = parsed["frontmatter"]
         entity_ids_used = frontmatter.get("entity-ids-used")
@@ -113,7 +116,13 @@ def list_diagrams(
         diagrams = [d for d in diagrams if s.is_global(d.path)]
     elif scope == "engagement":
         diagrams = [d for d in diagrams if not s.is_global(d.path)]
-    return {"total": len(diagrams), "items": [s.diagram_to_summary(d) for d in diagrams]}
+    standing_of = s.baseline_standing_reader()
+    return {
+        "total": len(diagrams),
+        "items": [
+            s.diagram_to_summary(d, standing=standing_of(standing_subject(d))) for d in diagrams
+        ],
+    }
 
 
 @router.get(

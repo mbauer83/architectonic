@@ -25,9 +25,10 @@ export const toDiagramContextEntityStub = (
   artifact_id: entity.id, artifact_type: entity.type, name: entity.name,
   display_alias: aliasById.get(entity.id) ?? entity.id, version: '', status: '', domain: '',
   subdomain: '', path: '', specializations: [],
-  // Execution items carry no tier; the stub exists only for alias resolution, so the
-  // required list-contract flag defaults to the engagement tier.
+  // Execution items carry no tier and no proposal state; the stub exists only for alias
+  // resolution, so both required list-contract fields take the plain reading.
   is_global: false,
+  baseline_standing: { kind: 'enterprise-baseline' },
 })
 
 /** `nameById` fills in the sidebar's connection-flow display (`source_name`/`target_name`);

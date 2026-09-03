@@ -1,4 +1,5 @@
 import { Schema } from 'effect'
+import { BaselineStandingSchema } from './baselineStanding'
 import { ViewpointApplicationSchema } from './viewpoints'
 import { EntityContextConnectionSchema } from './connections'
 import { EntityDisplayInfoSchema } from './entities'
@@ -34,6 +35,7 @@ export const DiagramDetailSchema = Schema.Struct({
   record_type: Schema.Literal('diagram'),
   path: Schema.String,
   is_global: Schema.Boolean,
+  baseline_standing: BaselineStandingSchema,
   group: Schema.optional(Schema.String),
   last_updated: Schema.optional(Schema.String),
   content_snippet: Schema.String,
@@ -143,6 +145,7 @@ export const DiagramContextEntitySchema = Schema.Struct({
   subdomain: Schema.String,
   path: Schema.String,
   is_global: Schema.Boolean,
+  baseline_standing: BaselineStandingSchema,
   display_alias: Schema.String,
   bindings: Schema.optional(Schema.Array(ElementCorrespondenceSchema)),
   group: Schema.optional(Schema.String),

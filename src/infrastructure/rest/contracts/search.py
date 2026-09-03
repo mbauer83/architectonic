@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from typing import Literal
 
+from src.infrastructure.rest.contracts.baseline_standing import BaselineStandingContract
 from src.infrastructure.rest.contracts.wire_shape import Closed
 
 #: The record kinds the keyword search can return. Connections are excluded upstream and serialised
@@ -66,6 +67,9 @@ class KeywordSearchHit(Closed):
     domain: str | None = None
     subdomain: str | None = None
     is_global: bool | None = None
+    #: How this artifact stands relative to the enterprise baseline. Required, not optional: absence
+    #: would read as the baseline, which is exactly the reading that hides a pending local change.
+    baseline_standing: BaselineStandingContract
     host_diagram_id: str | None = None
     diagram_internal: bool | None = None
     diagram_type: str | None = None
@@ -146,6 +150,9 @@ class ReferenceSearchHit(Closed):
     doc_type: str | None = None
     sections: list[str] | None = None
     is_global: bool | None = None
+    #: How this artifact stands relative to the enterprise baseline. Required, not optional: absence
+    #: would read as the baseline, which is exactly the reading that hides a pending local change.
+    baseline_standing: BaselineStandingContract
 
 
 class ReferenceSearchResponse(Closed):

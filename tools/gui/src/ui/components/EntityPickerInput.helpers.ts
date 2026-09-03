@@ -21,6 +21,9 @@ export function entityDisplayInfoToHit(entity: EntityDisplayInfo): PickerHit {
     artifact_type: entity.artifact_type,
     domain: entity.domain,
     diagram_internal: entity.diagram_internal,
+    // The display search answers over entities the picker may place; whether one carries a pending
+    // change is not what the picker is choosing on, and the item it adapts does not report it.
+    baseline_standing: { kind: 'enterprise-baseline' },
   }
 }
 

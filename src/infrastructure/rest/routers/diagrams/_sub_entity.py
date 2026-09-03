@@ -14,6 +14,8 @@ from fastapi import APIRouter, HTTPException
 from src.application._diagram_entity_extraction import extract_diagram_entities
 from src.application.artifacts._query_helpers import read_entity as serialize_entity
 from src.application.artifacts.parsing import parse_entity_content_sections
+from src.application.modeling.proposal_standing import standing_subject
+from src.domain.baseline_standing import BASELINE_STANDING
 from src.infrastructure.rest.contracts.entities import EntityDetailResponse
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers._openapi import READ_RESPONSES, TAG_DIAGRAMS
@@ -67,4 +69,5 @@ def get_diagram_entity(
     detail["properties"] = parsed["properties"]
     detail["notes"] = parsed["notes"]
     detail["is_global"] = s.is_global(record.path)
+    detail[BASELINE_STANDING] = s.baseline_standing_reader()(standing_subject(record)).to_mapping()
     return detail

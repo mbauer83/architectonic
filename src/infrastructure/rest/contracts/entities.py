@@ -19,6 +19,7 @@ from typing import Any, Literal
 from pydantic import ConfigDict, Field, RootModel
 
 from src.application.read_models import ConnectionDirection
+from src.infrastructure.rest.contracts.baseline_standing import BaselineStandingContract
 from src.infrastructure.rest.contracts.diagram_reference import DiagramReference
 from src.infrastructure.rest.contracts.scratchpad_reference import ScratchpadReference
 from src.infrastructure.rest.contracts.wire_nulls import NullsOmitted
@@ -43,6 +44,9 @@ class EntitySummary(NullsOmitted):
     subdomain: str
     path: str
     is_global: bool
+    #: How this artifact stands relative to the enterprise baseline. Required, not optional: absence
+    #: would read as the baseline, which is exactly the reading that hides a pending local change.
+    baseline_standing: BaselineStandingContract
     group: str | None = None
     #: Every applied specialization slug, in declaration order.
     #:
@@ -141,6 +145,9 @@ class EntityDetailResponse(EntityRecordFields):
     conn_sym: int | None = None
     conn_out: int | None = None
     is_global: bool | None = None
+    #: How this artifact stands relative to the enterprise baseline. Required, not optional: absence
+    #: would read as the baseline, which is exactly the reading that hides a pending local change.
+    baseline_standing: BaselineStandingContract
     referenced_in_documents: list[DocumentReference] = []
     #: Every diagram that draws this entity. The other half of "where does this appear": the documents
     #: that link to it were served here all along, and the diagrams that draw it were not, although the

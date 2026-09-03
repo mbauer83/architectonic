@@ -13,8 +13,10 @@ from src.application.artifacts.entity_references import references_to
 from src.application.artifacts.parsing import decode_entity_properties, parse_entity_content_sections
 from src.application.artifacts.schema import load_attribute_schema
 from src.application.entity_type_predicates import is_internal_entity_type
+from src.application.modeling.proposal_standing import standing_subject
 from src.application.read_models import EntityContextReadModel
 from src.application.runtime_catalogs import RuntimeCatalogs
+from src.domain.baseline_standing import BASELINE_STANDING
 from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
 from src.infrastructure.rest.contracts.catalog import (
     BackendIdentityResponse,
@@ -179,6 +181,7 @@ def read_entity(artifact_id: str) -> dict[str, Any]:
         result["conn_sym"] = sym
         result["conn_out"] = out
         result["is_global"] = s.is_global(entity_rec.path)
+        result[BASELINE_STANDING] = s.baseline_standing_reader()(standing_subject(entity_rec)).to_mapping()
     return result
 
 
@@ -208,6 +211,9 @@ def read_entity_context(artifact_id: str) -> EntityContextReadModel:
         context["entity"]["properties"] = decode_entity_properties(raw_props, prop_schemata, attr_types)
         context["entity"]["notes"] = parsed["notes"]
         context["entity"]["is_global"] = s.is_global(entity_rec.path)
+        context["entity"][BASELINE_STANDING] = (
+            s.baseline_standing_reader()(standing_subject(entity_rec)).to_mapping()
+        )
         context["entity"].update(references_to(entity_rec, repo))
     return context
 

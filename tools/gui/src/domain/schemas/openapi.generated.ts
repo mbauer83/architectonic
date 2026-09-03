@@ -6272,6 +6272,8 @@ export interface components {
             artifact_id: string;
             /** Artifact Type */
             artifact_type: string;
+            /** Baseline Standing */
+            baseline_standing: components["schemas"]["EnterpriseBaselineStanding"] | components["schemas"]["ProposedStanding"];
             /** Bindings */
             bindings?: components["schemas"]["ElementCorrespondenceWire"][];
             /** Conn In */
@@ -6363,6 +6365,8 @@ export interface components {
             artifact_type: string;
             /** Authored Groupings */
             authored_groupings?: components["schemas"]["AuthoredGroupingResponse"][];
+            /** Baseline Standing */
+            baseline_standing: components["schemas"]["EnterpriseBaselineStanding"] | components["schemas"]["ProposedStanding"];
             /** Connection Ids Used */
             connection_ids_used?: string[];
             /** Content Snippet */
@@ -6612,6 +6616,8 @@ export interface components {
         DiagramSummary: {
             /** Artifact Id */
             artifact_id: string;
+            /** Baseline Standing */
+            baseline_standing: components["schemas"]["EnterpriseBaselineStanding"] | components["schemas"]["ProposedStanding"];
             /** Diagram Type */
             diagram_type: string;
             /** Group */
@@ -6869,6 +6875,8 @@ export interface components {
              * @constant
              */
             artifact_type: "document";
+            /** Baseline Standing */
+            baseline_standing: components["schemas"]["EnterpriseBaselineStanding"] | components["schemas"]["ProposedStanding"];
             /** Content Snippet */
             content_snippet: string;
             /** Content Text */
@@ -7057,6 +7065,8 @@ export interface components {
         DocumentSummary: {
             /** Artifact Id */
             artifact_id: string;
+            /** Baseline Standing */
+            baseline_standing: components["schemas"]["EnterpriseBaselineStanding"] | components["schemas"]["ProposedStanding"];
             /** Doc Type */
             doc_type: string;
             /** Group */
@@ -7428,6 +7438,17 @@ export interface components {
             has_uncommitted_changes: boolean;
         };
         /**
+         * EnterpriseBaselineStanding
+         * @description What is shown is exactly the enterprise baseline.
+         */
+        EnterpriseBaselineStanding: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "enterprise-baseline";
+        };
+        /**
          * EnterpriseGroupOption
          * @description One enterprise group a mapping may be redirected to.
          */
@@ -7610,6 +7631,8 @@ export interface components {
             attributes: {
                 [key: string]: unknown;
             };
+            /** Baseline Standing */
+            baseline_standing: components["schemas"]["EnterpriseBaselineStanding"] | components["schemas"]["ProposedStanding"];
             /** Conn In */
             conn_in?: number;
             /** Conn Out */
@@ -7864,6 +7887,8 @@ export interface components {
             artifact_id: string;
             /** Artifact Type */
             artifact_type: string;
+            /** Baseline Standing */
+            baseline_standing: components["schemas"]["EnterpriseBaselineStanding"] | components["schemas"]["ProposedStanding"];
             /** Conn In */
             conn_in?: number;
             /** Conn Out */
@@ -8750,6 +8775,8 @@ export interface components {
             artifact_id: string;
             /** Artifact Type */
             artifact_type: string;
+            /** Baseline Standing */
+            baseline_standing: components["schemas"]["EnterpriseBaselineStanding"] | components["schemas"]["ProposedStanding"];
             /** Description */
             description?: string | null;
             /** Diagram Internal */
@@ -10156,6 +10183,28 @@ export interface components {
             target_kind: string;
         };
         /**
+         * ProposedStanding
+         * @description The baseline plus local changes that have not been accepted upstream.
+         */
+        ProposedStanding: {
+            /** Base Revision */
+            base_revision: string;
+            /** Changed Fields */
+            changed_fields: string[];
+            /**
+             * Condition
+             * @enum {string}
+             */
+            condition: "current" | "stale" | "conflicting";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "proposed";
+            /** Proposal Ids */
+            proposal_ids: string[];
+        };
+        /**
          * ProvenanceImmutableDetails
          * @description ``provenance_immutable``: the analysis that already authored this node.
          */
@@ -10298,6 +10347,8 @@ export interface components {
             artifact_id: string;
             /** Artifact Type */
             artifact_type?: string | null;
+            /** Baseline Standing */
+            baseline_standing: components["schemas"]["EnterpriseBaselineStanding"] | components["schemas"]["ProposedStanding"];
             /** Diagram Type */
             diagram_type?: string | null;
             /** Doc Type */

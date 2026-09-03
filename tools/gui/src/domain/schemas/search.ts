@@ -1,4 +1,5 @@
 import { Schema } from 'effect'
+import { BaselineStandingSchema } from './baselineStanding'
 
 /**
  * One artifact matched by keyword, with the display fields its kind actually has.
@@ -25,6 +26,7 @@ export const SearchHitSchema = Schema.Struct({
   domain: Schema.optional(Schema.NullOr(Schema.String)),
   subdomain: Schema.optional(Schema.NullOr(Schema.String)),
   is_global: Schema.optional(Schema.NullOr(Schema.Boolean)),
+  baseline_standing: BaselineStandingSchema,
   // Present together, only for a construct a diagram owns — how a display surface tells one from a
   // model entity.
   host_diagram_id: Schema.optional(Schema.NullOr(Schema.String)),
@@ -93,6 +95,7 @@ export const ReferenceSearchHitSchema = Schema.Struct({
   // possible without a second request.
   sections: Schema.optional(Schema.NullOr(Schema.Array(Schema.String))),
   is_global: Schema.optional(Schema.NullOr(Schema.Boolean)),
+  baseline_standing: BaselineStandingSchema,
 })
 export type ReferenceSearchHit = typeof ReferenceSearchHitSchema.Type
 

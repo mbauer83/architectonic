@@ -15,6 +15,7 @@ from typing import Any, Literal
 
 from pydantic import ConfigDict, RootModel
 
+from src.infrastructure.rest.contracts.baseline_standing import BaselineStandingContract
 from src.infrastructure.rest.contracts.wire_nulls import NullsOmitted, mark_nulls_omitted
 from src.infrastructure.rest.contracts.wire_shape import Closed
 
@@ -31,6 +32,9 @@ class DocumentSummary(Closed):
     sections: list[str]
     group: str
     is_global: bool
+    #: How this artifact stands relative to the enterprise baseline. Required, not optional: absence
+    #: would read as the baseline, which is exactly the reading that hides a pending local change.
+    baseline_standing: BaselineStandingContract
     last_updated: str | None = None
 
 
@@ -70,6 +74,9 @@ class DocumentDetailResponse(Closed):
     content_text: str
     group: str
     is_global: bool
+    #: How this artifact stands relative to the enterprise baseline. Required, not optional: absence
+    #: would read as the baseline, which is exactly the reading that hides a pending local change.
+    baseline_standing: BaselineStandingContract
     last_updated: str | None = None
     extra: dict[str, object] = {}
 

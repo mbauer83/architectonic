@@ -42,6 +42,7 @@ const makeEntity = (id: string, alias: string): DiagramContextEntity => ({
   path: '/tmp/x.md',
   specializations: [],
   is_global: false,
+  baseline_standing: { kind: 'enterprise-baseline' },
   group: 'uncategorized',
   display_alias: alias,
 })

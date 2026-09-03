@@ -11,6 +11,7 @@ from src.application.modeling.enterprise_reference import (
     GLOBAL_ARTIFACT_ENTITY_TYPE,
     proxies_an_entity,
 )
+from src.application.modeling.proposal_standing import standing_subject
 from src.application.ontology_views import (
     classification_levels_payload,
     element_appearance_payload,
@@ -153,7 +154,14 @@ def register_connection_read_routes(router: APIRouter) -> None:
             visible_diagram_entity_types=visible_diagram_entity_types(catalogs),
         )
         hits = prioritize_global_hits(result.hits)
-        return {"query": result.query, "hits": [search_hit_to_dict(hit) for hit in hits]}
+        standing_of = s.baseline_standing_reader()
+        return {
+            "query": result.query,
+            "hits": [
+                search_hit_to_dict(hit, standing=standing_of(standing_subject(hit.record)))
+                for hit in hits
+            ],
+        }
 
     @router.get("/api/relation-notations", tags=[TAG_CONNECTIONS],
         summary="How each relationship type is drawn", response_model=RelationNotationsResponse)

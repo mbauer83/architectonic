@@ -1,4 +1,5 @@
 import { Schema } from 'effect'
+import { BaselineStandingSchema } from './baselineStanding'
 
 // ── Frontmatter fields ────────────────────────────────────────────────────────
 
@@ -63,6 +64,7 @@ export const DocumentSummarySchema = Schema.Struct({
   // the day the producer stops filling the field.
   group: Schema.String,
   is_global: Schema.Boolean,
+  baseline_standing: BaselineStandingSchema,
   last_updated: Schema.optional(Schema.NullOr(Schema.String)),
 })
 export type DocumentSummary = typeof DocumentSummarySchema.Type
@@ -94,6 +96,7 @@ export const DocumentDetailSchema = Schema.Struct({
   content_snippet: Schema.String,
   content_text: Schema.String,
   is_global: Schema.Boolean,
+  baseline_standing: BaselineStandingSchema,
   last_updated: Schema.optional(Schema.NullOr(Schema.String)),
   extra: Schema.Record({ key: Schema.String, value: Schema.Unknown }),
 })

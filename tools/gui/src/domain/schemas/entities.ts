@@ -1,4 +1,5 @@
 import { Schema } from 'effect'
+import { BaselineStandingSchema } from './baselineStanding'
 import { DiagramRefSchema } from './diagram-types'
 import { EntityContextConnectionSchema } from './connections'
 
@@ -41,6 +42,7 @@ export const EntitySummarySchema = Schema.Struct({
   subdomain: Schema.String,
   path: Schema.String,
   is_global: Schema.Boolean,
+  baseline_standing: BaselineStandingSchema,
   host_diagram_id: Schema.optional(Schema.String),
   conn_in: Schema.optional(Schema.Number),
   conn_sym: Schema.optional(Schema.Number),
@@ -111,6 +113,7 @@ export const EntityDetailSchema = Schema.Struct({
   last_updated: Schema.optional(Schema.String),
   specializations: Schema.Array(Schema.String),
   is_global: Schema.optional(Schema.Boolean),
+  baseline_standing: BaselineStandingSchema,
   host_diagram_id: Schema.optional(Schema.String),
   conn_in: Schema.optional(Schema.Number),
   conn_sym: Schema.optional(Schema.Number),

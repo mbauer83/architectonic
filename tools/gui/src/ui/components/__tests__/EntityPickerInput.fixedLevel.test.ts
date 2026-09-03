@@ -149,6 +149,7 @@ describe('dividerIndex', () => {
     artifact_id: id, record_type: 'entity' as const, name: id, status: 'active',
     path: '', artifact_type: 'application-component', domain: 'application',
     diagram_internal: internal,
+    baseline_standing: { kind: 'enterprise-baseline' as const },
   })
 
   it('is the first diagram-internal hit, -1 when all are model entities', () => {

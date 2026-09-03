@@ -13,6 +13,7 @@ const row = (overrides: Partial<EntitySummary>): EntitySummary => ({
   path: '/x.md',
   specializations: [],
   is_global: false,
+  baseline_standing: { kind: 'enterprise-baseline' },
   ...overrides,
 })
 

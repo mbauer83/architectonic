@@ -35,6 +35,7 @@ const entity = (over: Partial<EntitySummary>): EntitySummary => ({
   path: '/model/application/application-component/APP@1700000000.aaaaaa.thing.md',
   specializations: [],
   is_global: false,
+  baseline_standing: { kind: 'enterprise-baseline' },
   ...over,
 })
 
