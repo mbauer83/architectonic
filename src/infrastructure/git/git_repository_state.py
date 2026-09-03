@@ -44,11 +44,25 @@ def commits_ahead_of_main(repo: Path) -> int:
         return 0
 
 
-def remote_ref_exists(enterprise_root: Path, branch: str) -> bool:
+def remote_ref_commit(enterprise_root: Path, branch: str) -> str | None:
+    """The commit `origin/<branch>` points at, or None where the remote has no such branch.
+
+    The commit rather than a yes/no, because a submission that has to survive a crash between the
+    push and the local write needs to know *which* commit is published: a ref at the commit the
+    submission expected is a completed push to recognise, and a ref at any other commit is someone
+    else's work to report rather than overwrite. `remote_ref_exists` is this question with the answer
+    thrown away, and is kept as the narrower form for callers that only need presence.
+    """
     rc, out, _ = run_repo_git(enterprise_root, "ls-remote", "--heads", "origin", branch, timeout=PUSH_TIMEOUT)
     if rc != 0:
         raise RuntimeError(f"Could not inspect origin for branch '{branch}'")
-    return bool(out)
+    first = out.split("\n", 1)[0].strip()
+    return first.split()[0] if first else None
+
+
+def remote_ref_exists(enterprise_root: Path, branch: str) -> bool:
+    """Whether `origin/<branch>` exists at all. One reading of the ref, asked two ways."""
+    return remote_ref_commit(enterprise_root, branch) is not None
 
 
 def local_ref_exists(enterprise_root: Path, branch: str) -> bool:

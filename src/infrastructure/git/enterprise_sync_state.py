@@ -250,6 +250,22 @@ def replace_lifecycle(
     )
 
 
+def replace_submission(
+    enterprise_root: Path,
+    submission: SubmissionPhase | None,
+    *,
+    status: EnterpriseSyncStatus,
+) -> SyncTransition:
+    """Record the submission in flight, leaving branch, tip and behind-count as they were.
+
+    Separate from `replace_lifecycle` because the saga advances a submission several times against
+    one unchanged branch, and routing that through the whole-lifecycle replacement would make each
+    step restate the branch and the behind-count — a caller that got either wrong would silently
+    rewrite state it was not trying to change.
+    """
+    return _transition(enterprise_root, lambda state: replace(state, status=status, submission=submission))
+
+
 def clear_lifecycle(enterprise_root: Path) -> SyncTransition:
     """Return the lifecycle to synced (branch discarded/merged); health preserved."""
     return replace_lifecycle(enterprise_root, status="synced")
