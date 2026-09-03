@@ -1,13 +1,11 @@
 <script setup lang="ts">
 import { inject } from 'vue'
-import ProposedBadge from '../components/ProposedBadge.vue'
+import ArtifactBadges from '../components/ArtifactBadges.vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { modelServiceKey } from '../keys'
 import { LIST_TIERS } from '../lib/tierUrlState'
-import { tierFromIsGlobal } from '../components/TierBadge.helpers'
 import { useDocumentsListState } from '../composables/useDocumentsListState'
 import GroupSelector from '../components/GroupSelector.vue'
-import TierBadge from '../components/TierBadge.vue'
 import TierFacet from '../components/TierFacet.vue'
 
 const svc = inject(modelServiceKey)!
@@ -145,8 +143,10 @@ const {
                 </td>
                 <td><span class="doc-type">{{ doc.doc_type }}</span></td>
                 <td>
-                  <TierBadge :tier="tierFromIsGlobal(doc.is_global)" />
-                  <ProposedBadge :standing="doc.baseline_standing" />
+                  <ArtifactBadges
+                    :is-global="doc.is_global"
+                    :standing="doc.baseline_standing"
+                  />
                 </td>
                 <td>
                   <span

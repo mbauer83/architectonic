@@ -1,16 +1,14 @@
 <script setup lang="ts">
 import { diagramCreateRoute, diagramDetailRoute, matrixCreateRoute } from '../router/artifactRoutes'
-import ProposedBadge from '../components/ProposedBadge.vue'
+import ArtifactBadges from '../components/ArtifactBadges.vue'
 import { computed, inject, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import type { DiagramTypeSummary } from '../../domain'
 import { modelServiceKey } from '../keys'
 import { LIST_TIERS } from '../lib/tierUrlState'
-import { tierFromIsGlobal } from '../components/TierBadge.helpers'
 import { useDiagramsListState } from '../composables/useDiagramsListState'
 import DiagramDownloadMenu from '../components/DiagramDownloadMenu.vue'
 import GroupSelector from '../components/GroupSelector.vue'
-import TierBadge from '../components/TierBadge.vue'
 import TierFacet from '../components/TierFacet.vue'
 
 const svc = inject(modelServiceKey)!
@@ -176,8 +174,10 @@ const diagramTypeLabel = (diagramType: string): string => {
               </div>
               <div class="diagram-meta">
                 <span class="diagram-type-badge">{{ diagramTypeLabel(d.diagram_type) }}</span>
-                <TierBadge :tier="tierFromIsGlobal(d.is_global)" />
-                <ProposedBadge :standing="d.baseline_standing" />
+                <ArtifactBadges
+                  :is-global="d.is_global"
+                  :standing="d.baseline_standing"
+                />
                 <span
                   class="status-badge"
                   :class="`status--${d.status}`"

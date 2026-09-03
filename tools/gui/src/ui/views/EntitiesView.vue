@@ -14,10 +14,8 @@ import {
   type TierSelection,
 } from '../lib/tierUrlState'
 import { entityListScope, groupFromQuery, savedGroupToMerge } from '../composables/listRequestParams'
-import TierBadge from '../components/TierBadge.vue'
-import ProposedBadge from '../components/ProposedBadge.vue'
+import ArtifactBadges from '../components/ArtifactBadges.vue'
 import TierFacet from '../components/TierFacet.vue'
-import { tierFromIsGlobal } from '../components/TierBadge.helpers'
 import EntitiesTreemap from '../components/EntitiesTreemap.vue'
 import ArchimateTypeGlyph from '../components/ArchimateTypeGlyph.vue'
 import SpecializationBadges from '../components/SpecializationBadges.vue'
@@ -427,14 +425,10 @@ const displayCount = computed(() => {
                 <RouterLink :to="{ path: entityDetailRoute(entity.artifact_id), query: browseReturnQuery }">
                   {{ entity.name || friendlyEntityId(entity.artifact_id) }}
                 </RouterLink>
-                <TierBadge
-                  v-if="entity.is_global && !isGlobal"
-                  class="row-tier-badge"
-                  :tier="tierFromIsGlobal(entity.is_global)"
-                />
-                <ProposedBadge
-                  class="row-tier-badge"
+                <ArtifactBadges
+                  :is-global="entity.is_global"
                   :standing="entity.baseline_standing"
+                  :suppress-tier="isGlobal"
                 />
                 <button
                   v-if="!activeGroup && groupOptions.length > 1 && entity.group && entity.group !== 'uncategorized'"
