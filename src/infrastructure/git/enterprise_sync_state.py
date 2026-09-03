@@ -27,10 +27,11 @@ from typing import Literal, cast, get_args
 
 from src.application.mutation_authorization import SyncHealthReason
 from src.domain.clock import utc_now_iso
+from src.domain.submission_phase import SubmissionPhase, submission_from_mapping
 
 EnterpriseSyncStatus = Literal["synced", "accumulating", "pending"]
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 _STATE_FILENAME = ".arch/enterprise-sync.json"
 _VALID_REASONS: frozenset[str] = frozenset(get_args(SyncHealthReason))
 _lock = threading.Lock()
@@ -51,6 +52,10 @@ class EnterpriseSyncState:
     pushed_at: str | None = None  # ISO-8601 timestamp of push
     commits_behind: int = 0  # commits on origin/main not yet on working branch
     health: SyncHealthRecord | None = None
+    #: The submission in flight, if one is. Written *before* the push and resolved afterwards by
+    #: comparing the remote ref against the commit it expected — see `domain/submission_phase.py`.
+    #: `None` is the ordinary state: no submission is in progress.
+    submission: SubmissionPhase | None = None
 
     def is_synced(self) -> bool:
         return self.status == "synced"
@@ -118,7 +123,23 @@ def _parse(data: dict[str, object]) -> EnterpriseSyncState:
         commits_behind=int(raw_behind) if isinstance(raw_behind, int | str) else 0,
         # Unversioned (pre-health) files load as healthy with lifecycle preserved.
         health=_parse_health(data.get("health")) if "version" in data else None,
+        submission=_parse_submission(data.get("submission")),
     )
+
+
+def _parse_submission(raw: object) -> SubmissionPhase | None:
+    """A submission record, or None where none is in flight.
+
+    A record that cannot be read is **refused**, which surfaces the whole file as corrupt rather
+    than as a healthy state with no submission. Dropping it silently would be worse than a torn
+    file: the remote could hold a review branch that nothing local knows to reconcile, and the next
+    submission would open a second one.
+    """
+    if raw is None:
+        return None
+    if not isinstance(raw, dict):
+        raise ValueError(f"submission record is not a mapping: {raw!r}")
+    return submission_from_mapping(raw)
 
 
 def _load_unlocked(enterprise_root: Path) -> EnterpriseSyncState:
@@ -152,6 +173,7 @@ def _persist_unlocked(enterprise_root: Path, previous: EnterpriseSyncState, curr
         "branch_tip": current.branch_tip,
         "pushed_at": current.pushed_at,
         "commits_behind": current.commits_behind,
+        "submission": None if current.submission is None else dict(current.submission.to_mapping()),
         "health": None
         if current.health is None
         else {
