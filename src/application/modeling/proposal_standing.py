@@ -22,8 +22,9 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
-from typing import TypeAlias
+from typing import TYPE_CHECKING, TypeAlias
 
+from src.application.derivation.refresh import compute_revision
 from src.application.modeling.enterprise_reference import enterprise_target
 from src.application.modeling.proposal_edit import UnproposableEdit, from_mapping
 from src.application.modeling.proposed_change import (
@@ -35,6 +36,10 @@ from src.application.modeling.proposed_change import (
     RECORDED_EDIT,
 )
 from src.domain.baseline_standing import BASELINE, BaselineStanding, ChangeCondition, Proposed
+
+if TYPE_CHECKING:
+    from src.application.artifacts.query import ArtifactRepository
+
 from src.domain.ontology_representation.artifact_types import (
     ConnectionRecord,
     DiagramRecord,
@@ -160,3 +165,41 @@ def standing_subject(record: StandingBearer) -> str:
             return enterprise_target(record.extra) or record.artifact_id
         case _:
             return record.artifact_id
+
+
+def standing_reader(repo: "ArtifactRepository | None") -> Callable[[str], BaselineStanding]:
+    """A reader answering how any artifact stands, for the span of one response.
+
+    The pending changes are gathered **once** and closed over, so an answer covering several hundred
+    artifacts derives them once rather than per row. Callers hold it for one response and discard it;
+    a snapshot is what a single response should be answering from.
+
+    In application rather than beside any one transport, because REST, the MCP tools and the CLI all
+    need the same answer and none of them may reach through another to get it. Staleness is decided
+    against `compute_revision` — the content hash the stale-write contract already uses — so there is
+    one notion of "what the artifact was" rather than a second grown for this.
+    """
+    if repo is None:
+        return lambda _artifact_id: BASELINE
+    pending = pending_proposals(repo.list_entities(artifact_type=PROPOSED_CHANGE_TYPE))
+    if not pending:
+        # Nothing is proposed anywhere, which is the ordinary state of a repository. Skip the
+        # per-artifact revision reads entirely rather than hashing files to confirm it.
+        return lambda _artifact_id: BASELINE
+
+    def revision_of(artifact_id: str) -> str | None:
+        record = repo.get_entity(artifact_id)
+        return compute_revision(record.path) if record is not None and record.path.exists() else None
+
+    return lambda artifact_id: standing_for(artifact_id, pending, revision_of=revision_of)
+
+
+def standing_subject_by_id(repo: "ArtifactRepository", artifact_id: str) -> str:
+    """`standing_subject` for a caller holding only an id.
+
+    A summary carries no frontmatter, so whether the artifact is a reference to an enterprise one has
+    to be read from the record. The lookup is an index hit, and the rule itself stays in one place —
+    a caller working it out from the id alone would be the second reader this module exists to avoid.
+    """
+    record = repo.get_entity(artifact_id)
+    return standing_subject(record) if record is not None else artifact_id

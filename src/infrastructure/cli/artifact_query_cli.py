@@ -4,7 +4,13 @@ from pathlib import Path
 from typing import Any
 
 from src.application.artifacts.query import ArtifactRepository
+from src.application.modeling.proposal_standing import (
+    StandingBearer,
+    standing_reader,
+    standing_subject,
+)
 from src.config.workspace_paths import resolve_workspace_repo_roots
+from src.domain.baseline_standing import EnterpriseBaseline
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, DiagramRecord, EntityRecord
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.artifact_index import shared_artifact_index
@@ -70,6 +76,23 @@ def bool_flag(args: list[str], arg_name: str) -> tuple[bool, list[str]]:
     if arg_name in args:
         return True, [arg for arg in args if arg != arg_name]
     return False, args
+
+
+def _standing_line(registry: Any, record: StandingBearer) -> str | None:
+    """How this artifact stands, as a line to print — or None when it is the plain baseline.
+
+    **The CLI is a text render, not a typed payload**, so this is where it says so. The record's own
+    `__str__` cannot: a record is parsed from one file, and whether a change is proposed against the
+    enterprise artifact it references is a fact about the whole repository. Putting a repo-wide
+    answer on a per-file record would make every record either carry a value nobody set or lie about
+    one, so the standing is resolved where the repository is in scope and rendered here.
+
+    Silent for an unproposed artifact, which is nearly all of them. A line saying "enterprise
+    baseline" under every entity is noise that trains a reader to skip the place the real answer
+    appears.
+    """
+    standing = standing_reader(registry)(standing_subject(record))
+    return None if isinstance(standing, EnterpriseBaseline) else f"    {standing}"
 
 
 def fmt_entity(rec: EntityRecord, *, verbose: bool = False) -> str:
@@ -208,6 +231,8 @@ def _cmd_get(registry: Any, args: list[str]) -> int:
         print(fmt_connection(rec, verbose=True))
     else:
         print(fmt_diagram(rec))
+    if (standing := _standing_line(registry, rec)) is not None:
+        print(standing)
     return 0
 
 
@@ -278,6 +303,11 @@ def _cmd_search(registry: Any, args: list[str]) -> int:
         include_diagrams=False if entities_only else (include_diags or not entities_only),
     )
     print(result)
+    standing_of = standing_reader(registry)
+    for hit in result.hits:
+        standing = standing_of(standing_subject(hit.record))
+        if not isinstance(standing, EnterpriseBaseline):
+            print(f"    {hit.record.artifact_id}: {standing}")
     return 0
 
 

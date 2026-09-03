@@ -3,6 +3,8 @@ from dataclasses import asdict
 from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
 from src.application.artifacts._search import ALL_SEARCHABLE_KINDS
+from src.application.modeling.proposal_standing import standing_reader, standing_subject
+from src.domain.baseline_standing import BASELINE_STANDING
 from src.domain.ontology_representation.artifact_types import (
     RecordType,
     ScratchpadNoteRecord,
@@ -101,12 +103,17 @@ def register_query_search_tools(mcp: MCPServer) -> None:
         )
 
         hits: list[dict[str, object]] = []
+        # One reader for the whole answer: the pending changes are gathered once, not per hit.
+        standing_of = standing_reader(repo)
         for h in result.hits:
             aid = getattr(h.record, "artifact_id", "")
             record = {
                 "score": h.score,
                 "record_type": h.record_type,
                 "artifact_id": aid,
+                # In the shared part, so every branch below carries it. Building it per branch is
+                # how `is_global` came to be emitted by one hit serialiser and omitted by two.
+                BASELINE_STANDING: standing_of(standing_subject(h.record)).to_mapping(),
             }
             if isinstance(h.record, ScratchpadRecord):
                 # A pad is addressable and readable on its own, so the answer is the address plus

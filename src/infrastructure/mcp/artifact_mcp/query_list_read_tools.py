@@ -4,6 +4,11 @@ from typing import Literal
 from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
 from src.application.artifacts._search import ALL_SEARCHABLE_KINDS
+from src.application.modeling.proposal_standing import (
+    standing_reader,
+    standing_subject_by_id,
+)
+from src.domain.baseline_standing import BASELINE_STANDING
 from src.infrastructure.mcp.artifact_mcp.context import (
     RepoScope,
     expand_artifact_id,
@@ -117,10 +122,14 @@ def register_query_list_read_tools(mcp: MCPServer) -> None:
         if group is not None:
             summaries = [s for s in summaries if s.group == group]
         out: list[dict[str, object]] = []
+        standing_of = standing_reader(repo)
         for s in summaries:
             d = asdict(s)
             d["path"] = str(s.path)
             d["repo_scope"] = repo_scope
+            # A summary is built from one record and cannot know what is proposed against it, so the
+            # standing is added where the repository is in scope rather than inside the summary.
+            d[BASELINE_STANDING] = standing_of(standing_subject_by_id(repo, s.artifact_id)).to_mapping()
             out.append(_project(d, fields))
         return out
 
@@ -173,4 +182,7 @@ def register_query_list_read_tools(mcp: MCPServer) -> None:
                 result["diagram_entities"] = extra.get("diagram-entities")
         result["repo_roots"] = [str(p) for p in roots]
         result["repo_scope"] = repo_scope
+        result[BASELINE_STANDING] = (
+            standing_reader(repo)(standing_subject_by_id(repo, resolved_id)).to_mapping()
+        )
         return result
