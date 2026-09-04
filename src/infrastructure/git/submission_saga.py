@@ -1,10 +1,17 @@
 """Publishing a set of proposed changes for review, in steps that survive a crash between them.
 
-`push_enterprise_branch` stamps the aggregate `pending` immediately after the push returns. That is
-truthful only while nothing goes wrong: the push updates a remote nothing local can roll back, and
-the local write happens afterwards, so a crash in between leaves a published review branch that the
-aggregate says nothing about. The next attempt then opens a second branch, or a withdrawal reports
-success over a branch that is still there.
+`push_enterprise_branch` — the *promotion* submit — stamps the aggregate `pending` immediately after
+the push returns. Measured rather than assumed: that one converges. A crash between the push and the
+write leaves `accumulating` with the branch on origin, and a retry pushes the same commit again and
+settles on one branch with a correct tip. What it could not survive was a *discard* in that window,
+which read the status instead of the remote and left the branch behind; that is fixed where it
+belonged, in the discard path.
+
+This module exists for the case a retry cannot settle. A submission carries a set of changes that are
+marked submitted once the branch is published, so "push again and see" is not available: the marking
+has to know whether *this* branch, at *this* commit, is what a reviewer is looking at. Without a
+recorded intent there is nothing to compare the remote against, and a second attempt cannot tell its
+own completed push from a branch someone else moved.
 
 This module runs the same publication as a saga:
 

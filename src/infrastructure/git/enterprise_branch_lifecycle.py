@@ -130,10 +130,15 @@ def abandon_enterprise_branch(enterprise_root: Path) -> str | None:
         )
     branch = state.branch
 
-    # 1. Remote ref absent (pending submissions only). A failed deletion whose ref
-    #    is in fact gone counts as success; a failure with the ref still present
-    #    preserves the pending state and reports — no claimed withdrawal.
-    if state.is_pending() and branch and remote_ref_exists(enterprise_root, branch):
+    # 1. Remote ref absent. Decided by asking the *remote*, not by reading the local status: the
+    #    push updates origin before the status is written, so a process that dies in between leaves
+    #    the branch published while the aggregate still says `accumulating`. Gating this on
+    #    `is_pending()` meant a discard in that window deleted the local branch, reported a
+    #    withdrawal, and left the branch on origin for a reviewer to find — the "claimed withdrawal"
+    #    the rest of this function exists to prevent, arrived through the status rather than the ref.
+    #    A failed deletion whose ref is in fact gone counts as success; a failure with the ref still
+    #    present preserves the state and reports.
+    if branch and remote_ref_exists(enterprise_root, branch):
         rc, _, stderr = run_repo_git(enterprise_root, "push", "origin", "--delete", branch, timeout=PUSH_TIMEOUT)
         if rc != 0 and remote_ref_exists(enterprise_root, branch):
             raise RuntimeError(f"Failed to delete remote branch '{branch}': {stderr}")
