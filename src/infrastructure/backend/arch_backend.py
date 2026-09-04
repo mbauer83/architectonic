@@ -357,6 +357,7 @@ def _initialise_repo(
         if recovered:
             logger.warning("Recovered %s durable transaction(s) in %s", recovered, root)
     startup_reconciliation.settle_submissions_in_flight(enterprise_root_path)
+    startup_reconciliation.forget_interrupted_worktrees(roots)
     repair_group_registries(repo_root_path, enterprise_root_path)
     # Class A profile-registry validation before the index build: a malformed registry or an
     # undefined binding makes the profile subsystem untrustworthy (engagement aborts,

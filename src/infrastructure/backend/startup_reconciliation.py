@@ -1,9 +1,10 @@
 """What a starting backend settles before it serves.
 
-Three records can outlive the process that wrote them: a durable write transaction, a submission
-prepared before a push, and a proposed change a reviewer has since applied. Each was written before
-something irreversible, and each has to be resolved before anything reports a status — otherwise the
-first served request answers from state that was true when a previous process died.
+Four kinds of leftover can outlive the process that wrote them: a durable write transaction, a
+submission prepared before a push, a proposed change a reviewer has since applied, and a rehearsal
+worktree an interrupted run never removed. Each was left behind by something that could not finish,
+and each has to be settled before anything reports a status — otherwise the first served request
+answers from state that was true when a previous process died.
 
 **None of them may prevent the backend from starting.** Two reach the network or the filesystem, and
 a workspace whose origin is unreachable, or whose one proposal is unwritable, still has a repository
@@ -70,3 +71,26 @@ def close_changes_already_integrated(repo: ArtifactRepository) -> None:
         return
     if report.changed_anything:
         logger.info("Integration sweep on startup: %s", report.summary())
+
+
+def forget_interrupted_worktrees(roots: list[Path]) -> None:
+    """Prune worktrees left registered by a run that never got to remove its own.
+
+    A killed process leaves the directory gone and the administrative entry behind, and git then
+    refuses to create a worktree at a path it still believes is registered — so the *next* rehearsal
+    fails because of the last one's interruption, which is a failure with no visible cause at the
+    place it appears.
+
+    Covers every worktree this product makes, not only a rebase rehearsal's: the sync manager creates
+    detached worktrees under `.arch-repo/sync-worktrees/` and nothing pruned those before.
+
+    Only what git reports as prunable is forgotten, so a worktree a person created and still has on
+    disk is never touched.
+    """
+    from src.infrastructure.git.rehearsal_worktree import prune_stale_worktrees  # noqa: PLC0415
+
+    for root in roots:
+        try:
+            prune_stale_worktrees(root)
+        except Exception:  # noqa: BLE001 — startup must survive a repository it cannot ask
+            logger.exception("Could not prune interrupted worktrees in %s; continuing", root)
