@@ -41,7 +41,7 @@ def register_query_search_tools(mcp: MCPServer) -> None:
         name="artifact_query_search_artifacts",
         title="Artifact Query: Search Artifacts",
         description=(
-            "Search artifacts by text query (keyword-scored; may include semantic supplement if configured). "
+            "Search artifacts by text query. Keyword-scored: semantic search is not available in this build. "
             "Returns ranked hits as (score + summary record). "
             "\n\nFilters: limit, domain, artifact_type, include_record_types, prefer_record_type, strict_record_type. "
             "Scratchpads and their notes are both searched by default. A pad is where thinking "

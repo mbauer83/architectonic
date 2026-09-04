@@ -67,11 +67,30 @@ class TestStorageSettings:
             }
             assert storage_assurance_max_classification() == "TLP:AMBER"
 
-    def test_storage_read_model_seam(self) -> None:
+    def test_storage_read_model_seam_returns_the_configured_block(self, monkeypatch) -> None:
+        """`isinstance(seam, dict)` was the whole assertion, which any dict-returning function passes.
+        What the accessor promises is the `storage.read_model` block itself."""
+        from src.config import settings
         from src.config.storage_settings import storage_read_model_seam
 
-        seam = storage_read_model_seam()
-        assert isinstance(seam, dict)
+        monkeypatch.setattr(
+            settings, "load_settings", lambda: {"storage": {"read_model": {"provider": "onnx"}}}
+        )
+
+        assert storage_read_model_seam() == {"provider": "onnx"}
+
+    @pytest.mark.parametrize(
+        "configured",
+        [{}, {"storage": {}}, {"storage": {"read_model": None}}, {"storage": "not a mapping"}],
+    )
+    def test_storage_read_model_seam_reads_nothing_configured_as_empty(self, monkeypatch, configured) -> None:
+        """A caller reads "nothing configured" rather than telling absence from an unexpected shape."""
+        from src.config import settings
+        from src.config.storage_settings import storage_read_model_seam
+
+        monkeypatch.setattr(settings, "load_settings", lambda: configured)
+
+        assert storage_read_model_seam() == {}
 
     def test_load_settings_includes_storage(self) -> None:
         from src.config.settings import load_settings

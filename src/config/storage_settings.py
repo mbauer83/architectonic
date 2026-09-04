@@ -118,7 +118,20 @@ def storage_assurance_activation_policy() -> str:
 
 
 def storage_read_model_seam() -> dict[str, object]:
-    """Return the storage.read_model seam dict (reserved for future FTS-backend toggle)."""
+    """The `storage.read_model` settings block — where a read-model backend is configured.
+
+    **No production caller yet, and the docstring used to name the wrong reason for that.** It said
+    "reserved for a future FTS-backend toggle"; the FTS backend has never been optional, and what this
+    block is actually reserved for is the semantic search adapter's configuration, which is the first
+    thing that will need a read-model setting at all.
+
+    Kept rather than deleted because the caller is a known, scheduled one. If the adapter does not
+    ship, this and its test go together — a settings accessor nothing reads is a claim nothing checks,
+    and "reserved for the future" is how one survives three releases without anyone asking.
+
+    Answers an empty mapping where the block or its parent is absent or malformed, so a caller reads
+    "nothing configured" rather than having to tell absence from a shape it did not expect.
+    """
     storage = settings.load_settings().get("storage", {})
     if not isinstance(storage, dict):
         return {}

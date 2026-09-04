@@ -40,7 +40,7 @@ looking entirely normal. See
 | `artifact_query_find_neighbors` | Read-only | Graph traversal: return direct or derived neighbors within max_hops. |
 | `artifact_query_list_artifacts` | Read-only | List artifacts (metadata-only) with AND-semantics filters. |
 | `artifact_query_read_artifact` | Read-only | Read one artifact by artifact_id. |
-| `artifact_query_search_artifacts` | Read-only | Search artifacts by text query (keyword-scored; may include semantic supplement if configured). |
+| `artifact_query_search_artifacts` | Read-only | Search artifacts by text query. |
 | `artifact_query_stats` | Read-only | Return model statistics: total entity/connection/diagram counts and breakdowns by domain, connection type, and group. |
 | `artifact_query_viewpoint` | Read-only | action='list': browse the effective merged viewpoint catalog — slug/version/name/purpose/content/stakeholders/concerns, a scope summary, a plain-language query_summary so you see what a viewpoint means, not just that it exists, and whether it is pinned (engagement-repo-local quick access). |
 | `artifact_verify` | Read-only | Verify one file or all model files. |
