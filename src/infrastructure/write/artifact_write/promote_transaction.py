@@ -23,6 +23,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 
+from src.infrastructure.git.git_worktree_checkpoint import WorktreeCheckpoint
 from src.infrastructure.write.artifact_write._promote_file_ops import rollback
 
 
@@ -62,23 +63,24 @@ class GitWorktreeTransaction:
     """Checkpoint/reset bracket on the enterprise working branch."""
 
     enterprise_root: Path
-    _head: str | None = None
-    _checkpoint: str | None = None
+    #: What `begin` recorded, or None before it ran. One record rather than two loose commits, so
+    #: "did begin happen" is one question and the branch cannot be dropped between the two.
+    _checkpoint: WorktreeCheckpoint | None = None
 
     def begin(self) -> None:
         from src.infrastructure.git.git_worktree_checkpoint import checkpoint_worktree  # noqa: PLC0415
 
-        self._head, self._checkpoint = checkpoint_worktree(self.enterprise_root)
+        self._checkpoint = checkpoint_worktree(self.enterprise_root)
 
     def commit(self) -> None:
         from src.infrastructure.git.git_worktree_checkpoint import release_worktree_checkpoint  # noqa: PLC0415
 
-        if self._head is not None and self._checkpoint is not None:
-            release_worktree_checkpoint(self.enterprise_root, head=self._head, checkpoint=self._checkpoint)
+        if self._checkpoint is not None:
+            release_worktree_checkpoint(self.enterprise_root, self._checkpoint)
 
     def abort(self) -> None:
         from src.infrastructure.git.git_worktree_checkpoint import restore_worktree_checkpoint  # noqa: PLC0415
 
-        if self._head is None or self._checkpoint is None:
+        if self._checkpoint is None:
             raise RuntimeError("GitWorktreeTransaction.abort called before begin")
-        restore_worktree_checkpoint(self.enterprise_root, head=self._head, checkpoint=self._checkpoint)
+        restore_worktree_checkpoint(self.enterprise_root, self._checkpoint)
