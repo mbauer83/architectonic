@@ -26,6 +26,7 @@ generically, and it is what lets the search use case's tier predicate name no ki
 from __future__ import annotations
 
 from collections.abc import Mapping
+from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Literal, Protocol, TypeAlias, runtime_checkable
 
@@ -95,6 +96,23 @@ RECORD_TYPE_ORDER: tuple[str, ...] = (
     *(rt for rt in KIND_TO_RECORD_TYPE.values() if rt not in SUBORDINATE_RECORD_TYPES),
     *SUBORDINATE_RECORD_ORDER,
 )
+
+
+@dataclass(frozen=True, slots=True)
+class SearchCandidate:
+    """One thing a retriever found, identified the way search identifies everything else.
+
+    `(record_type, artifact_id)` and not a bare id, because that pair is what search deduplicates on
+    (`artifacts/_search.py`) — two records of different kinds can share a textual id, and fusing bare
+    strings would collapse them into one and let a hit past the caller's kind and visibility policy.
+
+    Deliberately carries no score. A candidate is *what* a retriever found; how strongly is that
+    retriever's own scale, and the whole reason fusion is rank-based is that those scales do not
+    compare. A candidate that carried a score would invite someone to compare two.
+    """
+
+    record_type: RecordType
+    artifact_id: str
 
 
 @runtime_checkable
