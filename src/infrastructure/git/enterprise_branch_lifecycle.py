@@ -52,8 +52,7 @@ def ensure_working_branch(enterprise_root: Path) -> str:
                 )
             return branch
 
-    ts = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
-    branch_name = f"arch/work-{ts}"
+    branch_name = _new_working_branch_name(enterprise_root)
     rc, _, stderr = run_repo_git(enterprise_root, "checkout", "-b", branch_name)
     if rc != 0:
         raise RuntimeError(f"Failed to create enterprise working branch '{branch_name}': {stderr}")
@@ -62,6 +61,131 @@ def ensure_working_branch(enterprise_root: Path) -> str:
     return branch_name
 
 
+
+
+def _new_working_branch_name(enterprise_root: Path) -> str:
+    """A working-branch name no ref in this repository already holds.
+
+    The stamp is to the second, which is legible in a branch listing and was fine while a branch was
+    only ever created from `synced` — minutes after the last one was abandoned. It is not fine for a
+    replacement, which is opened *while* the branch it replaces still exists: created in the same
+    second, the two names collide and `checkout -b` refuses with `a branch named … already exists`.
+    That is the operation replacement exists for, failing exactly when it is used quickly.
+
+    So the stamp is a starting point and the ref is the authority: suffix until nothing holds the
+    name. Local refs only — the remote cannot hold a branch this repository never created, and a
+    round trip per attempt would put the network in the path of naming something.
+    """
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+    candidate = f"arch/work-{stamp}"
+    suffix = 2
+    while local_ref_exists(enterprise_root, candidate):
+        candidate = f"arch/work-{stamp}-{suffix}"
+        suffix += 1
+    return candidate
+
+
+def _drop_remote_ref(enterprise_root: Path, branch: str) -> None:
+    """Delete `origin/<branch>` if it is there, treating already-absent as success.
+
+    The re-check after a failure is the point: a deletion that reports an error but whose ref is in
+    fact gone has achieved the postcondition, and treating it as a failure would leave a caller
+    retrying something already done. A failure with the ref still present is reported, so nothing
+    upstream claims a removal that did not happen.
+    """
+    if not remote_ref_exists(enterprise_root, branch):
+        return
+    rc, _, stderr = run_repo_git(enterprise_root, "push", "origin", "--delete", branch, timeout=PUSH_TIMEOUT)
+    if rc != 0 and remote_ref_exists(enterprise_root, branch):
+        raise RuntimeError(f"Failed to delete remote branch '{branch}': {stderr}")
+
+
+def _drop_local_ref(enterprise_root: Path, branch: str) -> None:
+    """Delete the local branch if it is there, on the same already-absent-is-success rule.
+
+    The caller must not be standing on it — abandon checks out `main` first, and a retirement is
+    already on the replacement.
+    """
+    if not local_ref_exists(enterprise_root, branch):
+        return
+    rc, _, stderr = run_repo_git(enterprise_root, "branch", "-D", branch)
+    if rc != 0 and local_ref_exists(enterprise_root, branch):
+        raise RuntimeError(f"Failed to delete local branch '{branch}': {stderr}")
+
+
+def open_replacement_branch(enterprise_root: Path, *, from_head: str) -> str:
+    """Open a branch to replace one that is under review, keeping the reviewed one published.
+
+    The existing primitives permit only *abandon then create*: `ensure_working_branch` returns the
+    existing branch while the state is `accumulating` or `pending`, so creation is reachable only from
+    `synced`, and `abandon_enterprise_branch` deletes the remote ref before anything else. Together
+    that means the branch a reviewer is reading is deleted before its replacement exists — and if the
+    creation then fails, the reviewed work is gone from the remote with nothing to point at.
+
+    So: create first, record the old branch as superseded, and retire it separately once the
+    replacement is confirmed. The superseded branch's remote ref is deliberately left alone here;
+    `retire_superseded_branch` is what removes it, and until then a reviewer's link still resolves.
+
+    Only from `pending`, because that is the only state where a branch is published and a reviewer
+    could be looking at it. Replacing an `accumulating` branch is `ensure_working_branch`'s business,
+    and there is nothing published to preserve.
+    """
+    state = enterprise_sync_state.load(enterprise_root)
+    if not state.is_pending():
+        raise ValueError(
+            "A replacement branch is only opened for a submission under review; the enterprise "
+            f"repository is {state.status}."
+        )
+    if state.superseded_branch is not None:
+        raise ValueError(
+            f"Branch '{state.superseded_branch}' is still awaiting retirement. Retire it before "
+            "opening another replacement, or the first one is lost track of."
+        )
+    replaced = state.branch
+    if not replaced:
+        raise ValueError("The enterprise repository is pending review with no branch recorded")
+
+    branch_name = _new_working_branch_name(enterprise_root)
+    rc, _, stderr = run_repo_git(enterprise_root, "checkout", "-b", branch_name, from_head)
+    if rc != 0:
+        raise RuntimeError(f"Failed to open replacement branch '{branch_name}': {stderr}")
+
+    enterprise_sync_state.replace_lifecycle(
+        enterprise_root,
+        status="accumulating",
+        branch=branch_name,
+        commits_behind=state.commits_behind,
+    )
+    enterprise_sync_state.replace_superseded_branch(enterprise_root, replaced)
+    logger.info("Opened replacement branch %s; %s awaits retirement", branch_name, replaced)
+    return branch_name
+
+
+def retire_superseded_branch(enterprise_root: Path) -> str | None:
+    """Remove the replaced branch, remote ref first, once its successor is established.
+
+    Idempotent, and each postcondition treats *already absent* as success, so a retry after a partial
+    failure converges — the same shape `abandon_enterprise_branch` uses, for the same reason: a
+    half-retired branch must not need a person to finish it by hand.
+
+    Returns the branch that was retired, or None when there was none to retire.
+    """
+    state = enterprise_sync_state.load(enterprise_root)
+    branch = state.superseded_branch
+    if branch is None:
+        return None
+    if branch == state.branch:
+        raise ValueError(
+            f"'{branch}' is recorded both as the current branch and as superseded; retiring it would "
+            "delete the branch work is going to."
+        )
+
+    _drop_remote_ref(enterprise_root, branch)
+    _drop_local_ref(enterprise_root, branch)
+
+    enterprise_sync_state.replace_superseded_branch(enterprise_root, None)
+    logger.info("Retired superseded branch %s", branch)
+    return branch
 
 
 def submission_preflight(enterprise_root: Path) -> str:
@@ -138,10 +262,8 @@ def abandon_enterprise_branch(enterprise_root: Path) -> str | None:
     #    the rest of this function exists to prevent, arrived through the status rather than the ref.
     #    A failed deletion whose ref is in fact gone counts as success; a failure with the ref still
     #    present preserves the state and reports.
-    if branch and remote_ref_exists(enterprise_root, branch):
-        rc, _, stderr = run_repo_git(enterprise_root, "push", "origin", "--delete", branch, timeout=PUSH_TIMEOUT)
-        if rc != 0 and remote_ref_exists(enterprise_root, branch):
-            raise RuntimeError(f"Failed to delete remote branch '{branch}': {stderr}")
+    if branch:
+        _drop_remote_ref(enterprise_root, branch)
 
     # 2. Checkout main (already on main = success).
     if current_branch(enterprise_root) != "main":
@@ -150,10 +272,8 @@ def abandon_enterprise_branch(enterprise_root: Path) -> str | None:
             raise RuntimeError(f"Failed to return enterprise repo to main: {stderr}")
 
     # 3. Local branch absent (already absent = success).
-    if branch and local_ref_exists(enterprise_root, branch):
-        rc, _, stderr = run_repo_git(enterprise_root, "branch", "-D", branch)
-        if rc != 0 and local_ref_exists(enterprise_root, branch):
-            raise RuntimeError(f"Failed to delete local branch '{branch}': {stderr}")
+    if branch:
+        _drop_local_ref(enterprise_root, branch)
 
     # 4. Aggregate cleared — only now that every postcondition holds.
     enterprise_sync_state.clear_lifecycle(enterprise_root)

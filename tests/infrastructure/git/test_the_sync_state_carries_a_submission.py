@@ -92,14 +92,15 @@ def test_an_unreadable_submission_surfaces_as_corrupt_not_as_none(root: Path, re
     assert loaded.submission is None
 
 
-def test_the_schema_version_moved_with_the_field(root: Path) -> None:
-    """A file written now declares 3. The reader tolerates 2, which is why no migration is needed —
-    an absent submission is a valid state, not a missing one."""
+def test_the_schema_version_moves_with_each_added_field(root: Path) -> None:
+    """A file written now declares the current version. The reader tolerates every earlier one, which
+    is why no migration step exists — an absent field is a valid state, not a missing one. Asserted
+    against the constant rather than a literal, so a later additive field moves this with it."""
     state._persist_unlocked(
         root, state.EnterpriseSyncState(), state.EnterpriseSyncState(status="pending", submission=_prepared())
     )
     written = json.loads((root / ".arch" / "enterprise-sync.json").read_text(encoding="utf-8"))
 
-    assert written["version"] == state.SCHEMA_VERSION == 3
+    assert written["version"] == state.SCHEMA_VERSION
     assert written["submission"]["phase"] == "prepared"
     assert written["submission"]["proposal_ids"] == ["PCH@1.a", "PCH@1.b"]

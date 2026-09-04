@@ -31,7 +31,7 @@ from src.domain.submission_phase import SubmissionPhase, submission_from_mapping
 
 EnterpriseSyncStatus = Literal["synced", "accumulating", "pending"]
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 _STATE_FILENAME = ".arch/enterprise-sync.json"
 _VALID_REASONS: frozenset[str] = frozenset(get_args(SyncHealthReason))
 _lock = threading.Lock()
@@ -56,6 +56,11 @@ class EnterpriseSyncState:
     #: comparing the remote ref against the commit it expected — see `domain/submission_phase.py`.
     #: `None` is the ordinary state: no submission is in progress.
     submission: SubmissionPhase | None = None
+    #: A branch that has been replaced but whose remote ref is still published, because a reviewer
+    #: may be looking at it. Two named roles rather than a list: there is one branch work goes to and
+    #: at most one awaiting retirement. Held until the replacement is confirmed, or an
+    #: abandon-then-create ordering would delete a reviewed branch before its successor existed.
+    superseded_branch: str | None = None
 
     def is_synced(self) -> bool:
         return self.status == "synced"
@@ -124,6 +129,7 @@ def _parse(data: dict[str, object]) -> EnterpriseSyncState:
         # Unversioned (pre-health) files load as healthy with lifecycle preserved.
         health=_parse_health(data.get("health")) if "version" in data else None,
         submission=_parse_submission(data.get("submission")),
+        superseded_branch=superseded if isinstance(superseded := data.get("superseded_branch"), str) else None,
     )
 
 
@@ -174,6 +180,7 @@ def _persist_unlocked(enterprise_root: Path, previous: EnterpriseSyncState, curr
         "pushed_at": current.pushed_at,
         "commits_behind": current.commits_behind,
         "submission": None if current.submission is None else dict(current.submission.to_mapping()),
+        "superseded_branch": current.superseded_branch,
         "health": None
         if current.health is None
         else {
@@ -236,7 +243,13 @@ def replace_lifecycle(
     pushed_at: str | None = None,
     commits_behind: int = 0,
 ) -> SyncTransition:
-    """Replace the whole lifecycle; active health is preserved untouched."""
+    """Replace the whole lifecycle; active health and any superseded branch are preserved untouched.
+
+    A superseded branch outlives the lifecycle transitions that happen while it waits: work
+    accumulates on its replacement, that replacement is submitted, and throughout, a reviewer may
+    still be reading the old one. Clearing it here would retire it by side effect of an unrelated
+    transition — `retire_superseded_branch` is the operation that means to.
+    """
     return _transition(
         enterprise_root,
         lambda state: replace(
@@ -248,6 +261,11 @@ def replace_lifecycle(
             commits_behind=commits_behind,
         ),
     )
+
+
+def replace_superseded_branch(enterprise_root: Path, superseded: str | None) -> SyncTransition:
+    """Record, or clear, the branch awaiting retirement. Nothing else about the lifecycle moves."""
+    return _transition(enterprise_root, lambda state: replace(state, superseded_branch=superseded))
 
 
 def replace_submission(
