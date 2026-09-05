@@ -27,6 +27,8 @@ dependencies = [
     "lxml>=6.1.1",
     "cvss>=3.6",
     "packageurl-python>=0.17.6",
+    "numpy>=2.5.2",
+    "model2vec>=0.9.0",
 ]
 
 

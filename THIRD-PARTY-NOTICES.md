@@ -49,7 +49,7 @@ What follows is a disclosure inventory, for two purposes: to say what a build as
 - License text: licenses/texts/LGPL-3.0-or-later.txt + licenses/texts/GPL-3.0-or-later.txt
 - Obligation: Not conveyed by this project: it is a declared dependency that pip/uv installs from PyPI, so upstream is the distributor. Nothing is vendored and nothing is statically combined — cvss is an ordinary runtime import from site-packages, replaceable with a modified build by `pip install` alone. LGPLv3 §4's duties fall on whoever conveys a work containing the library; a redistributor who vendors or bundles it takes those on, including §4(a)-(b) notice and license texts.
 
-## Python dependencies (77)
+## Python dependencies (91)
 
 | Component | Version | License |
 |---|---|---|
@@ -68,25 +68,33 @@ What follows is a disclosure inventory, for two purposes: to say what a build as
 | cffi | 2.1.1 | MIT-0 |
 | charset-normalizer | 3.5.1 | MIT |
 | click | 8.5.0 | BSD-3-Clause |
+| cloudpickle | 3.1.2 | BSD License |
+| colorama | 0.4.6 | BSD-3-Clause |
 | cryptography | 50.0.1 | Apache-2.0 OR BSD-3-Clause |
 | cvss | 3.6 | GNU Lesser General Public License v3 or later (LGPLv3+) |
 | defusedxml | 0.7.1 | Python Software Foundation License |
 | fastapi | 0.141.1 | MIT |
+| filelock | 3.32.4 | MIT |
+| fsspec | 2026.7.0 | BSD-3-Clause |
 | greenlet | 3.5.5 | MIT AND PSF-2.0 |
 | h11 | 0.16.0 | MIT License |
+| hf-xet | 1.6.0 | Apache-2.0 |
 | httpcore | 1.0.9 | BSD-3-Clause |
 | httpcore2 | 2.12.0 | BSD-3-Clause |
 | httptools | 0.8.0 | MIT |
 | httpx | 0.28.1 | BSD License |
 | httpx2 | 2.12.0 | BSD-3-Clause |
 | httpx2-jsfetch | 1.0 | BSD-3-Clause |
+| huggingface-hub | 1.30.0 | Apache Software License |
 | idna | 3.19 | BSD-3-Clause |
 | isodate | 0.7.2 | BSD License |
 | jaraco-classes | 3.4.0 | MIT License |
 | jaraco-context | 6.1.2 | MIT |
 | jaraco-functools | 4.6.0 | MIT |
 | jeepney | 0.9.0 | MIT |
+| jinja2 | 3.1.6 | BSD License |
 | jmespath | 1.1.0 | MIT License |
+| joblib | 1.6.0 | BSD-3-Clause |
 | jsonschema | 4.26.0 | MIT |
 | jsonschema-specifications | 2025.9.1 | MIT |
 | keyring | 25.7.0 | MIT |
@@ -96,11 +104,14 @@ What follows is a disclosure inventory, for two purposes: to say what a build as
 | markupsafe | 3.0.3 | BSD-3-Clause |
 | mcp | 2.1.1 | MIT License |
 | mcp-types | 2.1.1 | MIT License |
+| model2vec | 0.9.0 | MIT License |
 | more-itertools | 11.1.0 | MIT |
 | msal | 1.38.0 | MIT License |
 | msal-extensions | 1.3.1 | MIT License |
+| numpy | 2.5.2 | BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0 |
 | opentelemetry-api | 1.44.0 | Apache-2.0 |
 | packageurl-python | 0.17.6 | MIT License |
+| packaging | 26.3 | Apache-2.0 OR BSD-2-Clause |
 | pycparser | 3.0 | BSD-3-Clause |
 | pydantic | 2.13.5 | MIT |
 | pydantic-core | 2.46.5 | MIT |
@@ -116,12 +127,15 @@ What follows is a disclosure inventory, for two purposes: to say what a build as
 | requests | 2.34.2 | Apache Software License |
 | rpds-py | 2026.6.3 | MIT |
 | s3transfer | 0.19.2 | Apache Software License |
+| safetensors | 0.8.0 | Apache Software License |
 | secretstorage | 3.5.0 | BSD-3-Clause |
 | six | 1.17.0 | MIT License |
 | sqlalchemy | 2.0.52 | MIT |
 | sqlcipher3 | 0.6.2 | MIT |
 | sse-starlette | 3.4.8 | BSD-3-Clause |
 | starlette | 1.6.0 | BSD-3-Clause |
+| tokenizers | 0.23.2 | Apache Software License |
+| tqdm | 4.70.0 | MPL-2.0 AND MIT |
 | truststore | 0.10.4 | MIT |
 | typing-extensions | 4.16.0 | PSF-2.0 |
 | typing-inspection | 0.4.4 | MIT |
