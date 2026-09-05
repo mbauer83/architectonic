@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from typing import cast
 
-from src.application._search_eligibility import EntityEligibility, semantic_entity_hits
+from src.application._search_eligibility import EntityEligibility, semantic_candidates
+from src.application.artifacts._fusion import fuse
 from src.application.artifacts._ranking import rank_hits
 from src.application.artifacts.scoring import (
     score_connection,
@@ -32,6 +33,7 @@ from src.domain.search_records import (
     RECORD_TYPE_TO_KIND,
     RecordType,
     SearchableKind,
+    SearchCandidate,
     SemanticSearchProvider,
 )
 
@@ -225,12 +227,33 @@ def search(
                 seen.add(key)
                 hits.append(h)
 
-    # Semantic supplement is entity-only; only inject when entities are in scope.
-    if "entities" in kinds:
-        hits.extend(semantic_entity_hits(store, semantic, query, eligibility=eligibility, seen=seen))
+    fused = fuse(
+        hits,
+        semantic_candidates(
+            store, semantic, query, eligibility=eligibility, kinds=frozenset(kinds), limit=limit
+        ),
+        resolve=lambda candidate: _resolve_record(store, candidate),
+    )
 
     prefer_rt = KIND_TO_RECORD_TYPE.get(prefer_kind) if prefer_kind else None
-    return SearchResult(query=query, hits=rank_hits(hits, query, limit, prefer_rt))
+    return SearchResult(query=query, hits=rank_hits(fused, query, limit, prefer_rt))
+
+
+def _resolve_record(store: ReadableArtifactStore, candidate: SearchCandidate) -> object | None:
+    """The record behind a candidate the keyword branches did not already read.
+
+    Only the three kinds the vector branch covers: the corpus is entities, documents and diagrams,
+    so a candidate of any other kind reached here by a route that does not exist.
+    """
+    match candidate.record_type:
+        case "entity":
+            return store.get_entity(candidate.artifact_id)
+        case "document":
+            return store.get_document(candidate.artifact_id)
+        case "diagram":
+            return store.get_diagram(candidate.artifact_id)
+        case _:
+            return None
 
 
 def _search_entities(

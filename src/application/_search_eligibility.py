@@ -29,12 +29,20 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from src.application.ports import ReadableArtifactStore
-from src.domain.ontology_representation.artifact_types import EntityRecord, SearchHit, SemanticSearchProvider
+from src.domain.ontology_representation.artifact_types import EntityRecord, SemanticSearchProvider
+from src.domain.search_records import RECORD_TYPE_TO_KIND, SearchCandidate
 
+#: Below this many entities the vector branch is not consulted at all. On a corpus this small a
+#: retriever asked for its nearest neighbours returns its nearest neighbours whether or not any of
+#: them is relevant, and fusion gives an only-vector candidate the same weight as an only-keyword
+#: one — so the noise does not merely rank low, it ties the right answer.
 SEMANTIC_MIN_CORPUS_SIZE = 50
-SEMANTIC_RESULT_BOUND = 1
-SEMANTIC_SCORE_THRESHOLD = 0.75
-_SEMANTIC_SCORE_WEIGHT = 3.0
+
+#: How deep a list to ask the vector branch for, relative to the window. Deeper than the window
+#: because fusion rewards a candidate two retrievers found, and a candidate cut off at the window's
+#: edge cannot be one of them. The retriever ranks its whole corpus either way; only the slice costs.
+_SEMANTIC_DEPTH_FACTOR = 5
+_SEMANTIC_MIN_DEPTH = 50
 
 
 @dataclass(frozen=True)
@@ -102,44 +110,49 @@ class EntityEligibility:
         return not host_diagram_id or artifact_type in self.visible_diagram_entity_types
 
 
-def semantic_entity_hits(
+def semantic_candidates(
     store: ReadableArtifactStore,
     semantic: SemanticSearchProvider | None,
     query: str,
     *,
     eligibility: EntityEligibility,
-    seen: set[tuple[str, str]],
-) -> list[SearchHit]:
-    """Entity hits from the semantic provider, refilled past ineligible candidates.
+    kinds: frozenset[str],
+    limit: int,
+) -> dict[str, list[SearchCandidate]]:
+    """The vector branch's ranked candidates, per record type, with this policy's exclusions applied.
 
-    Preserves provider ranking and the configured result bound: leading candidates that
-    are hidden, of a non-matching type, in a non-matching domain, or already seen do not
-    consume the budget — the request deepens until eligible hits fill the bound or the
-    provider is exhausted.
+    Filtered here rather than by the caller because visibility is settled once, in this module, for
+    every branch. An ineligible candidate is dropped rather than replaced: under rank fusion a gap
+    costs the candidates below it one rank, where the old bounded supplement had to refill because
+    an ineligible leading candidate would otherwise have consumed its entire budget of one.
+
+    Entities are the only kind this policy judges. A document or a diagram carries no type or domain
+    to exclude, so what governs those is the caller's `kinds`.
     """
     if semantic is None or not isinstance(semantic, SemanticSearchProvider):
-        return []
-    if eligibility.effective_request_is_empty:
-        return []
+        return {}
     if len(store.entity_ids()) < SEMANTIC_MIN_CORPUS_SIZE:
-        return []
-    hits: list[SearchHit] = []
-    scanned = 0
-    k = SEMANTIC_RESULT_BOUND + len(seen)
-    while True:
-        candidates = semantic.top_k(query, k=k, threshold=SEMANTIC_SCORE_THRESHOLD)
-        for sem_score, artifact_id in candidates[scanned:]:
-            key = ("entity", artifact_id)
-            if key in seen:
-                continue
-            record = store.get_entity(artifact_id)
-            if record is None or not eligibility.is_eligible(record):
-                continue
-            seen.add(key)
-            hits.append(SearchHit(score=sem_score * _SEMANTIC_SCORE_WEIGHT, record_type="entity", record=record))
-            if len(hits) >= SEMANTIC_RESULT_BOUND:
-                return hits
-        if len(candidates) < k:
-            return hits
-        scanned = len(candidates)
-        k *= 2
+        return {}
+
+    wanted = {RECORD_TYPE_TO_KIND.get(rt, "") for rt in ("entity", "document", "diagram")} & kinds
+    if not wanted:
+        return {}
+    if eligibility.effective_request_is_empty:
+        wanted = wanted - {"entities"}
+
+    depth = max(limit * _SEMANTIC_DEPTH_FACTOR, _SEMANTIC_MIN_DEPTH)
+    per_type: dict[str, list[SearchCandidate]] = {}
+    for candidate in semantic.ranked_candidates(query, limit=depth):
+        if RECORD_TYPE_TO_KIND.get(candidate.record_type) not in wanted:
+            continue
+        if candidate.record_type == "entity" and not _eligible_entity(store, candidate, eligibility):
+            continue
+        per_type.setdefault(candidate.record_type, []).append(candidate)
+    return per_type
+
+
+def _eligible_entity(
+    store: ReadableArtifactStore, candidate: SearchCandidate, eligibility: EntityEligibility
+) -> bool:
+    record = store.get_entity(candidate.artifact_id)
+    return record is not None and eligibility.is_eligible(record)

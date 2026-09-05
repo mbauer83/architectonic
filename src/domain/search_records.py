@@ -25,7 +25,7 @@ generically, and it is what lets the search use case's tier predicate name no ki
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Literal, Protocol, TypeAlias, runtime_checkable
@@ -117,7 +117,16 @@ class SearchCandidate:
 
 @runtime_checkable
 class SemanticSearchProvider(Protocol):
-    def top_k(self, query: str, k: int, *, threshold: float = 0.75) -> list[tuple[float, str]]: ...
+    """A retriever that answers by meaning, in rank order and without a score.
+
+    It used to answer `(score, entity_id)` pairs above a similarity threshold, and both parts were
+    wrong. The score was weighed against keyword scores on a scale that says nothing about them, and
+    the threshold was a number nobody had measured against an encoder: at its inherited default of
+    0.75, the best true match this corpus produces scores 0.401, so the branch admitted nothing at
+    any query. Rank is what the retrievers do share, so rank is what crosses the seam.
+    """
+
+    def ranked_candidates(self, query: str, limit: int) -> Sequence[SearchCandidate]: ...
 
 
 def record_title(record: object) -> str | None:

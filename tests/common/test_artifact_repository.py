@@ -37,6 +37,7 @@ from src.domain.ontology_representation.artifact_types import (
     summary_from_document,
     summary_from_entity,
 )
+from src.domain.search_records import SearchCandidate
 from src.infrastructure.artifact_index import ArtifactIndex, ReadModelVersion
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -630,32 +631,28 @@ def test_search_limit_respected() -> None:
 
 
 class _FakeSemantic(SemanticSearchProvider):
-    def __init__(self, hits: list[tuple[float, str]]) -> None:
-        self._hits = hits
+    def __init__(self, ranked: list[str]) -> None:
+        self._ranked = [SearchCandidate(record_type="entity", artifact_id=aid) for aid in ranked]
 
-    def top_k(self, query: str, k: int, threshold: float) -> list[tuple[float, str]]:
-        return [(score, aid) for score, aid in self._hits if score >= threshold][:k]
+    def ranked_candidates(self, query: str, limit: int) -> list[SearchCandidate]:
+        return self._ranked[:limit]
 
 
-def test_semantic_supplement_adds_hit_not_in_fts_results() -> None:
+def test_the_vector_branch_adds_a_hit_no_keyword_branch_found() -> None:
     entities = [_entity(f"e{i}", name=f"Entity {i}") for i in range(60)]
     store = FakeStore(entities=entities)
-    sem = _FakeSemantic([(0.9, "e50")])
-    repo = ArtifactRepository(store, semantic_provider=sem)
+    repo = ArtifactRepository(store, semantic_provider=_FakeSemantic(["e50"]))
     result = repo.search("something entirely unrelated to any name")
-    sem_hits = [h for h in result.hits if h.record_type == "entity" and h.record.artifact_id == "e50"]
-    assert len(sem_hits) == 1
+    assert [h.record.artifact_id for h in result.hits if h.record_type == "entity"] == ["e50"]
 
 
-def test_semantic_supplement_skipped_when_store_has_fewer_than_50_entities() -> None:
+def test_the_vector_branch_is_not_consulted_below_the_corpus_floor() -> None:
+    """On a corpus this small a nearest-neighbour answer is noise, and fusion weighs it equally."""
     entities = [_entity(f"e{i}", name=f"Entity {i}") for i in range(10)]
     store = FakeStore(entities=entities)
-    sem = _FakeSemantic([(0.9, "e5")])
-    repo = ArtifactRepository(store, semantic_provider=sem)
+    repo = ArtifactRepository(store, semantic_provider=_FakeSemantic(["e5"]))
     result = repo.search("unrelated query xyz abc")
-    # With only 10 entities the semantic supplement is skipped
-    sem_hits = [h for h in result.hits if h.score > 2.0]
-    assert len(sem_hits) == 0
+    assert [h for h in result.hits if h.record.artifact_id == "e5"] == []
 
 
 # ── registry-style delegation ─────────────────────────────────────────────────

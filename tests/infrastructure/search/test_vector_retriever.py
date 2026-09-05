@@ -8,6 +8,7 @@ a stand-in whose vectors the test chooses is what makes an assertion about ranki
 
 from __future__ import annotations
 
+from dataclasses import fields
 from pathlib import Path
 
 import numpy as np
@@ -153,36 +154,27 @@ def test_the_corpus_is_encoded_once_at_construction_not_per_query(three_records:
     assert [len(batch) for batch in encoder.encoded[1:]] == [1, 1]
 
 
-# ── the seam the application consumes today ──────────────────────────────────
+# ── the contract the application consumes ───────────────────────────────────
 
 
-def test_top_k_returns_entities_only(tmp_path: Path) -> None:
-    root = _repo(
-        tmp_path,
-        entities={_EMBEDDING: "embedding"},
-        documents={"ADR@1000000405.Eeeeee.embedding-decision": "Embedding Decision"},
-    )
-    hits = _retriever(root, VocabularyEncoder()).top_k("embedding", k=10, threshold=0.0)
-    assert [artifact_id for _, artifact_id in hits] == [_EMBEDDING]
+def test_the_retriever_satisfies_the_provider_protocol(three_records: Path) -> None:
+    """What the application depends on, checked against the application's own declaration."""
+    from src.domain.search_records import SemanticSearchProvider
+
+    assert isinstance(_retriever(three_records, VocabularyEncoder()), SemanticSearchProvider)
 
 
-def test_top_k_honours_the_threshold(three_records: Path) -> None:
+def test_nothing_carries_a_score_across_the_seam(three_records: Path) -> None:
+    """A score would invite comparing this retriever's scale against the keyword branch's."""
+    ranked = _retriever(three_records, VocabularyEncoder()).ranked_candidates("embedding", limit=3)
+    assert ranked
+    assert [field.name for field in fields(SearchCandidate)] == ["record_type", "artifact_id"]
+    assert all(not hasattr(candidate, "score") for candidate in ranked)
+
+
+def test_a_deeper_request_returns_a_prefix_of_itself(three_records: Path) -> None:
+    """Fusion asks deeper than the window; a deeper ask must not reorder what a shallower one gave."""
     retriever = _retriever(three_records, VocabularyEncoder())
-    assert retriever.top_k("embedding", k=10, threshold=0.99) == [(pytest.approx(1.0), _EMBEDDING)]
-    assert retriever.top_k("embedding", k=10, threshold=1.01) == []
-
-
-def test_top_k_honours_k(three_records: Path) -> None:
-    retriever = _retriever(three_records, VocabularyEncoder())
-    assert len(retriever.top_k("embedding", k=2, threshold=0.0)) == 2
-    assert retriever.top_k("embedding", k=0, threshold=0.0) == []
-
-
-def test_top_k_scores_are_real_similarities_in_descending_order(tmp_path: Path) -> None:
-    """The caller weighs these against keyword scores; a fabricated number would weigh the same."""
-    root = _repo(tmp_path, entities={_EMBEDDING: "embedding", _GRAPH: "embedding graph"})
-    hits = _retriever(root, VocabularyEncoder()).top_k("embedding", k=5, threshold=0.0)
-    scores = [score for score, _ in hits]
-    assert scores == sorted(scores, reverse=True)
-    assert all(-1.0 <= score <= 1.0 for score in scores)
-    assert scores[0] == pytest.approx(1.0)
+    assert retriever.ranked_candidates("embedding", limit=2) == retriever.ranked_candidates(
+        "embedding", limit=5
+    )[:2]

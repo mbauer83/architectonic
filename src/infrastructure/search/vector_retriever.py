@@ -1,9 +1,10 @@
 """Retrieval by meaning: one matrix over the corpus, and the candidates a query is nearest to.
 
-There is no persisted cache and no generation scheme. Building the whole corpus takes 0.2 s
-measured, so the matrix is built in memory when the retriever is constructed — which removes a
-file, a content-addressed generation, an atomically replaced pointer, a grace period before
-collecting a superseded one, and the staleness question all of them existed to answer.
+There is no persisted cache and no generation scheme. Building the whole corpus takes 0.05 s,
+measured over this repository's 1,222 passages, so the matrix is built in memory when the
+retriever is constructed — which removes a file, a content-addressed generation, an atomically
+replaced pointer, a grace period before collecting a superseded one, and the staleness question
+all of them existed to answer.
 
 The corpus is the engagement and enterprise repositories. Assurance content is excluded entirely
 rather than embedded under an inherited classification: an embedding is a derived representation of
@@ -14,13 +15,14 @@ This module reads the artifact store, which is that boundary.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
-from itertools import islice
 
 import numpy as np
 
 from src.application.ports import ReadableArtifactStore
 from src.domain.corpus_text import CorpusRecord, embeddable_text, text_chunks
+from src.domain.ontology_representation.artifact_types import EntityRecord
 from src.domain.search_records import RecordType, SearchCandidate
 from src.infrastructure.search.text_encoder import TextEncoder
 
@@ -79,26 +81,6 @@ class VectorRetriever:
                 ranked.append((float(similarities[position]), candidate))
         return ranked
 
-    # ── The seam the application consumes today ──────────────────────────────
-    #
-    # `SemanticSearchProvider.top_k` is entity-only and score-carrying, which is what the consumer
-    # in `_search_eligibility.py` was written against. Both go away when that consumer moves to rank
-    # fusion; until then this answers the older shape from the same ranking rather than building a
-    # second corpus for it.
-
-    def top_k(self, query: str, k: int, *, threshold: float = 0.75) -> list[tuple[float, str]]:
-        """The `k` nearest entities as `(cosine similarity, id)`, none below `threshold`.
-
-        Real similarities, not positions: the caller weighs them against keyword scores, and a
-        fabricated number would be weighed just as readily.
-        """
-        entities = (
-            (score, candidate.artifact_id)
-            for score, candidate in self._ranked(query)
-            if candidate.record_type == "entity" and score >= threshold
-        )
-        return list(islice(entities, max(k, 0)))
-
 
 def _corpus_passages(store: ReadableArtifactStore) -> list[_Passage]:
     """Every chunk of every record worth a vector, in a stable order.
@@ -107,18 +89,21 @@ def _corpus_passages(store: ReadableArtifactStore) -> list[_Passage]:
     would be a different matrix, and a test comparing two builds would be comparing orderings.
     """
     return [
-        _Passage(SearchCandidate(record_type=record_type, artifact_id=artifact_id), chunk)
-        for record_type, artifact_id, record in _corpus_records(store)
+        *_passages_of("entity", _entity_records(store)),
+        *_passages_of("document", store.list_documents()),
+        *_passages_of("diagram", store.list_diagrams()),
+    ]
+
+
+def _passages_of(record_type: RecordType, records: Iterable[CorpusRecord]) -> list[_Passage]:
+    return [
+        _Passage(SearchCandidate(record_type=record_type, artifact_id=record.artifact_id), chunk)
+        for record in records
         for chunk in text_chunks(embeddable_text(record))
     ]
 
 
-def _corpus_records(store: ReadableArtifactStore) -> list[tuple[RecordType, str, CorpusRecord]]:
-    entities = (
-        (store.get_entity(artifact_id), artifact_id) for artifact_id in sorted(store.entity_ids())
-    )
-    return [
-        *(("entity", artifact_id, record) for record, artifact_id in entities if record is not None),
-        *(("document", record.artifact_id, record) for record in store.list_documents()),
-        *(("diagram", record.artifact_id, record) for record in store.list_diagrams()),
-    ]
+def _entity_records(store: ReadableArtifactStore) -> list[EntityRecord]:
+    """Entities by id, sorted, skipping any the index knows and the store cannot read."""
+    found = (store.get_entity(artifact_id) for artifact_id in sorted(store.entity_ids()))
+    return [record for record in found if record is not None]

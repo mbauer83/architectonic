@@ -1,7 +1,14 @@
-"""Semantic-supplement refill: leading candidates that are hidden, of a non-matching
-type, or in a non-matching domain must not consume the semantic result budget — the
-supplement refills past them, preserving provider ranking; an explicit request fully
-consumed by the exclusion set skips semantic search entirely.
+"""The vector branch is subject to the same visibility policy as every other branch.
+
+A candidate that is hidden, of a non-matching type, in a non-matching domain, or no longer in the
+store must never surface through it, and an explicit request fully consumed by the exclusion set
+must not consult it at all.
+
+**These used to be refill tests, and the refill is gone with the budget that needed it.** The old
+supplement admitted exactly one entity, so an ineligible leading candidate would have consumed the
+whole allowance and the branch had to deepen its request past it. Under rank fusion an ineligible
+candidate is simply dropped: what it costs is one rank to the candidates below it, so every eligible
+candidate now surfaces and the assertions say so.
 """
 
 from __future__ import annotations
@@ -10,6 +17,7 @@ from pathlib import Path
 
 from src.application.artifacts.repository import ArtifactRepository
 from src.domain.ontology_representation.artifact_types import SemanticSearchProvider
+from src.domain.search_records import SearchCandidate
 from src.infrastructure.artifact_index import shared_artifact_index
 from tests.support.search_visibility_fixtures import (
     EXCLUDED_TYPES,
@@ -29,15 +37,15 @@ GAR_C_ID = "GAR@1000000205.SemGarC.proxy-gamma"
 
 
 class RecordingSemantic(SemanticSearchProvider):
-    """Ranked fixture provider that records every top_k request."""
+    """Ranked fixture provider that records every request made of it."""
 
-    def __init__(self, ranked: list[tuple[float, str]]) -> None:
-        self._ranked = ranked
+    def __init__(self, ranked: list[str]) -> None:
+        self._ranked = [SearchCandidate(record_type="entity", artifact_id=aid) for aid in ranked]
         self.calls: list[int] = []
 
-    def top_k(self, query: str, k: int, *, threshold: float = 0.75) -> list[tuple[float, str]]:
-        self.calls.append(k)
-        return [(score, aid) for score, aid in self._ranked if score >= threshold][:k]
+    def ranked_candidates(self, query: str, limit: int) -> list[SearchCandidate]:
+        self.calls.append(limit)
+        return self._ranked[:limit]
 
 
 def _build_corpus(tmp_path: Path) -> Path:
@@ -75,40 +83,67 @@ def _entity_ids(result) -> list[str]:
     return [h.record.artifact_id for h in result.hits if h.record_type == "entity"]
 
 
-class TestRefillPastIneligibleCandidates:
-    def test_leading_gar_does_not_consume_budget(self, tmp_path: Path) -> None:
-        sem = RecordingSemantic([(0.95, GAR_A_ID), (0.9, ELIGIBLE_ID)])
+class TestIneligibleCandidatesNeverSurface:
+    def test_a_hidden_candidate_is_dropped(self, tmp_path: Path) -> None:
+        sem = RecordingSemantic([GAR_A_ID, ELIGIBLE_ID])
         result = _repo(_build_corpus(tmp_path), sem).search_artifacts(_QUERY, limit=10)
         assert _entity_ids(result) == [ELIGIBLE_ID]
 
-    def test_multiple_leading_gars_are_all_skipped(self, tmp_path: Path) -> None:
-        sem = RecordingSemantic([(0.97, GAR_A_ID), (0.96, GAR_B_ID), (0.95, GAR_C_ID), (0.9, ELIGIBLE_ID)])
+    def test_several_hidden_candidates_are_all_dropped(self, tmp_path: Path) -> None:
+        sem = RecordingSemantic([GAR_A_ID, GAR_B_ID, GAR_C_ID, ELIGIBLE_ID])
         result = _repo(_build_corpus(tmp_path), sem).search_artifacts(_QUERY, limit=10)
         assert _entity_ids(result) == [ELIGIBLE_ID]
 
-    def test_leading_wrong_type_candidate_is_skipped(self, tmp_path: Path) -> None:
-        sem = RecordingSemantic([(0.95, CAPABILITY_ID), (0.9, ELIGIBLE_ID)])
+    def test_a_candidate_of_the_wrong_type_is_dropped(self, tmp_path: Path) -> None:
+        sem = RecordingSemantic([CAPABILITY_ID, ELIGIBLE_ID])
         result = _repo(_build_corpus(tmp_path), sem).search_artifacts(
             _QUERY, limit=10, artifact_type="requirement"
         )
         assert _entity_ids(result) == [ELIGIBLE_ID]
 
-    def test_leading_wrong_domain_candidate_is_skipped(self, tmp_path: Path) -> None:
-        sem = RecordingSemantic([(0.95, CAPABILITY_ID), (0.9, ELIGIBLE_ID)])
+    def test_a_candidate_in_the_wrong_domain_is_dropped(self, tmp_path: Path) -> None:
+        sem = RecordingSemantic([CAPABILITY_ID, ELIGIBLE_ID])
         result = _repo(_build_corpus(tmp_path), sem).search_artifacts(_QUERY, limit=10, domain="motivation")
         assert _entity_ids(result) == [ELIGIBLE_ID]
 
-    def test_provider_ranking_preserved_for_first_eligible(self, tmp_path: Path) -> None:
-        """The FIRST eligible candidate wins, not a later higher-typed one."""
-        filler_id = "REQ@1000000300.Fill00.filler-requirement-0"
-        sem = RecordingSemantic([(0.95, GAR_A_ID), (0.9, filler_id), (0.89, ELIGIBLE_ID)])
+    def test_a_candidate_no_longer_in_the_store_is_dropped(self, tmp_path: Path) -> None:
+        sem = RecordingSemantic(["REQ@9999999999.Absent.not-in-store", ELIGIBLE_ID])
         result = _repo(_build_corpus(tmp_path), sem).search_artifacts(_QUERY, limit=10)
-        assert _entity_ids(result) == [filler_id]
+        assert _entity_ids(result) == [ELIGIBLE_ID]
+
+    def test_a_provider_offering_only_hidden_candidates_contributes_nothing(self, tmp_path: Path) -> None:
+        sem = RecordingSemantic([GAR_A_ID, GAR_B_ID, GAR_C_ID])
+        result = _repo(_build_corpus(tmp_path), sem).search_artifacts(_QUERY, limit=10)
+        assert _entity_ids(result) == []
+        assert len(sem.calls) == 1
+
+
+class TestEveryEligibleCandidateSurfaces:
+    """What the bound of one used to prevent."""
+
+    def test_more_than_one_candidate_reaches_the_reader(self, tmp_path: Path) -> None:
+        filler = "REQ@1000000300.Fill00.filler-requirement-0"
+        sem = RecordingSemantic([ELIGIBLE_ID, filler])
+        result = _repo(_build_corpus(tmp_path), sem).search_artifacts(_QUERY, limit=10)
+        assert set(_entity_ids(result)) == {ELIGIBLE_ID, filler}
+
+    def test_the_provider_order_survives_where_nothing_else_ranks_them(self, tmp_path: Path) -> None:
+        """No keyword branch matches this query, so fusion is reading one list and must not reorder it."""
+        filler = "REQ@1000000300.Fill00.filler-requirement-0"
+        sem = RecordingSemantic([filler, ELIGIBLE_ID])
+        result = _repo(_build_corpus(tmp_path), sem).search_artifacts(_QUERY, limit=10)
+        assert _entity_ids(result) == [filler, ELIGIBLE_ID]
+
+    def test_a_hidden_leader_costs_a_rank_but_not_the_order(self, tmp_path: Path) -> None:
+        filler = "REQ@1000000300.Fill00.filler-requirement-0"
+        sem = RecordingSemantic([GAR_A_ID, filler, ELIGIBLE_ID])
+        result = _repo(_build_corpus(tmp_path), sem).search_artifacts(_QUERY, limit=10)
+        assert _entity_ids(result) == [filler, ELIGIBLE_ID]
 
 
 class TestEmptyEffectiveRequest:
     def test_explicit_hidden_type_query_skips_semantic_entirely(self, tmp_path: Path) -> None:
-        sem = RecordingSemantic([(0.95, GAR_A_ID)])
+        sem = RecordingSemantic([GAR_A_ID])
         result = _repo(_build_corpus(tmp_path), sem).search_artifacts(
             _QUERY,
             limit=10,
@@ -119,16 +154,3 @@ class TestEmptyEffectiveRequest:
         )
         assert result.hits == []
         assert sem.calls == []
-
-
-class TestRefillTermination:
-    def test_provider_with_only_hidden_candidates_yields_no_entity_hits(self, tmp_path: Path) -> None:
-        sem = RecordingSemantic([(0.97, GAR_A_ID), (0.96, GAR_B_ID), (0.95, GAR_C_ID)])
-        result = _repo(_build_corpus(tmp_path), sem).search_artifacts(_QUERY, limit=10)
-        assert _entity_ids(result) == []
-        assert len(sem.calls) >= 1
-
-    def test_unknown_candidate_ids_are_refilled_past(self, tmp_path: Path) -> None:
-        sem = RecordingSemantic([(0.95, "REQ@9999999999.Absent.not-in-store"), (0.9, ELIGIBLE_ID)])
-        result = _repo(_build_corpus(tmp_path), sem).search_artifacts(_QUERY, limit=10)
-        assert _entity_ids(result) == [ELIGIBLE_ID]
