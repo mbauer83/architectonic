@@ -77,7 +77,11 @@ never concurrently.
   manifest moved with it
 - an MCP tool's registration, name, arguments or description → 5
 - a dependency added, removed or re-locked → 9 and 10
-- a documentation link, anchor or media reference → 6
+- a documentation link, anchor or media reference → 6; **and a group rename**, which moves every
+  file of that group and so silently invalidates any hand-written link in `docs/` that named the old
+  directory. The write path heals links *inside* the repository it is writing, which is the right
+  boundary — it has no business editing the product's published prose — so gate 6 is the only thing
+  that catches the other side. One reached `main` and sat there.
 
 **Three standing exceptions, because they are cheap and they have each cost a release:**
 
