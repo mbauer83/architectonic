@@ -238,6 +238,30 @@ def _never_redirect_the_workers_stdio(monkeypatch: pytest.MonkeyPatch):
 
 
 @pytest.fixture(autouse=True)
+def _no_test_leaves_an_embedding_encoder_cached():
+    """No test may leave the semantic encoder cached for its successors.
+
+    `semantic_provider_for` caches the process's encoder with `lru_cache`, deliberately: the weights
+    are the same for every store a process serves and loading them costs 0.35s, so a backend serving
+    two repository roots should read 30 MB once. Under xdist that cache outlives the test that filled
+    it, and the next test on that worker gets a live encoder whether or not its own settings enabled
+    one — so `semantic_provider_for` builds a real retriever over whatever store it was handed.
+
+    Which is exactly what was seen: `test_startup_ordering` failing on
+    `'_FakeIndex' object has no attribute 'entity_ids'`, in a run whose sharding happened to put it
+    after the provider-wiring tests, and passing in isolation and in every earlier full run.
+
+    Clearing after as well as before is the whole fix: the wiring tests already cleared on the way in,
+    which protects them from their predecessors and their successors from nothing.
+    """
+    from src.infrastructure.search import provider
+
+    provider._process_encoder.cache_clear()
+    yield
+    provider._process_encoder.cache_clear()
+
+
+@pytest.fixture(autouse=True)
 def _reset_rest_server_state():
     """No test may leave the REST layer's process state configured for its successors.
 
