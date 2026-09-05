@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import logging
 import os
+import signal
 import subprocess
 import sys
 from collections.abc import Callable
@@ -271,6 +272,19 @@ class _AnnouncingServer(uvicorn.Server):
     """
 
     def handle_exit(self, sig: int, frame: object) -> None:
+        # Which signal, and whether this process still has the parent it was started under. A clean
+        # teardown records how the backend stopped and nothing about why; these are the two facts a
+        # signal can carry that separate the causes. SIGHUP with no parent is a session that ended
+        # under a detached process; SIGTERM is something that asked, and `stop_provenance` says who
+        # if it was this project's tooling; SIGINT is an interrupt reaching the process group.
+        parent = os.getppid()
+        logger.info(
+            "Stopping on %s (pid=%s ppid=%s%s)",
+            signal.Signals(sig).name if sig in set(signal.Signals) else sig,
+            os.getpid(),
+            parent,
+            ", original parent has exited" if parent == 1 else "",
+        )
         shutdown_signal.begin()
         super().handle_exit(sig, frame)  # type: ignore[arg-type]
 

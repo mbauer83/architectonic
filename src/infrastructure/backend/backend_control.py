@@ -43,6 +43,7 @@ from src.infrastructure.backend.backend_state import (
     remove_backend_state,
 )
 from src.infrastructure.backend.shutdown import STOP_DEADLINE_SECONDS
+from src.infrastructure.backend.stop_provenance import record_stop_request
 
 logger = logging.getLogger(__name__)
 
@@ -235,6 +236,10 @@ def stop_backend(
 ) -> dict[str, object]:
     resolved_port = resolve_backend_port(start=cwd, explicit_port=port)
     logger.info("Stop request for backend on port %s (cwd=%s)", resolved_port, cwd or Path.cwd())
+    # Also into the *backend's* log, which is where someone asking "what stopped it" is reading.
+    # This logger writes to the stopper's own stderr, and a stopper is a CLI invocation that has
+    # since scrolled away.
+    record_stop_request(cwd=cwd, port=resolved_port)
     claim = workspace_claim(cwd)
     state = read_backend_state(cwd)
     if state is not None:
