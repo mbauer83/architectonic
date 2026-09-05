@@ -21,6 +21,7 @@ from typing import Any
 
 from src.config.repo_paths import DIAGRAM_CATALOG
 from src.config.settings import archimate_type_markers
+from src.domain.viewpoints.viewpoint_style_values import PAGE_GROUND
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -53,14 +54,14 @@ def _generate_glyph_include(repo_root: Path) -> str:
     return "\n".join(lines) + "\n"
 
 
-_STEREOTYPE_HEADER = """\
+_STEREOTYPE_HEADER_TEMPLATE = """\
 hide stereotype
 
 skinparam defaultFontName SansSerif
 skinparam defaultFontSize 12
 skinparam shadowing false
 skinparam roundcorner 4
-skinparam backgroundColor #FAFAFA
+skinparam backgroundColor {page_ground}
 skinparam defaultTextAlignment center
 
 skinparam linetype ortho
@@ -73,6 +74,11 @@ skinparam rectangle<<Grouping>> {
   BorderStyle dashed
 }
 """
+
+#: The ground is declared once, in the domain's style values, because muting an element-kind fill
+#: means moving it toward this colour — and a second spelling here would mute toward a colour the
+#: page is not. Substituted rather than `.format`-ed: the template is full of PlantUML's own braces.
+_STEREOTYPE_HEADER = _STEREOTYPE_HEADER_TEMPLATE.replace("{page_ground}", PAGE_GROUND)
 
 
 #: How far a corner is cut or rounded, in points. One number per style, because the *style* is the

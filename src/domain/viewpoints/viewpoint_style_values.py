@@ -251,3 +251,24 @@ def interpolate_style_colors(near: str, far: str, position: float) -> str:
     colours, which are written that way; the case is not part of the convention.
     """
     return mix_colors(token_color(near), token_color(far), position).lower()
+
+
+#: The ground every rendered diagram is drawn on. Declared here rather than written into the include
+#: template it is emitted into, because muting a fill means moving it toward this and two spellings of
+#: the page colour would mute toward a colour the page is not.
+PAGE_GROUND = "#FAFAFA"
+
+#: How far a muted element-kind fill travels toward the page ground. Far enough that the attribute's
+#: palette is unmistakably the loud colouring, near enough that the kinds are still told apart — which
+#: is the whole difference between muting them and dropping them.
+ELEMENT_KIND_MUTING = 0.72
+
+
+def muted_element_kind_fill(fill: str) -> str:
+    """*fill* as it is drawn while an attribute colouring is the one a reader is reading.
+
+    One function, because the picture and its legend must agree: the diagram gets this colour through
+    a stereotype declaration and the legend's swatch gets it directly, and a legend naming a kind in a
+    colour brighter than the boxes it stands for is worse than no legend at all.
+    """
+    return mix_colors(fill if fill.startswith("#") else f"#{fill}", PAGE_GROUND, ELEMENT_KIND_MUTING)

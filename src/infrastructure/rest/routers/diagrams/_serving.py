@@ -17,6 +17,7 @@ request is not asking for.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 from typing import Literal
 
@@ -95,6 +96,30 @@ def _declared_type_labels(catalogs: RuntimeCatalogs) -> dict[str, str]:
         for info in catalogs.ontology.all_entity_types().values()
         if info.label
     }
+
+
+def _kind_muting(lens: ReadingLens, repo_root: Path) -> Callable[[str], str] | None:
+    """How a reading turns the element-kind colouring down, applied to the *prepared* body.
+
+    Not to the lensed body, and that is measured rather than chosen: preparation restates every
+    stereotype declaration from the ontology — one owner for what a kind looks like — so a muted
+    declaration written earlier survives as a block and comes back in the authored colour. After
+    preparation is the one point at which a body is final.
+
+    `None` when nothing is to be muted, so the render path takes its ordinary route.
+    """
+    from src.application.viewpoints.diagram_reading_lens import ElementKindColouring  # noqa: PLC0415
+    from src.infrastructure.rendering._archimate_includes import ArchimateDeclarations  # noqa: PLC0415
+    from src.infrastructure.rendering.diagram_kind_muting import (  # noqa: PLC0415
+        body_with_muted_element_kinds,
+    )
+
+    if lens.element_kind_colouring is not ElementKindColouring.MUTED or not lens.colour_by:
+        return None
+    declarations = ArchimateDeclarations.from_repo(repo_root)
+    return lambda prepared: body_with_muted_element_kinds(
+        prepared, lens=lens, declarations=declarations
+    )
 
 
 def _lensed_body(
@@ -255,7 +280,10 @@ def get_diagram_svg(
     from src.infrastructure.rendering.diagram_builder import render_puml_svg  # noqa: PLC0415
 
     svg, warnings = render_puml_svg(
-        _lensed_body(id, diagram_path, lens, catalogs, repo_root), repo_root, diagram_type
+        _lensed_body(id, diagram_path, lens, catalogs, repo_root),
+        repo_root,
+        diagram_type,
+        restyle_prepared=_kind_muting(lens, repo_root),
     )
     if svg is None:
         raise HTTPException(500, f"SVG render failed: {'; '.join(warnings)}")
@@ -319,7 +347,11 @@ def download_diagram(
     from src.infrastructure.rendering.puml_runtime import render_puml_bytes  # noqa: PLC0415
 
     image, produced, warnings = render_puml_bytes(
-        _lensed_body(id, diagram_path, lens, catalogs, repo_root), repo_root, format, diag_rec.diagram_type
+        _lensed_body(id, diagram_path, lens, catalogs, repo_root),
+        repo_root,
+        format,
+        diag_rec.diagram_type,
+        restyle_prepared=_kind_muting(lens, repo_root),
     )
     if image is None:
         raise HTTPException(500, f"{format.upper()} render failed: {'; '.join(warnings)}")

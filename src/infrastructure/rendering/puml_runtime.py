@@ -7,6 +7,7 @@ import os
 import subprocess
 import tempfile
 import time
+from collections.abc import Callable
 from fnmatch import fnmatch
 from pathlib import Path
 
@@ -82,6 +83,8 @@ def render_puml_bytes(
     repo_root: Path,
     fmt: str,
     diagram_type: str | None,
+    *,
+    restyle_prepared: Callable[[str], str] | None = None,
 ) -> tuple[bytes | None, str, list[str]]:
     """Render *puml_body* and return the image **bytes**, the media type they are, and any warnings.
 
@@ -111,6 +114,13 @@ def render_puml_bytes(
     # away from committing it.
     discard_abandoned_render_temp_files(diag_dir)
     render_body = _prepare_body(puml_body, repo_root, diagram_type)
+    # A reading gets its say *after* preparation, and it has to. Preparation restates every stereotype
+    # declaration from the ontology — that is the rule keeping one owner for what a kind looks like —
+    # so a reading that re-declared a stereotype earlier in the body would have its colour rewritten
+    # back. Measured: an appended declaration survives as a block and loses its fill. This is the one
+    # point at which a body is final, so it is where a reading that speaks in declarations is applied.
+    if restyle_prepared is not None:
+        render_body = restyle_prepared(render_body)
     if (native_svg := render_native_svg(render_body, diagram_type)) is not None:
         # Answered in SVG whatever was asked for: this diagram type renders natively and there is no
         # PNG to produce. Saying so in the media type is the whole reason it is returned.
@@ -175,7 +185,11 @@ def render_puml_svg(
     puml_body: str,
     repo_root: Path,
     diagram_type: str | None = None,
+    *,
+    restyle_prepared: Callable[[str], str] | None = None,
 ) -> tuple[str | None, list[str]]:
     """Render a diagram to SVG."""
-    image, _media_type, warnings = render_puml_bytes(puml_body, repo_root, "svg", diagram_type)
+    image, _media_type, warnings = render_puml_bytes(
+        puml_body, repo_root, "svg", diagram_type, restyle_prepared=restyle_prepared
+    )
     return (None if image is None else image.decode("utf-8")), warnings

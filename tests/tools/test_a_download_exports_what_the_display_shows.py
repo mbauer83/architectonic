@@ -20,7 +20,7 @@ It also holds the two refusals that make the lens a reading:
 
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from pathlib import Path
 
 import pytest
@@ -139,7 +139,7 @@ def rendered(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[dict[s
         path=source,
         extra={},
     )
-    seen: dict[str, list[str]] = {"svg": [], "bytes": []}
+    seen: dict[str, list[str]] = {"svg": [], "bytes": [], "svg_restyler": [], "bytes_restyler": []}
 
     monkeypatch.setattr(s, "maybe_engagement_root", lambda: tmp_path)
     monkeypatch.setattr(s, "get_repo", lambda: _Repo(record))
@@ -166,12 +166,27 @@ def rendered(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[dict[s
         ),
     )
 
-    def _svg(body: str, root: Path, diagram_type: str | None = None) -> tuple[str, list[str]]:
+    def _svg(
+        body: str,
+        root: Path,
+        diagram_type: str | None = None,
+        *,
+        restyle_prepared: Callable[[str], str] | None = None,
+    ) -> tuple[str, list[str]]:
         seen["svg"].append(body)
+        seen["svg_restyler"].append(restyle_prepared)  # type: ignore[arg-type]
         return "<svg>rendered</svg>", []
 
-    def _bytes(body: str, root: Path, fmt: str, diagram_type: str | None) -> tuple[bytes, str, list[str]]:
+    def _bytes(
+        body: str,
+        root: Path,
+        fmt: str,
+        diagram_type: str | None,
+        *,
+        restyle_prepared: Callable[[str], str] | None = None,
+    ) -> tuple[bytes, str, list[str]]:
         seen["bytes"].append(body)
+        seen["bytes_restyler"].append(restyle_prepared)  # type: ignore[arg-type]
         return b"rendered", "image/png", []
 
     monkeypatch.setattr("src.infrastructure.rendering.diagram_builder.render_puml_svg", _svg)
@@ -199,6 +214,25 @@ class TestTheExportIsTheDisplay:
         assert _get(rendered, f"/api/diagrams/{_ID}/download", format="png", **_LENS).status_code == 200
 
         assert rendered["svg"] == rendered["bytes"]
+
+    def test_both_routes_agree_about_turning_the_element_kinds_down(self, rendered: dict) -> None:
+        """Muting reaches the renderer as a restyler rather than inside the body, so "the export is
+        the display" has to be asserted over that too — the bodies could match while only one of them
+        was muted, and the export would then be a second opinion about the picture."""
+        muted = {**_LENS, "element_kind_colouring": "dim"}
+        assert _get(rendered, f"/api/diagrams/{_ID}/svg", **muted).status_code == 200
+        assert _get(rendered, f"/api/diagrams/{_ID}/download", format="png", **muted).status_code == 200
+
+        assert rendered["svg_restyler"][0] is not None
+        assert rendered["bytes_restyler"][0] is not None
+
+    def test_neither_route_restyles_when_the_kinds_are_kept(self, rendered: dict) -> None:
+        """So the muting cannot be asserted by a test that would pass however it was wired."""
+        assert _get(rendered, f"/api/diagrams/{_ID}/svg", **_LENS).status_code == 200
+        assert _get(rendered, f"/api/diagrams/{_ID}/download", format="png", **_LENS).status_code == 200
+
+        assert rendered["svg_restyler"] == [None]
+        assert rendered["bytes_restyler"] == [None]
 
     def test_the_rendered_body_actually_carries_the_lens(self, rendered: dict) -> None:
         """Otherwise the two could agree by both doing nothing."""

@@ -24,12 +24,13 @@ from collections.abc import Mapping, Sequence
 
 from src.application.puml_alias_declarations import overrides_colour
 from src.application.puml_legend import LegendRow, legend_block, with_legend
-from src.application.viewpoints.diagram_reading_lens import ReadingLens
+from src.application.viewpoints.diagram_reading_lens import ElementKindColouring, ReadingLens
 from src.domain.ontology_representation.relation_notation import RelationNotation
 from src.domain.viewpoints.viewpoint_style_values import (
     AD_HOC_RAMP_TOKENS,
     DEFAULT_ATTRIBUTE_GRADIENT,
     graded_colors,
+    muted_element_kind_fill,
     token_color,
 )
 from src.infrastructure.rendering._archimate_includes import (
@@ -74,6 +75,8 @@ def _element_kind_colouring(
     declarations: ArchimateDeclarations,
     notations: Mapping[str, StereotypeNotation],
     declared_labels: Mapping[str, str] | None = None,
+    *,
+    muted: bool = False,
 ) -> dict[str, str]:
     """The stereotype fills still on screen, which is not the same as the ones the body references.
 
@@ -95,6 +98,12 @@ def _element_kind_colouring(
     Through the same spelling the other sections use: this had its own `_`-to-space replacement, so one
     legend read `StrategyGrouping` in its colour rows and `strategy grouping` in its shape rows — two
     labels for one thing, in one table.
+
+    `muted` is the reader having turned the kind colouring down. The kinds are still on screen and
+    still named, but in the colour they are *drawn* in rather than the one they are declared in — a
+    swatch brighter than the boxes it stands for is worse than no swatch, because it tells a reader to
+    look for a colour the picture does not contain. The same function the picture is muted through, so
+    the two cannot drift.
     """
     still_showing: set[str] = set()
     for line in body.splitlines():
@@ -105,7 +114,9 @@ def _element_kind_colouring(
         # syntax register exists to stop.
         still_showing.update(declarations.referenced_in(line).stereotypes)
     return {
-        readable_label(name, declared_labels): notation.fill
+        readable_label(name, declared_labels): (
+            muted_element_kind_fill(notation.fill) if muted else notation.fill
+        )
         for name, notation in sorted(notations.items())
         if name in still_showing
     }
@@ -162,7 +173,11 @@ def _rows_for(
         # not. Either may be empty and contribute no section.
         *colour_rows(_attribute_colouring(lens, members, unset), means=lens.colour_by),
         *colour_rows(
-            _element_kind_colouring(body, declarations, notations, declared_labels), means="element kinds"
+            _element_kind_colouring(
+                body, declarations, notations, declared_labels,
+                muted=lens.element_kind_colouring is ElementKindColouring.MUTED and bool(lens.colour_by),
+            ),
+            means="element kinds",
         ),
         *shape_rows(notations, declared_labels),
         *glyph_rows(sorted(declarations.referenced_in(body).sprites), declared_labels),

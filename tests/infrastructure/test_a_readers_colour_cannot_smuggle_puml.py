@@ -144,7 +144,14 @@ class TestWhatBecomesOfTheElementKindColouring:
             ElementKindColouring.DROPPED
         )
 
-    @pytest.mark.parametrize("asked", ["", "dim", "keeep", "0", "true", "none"])
+    @pytest.mark.parametrize("asked", ["dim", "DIM", " dim "])
+    def test_muting_is_recognised_however_it_is_spelled(self, asked: str) -> None:
+        """`dim` was an unrecognised name here until it became a mode; this is that line moving."""
+        assert _lens(element_kind_colouring=asked).element_kind_colouring is (
+            ElementKindColouring.MUTED
+        )
+
+    @pytest.mark.parametrize("asked", ["", "dimm", "keeep", "0", "true", "none", "mute", "faded"])
     def test_anything_else_keeps_it(self, asked: str) -> None:
         assert _lens(element_kind_colouring=asked).element_kind_colouring is (
             ElementKindColouring.KEPT

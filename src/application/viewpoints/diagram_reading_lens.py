@@ -85,6 +85,12 @@ class ElementKindColouring(StrEnum):
 
     #: Both colourings at once — the authored fill stays wherever the attribute says nothing.
     KEPT = "keep"
+    #: One loud colouring and one quiet one. Every element the attribute says nothing about keeps its
+    #: own kind's fill, moved most of the way to the page ground, so the attribute's palette is
+    #: unmistakably the reading and the kinds are still told apart. Between the two below rather than
+    #: beside them: `keep` answers "which green is this?" with two equally loud colourings, and `drop`
+    #: answers it by discarding a fact the reader navigates by.
+    MUTED = "dim"
     #: One colouring. Every element the attribute says nothing about takes the neutral, which is the
     #: same neutral the unset member takes, because they are the same state: a value nobody recorded
     #: and a value declared "not assessed" tell a reader the same thing.

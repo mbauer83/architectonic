@@ -17132,7 +17132,7 @@ export interface operations {
             query?: {
                 /** @description Attribute to colour the drawn elements by */
                 colour_by?: string;
-                /** @description What becomes of the colour an element has for being what it is, while an attribute is read — `keep` for both colourings at once, `drop` to give every element the attribute says nothing about the same neutral the unset member takes. Acts only alongside `colour_by` */
+                /** @description What becomes of the colour an element has for being what it is, while an attribute is read — `keep` for both colourings at once, `dim` to turn the kinds down so they are still told apart but the attribute is the loud colouring, `drop` to give every element the attribute says nothing about the same neutral the unset member takes. Acts only alongside `colour_by` */
                 element_kind_colouring?: string;
                 format?: "png" | "svg";
                 /** @description Which named gradient an ordered value set is spread along — `red-green`, `yellow-blue` for a red/green colour-blind reader, or either reversed (`green-red`, `blue-yellow`) for a scale whose high end is the bad one. Absent leaves a graded set on the default and a ramp on its magnitude pair */
@@ -17542,7 +17542,7 @@ export interface operations {
             query?: {
                 /** @description Attribute to colour the drawn elements by */
                 colour_by?: string;
-                /** @description What becomes of the colour an element has for being what it is, while an attribute is read — `keep` for both colourings at once, `drop` to give every element the attribute says nothing about the same neutral the unset member takes. Acts only alongside `colour_by` */
+                /** @description What becomes of the colour an element has for being what it is, while an attribute is read — `keep` for both colourings at once, `dim` to turn the kinds down so they are still told apart but the attribute is the loud colouring, `drop` to give every element the attribute says nothing about the same neutral the unset member takes. Acts only alongside `colour_by` */
                 element_kind_colouring?: string;
                 /** @description Which named gradient an ordered value set is spread along — `red-green`, `yellow-blue` for a red/green colour-blind reader, or either reversed (`green-red`, `blue-yellow`) for a scale whose high end is the bad one. Absent leaves a graded set on the default and a ramp on its magnitude pair */
                 gradient?: string;

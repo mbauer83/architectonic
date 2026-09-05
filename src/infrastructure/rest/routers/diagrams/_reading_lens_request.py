@@ -68,9 +68,10 @@ Gradient = Annotated[
 ElementKindColouringParameter = Annotated[
     str,
     Query(description="What becomes of the colour an element has for being what it is, while an "
-                      "attribute is read — `keep` for both colourings at once, `drop` to give "
-                      "every element the attribute says nothing about the same neutral the unset "
-                      "member takes. Acts only alongside `colour_by`"),
+                      "attribute is read — `keep` for both colourings at once, `dim` to turn the "
+                      "kinds down so they are still told apart but the attribute is the loud "
+                      "colouring, `drop` to give every element the attribute says nothing about "
+                      "the same neutral the unset member takes. Acts only alongside `colour_by`"),
 ]
 
 
