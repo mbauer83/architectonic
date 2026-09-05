@@ -94,6 +94,54 @@ class TestTheSingleDirectoryAxes:
         assert not (repo / parent / "old-name").exists()
 
 
+class TestTheLinksIntoARenamedGroup:
+    """A rename moves the files; the links naming them have to follow, or every citation breaks.
+
+    Healed by the same function that heals a link when any artifact moves — its docstring already
+    names a group re-home as one of those moves. A second reader matching directory segments would
+    have been a second answer to "how does a link name a moved artifact", and a worse one: it could
+    only fix links *into* the group, while path recomputation handles a document that moved too.
+    """
+
+    def test_a_document_citing_a_moved_artifact_is_rewritten(self, repo: Path) -> None:
+        group_create(repo, axis="model-project", slug="old-name", name="Old Name")
+        artifact = repo / "projects" / "old-name" / "model" / "common" / "function"
+        artifact.mkdir(parents=True)
+        (artifact / "FNC@1.abc.thing.md").write_text("---\nartifact-id: FNC@1.abc.thing\n---\n", encoding="utf-8")
+        doc_dir = repo / "docs" / "adr" / "somewhere"
+        doc_dir.mkdir(parents=True)
+        citing = doc_dir / "ADR@1.xyz.a-decision.md"
+        citing.write_text(
+            "See [Thing](../../../projects/old-name/model/common/function/FNC@1.abc.thing.md).\n",
+            encoding="utf-8",
+        )
+        _commit(repo)
+
+        group_rename(repo, axis="model-project", slug="old-name", new_slug="new-name")
+
+        rewritten = citing.read_text(encoding="utf-8")
+        assert "projects/new-name/" in rewritten
+        assert "projects/old-name/" not in rewritten
+
+    def test_a_link_the_rename_does_not_affect_is_left_alone(self, repo: Path) -> None:
+        """The rewrite is keyed on the paths that actually moved, not on the slug as a word."""
+        group_create(repo, axis="model-project", slug="old-name", name="Old Name")
+        (repo / "projects" / "old-name").mkdir(parents=True, exist_ok=True)
+        (repo / "projects" / "old-name" / "a.md").write_text("x\n", encoding="utf-8")
+        other = repo / "projects" / "untouched"
+        other.mkdir(parents=True)
+        (other / "b.md").write_text("y\n", encoding="utf-8")
+        doc_dir = repo / "docs" / "adr" / "somewhere"
+        doc_dir.mkdir(parents=True)
+        citing = doc_dir / "ADR@1.xyz.a-decision.md"
+        citing.write_text("See [Other](../../../projects/untouched/b.md).\n", encoding="utf-8")
+        _commit(repo)
+
+        group_rename(repo, axis="model-project", slug="old-name", new_slug="new-name")
+
+        assert "projects/untouched/b.md" in citing.read_text(encoding="utf-8")
+
+
 def test_a_display_name_change_moves_nothing(repo: Path) -> None:
     """Renaming only the display name is a registry edit; the files must stay where they are."""
     group_create(repo, axis="model-project", slug="keep-slug", name="Old Name")

@@ -17,10 +17,12 @@ from src.domain.repository.groups import UNCATEGORIZED, GroupAxis, GroupEntry, G
 from ._group_fs import (
     _collection_dirs,
     _collection_files,
+    _git_add,
     _new_id,
     _persist_registry,
     _run_git,
     _safe_rmdir,
+    _subtree_files,
     _update_axis,
 )
 
@@ -69,6 +71,8 @@ class GroupEffects:
     def relocate_group_dir(self, repo_root: Path, axis: GroupAxis, slug: str, new_slug: str) -> None:
         if self.applies:
             _git_mv_group_dir(repo_root, axis, slug, new_slug)
+
+
 
     def remove_group_files(self, repo_root: Path, files: list[Path], dirs: list[Path]) -> None:
         if not self.applies or not files:
@@ -154,14 +158,28 @@ def _git_mv_group_dir(repo_root: Path, axis: GroupAxis, slug: str, new_slug: str
     Each target is the source's own parent under the new name, which is the same answer
     `_group_dir` gives for the two single-directory axes and the right one for every doc-type.
     """
+    from ._entity_rename import rewrite_document_links_for_moved_artifact  # noqa: PLC0415
+
     for old_dir in _collection_dirs(repo_root, axis, slug):
         new_dir = old_dir.parent / new_slug
+        moved = [f.relative_to(old_dir) for f in _subtree_files(old_dir)]
         new_dir.parent.mkdir(parents=True, exist_ok=True)
         result = _run_git(
             ["mv", str(old_dir.relative_to(repo_root)), str(new_dir.relative_to(repo_root))], repo_root
         )
         if result.returncode != 0:
             raise GroupOpError(f"git mv failed: {result.stderr}")
+
+        # Every file that moved is a link target somewhere. `rewrite_document_links_for_moved_artifact`
+        # is what already heals a hand-authored link when an artifact's path changes — its own
+        # docstring names a group re-home as one of the moves it covers — so the rename calls it per
+        # moved file rather than growing a second reader that matches directory segments. Keyed on
+        # paths, so it serves an entity, a diagram and a document alike.
+        for relative in moved:
+            for changed in rewrite_document_links_for_moved_artifact(
+                repo_root=repo_root, old_path=old_dir / relative, new_path=new_dir / relative
+            ):
+                _git_add(changed, repo_root)
 
 
 def group_archive(
