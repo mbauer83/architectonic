@@ -17,7 +17,6 @@ from src.domain.repository.groups import UNCATEGORIZED, GroupAxis, GroupEntry, G
 from ._group_fs import (
     _collection_dirs,
     _collection_files,
-    _group_dir,
     _new_id,
     _persist_registry,
     _run_git,
@@ -142,14 +141,27 @@ def group_rename(
 
 
 def _git_mv_group_dir(repo_root: Path, axis: GroupAxis, slug: str, new_slug: str) -> None:
-    old_dir = _group_dir(repo_root, axis, slug)
-    new_dir = _group_dir(repo_root, axis, new_slug)
-    if old_dir is None or new_dir is None or not old_dir.exists():
-        return
-    new_dir.parent.mkdir(parents=True, exist_ok=True)
-    result = _run_git(["mv", str(old_dir.relative_to(repo_root)), str(new_dir.relative_to(repo_root))], repo_root)
-    if result.returncode != 0:
-        raise GroupOpError(f"git mv failed: {result.stderr}")
+    """Move every directory backing this group to the new slug.
+
+    **Every** one, and derived from the old directory's own parent — not from `_group_dir(new_slug)`.
+    A document collection is backed by one directory per doc-type (`docs/adr/<slug>`,
+    `docs/arc42/<slug>`, …), and `_group_dir` answers "the first *existing* directory with this
+    slug". For a slug nothing is filed under yet that is `None`, so a document-collection rename
+    returned here having moved nothing: the registry took the new name and the files kept the old
+    one, which the verifier then reports as a group holding documents while not being declared a
+    collection. Even had a directory existed, only the first doc-type would have moved.
+
+    Each target is the source's own parent under the new name, which is the same answer
+    `_group_dir` gives for the two single-directory axes and the right one for every doc-type.
+    """
+    for old_dir in _collection_dirs(repo_root, axis, slug):
+        new_dir = old_dir.parent / new_slug
+        new_dir.parent.mkdir(parents=True, exist_ok=True)
+        result = _run_git(
+            ["mv", str(old_dir.relative_to(repo_root)), str(new_dir.relative_to(repo_root))], repo_root
+        )
+        if result.returncode != 0:
+            raise GroupOpError(f"git mv failed: {result.stderr}")
 
 
 def group_archive(

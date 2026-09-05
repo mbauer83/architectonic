@@ -16,9 +16,9 @@ model-projects:
   description: 'The assurance capability modeled as an architecture feature: STPA/CAST/GRC,
     confidential storage, supply-chain/vulnerability signals, and the roles/processes/services
     that operate it.'
-- slug: promotion-and-tiering
+- slug: tiering-and-cross-tier-change
   id: GRP@1783198348.Pesf9W
-  name: Promotion & Tiering
+  name: Tiering and Cross-Tier Change
   description: The two-tier enterprise/engagement repository relationship and the
     promotion pipeline that moves artifacts between them.
 - slug: diagram-authoring
@@ -58,9 +58,9 @@ diagram-collections:
   name: Assurance
   description: 'Assurance capability views: motivation, methods & roles, application/persistence
     architecture, and the STPA/CAST/GSN/bowtie assurance-content diagrams.'
-- slug: promotion-and-tiering
+- slug: tiering-and-cross-tier-change
   id: GRP@1783198403.AOWxrT
-  name: Promotion & Tiering
+  name: Tiering and Cross-Tier Change
   description: The enterprise/engagement two-tier structure and the promotion workflow
     between them.
 - slug: diagram-authoring
@@ -83,9 +83,9 @@ document-collections:
 - slug: assurance
   id: GRP@1783411088.Bmr1rG
   name: Assurance
-- slug: promotion-and-tiering
+- slug: tiering-and-cross-tier-change
   id: GRP@1783411088.YSQzlI
-  name: Promotion And Tiering
+  name: Tiering and Cross-Tier Change
 - slug: motivation-narrative
   id: GRP@1784370259.CwFXGq
   name: Motivation Narrative
