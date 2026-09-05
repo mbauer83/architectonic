@@ -80,3 +80,7 @@ test-results/
 
 # Local, private workspace config (personal engagements / enterprise remotes)
 arch-workspace.private.yaml
+
+# The embedding model is acquired by `get-embedding-model` and verified against the digests in
+# src/infrastructure/bootstrap/embedding_model_asset.py — 31 MB that a checkout should not carry.
+models/

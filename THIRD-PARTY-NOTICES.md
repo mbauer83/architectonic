@@ -207,7 +207,7 @@ What follows is a disclosure inventory, for two purposes: to say what a build as
 | vue-router | 4.6.4 | MIT |
 | w3c-keyname | 2.2.8 | MIT |
 
-## Native / system runtime components (11)
+## Native / system runtime components (12)
 
 | Component | Version | License |
 |---|---|---|
@@ -222,6 +222,7 @@ What follows is a disclosure inventory, for two purposes: to say what a build as
 | libfontconfig1 | Debian trixie | MIT (fontconfig) |
 | libharfbuzz0b | Debian trixie | MIT (Old MIT / HarfBuzz) |
 | python:3.13-slim-trixie (runtime base image) | 3.13-slim-trixie | PSF-2.0 (Python) + Debian trixie main (DFSG-free) |
+| potion-base-8M (embedding model weights) | revision bf8b056651a2c21b8d2565580b8569da283cab23 | MIT |
 
 ## Shipped content (1)
 

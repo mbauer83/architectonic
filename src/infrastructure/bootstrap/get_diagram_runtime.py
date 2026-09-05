@@ -15,6 +15,7 @@ from src.application.verification.artifact_verifier_syntax import PLANTUML_JAR_R
 from src.infrastructure.bootstrap.asset_download import download_verified
 from src.infrastructure.bootstrap.get_plantuml import PLANTUML_VERSION
 from src.infrastructure.bootstrap.get_plantuml import download as download_plantuml
+from src.infrastructure.bootstrap.project_layout import project_directory
 
 GRAPHVIZ_VERSION = "14.1.5"
 GRAPHVIZ_MIN_VERSION = "2.49.0"
@@ -23,15 +24,6 @@ GRAPHVIZ_TAR_XZ_URL = (
     f"graphviz-releases/{GRAPHVIZ_VERSION}/graphviz-{GRAPHVIZ_VERSION}.tar.xz"
 )
 GRAPHVIZ_TAR_XZ_SHA256 = "b017378835f7ca12f1a3f1db5c338d7e7af16b284b7007ad73ccec960c1b45b3"
-
-
-def _repo_root() -> Path:
-    candidate = Path(__file__).resolve()
-    for _ in range(6):
-        candidate = candidate.parent
-        if (candidate / "pyproject.toml").exists():
-            return candidate
-    raise SystemExit("Could not locate repository root from pyproject.toml")
 
 
 def _parse_version(text: str) -> tuple[int, ...] | None:
@@ -169,7 +161,7 @@ def main(argv: list[str] | None = None) -> None:
     )
     args = parser.parse_args(argv)
 
-    root = _repo_root()
+    root = project_directory()
     plantuml_path = _plantuml_path(root)
 
     if args.check:

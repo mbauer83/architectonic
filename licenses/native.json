@@ -1,7 +1,7 @@
 {
   "ecosystem": "native",
-  "description": "System / native runtime components bundled in or invoked by the Docker image (Debian trixie apt packages + the PlantUML jar + the base image). Hand-curated from the §10b.2 setup determinations; the license gate does not introspect apt/OCI layers, so this file is the reviewed source of truth for their obligations. purl/source URLs are the corresponding-source pointers for the copyleft components.",
-  "count": 11,
+  "description": "System / native runtime components bundled in or invoked by the Docker image (Debian trixie apt packages + the PlantUML jar + the base image), plus the model weights a deployment acquires. Hand-curated from the §10b.2 setup determinations; the license gate does not introspect apt/OCI layers or model assets, so this file is the reviewed source of truth for their obligations. purl/source URLs are the corresponding-source pointers for the copyleft components.",
+  "count": 12,
   "components": [
     {
       "name": "PlantUML",
@@ -106,6 +106,15 @@
       "exposure": "redistributed as the image base layer",
       "source_url": "https://hub.docker.com/_/python + https://www.debian.org/distrib/packages",
       "obligation": "Debian main is DFSG-free (no non-free packages pulled); ship the aggregate notice. Build-only images (node:20-alpine, ghcr.io/astral-sh/uv:python3.13-trixie-slim) are NOT shipped (multi-stage) and are out of redistribution scope."
+    },
+    {
+      "name": "potion-base-8M (embedding model weights)",
+      "version": "revision bf8b056651a2c21b8d2565580b8569da283cab23",
+      "license": "MIT",
+      "bucket": "allow",
+      "exposure": "fetched from the Hugging Face Hub at provisioning time by `get-embedding-model` (unmodified, not in this repository); present in a deployment that enables vector retrieval; loaded in-process as data, never executed",
+      "source_url": "https://huggingface.co/minishlab/potion-base-8M/tree/bf8b056651a2c21b8d2565580b8569da283cab23",
+      "obligation": "Not conveyed by this project: the weights are not in the repository — `get-embedding-model` downloads them from the Hub, so upstream is the distributor to whoever provisions. MIT's notice duty attaches to whoever redistributes a copy; if YOU publish an image carrying the weights, carry the upstream MIT notice with them. Three files are acquired — config.json, model.safetensors and tokenizer.json — each pinned to a SHA-256 in src/infrastructure/bootstrap/embedding_model_asset.py and refused on mismatch, so what a deployment holds is the reviewed revision named above and not whatever a mirror served."
     }
   ]
 }
