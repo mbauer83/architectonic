@@ -72,6 +72,10 @@ class PendingProposal:
     target_id: str
     changed_fields: tuple[str, ...]
     base_revision: str
+    #: Where the change is in its own lifecycle. `draft` may be revised in place; `submitted` has
+    #: been put to someone and is replaced rather than edited. The decode already reads it to filter
+    #: the live states, and which of the two it is decides what a further edit does.
+    state: str
     #: What the change says the artifact should be. Kept rather than reduced to `changed_fields`,
     #: because a reader of the target needs the *values* to be shown their own pending work — the
     #: decode has already read them, and discarding them here only means reading the file twice.
@@ -133,7 +137,8 @@ def _decode(record: EntityRecord) -> PendingProposal | None:
     target = record.extra.get(PROPOSES_CHANGE_TO)
     if not isinstance(target, str) or not target.strip():
         return None
-    if str(record.extra.get(PROPOSAL_STATE, "")) not in PENDING_STATES:
+    state = str(record.extra.get(PROPOSAL_STATE, ""))
+    if state not in PENDING_STATES:
         return None
     edit = record.extra.get(RECORDED_EDIT)
     if not isinstance(edit, Mapping):
@@ -150,6 +155,7 @@ def _decode(record: EntityRecord) -> PendingProposal | None:
         target_id=target.strip(),
         changed_fields=tuple(sorted(recorded.fields)),
         base_revision=base.strip(),
+        state=state,
         edit=recorded,
     )
 

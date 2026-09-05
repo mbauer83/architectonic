@@ -26,15 +26,22 @@ _BASELINE = {
 }
 
 
-def _change(proposal_id: str, **fields: object) -> PendingProposal:
+def _change(proposal_id: str, *, state: str = "draft", **fields: object) -> PendingProposal:
     edit = ProposalEdit(kind="entity", artifact_id="REQ@1.a.two-tier", fields=fields)
     return PendingProposal(
         proposal_id=proposal_id,
         target_id="REQ@1.a.two-tier",
         changed_fields=tuple(sorted(fields)),
         base_revision="rev-1",
+        state=state,
         edit=edit,
     )
+
+
+def test_composing_does_not_care_which_lifecycle_state_a_change_is_in() -> None:
+    """A submitted change is as much the author's own work as a draft, and reads the same."""
+    submitted = _change("PC@1", state="submitted", summary="Under review.")
+    assert composed_view(_BASELINE, [submitted])["summary"] == "Under review."
 
 
 def test_a_changed_field_reads_as_the_authors_value() -> None:
