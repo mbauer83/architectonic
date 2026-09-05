@@ -37,25 +37,6 @@ class TestParseVersionGetDiagramRuntime:
         assert _parse_version("") is None
 
 
-class TestSha256HexGetDiagramRuntime:
-    def test_returns_hex_string(self) -> None:
-        from src.infrastructure.bootstrap.get_diagram_runtime import _sha256hex
-
-        result = _sha256hex(b"hello")
-        assert len(result) == 64
-        assert all(c in "0123456789abcdef" for c in result)
-
-    def test_deterministic(self) -> None:
-        from src.infrastructure.bootstrap.get_diagram_runtime import _sha256hex
-
-        assert _sha256hex(b"test") == _sha256hex(b"test")
-
-    def test_different_inputs_differ(self) -> None:
-        from src.infrastructure.bootstrap.get_diagram_runtime import _sha256hex
-
-        assert _sha256hex(b"a") != _sha256hex(b"b")
-
-
 class TestGraphvizInstallPlans:
     def test_darwin_has_brew(self) -> None:
         from src.infrastructure.bootstrap.get_diagram_runtime import _GRAPHVIZ_INSTALL_PLANS
@@ -126,22 +107,10 @@ class TestCheckDiagramRuntimeMain:
 # ---------------------------------------------------------------------------
 # get_plantuml: pure helpers
 # ---------------------------------------------------------------------------
-
-
-class TestSha256HexGetPlantuml:
-    def test_returns_hex_string(self) -> None:
-        from src.infrastructure.bootstrap.get_plantuml import _sha256hex
-
-        result = _sha256hex(b"test data")
-        assert len(result) == 64
-
-    def test_known_value(self) -> None:
-        import hashlib
-
-        from src.infrastructure.bootstrap.get_plantuml import _sha256hex
-
-        expected = hashlib.sha256(b"").hexdigest()
-        assert _sha256hex(b"") == expected
+#
+# The two `_sha256hex` classes that stood here are gone with the functions they tested. There
+# were two of them because the digest was written twice, once per provisioning command; one
+# module owns it now and `tests/bootstrap/test_asset_download.py` states it once.
 
 
 class TestGetPlantumlCheck:

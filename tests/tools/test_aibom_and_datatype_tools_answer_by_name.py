@@ -141,11 +141,29 @@ class TestArtifactAibomCoverage:
         assert isinstance(answer["unbound_roles"], list)
 
         for row in answer["components"]:
-            # Each row names the component it is about and separates blocking from advisory: a report
-            # that merged them would make an advisory gap look like a release blocker.
-            assert str(row.get("artifact_id", "")), row
-            assert isinstance(row.get("blocking_gaps", []), list), row
-            assert isinstance(row.get("advisory_gaps", []), list), row
+            # Each row names the component it is about and separates required from recommended: a
+            # report that merged them would make an advisory gap look like a release blocker.
+            #
+            # Named against the response contract rather than from memory. The three assertions here
+            # before used `artifact_id`, `blocking_gaps` and `advisory_gaps` — none of which this
+            # surface has ever returned. They passed for as long as they did because `.get` supplied
+            # a default and the repository contained no AI component to put a row in the list, so the
+            # loop never ran. The first `ai-model` entity authored made all three fail at once.
+            assert str(row.get("entity_id", "")), row
+            assert str(row.get("name", "")), row
+            assert isinstance(row.get("missing_required_attributes"), list), row
+            assert isinstance(row.get("missing_recommended_attributes"), list), row
+            assert isinstance(row.get("missing_dataset_linkage"), bool), row
+            assert isinstance(row.get("missing_governance"), bool), row
+
+    def test_a_coverage_row_carries_exactly_the_fields_the_contract_declares(self) -> None:
+        """Content-independent, so it fails on drift rather than waiting for content to exist."""
+        from src.infrastructure.rest.contracts.assurance_aibom import AiBomComponentCoverage
+
+        answer = _call(mcp_read, "artifact_aibom_coverage")
+        declared = set(AiBomComponentCoverage.model_fields)
+        for row in answer["components"]:
+            assert set(row) == declared, row
 
     def test_it_agrees_with_the_export_about_which_components_exist(self) -> None:
         # Two reads over one model; if they disagree, one of them is deriving the AI inventory its own

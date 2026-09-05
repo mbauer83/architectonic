@@ -73,3 +73,10 @@ def test_sha256_hex_is_lowercase_hex() -> None:
     digest = sha256_hex(_PAYLOAD)
     assert digest == digest.lower()
     assert digest == _DIGEST
+    assert len(digest) == 64
+    assert all(character in "0123456789abcdef" for character in digest)
+
+
+def test_sha256_hex_agrees_with_hashlib_on_a_known_value() -> None:
+    """Carried over from the two per-command copies this module replaced."""
+    assert sha256_hex(b"") == hashlib.sha256(b"").hexdigest()
