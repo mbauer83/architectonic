@@ -17130,7 +17130,7 @@ export interface operations {
     diagrams_download_diagram_source: {
         parameters: {
             query?: {
-                /** @description Attribute the current display is coloured by */
+                /** @description Attribute to colour the drawn elements by */
                 colour_by?: string;
                 /** @description What becomes of the colour an element has for being what it is, while an attribute is read — `keep` for both colourings at once, `drop` to give every element the attribute says nothing about the same neutral the unset member takes. Acts only alongside `colour_by` */
                 element_kind_colouring?: string;
@@ -17141,7 +17141,7 @@ export interface operations {
                 key?: string[];
                 /** @description Draw a legend explaining the notation this diagram uses */
                 legend?: boolean;
-                /** @description Attribute values the current display prints */
+                /** @description Attribute values to print with the elements */
                 print?: string[];
                 /** @description A gradient for a continuous attribute, as `near:far` in #rrggbb */
                 ramp?: string;

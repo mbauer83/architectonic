@@ -18,9 +18,9 @@ request is not asking for.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Annotated, Literal
+from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse, Response
 
 from src.application.repo_path_helpers import rendered_dir_for_diagram
@@ -30,7 +30,16 @@ from src.config.repo_paths import DIAGRAM_CATALOG, DIAGRAMS, RENDERED
 from src.domain.ontology_representation.artifact_types import DiagramRecord
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers._openapi import READ_RESPONSES, TAG_DIAGRAMS, media_response
-from src.infrastructure.rest.routers.diagrams._reading_lens_request import lens_from_query
+from src.infrastructure.rest.routers.diagrams._reading_lens_request import (
+    ColourBy,
+    ElementKindColouringParameter,
+    Gradient,
+    Key,
+    Legend,
+    Printed,
+    Ramp,
+    lens_from_query,
+)
 from src.infrastructure.rest.routers.viewpoints._freshness import (
     fresh_viewpoints_runtime_catalogs_dependency,
 )
@@ -199,34 +208,13 @@ def get_diagram_image(filename: str) -> FileResponse:
     responses={**READ_RESPONSES, **media_response("image/svg+xml", "The rendered diagram")})
 def get_diagram_svg(
     artifact_id: str,
-    colour_by: Annotated[str, Query(description="Attribute to colour the drawn elements by")] = "",
-    printed: Annotated[
-        list[str], Query(alias="print", description="Attribute values to print with the elements")
-    ] = [],  # noqa: B006
-    ramp: Annotated[
-        str, Query(description="A gradient for a continuous attribute, as `near:far` in #rrggbb")
-    ] = "",
-    key: Annotated[
-        list[str], Query(description="A colour for one value, as `member:#rrggbb`; repeatable")
-    ] = [],  # noqa: B006
-    legend: Annotated[
-        bool, Query(description="Draw a legend explaining the notation this diagram uses")
-    ] = False,
-    gradient: Annotated[
-        str,
-        Query(description="Which named gradient an ordered value set is spread along — "
-                          "`red-green`, `yellow-blue` for a red/green colour-blind reader, or "
-                          "either reversed (`green-red`, `blue-yellow`) for a scale whose high end "
-                          "is the bad one. Absent leaves a graded set on the default and a ramp on "
-                          "its magnitude pair"),
-    ] = "",
-    element_kind_colouring: Annotated[
-        str,
-        Query(description="What becomes of the colour an element has for being what it is, while an "
-                          "attribute is read — `keep` for both colourings at once, `drop` to give "
-                          "every element the attribute says nothing about the same neutral the unset "
-                          "member takes. Acts only alongside `colour_by`"),
-    ] = "keep",
+    colour_by: ColourBy = "",
+    printed: Printed = [],  # noqa: B006
+    ramp: Ramp = "",
+    key: Key = [],  # noqa: B006
+    legend: Legend = False,
+    gradient: Gradient = "",
+    element_kind_colouring: ElementKindColouringParameter = "keep",
     catalogs: RuntimeCatalogs = Depends(fresh_viewpoints_runtime_catalogs_dependency),
 ) -> Response:
     id = artifact_id
@@ -285,34 +273,13 @@ def get_diagram_svg(
 def download_diagram(
     artifact_id: str,
     format: Literal["png", "svg"] = "png",  # noqa: A002
-    colour_by: Annotated[str, Query(description="Attribute the current display is coloured by")] = "",
-    printed: Annotated[
-        list[str], Query(alias="print", description="Attribute values the current display prints")
-    ] = [],  # noqa: B006
-    ramp: Annotated[
-        str, Query(description="A gradient for a continuous attribute, as `near:far` in #rrggbb")
-    ] = "",
-    key: Annotated[
-        list[str], Query(description="A colour for one value, as `member:#rrggbb`; repeatable")
-    ] = [],  # noqa: B006
-    legend: Annotated[
-        bool, Query(description="Draw a legend explaining the notation this diagram uses")
-    ] = False,
-    gradient: Annotated[
-        str,
-        Query(description="Which named gradient an ordered value set is spread along — "
-                          "`red-green`, `yellow-blue` for a red/green colour-blind reader, or "
-                          "either reversed (`green-red`, `blue-yellow`) for a scale whose high end "
-                          "is the bad one. Absent leaves a graded set on the default and a ramp on "
-                          "its magnitude pair"),
-    ] = "",
-    element_kind_colouring: Annotated[
-        str,
-        Query(description="What becomes of the colour an element has for being what it is, while an "
-                          "attribute is read — `keep` for both colourings at once, `drop` to give "
-                          "every element the attribute says nothing about the same neutral the unset "
-                          "member takes. Acts only alongside `colour_by`"),
-    ] = "keep",
+    colour_by: ColourBy = "",
+    printed: Printed = [],  # noqa: B006
+    ramp: Ramp = "",
+    key: Key = [],  # noqa: B006
+    legend: Legend = False,
+    gradient: Gradient = "",
+    element_kind_colouring: ElementKindColouringParameter = "keep",
     catalogs: RuntimeCatalogs = Depends(fresh_viewpoints_runtime_catalogs_dependency),
 ) -> Response:
     """The diagram as an attachment — the authored image, or the reader's current display.

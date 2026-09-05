@@ -16,12 +16,62 @@ reaching the renderer unrecognised.
 from __future__ import annotations
 
 from collections.abc import Sequence
+from typing import Annotated
+
+from fastapi import Query
 
 from src.application.viewpoints.diagram_reading_lens import ElementKindColouring, ReadingLens
 from src.domain.hex_colors import is_hex_color
 from src.domain.viewpoints.viewpoint_style_values import (
     ATTRIBUTE_GRADIENTS,
 )
+
+# ── How the reading is declared, once ────────────────────────────────────────
+#
+# Two operations take this lens — serving a diagram as SVG, and downloading one — because a lensed
+# download renders through the *same* call the browser display uses, which is what stops an export
+# becoming a second opinion about the display. Two operations taking one lens is one declaration,
+# here beside the parsing, so a parameter cannot be added to the reader and missed by the export.
+#
+# **The descriptions say what each parameter is, not why a caller passes it.** The two spellings that
+# differed said "the current display is coloured by" and "the current display prints", which describe
+# the download's motive rather than the parameter; that belongs in the download operation's own
+# description, where it already is, and a shared parameter cannot carry one caller's reason.
+
+ColourBy = Annotated[str, Query(description="Attribute to colour the drawn elements by")]
+
+Printed = Annotated[
+    list[str], Query(alias="print", description="Attribute values to print with the elements")
+]
+
+Ramp = Annotated[
+    str, Query(description="A gradient for a continuous attribute, as `near:far` in #rrggbb")
+]
+
+Key = Annotated[
+    list[str], Query(description="A colour for one value, as `member:#rrggbb`; repeatable")
+]
+
+Legend = Annotated[
+    bool, Query(description="Draw a legend explaining the notation this diagram uses")
+]
+
+Gradient = Annotated[
+    str,
+    Query(description="Which named gradient an ordered value set is spread along — "
+                      "`red-green`, `yellow-blue` for a red/green colour-blind reader, or "
+                      "either reversed (`green-red`, `blue-yellow`) for a scale whose high end "
+                      "is the bad one. Absent leaves a graded set on the default and a ramp on "
+                      "its magnitude pair"),
+]
+
+ElementKindColouringParameter = Annotated[
+    str,
+    Query(description="What becomes of the colour an element has for being what it is, while an "
+                      "attribute is read — `keep` for both colourings at once, `drop` to give "
+                      "every element the attribute says nothing about the same neutral the unset "
+                      "member takes. Acts only alongside `colour_by`"),
+]
 
 
 def _colour(value: str) -> str | None:
