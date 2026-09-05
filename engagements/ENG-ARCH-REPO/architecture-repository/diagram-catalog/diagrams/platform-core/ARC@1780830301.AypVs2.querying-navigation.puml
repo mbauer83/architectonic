@@ -6,22 +6,28 @@ version: 0.1.0
 status: draft
 diagram-type: archimate-layered
 entity-ids-used:
-- FNC@1776633706.3jpc7O.metadata-filter
 - FNC@1777390452.3seqIw.retrieve-architectural-context
-- FNC@1776633080.BdEMPx.graph-traversal
-- FNC@1776633704.bFY40B.full-text-search
 - FNC@1777390444.lLdx12.discover-relevant-architecture-content
 - SRV@1712870400.Qr8St8.discovery-querying-stats-service
+- FNC@1776633706.3jpc7O.metadata-filter
+- FNC@1776633080.BdEMPx.graph-traversal
+- FNC@1776633704.bFY40B.full-text-search
+- FNC@1788600509.scmGYcC.vector-similarity-search
+- FNC@1788599685.KQCmD1g.fuse-ranked-retrieval-results
 connection-ids-used:
 - FNC@1777390452.3seqIw---FNC@1777390444.lLdx12@@archimate-triggering
 - FNC@1777390444.lLdx12---SRV@1712870400.Qr8St8@@archimate-realization
 - FNC@1777390444.lLdx12---FNC@1776633080.BdEMPx@@archimate-triggering
 - FNC@1777390444.lLdx12---FNC@1776633704.bFY40B@@archimate-triggering
 - FNC@1777390444.lLdx12---FNC@1776633706.3jpc7O@@archimate-triggering
-last-updated: '2026-08-13T19:36:27Z'
+- FNC@1777390444.lLdx12---FNC@1788600509.scmGYcC@@archimate-triggering
+- FNC@1777390444.lLdx12---FNC@1788599685.KQCmD1g@@archimate-triggering
+- FNC@1776633080.BdEMPx---FNC@1788599685.KQCmD1g@@archimate-flow
+- FNC@1776633704.bFY40B---FNC@1788599685.KQCmD1g@@archimate-flow
+- FNC@1788600509.scmGYcC---FNC@1788599685.KQCmD1g@@archimate-flow
+last-updated: '2026-09-05T09:36:24Z'
 ---
 @startuml querying---navigation
-skinparam defaultTextAlignment center
 hide stereotype
 
 skinparam defaultFontName SansSerif
@@ -29,6 +35,7 @@ skinparam defaultFontSize 12
 skinparam shadowing false
 skinparam roundcorner 4
 skinparam backgroundColor #FAFAFA
+skinparam defaultTextAlignment center
 
 skinparam linetype ortho
 skinparam nodesep 60
@@ -100,11 +107,6 @@ skinparam rectangle<<service>> {
 }
 sprite $archimate_function <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.9 11.7V5.4L8 3.1l5.1 2.3v6.3L8 9.2z"  fill="#252327" stroke="none"/></svg>
 sprite $archimate_service <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3.2 4.1h7.2a2.8 2.8 0 0 1 0 7.8H3.2a2.8 2.8 0 0 1 0-7.8z"  fill="#252327" stroke="none"/></svg>
-skinparam wrapWidth 240
-top to bottom direction
-
-skinparam maxMessageSize 240
-
 title Querying & Navigation
 
 rectangle "<$archimate_function{scale=1.2}> Retrieve Architectural Context\n«Application Function»" <<function>> as FNC_3seqIw
@@ -116,8 +118,13 @@ rectangle "<$archimate_service{scale=1.2}> Discovery, Querying & Stats Service\n
 rectangle "<$archimate_function{scale=1.2}> Metadata Filter\n«Application Function»" <<function>> as FNC_3jpc7O
 rectangle "<$archimate_function{scale=1.2}> Graph Traversal\n«Application Function»" <<function>> as FNC_BdEMPx
 rectangle "<$archimate_function{scale=1.2}> Full-Text Search\n«Application Function»" <<function>> as FNC_bFY40B
+rectangle "<$archimate_function{scale=1.2}> Vector Similarity Search\n«Application Function»" <<function>> as FNC_scmGYcC
+
+rectangle "<$archimate_function{scale=1.2}> Fuse Ranked Retrieval Results\n«Application Function»" <<function>> as FNC_KQCmD1g
+
 FNC_3jpc7O -[hidden]right- FNC_BdEMPx
 FNC_BdEMPx -[hidden]right- FNC_bFY40B
+FNC_bFY40B -[hidden]right- FNC_scmGYcC
 SRV_Qr8St8 -[hidden]down- FNC_3jpc7O
 
 ' Connections
@@ -126,5 +133,10 @@ FNC_lLdx12 ..|> SRV_Qr8St8
 FNC_lLdx12 --> FNC_BdEMPx
 FNC_lLdx12 --> FNC_bFY40B
 FNC_lLdx12 --> FNC_3jpc7O
+FNC_lLdx12 --> FNC_scmGYcC
+FNC_lLdx12 --> FNC_KQCmD1g
+FNC_BdEMPx ..> FNC_KQCmD1g
+FNC_bFY40B ..> FNC_KQCmD1g
+FNC_scmGYcC ..> FNC_KQCmD1g
 
 @enduml
