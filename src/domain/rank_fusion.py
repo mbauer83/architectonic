@@ -1,10 +1,17 @@
 """Reciprocal rank fusion: one ordered list from several that do not share a scale.
 
-Three retrievers answer a search — full-text, vector similarity, and graph traversal by structural
-distance — and their scores are not comparable. `scoring.py` says so about the full-text scales
-outright ("incomparable scales"), and `_ranking.py` already works around it: it orders kinds by
-round-robin *because* "the scales do not permit" a global sort. So this codebase had already reasoned
-its way to rank-based fusion; round-robin is a cruder form of it.
+Two retrievers answer a search — full-text matching and vector similarity — and their scores are not
+comparable. `scoring.py` says so about the full-text scales outright ("incomparable scales"), and
+`_ranking.py` already works around it: it orders kinds by round-robin *because* "the scales do not
+permit" a global sort. So this codebase had already reasoned its way to rank-based fusion;
+round-robin is a cruder form of it.
+
+Two, and not the three an earlier draft of this module named. Graph traversal was built as a third
+list and measured: at equal weight it takes the labelled summary stratum from 98.3% to 61.7%, because
+a structural neighbour of the top hit scores the same `1/(k+1)` the top hit does, and forty
+neighbours tie the answer they surround. Damped enough to stop that, it contributes nothing. It may
+return, but only with per-list weights and a stratum whose ground truth is not the relation it
+walks.
 
 `score(candidate) = Σ over lists of 1 / (k + rank)`, rank starting at 1. A candidate absent from a
 list contributes nothing from it. `k` damps the difference between the top ranks: at k=60 the first
