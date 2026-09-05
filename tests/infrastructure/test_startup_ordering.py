@@ -91,7 +91,7 @@ class _FakeIndex:
 
 
 def _patch_initialise(monkeypatch: pytest.MonkeyPatch, order: list[str], index: _FakeIndex) -> None:
-    import src.infrastructure.backend.arch_backend as backend
+    import src.infrastructure.backend._startup_repository as backend
 
     monkeypatch.setattr(
         "src.infrastructure.artifact_index.shared_artifact_index", lambda roots: index, raising=True
@@ -111,9 +111,16 @@ def _patch_initialise(monkeypatch: pytest.MonkeyPatch, order: list[str], index: 
     )
 
     class _FakeRepo:
-        def __init__(self, idx: _FakeIndex, *, excluded_entity_types: frozenset[str] = frozenset()) -> None:
+        def __init__(
+            self,
+            idx: _FakeIndex,
+            *,
+            excluded_entity_types: frozenset[str] = frozenset(),
+            semantic_provider: object | None = None,
+        ) -> None:
             self._idx = idx
             self._excluded_entity_types = excluded_entity_types
+            self._semantic_provider = semantic_provider
 
         def refresh(self) -> None:
             self._idx.refresh()
@@ -126,7 +133,7 @@ def test_recover_and_repair_run_before_index_build(monkeypatch: pytest.MonkeyPat
     order: list[str] = []
     backend = _patch_initialise(monkeypatch, order, _FakeIndex(order))
 
-    backend._initialise_repo(tmp_path, None, SimpleNamespace(admin_mode=False, read_only=False))
+    backend.initialise_repo(tmp_path, None, SimpleNamespace(admin_mode=False, read_only=False))
 
     assert order.index("recover") < order.index("index_build")
     assert order.index("group_repair") < order.index("index_build")
@@ -139,6 +146,6 @@ def test_duplicate_scan_aborts_startup(monkeypatch: pytest.MonkeyPatch, tmp_path
     backend = _patch_initialise(monkeypatch, order, _FakeIndex(order, duplicates=dup))
 
     with pytest.raises(SystemExit) as exc:
-        backend._initialise_repo(tmp_path, None, SimpleNamespace(admin_mode=False, read_only=False))
+        backend.initialise_repo(tmp_path, None, SimpleNamespace(admin_mode=False, read_only=False))
 
     assert exc.value.code == 1
