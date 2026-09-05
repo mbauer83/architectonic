@@ -122,6 +122,13 @@ filterwarnings = [
     # `tests/infrastructure/artifact_index/test_index_close_releases_connections.py` asserts both
     # directions locally, so neither the fix nor the leak can be silently reversed behind these.
     "ignore:unclosed database:ResourceWarning",
+    # `model2vec` reads its config with `json.load(open(...))` and never closes the handle
+    # (model2vec/persistence/persistence.py:130). CPython closes it when the refcount drops, so
+    # nothing is actually held open — but `error` above turns the ResourceWarning into a failure of
+    # whichever test happened to construct an encoder. Not ours to fix and not worth re-implementing
+    # a library's loader over; narrowed to the one message and the one module, so the same warning
+    # from anything of ours stays an error. Remove when model2vec closes the file.
+    "ignore:unclosed file:ResourceWarning:model2vec.persistence.persistence",
     "ignore:Exception ignored while finalizing database connection:pytest.PytestUnraisableExceptionWarning",
     # pytest 9.1 deprecated fixture registration by id — `_register_fixture(nodeid=...)` and the
     # `FixtureDef(baseid=...)` it forwards to — in favour of passing the node. The caller is

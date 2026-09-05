@@ -27,7 +27,8 @@ def write_file(path: Path, text: str) -> None:
     path.write_text(text, encoding="utf-8")
 
 
-def entity_md(artifact_id: str, artifact_type: str, name: str) -> str:
+def entity_md(artifact_id: str, artifact_type: str, name: str, *, body: str = "") -> str:
+    """A minimal entity file. `body` gives it prose, for the readers that index more than a name."""
     return (
         "---\n"
         f"artifact-id: {artifact_id}\n"
@@ -37,7 +38,7 @@ def entity_md(artifact_id: str, artifact_type: str, name: str) -> str:
         "status: draft\n"
         "last-updated: '2026-01-01'\n"
         "---\n\n"
-        f"## {name}\n"
+        + (f"\n<!-- \u00a7content -->\n\n## {name}\n\n{body}\n" if body else f"## {name}\n")
     )
 
 
