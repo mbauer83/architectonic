@@ -118,22 +118,28 @@ def storage_assurance_activation_policy() -> str:
 
 
 def storage_read_model_seam() -> dict[str, object]:
-    """The `storage.read_model` settings block — where a read-model backend is configured.
+    """The `storage.read_model` settings block — how the read model answers a query.
 
-    **No production caller yet, and the docstring used to name the wrong reason for that.** It said
-    "reserved for a future FTS-backend toggle"; the FTS backend has never been optional, and what this
-    block is actually reserved for is the semantic search adapter's configuration, which is the first
-    thing that will need a read-model setting at all.
+    It carried no production caller for three releases while its docstring said it was reserved for
+    a future FTS-backend toggle, which the FTS backend never needed because it has never been
+    optional. What it was actually waiting for is `semantic_search` below.
 
-    Kept rather than deleted because the caller is a known, scheduled one. If the adapter does not
-    ship, this and its test go together — a settings accessor nothing reads is a claim nothing checks,
-    and "reserved for the future" is how one survives three releases without anyone asking.
-
-    Answers an empty mapping where the block or its parent is absent or malformed, so a caller reads
-    "nothing configured" rather than having to tell absence from a shape it did not expect.
+    Answers an empty mapping where the block or its parent is malformed, so a caller reads "nothing
+    configured" rather than having to tell absence from a shape it did not expect.
     """
     storage = settings.load_settings().get("storage", {})
     if not isinstance(storage, dict):
         return {}
     read_model = storage.get("read_model", {})
     return dict(read_model) if isinstance(read_model, dict) else {}
+
+
+def storage_read_model_semantic_search() -> bool:
+    """Whether this deployment retrieves by meaning as well as by term.
+
+    Off unless a deployment says otherwise, because the branch needs a 31 MB asset that
+    `get-embedding-model` acquires and one that has not acquired it must answer exactly as it always
+    has. Anything that is not the literal `true` is off: a setting that turned a capability on
+    through a typo would be the wrong way for this to fail.
+    """
+    return storage_read_model_seam().get("semantic_search") is True

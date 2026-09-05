@@ -46,6 +46,7 @@ from src.infrastructure.backend.log_rotation import (
     policy_from_settings,
 )
 from src.infrastructure.backend.shutdown import DRAIN_SECONDS, shutdown_signal
+from src.infrastructure.search.provider import semantic_provider_for
 
 logger = logging.getLogger(__name__)
 
@@ -368,6 +369,7 @@ def _initialise_repo(
         excluded_entity_types=process_runtime_catalogs().ontology.entity_types_with_class(
             "internal"
         ),
+        semantic_provider=semantic_provider_for(index),
     )
     repo.refresh()
     startup_reconciliation.close_changes_already_integrated(repo)

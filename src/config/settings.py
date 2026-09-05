@@ -55,7 +55,11 @@ _DEFAULTS: dict[str, dict[str, object]] = {
             "max_classification": "TLP:AMBER",
             "activation_policy": "manual",
         },
-        "read_model": {},
+        "read_model": {
+            # Off by default. The branch needs a 31 MB asset `get-embedding-model` acquires, and a
+            # deployment that has not acquired it must answer exactly as it always has.
+            "semantic_search": False,
+        },
     },
     "validation": {
         "datatype_type_references_blocking": True,
@@ -141,9 +145,10 @@ def load_settings() -> dict:
     )
     default_storage: dict[str, object] = _DEFAULTS["storage"]  # type: ignore[assignment]
     default_assurance: dict[str, object] = default_storage["assurance"]  # type: ignore[assignment]
+    default_read_model: dict[str, object] = default_storage["read_model"]  # type: ignore[assignment]
     storage: dict[str, object] = {
         "assurance": {**default_assurance, **storage_assurance},
-        "read_model": {**storage_read_model},
+        "read_model": {**default_read_model, **storage_read_model},
     }
     validation_raw = data.get("validation")
     validation_section: _SettingsSection = validation_raw if isinstance(validation_raw, dict) else {}

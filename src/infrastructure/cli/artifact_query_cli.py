@@ -14,6 +14,7 @@ from src.domain.baseline_standing import EnterpriseBaseline
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, DiagramRecord, EntityRecord
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.artifact_index import shared_artifact_index
+from src.infrastructure.search.provider import semantic_provider_for
 
 USAGE = """\
 Usage: python -m src.infrastructure.cli.artifact_query_cli <subcommand> [options]
@@ -131,9 +132,11 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     catalogs = process_runtime_catalogs()
+    index = shared_artifact_index(repo)
     registry = ArtifactRepository(
-        shared_artifact_index(repo),
+        index,
         excluded_entity_types=catalogs.ontology.entity_types_with_class("internal"),
+        semantic_provider=semantic_provider_for(index),
     )
     dispatch = {
         "stats": _cmd_stats,

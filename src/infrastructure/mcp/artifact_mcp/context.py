@@ -33,6 +33,7 @@ from src.infrastructure.mcp.artifact_mcp._background_refresh_queue import (
     queue_for,
     refresh_worker,
 )
+from src.infrastructure.search.provider import semantic_provider_for
 from src.infrastructure.verification.verifier_factory import build_artifact_verifier
 
 RepoPreset = Literal[
@@ -199,9 +200,11 @@ def repo_cached(roots_key_str: str) -> ArtifactRepository:
     shared = _shared_state_repo_for_roots(roots)
     if shared is not None:
         return shared
+    index = shared_artifact_index(roots)
     return ArtifactRepository(
-        shared_artifact_index(roots),
+        index,
         excluded_entity_types=process_runtime_catalogs().ontology.entity_types_with_class("internal"),
+        semantic_provider=semantic_provider_for(index),
     )
 
 
