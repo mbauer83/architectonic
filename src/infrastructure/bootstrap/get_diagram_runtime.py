@@ -3,17 +3,16 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import os
 import platform
 import shutil
 import subprocess
 import sys
 import tarfile
-import urllib.request
 from pathlib import Path
 
 from src.application.verification.artifact_verifier_syntax import PLANTUML_JAR_RELPATHS
+from src.infrastructure.bootstrap.asset_download import download_verified
 from src.infrastructure.bootstrap.get_plantuml import PLANTUML_VERSION
 from src.infrastructure.bootstrap.get_plantuml import download as download_plantuml
 
@@ -51,15 +50,6 @@ def _dot_version(dot_path: Path | str) -> tuple[int, ...] | None:  # pragma: no 
     return _parse_version((proc.stdout + proc.stderr).strip())
 
 
-def _download_bytes(url: str) -> bytes:  # pragma: no cover — network download, not testable in unit tests
-    with urllib.request.urlopen(url) as resp:  # noqa: S310
-        return resp.read()
-
-
-def _sha256hex(data: bytes) -> str:
-    return hashlib.sha256(data).hexdigest().lower()
-
-
 def _ensure_graphviz_from_source(root: Path, *, force: bool) -> Path:  # pragma: no cover
     tools_dir = root / "tools"
     output_dir = tools_dir / "graphviz"
@@ -73,10 +63,7 @@ def _ensure_graphviz_from_source(root: Path, *, force: bool) -> Path:  # pragma:
     src_dir = src_parent / f"graphviz-{GRAPHVIZ_VERSION}"
 
     print(f"Downloading Graphviz {GRAPHVIZ_VERSION} source …")
-    tar_bytes = _download_bytes(GRAPHVIZ_TAR_XZ_URL)
-    actual_sha = _sha256hex(tar_bytes)
-    if actual_sha != GRAPHVIZ_TAR_XZ_SHA256:
-        raise SystemExit(f"Graphviz SHA-256 mismatch: expected {GRAPHVIZ_TAR_XZ_SHA256}, got {actual_sha}")
+    tar_bytes = download_verified(GRAPHVIZ_TAR_XZ_URL, expected_sha256=GRAPHVIZ_TAR_XZ_SHA256)
 
     tools_dir.mkdir(parents=True, exist_ok=True)
     archive_path.write_bytes(tar_bytes)

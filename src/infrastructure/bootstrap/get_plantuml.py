@@ -17,13 +17,13 @@ Usage
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import sys
 import urllib.request
 from pathlib import Path
 
 from src.application.verification.artifact_verifier_syntax import PLANTUML_JAR_RELPATHS
+from src.infrastructure.bootstrap.asset_download import download_bytes, download_verified, sha256_hex
 
 # ── Pinned release ────────────────────────────────────────────────────────────
 #
@@ -48,19 +48,6 @@ _GITHUB_DOWNLOAD = "https://github.com/plantuml/plantuml/releases/download/v{ver
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 
-def _fetch(url: str, label: str) -> bytes:  # pragma: no cover — network download, not testable in unit tests
-    print(f"  {label}: {url} … ", end="", flush=True)
-    try:
-        req = urllib.request.Request(url, headers={"User-Agent": "get-plantuml/1.0"})
-        with urllib.request.urlopen(req) as resp:  # noqa: S310
-            data = resp.read()
-    except Exception as exc:
-        print("FAILED")
-        raise SystemExit(f"Download error: {exc}") from exc
-    print(f"{len(data):,} bytes")
-    return data
-
-
 def _head_ok(url: str) -> bool:  # pragma: no cover — network HEAD request, not testable in unit tests
     """Return True if url responds with 2xx."""
     try:
@@ -69,10 +56,6 @@ def _head_ok(url: str) -> bool:  # pragma: no cover — network HEAD request, no
             return resp.status < 300
     except Exception:
         return False
-
-
-def _sha256hex(data: bytes) -> str:
-    return hashlib.sha256(data).hexdigest().lower()
 
 
 def _latest_github_version() -> str:  # pragma: no cover — network GitHub API, not testable in unit tests
@@ -103,17 +86,8 @@ def _download_maven(version: str, output: Path) -> bool:  # pragma: no cover
         return False
 
     print(f"Downloading PlantUML {version} from Maven Central:")
-    jar_bytes = _fetch(jar_url, "jar")
-    sha_bytes = _fetch(sha_url, "sha256")
-
-    expected = sha_bytes.decode().strip().split()[0].lower()
-    actual = _sha256hex(jar_bytes)
-    if actual != expected:
-        print()
-        print("ERROR: SHA-256 mismatch — aborting, file not written")
-        print(f"  expected : {expected}")
-        print(f"  actual   : {actual}")
-        raise SystemExit(1)
+    expected = download_bytes(sha_url, label="sha256").decode().strip().split()[0]
+    jar_bytes = download_verified(jar_url, expected_sha256=expected, label="jar")
 
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_bytes(jar_bytes)
@@ -125,10 +99,10 @@ def _download_github(version: str, output: Path) -> None:  # pragma: no cover
     """Download from GitHub Releases (no SHA-256 sidecar)."""
     jar_url = _GITHUB_DOWNLOAD.format(version=version)
     print(f"Downloading PlantUML {version} from GitHub Releases:")
-    jar_bytes = _fetch(jar_url, "jar")
+    jar_bytes = download_bytes(jar_url, label="jar")
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_bytes(jar_bytes)
-    digest = _sha256hex(jar_bytes)
+    digest = sha256_hex(jar_bytes)
     print(f"OK  {output}  ({len(jar_bytes):,} bytes)")
     print(f"  SHA-256: {digest}  (no Maven Central sidecar to verify against)")
 
@@ -151,7 +125,7 @@ def check(output: Path) -> int:
     if not output.exists():
         print(f"File not found: {output}")
         return 1
-    digest = _sha256hex(output.read_bytes())
+    digest = sha256_hex(output.read_bytes())
     print(f"{output}")
     print(f"  SHA-256: {digest}")
     return 0
