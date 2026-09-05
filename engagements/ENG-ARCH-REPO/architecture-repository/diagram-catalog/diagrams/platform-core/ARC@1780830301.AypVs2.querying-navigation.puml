@@ -6,14 +6,14 @@ version: 0.1.0
 status: draft
 diagram-type: archimate-layered
 entity-ids-used:
-- FNC@1777390452.3seqIw.retrieve-architectural-context
-- FNC@1777390444.lLdx12.discover-relevant-architecture-content
-- SRV@1712870400.Qr8St8.discovery-querying-stats-service
 - FNC@1776633706.3jpc7O.metadata-filter
+- FNC@1777390452.3seqIw.retrieve-architectural-context
 - FNC@1776633080.BdEMPx.graph-traversal
-- FNC@1776633704.bFY40B.full-text-search
-- FNC@1788600509.scmGYcC.vector-similarity-search
 - FNC@1788599685.KQCmD1g.fuse-ranked-retrieval-results
+- FNC@1776633704.bFY40B.full-text-search
+- FNC@1777390444.lLdx12.discover-relevant-architecture-content
+- FNC@1788600509.scmGYcC.vector-similarity-search
+- SRV@1712870400.Qr8St8.discovery-querying-stats-service
 connection-ids-used:
 - FNC@1777390452.3seqIw---FNC@1777390444.lLdx12@@archimate-triggering
 - FNC@1777390444.lLdx12---SRV@1712870400.Qr8St8@@archimate-realization
@@ -25,7 +25,7 @@ connection-ids-used:
 - FNC@1776633080.BdEMPx---FNC@1788599685.KQCmD1g@@archimate-flow
 - FNC@1776633704.bFY40B---FNC@1788599685.KQCmD1g@@archimate-flow
 - FNC@1788600509.scmGYcC---FNC@1788599685.KQCmD1g@@archimate-flow
-last-updated: '2026-09-05T09:36:24Z'
+last-updated: '2026-09-05T10:24:31Z'
 ---
 @startuml querying---navigation
 hide stereotype
@@ -107,24 +107,28 @@ skinparam rectangle<<service>> {
 }
 sprite $archimate_function <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.9 11.7V5.4L8 3.1l5.1 2.3v6.3L8 9.2z"  fill="#252327" stroke="none"/></svg>
 sprite $archimate_service <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3.2 4.1h7.2a2.8 2.8 0 0 1 0 7.8H3.2a2.8 2.8 0 0 1 0-7.8z"  fill="#252327" stroke="none"/></svg>
+skinparam wrapWidth 240
+top to bottom direction
+
+skinparam maxMessageSize 240
+
 title Querying & Navigation
 
 rectangle "<$archimate_function{scale=1.2}> Retrieve Architectural Context\n«Application Function»" <<function>> as FNC_3seqIw
 
 rectangle "<$archimate_function{scale=1.2}> Discover Relevant Architecture Content\n«Application Function»" <<function>> as FNC_lLdx12
+rectangle "<$archimate_function{scale=1.2}> Graph Traversal\n«Application Function»" <<function>> as FNC_BdEMPx
+rectangle "<$archimate_function{scale=1.2}> Full-Text Search\n«Application Function»" <<function>> as FNC_bFY40B
+rectangle "<$archimate_function{scale=1.2}> Vector Similarity Search\n«Application Function»" <<function>> as FNC_scmGYcC
+FNC_lLdx12 -[hidden]down- FNC_BdEMPx
+FNC_BdEMPx -[hidden]down- FNC_bFY40B
+FNC_bFY40B -[hidden]down- FNC_scmGYcC
 
 rectangle "<$archimate_service{scale=1.2}> Discovery, Querying & Stats Service\n«Application Service»" <<service>> as SRV_Qr8St8
 
 rectangle "<$archimate_function{scale=1.2}> Metadata Filter\n«Application Function»" <<function>> as FNC_3jpc7O
-rectangle "<$archimate_function{scale=1.2}> Graph Traversal\n«Application Function»" <<function>> as FNC_BdEMPx
-rectangle "<$archimate_function{scale=1.2}> Full-Text Search\n«Application Function»" <<function>> as FNC_bFY40B
-rectangle "<$archimate_function{scale=1.2}> Vector Similarity Search\n«Application Function»" <<function>> as FNC_scmGYcC
-
 rectangle "<$archimate_function{scale=1.2}> Fuse Ranked Retrieval Results\n«Application Function»" <<function>> as FNC_KQCmD1g
-
-FNC_3jpc7O -[hidden]right- FNC_BdEMPx
-FNC_BdEMPx -[hidden]right- FNC_bFY40B
-FNC_bFY40B -[hidden]right- FNC_scmGYcC
+FNC_3jpc7O -[hidden]right- FNC_KQCmD1g
 SRV_Qr8St8 -[hidden]down- FNC_3jpc7O
 
 ' Connections
