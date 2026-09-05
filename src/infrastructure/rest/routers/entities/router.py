@@ -13,6 +13,7 @@ from src.application.artifacts.entity_references import references_to
 from src.application.artifacts.parsing import decode_entity_properties, parse_entity_content_sections
 from src.application.artifacts.schema import load_attribute_schema
 from src.application.entity_type_predicates import is_internal_entity_type
+from src.application.modeling.proposal_composition import composed_view
 from src.application.modeling.proposal_standing import standing_subject
 from src.application.read_models import EntityContextReadModel
 from src.application.runtime_catalogs import RuntimeCatalogs
@@ -181,7 +182,14 @@ def read_entity(artifact_id: str) -> dict[str, Any]:
         result["conn_sym"] = sym
         result["conn_out"] = out
         result["is_global"] = s.is_global(entity_rec.path)
-        result[BASELINE_STANDING] = s.baseline_standing_reader()(standing_subject(entity_rec)).to_mapping()
+        subject = standing_subject(entity_rec)
+        result[BASELINE_STANDING] = s.baseline_standing_reader()(subject).to_mapping()
+        # The author's own pending change, laid over the baseline they cannot write. Without this a
+        # read returns the enterprise values while the badge names fields that differ — so the next
+        # edit is written over work the author cannot see, and accepting both in order undoes the
+        # first. Only the view composes; the recorded change keeps the revision it was written
+        # against, which is what staleness is decided from.
+        result = composed_view(result, s.pending_change_reader()(subject))
     return result
 
 

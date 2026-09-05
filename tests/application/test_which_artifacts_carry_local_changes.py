@@ -13,7 +13,6 @@ from pathlib import Path
 import pytest
 
 from src.application.modeling.proposal_standing import (
-    PendingProposal,
     pending_proposals,
     standing_for,
 )
@@ -238,8 +237,28 @@ def test_records_that_are_not_proposals_are_not_read_as_ones() -> None:
 
 
 def test_a_pending_proposal_carries_only_what_a_reader_of_its_target_needs() -> None:
-    """The reduced shape is the point: a read path holding whole proposal records would carry their
-    bodies through every list answer."""
+    """The reduced shape is the point: a read path holding whole proposal *records* would carry their
+    frontmatter, paths and rendered bodies through every list answer.
+
+    It does carry the recorded edit, which is a widening made deliberately. A reader of the target
+    needs the values to be shown their own pending work, the decode has already read them, and the
+    alternative is reading every proposal file a second time. What bounds the cost is that live
+    changes are proportional to *pending work* — what one author has changed and not yet submitted —
+    and never to the size of the corpus being listed.
+    """
     (proposal,) = pending_proposals([_proposal("PCH@1.aaa", fields={"name": "y"})])[TARGET]
 
-    assert proposal == PendingProposal("PCH@1.aaa", TARGET, ("name",), REVISION)
+    assert proposal.proposal_id == "PCH@1.aaa"
+    assert proposal.target_id == TARGET
+    assert proposal.changed_fields == ("name",)
+    assert proposal.base_revision == REVISION
+    assert proposal.edit.fields == {"name": "y"}
+
+
+def test_a_pending_proposal_does_not_carry_the_proposal_record() -> None:
+    """The reduction that is still absolute: none of the file it was decoded from comes with it."""
+    (proposal,) = pending_proposals([_proposal("PCH@1.aaa", fields={"name": "y"})])[TARGET]
+
+    assert not hasattr(proposal, "path")
+    assert not hasattr(proposal, "content_text")
+    assert not hasattr(proposal, "extra")

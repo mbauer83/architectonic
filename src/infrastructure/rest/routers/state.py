@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from src.application.modeling.enterprise_reference import enterprise_target
-from src.application.modeling.proposal_standing import standing_reader
+from src.application.modeling.proposal_standing import PendingProposal, pending_reader, standing_reader
 from src.domain.baseline_standing import BASELINE_STANDING, BaselineStanding
 
 if TYPE_CHECKING:
@@ -123,6 +123,11 @@ def baseline_standing_reader() -> Callable[[str], BaselineStanding]:
     """The served repository's standing reader. The answer lives in application; this supplies the
     repository, which is the only thing REST knows that the resolver does not."""
     return standing_reader(maybe_get_repo())
+
+
+def pending_change_reader() -> Callable[[str], tuple[PendingProposal, ...]]:
+    """The served repository's live changes, for a read that composes them over the baseline."""
+    return pending_reader(maybe_get_repo())
 
 
 def entity_to_summary(

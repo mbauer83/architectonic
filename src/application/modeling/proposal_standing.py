@@ -26,7 +26,7 @@ from typing import TYPE_CHECKING, TypeAlias
 
 from src.application.derivation.refresh import compute_revision
 from src.application.modeling.enterprise_reference import enterprise_target
-from src.application.modeling.proposal_edit import UnproposableEdit, from_mapping
+from src.application.modeling.proposal_edit import ProposalEdit, UnproposableEdit, from_mapping
 from src.application.modeling.proposed_change import (
     BASE_REVISION,
     PENDING_STATES,
@@ -72,6 +72,10 @@ class PendingProposal:
     target_id: str
     changed_fields: tuple[str, ...]
     base_revision: str
+    #: What the change says the artifact should be. Kept rather than reduced to `changed_fields`,
+    #: because a reader of the target needs the *values* to be shown their own pending work — the
+    #: decode has already read them, and discarding them here only means reading the file twice.
+    edit: ProposalEdit
 
 
 def pending_proposals(entities: Iterable[EntityRecord]) -> Mapping[str, tuple[PendingProposal, ...]]:
@@ -146,6 +150,7 @@ def _decode(record: EntityRecord) -> PendingProposal | None:
         target_id=target.strip(),
         changed_fields=tuple(sorted(recorded.fields)),
         base_revision=base.strip(),
+        edit=recorded,
     )
 
 
@@ -192,6 +197,24 @@ def standing_reader(repo: "ArtifactRepository | None") -> Callable[[str], Baseli
         return compute_revision(record.path) if record is not None and record.path.exists() else None
 
     return lambda artifact_id: standing_for(artifact_id, pending, revision_of=revision_of)
+
+
+def pending_reader(repo: "ArtifactRepository | None") -> Callable[[str], tuple[PendingProposal, ...]]:
+    """The live changes against any artifact, for the span of one response.
+
+    The sibling of `standing_reader`, gathering the same pending set the same way, for the caller
+    that needs the changes' *values* rather than a verdict about them — a detail read composing an
+    author's own pending work over the baseline it cannot write.
+
+    Two readers rather than one returning both, because the list surfaces want the verdict for
+    hundreds of rows and would carry every recorded edit to use none of them.
+    """
+    if repo is None:
+        return lambda _artifact_id: ()
+    pending = pending_proposals(repo.list_entities(artifact_type=PROPOSED_CHANGE_TYPE))
+    if not pending:
+        return lambda _artifact_id: ()
+    return lambda artifact_id: pending.get(artifact_id, ())
 
 
 def standing_subject_by_id(repo: "ArtifactRepository", artifact_id: str) -> str:

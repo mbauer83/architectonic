@@ -149,3 +149,71 @@ def test_a_repository_with_nothing_proposed_costs_no_revision_reads() -> None:
 def test_no_repository_at_all_answers_the_baseline() -> None:
     """An app built without a served repository — the reader must not raise into a read path."""
     assert isinstance(standing_reader(None)("anything"), EnterpriseBaseline)
+
+
+# ── and shows what those changes say ─────────────────────────────────────────
+#
+# The standing above says *which* fields differ. These say that a read of the artifact returns the
+# author's values for them — the half that was missing, and the reason it mattered: an author who
+# cannot see their own pending change writes the next one over it.
+
+
+def test_the_pending_reader_answers_the_changes_against_a_subject(repo: _Repo) -> None:
+    from src.application.modeling.proposal_standing import pending_reader
+
+    pending = pending_reader(repo)(ENTERPRISE_ID)
+    assert [p.proposal_id for p in pending] == [PROPOSAL_ID]
+    assert pending[0].edit.fields == {"name": "Payments"}
+
+
+def test_a_subject_with_nothing_proposed_answers_no_changes(repo: _Repo) -> None:
+    from src.application.modeling.proposal_standing import pending_reader
+
+    assert pending_reader(repo)("VAL@1780000003.ddddddd.local-thing") == ()
+
+
+def test_no_repository_at_all_answers_no_changes() -> None:
+    from src.application.modeling.proposal_standing import pending_reader
+
+    assert pending_reader(None)("anything") == ()
+
+
+def test_the_two_readers_agree_about_which_fields_are_the_authors(repo: _Repo) -> None:
+    """`changed_fields` on the standing and the composed fields are derived from one edit. Two
+    answers to one question is the drift this file exists to catch."""
+    from src.application.modeling.proposal_composition import composed_fields
+    from src.application.modeling.proposal_standing import pending_reader
+
+    standing = standing_reader(repo)(ENTERPRISE_ID)
+    assert isinstance(standing, Proposed)
+    assert composed_fields(pending_reader(repo)(ENTERPRISE_ID)) == tuple(standing.changed_fields)
+
+
+def test_a_read_of_the_subject_returns_the_authors_value(repo: _Repo) -> None:
+    from src.application.modeling.proposal_composition import composed_view
+    from src.application.modeling.proposal_standing import pending_reader
+
+    baseline = {"artifact_id": ENTERPRISE_ID, "name": "Payment Handling", "summary": "Unchanged."}
+    composed = composed_view(baseline, pending_reader(repo)(ENTERPRISE_ID))
+    assert composed["name"] == "Payments"
+    assert composed["summary"] == "Unchanged."
+
+
+def test_the_pending_reader_is_one_snapshot_rather_than_a_lookup_per_row(repo: _Repo) -> None:
+    """The same property `standing_reader` has, for the same reason: a detail read for several
+    artifacts must not re-gather the proposals per artifact."""
+    from src.application.modeling.proposal_standing import pending_reader
+
+    calls = 0
+    original = repo.list_entities
+
+    def counting(artifact_type: str | None = None, **kw: object) -> list[EntityRecord]:
+        nonlocal calls
+        calls += 1
+        return original(artifact_type, **kw)
+
+    repo.list_entities = counting  # type: ignore[method-assign]
+    reader = pending_reader(repo)
+    for _ in range(5):
+        reader(ENTERPRISE_ID)
+    assert calls == 1
