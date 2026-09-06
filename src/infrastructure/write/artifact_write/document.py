@@ -4,8 +4,9 @@ from pathlib import Path
 import yaml  # type: ignore[import-untyped]
 
 from src.application.artifacts.document_schema import get_document_schema, get_document_subdirectory
+from src.application.artifacts.query import ArtifactRepository
 from src.application.identifier_allocator import get_default_allocator
-from src.application.verification.artifact_verifier import ArtifactVerifier
+from src.application.verification.artifact_verifier import ArtifactRegistry, ArtifactVerifier
 from src.config.repo_paths import DOCS
 from src.domain.artifact_id import stable_id
 from src.domain.repository.frontmatter import Frontmatter, FrontmatterProblem, read_frontmatter
@@ -18,6 +19,7 @@ from ._document_group_move import _doc_dir, _resolve_document_group_path
 from ._document_placeholder import _build_placeholder_body, _validate_section_templates
 from .boundary import assert_engagement_write_root, modification_stamp
 from .coerce import as_optional_str_list
+from .enterprise_edit_arguments import Interception, document_change
 from .file_transaction import FileChange, commit_file_changes
 from .types import WriteResult
 from .verify import verify_content_in_temp_path
@@ -290,9 +292,19 @@ def edit_document(
     version: str | None,
     last_updated: str | None,
     group: str | None = None,
+    registry: ArtifactRegistry | None = None,
+    repo: ArtifactRepository | None = None,
     dry_run: bool,
 ) -> WriteResult:
+    """Edit a document, or — where it is a reference to a promoted one — record a change to it."""
     assert_write_root(repo_root)
+
+    if (recorded := document_change(
+        into=Interception(registry, verifier, clear_repo_caches, repo, repo_root, artifact_id, dry_run),
+        title=title, body=body, keywords=keywords, extra_frontmatter=extra_frontmatter, status=status,
+        version=version, last_updated=last_updated, group=group,
+    )) is not None:
+        return recorded
 
     docs_root = repo_root / DOCS
     path = _resolve_document_path(docs_root, artifact_id)

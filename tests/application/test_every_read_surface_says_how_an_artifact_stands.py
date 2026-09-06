@@ -59,7 +59,7 @@ def _record(artifact_id: str, artifact_type: str, extra: dict) -> EntityRecord:
 
 
 class _Repo:
-    """The three methods the reader uses."""
+    """The methods the reader uses."""
 
     def __init__(self, *records: EntityRecord) -> None:
         self._records = {r.artifact_id: r for r in records}
@@ -69,6 +69,15 @@ class _Repo:
 
     def get_entity(self, artifact_id: str) -> EntityRecord | None:
         return self._records.get(artifact_id)
+
+    def find_file_by_id(self, artifact_id: str) -> Path | None:
+        """Whatever kind the artifact is — which is why the reader asks this and not `get_entity`.
+
+        Nothing here has a file on disk, so the answer is always None and staleness stays
+        undecidable, which is what these tests are about: they assert the standing, not the verdict.
+        """
+        _ = artifact_id
+        return None
 
 
 @pytest.fixture()

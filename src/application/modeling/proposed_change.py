@@ -51,6 +51,15 @@ BASE_REVISION = "base-revision"
 #: Where the change is in its lifecycle.
 PROPOSAL_STATE = "proposal-state"
 
+#: What `base-revision` says when the enterprise artifact could not be read at the moment the change
+#: was written — the ordinary state of an engagement deployment, which mounts no enterprise content.
+#: A value rather than an empty field because the field may not be empty (E148) and a change nothing
+#: can decode is a change nobody can see: recording the blank made the whole feature fail on the
+#: deployment shape it exists for. Staleness is then undecidable, which reads as `current` for the
+#: same reason a missing revision does — the check that matters happens at review, where both sides
+#: are visible.
+UNKNOWN_BASE = "unknown"
+
 #: The lifecycle. `draft` and `submitted` are live; `integrated` and `abandoned` are terminal and
 #: immutable — a terminal record is kept rather than deleted, because it is the evidence that the
 #: proposal existed and how it ended. Which states are terminal is declared where the transition

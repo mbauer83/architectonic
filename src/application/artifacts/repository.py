@@ -107,6 +107,16 @@ class ArtifactRepository:
     def get_document(self, artifact_id: str) -> DocumentRecord | None:
         return self._store.get_document(artifact_id)
 
+    def find_file_by_id(self, artifact_id: str) -> Path | None:
+        """The file any artifact lives in, whatever kind it is and whichever tier holds it.
+
+        The kind-agnostic sibling of the `get_*` lookups. Asking `get_entity` and hashing its path
+        was how the base revision of a change was taken, which answered nothing for a promoted
+        *document* — and this repository holds a reference to one, so that change failed E148 on a
+        field the author never saw.
+        """
+        return self._store.find_file_by_id(artifact_id)
+
     def list_documents(
         self,
         *,

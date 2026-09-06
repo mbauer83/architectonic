@@ -34,6 +34,7 @@ from src.application.modeling.proposed_change import (
     PROPOSED_CHANGE_TYPE,
     PROPOSES_CHANGE_TO,
     RECORDED_EDIT,
+    UNKNOWN_BASE,
 )
 from src.domain.baseline_standing import BASELINE, BaselineStanding, ChangeCondition, Proposed
 
@@ -128,9 +129,18 @@ def _union_of_changed_fields(proposals: tuple[PendingProposal, ...]) -> tuple[st
 
 
 def _condition(proposals: tuple[PendingProposal, ...], current: str | None) -> ChangeCondition:
+    """Whether the enterprise artifact has moved under these changes.
+
+    A change whose base is `UNKNOWN_BASE` was written where the enterprise artifact could not be
+    read, and it stays undecidable here rather than being compared against a hash it was never going
+    to equal — every such change would otherwise read `stale` the moment a reader mounted the
+    enterprise repository, which is the alarming direction the missing-revision case already refuses
+    to guess in.
+    """
     if current is None:
         return "current"
-    return "current" if all(p.base_revision == current for p in proposals) else "stale"
+    known = [p.base_revision for p in proposals if p.base_revision != UNKNOWN_BASE]
+    return "current" if all(base == current for base in known) else "stale"
 
 
 def _decode(record: EntityRecord) -> PendingProposal | None:
@@ -213,12 +223,16 @@ def enterprise_revision(repo: "ArtifactRepository", target_id: str) -> str | Non
     change reads stale from the moment it is recorded, on a deployment that mounts the enterprise
     repository and nowhere else. Which is exactly what happened.
 
+    Resolved by id and not by kind. A change is proposed against an entity, a document or a diagram,
+    and asking `get_entity` answered for one of the three — so a change to the promoted document this
+    repository already references recorded no base at all and was refused by E148.
+
     None where the enterprise repository is not mounted. Staleness is then undecidable rather than
     false, and `_condition` treats it as `current` — the honest reading, since nothing has been
     observed to move.
     """
-    record = repo.get_entity(target_id)
-    return compute_revision(record.path) if record is not None and record.path.exists() else None
+    path = repo.find_file_by_id(target_id)
+    return compute_revision(path) if path is not None and path.exists() else None
 
 
 def pending_reader(repo: "ArtifactRepository | None") -> Callable[[str], tuple[PendingProposal, ...]]:

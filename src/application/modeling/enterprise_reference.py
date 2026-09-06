@@ -21,6 +21,8 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 
+from src.application.modeling.edit_field_catalogue import PROPOSABLE, ArtifactKind
+
 #: The internal artifact type that proxies an enterprise artifact.
 GLOBAL_ARTIFACT_REFERENCE_TYPE = "global-artifact-reference"
 
@@ -52,10 +54,27 @@ def enterprise_target(fields: Mapping[str, object]) -> str | None:
     return stripped if isinstance(target, str) and (stripped := target.strip()) else None
 
 
+def proxied_kind(fields: Mapping[str, object]) -> ArtifactKind | None:
+    """Which kind of artifact this reference stands for, or None where it names none this can hold.
+
+    A reference proxies an entity, a document or a diagram, and *which* decides the vocabulary an
+    edit of it may use: a change to the promoted document `General coding guidelines` says `title`
+    and `body`, and a change to a promoted requirement says `summary` and `properties`. Reading the
+    field is one question with one answer, so it is asked here rather than by whoever needs the
+    vocabulary — a caller that assumed the entity kind recorded document edits under the entity
+    catalogue, which is the defect this replaces.
+
+    None for anything outside `PROPOSABLE`, including a missing or misspelled value: a reference
+    whose kind cannot be read is one nothing should guess about.
+    """
+    declared = fields.get(GLOBAL_ARTIFACT_KIND)
+    return next((kind for kind in PROPOSABLE if kind == declared), None)
+
+
 def proxies_an_entity(fields: Mapping[str, object]) -> bool:
     """Whether this reference stands for an *entity*, and so has a connection surface at all.
 
     A reference to a document or a diagram proxies something nothing can connect to, which is why
     the connection routes ask this before offering endpoints.
     """
-    return fields.get(GLOBAL_ARTIFACT_KIND) == ENTITY_KIND
+    return proxied_kind(fields) == ENTITY_KIND

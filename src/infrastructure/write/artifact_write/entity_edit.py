@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from src.application.modeling.artifact_write import slugify
-from src.application.modeling.enterprise_reference import enterprise_target
 from src.application.profile_quarantine import assert_not_quarantined
 from src.application.rename_followers import ArtifactRenamed, announce_rename
 from src.application.verification.artifact_verifier import ArtifactRegistry, ArtifactVerifier
@@ -30,6 +29,7 @@ from ._entity_rename import (
     rewrite_document_links_for_moved_artifact,
 )
 from .boundary import assert_engagement_write_root
+from .enterprise_edit_arguments import Interception, entity_change
 from .entity import entity_path, verification_to_entity_dict
 from .parse_existing import parse_entity_file
 from .types import WriteResult
@@ -126,30 +126,23 @@ def edit_entity(
     """
     assert_engagement_write_root(repo_root)
 
+    recorded = entity_change(
+        into=Interception(
+            registry=registry, verifier=verifier, clear_repo_caches=clear_repo_caches, repo=repo,
+            repo_root=repo_root, artifact_id=artifact_id, dry_run=dry_run,
+        ),
+        name=name, summary=summary, properties=properties, attribute_types=attribute_types,
+        notes=notes, keywords=keywords, specializations=specializations, version=version,
+        status=status, group=group,
+    )
+    if recorded is not None:
+        return recorded
+
     entity_file = registry.find_file_by_id(artifact_id)
     if entity_file is None:
         raise ValueError(f"Entity '{artifact_id}' not found in model")
 
     parsed = parse_entity_file(entity_file)
-    if (target := enterprise_target(parsed.frontmatter)) is not None:
-        # Lazily, because the capture module reads `_UNSET` from here — the sentinel has one
-        # owner and this is it.
-        from src.infrastructure.write.artifact_write.enterprise_change_capture import (  # noqa: PLC0415
-            provided_content_fields,
-            record_enterprise_change,
-        )
-
-        return record_enterprise_change(
-            repo=repo, registry=registry, verifier=verifier,
-            clear_repo_caches=clear_repo_caches, repo_root=repo_root,
-            reference_id=artifact_id, target_id=target, reference=parsed,
-            fields=provided_content_fields(
-                name=name, summary=summary, properties=properties,
-                attribute_types=attribute_types, notes=notes, keywords=keywords,
-                specializations=specializations, version=version, status=status, group=group,
-            ),
-            dry_run=dry_run,
-        )
     subject = subject_of(parsed, addressed_as=artifact_id)
     artifact_id, artifact_type = subject.artifact_id, subject.artifact_type
 

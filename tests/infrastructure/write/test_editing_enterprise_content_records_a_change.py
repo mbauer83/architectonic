@@ -16,7 +16,11 @@ from pathlib import Path
 import pytest
 
 from src.application.artifacts.query import ArtifactRepository
-from src.application.modeling.enterprise_reference import GLOBAL_ARTIFACT_ID
+from src.application.modeling.enterprise_reference import (
+    GLOBAL_ARTIFACT_ENTITY_TYPE,
+    GLOBAL_ARTIFACT_ID,
+    GLOBAL_ARTIFACT_KIND,
+)
 from src.application.modeling.proposal_standing import pending_proposals
 from src.application.modeling.proposed_change import PROPOSED_CHANGE_TYPE
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
@@ -39,7 +43,10 @@ def _reference_md() -> str:
         "status: active\n"
         "last-updated: '2026-01-01'\n"
         f"{GLOBAL_ARTIFACT_ID}: {ENTERPRISE}\n"
-        "global-artifact-kind: entity\n"
+        # Through the constants, not spelled again: this fixture said `global-artifact-kind`,
+        # which is not the field, and every test here passed because nothing read the kind.
+        f"{GLOBAL_ARTIFACT_KIND}: entity\n"
+        f"{GLOBAL_ARTIFACT_ENTITY_TYPE}: requirement\n"
         "---\n\n<!-- §content -->\n\n"
         "## Two-tier repositories\n\nA proxy.\n\n"
         "## Properties\n\n| Attribute | Value |\n|---|---|\n| (none) | (none) |\n\n"

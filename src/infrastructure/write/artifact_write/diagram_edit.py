@@ -2,7 +2,7 @@
 
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from src.application.candidate_repository import CandidateRepository
 from src.application.modeling.artifact_write import format_diagram_puml
@@ -27,8 +27,12 @@ from .diagram_references import (
 )
 from .diagram_render import _render_diagram_entities_puml
 from .diagram_render_input import render_entities_restored
+from .enterprise_edit_arguments import EDGE_LABELS_UNSET, KEYWORDS_UNSET, VIEWPOINT_UNSET, Interception, diagram_change
 from .parse_existing import parse_diagram_file
 from .types import WriteResult
+
+if TYPE_CHECKING:
+    from src.application.artifacts.query import ArtifactRepository
 
 
 def _extract_workspace_ids(fm: dict, module: object) -> set[str]:
@@ -50,8 +54,7 @@ def _extract_workspace_ids(fm: dict, module: object) -> set[str]:
     return result
 
 
-_EDGE_LABELS_UNSET = object()
-_VIEWPOINT_UNSET = object()
+
 
 
 def edit_diagram(
@@ -63,7 +66,7 @@ def edit_diagram(
     artifact_id: str,
     puml: str | None = None,
     name: str | None = None,
-    keywords: list[str] | None = ...,  # type: ignore[assignment]
+    keywords: list[str] | None = KEYWORDS_UNSET,
     diagram_entities: dict[str, object] | None = None,
     diagram_connections: list[dict[str, object]] | None = None,
     entity_ids_used: list[str] | None = None,
@@ -74,14 +77,15 @@ def edit_diagram(
     version: str | None = None,
     status: str | None = None,
     tlp: str | None = None,
-    viewpoint: dict[str, object] | None = _VIEWPOINT_UNSET,  # type: ignore[assignment]
-    edge_labels: dict[str, str | None] | None = _EDGE_LABELS_UNSET,  # type: ignore[assignment]
+    viewpoint: dict[str, object] | None = VIEWPOINT_UNSET,  # type: ignore[assignment]
+    edge_labels: dict[str, str | None] | None = EDGE_LABELS_UNSET,  # type: ignore[assignment]
     group: str | None = None,
     rebuild_layout: bool = False,
     dry_run: bool,
     committed_repo: CandidateRepository | None = None,
     authored_groupings: list[dict[str, object]] | None = None,
     manual_layout: bool | None = None,
+    repo: "ArtifactRepository | None" = None,
 ) -> WriteResult:
     """Edit an existing diagram file.
 
@@ -105,8 +109,18 @@ def edit_diagram(
     """
     from src.application.modeling.binding_normalize import normalize_bindings, strip_diagram_shorthand
     from src.domain.diagrams.bindings import bindings_to_raw
-
     assert_write_root(repo_root)
+
+    if (recorded := diagram_change(
+        into=Interception(verifier.registry, verifier, clear_repo_caches, repo, repo_root, artifact_id, dry_run),
+        puml=puml, name=name, keywords=keywords, diagram_entities=diagram_entities, viewpoint=viewpoint,
+        diagram_connections=diagram_connections, entity_ids_used=entity_ids_used, bindings=bindings,
+        connection_ids_used=connection_ids_used, view_derivations=view_derivations, tlp=tlp, group=group,
+        version=version, status=status, edge_labels=edge_labels, authored_groupings=authored_groupings,
+        manual_layout=manual_layout,
+    )) is not None:
+        return recorded
+
     warnings: list[str] = []
 
     _find = verifier.registry.find_file_by_id if verifier.registry is not None else None
@@ -126,7 +140,7 @@ def edit_diagram(
     eff_status = status if status is not None else str(fm.get("status", "draft"))
     _fm_tlp = fm.get("tlp")
     eff_tlp = tlp if tlp is not None else (str(_fm_tlp) if isinstance(_fm_tlp, str) else None)
-    eff_keywords = keywords if keywords is not ... else as_optional_str_list(fm.get("keywords"))
+    eff_keywords = keywords if keywords is not KEYWORDS_UNSET else as_optional_str_list(fm.get("keywords"))
     eff_diagram_entities = diagram_entities if diagram_entities is not None else fm.get("diagram-entities")
     eff_diagram_connections = diagram_connections if diagram_connections is not None else fm.get("connections")
     diagram_type = str(fm.get("diagram-type", "archimate"))
@@ -137,13 +151,13 @@ def edit_diagram(
         return edit_matrix_diagram(
             repo_root=repo_root, verifier=verifier, clear_repo_caches=clear_repo_caches,
             diagram_path=diagram_path, artifact_id=artifact_id, name=name,
-            keywords=None if keywords is ... else keywords,
+            keywords=None if keywords is KEYWORDS_UNSET else keywords,
             version=version, status=status, tlp=tlp, group=group, dry_run=dry_run,
             puml=puml, diagram_entities=diagram_entities, diagram_connections=diagram_connections,
             entity_ids_used=entity_ids_used, connection_ids_used=connection_ids_used,
             view_derivations=view_derivations, bindings=bindings, replace_bindings=replace_bindings,
-            edge_labels_given=edge_labels is not _EDGE_LABELS_UNSET,
-            viewpoint=None if viewpoint is _VIEWPOINT_UNSET else viewpoint,
+            edge_labels_given=edge_labels is not EDGE_LABELS_UNSET,
+            viewpoint=None if viewpoint is VIEWPOINT_UNSET else viewpoint,
         )
 
     raw_format_version = fm.get("diagram-format-version")
@@ -264,7 +278,7 @@ def edit_diagram(
     # A None value for a key removes that key (single-key clear without full replacement).
     _raw_el = fm.get("edge-labels")
     existing_edge_labels: dict[str, str] = dict(_raw_el) if isinstance(_raw_el, dict) else {}
-    if edge_labels is _EDGE_LABELS_UNSET:
+    if edge_labels is EDGE_LABELS_UNSET:
         eff_edge_labels: dict[str, str] | None = existing_edge_labels or None
     else:
         merged: dict[str, str] = dict(existing_edge_labels)
@@ -355,9 +369,9 @@ def edit_diagram(
 
     from src.domain.viewpoints.viewpoint_application_parsing import normalize_viewpoint_frontmatter
 
-    eff_viewpoint_raw = fm.get("viewpoint") if viewpoint is _VIEWPOINT_UNSET else viewpoint
+    eff_viewpoint_raw = fm.get("viewpoint") if viewpoint is VIEWPOINT_UNSET else viewpoint
     eff_viewpoint = normalize_viewpoint_frontmatter(eff_viewpoint_raw, target_kind="diagram", target_id=artifact_id)
-    if viewpoint is not _VIEWPOINT_UNSET:
+    if viewpoint is not VIEWPOINT_UNSET:
         # New applications only — an already-persisted value is a verifier concern.
         from src.infrastructure.write.artifact_write.diagram import (  # noqa: PLC0415
             _refuse_signal_viewpoint_persistence,
