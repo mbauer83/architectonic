@@ -161,3 +161,55 @@ def test_where_bases_disagree_the_oldest_is_carried() -> None:
     )
     assert isinstance(outcome, SupersedeSubmitted)
     assert outcome.base_revision == "rev-a"
+
+
+# ── a change already committed to by a submission in flight ──────────────────
+
+
+def test_a_draft_a_submission_is_carrying_is_superseded_not_revised() -> None:
+    """I7. A submission is recorded *before* its push, so between those two moments a change is
+    still `draft` and already committed to. Revising it in place would change what is being pushed
+    while it is being pushed, and the branch a reviewer receives would not be the one anyone decided
+    to send."""
+    draft = _pending("PC@1", "draft", summary="First.")
+
+    outcome = decide(
+        kind="entity", target_id=_TARGET, fields={"summary": "Second."},
+        pending=[draft], under_submission=frozenset({"PC@1"}),
+    )
+
+    assert isinstance(outcome, SupersedeSubmitted)
+    assert outcome.superseded_ids == ("PC@1",)
+
+
+def test_the_replacement_still_carries_what_the_superseded_change_said() -> None:
+    """Superseding is not discarding: the author's earlier fields survive unless overwritten."""
+    draft = _pending("PC@1", "draft", summary="First.", notes="Kept.")
+
+    outcome = decide(
+        kind="entity", target_id=_TARGET, fields={"summary": "Second."},
+        pending=[draft], under_submission=frozenset({"PC@1"}),
+    )
+
+    assert outcome.edit.fields == {"summary": "Second.", "notes": "Kept."}
+
+
+def test_a_draft_no_submission_names_is_still_revised_in_place() -> None:
+    """The window is narrow on purpose: an ordinary draft keeps its identity, so a bookmark and a
+    badge's link stay valid across a second thought."""
+    draft = _pending("PC@1", "draft", summary="First.")
+
+    outcome = decide(
+        kind="entity", target_id=_TARGET, fields={"summary": "Second."},
+        pending=[draft], under_submission=frozenset({"PC@99"}),
+    )
+
+    assert isinstance(outcome, ReviseDraft)
+
+
+def test_no_submission_in_flight_is_the_ordinary_case_and_needs_no_argument() -> None:
+    """An engagement deployment mounts no enterprise repository, so nothing is ever in flight from
+    where it stands — and the rule must not make that caller say so."""
+    draft = _pending("PC@1", "draft", summary="First.")
+
+    assert isinstance(_decide({"summary": "Second."}, [draft]), ReviseDraft)

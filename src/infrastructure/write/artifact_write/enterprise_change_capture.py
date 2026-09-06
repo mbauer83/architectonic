@@ -78,6 +78,24 @@ def recorded_instead_of_written(
     )
 
 
+def changes_under_submission(repo: "ArtifactRepository") -> frozenset[str]:
+    """The changes a submission already in flight is carrying, or nothing where none is.
+
+    A submission is recorded before its push, so a change can be committed to while still `draft`.
+    An edit landing in that window supersedes rather than revises, and this is where the window is
+    visible: the record lives on the *enterprise* repository's sync state, so an engagement
+    deployment — which mounts none — correctly answers that nothing is in flight, because from here
+    nothing is.
+    """
+    from src.infrastructure.git import enterprise_sync_state  # noqa: PLC0415
+
+    enterprise = next((m.root for m in repo.repo_mounts if m.scope == "enterprise"), None)
+    if enterprise is None:
+        return frozenset()
+    submission = enterprise_sync_state.load_cached(enterprise).submission
+    return frozenset(submission.intent.proposal_ids) if submission is not None else frozenset()
+
+
 def _record_enterprise_change(
     *,
     kind: ArtifactKind,
@@ -121,7 +139,10 @@ def _record_enterprise_change(
 
     pending = pending_proposals(repo.list_entities(artifact_type=PROPOSED_CHANGE_TYPE)).get(target_id, ())
     try:
-        outcome = decide(kind=kind, target_id=target_id, fields=fields, pending=pending)
+        outcome = decide(
+            kind=kind, target_id=target_id, fields=fields, pending=pending,
+            under_submission=changes_under_submission(repo),
+        )
     except UnrecordableChange as refused:
         return _refusal(reference_path, reference_id, str(refused))
 

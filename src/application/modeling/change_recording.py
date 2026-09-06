@@ -37,11 +37,13 @@ from typing import Any
 from src.application.modeling.edit_field_catalogue import ArtifactKind
 from src.application.modeling.proposal_edit import ProposalEdit
 from src.application.modeling.proposal_standing import PendingProposal
+from src.application.modeling.proposed_change import DRAFT_STATE, SUBMITTED_STATE
 
 #: The lifecycle states this module distinguishes. A change nobody has been shown may be rewritten;
-#: one that has been submitted may not, and is replaced instead.
-_DRAFT = "draft"
-_SUBMITTED = "submitted"
+#: one that has been submitted may not, and is replaced instead. Through the vocabulary's own owner:
+#: this module spelled both for itself, and so did the integration sweep.
+_DRAFT = DRAFT_STATE
+_SUBMITTED = SUBMITTED_STATE
 
 
 @dataclass(frozen=True, slots=True)
@@ -89,11 +91,19 @@ def decide(
     target_id: str,
     fields: Mapping[str, Any],
     pending: Sequence[PendingProposal],
+    under_submission: frozenset[str] = frozenset(),
 ) -> ChangeOutcome:
     """What recording `fields` against `target_id` does, given what is already pending.
 
     Pure. The caller supplies what it read and applies what this returns, so the rule can be stated
     against every combination without a repository — which is what a rule about lifecycles needs.
+
+    `under_submission` names the changes a submission already in flight is carrying. A submission is
+    recorded *before* its push, so between those two moments a change is still `draft` and already
+    committed to: revising it in place would change what is being pushed while it is being pushed,
+    and the branch a reviewer receives would not be the one anyone decided to send. Those are
+    superseded like a submitted change, which is the same answer for the same reason — the author's
+    second thought becomes a new change rather than a silent rewrite of one in someone else's hands.
     """
     if not fields:
         raise UnrecordableChange("an edit that changes nothing is not a change")
@@ -105,9 +115,14 @@ def decide(
     merged = _merged_fields(live, fields)
     edit = ProposalEdit(kind=kind, artifact_id=target_id, fields=merged)
 
-    if all(proposal.state == _DRAFT for proposal in live) and len(live) == 1:
-        # Nobody has been shown it. The change keeps its identity, which is what lets a reader's
-        # bookmark and a badge's link stay valid across an author's second thought.
+    revisable = (
+        len(live) == 1
+        and live[0].state == _DRAFT
+        and live[0].proposal_id not in under_submission
+    )
+    if revisable:
+        # Nobody has been shown it and nothing is carrying it. The change keeps its identity, which
+        # is what lets a reader's bookmark and a badge's link stay valid across a second thought.
         return ReviseDraft(proposal_id=live[0].proposal_id, edit=edit)
 
     return SupersedeSubmitted(
