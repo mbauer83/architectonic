@@ -266,3 +266,47 @@ def test_a_freshly_recorded_change_reads_as_current(workspace) -> None:  # noqa:
     standing = standing_reader(repo)(ENTERPRISE)
     assert isinstance(standing, Proposed)
     assert standing.condition == "current"
+
+
+# ── editing a value back to what the enterprise artifact says ────────────────
+
+
+def test_editing_back_to_the_enterprise_value_withdraws_the_change(workspace) -> None:  # noqa: ANN001
+    """I6, over the real write path: the author changed their mind, and the change that carried the
+    difference has nothing left to carry."""
+    _edit(workspace, REFERENCE, summary="Changed wording.")
+    assert ENTERPRISE in _changes(workspace)
+
+    _edit(workspace, REFERENCE, summary="The enterprise wording.")
+
+    assert _changes(workspace) == {}
+
+
+def test_the_withdrawal_says_what_happened(workspace) -> None:  # noqa: ANN001
+    """A change disappearing with no explanation reads as the edit having failed."""
+    _edit(workspace, REFERENCE, summary="Changed wording.")
+
+    result = _edit(workspace, REFERENCE, summary="The enterprise wording.")
+
+    assert result.wrote
+    assert any("withdrawn" in warning for warning in result.warnings)
+
+
+def test_the_record_of_a_withdrawn_change_is_retained(workspace) -> None:  # noqa: ANN001
+    """Terminal, not deleted — it existed, and a reviewer who saw it is owed what became of it."""
+    _root, repo = workspace
+    _edit(workspace, REFERENCE, summary="Changed wording.")
+    (change,) = pending_proposals(repo.list_entities(artifact_type=PROPOSED_CHANGE_TYPE))[ENTERPRISE]
+    _edit(workspace, REFERENCE, summary="The enterprise wording.")
+    repo.refresh()
+
+    ended = repo.get_entity(change.proposal_id)
+    assert ended is not None
+    assert ended.extra.get("proposal-state") == "abandoned"
+
+
+def test_proposing_what_the_artifact_already_says_is_refused_with_a_reason(workspace) -> None:  # noqa: ANN001
+    result = _edit(workspace, REFERENCE, summary="The enterprise wording.")
+
+    assert not result.wrote
+    assert any("already says" in warning for warning in result.warnings)

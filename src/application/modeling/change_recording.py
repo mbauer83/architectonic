@@ -35,6 +35,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from src.application.modeling.edit_field_catalogue import ArtifactKind
+from src.application.modeling.edit_field_values import comparable
 from src.application.modeling.proposal_edit import ProposalEdit
 from src.application.modeling.proposal_standing import PendingProposal
 from src.application.modeling.proposed_change import DRAFT_STATE, SUBMITTED_STATE
@@ -78,7 +79,20 @@ class SupersedeSubmitted:
     edit: ProposalEdit
 
 
-ChangeOutcome = RecordNew | ReviseDraft | SupersedeSubmitted
+@dataclass(frozen=True, slots=True)
+class WithdrawEmptied:
+    """Every field the changes claimed now matches the baseline, so nothing is left to propose.
+
+    Reached when an author edits a value back to what the enterprise artifact already says, or when
+    the enterprise artifact moves to say what they asked for. Either way the change would go on
+    claiming a difference that no longer exists — and a reviewer would be asked to accept an edit
+    that changes nothing.
+    """
+
+    superseded_ids: tuple[str, ...]
+
+
+ChangeOutcome = RecordNew | ReviseDraft | SupersedeSubmitted | WithdrawEmptied
 
 
 class UnrecordableChange(ValueError):
@@ -92,6 +106,7 @@ def decide(
     fields: Mapping[str, Any],
     pending: Sequence[PendingProposal],
     under_submission: frozenset[str] = frozenset(),
+    baseline: Mapping[str, Any] | None = None,
 ) -> ChangeOutcome:
     """What recording `fields` against `target_id` does, given what is already pending.
 
@@ -110,9 +125,17 @@ def decide(
 
     live = sorted(pending, key=lambda proposal: proposal.proposal_id)
     if not live:
-        return RecordNew(edit=ProposalEdit(kind=kind, artifact_id=target_id, fields=dict(fields)))
+        proposed = _differing_from(dict(fields), baseline)
+        if not proposed:
+            raise UnrecordableChange(
+                "every field this edit sets is what the artifact already says, so there is nothing "
+                "to propose"
+            )
+        return RecordNew(edit=ProposalEdit(kind=kind, artifact_id=target_id, fields=proposed))
 
-    merged = _merged_fields(live, fields)
+    merged = _differing_from(_merged_fields(live, fields), baseline)
+    if not merged:
+        return WithdrawEmptied(superseded_ids=tuple(p.proposal_id for p in live))
     edit = ProposalEdit(kind=kind, artifact_id=target_id, fields=merged)
 
     revisable = (
@@ -130,6 +153,25 @@ def decide(
         base_revision=_base_of(live),
         edit=edit,
     )
+
+
+def _differing_from(fields: dict[str, Any], baseline: Mapping[str, Any] | None) -> dict[str, Any]:
+    """`fields` without the ones the artifact already agrees with.
+
+    Compared through `comparable`, the same normalisation the integration verdict uses, so "already
+    says this" means the same thing at both ends of a change's life. A field the baseline has no
+    reading for is kept: undecidable is not agreement, and the safe direction is to leave the
+    author's intent standing.
+    """
+    if baseline is None:
+        return fields
+    return {
+        name: value
+        for name, value in fields.items()
+        if name not in baseline
+        or baseline[name] is None
+        or comparable(baseline[name]) != comparable(value)
+    }
 
 
 def _merged_fields(live: Sequence[PendingProposal], fields: Mapping[str, Any]) -> dict[str, Any]:

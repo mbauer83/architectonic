@@ -32,6 +32,7 @@ from typing import TYPE_CHECKING, Any
 from src.application.modeling.change_recording import UnrecordableChange, decide
 from src.application.modeling.edit_field_catalogue import ArtifactKind
 from src.application.modeling.enterprise_reference import enterprise_target, proxied_kind
+from src.application.modeling.integration_detection import current_values_of
 from src.application.modeling.proposal_standing import enterprise_revision, pending_proposals
 from src.application.modeling.proposed_change import PROPOSED_CHANGE_TYPE, UNKNOWN_BASE
 from src.domain.repository.frontmatter import parse_frontmatter
@@ -142,6 +143,7 @@ def _record_enterprise_change(
         outcome = decide(
             kind=kind, target_id=target_id, fields=fields, pending=pending,
             under_submission=changes_under_submission(repo),
+            baseline=current_values_of(repo.get_entity(target_id) or repo.get_document(target_id)),
         )
     except UnrecordableChange as refused:
         return _refusal(reference_path, reference_id, str(refused))

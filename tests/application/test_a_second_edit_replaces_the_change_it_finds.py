@@ -19,6 +19,7 @@ from src.application.modeling.change_recording import (
     ReviseDraft,
     SupersedeSubmitted,
     UnrecordableChange,
+    WithdrawEmptied,
     decide,
 )
 from src.application.modeling.proposal_edit import ProposalEdit
@@ -213,3 +214,71 @@ def test_no_submission_in_flight_is_the_ordinary_case_and_needs_no_argument() ->
     draft = _pending("PC@1", "draft", summary="First.")
 
     assert isinstance(_decide({"summary": "Second."}, [draft]), ReviseDraft)
+
+
+# ── a field the artifact already agrees with ─────────────────────────────────
+
+
+def test_a_field_the_artifact_already_says_is_not_proposed() -> None:
+    """I6. Proposing what the artifact already says asks a reviewer to accept an edit that changes
+    nothing, and makes the badge name a field as differing when it does not."""
+    outcome = decide(
+        kind="entity", target_id=_TARGET, fields={"summary": "Already this.", "notes": "New."},
+        pending=[], baseline={"summary": "Already this.", "notes": "Old."},
+    )
+
+    assert outcome.edit.fields == {"notes": "New."}
+
+
+def test_an_edit_that_only_restates_the_artifact_is_refused() -> None:
+    with pytest.raises(UnrecordableChange, match="already says"):
+        decide(
+            kind="entity", target_id=_TARGET, fields={"summary": "Already this."},
+            pending=[], baseline={"summary": "Already this."},
+        )
+
+
+def test_a_change_whose_last_field_matches_the_baseline_is_withdrawn() -> None:
+    """The author edited the value back. The change would otherwise go on claiming a difference
+    that no longer exists."""
+    live = _pending("PC@1", "draft", summary="Mine.")
+
+    outcome = decide(
+        kind="entity", target_id=_TARGET, fields={"summary": "The enterprise wording."},
+        pending=[live], baseline={"summary": "The enterprise wording."},
+    )
+
+    assert isinstance(outcome, WithdrawEmptied)
+    assert outcome.superseded_ids == ("PC@1",)
+
+
+def test_a_change_keeps_the_fields_that_still_differ() -> None:
+    live = _pending("PC@1", "draft", summary="Mine.", notes="Also mine.")
+
+    outcome = decide(
+        kind="entity", target_id=_TARGET, fields={"summary": "The enterprise wording."},
+        pending=[live], baseline={"summary": "The enterprise wording.", "notes": "Old."},
+    )
+
+    assert isinstance(outcome, ReviseDraft)
+    assert outcome.edit.fields == {"notes": "Also mine."}
+
+
+def test_a_baseline_with_no_reading_for_a_field_drops_nothing() -> None:
+    """Undecidable is not agreement: the safe direction leaves the author's intent standing."""
+    outcome = decide(
+        kind="entity", target_id=_TARGET, fields={"summary": "Mine."},
+        pending=[], baseline={"summary": None},
+    )
+
+    assert outcome.edit.fields == {"summary": "Mine."}
+
+
+def test_no_baseline_at_all_drops_nothing() -> None:
+    """An engagement deployment mounts no enterprise repository, so there is nothing to compare
+    against — and the rule must not turn that into agreement."""
+    outcome = decide(
+        kind="entity", target_id=_TARGET, fields={"summary": "Mine."}, pending=[], baseline=None,
+    )
+
+    assert outcome.edit.fields == {"summary": "Mine."}

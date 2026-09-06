@@ -27,6 +27,7 @@ from src.application.modeling.change_recording import (
     RecordNew,
     ReviseDraft,
     SupersedeSubmitted,
+    WithdrawEmptied,
 )
 from src.application.modeling.proposal_edit import to_mapping
 from src.application.modeling.proposed_change import (
@@ -75,6 +76,20 @@ def materialize(
             return _rewrite_recorded_edit(
                 repo=repo, verifier=verifier, clear_repo_caches=clear_repo_caches,
                 proposal_id=proposal_id, edit=edit, dry_run=dry_run,
+            )
+        case WithdrawEmptied(superseded_ids=emptied):
+            # Nothing is left to propose, so the changes end rather than going on claiming a
+            # difference that no longer exists. Retained in a terminal state like any other ending:
+            # they existed, and a reviewer who saw one is owed a record of what became of it.
+            _retire(repo, emptied, clear_repo_caches=clear_repo_caches)
+            return WriteResult(
+                wrote=True, path=engagement_root, artifact_id=emptied[0], content=None,
+                warnings=[
+                    f"'{target_name}' now says exactly what the enterprise artifact says, so the "
+                    f"{'change' if len(emptied) == 1 else 'changes'} awaiting review "
+                    f"{'was' if len(emptied) == 1 else 'were'} withdrawn."
+                ],
+                verification=None,
             )
         case SupersedeSubmitted(superseded_ids=superseded, base_revision=carried, edit=edit):
             written = _write_change(
