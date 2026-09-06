@@ -10,6 +10,11 @@ import type {
   EntityListSchema,
   EntitySummarySchema,
 } from './entities'
+import type {
+  ChangeDiscardedSchema,
+  ChangeListSchema,
+  ChangeSummarySchema,
+} from './changes'
 import type { DocumentDetailSchema, DocumentListSchema } from './documents'
 import type { DiagramListSchema, DiagramSummarySchema } from './diagram-types'
 import type {
@@ -159,6 +164,23 @@ describe('the document list', () => {
   it('decodes a page of documents, and one row', () => {
     expectTypeOf<SchemaType<typeof DocumentListSchema>>().toEqualTypeOf<
       Immutable<components['schemas']['DocumentListResponse']>
+    >()
+  })
+})
+
+describe('the local changes this repository holds', () => {
+  // A change row names the artifact by name and by the local reference standing for it. The
+  // enterprise id is what the change is against, and is never the only identifier offered — a client
+  // cannot open it.
+  it('decodes the list, one row, and what a discard did', () => {
+    expectTypeOf<SchemaType<typeof ChangeListSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['ChangeListResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof ChangeSummarySchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['ChangeSummary']>
+    >()
+    expectTypeOf<SchemaType<typeof ChangeDiscardedSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['ChangeDiscardedResponse']>
     >()
   })
 })

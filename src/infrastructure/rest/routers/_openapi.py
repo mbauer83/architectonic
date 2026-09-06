@@ -53,6 +53,7 @@ TAG_CONNECTIONS = "connections"
 TAG_DIAGRAMS = "diagrams"
 TAG_VIEWPOINTS = "viewpoints"
 TAG_DOCUMENTS = "documents"
+TAG_CHANGES = "changes"
 TAG_GROUPS = "groups"
 TAG_TAXONOMY = "taxonomy"
 TAG_SYNC = "sync"
@@ -75,7 +76,7 @@ TAG_ASSURANCE_SECURITY = "assurance: security signals"
 #: Every tag the served surface may use. The fitness function compares against this, so a new section
 #: is a deliberate addition here rather than a string that quietly becomes its own heading.
 ALL_TAGS: frozenset[str] = frozenset({
-    TAG_ENTITIES, TAG_CONNECTIONS, TAG_DIAGRAMS, TAG_VIEWPOINTS, TAG_DOCUMENTS, TAG_GROUPS,
+    TAG_ENTITIES, TAG_CONNECTIONS, TAG_DIAGRAMS, TAG_VIEWPOINTS, TAG_DOCUMENTS, TAG_CHANGES, TAG_GROUPS,
     TAG_TAXONOMY, TAG_SYNC, TAG_PROMOTION, TAG_PLATFORM, TAG_SCRATCHPADS, "admin",
     TAG_ASSURANCE_STORE, TAG_ASSURANCE_ANALYSES, TAG_ASSURANCE_NODES, TAG_ASSURANCE_FMEA,
     TAG_ASSURANCE_ARGUMENTS, TAG_ASSURANCE_SECURITY,

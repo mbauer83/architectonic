@@ -201,6 +201,9 @@ def test_architecture_write_mount_annotations_match_expected_intent() -> None:
         "artifact_create_entity": (False, False, False, False),
         "artifact_edit_entity": (False, True, False, False),
         "artifact_delete_entity": (False, True, False, False),
+        # Destructive but recoverable in the sense that matters: the record is kept in a
+        # terminal state, so what is destroyed is the change's effect, not the evidence.
+        "artifact_discard_change": (False, True, False, False),
         "artifact_add_connection": (False, False, False, False),
         "artifact_edit_connection": (False, True, False, False),
         "artifact_edit_connection_associations": (False, True, False, False),

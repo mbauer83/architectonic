@@ -19,9 +19,13 @@ same class of defect has now been fixed four times.
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
+from typing import TYPE_CHECKING
 
 from src.application.modeling.edit_field_catalogue import PROPOSABLE, ArtifactKind
+
+if TYPE_CHECKING:
+    from src.domain.ontology_representation.artifact_types import EntityRecord
 
 #: The internal artifact type that proxies an enterprise artifact.
 GLOBAL_ARTIFACT_REFERENCE_TYPE = "global-artifact-reference"
@@ -78,3 +82,22 @@ def proxies_an_entity(fields: Mapping[str, object]) -> bool:
     the connection routes ask this before offering endpoints.
     """
     return proxied_kind(fields) == ENTITY_KIND
+
+
+def references_by_target(entities: Iterable["EntityRecord"]) -> dict[str, "EntityRecord"]:
+    """Every reference in a repository, by the enterprise artifact it stands for.
+
+    The reverse of `enterprise_target`, and the answer to "how does this repository address that
+    promoted artifact" — which a reader needs in order to name a change's subject, and to link to it,
+    since the enterprise id is not something this repository can open.
+
+    Built once from a listing rather than scanned per question: `find_existing_gar` asks it once per
+    call, which is right for a duplicate check and wrong for a list of changes, where it would walk
+    every reference for every row.
+    """
+    return {
+        target: record
+        for record in entities
+        if record.artifact_type == GLOBAL_ARTIFACT_REFERENCE_TYPE
+        and (target := enterprise_target(record.extra)) is not None
+    }

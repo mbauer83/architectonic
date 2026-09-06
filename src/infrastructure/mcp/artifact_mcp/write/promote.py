@@ -189,6 +189,7 @@ def artifact_promote_to_enterprise(
                 "executed": result.executed,
                 "copied_files": result.copied_files,
                 "updated_files": result.updated_files,
+                "created_references": result.created_references,
                 "verification_errors": result.verification_errors,
                 "rolled_back": result.rolled_back,
                 # Execution can append warnings (e.g. incomplete GAR replacement) —

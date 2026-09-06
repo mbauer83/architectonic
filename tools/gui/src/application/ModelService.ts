@@ -28,6 +28,8 @@ export const makeModelService = (repo: ModelRepository) =>
     createDocument: (body: Parameters<ModelRepository['createDocument']>[0]) => repo.createDocument(body),
     editDocument: (id: string, body: Parameters<ModelRepository['editDocument']>[1]) => repo.editDocument(id, body),
     deleteDocument: (id: string) => repo.deleteDocument(id),
+    listChanges: () => repo.listChanges(),
+    discardChange: (id: string) => repo.discardChange(id),
     artifactSearch: (query: string, params?: Parameters<ModelRepository['artifactSearch']>[1]) =>
       repo.artifactSearch(query, params),
     searchReferenceArtifacts: (params: Parameters<ModelRepository['searchReferenceArtifacts']>[0]) =>

@@ -1255,6 +1255,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/changes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List local changes awaiting review */
+        get: operations["changes_list_changes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/changes/{artifact_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Discard a local change
+         * @description Take a change back. The record is kept in a terminal state, not deleted.
+         */
+        delete: operations["changes_discard_change"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/connections": {
         parameters: {
             query?: never;
@@ -5205,6 +5242,66 @@ export interface components {
              * @enum {string}
              */
             severity: "ontology" | "entity-id";
+        };
+        /**
+         * ChangeDiscardedResponse
+         * @description What a discard did.
+         *
+         *     The record is kept and moved to a terminal state rather than deleted: a change that was submitted
+         *     has been seen by someone, and its disappearance would be indistinguishable from it never having
+         *     existed. `discarded` is false when the change was already terminal, which is not an error.
+         */
+        ChangeDiscardedResponse: {
+            /** Artifact Id */
+            artifact_id: string;
+            /** Discarded */
+            discarded: boolean;
+            /**
+             * State
+             * @constant
+             */
+            state: "abandoned";
+        };
+        /**
+         * ChangeListResponse
+         * @description Every live change, ordered by the artifact each one changes.
+         */
+        ChangeListResponse: {
+            /** Changes */
+            changes: components["schemas"]["ChangeSummary"][];
+            /** Total */
+            total: number;
+        };
+        /**
+         * ChangeSummary
+         * @description One local change: what it changes, what it says, and where it stands.
+         */
+        ChangeSummary: {
+            /** Artifact Id */
+            artifact_id: string;
+            /** Changed Fields */
+            changed_fields: string[];
+            /**
+             * Condition
+             * @enum {string}
+             */
+            condition: "current" | "stale" | "conflicting";
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "entity" | "document" | "diagram";
+            /** Reference Id */
+            reference_id: string | null;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "draft" | "submitted";
+            /** Target Id */
+            target_id: string;
+            /** Target Name */
+            target_name: string;
         };
         /**
          * ClassificationLevelResponse
@@ -10145,6 +10242,8 @@ export interface components {
         PromotionResultResponse: {
             /** Copied Files */
             copied_files: string[];
+            /** Created References */
+            created_references: string[];
             /** Dry Run */
             dry_run: boolean;
             /** Executed */
@@ -15672,6 +15771,129 @@ export interface operations {
             };
             /** @description Request validation failed */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    changes_list_changes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChangeListResponse"];
+                };
+            };
+            /** @description Artifact not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    changes_discard_change: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChangeDiscardedResponse"];
+                };
+            };
+            /** @description Validation error (bad or ambiguous write) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write forbidden (e.g. admin mode not enabled, or mutation denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write temporarily rejected by the workspace gate (retryable) */
+            423: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -1,4 +1,6 @@
 import type { ClassificationLevelsResponse } from '../domain/schemas/ontology'
+import type { ChangeRepository } from './ChangeRepository'
+import type { DocumentRepository } from './DocumentRepository'
 import type { DiagramReadingRepository } from './DiagramReadingRepository'
 import type { Effect } from 'effect'
 import type { DiagramComposition, DiagramWriteBody } from './diagramWriteBodies'
@@ -14,9 +16,6 @@ import type {
   ConnectionList,
   Neighbors,
   SearchResult,
-  DocumentType,
-  DocumentList,
-  DocumentDetail,
   ArtifactSearchResult,
   ReferenceSearchResult,
   DiagramList,
@@ -89,7 +88,8 @@ export type { RepoError }
 export type { DiagramComposition, DiagramWriteBody }
 
 export interface ModelRepository
-  extends EnterpriseAdminRepository, ScratchpadRepository, DiagramReadingRepository {
+  extends EnterpriseAdminRepository, ScratchpadRepository, DiagramReadingRepository,
+    ChangeRepository, DocumentRepository {
   readonly getServerInfo: () => Effect.Effect<ServerInfo, RepoError>
   readonly listModules: () => Effect.Effect<readonly ModuleSummary[], RepoError>
   readonly getStats: () => Effect.Effect<Stats, RepoError>
@@ -311,23 +311,6 @@ export interface ModelRepository
     group_mapping_resolutions?: Record<string, string>;
     dry_run?: boolean;
   }) => Effect.Effect<PromotionResult, RepoError>
-  // ── Document methods ──────────────────────────────────────────────────────
-  readonly listDocumentTypes: () => Effect.Effect<DocumentType[], RepoError>
-  readonly listDocuments: (params?: {
-    doc_type?: string; status?: string; limit?: number; offset?: number; group?: string; scope?: string;
-  }) => Effect.Effect<DocumentList, RepoError>
-  readonly getDocument: (id: string) => Effect.Effect<DocumentDetail, RepoError | NotFoundError>
-  readonly createDocument: (body: {
-    doc_type: string; title: string; body?: string;
-    keywords?: string[]; extra_frontmatter?: Record<string, unknown>;
-    version?: string; status?: string; dry_run?: boolean;
-  }) => Effect.Effect<WriteResult, RepoError>
-  readonly editDocument: (id: string, body: {
-    title?: string; body?: string; keywords?: string[];
-    extra_frontmatter?: Record<string, unknown>;
-    status?: string; version?: string; dry_run?: boolean;
-  }) => Effect.Effect<WriteResult, RepoError>
-  readonly deleteDocument: (id: string) => Effect.Effect<void, RepoError>
   // ── Sync / save workflow ──────────────────────────────────────────────────
   readonly getSyncStatus: () => Effect.Effect<SyncStatus, RepoError>
   readonly saveEngagementChanges: (body: { message: string; push?: boolean }) => Effect.Effect<SyncSaveResult, RepoError>

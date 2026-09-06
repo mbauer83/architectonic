@@ -45,7 +45,7 @@ def _operations(*, mutation_domain: str, under_assurance: bool | None = None) ->
     }
 
 _TAGS = frozenset({
-    "admin", "assurance", "connections", "diagrams", "documents", "entities", "events",
+    "admin", "assurance", "changes", "connections", "diagrams", "documents", "entities", "events",
     "groups", "matrices", "promotion", "scratchpads", "sync", "taxonomy", "viewpoints",
 })
 

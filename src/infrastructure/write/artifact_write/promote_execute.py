@@ -311,6 +311,7 @@ def _replace_artifact_with_gar(
         dry_run=False,
     )
     result.updated_files.append(f"[created GAR] {gar_result.artifact_id}")
+    result.created_references.append(gar_result.artifact_id)
 
     if artifact_type == "entity":
         update_outgoing_references(aid, gar_result.artifact_id, eng_root, result)

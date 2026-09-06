@@ -108,6 +108,11 @@ def _rendered_filename(backend: FixtureBackend) -> str:
 
 READ_STEPS: tuple[ReadStep, ...] = (
     ReadStep(
+        "changes_list_changes",
+        lambda _b: "/api/changes",
+        "the local-changes list, which nothing reaches until a client shows an author what they hold",
+    ),
+    ReadStep(
         "diagrams_read_diagram_image",
         lambda b: f"/api/diagram-images/{_q(_rendered_filename(b))}",
         "an <img> src the inline-SVG diagram surface never takes",

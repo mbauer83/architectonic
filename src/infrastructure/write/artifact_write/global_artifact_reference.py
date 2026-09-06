@@ -20,7 +20,7 @@ from src.application.modeling.enterprise_reference import (
     GLOBAL_ARTIFACT_ID,
     GLOBAL_ARTIFACT_KIND,
     GLOBAL_ARTIFACT_REFERENCE_TYPE,
-    enterprise_target,
+    references_by_target,
 )
 from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.domain.modules.module_types import EntityTypeName
@@ -30,11 +30,16 @@ from .types import WriteResult
 
 
 def find_existing_gar(repo: ArtifactRepository, global_artifact_id: str) -> str | None:
-    """Return the artifact_id of an existing GAR for *global_artifact_id*, or None."""
-    for rec in repo.list_entities(artifact_type=GLOBAL_ARTIFACT_REFERENCE_TYPE):
-        if enterprise_target(rec.extra) == global_artifact_id:
-            return rec.artifact_id
-    return None
+    """Return the artifact_id of an existing GAR for *global_artifact_id*, or None.
+
+    Through `references_by_target`, which is the one reading of "which reference stands for this":
+    the comparison used to be spelled here as well, and the two disagreed about a target carrying
+    surrounding whitespace — the index bucketed it stripped, this compared it raw, and the duplicate
+    check could not see the reference it was looking for.
+    """
+    found = references_by_target(repo.list_entities(artifact_type=GLOBAL_ARTIFACT_REFERENCE_TYPE))
+    record = found.get(global_artifact_id)
+    return record.artifact_id if record is not None else None
 
 
 def ensure_global_artifact_reference(

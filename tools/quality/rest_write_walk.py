@@ -403,9 +403,22 @@ STEPS: tuple[Step, ...] = (
     ),
     Step(
         # File-level promotion into the fixture's own enterprise repository, and the step that gives
-        # the three enterprise operations below something to be about.
+        # the three enterprise operations below something to be about — and the reference the two
+        # change operations need, which it now reports as data rather than in prose.
         "promotion_execute_promotion", "POST", lambda _c: "/api/promote/execute",
         lambda c: {"entity_id": c.created["entity"], "dry_run": False},
+        must_have_written=False,
+        captures="reference", captures_field="created_references",
+    ),
+    Step(
+        # The promoted artifact is no longer this repository's to write, so editing it records a
+        # change instead. The receipt names the *change*, which is what discarding it takes.
+        "entities_update_entity", "PATCH", lambda c: f"/api/entities/{c.created['reference']}",
+        lambda _c: {"summary": "Changed through REST, against promoted content.", "dry_run": False},
+        captures="change",
+    ),
+    Step(
+        "changes_discard_change", "DELETE", lambda c: f"/api/changes/{c.created['change']}",
         must_have_written=False,
     ),
     Step(
@@ -739,7 +752,7 @@ def walk(
         answered.append(step.operation_id)
         context.created.update(step.records)
         if step.captures is not None:
-            identifier = payload.get(step.captures_field) if isinstance(payload, dict) else None
+            identifier = _captured(payload, step.captures_field)
             if not isinstance(identifier, str):
                 failures.append(
                     f"{step.operation_id}: captured no {step.captures_field} from {payload!r}"
@@ -748,6 +761,19 @@ def walk(
             context.created[step.captures] = identifier
 
     return answered, failures
+
+
+def _captured(payload: object, field_name: str) -> object:
+    """The id a step takes out of an answer, whether the field holds one or a list of them.
+
+    Promotion reports `created_references` as a list because it can promote several artifacts at
+    once; every other capture here names a single id. Reading the first is right for a walk that
+    promotes one thing, and stated rather than assumed.
+    """
+    if not isinstance(payload, dict):
+        return None
+    value = payload.get(field_name)
+    return value[0] if isinstance(value, list) and value else value
 
 
 def reached_operations(backend: FixtureBackend) -> frozenset[str]:

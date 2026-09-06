@@ -168,6 +168,10 @@ class PromotionResultResponse(Closed):
     executed: bool
     copied_files: list[str]
     updated_files: list[str]
+    #: How this repository now addresses what it promoted. The promoted artifact is no longer the
+    #: engagement's to edit, and these are what it edits instead — so the answer is data rather than
+    #: something to be read out of `updated_files`' prose.
+    created_references: list[str]
     verification_errors: list[str]
     rolled_back: bool
     warnings: list[str] = []

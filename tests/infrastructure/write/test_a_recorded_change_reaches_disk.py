@@ -28,7 +28,12 @@ from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.verification.verifier_factory import build_artifact_verifier
 from src.infrastructure.write.artifact_write.change_materialization import materialize
 
+#: The promoted artifact a change is against — named by the recorded edit, resolved upstream.
 TARGET = "APP@1780000000.aaaaaaa.payments-service"
+#: How this repository addresses it, and what the change file names. An engagement deployment
+#: holds no enterprise content, so a change naming `TARGET` names what its own verifier cannot
+#: find — E146, on the ordinary deployment.
+REFERENCE = "GAR@1780000001.bbbbbbb.payments-service"
 EXISTING = "PCH@1780000002.ccccccc.an-earlier-change"
 
 
@@ -47,6 +52,24 @@ def _target_md() -> str:
     )
 
 
+def _reference_md() -> str:
+    return (
+        "---\n"
+        f"artifact-id: {REFERENCE}\n"
+        "artifact-type: global-artifact-reference\n"
+        "name: Payments Service\n"
+        "version: 0.1.0\n"
+        "status: active\n"
+        "last-updated: '2026-01-01'\n"
+        f"global-artifact-id: {TARGET}\n"
+        "global-artifact-type: entity\n"
+        "global-artifact-entity-type: application-component\n"
+        "---\n\n<!-- §content -->\n\n"
+        "## Payments Service\n\nA proxy.\n\n"
+        "## Properties\n\n| Attribute | Value |\n|---|---|\n| (none) | (none) |\n\n<!-- §display -->\n"
+    )
+
+
 def _existing_change_md(state: str) -> str:
     """Shaped like what the product writes, `§display` marker included.
 
@@ -62,7 +85,7 @@ def _existing_change_md(state: str) -> str:
         "version: 0.1.0\n"
         "status: draft\n"
         "last-updated: '2026-01-01'\n"
-        f"proposes-change-to: {TARGET}\n"
+        f"proposes-change-to: {REFERENCE}\n"
         f"proposal-state: {state}\n"
         "base-revision: abc1234\n"
         "recorded-edit:\n"
@@ -82,8 +105,12 @@ def repo_at(tmp_path: Path):  # noqa: ANN201 — a builder, shaped by what each 
         root = tmp_path / "engagements" / "ENG-T" / "architecture-repository"
         (root / "model" / "application" / "application-component").mkdir(parents=True, exist_ok=True)
         (root / "model" / "common" / "proposed-change").mkdir(parents=True, exist_ok=True)
+        (root / "model" / "common" / "global-artifact-reference").mkdir(parents=True, exist_ok=True)
         (root / "model" / "application" / "application-component" / f"{TARGET}.md").write_text(
             _target_md(), encoding="utf-8"
+        )
+        (root / "model" / "common" / "global-artifact-reference" / f"{REFERENCE}.md").write_text(
+            _reference_md(), encoding="utf-8"
         )
         if existing_state is not None:
             (root / "model" / "common" / "proposed-change" / f"{EXISTING}.md").write_text(
@@ -108,6 +135,7 @@ def _materialize(outcome, root: Path, repo: ArtifactRepository, *, dry_run: bool
         verifier=build_artifact_verifier(catalogs=process_runtime_catalogs()),
         clear_repo_caches=lambda _path: repo.refresh(),
         target_name="Payments Service",
+        reference_id=REFERENCE,
         base_revision="deadbeef",
         dry_run=dry_run,
     )
@@ -148,7 +176,10 @@ def test_it_records_the_target_the_state_the_base_and_the_edit(repo_at) -> None:
     result = _materialize(RecordNew(edit=_edit(name="Payments Platform")), root, repo)
 
     frontmatter = _changes(repo)[result.artifact_id]
-    assert frontmatter["proposes-change-to"] == TARGET
+    # The reference, because that is what this repository can point at; what the change is against
+    # is the recorded edit's own artifact-id.
+    assert frontmatter["proposes-change-to"] == REFERENCE
+    assert frontmatter["recorded-edit"]["artifact-id"] == TARGET
     assert frontmatter["proposal-state"] == "draft"
     assert frontmatter["base-revision"] == "deadbeef"
     assert frontmatter["recorded-edit"]["fields"] == {"name": "Payments Platform"}
@@ -284,7 +315,7 @@ def _materialize_with(verifier, outcome, root: Path, repo: ArtifactRepository): 
     return materialize(
         outcome, repo=repo, engagement_root=root, verifier=verifier,
         clear_repo_caches=lambda _path: repo.refresh(), target_name="Payments Service",
-        base_revision="deadbeef", dry_run=False,
+        reference_id=REFERENCE, base_revision="deadbeef", dry_run=False,
     )
 
 

@@ -147,6 +147,13 @@ class PromotionResult:
     updated_files: list[str] = field(default_factory=list)
     verification_errors: list[str] = field(default_factory=list)
     rolled_back: bool = False
+    #: How the engagement repository now addresses what it promoted, one reference per artifact.
+    #:
+    #: Stated as data because it is the answer to the question a caller has next — the promoted
+    #: artifact is no longer theirs to edit, and the reference is what they edit instead. It was
+    #: previously only in `updated_files`, inside the prose "[created GAR] <id>", so anyone needing
+    #: it had to parse a log line the writer never promised to keep.
+    created_references: list[str] = field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------

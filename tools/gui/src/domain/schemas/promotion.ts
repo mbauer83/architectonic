@@ -117,6 +117,10 @@ export const PromotionResultSchema = Schema.Struct({
   executed: Schema.Boolean,
   copied_files: Schema.Array(Schema.String),
   updated_files: Schema.Array(Schema.String),
+  // How this repository now addresses what it promoted. The promoted artifact is no longer the
+  // engagement's to edit, and these are what it edits instead — an edit of one records a change
+  // awaiting review rather than writing.
+  created_references: Schema.Array(Schema.String),
   verification_errors: Schema.Array(Schema.String),
   // The one to read after a failure: the promotion runs in a git worktree transaction, so saying the
   // enterprise repository was restored is what stops an operator cleaning up by hand.

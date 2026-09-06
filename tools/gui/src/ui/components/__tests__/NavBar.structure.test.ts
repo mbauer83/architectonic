@@ -16,7 +16,7 @@ const template = source.slice(source.indexOf('<template>'), source.indexOf('</te
 describe('NavBar structure', () => {
   it('has one primary nav landmark with the five content entries', () => {
     expect(template).toContain('aria-label="Primary"')
-    for (const label of ['Browse', 'Documents', 'Diagrams', 'Viewpoints', 'Assurance']) {
+    for (const label of ['Browse', 'Documents', 'Diagrams', 'Changes', 'Viewpoints', 'Assurance']) {
       expect(template).toContain(label)
     }
   })

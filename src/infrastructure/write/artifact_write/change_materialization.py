@@ -53,6 +53,7 @@ def materialize(
     verifier: "ArtifactVerifier",
     clear_repo_caches: Callable[[Path], None],
     target_name: str,
+    reference_id: str,
     base_revision: str,
     dry_run: bool,
 ) -> WriteResult:
@@ -68,7 +69,7 @@ def materialize(
             return _write_change(
                 repo=repo, engagement_root=engagement_root, verifier=verifier,
                 clear_repo_caches=clear_repo_caches, edit=edit, target_name=target_name,
-                base_revision=base_revision, dry_run=dry_run,
+                reference_id=reference_id, base_revision=base_revision, dry_run=dry_run,
             )
         case ReviseDraft(proposal_id=proposal_id, edit=edit):
             return _rewrite_recorded_edit(
@@ -79,7 +80,7 @@ def materialize(
             written = _write_change(
                 repo=repo, engagement_root=engagement_root, verifier=verifier,
                 clear_repo_caches=clear_repo_caches, edit=edit, target_name=target_name,
-                base_revision=carried, dry_run=dry_run,
+                reference_id=reference_id, base_revision=carried, dry_run=dry_run,
             )
             if written.wrote:
                 # Only after the replacement exists. A failure between the two leaves the author
@@ -96,6 +97,7 @@ def _write_change(
     clear_repo_caches: Callable[[Path], None],
     edit: object,
     target_name: str,
+    reference_id: str,
     base_revision: str,
     dry_run: bool,
 ) -> WriteResult:
@@ -129,7 +131,12 @@ def _write_change(
         display_content="",
         repo_root=engagement_root,
         extra_frontmatter={
-            PROPOSES_CHANGE_TO: recorded["artifact-id"],
+            # The *reference*, not what it stands for. A non-admin deployment holds no enterprise
+            # content, so a change naming the enterprise artifact names something its own verifier
+            # cannot find — E146, on the ordinary deployment. What the change is *against* is the
+            # recorded edit's own `artifact-id`, which is not existence-checked because it is
+            # resolved upstream, where the artifact lives.
+            PROPOSES_CHANGE_TO: reference_id,
             PROPOSAL_STATE: "draft",
             BASE_REVISION: base_revision,
             RECORDED_EDIT: recorded,

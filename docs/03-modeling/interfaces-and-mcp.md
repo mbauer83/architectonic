@@ -35,6 +35,7 @@ looking entirely normal. See
 | `artifact_aibom_coverage` | Read-only | Per-AI-component AIBOM coverage over the architecture model: blocking gaps (missing required attributes, missing dataset linkage, missing governance edge) vs advisory gaps (missing recommended attributes), plus repo-wide derivation roles that no connection type is bound to. |
 | `artifact_aibom_export` | Read-only | Emit a CycloneDX 1.6 ML-BOM DERIVED from the architecture model: every entity carrying an AI specialization (ai-model, ai-agent, ai-inference-service, ai-dataset, ai-prompt-asset, ai-vector-store, ai-runtime, ai-tool-interface) becomes a component, with its authored model card, dataset/governance links resolved from connections, and a dependency graph between AI components. |
 | `artifact_diagram_scaffold` | Read-only | Generate a ready-to-edit @startuml…@enduml scaffold from a list of entity IDs. |
+| `artifact_list_changes` | Read-only | List the local changes this repository is holding: edits to artifacts promoted to the enterprise repository, which cannot be written here and are recorded as changes awaiting review. |
 | `artifact_query_datatype_types` | Read-only | List available attribute types for datatype diagrams. |
 | `artifact_query_find_connections_for` | Read-only | Find connection records that touch a given entity_id. |
 | `artifact_query_find_neighbors` | Read-only | Graph traversal: return direct or derived neighbors within max_hops. |
@@ -76,6 +77,7 @@ looking entirely normal. See
 | Promotion & sync | `artifact_save_changes` | Write | Commit all accumulated architecture changes. |
 | Promotion & sync | `artifact_submit_for_review` | Write | Push the enterprise working branch to the remote for team review. |
 | Promotion & sync | `artifact_withdraw_changes` | Destructive | Permanently discard all pending enterprise changes (requires confirm=True). |
+| Local changes | `artifact_discard_change` | Destructive | Take back a local change, naming it by its own artifact_id (from artifact_list_changes) — an artifact may carry more than one. |
 | Guidance & ops | `artifact_authoring_guidance` | Read-only | Return authoring guidance before creating entities or diagrams. |
 | Guidance & ops | `artifact_help` | Read-only | Return the full catalog of artifact types, entity types (by domain), connection types (by language), and diagram types (with accepted domains). |
 | Guidance & ops | `artifact_get_operation` | Read-only | Return the latest recorded status, phase, timestamps, error, and final result for a prior bulk operation by operation_id. |

@@ -108,6 +108,9 @@ _ARCH_WRITE_GROUPS: tuple[tuple[str, tuple[str, ...]], ...] = (
             "artifact_withdraw_changes",
         ),
     ),
+    # Beside promotion, which is what these are about: an edit to an artifact this repository
+    # promoted away is recorded as a change and travels back the same road.
+    ("Local changes", ("artifact_list_changes", "artifact_discard_change")),
     (
         "Guidance & ops",
         ("artifact_authoring_guidance", "artifact_help", "artifact_get_operation", "artifact_admin_reindex"),

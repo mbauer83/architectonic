@@ -150,6 +150,20 @@ def _artifact_id(payload: object) -> str | None:
     return None
 
 
+def _created_reference(payload: object) -> str | None:
+    """How the engagement now addresses what it just promoted.
+
+    From `created_references`, which promotion reports as data. It used to be legible only inside
+    `updated_files`' "[created GAR] <id>" prose, and a walk reading that would be a second reader of
+    a log line nothing promised to keep.
+    """
+    if isinstance(payload, Mapping):
+        created = payload.get("created_references")
+        if isinstance(created, list) and created and isinstance(created[0], str):
+            return created[0]
+    return None
+
+
 def _first_row_artifact_id(payload: object) -> str | None:
     rows = rows_of(payload)
     return _artifact_id(rows[0]) if rows else None
@@ -377,6 +391,26 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
             "dry_run": False,
         },
         mutates=False,
+        captures=(Capture("reference", _created_reference),),
+    ),
+    # ── the promoted artifact is no longer ours to write, so editing it records a change ─────────
+    #
+    # The only place the whole path runs over the transport: an edit that lands on a reference has
+    # nowhere to write, is recorded against what the reference stands for, and comes back addressed
+    # by the *change's* id — which is what discarding it needs. Every surface passed no repository
+    # for a while and answered a refusal here instead, and nothing said so.
+    WriteCall(
+        "artifact_edit_entity",
+        lambda c: {
+            "artifact_id": c.created["reference"],
+            "summary": "Changed through the write mount, against content this repository promoted.",
+            "dry_run": False,
+        },
+        captures=(Capture("change", _artifact_id),),
+    ),
+    WriteCall(
+        "artifact_discard_change",
+        lambda c: {"artifact_id": c.created["change"]},
     ),
     WriteCall(
         "artifact_save_changes",

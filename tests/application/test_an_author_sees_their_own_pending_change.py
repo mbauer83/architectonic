@@ -31,6 +31,7 @@ def _change(proposal_id: str, *, state: str = "draft", **fields: object) -> Pend
     return PendingProposal(
         proposal_id=proposal_id,
         target_id="REQ@1.a.two-tier",
+        reference_id="GAR@1.b.two-tier",
         changed_fields=tuple(sorted(fields)),
         base_revision="rev-1",
         state=state,

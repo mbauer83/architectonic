@@ -11,9 +11,6 @@ import {
   ConnectionListResponseSchema,
   DirectNeighborhoodSchema,
   SearchHitSchema,
-  DocumentTypesSchema,
-  DocumentListSchema,
-  DocumentDetailSchema,
   ArtifactSearchResultSchema,
   ReferenceSearchResultSchema,
   DiagramListSchema,
@@ -53,6 +50,7 @@ import {
 } from './httpTransport'
 import { encodeIdentitySegment } from '../../domain/identitySegments'
 import { parseMarkdown } from '../../application/MarkdownService'
+import { documentAndChangeMethods } from './HttpDocumentRepository'
 import { enterpriseAdminMethods } from './HttpEnterpriseAdminRepository'
 import { viewpointMethods } from './HttpViewpointRepository'
 import { scratchpadMethods } from './HttpScratchpadRepository'
@@ -163,38 +161,6 @@ export const makeHttpModelRepository = (): ModelRepository => ({
       })),
     )
   },
-
-  // The port speaks in document types, not envelopes: the create form wants the list and has no use
-  // for the wrapper, so unwrapping here keeps the envelope an HTTP detail.
-  listDocumentTypes: () =>
-    fetchJson(buildUrl('/document-types'), DocumentTypesSchema).pipe(
-      Effect.map((envelope) => [...envelope.document_types] as import('../../domain').DocumentType[]),
-    ),
-
-  listDocuments: (
-    params: {
-      doc_type?: string; status?: string; limit?: number; offset?: number; group?: string; scope?: string;
-    } = {},
-  ) =>
-    fetchJson(buildUrl('/documents', {
-      doc_type: params.doc_type, status: params.status,
-      limit: params.limit, offset: params.offset, group: params.group, scope: params.scope,
-    }), DocumentListSchema),
-
-  getDocument: (id) =>
-    fetchJsonNotFound(buildUrl(`/documents/${encodeIdentitySegment(id)}`), DocumentDetailSchema, id),
-
-  createDocument: (body) =>
-    postJson(buildUrl('/documents'), body, WriteResultSchema),
-
-  editDocument: (id, body) =>
-    patchJson(buildUrl(`/documents/${encodeIdentitySegment(id)}`), body, WriteResultSchema),
-
-  // `dry_run: false` explicitly, as every other delete in this adapter does. It relied on the
-  // route's default, and that default was the odd one out on the whole write surface — so the two
-  // mistakes cancelled, and neither was visible from either side alone.
-  deleteDocument: (id) =>
-    deleteNoContent(buildUrl(`/documents/${encodeIdentitySegment(id)}`, { dry_run: false })),
 
   artifactSearch: (q, params = {}) =>
     fetchJson(buildUrl('/artifact-search', { q, ...params }), ArtifactSearchResultSchema),
@@ -403,6 +369,7 @@ export const makeHttpModelRepository = (): ModelRepository => ({
   editMatrixDiagram: (id: string, body: object) =>
     putJson(buildUrl(`/matrices/${encodeIdentitySegment(id)}`), body, WriteResultSchema),
 
+  ...documentAndChangeMethods(),
   ...enterpriseAdminMethods(),
 
   planPromotion: (body) =>

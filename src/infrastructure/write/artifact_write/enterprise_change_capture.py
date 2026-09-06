@@ -132,6 +132,7 @@ def _record_enterprise_change(
         verifier=verifier,
         clear_repo_caches=clear_repo_caches,
         target_name=name,
+        reference_id=reference_id,
         # What the *enterprise artifact* is now — resolved through the one owner of that
         # question, because the standing compares the recorded value against it to decide staleness.
         # Hashing the reference file here instead made every change read stale from the moment it was

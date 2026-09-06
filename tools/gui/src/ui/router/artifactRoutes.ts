@@ -67,6 +67,8 @@ export const ROUTE_TEMPLATES = {
   /** The exploration surface with no anchor — a whole population, selected by a viewpoint.
    * Addresses no stored thing, so the viewpoint slug is an operand and stays in the query. */
   graphExplore: '/graph',
+  /** What this repository has changed in content it does not own. */
+  changeList: '/changes',
   documentList: '/documents',
   documentCreate: '/documents/new',
   documentGroups: '/documents/groups',

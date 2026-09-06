@@ -208,6 +208,7 @@ def promotion_execute(
             "executed": False,
             "copied_files": [],
             "updated_files": [],
+            "created_references": [],
             "verification_errors": [],
             "rolled_back": False,
         }
@@ -248,6 +249,7 @@ def promotion_execute(
         "executed": result.executed,
         "copied_files": result.copied_files,
         "updated_files": result.updated_files,
+        "created_references": result.created_references,
         "verification_errors": result.verification_errors,
         "rolled_back": result.rolled_back,
         "warnings": result.plan.warnings,

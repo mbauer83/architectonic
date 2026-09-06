@@ -145,6 +145,12 @@ onMounted(async () => {
         Diagrams
       </RouterLink>
       <RouterLink
+        to="/changes"
+        title="Edits to artifacts this repository does not own, held until they are accepted upstream"
+      >
+        Changes
+      </RouterLink>
+      <RouterLink
         to="/viewpoints"
         :class="{ 'nav__link--forced-active': viewpointDriven }"
       >

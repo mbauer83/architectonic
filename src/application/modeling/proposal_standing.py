@@ -70,7 +70,13 @@ class PendingProposal:
     """One live change, reduced to what a reader of its target needs to know."""
 
     proposal_id: str
+    #: The *enterprise* artifact the change is against, from the recorded edit — which is where it
+    #: is stated, because that is what a replay addresses.
     target_id: str
+    #: How this repository addresses that artifact. The change file names this rather than the
+    #: enterprise id: an engagement deployment holds no enterprise content, so a change naming the
+    #: promoted artifact names something its own verifier cannot find.
+    reference_id: str
     changed_fields: tuple[str, ...]
     base_revision: str
     #: Where the change is in its own lifecycle. `draft` may be revised in place; `submitted` has
@@ -144,8 +150,8 @@ def _condition(proposals: tuple[PendingProposal, ...], current: str | None) -> C
 
 
 def _decode(record: EntityRecord) -> PendingProposal | None:
-    target = record.extra.get(PROPOSES_CHANGE_TO)
-    if not isinstance(target, str) or not target.strip():
+    reference = record.extra.get(PROPOSES_CHANGE_TO)
+    if not isinstance(reference, str) or not reference.strip():
         return None
     state = str(record.extra.get(PROPOSAL_STATE, ""))
     if state not in PENDING_STATES:
@@ -162,7 +168,8 @@ def _decode(record: EntityRecord) -> PendingProposal | None:
         return None
     return PendingProposal(
         proposal_id=record.artifact_id,
-        target_id=target.strip(),
+        target_id=recorded.artifact_id,
+        reference_id=reference.strip(),
         changed_fields=tuple(sorted(recorded.fields)),
         base_revision=base.strip(),
         state=state,

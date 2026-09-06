@@ -25,12 +25,16 @@ from src.application.modeling.proposal_edit import ProposalEdit
 from src.application.modeling.proposal_standing import PendingProposal
 
 _TARGET = "REQ@1712870400.aaaaaa.two-tier-repositories"
+#: How the engagement repository addresses it — what the change file names, since an
+#: engagement deployment holds no enterprise content to point at.
+_REFERENCE = "GAR@1780000040.aaaaaa.two-tier-repositories"
 
 
 def _pending(proposal_id: str, state: str, base: str = "rev-1", **fields: object) -> PendingProposal:
     return PendingProposal(
         proposal_id=proposal_id,
         target_id=_TARGET,
+        reference_id=_REFERENCE,
         changed_fields=tuple(sorted(fields)),
         base_revision=base,
         state=state,
