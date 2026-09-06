@@ -2,13 +2,18 @@
 
 from collections.abc import Callable
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from src.application.modeling.artifact_write import slugify
+from src.application.modeling.enterprise_reference import enterprise_target
 from src.application.profile_quarantine import assert_not_quarantined
 from src.application.rename_followers import ArtifactRenamed, announce_rename
 from src.application.verification.artifact_verifier import ArtifactRegistry, ArtifactVerifier
 from src.domain.modules.module_types import EntityTypeName
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
+
+if TYPE_CHECKING:
+    from src.application.artifacts.query import ArtifactRepository
 
 from ._artifact_deduplication import get_repository, validate_entity_unique
 from ._entity_edit_support import (
@@ -104,12 +109,20 @@ def edit_entity(
     version: str | None = None,
     status: str | None = None,
     group: str | None = None,
+    repo: "ArtifactRepository | None" = None,
     dry_run: bool,
 ) -> WriteResult:
     """Edit an existing entity file by merging partial updates.
 
     Only provided fields are changed; omitted fields keep their current value.
     ``last-updated`` is always bumped to today.
+
+    **An enterprise-owned artifact is not edited; the edit is recorded as a change.** An
+    engagement repository holds a reference to a promoted artifact, not the artifact, so writing
+    the fields here would edit the reference — dropping the field that points at the real thing
+    and failing verification with `E140`, a message about a symptom of this function's own write
+    rather than about what the author did. `repo` is what makes recording possible: without it
+    the edit is refused, but by a refusal that says what is happening and what to do.
     """
     assert_engagement_write_root(repo_root)
 
@@ -118,6 +131,25 @@ def edit_entity(
         raise ValueError(f"Entity '{artifact_id}' not found in model")
 
     parsed = parse_entity_file(entity_file)
+    if (target := enterprise_target(parsed.frontmatter)) is not None:
+        # Lazily, because the capture module reads `_UNSET` from here — the sentinel has one
+        # owner and this is it.
+        from src.infrastructure.write.artifact_write.enterprise_change_capture import (  # noqa: PLC0415
+            provided_content_fields,
+            record_enterprise_change,
+        )
+
+        return record_enterprise_change(
+            repo=repo, registry=registry, verifier=verifier,
+            clear_repo_caches=clear_repo_caches, repo_root=repo_root,
+            reference_id=artifact_id, target_id=target, reference=parsed,
+            fields=provided_content_fields(
+                name=name, summary=summary, properties=properties,
+                attribute_types=attribute_types, notes=notes, keywords=keywords,
+                specializations=specializations, version=version, status=status, group=group,
+            ),
+            dry_run=dry_run,
+        )
     subject = subject_of(parsed, addressed_as=artifact_id)
     artifact_id, artifact_type = subject.artifact_id, subject.artifact_type
 

@@ -44,7 +44,13 @@ _RELOCATION = frozenset({"group"})
 #: Parameters every write takes whatever it is writing: the repository, the machinery to verify
 #: against, and whether to commit. Deliberately not `artifact_id` — that addresses the subject, which
 #: is part of the vocabulary and is where `edit_field_catalogue` puts it.
-_PLUMBING = frozenset({"repo_root", "registry", "verifier", "clear_repo_caches", "dry_run"})
+#:
+#: `repo` is a collaborator of the same kind, and only the engagement authority takes it: editing an
+#: artifact this repository does not own records a change instead of writing, and recording one means
+#: reading what is already pending. The enterprise authority owns what it edits and never needs to
+#: ask. A collaborator only one side takes is exactly what `_RELOCATION` had to state too — the
+#: difference is real and is written down rather than smoothed over.
+_PLUMBING = frozenset({"repo_root", "registry", "verifier", "clear_repo_caches", "dry_run", "repo"})
 
 
 @pytest.fixture()
