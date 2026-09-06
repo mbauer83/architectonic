@@ -6,7 +6,6 @@ const change = (over: Partial<ChangeSummary> = {}): ChangeSummary => ({
   artifact_id: 'PCH@1.a.change',
   target_id: 'STD@1.b.guidelines',
   target_name: 'General coding guidelines',
-  reference_id: 'GAR@1.c.guidelines',
   kind: 'document',
   changed_fields: ['title'],
   state: 'draft',
@@ -16,14 +15,14 @@ const change = (over: Partial<ChangeSummary> = {}): ChangeSummary => ({
 })
 
 describe('the changes shown on one artifact', () => {
-  it('matches the reference a reader of this repository holds', () => {
-    expect(changesAgainst([change()], 'GAR@1.c.guidelines')).toHaveLength(1)
+  it('matches the promoted artifact, which is the page a reader is on', () => {
+    expect(changesAgainst([change()], 'STD@1.b.guidelines')).toHaveLength(1)
   })
 
-  it('matches the enterprise id a reader of the promoted artifact holds', () => {
-    // The admin deployment reads the artifact directly; matching only the reference would leave the
-    // panel blank there, on an artifact that plainly carries a change.
-    expect(changesAgainst([change()], 'STD@1.b.guidelines')).toHaveLength(1)
+  it('does not match the reference, which no reachable page is addressed by', () => {
+    // A reference is machinery: excluded from every list and every search, so matching it would be
+    // a second place that had to know references exist.
+    expect(changesAgainst([change()], 'GAR@1.c.guidelines')).toEqual([])
   })
 
   it('shows nothing for an artifact nothing is proposed against', () => {
@@ -33,6 +32,6 @@ describe('the changes shown on one artifact', () => {
   it('keeps two changes against one artifact rather than picking one', () => {
     const both = [change(), change({ artifact_id: 'PCH@2.a.change' })]
 
-    expect(changesAgainst(both, 'GAR@1.c.guidelines')).toHaveLength(2)
+    expect(changesAgainst(both, 'STD@1.b.guidelines')).toHaveLength(2)
   })
 })

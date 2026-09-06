@@ -106,14 +106,19 @@ def test_a_change_names_the_artifact_rather_than_its_enterprise_id(workspace) ->
     assert row.target_name == "Zebra crossings"
 
 
-def test_a_change_carries_the_reference_a_reader_can_open(workspace) -> None:  # noqa: ANN001
-    """The enterprise id is not something this repository can show; the reference is."""
+def test_a_change_names_the_promoted_artifact_and_not_its_reference(workspace) -> None:  # noqa: ANN001
+    """This asserted the reference, on the reasoning that the enterprise id is not something this
+    repository can show. It is: the enterprise repository is mounted and search returns promoted
+    artifacts. The reference is machinery — kept out of every list and every search — and a row that
+    published one invited a client to link it, which put a page showing a proxy in front of a
+    reader.
+    """
     _root, repo = workspace
     _edit(workspace, FIRST_REF, summary="Changed wording.")
 
     (row,) = recorded_changes(repo)
-    assert row.reference_id == FIRST_REF
     assert row.target_id == FIRST
+    assert not hasattr(row, "reference_id")
 
 
 def test_a_change_says_which_fields_it_changes(workspace) -> None:  # noqa: ANN001

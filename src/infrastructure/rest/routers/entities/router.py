@@ -156,8 +156,8 @@ def _meta_ontology_types(meta_ontology: str | None, request: Request) -> frozens
     response_model=EntityDetailResponse, response_model_exclude_none=True,
     responses=READ_RESPONSES)
 def read_entity(artifact_id: str) -> dict[str, Any]:
-    id = artifact_id
     repo = s.get_repo()
+    id = s.artifact_a_read_should_serve(artifact_id)
     result = repo.read_artifact(id, mode="full")
     entity_rec = repo.get_entity(id)
     if result is None and "#" in id:

@@ -4,8 +4,8 @@ import { Schema } from 'effect'
  * One local change: an edit to an artifact this repository does not own, awaiting review upstream.
  *
  * `artifact_id` is the change's own — an artifact may carry more than one, so it is what discarding
- * names. `reference_id` is how this repository addresses the artifact, and therefore what a link
- * goes to; the enterprise id is what the change is *against* and is not something a client can open.
+ * names. `target_id` is the promoted artifact, which is what a link goes to and what a reader knows.
+ * The local reference standing for it is machinery and is deliberately not published.
  */
 /**
  * One field of a stale change: what it asks for, and what the artifact says now.
@@ -25,7 +25,6 @@ export const ChangeSummarySchema = Schema.Struct({
   artifact_id: Schema.String,
   target_id: Schema.String,
   target_name: Schema.String,
-  reference_id: Schema.NullOr(Schema.String),
   kind: Schema.Literal('entity', 'document', 'diagram'),
   changed_fields: Schema.Array(Schema.String),
   state: Schema.Literal('draft', 'submitted'),

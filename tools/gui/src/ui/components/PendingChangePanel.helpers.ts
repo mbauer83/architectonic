@@ -1,16 +1,14 @@
 import type { ChangeSummary } from '../../domain/schemas/changes'
 
 /**
- * The changes against one artifact, addressed however the caller happens to hold it.
+ * The changes against one artifact, named the way a reader holds it: the promoted artifact's own id.
  *
- * Both ids are accepted because both name the same artifact from different sides: a reader opening
- * this repository's reference holds the reference id, and one reading the promoted artifact directly
- * — the admin deployment — holds the enterprise id. Matching only one would leave the panel blank on
- * whichever deployment held the other.
+ * Not the reference's. A reference is machinery, kept out of every list and every search, so no page
+ * a reader can reach is addressed by one — and a panel matching on it would be a second place that
+ * had to know references exist.
  */
 export const changesAgainst = (
   changes: readonly ChangeSummary[],
   artifactId: string,
 ): readonly ChangeSummary[] =>
-  changes.filter((change) =>
-    change.reference_id === artifactId || change.target_id === artifactId)
+  changes.filter((change) => change.target_id === artifactId)

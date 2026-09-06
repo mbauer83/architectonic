@@ -28,6 +28,9 @@ pytest.importorskip("httpx")
 
 ENTERPRISE_GAR_ID = "GAR@1000000501.ScpGar.stray-enterprise-proxy"
 ENGAGEMENT_GAR_ID = "GAR@1000000103.VisGar.general-coding-guidelines"
+#: A reference standing for an *entity*, where the one above stands for a document. Both are
+#: hidden the same way; only this one can be served by the entity read.
+ENGAGEMENT_ENTITY_GAR_ID = "GAR@1000000502.EntGar.enterprise-guidelines-requirement"
 
 
 @pytest.fixture()
@@ -43,6 +46,14 @@ def client(tmp_path: Path):
     write_file(
         enterprise / "model" / "common" / GAR_TYPE / f"{ENTERPRISE_GAR_ID}.md",
         gar_md(ENTERPRISE_GAR_ID, "Stray enterprise proxy", global_artifact_id="STD@1.x.d"),
+    )
+    write_file(
+        engagement / "model" / "common" / GAR_TYPE / f"{ENGAGEMENT_ENTITY_GAR_ID}.md",
+        gar_md(
+            ENGAGEMENT_ENTITY_GAR_ID,
+            "Enterprise Guidelines Requirement",
+            global_artifact_id=ENTERPRISE_REQ_ID,
+        ),
     )
     index = combined_artifact_index(engagement, enterprise)
     index.refresh()
@@ -100,3 +111,46 @@ class TestEntityTaxonomyScopes:
         types = _taxonomy_types(client.get("/api/entity-taxonomy").json())
         assert "requirement" in types
         assert GAR_TYPE not in types
+
+
+class TestReadingOneByIdDoesNotShowAProxy:
+    """The list hides references; the detail read served them to anyone holding the URL.
+
+    What that showed was a proxy entity with a description written for nobody — "Engagement-repo
+    proxy for promoted document STD@…" — an artifact the model deliberately keeps out of sight,
+    presented as if it were the thing a reader had asked for.
+    """
+
+    def test_a_reference_serves_the_artifact_it_stands_for(self, client) -> None:
+        response = client.get(f"/api/entities/{ENGAGEMENT_ENTITY_GAR_ID}")
+
+        assert response.status_code == 200, response.text
+        assert response.json()["artifact_id"] == ENTERPRISE_REQ_ID
+
+    def test_the_proxy_prose_never_reaches_a_reader(self, client) -> None:
+        for reference in (ENGAGEMENT_ENTITY_GAR_ID, ENGAGEMENT_GAR_ID, ENTERPRISE_GAR_ID):
+            assert "proxy for promoted" not in client.get(f"/api/entities/{reference}").text
+
+    def test_a_reference_to_a_document_names_it_rather_than_rendering_itself(self, client) -> None:
+        """The entity read is not a document's route, and serving the proxy in its place is the one
+        thing this must not do — that is the page a reader was shown."""
+        response = client.get(f"/api/entities/{ENGAGEMENT_GAR_ID}")
+
+        assert response.status_code == 404
+        assert "VisDoc" in response.text
+
+    def test_a_reference_to_something_unreadable_names_it_rather_than_rendering_itself(
+        self, client
+    ) -> None:
+        """The stray enterprise proxy points at an artifact no repository here holds. Serving the
+        proxy would be the one thing this must not do, so it says which artifact was meant."""
+        response = client.get(f"/api/entities/{ENTERPRISE_GAR_ID}")
+
+        assert response.status_code == 404
+        assert "STD@1.x.d" in response.text
+
+    def test_an_ordinary_entity_is_unaffected(self, client) -> None:
+        response = client.get(f"/api/entities/{REQ_ID}")
+
+        assert response.status_code == 200
+        assert response.json()["artifact_id"] == REQ_ID

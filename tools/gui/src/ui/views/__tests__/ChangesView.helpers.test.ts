@@ -13,7 +13,6 @@ const change = (over: Partial<ChangeSummary> = {}): ChangeSummary => ({
   artifact_id: 'PCH@1.a.change-to-payments',
   target_id: 'REQ@1.b.payments',
   target_name: 'Payments',
-  reference_id: 'GAR@1.c.payments',
   kind: 'entity',
   changed_fields: ['summary'],
   state: 'draft',
@@ -23,16 +22,26 @@ const change = (over: Partial<ChangeSummary> = {}): ChangeSummary => ({
 })
 
 describe('where a change is opened', () => {
-  it('goes to the reference, because that is what this repository holds', () => {
-    expect(changeSubjectRoute(change())).toBe('/entities/GAR%401.c.payments')
+  it('goes to the promoted artifact, in its own kind\'s view', () => {
+    // These three asserted the reference, on the reasoning that it is what this repository holds.
+    // It is also machinery — excluded from every list and every search — so linking it put a page in
+    // front of readers showing a proxy and a description written for no one. The artifact a reader
+    // knows is the promoted one: it is what search returns and what they edited.
+    expect(changeSubjectRoute(change({ kind: 'entity' }))).toBe('/entities/REQ%401.b.payments')
   })
 
-  it('opens a document change at the same place: a reference is an entity locally', () => {
-    expect(changeSubjectRoute(change({ kind: 'document' }))).toBe('/entities/GAR%401.c.payments')
+  it('opens a document change in the document view', () => {
+    expect(changeSubjectRoute(change({ kind: 'document' }))).toBe('/documents/REQ%401.b.payments')
   })
 
-  it('offers no link when there is no reference, rather than one that would 404', () => {
-    expect(changeSubjectRoute(change({ reference_id: null }))).toBeNull()
+  it('opens a diagram change in the diagram view', () => {
+    expect(changeSubjectRoute(change({ kind: 'diagram' }))).toBe('/diagrams/REQ%401.b.payments')
+  })
+
+  it('always offers a link, because the promoted artifact is always addressable', () => {
+    // There is no case with nothing to link to any more: the row names the promoted artifact, and
+    // the local reference that used to be the link target is no longer published at all.
+    expect(changeSubjectRoute(change())).toBe('/entities/REQ%401.b.payments')
   })
 })
 

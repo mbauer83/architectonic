@@ -1,18 +1,28 @@
 import type { ChangeSummary } from '../../domain/schemas/changes'
-import { entityDetailRoute } from '../router/artifactRoutes'
+import {
+  diagramDetailRoute,
+  documentDetailRoute,
+  entityDetailRoute,
+} from '../router/artifactRoutes'
 
 /**
- * Where a change's subject is opened.
+ * Where a change's subject is opened: the promoted artifact itself, in its own kind's view.
  *
- * Through the *reference*, and as an entity: a global artifact reference is an entity in this
- * repository whatever it stands for, so the entity route opens all three kinds. `kind` says which
- * vocabulary the change speaks, not where the reference lives.
- *
- * Null where there is no reference — the admin deployment reads the promoted artifact directly, and
- * offering a link to the enterprise id would be a link to something this repository does not hold.
+ * **Never the reference.** A global artifact reference is machinery — excluded from every list and
+ * every search on purpose — and linking one put a page in front of readers that shows a proxy and a
+ * description written for no one ("Engagement-repo proxy for promoted document …"). The artifact a
+ * reader knows is the promoted one, which is what search returns and what they edited.
  */
-export const changeSubjectRoute = (change: ChangeSummary): string | null =>
-  change.reference_id === null ? null : entityDetailRoute(change.reference_id)
+export const changeSubjectRoute = (change: ChangeSummary): string => {
+  switch (change.kind) {
+    case 'document':
+      return documentDetailRoute(change.target_id)
+    case 'diagram':
+      return diagramDetailRoute(change.target_id)
+    case 'entity':
+      return entityDetailRoute(change.target_id)
+  }
+}
 
 /** What the change does, in the author's own terms rather than in file terms. */
 export const changedFieldsLabel = (change: ChangeSummary): string => change.changed_fields.join(', ')

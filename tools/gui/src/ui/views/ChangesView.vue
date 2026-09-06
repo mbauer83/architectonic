@@ -103,16 +103,11 @@ onMounted(load)
       >
         <div class="changes-row__subject">
           <RouterLink
-            v-if="changeSubjectRoute(change)"
-            :to="changeSubjectRoute(change)!"
+            :to="changeSubjectRoute(change)"
             class="changes-row__link"
           >
             {{ change.target_name }}
           </RouterLink>
-          <span
-            v-else
-            class="changes-row__link changes-row__link--plain"
-          >{{ change.target_name }}</span>
           <span class="changes-row__kind">{{ change.kind }}</span>
         </div>
 
@@ -193,7 +188,6 @@ onMounted(load)
 }
 .changes-row__subject { display: flex; align-items: baseline; gap: 0.6rem; }
 .changes-row__link { font-weight: 600; }
-.changes-row__link--plain { color: var(--muted-fg, #555); }
 .changes-row__kind {
   font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em;
   color: var(--muted-fg, #666);

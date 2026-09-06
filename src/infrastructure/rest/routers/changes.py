@@ -29,7 +29,6 @@ def _to_dict(change: RecordedChange) -> dict[str, Any]:
         "artifact_id": change.change_id,
         "target_id": change.target_id,
         "target_name": change.target_name,
-        "reference_id": change.reference_id,
         "kind": change.kind,
         "changed_fields": list(change.changed_fields),
         "state": change.state,

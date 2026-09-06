@@ -40,7 +40,6 @@ from src.domain.baseline_standing import ChangeCondition, Proposed
 
 if TYPE_CHECKING:
     from src.application.artifacts.query import ArtifactRepository
-    from src.domain.ontology_representation.artifact_types import EntityRecord
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,10 +64,11 @@ class RecordedChange:
 
     change_id: str
     target_id: str
-    #: What the artifact is called, and how this repository addresses it. `reference_id` is None on
-    #: a deployment reading the enterprise artifact directly, where there is no proxy to link to.
+    #: What the artifact is called. Not how this repository addresses it internally: a reference is
+    #: machinery, kept out of every list and every search, and a row that published one invited a
+    #: client to link it — which is how a page showing a proxy and a description written for no one
+    #: got in front of a reader.
     target_name: str
-    reference_id: str | None
     kind: ArtifactKind
     changed_fields: tuple[str, ...]
     state: str
@@ -92,7 +92,7 @@ def recorded_changes(repo: "ArtifactRepository | None") -> tuple[RecordedChange,
     rows = [
         _row(
             proposal,
-            repo.get_entity(proposal.reference_id),
+            _name_of(repo, target, proposal.reference_id),
             _condition_of(repo, target, pending),
             current_values_of(repo.get_entity(target) or repo.get_document(target)),
         )
@@ -100,6 +100,24 @@ def recorded_changes(repo: "ArtifactRepository | None") -> tuple[RecordedChange,
         for proposal in proposals
     ]
     return tuple(sorted(rows, key=lambda row: (row.target_name.casefold(), row.change_id)))
+
+
+def _name_of(repo: "ArtifactRepository", target: str, reference_id: str) -> str:
+    """What the promoted artifact is called.
+
+    From the artifact itself where this repository can read it, which is also the only spelling that
+    is right for a document — a document's frontmatter says `title`, so a name taken from the
+    reference's own fields named every promoted document by its id.
+
+    The reference is the fallback rather than the source: an engagement deployment mounts no
+    enterprise content, and there the reference is the only local record of what the artifact is
+    called. Promotion copies the name onto it for exactly this.
+    """
+    summary = repo.summarize_artifact(target)
+    if summary is not None and summary.name:
+        return summary.name
+    reference = repo.get_entity(reference_id)
+    return reference.name if reference is not None and reference.name else target
 
 
 def _condition_of(
@@ -140,16 +158,14 @@ def _as_text(value: Any) -> str | None:
 
 def _row(
     proposal: PendingProposal,
-    reference: "EntityRecord | None",
+    name: str,
     condition: ChangeCondition,
     current: Mapping[str, Any] | None,
 ) -> RecordedChange:
-    name = reference.name if reference is not None and reference.name else proposal.target_id
     return RecordedChange(
         change_id=proposal.proposal_id,
         target_id=proposal.target_id,
         target_name=name,
-        reference_id=proposal.reference_id or None,
         kind=proposal.edit.kind,
         changed_fields=proposal.changed_fields,
         state=proposal.state,

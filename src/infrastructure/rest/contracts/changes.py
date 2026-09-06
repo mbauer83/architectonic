@@ -1,8 +1,9 @@
 """Response contracts for the local changes this repository is holding.
 
-A change row names the artifact it changes the way this repository addresses it. The enterprise id is
-carried too, because it is what the change is *against* and what a reviewer sees — but it is not
-something a client can open, so it is never the only identifier offered.
+A change row names the promoted artifact: its id and what it is called. Not the local reference
+standing for it — that is machinery, excluded from every list and every search, and a row publishing
+one invited a client to link it. The artifact a reader knows is the promoted one, which is what
+search returns and what they edited.
 """
 
 from __future__ import annotations
@@ -33,9 +34,6 @@ class ChangeSummary(Closed):
     artifact_id: str
     target_id: str
     target_name: str
-    #: How this repository addresses the artifact. Null where it is read directly rather than
-    #: through a reference, which is the admin deployment's shape.
-    reference_id: str | None
     kind: Literal["entity", "document", "diagram"]
     changed_fields: list[str]
     state: Literal["draft", "submitted"]

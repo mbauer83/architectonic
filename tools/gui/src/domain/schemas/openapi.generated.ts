@@ -5293,8 +5293,6 @@ export interface components {
              * @enum {string}
              */
             kind: "entity" | "document" | "diagram";
-            /** Reference Id */
-            reference_id: string | null;
             /**
              * State
              * @enum {string}
