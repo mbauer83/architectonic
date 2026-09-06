@@ -12,6 +12,7 @@ const proposed = (
   changed_fields: ['name'],
   base_revision: '0f1e2d3c4b5a6978',
   condition: 'current',
+  review: 'not-sent',
   ...over,
 })
 
@@ -63,5 +64,26 @@ describe('the proposed badge copy', () => {
     for (const field of ['name', 'summary', 'status', 'keywords']) {
       expect(label).toContain(field)
     }
+  })
+})
+
+describe('what the badge says about who is looking', () => {
+  it('says nothing while the work is still private to this repository', () => {
+    // Silent on the ordinary case, the way `current` is: a reader already assumes nobody has been
+    // asked, and saying so spends the badge on an answer to a question nobody put.
+    expect(proposedAriaLabel(proposed())).not.toContain('review')
+  })
+
+  it('says a reviewer may be looking once a change has been sent', () => {
+    // The difference decides whether taking the change back is private or visible to someone, so it
+    // is said in words rather than left to the badge's colour.
+    expect(proposedAriaLabel(proposed({ review: 'awaiting-review' }))).toContain('awaiting review')
+  })
+
+  it('still names the fields, the frame and the condition either way', () => {
+    const label = proposedAriaLabel(proposed({ review: 'awaiting-review', condition: 'stale' }))
+    expect(label).toContain('Not yet accepted upstream')
+    expect(label).toContain('name')
+    expect(label).toContain('stale')
   })
 })

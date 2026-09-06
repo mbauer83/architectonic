@@ -34,9 +34,16 @@ from src.application.modeling.proposed_change import (
     PROPOSED_CHANGE_TYPE,
     PROPOSES_CHANGE_TO,
     RECORDED_EDIT,
+    SUBMITTED_STATE,
     UNKNOWN_BASE,
 )
-from src.domain.baseline_standing import BASELINE, BaselineStanding, ChangeCondition, Proposed
+from src.domain.baseline_standing import (
+    BASELINE,
+    BaselineStanding,
+    ChangeCondition,
+    Proposed,
+    ReviewStanding,
+)
 
 if TYPE_CHECKING:
     from src.application.artifacts.query import ArtifactRepository
@@ -122,7 +129,17 @@ def standing_for(
         changed_fields=_union_of_changed_fields(proposals),
         base_revision=proposals[0].base_revision,
         condition=_condition(proposals, revision_of(target_id)),
+        review=_review(proposals),
     )
+
+
+def _review(proposals: tuple[PendingProposal, ...]) -> ReviewStanding:
+    """Whether anyone upstream has been asked to look at these yet.
+
+    `awaiting-review` as soon as *one* has been sent. The answer decides whether taking a change back
+    is private or visible to someone mid-review, and that is true the moment the first one goes.
+    """
+    return "awaiting-review" if any(p.state == SUBMITTED_STATE for p in proposals) else "not-sent"
 
 
 def _union_of_changed_fields(proposals: tuple[PendingProposal, ...]) -> tuple[str, ...]:

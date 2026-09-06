@@ -33,7 +33,7 @@ to know something it cannot.
 
 from __future__ import annotations
 
-from typing import Literal, get_args
+from typing import Final, Literal, get_args
 
 #: The entity type a proposed change is stored as. Internal, like a global artifact reference:
 #: system-managed, and never offered in a user-facing entity list.
@@ -73,3 +73,12 @@ STATES: tuple[str, ...] = get_args(ProposalState)
 #: difference a reader needs told about. Declared here rather than beside the resolver because the
 #: same partition decides what a transition may leave, and two spellings of it would drift.
 PENDING_STATES: frozenset[str] = frozenset({"draft", "submitted"})
+
+#: The live state in which a change has been put to someone upstream, and the one before it.
+#:
+#: Named here because three questions turn on the pair and each had spelled it for itself — whether a
+#: further edit revises a change or replaces it, whether an integration sweep may close it, and
+#: whether taking it back is private or visible to a reviewer. Three literals with no owner is the
+#: shape `global-artifact-id` had before `enterprise_reference.py`, and it drifted.
+DRAFT_STATE: Final[ProposalState] = "draft"
+SUBMITTED_STATE: Final[ProposalState] = "submitted"

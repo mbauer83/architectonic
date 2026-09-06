@@ -154,6 +154,7 @@ describe('the baseline standing is required on every list row', () => {
         changed_fields: ['name', 'summary'],
         base_revision: '0f1e2d3c4b5a6978',
         condition: 'stale',
+        review: 'awaiting-review',
       },
     }) as { baseline_standing: { kind: string; changed_fields?: readonly string[] } }
 

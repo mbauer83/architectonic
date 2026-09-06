@@ -10302,6 +10302,11 @@ export interface components {
             kind: "proposed";
             /** Proposal Ids */
             proposal_ids: string[];
+            /**
+             * Review
+             * @enum {string}
+             */
+            review: "not-sent" | "awaiting-review";
         };
         /**
          * ProvenanceImmutableDetails

@@ -39,6 +39,9 @@ class ProposedStanding(Closed):
     base_revision: str
     #: Derived on read, never stored: whether the changes still apply to the baseline they name.
     condition: Literal["current", "stale", "conflicting"]
+    #: Whether anyone upstream has been asked to look yet. `awaiting-review` where *any* of the
+    #: changes has been sent — what the answer is for is knowing whether taking one back is private.
+    review: Literal["not-sent", "awaiting-review"]
 
 
 #: One artifact's standing on the wire. `Field(discriminator=...)` rather than a bare union so the

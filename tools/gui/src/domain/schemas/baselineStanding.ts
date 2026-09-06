@@ -29,6 +29,11 @@ export const ProposedStandingSchema = Schema.Struct({
   base_revision: Schema.String,
   /** Derived on read, never stored: whether the changes still apply to the baseline they name. */
   condition: Schema.Literal('current', 'stale', 'conflicting'),
+  /**
+   * Whether anyone upstream has been asked to look yet — `awaiting-review` as soon as *one* of
+   * the changes has been sent, because that is when taking one back stops being private.
+   */
+  review: Schema.Literal('not-sent', 'awaiting-review'),
 })
 
 export const BaselineStandingSchema = Schema.Union(EnterpriseBaselineSchema, ProposedStandingSchema)

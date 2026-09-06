@@ -31,6 +31,13 @@ ChangeCondition: TypeAlias = Literal["current", "stale", "conflicting"]
 
 CHANGE_CONDITIONS: tuple[str, ...] = get_args(ChangeCondition)
 
+#: Whether anyone upstream has been asked to look at these changes yet. Derived on every read from
+#: the changes' own lifecycle states, and never persisted — it is a fact about a *set* of changes,
+#: and the set moves when any one of them is sent.
+ReviewStanding: TypeAlias = Literal["not-sent", "awaiting-review"]
+
+REVIEW_STANDINGS: tuple[str, ...] = get_args(ReviewStanding)
+
 #: The field a payload carries the standing under. Named here, with the value, so a serialiser and a
 #: client cannot spell it differently.
 BASELINE_STANDING = "baseline_standing"
@@ -73,6 +80,13 @@ class Proposed:
     changed_fields: tuple[str, ...]
     base_revision: str
     condition: ChangeCondition
+    #: Whether these changes have been put to anyone yet.
+    #:
+    #: **`awaiting-review` where *any* of them has been sent**, not where all have. What the answer
+    #: is for is deciding whether taking one back is private or visible to a reviewer, and that is
+    #: true as soon as one has gone. Aggregating the other way would tell an author their work is
+    #: unsent while someone is reading it.
+    review: ReviewStanding
 
     def __post_init__(self) -> None:
         if not self.proposal_ids:
@@ -90,6 +104,11 @@ class Proposed:
                 f"proposal {self.proposal_ids[0]} names no base revision; without one there is "
                 "nothing to decide staleness or integration against"
             )
+        if self.review not in REVIEW_STANDINGS:
+            raise ImpossibleStanding(
+                f"{self.review!r} is not a review standing; expected one of "
+                f"{', '.join(REVIEW_STANDINGS)}"
+            )
         if self.condition not in CHANGE_CONDITIONS:
             raise ImpossibleStanding(
                 f"{self.condition!r} is not a change condition; expected one of "
@@ -103,13 +122,15 @@ class Proposed:
             "changed_fields": list(self.changed_fields),
             "base_revision": self.base_revision,
             "condition": self.condition,
+            "review": self.review,
         }
 
     def __str__(self) -> str:
         fields = ", ".join(self.changed_fields)
         proposals = ", ".join(self.proposal_ids)
         suffix = "" if self.condition == "current" else f", {self.condition}"
-        return f"proposed ({fields}; {proposals}{suffix})"
+        sent = "" if self.review == "not-sent" else ", awaiting review"
+        return f"proposed ({fields}; {proposals}{suffix}{sent})"
 
 
 #: One artifact's standing. Two arms, matched exhaustively — a third would be a fact about the
@@ -137,6 +158,7 @@ def standing_from_mapping(payload: Mapping[str, object]) -> BaselineStanding:
                 changed_fields=tuple(str(f) for f in _sequence(payload, "changed_fields")),
                 base_revision=str(payload.get("base_revision", "")),
                 condition=_condition(payload.get("condition")),
+                review=_review(payload.get("review")),
             )
         case other:
             raise ImpossibleStanding(
@@ -149,6 +171,16 @@ def _sequence(payload: Mapping[str, object], key: str) -> tuple[object, ...]:
     if isinstance(value, str) or not isinstance(value, (list, tuple)):
         raise ImpossibleStanding(f"{key} must be a list of ids, got {value!r}")
     return tuple(value)
+
+
+def _review(value: object) -> ReviewStanding:
+    match value:
+        case "not-sent" | "awaiting-review":
+            return value
+        case other:
+            raise ImpossibleStanding(
+                f"{other!r} is not a review standing; expected one of {', '.join(REVIEW_STANDINGS)}"
+            )
 
 
 def _condition(value: object) -> ChangeCondition:

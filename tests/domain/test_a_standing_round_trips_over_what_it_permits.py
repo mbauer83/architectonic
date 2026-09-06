@@ -18,6 +18,7 @@ from src.domain.baseline_standing import (
     BASELINE_KIND,
     CHANGE_CONDITIONS,
     PROPOSED_KIND,
+    REVIEW_STANDINGS,
     EnterpriseBaseline,
     ImpossibleStanding,
     Proposed,
@@ -103,17 +104,23 @@ def test_a_condition_absent_from_the_encoding_is_refused_not_assumed_current() -
 @pytest.mark.parametrize("condition", CHANGE_CONDITIONS)
 def test_every_declared_condition_is_constructible_and_survives(condition) -> None:
     """Enumerating a closed set and getting it wrong is the failure this pins."""
-    standing = Proposed(("PCH@1.x",), ("name",), "abc123", condition)
+    standing = Proposed(("PCH@1.x",), ("name",), "abc123", condition, "not-sent")
     assert standing_from_mapping(standing.to_mapping()) == standing
 
 
 @pytest.mark.parametrize(
     "kwargs",
     [
-        {"proposal_ids": (), "changed_fields": ("name",), "base_revision": "r", "condition": "current"},
-        {"proposal_ids": ("p",), "changed_fields": (), "base_revision": "r", "condition": "current"},
-        {"proposal_ids": ("p",), "changed_fields": ("name",), "base_revision": "", "condition": "current"},
-        {"proposal_ids": ("p",), "changed_fields": ("name",), "base_revision": "r", "condition": "nope"},
+        {"proposal_ids": (), "changed_fields": ("name",), "base_revision": "r",
+         "condition": "current", "review": "not-sent"},
+        {"proposal_ids": ("p",), "changed_fields": (), "base_revision": "r",
+         "condition": "current", "review": "not-sent"},
+        {"proposal_ids": ("p",), "changed_fields": ("name",), "base_revision": "",
+         "condition": "current", "review": "not-sent"},
+        {"proposal_ids": ("p",), "changed_fields": ("name",), "base_revision": "r",
+         "condition": "nope", "review": "not-sent"},
+        {"proposal_ids": ("p",), "changed_fields": ("name",), "base_revision": "r",
+         "condition": "current", "review": "nope"},
     ],
 )
 def test_the_constructor_refuses_the_same_shapes_the_decoder_does(kwargs) -> None:
@@ -124,7 +131,7 @@ def test_the_constructor_refuses_the_same_shapes_the_decoder_does(kwargs) -> Non
 
 def test_a_proposed_standing_renders_which_fields_for_the_cli() -> None:
     """The CLI is `print(record)`, so a standing reaches it only by rendering — and D5 asks *which*."""
-    rendered = str(Proposed(("PCH@1.abc",), ("name", "description"), "9f2c", "stale"))
+    rendered = str(Proposed(("PCH@1.abc",), ("name", "description"), "9f2c", "stale", "not-sent"))
     assert "name" in rendered and "description" in rendered
     assert "PCH@1.abc" in rendered
     assert "stale" in rendered
@@ -135,8 +142,31 @@ def test_the_baseline_renders_without_ceremony() -> None:
 
 
 def test_a_current_proposal_does_not_render_a_condition_nobody_asked_about() -> None:
-    assert "current" not in str(Proposed(("p",), ("name",), "r", "current"))
+    assert "current" not in str(Proposed(("p",), ("name",), "r", "current", "not-sent"))
 
 
 def _example() -> Proposed:
-    return Proposed(("PCH@1.abc",), ("name",), "9f2c", "current")
+    return Proposed(("PCH@1.abc",), ("name",), "9f2c", "current", "not-sent")
+
+
+@pytest.mark.parametrize("review", REVIEW_STANDINGS)
+def test_every_declared_review_standing_is_constructible_and_survives(review) -> None:
+    """The same enumeration the condition gets, for the same reason: a closed set nobody walked."""
+    standing = Proposed(("PCH@1.x",), ("name",), "abc123", "current", review)
+    assert standing_from_mapping(standing.to_mapping()) == standing
+
+
+def test_a_review_standing_absent_from_the_encoding_is_refused_not_assumed_unsent() -> None:
+    """`not-sent` is the harmless-looking guess, and guessing it tells an author their work is
+    private while a reviewer is reading it."""
+    with pytest.raises(ImpossibleStanding):
+        standing_from_mapping({
+            "kind": PROPOSED_KIND, "proposal_ids": ["p"], "changed_fields": ["name"],
+            "base_revision": "r", "condition": "current",
+        })
+
+
+def test_a_standing_awaiting_review_says_so_when_it_renders() -> None:
+    """The CLI reaches this only by rendering, and "someone is looking at this" is the part an
+    author needs before they take it back."""
+    assert "awaiting review" in str(Proposed(("p",), ("name",), "r", "current", "awaiting-review"))
