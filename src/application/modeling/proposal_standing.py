@@ -198,11 +198,27 @@ def standing_reader(repo: "ArtifactRepository | None") -> Callable[[str], Baseli
         # per-artifact revision reads entirely rather than hashing files to confirm it.
         return lambda _artifact_id: BASELINE
 
-    def revision_of(artifact_id: str) -> str | None:
-        record = repo.get_entity(artifact_id)
-        return compute_revision(record.path) if record is not None and record.path.exists() else None
+    return lambda artifact_id: standing_for(
+        artifact_id, pending, revision_of=lambda target: enterprise_revision(repo, target)
+    )
 
-    return lambda artifact_id: standing_for(artifact_id, pending, revision_of=revision_of)
+
+def enterprise_revision(repo: "ArtifactRepository", target_id: str) -> str | None:
+    """What the enterprise artifact at `target_id` is right now, or None where it cannot be read.
+
+    **The one answer to that question**, because two of them would be a silent bug rather than a
+    disagreement anyone notices: a change records this when it is written, and the standing compares
+    the recorded value against it to decide whether the change has gone stale. Computed over a
+    different file at one of the two sites — the reference rather than what it stands for — and every
+    change reads stale from the moment it is recorded, on a deployment that mounts the enterprise
+    repository and nowhere else. Which is exactly what happened.
+
+    None where the enterprise repository is not mounted. Staleness is then undecidable rather than
+    false, and `_condition` treats it as `current` — the honest reading, since nothing has been
+    observed to move.
+    """
+    record = repo.get_entity(target_id)
+    return compute_revision(record.path) if record is not None and record.path.exists() else None
 
 
 def pending_reader(repo: "ArtifactRepository | None") -> Callable[[str], tuple[PendingProposal, ...]]:

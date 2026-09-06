@@ -20,7 +20,7 @@ from src.application.modeling.enterprise_reference import GLOBAL_ARTIFACT_ID
 from src.application.modeling.proposal_standing import pending_proposals
 from src.application.modeling.proposed_change import PROPOSED_CHANGE_TYPE
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
-from src.infrastructure.artifact_index import shared_artifact_index
+from src.infrastructure.artifact_index import combined_artifact_index
 from src.infrastructure.verification.verifier_factory import build_artifact_verifier
 from src.infrastructure.write.artifact_write.entity_edit import edit_entity
 
@@ -63,9 +63,37 @@ def _local_md() -> str:
     )
 
 
+def _enterprise_md() -> str:
+    return (
+        "---\n"
+        f"artifact-id: {ENTERPRISE}\n"
+        "artifact-type: requirement\n"
+        "name: Two-tier repositories\n"
+        "version: 0.1.0\n"
+        "status: active\n"
+        "last-updated: '2026-01-01'\n"
+        "---\n\n<!-- §content -->\n\n"
+        "## Two-tier repositories\n\nThe enterprise wording.\n\n"
+        "## Properties\n\n| Attribute | Value |\n|---|---|\n| (none) | (none) |\n\n"
+        "<!-- §display -->\n"
+    )
+
+
 @pytest.fixture()
 def workspace(tmp_path: Path):  # noqa: ANN201
+    """Both tiers mounted, which is what a non-admin deployment actually has.
+
+    Without the enterprise artifact present, staleness is undecidable and every change reads
+    `current` whatever revision it recorded — which hid a real bug: the base was being taken from the
+    *reference* file rather than from what it stands for, so every change would have read `stale` the
+    moment a real workspace mounted the enterprise repository.
+    """
     process_runtime_catalogs()
+    enterprise = tmp_path / "enterprise-repository"
+    (enterprise / "model" / "motivation" / "requirement").mkdir(parents=True)
+    (enterprise / "model" / "motivation" / "requirement" / f"{ENTERPRISE}.md").write_text(
+        _enterprise_md(), encoding="utf-8"
+    )
     root = tmp_path / "engagements" / "ENG-T" / "architecture-repository"
     (root / "model" / "common" / "global-artifact-reference").mkdir(parents=True)
     (root / "model" / "common" / "proposed-change").mkdir(parents=True)
@@ -74,7 +102,7 @@ def workspace(tmp_path: Path):  # noqa: ANN201
         _reference_md(), encoding="utf-8"
     )
     (root / "model" / "motivation" / "requirement" / f"{LOCAL}.md").write_text(_local_md(), encoding="utf-8")
-    index = shared_artifact_index(root)
+    index = combined_artifact_index(root, enterprise)
     index.refresh()
     return root, ArtifactRepository(index)
 
@@ -201,3 +229,33 @@ def test_a_caller_with_no_repository_is_told_what_is_happening(workspace) -> Non
 
     assert not result.wrote
     assert any(ENTERPRISE in warning and "awaiting review" in warning for warning in result.warnings)
+
+
+# ── the base a change records ────────────────────────────────────────────────
+
+
+def test_a_change_records_the_revision_of_the_enterprise_artifact(workspace) -> None:  # noqa: ANN001
+    """Not the reference's. The standing compares the recorded value against the enterprise
+    artifact's revision to decide staleness, so a base taken from the wrong file makes every change
+    read stale from the moment it is recorded."""
+    from src.application.modeling.proposal_standing import enterprise_revision
+
+    _root, repo = workspace
+    _edit(workspace, REFERENCE, summary="Changed wording.")
+
+    (change,) = _changes(workspace)[ENTERPRISE]
+    assert change.base_revision == enterprise_revision(repo, ENTERPRISE)
+
+
+def test_a_freshly_recorded_change_reads_as_current(workspace) -> None:  # noqa: ANN001
+    """The property the wrong base broke: nothing upstream has moved, so nothing is stale."""
+    from src.application.modeling.proposal_standing import standing_reader
+    from src.domain.baseline_standing import Proposed
+
+    _root, repo = workspace
+    _edit(workspace, REFERENCE, summary="Changed wording.")
+    repo.refresh()
+
+    standing = standing_reader(repo)(ENTERPRISE)
+    assert isinstance(standing, Proposed)
+    assert standing.condition == "current"

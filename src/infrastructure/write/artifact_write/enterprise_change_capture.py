@@ -22,9 +22,8 @@ from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from src.application.derivation.refresh import compute_revision
 from src.application.modeling.change_recording import UnrecordableChange, decide
-from src.application.modeling.proposal_standing import pending_proposals
+from src.application.modeling.proposal_standing import enterprise_revision, pending_proposals
 from src.application.modeling.proposed_change import PROPOSED_CHANGE_TYPE
 from src.infrastructure.write.artifact_write.change_materialization import materialize
 from src.infrastructure.write.artifact_write.types import WriteResult
@@ -96,9 +95,11 @@ def record_enterprise_change(
         verifier=verifier,
         clear_repo_caches=clear_repo_caches,
         target_name=_display_name(reference, reference_id),
-        # What the reference is *now*. Only a first recording uses it; superseding carries the
-        # revision its predecessor was written against, which the outcome already holds.
-        base_revision=compute_revision(reference_path) if reference_path is not None else "",
+        # What the *enterprise artifact* is now — resolved through the one owner of that
+        # question, because the standing compares the recorded value against it to decide staleness.
+        # Hashing the reference file here instead made every change read stale from the moment it was
+        # recorded, on any deployment that mounts the enterprise repository.
+        base_revision=enterprise_revision(repo, target_id) or "",
         dry_run=dry_run,
     )
 
