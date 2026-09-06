@@ -28,13 +28,14 @@ from src.application.modeling.proposal_edit import ProposalEdit, UnproposableEdi
 from src.application.modeling.proposed_change import (
     PROPOSAL_STATE,
     PROPOSED_CHANGE_TYPE,
-    PROPOSES_CHANGE_TO,
     RECORDED_EDIT,
+    SUBMITTED_STATE,
 )
 from src.domain.ontology_representation.artifact_types import DocumentRecord, EntityRecord
 
 #: The one state a sweep may close. See the module docstring: a draft has been sent to nobody.
-SWEEPABLE = "submitted"
+#: The value has one owner; what this module adds is *which* of the states it acts on.
+SWEEPABLE = SUBMITTED_STATE
 
 #: Records the enterprise artifact for a change, or None when it cannot be read.
 TargetReader = Callable[[str], EntityRecord | DocumentRecord | None]
@@ -92,9 +93,16 @@ def sweep_integrated_changes(
             continue
         if str(proposal.extra.get(PROPOSAL_STATE, "")) != SWEEPABLE:
             continue
-        target_id = str(proposal.extra.get(PROPOSES_CHANGE_TO, "")).strip()
         edit = _recorded_edit(proposal)
-        if edit is None or not target_id:
+        if edit is None:
+            continue
+        # The *enterprise* artifact, from the recorded edit — which is where it is stated, because
+        # that is what a replay addresses. `proposes-change-to` names the local reference standing
+        # for it: an engagement deployment holds no enterprise content to point at, so a change
+        # naming the promoted artifact names what its own verifier cannot find. Reading the target
+        # from there would have this sweep comparing the edit against the *proxy's* values.
+        target_id = edit.artifact_id.strip()
+        if not target_id:
             continue
 
         verdict = integration_verdict(edit, current_values_of(target_of(target_id)))

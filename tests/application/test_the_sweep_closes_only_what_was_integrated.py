@@ -44,12 +44,20 @@ def _record(artifact_id: str, artifact_type: str, *, name="Payments", extra=None
     )
 
 
-def _proposal(proposal_id: str, *, state="submitted", fields=None, target=TARGET) -> EntityRecord:
+#: How this repository addresses the promoted artifact. Deliberately *not* `TARGET`: the change
+#: names the reference, and the sweep must read the enterprise artifact the recorded edit addresses.
+#: With one id standing for both, a sweep comparing against the proxy passes every test here.
+REFERENCE = "GAR@1780000001.bbbbbbb.payments-service"
+
+
+def _proposal(
+    proposal_id: str, *, state="submitted", fields=None, target=TARGET, reference=REFERENCE
+) -> EntityRecord:
     return _record(
         proposal_id,
         PROPOSED_CHANGE_TYPE,
         extra={
-            PROPOSES_CHANGE_TO: target,
+            PROPOSES_CHANGE_TO: reference,
             PROPOSAL_STATE: state,
             BASE_REVISION: "abc1234",
             RECORDED_EDIT: {
@@ -178,3 +186,21 @@ def test_the_summary_says_what_happened(closer) -> None:
 
     assert "closed 1" in report.summary()
     assert "1 still awaiting review" in report.summary()
+
+
+def test_the_sweep_reads_the_artifact_the_edit_addresses_not_the_reference(closer) -> None:  # noqa: ANN001
+    """The change names the local reference — an engagement deployment has no enterprise id to point
+    at — and the enterprise artifact is named by the recorded edit. A sweep reading the reference
+    would compare the edit against the *proxy's* values, which say nothing about what a reviewer
+    applied upstream.
+    """
+    asked: list[str] = []
+
+    def target_of(artifact_id: str):  # noqa: ANN202
+        asked.append(artifact_id)
+        return _target("Payments Platform")
+
+    sweep_integrated_changes([_proposal("PCH@1")], target_of=target_of, close=closer)
+
+    assert asked == [TARGET]
+    assert REFERENCE not in asked
