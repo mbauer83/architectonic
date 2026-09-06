@@ -209,6 +209,7 @@ def edit_diagram_gui(artifact_id: str, body: EditDiagramGuiBody,
     catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
 ) -> dict[str, Any]:
     from src.infrastructure.write.artifact_write.diagram_edit import edit_diagram
+    from src.infrastructure.write.artifact_write.enterprise_edit_arguments import KEYWORDS_UNSET
 
     repo = s.get_repo()
     repo_root, _, verifier = s.get_write_deps(catalogs)
@@ -226,9 +227,10 @@ def edit_diagram_gui(artifact_id: str, body: EditDiagramGuiBody,
             verifier=verifier,
             clear_repo_caches=s.clear_caches,
             artifact_id=artifact_id,
+            repo=repo,
             puml=puml,
             name=body.name,
-            keywords=...,
+            keywords=KEYWORDS_UNSET,
             diagram_entities=de,
             diagram_connections=dc,
             entity_ids_used=entity_ids_used,

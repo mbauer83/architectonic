@@ -5,6 +5,7 @@ from typing import Any, Final, Literal
 
 from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
+from src.application.artifacts.query import ArtifactRepository
 from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.infrastructure.mcp.artifact_mcp import edit_tool_descriptions as descriptions
@@ -29,17 +30,32 @@ def _result_dict(dry_run: bool, result: artifact_write_ops.WriteResult) -> dict[
     return _out(result, dry_run=dry_run)
 
 
-def _resolve(repo_root: str | None, *, need_registry: bool) -> tuple[Path, ArtifactRegistry | None, ArtifactVerifier]:
-    roots = resolve_repo_roots(
+def _roots_for(repo_root: str | None) -> list[Path]:
+    return resolve_repo_roots(
         repo_scope="engagement",
         repo_root=repo_root,
         repo_preset=None,
         enterprise_root=None,
     )
+
+
+def _resolve(repo_root: str | None, *, need_registry: bool) -> tuple[Path, ArtifactRegistry | None, ArtifactVerifier]:
+    roots = _roots_for(repo_root)
     key = roots_key(roots)
     registry = registry_cached(key) if need_registry else None
     verifier = verifier_for(key, include_registry=need_registry)
     return roots[0], registry, verifier
+
+
+def served_repository(repo_root: str | None) -> "ArtifactRepository":
+    """Where an edit of enterprise-owned content records its change instead of writing.
+
+    An edit that lands on a global artifact reference has nowhere to write, and is recorded as a
+    change against what the reference stands for. Recording one means reading what is already
+    pending, which is what the repository is for — without it the write path can only refuse, which
+    is what every edit tool did until this was passed.
+    """
+    return repo_cached(roots_key(_roots_for(repo_root)))
 
 
 def _require_registry(registry: ArtifactRegistry | None) -> ArtifactRegistry:
@@ -95,6 +111,7 @@ def artifact_edit_entity(
         verifier=verifier,
         clear_repo_caches=clear_repo_caches,
         artifact_id=artifact_id,
+        repo=served_repository(repo_root),
         dry_run=dry_run,
         **kwargs,
     )
@@ -288,6 +305,7 @@ def artifact_edit_diagram(
         verifier=verifier,
         clear_repo_caches=clear_repo_caches,
         artifact_id=artifact_id,
+        repo=served_repository(repo_root),
         dry_run=dry_run,
         committed_repo=committed_repo,
         **kwargs,

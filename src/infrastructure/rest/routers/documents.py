@@ -193,7 +193,7 @@ def create_document(req: CreateDocumentRequest, response: Response,
 ) -> dict[str, Any]:
     from src.infrastructure.write.artifact_write.document import create_document as _create
 
-    repo_root, _, verifier = s.get_write_deps(catalogs)
+    repo_root, registry, verifier = s.get_write_deps(catalogs)
 
     result = s.authorized_write(
             "documents_create_document", 
@@ -229,7 +229,7 @@ def edit_document(artifact_id: str, req: EditDocumentRequest,
     from src.infrastructure.write.artifact_write.document import DocumentNotFoundError
     from src.infrastructure.write.artifact_write.document import edit_document as _edit
 
-    repo_root, _, verifier = s.get_write_deps(catalogs)
+    repo_root, registry, verifier = s.get_write_deps(catalogs)
 
     # Both refusals are the caller's, and neither was translated: a bare `ValueError` reached the
     # error middleware and became a non-disclosing 500, so "you named a document that is not there"
@@ -245,6 +245,9 @@ def edit_document(artifact_id: str, req: EditDocumentRequest,
             verifier=verifier,
             clear_repo_caches=s.clear_caches,
             artifact_id=artifact_id,
+            # A reference to a promoted document lives in the model tree, not under `docs/`.
+            registry=registry,
+            repo=s.maybe_get_repo(),
             title=req.title,
             body=req.body,
             keywords=req.keywords,

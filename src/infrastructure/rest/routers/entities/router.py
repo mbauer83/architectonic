@@ -378,6 +378,9 @@ def edit_entity(artifact_id: str, body: EditEntityBody,
             verifier=verifier,
             clear_repo_caches=s.clear_caches,
             artifact_id=artifact_id,
+            # Editing an artifact this repository does not own records a change against it instead
+            # of writing; recording one means reading what is already pending.
+            repo=s.maybe_get_repo(),
             name=body.name,
             summary=body.summary if "summary" in provided else _UNSET,
             properties=body.properties if "properties" in provided else _UNSET,

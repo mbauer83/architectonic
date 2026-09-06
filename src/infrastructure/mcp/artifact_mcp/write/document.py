@@ -6,6 +6,8 @@ from src.infrastructure.mcp.artifact_mcp.write._common import (
     _out,
     artifact_write_ops,
     authoritative_callbacks_for,
+    registry_cached,
+    repo_cached,
     resolve_repo_roots,
     roots_key,
     verifier_for,
@@ -84,6 +86,10 @@ def artifact_edit_document(
         verifier=verifier_for(roots_key(roots), include_registry=False),
         clear_repo_caches=clear_repo_caches,
         artifact_id=artifact_id,
+        # A reference to a promoted document lives in the model tree, not under `docs/`, so this
+        # edit needs the registry to recognise one and the repository to record the change in.
+        registry=registry_cached(roots_key(roots)),
+        repo=repo_cached(roots_key(roots)),
         title=title,
         body=body,
         keywords=keywords,
