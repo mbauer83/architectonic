@@ -9,11 +9,15 @@ that stands for it — and says what the change does to it in the vocabulary of 
 enterprise artifact *now*, and `proposal_standing` owns deciding it. This module asks; it does not
 grow a second opinion, which is how one word comes to mean two things.
 
-**A stale change shows both values.** "Stale" on its own tells an author their work needs attention
-and nothing about what to do — they would have to open the enterprise artifact, if they can reach it
-at all, and compare by eye. So a stale row carries, per field, what the change asks for and what the
-artifact says now. Only for a stale one: on a current change the two agree by definition, and showing
-a value beside itself is noise.
+**Every change shows both values.** A row carries, per field, what the change asks for and what the
+artifact says now. That is what "stale" needs in order to be actionable — otherwise an author is told
+their work needs attention and nothing about what to do — and it is equally what an ordinary change
+needs, because the only place an author can otherwise see their own pending values is the edit form
+they would have to open.
+
+This was at first restricted to stale changes, on the reasoning that a current change and the
+artifact agree. They do not: a change's fields differ from the artifact by definition, since that is
+what makes them a change. They agree only once it has been integrated, and then it is closed.
 """
 
 from __future__ import annotations
@@ -69,8 +73,8 @@ class RecordedChange:
     changed_fields: tuple[str, ...]
     state: str
     condition: ChangeCondition
-    #: What the change asks for beside what the artifact says now, for a stale change. Empty
-    #: otherwise: on a current change the two agree, and a value shown beside itself is noise.
+    #: What the change asks for beside what the artifact says now, per field. Empty only where the
+    #: artifact cannot be read — an engagement deployment mounting no enterprise repository.
     divergence: tuple[FieldDivergence, ...]
 
 
@@ -109,16 +113,16 @@ def _condition_of(
 
 def _divergence(
     proposal: PendingProposal,
-    condition: ChangeCondition,
     current: Mapping[str, Any] | None,
 ) -> tuple[FieldDivergence, ...]:
-    """Which of the change's fields the artifact now disagrees with, and what each side says.
+    """Which of the change's fields the artifact disagrees with, and what each side says.
 
     Compared through `comparable`, the same normalisation staleness and integration are decided by,
     so "differs" means one thing across the whole lifecycle. A field the artifact has no reading for
-    is left out rather than shown as diverging from nothing.
+    is left out rather than shown as diverging from nothing, and a repository that cannot read the
+    artifact at all shows none.
     """
-    if condition == "current" or current is None:
+    if current is None:
         return ()
     return tuple(
         FieldDivergence(field=field, proposed=_as_text(proposed), current=_as_text(current[field]))
@@ -150,5 +154,5 @@ def _row(
         changed_fields=proposal.changed_fields,
         state=proposal.state,
         condition=condition,
-        divergence=_divergence(proposal, condition, current),
+        divergence=_divergence(proposal, current),
     )

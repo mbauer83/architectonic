@@ -13,6 +13,7 @@ import DerivedSecurityAttributesPanel from '../components/DerivedSecurityAttribu
 import SignalIngestPanel from '../components/SignalIngestPanel.vue'
 import EntityDetailHeader from '../components/EntityDetailHeader.vue'
 import EntityEditFormCard from '../components/EntityEditFormCard.vue'
+import PendingChangePanel from '../components/PendingChangePanel.vue'
 import EntityDeletePanel from '../components/EntityDeletePanel.vue'
 import EntityReferenceList from '../components/EntityReferenceList.vue'
 import {
@@ -122,6 +123,11 @@ const executeDelete = () => { void router.push(backTo.value) }
     </div>
 
     <template v-else-if="detail">
+      <PendingChangePanel
+        :standing="detail.baseline_standing"
+        :artifact-id="entityId"
+      />
+
       <EntityEditFormCard
         v-if="edit.editing"
         @open-reference-picker="edit.openReferencePicker($event)"

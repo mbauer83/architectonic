@@ -175,13 +175,21 @@ def _move_the_enterprise_artifact(root: Path, wording: str) -> None:
     )
 
 
-def test_a_current_change_shows_no_divergence(workspace) -> None:  # noqa: ANN001
-    """The two agree by definition, and a value shown beside itself is noise."""
+def test_an_ordinary_change_shows_both_values_too(workspace) -> None:  # noqa: ANN001
+    """This asserted the opposite, on the reasoning that a current change and the artifact agree.
+
+    They do not. A change's fields differ from the artifact by definition — that is what makes them
+    a change — and they agree only once it has been integrated, when it is closed. Restricting the
+    values to stale changes left an author's own pending values visible nowhere but the edit form.
+    """
     _root, repo = workspace
     _edit(workspace, FIRST_REF, summary="Mine.")
 
     (row,) = recorded_changes(repo)
-    assert row.divergence == ()
+    assert row.condition == "current"
+    assert [(d.field, d.proposed, d.current) for d in row.divergence] == [
+        ("summary", "Mine.", "The enterprise wording.")
+    ]
 
 
 def test_a_stale_change_shows_what_it_asks_for_and_what_the_artifact_says(workspace) -> None:  # noqa: ANN001
@@ -227,9 +235,10 @@ def test_a_field_the_artifact_has_no_reading_for_is_left_out(workspace) -> None:
         edit=ProposalEdit(kind="entity", artifact_id=FIRST, fields={"summary": "Mine."}),
     )
 
-    assert _divergence(proposal, "stale", {"summary": None}) == ()
-    assert _divergence(proposal, "stale", {}) == ()
-    assert _divergence(proposal, "stale", {"summary": "Theirs."}) == (
+    assert _divergence(proposal, {"summary": None}) == ()
+    assert _divergence(proposal, {}) == ()
+    assert _divergence(proposal, None) == ()
+    assert _divergence(proposal, {"summary": "Theirs."}) == (
         FieldDivergence(field="summary", proposed="Mine.", current="Theirs."),
     )
 
@@ -247,5 +256,5 @@ def test_a_structured_value_names_the_field_without_inventing_a_rendering(worksp
         edit=ProposalEdit(kind="entity", artifact_id=FIRST, fields={"properties": {"a": "1"}}),
     )
 
-    (shown,) = _divergence(proposal, "stale", {"properties": {"a": "2"}})
+    (shown,) = _divergence(proposal, {"properties": {"a": "2"}})
     assert (shown.field, shown.proposed, shown.current) == ("properties", None, None)
