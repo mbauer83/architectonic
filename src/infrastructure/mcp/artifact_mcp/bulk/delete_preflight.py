@@ -8,6 +8,7 @@ from typing import Any
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.mcp.artifact_mcp.context import expand_artifact_id
 from src.infrastructure.mcp.artifact_mcp.edit_tools import _require_registry, _resolve
+from src.infrastructure.write.artifact_write.boundary import owned_by
 
 from .common import KNOWN_DELETE_OPS
 from .delete_plan import (
@@ -178,9 +179,7 @@ def _entity_delete_blockers(
     if entity_file is None:
         results[index] = validation_error("delete_entity", f"Entity '{artifact_id}' not found in model")
         return []
-    try:
-        entity_file.relative_to(root)
-    except ValueError:
+    if not owned_by(entity_file, root):
         results[index] = validation_error(
             "delete_entity",
             f"Entity '{artifact_id}' is not in writable repo '{root}'",

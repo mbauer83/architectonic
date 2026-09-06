@@ -10,6 +10,18 @@ So the edit is recorded. The author changed the artifact they were shown, and wh
 already carried their earlier change; the recorded change is that intent, replayed later against
 whatever the enterprise artifact has become.
 
+**Two ways an edit lands on content this repository does not own, and only one was seen.** A
+reference is one: the artifact is here, and names something elsewhere. The other is the artifact
+*itself* — the enterprise repository is mounted, so a reader finds the promoted artifact by search
+and edits it by its own id. That is in fact the only way a person reaches it, because references are
+never shown: they are excluded from every list and every search on purpose.
+
+Recognising only the reference left the second path writing straight into the enterprise repository.
+The guard beside it checks the *root* a write was handed, not the *file* it is about to touch, so an
+engagement deployment editing an enterprise artifact by its own id passed the guard and modified
+upstream content — no change recorded, no refusal, `wrote: true`. `boundary.owned_by` is the question
+that was missing.
+
 **The kind comes from the reference, never from the caller's assumption.** A reference stands for an
 entity, a document or a diagram, and which one decides the vocabulary the recorded change may use.
 This module hardcoded `entity`, which was wrong for the promoted document this repository already
@@ -26,16 +38,18 @@ would have to know all three vocabularies to be right about any of them.
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
+from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from src.application.modeling.change_recording import UnrecordableChange, decide
-from src.application.modeling.edit_field_catalogue import ArtifactKind
+from src.application.modeling.edit_field_catalogue import PROPOSABLE, ArtifactKind
 from src.application.modeling.enterprise_reference import enterprise_target, proxied_kind
 from src.application.modeling.integration_detection import current_values_of
 from src.application.modeling.proposal_standing import enterprise_revision, pending_proposals
 from src.application.modeling.proposed_change import PROPOSED_CHANGE_TYPE, UNKNOWN_BASE
 from src.domain.repository.frontmatter import parse_frontmatter
+from src.infrastructure.write.artifact_write.boundary import owned_by
 from src.infrastructure.write.artifact_write.change_materialization import materialize
 from src.infrastructure.write.artifact_write.types import WriteResult
 
@@ -68,15 +82,131 @@ def recorded_instead_of_written(
     path = registry.find_file_by_id(artifact_id)
     if path is None or not path.exists():
         return None
+
     frontmatter = parse_frontmatter(path.read_text(encoding="utf-8")) or {}
-    target = enterprise_target(frontmatter)
-    if target is None:
+    if (target := enterprise_target(frontmatter)) is not None:
+        return _record_enterprise_change(
+            kind=kind, repo=repo, registry=registry, verifier=verifier,
+            clear_repo_caches=clear_repo_caches, repo_root=repo_root, reference_id=artifact_id,
+            target_id=target, target_name=_display_name(frontmatter, artifact_id),
+            target_kind=proxied_kind(frontmatter), fields=fields, dry_run=dry_run,
+        )
+    if owned_by(path, repo_root):
         return None
+    return _record_a_change_to_promoted_content(
+        kind=kind, repo=repo, registry=registry, verifier=verifier,
+        clear_repo_caches=clear_repo_caches, repo_root=repo_root, target_id=artifact_id,
+        fields=fields, dry_run=dry_run,
+    )
+
+
+def _record_a_change_to_promoted_content(
+    *,
+    kind: ArtifactKind,
+    repo: "ArtifactRepository | None",
+    registry: "ArtifactRegistry",
+    verifier: "ArtifactVerifier",
+    clear_repo_caches: Callable[[Path], None],
+    repo_root: Path,
+    target_id: str,
+    fields: Mapping[str, Any],
+    dry_run: bool,
+) -> WriteResult:
+    """A change against an enterprise artifact addressed by its own id — how a person reaches one.
+
+    The change has to name a *local* reference (`proposes-change-to`, E146), and the engagement holds
+    one only for what it promoted itself. So the reference is ensured rather than required: creating
+    it is what promotion does, the operation is idempotent, and it stays invisible like every other
+    reference. An edit that needs an anchor makes one.
+    """
+    if repo is None:
+        return _refusal(
+            None, target_id,
+            f"'{target_id}' is owned by the enterprise repository. The edit would be recorded as a "
+            "change awaiting review, and this caller supplied no repository to record it in.",
+        )
+    promoted = _promoted(repo, target_id)
+    reference_id = _reference_to(
+        repo=repo, repo_root=repo_root, verifier=verifier, clear_repo_caches=clear_repo_caches,
+        target_id=target_id, dry_run=dry_run,
+    )
+    if reference_id is None:
+        return _refusal(
+            None, target_id,
+            f"'{promoted.name}' is owned by the enterprise repository, and this repository could not "
+            "record a reference to it to hold the change against.",
+        )
     return _record_enterprise_change(
         kind=kind, repo=repo, registry=registry, verifier=verifier,
-        clear_repo_caches=clear_repo_caches, repo_root=repo_root, reference_id=artifact_id,
-        target_id=target, reference_frontmatter=frontmatter, fields=fields, dry_run=dry_run,
+        clear_repo_caches=clear_repo_caches, repo_root=repo_root, reference_id=reference_id,
+        target_id=target_id, target_name=promoted.name, target_kind=promoted.kind,
+        fields=fields, dry_run=dry_run,
     )
+
+
+@dataclass(frozen=True, slots=True)
+class _Promoted:
+    """What the repository already knows about an artifact this engagement does not own."""
+
+    kind: ArtifactKind | None
+    name: str
+    entity_type: str | None
+
+
+def _promoted(repo: "ArtifactRepository", artifact_id: str) -> _Promoted:
+    """Which kind it is, what it is called, and its own type — in the one lookup that answers all three.
+
+    Through `summarize_artifact`, which already carries `record_type`, `name` and `artifact_type`.
+    Asking `get_document` then `get_diagram` then `get_entity` was three lookups for the first
+    question and left the second answered wrongly: the name came from frontmatter, and a document's
+    frontmatter says `title`, so every promoted document was named by its id.
+
+    `None` for a connection, which has no reference to be proposed against, and for an id the
+    repository cannot see at all.
+    """
+    summary = repo.summarize_artifact(artifact_id)
+    if summary is None:
+        return _Promoted(kind=None, name=artifact_id, entity_type=None)
+    kind = summary.record_type if summary.record_type in PROPOSABLE else None
+    return _Promoted(
+        kind=kind,  # type: ignore[arg-type]  # narrowed by the PROPOSABLE membership above
+        name=summary.name or artifact_id,
+        entity_type=summary.artifact_type,
+    )
+
+
+def _reference_to(
+    *,
+    repo: "ArtifactRepository",
+    repo_root: Path,
+    verifier: "ArtifactVerifier",
+    clear_repo_caches: Callable[[Path], None],
+    target_id: str,
+    dry_run: bool,
+) -> str | None:
+    """The local reference standing for `target_id`, creating one where none stands yet."""
+    from src.infrastructure.write.artifact_write.global_artifact_reference import (  # noqa: PLC0415
+        ensure_global_artifact_reference,
+    )
+
+    promoted = _promoted(repo, target_id)
+    if promoted.kind is None:
+        return None
+    # `ensure` is the whole answer: it returns the reference that already stands for this artifact
+    # and creates one only where none does. Asking `find_existing_gar` first was this module
+    # re-deciding what that operation exists to decide.
+    written = ensure_global_artifact_reference(
+        engagement_repo=repo,
+        engagement_root=repo_root,
+        verifier=verifier,
+        clear_repo_caches=clear_repo_caches,
+        global_artifact_id=target_id,
+        global_artifact_name=promoted.name,
+        global_artifact_type=promoted.kind,
+        global_artifact_entity_type=promoted.entity_type,
+        dry_run=dry_run,
+    )
+    return written.artifact_id if written.artifact_id else None
 
 
 def changes_under_submission(repo: "ArtifactRepository") -> frozenset[str]:
@@ -107,14 +237,15 @@ def _record_enterprise_change(
     repo_root: Path,
     reference_id: str,
     target_id: str,
-    reference_frontmatter: Mapping[str, Any],
+    target_name: str,
+    target_kind: ArtifactKind | None,
     fields: Mapping[str, Any],
     dry_run: bool,
 ) -> WriteResult:
     """Record `fields` as a change against `target_id`, or say why it cannot be."""
     reference_path = registry.find_file_by_id(reference_id)
-    name = _display_name(reference_frontmatter, reference_id)
-    proxied = proxied_kind(reference_frontmatter)
+    name = target_name
+    proxied = target_kind
     if proxied is None:
         return _refusal(
             reference_path, reference_id,

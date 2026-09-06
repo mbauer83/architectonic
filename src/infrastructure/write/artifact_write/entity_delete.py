@@ -8,7 +8,7 @@ from pathlib import Path
 from src.application.verification.artifact_verifier import ArtifactRegistry
 from src.domain.artifact_id import stable_id
 
-from .boundary import assert_engagement_write_root
+from .boundary import assert_engagement_write_root, assert_owned_by
 from .types import WriteResult
 
 
@@ -129,10 +129,7 @@ def _delete_entity_core(
     resolved = registry.resolve_artifact(artifact_id)
     if resolved is not None:
         artifact_id = resolved.canonical_id
-    try:
-        entity_file.relative_to(repo_root)
-    except ValueError as exc:
-        raise ValueError(f"Entity '{artifact_id}' is not in writable repo '{repo_root}'") from exc
+    assert_owned_by(entity_file, repo_root, artifact_id=artifact_id)
 
     outgoing_path = _owned_outgoing_path(entity_file)
     owned_connection_ids = set(_owned_connection_ids(registry, artifact_id))

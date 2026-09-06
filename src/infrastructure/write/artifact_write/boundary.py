@@ -40,6 +40,35 @@ def assert_engagement_write_root(repo_root: Path) -> None:
         raise ValueError("Refusing to write to enterprise repository. Point repo_root at an engagement repository.")
 
 
+def owned_by(path: Path, repo_root: Path) -> bool:
+    """Whether `repo_root` is the repository this file belongs to, and so may write it.
+
+    **The question `assert_engagement_write_root` does not ask.** That one checks the *root* a write
+    was handed; this checks the *file* it is about to touch. The registry a write path is given spans
+    both tiers, so an artifact addressed by its enterprise id resolves to an enterprise file while
+    the root argument is still the engagement's — the guard passes and the write lands upstream.
+
+    Spelled twice before this existed, in the entity delete and the bulk delete preflight, and absent
+    from every edit. That absence is what let a PATCH to an enterprise artifact's own id modify the
+    enterprise repository from an engagement deployment.
+    """
+    # Compared as given, not resolved. Both come from the same configuration — the write root and
+    # the index's own paths — so they share a prefix form, and resolving one side through a symlink
+    # made a repository disown files it had just written. That was this extraction adding a change
+    # nobody asked for; the two callers it came from compared them exactly like this.
+    try:
+        path.relative_to(repo_root)
+    except ValueError:
+        return False
+    return True
+
+
+def assert_owned_by(path: Path, repo_root: Path, *, artifact_id: str) -> None:
+    """Refuse a write to a file the repository being written does not own."""
+    if not owned_by(path, repo_root):
+        raise ValueError(f"Entity '{artifact_id}' is not in writable repo '{repo_root}'")
+
+
 def assert_enterprise_write_root(repo_root: Path) -> None:
     """Accept only the enterprise repository root — for admin-mode GUI writes."""
     p = repo_root.resolve()

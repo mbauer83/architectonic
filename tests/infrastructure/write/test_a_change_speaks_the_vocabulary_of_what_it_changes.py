@@ -287,3 +287,67 @@ def test_an_unknown_base_reads_as_current_rather_than_stale(engagement_only) -> 
     standing = standing_reader(repo)(ENTITY)
     assert isinstance(standing, Proposed)
     assert standing.condition == "current"
+
+
+# ── the artifact addressed by its own id, which is the only way a person reaches it ──
+
+
+def test_editing_a_promoted_artifact_by_its_own_id_records_a_change(both_tiers) -> None:  # noqa: ANN001
+    """The path a person actually takes, and the one that used to write upstream.
+
+    References are excluded from every list and every search on purpose, so a reader finds the
+    promoted artifact itself and edits *that*. The interception recognised only a reference, and the
+    guard beside it checks the root a write was handed rather than the file it is about to touch — so
+    an engagement deployment editing an enterprise artifact by its own id passed the guard and
+    modified the enterprise repository, with no change recorded and `wrote: true`.
+    """
+    result = _edit_entity(both_tiers, ENTITY, summary="A proposed wording.")
+
+    assert result.wrote, result.verification or result.warnings
+    (change,) = _changes(both_tiers)[ENTITY]
+    assert change.edit.fields == {"summary": "A proposed wording."}
+
+
+def test_the_enterprise_file_is_left_exactly_as_it_was(both_tiers) -> None:  # noqa: ANN001
+    """The integrity claim, stated over the bytes."""
+    root, _repo = both_tiers
+    enterprise = root.parent.parent.parent / "enterprise-repository"
+    path = enterprise / "model" / "motivation" / "requirement" / f"{ENTITY}.md"
+    before = path.read_text(encoding="utf-8")
+
+    _edit_entity(both_tiers, ENTITY, summary="A proposed wording.")
+
+    assert path.read_text(encoding="utf-8") == before
+
+
+def test_the_change_is_held_against_the_reference_that_already_stood_for_it(both_tiers) -> None:  # noqa: ANN001
+    """One reference per promoted artifact: an edit by enterprise id uses the one that exists rather
+    than making a second."""
+    _edit_entity(both_tiers, ENTITY, summary="A proposed wording.")
+
+    (change,) = _changes(both_tiers)[ENTITY]
+    assert change.reference_id == ENTITY_REFERENCE
+
+
+def test_a_promoted_artifact_with_no_reference_gets_one(tmp_path: Path) -> None:
+    """A change names a *local* reference, and the engagement holds one only for what it promoted
+    itself. Ensuring it is what promotion does, the operation is idempotent, and it stays invisible
+    like every other reference — an edit that needs an anchor makes one."""
+    process_runtime_catalogs()
+    enterprise = tmp_path / "enterprise-repository"
+    (enterprise / "model" / "motivation" / "requirement").mkdir(parents=True)
+    (enterprise / "model" / "motivation" / "requirement" / f"{ENTITY}.md").write_text(
+        _entity_md(), encoding="utf-8"
+    )
+    root = tmp_path / "engagements" / "ENG-T" / "architecture-repository"
+    (root / "model" / "common" / "global-artifact-reference").mkdir(parents=True)
+    (root / "model" / "common" / "proposed-change").mkdir(parents=True)
+    index = combined_artifact_index(root, enterprise)
+    index.refresh()
+    workspace = (root, ArtifactRepository(index))
+
+    result = _edit_entity(workspace, ENTITY, summary="A proposed wording.")
+
+    assert result.wrote, result.verification or result.warnings
+    (change,) = _changes(workspace)[ENTITY]
+    assert change.reference_id.startswith("GAR@")
