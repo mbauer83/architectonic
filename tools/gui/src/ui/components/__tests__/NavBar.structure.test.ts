@@ -16,7 +16,7 @@ const template = source.slice(source.indexOf('<template>'), source.indexOf('</te
 describe('NavBar structure', () => {
   it('has one primary nav landmark with the five content entries', () => {
     expect(template).toContain('aria-label="Primary"')
-    for (const label of ['Browse', 'Documents', 'Diagrams', 'Changes', 'Viewpoints', 'Assurance']) {
+    for (const label of ['Browse', 'Documents', 'Diagrams', 'Proposed', 'Viewpoints', 'Assurance']) {
       expect(template).toContain(label)
     }
   })
@@ -33,6 +33,16 @@ describe('NavBar structure', () => {
     const workflow = template.slice(template.indexOf('aria-label="Workflow and status"'))
     expect(workflow).toContain('<SyncStatusCluster')
     expect(workflow).toContain('nav__search')
+  })
+
+  it('does not call two different things "Changes"', () => {
+    // The workflow cluster already has a "Changes" control: the git save flow, over uncommitted work
+    // in this repository. The `/changes` page is something else — edits to content this repository
+    // does not own — and one label for both makes them indistinguishable at the moment of clicking.
+    // Measured on the rendered header, which is where the collision was visible and nowhere else.
+    const nav = template.slice(template.indexOf('aria-label="Primary"'), template.indexOf('</nav>'))
+    expect(nav).not.toContain('>\n        Changes\n      <')
+    expect(nav).toContain('Proposed')
   })
 
   it('has no tier-first sections or /global links', () => {

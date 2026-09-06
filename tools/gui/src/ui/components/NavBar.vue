@@ -148,7 +148,7 @@ onMounted(async () => {
         to="/changes"
         title="Edits to artifacts this repository does not own, held until they are accepted upstream"
       >
-        Changes
+        Proposed
       </RouterLink>
       <RouterLink
         to="/viewpoints"

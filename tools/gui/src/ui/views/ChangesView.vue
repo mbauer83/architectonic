@@ -50,7 +50,7 @@ onMounted(load)
 <template>
   <section class="changes-page">
     <h1 class="changes-title">
-      Local changes
+      Proposed changes
     </h1>
     <p class="changes-intro">
       Edits to artifacts owned by the enterprise repository. They are held here until they are
