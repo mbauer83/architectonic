@@ -13,6 +13,14 @@ makes `proposes-change-to` resolvable at all.
 for that repository holding the old value, and the next read reports a change as still submitted after
 it was closed. `notify_paths_changed` is the one call that reaches every live index whose mounts
 overlap the path, which `tests/architecture/test_index_broadcast_policy.py` exists to enforce.
+
+**And the branch goes when the last change on it does.** A review branch exists to carry changes to a
+reviewer; once every change it carried has been integrated there is nothing left for it to be about,
+and leaving it published invites someone to review work that is already upstream. Four conditions
+have to hold together, because this is a destructive git action reached from a background sweep: the
+sweep closed something, *nothing* live remains anywhere, the branch is `pending` rather than
+`accumulating` — abandoning an accumulating branch would destroy work nobody has submitted — and the
+tree is clean. Any one of them failing leaves the branch alone, which is always the safe direction.
 """
 
 from __future__ import annotations
@@ -22,6 +30,7 @@ from pathlib import Path
 
 from src.application.artifacts.query import ArtifactRepository
 from src.application.modeling.integration_sweep import SweepReport, sweep_integrated_changes
+from src.application.modeling.proposal_standing import pending_proposals
 from src.application.modeling.proposed_change import PROPOSED_CHANGE_TYPE
 from src.domain.ontology_representation.artifact_types import DocumentRecord, EntityRecord
 from src.infrastructure.artifact_index import notify_paths_changed
@@ -64,4 +73,31 @@ def close_integrated_changes(repo: ArtifactRepository) -> SweepReport:
     if closed_paths:
         notify_paths_changed(closed_paths)
         logger.info("Integration sweep: %s", report.summary())
+        _retire_a_finished_review_branch(repo)
     return report
+
+
+def _retire_a_finished_review_branch(repo: ArtifactRepository) -> str | None:
+    """Take down the review branch once every change it carried has been integrated.
+
+    Returns the branch retired, or None — which is the answer whenever any of the four conditions in
+    the module docstring does not hold. Never raises into the sweep: a branch that could not be taken
+    down is tidying left undone, and failing here would leave the changes it just closed looking
+    unclosed to a caller reading an exception rather than the report.
+    """
+    from src.infrastructure.git import enterprise_branch_lifecycle, enterprise_sync_state  # noqa: PLC0415
+
+    enterprise = next((mount.root for mount in repo.repo_mounts if mount.scope == "enterprise"), None)
+    if enterprise is None:
+        return None
+    if any(pending_proposals(repo.list_entities(artifact_type=PROPOSED_CHANGE_TYPE)).values()):
+        return None
+    if not enterprise_sync_state.load(enterprise).is_pending():
+        return None
+    try:
+        retired = enterprise_branch_lifecycle.abandon_enterprise_branch(enterprise)
+    except (ValueError, RuntimeError, OSError):
+        logger.exception("Could not retire the review branch after its changes were integrated")
+        return None
+    logger.info("Review branch retired, every change it carried is upstream: %s", retired)
+    return retired

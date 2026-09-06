@@ -128,3 +128,92 @@ def test_a_second_pass_changes_nothing(repo_at) -> None:
 
     assert second.closed == ()
     assert proposal_path.read_bytes() == after_first
+
+
+# ── the branch goes when the last change on it does ──────────────────────────
+
+
+def _retire(repo, monkeypatch, *, pending: bool = True, mounts=None):  # noqa: ANN001, ANN202
+    """Run the retirement with the git side observed rather than performed.
+
+    The four conditions are the behaviour; whether `git push --delete` works is
+    `enterprise_branch_lifecycle`'s own test. Faking it here is what lets each condition be stated
+    on its own instead of behind a real remote.
+    """
+    from src.infrastructure.git import enterprise_branch_lifecycle, enterprise_sync_state
+    from src.infrastructure.write.artifact_write import integration_cleanup
+
+    abandoned: list[Path] = []
+    monkeypatch.setattr(
+        enterprise_branch_lifecycle, "abandon_enterprise_branch",
+        lambda root: (abandoned.append(root), "arch/work-1")[1],
+    )
+    monkeypatch.setattr(
+        enterprise_sync_state, "load",
+        lambda _root: type("S", (), {"is_pending": lambda self: pending})(),
+    )
+    return integration_cleanup._retire_a_finished_review_branch(repo), abandoned  # noqa: SLF001
+
+
+@pytest.fixture()
+def enterprise_mounted(tmp_path: Path, monkeypatch):  # noqa: ANN001, ANN201
+    """A repository whose mounts include an enterprise root, which is what the retirement needs."""
+    process_runtime_catalogs()
+    engagement = tmp_path / "engagements" / "ENG-T" / "architecture-repository"
+    (engagement / "model" / "common" / "proposed-change").mkdir(parents=True)
+    enterprise = tmp_path / "enterprise-repository"
+    (enterprise / "model").mkdir(parents=True)
+    from src.infrastructure.artifact_index import combined_artifact_index
+
+    index = combined_artifact_index(engagement, enterprise)
+    index.refresh()
+    return engagement, enterprise, ArtifactRepository(index)
+
+
+def test_the_branch_is_retired_once_nothing_live_remains(enterprise_mounted, monkeypatch) -> None:  # noqa: ANN001
+    _engagement, enterprise, repo = enterprise_mounted
+
+    retired, abandoned = _retire(repo, monkeypatch)
+
+    assert retired == "arch/work-1"
+    assert abandoned == [enterprise]
+
+
+def test_a_branch_still_carrying_a_live_change_is_left_alone(enterprise_mounted, monkeypatch) -> None:  # noqa: ANN001
+    """One integrated change does not empty a branch that is carrying another."""
+    engagement, _enterprise, repo = enterprise_mounted
+    (engagement / "model" / "common" / "proposed-change" / f"{PROPOSAL}.md").write_text(
+        _proposal_md("submitted", "Payments Platform"), encoding="utf-8"
+    )
+    repo.refresh()
+
+    retired, abandoned = _retire(repo, monkeypatch)
+
+    assert retired is None
+    assert abandoned == []
+
+
+def test_an_accumulating_branch_is_never_taken_down(enterprise_mounted, monkeypatch) -> None:  # noqa: ANN001
+    """The guard that matters most: an accumulating branch carries promoted work nobody has
+    submitted, and abandoning it would destroy it."""
+    _engagement, _enterprise, repo = enterprise_mounted
+
+    retired, abandoned = _retire(repo, monkeypatch, pending=False)
+
+    assert retired is None
+    assert abandoned == []
+
+
+def test_a_repository_with_no_enterprise_mount_has_no_branch_to_retire(tmp_path: Path, monkeypatch) -> None:  # noqa: ANN001
+    """The ordinary engagement deployment: there is no enterprise repository here, so there is
+    nothing of its lifecycle to reach."""
+    process_runtime_catalogs()
+    engagement = tmp_path / "engagements" / "ENG-T" / "architecture-repository"
+    (engagement / "model" / "common" / "proposed-change").mkdir(parents=True)
+    index = shared_artifact_index(engagement)
+    index.refresh()
+
+    retired, abandoned = _retire(ArtifactRepository(index), monkeypatch)
+
+    assert retired is None
+    assert abandoned == []
