@@ -49,6 +49,7 @@ import {
   fetchWithTimeout, patchJson, postJson, putJson,
 } from './httpTransport'
 import { encodeIdentitySegment } from '../../domain/identitySegments'
+import { bodyBelowARestatedTitle } from '../../domain/restatedTitle'
 import { parseMarkdown } from '../../application/MarkdownService'
 import { documentAndChangeMethods } from './HttpDocumentRepository'
 import { enterpriseAdminMethods } from './HttpEnterpriseAdminRepository'
@@ -105,7 +106,11 @@ export const makeHttpModelRepository = (): ModelRepository => ({
     fetchJsonNotFound(entityAddress(id), EntityDetailSchema, id).pipe(
       Effect.flatMap((entity) => {
         if (entity.content_text) {
-          return parseMarkdown(entity.content_text, 'model').pipe(
+          // Without this the name appears twice: the detail header states it, and the body's own
+          // first heading — which the writer emits so a file read on its own has one — states it
+          // again, larger.
+          const body = bodyBelowARestatedTitle(entity.content_text, entity.name)
+          return parseMarkdown(body, 'model').pipe(
             Effect.map((html) => ({ ...entity, content_html: html })),
           )
         }
@@ -119,7 +124,8 @@ export const makeHttpModelRepository = (): ModelRepository => ({
     ).pipe(
       Effect.flatMap((context) => {
         if (context.entity.content_text) {
-          return parseMarkdown(context.entity.content_text, 'model').pipe(
+          const body = bodyBelowARestatedTitle(context.entity.content_text, context.entity.name)
+          return parseMarkdown(body, 'model').pipe(
             Effect.map((html) => ({ ...context, entity: { ...context.entity, content_html: html } })),
           )
         }
