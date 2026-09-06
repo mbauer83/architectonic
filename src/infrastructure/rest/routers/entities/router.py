@@ -189,7 +189,10 @@ def read_entity(artifact_id: str) -> dict[str, Any]:
         # edit is written over work the author cannot see, and accepting both in order undoes the
         # first. Only the view composes; the recorded change keeps the revision it was written
         # against, which is what staleness is decided from.
-        result = composed_view(result, s.pending_change_reader()(subject))
+        # `kind="entity"`: this is the entity projection, and a reference proxying a promoted
+        # document is an entity here too — its change speaks `title`, which this payload has
+        # never heard of and its closed contract refuses.
+        result = composed_view(result, s.pending_change_reader()(subject), kind="entity")
     return result
 
 

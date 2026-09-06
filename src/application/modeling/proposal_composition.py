@@ -25,31 +25,53 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from typing import Any
 
+from src.application.modeling.edit_field_catalogue import ArtifactKind
 from src.application.modeling.proposal_standing import PendingProposal
 
 
-def composed_view(baseline: Mapping[str, Any], proposals: Sequence[PendingProposal]) -> dict[str, Any]:
-    """`baseline` with every live change's fields laid over it, later proposals winning.
+def composed_view(
+    baseline: Mapping[str, Any], proposals: Sequence[PendingProposal], *, kind: ArtifactKind
+) -> dict[str, Any]:
+    """`baseline` with every live change of `kind` laid over it, later proposals winning.
 
     Ordered by proposal id rather than by whatever order they were gathered in, so two reads of one
     repository agree. With one change per artifact — which is what the product now enforces — the
     order settles nothing; it is here because the stored shape still permits several, and a read that
     depended on gathering order would be wrong in a way nothing would report.
 
-    A field the change names but the baseline does not carry is still laid over: the baseline is the
-    read's own payload, and a payload that omits a field it has no value for is the ordinary case.
+    **`kind` is the read's own projection, and composing across projections is a category error.** A
+    reference proxying a promoted *document* is an entity in this repository, so the entity read
+    answers for it — and a document change names `title`, which an entity payload has never heard of.
+    Laying it over anyway is not a cosmetic mistake: the response contracts are closed, so the read
+    answered 500 with `extra_forbidden`. The author saw an error page instead of their own work.
+
+    A field this projection does not carry is left out for the same reason, stated as a guard rather
+    than relied on: the kind filter should make it unreachable, and a read that 500s is a worse
+    failure than a field that does not appear.
     """
     composed = dict(baseline)
     for proposal in sorted(proposals, key=lambda p: p.proposal_id):
-        composed.update(proposal.edit.fields)
+        if proposal.edit.kind != kind:
+            continue
+        composed.update({
+            name: value for name, value in proposal.edit.fields.items() if name in baseline
+        })
     return composed
 
 
-def composed_fields(proposals: Sequence[PendingProposal]) -> tuple[str, ...]:
+def composed_fields(proposals: Sequence[PendingProposal], *, kind: ArtifactKind) -> tuple[str, ...]:
     """Which of the read's fields carry the author's values rather than the baseline's.
+
+    Of `kind`, for the reason `composed_view` gives: a projection reports what it composed, and it
+    composes only changes spoken in its own vocabulary.
 
     The same set `BaselineStanding.changed_fields` reports, derived here from the same edits, so a
     surface can mark the composed fields without asking a second question and getting a second
     answer.
     """
-    return tuple(sorted({field for proposal in proposals for field in proposal.edit.fields}))
+    return tuple(sorted({
+        field
+        for proposal in proposals
+        if proposal.edit.kind == kind
+        for field in proposal.edit.fields
+    }))

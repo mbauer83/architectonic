@@ -195,7 +195,9 @@ def test_the_two_readers_agree_about_which_fields_are_the_authors(repo: _Repo) -
 
     standing = standing_reader(repo)(ENTERPRISE_ID)
     assert isinstance(standing, Proposed)
-    assert composed_fields(pending_reader(repo)(ENTERPRISE_ID)) == tuple(standing.changed_fields)
+    assert composed_fields(
+        pending_reader(repo)(ENTERPRISE_ID), kind="entity"
+    ) == tuple(standing.changed_fields)
 
 
 def test_a_read_of_the_subject_returns_the_authors_value(repo: _Repo) -> None:
@@ -203,7 +205,7 @@ def test_a_read_of_the_subject_returns_the_authors_value(repo: _Repo) -> None:
     from src.application.modeling.proposal_standing import pending_reader
 
     baseline = {"artifact_id": ENTERPRISE_ID, "name": "Payment Handling", "summary": "Unchanged."}
-    composed = composed_view(baseline, pending_reader(repo)(ENTERPRISE_ID))
+    composed = composed_view(baseline, pending_reader(repo)(ENTERPRISE_ID), kind="entity")
     assert composed["name"] == "Payments"
     assert composed["summary"] == "Unchanged."
 
