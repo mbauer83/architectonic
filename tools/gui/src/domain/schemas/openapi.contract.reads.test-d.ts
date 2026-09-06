@@ -14,6 +14,7 @@ import type {
   ChangeDiscardedSchema,
   ChangeListSchema,
   ChangeSummarySchema,
+  FieldDivergenceSchema,
 } from './changes'
 import type { DocumentDetailSchema, DocumentListSchema } from './documents'
 import type { DiagramListSchema, DiagramSummarySchema } from './diagram-types'
@@ -181,6 +182,9 @@ describe('the local changes this repository holds', () => {
     >()
     expectTypeOf<SchemaType<typeof ChangeDiscardedSchema>>().toEqualTypeOf<
       Immutable<components['schemas']['ChangeDiscardedResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof FieldDivergenceSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['FieldDivergence']>
     >()
   })
 })

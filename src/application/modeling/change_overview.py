@@ -8,15 +8,23 @@ that stands for it — and says what the change does to it in the vocabulary of 
 **The condition is computed, never stored.** Whether a change has gone stale is a fact about the
 enterprise artifact *now*, and `proposal_standing` owns deciding it. This module asks; it does not
 grow a second opinion, which is how one word comes to mean two things.
+
+**A stale change shows both values.** "Stale" on its own tells an author their work needs attention
+and nothing about what to do — they would have to open the enterprise artifact, if they can reach it
+at all, and compare by eye. So a stale row carries, per field, what the change asks for and what the
+artifact says now. Only for a stale one: on a current change the two agree by definition, and showing
+a value beside itself is noise.
 """
 
 from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from src.application.modeling.edit_field_catalogue import ArtifactKind
+from src.application.modeling.edit_field_values import comparable
+from src.application.modeling.integration_detection import current_values_of
 from src.application.modeling.proposal_standing import (
     PendingProposal,
     enterprise_revision,
@@ -29,6 +37,22 @@ from src.domain.baseline_standing import ChangeCondition, Proposed
 if TYPE_CHECKING:
     from src.application.artifacts.query import ArtifactRepository
     from src.domain.ontology_representation.artifact_types import EntityRecord
+
+
+@dataclass(frozen=True, slots=True)
+class FieldDivergence:
+    """One field of a stale change: what it asks for, and what the artifact says now.
+
+    Both rendered as text, because this is for reading rather than for replaying — the recorded value
+    is what a replay uses and it is already stored. `None` where the value has no single line to show
+    (a properties table, an attribute-type map): naming the field as diverging is still worth saying,
+    and inventing a rendering for a structured value here would be a second, worse spelling of what
+    the artifact view already draws properly.
+    """
+
+    field: str
+    proposed: str | None
+    current: str | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,6 +69,9 @@ class RecordedChange:
     changed_fields: tuple[str, ...]
     state: str
     condition: ChangeCondition
+    #: What the change asks for beside what the artifact says now, for a stale change. Empty
+    #: otherwise: on a current change the two agree, and a value shown beside itself is noise.
+    divergence: tuple[FieldDivergence, ...]
 
 
 def recorded_changes(repo: "ArtifactRepository | None") -> tuple[RecordedChange, ...]:
@@ -59,7 +86,12 @@ def recorded_changes(repo: "ArtifactRepository | None") -> tuple[RecordedChange,
     if not pending:
         return ()
     rows = [
-        _row(proposal, repo.get_entity(proposal.reference_id), _condition_of(repo, target, pending))
+        _row(
+            proposal,
+            repo.get_entity(proposal.reference_id),
+            _condition_of(repo, target, pending),
+            current_values_of(repo.get_entity(target) or repo.get_document(target)),
+        )
         for target, proposals in pending.items()
         for proposal in proposals
     ]
@@ -75,10 +107,38 @@ def _condition_of(
     return standing.condition if isinstance(standing, Proposed) else "current"
 
 
+def _divergence(
+    proposal: PendingProposal,
+    condition: ChangeCondition,
+    current: Mapping[str, Any] | None,
+) -> tuple[FieldDivergence, ...]:
+    """Which of the change's fields the artifact now disagrees with, and what each side says.
+
+    Compared through `comparable`, the same normalisation staleness and integration are decided by,
+    so "differs" means one thing across the whole lifecycle. A field the artifact has no reading for
+    is left out rather than shown as diverging from nothing.
+    """
+    if condition == "current" or current is None:
+        return ()
+    return tuple(
+        FieldDivergence(field=field, proposed=_as_text(proposed), current=_as_text(current[field]))
+        for field, proposed in sorted(proposal.edit.fields.items())
+        if field in current
+        and current[field] is not None
+        and comparable(current[field]) != comparable(proposed)
+    )
+
+
+def _as_text(value: Any) -> str | None:
+    """The value as one line of prose, or None where it has none to give."""
+    return value if isinstance(value, str) else None
+
+
 def _row(
     proposal: PendingProposal,
     reference: "EntityRecord | None",
     condition: ChangeCondition,
+    current: Mapping[str, Any] | None,
 ) -> RecordedChange:
     name = reference.name if reference is not None and reference.name else proposal.target_id
     return RecordedChange(
@@ -90,4 +150,5 @@ def _row(
         changed_fields=proposal.changed_fields,
         state=proposal.state,
         condition=condition,
+        divergence=_divergence(proposal, condition, current),
     )

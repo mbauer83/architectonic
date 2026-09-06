@@ -12,6 +12,19 @@ from typing import Literal
 from src.infrastructure.rest.contracts.wire_shape import Closed
 
 
+class FieldDivergence(Closed):
+    """One field of a stale change: what it asks for, and what the artifact says now.
+
+    Both null where the value has no single line to show — a properties table, an attribute-type
+    map. Naming the field as diverging is still worth saying; rendering a structured value here
+    would be a second, worse spelling of what the artifact view already draws.
+    """
+
+    field: str
+    proposed: str | None
+    current: str | None
+
+
 class ChangeSummary(Closed):
     """One local change: what it changes, what it says, and where it stands."""
 
@@ -29,6 +42,9 @@ class ChangeSummary(Closed):
     #: `stale` means the enterprise artifact has moved since this was written. Computed on read, so
     #: it is never a claim the file makes about the world.
     condition: Literal["current", "stale", "conflicting"]
+    #: What the change asks for beside what the artifact says now. Empty unless the change is
+    #: stale: on a current one the two agree, and a value shown beside itself is noise.
+    divergence: list[FieldDivergence]
 
 
 class ChangeListResponse(Closed):

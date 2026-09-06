@@ -5286,6 +5286,8 @@ export interface components {
              * @enum {string}
              */
             condition: "current" | "stale" | "conflicting";
+            /** Divergence */
+            divergence: components["schemas"]["FieldDivergence"][];
             /**
              * Kind
              * @enum {string}
@@ -8112,6 +8114,22 @@ export interface components {
             unanswered_cells: number;
             /** Worst Action Priority */
             worst_action_priority: string | null;
+        };
+        /**
+         * FieldDivergence
+         * @description One field of a stale change: what it asks for, and what the artifact says now.
+         *
+         *     Both null where the value has no single line to show — a properties table, an attribute-type
+         *     map. Naming the field as diverging is still worth saying; rendering a structured value here
+         *     would be a second, worse spelling of what the artifact view already draws.
+         */
+        FieldDivergence: {
+            /** Current */
+            current: string | null;
+            /** Field */
+            field: string;
+            /** Proposed */
+            proposed: string | null;
         };
         /**
          * FieldError

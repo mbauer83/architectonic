@@ -34,6 +34,10 @@ def _to_dict(change: RecordedChange) -> dict[str, Any]:
         "changed_fields": list(change.changed_fields),
         "state": change.state,
         "condition": change.condition,
+        "divergence": [
+            {"field": d.field, "proposed": d.proposed, "current": d.current}
+            for d in change.divergence
+        ],
     }
 
 

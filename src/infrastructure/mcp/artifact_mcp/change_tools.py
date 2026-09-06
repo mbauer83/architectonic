@@ -29,7 +29,8 @@ _LIST_DESCRIPTION = (
     "review. Each row names the artifact by name and by the local reference that stands for it — "
     "the enterprise id is what the change is against, not something this repository can open. "
     "\n\nstate: 'draft' has been put to nobody yet; 'submitted' is under review. "
-    "\n\ncondition: 'stale' means the enterprise artifact has moved since the change was written."
+    "\n\ncondition: 'stale' means the enterprise artifact has moved since the change was written; "
+    "divergence then carries, per field, what the change asks for and what the artifact says now."
 )
 
 _DISCARD_DESCRIPTION = (
@@ -60,6 +61,10 @@ def artifact_list_changes(*, repo_root: str | None = None) -> dict[str, Any]:
                 "changed_fields": list(change.changed_fields),
                 "state": change.state,
                 "condition": change.condition,
+                "divergence": [
+                    {"field": d.field, "proposed": d.proposed, "current": d.current}
+                    for d in change.divergence
+                ],
             }
             for change in recorded_changes(repo)
         ]

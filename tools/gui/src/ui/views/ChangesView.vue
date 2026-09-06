@@ -8,6 +8,10 @@
  *
  * Rows name the artifact, never the change file: an author did not author it and has no use for its
  * id. The link goes to the reference, because that is what this repository can open.
+ *
+ * A stale row shows both values, artifact first and the author's second. "Stale" alone says the work
+ * needs attention and nothing about what to do — an author would otherwise have to open the
+ * enterprise artifact, if they can reach it at all, and compare by eye.
  */
 import { inject, onMounted, ref } from 'vue'
 import { Effect } from 'effect'
@@ -17,6 +21,8 @@ import {
   changeSubjectRoute,
   changedFieldsLabel,
   conditionExplanation,
+  divergenceKey,
+  isLongValue,
   stateExplanation,
 } from './ChangesView.helpers'
 
@@ -26,6 +32,13 @@ const changes = ref<readonly ChangeSummary[]>([])
 const loading = ref(true)
 const error = ref<string | null>(null)
 const discarding = ref<string | null>(null)
+// Which long values the reader has asked to see whole, by change and field.
+const expanded = ref(new Set<string>())
+const toggle = (key: string) => {
+  const next = new Set(expanded.value)
+  if (!next.delete(key)) next.add(key)
+  expanded.value = next
+}
 
 const load = () => {
   loading.value = true
@@ -115,6 +128,42 @@ onMounted(load)
         >
           {{ conditionExplanation(change) }}
         </p>
+        <dl
+          v-if="change.divergence.length > 0"
+          class="changes-row__divergence"
+        >
+          <template
+            v-for="side in change.divergence"
+            :key="side.field"
+          >
+            <dt class="changes-row__field">
+              {{ side.field }}
+            </dt>
+            <dd class="changes-row__values">
+              <span
+                class="changes-row__value changes-row__value--theirs"
+                :class="{
+                  'changes-row__value--clamped':
+                    isLongValue(side.current)
+                    && !expanded.has(divergenceKey(change.artifact_id, side.field)),
+                }"
+              >{{ side.current ?? 'not shown here' }}</span>
+              <span class="changes-row__arrow">→</span>
+              <span class="changes-row__value changes-row__value--mine">
+                {{ side.proposed ?? 'not shown here' }}
+              </span>
+              <button
+                v-if="isLongValue(side.current)"
+                type="button"
+                class="changes-row__expand"
+                @click="toggle(divergenceKey(change.artifact_id, side.field))"
+              >
+                {{ expanded.has(divergenceKey(change.artifact_id, side.field))
+                  ? 'Show less' : 'Show the whole current value' }}
+              </button>
+            </dd>
+          </template>
+        </dl>
 
         <button
           type="button"
@@ -151,5 +200,43 @@ onMounted(load)
 }
 .changes-row__fields, .changes-row__state, .changes-row__condition { margin: 0; font-size: 0.9rem; }
 .changes-row__condition { color: var(--warning-fg, #8a5a00); }
-.changes-row__discard { justify-self: start; margin-top: 0.35rem; }
+.changes-row__divergence {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.15rem 0.75rem;
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+}
+.changes-row__field { font-weight: 600; color: var(--muted-fg, #555); }
+.changes-row__values { margin: 0; display: flex; gap: 0.5rem; align-items: baseline; flex-wrap: wrap; }
+.changes-row__value { flex: 1 1 18rem; min-width: 0; }
+.changes-row__value--theirs { color: var(--muted-fg, #666); text-decoration: line-through; }
+.changes-row__value--clamped {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.changes-row__expand {
+  background: none; border: 0; padding: 0;
+  color: var(--link-fg, #2563eb); cursor: pointer; font: inherit; text-decoration: underline;
+}
+.changes-row__value--mine { color: var(--fg, #111); }
+.changes-row__arrow { color: var(--muted-fg, #888); }
+/* The same treatment the entity delete panel's cancel gives a reversible-looking action: this
+   ends a change rather than deleting an artifact, so it is not the red one. */
+.changes-row__discard {
+  justify-self: start;
+  margin-top: 0.5rem;
+  padding: 7px 16px;
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.changes-row__discard:hover:not(:disabled) { background: #e5e7eb; }
+.changes-row__discard:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>

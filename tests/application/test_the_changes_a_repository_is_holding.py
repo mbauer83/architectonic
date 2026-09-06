@@ -162,3 +162,90 @@ def test_the_reverse_lookup_finds_every_reference_once(workspace) -> None:  # no
     found = references_by_target(repo.list_entities())
     assert {FIRST, SECOND} <= set(found)
     assert found[FIRST].artifact_id == FIRST_REF
+
+
+# ── what a stale change shows ────────────────────────────────────────────────
+
+
+def _move_the_enterprise_artifact(root: Path, wording: str) -> None:
+    enterprise = root.parent.parent.parent / "enterprise-repository"
+    path = enterprise / "model" / "motivation" / "requirement" / f"{FIRST}.md"
+    path.write_text(
+        path.read_text(encoding="utf-8").replace("The enterprise wording.", wording), encoding="utf-8"
+    )
+
+
+def test_a_current_change_shows_no_divergence(workspace) -> None:  # noqa: ANN001
+    """The two agree by definition, and a value shown beside itself is noise."""
+    _root, repo = workspace
+    _edit(workspace, FIRST_REF, summary="Mine.")
+
+    (row,) = recorded_changes(repo)
+    assert row.divergence == ()
+
+
+def test_a_stale_change_shows_what_it_asks_for_and_what_the_artifact_says(workspace) -> None:  # noqa: ANN001
+    """"Stale" alone tells an author their work needs attention and nothing about what to do."""
+    root, repo = workspace
+    _edit(workspace, FIRST_REF, summary="Mine.")
+    _move_the_enterprise_artifact(root, "Someone else's wording.")
+    repo.refresh()
+
+    (row,) = recorded_changes(repo)
+    assert row.condition == "stale"
+    assert [(d.field, d.proposed, d.current) for d in row.divergence] == [
+        ("summary", "Mine.", "Someone else's wording.")
+    ]
+
+
+def test_every_changed_field_is_shown_because_nothing_here_knows_which_one_moved(workspace) -> None:  # noqa: ANN001
+    """A stale change shows both values for *all* its fields, not only for the one that moved.
+
+    The recorded base is a content hash of the whole artifact, so nothing can say which field moved
+    under the change and which was always different — and a change's fields differ from the artifact
+    by definition, since that is what makes them a change. Showing all of them is the honest answer;
+    filtering to "the ones that moved" would need a per-field base nothing records.
+    """
+    root, repo = workspace
+    _edit(workspace, FIRST_REF, summary="Mine.", notes="Also mine.")
+    _move_the_enterprise_artifact(root, "Someone else's wording.")
+    repo.refresh()
+
+    (row,) = recorded_changes(repo)
+    assert [d.field for d in row.divergence] == ["notes", "summary"]
+
+
+def test_a_field_the_artifact_has_no_reading_for_is_left_out(workspace) -> None:
+    """Diverging from nothing is not a difference to show."""
+    from src.application.modeling.change_overview import FieldDivergence, _divergence
+    from src.application.modeling.proposal_edit import ProposalEdit
+    from src.application.modeling.proposal_standing import PendingProposal
+
+    proposal = PendingProposal(
+        proposal_id="PCH@1", target_id=FIRST, reference_id=FIRST_REF,
+        changed_fields=("summary",), base_revision="r", state="draft",
+        edit=ProposalEdit(kind="entity", artifact_id=FIRST, fields={"summary": "Mine."}),
+    )
+
+    assert _divergence(proposal, "stale", {"summary": None}) == ()
+    assert _divergence(proposal, "stale", {}) == ()
+    assert _divergence(proposal, "stale", {"summary": "Theirs."}) == (
+        FieldDivergence(field="summary", proposed="Mine.", current="Theirs."),
+    )
+
+
+def test_a_structured_value_names_the_field_without_inventing_a_rendering(workspace) -> None:
+    """A properties table has no single line to show, and making one up here would be a second,
+    worse spelling of what the artifact view already draws."""
+    from src.application.modeling.change_overview import _divergence
+    from src.application.modeling.proposal_edit import ProposalEdit
+    from src.application.modeling.proposal_standing import PendingProposal
+
+    proposal = PendingProposal(
+        proposal_id="PCH@1", target_id=FIRST, reference_id=FIRST_REF,
+        changed_fields=("properties",), base_revision="r", state="draft",
+        edit=ProposalEdit(kind="entity", artifact_id=FIRST, fields={"properties": {"a": "1"}}),
+    )
+
+    (shown,) = _divergence(proposal, "stale", {"properties": {"a": "2"}})
+    assert (shown.field, shown.proposed, shown.current) == ("properties", None, None)

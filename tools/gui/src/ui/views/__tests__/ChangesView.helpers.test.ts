@@ -4,6 +4,8 @@ import {
   changeSubjectRoute,
   changedFieldsLabel,
   conditionExplanation,
+  divergenceKey,
+  isLongValue,
   stateExplanation,
 } from '../ChangesView.helpers'
 
@@ -16,6 +18,7 @@ const change = (over: Partial<ChangeSummary> = {}): ChangeSummary => ({
   changed_fields: ['summary'],
   state: 'draft',
   condition: 'current',
+  divergence: [],
   ...over,
 })
 
@@ -56,5 +59,27 @@ describe('what the row says', () => {
 
   it('says a draft has been put to nobody', () => {
     expect(stateExplanation(change())).toMatch(/Not sent/)
+  })
+})
+
+describe('showing a value that would bury the row', () => {
+  it('treats a short value as showable whole', () => {
+    expect(isLongValue('A better title')).toBe(false)
+  })
+
+  it('treats a whole content section as needing to be clamped', () => {
+    // `summary` covers the artifact's entire content section, so "what it says now" can be several
+    // paragraphs — and a change replacing all of it with one line is what an author must see, at a
+    // size they can still scan.
+    expect(isLongValue('x'.repeat(241))).toBe(true)
+  })
+
+  it('has nothing to clamp when the value has no line to show', () => {
+    expect(isLongValue(null)).toBe(false)
+  })
+
+  it('identifies one field of one change, so two rows do not expand together', () => {
+    expect(divergenceKey('PCH@1', 'summary')).not.toBe(divergenceKey('PCH@2', 'summary'))
+    expect(divergenceKey('PCH@1', 'summary')).not.toBe(divergenceKey('PCH@1', 'notes'))
   })
 })

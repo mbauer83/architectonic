@@ -44,3 +44,16 @@ export const stateExplanation = (change: ChangeSummary): string =>
   change.state === 'draft'
     ? 'Not sent for review yet.'
     : 'Under review. Taking it back withdraws it from whoever is looking.'
+
+/**
+ * Whether a value is long enough that showing it whole would bury the row it belongs to.
+ *
+ * A field like `summary` covers the artifact's entire content section, so "what it says now" can be
+ * several paragraphs — and a change replacing all of it with one line is exactly what an author
+ * needs to see, at a size they can still scan. The threshold is a display decision, so it lives
+ * here with the rest of them rather than in the template.
+ */
+export const isLongValue = (value: string | null): boolean => (value?.length ?? 0) > 240
+
+/** The key that identifies one field of one change, for remembering which values are expanded. */
+export const divergenceKey = (changeId: string, field: string): string => `${changeId}:${field}`
