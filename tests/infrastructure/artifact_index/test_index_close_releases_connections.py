@@ -174,3 +174,41 @@ def test_the_teardown_step_is_silent_when_no_repository_was_installed() -> None:
 
     reset_state_for_test()
     _close_artifact_index()
+
+
+# ── a closed index leaves the cache it was handed out from ───────────────────
+
+
+def test_the_shared_cache_stops_handing_out_a_closed_index(tmp_path: Path) -> None:
+    """The defect this closes is a *hang*, not an error.
+
+    The caches are process-global and keyed by root: every caller for a root gets the same instance,
+    and nothing noticed when one holder closed it. The next read then waited on a drained connection
+    pool that would never be refilled — silently, forever, inside whichever caller asked next. In the
+    test suite that surfaced as a run stopping near the end with no failure and no output.
+    """
+    from src.infrastructure.artifact_index import shared_artifact_index
+
+    root = tmp_path / "engagement" / "architecture-repository"
+    (root / "model").mkdir(parents=True)
+
+    first = shared_artifact_index(root)
+    assert shared_artifact_index(root) is first, "the cache is meant to share one index per root"
+
+    first.close()
+
+    assert shared_artifact_index(root) is not first
+
+
+def test_the_index_the_cache_hands_out_after_a_close_actually_reads(tmp_path: Path) -> None:
+    """Evicting is only half the answer; the replacement has to work."""
+    from src.infrastructure.artifact_index import shared_artifact_index
+
+    root = tmp_path / "engagement" / "architecture-repository"
+    (root / "model").mkdir(parents=True)
+    shared_artifact_index(root).close()
+
+    replacement = shared_artifact_index(root)
+    replacement.refresh()
+
+    assert replacement.entity_ids() == set()

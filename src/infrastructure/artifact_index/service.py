@@ -99,7 +99,13 @@ class ArtifactIndex(_ReverseReferenceQueries, _ScratchpadNoteQueries):
         The delegation this class was missing: `_SqliteStore` owns the connections and callers hold an
         `ArtifactIndex`, so without a method here the only way to release them was to reach through to
         the private store — which is the workaround this codebase rejects on principle.
+
+        Also leaves the shared cache, or the next caller for this root is handed an index whose
+        connections are gone — and waits on them forever.
         """
+        from src.infrastructure.artifact_index.bootstrap import forget_shared_index  # noqa: PLC0415
+
+        forget_shared_index(self)
         self._db.close()
 
     def __enter__(self) -> ArtifactIndex:

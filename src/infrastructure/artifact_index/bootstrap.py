@@ -34,6 +34,31 @@ _combined_views: dict[str, CombinedArtifactView] = {}
 _combined_views_mu = threading.Lock()
 
 
+def forget_shared_index(index: object) -> None:
+    """Drop a closed index from the caches, so the next caller is given a live one.
+
+    **A cache that hands out a closed index is how a run hangs.** These maps are process-global and
+    keyed by root: every caller for a root gets the same instance, and nothing noticed when one
+    holder closed it. The next read then waited on a connection pool that had been drained and would
+    never be refilled — silently, forever, inside whichever test asked next.
+
+    Closing stays exactly what it says: release these connections now. What changes is that the
+    instance stops being handed out afterwards, which is the only reading under which both a
+    deterministic `close()` and a shared cache can be true at once.
+
+    By identity rather than by key, because the closer holds the instance and not the mounts it was
+    filed under, and a key recomputed here would be a second spelling of `service_key`.
+    """
+    with _services_mu:
+        for key, service in list(_services.items()):
+            if service is index:
+                del _services[key]
+    with _combined_views_mu:
+        for key, view in list(_combined_views.items()):
+            if view is index:
+                del _combined_views[key]
+
+
 def get_shared_index(factory: type["ArtifactIndex"], repo_root: Path | list[Path] | list[RepoMount]) -> "ArtifactIndex":
     mounts = normalize_mounts(repo_root)
     if len(mounts) != 1:

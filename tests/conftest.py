@@ -9,11 +9,61 @@ serializing everything.
 
 from __future__ import annotations
 
+import faulthandler
 import fcntl
 import os
+import pathlib
 import sys
+import tempfile
 
 import pytest
+
+#: How long a whole run may take before it is treated as stuck, in seconds.
+#:
+#: The suite is ~4:30 on twenty workers, so the controller's budget is a four-fold margin: a run past
+#: it is not slow, it is stopped. Absolute rather than idle-based because `faulthandler` offers no
+#: idle timer, and an absolute budget with that much headroom costs nothing on a healthy run.
+#:
+#: A worker dumps *earlier*, and without exiting, so its stack is in the log before the controller
+#: gives up. That asymmetry is the whole point: the controller's own stack says only that it is
+#: waiting for workers — which is true and useless — and the question is what the workers are doing.
+_STUCK_AFTER_SECONDS = 20 * 60
+_WORKER_DUMPS_AFTER_SECONDS = 8 * 60
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    """Turn a hung session into stack dumps and a failure, in every process it could hang in.
+
+    A run has stalled repeatedly with every worker idle and the controller waiting — no test
+    executing, so `faulthandler_timeout`, which is per-test, never fires. There is nothing to
+    interrupt and nothing to read: the run simply never ends, and once it did so *after* a real
+    failure, which it then never printed. A stall that hides a result is worse than a slow one.
+
+    Armed here rather than in a fixture because `pytest_configure` runs in the controller as well as
+    in each worker, and both halves of the wait have to be visible to say which one is stuck.
+    """
+    worker = getattr(config, "workerinput", {}).get("workerid") if hasattr(config, "workerinput") else None
+    if worker is None:
+        faulthandler.dump_traceback_later(_STUCK_AFTER_SECONDS, exit=True)
+        config.add_cleanup(faulthandler.cancel_dump_traceback_later)
+        return
+
+    # To a file, not to stderr. A worker's stderr is buffered by the controller and forwarded when
+    # the worker reports — which is exactly what a stalled worker never does, so a dump written
+    # there is a dump nobody ever sees. On disk it can be read *while* the run is stuck, which is
+    # the only moment the answer exists.
+    dump = pathlib.Path(tempfile.gettempdir()) / f"arch-pytest-stall-{worker}.stack"
+    handle = dump.open("w", encoding="utf-8")
+    faulthandler.dump_traceback_later(
+        _WORKER_DUMPS_AFTER_SECONDS, repeat=True, exit=False, file=handle
+    )
+
+    def _stand_down() -> None:
+        faulthandler.cancel_dump_traceback_later()
+        handle.close()
+        dump.unlink(missing_ok=True)
+
+    config.add_cleanup(_stand_down)
 
 # Test ids (substring match against nodeid) that must run after everything else. Currently:
 # TestRestartEquivalentRebootstrap calls importlib.reload(src.infrastructure.app_bootstrap),

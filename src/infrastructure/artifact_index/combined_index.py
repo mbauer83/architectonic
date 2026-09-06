@@ -34,6 +34,9 @@ class CombinedArtifactView(
 
     def close(self) -> None:
         """Close both sides. A caller holding the view cannot reach the halves to close them itself."""
+        from src.infrastructure.artifact_index.bootstrap import forget_shared_index  # noqa: PLC0415
+
+        forget_shared_index(self)
         self._engagement.close()
         self._enterprise.close()
 
