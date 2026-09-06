@@ -198,3 +198,36 @@ class TestInternalTypesExcluded:
         body = resp.json()
         listed = {e["name"] for e in body.get("entity_types", [])}
         assert "global-artifact-reference" not in listed
+
+
+# ── a type the ontology knows but never offers guidance for ──────────────────
+
+
+def test_an_internal_type_is_answered_with_nothing_rather_than_refused(client) -> None:  # noqa: ANN001
+    """Opening a global artifact reference asked three panels for guidance about it, and each got a
+    422 saying "provide known entity-type names" — about a name the ontology knows perfectly well.
+
+    Internal types are excluded from the guidance catalogue on purpose: they are produced by
+    promotion rather than authored, so there is nothing to offer. That is an answer, not a mistake by
+    the caller, and the difference is what this restores.
+    """
+    response = client.get("/api/authoring-guidance?entity_type=global-artifact-reference")
+
+    assert response.status_code == 200, response.text
+    assert response.json()["entity_types"] == []
+
+
+def test_a_name_the_ontology_has_never_heard_of_is_still_refused(client) -> None:  # noqa: ANN001
+    """The refusal has to keep working, or a caller's typo becomes an empty answer they believe."""
+    response = client.get("/api/authoring-guidance?entity_type=not-a-type-at-all")
+
+    assert response.status_code == 422
+    assert "not-a-type-at-all" in response.text
+
+
+def test_an_internal_type_beside_a_real_one_still_answers_for_the_real_one(client) -> None:  # noqa: ANN001
+    """A mixed filter is not an all-or-nothing question."""
+    response = client.get("/api/authoring-guidance?entity_type=requirement,global-artifact-reference")
+
+    assert response.status_code == 200, response.text
+    assert [entry["name"] for entry in response.json()["entity_types"]] == ["requirement"]

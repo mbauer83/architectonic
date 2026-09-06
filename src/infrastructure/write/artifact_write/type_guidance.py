@@ -97,6 +97,17 @@ def _classify_connections(source_type: str) -> dict[str, dict[str, list[str]]]:
     return {"outgoing": outgoing, "incoming": incoming, "symmetric": symmetric}
 
 
+def _is_internal_type(name: str) -> bool:
+    """Whether the ontology knows this type and produces it rather than offering it to an author.
+
+    The distinction an unknown name loses: a caller's typo is a mistake to report, and an internal
+    type is a question with an empty answer.
+    """
+    known = {str(type_name): info for type_name, info in _registry().all_entity_types().items()}
+    info = known.get(name)
+    return info is not None and info.internal
+
+
 def get_type_guidance(
     filter: list[str] | None = None,  # noqa: A002
     diagram_type: str | None = None,
@@ -283,28 +294,41 @@ def _entity_type_guidance(
         include_domain = True
         domain_context: list[str] | None = None
     else:
-        entity_type_hits = [n for n in filter if n in all_infos]
-        if len(entity_type_hits) == len(filter):
-            selected = [all_infos[EntityTypeName(n)] for n in filter]
+        # Internal types are dropped from the question rather than answered about. They are known to
+        # the ontology and deliberately absent from this catalogue — produced by promotion, never
+        # authored — so naming one is not a caller's mistake and has nothing to offer. Refused as
+        # unknown, they made every reader of such an artifact fire failing requests: opening a global
+        # artifact reference asked three panels for guidance and got three 422s, each saying
+        # "provide known entity-type names" about a name the ontology knows.
+        #
+        # Dropped rather than special-cased at the end, or a filter naming an internal type *beside*
+        # a real one would answer about neither.
+        effective = [name for name in filter if not _is_internal_type(name)]
+        if not effective:
+            selected = []
+            include_domain = False
+            domain_context = None
+        elif len([n for n in effective if n in all_infos]) == len(effective):
+            selected = [all_infos[EntityTypeName(n)] for n in effective]
             include_domain = True
             domain_context = None
         else:
-            unknown_types = [n for n in filter if n not in all_infos]
-            domain_set = {d.lower() for d in filter}
+            unmatched = [n for n in effective if n not in all_infos]
+            domain_set = {d.lower() for d in effective}
             selected = [
                 info for info in all_infos.values() if info.hierarchy and info.hierarchy[0].lower() in domain_set
             ]
             if not selected:
                 return {
                     "error": (
-                        f"No matches found for filter {filter!r}. "
+                        f"No matches found for filter {effective!r}. "
                         "Provide known entity-type names (e.g. 'requirement') "
                         "or domain names (e.g. 'motivation')."
                     ),
-                    "unknown": unknown_types,
+                    "unknown": unmatched,
                 }
             include_domain = False
-            domain_context = filter
+            domain_context = effective
 
     selected = sorted(
         selected,
