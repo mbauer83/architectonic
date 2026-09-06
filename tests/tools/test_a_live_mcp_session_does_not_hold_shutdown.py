@@ -66,7 +66,12 @@ def test_the_process_stops_inside_its_budget_with_a_session_open() -> None:
     with fixture_backend() as backend:
         anyio.run(_open_a_session, f"{backend.base_url}/mcp/read")
         started = time.monotonic()
-        stopped = backend_control.stop_backend(port=backend.port)
+        # In the *fixture's* own name. Asked in the repository's name, the stop resolves to
+        # whatever backend serves this workspace — the developer's, if one is running — and then
+        # measures stopping a process this test never started.
+        stopped = backend_control.stop_backend(
+            cwd=backend.workspace.root, port=backend.port
+        )
         took = time.monotonic() - started
 
     assert stopped, "the backend did not stop"

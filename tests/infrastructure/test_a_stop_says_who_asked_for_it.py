@@ -128,3 +128,64 @@ def test_every_stop_request_records_itself_before_it_signals(
     assert log.exists(), "a stop request that found nothing still has to say it was made"
     assert "STOP REQUESTED" in log.read_text(encoding="utf-8")
     assert "port=8099" in log.read_text(encoding="utf-8")
+
+
+# ── a named port is the one that gets stopped ────────────────────────────────
+
+
+def test_a_named_port_is_never_answered_with_a_backend_on_another_one(monkeypatch) -> None:  # noqa: ANN001
+    """A caller naming a port is asking about *that* port.
+
+    The workspace shortcut — "this is ours, on a port no record pointed at" — is right when nobody
+    named one, and wrong when somebody did: it stopped a backend the caller never asked about. The
+    suite's own shutdown test asked to stop its fixture backend by port and stopped the developer's
+    backend on 8000 instead, then waited on a process it had not started; a full run stalled at 99%
+    whenever one was running.
+    """
+    from src.infrastructure.backend import backend_control
+
+    stopped: list[int] = []
+    monkeypatch.setattr(backend_control, "read_backend_state", lambda cwd: None)
+    monkeypatch.setattr(
+        backend_control, "find_arch_backend_instances",
+        lambda: [{"pid": 4242, "ports": [8000], "declared_port": 8000, "served_roots": ["/repo"]}],
+    )
+    monkeypatch.setattr(
+        backend_control, "instances_serving_workspace", lambda instances, _claim: instances
+    )
+    monkeypatch.setattr(backend_control, "foreign_occupant", lambda _port, _claim: None)
+    monkeypatch.setattr(
+        backend_control, "_stop_pid",
+        lambda pid, **_kwargs: stopped.append(pid) or {"stopped": True},
+    )
+
+    backend_control.stop_backend(port=59999)
+
+    assert stopped != [4242], (
+        "a stop naming port 59999 stopped the backend on 8000; a caller who names a port is asking "
+        "about that port, and nothing else"
+    )
+
+
+def test_with_no_port_named_the_workspace_shortcut_still_answers(monkeypatch) -> None:  # noqa: ANN001
+    """The shortcut exists so `arch-backend --stop` finds this workspace's backend on whatever port
+    it ended up on. Naming a port is what turns it off, not this change."""
+    from src.infrastructure.backend import backend_control
+
+    stopped: list[int] = []
+    monkeypatch.setattr(backend_control, "read_backend_state", lambda cwd: None)
+    monkeypatch.setattr(
+        backend_control, "find_arch_backend_instances",
+        lambda: [{"pid": 4242, "ports": [8123], "declared_port": 8123, "served_roots": ["/repo"]}],
+    )
+    monkeypatch.setattr(
+        backend_control, "instances_serving_workspace", lambda instances, _claim: instances
+    )
+    monkeypatch.setattr(
+        backend_control, "_stop_pid",
+        lambda pid, **_kwargs: stopped.append(pid) or {"stopped": True},
+    )
+
+    backend_control.stop_backend()
+
+    assert stopped == [4242]

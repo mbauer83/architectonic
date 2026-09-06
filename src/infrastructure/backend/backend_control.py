@@ -156,6 +156,11 @@ def backend_status(*, cwd: Path | None = None, port: int | None = None) -> dict[
     }
 
 
+def _port_was_commanded(*, cwd: Path | None, explicit_port: int | None) -> bool:
+    """Whether this invocation named a port, as opposed to inheriting the workspace's preference."""
+    return backend_port_preference(start=cwd, explicit_port=explicit_port).authority == "command"
+
+
 def _commanded_elsewhere(recorded_port: int, *, cwd: Path | None, explicit_port: int | None) -> bool:
     """Whether this invocation asked about a port other than the one this workspace recorded."""
     preference = backend_port_preference(start=cwd, explicit_port=explicit_port)
@@ -255,10 +260,16 @@ def stop_backend(
 
     instances = find_arch_backend_instances()
     own = instances_serving_workspace(instances, claim)
-    if len(own) == 1:
+    if len(own) == 1 and not _port_was_commanded(cwd=cwd, explicit_port=port):
         # Ours, on a port no record pointed at. It needs no confirmation prompt: the backend said it
         # serves this workspace's repositories, which is the whole question a prompt would ask. This
         # precedes the foreign check, or a neighbour on the preferred port hides our own from a stop.
+        #
+        # **Only when no port was named.** A caller that names one is asking about *that* port, and
+        # answering with a backend on a different one stops something they did not ask about. That is
+        # not hypothetical: the suite's shutdown test asks to stop its own fixture backend by port,
+        # and this branch matched the developer's backend on 8000 instead — stopping it, then waiting
+        # on a process the test never started. A full run stalled at 99% whenever one was running.
         ours = own[0]
         own_port = ours["ports"][0]
         logger.info("Stopping this workspace's backend pid=%s on port %s", ours["pid"], own_port)
