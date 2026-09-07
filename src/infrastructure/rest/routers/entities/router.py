@@ -37,6 +37,7 @@ from src.infrastructure.rest.routers._openapi import (
     WRITE_RESPONSES,
     WriteResultResponse,
 )
+from src.infrastructure.rest.routers._read_subject import artifact_a_read_should_serve
 from src.infrastructure.rest.routers.entities.listing import (
     build_entity_list_rows,
     select_entity_population,
@@ -155,9 +156,12 @@ def _meta_ontology_types(meta_ontology: str | None, request: Request) -> frozens
     # document says so too.
     response_model=EntityDetailResponse, response_model_exclude_none=True,
     responses=READ_RESPONSES)
-def read_entity(artifact_id: str) -> dict[str, Any]:
+def read_entity(
+    artifact_id: str,
+    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
+) -> dict[str, Any]:
     repo = s.get_repo()
-    id = s.artifact_a_read_should_serve(artifact_id)
+    id = artifact_a_read_should_serve(artifact_id, catalogs)
     result = repo.read_artifact(id, mode="full")
     entity_rec = repo.get_entity(id)
     if result is None and "#" in id:

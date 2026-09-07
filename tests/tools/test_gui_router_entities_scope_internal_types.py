@@ -31,6 +31,8 @@ ENGAGEMENT_GAR_ID = "GAR@1000000103.VisGar.general-coding-guidelines"
 #: A reference standing for an *entity*, where the one above stands for a document. Both are
 #: hidden the same way; only this one can be served by the entity read.
 ENGAGEMENT_ENTITY_GAR_ID = "GAR@1000000502.EntGar.enterprise-guidelines-requirement"
+#: A recorded change — the other system-managed type, and the one a save answers with.
+CHANGE_ID = "PCH@1000000601.SysMan.change-to-the-guidelines"
 
 
 @pytest.fixture()
@@ -54,6 +56,19 @@ def client(tmp_path: Path):
             "Enterprise Guidelines Requirement",
             global_artifact_id=ENTERPRISE_REQ_ID,
         ),
+    )
+    write_file(
+        engagement / "model" / "common" / "proposed-change" / f"{CHANGE_ID}.md",
+        "---\n"
+        f"artifact-id: {CHANGE_ID}\n"
+        "artifact-type: proposed-change\n"
+        "name: Change to the guidelines\n"
+        "version: 0.1.0\nstatus: active\nlast-updated: '2026-01-01'\n"
+        f"proposes-change-to: {ENGAGEMENT_ENTITY_GAR_ID}\n"
+        "proposal-state: draft\nbase-revision: abc1234\n"
+        "recorded-edit:\n  kind: entity\n"
+        f"  artifact-id: {ENTERPRISE_REQ_ID}\n  fields:\n    name: Renamed\n"
+        "---\n\n<!-- §content -->\n\n## Change to the guidelines\n\nBecause.\n\n<!-- §display -->\n",
     )
     index = combined_artifact_index(engagement, enterprise)
     index.refresh()
@@ -154,3 +169,25 @@ class TestReadingOneByIdDoesNotShowAProxy:
 
         assert response.status_code == 200
         assert response.json()["artifact_id"] == REQ_ID
+
+
+class TestNoSystemManagedArtifactIsServedByTheDetailRead:
+    """References were not the only internal artifact reachable by URL.
+
+    Saving an edit to promoted content records a change and answers with the *change's* id, and the
+    detail view followed it — landing the reader inside a `proposed-change`, an artifact this
+    repository manages for itself. The rule is the same one the lists have always applied.
+    """
+
+    def test_a_recorded_change_is_not_served(self, client) -> None:  # noqa: ANN001
+        response = client.get(f"/api/entities/{CHANGE_ID}")
+
+        assert response.status_code == 404
+        assert "system-managed" in response.text.lower()
+
+    def test_it_is_not_listed_either(self, client) -> None:  # noqa: ANN001
+        assert CHANGE_ID not in _entity_ids(client.get("/api/entities").json())
+
+    def test_an_ordinary_entity_is_still_served(self, client) -> None:  # noqa: ANN001
+        """The rule names internal types, not everything the reader did not create."""
+        assert client.get(f"/api/entities/{REQ_ID}").status_code == 200

@@ -185,28 +185,6 @@ def resolve_gar(artifact_id: str) -> tuple[str, bool]:
     return artifact_id, False
 
 
-def artifact_a_read_should_serve(artifact_id: str) -> str:
-    """What to read when asked for this id: a reference serves what it stands for.
-
-    A reference is machinery — kept out of every list and every search — so a reader arrives at one
-    only by an old link, and serving it showed them a proxy entity with a description written for
-    nobody. Beside `resolve_gar` because that is the same question asked once; the caller adds only
-    what to do when the answer is not an entity.
-    """
-    from fastapi import HTTPException  # noqa: PLC0415
-
-    promoted, via_reference = resolve_gar(artifact_id)
-    if not via_reference:
-        return artifact_id
-    if get_repo().get_entity(promoted) is None:
-        raise HTTPException(
-            404,
-            f"'{artifact_id}' is an internal reference to '{promoted}'. Read that artifact "
-            "instead; references are not part of the model a reader works with.",
-        )
-    return promoted
-
-
 def connection_to_dict(c: ConnectionRecord) -> dict[str, Any]:
     with _state_lock:
         repo = _repo
