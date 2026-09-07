@@ -8,6 +8,8 @@ allowlist must exclude anything whose body depends on more than the model.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from src.infrastructure.backend.read_model_caching import _entity_tag, _is_cacheable
 
 
@@ -72,3 +74,49 @@ class TestTheValidator:
     def test_the_tag_is_marked_weak(self) -> None:
         """Byte-for-byte equality is not promised — only semantic equivalence."""
         assert _entity_tag("gen-7", _Request("/api/stats")).startswith('W/"')
+
+
+# ── the promise an ETag makes, across processes ──────────────────────────────
+
+
+def test_two_processes_never_agree_on_a_tag_for_the_same_generation() -> None:
+    """An ETag promises that the same tag means the same body, and the generation counter alone
+    cannot keep that promise: it starts again at zero in every process.
+
+    A client holding the tag for generation 7 from yesterday's process was told 304 by today's,
+    whose generation 7 describes different content — and a stale 304 is invisible. It cost a running
+    GUI its view of a recorded change: the artifact carried one and went on saying it did not, for as
+    long as the browser held the tag.
+    """
+    import subprocess
+    import sys
+
+    def tag_from_a_fresh_process() -> str:
+        return subprocess.run(  # noqa: S603
+            [sys.executable, "-c",
+             "from src.infrastructure.artifact_index.versioning import build_read_model_etag;"
+             "print(build_read_model_etag('scope', 7))"],
+            capture_output=True, text=True, check=True,
+            cwd=str(Path(__file__).resolve().parents[2]),
+        ).stdout.strip()
+
+    assert tag_from_a_fresh_process() != tag_from_a_fresh_process()
+
+
+def test_one_process_answers_the_same_tag_for_the_same_generation() -> None:
+    """The other half: within a process the tag is stable, or nothing would ever revalidate."""
+    from src.infrastructure.artifact_index.versioning import build_read_model_etag
+
+    assert build_read_model_etag("scope", 7) == build_read_model_etag("scope", 7)
+
+
+def test_a_later_generation_is_a_different_tag() -> None:
+    from src.infrastructure.artifact_index.versioning import build_read_model_etag
+
+    assert build_read_model_etag("scope", 7) != build_read_model_etag("scope", 8)
+
+
+def test_two_scopes_do_not_share_a_tag() -> None:
+    from src.infrastructure.artifact_index.versioning import build_read_model_etag
+
+    assert build_read_model_etag("one", 7) != build_read_model_etag("two", 7)
