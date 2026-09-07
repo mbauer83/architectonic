@@ -18,11 +18,13 @@ import { Effect } from 'effect'
 import { modelServiceKey } from '../keys'
 import type { ChangeSummary } from '../../domain/schemas/changes'
 import {
+  canBeRebased,
   changeSubjectRoute,
   changedFieldsLabel,
   conditionExplanation,
   divergenceKey,
   isLongValue,
+  rebaseOutcomeMessage,
   stateExplanation,
 } from './ChangesView.helpers'
 
@@ -32,6 +34,9 @@ const changes = ref<readonly ChangeSummary[]>([])
 const loading = ref(true)
 const error = ref<string | null>(null)
 const discarding = ref<string | null>(null)
+const rebasing = ref<string | null>(null)
+// What the last rebase concluded, by change, so a reader sees the answer beside the row.
+const rebased = ref<Record<string, string>>({})
 // Which long values the reader has asked to see whole, by change and field.
 const expanded = ref(new Set<string>())
 const toggle = (key: string) => {
@@ -55,6 +60,23 @@ const discard = (change: ChangeSummary) => {
     .then(() => { load() })
     .catch((event: unknown) => { error.value = String(event) })
     .finally(() => { discarding.value = null })
+}
+
+const rebase = (change: ChangeSummary) => {
+  rebasing.value = change.artifact_id
+  Effect.runPromise(svc.rebaseChange(change.artifact_id))
+    .then((report) => {
+      const first = report.changes[0]
+      rebased.value = {
+        ...rebased.value,
+        [change.artifact_id]: first
+          ? rebaseOutcomeMessage(first.outcome, first.reason)
+          : report.summary,
+      }
+      load()
+    })
+    .catch((event: unknown) => { error.value = String(event) })
+    .finally(() => { rebasing.value = null })
 }
 
 onMounted(load)
@@ -160,14 +182,32 @@ onMounted(load)
           </template>
         </dl>
 
-        <button
-          type="button"
-          class="changes-row__discard"
-          :disabled="discarding === change.artifact_id"
-          @click="discard(change)"
+        <p
+          v-if="rebased[change.artifact_id]"
+          class="changes-row__rebased"
         >
-          {{ discarding === change.artifact_id ? 'Discarding…' : 'Discard' }}
-        </button>
+          {{ rebased[change.artifact_id] }}
+        </p>
+
+        <div class="changes-row__actions">
+          <button
+            v-if="canBeRebased(change)"
+            type="button"
+            class="changes-row__discard"
+            :disabled="rebasing === change.artifact_id"
+            @click="rebase(change)"
+          >
+            {{ rebasing === change.artifact_id ? 'Rebasing…' : 'Bring onto the current version' }}
+          </button>
+          <button
+            type="button"
+            class="changes-row__discard"
+            :disabled="discarding === change.artifact_id"
+            @click="discard(change)"
+          >
+            {{ discarding === change.artifact_id ? 'Discarding…' : 'Discard' }}
+          </button>
+        </div>
       </li>
     </ul>
   </section>
@@ -220,6 +260,8 @@ onMounted(load)
 .changes-row__arrow { color: var(--muted-fg, #888); }
 /* The same treatment the entity delete panel's cancel gives a reversible-looking action: this
    ends a change rather than deleting an artifact, so it is not the red one. */
+.changes-row__actions { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+.changes-row__rebased { margin: 0.35rem 0 0; font-size: 0.85rem; color: var(--muted-fg, #555); }
 .changes-row__discard {
   justify-self: start;
   margin-top: 0.5rem;

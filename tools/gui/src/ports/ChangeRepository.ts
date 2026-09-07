@@ -1,5 +1,5 @@
 import type { Effect } from 'effect'
-import type { ChangeDiscarded, ChangeList } from '../domain/schemas/changes'
+import type { ChangeDiscarded, ChangeList, ChangeRebased } from '../domain/schemas/changes'
 import type { RepoError } from './repositoryErrors'
 
 /**
@@ -14,4 +14,6 @@ export interface ChangeRepository {
   readonly listChanges: () => Effect.Effect<ChangeList, RepoError>
   /** The record is kept in a terminal state, so this answers rather than returning nothing. */
   readonly discardChange: (id: string) => Effect.Effect<ChangeDiscarded, RepoError>
+  /** Bring the change onto the artifact as it stands, and say where it stood. */
+  readonly rebaseChange: (id: string) => Effect.Effect<ChangeRebased, RepoError>
 }

@@ -13,7 +13,11 @@ from typing import Any
 from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
 from src.application.modeling.change_overview import recorded_changes
-from src.application.modeling.proposed_change import PENDING_STATES, PROPOSAL_STATE
+from src.application.modeling.proposed_change import (
+    PENDING_STATES,
+    PROPOSAL_STATE,
+    PROPOSED_CHANGE_TYPE,
+)
 from src.infrastructure.mcp.artifact_mcp.context import (
     authoritative_callbacks_for,
     repo_cached,
@@ -21,7 +25,11 @@ from src.infrastructure.mcp.artifact_mcp.context import (
     roots_key,
 )
 from src.infrastructure.mcp.artifact_mcp.mutation_registration import register_mutation_tool
-from src.infrastructure.mcp.tool_annotations import DESTRUCTIVE_LOCAL_WRITE, READ_ONLY
+from src.infrastructure.mcp.tool_annotations import (
+    DESTRUCTIVE_LOCAL_WRITE,
+    LOCAL_WRITE,
+    READ_ONLY,
+)
 
 _LIST_DESCRIPTION = (
     "List the local changes this repository is holding: edits to artifacts promoted to the "
@@ -90,6 +98,62 @@ def artifact_discard_change(*, artifact_id: str, repo_root: str | None = None) -
     return {"artifact_id": artifact_id, "discarded": discarded, "state": "abandoned"}
 
 
+_REBASE_DESCRIPTION = (
+    "Bring a local change onto the enterprise artifact as it stands now, naming it by its own "
+    "artifact_id (from artifact_list_changes). The enterprise branch moves while changes wait, so a "
+    "stale change is the ordinary case rather than an error — this is the remedy for it. "
+    "\n\nThe change is re-applied in a throwaway worktree and judged by the real verifier, so "
+    "nothing is attempted where it can be seen. Three outcomes: 'clean' — it still applies, and the "
+    "change now records the revision it was proven against; 'superseded' — the artifact already says "
+    "what it asked, so discard it; 'conflicting' — the verifier's refusal, verbatim, and nothing was "
+    "written. Requires both repositories to be mounted; there is nothing to rebase onto otherwise."
+)
+
+
+def artifact_rebase_change(*, artifact_id: str, repo_root: str | None = None) -> dict[str, Any]:
+    from src.infrastructure.write.artifact_write.change_rebase_op import (  # noqa: PLC0415
+        RebaseUnavailable,
+        rebase_changes,
+    )
+
+    root, repo = _repo_for(repo_root)
+    proposal = _live_change(repo, artifact_id)
+    enterprise = next((mount.root for mount in repo.repo_mounts if mount.scope == "enterprise"), None)
+    mutation_context, clear_repo_caches = authoritative_callbacks_for(root)
+    try:
+        report = rebase_changes((proposal,), enterprise_root=enterprise, repo=repo)
+    except RebaseUnavailable as refused:
+        raise ValueError(str(refused)) from refused
+    if report.restamped:
+        restamped = repo.get_entity(artifact_id)
+        clear_repo_caches(restamped.path if restamped is not None else root)
+        mutation_context.finalize()
+    return {
+        "changes": [
+            {
+                "artifact_id": classified.proposal_id,
+                "target_id": classified.target_id,
+                "outcome": classified.outcome,
+                "reason": classified.reason,
+                "restamped": classified.proposal_id in report.restamped,
+            }
+            for classified in report.rehearsed.changes
+        ],
+        "summary": report.summary(),
+    }
+
+
+def _live_change(repo: Any, artifact_id: str):  # noqa: ANN202 — the proposal type is the caller's concern
+    """The change this operation is about, through the one decoder of a change record."""
+    from src.application.modeling.proposal_standing import pending_proposals  # noqa: PLC0415
+
+    for proposals in pending_proposals(repo.list_entities(artifact_type=PROPOSED_CHANGE_TYPE)).values():
+        for proposal in proposals:
+            if proposal.proposal_id == artifact_id:
+                return proposal
+    raise ValueError(f"There is no live change '{artifact_id}' in this repository.")
+
+
 def register_change_read_tools(mcp: MCPServer) -> None:
     mcp.tool(
         name="artifact_list_changes",
@@ -108,4 +172,12 @@ def register_change_write_tools(mcp: MCPServer) -> None:
         title="Artifact: Discard a Local Change",
         description=_DISCARD_DESCRIPTION,
         annotations=DESTRUCTIVE_LOCAL_WRITE,
+    )
+    register_mutation_tool(
+        mcp,
+        artifact_rebase_change,
+        name="artifact_rebase_change",
+        title="Artifact: Rebase a Local Change",
+        description=_REBASE_DESCRIPTION,
+        annotations=LOCAL_WRITE,
     )

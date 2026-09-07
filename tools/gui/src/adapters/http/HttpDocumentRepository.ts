@@ -2,6 +2,7 @@ import { Effect } from 'effect'
 import {
   ChangeDiscardedSchema,
   ChangeListSchema,
+  ChangeRebasedSchema,
   DocumentDetailSchema,
   DocumentListSchema,
   DocumentTypesSchema,
@@ -60,4 +61,7 @@ export const documentAndChangeMethods = (): DocumentRepository & ChangeRepositor
   // says what happened to it instead of implying it is gone.
   discardChange: (id) =>
     deleteReq(buildUrl(`/changes/${encodeIdentitySegment(id)}`, {}), ChangeDiscardedSchema),
+
+  rebaseChange: (id) =>
+    postJson(buildUrl(`/changes/${encodeIdentitySegment(id)}/rebase`, {}), {}, ChangeRebasedSchema),
 })

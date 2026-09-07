@@ -1292,6 +1292,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/changes/{artifact_id}/rebase": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Bring a local change onto the enterprise artifact as it stands
+         * @description Re-apply the change where nobody can see it, and record what it was proven against.
+         */
+        post: operations["changes_rebase_change"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/connections": {
         parameters: {
             query?: never;
@@ -5271,6 +5291,16 @@ export interface components {
             changes: components["schemas"]["ChangeSummary"][];
             /** Total */
             total: number;
+        };
+        /**
+         * ChangeRebasedResponse
+         * @description What the rehearsal concluded. Nothing is written for a superseded or conflicting change.
+         */
+        ChangeRebasedResponse: {
+            /** Changes */
+            changes: components["schemas"]["RebasedChange"][];
+            /** Summary */
+            summary: string;
         };
         /**
          * ChangeSummary
@@ -10419,6 +10449,29 @@ export interface components {
             minimum?: number;
             /** Value */
             value: string;
+        };
+        /**
+         * RebasedChange
+         * @description Where one change stood when the rebase rehearsed it, and what was done about it.
+         *
+         *     `outcome` is `change_rebase`'s own vocabulary, and `reason` is what an author reads — for a
+         *     conflict it is the verifier's refusal verbatim, because a second wording of a refusal is a
+         *     second vocabulary for the same thing.
+         */
+        RebasedChange: {
+            /** Artifact Id */
+            artifact_id: string;
+            /**
+             * Outcome
+             * @enum {string}
+             */
+            outcome: "clean" | "superseded" | "conflicting";
+            /** Reason */
+            reason: string;
+            /** Restamped */
+            restamped: boolean;
+            /** Target Id */
+            target_id: string;
         };
         /**
          * RecordGsnPublicationBody
@@ -15875,6 +15928,82 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ChangeDiscardedResponse"];
+                };
+            };
+            /** @description Validation error (bad or ambiguous write) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write forbidden (e.g. admin mode not enabled, or mutation denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write temporarily rejected by the workspace gate (retryable) */
+            423: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    changes_rebase_change: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChangeRebasedResponse"];
                 };
             };
             /** @description Validation error (bad or ambiguous write) */

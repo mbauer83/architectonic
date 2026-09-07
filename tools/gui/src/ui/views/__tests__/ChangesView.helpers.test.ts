@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import type { ChangeSummary } from '../../../domain/schemas/changes'
 import {
+  canBeRebased,
   changeSubjectRoute,
   changedFieldsLabel,
   conditionExplanation,
   divergenceKey,
   isLongValue,
+  rebaseOutcomeMessage,
   stateExplanation,
 } from '../ChangesView.helpers'
 
@@ -90,5 +92,36 @@ describe('showing a value that would bury the row', () => {
   it('identifies one field of one change, so two rows do not expand together', () => {
     expect(divergenceKey('PCH@1', 'summary')).not.toBe(divergenceKey('PCH@2', 'summary'))
     expect(divergenceKey('PCH@1', 'summary')).not.toBe(divergenceKey('PCH@1', 'notes'))
+  })
+})
+
+describe('when a rebase is worth offering', () => {
+  it('is not offered on a change that already sits on the current version', () => {
+    // Offering it would invite a reader to fix what is not broken.
+    expect(canBeRebased(change({ condition: 'current' }))).toBe(false)
+  })
+
+  it('is offered on a stale change, which is what it is for', () => {
+    expect(canBeRebased(change({ condition: 'stale' }))).toBe(true)
+  })
+
+  it('is offered on a conflicting one, because rehearsing is how you find out why', () => {
+    expect(canBeRebased(change({ condition: 'conflicting' }))).toBe(true)
+  })
+})
+
+describe('what a rebase concluded', () => {
+  it('says it landed, for a clean outcome', () => {
+    expect(rebaseOutcomeMessage('clean', 'replays onto X')).toMatch(/Brought onto/)
+  })
+
+  it('points at the discard for a superseded one, rather than calling it a conflict', () => {
+    expect(rebaseOutcomeMessage('superseded', 'X already says it')).toMatch(/discard/)
+  })
+
+  it("carries the verifier's own words for a conflict, and says nothing was written", () => {
+    const message = rebaseOutcomeMessage('conflicting', 'E031: the display section is missing')
+    expect(message).toContain('E031: the display section is missing')
+    expect(message).toMatch(/nothing was written/)
   })
 })

@@ -82,6 +82,7 @@ looking entirely normal. See
 | Guidance & ops | `artifact_help` | Read-only | Return the full catalog of artifact types, entity types (by domain), connection types (by language), and diagram types (with accepted domains). |
 | Guidance & ops | `artifact_get_operation` | Read-only | Return the latest recorded status, phase, timestamps, error, and final result for a prior bulk operation by operation_id. |
 | Guidance & ops | `artifact_admin_reindex` | Destructive | Rebuild the artifact index from disk. |
+| Other | `artifact_rebase_change` | Write | Bring a local change onto the enterprise artifact as it stands now, naming it by its own artifact_id (from artifact_list_changes). |
 | Other | `artifact_viewpoint` | Destructive | Create/edit/delete a ViewpointDefinition in the engagement repo's own catalog — the same validate/persist path a GUI builder's save flow uses. |
 | Other | `scratchpad_edit` | Destructive | Change a scratchpad by saying what changed, instead of sending the whole document back. |
 | Other | `scratchpad_lift` | Write | Lift a selection of notes — and the links among them — into ordinary model content, through the same verified write path as any other authoring. |

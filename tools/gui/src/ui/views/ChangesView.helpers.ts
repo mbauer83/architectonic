@@ -67,3 +67,24 @@ export const isLongValue = (value: string | null): boolean => (value?.length ?? 
 
 /** The key that identifies one field of one change, for remembering which values are expanded. */
 export const divergenceKey = (changeId: string, field: string): string => `${changeId}:${field}`
+
+/**
+ * Whether this change has a rebase worth offering.
+ *
+ * Only a stale one: a current change already sits on the artifact as it stands, so rebasing it would
+ * do nothing and offering it would invite a reader to fix what is not broken. `conflicting` is
+ * offered too — rehearsing is how a reader finds out *why*, and it writes nothing when it refuses.
+ */
+export const canBeRebased = (change: ChangeSummary): boolean => change.condition !== 'current'
+
+/** What a rebase concluded, in the words a reader acts on. */
+export const rebaseOutcomeMessage = (outcome: string, reason: string): string => {
+  switch (outcome) {
+    case 'clean':
+      return 'Brought onto the artifact as it stands.'
+    case 'superseded':
+      return `Already upstream — you can discard it. ${reason}`
+    default:
+      return `Still conflicting, and nothing was written. ${reason}`
+  }
+}

@@ -418,6 +418,13 @@ STEPS: tuple[Step, ...] = (
         captures="change",
     ),
     Step(
+        # Before the discard, because a discarded change is not there to rebase. Reports `clean`
+        # here: nothing has moved upstream since the edit, which is the honest answer and still
+        # exercises the worktree, the replay and the verifier.
+        "changes_rebase_change", "POST", lambda c: f"/api/changes/{c.created['change']}/rebase",
+        must_have_written=False,
+    ),
+    Step(
         "changes_discard_change", "DELETE", lambda c: f"/api/changes/{c.created['change']}",
         must_have_written=False,
     ),

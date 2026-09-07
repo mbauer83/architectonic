@@ -63,3 +63,27 @@ class ChangeDiscardedResponse(Closed):
     artifact_id: str
     discarded: bool
     state: Literal["abandoned"]
+
+
+class RebasedChange(Closed):
+    """Where one change stood when the rebase rehearsed it, and what was done about it.
+
+    `outcome` is `change_rebase`'s own vocabulary, and `reason` is what an author reads — for a
+    conflict it is the verifier's refusal verbatim, because a second wording of a refusal is a
+    second vocabulary for the same thing.
+    """
+
+    artifact_id: str
+    target_id: str
+    outcome: Literal["clean", "superseded", "conflicting"]
+    reason: str
+    #: Whether the change now records the revision it was just proven against. True only for a clean
+    #: outcome, and only where the artifact's current revision could be read.
+    restamped: bool
+
+
+class ChangeRebasedResponse(Closed):
+    """What the rehearsal concluded. Nothing is written for a superseded or conflicting change."""
+
+    changes: list[RebasedChange]
+    summary: str

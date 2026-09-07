@@ -34,6 +34,7 @@ ASSURANCE_ROUTE_PREFIX = "/api/assurance"
 
 _ENGAGEMENT_OPERATIONS: tuple[str, ...] = (
     "changes_discard_change",
+    "changes_rebase_change",
     "connections_cleanup_broken_references",
     "connections_create_connection",
     "connections_delete_connection",

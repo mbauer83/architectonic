@@ -47,3 +47,24 @@ export const ChangeDiscardedSchema = Schema.Struct({
   state: Schema.Literal('abandoned'),
 })
 export type ChangeDiscarded = typeof ChangeDiscardedSchema.Type
+
+/**
+ * Where one change stood when a rebase rehearsed it, and what was done about it.
+ *
+ * `reason` is what a reader acts on — for a conflict it is the verifier's own refusal, because a
+ * second wording of a refusal is a second vocabulary for the same thing.
+ */
+export const RebasedChangeSchema = Schema.Struct({
+  artifact_id: Schema.String,
+  target_id: Schema.String,
+  outcome: Schema.Literal('clean', 'superseded', 'conflicting'),
+  reason: Schema.String,
+  restamped: Schema.Boolean,
+})
+export type RebasedChange = typeof RebasedChangeSchema.Type
+
+export const ChangeRebasedSchema = Schema.Struct({
+  changes: Schema.Array(RebasedChangeSchema),
+  summary: Schema.String,
+})
+export type ChangeRebased = typeof ChangeRebasedSchema.Type

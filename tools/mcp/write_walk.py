@@ -409,6 +409,14 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
         captures=(Capture("change", _artifact_id),),
     ),
     WriteCall(
+        # Before the discard: a discarded change is not there to rebase. Reports `clean` — nothing
+        # has moved upstream since the edit — which still drives the worktree, the replay and the
+        # verifier over the transport.
+        "artifact_rebase_change",
+        lambda c: {"artifact_id": c.created["change"]},
+        mutates=False,
+    ),
+    WriteCall(
         "artifact_discard_change",
         lambda c: {"artifact_id": c.created["change"]},
     ),

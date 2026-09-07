@@ -27,23 +27,32 @@ class ProposalTransitionRefused(ValueError):
 
 
 def mark_proposal_state(path: Path, *, artifact_id: str, state: ProposalState) -> bool:
-    """Record `state` on the proposal at `path`. Returns whether the file changed.
-
-    Idempotent: a proposal already in the target state is left byte-identical rather than rewritten,
-    so a sweep that runs on every startup does not touch a file per boot — and does not make the
-    enterprise repository look dirty to the next status read.
-    """
+    """Record `state` on the proposal at `path`. Returns whether the file changed."""
     if state not in STATES:
         raise ProposalTransitionRefused(f"{state!r} is not a proposal state; expected one of {', '.join(STATES)}")
+    return record_proposal_field(path, artifact_id=artifact_id, field=PROPOSAL_STATE, value=state)
 
+
+def record_proposal_field(path: Path, *, artifact_id: str, field: str, value: str) -> bool:
+    """Record one frontmatter field on the proposal at `path`. Returns whether the file changed.
+
+    Idempotent: a proposal already carrying the value is left byte-identical rather than rewritten,
+    so a sweep that runs on every startup does not touch a file per boot — and does not make the
+    enterprise repository look dirty to the next status read.
+
+    Two fields move this way and only these two: the lifecycle state, and the base revision a rebase
+    has just proven the change against. Both are facts recorded *about* a change rather than part of
+    the edit it carries, which is why neither is in the editable vocabulary and why an author cannot
+    set either by hand. The mechanism was written twice before it was named once.
+    """
     source = path.read_text(encoding="utf-8")
     frontmatter = parse_frontmatter(source)
     if not frontmatter:
-        raise ProposalTransitionRefused(f"{artifact_id} has no frontmatter to record a state in")
-    if frontmatter.get(PROPOSAL_STATE) == state:
+        raise ProposalTransitionRefused(f"{artifact_id} has no frontmatter to record {field!r} in")
+    if frontmatter.get(field) == value:
         return False
 
-    dumped = yaml.safe_dump({**frontmatter, PROPOSAL_STATE: state}, sort_keys=False)
+    dumped = yaml.safe_dump({**frontmatter, field: value}, sort_keys=False)
     if not isinstance(dumped, str):
         raise TypeError("yaml.safe_dump returned non-string output")
     path.write_text(replace_frontmatter_text(source, dumped.strip()), encoding="utf-8")

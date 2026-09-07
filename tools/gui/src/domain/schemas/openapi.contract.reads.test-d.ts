@@ -13,8 +13,10 @@ import type {
 import type {
   ChangeDiscardedSchema,
   ChangeListSchema,
+  ChangeRebasedSchema,
   ChangeSummarySchema,
   FieldDivergenceSchema,
+  RebasedChangeSchema,
 } from './changes'
 import type { DocumentDetailSchema, DocumentListSchema } from './documents'
 import type { DiagramListSchema, DiagramSummarySchema } from './diagram-types'
@@ -185,6 +187,12 @@ describe('the local changes this repository holds', () => {
     >()
     expectTypeOf<SchemaType<typeof FieldDivergenceSchema>>().toEqualTypeOf<
       Immutable<components['schemas']['FieldDivergence']>
+    >()
+    expectTypeOf<SchemaType<typeof ChangeRebasedSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['ChangeRebasedResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof RebasedChangeSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['RebasedChange']>
     >()
   })
 })

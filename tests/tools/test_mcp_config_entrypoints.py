@@ -204,6 +204,10 @@ def test_architecture_write_mount_annotations_match_expected_intent() -> None:
         # Destructive but recoverable in the sense that matters: the record is kept in a
         # terminal state, so what is destroyed is the change's effect, not the evidence.
         "artifact_discard_change": (False, True, False, False),
+        # Not destructive: a rebase records what a change was proven against and writes nothing at
+        # all when it refuses. The replay that could destroy something happens in a worktree that
+        # goes with the block.
+        "artifact_rebase_change": (False, False, False, False),
         "artifact_add_connection": (False, False, False, False),
         "artifact_edit_connection": (False, True, False, False),
         "artifact_edit_connection_associations": (False, True, False, False),
