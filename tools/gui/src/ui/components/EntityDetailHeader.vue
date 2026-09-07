@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { entityGraphRoute } from '../router/artifactRoutes'
+
 import ProposedBadge from './ProposedBadge.vue'
 /**
  * Entity detail's top bar (back link, tier badge, graph/promote links, edit/delete/
@@ -14,9 +16,9 @@ import type { RouteLocationRaw } from 'vue-router'
 import type { EntityDetail } from '../../domain'
 import { entityEditFormKey } from '../composables/useEntityEditForm'
 import ArchimateTypeGlyph from './ArchimateTypeGlyph.vue'
-import { editBlockedReason } from '../lib/entityEditBlocking'
+import { editBlockedReason, editOutcome, editOutcomeTitle } from '../lib/entityEditBlocking'
 
-defineProps<{
+const props = defineProps<{
   detail: EntityDetail
   entityId: string
   backTo: RouteLocationRaw
@@ -25,6 +27,8 @@ defineProps<{
 }>()
 const emit = defineEmits<{ delete: [] }>()
 const edit = inject(entityEditFormKey)!
+// What pressing Edit will do here — the same question the form card answers in words.
+const outcome = computed(() => editOutcome(props.isGlobalEntity, props.adminMode))
 </script>
 
 <template>
@@ -58,13 +62,13 @@ const edit = inject(entityEditFormKey)!
           ↑ Promote to Enterprise
         </RouterLink>
         <button
-          v-if="!edit.editing && (!isGlobalEntity || adminMode)"
+          v-if="!edit.editing"
           class="edit-btn"
-          :class="{ 'edit-btn--admin': isGlobalEntity && adminMode }"
-          :title="isGlobalEntity && adminMode ? 'Edit global entity (admin mode)' : undefined"
+          :class="{ 'edit-btn--admin': outcome === 'writes-upstream' }"
+          :title="editOutcomeTitle(outcome)"
           @click="edit.startEdit()"
         >
-          Edit{{ isGlobalEntity && adminMode ? ' ⚠' : '' }}
+          Edit{{ outcome === 'writes-upstream' ? ' ⚠' : '' }}
         </button>
         <button
           v-if="!edit.editing && (!isGlobalEntity || adminMode)"

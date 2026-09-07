@@ -6,19 +6,34 @@
  * both act on one transaction). Injected, not a prop — its fields are v-model-bound here,
  * and a prop can't legitimately be mutated (`vue/no-mutating-props`).
  */
-import { inject } from 'vue'
+import { computed, inject } from 'vue'
 import { specializationOptionLabel } from '../lib/specializationOptions'
 import { entityEditFormKey } from '../composables/useEntityEditForm'
 import TypedPropertyInput from './TypedPropertyInput.vue'
 import SchemaQuarantineBanner from './SchemaQuarantineBanner.vue'
-import { editBlockedReason } from '../lib/entityEditBlocking'
+import { editBlockedReason, editOutcome } from '../lib/entityEditBlocking'
 
+const props = defineProps<{ adminMode: boolean; isGlobalEntity: boolean }>()
 const emit = defineEmits<{ 'open-reference-picker': [field: 'summary' | 'notes'] }>()
 const edit = inject(entityEditFormKey)!
+// The same question the header's Edit control answers in a title, said here in full: a form
+// that looks like every other edit form must say when saving it does something else.
+const outcome = computed(() => editOutcome(props.isGlobalEntity, props.adminMode))
 </script>
 
 <template>
   <div class="edit-form card">
+    <p
+      v-if="outcome === 'records-a-change'"
+      class="edit-form__records"
+    >
+      This artifact belongs to the enterprise repository, so saving does not change it. Your edit is
+      recorded as a change awaiting review there. The
+      <RouterLink to="/changes">
+        Proposed
+      </RouterLink>
+      page shows what you are holding, and takes a change back.
+    </p>
     <div class="form-row">
       <label class="form-label">Summary</label>
       <div class="field-tools">
@@ -223,6 +238,15 @@ const edit = inject(entityEditFormKey)!
 </template>
 
 <style scoped>
+.edit-form__records {
+  margin: 0 0 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #fcd34d;
+  background: #fffbeb;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: #78350f;
+}
 .card { background: white; border-radius: 8px; border: 1px solid #e5e7eb; }
 .state-msg { color: #6b7280; padding: 4px 0; }
 .state-msg--error { color: #dc2626; }

@@ -14,6 +14,7 @@ import SignalIngestPanel from '../components/SignalIngestPanel.vue'
 import EntityDetailHeader from '../components/EntityDetailHeader.vue'
 import EntityEditFormCard from '../components/EntityEditFormCard.vue'
 import PendingChangePanel from '../components/PendingChangePanel.vue'
+import { editOutcome, savedIdIsTheArtifact, savedMessage } from '../lib/entityEditBlocking'
 import EntityDeletePanel from '../components/EntityDeletePanel.vue'
 import EntityReferenceList from '../components/EntityReferenceList.vue'
 import {
@@ -83,8 +84,10 @@ const edit = useEntityEditForm({
   detail,
   editFn,
   onSaved: (newArtifactId) => {
-    addToast('Entity saved')
-    if (newArtifactId && newArtifactId !== entityId.value) {
+    const outcome = editOutcome(isGlobalEntity.value, adminMode.value)
+    addToast(savedMessage(outcome))
+    const followsTheId = savedIdIsTheArtifact(outcome) && newArtifactId && newArtifactId !== entityId.value
+    if (followsTheId) {
       void router.replace({ path: entityDetailRoute(newArtifactId), query: browseQuery.value })
     } else {
       load()
@@ -130,6 +133,8 @@ const executeDelete = () => { void router.push(backTo.value) }
 
       <EntityEditFormCard
         v-if="edit.editing"
+        :admin-mode="adminMode"
+        :is-global-entity="isGlobalEntity"
         @open-reference-picker="edit.openReferencePicker($event)"
       />
 

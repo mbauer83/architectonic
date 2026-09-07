@@ -373,7 +373,11 @@ def test_entity_detail_view_supports_reference_picker_for_summary_and_notes() ->
     edit_form_content = Path("tools/gui/src/ui/components/EntityEditFormCard.vue").read_text(encoding="utf-8")
 
     assert "ArtifactReferenceInput" in view_content
-    assert "addToast('Entity saved')" in view_content
+    # The confirmation is still toasted, but the wording is no longer a literal here: an edit of
+    # promoted content saves nothing locally, so "Entity saved" would be false for it. What the
+    # message says is decided in `entityEditBlocking` and tested there; what this pins is that the
+    # view asks rather than inventing its own.
+    assert "addToast(savedMessage(" in view_content
     assert "open-reference-picker', 'summary'" in edit_form_content
     assert "open-reference-picker', 'notes'" in edit_form_content
 

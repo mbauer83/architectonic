@@ -134,6 +134,18 @@ export default tseslint.config(
     },
   },
   {
+    // Destructuring a key away is how you omit one, and the binding it needs is unused by
+    // construction: `const { baseline_standing: _dropped, ...without } = row` says "this row minus
+    // that field" in the language's own terms. `ignoreRestSiblings` is the option the rule provides
+    // for exactly that shape, and it is what typescript-eslint's own recommended configuration sets.
+    // Declared here rather than worked around per site, because the alternatives are a cast or a
+    // `delete` — both worse than the idiom they would replace.
+    files: ['**/*.ts', '**/*.vue'],
+    rules: {
+      '@typescript-eslint/no-unused-vars': ['error', { ignoreRestSiblings: true }],
+    },
+  },
+  {
     // This config file itself runs in Node (env-gated fast tier below reads process.env).
     files: ['eslint.config.js'],
     languageOptions: {
