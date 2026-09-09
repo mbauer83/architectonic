@@ -21,7 +21,8 @@ export const editBlockedReason = (quarantined: boolean, requiredMissing: boolean
  * What saving this edit actually does, which is not the same question on every artifact.
  *
  * An engagement repository cannot write enterprise content, so an edit of a promoted artifact is
- * recorded as a change awaiting review upstream. That is the ordinary case for anything marked
+ * recorded as a local change, which goes upstream when it is submitted. That is the ordinary
+ * case for anything marked
  * Enterprise, and the reason the edit affordance exists there at all: it was hidden, so the only
  * interface most people use offered no way to reach the feature — and no explanation either.
  *
@@ -42,7 +43,7 @@ export const editOutcomeTitle = (outcome: EditOutcome): string | undefined => {
       return undefined
     case 'records-a-change':
       return 'This artifact belongs to the enterprise repository. '
-        + 'Your edit is recorded as a change awaiting review there.'
+        + 'Your edit is recorded as a local change, and goes there when you submit it for review.'
     case 'writes-upstream':
       return 'Edit global entity (admin mode)'
   }
@@ -50,7 +51,7 @@ export const editOutcomeTitle = (outcome: EditOutcome): string | undefined => {
 
 /** What to say after a save, which is not "saved" when nothing was saved here. */
 export const savedMessage = (outcome: EditOutcome): string =>
-  outcome === 'records-a-change' ? 'Change recorded, awaiting review' : 'Entity saved'
+  outcome === 'records-a-change' ? 'Change recorded' : 'Entity saved'
 
 /**
  * Whether the id a save answered with is the artifact to go to.

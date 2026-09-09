@@ -123,7 +123,7 @@ def _record_a_change_to_promoted_content(
         return _refusal(
             None, target_id,
             f"'{target_id}' is owned by the enterprise repository. The edit would be recorded as a "
-            "change awaiting review, and this caller supplied no repository to record it in.",
+            "local change, and this caller supplied no repository to record it in.",
         )
     promoted = _promoted(repo, target_id)
     reference_id = _reference_to(
@@ -265,7 +265,7 @@ def _record_enterprise_change(
             reference_path,
             reference_id,
             f"'{reference_id}' stands for the enterprise artifact '{target_id}', which this "
-            "repository does not own. The edit would be recorded as a change awaiting review, and "
+            "repository does not own. The edit would be recorded as a local change, and "
             "this caller supplied no repository to record it in.",
         )
 

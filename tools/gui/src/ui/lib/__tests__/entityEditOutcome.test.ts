@@ -31,8 +31,11 @@ describe('what the control promises before it is clicked', () => {
     expect(editOutcomeTitle('writes-here')).toBeUndefined()
   })
 
-  it('says the edit is recorded for review, not applied', () => {
-    expect(editOutcomeTitle('records-a-change')).toMatch(/awaiting review/)
+  it('says the edit is recorded here, not that anyone has been asked to look', () => {
+    // It promised "awaiting review", which is not what clicking Edit does: the change is recorded
+    // as a draft, and only submitting it puts it in front of anyone.
+    expect(editOutcomeTitle('records-a-change')).toMatch(/recorded as a local change/)
+    expect(editOutcomeTitle('records-a-change')).not.toMatch(/awaiting review/)
   })
 
   it('keeps naming admin mode, which is where the write does land upstream', () => {
@@ -52,8 +55,8 @@ describe('where a save leaves you', () => {
     expect(savedIdIsTheArtifact('records-a-change')).toBe(false)
   })
 
-  it('does not say "saved" when nothing was saved here', () => {
-    expect(savedMessage('records-a-change')).toMatch(/awaiting review/)
+  it('does not say "saved" when nothing was saved here, nor that review has begun', () => {
+    expect(savedMessage('records-a-change')).toBe('Change recorded')
     expect(savedMessage('writes-here')).toBe('Entity saved')
   })
 })

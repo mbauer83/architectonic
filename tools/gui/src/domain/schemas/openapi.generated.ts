@@ -1262,7 +1262,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List local changes awaiting review */
+        /** List local changes to enterprise artifacts */
         get: operations["changes_list_changes"];
         put?: never;
         post?: never;

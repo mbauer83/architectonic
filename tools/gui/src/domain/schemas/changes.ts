@@ -1,7 +1,8 @@
 import { Schema } from 'effect'
 
 /**
- * One local change: an edit to an artifact this repository does not own, awaiting review upstream.
+ * One local change: an edit to an artifact this repository does not own, held here until it is
+ * submitted for review upstream.
  *
  * `artifact_id` is the change's own — an artifact may carry more than one, so it is what discarding
  * names. `target_id` is the promoted artifact, which is what a link goes to and what a reader knows.

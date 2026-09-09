@@ -1,6 +1,7 @@
 """Canonical route policy for the local changes this repository is holding.
 
-A change is a local edit to an artifact the engagement does not own, awaiting review upstream. It is
+A change is a local edit to an artifact the engagement does not own, held here until it is
+submitted for review upstream. It is
 addressed by its own id here — not by the artifact it changes — because two changes against one
 artifact are ordinary and a caller discarding one must be able to say which.
 

@@ -3,7 +3,8 @@ import { test, expect } from './coverage-fixture'
 /**
  * The proposed-changes surface, driven in a browser.
  *
- * Editing an artifact this repository does not own records a change awaiting review upstream. What
+ * Editing an artifact this repository does not own records a local change, which goes upstream
+ * when it is submitted. What
  * this covers is everything a person does with one: see what they are holding, read what a stale
  * change would make the artifact say, bring it onto the current version, and take it back.
  *

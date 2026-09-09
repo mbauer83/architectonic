@@ -86,7 +86,7 @@ def materialize(
                 wrote=True, path=engagement_root, artifact_id=emptied[0], content=None,
                 warnings=[
                     f"'{target_name}' now says exactly what the enterprise artifact says, so the "
-                    f"{'change' if len(emptied) == 1 else 'changes'} awaiting review "
+                    f"recorded {'change' if len(emptied) == 1 else 'changes'} "
                     f"{'was' if len(emptied) == 1 else 'were'} withdrawn."
                 ],
                 verification=None,
@@ -136,7 +136,11 @@ def _write_change(
         version="0.1.0",
         status="active",
         last_updated=modification_stamp(),
-        summary=f"A local change to `{recorded['artifact-id']}`, awaiting review.",
+        # Says nothing about where the change is in its lifecycle. This is written once and the
+        # state moves under it, so a summary claiming review would be false for every change that
+        # has not been sent — which, until submission marks one, is all of them. `proposal-state` is
+        # the single place that answers where a change has got to.
+        summary=f"A local change to `{recorded['artifact-id']}`, held in this repository.",
         properties=None,
         notes=None,
         # A change is internal and never drawn, so it carries no display section. Empty rather

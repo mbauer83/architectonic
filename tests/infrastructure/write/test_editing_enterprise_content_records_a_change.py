@@ -230,12 +230,34 @@ def test_an_edit_that_changes_nothing_is_refused_with_a_reason(workspace) -> Non
 
 
 def test_a_caller_with_no_repository_is_told_what_is_happening(workspace) -> None:  # noqa: ANN001
-    """Strictly better than `E140`: it names the enterprise artifact and says the edit would be a
-    change awaiting review."""
+    """Strictly better than `E140`: it names the enterprise artifact and says the edit would be
+    recorded as a local change.
+
+    Not "awaiting review", which this refusal used to claim. Recording produces a draft, and a
+    refusal that never recorded anything cannot have sent it to anybody.
+    """
     result = _edit(workspace, REFERENCE, with_repo=False, summary="Changed wording.")
 
     assert not result.wrote
-    assert any(ENTERPRISE in warning and "awaiting review" in warning for warning in result.warnings)
+    assert any(ENTERPRISE in warning and "local change" in warning for warning in result.warnings)
+    assert not any("awaiting review" in warning for warning in result.warnings)
+
+
+def test_a_recorded_change_does_not_claim_anyone_has_been_asked_to_look(workspace) -> None:  # noqa: ANN001
+    """The stored summary is written once, while the change is a draft, and is never rewritten.
+
+    It read "awaiting review" on every change the product recorded — including every change nobody
+    had sent, which, until a submission marks one, is all of them. `proposal-state` is what answers
+    where a change has got to, and the summary now says only what stays true whatever it answers.
+    """
+    _root, repo = workspace
+    _edit(workspace, REFERENCE, summary="Changed wording.")
+    (change,) = _changes(workspace)[ENTERPRISE]
+
+    record = repo.get_entity(change.proposal_id)
+    assert record is not None
+    assert change.state == "draft"
+    assert "awaiting review" not in record.path.read_text(encoding="utf-8")
 
 
 # ── the base a change records ────────────────────────────────────────────────

@@ -28,7 +28,7 @@ const outcome = computed(() => editOutcome(props.isGlobalEntity, props.adminMode
       class="edit-form__records"
     >
       This artifact belongs to the enterprise repository, so saving does not change it. Your edit is
-      recorded as a change awaiting review there. The
+      recorded as a local change, which goes there when you submit it for review. The
       <RouterLink to="/changes">
         Proposed
       </RouterLink>

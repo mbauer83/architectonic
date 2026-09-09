@@ -49,7 +49,7 @@ def _to_dict(change: RecordedChange) -> dict[str, Any]:
     }
 
 
-@router.get("/api/changes", tags=[TAG_CHANGES], summary="List local changes awaiting review",
+@router.get("/api/changes", tags=[TAG_CHANGES], summary="List local changes to enterprise artifacts",
     response_model=ChangeListResponse, responses=READ_RESPONSES, operation_id="changes_list_changes")
 def list_changes() -> dict[str, Any]:
     rows = [_to_dict(change) for change in recorded_changes(s.maybe_get_repo())]

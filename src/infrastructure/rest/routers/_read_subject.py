@@ -2,7 +2,8 @@
 
 Two kinds of artifact are system-managed and deliberately kept out of every list and every search: a
 global artifact reference, which proxies promoted content, and a proposed change, which records an
-edit awaiting review. Neither is part of the model a reader works with, and both were reachable by
+edit this repository is holding. Neither is part of the model a reader works with, and both were
+reachable by
 URL — a reference showed a proxy with a description written for nobody, and saving an edit to
 promoted content navigated the reader straight into the change it had just recorded.
 
