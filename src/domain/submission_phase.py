@@ -38,6 +38,24 @@ class ImpossibleSubmission(ValueError):
     """A submission record that cannot describe a real submission."""
 
 
+def validate_proposal_ids(proposal_ids: tuple[str, ...]) -> None:
+    """What makes a list of change ids submittable at all, whatever is asking.
+
+    Here rather than only inside `SubmissionIntent` because the set is composed long before the
+    intent can exist: the intent records the commit the submission expects on the remote, and that
+    commit is not made until the changes have been replayed. A caller that could only learn its ids
+    were unusable by constructing the intent would learn it after writing to the enterprise
+    repository, which is the one place a refusal is expensive.
+    """
+    if not proposal_ids:
+        raise ImpossibleSubmission("a submission carries at least one proposed change")
+    if len(set(proposal_ids)) != len(proposal_ids):
+        raise ImpossibleSubmission(
+            f"a submission names a change twice: {proposal_ids}. Replay follows this order, so a "
+            "repeat would apply the same edit twice."
+        )
+
+
 @dataclass(frozen=True, slots=True)
 class SubmissionIntent:
     """What a submission set out to do: which changes, on which branch, from which commit.
@@ -53,13 +71,7 @@ class SubmissionIntent:
     expected_commit: str
 
     def __post_init__(self) -> None:
-        if not self.proposal_ids:
-            raise ImpossibleSubmission("a submission carries at least one proposed change")
-        if len(set(self.proposal_ids)) != len(self.proposal_ids):
-            raise ImpossibleSubmission(
-                f"a submission names a change twice: {self.proposal_ids}. Replay follows this order, "
-                "so a repeat would apply the same edit twice."
-            )
+        validate_proposal_ids(self.proposal_ids)
         if not self.branch.strip():
             raise ImpossibleSubmission("a submission names the branch it is pushed to")
         if not self.expected_commit.strip():
