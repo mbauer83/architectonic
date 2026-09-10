@@ -169,30 +169,20 @@ class TestWhenItMustNotHappen:
 
         assert _state_of(repo, change_id) == "draft"
 
-    def test_a_change_the_artifact_already_carries_is_refused(self, workspace) -> None:
+    def test_a_change_upstream_already_carries_is_refused(self, workspace) -> None:
         """There is nothing to put in front of a reviewer, and replaying it is not harmless: the
         write path stamps `last-updated`, so it would publish a commit that moves a timestamp and
-        nothing else. Decided by content before the replay, not inferred from the diff after it."""
+        nothing else. Decided by content before the replay, not inferred from the diff after it —
+        and against upstream, because this checkout carries our own unpublished work."""
         engagement, enterprise, repo = workspace
         change_id = _record_a_change(engagement, repo, "Wording the engagement proposes")
-        _submit(engagement, enterprise, repo, change_id)
-        second = _record_a_change(engagement, repo, "A further wording")
-        # Make the enterprise artifact already say what the second change asks for.
-        promoted = enterprise / "model" / "motivation" / "requirement" / f"{ENT_ENTITY_ID}.md"
-        promoted.write_text(
-            promoted.read_text(encoding="utf-8").replace(
-                "Wording the engagement proposes", "A further wording"
-            ),
-            encoding="utf-8",
-        )
-        git(enterprise, "add", "-A")
-        git(enterprise, "commit", "-m", "a reviewer's own edit")
-        repo.refresh()  # the file was written behind the index, which a running backend does not do
+        _upstream_already_says(enterprise, "Wording the engagement proposes")
+        repo.refresh()
 
-        with pytest.raises(SubmissionUnavailable, match="already says what"):
-            _submit(engagement, enterprise, repo, second)
+        with pytest.raises(SubmissionUnavailable, match="Upstream already says"):
+            _submit(engagement, enterprise, repo, change_id)
 
-        assert _state_of(repo, second) == "draft"
+        assert _state_of(repo, change_id) == "draft"
 
     def test_nothing_is_marked_when_the_set_is_refused(self, workspace) -> None:
         engagement, enterprise, repo = workspace
@@ -475,3 +465,91 @@ def _more_work_lands_on_the_branch(enterprise: Path) -> None:
     )
     git(enterprise, "add", "model")
     git(enterprise, "commit", "-m", "a promotion nobody has reviewed yet")
+
+
+class TestASubmissionInterruptedBeforeItPushed:
+    """The window between the commit and the push, which no local rollback can close.
+
+    A previous attempt has already put the replay on the branch; the changes are still `draft`
+    because nothing was published for them to be marked against. The retry must converge on the
+    commit that exists rather than treat it as evidence that there is nothing to do — read locally,
+    it looked exactly like a change the artifact already carried, and the advice was to discard it.
+    """
+
+    def test_the_retry_publishes_the_commit_the_first_attempt_left(self, workspace, monkeypatch) -> None:  # noqa: ANN001
+        from src.infrastructure.write.artifact_write import change_submission
+
+        engagement, enterprise, repo = workspace
+        change_id = _record_a_change(engagement, repo, "Wording the engagement proposes")
+
+        def _died(*_args, **_kwargs):  # noqa: ANN002, ANN003, ANN202
+            raise RuntimeError("the process died between the commit and the push")
+
+        monkeypatch.setattr(change_submission, "publish_submission", _died)
+        with pytest.raises(RuntimeError, match="died between"):
+            _submit(engagement, enterprise, repo, change_id)
+        monkeypatch.undo()
+        assert _state_of(repo, change_id) == "draft", "nothing was marked"
+
+        report = _submit(engagement, enterprise, repo, change_id)
+
+        assert _state_of(repo, change_id) == "submitted"
+        assert report.branch in _remote_heads(enterprise)
+
+
+class TestAChangeWhoseBranchWentAway:
+    """A reviewer merged some of the set and not others, or deleted the branch without merging.
+
+    D6's transition, and the only one that lets an author recover: the change is not rejected — no
+    such state exists in v0.9.0 — and it is not integrated. It is simply not in front of anybody,
+    and leaving it `submitted` against a branch that no longer exists is a state nothing can act on.
+    """
+
+    def test_it_returns_to_draft_when_no_branch_is_published(self, workspace) -> None:
+        engagement, enterprise, repo = workspace
+        change_id = _record_a_change(engagement, repo, "Wording the engagement proposes")
+        report = _submit(engagement, enterprise, repo, change_id)
+        _the_branch_goes_away_unmerged(enterprise, report.branch)
+        repo.refresh()
+
+        swept = close_integrated_changes(repo)
+
+        assert swept.returned_to_draft == (change_id,)
+        assert _state_of(repo, change_id) == "draft", "the author can revise it or send it again"
+
+    def test_it_stays_submitted_while_its_branch_is_published(self, workspace) -> None:
+        """The ordinary case, and the one this must not touch: under review is not stranded."""
+        engagement, enterprise, repo = workspace
+        change_id = _record_a_change(engagement, repo, "Wording the engagement proposes")
+        _submit(engagement, enterprise, repo, change_id)
+        repo.refresh()
+
+        swept = close_integrated_changes(repo)
+
+        assert swept.returned_to_draft == ()
+        assert _state_of(repo, change_id) == "submitted"
+
+
+def _the_branch_goes_away_unmerged(enterprise: Path, branch: str) -> None:
+    """A reviewer closes the review without merging: the branch goes, upstream never carried it."""
+    git(enterprise, "checkout", "main")
+    git(enterprise, "push", "origin", "--delete", branch)
+    git(enterprise, "branch", "-D", branch)
+    from src.infrastructure.git import enterprise_sync_state
+
+    enterprise_sync_state.clear_lifecycle(enterprise)
+
+
+def _upstream_already_says(enterprise: Path, summary: str) -> None:
+    """Put the change's own wording on `origin/main`, without this checkout carrying it."""
+    working = git(enterprise, "rev-parse", "--abbrev-ref", "HEAD")
+    git(enterprise, "checkout", "main")
+    promoted = enterprise / "model" / "motivation" / "requirement" / f"{ENT_ENTITY_ID}.md"
+    promoted.write_text(
+        promoted.read_text(encoding="utf-8").replace("Workflow fixture.", summary), encoding="utf-8"
+    )
+    git(enterprise, "add", "model")
+    git(enterprise, "commit", "-m", "upstream arrives at the same wording")
+    git(enterprise, "push", "origin", "main")
+    git(enterprise, "checkout", working)
+    git(enterprise, "fetch", "origin")

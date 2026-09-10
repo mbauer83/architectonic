@@ -40,7 +40,11 @@ from src.domain.clock import utc_now_iso
 from src.domain.submission_phase import PushedSubmission
 from src.infrastructure.git import enterprise_sync_state
 from src.infrastructure.git.enterprise_branch_lifecycle import ensure_working_branch
-from src.infrastructure.git.git_repository_state import has_uncommitted_changes
+from src.infrastructure.git.git_repository_state import (
+    content_is_upstream,
+    current_commit,
+    has_uncommitted_changes,
+)
 from src.infrastructure.git.git_work_commits import commit_enterprise_work
 from src.infrastructure.git.submission_saga import (
     prepare_submission,
@@ -54,6 +58,10 @@ from src.infrastructure.write.artifact_write.proposal_lifecycle import (
     restamp_base_revision,
 )
 from src.infrastructure.write.artifact_write.types import WriteResult
+from src.infrastructure.write.artifact_write.upstream_artifacts import (
+    UpstreamUnavailable,
+    upstream_artifacts,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -102,7 +110,7 @@ def submit_changes(
         )
 
     composed = compose(proposal_ids, pending_proposals(repo.list_entities(artifact_type=PROPOSED_CHANGE_TYPE)))
-    _refuse_what_the_artifact_already_says(composed, repo=repo)
+    _refuse_what_upstream_already_says(composed, enterprise_root=enterprise_root)
     ensure_working_branch(enterprise_root)
     return publish_on_the_current_branch(
         composed, repo=repo, enterprise_root=enterprise_root, registry=registry,
@@ -177,10 +185,10 @@ def _replay_onto_enterprise(
     transaction.commit()
 
 
-def _refuse_what_the_artifact_already_says(
-    composed: tuple[PendingProposal, ...], *, repo: "ArtifactRepository"
+def _refuse_what_upstream_already_says(
+    composed: tuple[PendingProposal, ...], *, enterprise_root: Path
 ) -> None:
-    """Refuse a change the enterprise artifact already carries, before anything is replayed.
+    """Refuse a change upstream already carries, before anything is replayed.
 
     Decided by content, through the same verdict the integration sweep and the rebase rehearsal use,
     so "already carries it" means one thing across the lifecycle. Asked *before* the replay rather
@@ -188,18 +196,26 @@ def _refuse_what_the_artifact_already_says(
     stamps `last-updated`, so replaying a change the artifact already says produces a commit that
     moves a timestamp and nothing else, and puts it in front of a reviewer as though it were work.
 
-    The remedy is the one a rebase already names for the same finding: discard it.
+    **Against upstream, not this checkout**, for the reason `upstream_artifacts` gives and for one
+    more that is specific to here: a submission that committed its replay and died before pushing
+    leaves the effect on *our* branch with the changes still `draft`. Read locally, the retry was
+    told the artifact already said it and to discard — advice that would throw the work away. Read
+    upstream, the retry is the ordinary case and converges.
+
+    An unreadable upstream does not refuse. The push that follows needs the same remote and will
+    fail on its own if it is really gone; blocking here as well would turn one fault into two.
     """
-    for proposal in composed:
-        current = current_values_of(
-            repo.get_entity(proposal.target_id) or repo.get_document(proposal.target_id)
-        )
-        if integration_verdict(proposal.edit, current).integrated:
-            raise SubmissionUnavailable(
-                f"'{proposal.target_id}' already says what '{proposal.proposal_id}' asks for, so "
-                "there is nothing to put in front of a reviewer. Discard the change: submitting it "
-                "would publish a commit that moves a timestamp and nothing else."
-            )
+    try:
+        with upstream_artifacts(enterprise_root) as upstream:
+            for proposal in composed:
+                if integration_verdict(proposal.edit, current_values_of(upstream(proposal.target_id))).integrated:
+                    raise SubmissionUnavailable(
+                        f"Upstream already says what '{proposal.proposal_id}' asks of "
+                        f"'{proposal.target_id}', so there is nothing to put in front of a "
+                        "reviewer. Discard the change."
+                    )
+    except UpstreamUnavailable:
+        logger.warning("Could not read upstream before submitting; the check was skipped", exc_info=True)
 
 
 def _commit_the_replay(
@@ -216,6 +232,13 @@ def _commit_the_replay(
             f"{verb} change to {named}" if len(composed) == 1 else f"{verb} changes to {named}",
         )
     except ValueError as nothing_to_commit:
+        if not content_is_upstream(enterprise_root, "HEAD"):
+            # The branch already carries work upstream does not have — which, with nothing left to
+            # commit, is a previous attempt that got this far and died before pushing. Its commit
+            # stands; carry on and publish it rather than refusing a retry of our own crash.
+            existing = current_commit(enterprise_root) or ""
+            logger.info("Replay added nothing; publishing the commit a previous attempt left at %.7s", existing)
+            return existing
         raise SubmissionUnavailable(
             "Replaying the changes altered nothing in the enterprise repository, so there is "
             "nothing to put in front of a reviewer. The artifacts already say what the changes "

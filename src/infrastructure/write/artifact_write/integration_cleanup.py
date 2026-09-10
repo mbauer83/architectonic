@@ -36,6 +36,7 @@ merged, from the remote, with no way back.
 from __future__ import annotations
 
 import logging
+from dataclasses import replace
 from pathlib import Path
 
 from src.application.artifacts.query import ArtifactRepository
@@ -95,11 +96,59 @@ def close_integrated_changes(repo: ArtifactRepository) -> SweepReport:
         # cannot lose anybody's work, and the reason is logged rather than resolved by guessing.
         logger.warning("Could not read upstream to reconcile changes; none were closed", exc_info=True)
         return SweepReport(closed=(), left_open=())
-    if closed_paths:
-        notify_paths_changed(closed_paths)
+    report, demoted_paths = _return_stranded_changes_to_draft(report, repo=repo, enterprise=enterprise)
+    if closed_paths or demoted_paths:
+        notify_paths_changed([*closed_paths, *demoted_paths])
         logger.info("Integration sweep: %s", report.summary())
+    if closed_paths:
         _retire_a_finished_review_branch(repo)
     return report
+
+
+def _return_stranded_changes_to_draft(
+    report: SweepReport, *, repo: ArtifactRepository, enterprise: Path
+) -> tuple[SweepReport, list[Path]]:
+    """A change cannot be awaiting review when no branch is published for it to be awaiting it on.
+
+    D6's transition, and the invariant behind it: a branch reaching `synced` must leave nothing
+    `submitted`. Stated over *whether a branch is published* rather than over that one status,
+    because the same stranding happens when the branch is abandoned and a new one opened — the
+    repository is then `accumulating`, and the change is on a branch that no longer exists either
+    way. `pending` is precisely the state in which a branch is published, so its absence is the
+    condition.
+
+    Back to `draft`, not to a terminal state. Nobody rejected the work: it is simply not in front of
+    anyone any more, and the author's own edit is still the thing they meant. From `draft` they can
+    revise it or submit it again, which is what makes this the self-healing direction.
+
+    Reached only where the sweep read upstream successfully, so a change that *is* integrated has
+    already been closed above and is not among the ones demoted here.
+    """
+    from src.infrastructure.git import enterprise_sync_state  # noqa: PLC0415
+
+    if not report.left_open or enterprise_sync_state.load(enterprise).is_pending():
+        return report, []
+
+    demoted: list[str] = []
+    paths: list[Path] = []
+    for stranded in report.left_open:
+        record = repo.get_entity(stranded.proposal_id)
+        if record is None:
+            continue
+        try:
+            changed = mark_proposal_state(record.path, artifact_id=record.artifact_id, state="draft")
+        except (ProposalTransitionRefused, OSError):
+            logger.exception("Could not return stranded change %s to draft", stranded.proposal_id)
+            continue
+        if changed:
+            demoted.append(stranded.proposal_id)
+            paths.append(record.path)
+    if demoted:
+        logger.warning(
+            "Returned %d change(s) to draft: no branch is published for them to be awaiting review on",
+            len(demoted),
+        )
+    return replace(report, returned_to_draft=tuple(demoted)), paths
 
 
 def _enterprise_mount(repo: ArtifactRepository) -> Path | None:

@@ -58,17 +58,23 @@ class SweepReport:
 
     closed: tuple[SweptChange, ...]
     left_open: tuple[SweptChange, ...]
+    #: The changes returned to `draft` because no branch is published for them to be awaiting review
+    #: on. Decided by the adapter, which is the half that knows about branches.
+    returned_to_draft: tuple[str, ...] = ()
 
     @property
     def changed_anything(self) -> bool:
-        return bool(self.closed)
+        return bool(self.closed or self.returned_to_draft)
 
     def summary(self) -> str:
         if not self.closed and not self.left_open:
             return "no submitted changes to reconcile"
+        stranded = (
+            f"; {len(self.returned_to_draft)} returned to draft" if self.returned_to_draft else ""
+        )
         return (
             f"closed {len(self.closed)} integrated change(s); "
-            f"{len(self.left_open)} still awaiting review"
+            f"{len(self.left_open)} still awaiting review{stranded}"
         )
 
 

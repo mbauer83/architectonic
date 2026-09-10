@@ -108,14 +108,16 @@ def test_the_index_is_told_so_the_next_read_agrees(repo_at) -> None:
     assert reread.extra["proposal-state"] == "integrated"
 
 
-def test_a_change_still_awaiting_review_is_untouched(repo_at) -> None:
+def test_a_change_upstream_does_not_carry_is_not_closed(repo_at) -> None:
+    """And, with no branch published in this fixture, it is stranded rather than awaiting review —
+    which is the other half of the sweep and is asserted here so the two cannot drift apart."""
     repository, proposal_path = repo_at(upstream_name="Payments")
-    before = proposal_path.read_bytes()
 
     report = close_integrated_changes(repository)
 
     assert report.closed == ()
-    assert proposal_path.read_bytes() == before
+    assert report.returned_to_draft == (PROPOSAL,)
+    assert "proposal-state: draft" in proposal_path.read_text(encoding="utf-8")
 
 
 def test_a_second_pass_changes_nothing(repo_at) -> None:
