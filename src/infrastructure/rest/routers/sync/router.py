@@ -16,6 +16,7 @@ POST /api/sync/enterprise/withdraw  — discard all pending enterprise changes
 from __future__ import annotations
 
 import asyncio
+import logging
 from typing import Literal
 
 from fastapi import APIRouter, HTTPException
@@ -31,6 +32,8 @@ from src.infrastructure.rest.contracts.sync import (
 )
 from src.infrastructure.rest.routers._openapi import TAG_SYNC
 from src.infrastructure.rest.routers.sync import status_cache as sync_status_cache
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=[TAG_SYNC])
 
@@ -253,6 +256,7 @@ async def withdraw_enterprise(body: WithdrawBody) -> dict:
             "sync_withdraw_enterprise", enterprise_branch_lifecycle.abandon_enterprise_branch, ent_root
         )
         sync_status_cache.invalidate_sync_status_cache(repo=ent_root)
+        _settle_the_withdrawn_changes()
         await event_bus.publish(
             {
                 "type": "sync_enterprise_withdrawn",
@@ -265,3 +269,11 @@ async def withdraw_enterprise(body: WithdrawBody) -> dict:
         raise HTTPException(400, str(exc))
     except RuntimeError as exc:
         raise HTTPException(500, str(exc))
+
+
+def _settle_the_withdrawn_changes() -> None:
+    """The changes the discarded branch was carrying, reconciled where they now stand."""
+    from src.infrastructure.rest.routers import state as s
+    from src.infrastructure.write.artifact_write.integration_cleanup import settle_after_a_withdrawal
+
+    settle_after_a_withdrawal(s.maybe_get_repo())

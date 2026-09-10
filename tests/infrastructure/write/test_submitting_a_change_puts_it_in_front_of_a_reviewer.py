@@ -634,6 +634,32 @@ class TestTakingBackASubmittedChange:
         assert discarded
         assert _state_of(repo, change_id) == "abandoned"
 
+    def test_withdrawing_settles_its_changes_at_once(self, workspace) -> None:
+        """Not at the next backend start. Between the two, the page would tell an author their work
+        was in front of somebody when the branch it was on had just been deleted."""
+        from src.infrastructure.git.enterprise_branch_lifecycle import abandon_enterprise_branch
+        from src.infrastructure.write.artifact_write.integration_cleanup import (
+            settle_after_a_withdrawal,
+        )
+
+        engagement, enterprise, repo = workspace
+        change_id = _record_a_change(engagement, repo, "Wording the engagement proposes")
+        _submit(engagement, enterprise, repo, change_id)
+        abandon_enterprise_branch(enterprise)
+        repo.refresh()
+
+        settle_after_a_withdrawal(repo)
+
+        assert _state_of(repo, change_id) == "draft"
+
+    def test_settling_where_there_is_no_repository_is_not_an_error(self) -> None:
+        """The withdrawal has already reached the remote; nothing here may report it as failed."""
+        from src.infrastructure.write.artifact_write.integration_cleanup import (
+            settle_after_a_withdrawal,
+        )
+
+        settle_after_a_withdrawal(None)
+
     def test_a_draft_is_taken_back_without_ceremony(self, workspace) -> None:
         engagement, enterprise, repo = workspace
         change_id = _record_a_change(engagement, repo, "Wording the engagement proposes")

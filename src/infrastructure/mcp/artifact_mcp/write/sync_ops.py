@@ -177,6 +177,7 @@ def artifact_withdraw_changes(*, confirm: bool = False) -> dict[str, object]:
 
     try:
         branch = enterprise_branch_lifecycle.abandon_enterprise_branch(ent_root)
+        _settle_the_withdrawn_changes()
         return {
             "ok": True,
             "discarded_branch": branch,
@@ -237,3 +238,11 @@ def register(mcp: MCPServer) -> None:
         annotations=DESTRUCTIVE_OPEN_WORLD_WRITE,  # deletes the REMOTE review branch
         structured_output=True,
     )
+
+
+def _settle_the_withdrawn_changes() -> None:
+    """The changes the discarded branch was carrying, reconciled where they now stand."""
+    from src.infrastructure.rest.routers.state import maybe_get_repo
+    from src.infrastructure.write.artifact_write.integration_cleanup import settle_after_a_withdrawal
+
+    settle_after_a_withdrawal(maybe_get_repo())

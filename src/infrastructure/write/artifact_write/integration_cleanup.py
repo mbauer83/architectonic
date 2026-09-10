@@ -187,3 +187,23 @@ def _retire_a_finished_review_branch(repo: ArtifactRepository) -> str | None:
         return None
     logger.info("Review branch retired, every change it carried is upstream: %s", retired)
     return retired
+
+
+def settle_after_a_withdrawal(repo: ArtifactRepository | None) -> None:
+    """Reconcile the changes a withdrawn branch was carrying, now that it carries them nowhere.
+
+    Without it they keep reading `submitted` until the next backend start, which tells an author
+    their work is in front of somebody when the branch it was on has just been deleted. The same
+    reconciliation startup runs: whatever upstream turns out to hold is closed, and the rest returns
+    to draft.
+
+    Never fatal, and that is the whole reason this is a function rather than a call. A withdrawal
+    that reached the remote has happened whatever this concludes, so reporting it as unsuccessful
+    because the reconciliation faulted would be a worse answer than a stale state.
+    """
+    if repo is None:
+        return
+    try:
+        close_integrated_changes(repo)
+    except Exception:  # noqa: BLE001 — the withdrawal stands whatever the reconciliation concludes
+        logger.exception("Could not settle the changes the withdrawn branch carried")
