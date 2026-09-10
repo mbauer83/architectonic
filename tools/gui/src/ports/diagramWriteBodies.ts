@@ -17,6 +17,12 @@ export type DiagramComposition = {
 /** A composition, plus what the write itself decides. */
 export type DiagramWriteBody = DiagramComposition & {
   version?: string; status?: string;
+  /**
+   * The model-project collection the diagram is filed in — its home. Not part of the composition:
+   * where a diagram lives is not something it draws, and `DiagramComposition` carries only what
+   * ends up in the picture. On a replacement, omitting it leaves the diagram where it is.
+   */
+  group?: string;
   viewpoint?: { slug: string; version: number; enforcement_override?: 'off' | 'warn' | 'ghost' } | null;
   dry_run?: boolean;
 }

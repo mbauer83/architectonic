@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { diagramCreateRoute, diagramDetailRoute, matrixCreateRoute } from '../router/artifactRoutes'
+import { createRouteInside, diagramCreateRoute, diagramDetailRoute, matrixCreateRoute } from '../router/artifactRoutes'
 import ArtifactBadges from '../components/ArtifactBadges.vue'
 import { computed, inject, ref } from 'vue'
 import { RouterLink } from 'vue-router'
@@ -36,7 +36,7 @@ const diagramFilters = computed(() => {
 })
 const createDiagramRoute = (kind: DiagramTypeSummary) => {
   if (kind.key === 'matrix') return matrixCreateRoute()
-  return { path: diagramCreateRoute(), query: { type: kind.key } }
+  return createRouteInside(diagramCreateRoute(), activeGroup.value, { type: kind.key })
 }
 const showCreateMenu = ref(false)
 let _closeMenuTimer: ReturnType<typeof setTimeout> | null = null

@@ -28,3 +28,13 @@ export const projectionByItemId = (
   new Map(
     (projection !== null && projection.applied ? projection.items : []).map((item) => [item.item_id, item]),
   )
+
+/**
+ * Whether the pinned viewpoint version is behind the definition's current one.
+ *
+ * Three conditions that only mean something together — a projection exists, it was applied, and its
+ * pin is stale — so they are one named question rather than a conjunction spelled at the view.
+ */
+export const isStalePin = (
+  projection: { readonly applied: boolean; readonly stale_pin?: boolean } | null | undefined,
+): boolean => projection != null && projection.applied && projection.stale_pin === true

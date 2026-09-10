@@ -18,11 +18,15 @@ export interface DocumentRepository {
   readonly getDocument: (id: string) => Effect.Effect<DocumentDetail, RepoError | NotFoundError>
   readonly createDocument: (body: {
     doc_type: string; title: string; body?: string;
+    /** The model-project collection this artifact is filed in — its home. */
+    group?: string;
     keywords?: string[]; extra_frontmatter?: Record<string, unknown>;
     version?: string; status?: string; dry_run?: boolean;
   }) => Effect.Effect<WriteResult, RepoError>
   readonly editDocument: (id: string, body: {
     title?: string; body?: string; keywords?: string[];
+    /** Move it to this collection. Omitted leaves it where it is. */
+    group?: string;
     extra_frontmatter?: Record<string, unknown>;
     status?: string; version?: string; dry_run?: boolean;
   }) => Effect.Effect<WriteResult, RepoError>

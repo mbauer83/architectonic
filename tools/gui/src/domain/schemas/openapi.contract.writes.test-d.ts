@@ -1,4 +1,5 @@
 import { describe, expectTypeOf, it } from 'vitest'
+import type { DocumentRepository } from '../../ports/DocumentRepository'
 import type { ModelRepository } from '../../ports/ModelRepository'
 import type { components } from './openapi.generated'
 
@@ -62,6 +63,42 @@ describe('what the client may send is what the server declares', () => {
       UndeclaredFields<
         Parameters<ModelRepository['editEntity']>[1],
         components['schemas']['EditEntityBody']
+      >
+    >().toEqualTypeOf<never>()
+  })
+
+  it('creates a document', () => {
+    expectTypeOf<
+      UndeclaredFields<
+        Parameters<DocumentRepository['createDocument']>[0],
+        components['schemas']['CreateDocumentRequest']
+      >
+    >().toEqualTypeOf<never>()
+  })
+
+  it('edits a document', () => {
+    expectTypeOf<
+      UndeclaredFields<
+        Parameters<DocumentRepository['editDocument']>[1],
+        components['schemas']['EditDocumentRequest']
+      >
+    >().toEqualTypeOf<never>()
+  })
+
+  it('creates a diagram', () => {
+    expectTypeOf<
+      UndeclaredFields<
+        Parameters<ModelRepository['createDiagram']>[0],
+        components['schemas']['CreateDiagramGuiBody']
+      >
+    >().toEqualTypeOf<never>()
+  })
+
+  it('replaces a diagram', () => {
+    expectTypeOf<
+      UndeclaredFields<
+        Parameters<ModelRepository['editDiagram']>[1],
+        components['schemas']['EditDiagramGuiBody']
       >
     >().toEqualTypeOf<never>()
   })

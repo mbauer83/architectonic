@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { diagramDetailRoute, matrixEditRoute } from '../router/artifactRoutes'
+import { isStalePin } from './EditDiagramView.helpers'
+import DiagramHomeSelect from '../components/DiagramHomeSelect.vue'
+import { NO_COLLECTION, homeForMove } from '../components/ArtifactHomeSelect.helpers'
 import { inject, ref, computed, onMounted, useTemplateRef, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Effect, Exit } from 'effect'
@@ -66,10 +69,7 @@ const onSelectViewpoint = (viewpoint: ViewpointSummary | null) => {
 const currentDefinitionVersion = computed(
   () => findViewpointBySlug(viewpoints.value, viewpointSlug.value)?.version ?? null,
 )
-const stalePin = computed(() => {
-  const projection = viewpointProjection.value
-  return projection !== null && projection.applied && projection.stale_pin
-})
+const stalePin = computed(() => isStalePin(viewpointProjection.value))
 
 const doRePin = () => {
   if (currentDefinitionVersion.value !== null) viewpointPinnedVersion.value = currentDefinitionVersion.value
@@ -93,7 +93,10 @@ const mergeTypeEntityData = (patch: Record<string, unknown>) => {
   previewMutation.reset()
 }
 
+// Where the diagram is filed. Seeded from what it says, so an untouched control moves nothing.
+const home = ref('')
 watch(diagramDetail, (d) => {
+  if (d) home.value = d.group === NO_COLLECTION ? '' : (d.group ?? '')
   if (d?.diagram_type === 'matrix') {
     void router.replace(matrixEditRoute(diagramId.value))
   }
@@ -200,6 +203,7 @@ const doSave = async () => {
   const exit = await saveMutation.run(svc.editDiagram(diagramId.value, {
     diagram_type: diagramDetail.value.diagram_type,
     name: diagramDetail.value.name,
+    group: homeForMove(home.value),
     entity_ids: finalEntityIds.value,
     connection_ids: selection.finalConnIds.value,
     diagram_entities: typeEntityData.value,
@@ -331,6 +335,8 @@ const saveTitle = computed(() => !previewMutation.result.value ? 'Run Preview fi
         @preview="doPreview"
         @save="doSave"
       />
+
+      <DiagramHomeSelect v-model="home" />
 
       <div class="groupings-slot">
         <DiagramGroupingsEditor

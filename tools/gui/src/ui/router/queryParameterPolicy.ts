@@ -61,6 +61,11 @@ export const QUERY_PARAMETER_ROLES: Readonly<Record<string, QueryParameterRole>>
   // ── operation input ──────────────────────────────────────────────────────
   'ui/views/PromoteView.vue#*': 'operation-input',
   'ui/views/CreateDiagramView.vue#type': 'operation-input',
+  // The collection the reader was browsing, seeding a new artifact's home. An operand of the
+  // create rather than a filter: it narrows nothing, and rather than addressing the page it
+  // supplies its first answer, which the reader can then change. Read by the home control itself,
+  // so no create form can be the one that forgets to.
+  'ui/components/ArtifactHomeSelect.vue#group': 'operation-input',
   'ui/views/ViewpointsManagementView.vue#seedEntityCriteria': 'operation-input',
   'ui/views/EphemeralViewpointQueryView.vue#slug': 'operation-input',
   // The graph explorer's viewpoint half owns the address for `viewpoint`, `param.*` and the

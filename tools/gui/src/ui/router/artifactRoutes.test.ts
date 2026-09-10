@@ -13,6 +13,7 @@ import {
   entityDetailRoute,
   entityGraphRoute,
   viewpointMatrixRoute,
+  createRouteInside,
 } from './artifactRoutes'
 
 describe('encodeIdentitySegment', () => {
@@ -90,5 +91,30 @@ describe('route templates', () => {
 
   it('puts identity in a path segment, never a query string', () => {
     expect(Object.values(ROUTE_TEMPLATES).filter((t) => t.includes('?'))).toEqual([])
+  })
+})
+
+
+describe('a create route opened from inside a collection', () => {
+  it('carries the collection, so the form opens on it', () => {
+    expect(createRouteInside('/entities/new', 'platform-core')).toEqual({
+      path: '/entities/new', query: { group: 'platform-core' },
+    })
+  })
+
+  it('carries nothing where no collection is being browsed', () => {
+    // `?group=` absent and `?group=all` both resolve to '' upstream, and neither should put an
+    // empty key on the link — a create form defaulting to a collection named '' shows nothing.
+    expect(createRouteInside('/entities/new', '')).toEqual({ path: '/entities/new', query: {} })
+  })
+
+  it('keeps whatever else the link already said', () => {
+    expect(createRouteInside('/diagrams/new', 'platform-core', { type: 'archimate' })).toEqual({
+      path: '/diagrams/new', query: { type: 'archimate', group: 'platform-core' },
+    })
+  })
+
+  it('lets the collection win over an extra of the same name, which would be two answers', () => {
+    expect(createRouteInside('/diagrams/new', 'chosen', { group: 'stale' }).query.group).toBe('chosen')
   })
 })

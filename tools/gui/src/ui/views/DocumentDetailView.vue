@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { computed, inject, onMounted, ref, watch } from 'vue'
+import { titleErrorFor } from '../lib/documentForms'
+import DocumentHomeSelect from '../components/DocumentHomeSelect.vue'
+import { homeForMove, homeFromArtifact } from '../components/ArtifactHomeSelect.helpers'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { Effect } from 'effect'
 import { renderMarkdown } from '../../application/MarkdownService'
@@ -36,16 +39,13 @@ const referenceCursorOffset = ref(0)
 const editing = ref(false)
 
 const title = ref('')
+const home = ref('')
 const status = ref('draft')
 const keywords = ref('')
 const body = ref('')
 const titleTouched = ref(false)
 const saveAttempted = ref(false)
-const titleError = computed(() =>
-  (!title.value.trim() && (titleTouched.value || saveAttempted.value))
-    ? 'Title is required.'
-    : null,
-)
+const titleError = computed(() => titleErrorFor(title.value, titleTouched.value, saveAttempted.value))
 
 const previewHtml = computed(() => renderMarkdown(body.value || '', 'docs'))
 const onBodyClick = routeInternalLinkClicks(router)
@@ -58,6 +58,7 @@ const load = async () => {
     const doc = await Effect.runPromise(svc.getDocument(documentId.value))
     detail.value = doc
     title.value = doc.title
+    home.value = homeFromArtifact(doc.group)
     status.value = doc.status
     keywords.value = (doc.keywords ?? []).join(', ')
     body.value = doc.content_text ?? ''
@@ -85,13 +86,11 @@ const matchedDocType = computed(() =>
   documentTypes.value.find((type) => type.doc_type === detail.value?.doc_type) ?? null,
 )
 
+// The section the cursor is in decides which entity types the reference picker suggests, so the
+// offset, the section and its terms are one derivation rather than three named steps.
 const currentSectionName = computed(() => sectionAtOffset(body.value, referenceCursorOffset.value))
-
-const currentSectionSpec = computed(() =>
-  findSectionSpec(matchedDocType.value?.sections, currentSectionName.value),
-)
-
-const suggestedEntityTypesForSection = computed(() => sectionReferenceTerms(currentSectionSpec.value))
+const suggestedEntityTypesForSection = computed(() =>
+  sectionReferenceTerms(findSectionSpec(matchedDocType.value?.sections, currentSectionName.value)))
 
 const openReferencePicker = () => {
   referenceCursorOffset.value = editorRef.value?.getCursorOffset() ?? body.value.length
@@ -109,6 +108,7 @@ const startEdit = () => {
 const cancelEdit = () => {
   if (detail.value) {
     title.value = detail.value.title
+    home.value = homeFromArtifact(detail.value.group)
     status.value = detail.value.status
     keywords.value = (detail.value.keywords ?? []).join(', ')
     body.value = detail.value.content_text ?? ''
@@ -128,6 +128,7 @@ const save = async () => {
   try {
     const result = await Effect.runPromise(svc.editDocument(documentId.value, {
       title: title.value,
+      group: homeForMove(home.value),
       status: status.value,
       keywords: keywords.value.split(',').map((value) => value.trim()).filter(Boolean),
       body: body.value,
@@ -164,9 +165,7 @@ const remove = async () => {
   }
 }
 
-const insertReference = (markdownLink: string) => {
-  editorRef.value?.insertAtCursor(markdownLink)
-}
+const insertReference = (markdownLink: string) => editorRef.value?.insertAtCursor(markdownLink)
 </script>
 
 <template>
@@ -303,6 +302,8 @@ const insertReference = (markdownLink: string) => {
             {{ detail.doc_type }}
           </div>
         </div>
+
+        <DocumentHomeSelect v-model="home" />
 
         <label class="form-field">
           <span>Status</span>

@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
-from pydantic import BaseModel, ConfigDict
 
 from src.application._diagram_entity_extraction import extract_diagram_entities
 from src.application.artifacts._query_helpers import read_entity as serialize_entity
@@ -18,7 +17,6 @@ from src.application.modeling.proposal_standing import standing_subject
 from src.application.read_models import EntityContextReadModel
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.domain.baseline_standing import BASELINE_STANDING
-from src.domain.repository.groups import UNCATEGORIZED
 from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
 from src.infrastructure.rest.contracts.catalog import (
     BackendIdentityResponse,
@@ -39,6 +37,10 @@ from src.infrastructure.rest.routers._openapi import (
     WriteResultResponse,
 )
 from src.infrastructure.rest.routers._read_subject import artifact_a_read_should_serve
+from src.infrastructure.rest.routers.entities._write_bodies import (
+    CreateEntityBody,
+    EditEntityBody,
+)
 from src.infrastructure.rest.routers.entities.listing import (
     build_entity_list_rows,
     select_entity_population,
@@ -53,10 +55,6 @@ router = APIRouter()
 # accepted it would give a caller two places to say which entity they meant — with nothing deciding
 # which wins when they disagree. Forbidding extras is what turns "the id moved" from a mismatch
 # nobody notices into a rejected request.
-
-
-class _Body(BaseModel):
-    model_config = ConfigDict(extra="forbid")
 
 
 #: A create answers 201 and names the resource in ``Location``; a dry run created nothing, so it
@@ -295,40 +293,6 @@ def get_entity_schemata(
     }
 
 
-class CreateEntityBody(_Body):
-    artifact_type: str
-    name: str
-    #: Which model-project collection the artifact is filed in — its *home*. Absent means
-    #: `uncategorized`, the same reading the write path and every MCP twin already take.
-    group: str | None = None
-    summary: str | None = None
-    properties: dict[str, Any] | None = None
-    attribute_types: dict[str, str] | None = None
-    notes: str | None = None
-    keywords: list[str] | None = None
-    specializations: list[str] | None = None
-    version: str = "0.1.0"
-    status: str = "draft"
-    dry_run: bool = True
-
-
-class EditEntityBody(_Body):
-    name: str | None = None
-    #: Move the artifact to this collection. Absent leaves it where it is; naming
-    #: `uncategorized` is how a re-home *out* of a collection is said, because that is a real
-    #: collection rather than the absence of one.
-    group: str | None = None
-    summary: str | None = None
-    properties: dict[str, Any] | None = None
-    attribute_types: dict[str, str] | None = None
-    notes: str | None = None
-    keywords: list[str] | None = None
-    specializations: list[str] | None = None
-    version: str | None = None
-    status: str | None = None
-    dry_run: bool = True
-
-
 @router.post("/api/entities", tags=[TAG_ENTITIES], summary="Create an entity (dry-run or committed)",
     response_model=WriteResultResponse, responses=_CREATE_RESPONSES,
     status_code=status.HTTP_201_CREATED)
@@ -351,7 +315,7 @@ def create_entity(
             clear_repo_caches=s.clear_caches,
             artifact_type=body.artifact_type,
             name=body.name,
-            group=body.group or UNCATEGORIZED,
+            group=body.home(),
             summary=body.summary,
             properties=body.properties,
             attribute_types=body.attribute_types,

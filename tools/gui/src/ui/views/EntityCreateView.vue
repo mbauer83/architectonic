@@ -11,11 +11,15 @@ import { reconcileRowsWithSchema, rowsFromSchema } from '../lib/schemaPropertyRo
 import SchemaQuarantineBanner from '../components/SchemaQuarantineBanner.vue'
 import WriteDryRunPreview from '../components/WriteDryRunPreview.vue'
 import { NO_QUARANTINE, quarantineFromSchemaInfo } from '../lib/schemaQuarantine'
-import { createBlockedReason, previewBlockedReason } from './EntityCreateView.helpers'
+import { createBlockedReason, previewBlockedReason, propertyRowsForWrite } from './EntityCreateView.helpers'
 import { entityDetailRoute } from '../router/artifactRoutes'
+import EntityHomeSelect from '../components/EntityHomeSelect.vue'
+import { homeForCreate } from '../components/ArtifactHomeSelect.helpers'
 
 const svc = inject(modelServiceKey)!
 const router = useRouter()
+
+const home = ref('')
 
 const writeHelp = ref<WriteHelp | null>(null)
 
@@ -149,20 +153,12 @@ const removePropRow = (i: number) => properties.value.splice(i, 1)
 // ── Build body ────────────────────────────────────────────────────────────────
 
 const buildBody = (dryRun: boolean) => {
-  const props: Record<string, string> = {}
-  const adhocTypes: Record<string, string> = {}
-  for (const row of properties.value) {
-    const k = row.key.trim()
-    if (!k) continue
-    props[k] = row.value
-    if (!schemaDescriptors.value[k] && row.adHocType !== 'string') {
-      adhocTypes[k] = row.adHocType
-    }
-  }
+  const { props, adhocTypes } = propertyRowsForWrite(properties.value, schemaDescriptors.value)
   const kws = keywords.value.split(',').map(k => k.trim()).filter(Boolean)
   return {
     artifact_type: artifactType.value,
     name: name.value,
+    group: homeForCreate(home.value),
     summary: summary.value || undefined,
     keywords: kws.length ? kws : undefined,
     status: status.value,
@@ -307,6 +303,8 @@ const doCreate = () => {
             placeholder="Human-readable name"
           >
         </div>
+
+        <EntityHomeSelect v-model="home" />
 
         <div class="form-row">
           <label class="form-label">Summary</label>

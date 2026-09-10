@@ -211,6 +211,7 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
             "artifact_type": "application-component",
             "name": "MCP Walk Created Component",
             "summary": "Authored through the write mount's own transport.",
+            "group": "platform-core",
             "dry_run": False,
         },
         captures=(Capture("entity", _artifact_id),),

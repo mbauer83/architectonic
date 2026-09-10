@@ -1,6 +1,15 @@
 <script setup lang="ts">
 import { computed, inject, onMounted, ref, watch, nextTick } from 'vue'
+import { titleErrorFor } from '../lib/documentForms'
+import {
+  filledExtraFrontmatter,
+  formatFieldLabel,
+  placeholderBody,
+  sectionsWithLinkHints as sectionsWithLinkHintsOf,
+} from './DocumentCreateView.helpers'
 import { useRouter } from 'vue-router'
+import DocumentHomeSelect from '../components/DocumentHomeSelect.vue'
+import { homeForCreate } from '../components/ArtifactHomeSelect.helpers'
 import { Effect } from 'effect'
 import { modelServiceKey } from '../keys'
 import { useWriteBlock } from '../composables/useWriteBlock'
@@ -13,6 +22,7 @@ import ReferenceTermChips from '../components/ReferenceTermChips.vue'
 
 const svc = inject(modelServiceKey)!
 const router = useRouter()
+const home = ref('')
 const writeBlocked = useWriteBlock()
 
 const documentTypes = ref<DocumentType[]>([])
@@ -45,12 +55,6 @@ const extraFrontmatter = ref<Record<string, string | string[]>>({})
 const typeSwitchWarning = ref<string | null>(null)
 const pendingDocType = ref<string | null>(null)
 
-const placeholderBody = (requiredSections: readonly string[]) =>
-  requiredSections.map((section) => `## ${section}\n\n`).join('\n')
-
-const formatFieldLabel = (name: string) =>
-  name.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
-
 const selectedType = computed(() =>
   documentTypes.value.find((type) => type.doc_type === docType.value) ?? null,
 )
@@ -58,20 +62,10 @@ const selectedType = computed(() =>
 const extraFields = computed(() => selectedType.value?.extra_frontmatter_fields ?? [])
 const requiredTerms = computed(() => selectedType.value?.required_connections ?? [])
 const suggestedTerms = computed(() => selectedType.value?.suggested_connections ?? [])
-const sectionsWithLinkHints = computed(() =>
-  (selectedType.value?.sections ?? []).filter(
-    (section) =>
-      (section.required_connections?.length ?? 0) > 0 ||
-      (section.suggested_connections?.length ?? 0) > 0,
-  ),
-)
+const sectionsWithLinkHints = computed(() => sectionsWithLinkHintsOf(selectedType.value))
 
 const draftPath = computed(() => draftDocumentPath(docType.value, selectedType.value?.subdirectory))
-const titleError = computed(() =>
-  (!title.value.trim() && (titleTouched.value || submitAttempted.value))
-    ? 'Title is required.'
-    : null,
-)
+const titleError = computed(() => titleErrorFor(title.value, titleTouched.value, submitAttempted.value))
 
 onMounted(() => {
   loading.value = true
@@ -143,15 +137,7 @@ const onArrayFieldInput = (fieldName: string, raw: string) => {
   headerWasManuallyEdited.value = true
 }
 
-const buildExtraFrontmatter = (): Record<string, unknown> | undefined => {
-  const result: Record<string, unknown> = {}
-  for (const f of extraFields.value) {
-    const v = extraFrontmatter.value[f.name]
-    if (Array.isArray(v) && v.length > 0) result[f.name] = v
-    else if (typeof v === 'string' && v.trim()) result[f.name] = v.trim()
-  }
-  return Object.keys(result).length > 0 ? result : undefined
-}
+const buildExtraFrontmatter = () => filledExtraFrontmatter(extraFields.value, extraFrontmatter.value)
 
 const confirmTypeSwitch = () => {
   if (!pendingDocType.value) return
@@ -188,6 +174,7 @@ const submit = () => {
   void Effect.runPromise(svc.createDocument({
     doc_type: docType.value,
     title: title.value,
+    group: homeForCreate(home.value),
     body: body.value,
     keywords: keywords.value.split(',').map((value) => value.trim()).filter(Boolean),
     status: status.value,
@@ -255,6 +242,8 @@ const insertReference = (markdownLink: string) => {
             >{{ type.name }}</option>
           </select>
         </label>
+
+        <DocumentHomeSelect v-model="home" />
 
         <label class="form-field">
           <span>Status</span>

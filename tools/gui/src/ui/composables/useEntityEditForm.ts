@@ -6,6 +6,7 @@ import { readErrorMessage } from '../lib/errors'
 import { specializationOptionsForEntityType } from '../lib/specializationOptions'
 import { NO_QUARANTINE, quarantineFromSchemaInfo } from '../lib/schemaQuarantine'
 import { reconcileRowsWithSchema } from '../lib/schemaPropertyRows'
+import { NO_COLLECTION, homeForMove } from '../components/ArtifactHomeSelect.helpers'
 
 type AdHocType = 'string' | 'integer' | 'number' | 'boolean' | 'array'
 const ADHOC_VALID = new Set<string>(['string', 'integer', 'number', 'boolean', 'array'])
@@ -39,6 +40,9 @@ export function useEntityEditForm(options: {
 
   const editing = ref(false)
   const editName = ref('')
+  // Where the entity is filed. Seeded from what it currently says, so leaving the control alone
+  // saves a home identical to the one it has and moves nothing.
+  const editHome = ref('')
   const editSummary = ref('')
   const editKeywords = ref('')
   const editStatus = ref('')
@@ -120,6 +124,7 @@ export function useEntityEditForm(options: {
     // data, not rows left over from a prior edit's schema.
     previousSchemaKeys = []
     editName.value = d.name
+    editHome.value = d.group === NO_COLLECTION ? '' : (d.group ?? '')
     editSummary.value = d.summary ?? ''
     editKeywords.value = (d.keywords ?? []).join(', ')
     editStatus.value = d.status
@@ -183,6 +188,9 @@ export function useEntityEditForm(options: {
     // two places to say which entity they meant.
     return {
       name: editName.value || undefined,
+      // Always sent, and never absent: absent means "leave it where it is", which cannot say
+      // "take it out of its collection". `homeForMove` is where the two readings are stated.
+      group: homeForMove(editHome.value),
       summary: editSummary.value || undefined,
       keywords: kws.length ? kws : undefined,
       status: editStatus.value || undefined,
@@ -253,6 +261,7 @@ export function useEntityEditForm(options: {
   return reactive({
     editing,
     editName,
+    editHome,
     editSummary,
     editKeywords,
     editStatus,

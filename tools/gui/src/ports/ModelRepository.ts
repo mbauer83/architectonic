@@ -173,6 +173,8 @@ export interface ModelRepository
   }) => Effect.Effect<AuthoringGuidance, RepoError>
   readonly createEntity: (body: {
     artifact_type: string; name: string; summary?: string;
+    /** The model-project collection this artifact is filed in — its home. */
+    group?: string;
     properties?: Record<string, string>; attribute_types?: Record<string, string>;
     notes?: string; keywords?: string[]; specializations?: string[];
     version?: string; status?: string;
@@ -180,6 +182,8 @@ export interface ModelRepository
   }) => Effect.Effect<WriteResult, RepoError>
   readonly editEntity: (id: string, body: {
     name?: string; summary?: string;
+    /** Move it to this collection. Omitted leaves it where it is. */
+    group?: string;
     properties?: Record<string, string>; attribute_types?: Record<string, string>;
     notes?: string; keywords?: string[]; specializations?: string[];
     version?: string; status?: string;

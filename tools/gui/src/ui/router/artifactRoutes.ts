@@ -110,6 +110,18 @@ export type AssuranceMethodSurface = 'fmea' | 'stpa' | 'grc' | 'cast' | 'gsn'
 
 const seg = encodeIdentitySegment
 
+/**
+ * A create route that carries the collection the reader is browsing, so the form opens on it.
+ *
+ * Stated once rather than at each list view: arriving at a create form from inside a collection and
+ * having to pick that collection again is the gap this closes, and a rule spelled per call site is
+ * a rule some call site will be missing.
+ */
+export const createRouteInside = (
+  path: string, group: string, extra: Readonly<Record<string, string>> = {},
+): { path: string; query: Record<string, string> } =>
+  ({ path, query: { ...extra, ...(group ? { group } : {}) } })
+
 export const entityListRoute = (): string => ROUTE_TEMPLATES.entityList
 export const entityCreateRoute = (): string => ROUTE_TEMPLATES.entityCreate
 export const entityDetailRoute = (artifactId: string): string => `/entities/${seg(artifactId)}`

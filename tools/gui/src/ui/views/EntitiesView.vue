@@ -14,6 +14,7 @@ import {
   type TierSelection,
 } from '../lib/tierUrlState'
 import { entityListScope, groupFromQuery, savedGroupToMerge } from '../composables/listRequestParams'
+import { createRouteInside } from '../router/artifactRoutes'
 import ArtifactBadges from '../components/ArtifactBadges.vue'
 import TierFacet from '../components/TierFacet.vue'
 import EntitiesTreemap from '../components/EntitiesTreemap.vue'
@@ -336,7 +337,7 @@ const displayCount = computed(() => {
           </div>
           <RouterLink
             v-if="!isGlobal"
-            :to="entityCreateRoute()"
+            :to="createRouteInside(entityCreateRoute(), activeGroup)"
             class="create-btn"
           >
             + Create Entity

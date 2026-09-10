@@ -210,6 +210,10 @@ STEPS: tuple[Step, ...] = (
         lambda _c: {
             "artifact_type": "application-component",
             "name": "Walk Created Component",
+            # Filed in a collection, and moved out of it by the edit below. The field reached the
+            # write path and every MCP tool long before any REST body carried it, so the two
+            # transports disagreed about whether a person could choose where their work lives.
+            "group": "platform-core",
             "dry_run": False,
         },
         captures="entity",
@@ -217,7 +221,13 @@ STEPS: tuple[Step, ...] = (
     Step(
         "entities_update_entity", "PATCH",
         lambda c: f"/api/entities/{_q(c.created['entity'])}",
-        lambda _c: {"summary": "Patched by the write walk.", "dry_run": False},
+        lambda _c: {
+            "summary": "Patched by the write walk.",
+            # The re-home. `uncategorized` is a real collection, which is why moving *out* of one
+            # names it rather than omitting the field — omitting it means "leave it where it is".
+            "group": "uncategorized",
+            "dry_run": False,
+        },
     ),
     Step(
         "documents_create_document", "POST", lambda _c: "/api/documents",

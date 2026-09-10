@@ -2,6 +2,8 @@
 import { diagramDetailRoute } from '../router/artifactRoutes'
 import { inject, ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import DiagramHomeSelect from '../components/DiagramHomeSelect.vue'
+import { homeForCreate } from '../components/ArtifactHomeSelect.helpers'
 import { Effect } from 'effect'
 import { modelServiceKey } from '../keys'
 import type {
@@ -24,6 +26,7 @@ import { loadViewpointSummaries } from '../lib/viewpointSummary'
 const svc = inject(modelServiceKey)!
 const route = useRoute()
 const router = useRouter()
+const home = ref('')
 
 const name = ref('')
 const diagramType = ref((route.query.type as string | undefined) ?? 'archimate-business')
@@ -331,6 +334,7 @@ const doCreate = () => {
     svc.createDiagram({
       diagram_type: diagramType.value,
       name: name.value,
+      group: homeForCreate(home.value),
       entity_ids: mergedEntityIds(),
       connection_ids: [...includedConnIds.value],
       diagram_entities: diagramEntities.value,
@@ -383,6 +387,8 @@ watch(diagramType, () => {
             placeholder="Diagram name"
           >
         </div>
+
+        <DiagramHomeSelect v-model="home" />
 
         <div class="form-row">
           <label class="lbl">Diagram Type</label>

@@ -7,6 +7,7 @@
  * and a prop can't legitimately be mutated (`vue/no-mutating-props`).
  */
 import { computed, inject } from 'vue'
+import EntityHomeSelect from './EntityHomeSelect.vue'
 import { specializationOptionLabel } from '../lib/specializationOptions'
 import { entityEditFormKey } from '../composables/useEntityEditForm'
 import TypedPropertyInput from './TypedPropertyInput.vue'
@@ -52,6 +53,8 @@ const outcome = computed(() => editOutcome(props.isGlobalEntity, props.adminMode
         rows="3"
       />
     </div>
+    <EntityHomeSelect v-model="edit.editHome" />
+
     <div class="form-row">
       <label class="form-label">Keywords <span class="form-hint">(comma-separated)</span></label>
       <input
