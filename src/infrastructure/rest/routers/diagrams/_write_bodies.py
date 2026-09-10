@@ -41,6 +41,9 @@ class DiagramPreviewBody(DiagramComposition):
 
 class CreateDiagramGuiBody(DiagramComposition):
     keywords: list[str] | None = None
+    #: Which model-project collection the artifact is filed in — its *home*. Absent means
+    #: `uncategorized`, the same reading the write path and every MCP twin already take.
+    group: str | None = None
     version: str = "0.1.0"
     status: str = "draft"
     tlp: str | None = None
@@ -50,6 +53,10 @@ class CreateDiagramGuiBody(DiagramComposition):
 
 class EditDiagramGuiBody(DiagramComposition, _Body):
     version: str | None = None
+    #: Move the artifact to this collection. Absent leaves it where it is; naming
+    #: `uncategorized` is how a re-home *out* of a collection is said, because that is a real
+    #: collection rather than the absence of one.
+    group: str | None = None
     status: str | None = None
     tlp: str | None = None
     viewpoint: dict[str, Any] | None = None

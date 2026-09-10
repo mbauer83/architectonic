@@ -5808,6 +5808,8 @@ export interface components {
             dry_run: boolean;
             /** Entity Ids */
             entity_ids: string[];
+            /** Group */
+            group?: string | null;
             /** Keywords */
             keywords?: string[] | null;
             /** Name */
@@ -5844,6 +5846,8 @@ export interface components {
             extra_frontmatter?: {
                 [key: string]: unknown;
             } | null;
+            /** Group */
+            group?: string | null;
             /** Keywords */
             keywords?: string[] | null;
             /** Last Updated */
@@ -5874,6 +5878,8 @@ export interface components {
              * @default true
              */
             dry_run: boolean;
+            /** Group */
+            group?: string | null;
             /** Keywords */
             keywords?: string[] | null;
             /** Name */
@@ -7390,6 +7396,8 @@ export interface components {
             dry_run: boolean;
             /** Entity Ids */
             entity_ids: string[];
+            /** Group */
+            group?: string | null;
             /** Name */
             name: string;
             /** Status */
@@ -7416,6 +7424,8 @@ export interface components {
             extra_frontmatter?: {
                 [key: string]: unknown;
             } | null;
+            /** Group */
+            group?: string | null;
             /** Keywords */
             keywords?: string[] | null;
             /** Last Updated */
@@ -7438,6 +7448,8 @@ export interface components {
              * @default true
              */
             dry_run: boolean;
+            /** Group */
+            group?: string | null;
             /** Keywords */
             keywords?: string[] | null;
             /** Name */

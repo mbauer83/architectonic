@@ -18,6 +18,7 @@ from src.application.modeling.proposal_standing import standing_subject
 from src.application.read_models import EntityContextReadModel
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.domain.baseline_standing import BASELINE_STANDING
+from src.domain.repository.groups import UNCATEGORIZED
 from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
 from src.infrastructure.rest.contracts.catalog import (
     BackendIdentityResponse,
@@ -297,6 +298,9 @@ def get_entity_schemata(
 class CreateEntityBody(_Body):
     artifact_type: str
     name: str
+    #: Which model-project collection the artifact is filed in — its *home*. Absent means
+    #: `uncategorized`, the same reading the write path and every MCP twin already take.
+    group: str | None = None
     summary: str | None = None
     properties: dict[str, Any] | None = None
     attribute_types: dict[str, str] | None = None
@@ -310,6 +314,10 @@ class CreateEntityBody(_Body):
 
 class EditEntityBody(_Body):
     name: str | None = None
+    #: Move the artifact to this collection. Absent leaves it where it is; naming
+    #: `uncategorized` is how a re-home *out* of a collection is said, because that is a real
+    #: collection rather than the absence of one.
+    group: str | None = None
     summary: str | None = None
     properties: dict[str, Any] | None = None
     attribute_types: dict[str, str] | None = None
@@ -343,6 +351,7 @@ def create_entity(
             clear_repo_caches=s.clear_caches,
             artifact_type=body.artifact_type,
             name=body.name,
+            group=body.group or UNCATEGORIZED,
             summary=body.summary,
             properties=body.properties,
             attribute_types=body.attribute_types,
@@ -389,6 +398,9 @@ def edit_entity(artifact_id: str, body: EditEntityBody,
             # of writing; recording one means reading what is already pending.
             repo=s.maybe_get_repo(),
             name=body.name,
+            # `None` means "leave it where it is", which is what an absent field decodes to — so a
+            # plain pass-through says re-home only when a caller asked for one.
+            group=body.group,
             summary=body.summary if "summary" in provided else _UNSET,
             properties=body.properties if "properties" in provided else _UNSET,
             attribute_types=body.attribute_types if "attribute_types" in provided else _UNSET,

@@ -17,6 +17,7 @@ from src.application.artifacts.document_schema import (
 from src.application.modeling.proposal_standing import standing_subject
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.domain.baseline_standing import BASELINE_STANDING
+from src.domain.repository.groups import UNCATEGORIZED
 from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
 from src.infrastructure.rest.contracts.authoring_catalogs import DocumentTypeListResponse
 from src.infrastructure.rest.contracts.documents import (
@@ -39,6 +40,9 @@ router = APIRouter()
 class CreateDocumentRequest(BaseModel):
     doc_type: str
     title: str
+    #: Which model-project collection the artifact is filed in — its *home*. Absent means
+    #: `uncategorized`, the same reading the write path and every MCP twin already take.
+    group: str | None = None
     body: str | None = None
     keywords: list[str] | None = None
     extra_frontmatter: dict[str, object] | None = None
@@ -50,6 +54,10 @@ class CreateDocumentRequest(BaseModel):
 
 class EditDocumentRequest(BaseModel):
     title: str | None = None
+    #: Move the artifact to this collection. Absent leaves it where it is; naming
+    #: `uncategorized` is how a re-home *out* of a collection is said, because that is a real
+    #: collection rather than the absence of one.
+    group: str | None = None
     body: str | None = None
     keywords: list[str] | None = None
     extra_frontmatter: dict[str, object] | None = None
@@ -203,6 +211,7 @@ def create_document(req: CreateDocumentRequest, response: Response,
         clear_repo_caches=s.clear_caches,
         doc_type=req.doc_type,
         title=req.title,
+        group=req.group or UNCATEGORIZED,
         body=req.body,
         keywords=req.keywords,
         extra_frontmatter=req.extra_frontmatter,
@@ -249,6 +258,7 @@ def edit_document(artifact_id: str, req: EditDocumentRequest,
             registry=registry,
             repo=s.maybe_get_repo(),
             title=req.title,
+            group=req.group,
             body=req.body,
             keywords=req.keywords,
             extra_frontmatter=req.extra_frontmatter,

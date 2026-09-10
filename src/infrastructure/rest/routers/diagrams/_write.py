@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from src.application.derivation.preview import project_view_for_preview
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.domain.diagrams.diagram_selection import DiagramSelectionError
+from src.domain.repository.groups import UNCATEGORIZED
 from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.rendering.diagram_selection import resolve_diagram_selection
@@ -178,6 +179,7 @@ def create_diagram_gui(body: CreateDiagramGuiBody, response: Response,
             clear_repo_caches=s.clear_caches,
             diagram_type=body.diagram_type,
             name=body.name,
+            group=body.group or UNCATEGORIZED,
             puml=puml,
             artifact_id=get_default_allocator().allocate(
                 prefix=prefix_for_diagram_type(body.diagram_type), name_hint=body.name
@@ -230,6 +232,7 @@ def edit_diagram_gui(artifact_id: str, body: EditDiagramGuiBody,
             repo=repo,
             puml=puml,
             name=body.name,
+            group=body.group,
             keywords=KEYWORDS_UNSET,
             diagram_entities=de,
             diagram_connections=dc,
