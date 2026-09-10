@@ -22,17 +22,27 @@ rather than a simulation of one.
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 from src.application.modeling.change_rebase import RehearsedRebase
 from src.application.modeling.proposal_standing import PendingProposal
+from src.infrastructure.git.git_repository_state import UPSTREAM_REF
+from src.infrastructure.write.artifact_write.change_republication import (
+    needs_republishing,
+    republish_on_a_replacement_branch,
+)
+from src.infrastructure.write.artifact_write.change_submission import SubmissionReport
 from src.infrastructure.write.artifact_write.rebase_rehearsal import rehearse_against, rehearsing
 from src.infrastructure.write.artifact_write.rebase_replay import rehearser_for
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from src.application.artifacts.query import ArtifactRepository
+    from src.application.verification.artifact_verifier import ArtifactVerifier
+    from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -43,13 +53,18 @@ class RebaseUnavailable(RuntimeError):
 
 @dataclass(frozen=True, slots=True)
 class RebaseReport:
-    """What the rehearsal concluded, and which changes were restamped because of it."""
+    """What the rehearsal concluded, which changes were restamped, and where they were republished."""
 
     rehearsed: RehearsedRebase
     restamped: tuple[str, ...]
+    #: The replacement branch a submitted set was republished on, or None where there was no
+    #: published branch to replace — every draft rebase, and a submitted one whose reviewer has
+    #: already merged and deleted the branch.
+    republished: "SubmissionReport | None" = None
 
     def summary(self) -> str:
-        return f"{self.rehearsed.summary()}; {len(self.restamped)} restamped"
+        published = f"; republished on {self.republished.branch}" if self.republished else ""
+        return f"{self.rehearsed.summary()}; {len(self.restamped)} restamped{published}"
 
 
 def rebase_changes(
@@ -57,10 +72,17 @@ def rebase_changes(
     *,
     enterprise_root: Path | None,
     repo: "ArtifactRepository",
-    start_point: str = "HEAD",
-    restamp: bool = True,
+    registry: "ArtifactRegistry",
+    verifier: "ArtifactVerifier",
+    clear_repo_caches: "Callable[[Path], None]",
 ) -> RebaseReport:
-    """Rehearse `proposals` against the enterprise head, restamping the ones that still apply.
+    """Rehearse `proposals` against the head they must apply to, restamping the ones that still do.
+
+    **Which head that is depends on where the set already is.** A draft has been applied nowhere, so
+    what it is against is the enterprise artifact as this repository holds it, and `HEAD` is that. A
+    submitted set has already been replayed onto the working branch — rehearsing *there* would find
+    every change made and call the whole set superseded, which is the answer that ended the first
+    version of this. What it must apply to is the upstream its review branch will be merged into.
 
     `enterprise_root` is None on a deployment that mounts no enterprise repository, where a rebase
     cannot be attempted at all — there is nothing to re-apply against. Refused rather than reported
@@ -74,6 +96,8 @@ def rebase_changes(
     if not proposals:
         return RebaseReport(rehearsed=RehearsedRebase(()), restamped=())
 
+    republishing = needs_republishing(proposals, enterprise_root=enterprise_root)
+    start_point = UPSTREAM_REF if republishing else "HEAD"
     with rehearsing(enterprise_root, start_point=start_point) as worktree, rehearser_for(worktree) as rehearser:
         rehearsed = rehearse_against(
             worktree,
@@ -82,9 +106,23 @@ def rebase_changes(
             apply_edit=rehearser.apply_edit,
         )
 
-    if not restamp:
-        return RebaseReport(rehearsed=rehearsed, restamped=())
-    return RebaseReport(rehearsed=rehearsed, restamped=_restamp_clean(rehearsed, proposals, repo))
+    report = RebaseReport(rehearsed=rehearsed, restamped=_restamp_clean(rehearsed, proposals, repo))
+    # What the rehearsal *proved*, not what the restamp happened to write. A change already carrying
+    # the revision it was just proven against is restamped to the same value and reports no change —
+    # which is not a reason to withhold it from the branch a reviewer reads.
+    proven = frozenset(classified.proposal_id for classified in rehearsed.with_outcome("clean"))
+    if not proven or not republishing:
+        return report
+    # A superseded or conflicting change is not put in front of anyone, and a set of nothing but
+    # those has nothing to republish.
+    return replace(
+        report,
+        republished=republish_on_a_replacement_branch(
+            tuple(p for p in proposals if p.proposal_id in proven),
+            repo=repo, enterprise_root=enterprise_root, registry=registry, verifier=verifier,
+            clear_repo_caches=clear_repo_caches, from_head=start_point,
+        ),
+    )
 
 
 def _restamp_clean(

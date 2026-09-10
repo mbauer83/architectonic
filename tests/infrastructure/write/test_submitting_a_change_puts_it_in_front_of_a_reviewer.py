@@ -163,9 +163,10 @@ class TestWhenItMustNotHappen:
 
         assert _state_of(repo, change_id) == "draft"
 
-    def test_a_change_the_artifact_already_carries_submits_nothing(self, workspace) -> None:
-        """Replaying it alters nothing, so there is nothing to put in front of a reviewer — and the
-        author is told that rather than shown an empty branch."""
+    def test_a_change_the_artifact_already_carries_is_refused(self, workspace) -> None:
+        """There is nothing to put in front of a reviewer, and replaying it is not harmless: the
+        write path stamps `last-updated`, so it would publish a commit that moves a timestamp and
+        nothing else. Decided by content before the replay, not inferred from the diff after it."""
         engagement, enterprise, repo = workspace
         change_id = _record_a_change(engagement, repo, "Wording the engagement proposes")
         _submit(engagement, enterprise, repo, change_id)
@@ -180,9 +181,12 @@ class TestWhenItMustNotHappen:
         )
         git(enterprise, "add", "-A")
         git(enterprise, "commit", "-m", "a reviewer's own edit")
+        repo.refresh()  # the file was written behind the index, which a running backend does not do
 
-        with pytest.raises(SubmissionUnavailable, match="altered nothing"):
+        with pytest.raises(SubmissionUnavailable, match="already says what"):
             _submit(engagement, enterprise, repo, second)
+
+        assert _state_of(repo, second) == "draft"
 
     def test_nothing_is_marked_when_the_set_is_refused(self, workspace) -> None:
         engagement, enterprise, repo = workspace
@@ -246,3 +250,137 @@ def _rewind_to_pushed(enterprise: Path, repo: ArtifactRepository, change_id: str
     assert record is not None
     mark_proposal_state(record.path, artifact_id=change_id, state="draft")
     repo.refresh()
+
+
+class TestRebasingASetAlreadyUnderReview:
+    """D4b: the branch is the unit of review, so a rebase replaces it rather than rewriting it.
+
+    Force-pushing would change the commits underneath a reviewer with nothing to say so. Opening a
+    branch and *not* publishing it would leave the changes reading `submitted` while their branch is
+    `accumulating`, which is the one pairing of the two lifecycles the regional invariant forbids.
+    So the replacement is opened, replayed onto, published, and only then is the old one retired.
+    """
+
+    def test_it_publishes_a_replacement_and_retires_the_reviewed_branch(self, workspace) -> None:
+        engagement, enterprise, repo = workspace
+        change_id = _record_a_change(engagement, repo, "Wording the engagement proposes")
+        first = _submit(engagement, enterprise, repo, change_id)
+        _main_moves_while_the_change_waits(enterprise)
+
+        report = _rebase(repo, enterprise, change_id)
+
+        assert report.republished is not None
+        replacement = report.republished.branch
+        assert replacement != first.branch
+        heads = _remote_heads(enterprise)
+        assert replacement in heads
+        assert first.branch not in heads, "the branch it replaced is retired once the successor is up"
+
+    def test_the_replacement_carries_the_change_on_top_of_what_moved(self, workspace) -> None:
+        """Read off the replacement branch itself, which is the only thing a reviewer sees.
+
+        Both halves matter: the branch must carry the change, or it is a review of nothing, and it
+        must carry what moved underneath, or it is the old branch under a new name.
+        """
+        engagement, enterprise, repo = workspace
+        change_id = _record_a_change(engagement, repo, "Wording the engagement proposes")
+        _submit(engagement, enterprise, repo, change_id)
+        _main_moves_while_the_change_waits(enterprise)
+
+        report = _rebase(repo, enterprise, change_id)
+
+        assert report.republished is not None
+        published = git(
+            enterprise, "show",
+            f"{report.republished.branch}:model/motivation/requirement/{ENT_ENTITY_ID}.md",
+        )
+        assert "Wording the engagement proposes" in published, "the change is on it"
+        assert "status: active" in published, "and so is what moved underneath it"
+
+    def test_the_branch_never_rests_in_accumulating(self, workspace) -> None:
+        """The regional invariant: a change reading `submitted` on an `accumulating` branch is the
+        state in which nothing local can say whether a reviewer is looking at this work or at the
+        version it replaced."""
+        engagement, enterprise, repo = workspace
+        change_id = _record_a_change(engagement, repo, "Wording the engagement proposes")
+        _submit(engagement, enterprise, repo, change_id)
+        _main_moves_while_the_change_waits(enterprise)
+
+        report = _rebase(repo, enterprise, change_id)
+
+        assert report.republished is not None
+        state = enterprise_sync_state.load(enterprise)
+        assert state.status == "pending"
+        assert state.branch == report.republished.branch, "the recorded branch is the new one"
+        assert state.superseded_branch is None, "nothing is left waiting to be retired"
+        assert _state_of(repo, change_id) == "submitted", "a rebase does not move the lifecycle"
+
+    def test_a_draft_rebase_publishes_nothing(self, workspace) -> None:
+        """There is no branch under review to protect, and opening one would publish work its author
+        never submitted."""
+        engagement, enterprise, repo = workspace
+        change_id = _record_a_change(engagement, repo, "Wording the engagement proposes")
+        _main_moves_while_the_change_waits(enterprise)
+
+        report = _rebase(repo, enterprise, change_id)
+
+        assert report.republished is None
+        assert not [head for head in _remote_heads(enterprise) if head.startswith("arch/")]
+
+
+def _remote_heads(enterprise: Path) -> list[str]:
+    """The branch names on origin, exactly.
+
+    Names rather than the raw `ls-remote` text: two branches created in the same second differ by a
+    numeric suffix, so a substring test finds the retired branch inside the name of the one that
+    replaced it and reports a retirement that did happen as one that did not.
+    """
+    listing = git(enterprise, "ls-remote", "--heads", "origin")
+    return [line.split("refs/heads/", 1)[1] for line in listing.splitlines() if "refs/heads/" in line]
+
+
+def _main_moves_while_the_change_waits(enterprise: Path) -> None:
+    """Advance the upstream the review branch will be merged into.
+
+    On `main`, not on the working branch: that is where the enterprise repository's own work lands,
+    and it is what a review branch goes stale against. Editing the working branch instead would be
+    this repository amending its own submission, which is a different act with a different remedy.
+    """
+    working = git(enterprise, "rev-parse", "--abbrev-ref", "HEAD")
+    git(enterprise, "checkout", "main")
+    promoted = enterprise / "model" / "motivation" / "requirement" / f"{ENT_ENTITY_ID}.md"
+    # A modelled field, not free prose in the body: every write in this product re-renders the
+    # artifact from the fields it knows, so a paragraph nothing models would not survive the replay
+    # and the test would be asserting the renderer's limits rather than where the branch was opened.
+    promoted.write_text(
+        promoted.read_text(encoding="utf-8").replace("status: draft", "status: active"),
+        encoding="utf-8",
+    )
+    # The model only. `git add -A` here stages `.arch/`, the runtime sync state, onto main — and
+    # switching back to the working branch then deletes it, resetting the repository to `synced` and
+    # making the submission it was holding disappear. The product excludes that directory from every
+    # commit it makes for the same reason.
+    git(enterprise, "add", "model")
+    git(enterprise, "commit", "-m", "the enterprise repository's own work")
+    git(enterprise, "push", "origin", "main")
+    git(enterprise, "checkout", working)
+    git(enterprise, "fetch", "origin")
+
+
+def _rebase(repo: ArtifactRepository, enterprise: Path, change_id: str):  # noqa: ANN202
+    from src.infrastructure.write.artifact_write.change_rebase_op import rebase_changes
+
+    repo.refresh()
+    proposal = next(
+        p
+        for group in pending_proposals(
+            repo.list_entities(artifact_type=PROPOSED_CHANGE_TYPE)
+        ).values()
+        for p in group
+        if p.proposal_id == change_id
+    )
+    registry, verifier = _deps(repo)
+    return rebase_changes(
+        (proposal,), enterprise_root=enterprise, repo=repo, registry=registry,
+        verifier=verifier, clear_repo_caches=lambda _p: repo.refresh(),
+    )

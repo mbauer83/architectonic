@@ -206,8 +206,9 @@ def test_architecture_write_mount_annotations_match_expected_intent() -> None:
         "artifact_discard_change": (False, True, False, False),
         # Not destructive: a rebase records what a change was proven against and writes nothing at
         # all when it refuses. The replay that could destroy something happens in a worktree that
-        # goes with the block.
-        "artifact_rebase_change": (False, False, False, False),
+        # goes with the block. Open-world, because rebasing a set already under review publishes its
+        # replacement branch to the shared remote.
+        "artifact_rebase_change": (False, False, False, True),
         # Open-world, unlike the other two: it pushes the review branch to a shared remote, which is
         # not this machine's to take back.
         "artifact_submit_changes": (False, False, False, True),

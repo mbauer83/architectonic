@@ -35,7 +35,6 @@ ASSURANCE_ROUTE_PREFIX = "/api/assurance"
 
 _ENGAGEMENT_OPERATIONS: tuple[str, ...] = (
     "changes_discard_change",
-    "changes_rebase_change",
     "connections_cleanup_broken_references",
     "connections_create_connection",
     "connections_delete_connection",
@@ -90,6 +89,9 @@ _ADMIN_INTENT: MutationIntent = "enterprise_admin_authoring"
 REST_MUTATION_MANIFEST: dict[str, MutationIntent] = {
     **{operation: _ENGAGEMENT_INTENT for operation in _ENGAGEMENT_OPERATIONS},
     **{operation: _ADMIN_INTENT for operation in _ADMIN_OPERATIONS},
+    # Both reach the remote: one publishes the review branch, the other replaces it. A rebase of a
+    # draft touches nothing upstream, but the intent is the operation's, not the argument's.
+    "changes_rebase_change": "enterprise_proposal",
     "changes_submit_changes": "enterprise_proposal",
     "promotion_execute_promotion": "promotion",
     "sync_save_enterprise": "enterprise_save",

@@ -32,6 +32,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from src.application.modeling.integration_detection import current_values_of, integration_verdict
 from src.application.modeling.proposal_standing import PendingProposal, pending_proposals
 from src.application.modeling.proposed_change import PROPOSED_CHANGE_TYPE, SUBMITTED_STATE
 from src.application.modeling.submission_set import compose
@@ -101,19 +102,43 @@ def submit_changes(
         )
 
     composed = compose(proposal_ids, pending_proposals(repo.list_entities(artifact_type=PROPOSED_CHANGE_TYPE)))
+    _refuse_what_the_artifact_already_says(composed, repo=repo)
     ensure_working_branch(enterprise_root)
+    return publish_on_the_current_branch(
+        composed, repo=repo, enterprise_root=enterprise_root, registry=registry,
+        verifier=verifier, clear_repo_caches=clear_repo_caches, verb="Proposed",
+    )
+
+
+def publish_on_the_current_branch(
+    composed: tuple[PendingProposal, ...],
+    *,
+    repo: "ArtifactRepository",
+    enterprise_root: Path,
+    registry: "ArtifactRegistry",
+    verifier: "ArtifactVerifier",
+    clear_repo_caches: "Callable[[Path], None]",
+    verb: str,
+) -> SubmissionReport:
+    """Replay the set onto whichever branch the enterprise checkout is on, and publish it.
+
+    Which branch that is belongs to the caller: a first submission accumulates on the working branch,
+    while a rebase of a set already under review opens a replacement first, because the branch is the
+    unit of review and a force-push rewrites what a reviewer is reading. Everything after that choice
+    is identical, and was not going to stay identical if it were written twice.
+    """
     _replay_onto_enterprise(
         composed, enterprise_root=enterprise_root, registry=registry, verifier=verifier,
         clear_repo_caches=clear_repo_caches,
     )
-    commit = _commit_the_replay(composed, enterprise_root=enterprise_root)
+    commit = _commit_the_replay(composed, enterprise_root=enterprise_root, verb=verb)
 
     prepared = prepare_submission(enterprise_root, tuple(p.proposal_id for p in composed))
     outcome = publish_submission(enterprise_root, prepared)
     complete_submission(repo=repo, enterprise_root=enterprise_root)
     _record_published(enterprise_root, branch=outcome.branch, commit=outcome.commit)
 
-    logger.info("Submitted %d change(s) on %s", len(composed), outcome.branch)
+    logger.info("Published %d change(s) on %s", len(composed), outcome.branch)
     return SubmissionReport(
         branch=outcome.branch,
         commit=commit,
@@ -152,19 +177,43 @@ def _replay_onto_enterprise(
     transaction.commit()
 
 
+def _refuse_what_the_artifact_already_says(
+    composed: tuple[PendingProposal, ...], *, repo: "ArtifactRepository"
+) -> None:
+    """Refuse a change the enterprise artifact already carries, before anything is replayed.
+
+    Decided by content, through the same verdict the integration sweep and the rebase rehearsal use,
+    so "already carries it" means one thing across the lifecycle. Asked *before* the replay rather
+    than inferred from the diff afterwards, because a no-op edit is not a no-op write: the write path
+    stamps `last-updated`, so replaying a change the artifact already says produces a commit that
+    moves a timestamp and nothing else, and puts it in front of a reviewer as though it were work.
+
+    The remedy is the one a rebase already names for the same finding: discard it.
+    """
+    for proposal in composed:
+        current = current_values_of(
+            repo.get_entity(proposal.target_id) or repo.get_document(proposal.target_id)
+        )
+        if integration_verdict(proposal.edit, current).integrated:
+            raise SubmissionUnavailable(
+                f"'{proposal.target_id}' already says what '{proposal.proposal_id}' asks for, so "
+                "there is nothing to put in front of a reviewer. Discard the change: submitting it "
+                "would publish a commit that moves a timestamp and nothing else."
+            )
+
+
 def _commit_the_replay(
     composed: tuple[PendingProposal, ...],
     *,
     enterprise_root: Path,
+    verb: str,
 ) -> str:
     """Commit the replayed edits, verifying the whole tree the way any enterprise save does."""
     named = ", ".join(sorted({proposal.edit.artifact_id for proposal in composed}))
     try:
         return commit_enterprise_work(
             enterprise_root,
-            f"Proposed change to {named}"
-            if len(composed) == 1
-            else f"Proposed changes to {named}",
+            f"{verb} change to {named}" if len(composed) == 1 else f"{verb} changes to {named}",
         )
     except ValueError as nothing_to_commit:
         raise SubmissionUnavailable(

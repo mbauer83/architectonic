@@ -29,7 +29,6 @@ from src.infrastructure.mcp.artifact_mcp.context import (
 from src.infrastructure.mcp.artifact_mcp.mutation_registration import register_mutation_tool
 from src.infrastructure.mcp.tool_annotations import (
     DESTRUCTIVE_LOCAL_WRITE,
-    LOCAL_WRITE,
     OPEN_WORLD_WRITE,
     READ_ONLY,
 )
@@ -109,22 +108,34 @@ _REBASE_DESCRIPTION = (
     "nothing is attempted where it can be seen. Three outcomes: 'clean' — it still applies, and the "
     "change now records the revision it was proven against; 'superseded' — the artifact already says "
     "what it asked, so discard it; 'conflicting' — the verifier's refusal, verbatim, and nothing was "
-    "written. Requires both repositories to be mounted; there is nothing to rebase onto otherwise."
+    "written. Requires both repositories to be mounted; there is nothing to rebase onto otherwise. "
+    "\n\nWhere the change has already been submitted, a clean rebase also opens a replacement "
+    "review branch on the current head, publishes it and retires the one it replaces — the branch "
+    "is what a reviewer reads, and rewriting it would change the commits under them silently."
 )
 
 
-def artifact_rebase_change(*, artifact_id: str, repo_root: str | None = None) -> dict[str, Any]:
+def artifact_rebase_change(
+    *, artifact_id: str, repo_root: str | None = None, enterprise_root: str | None = None
+) -> dict[str, Any]:
     from src.infrastructure.write.artifact_write.change_rebase_op import (  # noqa: PLC0415
         RebaseUnavailable,
         rebase_changes,
     )
 
-    root, repo = _repo_for(repo_root)
+    roots = resolve_repo_roots(
+        repo_scope="both", repo_root=repo_root, repo_preset=None, enterprise_root=enterprise_root
+    )
+    key = roots_key(roots)
+    root, enterprise = roots[0], roots[1]
+    repo = repo_cached(key)
     proposal = _live_change(repo, artifact_id)
-    enterprise = next((mount.root for mount in repo.repo_mounts if mount.scope == "enterprise"), None)
     mutation_context, clear_repo_caches = authoritative_callbacks_for(root)
     try:
-        report = rebase_changes((proposal,), enterprise_root=enterprise, repo=repo)
+        report = rebase_changes(
+            (proposal,), enterprise_root=enterprise, repo=repo, registry=registry_cached(key),
+            verifier=verifier_for(key, include_registry=True), clear_repo_caches=clear_repo_caches,
+        )
     except RebaseUnavailable as refused:
         raise ValueError(str(refused)) from refused
     if report.restamped:
@@ -236,7 +247,8 @@ def register_change_write_tools(mcp: MCPServer) -> None:
         name="artifact_rebase_change",
         title="Artifact: Rebase a Local Change",
         description=_REBASE_DESCRIPTION,
-        annotations=LOCAL_WRITE,
+        # Open-world: rebasing a change already under review publishes its replacement branch.
+        annotations=OPEN_WORLD_WRITE,
     )
     register_mutation_tool(
         mcp,

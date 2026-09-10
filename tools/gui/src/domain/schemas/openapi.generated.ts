@@ -5319,6 +5319,8 @@ export interface components {
         ChangeRebasedResponse: {
             /** Changes */
             changes: components["schemas"]["RebasedChange"][];
+            /** Republished Branch */
+            republished_branch: string | null;
             /** Summary */
             summary: string;
         };

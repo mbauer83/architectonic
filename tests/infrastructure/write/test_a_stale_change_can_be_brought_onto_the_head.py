@@ -113,6 +113,24 @@ def _pending(repo):  # noqa: ANN001, ANN202
     return pending_proposals(repo.list_entities(artifact_type=PROPOSED_CHANGE_TYPE))[TARGET]
 
 
+def _rebase(repo, enterprise, proposals=None):  # noqa: ANN001, ANN202
+    """A rebase with the write capability it now needs, since a submitted set republishes.
+
+    The changes here are drafts, so nothing is published — but the capability is not optional on the
+    operation, only unused on this path, and a test that could not supply it would be testing a
+    narrower function than the one that ships.
+    """
+    registry = ArtifactRegistry(repo._store)  # noqa: SLF001 — the write path is handed one
+    return rebase_changes(
+        _pending(repo) if proposals is None else proposals,
+        enterprise_root=enterprise,
+        repo=repo,
+        registry=registry,
+        verifier=build_artifact_verifier(registry, catalogs=process_runtime_catalogs()),
+        clear_repo_caches=lambda _p: repo.refresh(),
+    )
+
+
 # ── the clean case, which is the point of the operation ──────────────────────
 
 
@@ -121,7 +139,7 @@ def test_a_stale_change_that_still_applies_is_reported_clean(workspace) -> None:
     _record_a_change(workspace, summary="My wording.")
     _move_upstream(enterprise, "Someone else's wording.")
 
-    report = rebase_changes(_pending(repo), enterprise_root=enterprise, repo=repo)
+    report = _rebase(repo, enterprise)
 
     (classified,) = report.rehearsed.changes
     assert classified.outcome == "clean"
@@ -134,7 +152,7 @@ def test_a_clean_rebase_restamps_the_revision_it_was_proven_against(workspace) -
     _move_upstream(enterprise, "Someone else's wording.")
     assert _stale(repo)
 
-    report = rebase_changes(_pending(repo), enterprise_root=enterprise, repo=repo)
+    report = _rebase(repo, enterprise)
 
     assert report.restamped == (change_id,)
     assert not _stale(repo)
@@ -147,7 +165,7 @@ def test_the_recorded_edit_itself_is_untouched(workspace) -> None:  # noqa: ANN0
     _record_a_change(workspace, summary="My wording.")
     _move_upstream(enterprise, "Someone else's wording.")
 
-    rebase_changes(_pending(repo), enterprise_root=enterprise, repo=repo)
+    _rebase(repo, enterprise)
 
     (change,) = _pending(repo)
     assert change.edit.fields == {"summary": "My wording."}
@@ -162,7 +180,7 @@ def test_the_enterprise_checkout_is_left_as_it_was(workspace) -> None:  # noqa: 
         encoding="utf-8"
     )
 
-    rebase_changes(_pending(repo), enterprise_root=enterprise, repo=repo)
+    _rebase(repo, enterprise)
 
     assert (enterprise / "model" / "motivation" / "requirement" / f"{TARGET}.md").read_text(
         encoding="utf-8"
@@ -178,7 +196,7 @@ def test_a_change_the_artifact_already_carries_is_superseded_not_conflicting(wor
     _record_a_change(workspace, summary="My wording.")
     _move_upstream(enterprise, "My wording.")
 
-    report = rebase_changes(_pending(repo), enterprise_root=enterprise, repo=repo)
+    report = _rebase(repo, enterprise)
 
     (classified,) = report.rehearsed.changes
     assert classified.outcome == "superseded"
@@ -191,7 +209,7 @@ def test_a_superseded_change_is_reported_and_not_acted_on(workspace) -> None:  #
     _record_a_change(workspace, summary="My wording.")
     _move_upstream(enterprise, "My wording.")
 
-    report = rebase_changes(_pending(repo), enterprise_root=enterprise, repo=repo)
+    report = _rebase(repo, enterprise)
 
     assert report.restamped == ()
     assert len(_pending(repo)) == 1
@@ -204,7 +222,7 @@ def test_a_target_that_is_gone_conflicts_rather_than_crashing(workspace) -> None
     _git(enterprise, "add", "-A")
     _git(enterprise, "commit", "-qm", "the artifact was removed upstream")
 
-    report = rebase_changes(_pending(repo), enterprise_root=enterprise, repo=repo)
+    report = _rebase(repo, enterprise)
 
     (classified,) = report.rehearsed.changes
     assert classified.outcome == "conflicting"
@@ -221,13 +239,13 @@ def test_a_deployment_without_the_enterprise_repository_is_told_why(workspace) -
     _record_a_change(workspace, summary="My wording.")
 
     with pytest.raises(RebaseUnavailable, match="both repositories are mounted"):
-        rebase_changes(_pending(repo), enterprise_root=None, repo=repo)
+        _rebase(repo, None)
 
 
 def test_nothing_pending_is_not_an_error(workspace) -> None:  # noqa: ANN001
     _root, enterprise, repo = workspace
 
-    report = rebase_changes((), enterprise_root=enterprise, repo=repo)
+    report = _rebase(repo, enterprise, proposals=())
 
     assert report.rehearsed.changes == ()
 
@@ -245,7 +263,7 @@ def test_the_base_revision_on_disk_is_what_moved(workspace) -> None:  # noqa: AN
     before = parse_frontmatter(repo.get_entity(change_id).path.read_text(encoding="utf-8"))
     _move_upstream(enterprise, "Someone else's wording.")
 
-    rebase_changes(_pending(repo), enterprise_root=enterprise, repo=repo)
+    _rebase(repo, enterprise)
 
     after = parse_frontmatter(repo.get_entity(change_id).path.read_text(encoding="utf-8"))
     assert after[BASE_REVISION] != before[BASE_REVISION]

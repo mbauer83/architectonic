@@ -86,6 +86,9 @@ class ChangeRebasedResponse(Closed):
     """What the rehearsal concluded. Nothing is written for a superseded or conflicting change."""
 
     changes: list[RebasedChange]
+    #: The replacement branch a set already under review was republished on. None where there was
+    #: no published branch to replace, which is every rebase of a draft.
+    republished_branch: str | None
     summary: str
 
 

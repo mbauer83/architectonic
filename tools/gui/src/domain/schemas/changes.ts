@@ -66,6 +66,12 @@ export type RebasedChange = typeof RebasedChangeSchema.Type
 
 export const ChangeRebasedSchema = Schema.Struct({
   changes: Schema.Array(RebasedChangeSchema),
+  /**
+   * The replacement review branch a rebase of a submitted set was published on. Null for a draft,
+   * which has no published branch to replace — the branch is the unit of review, so a set already
+   * under review gets a new one rather than having the one a reviewer is reading rewritten.
+   */
+  republished_branch: Schema.NullOr(Schema.String),
   summary: Schema.String,
 })
 export type ChangeRebased = typeof ChangeRebasedSchema.Type

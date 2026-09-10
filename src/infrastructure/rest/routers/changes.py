@@ -90,7 +90,9 @@ def discard_change(artifact_id: str) -> dict[str, Any]:
     summary="Bring a local change onto the enterprise artifact as it stands",
     response_model=ChangeRebasedResponse, responses=WRITE_RESPONSES,
     operation_id="changes_rebase_change")
-def rebase_change(artifact_id: str) -> dict[str, Any]:
+def rebase_change(artifact_id: str,
+    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
+) -> dict[str, Any]:
     """Re-apply the change where nobody can see it, and record what it was proven against."""
     from src.infrastructure.write.artifact_write.change_rebase_op import (
         RebaseUnavailable,
@@ -99,9 +101,12 @@ def rebase_change(artifact_id: str) -> dict[str, Any]:
 
     repo = s.get_repo()
     proposal = _live_change(repo, artifact_id)
+    enterprise_root, registry, verifier = s.enterprise_write_deps(catalogs)
     try:
-        report = rebase_changes(
-            (proposal,), enterprise_root=s.maybe_enterprise_root(), repo=repo,
+        report = s.authorized_write(
+            "changes_rebase_change", rebase_changes,
+            (proposal,), enterprise_root=enterprise_root, repo=repo, registry=registry,
+            verifier=verifier, clear_repo_caches=s.clear_caches,
         )
     except RebaseUnavailable as refused:
         raise HTTPException(409, str(refused)) from refused
@@ -118,6 +123,7 @@ def rebase_change(artifact_id: str) -> dict[str, Any]:
             }
             for classified in report.rehearsed.changes
         ],
+        "republished_branch": report.republished.branch if report.republished else None,
         "summary": report.summary(),
     }
 

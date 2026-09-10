@@ -137,7 +137,6 @@ MUTATION_TOOL_MANIFEST: dict[str, MutationToolManifestRow] = {
     "artifact_edit_connection_associations": _ENGAGEMENT_ROW,
     "artifact_delete_entity": _ENGAGEMENT_ROW,
     "artifact_discard_change": _ENGAGEMENT_ROW,
-    "artifact_rebase_change": _ENGAGEMENT_ROW,
     "artifact_delete_diagram": _ENGAGEMENT_ROW,
     "artifact_group": _ENGAGEMENT_ROW,
     "artifact_viewpoint": _ENGAGEMENT_ROW,
@@ -149,6 +148,9 @@ MUTATION_TOOL_MANIFEST: dict[str, MutationToolManifestRow] = {
     ),
     "artifact_submit_for_review": MutationToolManifestRow(
         intents=("enterprise_submit",), build_request=_enterprise_submit
+    ),
+    "artifact_rebase_change": MutationToolManifestRow(
+        intents=("enterprise_proposal",), build_request=_enterprise_proposal
     ),
     "artifact_submit_changes": MutationToolManifestRow(
         intents=("enterprise_proposal",), build_request=_enterprise_proposal

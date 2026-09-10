@@ -17,6 +17,11 @@ from pathlib import Path
 
 from src.infrastructure.git._git_command import PUSH_TIMEOUT, run_repo_git
 
+#: What an enterprise working branch is opened from and merged back into. Spelled here because two
+#: questions need it — how far behind a branch is, and what a rebase re-applies onto — and a second
+#: spelling of the upstream is a second place to be wrong about which branch review happens against.
+UPSTREAM_REF = "origin/main"
+
 
 def current_branch(repo: Path) -> str | None:
     rc, out, _ = run_repo_git(repo, "rev-parse", "--abbrev-ref", "HEAD")
@@ -37,7 +42,7 @@ def has_uncommitted_changes(repo: Path, *pathspecs: str) -> bool:
 
 
 def commits_ahead_of_main(repo: Path) -> int:
-    rc, out, _ = run_repo_git(repo, "rev-list", "--count", "origin/main..HEAD")
+    rc, out, _ = run_repo_git(repo, "rev-list", "--count", f"{UPSTREAM_REF}..HEAD")
     try:
         return int(out) if rc == 0 else 0
     except ValueError:
