@@ -20,21 +20,24 @@ from src.application.modeling.proposed_change import (
 )
 from src.infrastructure.mcp.artifact_mcp.context import (
     authoritative_callbacks_for,
+    registry_cached,
     repo_cached,
     resolve_repo_roots,
     roots_key,
+    verifier_for,
 )
 from src.infrastructure.mcp.artifact_mcp.mutation_registration import register_mutation_tool
 from src.infrastructure.mcp.tool_annotations import (
     DESTRUCTIVE_LOCAL_WRITE,
     LOCAL_WRITE,
+    OPEN_WORLD_WRITE,
     READ_ONLY,
 )
 
 _LIST_DESCRIPTION = (
     "List the local changes this repository is holding: edits to artifacts promoted to the "
-    "enterprise repository, which cannot be written here and are recorded as changes awaiting "
-    "review. Each row names the artifact by name and by the local reference that stands for it — "
+    "enterprise repository, which cannot be written here and are recorded as local changes "
+    "instead. Each row names the artifact by name and by the local reference that stands for it — "
     "the enterprise id is what the change is against, not something this repository can open. "
     "\n\nstate: 'draft' has been put to nobody yet; 'submitted' is under review. "
     "\n\ncondition: 'stale' means the enterprise artifact has moved since the change was written; "
@@ -143,6 +146,60 @@ def artifact_rebase_change(*, artifact_id: str, repo_root: str | None = None) ->
     }
 
 
+_SUBMIT_DESCRIPTION = (
+    "Submit local changes for review upstream, naming them by their own artifact_ids (from "
+    "artifact_list_changes) in the order they are to be replayed. The order is part of the command: "
+    "where two changes touch one artifact, whichever replays second decides the result. "
+    "\n\nThe recorded edits are re-applied to the enterprise repository, committed on its working "
+    "branch and pushed, and the changes are marked submitted only once the remote confirms the "
+    "branch. Refused, with nothing submitted, when a change no longer applies — rebase it first — "
+    "when two of them write the same field of one artifact, when the enterprise repository has "
+    "unsaved work that the commit would publish alongside, and when replaying them alters nothing. "
+    "Requires both repositories to be mounted."
+)
+
+
+def artifact_submit_changes(
+    *,
+    artifact_ids: list[str],
+    repo_root: str | None = None,
+    enterprise_root: str | None = None,
+) -> dict[str, Any]:
+    from src.infrastructure.write.artifact_write.change_submission import (  # noqa: PLC0415
+        SubmissionUnavailable,
+        submit_changes,
+    )
+
+    roots = resolve_repo_roots(
+        repo_scope="both", repo_root=repo_root, repo_preset=None, enterprise_root=enterprise_root
+    )
+    key = roots_key(roots)
+    engagement, enterprise = roots[0], roots[1]
+    mutation_context, clear_repo_caches = authoritative_callbacks_for(engagement)
+    try:
+        report = submit_changes(
+            artifact_ids,
+            repo=repo_cached(key),
+            enterprise_root=enterprise,
+            registry=registry_cached(key),
+            verifier=verifier_for(key, include_registry=True),
+            clear_repo_caches=clear_repo_caches,
+        )
+    except SubmissionUnavailable as refused:
+        raise ValueError(str(refused)) from refused
+    mutation_context.finalize()
+    return {
+        "branch": report.branch,
+        "commit": report.commit,
+        "submitted": list(report.submitted),
+        "pushed_now": report.pushed_now,
+        "summary": (
+            f"{len(report.submitted)} change"
+            f"{'' if len(report.submitted) == 1 else 's'} submitted on '{report.branch}'."
+        ),
+    }
+
+
 def _live_change(repo: Any, artifact_id: str):  # noqa: ANN202 — the proposal type is the caller's concern
     """The change this operation is about, through the one decoder of a change record."""
     from src.application.modeling.proposal_standing import pending_proposals  # noqa: PLC0415
@@ -180,4 +237,14 @@ def register_change_write_tools(mcp: MCPServer) -> None:
         title="Artifact: Rebase a Local Change",
         description=_REBASE_DESCRIPTION,
         annotations=LOCAL_WRITE,
+    )
+    register_mutation_tool(
+        mcp,
+        artifact_submit_changes,
+        name="artifact_submit_changes",
+        title="Artifact: Submit Local Changes for Review",
+        description=_SUBMIT_DESCRIPTION,
+        # Open-world: it pushes to a shared remote, which is not this machine's to undo. The other
+        # change tools are local — a rebase's replay happens in a worktree that goes with the block.
+        annotations=OPEN_WORLD_WRITE,
     )

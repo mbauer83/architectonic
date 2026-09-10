@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
 from src.application.modeling.change_overview import RecordedChange, recorded_changes
 from src.application.modeling.proposal_standing import PendingProposal, pending_proposals
@@ -18,10 +18,14 @@ from src.application.modeling.proposed_change import (
     PROPOSAL_STATE,
     PROPOSED_CHANGE_TYPE,
 )
+from src.application.runtime_catalogs import RuntimeCatalogs
+from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
 from src.infrastructure.rest.contracts.changes import (
     ChangeDiscardedResponse,
     ChangeListResponse,
     ChangeRebasedResponse,
+    ChangeSubmitRequest,
+    ChangeSubmittedResponse,
 )
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers._openapi import (
@@ -115,6 +119,41 @@ def rebase_change(artifact_id: str) -> dict[str, Any]:
             for classified in report.rehearsed.changes
         ],
         "summary": report.summary(),
+    }
+
+
+@router.post("/api/changes/submit", tags=[TAG_CHANGES],
+    summary="Submit local changes for review upstream",
+    response_model=ChangeSubmittedResponse, responses=WRITE_RESPONSES,
+    operation_id="changes_submit_changes")
+def submit_changes_for_review(body: ChangeSubmitRequest,
+    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
+) -> dict[str, Any]:
+    """Replay the changes into the enterprise repository and publish the branch carrying them."""
+    from src.infrastructure.write.artifact_write.change_submission import (
+        SubmissionUnavailable,
+        submit_changes,
+    )
+
+    enterprise_root, registry, verifier = s.enterprise_write_deps(catalogs)
+    try:
+        report = s.authorized_write(
+            "changes_submit_changes", submit_changes,
+            body.artifact_ids, repo=s.get_repo(), enterprise_root=enterprise_root,
+            registry=registry, verifier=verifier, clear_repo_caches=s.clear_caches,
+        )
+    except (SubmissionUnavailable, ValueError) as refused:
+        raise HTTPException(409, str(refused)) from refused
+    s.refresh_now()
+    return {
+        "branch": report.branch,
+        "commit": report.commit,
+        "submitted": list(report.submitted),
+        "pushed_now": report.pushed_now,
+        "summary": (
+            f"{len(report.submitted)} change"
+            f"{'' if len(report.submitted) == 1 else 's'} submitted on '{report.branch}'."
+        ),
     }
 
 

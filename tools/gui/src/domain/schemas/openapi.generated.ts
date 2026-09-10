@@ -1312,6 +1312,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/changes/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit local changes for review upstream
+         * @description Replay the changes into the enterprise repository and publish the branch carrying them.
+         */
+        post: operations["changes_submit_changes"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/connections": {
         parameters: {
             query?: never;
@@ -5299,6 +5319,37 @@ export interface components {
         ChangeRebasedResponse: {
             /** Changes */
             changes: components["schemas"]["RebasedChange"][];
+            /** Summary */
+            summary: string;
+        };
+        /**
+         * ChangeSubmitRequest
+         * @description The changes to submit, in the order they are to be replayed.
+         *
+         *     Ordered because replay order decides the result where two changes touch one artifact, and the
+         *     order is the caller's to state rather than the server's to infer from filesystem or timestamps —
+         *     the same submission would otherwise produce different content on different machines.
+         */
+        ChangeSubmitRequest: {
+            /** Artifact Ids */
+            artifact_ids: string[];
+        };
+        /**
+         * ChangeSubmittedResponse
+         * @description What reached the reviewer, and what was marked.
+         *
+         *     `pushed_now` is false on a converging retry, where the remote already carried the commit this
+         *     submission published — which is a success, not a repeat.
+         */
+        ChangeSubmittedResponse: {
+            /** Branch */
+            branch: string;
+            /** Commit */
+            commit: string;
+            /** Pushed Now */
+            pushed_now: boolean;
+            /** Submitted */
+            submitted: string[];
             /** Summary */
             summary: string;
         };
@@ -16004,6 +16055,84 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ChangeRebasedResponse"];
+                };
+            };
+            /** @description Validation error (bad or ambiguous write) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write forbidden (e.g. admin mode not enabled, or mutation denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write temporarily rejected by the workspace gate (retryable) */
+            423: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    changes_submit_changes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangeSubmitRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChangeSubmittedResponse"];
                 };
             };
             /** @description Validation error (bad or ambiguous write) */

@@ -132,10 +132,10 @@ class ProposalWrite:
     terminal locally and then fail to delete the pushed branch, leaving a review branch alive that
     nothing observes, because the proposal is terminal and the branch is the reviewer's.
 
-    Not `PromotionWrite` widened. Promotion means "copy an engagement artifact into enterprise"; a
-    proposal writes no enterprise artifact at all. One shape meaning two things would pass every
-    policy test there is, because those assert that the intents behave, not that a wrong one is
-    refused.
+    Not `PromotionWrite` widened. Promotion copies an engagement artifact into enterprise as new
+    content; a proposal re-applies a recorded edit to an artifact already there, on a working branch
+    nobody has merged, and cannot create one. One shape meaning two things would pass every policy
+    test there is, because those assert that the intents behave, not that a wrong one is refused.
     """
 
     source_root: Path

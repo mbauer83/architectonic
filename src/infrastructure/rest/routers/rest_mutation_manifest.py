@@ -27,6 +27,7 @@ from src.application.mutation_authorization import (
     MutationIntent,
     MutationRequest,
     PromotionWrite,
+    ProposalWrite,
     RepositoryWrite,
 )
 
@@ -89,6 +90,7 @@ _ADMIN_INTENT: MutationIntent = "enterprise_admin_authoring"
 REST_MUTATION_MANIFEST: dict[str, MutationIntent] = {
     **{operation: _ENGAGEMENT_INTENT for operation in _ENGAGEMENT_OPERATIONS},
     **{operation: _ADMIN_INTENT for operation in _ADMIN_OPERATIONS},
+    "changes_submit_changes": "enterprise_proposal",
     "promotion_execute_promotion": "promotion",
     "sync_save_enterprise": "enterprise_save",
     "sync_submit_enterprise": "enterprise_submit",
@@ -134,6 +136,13 @@ def build_rest_request(operation_id: str) -> MutationRequest:
         case "promotion":
             engagement, enterprise = gui_state.get_both_roots()
             return MutationRequest(intent, PromotionWrite(engagement, enterprise))
+        case "enterprise_proposal":
+            # Both roots, like promotion: a submission reads the changes held in one and writes the
+            # other. Its own intent rather than promotion's, because promotion copies an engagement
+            # artifact upstream while this replays an edit to an artifact already there — and
+            # widening one intent to mean both is how a policy stops being able to refuse either.
+            engagement, enterprise = gui_state.get_both_roots()
+            return MutationRequest(intent, ProposalWrite(engagement, enterprise))
         case "enterprise_discard":
             from src.infrastructure.git import enterprise_sync_state  # noqa: PLC0415
 

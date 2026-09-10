@@ -26,6 +26,7 @@ from src.application.mutation_authorization import (
     MutationIntent,
     MutationRequest,
     PromotionWrite,
+    ProposalWrite,
     RepositoryWrite,
 )
 from src.infrastructure.mcp.artifact_mcp.context import resolve_enterprise_repo_root, resolve_repo_root
@@ -101,6 +102,20 @@ def _enterprise_discard(arguments: ToolArguments) -> MutationRequest:
     return MutationRequest("enterprise_discard", DiscardWrite(root, pending_remote=pending_remote))
 
 
+def _enterprise_proposal(arguments: ToolArguments) -> MutationRequest:
+    """Both roots, like promotion: a submission reads the changes held in one and writes the other."""
+    enterprise = arguments.get("enterprise_root")
+    return MutationRequest(
+        "enterprise_proposal",
+        ProposalWrite(
+            source_root=resolve_repo_root(repo_root=_repo_root_argument(arguments), repo_preset=None),
+            destination_root=resolve_enterprise_repo_root(
+                enterprise_root=enterprise if isinstance(enterprise, str) else None
+            ),
+        ),
+    )
+
+
 def _maintenance(arguments: ToolArguments) -> MutationRequest:
     root = resolve_repo_root(repo_root=_repo_root_argument(arguments), repo_preset=None)
     return MutationRequest("maintenance", RepositoryWrite(root))
@@ -134,6 +149,9 @@ MUTATION_TOOL_MANIFEST: dict[str, MutationToolManifestRow] = {
     ),
     "artifact_submit_for_review": MutationToolManifestRow(
         intents=("enterprise_submit",), build_request=_enterprise_submit
+    ),
+    "artifact_submit_changes": MutationToolManifestRow(
+        intents=("enterprise_proposal",), build_request=_enterprise_proposal
     ),
     "artifact_withdraw_changes": MutationToolManifestRow(
         intents=("enterprise_discard",), build_request=_enterprise_discard

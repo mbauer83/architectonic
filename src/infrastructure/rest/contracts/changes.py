@@ -87,3 +87,28 @@ class ChangeRebasedResponse(Closed):
 
     changes: list[RebasedChange]
     summary: str
+
+
+class ChangeSubmitRequest(Closed):
+    """The changes to submit, in the order they are to be replayed.
+
+    Ordered because replay order decides the result where two changes touch one artifact, and the
+    order is the caller's to state rather than the server's to infer from filesystem or timestamps —
+    the same submission would otherwise produce different content on different machines.
+    """
+
+    artifact_ids: list[str]
+
+
+class ChangeSubmittedResponse(Closed):
+    """What reached the reviewer, and what was marked.
+
+    `pushed_now` is false on a converging retry, where the remote already carried the commit this
+    submission published — which is a success, not a repeat.
+    """
+
+    branch: str
+    commit: str
+    submitted: list[str]
+    pushed_now: bool
+    summary: str

@@ -1,9 +1,18 @@
 """Admin-mode write operations — enterprise repository writes.
 
 This module is the ONLY authorised path for writing to the enterprise repo.
-It is called exclusively from src/infrastructure/rest/routers/admin.py and never
-from any MCP tool. It enforces the enterprise boundary via
-assert_enterprise_write_root at every entry point.
+It enforces the enterprise boundary via assert_enterprise_write_root at every
+entry point.
+
+Two authorities call it, and which of them may is decided by the intent its
+call site passes to the mutation policy, never by this module. Admin authoring
+comes through src/infrastructure/rest/routers/admin.py under
+`enterprise_admin_authoring`. Submitting a proposed change comes through
+change_submission under `enterprise_proposal`, from REST and from MCP alike —
+which is the case B67 exists for, a deployment that is not in admin mode. It
+was true that no MCP tool reached here, and the reason recorded was that the
+enterprise repo is not an MCP tool's to write; the accurate rule is that it is
+not an *engagement authoring* tool's to write, and a submission is not one.
 
 The standard write functions (entity.py, connection.py, …) unconditionally
 reject enterprise roots via assert_engagement_write_root and are not called here.

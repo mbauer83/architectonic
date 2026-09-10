@@ -37,4 +37,12 @@ CHANGE_ROWS: tuple[RouteRow, ...] = (
         "POST", "/api/changes/{artifact_id}/rebase", "subresource", "changes_rebase_change",
         TYPED, identity_parameters=_CHANGE, mutation_domain="repository",
     ),
+    RouteRow(
+        # An action, and with no change in the address: a submission carries a *set*, and the order
+        # it names them in is part of the command — replay follows it. An address naming one change
+        # could only have meant one submission per change, which is the branch-per-change shape the
+        # design refused.
+        "POST", "/api/changes/submit", "operation", "changes_submit_changes",
+        TYPED, mutation_domain="repository", timeout_class="derived-graph",
+    ),
 )

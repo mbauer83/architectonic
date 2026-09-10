@@ -16,6 +16,7 @@ import pytest
 from src.application.mutation_authorization import (
     DiscardWrite,
     MutationRequest,
+    MutationTarget,
     PromotionWrite,
     RepositoryWrite,
 )
@@ -91,7 +92,10 @@ class TestEveryRequestBuilderInvoked:
             request = row.build_request(self._representative_arguments(name, roots))
             assert isinstance(request, MutationRequest), name
             assert request.intent in row.intents, name
-            assert isinstance(request.target, RepositoryWrite | PromotionWrite | DiscardWrite), name
+            # Through the closed union rather than by naming its members: this listed three of
+            # them, so a fourth target shape failed here rather than being covered by the rule the
+            # assertion is for.
+            assert isinstance(request.target, MutationTarget), name
 
     def test_engagement_authoring_builders_resolve_the_repo_root_argument(self, roots) -> None:
         engagement, _ = roots
