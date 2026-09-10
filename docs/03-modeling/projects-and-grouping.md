@@ -73,8 +73,14 @@ parameter:
 - at create time, the artifact is placed in that group's directory
 - at edit time, the artifact is re-homed to a new group with a safe `git mv`
 
-Group authoring is intentionally out of scope for the CLI; use the MCP tools or the REST/GUI
-surface.
+In the GUI this is the **Home** field on every create and edit form, for entities, documents and
+diagrams alike. It offers the collections of the axis that files that kind, leaving out archived
+ones, and a form opened from inside a collection starts on it. "No collection" is a real answer:
+it is where an artifact sits when it belongs to the repository rather than to a project. Choosing
+another collection on an edit form moves the artifact there when you save.
+
+Group authoring itself — creating, renaming, archiving a collection — is intentionally out of
+scope for the CLI; use the MCP tools or the REST/GUI surface.
 
 &nbsp;
 

@@ -18,6 +18,7 @@ GUI, the REST API, the CLI, and the MCP tools.
 |---|---|
 | [Scratchpad](scratchpad.md) | Somewhere to think before anything is typed — notes and links on a canvas, lifted into the model when they are ready |
 | [Projects & grouping](projects-and-grouping.md) | The three independent grouping axes and the group lifecycle |
+| [Proposing changes](proposing-changes.md) | Editing content the engagement does not own — what a recorded change is, submitting a set for review, and bringing one onto a moved artifact |
 | [Views & exploration](views-and-exploration.md) | List view, treemap, grid, full-text search, and graph navigation |
 | [Diagramming](diagramming.md) | ArchiMate, matrix, activity, sequence, C4, and datatype (UML class) diagram families |
 | [Viewpoints](viewpoints.md) | Saved, criteria-based ways of looking at a slice of the model — definitions, applications to existing diagrams, and ad-hoc execution |

@@ -121,6 +121,11 @@ repo_init:
     commit_author_email: architecture-bot@example.com
 
 storage:
+  read_model:
+    semantic_search: false      # also retrieve by meaning, not only by term. Off unless set
+                                # to literal true. Needs a model asset acquired once with
+                                # `uv run get-embedding-model`; a deployment that has not
+                                # acquired it answers exactly as it does with this off
   assurance:
     store_backend: sqlcipher              # sqlcipher | private-git | pocketbase
     signals_backend: sqlcipher-colocated  # sqlcipher-colocated | sqlite | encrypted
@@ -164,6 +169,11 @@ These apply globally and are read at startup; they are not configurable via
 bounds are covered in full in [Viewpoints — schema
 reference](viewpoints-schema.md#execution-result--bounds); `guidance.default_source` in
 [Authoring guidance](../05-extensibility/guidance.md#importing).
+`storage.read_model.semantic_search` adds a second retriever to search, fusing its ranking with
+the term-based one rather than appending to it — see [Search](../03-modeling/views-and-exploration.md#search).
+The asset it needs is acquired once per machine and is not shipped in the image; a deployment
+without it behaves as though the setting were off.
+
 The `storage.assurance` keys are written automatically by
 `arch-assurance init` and `arch-assurance use-backend` — see
 [Assurance: storage & confidentiality](../04-assurance/storage-and-confidentiality.md).

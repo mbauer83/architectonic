@@ -91,6 +91,11 @@ resolves a dirty tree while denying promotion, Submit, and remote-touching Disca
 State is persisted in `.arch/enterprise-sync.json` (versioned, with a typed sync-health
 overlay) and survives restarts.
 
+An engagement that holds no authority over enterprise content reaches this workflow a second way:
+editing a promoted artifact records a change, and submitting the changes it is holding replays them
+onto this same working branch and publishes it. See
+[Proposing changes](../03-modeling/proposing-changes.md).
+
 &nbsp;
 
 ## Continuous git sync

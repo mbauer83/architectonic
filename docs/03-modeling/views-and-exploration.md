@@ -69,10 +69,17 @@ domain or type.
 ## Search
 
 Full-text search across every artifact family (entities, connections, diagrams, documents,
-scratchpads) with relevance ranking, plus optional semantic supplement where configured. Results
-carry enough metadata to act on without a second round-trip. System-managed bookkeeping artifacts
-(such as the cross-repository reference proxies created by promotion) never appear in results —
-search surfaces only content someone authored.
+scratchpads) with relevance ranking. Results carry enough metadata to act on without a second
+round-trip. System-managed bookkeeping artifacts (such as the cross-repository reference proxies
+created by promotion) never appear in results — search surfaces only content someone authored.
+
+**Searching by meaning.** Where a deployment enables it, a second retriever finds artifacts whose
+wording differs from the query but whose meaning matches, and the two result lists are fused so a
+term match and a meaning match compete on one ranking rather than one being appended to the other.
+It is off by default and needs a model asset acquired once; see
+[`storage.read_model.semantic_search`](../reference/configuration.md#configsettingsyaml--backend).
+Nothing about the search surface changes when it is off, and nothing about what is indexed changes
+when it is on: the same artifacts are searched either way.
 
 **A title you type is a title you find.** An artifact whose name matches what you searched for ranks
 first, across every family rather than within one, so an entity and a diagram sharing a name arrive

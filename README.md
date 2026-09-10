@@ -103,7 +103,7 @@ More on the audience in [Who it serves](docs/01-motivation.md#who-it-serves).
 |---|---|---|
 | ✏️ | **A scratchpad tier** | Somewhere to think before anything is typed: notes and links on a canvas, no ontology involved. What survives is lifted into verified model content — one-way, never synced back |
 | 🗺️ | **A typed architecture graph** | Entities and connections across motivation → strategy → business → application → technology, geared toward the ArchiMate 4.0 standard | 
-| 🔍 | **Browse and explore** | List, treemap, full-text search, and interactive graph navigation — *what connects to this, and how far to that?* |
+| 🔍 | **Browse and explore** | List, treemap, full-text search, and interactive graph navigation — *what connects to this, and how far to that?* Searching by meaning as well as by term is available where a deployment enables it |
 | 📐 | **Diagram families** | ArchiMate views, C4 (model-backed), UML activity, sequence & class (datatype), and relationship matrices |
 | 🎨 | **Read a diagram your own way** | Colour and annotate any diagram by any attribute its elements declare, with colours you pick and a legend drawn into the image — for the length of a visit, changing nothing, and exported exactly as shown |
 | 🎯 | **Viewpoints** | Criteria-based ways of looking at the model — table/matrix/diagram/exploration, applied to existing diagrams or executed ad hoc, persisted or run on-the-fly |
@@ -111,6 +111,7 @@ More on the audience in [Who it serves](docs/01-motivation.md#who-it-serves).
 | ✅ | **Always-on verification** | Schema, referential integrity, cross-repo rules, and PlantUML syntax checked on every write |
 | 🤖 | **AI-native access** | A split read/write MCP server exposes the model as typed tools; the same capability is in the GUI and REST API |
 | 🏢 | **Two-tier repositories** | Draft and manage local details in an engagement repo, promote curated content to a shared enterprise repo |
+| 📝 | **Propose changes to shared content** | An engagement cannot write what it does not own, so editing promoted content records a change instead. Hold them, see what each would alter, bring one onto a moved artifact, and submit the set for review on one branch |
 | 🛡️ | **First-class assurance** | Confidential STPA/CAST/GRC and FMEA analysis, linked to the model, with a tamper-evident archive. Failure modes attach to the hazards the analysis already states, so priority is derived rather than restated |
 | 🔧 | **Operational upgrades** | `arch-repair upgrade` migrates repositories and deployment data across format changes — dry-run first, resumable, Docker-integrated |
 | 🧩 | **Modular everywhere** | Pluggable ontologies, diagram types, schemata, and storage backends over a hexagonal core |
@@ -227,7 +228,7 @@ The agent can then `artifact_query_search_artifacts`, walk the graph with
 |---|---|---|
 | 1 | [Motivation, Ideas, Goals & Scope](docs/01-motivation.md) | Why the project exists; goals, principles, and explicit non-goals |
 | 2 | [Installation & Setup](docs/02-installation.md) | Per-OS prerequisites, dependency groups, backend, MCP, quality checks |
-| 3 | [Architecture Modeling](docs/03-modeling/index.md) | Projects, views, graph exploration, diagramming, viewpoints, the MCP/REST surface |
+| 3 | [Architecture Modeling](docs/03-modeling/index.md) | Projects, views, graph exploration, diagramming, viewpoints, [proposing changes](docs/03-modeling/proposing-changes.md), the MCP/REST surface |
 | 4 | [Assurance — Safety, Security, GRC](docs/04-assurance/index.md) | STPA/CAST/GRC/FMEA methods, assurance diagrams, confidential storage |
 | 5 | [Extensibility](docs/05-extensibility/index.md) | Profiles, guidance, document types, ontology & diagram-type modules, hexagonal core |
 | 6 | [Showcase](docs/06-showcase.md) | The platform's own model, walked from strategy to assurance |
