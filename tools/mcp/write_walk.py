@@ -417,10 +417,6 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
         mutates=False,
     ),
     WriteCall(
-        "artifact_discard_change",
-        lambda c: {"artifact_id": c.created["change"]},
-    ),
-    WriteCall(
         "artifact_save_changes",
         lambda _c: {"message": "Saved by the MCP write walk", "target": "engagement", "push": True},
         mutates=False,
@@ -433,6 +429,15 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
         lambda _c: {"message": "Promoted by the MCP write walk", "target": "enterprise"},
         mutates=False,
     ),
+    WriteCall(
+        # The change is still alive at this point, and the enterprise repository has just committed
+        # the promotion — a submission refuses to publish unsaved work alongside the proposed kind,
+        # so this is the first step in the walk where it can run at all. It replays the recorded
+        # edit into the enterprise repository, commits it and pushes the branch a reviewer reads.
+        "artifact_submit_changes",
+        lambda c: {"artifact_ids": [c.created["change"]]},
+        mutates=False,
+    ),
     WriteCall("artifact_submit_for_review", mutates=False),
     WriteCall(
         # Irreversible, and it takes the branch just submitted with it. Safe only because the remote is
@@ -440,6 +445,14 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
         "artifact_withdraw_changes",
         lambda _c: {"confirm": True},
         mutates=False,
+    ),
+    WriteCall(
+        # Last, and after the branch is gone: discarding is what ends a change, and running it here
+        # rather than before the saves is what leaves one alive to submit. A change that has been
+        # submitted is still discardable — that is the pending half of the lifecycle, and the record
+        # is kept in a terminal state either way.
+        "artifact_discard_change",
+        lambda c: {"artifact_id": c.created["change"]},
     ),
     # ── scratchpads: create → replace → edit → lift → delete, the whole loop an agent has ───────
     #

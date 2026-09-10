@@ -425,12 +425,17 @@ STEPS: tuple[Step, ...] = (
         must_have_written=False,
     ),
     Step(
-        "changes_discard_change", "DELETE", lambda c: f"/api/changes/{c.created['change']}",
+        "sync_save_enterprise", "POST", lambda _c: "/api/sync/enterprise/save",
+        lambda _c: {"message": "Promoted by the REST write walk", "push": False},
         must_have_written=False,
     ),
     Step(
-        "sync_save_enterprise", "POST", lambda _c: "/api/sync/enterprise/save",
-        lambda _c: {"message": "Promoted by the REST write walk", "push": False},
+        # After the enterprise save, and for a reason the operation states: a submission refuses to
+        # publish unsaved enterprise work alongside the proposed kind, so this is the first point in
+        # the walk where it can run. It replays the recorded edit upstream, commits it and pushes the
+        # branch — the only step here carrying the `enterprise_proposal` intent.
+        "changes_submit_changes", "POST", lambda _c: "/api/changes/submit",
+        lambda c: {"artifact_ids": [c.created["change"]]},
         must_have_written=False,
     ),
     Step(
@@ -443,6 +448,13 @@ STEPS: tuple[Step, ...] = (
         # formality: without it the route answers 400 and says so.
         "sync_withdraw_enterprise", "POST", lambda _c: "/api/sync/enterprise/withdraw",
         lambda _c: {"confirm": True}, must_have_written=False,
+    ),
+    Step(
+        # Last, and after the branch is gone: discarding ends a change, and running it here rather
+        # than before the saves is what leaves one alive to submit. A submitted change is still
+        # discardable — that is the pending half of the lifecycle.
+        "changes_discard_change", "DELETE", lambda c: f"/api/changes/{c.created['change']}",
+        must_have_written=False,
     ),
     # ── the confidential store's write surface ────────────────────────────────────────────────────
     #
