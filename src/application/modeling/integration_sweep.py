@@ -72,6 +72,21 @@ class SweepReport:
         )
 
 
+def sweepable(proposals: Iterable[EntityRecord]) -> tuple[EntityRecord, ...]:
+    """The changes a sweep may judge: proposed changes that were actually submitted.
+
+    Separate from the sweep because the infrastructure has to know the answer *before* it can read
+    the upstream this decision is made against — resolving that is expensive, and asking it when
+    there is nothing to judge would put a checkout in the path of every backend start.
+    """
+    return tuple(
+        proposal
+        for proposal in proposals
+        if proposal.artifact_type == PROPOSED_CHANGE_TYPE
+        and str(proposal.extra.get(PROPOSAL_STATE, "")) == SWEEPABLE
+    )
+
+
 def sweep_integrated_changes(
     proposals: Iterable[EntityRecord],
     *,
@@ -88,11 +103,7 @@ def sweep_integrated_changes(
     closed: list[SweptChange] = []
     left_open: list[SweptChange] = []
 
-    for proposal in proposals:
-        if proposal.artifact_type != PROPOSED_CHANGE_TYPE:
-            continue
-        if str(proposal.extra.get(PROPOSAL_STATE, "")) != SWEEPABLE:
-            continue
+    for proposal in sweepable(proposals):
         edit = _recorded_edit(proposal)
         if edit is None:
             continue

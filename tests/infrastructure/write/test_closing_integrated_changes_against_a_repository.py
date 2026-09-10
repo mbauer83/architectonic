@@ -1,10 +1,14 @@
 """The sweep, bound to real repositories: it closes a change and tells the index it did.
 
 `integration_sweep` decides; this is the adapter that reads enterprise artifacts and writes proposal
-state. Two things it must get right that the decision cannot: the proposal has to be *findable* — a
-`proposed-change` is an internal type, and a repository that excluded internal types from listing
-would sweep nothing while reporting success — and every closed proposal has to reach the index, or
-the next read reports it as still submitted.
+state. Three things it must get right that the decision cannot: the proposal has to be *findable* —
+a `proposed-change` is an internal type, and a repository that excluded internal types from listing
+would sweep nothing while reporting success — every closed proposal has to reach the index, or the
+next read reports it as still submitted, and the artifact has to be read from **upstream**.
+
+The fixture is a real pair with a real bare origin, with the target in the enterprise repository
+where it belongs. It used to put the enterprise artifact in the *engagement* root and read it from
+there, which is the confusion that let a submission's own replay count as somebody accepting it.
 """
 
 from __future__ import annotations
@@ -16,25 +20,17 @@ import pytest
 from src.application.artifacts.query import ArtifactRepository
 from src.application.modeling.proposed_change import PROPOSED_CHANGE_TYPE
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
-from src.infrastructure.artifact_index import shared_artifact_index
+from src.infrastructure.artifact_index import combined_artifact_index, shared_artifact_index
 from src.infrastructure.write.artifact_write.integration_cleanup import close_integrated_changes
+from tests.support.git_workflow_fixtures import (
+    ENT_ENTITY_ID,
+    build_workflow_pair,
+    git,
+    valid_entity_md,
+)
 
-TARGET = "APP@1780000000.aaaaaaa.payments-service"
+TARGET = ENT_ENTITY_ID
 PROPOSAL = "PCH@1780000002.ccccccc.rename-it"
-
-
-def _target_md(name: str) -> str:
-    return (
-        "---\n"
-        f"artifact-id: {TARGET}\n"
-        "artifact-type: application-component\n"
-        f"name: {name}\n"
-        "version: 0.1.0\n"
-        "status: draft\n"
-        "last-updated: '2026-01-01'\n"
-        "---\n\n<!-- §content -->\n\n"
-        f"## {name}\n\nA service.\n\n## Properties\n\n| Attribute | Value |\n|---|---|\n| (none) | (none) |\n\n"
-    )
 
 
 def _proposal_md(state: str, proposed_name: str) -> str:
@@ -60,17 +56,21 @@ def _proposal_md(state: str, proposed_name: str) -> str:
 
 @pytest.fixture()
 def repo_at(tmp_path: Path):
-    def build(*, current_name: str, state: str = "submitted", proposed_name: str = "Payments Platform"):
-        root = tmp_path / "engagements" / "ENG-T" / "architecture-repository"
-        target_dir = root / "model" / "application" / "application-component"
-        proposal_dir = root / "model" / "common" / "proposed-change"
-        target_dir.mkdir(parents=True, exist_ok=True)
+    def build(*, upstream_name: str, state: str = "submitted", proposed_name: str = "Payments Platform"):
+        """A pair whose `origin/main` says `upstream_name`, holding one proposal asking for another."""
+        engagement, enterprise = build_workflow_pair(tmp_path)
+        target = enterprise / "model" / "motivation" / "requirement" / f"{TARGET}.md"
+        target.write_text(valid_entity_md(TARGET, upstream_name), encoding="utf-8")
+        git(enterprise, "add", "model")
+        git(enterprise, "commit", "-m", "what upstream says")
+        git(enterprise, "push", "origin", "main")
+
+        proposal_dir = engagement / "model" / "common" / "proposed-change"
         proposal_dir.mkdir(parents=True, exist_ok=True)
-        (target_dir / f"{TARGET}.md").write_text(_target_md(current_name), encoding="utf-8")
         proposal_path = proposal_dir / f"{PROPOSAL}.md"
         proposal_path.write_text(_proposal_md(state, proposed_name), encoding="utf-8")
 
-        index = shared_artifact_index(root)
+        index = combined_artifact_index(engagement, enterprise)
         repository = ArtifactRepository(
             index,
             excluded_entity_types=process_runtime_catalogs().ontology.entity_types_with_class("internal"),
@@ -83,13 +83,13 @@ def repo_at(tmp_path: Path):
 
 def test_the_proposal_is_findable_even_though_its_type_is_internal(repo_at) -> None:
     """The failure that would make the whole sweep silently do nothing."""
-    repository, _ = repo_at(current_name="Payments")
+    repository, _ = repo_at(upstream_name="Payments")
 
     assert [r.artifact_id for r in repository.list_entities(artifact_type=PROPOSED_CHANGE_TYPE)] == [PROPOSAL]
 
 
 def test_a_change_the_artifact_now_carries_is_closed_on_disk(repo_at) -> None:
-    repository, proposal_path = repo_at(current_name="Payments Platform")
+    repository, proposal_path = repo_at(upstream_name="Payments Platform")
 
     report = close_integrated_changes(repository)
 
@@ -99,7 +99,7 @@ def test_a_change_the_artifact_now_carries_is_closed_on_disk(repo_at) -> None:
 
 def test_the_index_is_told_so_the_next_read_agrees(repo_at) -> None:
     """A state written straight to disk leaves every cached index holding the old value."""
-    repository, _ = repo_at(current_name="Payments Platform")
+    repository, _ = repo_at(upstream_name="Payments Platform")
 
     close_integrated_changes(repository)
     reread = repository.get_entity(PROPOSAL)
@@ -109,7 +109,7 @@ def test_the_index_is_told_so_the_next_read_agrees(repo_at) -> None:
 
 
 def test_a_change_still_awaiting_review_is_untouched(repo_at) -> None:
-    repository, proposal_path = repo_at(current_name="Payments")
+    repository, proposal_path = repo_at(upstream_name="Payments")
     before = proposal_path.read_bytes()
 
     report = close_integrated_changes(repository)
@@ -120,7 +120,7 @@ def test_a_change_still_awaiting_review_is_untouched(repo_at) -> None:
 
 def test_a_second_pass_changes_nothing(repo_at) -> None:
     """It runs on every startup and after every fetch, so it must be free when there is nothing to do."""
-    repository, proposal_path = repo_at(current_name="Payments Platform")
+    repository, proposal_path = repo_at(upstream_name="Payments Platform")
     close_integrated_changes(repository)
     after_first = proposal_path.read_bytes()
 
@@ -133,14 +133,18 @@ def test_a_second_pass_changes_nothing(repo_at) -> None:
 # ── the branch goes when the last change on it does ──────────────────────────
 
 
-def _retire(repo, monkeypatch, *, pending: bool = True, mounts=None):  # noqa: ANN001, ANN202
+def _retire(repo, monkeypatch, *, pending: bool = True, upstream_holds_it: bool = True):  # noqa: ANN001, ANN202
     """Run the retirement with the git side observed rather than performed.
 
-    The four conditions are the behaviour; whether `git push --delete` works is
+    The conditions are the behaviour; whether `git push --delete` works is
     `enterprise_branch_lifecycle`'s own test. Faking it here is what lets each condition be stated
     on its own instead of behind a real remote.
     """
-    from src.infrastructure.git import enterprise_branch_lifecycle, enterprise_sync_state
+    from src.infrastructure.git import (
+        enterprise_branch_lifecycle,
+        enterprise_sync_state,
+        git_repository_state,
+    )
     from src.infrastructure.write.artifact_write import integration_cleanup
 
     abandoned: list[Path] = []
@@ -150,7 +154,10 @@ def _retire(repo, monkeypatch, *, pending: bool = True, mounts=None):  # noqa: A
     )
     monkeypatch.setattr(
         enterprise_sync_state, "load",
-        lambda _root: type("S", (), {"is_pending": lambda self: pending})(),
+        lambda _root: type("S", (), {"is_pending": lambda self: pending, "branch": "arch/work-1"})(),
+    )
+    monkeypatch.setattr(
+        git_repository_state, "content_is_upstream", lambda *_a, **_k: upstream_holds_it
     )
     return integration_cleanup._retire_a_finished_review_branch(repo), abandoned  # noqa: SLF001
 
@@ -163,8 +170,6 @@ def enterprise_mounted(tmp_path: Path, monkeypatch):  # noqa: ANN001, ANN201
     (engagement / "model" / "common" / "proposed-change").mkdir(parents=True)
     enterprise = tmp_path / "enterprise-repository"
     (enterprise / "model").mkdir(parents=True)
-    from src.infrastructure.artifact_index import combined_artifact_index
-
     index = combined_artifact_index(engagement, enterprise)
     index.refresh()
     return engagement, enterprise, ArtifactRepository(index)
@@ -188,6 +193,18 @@ def test_a_branch_still_carrying_a_live_change_is_left_alone(enterprise_mounted,
     repo.refresh()
 
     retired, abandoned = _retire(repo, monkeypatch)
+
+    assert retired is None
+    assert abandoned == []
+
+
+def test_a_branch_carrying_work_upstream_lacks_is_left_alone(enterprise_mounted, monkeypatch) -> None:  # noqa: ANN001
+    """The condition that makes this safe. "No change is still pending" is not "the branch is
+    finished": the same branch carries promotions, which are not changes and have their own review,
+    and deleting it from the remote on the change count alone would take them with it."""
+    _engagement, _enterprise, repo = enterprise_mounted
+
+    retired, abandoned = _retire(repo, monkeypatch, upstream_holds_it=False)
 
     assert retired is None
     assert abandoned == []

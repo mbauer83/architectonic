@@ -19,9 +19,9 @@ import logging
 from dataclasses import dataclass
 from pathlib import Path
 
-from src.config.repo_paths import DIAGRAM_CATALOG, DOCS, MODEL
 from src.infrastructure.git import enterprise_sync_state
 from src.infrastructure.git.fetch_attempts import FetchDeferred, Fetched, FetchFailed
+from src.infrastructure.git.git_repository_state import content_is_upstream
 from src.infrastructure.git.git_sync import (
     _AUTO_UNBLOCK_S,
     _PULL_TIMEOUT_S,
@@ -175,8 +175,10 @@ async def reconcile_state(sync: GitSyncManager, root: Path) -> ReconcileOutcome:
         logger.warning("enterprise state recorded missing branch %s — reset to synced", branch)
         return _outcome(transition.current, completed=True)
 
-    rc, out, _ = await sync._git(root, "diff", "origin/main", branch, "--", MODEL, DOCS, DIAGRAM_CATALOG)
-    if rc == 0 and not out.strip():  # branch content already in origin/main: finish the cleanup
+    # Off the loop: the question is a synchronous `git diff` owned by `git_repository_state`, and
+    # asking it there rather than spelling the diff again is what keeps this and the retirement
+    # that deletes the remote branch agreeing about what "merged" means.
+    if await asyncio.to_thread(content_is_upstream, root, branch):  # finish the cleanup
         await sync._git(root, "branch", "-D", branch)
         transition = enterprise_sync_state.clear_lifecycle(root)
         logger.info("enterprise working branch %s was merged externally — cleaned up", branch)
@@ -313,8 +315,7 @@ async def ent_pending(
 
 async def promotion_merged(sync: GitSyncManager, root: Path) -> bool:
     """Merged means: origin/main already contains the branch's model/docs/diagram content."""
-    rc, out, _ = await sync._git(root, "diff", "origin/main", "HEAD", "--", MODEL, DOCS, DIAGRAM_CATALOG)
-    return rc == 0 and not out.strip()
+    return await asyncio.to_thread(content_is_upstream, root, "HEAD")
 
 
 async def ent_switch_to_main(

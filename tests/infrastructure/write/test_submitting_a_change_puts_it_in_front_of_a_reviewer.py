@@ -31,8 +31,14 @@ from src.infrastructure.write.artifact_write.change_submission import (
     submit_changes,
 )
 from src.infrastructure.write.artifact_write.entity_edit import edit_entity
+from src.infrastructure.write.artifact_write.integration_cleanup import close_integrated_changes
 from src.infrastructure.write.artifact_write.proposal_lifecycle import mark_proposal_state
-from tests.support.git_workflow_fixtures import ENT_ENTITY_ID, build_workflow_pair, git
+from tests.support.git_workflow_fixtures import (
+    ENT_ENTITY_ID,
+    build_workflow_pair,
+    git,
+    valid_entity_md,
+)
 
 
 @pytest.fixture()
@@ -384,3 +390,88 @@ def _rebase(repo: ArtifactRepository, enterprise: Path, change_id: str):  # noqa
         (proposal,), enterprise_root=enterprise, repo=repo, registry=registry,
         verifier=verifier, clear_repo_caches=lambda _p: repo.refresh(),
     )
+
+
+class TestTheSweepAfterASubmission:
+    """The sweep judges a change integrated when the enterprise artifact carries its effect.
+
+    Which reference that is decides everything. A submission replays the effect onto *this*
+    deployment's working branch, so reading the local checkout made every change read as integrated
+    the instant it was submitted — closed terminally, and its review branch deleted from the remote
+    while somebody was reading it. Upstream is the only reference under which "the artifact carries
+    this" means "somebody took it up".
+    """
+
+    def test_a_submitted_change_is_not_closed_by_its_own_replay(self, workspace) -> None:
+        engagement, enterprise, repo = workspace
+        change_id = _record_a_change(engagement, repo, "Wording the engagement proposes")
+        report = _submit(engagement, enterprise, repo, change_id)
+        repo.refresh()  # exactly what startup does before sweeping
+
+        swept = close_integrated_changes(repo)
+
+        assert swept.closed == ()
+        assert _state_of(repo, change_id) == "submitted"
+        assert report.branch in _remote_heads(enterprise), "the reviewer's branch is still there"
+
+    def test_it_closes_the_change_once_upstream_carries_it(self, workspace) -> None:
+        """The sweep still does its job — this is the event it exists for."""
+        engagement, enterprise, repo = workspace
+        change_id = _record_a_change(engagement, repo, "Wording the engagement proposes")
+        report = _submit(engagement, enterprise, repo, change_id)
+        _a_reviewer_merges(enterprise, report.branch)
+        repo.refresh()
+
+        swept = close_integrated_changes(repo)
+
+        assert len(swept.closed) == 1
+        assert _state_of(repo, change_id) == "integrated"
+
+    def test_nothing_is_closed_when_upstream_cannot_be_read(self, workspace) -> None:
+        """Not knowing is not evidence. Absence of a readable upstream is equally consistent with a
+        fetch that never ran and a branch somebody deleted, and each wants a different answer."""
+        engagement, enterprise, repo = workspace
+        change_id = _record_a_change(engagement, repo, "Wording the engagement proposes")
+        _submit(engagement, enterprise, repo, change_id)
+        git(enterprise, "update-ref", "-d", "refs/remotes/origin/main")
+        repo.refresh()
+
+        swept = close_integrated_changes(repo)
+
+        assert swept.closed == ()
+        assert _state_of(repo, change_id) == "submitted"
+
+    def test_the_branch_survives_while_it_carries_work_upstream_lacks(self, workspace) -> None:
+        """Retiring is deleting a branch from a shared remote. "No change is still pending" is not
+        "the branch is finished" — the same branch carries promotions, which are not changes."""
+        engagement, enterprise, repo = workspace
+        change_id = _record_a_change(engagement, repo, "Wording the engagement proposes")
+        report = _submit(engagement, enterprise, repo, change_id)
+        _a_reviewer_merges(enterprise, report.branch)
+        _more_work_lands_on_the_branch(enterprise)
+        repo.refresh()
+
+        swept = close_integrated_changes(repo)
+
+        assert len(swept.closed) == 1, "the change is integrated"
+        assert report.branch in _remote_heads(enterprise), "and the branch is not deleted"
+
+
+def _a_reviewer_merges(enterprise: Path, branch: str) -> None:
+    """What acceptance looks like from here: the branch's content reaches `origin/main`."""
+    working = git(enterprise, "rev-parse", "--abbrev-ref", "HEAD")
+    git(enterprise, "checkout", "main")
+    git(enterprise, "merge", "--no-ff", branch, "-m", "reviewer merged the submission")
+    git(enterprise, "push", "origin", "main")
+    git(enterprise, "checkout", working)
+    git(enterprise, "fetch", "origin")
+
+
+def _more_work_lands_on_the_branch(enterprise: Path) -> None:
+    """A commit on the review branch that upstream does not have — a promotion stands in."""
+    promoted = enterprise / "model" / "motivation" / "requirement" / "REQ@1000000603.Prom.promoted-later.md"
+    promoted.write_text(
+        valid_entity_md("REQ@1000000603.Prom.promoted-later", "Promoted Later"), encoding="utf-8"
+    )
+    git(enterprise, "add", "model")
+    git(enterprise, "commit", "-m", "a promotion nobody has reviewed yet")

@@ -15,6 +15,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from src.config.repo_paths import DIAGRAM_CATALOG, DOCS, MODEL
 from src.infrastructure.git._git_command import PUSH_TIMEOUT, run_repo_git
 
 #: What an enterprise working branch is opened from and merged back into. Spelled here because two
@@ -59,6 +60,22 @@ def is_ancestor(repo: Path, ancestor: str, descendant: str) -> bool:
     """
     rc, _, _ = run_repo_git(repo, "merge-base", "--is-ancestor", ancestor, descendant)
     return rc == 0
+
+
+def content_is_upstream(repo: Path, ref: str) -> bool:
+    """Whether `ref` holds no reviewable content that `origin/main` does not already have.
+
+    Over the content paths only, so a branch differing in nothing but runtime state or a commit
+    message still counts as merged — which is what "merged externally" means after a squash, where
+    no hash survives to compare.
+
+    The one place this is decided. It was spelled twice inside the sync alone, and a third was about
+    to be added by the only caller for which a wrong answer is destructive: retiring a review branch
+    deletes it from the remote, and a branch is only finished when upstream holds everything on it —
+    not when the last *change* it carried closed, because the same branch carries promotions too.
+    """
+    rc, out, _ = run_repo_git(repo, "diff", UPSTREAM_REF, ref, "--", MODEL, DOCS, DIAGRAM_CATALOG)
+    return rc == 0 and not out.strip()
 
 
 def remote_ref_commit(enterprise_root: Path, branch: str) -> str | None:
