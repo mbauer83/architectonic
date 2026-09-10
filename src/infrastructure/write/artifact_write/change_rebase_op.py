@@ -30,8 +30,11 @@ from src.application.modeling.change_rebase import RehearsedRebase
 from src.application.modeling.proposal_standing import PendingProposal
 from src.infrastructure.git.git_repository_state import UPSTREAM_REF
 from src.infrastructure.write.artifact_write.change_republication import (
+    RepublicationUnsafe,
     needs_republishing,
+    refuse_a_branch_carrying_more,
     republish_on_a_replacement_branch,
+    the_whole_submitted_set,
 )
 from src.infrastructure.write.artifact_write.change_submission import SubmissionReport
 from src.infrastructure.write.artifact_write.rebase_rehearsal import rehearse_against, rehearsing
@@ -97,6 +100,11 @@ def rebase_changes(
         return RebaseReport(rehearsed=RehearsedRebase(()), restamped=())
 
     republishing = needs_republishing(proposals, enterprise_root=enterprise_root)
+    if republishing:
+        # The branch is the unit of review, so the set is the branch's, not the one change an
+        # author asked about — a replacement carrying a subset would drop the rest of the set from
+        # the very branch that exists to carry it.
+        proposals = the_whole_submitted_set(repo, enterprise_root) or proposals
     start_point = UPSTREAM_REF if republishing else "HEAD"
     with rehearsing(enterprise_root, start_point=start_point) as worktree, rehearser_for(worktree) as rehearser:
         rehearsed = rehearse_against(
@@ -115,14 +123,26 @@ def rebase_changes(
         return report
     # A superseded or conflicting change is not put in front of anyone, and a set of nothing but
     # those has nothing to republish.
-    return replace(
-        report,
-        republished=republish_on_a_replacement_branch(
-            tuple(p for p in proposals if p.proposal_id in proven),
-            repo=repo, enterprise_root=enterprise_root, registry=registry, verifier=verifier,
-            clear_repo_caches=clear_repo_caches, from_head=start_point,
-        ),
-    )
+    replayed = tuple(p for p in proposals if p.proposal_id in proven)
+    try:
+        refuse_a_branch_carrying_more(
+            replayed, repo=repo, enterprise_root=enterprise_root, branch=_published_branch(enterprise_root)
+        )
+        republished = republish_on_a_replacement_branch(
+            replayed, repo=repo, enterprise_root=enterprise_root, registry=registry,
+            verifier=verifier, clear_repo_caches=clear_repo_caches, from_head=start_point,
+        )
+    except RepublicationUnsafe as unsafe:
+        # The rehearsal stands and the restamps stand; what is refused is replacing the branch.
+        raise RebaseUnavailable(str(unsafe)) from unsafe
+    return replace(report, republished=republished)
+
+
+def _published_branch(enterprise_root: Path) -> str:
+    """The branch under review. `needs_republishing` has already established there is one."""
+    from src.infrastructure.git import enterprise_sync_state  # noqa: PLC0415
+
+    return enterprise_sync_state.load(enterprise_root).branch or ""
 
 
 def _restamp_clean(

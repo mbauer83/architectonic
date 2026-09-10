@@ -24,7 +24,9 @@ from src.domain.submission_phase import CompletedSubmission, PushedSubmission
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.artifact_index import combined_artifact_index
 from src.infrastructure.git import enterprise_sync_state
+from src.infrastructure.git.enterprise_branch_lifecycle import ensure_working_branch
 from src.infrastructure.verification.verifier_factory import build_artifact_verifier
+from src.infrastructure.write.artifact_write.change_rebase_op import RebaseUnavailable
 from src.infrastructure.write.artifact_write.change_submission import (
     SubmissionUnavailable,
     complete_submission,
@@ -40,11 +42,21 @@ from tests.support.git_workflow_fixtures import (
     valid_entity_md,
 )
 
+#: A second promoted artifact, so a submission can carry a set rather than one change.
+OTHER_ID = "REQ@1000000605.WfTwo.a-second-enterprise-requirement"
+#: Something promoted onto the working branch that is not a change and has its own review.
+PROMOTED_ID = "REQ@1000000604.Prom.newly-promoted"
+
 
 @pytest.fixture()
 def workspace(tmp_path: Path):  # noqa: ANN201
     """An engagement holding one recorded change against a promoted enterprise requirement."""
     engagement, enterprise = build_workflow_pair(tmp_path)
+    (enterprise / "model" / "motivation" / "requirement" / f"{OTHER_ID}.md").write_text(
+        valid_entity_md(OTHER_ID, "A Second Enterprise Requirement"), encoding="utf-8"
+    )
+    git(enterprise, "add", "model")
+    git(enterprise, "commit", "-m", "a second promoted artifact")
     git(enterprise, "push", "origin", "main")
     index = combined_artifact_index(engagement, enterprise)
     index.refresh()
@@ -60,12 +72,14 @@ def _deps(repo: ArtifactRepository):  # noqa: ANN202
     return registry, build_artifact_verifier(registry, catalogs=process_runtime_catalogs())
 
 
-def _record_a_change(engagement: Path, repo: ArtifactRepository, summary: str) -> str:
+def _record_a_change(
+    engagement: Path, repo: ArtifactRepository, summary: str, *, target: str = ENT_ENTITY_ID
+) -> str:
     """Edit the promoted artifact the way an author does, which records a change."""
     registry, verifier = _deps(repo)
     result = edit_entity(
         repo_root=engagement, registry=registry, verifier=verifier,
-        clear_repo_caches=lambda _p: repo.refresh(), artifact_id=ENT_ENTITY_ID, repo=repo,
+        clear_repo_caches=lambda _p: repo.refresh(), artifact_id=target, repo=repo,
         dry_run=False, summary=summary,
     )
     repo.refresh()
@@ -538,6 +552,56 @@ def _the_branch_goes_away_unmerged(enterprise: Path, branch: str) -> None:
     from src.infrastructure.git import enterprise_sync_state
 
     enterprise_sync_state.clear_lifecycle(enterprise)
+
+
+class TestRebasingABranchThatCarriesMore:
+    """A replacement is built from upstream plus the set, and the branch it replaces is deleted.
+
+    So anything else the old branch held has to be accounted for, or it exists nowhere afterwards.
+    A promotion sharing the review branch was destroyed that way — measured: present on the old
+    branch, absent from upstream, absent from the replacement, and the old branch retired.
+    """
+
+    def test_a_promotion_sharing_the_branch_refuses_the_rebase(self, workspace) -> None:
+        engagement, enterprise, repo = workspace
+        change_id = _record_a_change(engagement, repo, "Wording the engagement proposes")
+        ensure_working_branch(enterprise)
+        _a_promotion_lands_on_the_branch(enterprise)
+        report = _submit(engagement, enterprise, repo, change_id)
+        _main_moves_while_the_change_waits(enterprise)
+
+        with pytest.raises(RebaseUnavailable, match="do not account for"):
+            _rebase(repo, enterprise, change_id)
+
+        assert report.branch in _remote_heads(enterprise), "and the branch it would have deleted stands"
+        assert "newly-promoted" in git(enterprise, "ls-tree", "-r", "--name-only", report.branch)
+
+    def test_the_whole_submitted_set_is_replayed_not_the_one_asked_about(self, workspace) -> None:
+        """Replaying a subset onto a fresh branch would drop the rest of the set from the very
+        branch that exists to carry it."""
+        engagement, enterprise, repo = workspace
+        first = _record_a_change(engagement, repo, "Wording the engagement proposes")
+        second = _record_a_change(engagement, repo, "A second artifact's wording", target=OTHER_ID)
+        _submit(engagement, enterprise, repo, first, second)
+        _main_moves_while_the_change_waits(enterprise)
+
+        report = _rebase(repo, enterprise, first)
+
+        assert report.republished is not None
+        assert {c.proposal_id for c in report.rehearsed.changes} == {first, second}
+        published = git(
+            enterprise, "show",
+            f"{report.republished.branch}:model/motivation/requirement/{OTHER_ID}.md",
+        )
+        assert "A second artifact's wording" in published, "the other change is on the replacement"
+
+
+def _a_promotion_lands_on_the_branch(enterprise: Path) -> None:
+    """Promoted content is committed on the same working branch a submission publishes."""
+    promoted = enterprise / "model" / "motivation" / "requirement" / f"{PROMOTED_ID}.md"
+    promoted.write_text(valid_entity_md(PROMOTED_ID, "Newly Promoted"), encoding="utf-8")
+    git(enterprise, "add", "model")
+    git(enterprise, "commit", "-m", "a promotion nobody has reviewed yet")
 
 
 def _upstream_already_says(enterprise: Path, summary: str) -> None:

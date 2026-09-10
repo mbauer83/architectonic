@@ -19,6 +19,15 @@ whether a reviewer is looking at this work or at the version it replaced.
 **Only for a set that is actually under review.** A draft has no published branch to protect, and its
 rebase is finished when the record is restamped; opening a branch for one would publish work its
 author never submitted.
+
+**And the replacement has to carry everything the branch did.** It is opened on the current upstream
+head and the set is replayed onto it, so anything else the old branch held is simply not there — and
+the old branch is then retired, which deletes it from the remote. A promotion sharing the branch was
+destroyed that way, present afterwards in neither branch. Two rules follow, and both are enforced
+here: the set replayed is the **whole** submitted set the branch carries, in the order the
+submission recorded, not just the one change an author happened to ask about; and if the branch
+still differs from upstream in anything that set does not account for, the rebase is refused rather
+than performed, because there is no mechanism here that could carry it across.
 """
 
 from __future__ import annotations
@@ -34,6 +43,7 @@ from src.infrastructure.git.enterprise_branch_lifecycle import (
     open_replacement_branch,
     retire_superseded_branch,
 )
+from src.infrastructure.git.git_repository_state import content_changed_against_upstream
 from src.infrastructure.write.artifact_write.change_submission import (
     SubmissionReport,
     publish_on_the_current_branch,
@@ -47,6 +57,10 @@ if TYPE_CHECKING:
     from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 
 logger = logging.getLogger(__name__)
+
+
+class RepublicationUnsafe(RuntimeError):
+    """Replacing the branch would leave something behind, so nothing was replaced."""
 
 
 def needs_republishing(
@@ -64,6 +78,74 @@ def needs_republishing(
     if not any(proposal.state == SUBMITTED_STATE for proposal in proposals):
         return False
     return enterprise_sync_state.load(enterprise_root).is_pending()
+
+
+def the_whole_submitted_set(
+    repo: "ArtifactRepository", enterprise_root: Path
+) -> tuple[PendingProposal, ...]:
+    """Every live submitted change, in the order the submission recorded for replaying them.
+
+    The branch is the unit of review, so the replacement carries the set — not the one change an
+    author clicked on. Replaying a subset onto a fresh branch would drop the rest of the set from
+    the very branch that exists to carry it.
+
+    The order is the submission's own: `SubmissionIntent` recorded it because replay order decides
+    the result where two changes touch one artifact, and inferring it here would make a rebase
+    produce different content from the submission it replaces. Anything submitted that the intent
+    does not name follows, by id, so the set is still deterministic.
+    """
+    from src.application.modeling.proposal_standing import pending_proposals  # noqa: PLC0415
+    from src.application.modeling.proposed_change import PROPOSED_CHANGE_TYPE  # noqa: PLC0415
+
+    live = {
+        proposal.proposal_id: proposal
+        for group in pending_proposals(
+            repo.list_entities(artifact_type=PROPOSED_CHANGE_TYPE)
+        ).values()
+        for proposal in group
+        if proposal.state == SUBMITTED_STATE
+    }
+    submission = enterprise_sync_state.load(enterprise_root).submission
+    recorded = submission.intent.proposal_ids if submission is not None else ()
+    ordered = [live.pop(proposal_id) for proposal_id in recorded if proposal_id in live]
+    return (*ordered, *(live[proposal_id] for proposal_id in sorted(live)))
+
+
+def refuse_a_branch_carrying_more(
+    replayed: tuple[PendingProposal, ...],
+    *,
+    repo: "ArtifactRepository",
+    enterprise_root: Path,
+    branch: str,
+) -> None:
+    """Refuse when the branch differs from upstream in anything the replay would not reproduce.
+
+    The replacement is built from upstream plus this set, and the branch it replaces is deleted from
+    the remote. Anything on it that the set does not account for — a promotion, most often, which is
+    not a change and has its own review — would exist nowhere afterwards.
+
+    Accounted for by *path*, resolved through the registry rather than by matching an id against a
+    filename: the id-to-file question already has an owner, and a second reading of the naming
+    convention is the defect this project keeps paying for.
+    """
+    changed = content_changed_against_upstream(enterprise_root, branch)
+    if changed is None:
+        raise RepublicationUnsafe(
+            f"Could not compare '{branch}' against upstream, so replacing it might leave work "
+            "behind. Nothing was changed."
+        )
+    accounted = {
+        path.relative_to(enterprise_root).as_posix()
+        for path in (repo.find_file_by_id(proposal.target_id) for proposal in replayed)
+        if path is not None and path.is_relative_to(enterprise_root)
+    }
+    left_behind = sorted(set(changed) - accounted)
+    if left_behind:
+        raise RepublicationUnsafe(
+            f"'{branch}' carries work these changes do not account for, and a replacement branch "
+            f"would not carry it: {', '.join(left_behind)}. Get that reviewed or withdrawn first — "
+            "rebasing would delete the branch holding it."
+        )
 
 
 def republish_on_a_replacement_branch(

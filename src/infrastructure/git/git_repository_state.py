@@ -74,8 +74,29 @@ def content_is_upstream(repo: Path, ref: str) -> bool:
     deletes it from the remote, and a branch is only finished when upstream holds everything on it —
     not when the last *change* it carried closed, because the same branch carries promotions too.
     """
-    rc, out, _ = run_repo_git(repo, "diff", UPSTREAM_REF, ref, "--", MODEL, DOCS, DIAGRAM_CATALOG)
+    rc, out = _content_diff(repo, ref)
     return rc == 0 and not out.strip()
+
+
+def content_changed_against_upstream(repo: Path, ref: str) -> tuple[str, ...] | None:
+    """Which content paths `ref` changes relative to `origin/main`, or None where it cannot be told.
+
+    None rather than an empty tuple for the failure, because the caller that needs this is deciding
+    whether replacing a branch would leave something behind, and "nothing" and "cannot tell" want
+    opposite answers there.
+    """
+    rc, out = _content_diff(repo, ref)
+    if rc != 0:
+        return None
+    return tuple(line.strip() for line in out.splitlines() if line.strip())
+
+
+def _content_diff(repo: Path, ref: str) -> tuple[int, str]:
+    """The one comparison both questions above are asked of."""
+    rc, out, _ = run_repo_git(
+        repo, "diff", "--name-only", UPSTREAM_REF, ref, "--", MODEL, DOCS, DIAGRAM_CATALOG
+    )
+    return rc, out
 
 
 def remote_ref_commit(enterprise_root: Path, branch: str) -> str | None:
