@@ -47,7 +47,11 @@ from src.domain.submission_phase import (
 from src.infrastructure.git import enterprise_sync_state
 from src.infrastructure.git._git_command import PUSH_TIMEOUT, run_repo_git
 from src.infrastructure.git.enterprise_branch_lifecycle import submission_preflight
-from src.infrastructure.git.git_repository_state import current_commit, remote_ref_commit
+from src.infrastructure.git.git_repository_state import (
+    current_commit,
+    is_ancestor,
+    remote_ref_commit,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -103,7 +107,7 @@ def publish_submission(enterprise_root: Path, prepared: PreparedSubmission) -> S
     pushed_now = published != intent.expected_commit
 
     if pushed_now:
-        _refuse_a_moved_branch(published, intent)
+        _refuse_a_moved_branch(enterprise_root, published, intent)
         rc, _, stderr = run_repo_git(
             enterprise_root, "push", "-u", "origin", intent.branch, timeout=PUSH_TIMEOUT
         )
@@ -133,15 +137,38 @@ def publish_submission(enterprise_root: Path, prepared: PreparedSubmission) -> S
     )
 
 
-def _refuse_a_moved_branch(published: str | None, intent: SubmissionIntent) -> None:
-    """A branch that exists at some *other* commit is not ours to overwrite.
+def record_submitted(enterprise_root: Path, pushed: PushedSubmission) -> CompletedSubmission:
+    """Record that a published submission's changes have been marked, finishing it.
 
-    An absent ref is the ordinary first push. A ref at a different commit means the branch moved for
-    a reason this process did not cause, and `push -u` would either be refused by the remote or
-    force the other work away depending on configuration — neither is an outcome to discover after
-    marking changes submitted.
+    The third phase, and the one that stops the reconciler looking at this submission again: a
+    `pushed` record means the branch is on the remote and the changes local to it are *not* yet
+    marked, which is precisely the state startup has to resolve. Recording it here rather than at
+    either caller keeps all three transitions in the module that owns the phases.
     """
-    if published is not None:
+    completed = pushed.submitted(at=utc_now_iso())
+    _persist(enterprise_root, completed)
+    logger.info("Submission completed: %s", pushed.intent.branch)
+    return completed
+
+
+def _refuse_a_moved_branch(
+    enterprise_root: Path, published: str | None, intent: SubmissionIntent
+) -> None:
+    """A branch that exists at some commit we did not put there is not ours to overwrite.
+
+    Three cases, and the middle one is why this asks about reachability rather than equality.
+
+    An **absent** ref is the ordinary first push. A ref at a commit the submission's own head
+    descends from is **our earlier publication**: successive changes accumulate on one working
+    branch by design, so a second submission finds the remote exactly where the first left it, and
+    pushing fast-forwards it. Refusing that made the second submission onto a branch impossible —
+    which nothing noticed while the saga had no caller.
+
+    Anything else means the branch moved for a reason this process did not cause, and `push -u`
+    would either be refused by the remote or force the other work away depending on configuration —
+    neither is an outcome to discover after marking changes submitted.
+    """
+    if published is not None and not is_ancestor(enterprise_root, published, intent.expected_commit):
         raise SubmissionConflict(
             f"Branch '{intent.branch}' already exists on origin at {published}, but this submission "
             f"was prepared against {intent.expected_commit}. Someone else has moved it; nothing has "
@@ -149,7 +176,7 @@ def _refuse_a_moved_branch(published: str | None, intent: SubmissionIntent) -> N
         )
 
 
-def _persist(enterprise_root: Path, phase: PreparedSubmission | PushedSubmission) -> None:
+def _persist(enterprise_root: Path, phase: SubmissionPhase) -> None:
     """Write the phase onto the aggregate, leaving the rest of the lifecycle alone."""
     current = enterprise_sync_state.load(enterprise_root)
     enterprise_sync_state.replace_submission(enterprise_root, phase, status=current.status)

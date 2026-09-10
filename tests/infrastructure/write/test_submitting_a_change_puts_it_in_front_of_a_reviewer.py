@@ -20,15 +20,18 @@ from src.application.modeling.proposal_standing import pending_proposals
 from src.application.modeling.proposed_change import PROPOSED_CHANGE_TYPE
 from src.application.modeling.submission_set import UnsubmittableSet
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
+from src.domain.submission_phase import CompletedSubmission, PushedSubmission
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.artifact_index import combined_artifact_index
 from src.infrastructure.git import enterprise_sync_state
 from src.infrastructure.verification.verifier_factory import build_artifact_verifier
 from src.infrastructure.write.artifact_write.change_submission import (
     SubmissionUnavailable,
+    complete_submission,
     submit_changes,
 )
 from src.infrastructure.write.artifact_write.entity_edit import edit_entity
+from src.infrastructure.write.artifact_write.proposal_lifecycle import mark_proposal_state
 from tests.support.git_workflow_fixtures import ENT_ENTITY_ID, build_workflow_pair, git
 
 
@@ -177,3 +180,54 @@ class TestWhenItMustNotHappen:
         assert not pending_proposals(
             repo.list_entities(artifact_type=PROPOSED_CHANGE_TYPE)
         ).get("nothing", ())
+
+
+class TestASubmissionLeftUnmarked:
+    """The window the saga exists for: the push landed and the process died before the marking.
+
+    `reconcile_submission` resolves the remote half at startup and can go no further — it runs
+    before the repository exists. It leaves a `pushed` record, and finishing that record is what
+    stops a branch a reviewer can already see carrying changes this repository still calls drafts.
+    """
+
+    def test_an_ordinary_submission_leaves_nothing_to_reconcile(self, workspace) -> None:
+        engagement, enterprise, repo = workspace
+        change_id = _record_a_change(engagement, repo, "Wording the engagement proposes")
+
+        _submit(engagement, enterprise, repo, change_id)
+
+        assert isinstance(enterprise_sync_state.load(enterprise).submission, CompletedSubmission)
+
+    def test_a_pushed_submission_is_finished(self, workspace) -> None:
+        engagement, enterprise, repo = workspace
+        change_id = _record_a_change(engagement, repo, "Wording the engagement proposes")
+        _submit(engagement, enterprise, repo, change_id)
+        _rewind_to_pushed(enterprise, repo, change_id)
+        assert _state_of(repo, change_id) == "draft"
+
+        marked = complete_submission(repo=repo, enterprise_root=enterprise)
+
+        assert marked == (change_id,)
+        assert _state_of(repo, change_id) == "submitted"
+        assert isinstance(enterprise_sync_state.load(enterprise).submission, CompletedSubmission)
+
+    def test_a_start_with_no_submission_in_flight_does_nothing(self, workspace) -> None:
+        """The ordinary case at startup, and it must not be an error or a warning."""
+        _engagement, enterprise, repo = workspace
+
+        assert complete_submission(repo=repo, enterprise_root=enterprise) == ()
+
+
+def _rewind_to_pushed(enterprise: Path, repo: ArtifactRepository, change_id: str) -> None:
+    """The state a process leaves by dying between the push and the marking."""
+    completed = enterprise_sync_state.load(enterprise).submission
+    assert isinstance(completed, CompletedSubmission)
+    enterprise_sync_state.replace_submission(
+        enterprise,
+        PushedSubmission(intent=completed.intent, pushed_at=completed.pushed_at),
+        status=enterprise_sync_state.load(enterprise).status,
+    )
+    record = repo.get_entity(change_id)
+    assert record is not None
+    mark_proposal_state(record.path, artifact_id=change_id, state="draft")
+    repo.refresh()

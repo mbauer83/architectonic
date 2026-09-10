@@ -44,6 +44,18 @@ def commits_ahead_of_main(repo: Path) -> int:
         return 0
 
 
+def is_ancestor(repo: Path, ancestor: str, descendant: str) -> bool:
+    """Whether `ancestor` is reachable from `descendant` — a push of the second fast-forwards a
+    remote at the first.
+
+    The question that separates "this branch carries work we published earlier" from "this branch
+    moved for a reason we did not cause". Both look identical as a pair of differing commit ids, and
+    only reachability tells them apart.
+    """
+    rc, _, _ = run_repo_git(repo, "merge-base", "--is-ancestor", ancestor, descendant)
+    return rc == 0
+
+
 def remote_ref_commit(enterprise_root: Path, branch: str) -> str | None:
     """The commit `origin/<branch>` points at, or None where the remote has no such branch.
 

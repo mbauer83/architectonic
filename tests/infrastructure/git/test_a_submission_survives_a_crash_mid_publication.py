@@ -159,14 +159,51 @@ class TestFailureAfterTheRemoteUpdates:
         assert _branches_on(origin).count(branch) == 1
 
 
+def _publish_someone_elses_commit(enterprise: Path, branch: str) -> None:
+    """Put a commit on `origin/<branch>` that the local branch does not descend from."""
+    git(enterprise, "checkout", "-b", "another-workspace", "HEAD~1")
+    write_entity(enterprise, "REQ@1000001202.Theirs.someone-elses-work", "Someone Else's Work")
+    git_work_commits.commit_enterprise_work(enterprise, "someone else's work")
+    git(enterprise, "push", "origin", f"HEAD:refs/heads/{branch}")
+    git(enterprise, "checkout", branch)
+
+
+class TestASecondSubmissionOntoTheSameBranch:
+    """Successive changes accumulate on one working branch, so this is the ordinary case.
+
+    The remote is then exactly where the first submission left it, and the difference between that
+    and someone else's move is reachability, not inequality. Refusing it made a second submission
+    impossible — which nothing noticed while the saga had no production caller.
+    """
+
+    def test_it_fast_forwards_the_branch_it_already_published(self, pair) -> None:
+        enterprise, origin = pair
+        branch = _accumulate(enterprise)
+        submission_saga.publish_submission(
+            enterprise, submission_saga.prepare_submission(enterprise, CHANGES)
+        )
+        write_entity(enterprise, "REQ@1000001203.More.further-work", "Further Work")
+        git_work_commits.commit_enterprise_work(enterprise, "more work to submit")
+
+        outcome = submission_saga.publish_submission(
+            enterprise, submission_saga.prepare_submission(enterprise, CHANGES)
+        )
+
+        assert outcome.pushed_now
+        assert git(origin, "rev-parse", f"refs/heads/{branch}") == outcome.commit
+        assert _branches_on(origin).count(branch) == 1
+
+
 class TestARefAtAnUnexpectedCommitFailsClosed:
     def test_a_branch_already_on_origin_at_another_commit_is_not_overwritten(self, pair) -> None:
         """Someone else moved it — a reviewer's amend, a force-push, another workspace."""
         enterprise, origin = pair
         branch = _accumulate(enterprise)
         prepared = submission_saga.prepare_submission(enterprise, CHANGES)
-        # Publish a *different* commit under the same name, the way another workspace would.
-        git(enterprise, "push", "origin", f"HEAD~1:refs/heads/{branch}")
+        # A commit this branch does not descend from, which is what "someone else moved it" means.
+        # It used to publish `HEAD~1`, an *ancestor* — indistinguishable from this repository's own
+        # earlier publication, which is the ordinary second submission onto an accumulating branch.
+        _publish_someone_elses_commit(enterprise, branch)
         theirs = git(origin, "rev-parse", f"refs/heads/{branch}")
 
         with pytest.raises(SubmissionConflict, match="Someone else has moved it"):

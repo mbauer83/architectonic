@@ -73,6 +73,9 @@ def initialise_repo(
         semantic_provider=semantic_provider_for(index),
     )
     repo.refresh()
+    # Before the sweep: the sweep closes only *submitted* changes, so a submission left unmarked
+    # would hide every change it carries from it until the next start after this one.
+    startup_reconciliation.finish_a_submission_left_unmarked(repo, enterprise_root_path)
     startup_reconciliation.close_changes_already_integrated(repo)
     assert_no_duplicate_short_ids(index)
     assert_no_cross_repo_id_collisions(index)

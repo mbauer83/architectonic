@@ -48,6 +48,34 @@ def settle_submissions_in_flight(enterprise_root: Path | None) -> None:
         logger.warning("Submission reconciliation on startup: %s", outcome.summary)
 
 
+def finish_a_submission_left_unmarked(repo: ArtifactRepository, enterprise_root: Path | None) -> None:
+    """Mark the changes a published submission carries, where a previous process did not.
+
+    `reconcile_submission` above resolves the *remote* half and can go no further: it runs before
+    the repository exists and has no way to write the engagement repository the changes live in. So
+    it leaves a `pushed` record, and this is what that record is for. Without it a branch a reviewer
+    can already see carries changes this repository still calls drafts.
+
+    Like the sweep below, it may never prevent the backend from starting.
+    """
+    if enterprise_root is None:
+        return
+    from src.infrastructure.write.artifact_write.change_submission import (  # noqa: PLC0415
+        complete_submission,
+    )
+
+    try:
+        marked = complete_submission(repo=repo, enterprise_root=enterprise_root)
+    except Exception:  # noqa: BLE001 — startup must survive any submission-state fault
+        logger.exception("Could not finish an unmarked submission; continuing startup")
+        return
+    if marked:
+        logger.warning(
+            "Finished a submission a previous process left unmarked: %d change(s) now submitted",
+            len(marked),
+        )
+
+
 def close_changes_already_integrated(repo: ArtifactRepository) -> None:
     """Close proposed changes the enterprise repository already carries.
 

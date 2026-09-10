@@ -36,11 +36,16 @@ from src.application.modeling.proposal_standing import PendingProposal, pending_
 from src.application.modeling.proposed_change import PROPOSED_CHANGE_TYPE, SUBMITTED_STATE
 from src.application.modeling.submission_set import compose
 from src.domain.clock import utc_now_iso
+from src.domain.submission_phase import PushedSubmission
 from src.infrastructure.git import enterprise_sync_state
 from src.infrastructure.git.enterprise_branch_lifecycle import ensure_working_branch
 from src.infrastructure.git.git_repository_state import has_uncommitted_changes
 from src.infrastructure.git.git_work_commits import commit_enterprise_work
-from src.infrastructure.git.submission_saga import prepare_submission, publish_submission
+from src.infrastructure.git.submission_saga import (
+    prepare_submission,
+    publish_submission,
+    record_submitted,
+)
 from src.infrastructure.write.artifact_write.enterprise_replay import apply_to_enterprise
 from src.infrastructure.write.artifact_write.promote_transaction import GitWorktreeTransaction
 from src.infrastructure.write.artifact_write.proposal_lifecycle import mark_proposal_state
@@ -102,7 +107,7 @@ def submit_changes(
 
     prepared = prepare_submission(enterprise_root, tuple(p.proposal_id for p in composed))
     outcome = publish_submission(enterprise_root, prepared)
-    _mark_submitted(composed, repo=repo)
+    complete_submission(repo=repo, enterprise_root=enterprise_root)
     _record_published(enterprise_root, branch=outcome.branch, commit=outcome.commit)
 
     logger.info("Submitted %d change(s) on %s", len(composed), outcome.branch)
@@ -166,17 +171,41 @@ def _commit_the_replay(
         ) from nothing_to_commit
 
 
-def _mark_submitted(composed: tuple[PendingProposal, ...], *, repo: "ArtifactRepository") -> None:
-    """Mark every change in the set submitted, now the remote has confirmed the branch."""
-    for proposal in composed:
-        record = repo.get_entity(proposal.proposal_id)
+def complete_submission(*, repo: "ArtifactRepository", enterprise_root: Path) -> tuple[str, ...]:
+    """Mark the changes a published submission carries, and record the submission finished.
+
+    The step between a branch reaching the remote and anyone here knowing it did. Both callers are
+    the same situation seen at different moments: the submission that just pushed, and the one a
+    previous process pushed before dying — `reconcile_submission` resolves the remote and leaves a
+    `pushed` record precisely so this can finish it. That is D4c's transition, and it is one
+    function rather than two so a change cannot be marked one way at submit time and another at
+    startup.
+
+    Returns what it marked. Nothing, and no complaint, where no submission is awaiting completion:
+    at startup that is the ordinary case.
+    """
+    submission = enterprise_sync_state.load(enterprise_root).submission
+    if not isinstance(submission, PushedSubmission):
+        return ()
+    marked = _mark_submitted(submission.intent.proposal_ids, repo=repo)
+    record_submitted(enterprise_root, submission)
+    return marked
+
+
+def _mark_submitted(proposal_ids: tuple[str, ...], *, repo: "ArtifactRepository") -> tuple[str, ...]:
+    """Mark each change submitted, now the remote has confirmed the branch."""
+    marked: list[str] = []
+    for proposal_id in proposal_ids:
+        record = repo.get_entity(proposal_id)
         if record is None:
             # It was there when the set was composed. Losing it between then and here means the
             # branch is published carrying an edit nothing local claims — worth an operator's
             # attention, and not worth failing the other changes over.
-            logger.warning("Change %s vanished between composition and marking", proposal.proposal_id)
+            logger.warning("Change %s vanished between composition and marking", proposal_id)
             continue
-        mark_proposal_state(record.path, artifact_id=proposal.proposal_id, state=SUBMITTED_STATE)
+        if mark_proposal_state(record.path, artifact_id=proposal_id, state=SUBMITTED_STATE):
+            marked.append(proposal_id)
+    return tuple(marked)
 
 
 def _record_published(enterprise_root: Path, *, branch: str, commit: str) -> None:
