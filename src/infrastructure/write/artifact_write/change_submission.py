@@ -48,7 +48,10 @@ from src.infrastructure.git.submission_saga import (
 )
 from src.infrastructure.write.artifact_write.enterprise_replay import apply_to_enterprise
 from src.infrastructure.write.artifact_write.promote_transaction import GitWorktreeTransaction
-from src.infrastructure.write.artifact_write.proposal_lifecycle import mark_proposal_state
+from src.infrastructure.write.artifact_write.proposal_lifecycle import (
+    mark_proposal_state,
+    restamp_base_revision,
+)
 from src.infrastructure.write.artifact_write.types import WriteResult
 
 if TYPE_CHECKING:
@@ -193,18 +196,38 @@ def complete_submission(*, repo: "ArtifactRepository", enterprise_root: Path) ->
 
 
 def _mark_submitted(proposal_ids: tuple[str, ...], *, repo: "ArtifactRepository") -> tuple[str, ...]:
-    """Mark each change submitted, now the remote has confirmed the branch."""
+    """Mark each change submitted and restamp what the replay has just proven it against.
+
+    The two facts belong together. The replay moved the enterprise artifact — by this change's own
+    hand — so a base left at the older revision reads as staleness the moment the submission
+    succeeds, and would send an author to rebase what they have just submitted.
+
+    Read through `pending_proposals` rather than from the ids alone, because restamping needs the
+    enterprise artifact each change is against, and that is stated in the recorded edit, which the
+    one decoder of a change record is what reads.
+    """
+    by_id = {
+        proposal.proposal_id: proposal
+        for group in pending_proposals(
+            repo.list_entities(artifact_type=PROPOSED_CHANGE_TYPE)
+        ).values()
+        for proposal in group
+    }
     marked: list[str] = []
     for proposal_id in proposal_ids:
-        record = repo.get_entity(proposal_id)
-        if record is None:
+        proposal = by_id.get(proposal_id)
+        if proposal is None:
             # It was there when the set was composed. Losing it between then and here means the
             # branch is published carrying an edit nothing local claims — worth an operator's
             # attention, and not worth failing the other changes over.
             logger.warning("Change %s vanished between composition and marking", proposal_id)
             continue
-        if mark_proposal_state(record.path, artifact_id=proposal_id, state=SUBMITTED_STATE):
+        record = repo.get_entity(proposal_id)
+        if record is not None and mark_proposal_state(
+            record.path, artifact_id=proposal_id, state=SUBMITTED_STATE
+        ):
             marked.append(proposal_id)
+        restamp_base_revision(repo, proposal_id=proposal_id, target_id=proposal.target_id)
     return tuple(marked)
 
 

@@ -15,11 +15,20 @@ risks losing whatever the renderer does not know about.
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import yaml  # type: ignore[import-untyped]
 
-from src.application.modeling.proposed_change import PROPOSAL_STATE, STATES, ProposalState
+from src.application.modeling.proposed_change import (
+    BASE_REVISION,
+    PROPOSAL_STATE,
+    STATES,
+    ProposalState,
+)
 from src.domain.repository.frontmatter import parse_frontmatter, replace_frontmatter_text
+
+if TYPE_CHECKING:
+    from src.application.artifacts.query import ArtifactRepository
 
 
 class ProposalTransitionRefused(ValueError):
@@ -57,3 +66,27 @@ def record_proposal_field(path: Path, *, artifact_id: str, field: str, value: st
         raise TypeError("yaml.safe_dump returned non-string output")
     path.write_text(replace_frontmatter_text(source, dumped.strip()), encoding="utf-8")
     return True
+
+
+def restamp_base_revision(
+    repo: "ArtifactRepository", *, proposal_id: str, target_id: str
+) -> bool:
+    """Record what the change has now been proven against: the enterprise artifact as it stands.
+
+    Both moments that prove a change need this, and they used to be one function and one open-coded
+    sequence. A rebase re-applies it to a moved artifact; a submission replays it into the enterprise
+    repository, which moves the artifact by the change's own hand — and a base left at the older
+    revision then reads as staleness, sending an author to rebase what they have just submitted.
+
+    Taken from the live repository, never from a rehearsal worktree: that carries the replay's own
+    writes, so hashing there would stamp the change against content existing nowhere.
+    """
+    from src.application.modeling.proposal_standing import enterprise_revision  # noqa: PLC0415
+
+    revision = enterprise_revision(repo, target_id)
+    record = repo.get_entity(proposal_id)
+    if revision is None or record is None:
+        return False
+    return record_proposal_field(
+        record.path, artifact_id=proposal_id, field=BASE_REVISION, value=revision
+    )

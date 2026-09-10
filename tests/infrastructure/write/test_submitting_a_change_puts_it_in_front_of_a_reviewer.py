@@ -113,6 +113,21 @@ class TestTheOrdinarySubmission:
 
         assert _state_of(repo, change_id) == "submitted"
 
+    def test_a_just_submitted_change_does_not_read_as_stale(self, workspace) -> None:
+        """The replay moves the enterprise artifact — by this change's own hand. Reading that as
+        staleness would send an author to rebase the thing they have just submitted, and would churn
+        a review branch per submission."""
+        from src.application.modeling.change_overview import recorded_changes  # noqa: PLC0415
+
+        engagement, enterprise, repo = workspace
+        change_id = _record_a_change(engagement, repo, "Wording the engagement proposes")
+
+        _submit(engagement, enterprise, repo, change_id)
+        repo.refresh()
+
+        (row,) = [c for c in recorded_changes(repo) if c.change_id == change_id]
+        assert row.condition == "current"
+
     def test_the_branch_stops_accumulating(self, workspace) -> None:
         """The regional invariant: no change reads `submitted` while its branch is `accumulating`."""
         engagement, enterprise, repo = workspace

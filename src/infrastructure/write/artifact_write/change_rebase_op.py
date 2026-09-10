@@ -27,8 +27,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from src.application.modeling.change_rebase import RehearsedRebase
-from src.application.modeling.proposal_standing import PendingProposal, enterprise_revision
-from src.application.modeling.proposed_change import BASE_REVISION
+from src.application.modeling.proposal_standing import PendingProposal
 from src.infrastructure.write.artifact_write.rebase_rehearsal import rehearse_against, rehearsing
 from src.infrastructure.write.artifact_write.rebase_replay import rehearser_for
 
@@ -93,32 +92,17 @@ def _restamp_clean(
     proposals: tuple[PendingProposal, ...],
     repo: "ArtifactRepository",
 ) -> tuple[str, ...]:
-    """Record the revision each clean change has now been proven against.
-
-    Taken from the live repository, not from the worktree: the worktree carried the replay's own
-    writes, so hashing an artifact there would stamp the change against content that exists nowhere.
-    """
-    by_id = {proposal.proposal_id: proposal for proposal in proposals}
-    restamped: list[str] = []
-    for classified in rehearsed.with_outcome("clean"):
-        proposal = by_id.get(classified.proposal_id)
-        revision = enterprise_revision(repo, classified.target_id) if proposal is not None else None
-        if proposal is None or revision is None:
-            continue
-        if _write_base_revision(repo, proposal.proposal_id, revision):
-            restamped.append(proposal.proposal_id)
-    return tuple(restamped)
-
-
-def _write_base_revision(repo: "ArtifactRepository", proposal_id: str, revision: str) -> bool:
-    """Through the one owner of "record a field on a change", which the lifecycle already is."""
+    """Record the revision each clean change has now been proven against."""
     from src.infrastructure.write.artifact_write.proposal_lifecycle import (  # noqa: PLC0415
-        record_proposal_field,
+        restamp_base_revision,
     )
 
-    record = repo.get_entity(proposal_id)
-    if record is None:
-        return False
-    return record_proposal_field(
-        record.path, artifact_id=proposal_id, field=BASE_REVISION, value=revision
+    known = {proposal.proposal_id for proposal in proposals}
+    return tuple(
+        classified.proposal_id
+        for classified in rehearsed.with_outcome("clean")
+        if classified.proposal_id in known
+        and restamp_base_revision(
+            repo, proposal_id=classified.proposal_id, target_id=classified.target_id
+        )
     )
