@@ -14,8 +14,6 @@ from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
 from src.application.modeling.change_overview import recorded_changes
 from src.application.modeling.proposed_change import (
-    PENDING_STATES,
-    PROPOSAL_STATE,
     PROPOSED_CHANGE_TYPE,
 )
 from src.infrastructure.mcp.artifact_mcp.context import (
@@ -81,21 +79,16 @@ def artifact_list_changes(*, repo_root: str | None = None) -> dict[str, Any]:
 
 
 def artifact_discard_change(*, artifact_id: str, repo_root: str | None = None) -> dict[str, Any]:
-    from src.infrastructure.write.artifact_write.proposal_lifecycle import mark_proposal_state
+    from src.infrastructure.write.artifact_write.proposal_lifecycle import (  # noqa: PLC0415
+        discard_change,
+    )
 
     root, repo = _repo_for(repo_root)
-    record = repo.get_entity(artifact_id)
-    if record is None:
-        raise ValueError(f"There is no change '{artifact_id}' in this repository.")
-    if str(record.extra.get(PROPOSAL_STATE, "")) not in PENDING_STATES:
-        raise ValueError(
-            f"'{artifact_id}' has already ended; a change that is integrated or abandoned is a "
-            "record of what happened and is not changed again."
-        )
+    enterprise = next((m.root for m in repo.repo_mounts if m.scope == "enterprise"), None)
     mutation_context, clear_repo_caches = authoritative_callbacks_for(root)
-    discarded = mark_proposal_state(record.path, artifact_id=artifact_id, state="abandoned")
+    path, discarded = discard_change(repo, artifact_id=artifact_id, enterprise_root=enterprise)
     if discarded:
-        clear_repo_caches(record.path)
+        clear_repo_caches(path)
         mutation_context.finalize()
     return {"artifact_id": artifact_id, "discarded": discarded, "state": "abandoned"}
 

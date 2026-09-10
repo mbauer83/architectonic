@@ -14,8 +14,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from src.application.modeling.change_overview import RecordedChange, recorded_changes
 from src.application.modeling.proposal_standing import PendingProposal, pending_proposals
 from src.application.modeling.proposed_change import (
-    PENDING_STATES,
-    PROPOSAL_STATE,
     PROPOSED_CHANGE_TYPE,
 )
 from src.application.runtime_catalogs import RuntimeCatalogs
@@ -65,24 +63,25 @@ def list_changes() -> dict[str, Any]:
     operation_id="changes_discard_change")
 def discard_change(artifact_id: str) -> dict[str, Any]:
     """Take a change back. The record is kept in a terminal state, not deleted."""
-    from src.infrastructure.write.artifact_write.proposal_lifecycle import mark_proposal_state
+    from src.infrastructure.write.artifact_write.proposal_lifecycle import (
+        DiscardRefused,
+    )
+    from src.infrastructure.write.artifact_write.proposal_lifecycle import (
+        discard_change as discard,
+    )
 
     repo = s.get_repo()
-    record = repo.get_entity(artifact_id)
-    if record is None:
+    if repo.get_entity(artifact_id) is None:
         raise HTTPException(404, f"There is no change '{artifact_id}' in this repository.")
-    if str(record.extra.get(PROPOSAL_STATE, "")) not in PENDING_STATES:
-        raise HTTPException(
-            409,
-            f"'{artifact_id}' has already ended; a change that is integrated or abandoned is a "
-            "record of what happened and is not changed again.",
+    try:
+        path, changed = s.authorized_write(
+            "changes_discard_change", discard,
+            repo, artifact_id=artifact_id, enterprise_root=s.maybe_enterprise_root(),
         )
-    changed = s.authorized_write(
-        "changes_discard_change", mark_proposal_state,
-        record.path, artifact_id=artifact_id, state="abandoned",
-    )
+    except DiscardRefused as refused:
+        raise HTTPException(409, str(refused)) from refused
     if changed:
-        s.clear_caches(record.path)
+        s.clear_caches(path)
     return {"artifact_id": artifact_id, "discarded": bool(changed), "state": "abandoned"}
 
 

@@ -90,3 +90,51 @@ def restamp_base_revision(
     return record_proposal_field(
         record.path, artifact_id=proposal_id, field=BASE_REVISION, value=revision
     )
+
+
+class DiscardRefused(ValueError):
+    """Taking this change back would leave the branch carrying it, so nothing was changed."""
+
+
+def discard_change(
+    repo: "ArtifactRepository", *, artifact_id: str, enterprise_root: "Path | None"
+) -> tuple["Path", bool]:
+    """Take a change back, returning its file and whether the file changed.
+
+    One operation, because there were two: REST and MCP each found the record, checked the state and
+    wrote `abandoned` in their own words, so a rule added to either was absent from the other — and
+    the rule below is one neither had.
+
+    **A change on a published branch cannot be taken back on its own.** Marking it `abandoned` does
+    not remove its effect from the branch a reviewer is reading, so the record would say withdrawn
+    while the branch still offered the work for merging, and a later rebase could not repair it:
+    the replacement carries the live set, and the withdrawn change's effect on the old branch is
+    then work the set does not account for, which refuses the rebase outright.
+
+    The remedy composes out of what already exists. Withdraw the submission — the branch goes, no
+    branch is published, and the reconciliation returns its changes to `draft`, where taking one
+    back is an ordinary local act.
+    """
+    from src.application.modeling.proposed_change import PENDING_STATES, SUBMITTED_STATE
+    from src.infrastructure.git import enterprise_sync_state
+
+    record = repo.get_entity(artifact_id)
+    if record is None:
+        raise DiscardRefused(f"There is no change '{artifact_id}' in this repository.")
+    state = str(record.extra.get(PROPOSAL_STATE, ""))
+    if state not in PENDING_STATES:
+        raise DiscardRefused(
+            f"'{artifact_id}' has already ended; a change that is integrated or abandoned is a "
+            "record of what happened and is not changed again."
+        )
+    if (
+        state == SUBMITTED_STATE
+        and enterprise_root is not None
+        and enterprise_sync_state.load(enterprise_root).is_pending()
+    ):
+        raise DiscardRefused(
+            f"'{artifact_id}' is on a branch that has been published for review, and taking it "
+            "back here would not take it off that branch. Withdraw the submission first: the "
+            "branch goes, and the changes it carried return to draft."
+        )
+    return record.path, mark_proposal_state(record.path, artifact_id=artifact_id, state="abandoned")

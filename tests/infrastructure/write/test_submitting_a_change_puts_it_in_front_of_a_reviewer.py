@@ -34,7 +34,11 @@ from src.infrastructure.write.artifact_write.change_submission import (
 )
 from src.infrastructure.write.artifact_write.entity_edit import edit_entity
 from src.infrastructure.write.artifact_write.integration_cleanup import close_integrated_changes
-from src.infrastructure.write.artifact_write.proposal_lifecycle import mark_proposal_state
+from src.infrastructure.write.artifact_write.proposal_lifecycle import (
+    DiscardRefused,
+    discard_change,
+    mark_proposal_state,
+)
 from tests.support.git_workflow_fixtures import (
     ENT_ENTITY_ID,
     build_workflow_pair,
@@ -594,6 +598,50 @@ class TestRebasingABranchThatCarriesMore:
             f"{report.republished.branch}:model/motivation/requirement/{OTHER_ID}.md",
         )
         assert "A second artifact's wording" in published, "the other change is on the replacement"
+
+
+class TestTakingBackASubmittedChange:
+    """Marking a change `abandoned` does not take its effect off the branch carrying it.
+
+    So the record would say withdrawn while the branch still offered the work for merging — and a
+    later rebase could not repair it, because the withdrawn change's effect is then work the live
+    set does not account for, which refuses the rebase outright.
+    """
+
+    def test_it_is_refused_while_its_branch_is_published(self, workspace) -> None:
+        engagement, enterprise, repo = workspace
+        change_id = _record_a_change(engagement, repo, "Wording the engagement proposes")
+        _submit(engagement, enterprise, repo, change_id)
+        repo.refresh()
+
+        with pytest.raises(DiscardRefused, match="published for review"):
+            discard_change(repo, artifact_id=change_id, enterprise_root=enterprise)
+
+        assert _state_of(repo, change_id) == "submitted"
+
+    def test_withdrawing_the_submission_makes_it_ordinary_again(self, workspace) -> None:
+        """The remedy composes out of what already exists: the branch goes, the change returns to
+        draft, and taking it back is a local act again."""
+        engagement, enterprise, repo = workspace
+        change_id = _record_a_change(engagement, repo, "Wording the engagement proposes")
+        report = _submit(engagement, enterprise, repo, change_id)
+        _the_branch_goes_away_unmerged(enterprise, report.branch)
+        repo.refresh()
+        close_integrated_changes(repo)
+
+        _path, discarded = discard_change(repo, artifact_id=change_id, enterprise_root=enterprise)
+
+        assert discarded
+        assert _state_of(repo, change_id) == "abandoned"
+
+    def test_a_draft_is_taken_back_without_ceremony(self, workspace) -> None:
+        engagement, enterprise, repo = workspace
+        change_id = _record_a_change(engagement, repo, "Wording the engagement proposes")
+
+        _path, discarded = discard_change(repo, artifact_id=change_id, enterprise_root=enterprise)
+
+        assert discarded
+        assert _state_of(repo, change_id) == "abandoned"
 
 
 def _a_promotion_lands_on_the_branch(enterprise: Path) -> None:
