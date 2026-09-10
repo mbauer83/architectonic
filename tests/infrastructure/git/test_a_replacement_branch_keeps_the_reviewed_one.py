@@ -238,3 +238,37 @@ def test_a_state_file_predating_the_field_loads_without_one(tmp_path: Path) -> N
     assert loaded.branch == "arch/work-1"
     assert loaded.status == "pending"
     assert not loaded.is_blocked
+
+
+class TestNamingAcrossTwoDeployments:
+    """Two deployments share an enterprise remote — the arrangement the whole feature is for.
+
+    The name is stamped to the second, and the uniqueness check used to read local refs alone on
+    the reasoning that "the remote cannot hold a branch this repository never created". That is
+    false here: the other deployment created it. Two submissions in the same second produced the
+    same name and the second push refused, reporting someone else's move.
+    """
+
+    def test_a_name_the_remote_is_known_to_hold_is_not_reused(self, tmp_path: Path) -> None:
+        _, enterprise = build_workflow_pair(tmp_path)
+        git(enterprise, "push", "origin", "main")
+        taken = lifecycle._new_working_branch_name(enterprise)  # noqa: SLF001
+        # Another deployment publishes that name, and this one hears about it on its next fetch.
+        git(enterprise, "push", "origin", f"HEAD:refs/heads/{taken}")
+        git(enterprise, "fetch", "origin")
+
+        assert lifecycle._new_working_branch_name(enterprise) != taken  # noqa: SLF001
+
+    def test_it_asks_no_remote_to_find_out(self, tmp_path: Path, monkeypatch) -> None:  # noqa: ANN001
+        """Naming must not put the network in its own path — a round trip per attempt turns a
+        hanging remote into a hanging save."""
+        from src.infrastructure.git import git_repository_state
+
+        _, enterprise = build_workflow_pair(tmp_path)
+
+        def _refuse(*_args, **_kwargs):  # noqa: ANN002, ANN003, ANN202
+            raise AssertionError("naming asked the remote")
+
+        monkeypatch.setattr(git_repository_state, "remote_ref_commit", _refuse)
+
+        assert lifecycle._new_working_branch_name(enterprise)  # noqa: SLF001

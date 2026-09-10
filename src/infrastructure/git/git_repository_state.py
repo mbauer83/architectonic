@@ -104,3 +104,16 @@ def local_ref_exists(enterprise_root: Path, branch: str) -> bool:
     return rc == 0
 
 
+def remote_tracking_ref_exists(enterprise_root: Path, branch: str) -> bool:
+    """Whether this repository already knows of `origin/<branch>`, without asking the remote.
+
+    The last fetch's answer, not the current one. `remote_ref_exists` asks origin and pays a round
+    trip for it; this reads what is on disk, which is what a caller wants when the cost of being
+    wrong is low and the cost of the network is a hang.
+    """
+    rc, _, _ = run_repo_git(
+        enterprise_root, "show-ref", "--verify", "--quiet", f"refs/remotes/origin/{branch}"
+    )
+    return rc == 0
+
+

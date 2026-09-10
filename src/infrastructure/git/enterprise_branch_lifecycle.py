@@ -21,6 +21,7 @@ from src.infrastructure.git.git_repository_state import (
     has_uncommitted_changes,
     local_ref_exists,
     remote_ref_exists,
+    remote_tracking_ref_exists,
 )
 
 logger = logging.getLogger(__name__)
@@ -73,13 +74,25 @@ def _new_working_branch_name(enterprise_root: Path) -> str:
     That is the operation replacement exists for, failing exactly when it is used quickly.
 
     So the stamp is a starting point and the ref is the authority: suffix until nothing holds the
-    name. Local refs only — the remote cannot hold a branch this repository never created, and a
-    round trip per attempt would put the network in the path of naming something.
+    name, locally or in what this repository last heard from origin.
+
+    The remote-tracking half is new, and the reason the old comment gave for leaving it out — "the
+    remote cannot hold a branch this repository never created" — is false wherever two deployments
+    share an enterprise remote, which is the arrangement the whole change-proposal feature is for.
+    Two of them submitting in the same second produced the same name, and the second push refused,
+    reporting someone else's move.
+
+    Read from disk, never from the network: `remote_ref_exists` would ask origin and put a round
+    trip per attempt in the path of naming something. So this narrows the race rather than closing
+    it — a branch created since the last fetch is still unknown here — and the push refusing remains
+    what makes the remaining case safe rather than silent.
     """
     stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
     candidate = f"arch/work-{stamp}"
     suffix = 2
-    while local_ref_exists(enterprise_root, candidate):
+    while local_ref_exists(enterprise_root, candidate) or remote_tracking_ref_exists(
+        enterprise_root, candidate
+    ):
         candidate = f"arch/work-{stamp}-{suffix}"
         suffix += 1
     return candidate
