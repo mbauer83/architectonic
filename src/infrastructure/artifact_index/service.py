@@ -405,6 +405,18 @@ class ArtifactIndex(_ReverseReferenceQueries, _ScratchpadNoteQueries):
                 "status": entity.status,
                 "domain": entity.domain,
                 "subdomain": entity.subdomain,
+                # Where the entity is filed. The context read publishes `EntityDetailResponse`,
+                # which declares this — but the projection did not produce it, and `NullsOmitted`
+                # then dropped the key, so the field was declared and absent. The edit form is
+                # driven from this payload, so it could not show an entity's own home: the control
+                # opened blank and saving would have offered to move the entity out of it.
+                # Where the entity is filed. The context read publishes `EntityDetailResponse`,
+                # which declares this — but the projection did not produce it, and `NullsOmitted`
+                # then dropped the key, so the field was declared and absent. The edit form is
+                # driven from this payload, so it could not show an entity's own home: the control
+                # opened blank and saving would have offered to move the entity out of it.
+                "group": entity.group,
+                "last_updated": entity.last_updated,
                 "record_type": "entity",
                 "path": str(entity.path),
                 "content_snippet": entity.content_text[:240],
