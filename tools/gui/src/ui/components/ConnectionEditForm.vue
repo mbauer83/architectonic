@@ -58,6 +58,19 @@ const error = computed(() =>
     : mutation.errorMessage.value,
 )
 
+/**
+ * The specialization field, only where the reader changed it.
+ *
+ * Omitted leaves the connection's own set alone, which matters because this control is a single
+ * select and a connection may carry several (ArchiMate §15.2): sending the first one back would
+ * silently drop the rest of a set the form cannot show. An explicit empty list is how clearing is
+ * said, so choosing "none" still means none.
+ */
+const specializationDelta = (): { specializations?: readonly string[] } => {
+  if (specialization.value === (props.connection.specializations[0] ?? '')) return {}
+  return { specializations: specialization.value ? [specialization.value] : [] }
+}
+
 const save = () => {
   if (blocked.value) return
   const metadata = metadataWireValues(
@@ -70,7 +83,7 @@ const save = () => {
     description: description.value.trim(),
     src_multiplicity: sourceMultiplicity.value.trim(),
     tgt_multiplicity: targetMultiplicity.value.trim(),
-    specialization: specialization.value,
+    ...specializationDelta(),
     metadata,
     dry_run: false,
   })).then((exit) => Exit.match(exit, {

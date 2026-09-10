@@ -141,7 +141,9 @@ export interface ModelRepository
   readonly addConnection: (body: {
     source_entity: string; connection_type: string; target_entity: string;
     description?: string; src_multiplicity?: string; tgt_multiplicity?: string;
-    specialization?: string;
+    /** A concept may carry several (ArchiMate §15.2), so the wire field is the list the
+     *  server declares — `specialization` was refused outright by a body that forbids extras. */
+    specializations?: readonly string[];
     /** Attributes declared by the pair's effective metadata schema. */
     metadata?: Record<string, unknown>;
     dry_run?: boolean;
@@ -149,7 +151,9 @@ export interface ModelRepository
   /** Identity is the composite id; the body carries only what changes. */
   readonly editConnection: (connectionId: string, body: {
     description?: string; src_multiplicity?: string; tgt_multiplicity?: string;
-    specialization?: string;
+    /** Omitted leaves what the connection has; `[]` clears it. A single-select cannot express a
+     *  connection carrying several, so it is sent only when the reader actually changed it. */
+    specializations?: readonly string[];
     /** Replaces the schema-declared attributes wholesale; {} clears them. */
     metadata?: Record<string, unknown>;
     dry_run?: boolean;
@@ -170,14 +174,14 @@ export interface ModelRepository
   readonly createEntity: (body: {
     artifact_type: string; name: string; summary?: string;
     properties?: Record<string, string>; attribute_types?: Record<string, string>;
-    notes?: string; keywords?: string[]; specialization?: string; specializations?: string[];
+    notes?: string; keywords?: string[]; specializations?: string[];
     version?: string; status?: string;
     dry_run?: boolean;
   }) => Effect.Effect<WriteResult, RepoError>
   readonly editEntity: (id: string, body: {
     name?: string; summary?: string;
     properties?: Record<string, string>; attribute_types?: Record<string, string>;
-    notes?: string; keywords?: string[]; specialization?: string; specializations?: string[];
+    notes?: string; keywords?: string[]; specializations?: string[];
     version?: string; status?: string;
     dry_run?: boolean;
   }) => Effect.Effect<WriteResult, RepoError>

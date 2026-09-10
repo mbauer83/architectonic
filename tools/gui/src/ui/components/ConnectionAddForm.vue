@@ -130,7 +130,7 @@ const confirmAdd = () => {
     description: descInput.value.trim() || undefined,
     src_multiplicity: srcMultInput.value.trim() || undefined,
     tgt_multiplicity: tgtMultInput.value.trim() || undefined,
-    specialization: specSelected.value || undefined,
+    specializations: specSelected.value ? [specSelected.value] : undefined,
     metadata: metadataBody.value,
     dry_run: false,
   })).then((exit) => Exit.match(exit, {
