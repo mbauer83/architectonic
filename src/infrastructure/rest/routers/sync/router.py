@@ -251,12 +251,18 @@ async def withdraw_enterprise(body: WithdrawBody) -> dict:
     if ent_root is None:
         raise HTTPException(400, "Enterprise repository is not configured")
 
-    try:
-        branch = await s.authorized_write_async(
-            "sync_withdraw_enterprise", enterprise_branch_lifecycle.abandon_enterprise_branch, ent_root
-        )
-        sync_status_cache.invalidate_sync_status_cache(repo=ent_root)
+    def _abandon_and_settle() -> str | None:
+        # One unit of work, inside the write queue. Abandoning the branch and settling the changes
+        # it carried are one transition — a withdrawal that ran the first and left the second to a
+        # request thread would put a file write outside the serialisation every other write uses,
+        # and would leave a window where the branch is gone and the changes still read `submitted`.
+        discarded = enterprise_branch_lifecycle.abandon_enterprise_branch(ent_root)
         _settle_the_withdrawn_changes()
+        return discarded
+
+    try:
+        branch = await s.authorized_write_async("sync_withdraw_enterprise", _abandon_and_settle)
+        sync_status_cache.invalidate_sync_status_cache(repo=ent_root)
         await event_bus.publish(
             {
                 "type": "sync_enterprise_withdrawn",
