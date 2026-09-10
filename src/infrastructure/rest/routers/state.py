@@ -286,15 +286,29 @@ def get_admin_write_deps(catalogs: RuntimeCatalogs) -> tuple[Path, Any, Any]:
     not configured.  Registry spans both repos so cross-repo entity references
     in outgoing files validate correctly.
     """
+    with _state_lock:
+        admin_mode = _admin_mode
+    if not admin_mode:
+        raise HTTPException(403, "Admin mode is not enabled")
+    return enterprise_write_deps(catalogs)
+
+
+def enterprise_write_deps(catalogs: RuntimeCatalogs) -> tuple[Path, Any, Any]:
+    """The same three, without asking whether admin mode is on.
+
+    Which authority may write the enterprise repository is decided by the *intent* the call site
+    passes to `authorized_write`, not by who can assemble a registry. Admin authoring is one such
+    authority and asks above; submitting a proposed change is the other, and is exactly the case
+    B67 exists for — a deployment that is not in admin mode. Bundling the gate with the dependencies
+    would have left that caller reaching past `admin_ops` for a writer that took a root, which is
+    the workaround this project refuses by name.
+    """
     from src.application.verification.artifact_verifier_registry import ArtifactRegistry
     from src.infrastructure.artifact_index import combined_artifact_index, shared_artifact_index
 
     with _state_lock:
-        admin_mode = _admin_mode
         enterprise_root = _enterprise_root
         repo_root = _repo_root
-    if not admin_mode:
-        raise HTTPException(403, "Admin mode is not enabled")
     if enterprise_root is None:
         raise HTTPException(500, "Enterprise repository not configured")
     index = (
