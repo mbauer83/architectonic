@@ -219,17 +219,21 @@ onMounted(async () => {
 .nav { display: flex; align-items: center; gap: 20px; padding: 0 24px; height: 48px; background: #1e293b; color: #f8fafc; position: sticky; top: 0; z-index: 10; }
 .nav__brand { font-weight: 600; font-size: 15px; color: #f8fafc; white-space: nowrap; flex-shrink: 0; }
 .nav__brand:hover { text-decoration: none; color: #93c5fd; }
-/* Wrap order: the primary links shrink and truncate FIRST; the workflow/status
-   landmark and search keep their size (flex-shrink: 0). */
-.nav__links { display: flex; gap: 4px; flex-wrap: nowrap; min-width: 0; overflow: hidden; flex: 1; }
+/* Shrink order: the status landmark gives way first, then search; the primary links keep their
+   size. It used to be the other way round, and what "the links truncate first" costs depends on
+   how many there are: with one more destination in the bar, 1440px — the ordinary laptop width —
+   cut "Viewpoints" mid-word and clipped Assurance out of the bar entirely, so a whole section had
+   no way in. A status sentence losing its tail still reads; a destination that is not drawn is
+   gone. */
+.nav__links { display: flex; gap: 4px; flex-wrap: nowrap; flex-shrink: 0; }
 .nav__links a { color: #b0bec5; font-size: 13px; padding: 4px 8px; border-radius: 4px; white-space: nowrap; }
 .nav__links a.router-link-active { color: #f8fafc; font-weight: 500; background: #2d3f55; }
 .nav__links a:hover { color: #f1f5f9; text-decoration: none; background: #263347; }
 .nav__links a.nav__link--suppressed.router-link-active { color: #b0bec5; font-weight: 400; background: transparent; }
 .nav__links a.nav__link--forced-active { color: #f8fafc; font-weight: 500; background: #2d3f55; }
-.nav__workflow { margin-inline-start: auto; display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
-.nav__search { display: flex; align-items: center; flex-shrink: 0; position: relative; }
-.nav__search-input { width: clamp(140px, 18vw, 260px); padding: 5px 10px; border-radius: 5px; border: 1px solid #334155; background: #0f172a; color: #f1f5f9; font-size: 13px; outline: none; transition: width .2s, border-color .15s; }
+.nav__workflow { margin-inline-start: auto; display: flex; align-items: center; gap: 12px; min-width: 0; }
+.nav__search { display: flex; align-items: center; min-width: 0; position: relative; }
+.nav__search-input { width: clamp(140px, 18vw, 260px); min-width: 88px; max-width: 100%; padding: 5px 10px; border-radius: 5px; border: 1px solid #334155; background: #0f172a; color: #f1f5f9; font-size: 13px; outline: none; transition: width .2s, border-color .15s; }
 .nav__search-input::placeholder { color: #64748b; }
 .nav__search-input:focus { width: clamp(180px, 22vw, 340px); border-color: #475569; background: #1e293b; }
 .nav__search-input::-webkit-search-cancel-button { display: none; }
@@ -241,6 +245,8 @@ onMounted(async () => {
 .nav__search-item-type { font-size: 11px; color: #64748b; white-space: nowrap; flex-shrink: 0; }
 @media (max-width: 1060px) {
   .nav { gap: 12px; padding: 0 16px; }
+  /* Past this width the search gives up its floor rather than push a destination off the bar. */
+  .nav__search-input { min-width: 0; }
 }
 @media (max-width: 820px) {
   .nav__brand { font-size: 13px; }

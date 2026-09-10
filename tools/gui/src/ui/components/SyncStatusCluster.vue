@@ -131,15 +131,18 @@ const closeMenu = () => {
 </template>
 
 <style scoped>
-.cluster { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-.cluster__status { font-size: 12px; padding: 3px 9px; border-radius: 10px; font-weight: 600; white-space: nowrap; max-width: 320px; overflow: hidden; text-overflow: ellipsis; }
+/* The chip is what yields when the bar is short: it already ellipsises, and a status sentence
+   losing its tail still reads. The menu button never shrinks — it is the only way to reach the
+   write actions. */
+.cluster { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.cluster__status { flex-shrink: 1; min-width: 0; font-size: 12px; padding: 3px 9px; border-radius: 10px; font-weight: 600; white-space: nowrap; max-width: 320px; overflow: hidden; text-overflow: ellipsis; }
 .cluster__status--ok { background: #14352a; color: #6ee7b7; }
 .cluster__status--info { background: #1e3a5f; color: #93c5fd; }
 .cluster__status--warn { background: #422006; color: #fcd34d; }
 .cluster__status--error { background: #450a0a; color: #fca5a5; }
 .cluster__status--muted { background: #1f2937; color: #94a3b8; }
 .cluster__behind { margin-left: 4px; color: #fbbf24; }
-.cluster__menu-wrap { position: relative; }
+.cluster__menu-wrap { position: relative; flex-shrink: 0; }
 .cluster__menu-btn { background: #2563eb; color: #fff; border: none; border-radius: 5px; font-size: 12px; font-weight: 600; padding: 4px 10px; cursor: pointer; white-space: nowrap; }
 .cluster__menu-btn:hover:not(:disabled) { background: #1d4ed8; }
 .cluster__menu-btn:disabled { background: #334155; color: #64748b; cursor: not-allowed; }
