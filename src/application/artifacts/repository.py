@@ -54,6 +54,17 @@ class ArtifactRepository:
         return self._store.repo_mounts
 
     @property
+    def enterprise_root(self) -> Path | None:
+        """The enterprise repository this deployment mounts, or None where it mounts none.
+
+        Asked wherever the two tiers differ — a change is recorded against enterprise content, a
+        sweep reads the upstream of it, a submission publishes to it — and answered by picking the
+        mount out of the list at each of those places until it was three spellings of one question.
+        None is the ordinary engagement deployment, not a failure.
+        """
+        return next((mount.root for mount in self.repo_mounts if mount.scope == "enterprise"), None)
+
+    @property
     def repo_roots(self) -> list[Path]:
         return self._store.repo_roots
 

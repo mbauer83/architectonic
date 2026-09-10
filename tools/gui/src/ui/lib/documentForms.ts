@@ -1,9 +1,17 @@
 /**
  * What the two document forms — create and edit — answer the same way.
  *
- * They asked it identically and separately: five lines of the same conditional in each, which is
- * the shape a rule takes just before the two copies stop agreeing.
+ * They asked these identically and separately, which is the shape a rule takes just before its
+ * copies stop agreeing. One is about when to complain; the other is the lookup that decides which
+ * sections, connections and extra fields a form offers at all.
  */
+
+import type { DocumentType } from '../../domain'
+
+/** The declared type a document is of, or null while the catalogue has not arrived. */
+export const documentTypeFor = (
+  types: readonly DocumentType[], docType: string | undefined,
+): DocumentType | null => types.find((type) => type.doc_type === docType) ?? null
 
 /**
  * The title error to show, or null while there is nothing to complain about yet.

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, inject, onMounted, ref, watch, nextTick } from 'vue'
-import { titleErrorFor } from '../lib/documentForms'
+import { documentTypeFor, titleErrorFor } from '../lib/documentForms'
 import {
   filledExtraFrontmatter,
   formatFieldLabel,
@@ -56,7 +56,7 @@ const typeSwitchWarning = ref<string | null>(null)
 const pendingDocType = ref<string | null>(null)
 
 const selectedType = computed(() =>
-  documentTypes.value.find((type) => type.doc_type === docType.value) ?? null,
+  documentTypeFor(documentTypes.value, docType.value),
 )
 
 const extraFields = computed(() => selectedType.value?.extra_frontmatter_fields ?? [])

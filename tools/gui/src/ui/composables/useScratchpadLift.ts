@@ -4,6 +4,7 @@ import { useMutation } from './useMutation'
 import { useQuery } from './useQuery'
 import type { ModelService } from '../../application/ModelService'
 import type { GroupList } from '../../domain/schemas/groups'
+import { filableCollections } from '../lib/collectionAxes'
 import type { Scratchpad, ScratchpadLift } from '../../domain/schemas/scratchpads'
 import type { RepoError } from '../../ports/repositoryErrors'
 
@@ -55,9 +56,7 @@ export function useScratchpadLift(
   const groupsQuery = useQuery<GroupList, RepoError>()
 
   const projects = computed(() =>
-    (groupsQuery.data.value?.['model-projects'] ?? [])
-      .filter((group) => !group.archived)
-      .map((group) => group.slug),
+    filableCollections(groupsQuery.data.value ?? null, 'model-project').map((group) => group.slug),
   )
 
   const run = async (dryRun: boolean): Promise<void> => {

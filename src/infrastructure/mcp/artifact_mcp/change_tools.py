@@ -84,7 +84,7 @@ def artifact_discard_change(*, artifact_id: str, repo_root: str | None = None) -
     )
 
     root, repo = _repo_for(repo_root)
-    enterprise = next((m.root for m in repo.repo_mounts if m.scope == "enterprise"), None)
+    enterprise = repo.enterprise_root
     mutation_context, clear_repo_caches = authoritative_callbacks_for(root)
     path, discarded = discard_change(repo, artifact_id=artifact_id, enterprise_root=enterprise)
     if discarded:

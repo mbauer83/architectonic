@@ -6,6 +6,8 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict
 
+from src.infrastructure.rest.contracts.artifact_home import FiledOnCreate, Rehomeable
+
 
 class _Body(BaseModel):
     """`extra="forbid"`, and no identity field: identity is in the path, and a body that also
@@ -39,11 +41,8 @@ class DiagramPreviewBody(DiagramComposition):
     """A composition, rendered but not written. It adds nothing, which is the point."""
 
 
-class CreateDiagramGuiBody(DiagramComposition):
+class CreateDiagramGuiBody(DiagramComposition, FiledOnCreate):
     keywords: list[str] | None = None
-    #: Which model-project collection the artifact is filed in — its *home*. Absent means
-    #: `uncategorized`, the same reading the write path and every MCP twin already take.
-    group: str | None = None
     version: str = "0.1.0"
     status: str = "draft"
     tlp: str | None = None
@@ -51,12 +50,8 @@ class CreateDiagramGuiBody(DiagramComposition):
     dry_run: bool = True
 
 
-class EditDiagramGuiBody(DiagramComposition, _Body):
+class EditDiagramGuiBody(DiagramComposition, _Body, Rehomeable):
     version: str | None = None
-    #: Move the artifact to this collection. Absent leaves it where it is; naming
-    #: `uncategorized` is how a re-home *out* of a collection is said, because that is a real
-    #: collection rather than the absence of one.
-    group: str | None = None
     status: str | None = None
     tlp: str | None = None
     viewpoint: dict[str, Any] | None = None

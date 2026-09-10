@@ -220,7 +220,7 @@ def changes_under_submission(repo: "ArtifactRepository") -> frozenset[str]:
     """
     from src.infrastructure.git import enterprise_sync_state  # noqa: PLC0415
 
-    enterprise = next((m.root for m in repo.repo_mounts if m.scope == "enterprise"), None)
+    enterprise = repo.enterprise_root
     if enterprise is None:
         return frozenset()
     submission = enterprise_sync_state.load_cached(enterprise).submission

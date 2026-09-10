@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, inject, onMounted, ref, watch } from 'vue'
-import { titleErrorFor } from '../lib/documentForms'
+import { documentTypeFor, titleErrorFor } from '../lib/documentForms'
 import DocumentHomeSelect from '../components/DocumentHomeSelect.vue'
 import { homeForMove, homeFromArtifact } from '../components/ArtifactHomeSelect.helpers'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
@@ -83,7 +83,7 @@ watch(documentId, () => {
 })
 
 const matchedDocType = computed(() =>
-  documentTypes.value.find((type) => type.doc_type === detail.value?.doc_type) ?? null,
+  documentTypeFor(documentTypes.value, detail.value?.doc_type),
 )
 
 // The section the cursor is in decides which entity types the reference picker suggests, so the

@@ -70,7 +70,7 @@ def close_integrated_changes(repo: ArtifactRepository) -> SweepReport:
     closed_paths: list[Path] = []
     proposals = repo.list_entities(artifact_type=PROPOSED_CHANGE_TYPE)
     submitted = sweepable(proposals)
-    enterprise = _enterprise_mount(repo)
+    enterprise = repo.enterprise_root
     if not submitted or enterprise is None:
         return SweepReport(closed=(), left_open=())
 
@@ -151,11 +151,6 @@ def _return_stranded_changes_to_draft(
     return replace(report, returned_to_draft=tuple(demoted)), paths
 
 
-def _enterprise_mount(repo: ArtifactRepository) -> Path | None:
-    """The enterprise repository this deployment mounts, or None where it mounts none."""
-    return next((mount.root for mount in repo.repo_mounts if mount.scope == "enterprise"), None)
-
-
 def _retire_a_finished_review_branch(repo: ArtifactRepository) -> str | None:
     """Take down the review branch once upstream holds everything on it.
 
@@ -167,7 +162,7 @@ def _retire_a_finished_review_branch(repo: ArtifactRepository) -> str | None:
     from src.infrastructure.git import enterprise_branch_lifecycle, enterprise_sync_state  # noqa: PLC0415
     from src.infrastructure.git.git_repository_state import content_is_upstream  # noqa: PLC0415
 
-    enterprise = _enterprise_mount(repo)
+    enterprise = repo.enterprise_root
     if enterprise is None:
         return None
     if any(pending_proposals(repo.list_entities(artifact_type=PROPOSED_CHANGE_TYPE)).values()):

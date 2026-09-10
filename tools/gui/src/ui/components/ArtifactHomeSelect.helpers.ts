@@ -1,30 +1,14 @@
-import type { GroupEntry, GroupList } from '../../domain/schemas/groups'
+import type { GroupEntry } from '../../domain/schemas/groups'
+import { type CollectionAxis, filableCollections } from '../lib/collectionAxes'
 
 /**
- * Which collection axis files which kind of artifact.
+ * The axis a home control chooses from, and its options.
  *
- * Four axes exist and they are independent registries: a slug on one says nothing about the others.
- * So a home control has to be told which one it is choosing from, and the mapping lives here rather
- * than at three call sites that would each be free to be wrong about it.
+ * Re-exported rather than restated: which axis files which kind is a fact about the collections
+ * themselves, and the scratchpad lift asks the same question when it offers somewhere to lift into.
  */
-export type HomeAxis = 'model-project' | 'diagram-collection' | 'document-collection'
-
-/** Where the axis's entries arrive in a `listGroups` answer. Plural on the wire, singular in the ask. */
-const RESPONSE_KEY: Readonly<Record<HomeAxis, keyof GroupList>> = {
-  'model-project': 'model-projects',
-  'diagram-collection': 'diagram-collections',
-  'document-collection': 'document-collections',
-}
-
-/**
- * The collections a reader may file something in, in the order the sidebar shows them.
- *
- * Archived ones are left out: an archive is a place work goes when it stops being current, so
- * offering it as a destination invites filing new work into it. The server orders by `(order, slug)`
- * already, and re-sorting here would be a second opinion about a sequence somebody curated.
- */
-export const homeOptions = (list: GroupList | null, axis: HomeAxis): readonly GroupEntry[] =>
-  (list?.[RESPONSE_KEY[axis]] ?? []).filter((entry) => !entry.archived)
+export type HomeAxis = CollectionAxis
+export const homeOptions = filableCollections
 
 /**
  * The home a create form should start on, given the collection the reader is browsing.

@@ -15,39 +15,14 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict
 
-from src.domain.repository.groups import UNCATEGORIZED
+from src.infrastructure.rest.contracts.artifact_home import FiledOnCreate, Rehomeable
 
 
 class _Body(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
-class _FiledOnCreate(_Body):
-    """A body that says where the artifact it creates is filed."""
-
-    #: Which model-project collection the artifact is filed in — its *home*. Absent means
-    #: `uncategorized`, the same reading the write path and every MCP twin already take.
-    group: str | None = None
-
-    def home(self) -> str:
-        """The collection to place it in, absent reading as the uncategorized one.
-
-        A method rather than the call site's `or UNCATEGORIZED`, so the reading of an absent home is
-        stated once for every surface that creates something.
-        """
-        return self.group or UNCATEGORIZED
-
-
-class _Rehomeable(_Body):
-    """A body that can move the artifact it edits."""
-
-    #: Move the artifact to this collection. Absent leaves it where it is; naming `uncategorized`
-    #: is how a re-home *out* of a collection is said, because that is a real collection rather
-    #: than the absence of one.
-    group: str | None = None
-
-
-class CreateEntityBody(_FiledOnCreate):
+class CreateEntityBody(_Body, FiledOnCreate):
     artifact_type: str
     name: str
     summary: str | None = None
@@ -61,7 +36,7 @@ class CreateEntityBody(_FiledOnCreate):
     dry_run: bool = True
 
 
-class EditEntityBody(_Rehomeable):
+class EditEntityBody(_Body, Rehomeable):
     name: str | None = None
     summary: str | None = None
     properties: dict[str, Any] | None = None
