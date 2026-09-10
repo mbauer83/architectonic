@@ -14,6 +14,7 @@ import type {
   ChangeDiscardedSchema,
   ChangeListSchema,
   ChangeRebasedSchema,
+  ChangeSubmittedSchema,
   ChangeSummarySchema,
   FieldDivergenceSchema,
   RebasedChangeSchema,
@@ -193,6 +194,9 @@ describe('the local changes this repository holds', () => {
     >()
     expectTypeOf<SchemaType<typeof RebasedChangeSchema>>().toEqualTypeOf<
       Immutable<components['schemas']['RebasedChange']>
+    >()
+    expectTypeOf<SchemaType<typeof ChangeSubmittedSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['ChangeSubmittedResponse']>
     >()
   })
 })

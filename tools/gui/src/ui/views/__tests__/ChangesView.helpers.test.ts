@@ -9,6 +9,8 @@ import {
   isLongValue,
   rebaseOutcomeMessage,
   stateExplanation,
+  submitLabel,
+  submittableIds,
 } from '../ChangesView.helpers'
 
 const change = (over: Partial<ChangeSummary> = {}): ChangeSummary => ({
@@ -123,5 +125,35 @@ describe('what a rebase concluded', () => {
     const message = rebaseOutcomeMessage('conflicting', 'E031: the display section is missing')
     expect(message).toContain('E031: the display section is missing')
     expect(message).toMatch(/nothing was written/)
+  })
+})
+
+
+describe('what a submission would carry', () => {
+  it('takes the drafts, in the order the page shows them', () => {
+    const ids = submittableIds([
+      change({ artifact_id: 'PCH@2.b.second' }),
+      change({ artifact_id: 'PCH@1.a.first' }),
+    ])
+
+    expect(ids).toEqual(['PCH@2.b.second', 'PCH@1.a.first'])
+  })
+
+  it('leaves out one already submitted, which is rebased rather than submitted again', () => {
+    const ids = submittableIds([
+      change({ artifact_id: 'PCH@1.a.draft' }),
+      change({ artifact_id: 'PCH@2.b.sent', state: 'submitted' }),
+    ])
+
+    expect(ids).toEqual(['PCH@1.a.draft'])
+  })
+
+  it('offers nothing when everything is already under review', () => {
+    expect(submittableIds([change({ state: 'submitted' })])).toEqual([])
+  })
+
+  it('counts what it would carry, in the singular where there is one', () => {
+    expect(submitLabel(1)).toBe('Submit 1 change for review')
+    expect(submitLabel(3)).toBe('Submit 3 changes for review')
   })
 })

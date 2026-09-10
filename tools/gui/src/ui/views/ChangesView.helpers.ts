@@ -88,3 +88,21 @@ export const rebaseOutcomeMessage = (outcome: string, reason: string): string =>
       return `Still conflicting, and nothing was written. ${reason}`
   }
 }
+
+/**
+ * The changes a submission would carry, in the order it would replay them.
+ *
+ * Drafts only: a change already submitted is on a branch somebody may be reading, and submitting it
+ * again would open a second branch for the same work — rebasing is what puts it back in front of a
+ * reviewer on the current head.
+ *
+ * The order is the page's, which is the order the reader is looking at. It has to come from
+ * somewhere stated rather than from whichever set the client happened to build, because where two
+ * changes touch one artifact the one replayed second decides the result.
+ */
+export const submittableIds = (changes: readonly ChangeSummary[]): readonly string[] =>
+  changes.filter((change) => change.state === 'draft').map((change) => change.artifact_id)
+
+/** What the submit control says, given how many changes it would carry. */
+export const submitLabel = (count: number): string =>
+  count === 1 ? 'Submit 1 change for review' : `Submit ${count} changes for review`

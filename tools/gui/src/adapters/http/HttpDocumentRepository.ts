@@ -3,6 +3,7 @@ import {
   ChangeDiscardedSchema,
   ChangeListSchema,
   ChangeRebasedSchema,
+  ChangeSubmittedSchema,
   DocumentDetailSchema,
   DocumentListSchema,
   DocumentTypesSchema,
@@ -64,4 +65,9 @@ export const documentAndChangeMethods = (): DocumentRepository & ChangeRepositor
 
   rebaseChange: (id) =>
     postJson(buildUrl(`/changes/${encodeIdentitySegment(id)}/rebase`, {}), {}, ChangeRebasedSchema),
+
+  // On the collection and with no id in the address: a submission carries a set, and the order in
+  // the body is part of the command.
+  submitChanges: (ids) =>
+    postJson(buildUrl('/changes/submit', {}), { artifact_ids: [...ids] }, ChangeSubmittedSchema),
 })

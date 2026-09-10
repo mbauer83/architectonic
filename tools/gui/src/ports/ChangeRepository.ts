@@ -1,5 +1,10 @@
 import type { Effect } from 'effect'
-import type { ChangeDiscarded, ChangeList, ChangeRebased } from '../domain/schemas/changes'
+import type {
+  ChangeDiscarded,
+  ChangeList,
+  ChangeRebased,
+  ChangeSubmitted,
+} from '../domain/schemas/changes'
 import type { RepoError } from './repositoryErrors'
 
 /**
@@ -16,4 +21,12 @@ export interface ChangeRepository {
   readonly discardChange: (id: string) => Effect.Effect<ChangeDiscarded, RepoError>
   /** Bring the change onto the artifact as it stands, and say where it stood. */
   readonly rebaseChange: (id: string) => Effect.Effect<ChangeRebased, RepoError>
+  /**
+   * Put a set of changes in front of a reviewer, in the order given.
+   *
+   * A set rather than one at a time, and ordered: where two changes touch one artifact, whichever
+   * replays second decides the result, so the order is part of the command rather than something
+   * the server infers.
+   */
+  readonly submitChanges: (ids: readonly string[]) => Effect.Effect<ChangeSubmitted, RepoError>
 }

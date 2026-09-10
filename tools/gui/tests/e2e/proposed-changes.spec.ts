@@ -114,6 +114,8 @@ test.describe('a change whose artifact has moved', () => {
             artifact_id: stale.artifact_id, target_id: stale.target_id,
             outcome: 'conflicting', reason: 'E031: the display section is missing', restamped: false,
           }],
+          // A conflicting rebase publishes nothing, so there is no replacement branch to name.
+          republished_branch: null,
           summary: '0 clean, 0 already upstream, 1 conflicting; 0 restamped',
         }),
       }))
@@ -123,6 +125,62 @@ test.describe('a change whose artifact has moved', () => {
 
     await expect(page.getByText(/E031: the display section is missing/)).toBeVisible()
     await expect(page.getByText(/nothing was written/i)).toBeVisible()
+  })
+})
+
+test.describe('putting changes in front of a reviewer', () => {
+  test('offers to submit what is still a draft, and says how many', async ({ page }) => {
+    await serve(page, [CHANGE, { ...CHANGE, artifact_id: 'PCH@2.SpecCcc.second', target_name: 'Another' }])
+    await page.goto('/changes')
+
+    await expect(page.getByRole('button', { name: /Submit 2 changes for review/i })).toBeVisible()
+  })
+
+  test('offers nothing where everything is already under review', async ({ page }) => {
+    await serve(page, [{ ...CHANGE, state: 'submitted' }])
+    await page.goto('/changes')
+
+    await expect(page.getByRole('button', { name: /Submit .* for review/i })).toHaveCount(0)
+  })
+
+  test('reports the branch a reviewer will read', async ({ page }) => {
+    await serve(page, [CHANGE])
+    await page.route('**/api/changes/submit', async (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          branch: 'arch/work-20260910-010203', commit: 'abc1234',
+          submitted: [CHANGE.artifact_id], pushed_now: true,
+          summary: "1 change submitted on 'arch/work-20260910-010203'.",
+        }),
+      }))
+    await page.goto('/changes')
+
+    await page.getByRole('button', { name: /Submit 1 change for review/i }).click()
+
+    await expect(page.getByText(/arch\/work-20260910-010203/)).toBeVisible()
+  })
+
+  test('shows the refusal rather than pretending it went', async ({ page }) => {
+    await serve(page, [CHANGE])
+    await page.route('**/api/changes/submit', async (route) =>
+      route.fulfill({
+        status: 409,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          detail: {
+            code: 'conflict',
+            message: "'REQ@1.b' already says what 'PCH@1.a' asks for.",
+            details: null, request_id: 'r1',
+          },
+        }),
+      }))
+    await page.goto('/changes')
+
+    await page.getByRole('button', { name: /Submit 1 change for review/i }).click()
+
+    await expect(page.getByRole('alert')).toBeVisible()
   })
 })
 

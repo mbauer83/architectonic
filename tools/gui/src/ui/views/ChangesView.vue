@@ -13,7 +13,7 @@
  * needs attention and nothing about what to do — an author would otherwise have to open the
  * enterprise artifact, if they can reach it at all, and compare by eye.
  */
-import { inject, onMounted, ref } from 'vue'
+import { computed, inject, onMounted, ref } from 'vue'
 import { Effect } from 'effect'
 import { modelServiceKey } from '../keys'
 import type { ChangeSummary } from '../../domain/schemas/changes'
@@ -26,6 +26,8 @@ import {
   isLongValue,
   rebaseOutcomeMessage,
   stateExplanation,
+  submitLabel,
+  submittableIds,
 } from './ChangesView.helpers'
 
 const svc = inject(modelServiceKey)!
@@ -43,6 +45,23 @@ const toggle = (key: string) => {
   const next = new Set(expanded.value)
   if (!next.delete(key)) next.add(key)
   expanded.value = next
+}
+
+const submitting = ref(false)
+// What the last submission said, and what it refused. Kept apart from `error`, which is about
+// loading the page: a refusal to submit leaves the list perfectly readable.
+const submitted = ref<string | null>(null)
+const submitRefusal = ref<string | null>(null)
+const submittable = computed(() => submittableIds(changes.value))
+
+const submit = () => {
+  submitting.value = true
+  submitted.value = null
+  submitRefusal.value = null
+  Effect.runPromise(svc.submitChanges(submittable.value))
+    .then((report) => { submitted.value = report.summary; load() })
+    .catch((event: unknown) => { submitRefusal.value = String(event) })
+    .finally(() => { submitting.value = false })
 }
 
 const load = () => {
@@ -90,6 +109,39 @@ onMounted(load)
     <p class="changes-intro">
       Edits to artifacts owned by the enterprise repository. They are held here until they are
       accepted upstream — this repository has nowhere to write them.
+    </p>
+
+    <div
+      v-if="submittable.length > 0"
+      class="changes-submit"
+    >
+      <button
+        type="button"
+        class="changes-submit__button"
+        :disabled="submitting"
+        @click="submit"
+      >
+        {{ submitting ? 'Submitting…' : submitLabel(submittable.length) }}
+      </button>
+      <span class="changes-submit__hint">
+        Replays them into the enterprise repository and publishes the branch a reviewer reads.
+      </span>
+    </div>
+
+    <p
+      v-if="submitted"
+      class="changes-note changes-note--done"
+      role="status"
+    >
+      {{ submitted }}
+    </p>
+
+    <p
+      v-if="submitRefusal"
+      class="changes-error"
+      role="alert"
+    >
+      {{ submitRefusal }}
     </p>
 
     <p
@@ -275,4 +327,28 @@ onMounted(load)
 }
 .changes-row__discard:hover:not(:disabled) { background: #e5e7eb; }
 .changes-row__discard:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* The one action on this page that reaches outside the repository, so it is the one that reads as
+   primary. Everything else here is local and takes the quiet treatment the row buttons have. */
+.changes-submit {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+.changes-submit__button {
+  padding: 8px 18px;
+  background: #1f2937;
+  color: #f9fafb;
+  border: 1px solid #1f2937;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.changes-submit__button:hover:not(:disabled) { background: #111827; }
+.changes-submit__button:disabled { opacity: 0.5; cursor: not-allowed; }
+.changes-submit__hint { color: #6b7280; font-size: 13px; }
+.changes-note--done { color: #065f46; }
 </style>

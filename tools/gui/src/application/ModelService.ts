@@ -31,6 +31,7 @@ export const makeModelService = (repo: ModelRepository) =>
     listChanges: () => repo.listChanges(),
     discardChange: (id: string) => repo.discardChange(id),
     rebaseChange: (id: string) => repo.rebaseChange(id),
+    submitChanges: (ids: readonly string[]) => repo.submitChanges(ids),
     artifactSearch: (query: string, params?: Parameters<ModelRepository['artifactSearch']>[1]) =>
       repo.artifactSearch(query, params),
     searchReferenceArtifacts: (params: Parameters<ModelRepository['searchReferenceArtifacts']>[0]) =>

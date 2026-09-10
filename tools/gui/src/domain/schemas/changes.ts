@@ -75,3 +75,18 @@ export const ChangeRebasedSchema = Schema.Struct({
   summary: Schema.String,
 })
 export type ChangeRebased = typeof ChangeRebasedSchema.Type
+
+/**
+ * What a submission published, and which changes it marked.
+ *
+ * `pushed_now` is false on a converging retry, where the remote already carried the commit this
+ * submission published — a success, not a repeat.
+ */
+export const ChangeSubmittedSchema = Schema.Struct({
+  branch: Schema.String,
+  commit: Schema.String,
+  submitted: Schema.Array(Schema.String),
+  pushed_now: Schema.Boolean,
+  summary: Schema.String,
+})
+export type ChangeSubmitted = typeof ChangeSubmittedSchema.Type
