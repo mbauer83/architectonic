@@ -56,7 +56,11 @@ class TestOldFileCompatibility:
             "branch_tip": "abc123",
             "pushed_at": "2026-08-31T10:00:00Z",
             "commits_behind": 2,
-            "health": {"reason": "fetch_failed", "message": "origin unreachable", "observed_at": "2026-08-31T10:00:00Z"},
+            "health": {
+                "reason": "fetch_failed",
+                "message": "origin unreachable",
+                "observed_at": "2026-08-31T10:00:00Z",
+            },
         }
         _state_file(tmp_path).parent.mkdir(parents=True)
         _state_file(tmp_path).write_text(json.dumps(payload), encoding="utf-8")
