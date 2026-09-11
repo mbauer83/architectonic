@@ -3,6 +3,82 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [0.9.0] — 2026-09-11
+
+**[Full detail → `changelog-assets/0.9.0-detail.md`](changelog-assets/0.9.0-detail.md)**
+
+**Edit an artifact the enterprise repository owns, and put the edit in front of a reviewer.** An
+engagement holds no enterprise content to write, so an edit to a promoted artifact is recorded as a
+proposed change: visible wherever that artifact is read, submitted for review as one branch, brought
+onto the current version when the baseline moves underneath it, and closed once the change is
+upstream. Search can also retrieve by meaning where a deployment enables it, and every create and
+edit page lets you say where an artifact is filed.
+
+### Added
+
+- **A proposed change.** Editing an artifact this repository does not own records what the edit asks
+  for, against the artifact it changes. Nothing local is rewritten and nothing is silently blended
+  into the baseline: a read shows what the enterprise repository says, with the proposal beside it.
+- **Proposed changes, in one place.** Reached from **Changes** in the header. A row names the
+  artifact rather than the change record, and for each changed field shows what the change asks for
+  beside what the artifact says now, so a change can be acted on without opening anything else.
+- **Submitting a set of changes for review.** Submit replays each recorded edit into the enterprise
+  repository through its own authorised writer, verifies the whole tree, commits, and publishes the
+  branch a reviewer reads — marking the changes submitted only once the remote confirms the ref. The
+  branch is the unit of review, and it is the same working branch promotions accumulate on: one
+  branch, one review, whatever it carries.
+- **Bringing a stale change onto the current version.** When the enterprise artifact moves after a
+  change was written, the change says so and offers to rebase onto the artifact as it stands. A
+  change that can no longer apply is reported as conflicting rather than applied over.
+- **Changes close themselves.** A change whose content is upstream is marked integrated, on startup
+  and after each fetch, and a review branch is taken down once every change it carried has been
+  taken up. What upstream says is asked of the remote, never of a local checkout that may carry its
+  own unmerged work.
+- **Taking a change back.** A draft is discarded outright. A change a reviewer is already looking at
+  is withdrawn, which settles everything the branch was carrying at once rather than leaving part of
+  it stranded.
+- **An artifact says what is proposed about it, wherever it is read.** The marker names which fields
+  are proposed and whether anyone upstream has been asked yet, in the GUI, over REST, through MCP and
+  on the CLI.
+- **Search by meaning.** A second retriever finds artifacts whose wording differs from the query but
+  whose meaning matches, and the two rankings are fused so a term match and a meaning match compete
+  on one list rather than one being appended to the other. Off by default; it needs a model asset
+  acquired once with `uv run get-embedding-model`, and a deployment without it answers exactly as it
+  does with the setting off.
+- **Choosing where an artifact is filed.** Every create page offers a home and defaults it to
+  wherever you were browsing; every edit page can move an artifact to another one. Entities,
+  documents and diagrams alike.
+- **Element-kind colours can be turned down instead of off.** Reading an attribute used to mean
+  choosing between two colourings shouting at once and discarding one of them. Muted kinds stay told
+  apart, the attribute is unmistakably the reading, and the legend still names them.
+
+### Changed
+
+- **A stop request is recorded in the backend's own log** — which process asked, its parent, and its
+  working directory — so a backend that stopped cleanly can still say what asked it to.
+- **Dependency floors are enforced where they hold.** A locked Python pin younger than 24 hours fails
+  the supply-chain gate; npm's own `min-release-age` does the same at resolution. Neither gate
+  rewrites the lock it judges.
+- **The MCP server runs on `mcp` 2.x**, and the toolchains the build and the gates run — Vite,
+  Vitest, vue-tsc, typescript-eslint, zuban, ruff, pytest — moved with it.
+
+### Fixed
+
+- **A group rename no longer strands a diagram collection's rendered output.** The sources moved and
+  the PNG and SVG stayed under the old slug, so every PNG download in that collection answered
+  "not yet rendered — save the diagram first" for a diagram that was saved. Repositories already in
+  that state are repaired by `arch-repair upgrade`.
+- **Every navigation destination stays on the bar.** The primary links were the first thing to give
+  way when the header ran out of room, which at an ordinary laptop width cut one destination in half
+  and left another unpainted. The status chip yields first now, then the search box.
+- **A symmetric connection can be deleted from either endpoint**, not only from the one that
+  declared it.
+- **A bulk edit applies every field it accepts**, rather than most of them.
+- **An ETag is a promise the process can keep.** A read could answer "not modified" against a
+  validator it would no longer honour.
+- **A detail read serves no system-managed artifact**, and no reader is shown a cross-repository
+  reference where the promoted artifact itself can be linked.
+
 ## [0.8.3] — 2026-08-31
 
 **[Full detail → `changelog-assets/0.8.3-detail.md`](changelog-assets/0.8.3-detail.md)**
