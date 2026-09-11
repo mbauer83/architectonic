@@ -41,6 +41,37 @@ class TestOldFileCompatibility:
         assert state.commits_behind == 3
         assert state.health is None
 
+    def test_a_file_the_previous_release_wrote_loads_whole(self, tmp_path: Path) -> None:
+        """The schema went from 2 to 4 this release, and a repository upgrading across that pays
+        nothing for it: the two fields added — the submission record and the superseded branch —
+        are absent from a v0.8.3 file and read as "none in flight", which is what was true of it.
+
+        The payload is exactly what that release's writer emitted, taken from its own source, so
+        this cannot drift into testing a shape nobody ever wrote.
+        """
+        payload = {
+            "version": 2,
+            "status": "pending",
+            "branch": "arch/work-20260425-143012",
+            "branch_tip": "abc123",
+            "pushed_at": "2026-08-31T10:00:00Z",
+            "commits_behind": 2,
+            "health": {"reason": "fetch_failed", "message": "origin unreachable", "observed_at": "2026-08-31T10:00:00Z"},
+        }
+        _state_file(tmp_path).parent.mkdir(parents=True)
+        _state_file(tmp_path).write_text(json.dumps(payload), encoding="utf-8")
+
+        state = load(tmp_path)
+
+        assert state.status == "pending"
+        assert state.branch == "arch/work-20260425-143012"
+        assert state.branch_tip == "abc123"
+        assert state.pushed_at == "2026-08-31T10:00:00Z"
+        assert state.commits_behind == 2
+        assert state.health is not None and state.health.reason == "fetch_failed"
+        assert state.submission is None
+        assert state.superseded_branch is None
+
     def test_versioned_round_trip_survives_restart(self, tmp_path: Path) -> None:
         replace_lifecycle(tmp_path, status="accumulating", branch="arch/work-y")
         record_block(tmp_path, "fetch_failed", "origin unreachable")
