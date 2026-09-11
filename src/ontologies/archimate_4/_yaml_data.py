@@ -95,6 +95,7 @@ def load_entity_types(
             create_when=create_when,
             never_create_when=never_create_when,
             internal=bool(info.get("internal", False)),
+            takes_no_relationships=bool(info.get("takes_no_relationships", False)),
             label=str(info["label"]) if info.get("label") else None,
         )
     return out
@@ -163,6 +164,14 @@ def _expand_ref(
     all_types: list[str],
     class_members: dict[str, list[str]],
 ) -> list[str]:
+    """Resolve one endpoint reference to the entity types it names.
+
+    ``all_types`` and ``class_members`` are built with types that take no relationships already
+    removed, so a general rule cannot reach one. Naming such a type outright is refused where the
+    set is built rather than filtered out silently: a rule that names it and a declaration that
+    forbids it are a contradiction, and dropping the rule would leave both halves in the file
+    disagreeing with nobody the wiser.
+    """
     if isinstance(ref, list):
         out: list[str] = []
         for item in ref:
@@ -175,14 +184,24 @@ def _expand_ref(
     return [ref]
 
 
+def _named_types(ref: str | list[Any]) -> set[str]:
+    """The entity types a reference names outright, ignoring `@all` and class references."""
+    if isinstance(ref, list):
+        return {name for item in ref for name in _named_types(item)}
+    return set() if ref.startswith("@") else {ref}
+
+
 def build_permitted_relationships(
     data: dict[str, Any],
     entity_types: dict[EntityTypeName, EntityTypeInfo],
 ) -> PermittedRelationshipSet:
-    all_types: list[str] = [str(k) for k in entity_types.keys()]
+    detached = {str(k) for k, info in entity_types.items() if info.takes_no_relationships}
+    all_types: list[str] = [str(k) for k in entity_types.keys() if str(k) not in detached]
 
     class_members: dict[str, list[str]] = {}
     for ename, info in entity_types.items():
+        if str(ename) in detached:
+            continue
         for cls in info.classes:
             class_members.setdefault(cls, []).append(str(ename))
 
@@ -190,6 +209,11 @@ def build_permitted_relationships(
 
     for rule in data.get("permitted_relationships", []):
         raw_src, raw_tgt, raw_conn_shorts = rule
+        for named in _named_types(raw_src) | _named_types(raw_tgt):
+            if named in detached:
+                raise ValueError(
+                    f"permitted_relationships names {named!r}, which declares takes_no_relationships"
+                )
         conn_types = [ConnectionTypeName(f"archimate-{t}") for t in raw_conn_shorts]
         sources = _expand_ref(raw_src, all_types, class_members)
 

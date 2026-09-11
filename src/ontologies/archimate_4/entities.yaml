@@ -515,6 +515,7 @@ entity_types:
     prefix: PCH
     hierarchy: [common]
     internal: true              # not a modelling element — skipped by domain display
+    takes_no_relationships: true   # enforces the connection surface the comment above states
     classes: [internal]
     create_when: ""
     never_create_when: ""

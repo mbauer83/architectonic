@@ -124,6 +124,14 @@ class EntityTypeInfo:
     create_when: str
     never_create_when: str
     internal: bool = False
+    #: True for a type nothing may connect to or from. The permitted-relationship rules are written
+    #: in terms of `@all` and element classes, so every entity type is swept into the general rules
+    #: — association with anything, composition with its own kind, the junction rules — whether or
+    #: not it is a modelling element at all. A record *about* an artifact rather than a participant
+    #: in the model has to say so, or the type-level table permits what its own declaration forbids.
+    #: This is not the same as `internal`: a global artifact reference is internal and does carry a
+    #: connection surface, being a proxy for something that participates.
+    takes_no_relationships: bool = False
     #: What a reader calls an element of this type, where the type's own name is not it. An ArchiMate
     #: value stream is drawn as the stages that make it up, so a box in one is a stage — and every
     #: surface that names the type for a reader has to say the same thing, which is why this is
