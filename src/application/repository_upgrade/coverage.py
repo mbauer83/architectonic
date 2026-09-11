@@ -22,6 +22,7 @@ REQUIRED_STEP_IDS_BY_SURFACE: dict[ScannedSurface, tuple[str, ...]] = {
     "diagram_frontmatter": ("d9-multiplicity-rename", "viewpoint-application-scan"),
     "group_registry": ("group-meta-ontology-archimate-4-rename",),
     "modification_stamps": ("modification-stamp-datetime",),
+    "rendered_output": ("d11-rendered-output-under-a-former-slug",),
 }
 
 
