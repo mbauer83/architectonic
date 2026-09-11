@@ -20,6 +20,7 @@ ScannedSurface = Literal[
     "diagram_frontmatter",
     "group_registry",
     "modification_stamps",
+    "rendered_output",
 ]
 FindingOutcome = Literal["applied", "skipped", "error"]
 

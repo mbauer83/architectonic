@@ -21,6 +21,7 @@ from src.application.repository_upgrade.steps.modification_stamp_datetime import
 from src.application.repository_upgrade.steps.multiplicity_rename import MultiplicityRenameStep
 from src.application.repository_upgrade.steps.ordinal_enum_declaration import OrdinalEnumDeclarationStep
 from src.application.repository_upgrade.steps.profile_reconciliation_scan import ProfileReconciliationScanStep
+from src.application.repository_upgrade.steps.rendered_output_collection import RenderedOutputCollectionStep
 from src.application.repository_upgrade.steps.schema_file_scan import SchemaFileScanStep
 from src.application.repository_upgrade.steps.specialization_declaration_scan import (
     SpecializationDeclarationScanStep,
@@ -86,6 +87,7 @@ def build_registry(selection_resolutions: Mapping[str, SelectionMode] | None = N
     registry.register(ViewpointApplicationScanStep())
     registry.register(ModificationStampDatetimeStep())
     registry.register(StaleSlugReferenceStep())
+    registry.register(RenderedOutputCollectionStep())
     return registry
 
 

@@ -54,12 +54,33 @@ class FilesystemRepoUpgradeView:
         return _known_entity_type_names()
 
 
+def _prune_empty_parents(directory: Path, *, stop_at: Path) -> None:
+    """Remove *directory* and its parents up to (not including) *stop_at* while they are empty.
+
+    A move that empties a collection's directory should not leave the directory behind: the
+    repository reads "which collections exist" off the filesystem in places, and an empty one
+    named by a slug nothing is filed under any more is exactly the disagreement between the
+    registry and the tree that these steps exist to settle.
+    """
+    current = directory
+    while current != stop_at and stop_at in current.parents and not any(current.iterdir()):
+        current.rmdir()
+        current = current.parent
+
+
 @dataclass(frozen=True)
 class FilesystemRepoUpgradeWriter:
     root: Path
 
     def write_text(self, relative_path: str, content: str) -> None:
         write_atomic(self.root / relative_path, content)
+
+    def move_file(self, relative_from: str, relative_to: str) -> None:
+        source = self.root / relative_from
+        destination = self.root / relative_to
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        source.replace(destination)
+        _prune_empty_parents(source.parent, stop_at=self.root)
 
     def rebuild_index(self) -> None:
         from src.infrastructure.artifact_index.service import ArtifactIndex  # noqa: PLC0415

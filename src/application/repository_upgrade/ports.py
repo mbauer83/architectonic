@@ -48,6 +48,17 @@ class RepoUpgradeWriter(Protocol):
 
     def write_text(self, relative_path: str, content: str) -> None: ...
 
+    def move_file(self, relative_from: str, relative_to: str) -> None:
+        """Move a file within the repo, creating the destination's directory.
+
+        Here because a repository's derived output is not text and cannot be healed by
+        rewriting it: a rendered PNG filed under a collection's former slug has to be moved,
+        byte for byte. Reading it out and writing it back through `write_text` would corrupt
+        it, and reaching past the writer to the filesystem would put one step's mutations
+        outside the surface every other step goes through.
+        """
+        ...
+
     def rebuild_index(self) -> None:
         """Rebuild the disk-backed index after all steps have applied their rewrites."""
         ...

@@ -135,6 +135,10 @@ def test_apply_is_a_true_no_op_when_already_up_to_date(tmp_path: Path) -> None:
             calls.append("write_text")
             real_writer.write_text(relative_path, content)
 
+        def move_file(self, relative_from: str, relative_to: str) -> None:
+            calls.append("move_file")
+            real_writer.move_file(relative_from, relative_to)
+
         def rebuild_index(self) -> None:
             calls.append("rebuild_index")
             real_writer.rebuild_index()
