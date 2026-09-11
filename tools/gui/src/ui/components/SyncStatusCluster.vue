@@ -2,11 +2,20 @@
 /**
  * Right-aligned workflow/status cluster: repository status chip plus a Changes
  * menu housing engagement Save, enterprise Save/Submit/Discard, and the Promote
- * entry point. Nouns live in the left navigation; every verb lives here, and all
- * of them are fail-closed behind the reducer's authority handling.
+ * entry point. The verbs are fail-closed behind the reducer's authority handling.
+ *
+ * The menu also opens the Proposed changes page. That destination is not on the
+ * artifact axis the left navigation is for — Browse, Documents, Diagrams and the
+ * rest are classes of artifact, while this is the state of the enterprise-change
+ * workflow, which is what this cluster owns. It is a destination and not an
+ * action, so it does not pass through the reducer and is not authority-gated:
+ * reading which changes exist and where they stand is not a write. That is also
+ * why the button no longer disables itself when the reducer offers nothing —
+ * there is always something to open, and a submission waiting on review is
+ * exactly the situation in which there is nothing left to do.
  */
 import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import type { EnterpriseSyncStatus, SyncAuthority } from '../../domain'
 import { reduceCluster, type ClusterAction } from './SyncStatusCluster.helpers'
 
@@ -104,7 +113,6 @@ const closeMenu = () => {
       <button
         ref="menuButton"
         class="cluster__menu-btn"
-        :disabled="!hasActions"
         aria-haspopup="menu"
         :aria-expanded="menuOpen"
         @click="menuOpen = !menuOpen"
@@ -112,10 +120,23 @@ const closeMenu = () => {
         Changes ▾
       </button>
       <div
-        v-if="menuOpen && hasActions"
+        v-if="menuOpen"
         class="cluster__menu"
         role="menu"
       >
+        <RouterLink
+          class="cluster__menu-item"
+          role="menuitem"
+          to="/changes"
+          title="Edits to artifacts this repository does not own, held until they are accepted upstream"
+          @click="menuOpen = false"
+        >
+          Proposed changes
+        </RouterLink>
+        <hr
+          v-if="hasActions"
+          class="cluster__menu-rule"
+        >
         <button
           v-for="action in menuActions"
           :key="action"
@@ -145,8 +166,8 @@ const closeMenu = () => {
 .cluster__menu-wrap { position: relative; flex-shrink: 0; }
 .cluster__menu-btn { background: #2563eb; color: #fff; border: none; border-radius: 5px; font-size: 12px; font-weight: 600; padding: 4px 10px; cursor: pointer; white-space: nowrap; }
 .cluster__menu-btn:hover:not(:disabled) { background: #1d4ed8; }
-.cluster__menu-btn:disabled { background: #334155; color: #64748b; cursor: not-allowed; }
+.cluster__menu-rule { border: none; border-top: 1px solid #e2e8f0; margin: 4px 0; }
 .cluster__menu { position: absolute; right: 0; top: calc(100% + 6px); min-width: 220px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.18); padding: 4px 0; z-index: 60; }
-.cluster__menu-item { display: block; width: 100%; padding: 8px 14px; border: none; background: none; cursor: pointer; text-align: left; font-size: 13px; color: #1f2937; white-space: nowrap; }
+.cluster__menu-item { display: block; width: 100%; box-sizing: border-box; text-decoration: none; padding: 8px 14px; border: none; background: none; cursor: pointer; text-align: left; font-size: 13px; color: #1f2937; white-space: nowrap; }
 .cluster__menu-item:hover { background: #f1f5f9; color: #1d4ed8; }
 </style>

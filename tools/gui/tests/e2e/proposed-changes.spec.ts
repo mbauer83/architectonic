@@ -213,14 +213,26 @@ test.describe('taking a change back', () => {
 })
 
 test.describe('the page is reachable the way a person finds it', () => {
-  test('the primary navigation offers it, and does not call it "Changes"', async ({ page }) => {
+  test('the Changes menu opens it, with nothing to save and nothing to submit', async ({ page }) => {
     await serve(page, [])
+    // The state that matters: the reducer offers no verb at all. It is fail-closed on an
+    // unreadable status, and the same emptiness arrives whenever the lifecycle offers nothing —
+    // which is how a repository sits while a submission waits on review. The control used to
+    // disable itself there, taking the page with it.
+    await page.route('**/api/sync/status', (route) => route.fulfill({ status: 503, body: '{}' }))
     await page.goto('/entities')
 
+    const changes = page.getByRole('button', { name: /^Changes/ })
+    await expect(changes).toBeEnabled()
+    await changes.click()
+    await page.getByRole('menuitem', { name: 'Proposed changes' }).click()
+
+    await expect(page).toHaveURL(/\/changes$/)
+
+    // The page is not on the artifact axis the primary navigation carries, and a second control
+    // called "Changes" on the left is what made the two indistinguishable at the moment of
+    // clicking when this page did live there.
     const nav = page.locator('nav[aria-label="Primary"]')
-    await expect(nav.getByRole('link', { name: 'Proposed' })).toBeVisible()
-    // The workflow cluster's own "Changes" control is the git save flow; one label for both would
-    // make them indistinguishable at the moment of clicking.
-    await expect(nav.getByRole('link', { name: 'Changes', exact: true })).toHaveCount(0)
+    await expect(nav.getByRole('link', { name: /change/i })).toHaveCount(0)
   })
 })

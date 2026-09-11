@@ -33,10 +33,12 @@ trace whatever became of it.
 
 ## Seeing what you are holding
 
-The **Proposed** page lists every live change. A row names the artifact, not the change file: you
+**Changes** in the header opens **Proposed changes**, which lists every live change. A row names the artifact, not the change file: you
 did not author that file and have no use for its id. For each changed field it shows what the
 change asks for beside what the artifact says now, so a change needing attention can be acted on
 without opening anything else.
+
+![Proposed changes: a draft change on the current version of its artifact, showing the proposed summary beside the enterprise wording, and a submitted change whose artifact has moved on, offering to bring it onto the current version](../media/proposed-changes.png)
 
 An artifact carrying changes is marked wherever it is read. The marker says which fields are
 proposed and whether anyone upstream has been asked yet — a read never silently blends a proposal
@@ -46,7 +48,7 @@ into the enterprise baseline.
 
 ## Submitting
 
-**Submit** on the Proposed page takes the changes you are holding, in the order shown, and:
+**Submit** on that page takes the changes you are holding, in the order shown, and:
 
 1. replays each recorded edit into the enterprise repository through its own authorised writer;
 2. commits the result on the enterprise working branch, verifying the whole tree first;

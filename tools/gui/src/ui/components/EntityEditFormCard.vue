@@ -31,9 +31,9 @@ const outcome = computed(() => editOutcome(props.isGlobalEntity, props.adminMode
       This artifact belongs to the enterprise repository, so saving does not change it. Your edit is
       recorded as a local change, which goes there when you submit it for review. The
       <RouterLink to="/changes">
-        Proposed
+        Proposed changes
       </RouterLink>
-      page shows what you are holding, and takes a change back.
+      page, under Changes in the header, shows what you are holding and takes a change back.
     </p>
     <div class="form-row">
       <label class="form-label">Summary</label>
