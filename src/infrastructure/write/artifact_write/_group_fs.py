@@ -68,24 +68,45 @@ def _all_doc_group_dirs(repo_root: Path, slug: str) -> list[Path]:
     ]
 
 
-def _group_dir(repo_root: Path, axis: GroupAxis, slug: str) -> Path | None:
-    """Return the filesystem directory for this group, or None if it has no dedicated dir."""
-    from src.application.repo_path_helpers import diagram_source_root  # noqa: PLC0415
+def _diagram_collection_dirs(repo_root: Path, slug: str) -> list[Path]:
+    """Return every existing directory a diagram-collection is filed under.
 
-    if axis == "model-project":
-        return repo_root / "projects" / slug
-    if axis == "diagram-collection":
-        return diagram_source_root(repo_root) / slug
-    dirs = _all_doc_group_dirs(repo_root, slug)  # document-collection: first existing match
-    return dirs[0] if dirs else None
+    Three of them, not one. Public sources sit under ``diagrams/<slug>``, confidential sources
+    under ``diagrams/confidential/<slug>``, and the rendered PNG/SVG pair under
+    ``rendered/<slug>`` — ``rendered_dir_for_diagram`` files output by the source's own collection
+    segment, so the rendered tree carries the slug just as the source tree does.
+
+    A rename that knew only the first left the other two behind. Measured in this repository: the
+    ``promotion-and-tiering`` collection was renamed, its three diagrams moved, and their six
+    rendered files did not, so every PNG download in that collection answered
+    ``404 PNG not yet rendered — save the diagram first`` while the SVG, which is re-derived on
+    read, still answered 200. Found by re-shooting the documentation media, which downloads one.
+
+    Confidential *rendered* output is deliberately not here: it lands in ``rendered/confidential/``
+    flat, with no slug segment, so a rename has nothing to move there.
+    """
+    from src.application.repo_path_helpers import (  # noqa: PLC0415
+        diagram_source_confidential_root,
+        diagram_source_root,
+        rendered_root,
+    )
+
+    candidates = (
+        diagram_source_root(repo_root) / slug,
+        diagram_source_confidential_root(repo_root) / slug,
+        rendered_root(repo_root) / slug,
+    )
+    return [d for d in candidates if d.exists()]
 
 
 def _collection_dirs(repo_root: Path, axis: GroupAxis, slug: str) -> list[Path]:
-    """All existing directories backing a group (multiple for document-collections)."""
+    """All existing directories backing a group. Only a model-project is backed by one."""
     if axis == "document-collection":
         return _all_doc_group_dirs(repo_root, slug)
-    d = _group_dir(repo_root, axis, slug)
-    return [d] if d is not None and d.exists() else []
+    if axis == "diagram-collection":
+        return _diagram_collection_dirs(repo_root, slug)
+    project = repo_root / "projects" / slug
+    return [project] if project.exists() else []
 
 
 def _collection_files(repo_root: Path, axis: GroupAxis, slug: str) -> list[Path]:

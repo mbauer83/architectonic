@@ -7,7 +7,15 @@ rename returned having moved no files while the registry took the new name. The 
 result as a group holding documents while not being declared a collection (W046), which is how this
 was found: by renaming a real group and reading what the verifier said afterwards.
 
-The single-directory axes were never broken, and are here so the fix is shown not to have moved them.
+A diagram collection is backed by up to three: `diagrams/<slug>`, `diagrams/confidential/<slug>`,
+and `rendered/<slug>`, which holds the PNG and SVG a diagram keeps on disk. The rename knew only the
+first, so the sources moved and their rendered output stayed behind under the old slug. Nothing
+reported it — the SVG route re-derives on read and kept answering 200 — until a PNG download in the
+renamed collection answered `404 PNG not yet rendered — save the diagram first`, months later, while
+re-shooting the documentation media. Measured in this repository, on `promotion-and-tiering`.
+
+A model-project is the one axis backed by a single directory, and is here so the fix is shown not to
+have moved it.
 """
 
 from __future__ import annotations
@@ -76,22 +84,66 @@ class TestADocumentCollection:
         assert result["slug"] == "renamed-one"
 
 
-class TestTheSingleDirectoryAxes:
-    @pytest.mark.parametrize(
-        ("axis", "parent"),
-        [("model-project", "projects"), ("diagram-collection", "diagram-catalog/diagrams")],
-    )
-    def test_the_directory_still_moves(self, repo: Path, axis, parent) -> None:
-        """These were never broken; the fix derives their destination differently, so they are pinned."""
-        group_create(repo, axis=axis, slug="old-name", name="Old Name")
-        (repo / parent / "old-name").mkdir(parents=True, exist_ok=True)
-        (repo / parent / "old-name" / "a.md").write_text("x\n", encoding="utf-8")
+class TestADiagramCollection:
+    """Sources and rendered output are filed under the same slug, so both follow the rename."""
+
+    def test_the_rendered_output_moves_with_its_sources(self, repo: Path) -> None:
+        """The regression: the PUML moved, the PNG and SVG did not, and the download 404ed."""
+        group_create(repo, axis="diagram-collection", slug="old-name", name="Old Name")
+        catalog = repo / "diagram-catalog"
+        (catalog / "diagrams" / "old-name").mkdir(parents=True, exist_ok=True)
+        source = catalog / "diagrams" / "old-name" / "ARC@1.abc.a-diagram.puml"
+        source.write_text("@startuml\n@enduml\n", encoding="utf-8")
+        (catalog / "rendered" / "old-name").mkdir(parents=True, exist_ok=True)
+        for suffix in (".png", ".svg"):
+            (catalog / "rendered" / "old-name" / f"ARC@1.abc.a-diagram{suffix}").write_bytes(b"x")
         _commit(repo)
 
-        group_rename(repo, axis=axis, slug="old-name", new_slug="new-name")
+        group_rename(repo, axis="diagram-collection", slug="old-name", new_slug="new-name")
 
-        assert (repo / parent / "new-name" / "a.md").exists()
-        assert not (repo / parent / "old-name").exists()
+        assert (catalog / "diagrams" / "new-name" / "ARC@1.abc.a-diagram.puml").exists()
+        for suffix in (".png", ".svg"):
+            assert (catalog / "rendered" / "new-name" / f"ARC@1.abc.a-diagram{suffix}").exists(), suffix
+        assert not (catalog / "rendered" / "old-name").exists()
+
+    def test_confidential_sources_move_too(self, repo: Path) -> None:
+        """A second source root, under the same slug, and just as easy to leave behind."""
+        group_create(repo, axis="diagram-collection", slug="old-name", name="Old Name")
+        confidential = repo / "diagram-catalog" / "diagrams" / "confidential" / "old-name"
+        confidential.mkdir(parents=True, exist_ok=True)
+        (confidential / "ARC@1.abc.secret.puml").write_text("@startuml\n@enduml\n", encoding="utf-8")
+        _commit(repo)
+
+        group_rename(repo, axis="diagram-collection", slug="old-name", new_slug="new-name")
+
+        moved = repo / "diagram-catalog" / "diagrams" / "confidential" / "new-name"
+        assert (moved / "ARC@1.abc.secret.puml").exists()
+        assert not confidential.exists()
+
+    def test_a_collection_with_sources_and_no_rendering_yet_renames_cleanly(self, repo: Path) -> None:
+        """A diagram saved but never rendered has no rendered/<slug>; that is not a failure."""
+        group_create(repo, axis="diagram-collection", slug="old-name", name="Old Name")
+        (repo / "diagram-catalog" / "diagrams" / "old-name").mkdir(parents=True, exist_ok=True)
+        (repo / "diagram-catalog" / "diagrams" / "old-name" / "a.puml").write_text("x\n", encoding="utf-8")
+        _commit(repo)
+
+        group_rename(repo, axis="diagram-collection", slug="old-name", new_slug="new-name")
+
+        assert (repo / "diagram-catalog" / "diagrams" / "new-name" / "a.puml").exists()
+
+
+class TestTheSingleDirectoryAxis:
+    def test_the_directory_still_moves(self, repo: Path) -> None:
+        """A model-project was never broken; the fix derives its destination differently, so it is pinned."""
+        group_create(repo, axis="model-project", slug="old-name", name="Old Name")
+        (repo / "projects" / "old-name").mkdir(parents=True, exist_ok=True)
+        (repo / "projects" / "old-name" / "a.md").write_text("x\n", encoding="utf-8")
+        _commit(repo)
+
+        group_rename(repo, axis="model-project", slug="old-name", new_slug="new-name")
+
+        assert (repo / "projects" / "new-name" / "a.md").exists()
+        assert not (repo / "projects" / "old-name").exists()
 
 
 class TestTheLinksIntoARenamedGroup:

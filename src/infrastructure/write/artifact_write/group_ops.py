@@ -147,16 +147,17 @@ def group_rename(
 def _git_mv_group_dir(repo_root: Path, axis: GroupAxis, slug: str, new_slug: str) -> None:
     """Move every directory backing this group to the new slug.
 
-    **Every** one, and derived from the old directory's own parent — not from `_group_dir(new_slug)`.
+    **Every** one, which `_collection_dirs` answers and only a model-project answers with one.
     A document collection is backed by one directory per doc-type (`docs/adr/<slug>`,
-    `docs/arc42/<slug>`, …), and `_group_dir` answers "the first *existing* directory with this
-    slug". For a slug nothing is filed under yet that is `None`, so a document-collection rename
-    returned here having moved nothing: the registry took the new name and the files kept the old
-    one, which the verifier then reports as a group holding documents while not being declared a
-    collection. Even had a directory existed, only the first doc-type would have moved.
+    `docs/arc42/<slug>`, …) and a diagram collection by up to three (public sources, confidential
+    sources, rendered output). Both have been got wrong here, in the same way: the rename moved
+    the one directory it knew about, the registry took the new name, and the rest kept the old.
+    For documents the verifier says so — a group holding documents while not declared a
+    collection — and for diagrams nothing did, until a PNG download 404ed in a collection that had
+    been renamed months earlier.
 
-    Each target is the source's own parent under the new name, which is the same answer
-    `_group_dir` gives for the two single-directory axes and the right one for every doc-type.
+    Each target is the source's own parent under the new name, which is right for every one of
+    them: `diagrams/<old>` → `diagrams/<new>`, `rendered/<old>` → `rendered/<new>`, and so on.
     """
     from ._entity_rename import rewrite_document_links_for_moved_artifact  # noqa: PLC0415
 

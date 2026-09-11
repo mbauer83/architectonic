@@ -16,7 +16,6 @@ from src.application.group_registry import load_group_registry
 from src.infrastructure.write.artifact_write._group_fs import (
     _collection_dirs,
     _collection_files,
-    _group_dir,
     _safe_rmdir,
     _update_axis,
 )
@@ -439,25 +438,38 @@ class TestGroupFsHelpers:
         updated = _update_axis(reg, "document-collection", [entry])
         assert updated.document_collections == (entry,)
 
-    def test_group_dir_model_project(self, repo: Path) -> None:
-        d = _group_dir(repo, "model-project", "my-proj")
-        assert d == repo / "projects" / "my-proj"
+    def test_a_model_project_is_backed_by_one_directory(self, repo: Path) -> None:
+        (repo / "projects" / "my-proj").mkdir(parents=True, exist_ok=True)
+        assert _collection_dirs(repo, "model-project", "my-proj") == [repo / "projects" / "my-proj"]
 
-    def test_group_dir_diagram_collection(self, repo: Path) -> None:
-        d = _group_dir(repo, "diagram-collection", "dc-slug")
-        assert d is not None
-        assert d.name == "dc-slug"
+    def test_a_diagram_collection_names_its_sources_and_its_rendered_output(self, repo: Path) -> None:
+        """Both, or a rename strands whichever it did not name."""
+        catalog = repo / "diagram-catalog"
+        (catalog / "diagrams" / "dc-slug").mkdir(parents=True, exist_ok=True)
+        (catalog / "rendered" / "dc-slug").mkdir(parents=True, exist_ok=True)
 
-    def test_group_dir_document_collection_no_dirs(self, repo: Path) -> None:
-        d = _group_dir(repo, "document-collection", "nonexistent")
-        assert d is None
+        assert _collection_dirs(repo, "diagram-collection", "dc-slug") == [
+            catalog / "diagrams" / "dc-slug",
+            catalog / "rendered" / "dc-slug",
+        ]
 
-    def test_group_dir_document_collection_with_dir(self, repo: Path) -> None:
+    def test_a_diagram_collection_names_its_confidential_sources(self, repo: Path) -> None:
+        catalog = repo / "diagram-catalog"
+        (catalog / "diagrams" / "confidential" / "dc-slug").mkdir(parents=True, exist_ok=True)
+
+        assert _collection_dirs(repo, "diagram-collection", "dc-slug") == [
+            catalog / "diagrams" / "confidential" / "dc-slug",
+        ]
+
+    def test_a_document_collection_with_nothing_filed_under_it(self, repo: Path) -> None:
+        assert _collection_dirs(repo, "document-collection", "nonexistent") == []
+
+    def test_a_document_collection_names_each_doc_type_directory(self, repo: Path) -> None:
         slug = "my-docs"
         docs_dir = repo / "docs" / "specification" / slug
         docs_dir.mkdir(parents=True)
-        d = _group_dir(repo, "document-collection", slug)
-        assert d == docs_dir
+
+        assert _collection_dirs(repo, "document-collection", slug) == [docs_dir]
 
     def test_collection_dirs_empty(self, repo: Path) -> None:
         dirs = _collection_dirs(repo, "diagram-collection", "missing")
