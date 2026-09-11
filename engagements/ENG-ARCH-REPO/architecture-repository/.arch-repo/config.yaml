@@ -1,5 +1,6 @@
 applied_upgrade_steps:
 - d10-stale-slug-references
+- d11-rendered-output-under-a-former-slug
 - d9-multiplicity-rename
 - default-schemata-ensure
 - modification-stamp-datetime
