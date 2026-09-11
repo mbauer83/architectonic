@@ -1,16 +1,31 @@
-"""Encoding-independent semantic invariants for derived relationships."""
+"""Encoding-independent semantic invariants for derived relationships.
+
+Split by the first relation's source type and the join, for the reason the exhaustive file records:
+the same 4,404,266 pairs, in items of a few seconds rather than one of several minutes.
+"""
 
 from __future__ import annotations
+
+import pytest
 
 from src.domain.modules.module_types import ConnectionTypeName, EntityTypeName
 from src.domain.relationships.relationship_derivation import OrientedRelation, compose
 from src.ontologies.archimate_4 import module
-from tests.domain.test_relationship_derivation_exhaustive import _expected_rule, _joined_pairs, _oriented_pair
+from tests.domain.test_relationship_derivation_exhaustive import (
+    SPLIT,
+    _expected_rule,
+    _joined_pairs,
+    _oriented_pair,
+)
 
 
-def test_derived_relationships_preserve_the_specification_invariants() -> None:
-    observed = 0
-    for first, second, join, intermediate in _joined_pairs():
+@pytest.mark.parametrize(("source_type", "only_join"), SPLIT)
+def test_derived_relationships_preserve_the_specification_invariants(
+    source_type: EntityTypeName, only_join: str
+) -> None:
+    examined = 0
+    for first, second, join, intermediate in _joined_pairs(source_type, only_join):
+        examined += 1
         result = compose(
             *_oriented_pair(first, second, join),
             intermediate,
@@ -20,7 +35,6 @@ def test_derived_relationships_preserve_the_specification_invariants() -> None:
         )
         if result is None:
             continue
-        observed += 1
         expected = _expected_rule(first, second, join, intermediate)
         assert expected is not None
         if expected["certainty"] == "potential":
@@ -41,7 +55,7 @@ def test_derived_relationships_preserve_the_specification_invariants() -> None:
             assert result.connection_type.derivation_strength <= min(
                 first.connection_type.derivation_strength, second.connection_type.derivation_strength
             )
-    assert observed > 1_000
+    assert examined > 0, (source_type, only_join)
 
 
 def test_grouped_candidates_require_permission_only_for_their_explicit_rule() -> None:

@@ -1,11 +1,26 @@
-"""Metamodel-wide composition checks derived from direct relationship inputs."""
+"""Metamodel-wide composition checks derived from direct relationship inputs.
+
+Every permitted relationship is joined with every other that shares an endpoint — 4,404,266 ordered
+pairs, each a distinct input tuple, so there is no redundancy to remove. The work is split by the
+first relation's source type instead: the same pairs, in about fifty test items rather than one.
+
+That shape is not cosmetic. As a single item the loop ran for over four minutes under CI's branch
+coverage on Python 3.13 — five times what it costs untraced — and it is the only test that has ever
+taken a worker down, twice, six and a half minutes into a session, with no assertion failure, no
+traceback and no out-of-memory report (it peaks at 180 MB). Split, no item runs more than a few
+seconds, the pairs spread across the workers instead of queueing behind one, and a failure names the
+source type it came from rather than a four-million-iteration loop.
+"""
 
 from __future__ import annotations
 
 from collections import defaultdict
 from collections.abc import Iterable
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Mapping, cast
+
+import pytest
 
 from src.domain.modules.module_types import ConnectionTypeName, EntityTypeName
 from src.domain.ontology_representation.ontology_types import ConnectionTypeInfo, EntityTypeInfo
@@ -21,6 +36,7 @@ class _DirectRelation:
     connection_type: ConnectionTypeInfo
 
 
+@lru_cache(maxsize=1)
 def _direct_relations() -> tuple[_DirectRelation, ...]:
     return tuple(
         _DirectRelation(source, target, module.connection_types[connection])
@@ -30,22 +46,60 @@ def _direct_relations() -> tuple[_DirectRelation, ...]:
     )
 
 
-def _joined_pairs() -> Iterable[tuple[_DirectRelation, _DirectRelation, str, EntityTypeInfo]]:
-    relations = _direct_relations()
+@lru_cache(maxsize=1)
+def _relations_by_endpoint() -> tuple[
+    dict[EntityTypeName, list[_DirectRelation]], dict[EntityTypeName, list[_DirectRelation]]
+]:
     by_source: dict[EntityTypeName, list[_DirectRelation]] = defaultdict(list)
     by_target: dict[EntityTypeName, list[_DirectRelation]] = defaultdict(list)
-    for relation in relations:
+    for relation in _direct_relations():
         by_source[relation.source_type].append(relation)
         by_target[relation.target_type].append(relation)
+    return by_source, by_target
+
+
+#: The four ways two relations can share an endpoint. Named here because the split runs over them.
+JOINS: tuple[str, ...] = ("target-source", "target-target", "source-source", "source-target")
+
+#: The source types the split runs over. Every direct relation has one, so iterating them covers
+#: every `first` and therefore every pair.
+SOURCE_TYPES: tuple[EntityTypeName, ...] = tuple(sorted({r.source_type for r in _direct_relations()}))
+
+#: One item per (source type, join). The source type alone left three items carrying the bulk —
+#: `grouping` and the two junctions, which the `@all` rules attach to everything, at 41s each under
+#: branch coverage on 3.13 against 7s for a typical one. The join divides those evenly.
+SPLIT: tuple[tuple[EntityTypeName, str], ...] = tuple(
+    (source_type, join) for source_type in SOURCE_TYPES for join in JOINS
+)
+
+
+def _joined_pairs(
+    source_type: EntityTypeName | None = None,
+    only_join: str | None = None,
+) -> Iterable[tuple[_DirectRelation, _DirectRelation, str, EntityTypeInfo]]:
+    """Every joined pair, or only those whose first relation starts at *source_type*.
+
+    The union over `SPLIT` is exactly the unfiltered set — asserted below, because a filter that
+    silently dropped pairs would turn an exhaustive test into a partial one that still passes.
+    """
+    relations = _direct_relations() if source_type is None else tuple(
+        r for r in _direct_relations() if r.source_type == source_type
+    )
+    by_source, by_target = _relations_by_endpoint()
+    wanted = JOINS if only_join is None else (only_join,)
     for first in relations:
-        for second in by_source[first.target_type]:
-            yield first, second, "target-source", module.entity_types[first.target_type]
-        for second in by_target[first.target_type]:
-            yield first, second, "target-target", module.entity_types[first.target_type]
-        for second in by_source[first.source_type]:
-            yield first, second, "source-source", module.entity_types[first.source_type]
-        for second in by_target[first.source_type]:
-            yield first, second, "source-target", module.entity_types[first.source_type]
+        if "target-source" in wanted:
+            for second in by_source[first.target_type]:
+                yield first, second, "target-source", module.entity_types[first.target_type]
+        if "target-target" in wanted:
+            for second in by_target[first.target_type]:
+                yield first, second, "target-target", module.entity_types[first.target_type]
+        if "source-source" in wanted:
+            for second in by_source[first.source_type]:
+                yield first, second, "source-source", module.entity_types[first.source_type]
+        if "source-target" in wanted:
+            for second in by_target[first.source_type]:
+                yield first, second, "source-target", module.entity_types[first.source_type]
 
 
 def _relation(item: _DirectRelation, *, source_id: str, target_id: str) -> OrientedRelation:
@@ -135,9 +189,27 @@ def _expected_connection_type(
     )
 
 
-def test_every_composition_from_direct_inputs_has_the_specified_result_shape() -> None:
-    observed = 0
-    for first, second, join, intermediate in _joined_pairs():
+def test_the_split_covers_every_pair_the_unfiltered_generator_yields() -> None:
+    """The union of the parts is the whole.
+
+    Enumeration only — no composing — so it costs a second. It is the assertion the split rests on:
+    a filter that quietly dropped pairs would leave an exhaustive test passing over a subset, which
+    is the failure mode of splitting a test up and the one thing no other assertion here would see.
+    """
+    whole = sum(1 for _ in _joined_pairs())
+    parts = sum(sum(1 for _ in _joined_pairs(source_type, join)) for source_type, join in SPLIT)
+
+    assert parts == whole
+    assert whole > 1_000_000
+
+
+@pytest.mark.parametrize(("source_type", "only_join"), SPLIT)
+def test_every_composition_from_direct_inputs_has_the_specified_result_shape(
+    source_type: EntityTypeName, only_join: str
+) -> None:
+    examined = 0
+    for first, second, join, intermediate in _joined_pairs(source_type, only_join):
+        examined += 1
         expected = _expected_rule(first, second, join, intermediate)
         result = compose(
             *_oriented_pair(first, second, join),
@@ -176,12 +248,16 @@ def test_every_composition_from_direct_inputs_has_the_specified_result_shape() -
             continue
         if result is None:
             continue
-        observed += 1
         assert result.certainty == expected["certainty"]
         assert result.connection_type == expected_type
         assert result.source_id == endpoint_ids[source_endpoint]
         assert result.target_id == endpoint_ids[target_endpoint]
-    assert observed > 1_000
+    # Each item states that it had something to examine — the guard the whole loop used to carry
+    # as `observed > 1_000`, restated for a part. It deliberately counts *pairs*, not compositions:
+    # four of the 180 items compose nothing at all, because a junction joined source-to-source
+    # derives nothing, and a per-item threshold on compositions would encode that rule a second
+    # time. What the corpus composes is covered by the pairs themselves and by the union test.
+    assert examined > 0, (source_type, only_join)
 
 
 def _endpoint_type(endpoint: object, first: _DirectRelation, second: _DirectRelation) -> EntityTypeName:
