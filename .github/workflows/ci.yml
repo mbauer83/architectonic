@@ -245,11 +245,12 @@ jobs:
         run: npm ci
 
       - name: ESLint
-        # Typed linting is CPU-bound and single-threaded by default; the hosted runner
-        # (4 vCPU / 16 GB) takes 20+ min cold. Workers each build their own type program
-        # (~2-3 GB), which the runner's memory accommodates — findings are identical to a
-        # serial run, only wall time changes.
-        run: npm run lint -- --concurrency auto
+        # `lint` is two processes — `lint:ts`, then `lint:vue` — and must stay two: in one process
+        # typescript-eslint's project service re-checks the type program every time a `.vue` script
+        # block is admitted between `.ts` files, and the same rules over the same files took 15 min
+        # (measured 2026-09-17: 944 s together, 24 s + 13 s apart). Serial is ~40 s on a developer
+        # box, so the worker fan-out this step once passed is no longer needed.
+        run: npm run lint
 
       - name: Type check
         run: npm run typecheck

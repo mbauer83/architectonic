@@ -58,9 +58,9 @@ cannot be a surprise about *which* commands exist. It went unchecked once and CI
 defects — a coverage floor and an IPv4/IPv6 bind — after a release was tagged.
 
 **The list is complete; the tier is when you run it.** Every gate before every commit costs more than
-the work it guards — on a developer box the backend suite is ~3.5 minutes and `npm run lint` 10 to 20
-— and a cadence nobody can afford is one that gets skipped without saying so. Run one at a time,
-never concurrently.
+the work it guards — on a developer box the backend suite is ~3.5 minutes, and `npm run lint` was 10 to
+20 until it was split into two processes (~40 seconds since) — and a cadence nobody can afford is one
+that gets skipped without saying so. Run one at a time, never concurrently.
 
 | Tier | When | What |
 | --- | --- | --- |
@@ -149,8 +149,13 @@ renders:
     where `arch-backend` serves the built SPA, which is what CI drives and what ships. Pass
     `E2E_BASE_URL=http://localhost:5173` to iterate against a Vite dev server instead.
 15. `npm run lint` — read the output in full; never pipe it through `tail` or `grep`, which masks the
-    exit code. It takes ~10 minutes; run `npm run lint:fast` while iterating and the full one once at
-    the end. CI passes `-- --concurrency auto`, which changes only how long it takes.
+    exit code. It runs `lint:ts` and then `lint:vue` as **two processes**, ~40 seconds together, and
+    they must stay two: in one process typescript-eslint's project service re-checks the type
+    program every time a `.vue` script block is admitted between `.ts` files, and the same rules over
+    the same files took 15 minutes (measured 2026-09-17: 944 s together, 24 s + 13 s apart). Do not
+    pass `--concurrency auto` on a developer box: each worker builds its own type program, and
+    twenty of them exhausted 15 GB and stalled the machine. `npm run lint:fast` is the cached
+    syntactic tier for the inner loop.
 
 The browser suite is the only one that exercises the real application, so leaving it to CI means UI
 and content regressions are discovered after the fact rather than at the stage that caused them.
