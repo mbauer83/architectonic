@@ -138,7 +138,7 @@ class TestDryRun:
         )
         assert code == 0
         payload = json.loads(capsys.readouterr().out)
-        assert payload["report_schema_version"] == "1"
+        assert payload["report_schema_version"] == "2"
         kinds = {t["kind"]: t for t in payload["operational_targets"]}
         assert kinds["guidance_cache"]["state"] == "pending"
         assert kinds["deployment_settings"]["state"] == "current"
@@ -251,3 +251,27 @@ class TestCommit:
         assert "guidance_cache" not in kinds
         notes = payload["deployment_preflight"]["notes"]
         assert any("NOT certified" in note for note in notes)
+
+
+def test_a_safety_point_that_cannot_be_taken_writes_nothing_and_exits_infrastructure_failure(
+    tmp_path: Path, monkeypatch, capsys,  # type: ignore[no-untyped-def]
+) -> None:
+    from src.infrastructure.cli._upgrade_checkpoints import CheckpointFailed
+
+    root = _deployment(tmp_path)
+
+    def refusing(*args, **kwargs):  # type: ignore[no-untyped-def]
+        raise CheckpointFailed("the safety point could not be taken, so nothing was written: disk full")
+
+    monkeypatch.setattr(cli, "take_checkpoint_set", refusing)
+
+    code = cli.main_upgrade(
+        ["--deployment-root", str(root), "--commit"],
+        registry=_repo_registry(),
+        operational_registry=_op_registry(_CacheFixtureStep()),
+    )
+
+    assert code == cli.EXIT_INFRASTRUCTURE_FAILURE
+    assert "nothing was written" in capsys.readouterr().err
+    cache_doc = root / "guidance-cache" / "m.guidance.yaml"
+    assert cache_doc.read_text(encoding="utf-8") == "guidance_format: 1\n"

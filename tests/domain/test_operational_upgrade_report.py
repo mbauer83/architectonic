@@ -44,7 +44,7 @@ class TestReportShape:
         report = DeploymentUpgradeReport(repos=WorkspaceUpgradeReport(per_repo=(_repo_report(),)))
         payload = report.to_dict()
         assert isinstance(payload["repos"], list)  # existing consumers keep working
-        assert payload["report_schema_version"] == "1"
+        assert payload["report_schema_version"] == "2"
         assert payload["operational_targets"] == []
         assert payload["deployment_preflight"] is None
         assert payload["outcome"] == "success"

@@ -28,7 +28,8 @@ DeploymentApplyOutcome = Literal[
     "infrastructure_failure",
 ]
 
-REPORT_SCHEMA_VERSION = "1"
+REPORT_SCHEMA_VERSION = "2"
+"""Moved from "1" when `checkpoint_set` joined the report."""
 
 APPLY_ORDER: tuple[TargetKind, ...] = (
     "repository",
@@ -92,6 +93,7 @@ class OperationalTargetReport:
                     "description": r.finding.description,
                     "severity": r.finding.severity,
                     "auto_migratable": r.finding.auto_migratable,
+                    "blocks_commit": r.finding.blocks_commit,
                     "rewrite_summary": r.finding.rewrite_summary,
                     "manual_instructions": r.finding.manual_instructions,
                     "outcome": r.outcome,
@@ -126,6 +128,65 @@ class DeploymentPreflight:
 
 
 @dataclass(frozen=True)
+class RepositoryCheckpoint:
+    """One repository's working tree as it was before a commit wrote it, pinned under a git ref."""
+
+    root: str
+    ref: str
+
+
+@dataclass(frozen=True)
+class OperationalBackup:
+    """One operational target's file copy, taken before a commit wrote it."""
+
+    kind: TargetKind
+    location: str
+    backup_path: str
+
+
+@dataclass(frozen=True)
+class CheckpointSet:
+    """The safety point one `--commit` leaves behind: every target it was about to write, as it was.
+
+    Taken after the backend-not-serving gate and before the first write, so it records the exact
+    pre-upgrade state; named by a compact UTC timestamp so `--restore` can address it. Repositories
+    are git refs, not copies — a six-figure file count is why — and operational targets are copies,
+    because a database has no ref to pin.
+    """
+
+    id: str
+    repositories: tuple[RepositoryCheckpoint, ...] = ()
+    operational: tuple[OperationalBackup, ...] = ()
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "id": self.id,
+            "repositories": [{"root": r.root, "ref": r.ref} for r in self.repositories],
+            "operational": [
+                {"kind": o.kind, "location": o.location, "backup_path": o.backup_path} for o in self.operational
+            ],
+        }
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, object]) -> CheckpointSet:
+        repositories = data.get("repositories")
+        operational = data.get("operational")
+        return cls(
+            id=str(data["id"]),
+            repositories=tuple(
+                RepositoryCheckpoint(root=str(r["root"]), ref=str(r["ref"]))
+                for r in (repositories if isinstance(repositories, list) else [])
+                if isinstance(r, Mapping)
+            ),
+            operational=tuple(
+                OperationalBackup(kind=o["kind"], location=str(o["location"]), backup_path=str(o["backup_path"]))
+                for o in (operational if isinstance(operational, list) else [])
+                if isinstance(o, Mapping)
+            ),
+        )
+
+
+@dataclass(frozen=True)
 class DeploymentUpgradeReport:
     """The full additive report: existing `repos` retained, operational sections new."""
 
@@ -133,6 +194,8 @@ class DeploymentUpgradeReport:
     operational_targets: tuple[OperationalTargetReport, ...] = ()
     preflight: DeploymentPreflight | None = None
     outcome: DeploymentApplyOutcome = "success"
+    checkpoint_set: CheckpointSet | None = None
+    """What a commit recorded before its first write; None for a dry run or a no-op commit."""
 
     def to_dict(self) -> Mapping[str, object]:
         base: dict[str, object] = dict(self.repos.to_dict())
@@ -140,6 +203,7 @@ class DeploymentUpgradeReport:
         base["operational_targets"] = [t.to_dict() for t in self.operational_targets]
         base["deployment_preflight"] = self.preflight.to_dict() if self.preflight else None
         base["outcome"] = self.outcome
+        base["checkpoint_set"] = self.checkpoint_set.to_dict() if self.checkpoint_set else None
         return base
 
 

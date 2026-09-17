@@ -35,7 +35,12 @@ PUSH_TIMEOUT = 60
 #: even when the repo has no `.gitignore`. Here rather than beside either caller because the
 #: checkpoint and both work commits stage the same way, and the incident above is the reason they
 #: must not drift apart.
-STAGE_ALL_BUT_RUNTIME_STATE = ("add", "-A", "--", ".", ":(exclude).arch")
+#: `**/.arch/**` rather than `.arch`: when the repository's own `.gitignore` lists `.arch/` and the
+#: directory exists, git 2.39 treats a plain `:(exclude).arch` as a path named on the command line
+#: that is ignored, and refuses the whole `add` — so a data upgrade's checkpoint failed on exactly
+#: the enterprise repositories the template ships. The glob form is not a named path, and it holds
+#: in both configurations: `.arch/` ignored, and `.arch/` merely untracked.
+STAGE_ALL_BUT_RUNTIME_STATE = ("add", "-A", "--", ".", ":(exclude,glob)**/.arch/**")
 
 
 def run_repo_git(

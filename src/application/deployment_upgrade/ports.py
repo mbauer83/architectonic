@@ -9,6 +9,7 @@ connection per target; text-file targets write atomically (temp + rename).
 from __future__ import annotations
 
 from collections.abc import Mapping
+from pathlib import Path
 from typing import Protocol
 
 from src.domain.guidance.guidance_hierarchy import GuidanceHierarchy
@@ -102,6 +103,18 @@ class OperationalTargetHandle(Protocol):
     def view(self) -> OperationalTargetView: ...
 
     def begin(self) -> OperationalTargetUnitOfWork: ...
+
+    def backup(self, destination_dir: Path) -> Path | None:
+        """Copy the target into *destination_dir* before a migration writes it; the copy's path.
+
+        None where the target has nothing to copy. The copy is what `restore` takes back — the
+        safety point a `--commit` leaves behind so a later `--restore` can undo what it wrote.
+        """
+        ...
+
+    def restore(self, backup: Path) -> None:
+        """Put the target back as `backup` recorded it, replacing whatever a migration wrote."""
+        ...
 
 
 class OperationalStepRegistry:

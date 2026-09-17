@@ -87,6 +87,7 @@ def discover_operational_handles(
                 ),
                 connect=factory,
                 inspectable=inspectable,
+                path=signals_path,
             )
         )
 
@@ -110,6 +111,7 @@ def discover_operational_handles(
                 ),
                 connect=factory if factory is not None else _never_connect(assurance_path),
                 inspectable=readable,
+                path=assurance_path,
             )
         )
 

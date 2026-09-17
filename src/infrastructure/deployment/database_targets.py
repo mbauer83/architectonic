@@ -10,6 +10,7 @@ reports or logs.
 
 from __future__ import annotations
 
+import shutil
 import sqlite3
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -107,12 +108,43 @@ class DatabaseTargetHandle:
     target: UpgradeTarget
     connect: ConnectionFactory
     inspectable: bool
+    #: Where the database file is, for the file-level copy a backup is. None only for a handle a
+    #: test builds around a connection with no file behind it; such a handle has nothing to back up.
+    path: Path | None = None
 
     def view(self) -> _DatabaseView:
         return _DatabaseView(self.target, self.connect)
 
     def begin(self) -> DatabaseUnitOfWork:
         return DatabaseUnitOfWork(self.connect())
+
+    def backup(self, destination_dir: Path) -> Path | None:
+        """A file copy with its write-ahead log — the same copy `arch-assurance backup` takes.
+
+        Through that one function rather than a second `copy2`, because the log is the point: a
+        WAL-mode store's latest commits live in `<db>-wal` until a checkpoint, and a copy of the
+        main file alone is a snapshot from before them. An encrypted store stays encrypted; the key
+        is never read here.
+        """
+        if self.path is None or not self.path.is_file():
+            return None
+        from src.infrastructure.assurance.lifecycle import backup_store  # noqa: PLC0415
+
+        destination_dir.mkdir(parents=True, exist_ok=True)
+        copy = destination_dir / self.path.name
+        backup_store(self.path, backup_path=copy)
+        return copy
+
+    def restore(self, backup: Path) -> None:
+        """Put the file (and its log) back; a stale `-shm` is scratch state SQLite rebuilds."""
+        if self.path is None:
+            raise RuntimeError(f"{self.target.display_location}: no file to restore into")
+        for sidecar in ("-wal", "-shm"):
+            self.path.with_name(self.path.name + sidecar).unlink(missing_ok=True)
+        shutil.copy2(backup, self.path)
+        wal = backup.with_name(backup.name + "-wal")
+        if wal.exists():
+            shutil.copy2(wal, self.path.with_name(self.path.name + "-wal"))
 
 
 def sqlite_connection_factory(path: Path) -> ConnectionFactory:

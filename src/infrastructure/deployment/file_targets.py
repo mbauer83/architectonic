@@ -4,6 +4,7 @@ commit — one unit of work per target, never a partial rewrite."""
 
 from __future__ import annotations
 
+import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -83,6 +84,15 @@ class SettingsDocumentHandle:
     def begin(self) -> TextTargetUnitOfWork:
         return TextTargetUnitOfWork(self.path, single_file=True)
 
+    def backup(self, destination_dir: Path) -> Path | None:
+        destination_dir.mkdir(parents=True, exist_ok=True)
+        copy = destination_dir / self.path.name
+        shutil.copy2(self.path, copy)
+        return copy
+
+    def restore(self, backup: Path) -> None:
+        write_atomic(self.path, backup.read_text(encoding="utf-8"))
+
 
 @dataclass(frozen=True)
 class GuidanceCacheHandle:
@@ -100,6 +110,16 @@ class GuidanceCacheHandle:
 
     def begin(self) -> TextTargetUnitOfWork:
         return TextTargetUnitOfWork(self.root, single_file=False)
+
+    def backup(self, destination_dir: Path) -> Path | None:
+        copy = destination_dir / self.root.name
+        shutil.copytree(self.root, copy, dirs_exist_ok=True)
+        return copy
+
+    def restore(self, backup: Path) -> None:
+        # Whole-directory: a migration may have added members as well as rewritten them.
+        shutil.rmtree(self.root)
+        shutil.copytree(backup, self.root)
 
 
 def guidance_cache_version(root: Path) -> int | None:

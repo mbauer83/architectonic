@@ -71,6 +71,11 @@ def emit_deployment(report: DeploymentUpgradeReport, as_json: bool) -> None:
     print(f"Note: {COVERAGE_NOTE}")
     _print_repos(report.repos)
     print_operational_reports(report.operational_targets)
+    if report.checkpoint_set is not None:
+        print(
+            f"\nCheckpoint set {report.checkpoint_set.id}: every target above as it was before this run "
+            f"— `arch-repair upgrade --restore {report.checkpoint_set.id}` returns to it."
+        )
     preflight = report.preflight
     if preflight is not None:
         for note in preflight.notes:
@@ -90,3 +95,40 @@ def _print_repos(report: WorkspaceUpgradeReport) -> None:
         for result in repo_report.results:
             f = result.finding
             print(f"  [{result.outcome}] {f.step_id}/{f.finding_id} ({f.severity}) — {f.location}: {f.description}")
+
+
+def refresh_generated_includes(roots: "list[Path]") -> list[str]:
+    """Rewrite the generated ArchiMate include files in every root, reporting what was refreshed.
+
+    `_archimate-stereotypes.puml` and its siblings are generated: every diagram `!include`s them and
+    their content is the ontology's declarations rendered into skinparams and macros. So a release
+    that changes a declaration reaches an existing repository only when these are rewritten — and
+    nothing rewrote them. `arch-init` regenerates them and CI checks them; the command whose job is
+    bringing a repository to the current version did not, so 0.7.1's grouping notation, and every
+    appearance change before it, stopped at the repository boundary.
+
+    Not an upgrade step. A step's replacement content comes from the domain, and this content is
+    generated from the module registry, which an application-layer step may not reach. The CLI is the
+    composition root that already does this in `arch-init`.
+
+    Called *after* the steps apply, because a step may change what the generator would emit — a
+    profile reconciliation, say — and regenerating first would bake the pre-migration answer in.
+
+    A root with no diagram catalogue is skipped rather than failed: an upgrade runs over every
+    configured root and one of them may legitimately have none.
+    """
+    from src.infrastructure.rendering.generate_static_includes import (  # noqa: PLC0415
+        generate_static_includes,
+    )
+
+    refreshed: list[str] = []
+    for root in roots:
+        if not (root / "diagram-catalog").is_dir():
+            continue
+        try:
+            generate_static_includes(root)
+        except Exception as exc:  # noqa: BLE001 - one unwritable root must not fail the upgrade
+            print(f"  static includes: skipped for {root} ({exc})", file=sys.stderr)
+            continue
+        refreshed.append(str(root))
+    return refreshed

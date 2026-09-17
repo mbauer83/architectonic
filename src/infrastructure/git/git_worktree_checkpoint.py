@@ -170,3 +170,83 @@ def release_worktree_checkpoint(repo: Path, checkpoint: WorktreeCheckpoint) -> N
         raise RuntimeError(f"Failed to release promotion checkpoint: {stderr}")
 
 
+
+
+# ── Pinned checkpoints ────────────────────────────────────────────────────────────────────────────
+#
+# A promotion's checkpoint lives exactly as long as the transaction: it is a commit on the branch,
+# un-committed again on release. A data upgrade needs the opposite — a checkpoint that outlives the
+# run, so a later `--restore` can put the tree back after the software itself has moved on. That is a
+# **ref**: `refs/arch-repair/pre-upgrade/<name>` holds a commit, and a commit a ref names survives
+# `git gc`, is never pushed (no fetch or push spec names this namespace) and never moves the branch.
+#
+# One ref can name one commit, and a restore needs three facts — the tree, the head the branch was at,
+# and the branch's name. So the pinned commit is made for the purpose: `commit-tree` over the
+# checkpoint's tree, parented on the recorded head, with `Head:` and `Branch:` trailers in its message.
+# Reading the pin reads those trailers; nothing else in the repository is consulted.
+
+PINNED_CHECKPOINT_NAMESPACE = "refs/arch-repair/pre-upgrade"
+_HEAD_TRAILER = "Head:"
+_BRANCH_TRAILER = "Branch:"
+_DETACHED = "(detached)"
+
+
+def pin_checkpoint(repo: Path, checkpoint: WorktreeCheckpoint, name: str) -> str:
+    """Record *checkpoint* under `refs/arch-repair/pre-upgrade/<name>`; returns the ref.
+
+    The branch is left exactly where `checkpoint_worktree` left it — pinning writes objects and a
+    ref, nothing in the working tree or on the branch — so the caller still releases the transient
+    checkpoint commit afterwards, as a promotion does.
+    """
+    from src.config.git_identity import load_service_git_identity  # noqa: PLC0415
+
+    service = load_service_git_identity()
+    message = "\n".join([
+        "arch-repair pre-upgrade checkpoint",
+        "",
+        f"{_HEAD_TRAILER} {checkpoint.head}",
+        f"{_BRANCH_TRAILER} {checkpoint.branch or _DETACHED}",
+    ])
+    env = {
+        "GIT_AUTHOR_NAME": service.name, "GIT_AUTHOR_EMAIL": service.email,
+        "GIT_COMMITTER_NAME": service.name, "GIT_COMMITTER_EMAIL": service.email,
+    }
+    rc, pinned, stderr = run_repo_git(
+        repo, "commit-tree", f"{checkpoint.checkpoint}^{{tree}}", "-p", checkpoint.head, "-m", message,
+        env_overrides=env,
+    )
+    if rc != 0:
+        raise RuntimeError(f"Failed to write the pinned checkpoint commit: {stderr}")
+    ref = f"{PINNED_CHECKPOINT_NAMESPACE}/{name}"
+    rc, _, stderr = run_repo_git(repo, "update-ref", ref, pinned.strip())
+    if rc != 0:
+        raise RuntimeError(f"Failed to pin the checkpoint under {ref}: {stderr}")
+    return ref
+
+
+def checkpoint_from_ref(repo: Path, ref: str) -> WorktreeCheckpoint:
+    """The checkpoint a pinned ref records, in the form `restore_worktree_checkpoint` takes."""
+    rc, pinned, stderr = run_repo_git(repo, "rev-parse", "--verify", "--quiet", f"{ref}^{{commit}}")
+    if rc != 0 or not pinned.strip():
+        raise RuntimeError(f"No pinned checkpoint at {ref}: {stderr or 'ref not found'}")
+    rc, body, stderr = run_repo_git(repo, "log", "-1", "--format=%B", pinned.strip())
+    if rc != 0:
+        raise RuntimeError(f"Failed to read the pinned checkpoint {ref}: {stderr}")
+    head: str | None = None
+    branch: str | None = None
+    for line in body.splitlines():
+        if line.startswith(_HEAD_TRAILER):
+            head = line[len(_HEAD_TRAILER):].strip()
+        elif line.startswith(_BRANCH_TRAILER):
+            recorded = line[len(_BRANCH_TRAILER):].strip()
+            branch = None if recorded == _DETACHED else recorded
+    if head is None:
+        raise RuntimeError(f"The pinned checkpoint {ref} records no head to return to")
+    return WorktreeCheckpoint(branch=branch, head=head, checkpoint=pinned.strip())
+
+
+def release_pinned_checkpoint(repo: Path, ref: str) -> None:
+    """Forget a pinned checkpoint. Its objects become collectable; nothing else changes."""
+    rc, _, stderr = run_repo_git(repo, "update-ref", "-d", ref)
+    if rc != 0 and "not a valid ref" not in stderr and "does not exist" not in stderr:
+        raise RuntimeError(f"Failed to release the pinned checkpoint {ref}: {stderr}")

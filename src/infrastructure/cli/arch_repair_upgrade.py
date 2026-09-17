@@ -33,6 +33,7 @@ See `src.infrastructure.repository_upgrade.guard`.
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
 from importlib.metadata import PackageNotFoundError
@@ -67,6 +68,15 @@ from src.infrastructure.backend.backend_probe import (
     probe_backend_url,
     resolve_backend_port,
 )
+from src.infrastructure.cli._upgrade_checkpoints import (
+    CheckpointFailed,
+    checkpoint_base,
+    list_checkpoint_sets,
+    load_checkpoint_set,
+    prune_previous_sets,
+    restore_checkpoint_set,
+    take_checkpoint_set,
+)
 from src.infrastructure.cli._upgrade_deployment import (
     DeploymentSide,
     add_deployment_arguments,
@@ -76,6 +86,7 @@ from src.infrastructure.cli._upgrade_deployment import (
 from src.infrastructure.cli._upgrade_repo_phases import (
     emit_deployment,
     note_dirty_overlap,
+    refresh_generated_includes,
     sweep_and_recover,
 )
 from src.infrastructure.repository_upgrade.fs_adapter import (
@@ -130,6 +141,14 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--workspace", metavar="PATH", help="Resolve engagement + enterprise roots from arch-init state")
     p.add_argument("--commit", action="store_true", default=False)
     p.add_argument("--json", action="store_true", default=False, dest="json_output")
+    p.add_argument(
+        "--restore", metavar="CHECKPOINT-SET",
+        help="Return every target to the state a previous --commit recorded before it wrote (see --list-checkpoints)",
+    )
+    p.add_argument(
+        "--list-checkpoints", action="store_true", default=False,
+        help="List the checkpoint sets --commit has left behind for this deployment",
+    )
     p.add_argument(
         "--resolve-selection",
         action="append",
@@ -192,6 +211,8 @@ def main_upgrade(
     roots = resolve_repo_roots(
         repo_root=args.repo_root, workspace=args.workspace, allow_empty=side.active
     )
+    if args.restore or args.list_checkpoints:
+        return _restore_or_list(args, side, roots)
     version = software_version()
     targets = [RepoUpgradeTarget(FilesystemRepoUpgradeView(r), FilesystemRepoUpgradeWriter(r)) for r in roots]
 
@@ -255,6 +276,22 @@ def main_upgrade(
         note_dirty_overlap(root, repo_report.touched_locations)
         print(f"Backup/branch recommendation: commit or branch {root} before proceeding.", file=sys.stderr)
 
+    # Phase 5b — the safety point, after the gate and before the first write; skipped when there
+    # is nothing to write, so a current deployment stays a true no-op under --commit.
+    base = checkpoint_base(
+        workspace=args.workspace,
+        settings_document=side.manifest.settings_document.path if side.manifest else None,
+        roots=roots,
+    )
+    try:
+        checkpoint_set = (
+            take_checkpoint_set(roots, side.handles, base)
+            if _has_work(gate_report, gate_operational) else None
+        )
+    except CheckpointFailed as exc:
+        print(f"INFRASTRUCTURE FAILURE — {exc}", file=sys.stderr)
+        return EXIT_INFRASTRUCTURE_FAILURE
+
     # Phase 6 — ordered per-target apply: repositories first (existing semantics,
     # grandfathered per-repo isolation), then operational targets in kind order.
     repo_report_applied = apply_workspace(targets, registry=registry, software_version=version)
@@ -275,53 +312,61 @@ def main_upgrade(
             repository_step_errors=repo_report_applied.has_errors,
         )
     )
+    if outcome == "success" and checkpoint_set is not None:
+        for pruned in prune_previous_sets(base, keep=checkpoint_set.id):
+            print(f"  checkpoint set {pruned}: pruned (one is kept)", file=sys.stderr)
     emit_deployment(
         DeploymentUpgradeReport(
             repos=repo_report_applied,
             operational_targets=operational_applied,
             preflight=preflight,
             outcome=outcome,
+            checkpoint_set=checkpoint_set,
         ),
         args.json_output,
     )
     return _EXIT_BY_OUTCOME[outcome]
 
 
-def refresh_generated_includes(roots: "list[Path]") -> list[str]:
-    """Rewrite the generated ArchiMate include files in every root, reporting what was refreshed.
+def _has_work(gate_report, gate_operational) -> bool:  # type: ignore[no-untyped-def]
+    """Whether this commit will write anything: an auto-migratable repository finding or a pending target."""
+    return any(
+        result.finding.auto_migratable
+        for repo_report in gate_report.per_repo
+        for result in repo_report.results
+    ) or any(report.state == "pending" for report in gate_operational)
 
-    `_archimate-stereotypes.puml` and its siblings are generated: every diagram `!include`s them and
-    their content is the ontology's declarations rendered into skinparams and macros. So a release
-    that changes a declaration reaches an existing repository only when these are rewritten — and
-    nothing rewrote them. `arch-init` regenerates them and CI checks them; the command whose job is
-    bringing a repository to the current version did not, so 0.7.1's grouping notation, and every
-    appearance change before it, stopped at the repository boundary.
 
-    Not an upgrade step. A step's replacement content comes from the domain, and this content is
-    generated from the module registry, which an application-layer step may not reach. The CLI is the
-    composition root that already does this in `arch-init`.
-
-    Called *after* the steps apply, because a step may change what the generator would emit — a
-    profile reconciliation, say — and regenerating first would bake the pre-migration answer in.
-
-    A root with no diagram catalogue is skipped rather than failed: an upgrade runs over every
-    configured root and one of them may legitimately have none.
-    """
-    from src.infrastructure.rendering.generate_static_includes import (  # noqa: PLC0415
-        generate_static_includes,
+def _restore_or_list(args: argparse.Namespace, side: DeploymentSide, roots: list[Path]) -> int:
+    """`--list-checkpoints` and `--restore`: both act on the recorded sets, neither migrates."""
+    base = checkpoint_base(
+        workspace=args.workspace,
+        settings_document=side.manifest.settings_document.path if side.manifest else None,
+        roots=roots,
     )
-
-    refreshed: list[str] = []
-    for root in roots:
-        if not (root / "diagram-catalog").is_dir():
-            continue
-        try:
-            generate_static_includes(root)
-        except Exception as exc:  # noqa: BLE001 - one unwritable root must not fail the upgrade
-            print(f"  static includes: skipped for {root} ({exc})", file=sys.stderr)
-            continue
-        refreshed.append(str(root))
-    return refreshed
+    if args.list_checkpoints:
+        sets = list_checkpoint_sets(base)
+        if args.json_output:
+            print(json.dumps([s.to_dict() for s in sets], indent=2))
+        else:
+            print(f"Checkpoint sets under {base}:" if sets else f"No checkpoint sets under {base}.")
+            for s in sets:
+                print(f"  {s.id}: {len(s.repositories)} repositor{'y' if len(s.repositories) == 1 else 'ies'}, "
+                      f"{len(s.operational)} operational target(s)")
+        return 0
+    checkpoint_set = load_checkpoint_set(base, args.restore)
+    for repository in checkpoint_set.repositories:
+        _guard_backend_not_serving(Path(repository.root))
+    done = restore_checkpoint_set(
+        checkpoint_set, side.handles, rebuild_index=lambda root: FilesystemRepoUpgradeWriter(root).rebuild_index()
+    )
+    if args.json_output:
+        print(json.dumps({"restored": checkpoint_set.to_dict(), "actions": done}, indent=2))
+    else:
+        print(f"Restored checkpoint set {checkpoint_set.id}:")
+        for line in done:
+            print(f"  {line}")
+    return 0
 
 
 def _preflight_with_repairs(side: DeploymentSide, repairs: list[str]) -> DeploymentPreflight:

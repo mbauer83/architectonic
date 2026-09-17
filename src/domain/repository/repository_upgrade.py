@@ -122,6 +122,7 @@ class RepoUpgradeReport:
                     "description": r.finding.description,
                     "severity": r.finding.severity,
                     "auto_migratable": r.finding.auto_migratable,
+                    "blocks_commit": r.finding.blocks_commit,
                     "rewrite_summary": r.finding.rewrite_summary,
                     "manual_instructions": r.finding.manual_instructions,
                     "outcome": r.outcome,
