@@ -1,0 +1,6 @@
+# Keys that may sign a release tag of this project, in OpenSSH allowed_signers format.
+#
+# `arch-update` verifies a fetched release tag against the copy of this file the *installed*
+# version carries, so a key must ship in a release before any tag is signed with it. Adding or
+# retiring a key is therefore a reviewed commit, never a flag on the command line.
+mbauer.mphil@googlemail.com namespaces="git" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMwIj6r2mb5IxDZ3DvZd6tvIvBoGCEwoPuIKoEKREoXW
