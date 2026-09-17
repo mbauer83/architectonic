@@ -80,7 +80,7 @@ def read_backend_state(start: Path | None = None) -> BackendState | None:
     return BackendState(pid=pid, port=port)
 
 
-def _process_exists(pid: int) -> bool:
+def process_exists(pid: int) -> bool:
     try:
         os.kill(pid, 0)
     except ProcessLookupError:

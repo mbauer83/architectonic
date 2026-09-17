@@ -301,7 +301,7 @@ def test_status_does_not_trust_a_record_whose_port_a_neighbour_now_holds(monkeyp
     theirs = _workspace(tmp_path, name="theirs")
     _record_backend(ours, port=8000, pid=4242)
     _install_machine(monkeypatch, {8000: theirs})
-    monkeypatch.setattr(backend_control, "_process_exists", lambda pid: True)
+    monkeypatch.setattr(backend_control, "process_exists", lambda pid: True)
     monkeypatch.setattr(backend_control, "_read_process_state", lambda pid: "S")
     monkeypatch.setattr(
         backend_control,
@@ -397,7 +397,7 @@ def test_stop_reaches_our_own_relocated_backend_without_a_record(monkeypatch, tm
     )
     signalled: list[int] = []
     monkeypatch.setattr(backend_control.os, "kill", lambda pid, sig: signalled.append(pid))
-    monkeypatch.setattr(backend_control, "_process_exists", lambda pid: False)
+    monkeypatch.setattr(backend_control, "process_exists", lambda pid: False)
 
     result = backend_control.stop_backend(cwd=ours)
 
@@ -412,7 +412,7 @@ def test_a_recorded_backend_is_stopped_even_when_the_preferred_port_moved(monkey
     _install_machine(monkeypatch, {8188: ours})
     signalled: list[int] = []
     monkeypatch.setattr(backend_control.os, "kill", lambda pid, sig: signalled.append(pid))
-    monkeypatch.setattr(backend_control, "_process_exists", lambda pid: False)
+    monkeypatch.setattr(backend_control, "process_exists", lambda pid: False)
 
     result = backend_control.stop_backend(cwd=ours)
 
@@ -426,7 +426,7 @@ def test_a_port_named_on_the_command_line_overrides_the_record(monkeypatch, tmp_
     _record_backend(ours, port=8188, pid=4242)
     _install_machine(monkeypatch, {})
     monkeypatch.setattr(backend_control, "find_arch_backend_instances", lambda: [])
-    monkeypatch.setattr(backend_control, "_process_exists", lambda pid: True)
+    monkeypatch.setattr(backend_control, "process_exists", lambda pid: True)
 
     result = backend_control.stop_backend(cwd=ours, port=9999)
 

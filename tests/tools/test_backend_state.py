@@ -2,7 +2,7 @@
 
 Covers: _state_dir (env var, file-based start), backend_log_path,
 read_backend_state (missing file, valid, invalid JSON, wrong types),
-_process_exists, write_backend_state, remove_backend_state.
+process_exists, write_backend_state, remove_backend_state.
 """
 
 from __future__ import annotations
@@ -16,10 +16,10 @@ from unittest.mock import patch
 
 from src.infrastructure.backend.backend_process import _read_process_state
 from src.infrastructure.backend.backend_state import (
-    _process_exists,
     _state_dir,
     backend_log_path,
     backend_state_path,
+    process_exists,
     read_backend_state,
     remove_backend_state,
     remove_own_backend_state,
@@ -125,17 +125,17 @@ class TestReadBackendState:
         assert result is None
 
 
-# ── _process_exists ───────────────────────────────────────────────────────────
+# ── process_exists ───────────────────────────────────────────────────────────
 
 
 class TestProcessExists:
     def test_current_process_exists(self) -> None:
-        result = _process_exists(os.getpid())
+        result = process_exists(os.getpid())
         assert result is True
 
     def test_nonexistent_pid_returns_false(self) -> None:
         # PID 2^30 is unlikely to exist
-        result = _process_exists(2**30)
+        result = process_exists(2**30)
         assert result is False
 
     def test_zombie_counts_as_gone(self) -> None:
@@ -161,7 +161,7 @@ class TestProcessExists:
             while _read_process_state(child.pid) != "Z" and time.monotonic() < deadline:
                 time.sleep(0.01)
             assert _read_process_state(child.pid) == "Z"
-            assert _process_exists(child.pid) is False
+            assert process_exists(child.pid) is False
         finally:
             child.wait()
 

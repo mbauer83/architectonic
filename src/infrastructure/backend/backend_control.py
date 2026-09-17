@@ -37,8 +37,8 @@ from src.infrastructure.backend.backend_process import (
     find_arch_backend_instances,
 )
 from src.infrastructure.backend.backend_state import (
-    _process_exists,
     backend_log_path,
+    process_exists,
     read_backend_state,
     remove_backend_state,
 )
@@ -53,7 +53,7 @@ def _wait_for_exit(pid: int, *, timeout_s: float, interval: float) -> bool:
     """Poll until ``pid`` is gone or ``timeout_s`` elapses. Returns whether it exited."""
     deadline = time.monotonic() + timeout_s
     while time.monotonic() < deadline:
-        if not _process_exists(pid):
+        if not process_exists(pid):
             return True
         time.sleep(interval)
     return False
@@ -114,7 +114,7 @@ def backend_status(*, cwd: Path | None = None, port: int | None = None) -> dict[
 
     pid = state["pid"]
     port = state["port"]
-    if not _process_exists(pid):
+    if not process_exists(pid):
         logger.warning("Removing stale backend state for missing pid %s", pid)
         remove_backend_state(cwd)
         return {"running": False, "reason": "stale_pid", "pid": pid, "port": port}
@@ -255,7 +255,7 @@ def stop_backend(
         # preferred port: a workspace whose default was taken serves on a derived one. Only a port
         # named on this command line overrides the record — comparing against the *resolved* port
         # instead left `--stop` unable to stop a relocated backend at all.
-        if not _commanded_elsewhere(state_port, cwd=cwd, explicit_port=port) or not _process_exists(pid):
+        if not _commanded_elsewhere(state_port, cwd=cwd, explicit_port=port) or not process_exists(pid):
             return _stop_pid(pid, cwd=cwd, timeout_s=timeout_s, port=state_port)
 
     instances = find_arch_backend_instances()
@@ -371,7 +371,7 @@ def stop_backend(
         logger.info("Stop request found no backend state and no matching arch-backend process")
         return {"stopped": False, "reason": "not_running"}
 
-    if _process_exists(state["pid"]):
+    if process_exists(state["pid"]):
         # The record names a live process on a port this request did not ask about — which happens
         # when `--port` names another one. Calling that record stale and deleting it would lose the
         # only pointer to a running backend, on the strength of a question about somewhere else.

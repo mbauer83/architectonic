@@ -266,7 +266,7 @@ def verify_credentials(targets: list[Path], env: dict[str, str]) -> list[tuple[P
     return failures
 
 
-def _has_env_credentials() -> bool:
+def has_env_credentials() -> bool:
     """True when git credentials come from the environment (so a rejection can't be re-prompted)."""
     if os.environ.get("ARCH_GIT_SSH_PASSWORD"):
         return True
@@ -295,7 +295,7 @@ def collect_verified_credentials(targets: list[Path | str]) -> GitCredentials | 
             if not failures:
                 return creds
             reason = "; ".join(f"{path}: {r}" for path, r in failures)
-            if not sys.stdin.isatty() or _has_env_credentials():
+            if not sys.stdin.isatty() or has_env_credentials():
                 raise GitCredentialError(
                     f"Git authentication was rejected with the supplied credentials ({reason}). "
                     "Fix the credentials and restart."

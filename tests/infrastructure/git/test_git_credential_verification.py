@@ -79,7 +79,7 @@ class TestCollectVerifiedCredentials:
         monkeypatch.setattr(git_auth, "create_askpass_script", lambda: tmp_path / "askpass.sh")
         # env is the passphrase so verify can distinguish which creds it was handed.
         monkeypatch.setattr(git_auth, "build_git_env", lambda c, a: {"pp": c.ssh_passphrase or ""})
-        monkeypatch.setattr(git_auth, "_has_env_credentials", lambda: env)
+        monkeypatch.setattr(git_auth, "has_env_credentials", lambda: env)
         monkeypatch.setattr(sys, "stdin", _FakeStdin(tty))
 
     def test_returns_none_when_no_credentials_needed(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:

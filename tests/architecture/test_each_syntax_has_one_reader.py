@@ -117,7 +117,42 @@ _STEREOTYPE_STYLING_HEAD = re.compile(r"rectangle<<")
 #: reader hands the prefix to `startswith` or `split` as exactly this string and nothing else.
 _REFERENCE_TERM_PREFIX = re.compile(r"\A(doc|diagram):\Z")
 
+#: The release version form, as a regex source would spell it: three integer groups joined by
+#: escaped dots. A second reader of `MAJOR.MINOR.PATCH` is a second opinion on how two versions order.
+_RELEASE_VERSION_FORM = re.compile(r"\\d\+\\\.\\d\+\\\.\\d\+")
+
+#: The digest half of a `SHA256SUMS` line as a regex source spells it: sixty-four hex characters.
+_CHECKSUM_DIGEST = re.compile(r"\[0-9a-f(A-F)?\]\{64\}")
+
 SYNTAX_READERS: tuple[SyntaxReader, ...] = (
+    SyntaxReader(
+        syntax="the release version — `MAJOR.MINOR.PATCH`, with or without its tag's `v`",
+        owners=(Path("src/application/software_update/version.py"),),
+        instead=(
+            "`src.application.software_update.version`: `parse_release_version` for the reading, "
+            "`ReleaseVersion` for ordering and `.tag` for the spelling"
+        ),
+        incident=(
+            "registered with its owner rather than after an incident: `arch-update` compares the "
+            "installed version with a release's, and a second reading that ordered `0.10` before "
+            "`0.9` lexically would offer a downgrade as an update"
+        ),
+        literal_probe=_RELEASE_VERSION_FORM,
+    ),
+    SyntaxReader(
+        syntax="a `SHA256SUMS` line — the digest, two spaces, the file name",
+        owners=(Path("src/application/software_update/release.py"),),
+        instead=(
+            "`src.application.software_update.release.ChecksumStatement.parse`, and `verify_asset` to "
+            "compare bytes against every digest a release states"
+        ),
+        incident=(
+            "registered with its owner: the file is one of two independent digest statements an "
+            "installed asset must agree with, and a reader that accepted a shorter hex run would "
+            "accept a truncated statement"
+        ),
+        literal_probe=_CHECKSUM_DIGEST,
+    ),
     SyntaxReader(
         syntax="what counts as a frontmatter block",
         owners=(Path("src/domain/repository/frontmatter.py"),),

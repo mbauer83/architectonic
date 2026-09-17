@@ -74,6 +74,11 @@ _DEFAULTS: dict[str, dict[str, object]] = {
             "refs/heads/main/guidance.yaml"
         ),
     },
+    "update": {
+        # Where `arch-update` reads published releases from, as GitHub's `owner/repo`. A fork or a
+        # mirror changes this one value; nothing is contacted until the command is run.
+        "repository": "mbauer83/architectonic",
+    },
     "viewpoints": {
         "execution_max_entities": 500,
         "execution_default_entity_limit_mcp": 200,
@@ -170,7 +175,12 @@ def load_settings() -> dict:
     assurance_section: _SettingsSection = assurance_raw if isinstance(assurance_raw, dict) else {}
     assurance = {**_DEFAULTS["assurance"], **assurance_section}
 
+    update_raw = data.get("update")
+    update_section: _SettingsSection = update_raw if isinstance(update_raw, dict) else {}
+    update = {**_DEFAULTS["update"], **update_section}
+
     return {
+        "update": update,
         "backend": backend,
         "diagrams": diagrams,
         "repo_init": repo_init,
@@ -333,6 +343,15 @@ def guidance_default_source() -> str:
     if not isinstance(guidance, dict):
         return ""
     value = guidance.get("default_source", "")
+    return value if isinstance(value, str) else ""
+
+
+def update_repository() -> str:
+    """The GitHub `owner/repo` whose releases `arch-update` reads. Operational default only."""
+    update = load_settings().get("update", {})
+    if not isinstance(update, dict):
+        return ""
+    value = update.get("repository", "")
     return value if isinstance(value, str) else ""
 
 

@@ -49,6 +49,7 @@ arch-mcp-stdio-assurance-read = "src.infrastructure.mcp.arch_mcp_stdio_assurance
 arch-mcp-stdio-assurance-write = "src.infrastructure.mcp.arch_mcp_stdio_assurance:main_write"
 arch-import-guidance = "src.infrastructure.cli.arch_import_guidance:main"
 arch-exchange = "src.infrastructure.cli.arch_exchange:main"
+arch-update = "src.infrastructure.cli.arch_update:main"
 
 [build-system]
 requires = ["hatchling"]
