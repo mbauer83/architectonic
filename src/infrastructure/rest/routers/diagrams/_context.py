@@ -22,6 +22,7 @@ from src.domain.diagrams.element_correspondence import element_correspondences
 from src.domain.modules.module_types import EntityTypeName
 from src.domain.ontology_representation.artifact_types import DiagramRecord, EntityRecord
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
+from src.infrastructure.rendering.archimate_occurrences import drawn_labels_by_instance
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers.viewpoints._scope import resolve_viewpoint_scope
 
@@ -53,7 +54,12 @@ def puml_contains(d: DiagramRecord, *aliases: str) -> bool:
         return False
 
 
-def entity_display_item(rec: EntityRecord, catalogs: RuntimeCatalogs) -> dict[str, Any]:
+def element_label(rec: EntityRecord, catalogs: RuntimeCatalogs) -> str:
+    """What the element is called where it is drawn: its display block's label, else its name.
+
+    One resolution for both the picker row and the diagram's own entity row, so the two cannot show
+    the same element under two labels.
+    """
     ontology = catalogs.module_catalog.ontology_for_entity_type(EntityTypeName(rec.artifact_type))
     section_id = ontology.display_section_id if ontology else "archimate"
     arch_data: dict[str, Any] = {}
@@ -62,6 +68,10 @@ def entity_display_item(rec: EntityRecord, catalogs: RuntimeCatalogs) -> dict[st
         parsed = ontology.extract_display_section(raw_block)
         if parsed:
             arch_data = parsed
+    return str(arch_data.get("label") or rec.name)
+
+
+def entity_display_item(rec: EntityRecord, catalogs: RuntimeCatalogs) -> dict[str, Any]:
     return {
         "artifact_id": rec.artifact_id,
         "name": rec.name,
@@ -71,7 +81,7 @@ def entity_display_item(rec: EntityRecord, catalogs: RuntimeCatalogs) -> dict[st
         "status": rec.status,
         "display_alias": rec.display_alias,
         "element_type": rec.artifact_type,
-        "element_label": str(arch_data.get("label") or rec.name),
+        "element_label": element_label(rec, catalogs),
         # Diagram-owned constructs (swimlanes, lifelines, actions, …) are pickable in
         # diagram contexts but must never outrank — or be confusable with — model
         # entities, so every display surface can partition on this flag.
@@ -103,6 +113,7 @@ def diagram_entities_and_puml(
         if is_owned or (rec.display_alias and normalize_puml_alias(rec.display_alias) in aliases):
             row = s.entity_to_summary(rec, standing=standing_of(standing_subject(rec)))
             row["display_alias"] = rec.display_alias
+            row["element_label"] = element_label(rec, catalogs)
             declared = correspondences.get(rec.display_alias)
             if declared:
                 row["bindings"] = [
@@ -221,6 +232,10 @@ def diagram_context_payload(repo: Any, diag_rec: DiagramRecord, catalogs: Runtim
         "diagram": diagram,
         "entities": entities,
         "connections": connections,
+        # What each instance is called in the body as it stands, by instance id. Read off the body
+        # rather than derived, because a hand-laid body may call an element something its record
+        # does not — and an editor that cannot see that would revert it on the first save.
+        "drawn_labels": drawn_labels_by_instance(puml, diagram_entities, in_diagram),
         "candidate_connections": candidate_connections_for_entities(repo, entity_ids),
         "suggested_entities": hop_suggestions(repo, entity_ids, catalogs, max_hops=2, limit_per_hop=25),
         "explicit_connection_pairs": [list(pair) for pair in sorted(explicit_pairs)],

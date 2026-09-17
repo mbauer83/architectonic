@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { EntityDisplayInfo, EntityContextConnection } from '../../domain'
 import ArchimateTypeGlyph from './ArchimateTypeGlyph.vue'
+import InstanceLabelEditor from './InstanceLabelEditor.vue'
 import RelatedEntityPanel from './RelatedEntityPanel.vue'
+import RowConnectionsPanel from './RowConnectionsPanel.vue'
 import { toGlyphKey } from '../lib/glyphKey'
+import { displayLabelOf, drawnLabelFor } from '../lib/archimateDisplayLabels'
 import { drawingKey } from '../lib/archimateOccurrences'
 import { connectionsByType, type ConnTypeGroup } from '../lib/rowConnections'
 
@@ -16,7 +19,7 @@ export type EntityRowActionKind = 'remove' | 'mark-remove'
  * One row is one *drawing* of an entity, not one entity.
  *
  * An entity drawn twice gets two rows, each owning its own connections — which is the only reason
- * to draw it twice. `occurrenceId` is null for the base drawing, matching what the diagram means by
+ * to draw it twice. `occurrenceId` is null for the base instance, matching what the diagram means by
  * saying nothing about a connection's routing.
  */
 export interface EntityRow {
@@ -25,7 +28,7 @@ export interface EntityRow {
   badgeText?: string
   actionKind?: EntityRowActionKind
   actionTitle?: string
-  /** Null for the entity's base drawing; an occurrence id for an additional one. */
+  /** Null for the entity's base instance; an occurrence id for an additional one. */
   occurrenceId?: string | null
   /** Which drawing this is, for the reader: "2nd", "3rd". Absent on the base row. */
   occurrenceOrdinal?: string
@@ -43,20 +46,26 @@ const props = defineProps<{
   diagramEntities?: Record<string, unknown>
   /** Whether this diagram type can draw an entity more than once. */
   occurrencesSupported?: boolean
-  /** The box a drawing sits in, if any — without it a boxed drawing reads as a loose one. */
-  groupLabelOf?: (drawingId: string) => string | undefined
+  /** The box an instance sits in, if any — without it a boxed drawing reads as a loose one. */
+  groupLabelOf?: (instanceId: string) => string | undefined
+  /** Whether an instance on this diagram type can carry its own label. */
+  labelsSupported?: boolean
+  /** What the saved body calls each instance, by instance id — a hand-laid body may differ from the element. */
+  drawnLabels?: Record<string, string>
 }>()
 
 const emit = defineEmits<{
   toggleConnections: [rowKey: string]
   toggleRelated: [rowKey: string]
-  /** The connection, and the drawing the click came from — which endpoint it routes follows. */
+  /** The connection, and the instance the click came from — which endpoint it routes follows. */
   toggleConnection: [connectionId: string, entityId: string, occurrenceId: string | null]
-  /** The neighbour, plus the drawing it should be connected to. */
+  /** The neighbour, plus the instance it should be connected to. */
   addRelatedEntity: [entity: EntityDisplayInfo, viaEntityId: string, occurrenceId: string | null]
   entityAction: [entityId: string]
   addOccurrence: [entity: EntityDisplayInfo]
   removeOccurrence: [occurrenceId: string]
+  /** The label this diagram gives the instance; `null` withdraws it so the element speaks for itself. */
+  setDisplayLabel: [instanceId: string, label: string | null]
 }>()
 
 const entityNames = computed(() =>
@@ -83,6 +92,27 @@ const hasExcludedConnections = (row: EntityRow) =>
   getConnsByType(row).some(([, group]) => group.excluded.length > 0)
 
 const actionLabel = (row: EntityRow) => row.actionKind === 'mark-remove' ? '−' : '×'
+
+// ── The label an instance carries here ─────────────────────────────────────────
+
+const instanceIdOf = (row: EntityRow): string => row.occurrenceId ?? row.entity.artifact_id
+const elementLabelOf = (row: EntityRow): string => row.entity.element_label || row.entity.name
+const carriedLabel = (row: EntityRow): string =>
+  drawnLabelFor(props.diagramEntities ?? {}, props.drawnLabels ?? {}, instanceIdOf(row), row.entity)
+const labelIsStated = (row: EntityRow): boolean =>
+  displayLabelOf(props.diagramEntities ?? {}, instanceIdOf(row)) !== undefined
+/** Shown beside the name only when it says something the name does not. */
+const labelDiffers = (row: EntityRow): boolean => carriedLabel(row) !== elementLabelOf(row)
+
+const editingLabelKey = ref<string | null>(null)
+const toggleLabelEditor = (row: EntityRow): void => {
+  const key = rowKey(row)
+  editingLabelKey.value = editingLabelKey.value === key ? null : key
+}
+const applyLabel = (row: EntityRow, label: string | null): void => {
+  emit('setDisplayLabel', instanceIdOf(row), label)
+  editingLabelKey.value = null
+}
 </script>
 
 <template>
@@ -122,20 +152,32 @@ const actionLabel = (row: EntityRow) => row.actionKind === 'mark-remove' ? '−'
               :size="14"
             />
           </span>
-          <!-- An occurrence row sits under the entity it copies, so repeating the name says
-               nothing; what the reader needs there is which copy it is and where it sits. -->
-          <span
-            class="entity-name"
-            :class="{ 'entity-name--occ': row.occurrenceId }"
-          >{{ row.occurrenceId ? `${row.occurrenceOrdinal} occurrence` : row.entity.name }}</span>
-          <span
-            v-if="groupLabelOf?.(row.occurrenceId ?? row.entity.artifact_id)"
-            class="entity-group"
-          >in: {{ groupLabelOf(row.occurrenceId ?? row.entity.artifact_id) }}</span>
-          <span
-            v-if="row.badgeText"
-            class="entity-badge"
-          >{{ row.badgeText }}</span>
+          <span class="entity-text">
+            <span class="entity-line">
+              <!-- An occurrence row sits under the entity it copies, so repeating the name says
+                   nothing; what the reader needs there is which copy it is and where it sits. -->
+              <span
+                class="entity-name"
+                :class="{ 'entity-name--occ': row.occurrenceId }"
+                :title="row.entity.name"
+              >{{ row.occurrenceId ? `${row.occurrenceOrdinal} occurrence` : row.entity.name }}</span>
+              <span
+                v-if="groupLabelOf?.(row.occurrenceId ?? row.entity.artifact_id)"
+                class="entity-group"
+              >in: {{ groupLabelOf(row.occurrenceId ?? row.entity.artifact_id) }}</span>
+              <span
+                v-if="row.badgeText"
+                class="entity-badge"
+              >{{ row.badgeText }}</span>
+            </span>
+            <!-- What the box says here, when that is not the element's own name: its own line, so
+                 the name above keeps the width it had. -->
+            <span
+              v-if="labelsSupported && labelDiffers(row)"
+              class="entity-label"
+              :title="`Labelled “${carriedLabel(row)}” on this diagram`"
+            >as: {{ carriedLabel(row) }}</span>
+          </span>
         </button>
         <button
           class="related-btn"
@@ -147,6 +189,18 @@ const actionLabel = (row: EntityRow) => row.actionKind === 'mark-remove' ? '−'
         >
           Related
           <span class="related-count">{{ relatedEntitiesById[row.entity.artifact_id]?.length ?? 0 }}</span>
+        </button>
+        <button
+          v-if="labelsSupported"
+          class="label-btn"
+          :class="{ 'label-btn--stated': labelIsStated(row), expanded: editingLabelKey === rowKey(row) }"
+          :title="labelIsStated(row)
+            ? 'This diagram labels the instance itself; change or withdraw that label'
+            : 'Label this instance for this diagram only'"
+          :aria-label="`Label ${carriedLabel(row)} on this diagram`"
+          @click="toggleLabelEditor(row)"
+        >
+          ✎
         </button>
         <button
           v-if="occurrencesSupported && !row.occurrenceId"
@@ -174,76 +228,21 @@ const actionLabel = (row: EntityRow) => row.actionKind === 'mark-remove' ? '−'
         </button>
       </div>
 
-      <div
+      <InstanceLabelEditor
+        v-if="editingLabelKey === rowKey(row)"
+        :current="carriedLabel(row)"
+        :element-label="elementLabelOf(row)"
+        :stated="labelIsStated(row)"
+        @apply="applyLabel(row, $event)"
+        @cancel="editingLabelKey = null"
+      />
+
+      <RowConnectionsPanel
         v-if="expandedConnectionIdSet.has(rowKey(row))"
-        class="entity-panel"
-      >
-        <div
-          v-if="!getConnsByType(row).length"
-          class="empty-msg"
-        >
-          {{ row.occurrenceId
-            ? 'No unclaimed connections — each is already drawn on another occurrence of this entity.'
-            : 'No connections to currently included entities.' }}
-        </div>
-        <div
-          v-for="[connType, group] in getConnsByType(row)"
-          :key="connType"
-          class="conn-type-block"
-        >
-          <div class="conn-type-label">
-            {{ connType }}
-          </div>
-          <div class="conn-cols">
-            <div class="conn-col">
-              <div class="col-header col-header--included">
-                Included
-              </div>
-              <button
-                v-for="entry in group.included"
-                :key="entry.conn.artifact_id"
-                class="conn-entry conn-entry--included"
-                title="Exclude connection"
-                @click="emit(
-                  'toggleConnection', entry.conn.artifact_id, row.entity.artifact_id, row.occurrenceId ?? null,
-                )"
-              >
-                <span class="dir-arrow">{{ entry.direction === 'out' ? '→' : '←' }}</span>
-                <span class="other-name">{{ entry.otherName }}</span>
-              </button>
-              <div
-                v-if="!group.included.length"
-                class="col-empty"
-              >
-                —
-              </div>
-            </div>
-            <div class="conn-col">
-              <div class="col-header">
-                Excluded
-              </div>
-              <button
-                v-for="entry in group.excluded"
-                :key="entry.conn.artifact_id"
-                class="conn-entry conn-entry--excluded"
-                :title="row.occurrenceId ? 'Draw this connection on this occurrence' : 'Include connection'"
-                @click="emit(
-                  'toggleConnection', entry.conn.artifact_id, row.entity.artifact_id, row.occurrenceId ?? null,
-                )"
-              >
-                <span class="dir-arrow">{{ entry.direction === 'out' ? '→' : '←' }}</span>
-                <span class="other-name">{{ entry.otherName }}</span>
-              </button>
-              <div
-                v-if="!group.excluded.length"
-                class="col-empty"
-              >
-                —
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+        :groups="getConnsByType(row)"
+        :occurrence="!!row.occurrenceId"
+        @toggle="emit('toggleConnection', $event, row.entity.artifact_id, row.occurrenceId ?? null)"
+      />
 
       <RelatedEntityPanel
         v-if="expandedRelatedIdSet.has(rowKey(row))"
@@ -268,18 +267,28 @@ const actionLabel = (row: EntityRow) => row.actionKind === 'mark-remove' ? '−'
 .toggle-btn,
 .row-action-btn,
 .related-btn,
-.conn-entry,
 .include-btn { border: none; background: none; cursor: pointer; }
 .toggle-btn { color: #9ca3af; font-size: 10px; line-height: 1; padding: 2px; transition: transform .12s; }
 .toggle-btn.expanded { transform: rotate(90deg); }
 .dd-glyph { display: flex; align-items: center; color: #4b5563; flex-shrink: 0; }
 .entity-name,
-.related-name,
-.other-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.related-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .entity-group {
   font-size: 10px; font-weight: 600; color: #0369a1; background: #e0f2fe;
   border-radius: 999px; padding: 1px 7px; white-space: nowrap;
 }
+.entity-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.entity-line { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.entity-label {
+  font-size: 11px; font-weight: 500; color: #6d28d9;
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.label-btn {
+  width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0; border: none; cursor: pointer;
+  color: #9ca3af; background: none; font-size: 13px; line-height: 1;
+}
+.label-btn:hover, .label-btn.expanded { color: #6d28d9; background: #f5f3ff; }
+.label-btn--stated { color: #6d28d9; }
 .entity-row--occurrence { margin-left: 18px; border-left: 2px solid #ddd6fe; }
 .occ-btn {
   padding: 2px 8px; font-size: 11px; color: #6d28d9; background: #f5f3ff;
@@ -304,24 +313,6 @@ const actionLabel = (row: EntityRow) => row.actionKind === 'mark-remove' ? '−'
   color: #dc2626; background: #fef2f2; font-size: 14px; line-height: 1;
 }
 .row-action-btn:hover { background: #fee2e2; }
-.entity-panel { padding: 10px; border-top: 1px solid #f3f4f6; background: #fafafa; }
-.entity-panel--related { background: #f8fbff; }
-.empty-msg { font-size: 12px; color: #9ca3af; }
-.conn-type-block + .conn-type-block { margin-top: 8px; }
-.conn-type-label { font-size: 10px; font-weight: 700; color: #6366f1; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
-.conn-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.conn-col { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.col-header { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #6b7280; }
-.col-header--included { color: #059669; }
-.conn-entry {
-  display: flex; align-items: center; gap: 6px; width: 100%; text-align: left; padding: 6px 8px; border-radius: 6px; font-size: 12px;
-}
-.conn-entry--included { background: #ecfdf5; color: #1f2937; }
-.conn-entry--included:hover { background: #d1fae5; }
-.conn-entry--excluded { background: #fff; color: #6b7280; border: 1px solid #e5e7eb; }
-.conn-entry--excluded:hover { background: #f9fafb; color: #1f2937; }
-.dir-arrow { color: #6b7280; flex-shrink: 0; }
-.col-empty { font-size: 11px; color: #d1d5db; padding: 6px 8px; }
 .related-list { display: flex; flex-direction: column; gap: 6px; }
 .related-row {
   display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 8px;

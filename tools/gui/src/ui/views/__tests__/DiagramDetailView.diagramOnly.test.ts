@@ -36,6 +36,7 @@ const gsnNodeSummaryRaw = {
   // The diagram read resolves the alias each entity is drawn under, and every row carries it —
   // it is what the SVG click targets are matched on.
   display_alias: 'g1',
+  element_label: 'The system is acceptably secure',
 }
 
 const gsnNodeDetailRaw = {
@@ -101,6 +102,7 @@ const makeEntity = (artifactId: string, display_alias: string, host_diagram_id?:
   baseline_standing: { kind: 'enterprise-baseline' },
   group: 'uncategorized',
   display_alias,
+  element_label: 'Test',
   host_diagram_id,
 })
 

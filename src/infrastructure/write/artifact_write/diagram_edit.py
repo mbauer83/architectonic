@@ -11,6 +11,7 @@ from src.application.repo_path_helpers import diagram_source_root, resolve_diagr
 from src.application.verification.artifact_verifier import ArtifactVerifier
 
 from ._diagram_group_move import _verification_to_dict, commit_diagram_write
+from ._diagram_instance_labels import relabelled_instances
 from .boundary import modification_stamp
 from .coerce import as_optional_str_list
 from .diagram_body_preparation import (
@@ -349,6 +350,11 @@ def edit_diagram(
         # about a change to one. The only route by which a manual-layout diagram hears at all.
         puml_body = _restate_generated_declarations(puml_body, repo_root, diagram_type)
 
+    # And what the *diagram* states about its instances: a label in `diagram-entities.display_labels`
+    # reaches a rendered body through the renderer, and reaches a body that arrived already written —
+    # supplied by the caller, or kept as the author left it — only here.
+    puml_body = relabelled_instances(puml_body, eff_diagram_entities, verifier)
+
     # One reconcile, above both ways a body arrives. They differ only in how the fresh reference set
     # was obtained — rendered from `diagram-entities`, or read off a supplied `puml` — and both end
     # by handing it to the same question, so the answer is stated once.
@@ -415,3 +421,4 @@ def edit_diagram(
         warnings=warnings,
         dry_run=dry_run,
     )
+

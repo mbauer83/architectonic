@@ -1,4 +1,5 @@
 import type { EntityDisplayInfo, DiagramContextEntity } from '../../domain'
+import { withoutDisplayLabels } from './archimateDisplayLabels'
 
 export interface ArchimateOccurrence {
   id: string
@@ -31,14 +32,14 @@ export const occurrenceItems = (diagramEntities: Record<string, unknown>): Archi
 export const drawingKey = (entityId: string, occurrenceId: string | null): string =>
   `${entityId}::${occurrenceId ?? 'base'}`
 
-/** Every extra drawing of *entityId*, in the order the diagram declares them. */
+/** Every extran instance of *entityId*, in the order the diagram declares them. */
 export const occurrencesOf = (
   diagramEntities: Record<string, unknown>,
   entityId: string,
 ): ArchimateOccurrence[] =>
   occurrenceItems(diagramEntities).filter((item) => item.backing_entity_id === entityId)
 
-/** "2nd", "3rd", … — how a drawing is named to the reader. The base drawing is unnamed. */
+/** "2nd", "3rd", … — how an instance is named to the reader. The base instance is unnamed. */
 export const occurrenceOrdinal = (index: number): string => {
   const position = index + 2
   const suffix = position % 10 === 1 && position % 100 !== 11 ? 'st'
@@ -93,10 +94,11 @@ export const addOccurrence = (
   entity: OccurrenceEntity,
 ): Record<string, unknown> => addOccurrenceFor(diagramEntities, entity).diagramEntities
 
+/** Its label goes with it: a statement about an instance that is gone would only resurface on a later copy. */
 export const removeOccurrence = (
   diagramEntities: Record<string, unknown>,
   occurrenceId: string,
-): Record<string, unknown> => ({
+): Record<string, unknown> => withoutDisplayLabels({
   ...diagramEntities,
   occurrence: occurrenceItems(diagramEntities).filter((item) => item.id !== occurrenceId),
-})
+}, [occurrenceId])

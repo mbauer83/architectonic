@@ -45,6 +45,7 @@ const makeEntity = (id: string, alias: string): DiagramContextEntity => ({
   baseline_standing: { kind: 'enterprise-baseline' },
   group: 'uncategorized',
   display_alias: alias,
+  element_label: id,
 })
 
 const untouchableSvgRoot = () => new Proxy({}, {

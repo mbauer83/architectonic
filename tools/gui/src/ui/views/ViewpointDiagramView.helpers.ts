@@ -23,7 +23,8 @@ export const toDiagramContextEntityStub = (
   aliasById: ReadonlyMap<string, string> = new Map(),
 ): DiagramContextEntity => ({
   artifact_id: entity.id, artifact_type: entity.type, name: entity.name,
-  display_alias: aliasById.get(entity.id) ?? entity.id, version: '', status: '', domain: '',
+  display_alias: aliasById.get(entity.id) ?? entity.id, element_label: entity.name,
+  version: '', status: '', domain: '',
   subdomain: '', path: '', specializations: [],
   // Execution items carry no tier and no proposal state; the stub exists only for alias
   // resolution, so both required list-contract fields take the plain reading.

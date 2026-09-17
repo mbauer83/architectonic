@@ -52,6 +52,7 @@ const makeEntity = (id: string, alias: string, hostDiagramId?: string): DiagramC
   baseline_standing: { kind: 'enterprise-baseline' },
   group: 'uncategorized',
   display_alias: alias,
+  element_label: id,
   host_diagram_id: hostDiagramId,
 })
 

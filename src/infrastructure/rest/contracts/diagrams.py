@@ -384,9 +384,15 @@ class DiagramContextEntity(EntitySummary):
     Absent rather than empty when the element declares none: there is no second state to tell apart
     here — an element with no correspondence and an element for which the question does not arise
     are the same element.
+
+    ``element_label`` is what the element's box says on a picture: its display block's label, else
+    its name. It is here for the same reason as the alias — an editor that lets a diagram label an
+    instance its own way has to show what the instance says *without* that override, and only a
+    diagram read is in a position to answer.
     """
 
     display_alias: str
+    element_label: str
     bindings: list[ElementCorrespondenceWire] | None = None
 
 
@@ -437,11 +443,17 @@ class DiagramContextResponse(NullsOmitted):
 
     ``explicit_connection_pairs`` are the source/target alias pairs the PUML actually draws, which
     is how a stated connection is told from one that merely exists between two placed entities.
+
+    ``drawn_labels`` is what the body calls each instance as it stands — keyed by instance id: the
+    entity's artifact id for its base instance, the occurrence id for a further one. A hand-laid
+    body may call an element something its record does not, and an editor that regenerates the body
+    on save has to know that to keep it.
     """
 
     diagram: DiagramDetailResponse
     entities: list[DiagramContextEntity]
     connections: list[DiagramContextConnection]
+    drawn_labels: dict[str, str]
     candidate_connections: list[ContextConnection]
     suggested_entities: list[HopSuggestionGroup]
     explicit_connection_pairs: list[tuple[str, str]]

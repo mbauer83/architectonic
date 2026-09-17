@@ -1,9 +1,9 @@
 <script setup lang="ts">
 /**
  * Diagram-edit view's right sidebar: viewpoint selector, entity search, diagram-type
- * config panel, the included-entities selection list (one row per drawing), the
- * pending-removal list, and the preview/save action pair (mirrored from the header — same
- * emitted events drive both). Almost entirely a layout/plumbing wrapper over
+ * config panel, the included-entities selection list (one row per drawing, each able to carry
+ * its own label on this diagram), the pending-removal list, and the preview/save action pair
+ * (mirrored from the header — same emitted events drive both). Almost entirely a layout/plumbing wrapper over
  * already-existing child components; owns no state of its own beyond what's passed in.
  */
 import type {
@@ -33,8 +33,10 @@ defineProps<{
   relatedEntitiesById: Record<string, EntityDisplayInfo[]>
   expandedConnectionEntityIds: string[]
   expandedRelatedEntityIds: string[]
-  /** The box a drawing sits in — the list shows it beside the name. */
-  groupLabelOf?: (drawingId: string) => string | undefined
+  /** The box an instance sits in — the list shows it beside the name. */
+  groupLabelOf?: (instanceId: string) => string | undefined
+  /** What the saved body calls each instance, by instance id. */
+  drawnLabels?: Record<string, string>
   toRemoveEntities: EntityDisplayInfo[]
   previewRunning: boolean
   previewDisabled: boolean
@@ -52,6 +54,7 @@ const emit = defineEmits<{
   'diagram-connections-change': [connections: DiagramConnection[]]
   'add-occurrence': [entity: EntityDisplayInfo]
   'remove-occurrence': [occurrenceId: string]
+  'set-display-label': [instanceId: string, label: string | null]
   'toggle-connections': [entityId: string]
   'toggle-related': [entityId: string]
   'toggle-connection': [connId: string, entityId: string, occurrenceId: string | null]
@@ -114,6 +117,8 @@ const emit = defineEmits<{
             :expanded-related-entity-ids="expandedRelatedEntityIds"
             :diagram-entities="typeEntityData"
             :occurrences-supported="isArchimateDiagramType(diagramType)"
+            :labels-supported="isArchimateDiagramType(diagramType)"
+            :drawn-labels="drawnLabels"
             :group-label-of="groupLabelOf"
             @toggle-connections="emit('toggle-connections', $event)"
             @toggle-related="emit('toggle-related', $event)"
@@ -123,6 +128,7 @@ const emit = defineEmits<{
             @entity-action="emit('entity-action', $event)"
             @add-occurrence="emit('add-occurrence', $event)"
             @remove-occurrence="emit('remove-occurrence', $event)"
+            @set-display-label="(instanceId, label) => emit('set-display-label', instanceId, label)"
           />
         </div>
       </div>

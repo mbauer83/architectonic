@@ -89,9 +89,13 @@ const C4_CONTEXT_RESPONSE = {
     baseline_standing: { kind: 'enterprise-baseline' as const },
     group: 'uncategorized',
     display_alias: 'ROL_udXPfB',
+    // The context read added what the element's box says and what the body calls each instance
+    // (0.9.1); the capture carries both as the current backend serves them.
+    element_label: 'AI Agent',
     specializations: [],
   }],
   connections: [],
+  drawn_labels: { 'ROL@1776633082.udXPfB.ai-agent': 'AI Agent' },
   candidate_connections: [],
   suggested_entities: [],
   explicit_connection_pairs: [['ROL_udXPfB', 'APP_Ne0utf']],

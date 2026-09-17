@@ -32,6 +32,8 @@ export function useDiagramEditSelection(options: {
   const diagramEntities = ref<DiagramContextEntity[]>([])
   const diagramConnections = ref<DiagramConnection[]>([])
   const includedEntities = ref<EntityDisplayInfo[]>([])
+  /** What the saved body calls each instance, by instance id — read, never written, from here. */
+  const drawnLabels = ref<Record<string, string>>({})
   const allModelConns = ref<Map<string, EntityContextConnection>>(new Map())
   const includedConnIds = ref<Set<string>>(new Set())
 
@@ -63,7 +65,7 @@ export function useDiagramEditSelection(options: {
   ])
 
   /**
-   * Putting a drawing in the box another sits in.
+   * Putting an instance in the box another sits in.
    *
    * The boxes are authored beside this state and need the entity list this holds, so the one
    * operation this needs from them arrives once both exist rather than as a constructor argument.
@@ -74,7 +76,7 @@ export function useDiagramEditSelection(options: {
   }
 
   /**
-   * Connect a drawing that just joined a box to the drawings already inside it.
+   * Connect an instance that just joined a box to the instances already inside it.
    *
    * A box should read as a unit, so a new member attaches to what is *in* the box rather than to
    * whichever copy of the same entity sits elsewhere on the picture.
@@ -235,7 +237,7 @@ export function useDiagramEditSelection(options: {
     void refreshDiscovery()
   }
 
-  /** From a drawing's Related card the neighbour joins that copy of the cluster — and its box. */
+  /** From an instance's Related card the neighbour joins that copy of the cluster — and its box. */
   const addRelatedEntity = async (
     entity: EntityDisplayInfo, viaEntityId: string, occurrenceId: string | null,
   ): Promise<void> => {
@@ -276,6 +278,7 @@ export function useDiagramEditSelection(options: {
     entitiesToAdd.value = []; selectedNewConnIds.value = new Set()
     expandedConnectionEntityIds.value = new Set(); expandedRelatedEntityIds.value = new Set()
     includedEntities.value = []; allModelConns.value = new Map(); includedConnIds.value = new Set()
+    drawnLabels.value = {}
   }
 
   const populateFromContext = (context: DiagramContext): void => {
@@ -284,8 +287,10 @@ export function useDiagramEditSelection(options: {
     includedEntities.value = context.entities.map((s) => ({
       artifact_id: s.artifact_id, name: s.name, artifact_type: s.artifact_type,
       domain: s.domain, subdomain: s.subdomain, status: s.status,
-      display_alias: s.display_alias, element_type: s.artifact_type, element_label: s.name, diagram_internal: false,
+      display_alias: s.display_alias, element_type: s.artifact_type, element_label: s.element_label,
+      diagram_internal: false,
     }))
+    drawnLabels.value = { ...context.drawn_labels }
     allModelConns.value = new Map(context.candidate_connections.map((conn) => [conn.artifact_id, conn]))
     const inc = new Set<string>()
     // The diagram declares its connections with full endpoint ids, as authored; the records
@@ -305,7 +310,7 @@ export function useDiagramEditSelection(options: {
   }
 
   return {
-    diagramEntities, diagramConnections, includedEntities, allModelConns, includedConnIds,
+    diagramEntities, diagramConnections, includedEntities, drawnLabels, allModelConns, includedConnIds,
     toRemoveEntityIds, toRemoveConnIds, entitiesToAdd, selectedNewConnIds,
     expandedConnectionEntityIds, expandedRelatedEntityIds,
     includedEntityIds, toAddEntityIds, effectiveEntityIds, effectiveEntitiesList,

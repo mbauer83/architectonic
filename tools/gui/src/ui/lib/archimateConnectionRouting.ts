@@ -6,7 +6,7 @@
  * diagram data, and it travels in `diagram-entities` under `_connections`, the same transport the
  * backend reads as `diagram-connections`.
  *
- * **One entry is one arrow.** No entry means one arrow between the base drawings, which is what
+ * **One entry is one arrow.** No entry means one arrow between the base instances, which is what
  * every diagram authored before any of this means, so nothing needs migrating.
  *
  * **The rule.** A connection may be drawn once per (source-drawing, target-drawing) pair, and each
@@ -17,9 +17,11 @@
  * stricter behaviour: two arrows into the same box really is the same fact twice.
  */
 
+import { withoutDisplayLabels } from './archimateDisplayLabels'
+
 export type Endpoint = 'source' | 'target'
 
-/** Which drawing of an endpoint: null is the entity's base drawing, a string is an occurrence id. */
+/** Which drawing of an endpoint: null is the entity's base instance, a string is an occurrence id. */
 export type Drawing = string | null
 
 export interface ConnectionInstance {
@@ -64,7 +66,7 @@ export const instancesOf = (
 /**
  * Whether *drawing* already carries this connection on *endpoint*.
  *
- * With no entries at all the base drawings carry it, which keeps an unrouted diagram meaning what
+ * With no entries at all the base instances carry it, which keeps an unrouted diagram meaning what
  * it has always meant.
  */
 export const drawingCarries = (
@@ -140,7 +142,7 @@ export const claimInstance = (
     (item) => drawingIn(item, 'source') === pairing.source && drawingIn(item, 'target') === pairing.target,
   )
   if (already) return diagramEntities
-  // The first arrow of a connection with no opt-ins between the base drawings is what an absent
+  // The first arrow of a connection with no opt-ins between the base instances is what an absent
   // entry already says, so it is left unwritten rather than stated redundantly.
   const kept = withoutEmptyRouting(entry)
   if (!existing.length && !kept) return diagramEntities
@@ -187,7 +189,7 @@ export const releaseConnection = (
 /**
  * Forget everything a diagram said about an entity it no longer draws.
  *
- * Removing an entity used to leave its extra drawings behind — the panel kept listing rows for an
+ * Removing an entity used to leave its extran instances behind — the panel kept listing rows for an
  * entity the diagram no longer contained — and would now leave arrows pointing at occurrence ids
  * nothing declares.
  */
@@ -206,18 +208,19 @@ export const forgetEntity = (
       .map((item) => item.id),
   )
   const orphaned = new Set(connectionsTouchingEntity)
-  return {
+  // Its labels go too: a statement about an instance that is gone would only resurface on a later copy.
+  return withoutDisplayLabels({
     ...diagramEntities,
     occurrence: occurrences.filter((item) =>
       !(!!item && typeof item === 'object' && dropped.has((item as { id?: string }).id ?? '')),
     ),
     _connections: routingItems(diagramEntities)
-      // An arrow that ran to a drawing that is gone is gone with it; one that never did survives.
+      // An arrow that ran to an instance that is gone is gone with it; one that never did survives.
       .filter((item) => !orphaned.has(item.artifact_id))
       .filter((item) => !dropped.has(item['source-occurrence'] ?? '') && !dropped.has(item['target-occurrence'] ?? ''))
       .map(withoutEmptyRouting)
       .filter((item): item is ConnectionInstance => item !== null),
-  }
+  }, [entityId, ...dropped])
 }
 
 /** Every occurrence id the diagram no longer declares, so a caller can tell stale routing exists. */

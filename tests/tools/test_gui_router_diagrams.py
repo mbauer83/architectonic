@@ -90,6 +90,7 @@ DIAG_ID = "DIAG@1000000020.DiagTst.test-diagram"
 ASSURANCE_DIAG_ID = "DIAG@1000000021.BowTest.legacy-bowtie"
 GSN_DIAG_ID = "GSN@1000000022.GsnTst.selectable-gsn"
 VIEWPOINT_DIAG_ID = "DIAG@1000000023.VptTst.viewpoint-applied"
+LABELLED_DIAG_ID = "DIAG@1000000024.LblTst.hand-labelled"
 
 
 # ── fixtures ──────────────────────────────────────────────────────────────────
@@ -111,6 +112,25 @@ def populated_root(tmp_path: Path) -> Path:
             VIEWPOINT_DIAG_ID, "Viewpoint Applied",
             extra_frontmatter="viewpoint: {slug: motivation, version: 1}\n",
         ),
+    )
+    _write(
+        diag_dir / f"{LABELLED_DIAG_ID}.puml",
+        f"""\
+---
+artifact-id: {LABELLED_DIAG_ID}
+artifact-type: diagram
+diagram-type: archimate-motivation
+name: "Hand Labelled"
+version: 0.1.0
+status: draft
+last-updated: '2026-01-01'
+manual-layout: true
+entity-ids-used: [{ENT_ID}]
+---
+@startuml hand-labelled
+rectangle "<$archimate_requirement{{scale=1.2}}> Short Name" <<requirement>> as REQ_entity_for_diag
+@enduml
+""",
     )
     _write(
         diag_dir / f"{GSN_DIAG_ID}.puml",
@@ -373,6 +393,16 @@ class TestDiagramContext:
     def test_found(self, sync_client) -> None:
         r = sync_client.get(f"/api/diagrams/{DIAG_ID}/context")
         assert r.status_code == 200
+
+    def test_the_read_says_what_the_body_calls_each_drawing(self, sync_client) -> None:
+        """A hand-laid body may call an element something its record does not; the editor has to see
+        it, or its first save regenerates the body and reverts it."""
+        r = sync_client.get(f"/api/diagrams/{LABELLED_DIAG_ID}/context")
+        assert r.status_code == 200
+        data = r.json()
+        assert data["drawn_labels"] == {ENT_ID: "Short Name"}
+        row = next(entity for entity in data["entities"] if entity["artifact_id"] == ENT_ID)
+        assert row["element_label"] == "Entity For Diag"
 
 
 # ── GET /api/diagram-entity-discovery ────────────────────────────────────────

@@ -55,6 +55,11 @@ class _ConfiguredArchimateDiagramType(_ConfiguredOntologyDiagramType):
                 " diagram_entities.occurrence[] items with id and backing_entity_id. The id is the"
                 " occurrence identity; backing_entity_id is the model entity to render again. visual_role"
                 " is optional human-readable metadata, not the occurrence identifier.",
+                "To label an instance differently on this diagram alone, set"
+                " diagram_entities.display_labels to a mapping of instance id to label, where the instance"
+                " id is the entity's artifact_id for its base instance or the occurrence id for a further"
+                " one. The model entity keeps its name; the label applies to this diagram only, and an"
+                " absent entry means the element's own label.",
             ),
         )
 

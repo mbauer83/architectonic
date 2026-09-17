@@ -11,6 +11,7 @@ import type {
   DiagramTypeUiConfig, ViewpointSummary,
 } from '../../domain'
 import EntitySelectionList from '../components/EntitySelectionList.vue'
+import { withDisplayLabel } from '../lib/archimateDisplayLabels'
 import EntityPickerInput from '../components/EntityPickerInput.vue'
 import DiagramTypeSelect from '../components/DiagramTypeSelect.vue'
 import DiagramTypeConfigPanel from '../components/DiagramTypeConfigPanel.vue'
@@ -180,8 +181,8 @@ const addEntity = async (entity: EntityDisplayInfo) => {
  * Put an entity in a box, and connect it to what that box already holds.
  *
  * Which drawing the box gets: the diagram's first one if it does not draw the entity yet, and a new
- * one if it does — a box never silently relocates a drawing placed elsewhere. Then the member is
- * wired to the drawings *inside* the box rather than to whichever copy sits elsewhere, because a
+ * one if it does — a box never silently relocates an instance placed elsewhere. Then the member is
+ * wired to the instances *inside* the box rather than to whichever copy sits elsewhere, because a
  * box should read as a unit.
  */
 const onAddMember = async (groupIndex: number, entity: EntityDisplayInfo) => {
@@ -204,7 +205,7 @@ const onAddMember = async (groupIndex: number, entity: EntityDisplayInfo) => {
 }
 
 /**
- * From a drawing's Related card the neighbour joins *that* drawing — its copy of the cluster, and
+ * From an instance's Related card the neighbour joins *that* drawing — its copy of the cluster, and
  * its box. Reached from inside a box, landing outside it is not what the click offered.
  */
 const addRelatedEntity = async (
@@ -441,9 +442,11 @@ watch(diagramType, () => {
             :expanded-related-entity-ids="[...expandedRelatedEntityIds]"
             :diagram-entities="diagramEntities"
             :occurrences-supported="isArchimateDiagramType(diagramType)"
+            :labels-supported="isArchimateDiagramType(diagramType)"
             :group-label-of="labelOfDrawing"
             @add-occurrence="addEntityOccurrence"
             @remove-occurrence="removeEntityOccurrence"
+            @set-display-label="(instanceId, label) => setDiagramEntities(withDisplayLabel(diagramEntities, instanceId, label))"
             @toggle-connections="toggleConnections"
             @toggle-related="toggleRelated"
             @toggle-connection="toggleConnection"

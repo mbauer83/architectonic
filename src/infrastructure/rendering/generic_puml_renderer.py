@@ -13,6 +13,7 @@ from src.domain.modules.module_types import ConnectionTypeName, ElementClassName
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
 from src.domain.ontology_representation.ontology_types import ConnectionTypeInfo
 from src.domain.ontology_representation.specializations import SpecializationCatalog, merge_specialization_catalogs
+from src.infrastructure.rendering import archimate_occurrences as instances
 from src.infrastructure.rendering._archimate_includes import inject_archimate_includes
 from src.infrastructure.rendering._authored_grouping_rendering import render_authored_groupings
 from src.infrastructure.rendering._component_canvas import render_component_canvas
@@ -26,7 +27,6 @@ from src.infrastructure.rendering.archimate_entity_declarations import (
     grouping_stereotype,
     ordered_domains,
 )
-from src.infrastructure.rendering.archimate_occurrences import occurrence_entities
 from src.infrastructure.rendering.archimate_relation_rendering import (
     format_multiplicity_label,
 )
@@ -83,8 +83,9 @@ class GenericPumlRenderer:
 
         entity_by_id = {entity.artifact_id: entity for entity in entities}
         render_entities = list(entities)
-        occurrences = occurrence_entities(diagram_entities, entity_by_id)
+        occurrences = instances.occurrence_entities(diagram_entities, entity_by_id)
         render_entities.extend(occurrences)
+        label_by_alias = instances.instance_labels_by_alias(diagram_entities, entities, occurrences)
 
         alias_by_id = {
             entity.artifact_id: normalize_puml_alias(entity.display_alias)
@@ -158,8 +159,9 @@ class GenericPumlRenderer:
                 return []
             children = children_map.get(alias, [])
             decl_args = (entity, alias, _registry(), self._junction_types(), specialization_catalog)
+            label_args = {"label_attribute": label_attribute, "instance_label": label_by_alias.get(alias)}
             if not children:
-                return [f"{indent}{entity_declaration(*decl_args, label_attribute=label_attribute)}"]
+                return [f"{indent}{entity_declaration(*decl_args, **label_args)}"]
             inner = indent + "  "
             subtree = collect_subtree_aliases(entity, children_map)
             crossing_flow = any((src in subtree) != (tgt in subtree) for src, tgt in flow_edges)
@@ -170,7 +172,7 @@ class GenericPumlRenderer:
             else:
                 main_axis = "right" if chain_axis == "down" else "down"
             branch_axis = "down" if main_axis == "right" else "right"
-            rendered = [f"{indent}{entity_nest_declaration(*decl_args, label_attribute=label_attribute)}"]
+            rendered = [f"{indent}{entity_nest_declaration(*decl_args, **label_args)}"]
             for child in children:
                 rendered.extend(render_entity(child, inner, main_axis))
             child_als = [normalize_puml_alias(child.display_alias) for child in children if child.display_alias]

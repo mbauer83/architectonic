@@ -6452,6 +6452,11 @@ export interface components {
          *     Absent rather than empty when the element declares none: there is no second state to tell apart
          *     here — an element with no correspondence and an element for which the question does not arise
          *     are the same element.
+         *
+         *     ``element_label`` is what the element's box says on a picture: its display block's label, else
+         *     its name. It is here for the same reason as the alias — an editor that lets a diagram label an
+         *     instance its own way has to show what the instance says *without* that override, and only a
+         *     diagram read is in a position to answer.
          */
         DiagramContextEntity: {
             /** Artifact Id */
@@ -6472,6 +6477,8 @@ export interface components {
             display_alias: string;
             /** Domain */
             domain: string;
+            /** Element Label */
+            element_label: string;
             /** Group */
             group?: string;
             /** Host Diagram Id */
@@ -6506,6 +6513,11 @@ export interface components {
          *
          *     ``explicit_connection_pairs`` are the source/target alias pairs the PUML actually draws, which
          *     is how a stated connection is told from one that merely exists between two placed entities.
+         *
+         *     ``drawn_labels`` is what the body calls each instance as it stands — keyed by instance id: the
+         *     entity's artifact id for its base instance, the occurrence id for a further one. A hand-laid
+         *     body may call an element something its record does not, and an editor that regenerates the body
+         *     on save has to know that to keep it.
          */
         DiagramContextResponse: {
             /** Candidate Connections */
@@ -6513,6 +6525,10 @@ export interface components {
             /** Connections */
             connections: components["schemas"]["DiagramContextConnection"][];
             diagram: components["schemas"]["DiagramDetailResponse"];
+            /** Drawn Labels */
+            drawn_labels: {
+                [key: string]: string;
+            };
             /** Entities */
             entities: components["schemas"]["DiagramContextEntity"][];
             /** Etag */

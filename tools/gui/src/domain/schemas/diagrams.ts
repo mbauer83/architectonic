@@ -147,6 +147,9 @@ export const DiagramContextEntitySchema = Schema.Struct({
   is_global: Schema.Boolean,
   baseline_standing: BaselineStandingSchema,
   display_alias: Schema.String,
+  /** What the element's box says on a picture — its display block's label, else its name — before
+   * any label this diagram states for the instance. */
+  element_label: Schema.String,
   bindings: Schema.optional(Schema.Array(ElementCorrespondenceSchema)),
   group: Schema.optional(Schema.String),
   specializations: Schema.Array(Schema.String),
@@ -198,6 +201,10 @@ export const DiagramContextSchema = Schema.Struct({
   diagram: DiagramDetailSchema,
   entities: Schema.Array(DiagramContextEntitySchema),
   connections: Schema.Array(DiagramContextConnectionSchema),
+  /** What the body calls each instance as it stands, by instance id — the entity's id for its base
+   * drawing, the occurrence id for a further one. A hand-laid body may call an element something
+   * its record does not, and an editor that regenerates the body on save has to know that. */
+  drawn_labels: Schema.Record({ key: Schema.String, value: Schema.String }),
   candidate_connections: Schema.Array(EntityContextConnectionSchema),
   suggested_entities: Schema.Array(HopSuggestionGroupSchema),
   /** Source/target alias pairs the PUML actually draws — how a stated connection is told from

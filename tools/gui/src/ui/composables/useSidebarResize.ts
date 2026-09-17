@@ -1,4 +1,4 @@
-import { computed, onUnmounted, ref, type Ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, type Ref } from 'vue'
 
 export interface SidebarResizeOptions {
   initialWidth?: number
@@ -51,6 +51,15 @@ export function useSidebarResize(gridRef: Ref<HTMLElement | null>, options: Side
     window.addEventListener('mousemove', onResizeMove)
     window.addEventListener('mouseup', stopResize)
   }
+
+  // The initial width obeys the same bound a drag does. Unclamped, a host that asks for more than
+  // 45% of its grid opens that wide, and the first drag snaps the sidebar to the bound with no way
+  // back to where it started — the bound is the widest a drag can ever reach.
+  onMounted(() => {
+    if (gridRef.value && gridRef.value.getBoundingClientRect().width >= STACKED_BELOW) {
+      sidebarWidth.value = clampSidebarWidth(sidebarWidth.value)
+    }
+  })
 
   onUnmounted(stopResize)
 

@@ -107,6 +107,77 @@ _COLOUR_SUFFIX = re.compile(r"\s+#[A-Za-z0-9_:;#,-]+\s*$")
 _APPENDED = "\\n<size:10>"
 
 
+#: The sprite a rendered label opens with — `<$archimate_goal{scale=1.2}> ` — which is the type's
+#: glyph rather than anything the element is called.
+_SPRITE_PREFIX = re.compile(r"^<\$[^>]*>\s*")
+
+#: The specialization line the renderer appends under a label: a literal `\n` then guillemets.
+_GUILLEMET_SUFFIX = re.compile(r"\\n«[^»]*»$")
+
+
+def quoted_label_text(text: str) -> str:
+    """*text* as it can be spelled inside one quoted PlantUML label.
+
+    One line — a newline inside the quotes ends the declaration early — and no double quote, which
+    would close the string. Both the renderer's own declarations and a relabelled one go through this,
+    so the two cannot disagree about what a label may contain.
+    """
+    return " ".join(text.split()).replace('"', "'")
+
+
+def _label_parts(quoted: str) -> tuple[str, str, str]:
+    """Split a quoted label's content into (sprite prefix, the label proper, everything appended).
+
+    The appended part is the renderer's, never the author's: a specialization's guillemet line and a
+    reading lens's attribute block. Splitting here is what lets a relabel replace the name and keep
+    both, and lets a reader report the name without either.
+    """
+    sprite = _SPRITE_PREFIX.match(quoted)
+    prefix = sprite.group(0) if sprite else ""
+    rest = quoted[len(prefix):]
+    base, marker, appendix = rest.partition(_APPENDED)
+    guillemet = _GUILLEMET_SUFFIX.search(base)
+    if guillemet:
+        appendix = guillemet.group(0) + marker + appendix
+        base = base[: guillemet.start()]
+    else:
+        appendix = marker + appendix
+    return prefix, base, appendix
+
+
+def label_declared_on(line: str) -> str | None:
+    """What the declaration on *line* calls its element, or None where it declares nothing quoted.
+
+    The name as the author or renderer wrote it, without the type's sprite and without anything the
+    renderer appends beneath it. A relation, a comment or a bare `rectangle X` has no label to report.
+    """
+    if alias_declared_on(line) is None:
+        return None
+    quoted = _QUOTED.search(line.strip())
+    if quoted is None:
+        return None
+    _prefix, base, _appendix = _label_parts(quoted.group(0)[1:-1])
+    return base.strip()
+
+
+def relabelled_declaration(line: str, label: str) -> str:
+    """*line* with its element called *label*, keeping its sprite, its appended lines and its alias.
+
+    The write twin of `label_declared_on`, and here for the reason `restyled_declaration` is: a caller
+    rewriting a declaration with its own regex is one more reading of what declares an alias. A line
+    that declares nothing, or declares without a quoted label, comes back unchanged — there is nothing
+    to rename without guessing at the syntax.
+    """
+    if alias_declared_on(line) is None:
+        return line
+    quoted = _QUOTED.search(line)
+    if quoted is None:
+        return line
+    prefix, _base, appendix = _label_parts(quoted.group(0)[1:-1])
+    replacement = f'"{prefix}{quoted_label_text(label)}{appendix}"'
+    return line[: quoted.start()] + replacement + line[quoted.end():]
+
+
 def overrides_colour(line: str) -> bool:
     """Whether this declaration line carries a colour of its own, overriding its stereotype's fill.
 

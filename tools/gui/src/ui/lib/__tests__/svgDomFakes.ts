@@ -100,4 +100,5 @@ export const makeEntity = (
   baseline_standing: { kind: 'enterprise-baseline' },
   group: 'uncategorized',
   display_alias: alias,
+  element_label: id,
 })

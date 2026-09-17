@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
+from src.application.puml_alias_declarations import quoted_label_text
 from src.domain.modules.module_types import EntityTypeName
 from src.domain.ontology_representation.artifact_types import EntityRecord
 from src.domain.ontology_representation.ontology_types import EntityTypeInfo
@@ -64,11 +65,12 @@ def entity_declaration(
     specialization_catalog: SpecializationCatalog = SpecializationCatalog.empty(),
     *,
     label_attribute: str | None = None,
+    instance_label: str | None = None,
 ) -> str:
     if entity.artifact_type in junction_types:
         return f'circle " " as {alias}'
     label, stereotype, spec = entity_label_and_stereotype(
-        entity, registry, specialization_catalog, label_attribute=label_attribute
+        entity, registry, specialization_catalog, label_attribute=label_attribute, instance_label=instance_label
     )
     icon_key, color_suffix, show_icon = _specialization_notation(stereotype, spec, entity_has_sprite(entity, registry))
     if show_icon and icon_key:
@@ -89,11 +91,12 @@ def entity_nest_declaration(
     specialization_catalog: SpecializationCatalog = SpecializationCatalog.empty(),
     *,
     label_attribute: str | None = None,
+    instance_label: str | None = None,
 ) -> str:
     if entity.artifact_type in junction_types:
         return f'circle " " as {alias}'
     label, stereotype, spec = entity_label_and_stereotype(
-        entity, registry, specialization_catalog, label_attribute=label_attribute
+        entity, registry, specialization_catalog, label_attribute=label_attribute, instance_label=instance_label
     )
     icon_key, color_suffix, show_icon = _specialization_notation(stereotype, spec, entity_has_sprite(entity, registry))
     if show_icon and icon_key:
@@ -140,11 +143,21 @@ def entity_label_and_stereotype(
     specialization_catalog: SpecializationCatalog = SpecializationCatalog.empty(),
     *,
     label_attribute: str | None = None,
+    instance_label: str | None = None,
 ) -> tuple[str, str | None, SpecializationInfo | None]:
+    """The text an element's box carries, its stereotype, and its primary specialization.
+
+    ``instance_label`` is what *this diagram* calls the instance (``diagram-entities.display_labels``)
+    and wins over everything the element says about itself: the element's own display label, then
+    its name. The model is not consulted about it and is not changed by it.
+    """
     section_id = display_section_id(entity, registry)
     raw_block = entity.display_blocks.get(section_id, "")
     archimate_block = parse_archimate_display_block(raw_block)
-    label = str(archimate_block.get("label") or entity.display_label or entity.name).replace('"', "'")
+    if instance_label and instance_label.strip():
+        label = quoted_label_text(instance_label)
+    else:
+        label = str(archimate_block.get("label") or entity.display_label or entity.name).replace('"', "'")
     info = registry.find_entity_type(EntityTypeName(entity.artifact_type))
     stereotype = stereotype_key(info.artifact_type) if isinstance(info, EntityTypeInfo) else None
     # All applied specializations show in the label (§15.2 comma-separated list); the PRIMARY

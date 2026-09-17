@@ -51,6 +51,17 @@ colour per domain, corner style per entity type.
 Diagram families with their own renderer (activity, sequence, matrix, C4, datatype, GSN) draw in
 their own notation and are unaffected by the domain palette.
 
+**An element can be labelled differently on one diagram.** An element is called what its record says on every
+view, and a name that is right for the model is often too long for one crowded box. The diagram's
+`diagram-entities.display_labels` maps an instance to the label it carries there — the entity's id for
+its base instance, the [occurrence](#archimate-views) id for a further one — and the element keeps
+its name everywhere else. In the diagram editor each included element shows the label its box
+carries and offers to change it; a hand-laid body that already calls an element something shorter
+shows that label too, and keeps it across a save. Through MCP the same statement is
+`diagram_entities={"display_labels": {"<entity id or occurrence id>": "Label"}}` on
+`artifact_create_diagram` or `artifact_edit_diagram`; on a `manual-layout` diagram it is written into
+the declaration in place, and the rest of the body is untouched.
+
 **A relationship's line and end markers are declared the same way.** Each connection type states
 its notation structurally — `dashed`, `hollow-triangle at the target` — and its PlantUML spelling
 is derived from that statement, so a rendered diagram and the graph explorer cannot draw the same
@@ -239,7 +250,7 @@ viewpoint, and gone when you reload. The panel is absent on diagrams that permit
   Only what the picture contains. A composition or an aggregation is drawn as **containment** — the
   part inside the whole — so it gets a nesting row rather than a line, and where a relationship is
   drawn both ways on one diagram it appears in both sections. Composition and aggregation share one
-  nesting row because the drawing is identical for them: the model distinguishes a part that cannot
+  nesting row because the instance is identical for them: the model distinguishes a part that cannot
   exist without its whole from one that can and may be shared, and the picture does not.
 
 **A download exports what is on screen**, legend included, in SVG or PNG. The picture and the file

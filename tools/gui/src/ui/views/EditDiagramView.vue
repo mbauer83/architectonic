@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { diagramDetailRoute, matrixEditRoute } from '../router/artifactRoutes'
-import { isStalePin } from './EditDiagramView.helpers'
 import DiagramHomeSelect from '../components/DiagramHomeSelect.vue'
 import { NO_COLLECTION, homeForMove } from '../components/ArtifactHomeSelect.helpers'
 import { inject, ref, computed, onMounted, useTemplateRef, watch } from 'vue'
@@ -8,8 +7,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { Effect, Exit } from 'effect'
 import { modelServiceKey, toastKey } from '../keys'
 import type {
-  DiagramContext, DiagramPreviewResult, WriteResult, EntityDisplayInfo,
-  DiagramTypeUiConfig, ViewpointSummary, DiagramViewpointProjection,
+  DiagramContext, DiagramPreviewResult, WriteResult, EntityDisplayInfo, DiagramTypeUiConfig,
 } from '../../domain'
 import type { RepoError } from '../../ports/ModelRepository'
 import type { NotFoundError } from '../../domain'
@@ -18,14 +16,15 @@ import DiagramEditViewpointBar from '../components/DiagramEditViewpointBar.vue'
 import DiagramEditSidebar from '../components/DiagramEditSidebar.vue'
 import DiagramGroupingsEditor from '../components/DiagramGroupingsEditor.vue'
 import DiagramPreviewPanel from '../components/DiagramPreviewPanel.vue'
-import { findViewpointBySlug } from '../components/ViewpointSelect.helpers'
+import DiagramSplitLayout from '../components/DiagramSplitLayout.vue'
 import { useQuery } from '../composables/useQuery'
 import { useMutation } from '../composables/useMutation'
 import { usePanZoom } from '../composables/usePanZoom'
 import { useDiagramEditSelection } from '../composables/useDiagramEditSelection'
+import { useDiagramEditViewpoint } from '../composables/useDiagramEditViewpoint'
+import { useDiagramTypeEntityData } from '../composables/useDiagramTypeEntityData'
 import { useDiagramEditSvgOverlay } from '../composables/useDiagramEditSvgOverlay'
 import { sanitizeDiagramSvg } from '../lib/svgSanitize'
-import { loadViewpointSummaries } from '../lib/viewpointSummary'
 import { useDiagramGroupings } from '../composables/useDiagramGroupings'
 
 const svc = inject(modelServiceKey)!
@@ -44,54 +43,16 @@ const diagramDetail = computed(() => contextQuery.data.value?.diagram ?? null)
 const diagramType = computed(() => diagramDetail.value?.diagram_type)
 const uiConfig = ref<DiagramTypeUiConfig | null>(null)
 
-// ── Viewpoint selector + ghost/hide overlay ─────────────────────────────────
+// ── Viewpoint, and the diagram's own data ───────────────────────────────────
 
-const viewpoints = ref<ViewpointSummary[]>([])
-const viewpointSlug = ref<string | null>(null)
-const viewpointPinnedVersion = ref<number | null>(null)
-const viewpointProjection = ref<DiagramViewpointProjection | null>(null)
-const hideInsteadOfGhost = ref(false)
-
-const loadViewpoints = async () => {
-  viewpoints.value = await loadViewpointSummaries(svc.listViewpointDefinitions())
-}
-
-const loadProjection = async () => {
-  if (!diagramId.value) return
-  viewpointProjection.value = await Effect.runPromise(svc.getViewpointProjection(diagramId.value)).catch(() => null)
-}
-
-const onSelectViewpoint = (viewpoint: ViewpointSummary | null) => {
-  viewpointPinnedVersion.value = viewpoint?.version ?? null
-  void selection.refreshDiscovery()
-}
-
-const currentDefinitionVersion = computed(
-  () => findViewpointBySlug(viewpoints.value, viewpointSlug.value)?.version ?? null,
-)
-const stalePin = computed(() => isStalePin(viewpointProjection.value))
-
-const doRePin = () => {
-  if (currentDefinitionVersion.value !== null) viewpointPinnedVersion.value = currentDefinitionVersion.value
-}
-
-const dismissViewpoint = () => {
-  viewpointSlug.value = null
-  viewpointPinnedVersion.value = null
-  void selection.refreshDiscovery()
-}
-
-// ── Diagram-type-owned entity data ──────────────────────────────────────────
-
-const baseTypeEntityData = ref<Record<string, unknown>>({})
-const typeEntityPatch = ref<Record<string, unknown>>({})
-const typeEntityData = computed(() => ({ ...baseTypeEntityData.value, ...typeEntityPatch.value }))
-const asRecord = (value: unknown): Record<string, unknown> =>
-  value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}
-const mergeTypeEntityData = (patch: Record<string, unknown>) => {
-  typeEntityPatch.value = { ...typeEntityPatch.value, ...patch }
-  previewMutation.reset()
-}
+const {
+  viewpoints, viewpointSlug, viewpointPinnedVersion, viewpointProjection, hideInsteadOfGhost,
+  loadViewpoints, loadProjection, onSelectViewpoint, stalePin, doRePin, dismissViewpoint,
+  forWrite: viewpointForWrite,
+} = useDiagramEditViewpoint({ svc, diagramId, refreshDiscovery: () => { void selection.refreshDiscovery() } })
+const {
+  typeEntityData, mergeTypeEntityData, seedFromContext, setInstanceLabel,
+} = useDiagramTypeEntityData(() => previewMutation.reset())
 
 // Where the diagram is filed. Seeded from what it says, so an untouched control moves nothing.
 const home = ref('')
@@ -151,8 +112,7 @@ const load = async () => {
   Exit.match(exit, {
     onSuccess: (context) => {
       selection.populateFromContext(context)
-      baseTypeEntityData.value = asRecord(context.diagram.diagram_entities)
-      typeEntityPatch.value = {}
+      seedFromContext(context)
       viewpointSlug.value = context.diagram.viewpoint?.slug ?? null
       viewpointPinnedVersion.value = context.diagram.viewpoint?.version ?? null
       void Effect.runPromise(svc.getDiagramTypeUiConfig(context.diagram.diagram_type))
@@ -186,6 +146,7 @@ const onAddMember = async (index: number, entity: EntityDisplayInfo) => {
 }
 const finalEntityIds = selection.finalEntityIds
 
+
 const doPreview = () => {
   if (!diagramDetail.value) return
   void previewMutation.run(svc.previewDiagram({
@@ -208,9 +169,7 @@ const doSave = async () => {
     connection_ids: selection.finalConnIds.value,
     diagram_entities: typeEntityData.value,
     authored_groupings: groupingsForWrite(),
-    viewpoint: viewpointSlug.value
-      ? { slug: viewpointSlug.value, version: viewpointPinnedVersion.value ?? currentDefinitionVersion.value ?? 1 }
-      : null,
+    viewpoint: viewpointForWrite(),
     dry_run: false,
   }))
   if (!Exit.isSuccess(exit) || !exit.value.wrote) return
@@ -249,105 +208,121 @@ const saveTitle = computed(() => !previewMutation.result.value ? 'Run Preview fi
       @update:hide-instead-of-ghost="hideInsteadOfGhost = $event"
     />
 
-    <div class="main-grid">
-      <div
-        ref="viewport"
-        class="img-container"
-        @mousedown="onMouseDown"
-        @dblclick="resetView"
-      >
-        <div :style="canvasStyle">
+    <!-- Wider than a detail sidebar: a row carries the glyph, name, box, Related count and controls. -->
+    <DiagramSplitLayout
+      :initial-width="480"
+      :min-width="380"
+      :max-width="760"
+    >
+      <template #canvas>
+        <!-- One root: several would each become a grid item of the split layout. -->
+        <div class="canvas-col">
           <div
-            v-if="svgQuery.loading.value"
-            class="no-img"
+            ref="viewport"
+            class="img-container"
+            @mousedown="onMouseDown"
+            @dblclick="resetView"
           >
-            Rendering SVG…
+            <div :style="canvasStyle">
+              <div
+                v-if="svgQuery.loading.value"
+                class="no-img"
+              >
+                Rendering SVG…
+              </div>
+              <div
+                v-else-if="svgQuery.errorMessage.value"
+                class="no-img err-txt"
+              >
+                {{ svgQuery.errorMessage.value }}
+              </div>
+              <div
+                v-else-if="svgHtml"
+                ref="svgContainer"
+                class="svg-wrap"
+                v-html="svgHtml"
+              />
+              <div
+                v-else
+                class="no-img"
+              >
+                No diagram rendered.
+              </div>
+            </div>
+            <button
+              v-if="isTransformed"
+              class="reset-btn"
+              @click.stop="resetView"
+            >
+              ⊙ Reset
+            </button>
+            <div class="zoom-hint">
+              Click entity to mark for removal · Click connection to toggle · Scroll/drag to navigate
+            </div>
           </div>
-          <div
-            v-else-if="svgQuery.errorMessage.value"
-            class="no-img err-txt"
-          >
-            {{ svgQuery.errorMessage.value }}
-          </div>
-          <div
-            v-else-if="svgHtml"
-            ref="svgContainer"
-            class="svg-wrap"
-            v-html="svgHtml"
+
+          <DiagramHomeSelect
+            v-model="home"
+            class="home-slot"
           />
-          <div
-            v-else
-            class="no-img"
-          >
-            No diagram rendered.
+
+          <div class="groupings-slot">
+            <DiagramGroupingsEditor
+              v-model="authoredGroupings"
+              :candidates="groupingCandidates"
+              :diagram-type="diagramType"
+              :viewpoint="viewpointSlug ?? undefined"
+              @add-member="onAddMember"
+            />
           </div>
         </div>
-        <button
-          v-if="isTransformed"
-          class="reset-btn"
-          @click.stop="resetView"
-        >
-          ⊙ Reset
-        </button>
-        <div class="zoom-hint">
-          Click entity to mark for removal · Click connection to toggle · Scroll/drag to navigate
-        </div>
-      </div>
+      </template>
 
-      <DiagramEditSidebar
-        class="sidebar-col"
-        :viewpoints="viewpoints"
-        :viewpoint-slug="viewpointSlug"
-        :ui-config="uiConfig"
-        :diagram-type="diagramType"
-        :effective-entity-ids="selection.effectiveEntityIds.value"
-        :type-entity-data="typeEntityData"
-        :effective-entities-list="selection.effectiveEntitiesList.value"
-        :diagram-connections="selection.diagramConnections.value"
-        :diagram-id="diagramId"
-        :selection-rows="selection.selectionRows.value"
-        :candidate-connections="[...selection.allModelConns.value.values()]"
-        :final-conn-ids="selection.finalConnIds.value"
-        :related-entities-by-id="selection.relatedEntitiesById.value"
-        :expanded-connection-entity-ids="[...selection.expandedConnectionEntityIds.value]"
-        :expanded-related-entity-ids="[...selection.expandedRelatedEntityIds.value]"
-        :group-label-of="labelOfDrawing"
-        :to-remove-entities="selection.toRemoveEntities.value"
-        :preview-running="previewMutation.running.value"
-        :preview-disabled="previewMutation.running.value || !diagramDetail"
-        :save-running="saveMutation.running.value"
-        :save-disabled="saveDisabled"
-        :save-title="saveTitle"
-        :save-error="saveError"
-        @update:viewpoint-slug="viewpointSlug = $event"
-        @select-viewpoint="onSelectViewpoint"
-        @add-entity="selection.addEntity"
-        @add-related-entity="selection.addRelatedEntity"
-        @diagram-entities-change="mergeTypeEntityData"
-        @diagram-connections-change="selection.diagramConnections.value = $event"
-        @add-occurrence="selection.addEntityOccurrence"
-        @remove-occurrence="selection.removeEntityOccurrence"
-        @toggle-connections="selection.toggleConnections"
-        @toggle-related="selection.toggleRelated"
-        @toggle-connection="selection.toggleConn"
-        @entity-action="selection.handleEntityAction"
-        @restore-entity="selection.toggleEntityRemoval"
-        @preview="doPreview"
-        @save="doSave"
-      />
-
-      <DiagramHomeSelect v-model="home" />
-
-      <div class="groupings-slot">
-        <DiagramGroupingsEditor
-          v-model="authoredGroupings"
-          :candidates="groupingCandidates"
+      <template #sidebar>
+        <DiagramEditSidebar
+          :viewpoints="viewpoints"
+          :viewpoint-slug="viewpointSlug"
+          :ui-config="uiConfig"
           :diagram-type="diagramType"
-          :viewpoint="viewpointSlug ?? undefined"
-          @add-member="onAddMember"
+          :effective-entity-ids="selection.effectiveEntityIds.value"
+          :type-entity-data="typeEntityData"
+          :effective-entities-list="selection.effectiveEntitiesList.value"
+          :diagram-connections="selection.diagramConnections.value"
+          :diagram-id="diagramId"
+          :selection-rows="selection.selectionRows.value"
+          :candidate-connections="[...selection.allModelConns.value.values()]"
+          :final-conn-ids="selection.finalConnIds.value"
+          :related-entities-by-id="selection.relatedEntitiesById.value"
+          :expanded-connection-entity-ids="[...selection.expandedConnectionEntityIds.value]"
+          :expanded-related-entity-ids="[...selection.expandedRelatedEntityIds.value]"
+          :group-label-of="labelOfDrawing"
+          :drawn-labels="selection.drawnLabels.value"
+          :to-remove-entities="selection.toRemoveEntities.value"
+          :preview-running="previewMutation.running.value"
+          :preview-disabled="previewMutation.running.value || !diagramDetail"
+          :save-running="saveMutation.running.value"
+          :save-disabled="saveDisabled"
+          :save-title="saveTitle"
+          :save-error="saveError"
+          @update:viewpoint-slug="viewpointSlug = $event"
+          @select-viewpoint="onSelectViewpoint"
+          @add-entity="selection.addEntity"
+          @add-related-entity="selection.addRelatedEntity"
+          @diagram-entities-change="mergeTypeEntityData"
+          @diagram-connections-change="selection.diagramConnections.value = $event"
+          @add-occurrence="selection.addEntityOccurrence"
+          @remove-occurrence="selection.removeEntityOccurrence"
+          @set-display-label="setInstanceLabel"
+          @toggle-connections="selection.toggleConnections"
+          @toggle-related="selection.toggleRelated"
+          @toggle-connection="selection.toggleConn"
+          @entity-action="selection.handleEntityAction"
+          @restore-entity="selection.toggleEntityRemoval"
+          @preview="doPreview"
+          @save="doSave"
         />
-      </div>
-    </div>
+      </template>
+    </DiagramSplitLayout>
 
     <DiagramPreviewPanel
       :running="previewMutation.running.value"
@@ -358,13 +333,12 @@ const saveTitle = computed(() => !previewMutation.result.value ? 'Run Preview fi
 </template>
 
 <style scoped>
-/* The sidebar spans both rows, so the groupings sit directly under the diagram rather
-   than below a row stretched to the sidebar's full height. */
-.sidebar-col { grid-row: 1 / span 2; }
+/* The sidebar is sticky and has its column to itself: a sticky item slides within its grid
+   container, so anything beneath it in its own column is something it would cover. */
+.canvas-col { min-width: 0; }
+.home-slot { margin-top: 12px; }
 .groupings-slot { margin-top: 10px; }
 .page { max-width: 100%; }
-.main-grid { display: grid; grid-template-columns: 1fr 50%; gap: 16px; align-items: start; }
-@media (max-width: 860px) { .main-grid { grid-template-columns: 1fr; } }
 
 .img-container {
   position: relative; overflow: hidden; background: #f8fafc;
