@@ -79,6 +79,7 @@ New here? Start with the [Quickstart in the README](../README.md#quickstart), th
 - [Configuration](reference/configuration.md)
 - [CLI & backend](reference/cli-and-backend.md)
 - [Upgrading a deployment](reference/upgrade-guide.md)
+- [Updating an installation](reference/software-update.md)
 - [Git sync & promotion](reference/git-sync-promotion.md)
 - [Docker Compose deployment](reference/docker-compose.md)
 - [REST API](reference/rest-api.md)

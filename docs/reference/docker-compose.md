@@ -306,7 +306,8 @@ backend instead of starting their own — set
 ```bash
 docker compose logs -f app            # follow backend logs
 docker compose exec app arch-assurance status   # store + unlock state
-docker compose up -d --build          # update (the app image is built locally, not pulled)
+docker compose up -d --build          # rebuild from the checkout as it stands
+uv run arch-update --commit           # update the checkout to a release, then the image and the volumes
 docker compose down                   # stop (named volumes persist)
 ```
 
@@ -318,6 +319,12 @@ docker compose down                   # stop (named volumes persist)
 | `arch-home` | credential vault (`$HOME/.config/...`) |
 
 Health is exposed at `/health` and wired into the container `HEALTHCHECK`.
+
+**Updating to a release.** On the host, [`arch-update`](software-update.md) verifies the release,
+moves the checkout, builds the image, stops the container, runs the data upgrade inside the new
+image against the volumes, starts the container and verifies the served version; the previous image
+is kept under its version for a rollback. The restart-time upgrade below is then a no-op that
+doubles as the check that the volumes are current.
 
 **Repository format upgrade on every restart.** Before starting the backend, the
 entrypoint runs `arch-repair upgrade --commit` against the resolved workspace

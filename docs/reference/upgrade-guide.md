@@ -11,7 +11,7 @@ how to run an upgrade safely and what the reports mean.
 - [Check first, then commit](#check-first-then-commit)
 - [Deployment identity — how targets are discovered](#deployment-identity--how-targets-are-discovered)
 - [Credentials and locked stores](#credentials-and-locked-stores)
-- [Back up before committing](#back-up-before-committing)
+- [The safety point a commit leaves behind](#the-safety-point-a-commit-leaves-behind)
 - [What `--commit` does, in order](#what---commit-does-in-order)
 - [Quarantine and blocking findings](#quarantine-and-blocking-findings)
 - [Partial completion and resuming](#partial-completion-and-resuming)
@@ -96,6 +96,10 @@ This advances the format contract to version `"4"`.
 
 &nbsp;
 
+This guide is about the *data*: repositories and operational targets moving to the format a version
+reads. Moving the *software* to a release is [`arch-update`](software-update.md), which runs this
+command for you at the right moment and restores its safety point on failure.
+
 ## Check first, then commit
 
 The default invocation is a **dry run** — it never mutates anything and always exits `0`;
@@ -155,15 +159,34 @@ never appear in reports or logs.
 
 &nbsp;
 
-## Back up before committing
+## The safety point a commit leaves behind
 
-| Target kind | Backup | Recovery |
+`--commit` records every target it is about to write, as it was, after the backend-not-serving gate
+and before its first write. This is the checkpoint set, named by a UTC timestamp and reported at the
+end of the run (`checkpoint_set` in `--json`).
+
+| Target kind | Recorded as | Returned by |
 |---|---|---|
-| Repository | Commit or branch the repo (the CLI recommends this) | Re-run `--commit`; steps are idempotent and self-healing |
-| Guidance cache (`~/.config/arch-repo/guidance-cache/` or deployment-scoped) | Copy the directory | Restore the copy, or re-import from the licensed source with `arch-import-guidance` |
-| Public signals SQLite | Copy the `.db` file | Restore the copy and re-run |
-| SQLCipher assurance store | `arch-assurance backup` (encrypted copy) | Restore the backup; the key stays in the OS keychain/vault |
-| Deployment settings document | Copy the YAML file | Restore the copy; rewrites are atomic and byte-preserving outside the changed key |
+| Repository | Its working tree, uncommitted edits and untracked files included, pinned under `refs/arch-repair/pre-upgrade/<set>` in the repository's own git objects | `--restore <set>` |
+| Guidance cache | A copy of the directory | `--restore <set>` |
+| Public signals SQLite | A copy of the file and its write-ahead log | `--restore <set>` |
+| SQLCipher assurance store | An encrypted copy of the file and its write-ahead log; the key stays in the OS keychain or vault | `--restore <set>` |
+| Deployment settings document | A copy of the file | `--restore <set>` |
+
+A repository is not copied. Its snapshot is git objects, so a repository with many thousands of files
+costs one object per changed file, and the pinned ref keeps them through garbage collection without
+moving the branch or leaving anything to push.
+
+```bash
+uv run arch-repair upgrade --workspace <path> --list-checkpoints   # what is recorded
+uv run arch-repair upgrade --workspace <path> --restore <set>      # every target back as recorded
+```
+
+`--restore` uses the same backend-not-serving gate as `--commit`. Copies live under
+`.arch/upgrade-checkpoints/<set>/` in the workspace, or beside the deployment settings document when
+the run has a deployment identity and no workspace. One set is kept: a successful commit prunes the
+one before it. A run that finds nothing to write takes no set, so a current deployment stays a true
+no-op. A dry run never takes one.
 
 &nbsp;
 

@@ -283,7 +283,9 @@ cd ../..
 ```
 
 Re-run `npm run build` after pulling frontend changes. The Docker image performs this build
-automatically, so containerised deployments need no manual step.
+automatically, so containerised deployments need no manual step. From release 0.10.0 on,
+[`arch-update`](reference/software-update.md) moves the checkout to a published release, installs
+the built GUI the release carries and runs the data upgrade, so none of this is repeated by hand.
 
 **Develop with hot-reload (frontend work).** Run the Vite dev server instead of building; it
 proxies API calls to the backend on :8000:

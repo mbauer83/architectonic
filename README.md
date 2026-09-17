@@ -113,7 +113,7 @@ More on the audience in [Who it serves](docs/01-motivation.md#who-it-serves).
 | 🏢 | **Two-tier repositories** | Draft and manage local details in an engagement repo, promote curated content to a shared enterprise repo |
 | 📝 | **Propose changes to shared content** | An engagement cannot write what it does not own, so editing promoted content records a change instead. Hold them, see what each would alter, bring one onto a moved artifact, and submit the set for review on one branch |
 | 🛡️ | **First-class assurance** | Confidential STPA/CAST/GRC and FMEA analysis, linked to the model, with a tamper-evident archive. Failure modes attach to the hazards the analysis already states, so priority is derived rather than restated |
-| 🔧 | **Operational upgrades** | `arch-repair upgrade` migrates repositories and deployment data across format changes — dry-run first, resumable, Docker-integrated |
+| 🔧 | **Operational upgrades** | `arch-repair upgrade` migrates repositories and deployment data across format changes — dry-run first, resumable, Docker-integrated; `arch-update` brings the installation to a verified release and rolls back on failure |
 | 🧩 | **Modular everywhere** | Pluggable ontologies, diagram types, schemata, and storage backends over a hexagonal core |
 
 &nbsp;
@@ -233,7 +233,7 @@ The agent can then `artifact_query_search_artifacts`, walk the graph with
 | 5 | [Extensibility](docs/05-extensibility/index.md) | Profiles, guidance, document types, ontology & diagram-type modules, hexagonal core |
 | 6 | [Showcase](docs/06-showcase.md) | The platform's own model, walked from strategy to assurance |
 | 7 | [First-model tutorial](docs/07-first-model.md) | From a running backend to a model that answers a real question |
-| — | [Reference](docs/reference/configuration.md) | Configuration, CLI, [upgrades](docs/reference/upgrade-guide.md), git sync & promotion, [Docker Compose](docs/reference/docker-compose.md), [REST API](docs/reference/rest-api.md), [licensing](docs/reference/licensing.md) |
+| — | [Reference](docs/reference/configuration.md) | Configuration, CLI, [upgrades](docs/reference/upgrade-guide.md), [updating](docs/reference/software-update.md), git sync & promotion, [Docker Compose](docs/reference/docker-compose.md), [REST API](docs/reference/rest-api.md), [licensing](docs/reference/licensing.md) |
 
 &nbsp;
 

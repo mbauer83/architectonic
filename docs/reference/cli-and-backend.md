@@ -67,6 +67,26 @@ instead of moving. See
 
 &nbsp;
 
+## Software update
+
+```bash
+uv run arch-update                       # dry run: check, verify, rehearse, print the plan
+uv run arch-update --json                # the report the human form renders
+uv run arch-update --to 0.10.1           # a specific release instead of the newest
+uv run arch-update --include-prerelease
+uv run arch-update --no-rehearse         # skip the next version's arch-repair upgrade dry run
+uv run arch-update --commit [--resolve-selection SLUG=scope|query]…
+uv run arch-update --gui-source release|build
+uv run arch-update --compose-file PATH --deployment local|compose
+uv run arch-update --status | --rollback
+```
+
+**`arch-update`** checks the published releases, verifies the newest (tag signature, release
+commit, asset digests), runs that version's `arch-repair upgrade` dry run in a throwaway worktree
+and prints the plan. `--commit` performs it as journaled phases and rolls back on failure. Exit
+codes follow `arch-repair upgrade`: `0`, `3` blocked, `20` partial, `21` infrastructure failure.
+See [Updating an installation](software-update.md).
+
 ## Repository maintenance
 
 `arch-repair` has two subcommands. The legacy no-subcommand invocation (the flat
@@ -77,7 +97,9 @@ stderr, and will be removed once that release ships.
 ```bash
 uv run arch-repair git-repair --repo-root <path> --confirm    # guarded, resumable git repair
 uv run arch-repair upgrade --repo-root <path>                  # dry-run report (default; never mutates)
-uv run arch-repair upgrade --repo-root <path> --commit         # apply
+uv run arch-repair upgrade --repo-root <path> --commit         # apply (takes a checkpoint set first)
+uv run arch-repair upgrade --list-checkpoints ...              # the checkpoint set a commit kept
+uv run arch-repair upgrade --restore <set> ...                 # return every target to it
 ```
 
 **`arch-repair upgrade`** detects and (with `--commit`) applies persisted-format
@@ -96,6 +118,8 @@ backend start).
 | `--settings <path>` / `--deployment-root <path>` | Explicit **deployment identity** — additionally discovers the deployment's operational targets (guidance cache, signal stores, the operator-owned settings document) |
 | `--guidance-cache` / `--signals-db` / `--assurance-store` | Override one operational path within that deployment identity |
 | `--exclude-target <kind>` | Operator-run partial commands only — skip one operational target kind; the report then states deployment readiness is NOT certified. Docker startup never excludes a configured active target |
+| `--list-checkpoints` | The checkpoint sets `--commit` has recorded for this deployment |
+| `--restore <set>` | Return every target a recorded set names to the state it had before that commit wrote it — repositories from their pinned git ref, operational targets from their copies |
 
 Each repo root is evaluated/applied independently; findings and applied-step
 ids are reported per root plus one aggregate summary for `--workspace` runs.
@@ -119,9 +143,9 @@ returns:
 | `20` | Partial apply — re-run to resume |
 | `21` | Infrastructure/credential failure before any commit |
 
-The `--json` report contract: `repos` per repository, plus
-`report_schema_version`, `operational_targets`, `deployment_preflight`, and
-`outcome`.
+The `--json` report contract (`report_schema_version` `2`): `repos` per repository, plus
+`operational_targets`, `deployment_preflight`, `outcome`, and `checkpoint_set` — what the commit
+recorded before its first write, or null for a dry run and for a commit with nothing to write.
 
 For how to run an upgrade safely — target discovery, credentials, backups,
 quarantine and blocking findings, resuming a partial apply, the Docker startup
