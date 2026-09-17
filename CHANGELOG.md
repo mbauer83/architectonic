@@ -3,6 +3,24 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [0.9.1] — 2026-09-17
+
+**[Full detail → `changelog-assets/0.9.1-detail.md`](changelog-assets/0.9.1-detail.md)**
+
+### Added
+
+- **An element can be labelled differently on one diagram.** Each element in the ArchiMate diagram editor shows
+  the label its box carries and offers to change it for that diagram alone; the element keeps its
+  name on every other view. A hand-laid body that already calls an element something shorter shows
+  that label and keeps it across a save. Through MCP the same statement is
+  `diagram_entities.display_labels`, keyed by the entity's id or an occurrence id.
+
+### Fixed
+
+- **The diagram editor's entity panel no longer slides over the groupings beneath it.** The panel
+  stays beside the canvas as the page scrolls, on the right like every other diagram surface, and
+  its width can be dragged.
+
 ## [0.9.0] — 2026-09-11
 
 **[Full detail → `changelog-assets/0.9.0-detail.md`](changelog-assets/0.9.0-detail.md)**
@@ -225,7 +243,7 @@ reported.
   met at it, and dropped the edge that closed a loop.
 - **Display options appear only where there is something to adjust**, and say what that is.
 - **A diagram refresh corrects a reference naming an artifact by a slug it no longer has.**
-- **Declared step edges a drawing cannot carry are reported (W048)**, as are returning flows it
+- **Declared step edges an instance cannot carry are reported (W048)**, as are returning flows it
   cannot express (W049).
 - **Two files claiming one identity are refused (E319).** The backend already declined to start on
   this; verification was silent about it.
@@ -294,7 +312,7 @@ wrote, and findings computed and then withheld from every reader entitled to the
   outside the managed subtrees was dropped after the write said it wrote.
 - **A bound element shows what it corresponds to in the model**, as a link, on every diagram type that
   declares one. Two further consumers read a shorthand the persist path strips, so an ArchiMate
-  occurrence lost the entity it redraws: the renderer resolved none, the editor saw none as a drawing.
+  occurrence lost the entity it redraws: the renderer resolved none, the editor saw none as an instance.
 
 ### Changed
 
@@ -490,7 +508,7 @@ Three renderers stopped losing content that the source contained.
   once per branch and nested forks multiplied it. The continuation is drawn once.
 - **Every relationship is drawn with the line style it declares.** `archimate-access` declared a
   dotted line and drew a solid one; twelve further types across the assurance and datatype modules
-  declared nothing and drew something else. The declaration and the drawing are now derived from
+  declared nothing and drew something else. The declaration and the instance are now derived from
   one another and held equal by a gate.
 - **The relationship macros a diagram body may call are generated from the ontology.** Nine of
   twelve ArchiMate relationships had one; a body calling another drew nothing.
@@ -843,7 +861,7 @@ repairs references that name an artifact by a name it no longer has.
 
 ### Added
 
-- **A diagram can draw an entity more than once and connect each drawing differently.** Each drawing
+- **A diagram can draw an entity more than once and connect each instance differently.** Each drawing
   gets its own row in Included Entities, with its own connections and its own related-entity list. A
   relation may be drawn once per pair of drawings, so a cluster duplicated to keep arrows untangled
   reads as a complete unit in each copy. Existing diagrams are unaffected.
@@ -1025,6 +1043,7 @@ never-requested operations is empty — the reason to trust a release which rena
 - Confidential assurance tier (STPA/CAST/GRC/FMEA/GSN) on an encrypted store with tamper-evident history
 - Viewpoint query engine with diagram/matrix/table representations
 
+[0.9.1]: https://github.com/mbauer83/architectonic/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/mbauer83/architectonic/compare/v0.8.3...v0.9.0
 [0.8.3]: https://github.com/mbauer83/architectonic/compare/v0.8.2...v0.8.3
 [0.8.2]: https://github.com/mbauer83/architectonic/compare/v0.8.1...v0.8.2
