@@ -6,7 +6,7 @@ import logging
 import os
 import pathlib
 from pathlib import Path
-from typing import TypedDict
+from typing import NotRequired, TypedDict
 
 logger = logging.getLogger(__name__)
 _PROC_DIR = Path("/proc")
@@ -26,6 +26,10 @@ class BackendInstance(TypedDict):
     argv: list[str]
     ports: list[int]
     declared_port: int | None
+    #: The serving flags the process was started with, as argv tokens a restart can carry verbatim:
+    #: `--admin-mode`, `--read-only`, and `--host <address>`. Optional only so a test can build an
+    #: instance without spelling them; `find_arch_backend_instances` always fills it.
+    serving_flags: NotRequired[list[str]]
     process_state: str | None
     stdin: str | None
     stdout: str | None
@@ -59,6 +63,29 @@ def _parse_cli_port(argv: list[str]) -> int | None:
             except ValueError:
                 return None
     return None
+
+
+#: The flags that describe *how* a backend serves, as distinct from where (`--port`) and from the
+#: launcher's own role (`--daemon`). A restart that dropped one would silently change the deployment's
+#: posture — a read-only review backend coming back writable.
+_SERVING_FLAGS = frozenset({"--admin-mode", "--read-only"})
+_SERVING_VALUE_FLAGS = frozenset({"--host"})
+
+
+def serving_flags(argv: list[str]) -> list[str]:
+    """The serving flags in `argv`, in the order given, values kept beside their flag."""
+    kept: list[str] = []
+    skip_value = False
+    for index, arg in enumerate(argv):
+        if skip_value:
+            skip_value = False
+            continue
+        if arg in _SERVING_FLAGS:
+            kept.append(arg)
+        elif arg in _SERVING_VALUE_FLAGS and index + 1 < len(argv):
+            kept.extend((arg, argv[index + 1]))
+            skip_value = True
+    return kept
 
 
 #: Invocations that never serve. ``--daemon`` spawns a child and exits; ``--stop`` and ``--status``
@@ -193,6 +220,7 @@ def find_arch_backend_instances() -> list[BackendInstance]:
                 "argv": argv,
                 "ports": _ports_for_pid(pid, inode_to_port),
                 "declared_port": _parse_cli_port(argv),
+                "serving_flags": serving_flags(argv),
                 "process_state": _read_process_state(pid),
                 "stdin": _fd_target(pid, 0),
                 "stdout": _fd_target(pid, 1),

@@ -23,10 +23,13 @@ import argparse
 import pytest
 
 from src.config import storage_settings
+from src.infrastructure.assurance import activation
 from src.infrastructure.cli import _assurance_commands as ac
 
+#: Captured at import, before the autouse fixture replaces the module attribute with a stub.
+_REAL_NOTIFY_BACKEND_RELOAD = activation.notify_backend_reload
+
 #: Captured before the autouse fixture below replaces the module attribute with a stub.
-_REAL_NOTIFY_BACKEND_RELOAD = ac._notify_backend_reload
 
 
 @pytest.fixture(autouse=True)
@@ -37,7 +40,7 @@ def _force_sqlcipher_config(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(storage_settings, "storage_assurance_max_classification", lambda: "TLP:RED")
     # Keep cmd_unlock/cmd_lock from blocking on a real backend reload POST. Accepts whatever
     # authorization intent the command passes, so the stub cannot go stale against the signature.
-    monkeypatch.setattr(ac, "_notify_backend_reload", lambda **_kwargs: None)
+    monkeypatch.setattr(activation, "notify_backend_reload", lambda **_kwargs: None)
 
 
 @pytest.fixture(autouse=True)

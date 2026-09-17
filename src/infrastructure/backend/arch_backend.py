@@ -6,7 +6,6 @@ import argparse
 import logging
 import os
 import signal
-import subprocess
 import sys
 from collections.abc import Callable
 from pathlib import Path
@@ -32,8 +31,8 @@ from src.infrastructure.backend.backend_probe import (
     resolve_backend_port,
 )
 from src.infrastructure.backend.backend_state import (
-    _process_exists,
     backend_log_path,
+    process_exists,
     read_backend_state,
     remove_own_backend_state,
     write_backend_state,
@@ -195,11 +194,10 @@ def _guard_prestart(resolved_port: int, *, for_daemon: bool, restart: bool) -> b
 # ── Daemon command ────────────────────────────────────────────────────────────
 
 def _get_git_credentials():  # type: ignore[no-untyped-def]
-    from src.infrastructure.backend.arch_backend_app import find_git_repos
-    from src.infrastructure.git.git_auth import collect_verified_credentials
+    from src.infrastructure.backend.backend_launch import workspace_git_credentials
     # Verify up front: a wrong interactively-entered passphrase re-prompts until valid (or Ctrl-C);
     # a wrong environment/non-interactive credential fails loudly instead of starting sync broken.
-    return collect_verified_credentials([r.path for r in find_git_repos()])
+    return workspace_git_credentials(Path.cwd())
 
 
 def _run_daemon(args: argparse.Namespace, resolved_port: int, argv: list[str] | None) -> None:
@@ -211,7 +209,7 @@ def _run_daemon(args: argparse.Namespace, resolved_port: int, argv: list[str] | 
     pid = _start_daemon(argv=argv, log_path=log_path, port=resolved_port)
     verdict = await_backend_startup(
         lambda: probe_backend(resolved_port),
-        lambda: _process_exists(pid),
+        lambda: process_exists(pid),
     )
     if verdict == "serving":
         print(f"backend started on port {resolved_port} (pid {pid}); log: {log_path}")
@@ -224,13 +222,17 @@ def _run_daemon(args: argparse.Namespace, resolved_port: int, argv: list[str] | 
 
 
 def _start_daemon(*, argv: list[str] | None, log_path: Path, port: int | None = None) -> int:
-    log_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(log_path, "ab") as log:
-        proc = subprocess.Popen(
-            [sys.argv[0], *_daemon_argv(argv, port=port)],
-            stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT, start_new_session=True, cwd=str(Path.cwd()),
-        )
-    return int(proc.pid)
+    """Re-run this invocation detached, minus the flags that described the launcher's role.
+
+    The child is spawned through `backend_launch.spawn_detached`, the one seam every detached start
+    goes through; the credentials it carries were already placed in this process's environment by
+    `_run_daemon`, which the child inherits.
+    """
+    from src.infrastructure.backend.backend_launch import spawn_detached
+
+    return spawn_detached(
+        [sys.argv[0], *_daemon_argv(argv, port=port)], workspace=Path.cwd(), log_path=log_path, credentials=None,
+    )
 
 
 def _daemon_argv(argv: list[str] | None, *, port: int | None = None) -> list[str]:

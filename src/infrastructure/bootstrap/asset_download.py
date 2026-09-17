@@ -45,6 +45,22 @@ def download_bytes(url: str, *, label: str | None = None) -> bytes:
     return data
 
 
+def verify_bytes(data: bytes, *, expected_sha256: str, source: str) -> None:
+    """Refuse `data` unless it hashes to `expected_sha256`; `source` names it in the refusal.
+
+    The one comparison every provisioning step and the release updater make, whether the digest is a
+    constant pinned in this repository or a statement a release publishes beside its asset. Bytes that
+    were fetched some other way — through an API client rather than `download_bytes` — come here so
+    "verified" cannot mean two things.
+    """
+    actual = sha256_hex(data)
+    expected = expected_sha256.lower()
+    if actual != expected:
+        raise SystemExit(
+            f"SHA-256 mismatch for {source} — nothing written\n  expected : {expected}\n  actual   : {actual}"
+        )
+
+
 def download_verified(url: str, *, expected_sha256: str, label: str | None = None) -> bytes:
     """Fetch `url` and return its bytes only when they hash to `expected_sha256`.
 
@@ -52,10 +68,5 @@ def download_verified(url: str, *, expected_sha256: str, label: str | None = Non
     which is what keeps a mismatch from leaving a half-provisioned tree behind.
     """
     data = download_bytes(url, label=label)
-    actual = sha256_hex(data)
-    expected = expected_sha256.lower()
-    if actual != expected:
-        raise SystemExit(
-            f"SHA-256 mismatch for {url} — nothing written\n  expected : {expected}\n  actual   : {actual}"
-        )
+    verify_bytes(data, expected_sha256=expected_sha256, source=url)
     return data

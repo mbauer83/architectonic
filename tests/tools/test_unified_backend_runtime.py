@@ -379,6 +379,8 @@ def test_ensure_backend_running_starts_backend_in_workspace_using_project_launch
     monkeypatch.setattr(backend_launch, "probe_backend", fake_probe_backend)
 
     class FakePopen:
+        pid = 4321
+
         def __init__(self, command, cwd=None, **kwargs):
             popen_calls["spawned_command"] = command
             popen_calls["cwd"] = cwd
@@ -531,7 +533,7 @@ def test_stop_backend_cleans_up_non_socket_declarants(monkeypatch) -> None:
 
     monkeypatch.setattr(backend_control, "_stop_pid", fake_stop_pid)
     monkeypatch.setattr(backend_control.os, "kill", fake_kill)
-    monkeypatch.setattr(backend_control, "_process_exists", lambda pid: pid in alive)
+    monkeypatch.setattr(backend_control, "process_exists", lambda pid: pid in alive)
 
     result = backend_control.stop_backend(port=8000)
 
@@ -873,7 +875,7 @@ def test_backend_status_removes_stale_pid(monkeypatch) -> None:
     removed: list[object] = []
 
     monkeypatch.setattr(backend_control, "read_backend_state", lambda start=None: {"pid": 123, "port": 8000})
-    monkeypatch.setattr(backend_control, "_process_exists", lambda pid: False)
+    monkeypatch.setattr(backend_control, "process_exists", lambda pid: False)
     monkeypatch.setattr(backend_control, "remove_backend_state", lambda start=None: removed.append(start))
 
     result = backend_control.backend_status(port=8000)
@@ -886,7 +888,7 @@ def test_backend_status_reports_tracked_stopped_backend_without_probe(monkeypatc
     probed: list[int] = []
 
     monkeypatch.setattr(backend_control, "read_backend_state", lambda start=None: {"pid": 123, "port": 8000})
-    monkeypatch.setattr(backend_control, "_process_exists", lambda pid: True)
+    monkeypatch.setattr(backend_control, "process_exists", lambda pid: True)
     monkeypatch.setattr(backend_control, "_read_process_state", lambda pid: "T")
     monkeypatch.setattr(
         backend_control,
@@ -972,7 +974,7 @@ def test_stop_pid_continues_stopped_process_before_terminating(monkeypatch) -> N
 
     monkeypatch.setattr(backend_control, "read_backend_state", lambda start=None: None)
     monkeypatch.setattr(backend_control, "_read_process_state", lambda pid: "T")
-    monkeypatch.setattr(backend_control, "_process_exists", lambda pid: next(alive))
+    monkeypatch.setattr(backend_control, "process_exists", lambda pid: next(alive))
 
     def fake_kill(pid: int, sig: int) -> None:
         signals.append(sig)
@@ -1009,7 +1011,7 @@ def test_stop_pid_escalates_to_sigkill_after_timeout(monkeypatch) -> None:
         kill_phase["checks_after_sigkill"] += 1
         return kill_phase["checks_after_sigkill"] < 2
 
-    monkeypatch.setattr(backend_control, "_process_exists", fake_process_exists)
+    monkeypatch.setattr(backend_control, "process_exists", fake_process_exists)
 
     import signal as signal_module
 
@@ -1159,8 +1161,11 @@ def test_start_daemon_detaches_stdin_and_session(monkeypatch, tmp_path: Path) ->
         calls.append({"command": command, **kwargs})
         return _Proc()
 
+    from src.infrastructure.backend import backend_launch as launch
+
     monkeypatch.setattr(arch_backend.sys, "argv", ["arch-backend", "--daemon", "--port", "8123"])
-    monkeypatch.setattr(arch_backend.subprocess, "Popen", fake_popen)
+    # The daemon is spawned through the one detached-start seam, so that is where the process is faked.
+    monkeypatch.setattr(launch.subprocess, "Popen", fake_popen)
 
     log_path = tmp_path / ".arch" / "backend.log"
     pid = arch_backend._start_daemon(argv=None, log_path=log_path)
@@ -1168,8 +1173,8 @@ def test_start_daemon_detaches_stdin_and_session(monkeypatch, tmp_path: Path) ->
     assert pid == 4321
     assert calls
     assert calls[0]["command"] == ["arch-backend", "--port", "8123"]
-    assert calls[0]["stdin"] is arch_backend.subprocess.DEVNULL
-    assert calls[0]["stderr"] is arch_backend.subprocess.STDOUT
+    assert calls[0]["stdin"] is launch.subprocess.DEVNULL
+    assert calls[0]["stderr"] is launch.subprocess.STDOUT
     assert calls[0]["start_new_session"] is True
     assert calls[0]["cwd"] == str(Path.cwd())
 

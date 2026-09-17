@@ -148,90 +148,42 @@ def cmd_status(args: argparse.Namespace) -> int:
     return 0
 
 
-def _notify_backend_reload(*, authorize: bool | None = None) -> None:
-    """Best-effort POST to *this workspace's* backend to reload the assurance bundle.
-
-    ``authorize`` carries the operator's intent to the running process: True where the command
-    grants access, False where it revokes it, None to leave authorization untouched. Under the
-    manual activation policy this is what makes the command take effect on the process that is
-    already running rather than only on the next start.
-
-    Which process that is has to be decided by what it serves. Composed from the configured port,
-    this call authorized a neighbouring workspace's backend to open *its* confidential store — an
-    unlock ceremony in one workspace granting access in another.
-    """
-    import json  # noqa: PLC0415
-    import urllib.request  # noqa: PLC0415
-
-    try:
-        from src.infrastructure.cli._workspace_backend import workspace_backend_url  # noqa: PLC0415
-
-        base_url = workspace_backend_url()
-        if base_url is None:
-            return
-        payload = json.dumps({} if authorize is None else {"authorize": authorize}).encode()
-        req = urllib.request.Request(
-            f"{base_url}/api/assurance/reload",
-            data=payload,
-            method="POST",
-            headers={"Content-Type": "application/json"},
-        )
-        with urllib.request.urlopen(req, timeout=3):
-            pass
-    except Exception:  # noqa: BLE001
-        pass  # Backend not running — the activation policy applies at its next start.
-
-
 def cmd_unlock(args: argparse.Namespace) -> int:
-    from src.infrastructure.assurance._sqlcipher_store import SQLCipherAssuranceStore  # noqa: PLC0415
+    from src.infrastructure.assurance.activation import activate_store  # noqa: PLC0415
 
     db_path = Path(args.db_path) if args.db_path else _default_db_path()
-    store = SQLCipherAssuranceStore(db_path)
     try:
-        store.unlock()
-        stats = store.stats()
-        store.lock()
-        # Record that this store was ceremonially activated at least once. Whether a future
-        # process may open it unattended is a separate, deployment-level question.
-        accounts.write(accounts.SETUP_GATE, db_path, "1")
-        # Authorize the running backend (if any) immediately: under the manual policy a plain
-        # reload would re-apply the policy and stay locked, so the command would do nothing.
-        _notify_backend_reload(authorize=True)
-        _print_yaml({
-            "status": "unlocked_and_verified",
-            "db_path": str(db_path),
-            "stats": stats,
-            "note": (
-                "Store activated and the running backend authorized. Whether a newly started "
-                "process opens the store by itself depends on "
-                "storage.assurance.activation_policy: 'manual' (default) starts locked and "
-                "needs this command again, 'persistent' opens from the activation gate until "
-                "`arch-assurance lock`. Either way this bounds application-level access, not "
-                "key extraction — the key stays in the OS keychain. "
-                "Run `arch-assurance export-key` to save your recovery key offline."
-            ),
-        })
-        return 0
+        activation = activate_store(db_path)
     except RuntimeError as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 1
+    _print_yaml({
+        "status": "unlocked_and_verified",
+        "db_path": str(db_path),
+        "stats": activation.stats,
+        "note": (
+            "Store activated and the running backend authorized. Whether a newly started "
+            "process opens the store by itself depends on "
+            "storage.assurance.activation_policy: 'manual' (default) starts locked and "
+            "needs this command again, 'persistent' opens from the activation gate until "
+            "`arch-assurance lock`. Either way this bounds application-level access, not "
+            "key extraction — the key stays in the OS keychain. "
+            "Run `arch-assurance export-key` to save your recovery key offline."
+        ),
+    })
+    return 0
 
 
 def cmd_lock(args: argparse.Namespace) -> int:
-    """Revoke access: clear the activation gate and close the store in the running backend.
+    """Revoke access — see `activation.deactivate_store` for what that means and why it is immediate."""
+    from src.infrastructure.assurance.activation import deactivate_store  # noqa: PLC0415
 
-    The inverse of `unlock`. Revocation takes effect immediately on the running process rather
-    than at its next start, or this command would report success while access stayed open. The
-    encryption key stays in the OS keychain, so `unlock` re-enables access without the recovery
-    key — and so this bounds application-level access, not key extraction.
-    """
     db_path = Path(args.db_path) if args.db_path else _default_db_path()
     try:
-        accounts.clear(accounts.SETUP_GATE, db_path)
+        deactivate_store(db_path)
     except Exception as exc:  # noqa: BLE001
         print(f"Error: {exc}", file=sys.stderr)
         return 1
-    _notify_backend_reload(authorize=False)
     _print_yaml({
         "status": "locked",
         "note": (

@@ -8,6 +8,7 @@ not "what is running" but "which endpoint may this workspace use". The answer is
 from __future__ import annotations
 
 import logging
+import os
 import subprocess
 import time
 from pathlib import Path
@@ -33,6 +34,12 @@ from src.infrastructure.backend.backend_probe import (
     resolve_backend_port,
 )
 from src.infrastructure.backend.backend_state import backend_log_path, read_backend_state
+from src.infrastructure.git.git_auth import (
+    GitCredentials,
+    collect_verified_credentials,
+    credentials_to_env_overrides,
+)
+from src.infrastructure.workspace.git_repos import configured_git_repos
 
 logger = logging.getLogger(__name__)
 
@@ -101,21 +108,66 @@ def _announce_relocation(chosen: int, moved_from: int | None, because: EndpointS
     )
 
 
-def _start_backend(port: int, *, workspace: Path, project_dir: Path | None) -> int:
-    log_path = backend_log_path(workspace)
+def workspace_git_credentials(workspace: Path) -> GitCredentials | None:
+    """The credentials this workspace's remotes need, collected and verified — or None if none do.
+
+    The same prompt-and-verify loop `arch-backend --daemon` has always run before spawning: a wrong
+    passphrase typed at a TTY is re-asked, a wrong one from the environment fails loudly, and a
+    workspace with no remote needing any is asked nothing. A detached start that skipped this handed
+    the child a prompt it could only answer into `/dev/null`.
+    """
+    return collect_verified_credentials([repo.path for repo in configured_git_repos(workspace)])
+
+
+def spawn_detached(
+    command: list[str], *, workspace: Path, log_path: Path, credentials: GitCredentials | None
+) -> int:
+    """Start `command` as a detached session writing to `log_path`, carrying `credentials`.
+
+    The one place a backend is spawned: stdin from nowhere, output into the workspace's log, its own
+    session so a closing terminal cannot take it down, and the credentials handed over in the
+    environment the way the child already reads them. Returns the pid.
+    """
     log_path.parent.mkdir(parents=True, exist_ok=True)
+    env = {**os.environ, **credentials_to_env_overrides(credentials)}
+    logger.info("Starting backend with command: %s", " ".join(command))
     with open(log_path, "ab") as log:
-        command = backend_start_command(port=port, project_dir=project_dir)
-        logger.info("Starting backend with command: %s", " ".join(command))
-        subprocess.Popen(
+        process = subprocess.Popen(
             command,
             cwd=str(workspace),
             stdout=log,
             stderr=subprocess.STDOUT,
             stdin=subprocess.DEVNULL,
             start_new_session=True,
+            env=env,
         )
+    return int(process.pid)
+
+
+def start_detached(
+    port: int,
+    *,
+    workspace: Path,
+    project_dir: Path | None = None,
+    flags: tuple[str, ...] = (),
+    credentials: GitCredentials | None = None,
+) -> int:
+    """Start this workspace's backend detached on `port` and wait until it serves the workspace.
+
+    `flags` are the serving flags a restart carries over (`--admin-mode`, `--read-only`,
+    `--host <address>`); `credentials` are ones a caller has already collected — the updater asks for
+    them before it stops anything — and are collected here when not given.
+    """
+    if credentials is None:
+        credentials = workspace_git_credentials(workspace)
+    log_path = backend_log_path(workspace)
+    command = [*backend_start_command(port=port, project_dir=project_dir), *flags]
+    spawn_detached(command, workspace=workspace, log_path=log_path, credentials=credentials)
     return _await_own_backend(port, workspace=workspace, log_path=log_path)
+
+
+def _start_backend(port: int, *, workspace: Path, project_dir: Path | None) -> int:
+    return start_detached(port, workspace=workspace, project_dir=project_dir)
 
 
 def _await_own_backend(port: int, *, workspace: Path, log_path: Path) -> int:

@@ -107,6 +107,11 @@ class TestCheckDiagramRuntimeMain:
 # ---------------------------------------------------------------------------
 # get_plantuml: pure helpers
 # ---------------------------------------------------------------------------
+
+
+def _offline(url: str, *, label: str | None = None) -> bytes:
+    """The network as an offline box sees it: every fetch is the refusal `download_bytes` raises."""
+    raise SystemExit(f"Download error: {url}")
 #
 # The two `_sha256hex` classes that stood here are gone with the functions they tested. There
 # were two of them because the digest was written twice, once per provisioning command; one
@@ -120,12 +125,17 @@ class TestGetPlantumlCheck:
         result = check(tmp_path / "nonexistent.jar")
         assert result == 1
 
-    def test_check_returns_0_when_file_exists(self, tmp_path: Path) -> None:
-        from src.infrastructure.bootstrap.get_plantuml import check
+    def test_check_returns_0_when_file_exists_and_the_pin_cannot_be_verified(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Offline, a present jar is "unverifiable", never "wrong" — the check must not fail a box for
+        having no network. The network is stubbed to keep this module's promise of no network calls."""
+        from src.infrastructure.bootstrap import get_plantuml
 
+        monkeypatch.setattr(get_plantuml, "download_bytes", _offline)
         jar = tmp_path / "plantuml.jar"
         jar.write_bytes(b"fake jar content")
-        result = check(jar)
+        result = get_plantuml.check(jar)
         assert result == 0
 
 
@@ -149,11 +159,14 @@ class TestGetPlantumlMain:
             main(["--check", "--output", str(tmp_path / "nonexistent.jar")])
         assert exc_info.value.code == 1
 
-    def test_main_check_returns_0_when_file_exists(self, tmp_path: Path) -> None:
-        from src.infrastructure.bootstrap.get_plantuml import main
+    def test_main_check_returns_0_when_file_exists_and_the_pin_cannot_be_verified(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        from src.infrastructure.bootstrap import get_plantuml
 
+        monkeypatch.setattr(get_plantuml, "download_bytes", _offline)
         jar = tmp_path / "plantuml.jar"
         jar.write_bytes(b"fake")
         with pytest.raises(SystemExit) as exc_info:
-            main(["--check", "--output", str(jar)])
+            get_plantuml.main(["--check", "--output", str(jar)])
         assert exc_info.value.code == 0

@@ -121,14 +121,50 @@ def download(version: str, output: Path, *, force: bool) -> int:
     return 0
 
 
+def pinned_sidecar_digest(version: str = PLANTUML_VERSION) -> str | None:
+    """The SHA-256 Maven Central states for `version`'s jar, or None when it cannot be fetched.
+
+    None is "unverifiable", never "not pinned": an offline box must not be told its jar is wrong.
+    """
+    sidecar_url = f"{_MAVEN_BASE}/{version}/plantuml-{version}.jar.sha256"
+    try:
+        return download_bytes(sidecar_url).decode().strip().split()[0].lower()
+    except (SystemExit, UnicodeDecodeError, IndexError):
+        return None
+
+
+def installed_jar_matches_pin(output: Path, version: str = PLANTUML_VERSION) -> bool | None:
+    """Whether the jar at `output` is the release this source pins.
+
+    True or False when Maven Central's sidecar could be read; None when it could not, or when there
+    is no jar to compare. The updater asks this after moving the checkout, because a release may move
+    the pin, and a jar left over from the previous pin renders with the previous PlantUML.
+    """
+    if not output.exists():
+        return None
+    expected = pinned_sidecar_digest(version)
+    if expected is None:
+        return None
+    return sha256_hex(output.read_bytes()) == expected
+
+
 def check(output: Path) -> int:
+    """Print the jar's digest and whether it is the pinned release; exit 1 only when it is not."""
     if not output.exists():
         print(f"File not found: {output}")
         return 1
     digest = sha256_hex(output.read_bytes())
     print(f"{output}")
     print(f"  SHA-256: {digest}")
-    return 0
+    verdict = installed_jar_matches_pin(output)
+    if verdict is None:
+        print(f"  pinned {PLANTUML_VERSION}: unverifiable (Maven Central sidecar not reachable)")
+        return 0
+    if verdict:
+        print(f"  pinned {PLANTUML_VERSION}: yes")
+        return 0
+    print(f"  pinned {PLANTUML_VERSION}: NO — run get-plantuml --force to install the pinned release")
+    return 1
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────

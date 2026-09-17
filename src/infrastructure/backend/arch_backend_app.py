@@ -33,28 +33,10 @@ if TYPE_CHECKING:
 
 
 def find_git_repos() -> "list[RepoSpec]":
-    """Return git-backed repos from arch-workspace.yaml, tagged with their role."""
-    from src.config.workspace_paths import find_workspace_config, parse_workspace_config
-    from src.infrastructure.git.git_sync import RepoSpec
+    """The workspace's git-backed repositories, from the cwd — see `workspace.git_repos`."""
+    from src.infrastructure.workspace.git_repos import configured_git_repos
 
-    cfg = find_workspace_config(Path.cwd())
-    if cfg is None:
-        return []
-    workspace_root = cfg.parent
-    config = parse_workspace_config(cfg)
-    repos = []
-    for key in ("engagement", "enterprise"):
-        spec = config.get(key, {})
-        if "git" in spec:
-            git_spec = spec["git"]
-            rel = git_spec.get("path", f"./{key}-repository")
-            repos.append(
-                RepoSpec(
-                    path=(workspace_root / rel).resolve(),
-                    role=key,  # type: ignore[arg-type]
-                )
-            )
-    return repos
+    return configured_git_repos()
 
 
 def _log_thread_dump(*, reason: str) -> None:
