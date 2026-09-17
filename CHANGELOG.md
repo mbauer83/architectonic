@@ -3,6 +3,53 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [0.10.0] — 2026-09-17
+
+**[Full detail → `changelog-assets/0.10.0-detail.md`](changelog-assets/0.10.0-detail.md)**
+
+**Update an installation with one command.** `arch-update` checks the published releases, verifies
+the newest one and reports what an update would do; `arch-update --commit` performs it and puts the
+deployment back the way it was if anything fails. Releases from this version on carry the built GUI,
+a checksum file and a signed tag.
+
+### Added
+
+- **`arch-update`.** A dry run by default: it reads the release record, verifies the tag's
+  signature, the release commit and every asset digest, runs the *next* version's `arch-repair
+  upgrade` dry run in a throwaway worktree against this deployment, and prints the plan with
+  every step, every credential it will ask for and every reason it would refuse. `--commit` runs
+  the plan as journaled phases: stop the backend, move the checkout, sync the environment, install
+  the GUI bundle, migrate, start the backend on the same port with the same flags, re-authorize the
+  store, verify the served version. A failure rolls back through every phase, including a committed
+  migration. `--status`, `--rollback` and `--resume` act on an update in flight. Exit codes follow
+  `arch-repair upgrade`. See [Updating an installation](docs/reference/software-update.md).
+- **A compose deployment updates from its host.** On a checkout whose compose project runs the app,
+  `arch-update --commit` builds the image for the new checkout, stops the container, migrates
+  inside the new image, starts it and verifies the served version; the previous image is kept
+  under its version so a rollback retags instead of rebuilding.
+- **`arch-repair upgrade --commit` takes a safety point before it writes.** Each repository is
+  pinned under a git ref and each operational target copied; `--restore <set>` returns every
+  target to it and `--list-checkpoints` shows the one set that is kept. The `--json` report names
+  the set and whether each finding blocks a commit.
+- **Signed, published releases.** Tags from this version on are signed with the maintainer's SSH
+  key and verified against `.github/release-signers`; a release publishes the built GUI bundle,
+  `SHA256SUMS` and a build-provenance attestation.
+
+### Fixed
+
+- **A data upgrade's checkpoint no longer fails on a repository that ignores its own `.arch/`.**
+  The staging rule every enterprise commit and checkpoint uses is a glob exclude git accepts
+  whether or not the directory is ignored. A checkpoint set that cannot be completed now leaves no
+  ref and no directory behind, and the command exits 21 having written nothing.
+
+### Upgrading
+
+- This release is installed by hand, as before: pull, `uv sync`, rebuild the GUI, run
+  `arch-repair upgrade --commit` with the backend stopped. Every later release is installed with
+  `arch-update --commit`.
+- `arch-repair upgrade`'s `--json` report is schema version 2: findings carry `blocks_commit`, and a
+  committed run reports its `checkpoint_set`.
+
 ## [0.9.1] — 2026-09-17
 
 **[Full detail → `changelog-assets/0.9.1-detail.md`](changelog-assets/0.9.1-detail.md)**
@@ -1043,6 +1090,7 @@ never-requested operations is empty — the reason to trust a release which rena
 - Confidential assurance tier (STPA/CAST/GRC/FMEA/GSN) on an encrypted store with tamper-evident history
 - Viewpoint query engine with diagram/matrix/table representations
 
+[0.10.0]: https://github.com/mbauer83/architectonic/compare/v0.9.1...v0.10.0
 [0.9.1]: https://github.com/mbauer83/architectonic/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/mbauer83/architectonic/compare/v0.8.3...v0.9.0
 [0.8.3]: https://github.com/mbauer83/architectonic/compare/v0.8.2...v0.8.3
