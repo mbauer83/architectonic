@@ -12,9 +12,9 @@ from typing import Any
 from fastapi import APIRouter, Depends
 
 from src.application.runtime_catalogs import RuntimeCatalogs
-from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
 from src.infrastructure.rest.contracts.authoring_guidance import AuthoringGuidanceResponse
 from src.infrastructure.rest.contracts.errors import ApiError, FieldError, ValidationErrorDetails
+from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers._openapi import TAG_TAXONOMY
 from src.infrastructure.rest.routers.entities._filter import parse_csv_filter

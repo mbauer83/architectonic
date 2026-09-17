@@ -13,10 +13,7 @@ from src.application.modeling.binding_normalize import restore_diagram_shorthand
 from src.application.modeling.proposal_standing import standing_subject
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.domain.baseline_standing import BASELINE_STANDING
-from src.infrastructure.app_bootstrap import (
-    complete_diagram_type_catalog,
-    runtime_catalogs_dependency,
-)
+from src.infrastructure.app_bootstrap import complete_diagram_type_catalog
 from src.infrastructure.rest.contracts.diagrams import (
     DiagramConnectionListResponse,
     DiagramContextResponse,
@@ -26,6 +23,7 @@ from src.infrastructure.rest.contracts.diagrams import (
     DiagramReferenceListResponse,
     MatrixConfigResponse,
 )
+from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers._openapi import READ_RESPONSES, TAG_DIAGRAMS
 from src.infrastructure.rest.routers.diagrams._context import (

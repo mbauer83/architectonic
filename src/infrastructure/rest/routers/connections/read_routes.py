@@ -17,7 +17,6 @@ from src.application.ontology_views import (
     element_appearance_payload,
 )
 from src.application.runtime_catalogs import RuntimeCatalogs
-from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
 from src.infrastructure.rendering.diagram_selection import connections_among
 from src.infrastructure.rest.contracts.authoring_catalogs import (
     ClassificationLevelsResponse,
@@ -31,6 +30,7 @@ from src.infrastructure.rest.contracts.entities import EntityNeighborhoodRespons
 from src.infrastructure.rest.contracts.errors import ApiError, FieldError, ValidationErrorDetails
 from src.infrastructure.rest.contracts.search import KeywordSearchResponse
 from src.infrastructure.rest.contracts.write_help import WriteHelpResponse
+from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers._failures import derivation_limit
 from src.infrastructure.rest.routers._global_search import (

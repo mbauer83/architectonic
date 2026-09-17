@@ -184,7 +184,7 @@ class TestMcpAuthoringGuidancePairLegality:
 def _ontology_rest_client():
     from starlette.testclient import TestClient
 
-    from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
+    from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
     from src.infrastructure.rest.routers.connections.router import router as connections_router
 
     app = build_api_app(connections_router)

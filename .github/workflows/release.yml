@@ -51,7 +51,8 @@ jobs:
 
       - name: Install dependencies (all groups)
         # The GUI build regenerates the frontend types from the ontology through `uv run`, which
-        # imports the backend; the groups that hold its dependencies must be synced first.
+        # imports the backend's bootstrap. Synced here, from the lock and with every group, as ci.yml
+        # does, so the build runs in the environment the gates ran in.
         run: uv sync --locked --all-groups
 
       - name: Set up Node 20

@@ -16,7 +16,6 @@ from src.application.artifacts.document_schema import (
 from src.application.modeling.proposal_standing import standing_subject
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.domain.baseline_standing import BASELINE_STANDING
-from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
 from src.infrastructure.rest.contracts.artifact_home import FiledOnCreate, Rehomeable
 from src.infrastructure.rest.contracts.authoring_catalogs import DocumentTypeListResponse
 from src.infrastructure.rest.contracts.documents import (
@@ -24,6 +23,7 @@ from src.infrastructure.rest.contracts.documents import (
     DocumentListResponse,
     DocumentSchemataResponse,
 )
+from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers._openapi import (
     READ_RESPONSES,

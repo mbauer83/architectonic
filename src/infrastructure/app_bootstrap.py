@@ -6,8 +6,6 @@ import logging
 from functools import lru_cache
 from typing import Any
 
-from fastapi import Request
-
 from src.application.assurance.edge_catalog import EdgeCatalogSource
 from src.application.derivation.strategy_registry import DerivationStrategyCatalogBuilder
 from src.application.guidance_composition import ComposedContext, GuidanceContextView
@@ -284,22 +282,12 @@ def module_registry_from_app(app: Any) -> ModuleRegistry:
     return registry
 
 
-def module_registry_dependency(request: Request) -> ModuleRegistry:
-    """FastAPI dependency exposing the installed module registry."""
-    return module_registry_from_app(request.app)
-
-
 def runtime_catalogs_from_app(app: Any) -> RuntimeCatalogs:
     """Return the RuntimeCatalogs installed on a FastAPI application."""
     catalogs = getattr(app.state, _RUNTIME_CATALOGS_STATE_KEY, None)
     if not isinstance(catalogs, RuntimeCatalogs):
         raise RuntimeError("RuntimeCatalogs have not been installed on the FastAPI application")
     return catalogs
-
-
-def runtime_catalogs_dependency(request: Request) -> RuntimeCatalogs:
-    """FastAPI dependency exposing the installed RuntimeCatalogs."""
-    return runtime_catalogs_from_app(request.app)
 
 
 @lru_cache(maxsize=1)

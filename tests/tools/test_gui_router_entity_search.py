@@ -120,11 +120,8 @@ def populated_root(tmp_path: Path) -> Path:
 def sync_client(populated_root: Path):
     from starlette.testclient import TestClient
 
-    from src.infrastructure.app_bootstrap import (
-        build_runtime_catalogs,
-        get_module_registry,
-        runtime_catalogs_dependency,
-    )
+    from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry
+    from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
 
     repo = ArtifactRepository(shared_artifact_index([populated_root]))
     gui_state.init_state(repo, populated_root, None)

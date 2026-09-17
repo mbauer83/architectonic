@@ -170,11 +170,8 @@ $GsnSupportedBy(g1, s1)
 def sync_client(populated_root: Path):
     from starlette.testclient import TestClient
 
-    from src.infrastructure.app_bootstrap import (
-        build_runtime_catalogs,
-        get_module_registry,
-        runtime_catalogs_dependency,
-    )
+    from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry
+    from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
 
     repo = ArtifactRepository(shared_artifact_index([populated_root]))
     gui_state.init_state(repo, populated_root, None)
@@ -326,11 +323,8 @@ def sync_client_with_viewpoint(populated_root: Path):
 
     from src.domain.concept_scope import ConceptScope
     from src.domain.viewpoints.viewpoints import ViewpointCatalog, ViewpointDefinition
-    from src.infrastructure.app_bootstrap import (
-        build_runtime_catalogs,
-        get_module_registry,
-        runtime_catalogs_dependency,
-    )
+    from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry
+    from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
 
     repo = ArtifactRepository(shared_artifact_index([populated_root]))
     gui_state.init_state(repo, populated_root, None)

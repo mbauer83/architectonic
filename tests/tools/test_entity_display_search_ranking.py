@@ -98,11 +98,8 @@ ACT_Clerk1 --> APP_Order1 : Uses
 def ranking_client(tmp_path: Path):
     from starlette.testclient import TestClient
 
-    from src.infrastructure.app_bootstrap import (
-        build_runtime_catalogs,
-        get_module_registry,
-        runtime_catalogs_dependency,
-    )
+    from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry
+    from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
 
     root = tmp_path / "engagements" / "ENG-RANK" / "architecture-repository"
     _write(root / "model" / "application" / "application-component" / f"{_SYSTEM_ID}.md", _SYSTEM_CONTENT)

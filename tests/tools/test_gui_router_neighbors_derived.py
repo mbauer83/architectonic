@@ -38,11 +38,8 @@ def _connection(repo: Path, source: str, target: str, connection_type: str) -> N
 def test_derived_neighbors_match_mcp(repo: Path) -> None:
     from starlette.testclient import TestClient
 
-    from src.infrastructure.app_bootstrap import (
-        build_runtime_catalogs,
-        get_module_registry,
-        runtime_catalogs_dependency,
-    )
+    from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry
+    from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
 
     component = _entity(repo, "application-component", "Component")
     function = _entity(repo, "function", "Function")

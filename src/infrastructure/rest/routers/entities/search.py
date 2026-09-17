@@ -11,12 +11,12 @@ from src.application.entity_type_predicates import is_assurance_entity_type, is_
 from src.application.modeling.proposal_standing import standing_subject
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.domain.baseline_standing import BASELINE_STANDING
-from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
 from src.infrastructure.rest.contracts.catalog import EntityTaxonomyResponse
 from src.infrastructure.rest.contracts.search import (
     DisplaySearchResponse,
     ReferenceSearchResponse,
 )
+from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers._global_search import (
     prioritize_global_hits,

@@ -82,11 +82,8 @@ First realizes second.
 def client(tmp_path: Path):
     from starlette.testclient import TestClient
 
-    from src.infrastructure.app_bootstrap import (
-        build_runtime_catalogs,
-        get_module_registry,
-        runtime_catalogs_dependency,
-    )
+    from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry
+    from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
 
     root = tmp_path / "engagements" / "ENG-PREV" / "architecture-repository"
     model_dir = root / "model" / "motivation" / "goal"

@@ -12,8 +12,8 @@ from src.application.entity_type_predicates import is_internal_entity_type
 from src.application.modeling.enterprise_reference import proxies_an_entity
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.domain.artifact_id import ConnectionKey, MalformedArtifactIdError, parse_connection_id
-from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
 from src.infrastructure.rest.contracts.connections import BrokenReferenceCleanupResponse
+from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers._openapi import (
     READ_RESPONSES,

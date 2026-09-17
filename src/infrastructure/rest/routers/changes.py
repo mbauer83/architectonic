@@ -17,7 +17,6 @@ from src.application.modeling.proposed_change import (
     PROPOSED_CHANGE_TYPE,
 )
 from src.application.runtime_catalogs import RuntimeCatalogs
-from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
 from src.infrastructure.rest.contracts.changes import (
     ChangeDiscardedResponse,
     ChangeListResponse,
@@ -25,6 +24,7 @@ from src.infrastructure.rest.contracts.changes import (
     ChangeSubmitRequest,
     ChangeSubmittedResponse,
 )
+from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers._openapi import (
     READ_RESPONSES,

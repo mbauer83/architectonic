@@ -31,11 +31,8 @@ pytest.importorskip("httpx")
 def client(tmp_path: Path):
     from starlette.testclient import TestClient
 
-    from src.infrastructure.app_bootstrap import (
-        build_runtime_catalogs,
-        get_module_registry,
-        runtime_catalogs_dependency,
-    )
+    from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry
+    from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
     from src.infrastructure.rest.routers.connections.router import router as connections_router
     from src.infrastructure.rest.routers.diagrams.router import router as diagrams_router
     from src.infrastructure.rest.routers.entities.search import router as entity_search_router

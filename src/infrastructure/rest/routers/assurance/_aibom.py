@@ -24,7 +24,6 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict
 
 from src.application.runtime_catalogs import RuntimeCatalogs
-from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
 from src.infrastructure.rest.contracts.assurance_aibom import (
     AiBomCoverageResponse,
     AiBomExportResponse,
@@ -32,6 +31,7 @@ from src.infrastructure.rest.contracts.assurance_aibom import (
     AiBomScanResponse,
 )
 from src.infrastructure.rest.contracts.errors import ApiError, NotConfiguredDetails
+from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
 from src.infrastructure.rest.routers._openapi import TAG_ASSURANCE_SECURITY
 from src.infrastructure.rest.routers.assurance._http import ok as _ok
 

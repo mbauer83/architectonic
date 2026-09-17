@@ -33,7 +33,6 @@ from src.application.assurance.provenance_assignment import (
     assign_provenance,
 )
 from src.application.runtime_catalogs import RuntimeCatalogs
-from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
 from src.infrastructure.assurance.edge_legality import legal_connection_types
 from src.infrastructure.assurance.write_serialization import run_write
 from src.infrastructure.mcp.assurance_mcp.context import get_assurance_context
@@ -57,6 +56,7 @@ from src.infrastructure.rest.contracts.errors import (
     ProvenanceImmutableDetails,
     ValidationErrorDetails,
 )
+from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
 from src.infrastructure.rest.routers._openapi import TAG_ASSURANCE_NODES
 from src.infrastructure.rest.routers.assurance._http import (
     deleted as deleted_response,

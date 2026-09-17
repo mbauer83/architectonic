@@ -13,8 +13,8 @@ from fastapi import APIRouter, Body, Depends, HTTPException
 
 from src.application.identifier_allocator import get_default_allocator
 from src.application.runtime_catalogs import RuntimeCatalogs
-from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
 from src.infrastructure.rest.contracts.platform import AllocatedIdentifierResponse
+from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
 from src.infrastructure.rest.routers._openapi import TAG_ENTITIES
 
 router = APIRouter()

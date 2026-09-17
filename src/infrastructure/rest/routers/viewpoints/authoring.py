@@ -38,7 +38,6 @@ from src.domain.viewpoints.viewpoint_serialization import viewpoint_definition_t
 from src.domain.viewpoints.viewpoint_summary import render_query_summary
 from src.domain.viewpoints.viewpoint_value_types import BINDING_SELECT_NAMES
 from src.domain.viewpoints.viewpoints import ViewpointCatalog, ViewpointDefinition
-from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
 from src.infrastructure.rest.contracts.viewpoint_catalogs import (
     CriteriaCatalogResponse,
     ViewpointQuerySummaryResponse,
@@ -48,6 +47,7 @@ from src.infrastructure.rest.contracts.viewpoints import (
     ViewpointPinsResponse,
     ViewpointReferencerListResponse,
 )
+from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers._openapi import READ_RESPONSES, TAG_VIEWPOINTS, WRITE_RESPONSES
 from src.infrastructure.rest.routers.viewpoints._write import router as _write_router

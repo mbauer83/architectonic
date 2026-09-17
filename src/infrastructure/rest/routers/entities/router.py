@@ -17,7 +17,6 @@ from src.application.modeling.proposal_standing import standing_subject
 from src.application.read_models import EntityContextReadModel
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.domain.baseline_standing import BASELINE_STANDING
-from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
 from src.infrastructure.rest.contracts.catalog import (
     BackendIdentityResponse,
     RepositoryStatsResponse,
@@ -28,6 +27,7 @@ from src.infrastructure.rest.contracts.entities import (
     EntityListResponse,
     EntitySchemaResponse,
 )
+from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers._openapi import (
     READ_RESPONSES,

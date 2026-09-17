@@ -13,10 +13,7 @@ from __future__ import annotations
 
 import typing
 
-from src.infrastructure.app_bootstrap import (
-    module_registry_dependency,
-    runtime_catalogs_dependency,
-)
+from src.infrastructure.rest.dependencies import module_registry_dependency, runtime_catalogs_dependency
 
 
 def test_runtime_dependency_request_annotation_resolves() -> None:

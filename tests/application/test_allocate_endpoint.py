@@ -69,7 +69,7 @@ def test_allocate_refuses_an_entity_type_that_is_not_workspace_scoped() -> None:
     against the live model.
     """
     starlette_tc = pytest.importorskip("starlette.testclient")
-    from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
+    from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
 
     class _Entry:
         entity_type = "scoped-thing"

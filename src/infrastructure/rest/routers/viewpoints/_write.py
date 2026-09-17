@@ -27,7 +27,6 @@ from src.application.viewpoints.persist_definition import (
     persist_viewpoint_definition,
 )
 from src.domain.viewpoints.viewpoint_parsing import viewpoint_definition_from_mapping
-from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
 from src.infrastructure.rest.contracts.errors import (
     ApiError,
     DenialDetails,
@@ -38,6 +37,7 @@ from src.infrastructure.rest.contracts.errors import (
     ViewpointReferencerRef,
 )
 from src.infrastructure.rest.contracts.viewpoints import ViewpointPersistResponse
+from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
 from src.infrastructure.rest.route_policy import reserved_segments_under
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers._openapi import TAG_VIEWPOINTS, WRITE_RESPONSES

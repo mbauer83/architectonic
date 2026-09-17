@@ -8,7 +8,7 @@ from __future__ import annotations
 from fastapi import Depends
 
 from src.application.runtime_catalogs import RuntimeCatalogs
-from src.infrastructure.app_bootstrap import runtime_catalogs_dependency
+from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.viewpoint_declarations import with_effective_viewpoints
 

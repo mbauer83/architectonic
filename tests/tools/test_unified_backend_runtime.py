@@ -13,7 +13,7 @@ from src.domain.deployment.backend_endpoint import (
     StartBackendOn,
 )
 from src.domain.modules.module_registry import ModuleRegistry
-from src.infrastructure.app_bootstrap import module_registry_dependency, module_registry_from_app
+from src.infrastructure.app_bootstrap import module_registry_from_app
 from src.infrastructure.backend import (
     _lifecycle_cli,
     arch_backend,
@@ -25,6 +25,7 @@ from src.infrastructure.backend import (
 )
 from src.infrastructure.backend.arch_backend_app import _build_app
 from src.infrastructure.mcp import arch_mcp_stdio, arch_mcp_stdio_assurance
+from src.infrastructure.rest.dependencies import module_registry_dependency
 
 
 @pytest.fixture(autouse=True)
