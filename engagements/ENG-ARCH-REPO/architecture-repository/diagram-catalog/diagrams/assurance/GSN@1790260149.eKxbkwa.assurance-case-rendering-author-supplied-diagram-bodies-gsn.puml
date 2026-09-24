@@ -1,0 +1,221 @@
+---
+artifact-id: GSN@1790260149.eKxbkwa.assurance-case-rendering-author-supplied-diagram-bodies-gsn
+artifact-type: diagram
+name: "Assurance Case \u2014 PlantUML Preprocessor Untrusted-Input Disclosure (GSN)"
+version: 0.1.0
+status: active
+keywords:
+- assurance-case
+- gsn
+- rendering
+- plantuml
+- security
+diagram-type: gsn
+diagram-entities:
+  nodes:
+  - node_id: G-TOP
+    gsn_type: goal
+    name: Diagram rendering discloses no server-side confidential data and bypasses
+      no TLP or unlock control
+    source_assurance_ids:
+    - LSS@1784721758.xyb7.5e5a41
+    - LSS@1784721761.subh.8af6a4
+  - node_id: C-STPA@1784721732.pflr.3e4395
+    gsn_type: context
+    name: 'STPA-Sec analysis: PlantUML Preprocessor Untrusted-Input Disclosure'
+    source_assurance_ids: []
+  - node_id: G-HAZ@1784721764.wra3.48aefe
+    gsn_type: goal
+    name: The renderer never processes an untrusted PlantUML body with the backend's
+      file or network access
+    source_assurance_ids:
+    - HAZ@1784721764.wra3.48aefe
+  - node_id: S-HAZ@1784721764.wra3.48aefe
+    gsn_type: strategy
+    name: Argue over the constraints derived from the unsafe control action and its
+      loss scenarios
+    source_assurance_ids:
+    - HAZ@1784721764.wra3.48aefe
+    - UCA@1784721777.tdvx.edace6
+  - node_id: J-two-controls
+    gsn_type: justification
+    name: Two independent controls, because the body check runs before submission
+      and PlantUML reports no attempted file access
+    source_assurance_ids: []
+  - node_id: G-ACN@1784721782.lrw1.6ca350
+    gsn_type: goal
+    name: A PlantUML body that references a file, URL or environment value is refused
+      on every write and render path
+    source_assurance_ids:
+    - ACN@1784721782.lrw1.6ca350
+  - node_id: G-ACN@1790259990.3trt.374968
+    gsn_type: goal
+    name: PlantUML runs without file or network access
+    source_assurance_ids:
+    - ACN@1790259990.3trt.374968
+  - node_id: G-ACN@1784721785.rgil.543a7f
+    gsn_type: goal
+    name: User-controlled diagram names are stripped of control characters before
+      embedding
+    source_assurance_ids:
+    - ACN@1784721785.rgil.543a7f
+  - node_id: A-sandbox
+    gsn_type: assumption
+    name: PlantUML's SANDBOX profile behaves as documented for the pinned release
+    source_assurance_ids: []
+  - node_id: Sn-EVD@1785063486.rkk3.e4921e
+    gsn_type: solution
+    name: Refusal on every write and render path (renderer input-safety suite)
+    source_assurance_ids:
+    - ACN@1784721782.lrw1.6ca350
+    - EVD@1785063486.rkk3.e4921e
+  - node_id: Sn-EVD@1790260002.t3w5.b8cd53
+    gsn_type: solution
+    name: Sandboxed PlantUML reads nothing with the check bypassed; one launcher (renderer
+      input-safety suite)
+    source_assurance_ids:
+    - ACN@1784721782.lrw1.6ca350
+    - ACN@1790259990.3trt.374968
+    - EVD@1790260002.t3w5.b8cd53
+  - node_id: Sn-EVD@1785063476.b1ah.76d898
+    gsn_type: solution
+    name: Control-character collapsing in diagram names (renderer input-safety suite)
+    source_assurance_ids:
+    - ACN@1784721785.rgil.543a7f
+    - EVD@1785063476.b1ah.76d898
+  edges:
+  - source_id: G-TOP
+    target_id: G-HAZ@1784721764.wra3.48aefe
+    conn_type: supported-by
+  - source_id: G-TOP
+    target_id: C-STPA@1784721732.pflr.3e4395
+    conn_type: in-context-of
+  - source_id: G-HAZ@1784721764.wra3.48aefe
+    target_id: S-HAZ@1784721764.wra3.48aefe
+    conn_type: supported-by
+  - source_id: S-HAZ@1784721764.wra3.48aefe
+    target_id: J-two-controls
+    conn_type: in-context-of
+  - source_id: S-HAZ@1784721764.wra3.48aefe
+    target_id: G-ACN@1784721782.lrw1.6ca350
+    conn_type: supported-by
+  - source_id: S-HAZ@1784721764.wra3.48aefe
+    target_id: G-ACN@1790259990.3trt.374968
+    conn_type: supported-by
+  - source_id: S-HAZ@1784721764.wra3.48aefe
+    target_id: G-ACN@1784721785.rgil.543a7f
+    conn_type: supported-by
+  - source_id: G-ACN@1790259990.3trt.374968
+    target_id: A-sandbox
+    conn_type: in-context-of
+  - source_id: G-ACN@1784721782.lrw1.6ca350
+    target_id: Sn-EVD@1785063486.rkk3.e4921e
+    conn_type: supported-by
+  - source_id: G-ACN@1784721782.lrw1.6ca350
+    target_id: Sn-EVD@1790260002.t3w5.b8cd53
+    conn_type: supported-by
+  - source_id: G-ACN@1790259990.3trt.374968
+    target_id: Sn-EVD@1790260002.t3w5.b8cd53
+    conn_type: supported-by
+  - source_id: G-ACN@1784721785.rgil.543a7f
+    target_id: Sn-EVD@1785063476.b1ah.76d898
+    conn_type: supported-by
+connections: []
+last-updated: '2026-09-24T16:01:01Z'
+---
+@startuml Assurance_Case_PlantUML_Preprocessor_Untrusted_Input_Disclosure_GSN
+title Assurance Case — PlantUML Preprocessor Untrusted-Input Disclosure (GSN)
+top to bottom direction
+' GSN Community Standard v3 semantic notation primitives.
+' The GSN renderer consumes these stable macro calls for its native SVG.
+' The declarations below remain a valid PlantUML fallback for source portability.
+
+hide stereotype
+allowmixing
+skinparam shadowing false
+skinparam defaultFontName SansSerif
+skinparam defaultFontColor #111827
+skinparam ArrowColor #20242A
+skinparam ArrowThickness 1.2
+skinparam rectangle {
+  BorderColor #20242A
+  BackgroundColor #FFFFFF
+  BackgroundColor<<GsnGoal>> #D0E8FF
+  BackgroundColor<<GsnContext>> #FFFFD0
+  BackgroundColor<<GsnUndeveloped>> #FFFFFF
+}
+skinparam hexagon {
+  BorderColor #20242A
+  BackgroundColor<<GsnStrategy>> #E8E0FF
+}
+skinparam usecase {
+  BorderColor #20242A
+  BackgroundColor #FFFFFF
+  BackgroundColor<<GsnSolution>> #D0FFD8
+  BackgroundColor<<GsnAssumption>> #FFE8D0
+  BackgroundColor<<GsnJustification>> #FFD0E8
+}
+
+!procedure $GsnGoal($alias, $label)
+rectangle "$label" as $alias <<GsnGoal>>
+!endprocedure
+
+!procedure $GsnStrategy($alias, $label)
+hexagon "$label" as $alias <<GsnStrategy>>
+!endprocedure
+
+!procedure $GsnSolution($alias, $label)
+usecase "$label" as $alias <<GsnSolution>>
+!endprocedure
+
+!procedure $GsnContext($alias, $label)
+rectangle "$label" as $alias <<GsnContext>>
+!endprocedure
+
+!procedure $GsnAssumption($alias, $label)
+usecase "$label" as $alias <<GsnAssumption>>
+!endprocedure
+
+!procedure $GsnJustification($alias, $label)
+usecase "$label" as $alias <<GsnJustification>>
+!endprocedure
+
+!procedure $GsnUndeveloped($alias, $label)
+rectangle "$label" as $alias <<GsnUndeveloped>>
+!endprocedure
+
+!procedure $GsnSupportedBy($source, $target)
+$source --> $target : supported-by
+!endprocedure
+
+!procedure $GsnInContextOf($source, $target)
+$source --|> $target : in-context-of
+!endprocedure
+
+$GsnGoal(G_TOP, "G: Diagram rendering discloses no\nserver-side confidential data and\nbypasses no TLP or unlock control")
+$GsnContext(C_STPA_1784721732_pflr_3e4395, "C: STPA-Sec analysis: PlantUML\nPreprocessor Untrusted-Input\nDisclosure")
+$GsnGoal(G_HAZ_1784721764_wra3_48aefe, "G: The renderer never processes an\nuntrusted PlantUML body with the\nbackend's file or network access")
+$GsnStrategy(S_HAZ_1784721764_wra3_48aefe, "S: Argue over the constraints derived\nfrom the unsafe control action and its\nloss scenarios")
+$GsnJustification(J_two_controls, "J: Two independent controls, because\nthe body check runs before submission\nand PlantUML reports no attempted file\naccess")
+$GsnGoal(G_ACN_1784721782_lrw1_6ca350, "G: A PlantUML body that references a\nfile, URL or environment value is\nrefused on every write and render path")
+$GsnGoal(G_ACN_1790259990_3trt_374968, "G: PlantUML runs without file or\nnetwork access")
+$GsnGoal(G_ACN_1784721785_rgil_543a7f, "G: User-controlled diagram names are\nstripped of control characters before\nembedding")
+$GsnAssumption(A_sandbox, "A: PlantUML's SANDBOX profile behaves\nas documented for the pinned release")
+$GsnSolution(Sn_EVD_1785063486_rkk3_e4921e, "Sn: Refusal on every\nwrite and render\npath (renderer\ninput-safety suite)")
+$GsnSolution(Sn_EVD_1790260002_t3w5_b8cd53, "Sn: Sandboxed\nPlantUML reads\nnothing with the\ncheck bypassed; one\nlauncher (renderer\ninput-safety suite)")
+$GsnSolution(Sn_EVD_1785063476_b1ah_76d898, "Sn: Control-\ncharacter collapsing\nin diagram names\n(renderer input-\nsafety suite)")
+
+$GsnSupportedBy(G_TOP, G_HAZ_1784721764_wra3_48aefe)
+$GsnInContextOf(G_TOP, C_STPA_1784721732_pflr_3e4395)
+$GsnSupportedBy(G_HAZ_1784721764_wra3_48aefe, S_HAZ_1784721764_wra3_48aefe)
+$GsnInContextOf(S_HAZ_1784721764_wra3_48aefe, J_two_controls)
+$GsnSupportedBy(S_HAZ_1784721764_wra3_48aefe, G_ACN_1784721782_lrw1_6ca350)
+$GsnSupportedBy(S_HAZ_1784721764_wra3_48aefe, G_ACN_1790259990_3trt_374968)
+$GsnSupportedBy(S_HAZ_1784721764_wra3_48aefe, G_ACN_1784721785_rgil_543a7f)
+$GsnInContextOf(G_ACN_1790259990_3trt_374968, A_sandbox)
+$GsnSupportedBy(G_ACN_1784721782_lrw1_6ca350, Sn_EVD_1785063486_rkk3_e4921e)
+$GsnSupportedBy(G_ACN_1784721782_lrw1_6ca350, Sn_EVD_1790260002_t3w5_b8cd53)
+$GsnSupportedBy(G_ACN_1790259990_3trt_374968, Sn_EVD_1790260002_t3w5_b8cd53)
+$GsnSupportedBy(G_ACN_1784721785_rgil_543a7f, Sn_EVD_1785063476_b1ah_76d898)
+
+@enduml
