@@ -20,7 +20,7 @@ from src.domain.icons.icon_ref import IconStyle
 from src.domain.icons.resolved_icon import IconSource
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
 from src.domain.ontology_representation.ontology_protocol import DiagramRendererReferences
-from src.infrastructure.rendering.diagram_node_icons import DrawnNode, node_icons
+from src.infrastructure.rendering.drawn_element_icons import DrawnElement, element_icons
 from src.infrastructure.rendering.puml_label_wrapping import label_wrap_skinparams
 from src.infrastructure.rendering.puml_safety import (
     configured_puml_size_warning_threshold,
@@ -160,8 +160,12 @@ class C4PumlRenderer:
             "",
         ]
 
-        icons = node_icons(diagram_entities, [_drawn(i) for i in _every_item(state)], icon_source, C4_ICON_PX)
-        drawing = _Drawing(bool(c4_config.get("show_node_descriptions", False)), icons.sprites, icons.badges)
+        icons = element_icons(diagram_entities, [_drawn(i) for i in _every_item(state)], icon_source)
+        drawing = _Drawing(
+            bool(c4_config.get("show_node_descriptions", False)),
+            {alias: icon.sprite(C4_ICON_PX) for alias, icon in icons.by_alias.items()},
+            {alias: icon.reference(C4_ICON_PX) for alias, icon in icons.by_alias.items()},
+        )
 
         # Hidden chains that order top-level elements are collected here and emitted *after* the
         # visible edges, which is the whole of what keeps this diagram renderable.
@@ -403,5 +407,5 @@ def _every_item(state: _ResolvedState) -> list[_ResolvedItem]:
     return list(seen.values())
 
 
-def _drawn(item: _ResolvedItem) -> DrawnNode:
-    return DrawnNode(item.local_id, item.item_type, item.alias)
+def _drawn(item: _ResolvedItem) -> DrawnElement:
+    return DrawnElement(item.local_id, (item.item_type,), item.alias)

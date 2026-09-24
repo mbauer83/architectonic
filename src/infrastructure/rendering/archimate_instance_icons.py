@@ -1,7 +1,7 @@
 """Which embedded icon each ArchiMate instance shows, by the alias it is declared under.
 
-The precedence is generic (`application.icons.effective_icons`); what is ArchiMate's here is how an
-instance is addressed — the entity's id for its base drawing, the occurrence id for a further one, as
+The join from statements to pictures is generic (`drawn_element_icons`); what is ArchiMate's here is
+how an instance is addressed — the entity's id for its base drawing, the occurrence id for a further one, as
 `archimate_occurrences` defines — and where a specialization keeps its default, `notation.icon`. An
 icon is drawn at the height of the type glyph it stands in for, whatever size it is stored at.
 """
@@ -13,30 +13,21 @@ from dataclasses import dataclass
 from typing import Protocol
 
 from src.application.artifacts.parsing import normalize_puml_alias
-from src.application.icons.effective_icons import (
-    effective_icon,
-    icon_assignments,
-    names_most_specific_first,
-)
+from src.application.icons.effective_icons import names_most_specific_first
 from src.application.puml_alias_declarations import (
     alias_declared_on,
     declaration_keyword,
     picture_declared_on,
     with_label_picture,
 )
-from src.application.puml_icon_header import (
-    icon_key,
-    icon_reference,
-    is_icon_reference,
-    referenced_icon_keys,
-    with_icon_block,
-)
+from src.application.puml_icon_header import is_icon_reference, referenced_icon_keys, with_icon_block
 from src.domain.diagrams.instance_statements import DiagramInstances
 from src.domain.icons.icon_ref import IconRef, IconStyle, library_icon_named
 from src.domain.icons.resolved_icon import IconSource
 from src.domain.ontology_representation.artifact_types import EntityRecord
 from src.domain.ontology_representation.specializations import SpecializationCatalog
 from src.infrastructure.rendering.archimate_occurrences import instance_id_of, occurrence_entities
+from src.infrastructure.rendering.drawn_element_icons import DrawnElement, element_icons
 
 #: The drawn height of a badge: the type glyph is a 16 px sprite at scale 1.2.
 BADGE_EDGE_PX = 20
@@ -65,8 +56,6 @@ class InstanceIcons:
     pictures: Mapping[str, bytes]
 
 
-NO_ICONS = InstanceIcons({}, {})
-
 
 def instance_icons(
     diagram_entities: Mapping[str, object] | None,
@@ -75,30 +64,24 @@ def instance_icons(
     source: IconSource | None,
     specializations: SpecializationCatalog,
 ) -> InstanceIcons:
-    if source is None:
-        return NO_ICONS
-    assignments = icon_assignments(diagram_entities)
-    addressed = [(instance_id_of(entity), entity) for entity in [*entities, *occurrences]]
-    by_alias: dict[str, DrawnIcon] = {}
-    pictures: dict[str, bytes] = {}
-    for instance_id, entity in addressed:
-        alias = normalize_puml_alias(entity.display_alias)
-        if not alias:
-            continue
-        shown = effective_icon(
-            instance_id,
+    elements = [
+        DrawnElement(
+            instance_id_of(entity),
             names_most_specific_first(entity.artifact_type, entity.specializations),
-            assignments,
-            source,
+            alias,
             _default_for(entity, specializations),
         )
-        if shown is None:
-            continue
-        key, edge = icon_key(shown.icon.render_digest), max(shown.icon.width, shown.icon.height)
-        badge, figure = (icon_reference(key, _scale(drawn, edge)) for drawn in (BADGE_EDGE_PX, FIGURE_EDGE_PX))
-        by_alias[alias] = DrawnIcon(shown.style, badge, figure)
-        pictures[key] = shown.icon.png
-    return InstanceIcons(by_alias, pictures)
+        for entity in [*entities, *occurrences]
+        if (alias := normalize_puml_alias(entity.display_alias))
+    ]
+    shown = element_icons(diagram_entities, elements, source)
+    return InstanceIcons(
+        {
+            alias: DrawnIcon(icon.style, icon.reference(BADGE_EDGE_PX), icon.reference(FIGURE_EDGE_PX))
+            for alias, icon in shown.by_alias.items()
+        },
+        shown.pictures,
+    )
 
 
 def _default_for(entity: EntityRecord, specializations: SpecializationCatalog) -> Callable[[str], IconRef | None]:
@@ -108,10 +91,6 @@ def _default_for(entity: EntityRecord, specializations: SpecializationCatalog) -
         return IconRef(target) if target is not None else None
 
     return default
-
-
-def _scale(drawn_px: int, stored_px: int) -> str:
-    return f"{drawn_px / stored_px:.3g}"
 
 
 class KeptBodyDeclarations(Protocol):
