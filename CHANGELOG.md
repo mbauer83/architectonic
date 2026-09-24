@@ -3,6 +3,45 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [0.10.1] — 2026-09-24
+
+**[Full detail → `changelog-assets/0.10.1-detail.md`](changelog-assets/0.10.1-detail.md)**
+
+### Security
+
+- **A PlantUML diagram body can no longer make the renderer read a server file or fetch a URL.** Up
+  to 0.10.0, someone with write access to diagrams could put a PlantUML body in front of the
+  renderer that read a file the backend can read, or fetched a URL it can reach, and receive the
+  result in the rendered SVG. That applied to bodies submitted through the GUI, REST or MCP and to
+  diagram files that reach a repository through git. The body check listed the directives it refused
+  and missed several spellings (`!include_once`, `!include_many`, `<img:path>`,
+  `$sprite="img:path"`), the create path did not run it, and PlantUML ran with its default security
+  profile. Now a PlantUML body may include only the bundled standard library and the product's own
+  generated fragments, and may embed images only as `data:image/…;base64`. The create, edit and
+  preview paths refuse anything else, the renderer refuses to draw it, and the verifier reports it
+  as `E353` without rendering it. Every PlantUML run also uses PlantUML's sandbox profile, so a
+  spelling the check does not know still reads nothing. Upgrading is recommended for any deployment
+  that serves more than one user.
+
+### Fixed
+
+- **The assurance baselines list works once a baseline has been sealed.** It answered with a server
+  error for any store holding a baseline; the list now also carries each seal's RFC 3161 timestamp
+  token when one was requested.
+- **Editing a GSN argument's nodes re-renders it.** The new nodes were saved but the diagram kept
+  drawing the old ones, `auto-sync` included; an argument looked right only until its first edit.
+- **A GSN argument no longer draws one side node over another, or joins one to the wrong node.** A
+  goal with two contexts above a strategy with a justification drew the second context under the
+  justification, and an assumption on a goal that was not rightmost in its row was joined by a line
+  through the goal beside it. Each row is now as tall as the side nodes it carries, and a node with
+  side nodes is placed next to them.
+
+### Upgrading
+
+- No data changes. A PlantUML diagram body that relied on including a file other than the bundled
+  standard library or the generated fragments, or on an image from a path or URL, is now refused;
+  embed the image as `data:image/png;base64,…` instead.
+
 ## [0.10.0] — 2026-09-17
 
 **[Full detail → `changelog-assets/0.10.0-detail.md`](changelog-assets/0.10.0-detail.md)**
@@ -1090,6 +1129,7 @@ never-requested operations is empty — the reason to trust a release which rena
 - Confidential assurance tier (STPA/CAST/GRC/FMEA/GSN) on an encrypted store with tamper-evident history
 - Viewpoint query engine with diagram/matrix/table representations
 
+[0.10.1]: https://github.com/mbauer83/architectonic/compare/v0.10.0...v0.10.1
 [0.10.0]: https://github.com/mbauer83/architectonic/compare/v0.9.1...v0.10.0
 [0.9.1]: https://github.com/mbauer83/architectonic/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/mbauer83/architectonic/compare/v0.8.3...v0.9.0
