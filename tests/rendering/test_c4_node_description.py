@@ -14,7 +14,7 @@ from pathlib import Path
 import yaml
 
 from src.diagram_types.c4._resolve import _ResolvedItem
-from src.diagram_types.c4.renderer import C4PumlRenderer, _render_item_body
+from src.diagram_types.c4.renderer import C4PumlRenderer, _Drawing, _render_item_body
 
 # ── helpers ────────────────────────────────────────────────────────────────────
 
@@ -118,7 +118,7 @@ def test_render_item_default_no_description() -> None:
 def test_render_item_with_show_descriptions() -> None:
     renderer = _renderer()
     item = _item(label="API Server", description="Handles all REST requests from the GUI.")
-    rendered = renderer._render_item(item, show_descriptions=True)
+    rendered = renderer._render_item(item, _Drawing(show_descriptions=True))
     assert "Handles all REST requests from the GUI." in rendered
 
 

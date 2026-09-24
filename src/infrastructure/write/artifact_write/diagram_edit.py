@@ -17,6 +17,7 @@ from .diagram_body_preparation import (
     _prepare_diagram_puml_body,
     _restate_generated_declarations,
     _with_instances_restated,
+    library_icons,
 )
 from .diagram_references import (
     _collect_diagram_renderer_references,
@@ -304,12 +305,8 @@ def edit_diagram(
         render_entities = render_entities_restored(dict(eff_diagram_entities), norm_bindings, eff_view_derivations)
         eff_diagram_conns = eff_diagram_connections if isinstance(eff_diagram_connections, list) else None
         puml_body = _render_diagram_entities_puml(
-            diagram_type,
-            eff_name,
-            render_entities,
-            eff_diagram_conns,
-            repo_root,
-            edge_labels=eff_edge_labels,
+            diagram_type, eff_name, render_entities, eff_diagram_conns, repo_root,
+            edge_labels=eff_edge_labels, icon_source=library_icons(verifier),
         )
         collected_entity_ids, collected_connection_ids = _collect_diagram_renderer_references(
             diagram_type,

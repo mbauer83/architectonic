@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from src.domain.diagrams.instance_statements import DiagramInstances
+from src.domain.icons.resolved_icon import IconSource
 from src.infrastructure.diagram_type_registry import find_renderer, suppressed_stereotype_tokens
 from src.infrastructure.rendering.archimate_relation_rendering import strip_suppressed_relation_labels
 
@@ -49,6 +50,13 @@ def _restate_generated_declarations(puml_body: str, repo_root: Path, diagram_typ
     return renderer.refresh_generated_header(puml_body, repo_root)
 
 
+def library_icons(verifier: ArtifactVerifier) -> IconSource | None:
+    """How an icon reference resolves on this write: through the repository's index, where there is one."""
+    from src.infrastructure.icons.library_source import LibraryIconSource  # noqa: PLC0415
+
+    return LibraryIconSource(verifier.registry) if verifier.registry is not None else None
+
+
 def _with_instances_restated(
     puml_body: str,
     diagram_entities: object,
@@ -73,10 +81,8 @@ def _with_instances_restated(
         return puml_body
     if registry is None or not isinstance(diagram_entities, dict):
         return puml_body
-    from src.infrastructure.icons.library_source import LibraryIconSource  # noqa: PLC0415
-
-    source = LibraryIconSource(registry)
-    instances = DiagramInstances(diagram_entities, tuple(entity_ids or ()), registry.get_entity, source)
+    ids = tuple(entity_ids or ())
+    instances = DiagramInstances(diagram_entities, ids, registry.get_entity, library_icons(verifier))
     return renderer.restate_instance_presentation(puml_body, instances)
 
 

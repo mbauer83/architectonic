@@ -15,12 +15,14 @@ from src.application.verification._issue_serialization import as_issue_dict
 from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.application.verification.artifact_verifier_types import ENTITY_ID_RE, Issue, Severity
 from src.domain.diagrams.bindings import Binding
+from src.domain.icons.resolved_icon import IconSource
 from src.domain.repository.groups import UNCATEGORIZED
 
 from ._artifact_deduplication import extract_friendly_slug, get_repository, validate_diagram_unique
 from .boundary import assert_engagement_write_root
 from .diagram_body_preparation import (
     _prepare_diagram_puml_body,
+    library_icons,
 )
 from .diagram_confidentiality import ensure_confidential_gitignore, is_confidential_diagram_source
 from .diagram_references import (
@@ -69,10 +71,13 @@ def _build_model_backed(
     entity_ids_used: list[str] | None,
     connection_ids_used: list[str] | None,
     view_derivations: list[dict[str, object]] | None,
+    icon_source: IconSource | None,
 ) -> _DiagramBuild:
     """Render a diagram from structured entities/connections, collecting referenced ids."""
     render_entities = render_entities_restored(dict(diagram_entities), norm_bindings, view_derivations)
-    puml_body = _render_diagram_entities_puml(diagram_type, name, render_entities, diagram_connections, repo_root)
+    puml_body = _render_diagram_entities_puml(
+        diagram_type, name, render_entities, diagram_connections, repo_root, icon_source=icon_source
+    )
     collected_e, collected_c = _collect_diagram_renderer_references(
         diagram_type, repo_root, render_entities, diagram_connections, bindings=norm_bindings_raw
     )
@@ -235,7 +240,7 @@ def create_diagram(
             diagram_connections=diagram_connections, norm_bindings=norm_bindings,
             norm_bindings_raw=norm_bindings_raw, effective_id=artifact_id,
             entity_ids_used=entity_ids_used, connection_ids_used=connection_ids_used,
-            view_derivations=view_derivations,
+            view_derivations=view_derivations, icon_source=library_icons(verifier),
         )
     else:
         build = _build_from_puml(

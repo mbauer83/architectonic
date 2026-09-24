@@ -12,7 +12,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from src.diagram_types.c4._resolve import _ResolvedItem
-from src.diagram_types.c4.renderer import C4PumlRenderer, _c4_macro_name, _tech_variant
+from src.diagram_types.c4.renderer import C4PumlRenderer, _c4_macro_name, _Drawing, _tech_variant
 
 # ── helpers ────────────────────────────────────────────────────────────────────
 
@@ -226,7 +226,7 @@ def test_render_item_with_description_when_enabled() -> None:
         local_id="c1", item_type="container", alias="C_api", label="API",
         description="Handles requests", technology="FastAPI", external=False,
     )
-    rendered = renderer._render_item(item, show_descriptions=True)
+    rendered = renderer._render_item(item, _Drawing(show_descriptions=True))
     assert "Handles requests" in rendered
     assert "FastAPI" in rendered
 

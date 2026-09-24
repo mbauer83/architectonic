@@ -13,6 +13,8 @@ from src.application.verification.artifact_verifier_syntax import (
     plantuml_command,
 )
 from src.config.settings import plantuml_limit_size, render_dpi
+from src.domain.icons.resolved_icon import IconSource
+from src.domain.ontology_representation.ontology_protocol import IconPresentingRenderer
 from src.infrastructure.rendering.native_svg import render_native_svg
 from src.infrastructure.rendering.puml_safety import strip_leading_puml_frontmatter, strip_startuml_name
 
@@ -85,6 +87,7 @@ def _render_diagram_entities_puml(
     *,
     edge_labels: dict[str, str] | None = None,
     candidate: object = None,
+    icon_source: IconSource | None = None,
 ) -> str:
     from src.infrastructure.diagram_type_registry import get_diagram_type  # noqa: PLC0415
 
@@ -93,6 +96,8 @@ def _render_diagram_entities_puml(
     extra: dict[str, object] = {}
     if edge_labels and _renderer_supports_edge_labels(diagram_type_mod.renderer):
         extra["edge_labels"] = edge_labels
+    if icon_source is not None and isinstance(diagram_type_mod.renderer, IconPresentingRenderer):
+        extra["icon_source"] = icon_source
     return diagram_type_mod.renderer.render_body(
         name,
         [],

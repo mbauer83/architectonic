@@ -9,13 +9,18 @@ from __future__ import annotations
 
 import re
 from collections.abc import Mapping, Sequence
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from src.diagram_types.c4._c4_types import _ResolvedState
 from src.diagram_types.c4._projection_vocabulary import GROUP_TYPE, NODE_TYPE
 from src.diagram_types.c4._resolve import _ResolvedItem, resolve_c4_state
+from src.domain.icons.icon_ref import IconStyle
+from src.domain.icons.resolved_icon import IconSource
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
 from src.domain.ontology_representation.ontology_protocol import DiagramRendererReferences
+from src.infrastructure.rendering.diagram_node_icons import DrawnNode, node_icons
 from src.infrastructure.rendering.puml_label_wrapping import label_wrap_skinparams
 from src.infrastructure.rendering.puml_safety import (
     configured_puml_size_warning_threshold,
@@ -93,6 +98,21 @@ def _c4_macro_name(item_type: str, variant: str, external: bool) -> str:
     return f"Container{ext}"  # unknown item type → generic container shape
 
 
+@dataclass(frozen=True)
+class _Drawing:
+    """What one render decides for every item it draws: descriptions, and each alias's embedded icon."""
+
+    show_descriptions: bool = False
+    #: alias → the `$sprite` a macro draws the item's icon with.
+    sprites: Mapping[str, str] = field(default_factory=dict)
+    #: alias → the badge a boundary's title opens with, a boundary macro taking no sprite of its own.
+    badges: Mapping[str, str] = field(default_factory=dict)
+
+
+#: The drawn height of an icon on a C4 element.
+C4_ICON_PX = 48
+
+
 class C4PumlRenderer:
     def __init__(
         self,
@@ -114,6 +134,7 @@ class C4PumlRenderer:
         diagram_entities: Mapping[str, object] | None = None,
         diagram_connections: list[dict[str, object]] | None = None,
         edge_labels: dict[str, str] | None = None,
+        icon_source: IconSource | None = None,
     ) -> str:
         del entities, connections
         diagram_name = re.sub(r"[^a-zA-Z0-9_-]", "-", name.lower()).strip("-") or "c4-diagram"
@@ -139,7 +160,8 @@ class C4PumlRenderer:
             "",
         ]
 
-        show_desc = bool(c4_config.get("show_node_descriptions", False))
+        icons = node_icons(diagram_entities, [_drawn(i) for i in _every_item(state)], icon_source, C4_ICON_PX)
+        drawing = _Drawing(bool(c4_config.get("show_node_descriptions", False)), icons.sprites, icons.badges)
 
         # Hidden chains that order top-level elements are collected here and emitted *after* the
         # visible edges, which is the whole of what keeps this diagram renderable.
@@ -160,22 +182,22 @@ class C4PumlRenderer:
             # The system in scope is the title, not a box: what the reader is being shown is where
             # its containers run, so each hosting node is the boundary and the containers sit in it.
             for host in state.internal_items:
-                self._append_nested(lines, host, indent="", show_descriptions=show_desc)
+                self._append_nested(lines, host, indent="", drawing=drawing)
         elif state.scope_render_mode == "node":
             # Every scope item is drawn: one system at context level, a portfolio of them at
             # landscape level. A boundary can only wrap one thing, which is why the two modes and
             # the two scope cardinalities divide along the same line.
             for item in state.scope_items:
-                lines.append(self._render_item(item, show_descriptions=show_desc))
+                lines.append(self._render_item(item, drawing))
             self._append_hidden_chain(
                 top_level_chains, [i.alias for i in state.scope_items], indent="",
             )
         else:
-            lines.append(
-                f'System_Boundary({state.scope_item.alias}, "{_escape_puml(state.scope_item.label)}") {{'
-            )
+            scope = state.scope_item
+            badge = f"{drawing.badges[scope.alias]} " if scope.alias in drawing.badges else ""
+            lines.append(f'System_Boundary({scope.alias}, "{badge}{_escape_puml(scope.label)}") {{')
             for item in state.internal_items:
-                self._append_nested(lines, item, indent="  ", show_descriptions=show_desc)
+                self._append_nested(lines, item, indent="  ", drawing=drawing)
             self._append_hidden_chain(lines, [i.alias for i in state.internal_items], indent="  ")
             lines.append("}")
         lines.append("")
@@ -183,7 +205,7 @@ class C4PumlRenderer:
         outside_items = state.outside_items
         if outside_items:
             for item in outside_items:
-                lines.append(self._render_item(item, show_descriptions=show_desc))
+                lines.append(self._render_item(item, drawing))
             lines.append("")
             # Two chains, never one running through the scope. Threading people → boundary →
             # systems onto a single line made the boundary alias — a cluster — an endpoint, and
@@ -214,9 +236,13 @@ class C4PumlRenderer:
         lines.append("@enduml")
 
         body = "\n".join(line for line in lines if line is not None)
-        threshold = configured_puml_size_warning_threshold(self._config)
-        warn_when_puml_exceeds_threshold(body, threshold=threshold)
-        return body + "\n"
+        # Measured without the icon block: its pictures are data, not the diagram's complexity.
+        warn_when_puml_exceeds_threshold(body, threshold=configured_puml_size_warning_threshold(self._config))
+        return icons.embedded_in(body) + "\n"
+
+    @property
+    def icon_styles(self) -> tuple[IconStyle, ...]:
+        return ("badge",)  # C4's macros draw an image beside the name; none draws it as the element
 
     def inject_includes(self, body: str, repo_root: Path) -> str:
         del repo_root
@@ -265,10 +291,10 @@ class C4PumlRenderer:
             connection_ids=tuple(conn_ids),
         )
 
-    def _render_item(self, item: _ResolvedItem, *, show_descriptions: bool = False) -> str:
+    def _render_item(self, item: _ResolvedItem, drawing: _Drawing = _Drawing()) -> str:
         label = _escape_puml(item.label)
         tech = _escape_puml(item.technology) if item.technology else ""
-        descr = _escape_puml(item.description) if show_descriptions and item.description else ""
+        descr = _escape_puml(item.description) if drawing.show_descriptions and item.description else ""
 
         # Shape resolution: explicit shape → technology inference → item-type default
         if item.shape:
@@ -284,17 +310,17 @@ class C4PumlRenderer:
             macro = _c4_macro_name(item.item_type, variant, item.external)
             has_tech_arg = item.item_type not in ("person", "software-system")
 
-        if has_tech_arg:
-            if descr:
-                return f'{macro}({item.alias}, "{label}", "{tech}", "{descr}")'
-            return f'{macro}({item.alias}, "{label}", "{tech}")'
-        if descr:
-            return f'{macro}({item.alias}, "{label}", "{descr}")'
-        return f'{macro}({item.alias}, "{label}")'
+        sprite = drawing.sprites.get(item.alias)
+        arguments = [
+            item.alias,
+            f'"{label}"',
+            *([f'"{tech}"'] if has_tech_arg else []),
+            *([f'"{descr}"'] if descr else []),
+            *([f'$sprite="{sprite}"'] if sprite else []),
+        ]
+        return f"{macro}({', '.join(arguments)})"
 
-    def _append_nested(
-        self, lines: list[str], item: _ResolvedItem, *, indent: str, show_descriptions: bool
-    ) -> None:
+    def _append_nested(self, lines: list[str], item: _ResolvedItem, *, indent: str, drawing: _Drawing) -> None:
         """One element and everything drawn inside it, however deep the nesting goes.
 
         Two things open a boundary rather than draw a box, and they are the same shape of statement:
@@ -313,21 +339,27 @@ class C4PumlRenderer:
 
         """
         if not item.children:
-            lines.append(f"{indent}{self._render_item(item, show_descriptions=show_descriptions)}")
+            lines.append(f"{indent}{self._render_item(item, drawing)}")
             return
-        lines.append(f"{indent}{self._open_boundary(item)}")
+        lines.append(f"{indent}{self._open_boundary(item, drawing)}")
         inner = indent + "  "
         for child in item.children:
-            self._append_nested(lines, child, indent=inner, show_descriptions=show_descriptions)
+            self._append_nested(lines, child, indent=inner, drawing=drawing)
         self._append_hidden_chain(lines, [child.alias for child in item.children], indent=inner)
         lines.append(f"{indent}}}")
 
-    def _open_boundary(self, item: _ResolvedItem) -> str:
-        """The macro that opens a boundary for an element that holds others."""
+    def _open_boundary(self, item: _ResolvedItem, drawing: _Drawing) -> str:
+        """The macro that opens a boundary for an element that holds others, with its icon if it has one.
+
+        `Deployment_Node` draws a sprite; `Boundary` takes none, so a group's icon opens its title.
+        """
         label = _escape_puml(item.label)
         if item.item_type == GROUP_TYPE:
-            return f'Boundary({item.alias}, "{label}", "group") {{'
-        return f'Deployment_Node({item.alias}, "{label}", "{_escape_puml(item.technology or item.item_type)}") {{'
+            badge = f"{drawing.badges[item.alias]} " if item.alias in drawing.badges else ""
+            return f'Boundary({item.alias}, "{badge}{label}", "group") {{'
+        kind = _escape_puml(item.technology or item.item_type)
+        sprite = f', $sprite="{drawing.sprites[item.alias]}"' if item.alias in drawing.sprites else ""
+        return f'Deployment_Node({item.alias}, "{label}", "{kind}"{sprite}) {{'
 
     def _append_hidden_chain(self, lines: list[str], aliases: list[str], *, indent: str) -> None:
         if len(aliases) < 2:
@@ -357,3 +389,19 @@ def _render_item_body(item: _ResolvedItem, *, show_descriptions: bool = False) -
 
 def _escape_puml(value: str) -> str:
     return value.replace("\\", "\\\\").replace('"', "'")
+
+
+def _every_item(state: _ResolvedState) -> list[_ResolvedItem]:
+    """Every item a render may draw, nested ones included, each once."""
+    seen: dict[str, _ResolvedItem] = {}
+    pending = [*state.scope_items, *state.internal_items, *state.outside_items]
+    while pending:
+        item = pending.pop()
+        if item.alias not in seen:
+            seen[item.alias] = item
+            pending.extend(item.children)
+    return list(seen.values())
+
+
+def _drawn(item: _ResolvedItem) -> DrawnNode:
+    return DrawnNode(item.local_id, item.item_type, item.alias)

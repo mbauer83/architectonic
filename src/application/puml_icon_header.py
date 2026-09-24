@@ -45,6 +45,11 @@ def icon_reference(key: str, scale: str) -> str:
     return f"<img:${key}{{scale={scale}}}>"
 
 
+def sprite_reference(key: str, scale: str) -> str:
+    """How a macro that takes an image parameter shows an embedded icon — C4's `$sprite="img:…"`."""
+    return f"img:${key}{{scale={scale}}}"
+
+
 def is_icon_reference(text: str) -> bool:
     """Whether *text* is exactly an embedded icon as a declaration shows it."""
     return _ICON_REFERENCE_RE.fullmatch(text) is not None
