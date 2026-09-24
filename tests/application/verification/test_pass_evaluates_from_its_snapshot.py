@@ -106,11 +106,11 @@ class _CountingInventory(FileInventoryPort):
         self.builds += 1
         return self._inner.build(repo_path, include_diagrams=include_diagrams)
 
-    def list_doc_files(self, repo_path: Path) -> list[Path]:
-        return self._inner.list_doc_files(repo_path)
+    def list_standalone_artifacts(self, repo_path: Path) -> list[Path]:
+        return self._inner.list_standalone_artifacts(repo_path)
 
-    def filter_doc_files(self, repo_path: Path, paths: list[Path]) -> list[Path]:
-        return self._inner.filter_doc_files(repo_path, paths)
+    def filter_standalone_artifacts(self, repo_path: Path, paths: list[Path]) -> list[Path]:
+        return self._inner.filter_standalone_artifacts(repo_path, paths)
 
 
 def test_a_full_pass_reached_from_the_incremental_path_sweeps_once(

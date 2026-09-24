@@ -55,11 +55,11 @@ class _FakeInventoryPort:
         self.build_calls.append({"repo_path": repo_path, "include_diagrams": include_diagrams})
         return self._inventory
 
-    def list_doc_files(self, repo_path: Path) -> list[Path]:
+    def list_standalone_artifacts(self, repo_path: Path) -> list[Path]:
         self.list_doc_calls.append(repo_path)
         return []
 
-    def filter_doc_files(self, repo_path: Path, candidates: list[Path]) -> list[Path]:
+    def filter_standalone_artifacts(self, repo_path: Path, candidates: list[Path]) -> list[Path]:
         self.filter_doc_calls.append((repo_path, candidates))
         return []
 
@@ -135,7 +135,7 @@ def test_verify_all_full_calls_inventory_build(tmp_path: Path) -> None:
     assert all(c["repo_path"] == tmp_path for c in inventory.build_calls)
 
 
-def test_verify_all_full_calls_list_doc_files(tmp_path: Path) -> None:
+def test_verify_all_full_calls_list_standalone_artifacts(tmp_path: Path) -> None:
     inventory = _FakeInventoryPort(tmp_path)
     scheduler = _FakeScheduler()
     verifier = ArtifactVerifier(
@@ -148,7 +148,7 @@ def test_verify_all_full_calls_list_doc_files(tmp_path: Path) -> None:
     assert tmp_path in inventory.list_doc_calls
 
 
-def test_verify_paths_calls_filter_doc_files(tmp_path: Path) -> None:
+def test_verify_paths_calls_filter_standalone_artifacts(tmp_path: Path) -> None:
     entity_file = tmp_path / "entity.md"
     entity_file.touch()
     inventory = _FakeInventoryPort(tmp_path, entity_file=entity_file)

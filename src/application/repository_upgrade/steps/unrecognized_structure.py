@@ -16,10 +16,11 @@ from __future__ import annotations
 from src.application.artifacts.parsing import extract_yaml_block
 from src.application.repository_upgrade.ports import RepoUpgradeView, RepoUpgradeWriter
 from src.application.repository_upgrade.steps._frontmatter_scan import list_frontmatter_candidate_files
+from src.domain.icons.icon_file import ICON_ARTIFACT_TYPE
 from src.domain.repository.frontmatter import opens_with_frontmatter
 from src.domain.repository.repository_upgrade import AppliedFinding, ScannedSurface, UpgradeFinding
 
-_KNOWN_LITERAL_ARTIFACT_TYPES = frozenset({"diagram", "document"})
+_KNOWN_LITERAL_ARTIFACT_TYPES = frozenset({"diagram", "document", ICON_ARTIFACT_TYPE})
 
 
 class UnrecognizedStructureScanStep:

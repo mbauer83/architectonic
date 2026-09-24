@@ -6,7 +6,6 @@ from typing import Literal
 from src.application.verification._verifier_inventory import FileInventory
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.application.verification.artifact_verifier_types import entity_id_from_path
-from src.config.repo_paths import DOCS
 from src.domain.repository.artifact_location import artifact_kind_at, model_file_kind
 
 
@@ -22,15 +21,14 @@ class CandidateInventoryPort:
             include_diagrams=include_diagrams,
         )
 
-    def list_doc_files(self, repo_path: Path) -> list[Path]:
-        return self.filter_doc_files(repo_path, list(self._changed_paths))
+    def list_standalone_artifacts(self, repo_path: Path) -> list[Path]:
+        return self.filter_standalone_artifacts(repo_path, list(self._changed_paths))
 
-    def filter_doc_files(self, repo_path: Path, candidates: list[Path]) -> list[Path]:
+    def filter_standalone_artifacts(self, repo_path: Path, candidates: list[Path]) -> list[Path]:
         return [
             path for path in candidates
             if (rel := rel_to_root(path.resolve(), repo_path.resolve())) is not None
-            and Path(rel).parts[:1] == (DOCS,)
-            and path.suffix == ".md"
+            and artifact_kind_at(rel) in ("document", "icon")
         ]
 
 

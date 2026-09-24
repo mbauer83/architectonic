@@ -85,7 +85,7 @@ export type SyncSaveResult = typeof SyncSaveResultSchema.Type
 export const SyncChangedArtifactSchema = Schema.Struct({
   artifact_id: Schema.String,
   name: Schema.String,
-  record_type: Schema.Literal('entity', 'diagram', 'document'),
+  record_type: Schema.Literal('entity', 'diagram', 'document', 'icon'),
   // Null for an artifact whose frontmatter names none — a connections-only change is attributed to
   // its source entity, which this code has not read.
   artifact_type: Schema.NullOr(Schema.String),

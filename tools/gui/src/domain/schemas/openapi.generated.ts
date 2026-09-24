@@ -11555,7 +11555,7 @@ export interface components {
              * Record Type
              * @enum {string}
              */
-            record_type: "entity" | "diagram" | "document";
+            record_type: "entity" | "diagram" | "document" | "icon";
         };
         /**
          * SyncChangesResponse
@@ -12651,7 +12651,7 @@ export interface components {
          */
         WriteVerificationResponse: {
             /** File Type */
-            file_type?: ("entity" | "connection" | "diagram" | "document") | null;
+            file_type?: ("entity" | "connection" | "diagram" | "document" | "icon") | null;
             /**
              * Issues
              * @default []

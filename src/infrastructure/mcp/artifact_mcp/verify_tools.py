@@ -23,7 +23,7 @@ def _verifiable_kind_at(path: Path, roots: Sequence[Path]) -> VerificationFileTy
     for root in roots:
         if path.is_relative_to(root):
             match artifact_kind_at(path.relative_to(root)):
-                case "entity" | "connection" | "diagram" | "document" as kind:
+                case "entity" | "connection" | "diagram" | "document" | "icon" as kind:
                     return kind
                 case "scratchpad" | None:
                     return None
@@ -60,7 +60,7 @@ async def artifact_verify(
                 "ok": False,
                 "error": "not an artifact file",
                 "message": (
-                    f"{p} holds no entity, connection, diagram or document where it sits in the "
+                    f"{p} holds no entity, connection, diagram, document or icon where it sits in the "
                     "repository layout; pass file_type to verify it as one anyway"
                 ),
             }
@@ -75,6 +75,8 @@ async def artifact_verify(
                 )
             case "document":
                 result = verifier.verify_document_file(p)
+            case "icon":
+                result = verifier.verify_icon_file(p)
         out = as_verification_result_dict(result)
         out["repo_roots"] = [str(r) for r in roots]
         out["repo_scope"] = repo_scope

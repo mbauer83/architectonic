@@ -15,6 +15,7 @@ import pytest
 
 from src.infrastructure.mcp.artifact_mcp.verify_tools import artifact_verify
 from src.infrastructure.rest.routers.sync.changes import list_changes
+from tests.support.icon_files import write_icon
 
 _ENTITY = (
     "---\nartifact-id: REQ@1.aaaa.probe\nartifact-type: requirement\nname: Probe\nversion: 0.1.0\n"
@@ -67,3 +68,11 @@ def test_verifying_a_file_the_layout_gives_no_kind_is_refused_with_the_way_forwa
     result = asyncio.run(artifact_verify(str(readme), repo_root=str(repo), repo_scope="engagement"))
 
     assert result["ok"] is False and "file_type" in result["message"]
+
+
+def test_an_icon_change_is_listed_as_an_icon(repo: Path) -> None:
+    write_icon(repo)
+
+    assert [(e["artifact_id"], e["record_type"]) for e in list_changes(repo)] == [
+        ("ICO@1790000000.aks001.azure-kubernetes-service", "icon")
+    ]

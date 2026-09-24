@@ -38,6 +38,7 @@ from src.domain.ontology_representation.artifact_types import (
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 
 from . import _sqlite_queries as _q
+from ._icon_queries import _IconQueries
 from ._identity_resolver import _IdentityResolver
 from ._mem_store import _MemStore
 from ._reverse_reference_queries import _EntityIds, _ReverseReferenceQueries
@@ -49,6 +50,7 @@ from ._service_incremental import (
     _apply_outgoing_records,
     apply_diagram_change,
     apply_document_change,
+    apply_icon_change,
     apply_scratchpad_change,
     classify_path_change,
 )
@@ -72,10 +74,11 @@ _CHANGE_APPLIERS = {
     "scratchpad": lambda service, path, data: apply_scratchpad_change(
         path, service._mem, service._db, parsed=data
     ),
+    "icon": lambda service, path, data: apply_icon_change(path, service._mem, parsed=data),
 }
 
 
-class ArtifactIndex(_ReverseReferenceQueries, _ScratchpadNoteQueries):
+class ArtifactIndex(_ReverseReferenceQueries, _ScratchpadNoteQueries, _IconQueries):
     def __init__(self, repo_root: Path | list[Path] | list[RepoMount]) -> None:
         mounts = normalize_mounts(repo_root)
         self.repo_mounts: list[RepoMount] = mounts

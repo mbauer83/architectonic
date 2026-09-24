@@ -22,6 +22,7 @@ from src.domain.repository.repo_layout import (
     DIAGRAM_CATALOG,
     DIAGRAMS,
     DOCS,
+    ICONS,
     MODEL,
     OUTGOING_SUFFIX,
     PROJECTS,
@@ -29,7 +30,7 @@ from src.domain.repository.repo_layout import (
     SCRATCHPADS,
 )
 
-ArtifactKind = Literal["entity", "connection", "diagram", "document", "scratchpad"]
+ArtifactKind = Literal["entity", "connection", "diagram", "document", "scratchpad", "icon"]
 
 
 def artifact_kind_at(relative: PurePath | str) -> ArtifactKind | None:
@@ -42,6 +43,8 @@ def artifact_kind_at(relative: PurePath | str) -> ArtifactKind | None:
         return "document" if path.suffix == ".md" else None
     if parts[:2] == (DIAGRAM_CATALOG, DIAGRAMS):
         return "diagram" if path.suffix in ARTIFACT_SOURCE_SUFFIXES else None
+    if parts[:2] == (DIAGRAM_CATALOG, ICONS) and len(parts) == 3:
+        return "icon" if path.suffix == ".md" else None
     if parts[:1] == (SCRATCHPADS,):
         return "scratchpad" if path.name.endswith(SCRATCHPAD_SUFFIX) else None
     return None

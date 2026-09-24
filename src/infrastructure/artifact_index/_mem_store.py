@@ -6,6 +6,7 @@ from pathlib import Path
 from src.application.modeling.enterprise_reference import enterprise_target
 from src.application.ports import Candidate
 from src.domain.artifact_id import canonical_reference_key, stable_conn_id, stable_id
+from src.domain.icons.icon_record import IconRecord
 from src.domain.ontology_representation.artifact_types import (
     ConnectionRecord,
     DiagramRecord,
@@ -22,6 +23,7 @@ class _MemStore:
     connections: dict[str, ConnectionRecord] = field(default_factory=dict)
     diagrams: dict[str, DiagramRecord] = field(default_factory=dict)
     documents: dict[str, DocumentRecord] = field(default_factory=dict)
+    icons: dict[str, IconRecord] = field(default_factory=dict)
     scratchpads: dict[str, ScratchpadRecord] = field(default_factory=dict)
     """scratchpad artifact_id → the pad itself. Held apart from its notes because a pad outlives
     them: a note stops being searchable once it has a model counterpart."""
@@ -35,6 +37,7 @@ class _MemStore:
     connections_by_entity: dict[str, set[str]] = field(default_factory=dict)
     diagram_by_path: dict[Path, str] = field(default_factory=dict)
     document_by_path: dict[Path, str] = field(default_factory=dict)
+    icon_by_path: dict[Path, str] = field(default_factory=dict)
     entities_by_diagram: dict[str, set[str]] = field(default_factory=dict)
     """diagram_id → set of diagram-only entity artifact_ids owned by that diagram."""
     connections_by_diagram: dict[str, set[str]] = field(default_factory=dict)
@@ -68,7 +71,7 @@ class _MemStore:
         entities collide on the same "stable id" — a real bug this branch exists to
         avoid, not a hypothetical one (caught by WU-F3a's exchange re-import test).
         """
-        stores = (self.entities, self.connections, self.diagrams, self.documents)
+        stores = (self.entities, self.connections, self.diagrams, self.documents, self.icons)
         if any(artifact_id in store for store in stores):
             return artifact_id
         if "---" in artifact_id and "@@" in artifact_id:
@@ -99,6 +102,9 @@ class _MemStore:
     def document(self, artifact_id: str) -> DocumentRecord | None:
         return self.documents.get(self.canonical_id(artifact_id))
 
+    def icon(self, artifact_id: str) -> IconRecord | None:
+        return self.icons.get(self.canonical_id(artifact_id))
+
     def scratchpad_note(self, artifact_id: str) -> ScratchpadNoteRecord | None:
         """A note by its composed address. Not canonicalized: `canonical_id` reads the *last* dot
         of an id to find its stable stem, and a note address ends in a minted local id with no
@@ -117,6 +123,7 @@ class _MemStore:
             "connections",
             "diagrams",
             "documents",
+            "icons",
             "scratchpads",
             "scratchpad_notes",
             "notes_by_scratchpad",
@@ -125,6 +132,7 @@ class _MemStore:
             "connections_by_entity",
             "diagram_by_path",
             "document_by_path",
+            "icon_by_path",
             "entities_by_diagram",
             "connections_by_diagram",
             "diagrams_by_reference",
@@ -142,7 +150,7 @@ class _MemStore:
         entities by a slug they no longer carry.
         """
         for attr in (
-            "entities", "connections", "diagrams", "documents", "scratchpads", "scratchpad_notes",
+            "entities", "connections", "diagrams", "documents", "icons", "scratchpads", "scratchpad_notes",
             "identity_candidates", "attribute_type_refs",
         ):
             getattr(self, attr).clear()
@@ -224,6 +232,7 @@ class _MemStore:
             for ref_id in _scratchpad_reference_ids(r):
                 self.scratchpads_by_reference.setdefault(ref_id, set()).add(r.artifact_id)
         self.document_by_path = {r.path.resolve(): r.artifact_id for r in self.documents.values()}
+        self.icon_by_path = {r.path.resolve(): r.artifact_id for r in self.icons.values()}
         notes_by_pad: dict[str, set[str]] = {}
         for r in self.scratchpad_notes.values():
             notes_by_pad.setdefault(r.scratchpad_id, set()).add(r.artifact_id)

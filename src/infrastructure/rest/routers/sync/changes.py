@@ -98,7 +98,7 @@ def _classify(rel: str) -> str | None:
     match artifact_kind_at(rel):
         case "connection":
             return "connections"
-        case "entity" | "document" | "diagram" as kind:
+        case "entity" | "document" | "diagram" | "icon" as kind:
             return kind
         case "scratchpad":
             return None

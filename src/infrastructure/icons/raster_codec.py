@@ -15,6 +15,7 @@ from dataclasses import dataclass
 
 from PIL import Image, UnidentifiedImageError
 
+from src.application.verification.verifier_ports import PictureProblem
 from src.domain.icons.render_form import MAX_SOURCE_EDGE_PX, MAX_STORED_BYTES, STORED_EDGE_PX
 
 _OPENABLE = ("PNG", "JPEG", "WEBP")
@@ -97,3 +98,19 @@ def _png(image: Image.Image) -> bytes:
     buffer = io.BytesIO()
     image.save(buffer, format="PNG", optimize=True)
     return buffer.getvalue()
+
+
+class StoredPngInspector:
+    """The verifier's picture check: whether stored bytes are a PNG the upload path could have made."""
+
+    def inspect(self, png: bytes) -> tuple[int, int] | PictureProblem:
+        if len(png) > MAX_STORED_BYTES:
+            return PictureProblem(f"{len(png):,} bytes exceeds the {MAX_STORED_BYTES:,}-byte stored limit")
+        try:
+            image = Image.open(io.BytesIO(png), formats=("PNG",))
+            image.load()
+        except (UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError):
+            return PictureProblem("the bytes do not decode as a PNG")
+        if max(image.size) > STORED_EDGE_PX:
+            return PictureProblem(f"{image.width}×{image.height} exceeds the {STORED_EDGE_PX} px stored edge")
+        return image.size

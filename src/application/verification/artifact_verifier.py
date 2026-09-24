@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Literal
 
 from src.application.runtime_catalogs import RuntimeCatalogs
+from src.application.verification._verifier_adapters import _VerifierAdapters
 from src.application.verification._verifier_contribution_runner import (
     build_candidate_repo,
     run_repository_contributions,
@@ -19,6 +20,7 @@ from src.application.verification._verifier_diagram import (
 )
 from src.application.verification._verifier_document import verify_document
 from src.application.verification._verifier_entity import verify_entity
+from src.application.verification._verifier_icon import verify_icon
 from src.application.verification._verifier_incremental_pass import (
     IncrementalPassContext,
     run_incremental_pass,
@@ -59,13 +61,14 @@ from src.application.verification.verifier_ports import (
     FileInventoryPort,
     IncrementalStatePort,
     PumlSyntaxPort,
+    StoredPictureInspector,
     VerifierScheduler,
 )
 from src.application.viewpoints.registry_snapshot import build_registry_snapshot as registry_snapshot
-from src.domain.repository.artifact_location import model_file_kind
+from src.domain.repository.artifact_location import artifact_kind_at, model_file_kind
 
 
-class ArtifactVerifier:
+class ArtifactVerifier(_VerifierAdapters):
     def __init__(
         self,
         registry: ArtifactRegistry | None = None,
@@ -77,6 +80,7 @@ class ArtifactVerifier:
         scheduler: VerifierScheduler | None = None,
         file_inventory: FileInventoryPort | None = None,
         incremental_state: IncrementalStatePort | None = None,
+        picture_inspector: StoredPictureInspector | None = None,
     ) -> None:
         self.registry = registry
         self.check_puml_syntax = check_puml_syntax
@@ -86,6 +90,7 @@ class ArtifactVerifier:
         self._scheduler_port = scheduler
         self._inventory_port = file_inventory
         self._incremental_port = incremental_state
+        self._picture_inspector = picture_inspector
 
     @functools.cached_property
     def _runtime_catalogs(self) -> RuntimeCatalogs:
@@ -94,42 +99,8 @@ class ArtifactVerifier:
         return self._catalogs
 
     @functools.cached_property
-    def _puml_syntax(self) -> PumlSyntaxPort:
-        if self._puml_port is not None:
-            return self._puml_port
-        from src.application.verification._verifier_stdlib_adapters import _NullPumlSyntax  # noqa: PLC0415
-
-        return _NullPumlSyntax()
-
-    @functools.cached_property
-    def _scheduler(self) -> VerifierScheduler:
-        if self._scheduler_port is not None:
-            return self._scheduler_port
-        from src.application.verification._verifier_stdlib_adapters import ThreadPoolVerifierScheduler  # noqa: PLC0415
-
-        return ThreadPoolVerifierScheduler()
-
-    @functools.cached_property
-    def _inventory(self) -> FileInventoryPort:
-        if self._inventory_port is not None:
-            return self._inventory_port
-        from src.application.verification._verifier_stdlib_adapters import FilesystemInventoryAdapter  # noqa: PLC0415
-
-        return FilesystemInventoryAdapter()
-
-    @functools.cached_property
     def _registry_snapshot(self):
         return registry_snapshot(self._runtime_catalogs, () if self.registry is None else self.registry.repo_roots)
-
-    @functools.cached_property
-    def _incremental(self) -> IncrementalStatePort:
-        if self._incremental_port is not None:
-            return self._incremental_port
-        from src.application.verification._verifier_stdlib_adapters import (
-            DefaultIncrementalStateAdapter,  # noqa: PLC0415
-        )
-
-        return DefaultIncrementalStateAdapter()
 
     @functools.cached_property
     def _diagram_rules(self) -> DiagramRuleContext:
@@ -263,7 +234,7 @@ class ArtifactVerifier:
         """
         return acquire_snapshot(
             self._inventory.build(repo_path, include_diagrams=include_diagrams),
-            extra_paths=self._inventory.list_doc_files(repo_path),
+            extra_paths=self._inventory.list_standalone_artifacts(repo_path),
         )
 
     def verify_paths(
@@ -291,8 +262,8 @@ class ArtifactVerifier:
         selected = relpaths if verification_scope == "changed" else expand_impacted_paths(inv, relpaths)
         results = self._verify_inventory_subset(inv, selected)
 
-        doc_files = self._inventory.filter_doc_files(repo_path, list(changed_paths))
-        results.extend(self._scheduler.run(self.verify_document_file, doc_files))
+        standalone = self._inventory.filter_standalone_artifacts(repo_path, list(changed_paths))
+        results.extend(self._scheduler.run(self.verify_standalone_artifact, standalone))
         return results
 
     def _verify_repository(self, repo_path: Path) -> VerificationResult | None:
@@ -308,7 +279,7 @@ class ArtifactVerifier:
             evaluation = replace(evaluation, snapshot=self.acquire(repo_path, include_diagrams=include_diagrams))
         inv = evaluation.acquired().inventory
         results = self._verify_inventory_subset(inv, set(inv.ordered_paths), evaluation=evaluation)
-        results.extend(self._verify_documents(repo_path, evaluation=evaluation))
+        results.extend(self._verify_standalone_artifacts(repo_path, evaluation=evaluation))
         repo_result = self._verify_repository(repo_path)
         if repo_result is not None:
             results.append(repo_result)
@@ -328,7 +299,7 @@ class ArtifactVerifier:
                 has_registry=self.registry is not None,
                 verify_full=self._verify_all_full,
                 verify_subset=self._verify_inventory_subset,
-                verify_documents=self._verify_documents,
+                verify_standalone_artifacts=self._verify_standalone_artifacts,
                 verify_repository=self._verify_repository,
             ),
             repo_path,
@@ -337,11 +308,22 @@ class ArtifactVerifier:
             evaluation=evaluation,
         )
 
-    def _verify_documents(
+    def _verify_standalone_artifacts(
         self, repo_path: Path, *, evaluation: EvaluationContext = UNCONDITIONAL
     ) -> list[VerificationResult]:
-        docs = self._inventory.list_doc_files(repo_path)
-        return self._scheduler.run(evaluation.per_file(self.verify_document_file), docs)
+        standalone = self._inventory.list_standalone_artifacts(repo_path)
+        return self._scheduler.run(evaluation.per_file(self.verify_standalone_artifact), standalone)
+
+    def verify_standalone_artifact(
+        self, path: Path, *, snapshot: "RepositorySnapshot | None" = None
+    ) -> VerificationResult:
+        root = self._repo_root_for_path(path)
+        if root is not None and artifact_kind_at(path.resolve().relative_to(root)) == "icon":
+            return self.verify_icon_file(path, snapshot=snapshot)
+        return self.verify_document_file(path, snapshot=snapshot)
+
+    def verify_icon_file(self, path: Path, *, snapshot: "RepositorySnapshot | None" = None) -> VerificationResult:
+        return verify_icon(path, inspector=self._picture_inspector, snapshot=snapshot)
 
     def _verify_inventory_subset(
         self, inv: FileInventory, relpaths: set[str], *, evaluation: EvaluationContext = UNCONDITIONAL

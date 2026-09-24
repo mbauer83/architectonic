@@ -11,6 +11,7 @@ from src.application._diagram_entity_extraction import (
 from src.application._diagram_entity_extraction import (
     extract_diagram_entities as _extract_diagram_entities,
 )
+from src.application.artifacts.icon_parsing import parse_icon
 from src.application.artifacts.parsing import (
     parse_diagram,
     parse_document,
@@ -26,6 +27,7 @@ from src.application.repo_path_helpers import (
 )
 from src.application.scratchpad.indexing import parse_scratchpad
 from src.config.repo_paths import MODEL
+from src.domain.icons.icon_record import IconRecord
 from src.domain.ontology_representation.artifact_types import (
     ConnectionRecord,
     DiagramRecord,
@@ -159,6 +161,8 @@ def classify_path_change(
             return ("document", path, parse_document_for_path(path, mounts))
         case "scratchpad":
             return ("scratchpad", path, parse_scratchpad_for_path(path, mounts))
+        case "icon":
+            return ("icon", path, parse_icon(path))
         case None:
             return None
 
@@ -286,3 +290,13 @@ def apply_document_change(
         db.delete_document(old.artifact_id)
     if parsed is not None:
         db.upsert_document(parsed)
+
+
+def apply_icon_change(path: Path, mem: _MemStore, *, parsed: IconRecord | None) -> None:
+    """Icons are held in memory only: the picker filters them there, and nothing searches them."""
+    resolved = path.resolve()
+    if (old_id := mem.icon_by_path.pop(resolved, None)) is not None:
+        mem.icons.pop(old_id, None)
+    if parsed is not None:
+        mem.icons[parsed.artifact_id] = parsed
+        mem.icon_by_path[resolved] = parsed.artifact_id

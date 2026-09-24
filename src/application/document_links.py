@@ -41,6 +41,7 @@ from typing import Literal
 
 import yaml
 
+from src.domain.icons.icon_file import ICON_ARTIFACT_TYPE
 from src.domain.ontology_representation.artifact_types import DocumentRecord, EntityRecord
 from src.domain.repository.frontmatter import parse_frontmatter
 from src.domain.repository.repo_layout import ARTIFACT_SOURCE_SUFFIXES
@@ -190,6 +191,8 @@ def _classify(fm: dict[str, object]) -> tuple[ArtifactLinkKind, str] | None:
     if artifact_type == "diagram":
         diagram_type = str(fm.get("diagram-type") or "").strip()
         return ("diagram", diagram_type) if diagram_type else None
+    if artifact_type == ICON_ARTIFACT_TYPE:
+        return None  # a picture of the library, not model content: linked as an image would be
     return ("entity", artifact_type)
 
 

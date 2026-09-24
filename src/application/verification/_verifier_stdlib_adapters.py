@@ -29,7 +29,8 @@ from src.application.verification.artifact_verifier_types import (
     Issue,
     VerificationResult,
 )
-from src.domain.repository.repo_layout import DOCS
+from src.domain.repository.artifact_location import artifact_kind_at
+from src.domain.repository.repo_layout import DIAGRAM_CATALOG, DOCS, ICONS
 
 
 class _NullPumlSyntax:
@@ -69,20 +70,21 @@ class FilesystemInventoryAdapter:
     def build(self, repo_path: Path, *, include_diagrams: bool) -> FileInventory:
         return inventory_files(repo_path, include_diagrams=include_diagrams)
 
-    def list_doc_files(self, repo_path: Path) -> list[Path]:
-        docs_root = repo_path / DOCS
-        if not docs_root.exists():
-            return []
-        return sorted(docs_root.rglob("*.md"))
+    def list_standalone_artifacts(self, repo_path: Path) -> list[Path]:
+        roots = (repo_path / DOCS, repo_path / DIAGRAM_CATALOG / ICONS)
+        found = (path for root in roots if root.exists() for path in root.rglob("*.md"))
+        return sorted(self.filter_standalone_artifacts(repo_path, list(found)))
 
-    def filter_doc_files(self, repo_path: Path, candidates: list[Path]) -> list[Path]:
-        docs_root = repo_path / DOCS
-        if not docs_root.exists():
-            return []
-        return [
-            p for p in candidates
-            if p.suffix == ".md" and p.exists() and docs_root in p.resolve().parents
-        ]
+    def filter_standalone_artifacts(self, repo_path: Path, candidates: list[Path]) -> list[Path]:
+        return [path for path in candidates if path.exists() and _is_standalone(repo_path, path)]
+
+
+def _is_standalone(repo_path: Path, path: Path) -> bool:
+    try:
+        relative = path.resolve().relative_to(repo_path.resolve())
+    except ValueError:
+        return False
+    return artifact_kind_at(relative) in ("document", "icon")
 
 
 class DefaultIncrementalStateAdapter:

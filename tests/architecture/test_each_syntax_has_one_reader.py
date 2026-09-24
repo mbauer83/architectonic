@@ -75,6 +75,9 @@ class SyntaxReader:
     exempt: frozenset[Path] = field(default_factory=frozenset)
 
 
+#: The fence an icon file's render form sits in.
+_ICON_RENDER_FENCE = re.compile(r"png-base64")
+
 #: The `data:` URI of an embedded image, as something a value is tested for.
 _DATA_IMAGE_URI = re.compile(r"data:image")
 
@@ -174,6 +177,17 @@ SYNTAX_READERS: tuple[SyntaxReader, ...] = (
             "rewritten under another"
         ),
         literal_probe=_ANCHORED_FENCE,
+    ),
+    SyntaxReader(
+        syntax="an icon file: its frontmatter fields and its fenced `png-base64` and `svg` blocks",
+        owners=(Path("src/domain/icons/icon_file.py"),),
+        instead="`src.domain.icons.icon_file`: `read_icon_file` and `format_icon_file`, one pair",
+        incident=(
+            "none yet, and on purpose: the icon file arrived in 0.11.0 with a writer and a reader in "
+            "one module and a round-trip test over what the format permits, because every other "
+            "syntax in this register gained its second reader before anyone asked who owned it"
+        ),
+        literal_probe=_ICON_RENDER_FENCE,
     ),
     SyntaxReader(
         syntax="an image embedded in text as a `data:image/…;base64,…` URI",

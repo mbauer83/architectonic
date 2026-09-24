@@ -40,7 +40,7 @@ class IncrementalPassContext:
     has_registry: bool
     verify_full: Callable[..., list[VerificationResult]]
     verify_subset: Callable[..., list[VerificationResult]]
-    verify_documents: Callable[..., list[VerificationResult]]
+    verify_standalone_artifacts: Callable[..., list[VerificationResult]]
     #: The rules that are about the repository rather than about a file in it. Needed here for the
     #: reason documents are: they sit outside the incremental inventory, so a pass that reuses stored
     #: per-file state would skip them and report a repository-level fault as clean.
@@ -82,7 +82,7 @@ def run_incremental_pass(
     # here — but every "full" result already includes them, and appending again reported each
     # document issue twice.
     if mode != "full":
-        results.extend(ctx.verify_documents(repo_path, evaluation=evaluation))
+        results.extend(ctx.verify_standalone_artifacts(repo_path, evaluation=evaluation))
         # And the repository-level rules, for the same reason and with the same guard. A rule asking
         # whether two files claim one identity is not answered by any file's own state, so reusing
         # that state answered "clean" for a repository the backend would refuse to serve. Cheap

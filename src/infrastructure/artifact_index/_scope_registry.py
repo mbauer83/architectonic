@@ -112,14 +112,14 @@ class _ScopeRegistry:
         """
         self._ensure_loaded()
         with self._lock.reading():
-            for table in (self._mem.entities, self._mem.diagrams, self._mem.documents):
+            for table in (self._mem.entities, self._mem.diagrams, self._mem.documents, self._mem.icons):
                 r = table.get(artifact_id)
                 if r is not None:
                     return r.path
             if stable_id(artifact_id) == artifact_id:
                 resolved_id = self._mem.canonical_id(artifact_id)
                 if resolved_id != artifact_id:
-                    for table in (self._mem.entities, self._mem.diagrams, self._mem.documents):
+                    for table in (self._mem.entities, self._mem.diagrams, self._mem.documents, self._mem.icons):
                         r = table.get(resolved_id)
                         if r is not None:
                             return r.path

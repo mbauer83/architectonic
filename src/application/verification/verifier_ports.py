@@ -9,6 +9,7 @@ the filesystem, subprocess, or thread pools.
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 
@@ -41,13 +42,31 @@ class VerifierScheduler(Protocol):
 
 
 class FileInventoryPort(Protocol):
-    """Build and query the file inventory for a model repository."""
+    """Build and query the file inventory for a model repository.
+
+    *Standalone artifacts* — documents and icons — are verified one file at a time beside the model
+    inventory rather than inside it: no graph of theirs is built, and no stored per-file state is
+    reused for them, so an incremental pass verifies them every time.
+    """
 
     def build(self, repo_path: Path, *, include_diagrams: bool) -> FileInventory: ...
 
-    def list_doc_files(self, repo_path: Path) -> list[Path]: ...
+    def list_standalone_artifacts(self, repo_path: Path) -> list[Path]: ...
 
-    def filter_doc_files(self, repo_path: Path, candidates: list[Path]) -> list[Path]: ...
+    def filter_standalone_artifacts(self, repo_path: Path, candidates: list[Path]) -> list[Path]: ...
+
+
+@dataclass(frozen=True, slots=True)
+class PictureProblem:
+    """Why a stored icon picture is not one this product will embed."""
+
+    reason: str
+
+
+class StoredPictureInspector(Protocol):
+    """Decode a stored icon picture: its size when it is a PNG within the stored limits."""
+
+    def inspect(self, png: bytes) -> tuple[int, int] | PictureProblem: ...
 
 
 class IncrementalStatePort(Protocol):

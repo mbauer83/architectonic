@@ -11,7 +11,7 @@ from src.domain.verification_findings import Issue, Severity, SeverityLiteral
 # domain verification port does not have to reach up here for it.
 __all__ = ["Issue", "Severity", "SeverityLiteral"]
 
-VerificationFileType: TypeAlias = Literal["entity", "connection", "diagram", "document"]
+VerificationFileType: TypeAlias = Literal["entity", "connection", "diagram", "document", "icon"]
 
 
 @dataclass

@@ -104,7 +104,7 @@ class SyncChangedArtifact(Closed):
 
     artifact_id: str
     name: str
-    record_type: Literal["entity", "diagram", "document"]
+    record_type: Literal["entity", "diagram", "document", "icon"]
     artifact_type: str | None
     file_status: Literal["added", "deleted", "modified"]
     changes: list[str]

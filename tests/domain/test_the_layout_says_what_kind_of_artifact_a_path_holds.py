@@ -19,6 +19,7 @@ from src.domain.repository.artifact_location import artifact_kind_at
         ("diagram-catalog/diagrams/core/MTX@1.a.x.md", "diagram"),
         ("diagram-catalog/diagrams/confidential/STPA@1.a.x.puml", "diagram"),
         ("scratchpads/core/SCR@1.a.x.scratchpad.yaml", "scratchpad"),
+        ("diagram-catalog/icons/ICO@1.a.x.md", "icon"),
     ],
 )
 def test_each_artifact_source_is_read_by_where_it_sits(relative: str, kind: str) -> None:
@@ -37,7 +38,8 @@ def test_each_artifact_source_is_read_by_where_it_sits(relative: str, kind: str)
         "docs/adr/core/diagram.png",
         "diagram-catalog/_archimate-glyphs.puml",
         "diagram-catalog/rendered/core/ARC@1.a.x.svg",
-        "diagram-catalog/icons/ICO@1.a.x.md",
+        "diagram-catalog/icons/azure/ICO@1.a.x.md",
+        "diagram-catalog/icons/ICO@1.a.x.png",
         "diagram-catalog/diagrams/core/ARC@1.a.x.svg",
         "scratchpads/core/notes.yaml",
         ".arch-repo/documents/adr.json",

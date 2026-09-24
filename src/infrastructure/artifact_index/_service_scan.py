@@ -17,6 +17,7 @@ from src.application._diagram_entity_extraction import (
 from src.application._diagram_entity_extraction import (
     extract_diagram_entities as _extract_diagram_entities,
 )
+from src.application.artifacts.icon_parsing import parse_icon
 from src.application.artifacts.parsing import (
     parse_diagram,
     parse_document,
@@ -37,6 +38,7 @@ from src.application.repo_path_helpers import (
 from src.application.scratchpad.indexing import parse_scratchpad
 from src.config.repo_paths import RENDERED
 from src.domain.artifact_id import stable_id
+from src.domain.icons.icon_record import IconRecord
 from src.domain.ontology_representation.artifact_types import (
     ConnectionRecord,
     DiagramRecord,
@@ -45,13 +47,13 @@ from src.domain.ontology_representation.artifact_types import (
     EntityRecord,
     RepoMount,
 )
-from src.domain.repository.artifact_location import model_file_kind
-from src.domain.repository.repo_layout import SCRATCHPAD_SUFFIX
+from src.domain.repository.artifact_location import artifact_kind_at, model_file_kind
+from src.domain.repository.repo_layout import DIAGRAM_CATALOG, ICONS, SCRATCHPAD_SUFFIX
 from src.infrastructure.write.artifact_write.staged_workspace import overlay_paths
 
 from ._mem_store import _MemStore
 
-_ArtT = TypeVar("_ArtT", EntityRecord, ConnectionRecord, DiagramRecord, DocumentRecord)
+_ArtT = TypeVar("_ArtT", EntityRecord, ConnectionRecord, DiagramRecord, DocumentRecord, IconRecord)
 
 
 def _insert_mounted(
@@ -169,6 +171,12 @@ def _scan_scratchpad_records(repo_root: Path, mem: _MemStore) -> None:
             mem.scratchpad_notes[note.artifact_id] = note
 
 
+def _scan_icon_records(repo_root: Path, mem: _MemStore) -> None:
+    for path in sorted(overlay_paths(repo_root / DIAGRAM_CATALOG / ICONS, ("*.md",))):
+        if artifact_kind_at(path.relative_to(repo_root)) == "icon" and (icon := parse_icon(path)) is not None:
+            _insert_mounted(icon, "icon", repo_root, mem.icons)
+
+
 def scan_mount(
     mount: RepoMount,
     mem: _MemStore,
@@ -181,3 +189,4 @@ def scan_mount(
     _scan_diagram_records(mount.root, mem, workspace_types=workspace_types, attr_type_ref_fn=attr_type_ref_fn)
     _scan_document_records(mount.root, mem)
     _scan_scratchpad_records(mount.root, mem)
+    _scan_icon_records(mount.root, mem)

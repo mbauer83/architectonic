@@ -25,6 +25,7 @@ from src.application.runtime_catalogs import RuntimeCatalogs
 from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.application.verification.verifier_ports import FileInventoryPort
+from src.infrastructure.icons.raster_codec import StoredPngInspector
 from src.infrastructure.verification.adapters import DefaultPumlSyntaxAdapter
 
 
@@ -49,4 +50,5 @@ def build_artifact_verifier(
         file_inventory=file_inventory,
         check_puml_syntax=check_puml_syntax,
         puml_syntax=DefaultPumlSyntaxAdapter() if check_puml_syntax else None,
+        picture_inspector=StoredPngInspector(),
     )
