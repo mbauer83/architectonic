@@ -75,6 +75,9 @@ class SyntaxReader:
     exempt: frozenset[Path] = field(default_factory=frozenset)
 
 
+#: The `data:` URI of an embedded image, as something a value is tested for.
+_DATA_IMAGE_URI = re.compile(r"data:image")
+
 #: The outgoing-connections file name, as a test of what a file is. Writers compose the name
 #: (`with_suffix`, a glob) and are not readings; asking a name whether it ends so is.
 _OUTGOING_FILE = re.compile(r"^\.outgoing\.md$")
@@ -171,6 +174,17 @@ SYNTAX_READERS: tuple[SyntaxReader, ...] = (
             "rewritten under another"
         ),
         literal_probe=_ANCHORED_FENCE,
+    ),
+    SyntaxReader(
+        syntax="an image embedded in text as a `data:image/…;base64,…` URI",
+        owners=(Path("src/domain/embedded_image.py"),),
+        instead="`src.domain.embedded_image.embedded_image`, then accept or refuse its `subtype`",
+        incident=(
+            "the PlantUML body policy and the uploaded-SVG sanitiser each spelled the URI: the policy "
+            "matched only its prefix, the sanitiser the whole URI with two subtypes, so a payload "
+            "one accepted the other refused, for a value both call an embedded image"
+        ),
+        literal_probe=_DATA_IMAGE_URI,
     ),
     SyntaxReader(
         syntax="which kind of artifact a repository file is, from where it sits and its name",

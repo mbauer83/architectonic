@@ -27,6 +27,8 @@ from __future__ import annotations
 
 import re
 
+from src.domain.embedded_image import embedded_image
+
 _MANAGED_INCLUDE_BASENAMES = frozenset({
     "_archimate-stereotypes.puml",
     "_archimate-glyphs.puml",
@@ -44,7 +46,6 @@ _IO_BUILTIN_RE = re.compile(
 )
 #: Every place creole or a stdlib macro takes an image: `<img:X>`, `<img src=X>`, `$sprite="img:X"`.
 _IMAGE_TARGET_RE = re.compile(r"(?:\bimg:|<img\s+src\s*=\s*[\"']?)([^\"'>\s{}]*)", re.IGNORECASE)
-_EMBEDDED_IMAGE_RE = re.compile(r"^data:image/[a-z0-9.+-]+;base64,", re.IGNORECASE)
 _MANAGED_INCLUDE_RE = re.compile(
     r"^(?:\.\./)*(" + "|".join(re.escape(b) for b in _MANAGED_INCLUDE_BASENAMES) + r")$"
 )
@@ -90,7 +91,7 @@ def assert_user_puml_safe(puml_body: str) -> None:
 def _line_reaches_outside(line: str) -> bool:
     if _THEME_FROM_RE.match(line) or _IO_BUILTIN_RE.search(line):
         return True
-    if any(not _EMBEDDED_IMAGE_RE.match(target) for target in _IMAGE_TARGET_RE.findall(line)):
+    if any(embedded_image(target) is None for target in _IMAGE_TARGET_RE.findall(line)):
         return True
     match = _SOURCE_DIRECTIVE_RE.match(line)
     if match is None:

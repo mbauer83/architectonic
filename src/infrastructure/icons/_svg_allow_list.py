@@ -52,7 +52,6 @@ KEPT_CSS_PROPERTIES = frozenset({
 _URL_RE = re.compile(r"url\s*\(", re.IGNORECASE)
 _FRAGMENT_URL_RE = re.compile(r"url\(\s*['\"]?#[A-Za-z_][\w.-]*['\"]?\s*\)", re.IGNORECASE)
 _FRAGMENT_RE = re.compile(r"^#[A-Za-z_][\w.-]*$")
-_EMBEDDED_RASTER_RE = re.compile(r"^data:image/(png|jpeg);base64,([A-Za-z0-9+/=\s]+)$", re.IGNORECASE)
 
 
 def value_points_only_inside(value: str) -> bool:
@@ -64,7 +63,5 @@ def is_fragment_reference(value: str) -> bool:
     return bool(_FRAGMENT_RE.match(value.strip()))
 
 
-def embedded_raster(value: str) -> tuple[str, str] | None:
-    """The media subtype and base64 payload of a `data:image/png|jpeg` URI, or None for anything else."""
-    match = _EMBEDDED_RASTER_RE.match(value.strip())
-    return None if match is None else (match.group(1).lower(), match.group(2))
+#: The embedded rasters an `<image>` may keep; the codec re-encodes each before it is kept.
+EMBEDDABLE_RASTER_SUBTYPES = frozenset({"png", "jpeg"})

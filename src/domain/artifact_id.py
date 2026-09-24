@@ -54,7 +54,7 @@ _ENTITY_ID_RE = re.compile(
 #: when scanning free text rather than a whole-string match: a composite connection id joins
 #: two artifact ids with ``---``, and a slug allowed to contain runs of hyphens swallows that
 #: separator and the prefix of the endpoint after it.
-_EMITTED_SLUG_PATTERN = r"[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*"
+EMITTED_SLUG_PATTERN = r"[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*"
 
 
 def full_ids_with_stem(stem: str) -> re.Pattern[str]:
@@ -66,7 +66,7 @@ def full_ids_with_stem(stem: str) -> re.Pattern[str]:
     stem must be the separating dot — and bounded so a match stops at a ``---`` join rather
     than consuming the endpoint on the far side of it.
     """
-    return re.compile(rf"{re.escape(stem)}\.{_EMITTED_SLUG_PATTERN}")
+    return re.compile(rf"{re.escape(stem)}\.{EMITTED_SLUG_PATTERN}")
 
 
 class MalformedArtifactIdError(ValueError):

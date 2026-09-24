@@ -10,9 +10,9 @@ from pathlib import Path
 import pytest
 from PIL import Image, PngImagePlugin
 
-from src.domain.icons.normalised_icon import IconRefusedError
+from src.domain.icons.normalised_icon import IconRefused, NormalisedIcon
 from src.domain.icons.render_form import MAX_SOURCE_BYTES, MAX_STORED_BYTES, STORED_EDGE_PX
-from src.infrastructure.icons.normaliser import normalise_upload
+from src.infrastructure.icons.normaliser import normalise_upload as _normalise
 from src.infrastructure.icons.svg_rasteriser import rasterise_svg
 
 SVG_NS = 'xmlns="http://www.w3.org/2000/svg"'
@@ -28,6 +28,13 @@ def _raster(size: tuple[int, int], fmt: str, colour: tuple[int, int, int, int] =
     image = Image.new("RGBA", size, colour)
     (image.convert("RGB") if fmt == "JPEG" else image).save(buffer, format=fmt, **save)
     return buffer.getvalue()
+
+
+def normalise_upload(source: bytes, fmt: str) -> NormalisedIcon:
+    """The stored icon, for the cases that must produce one; a refusal there fails the test."""
+    result = _normalise(source, fmt)  # type: ignore[arg-type]
+    assert isinstance(result, NormalisedIcon), result
+    return result
 
 
 def _decoded(png: bytes) -> Image.Image:
@@ -49,7 +56,7 @@ def test_an_svg_with_a_gradient_is_drawn_at_the_stored_size_keeping_its_shape() 
 
 @pytest.mark.parametrize("fmt", ["PNG", "JPEG", "WEBP"])
 def test_each_raster_format_is_fitted_into_the_stored_form(fmt: str) -> None:
-    icon = normalise_upload(_raster((1000, 500), fmt), fmt.lower())  # type: ignore[arg-type]
+    icon = normalise_upload(_raster((1000, 500), fmt), fmt.lower())
 
     assert (icon.width, icon.height) == (STORED_EDGE_PX, STORED_EDGE_PX // 2)
     assert len(icon.png) <= MAX_STORED_BYTES and _decoded(icon.png).mode == "RGBA"
@@ -81,12 +88,11 @@ def test_a_detailed_raster_is_reduced_to_fit_the_stored_limit() -> None:
     buffer = io.BytesIO()
     noise.save(buffer, format="PNG")
 
-    try:
-        icon = normalise_upload(buffer.getvalue(), "png")
-    except IconRefusedError as refusal:
-        assert "does not compress" in str(refusal)
-    else:
-        assert len(icon.png) <= MAX_STORED_BYTES
+    match _normalise(buffer.getvalue(), "png"):
+        case IconRefused(reason):
+            assert "does not compress" in reason
+        case NormalisedIcon(png=png):
+            assert len(png) <= MAX_STORED_BYTES
 
 
 def _declared_canvas(width: int, height: int) -> bytes:
@@ -113,8 +119,9 @@ def _declared_canvas(width: int, height: int) -> bytes:
     ids=["too-large", "declared-bomb", "declared-oversize", "eps", "gif", "thin-svg", "malformed-svg"],
 )
 def test_a_refusal_names_what_is_wrong(source: bytes, fmt: str, reason: str) -> None:
-    with pytest.raises(IconRefusedError, match=reason):
-        normalise_upload(source, fmt)  # type: ignore[arg-type]
+    result = _normalise(source, fmt)  # type: ignore[arg-type]
+
+    assert isinstance(result, IconRefused) and reason in result.reason, result
 
 
 RED_MARKER = (255, 0, 0, 255)

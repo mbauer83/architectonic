@@ -7,8 +7,11 @@ from dataclasses import dataclass
 from src.domain.icons.render_form import SourceFormat, render_digest
 
 
-class IconRefusedError(ValueError):
+@dataclass(frozen=True, slots=True)
+class IconRefused:
     """An upload that will not be stored, with the reason an uploader can act on."""
+
+    reason: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -25,3 +28,7 @@ class NormalisedIcon:
     @property
     def digest(self) -> str:
         return render_digest(self.png)
+
+
+#: What normalising an upload comes to: the icon to store, or why there is none.
+NormalisationResult = NormalisedIcon | IconRefused

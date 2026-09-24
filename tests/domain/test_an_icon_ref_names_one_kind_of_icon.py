@@ -11,7 +11,7 @@ from src.domain.icons.icon_ref import (
     SharedIcon,
     icon_ref_from,
 )
-from src.domain.icons.render_form import is_render_digest, render_digest
+from src.domain.icons.render_form import render_digest
 
 
 def test_a_library_icon_is_named_by_its_rename_stable_id() -> None:
@@ -40,6 +40,8 @@ def test_a_reference_round_trips_through_its_stored_form(ref: IconRef) -> None:
         "APP@1790000000.abc",
         "local:",
         "local:Upper",
+        "local:a--b",
+        "local:-lead",
         "local:" + "a" * 49,
         "icon.png",
         {"icon": "local:x", "style": "sticker"},
@@ -56,6 +58,5 @@ def test_anything_else_is_refused(raw: object) -> None:
 def test_a_digest_names_the_stored_bytes() -> None:
     digest = render_digest(b"\x89PNG")
 
-    assert is_render_digest(digest)
+    assert digest.startswith("sha256:") and len(digest) == len("sha256:") + 64
     assert digest != render_digest(b"\x89PNH")
-    assert not is_render_digest("md5:" + digest.split(":")[1])

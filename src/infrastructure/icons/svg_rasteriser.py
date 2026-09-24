@@ -49,7 +49,7 @@ def rasterise_svg(markup: str, aspect_ratio: float) -> bytes:
     request = json.dumps({"svg": markup, "width": width, "height": height}).encode("utf-8")
     with tempfile.TemporaryDirectory(prefix="icon-raster-") as empty:
         try:
-            completed = subprocess.run(  # noqa: S603 — fixed interpreter and program; the SVG goes by stdin
+            completed = subprocess.run(  # a fixed interpreter and program; the SVG goes by stdin
                 [sys.executable, "-I", "-c", _CHILD],
                 input=request,
                 capture_output=True,

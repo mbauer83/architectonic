@@ -24,14 +24,15 @@ from dataclasses import dataclass
 from defusedxml import ElementTree as SafeET
 from defusedxml.common import DefusedXmlException
 
+from src.domain.embedded_image import embedded_image
 from src.infrastructure.icons._svg_allow_list import (
     DESCRIPTIVE_ELEMENTS,
+    EMBEDDABLE_RASTER_SUBTYPES,
     KEPT_ATTRIBUTES,
     KEPT_CSS_PROPERTIES,
     KEPT_ELEMENTS,
     SVG_NAMESPACE,
     XLINK_NAMESPACE,
-    embedded_raster,
     is_fragment_reference,
     value_points_only_inside,
 )
@@ -149,11 +150,11 @@ class _Builder:
             self._drop(f"a reference outside the document on <{element}> removed")
 
     def _embedded_png(self, value: str) -> bytes | None:
-        raster = embedded_raster(value)
-        if raster is None:
+        image = embedded_image(value)
+        if image is None or image.subtype not in EMBEDDABLE_RASTER_SUBTYPES:
             return None
         try:
-            decoded = base64.b64decode("".join(raster[1].split()), validate=True)
+            decoded = base64.b64decode(image.payload, validate=True)
         except (binascii.Error, ValueError):
             return None
         return self._reencode(decoded)

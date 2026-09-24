@@ -17,7 +17,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Literal, get_args
 
-from src.domain.artifact_id import is_entity_id, parse_entity_id, stable_id
+from src.domain.artifact_id import EMITTED_SLUG_PATTERN, is_entity_id, parse_entity_id, stable_id
 
 #: `badge` sits where the type glyph sits, inside the element; `figure` is the element itself, its
 #: label beneath. Which of the two a diagram type can draw is that type's declaration.
@@ -28,7 +28,9 @@ ICON_STYLES: tuple[IconStyle, ...] = get_args(IconStyle)
 ICON_ID_PREFIX = "ICO"
 
 LOCAL_PREFIX = "local:"
-_LOCAL_KEY_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,47}$")
+#: A key is minted the way a slug is (`slugify` of the icon's name), so it is read by the slug grammar,
+#: lower-cased and bounded.
+_LOCAL_KEY_RE = re.compile(rf"^(?=[a-z0-9-]{{1,48}}$){EMITTED_SLUG_PATTERN}$")
 
 
 class InvalidIconRefError(ValueError):
@@ -69,16 +71,16 @@ class IconRef:
         return spelled if self.style is None else {"icon": spelled, "style": self.style}
 
 
-def is_local_key(key: str) -> bool:
+def _is_local_key(key: str) -> bool:
     return bool(_LOCAL_KEY_RE.match(key))
 
 
 def icon_target_from(spelled: str) -> IconTarget:
     if spelled.startswith(LOCAL_PREFIX):
         key = spelled.removeprefix(LOCAL_PREFIX)
-        if not is_local_key(key):
+        if not _is_local_key(key):
             raise InvalidIconRefError(
-                f"'{spelled}': a local icon key is 1-48 lowercase letters, digits and hyphens"
+                f"'{spelled}': a local icon key is a lowercase slug of at most 48 characters"
             )
         return LocalIcon(key)
     if is_entity_id(spelled) and parse_entity_id(spelled).prefix == ICON_ID_PREFIX:
