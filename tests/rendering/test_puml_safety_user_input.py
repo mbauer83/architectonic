@@ -2,8 +2,10 @@
 body are rejected, while the renderer's own managed includes and bundled stdlib are allowed.
 
 Threat: with PlantUML's default security profile, a submitted `!include /etc/passwd`
-embeds the file's contents in the rendered SVG (confirmed empirically). PlantUML's own
-profiles are all-or-nothing for our include model, so the control is at our trust boundary.
+embeds the file's contents in the rendered SVG (confirmed empirically). This body policy is the
+first barrier; PlantUML also runs under its sandbox profile, which is the second — see
+`test_a_puml_body_cannot_reference_files_or_urls.py` for both, and for the spellings a list of
+forbidden directives once missed.
 """
 
 from __future__ import annotations

@@ -11,7 +11,7 @@ from pathlib import Path
 from src.application.verification.artifact_verifier_syntax import (
     find_graphviz_dot,
     find_plantuml_jar,
-    resolve_java_executable,
+    plantuml_command,
 )
 
 
@@ -68,7 +68,7 @@ def main(argv: list[str] | None = None) -> int:
     if dot_version < min_graphviz:
         raise SystemExit(f"Graphviz {args.min_graphviz}+ required, found {'.'.join(str(p) for p in dot_version)}")
 
-    plantuml_output = _run([resolve_java_executable(), "-jar", str(jar_path), "-version"])
+    plantuml_output = _run(plantuml_command(jar_path, "-version"))
     plantuml_version = _parse_version(plantuml_output)
     if plantuml_version is None:
         raise SystemExit(f"Could not parse PlantUML version from: {plantuml_output}")

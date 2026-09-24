@@ -99,10 +99,11 @@ def render_puml_bytes(
     type with a native SVG renderer answers a PNG request with SVG, which was already true and is now
     *sayable*. A caller that sets a `Content-Type` from `fmt` alone would have mislabelled those bytes.
     """
+    from src.application.puml_directive_policy import find_unsafe_puml_directives
     from src.application.verification.artifact_verifier_syntax import (
         find_graphviz_dot,
         find_plantuml_jar,
-        resolve_java_executable,
+        plantuml_command,
     )
     from src.config.settings import plantuml_limit_size, render_dpi
 
@@ -114,6 +115,11 @@ def render_puml_bytes(
     # away from committing it.
     discard_abandoned_render_temp_files(diag_dir)
     render_body = _prepare_body(puml_body, repo_root, diagram_type)
+    # Every on-demand render — previews, reading lenses, bodies that arrived through git — is checked
+    # here, on the prepared bytes, which are the bytes PlantUML would be given.
+    if offenders := find_unsafe_puml_directives(render_body):
+        refusal = f"Render refused: the body references a file, URL or environment value ({offenders[0]})"
+        return None, _MEDIA_TYPES[fmt], [refusal]
     # A reading gets its say *after* preparation, and it has to. Preparation restates every stereotype
     # declaration from the ontology — that is the rule keeping one owner for what a kind looks like —
     # so a reading that re-declared a stereotype earlier in the body would have its colour rewritten
@@ -138,17 +144,11 @@ def render_puml_bytes(
             tmp_path = Path(tmp.name)
         with tempfile.TemporaryDirectory() as out_dir:
             env = {**os.environ, "GRAPHVIZ_DOT": str(dot)} if (dot := find_graphviz_dot()) else None
-            cmd = [
-                resolve_java_executable(),
-                "-Djava.awt.headless=true",
-                f"-DPLANTUML_LIMIT_SIZE={plantuml_limit_size()}",
-                "-jar",
-                str(jar.resolve()),
-                f"-t{fmt}",
-            ]
-            if fmt == "png":
-                cmd.append(f"-Sdpi={render_dpi()}")
-            cmd += ["-o", out_dir, tmp_path.name]
+            arguments = [f"-t{fmt}", *([f"-Sdpi={render_dpi()}"] if fmt == "png" else []), "-o", out_dir]
+            cmd = plantuml_command(
+                jar.resolve(), *arguments, tmp_path.name,
+                system_properties=(f"-DPLANTUML_LIMIT_SIZE={plantuml_limit_size()}",),
+            )
             proc = subprocess.run(
                 cmd, cwd=str(diag_dir), capture_output=True, text=True, timeout=60, env=env
             )

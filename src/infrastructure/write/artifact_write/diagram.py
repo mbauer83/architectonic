@@ -9,6 +9,7 @@ from src.application.modeling.artifact_write import (
     generate_diagram_id,
 )
 from src.application.modeling.artifact_write_layout import ensure_puml_layout
+from src.application.puml_directive_policy import assert_user_puml_safe
 from src.application.repo_path_helpers import diagram_source_confidential_root, diagram_source_root
 from src.application.verification._issue_serialization import as_issue_dict
 from src.application.verification.artifact_verifier import ArtifactVerifier
@@ -95,6 +96,8 @@ def _build_from_puml(
     connection_ids_used: list[str] | None,
 ) -> _DiagramBuild:
     """Prepare a hand-authored PUML body, inferring its referenced ids and minting an id if needed."""
+    # The create path checks a supplied body as the edit path always has; until 0.10.1 it did not.
+    assert_user_puml_safe(puml)
     eid = effective_id
     if eid is None:
         # Only adopt the @startuml token as the artifact-id when it is itself a canonical id

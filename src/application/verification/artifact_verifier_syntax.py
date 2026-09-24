@@ -6,6 +6,7 @@ import tempfile
 from functools import lru_cache
 from pathlib import Path
 
+from src.application.puml_directive_policy import find_unsafe_puml_directives
 from src.application.verification.artifact_verifier_types import Issue, Severity
 
 #: Where the PlantUML jar may sit relative to the directory holding pyproject.toml, in
@@ -51,6 +52,33 @@ def find_graphviz_dot() -> Path | None:
 
     which_dot = shutil.which("dot")
     return Path(which_dot) if which_dot else None
+
+
+#: PlantUML's own security profile for every run. SANDBOX refuses local file reads and URL fetches
+#: by the preprocessor and by creole images, whatever spelling reaches it; the bundled standard
+#: library (`!include <C4/…>`) still works, because it is read from the jar. The product expands its
+#: own managed include fragments into a body before PlantUML sees it, so nothing it renders needs
+#: more than this. The body policy (`puml_directive_policy`) refuses early and says why; this is what
+#: holds when a spelling gets past it.
+PLANTUML_SECURITY_PROFILE = "SANDBOX"
+
+
+def plantuml_command(jar: Path, *arguments: str, system_properties: tuple[str, ...] = ()) -> list[str]:
+    """The command line for one PlantUML run — the only way this codebase starts PlantUML.
+
+    Every launch goes through here so that none can run without the sandbox profile; a fitness
+    function refuses a `-jar` command assembled anywhere else. `system_properties` are further
+    `-Dname=value` settings (the size limit), placed before `-jar` as the JVM requires.
+    """
+    return [
+        resolve_java_executable(),
+        "-Djava.awt.headless=true",
+        f"-DPLANTUML_SECURITY_PROFILE={PLANTUML_SECURITY_PROFILE}",
+        *system_properties,
+        "-jar",
+        str(jar),
+        *arguments,
+    ]
 
 
 def resolve_java_executable() -> str:
@@ -124,7 +152,33 @@ def resolve_worker_count() -> int:
 
 
 
+def body_reaches_outside(path: Path, loc: str) -> Issue | None:
+    """E353 when a diagram file references a file, URL or environment value, so it is never rendered.
+
+    The syntax check renders the file, and a file can arrive through git without passing any write
+    path, so this check is the only one a body written elsewhere is certain to meet.
+    """
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return None
+    offenders = find_unsafe_puml_directives(text)
+    if not offenders:
+        return None
+    return Issue(
+        Severity.ERROR,
+        "E353",
+        f"The body references a file, URL or environment value and was not rendered: "
+        f"{'; '.join(offenders[:3])}. A body may "
+        "include only the bundled standard library and the managed fragments, and may embed images "
+        "only as data:image/…;base64.",
+        loc,
+    )
+
+
 def check_puml_syntax(path: Path, loc: str) -> list[Issue]:
+    if (refused := body_reaches_outside(path, loc)) is not None:
+        return [refused]
     if os.environ.get("ARCH_SKIP_PUML_SYNTAX"):
         return []
     result: list[Issue] = []
@@ -139,7 +193,6 @@ def check_puml_syntax(path: Path, loc: str) -> list[Issue]:
             )
         ]
 
-    java_exe = resolve_java_executable()
     env = os.environ.copy()
     dot = find_graphviz_dot()
     if dot is not None:
@@ -148,17 +201,7 @@ def check_puml_syntax(path: Path, loc: str) -> list[Issue]:
     try:
         with tempfile.TemporaryDirectory() as tmp_out:
             proc = subprocess.run(
-                [
-                    java_exe,
-                    "-Djava.awt.headless=true",
-                    "-jar",
-                    str(jar),
-                    "-tsvg",
-                    "-verbose",
-                    "-o",
-                    tmp_out,
-                    str(path),
-                ],
+                plantuml_command(jar, "-tsvg", "-verbose", "-o", tmp_out, str(path)),
                 capture_output=True,
                 text=True,
                 timeout=30,
@@ -199,6 +242,10 @@ def check_puml_syntax(path: Path, loc: str) -> list[Issue]:
 
 def check_puml_syntax_batch(paths: list[Path], *, chunk_size: int = 120) -> dict[Path, list[Issue]]:
     issues_by_path: dict[Path, list[Issue]] = {p: [] for p in paths}
+    refused = {p: issue for p in paths if (issue := body_reaches_outside(p, str(p))) is not None}
+    for path, issue in refused.items():
+        issues_by_path[path].append(issue)
+    paths = [p for p in paths if p not in refused]
     if not paths or os.environ.get("ARCH_SKIP_PUML_SYNTAX"):
         return issues_by_path
 
@@ -215,7 +262,6 @@ def check_puml_syntax_batch(paths: list[Path], *, chunk_size: int = 120) -> dict
             )
         return issues_by_path
 
-    java_exe = resolve_java_executable()
     env = os.environ.copy()
     dot = find_graphviz_dot()
     if dot is not None:
@@ -226,17 +272,7 @@ def check_puml_syntax_batch(paths: list[Path], *, chunk_size: int = 120) -> dict
         try:
             with tempfile.TemporaryDirectory() as tmp_out:
                 proc = subprocess.run(
-                    [
-                        java_exe,
-                        "-Djava.awt.headless=true",
-                        "-jar",
-                        str(jar),
-                        "-tsvg",
-                        "-verbose",
-                        "-o",
-                        tmp_out,
-                        *[str(p) for p in path_chunk],
-                    ],
+                    plantuml_command(jar, "-tsvg", "-verbose", "-o", tmp_out, *[str(p) for p in path_chunk]),
                     capture_output=True,
                     text=True,
                     timeout=120,

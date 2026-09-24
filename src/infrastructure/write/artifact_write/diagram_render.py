@@ -5,11 +5,12 @@ import subprocess
 import tempfile
 from pathlib import Path
 
+from src.application.puml_directive_policy import find_unsafe_puml_directives
 from src.application.repo_path_helpers import rendered_dir_for_diagram, repo_root_for_diagram_path
 from src.application.verification.artifact_verifier_syntax import (
     find_graphviz_dot,
     find_plantuml_jar,
-    resolve_java_executable,
+    plantuml_command,
 )
 from src.config.settings import plantuml_limit_size, render_dpi
 from src.infrastructure.rendering.native_svg import render_native_svg
@@ -54,6 +55,12 @@ def render_diagram_outputs(path: Path, warnings: list[str]) -> list[str]:
     whole reason the failure channel exists.
     """
     failures: list[str] = []
+    try:
+        offenders = find_unsafe_puml_directives(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError):
+        offenders = []
+    if offenders:
+        return [f"Render refused: the body references a file, URL or environment value ({offenders[0]})"]
     svg_path = _render_diagram_svg(path, warnings, failures)
     if svg_path is not None or not failures:
         png_path = _render_diagram_png(path, warnings, failures)
@@ -216,18 +223,10 @@ def _render_diagram_png(
         # project root produces a doubled/wrong path.
         dpi = render_dpi()
         result = subprocess.run(
-            [
-                resolve_java_executable(),
-                "-Djava.awt.headless=true",
-                f"-DPLANTUML_LIMIT_SIZE={plantuml_limit_size()}",
-                "-jar",
-                str(jar.resolve()),
-                "-tpng",
-                f"-Sdpi={dpi}",
-                "-o",
-                str(rendered_dir.resolve()),
-                tmp_path.name,
-            ],
+            plantuml_command(
+                jar.resolve(), "-tpng", f"-Sdpi={dpi}", "-o", str(rendered_dir.resolve()), tmp_path.name,
+                system_properties=(f"-DPLANTUML_LIMIT_SIZE={plantuml_limit_size()}",),
+            ),
             cwd=str(puml_path.parent),
             capture_output=True,
             text=True,
@@ -309,17 +308,10 @@ def _render_diagram_svg(
         if dot is not None:
             env = {**os.environ, "GRAPHVIZ_DOT": str(dot)}
         result = subprocess.run(
-            [
-                resolve_java_executable(),
-                "-Djava.awt.headless=true",
-                f"-DPLANTUML_LIMIT_SIZE={plantuml_limit_size()}",
-                "-jar",
-                str(jar.resolve()),
-                "-tsvg",
-                "-o",
-                str(rendered_dir.resolve()),
-                tmp_path.name,
-            ],
+            plantuml_command(
+                jar.resolve(), "-tsvg", "-o", str(rendered_dir.resolve()), tmp_path.name,
+                system_properties=(f"-DPLANTUML_LIMIT_SIZE={plantuml_limit_size()}",),
+            ),
             cwd=str(puml_path.parent),
             capture_output=True,
             text=True,
