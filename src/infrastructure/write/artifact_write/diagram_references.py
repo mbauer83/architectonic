@@ -251,8 +251,10 @@ def reconcile_recorded_connections(
 def diagram_entities_are_authoritative(verifier, diagram_type: str) -> bool:
     """True when *diagram_type*'s own entity types make ``diagram_entities`` its body source.
 
-    Diagram-owned types (activity, sequence, C4, datatype, GSN — declared via
-    ``ui_config.diagram_only_types``) are always rendered from ``diagram_entities``.
+    Asked of the diagram type (``body_is_rendered_from_diagram_entities``) rather than inferred from
+    its declared diagram-owned entity types: a type may host its nodes in ``diagram_entities``
+    without declaring types, and inferring left its edits writing new nodes over an unchanged body
+    and picture. A type drawn from a store answers false: its nodes live in the store.
     ArchiMate-family types may carry ``diagram_entities`` purely as occurrence-binding
     metadata (WU-B3) on top of a hand-authored ``puml=`` body, so it must not be
     treated as a render trigger for them.
@@ -261,4 +263,4 @@ def diagram_entities_are_authoritative(verifier, diagram_type: str) -> bool:
         module = verifier._runtime_catalogs.diagram_types.find_diagram_type(diagram_type)
     except Exception:  # noqa: BLE001
         return False
-    return bool(module is not None and module.ui_config.diagram_only_types)
+    return bool(module is not None and module.body_is_rendered_from_diagram_entities)

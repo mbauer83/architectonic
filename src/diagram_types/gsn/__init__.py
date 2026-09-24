@@ -47,6 +47,18 @@ class _GsnDiagramType(DiagramTypeBase):
         return PermittedRelationshipSet.empty()
 
     @property
+    def body_is_rendered_from_diagram_entities(self) -> bool:
+        """A GSN argument's goals, strategies and solutions are nodes of the diagram itself, held in
+        its `diagram-entities`, so they are the body's source.
+
+        A published argument is linked to the analysis it was drafted from: each node may name the
+        store nodes it argues from (`source_assurance_ids`), and the publication records a reference
+        from each of those to the diagram node. The link runs to the node; the node's text, kind
+        and edges are the argument's own and are not drawn from the store.
+        """
+        return True
+
+    @property
     def renderer(self) -> GsnDiagramRenderer:
         return GsnDiagramRenderer()
 

@@ -135,6 +135,12 @@ class DiagramTypeBase:
             return diagram_type_ui_config_from_mapping(config, default_label=default_label)
         return DiagramTypeUiConfig(label=default_label, entity_search_filter=True)
 
+    @property
+    def body_is_rendered_from_diagram_entities(self) -> bool:
+        """Types that declare their own entity types render from them; a type that keeps its nodes in
+        `diagram-entities` without declaring them as types says so by overriding this."""
+        return bool(self.ui_config.diagram_only_types)
+
     def write_guidance(self) -> DiagramTypeWriteGuidance:
         return DiagramTypeWriteGuidance(when_to_use="", when_not_to_use="")
 

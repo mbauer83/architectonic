@@ -296,6 +296,17 @@ class DiagramTypeModule(Protocol):
     def ui_config(self) -> DiagramTypeUiConfig: ...
 
     @property
+    def body_is_rendered_from_diagram_entities(self) -> bool:
+        """Whether this type's body is generated from its `diagram-entities`, so an edit of them re-renders.
+
+        True where the nodes a diagram draws are hosted by the diagram itself — declared diagram-owned
+        entity types, or nodes a type keeps in `diagram-entities` without declaring types. False where
+        `diagram-entities` is metadata beside a body the diagram owns, and for a type drawn from a
+        store (`StoreGraphProjectingDiagramType`), whose nodes exist in the store and are drawn from it.
+        """
+        ...
+
+    @property
     def own_permitted_relationships(self) -> PermittedRelationshipSet: ...
 
     @property
