@@ -5,14 +5,15 @@ from __future__ import annotations
 import functools
 import re
 from collections import defaultdict
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
 from src.application.artifacts.parsing import normalize_puml_alias
-from src.application.icons.effective_icons import IconSource
 from src.application.puml_icon_header import with_icon_block
+from src.domain.diagrams.instance_statements import DiagramInstances
 from src.domain.icons.icon_ref import IconStyle
+from src.domain.icons.resolved_icon import IconSource
 from src.domain.modules.module_types import ConnectionTypeName, ElementClassName
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
 from src.domain.ontology_representation.ontology_types import ConnectionTypeInfo
@@ -33,8 +34,9 @@ from src.infrastructure.rendering.archimate_entity_declarations import (
     grouping_key,
     grouping_stereotype,
     ordered_domains,
+    type_glyph,
 )
-from src.infrastructure.rendering.archimate_instance_icons import instance_icons
+from src.infrastructure.rendering.archimate_instance_icons import instance_icons, restate_instance_icons
 from src.infrastructure.rendering.archimate_relation_rendering import (
     format_multiplicity_label,
 )
@@ -326,10 +328,11 @@ class GenericPumlRenderer:
     def refresh_generated_header(self, body: str, repo_root: Path) -> str:
         return refreshed_header(body, repo_root, self._config)
 
-    def restate_instance_presentation(
-        self, body: str, diagram_entities: Mapping[str, object], entity_of: Callable[[str], EntityRecord | None]
-    ) -> str:
-        return instances.restate_instance_presentation(body, diagram_entities, entity_of)
+    def restate_instance_presentation(self, body: str, stated: DiagramInstances) -> str:
+        relabelled = instances.restate_instance_labels(body, stated.diagram_entities, stated.entity_of)
+        catalog = self._specialization_catalog()
+        glyph = functools.partial(type_glyph, registry=_registry(), specialization_catalog=catalog)
+        return restate_instance_icons(relabelled, stated, glyph, catalog)
 
 
     def visible_connection_label(

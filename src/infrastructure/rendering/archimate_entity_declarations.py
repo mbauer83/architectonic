@@ -108,6 +108,17 @@ def entity_nest_declaration(
     return line if entity.artifact_type in junction_types else f"{line} {{"
 
 
+def type_glyph(
+    entity: EntityRecord,
+    registry: Any,
+    specialization_catalog: SpecializationCatalog = SpecializationCatalog.empty(),
+) -> str:
+    """The glyph an element's label opens with when no icon stands in for it; empty where it has none."""
+    _label, stereotype, spec = entity_label_and_stereotype(entity, registry, specialization_catalog)
+    icon_key, _colour, show_icon = _specialization_notation(stereotype, spec, entity_has_sprite(entity, registry))
+    return f"<$archimate_{icon_key}{{scale={ICON_SCALE}}}>" if show_icon and icon_key else ""
+
+
 def _specialization_notation(
     stereotype: str | None, spec: SpecializationInfo | None, parent_has_sprite: bool
 ) -> tuple[str | None, str, bool]:

@@ -24,7 +24,13 @@ BLOCK_END = "' arch-icons:end"
 ICON_VARIABLE_PREFIX = "ARCH_ICON_"
 
 _KEY_HEX_LENGTH = 12
-_REFERENCE_RE = re.compile(rf"\$({ICON_VARIABLE_PREFIX}[0-9a-f]{{{_KEY_HEX_LENGTH}}})\b")
+_KEY_PATTERN = rf"{ICON_VARIABLE_PREFIX}[0-9a-f]{{{_KEY_HEX_LENGTH}}}"
+_REFERENCE_RE = re.compile(rf"\$({_KEY_PATTERN})\b")
+
+#: An embedded icon as a declaration shows it, `<img:$ARCH_ICON_…{scale=…}>`. Public so the reader of a
+#: declaration's label can tell the picture from the name without spelling the form a second time.
+ICON_REFERENCE_PATTERN = rf"<img:\${_KEY_PATTERN}\{{scale=[0-9.]+\}}>"
+_ICON_REFERENCE_RE = re.compile(ICON_REFERENCE_PATTERN)
 _ASSIGNMENT_RE = re.compile(rf'^\s*!\s*\$({ICON_VARIABLE_PREFIX}\w*)\s*=\s*"?([^"]*)"?\s*$')
 _BLOCK_RE = re.compile(rf"^{re.escape(BLOCK_BEGIN)}\n(?:.*\n)*?{re.escape(BLOCK_END)}\n", re.MULTILINE)
 
@@ -37,6 +43,11 @@ def icon_key(render_digest: str) -> str:
 def icon_reference(key: str, scale: str) -> str:
     """How a declaration shows an embedded icon."""
     return f"<img:${key}{{scale={scale}}}>"
+
+
+def is_icon_reference(text: str) -> bool:
+    """Whether *text* is exactly an embedded icon as a declaration shows it."""
+    return _ICON_REFERENCE_RE.fullmatch(text) is not None
 
 
 def referenced_icon_keys(body: str) -> frozenset[str]:

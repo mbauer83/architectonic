@@ -6,13 +6,13 @@ import pytest
 
 from src.application.icons.effective_icons import (
     EffectiveIcon,
-    ResolvedIcon,
     effective_icon,
     icon_assignments,
     names_most_specific_first,
 )
 from src.domain.icons.applicability import applicability_from
 from src.domain.icons.icon_ref import IconRef, IconTarget, SharedIcon, icon_ref_from
+from src.domain.icons.resolved_icon import ResolvedIcon
 
 INSTANCE, TYPE, SPEC, DEFAULT, NARROW = (f"ICO@1.{k}" for k in ("inst1", "type1", "spec1", "dflt1", "narr1"))
 

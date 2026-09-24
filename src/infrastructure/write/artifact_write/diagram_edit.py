@@ -16,7 +16,7 @@ from .coerce import as_optional_str_list
 from .diagram_body_preparation import (
     _prepare_diagram_puml_body,
     _restate_generated_declarations,
-    _restate_instance_presentation,
+    _with_instances_restated,
 )
 from .diagram_references import (
     _collect_diagram_renderer_references,
@@ -350,10 +350,9 @@ def edit_diagram(
         # about a change to one. The only route by which a manual-layout diagram hears at all.
         puml_body = _restate_generated_declarations(puml_body, repo_root, diagram_type)
 
-    # And what the *diagram* states about its instances: a label in `diagram-entities.display_labels`
-    # reaches a rendered body through the renderer, and reaches a body that arrived already written —
-    # supplied by the caller, or kept as the author left it — only here.
-    puml_body = _restate_instance_presentation(puml_body, eff_diagram_entities, diagram_type, verifier)
+    # What the *diagram* states about its instances (labels, icons) reaches a rendered body through the
+    # renderer, and a body that arrived already written — supplied, or kept as laid out — only here.
+    puml_body = _with_instances_restated(puml_body, eff_diagram_entities, diagram_type, verifier, eff_entity_ids_used)
 
     # One reconcile, above both ways a body arrives. They differ only in how the fresh reference set
     # was obtained — rendered from `diagram-entities`, or read off a supplied `puml` — and both end

@@ -13,9 +13,11 @@ renderer's own, restated rather than trusted because an author never wrote them.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from src.domain.diagrams.instance_statements import DiagramInstances
 from src.infrastructure.diagram_type_registry import find_renderer, suppressed_stereotype_tokens
 from src.infrastructure.rendering.archimate_relation_rendering import strip_suppressed_relation_labels
 
@@ -47,8 +49,12 @@ def _restate_generated_declarations(puml_body: str, repo_root: Path, diagram_typ
     return renderer.refresh_generated_header(puml_body, repo_root)
 
 
-def _restate_instance_presentation(
-    puml_body: str, diagram_entities: object, diagram_type: str, verifier: ArtifactVerifier
+def _with_instances_restated(
+    puml_body: str,
+    diagram_entities: object,
+    diagram_type: str,
+    verifier: ArtifactVerifier,
+    entity_ids: Sequence[str] | None,
 ) -> str:
     """Show each instance the way the diagram states it, in a body this write did not render.
 
@@ -67,7 +73,11 @@ def _restate_instance_presentation(
         return puml_body
     if registry is None or not isinstance(diagram_entities, dict):
         return puml_body
-    return renderer.restate_instance_presentation(puml_body, diagram_entities, registry.get_entity)
+    from src.infrastructure.icons.library_source import LibraryIconSource  # noqa: PLC0415
+
+    source = LibraryIconSource(registry)
+    instances = DiagramInstances(diagram_entities, tuple(entity_ids or ()), registry.get_entity, source)
+    return renderer.restate_instance_presentation(puml_body, instances)
 
 
 def _prepare_diagram_puml_body(puml_body: str, repo_root: Path, diagram_type: str) -> str:

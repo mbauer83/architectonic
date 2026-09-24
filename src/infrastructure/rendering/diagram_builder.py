@@ -16,7 +16,7 @@ from functools import lru_cache
 from pathlib import Path
 
 from src.application.artifacts.parsing import normalize_puml_alias
-from src.application.icons.effective_icons import IconSource
+from src.domain.icons.resolved_icon import IconSource
 from src.domain.modules.module_types import ConnectionTypeName, ElementClassName
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
 from src.domain.ontology_representation.ontology_protocol import IconPresentingRenderer

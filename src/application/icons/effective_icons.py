@@ -21,8 +21,8 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Literal
 
-from src.domain.icons.applicability import Applicability
-from src.domain.icons.icon_ref import IconRef, IconStyle, IconTarget, InvalidIconRefError, icon_ref_from
+from src.domain.icons.icon_ref import IconRef, IconStyle, InvalidIconRefError, icon_ref_from
+from src.domain.icons.resolved_icon import IconSource, ResolvedIcon
 
 DISPLAY_ICONS_KEY = "display_icons"
 TYPE_ICONS_KEY = "type_icons"
@@ -32,18 +32,6 @@ AssignmentLevel = Literal["instance", "type", "specialization-default"]
 _INSTANCE: AssignmentLevel = "instance"
 _TYPE: AssignmentLevel = "type"
 _SPECIALIZATION_DEFAULT: AssignmentLevel = "specialization-default"
-
-
-@dataclass(frozen=True, slots=True)
-class ResolvedIcon:
-    """A picture a reference names, with what decides whether and how it is shown."""
-
-    png: bytes
-    render_digest: str
-    width: int
-    height: int
-    applies_to: Applicability
-    default_style: IconStyle
 
 
 @dataclass(frozen=True, slots=True)
@@ -59,10 +47,6 @@ class IconAssignments:
 
     by_instance: Mapping[str, IconRef]
     by_name: Mapping[str, IconRef]
-
-
-#: How a reference becomes a picture: the library's, or a diagram's own. None when it names nothing drawable.
-IconSource = Callable[[IconTarget], "ResolvedIcon | None"]
 
 
 def icon_assignments(diagram_entities: Mapping[str, object] | None) -> IconAssignments:

@@ -173,10 +173,10 @@ def drawn_labels_by_instance(
     }
 
 
-def restate_instance_presentation(
+def restate_instance_labels(
     body: str, diagram_entities: Mapping[str, object], entity_of: Callable[[str], EntityRecord | None]
 ) -> str:
-    """*body* showing every instance the way this diagram states it, for a body the renderer did not write.
+    """*body* with every instance labelled the way this diagram states it, for a body the renderer did not write.
 
     An instance is addressed by its entity's id or by an occurrence id, so the entities to resolve are
     the ones the labels name and the ones the occurrences stand for.

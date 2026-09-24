@@ -29,6 +29,8 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+from src.application.puml_icon_header import ICON_REFERENCE_PATTERN
+
 #: `… as ALIAS` followed by anything but a further alias. The trailing group is deliberately
 #: unconstrained: PlantUML permits colours, sprites, stereotypes and sizing hints after the alias,
 #: and an allowlist of decorations is the same bet the end-anchored readings lost.
@@ -107,9 +109,10 @@ _COLOUR_SUFFIX = re.compile(r"\s+#[A-Za-z0-9_:;#,-]+\s*$")
 _APPENDED = "\\n<size:10>"
 
 
-#: The sprite a rendered label opens with — `<$archimate_goal{scale=1.2}> ` — which is the type's
-#: glyph rather than anything the element is called.
-_SPRITE_PREFIX = re.compile(r"^<\$[^>]*>\s*")
+#: The picture a rendered label opens with — the type's glyph, `<$archimate_goal{scale=1.2}> `, or an
+#: icon the diagram assigns the element, `<img:$ARCH_ICON_…{scale=…}> ` — rather than anything the
+#: element is called.
+_SPRITE_PREFIX = re.compile(rf"^(?:<\$[^>]*>|{ICON_REFERENCE_PATTERN})\s*")
 
 #: The specialization line the renderer appends under a label: a literal `\n` then guillemets.
 _GUILLEMET_SUFFIX = re.compile(r"\\n«[^»]*»$")
@@ -176,6 +179,28 @@ def relabelled_declaration(line: str, label: str) -> str:
     prefix, _base, appendix = _label_parts(quoted.group(0)[1:-1])
     replacement = f'"{prefix}{quoted_label_text(label)}{appendix}"'
     return line[: quoted.start()] + replacement + line[quoted.end():]
+
+
+def with_label_picture(line: str, picture: str) -> str:
+    """*line* with its label opening with *picture* — a glyph, an icon reference, or nothing when empty.
+
+    Everything else on the line is kept: the label proper, what the renderer appended, the stereotype,
+    the colour, the alias. A line that declares nothing quoted comes back unchanged.
+    """
+    if alias_declared_on(line) is None:
+        return line
+    quoted = _QUOTED.search(line)
+    if quoted is None:
+        return line
+    _old, base, appendix = _label_parts(quoted.group(0)[1:-1])
+    opening = f"{picture} " if picture else ""
+    return line[: quoted.start()] + f'"{opening}{base}{appendix}"' + line[quoted.end():]
+
+
+def picture_declared_on(line: str) -> str:
+    """The picture a declaration's label opens with, or an empty string where it opens with none."""
+    quoted = _QUOTED.search(line) if alias_declared_on(line) is not None else None
+    return _label_parts(quoted.group(0)[1:-1])[0].strip() if quoted is not None else ""
 
 
 def overrides_colour(line: str) -> bool:

@@ -73,3 +73,33 @@ def test_an_icon_for_another_type_leaves_the_glyph(repo: Path) -> None:
 
     body = Path(str(result["path"])).read_text(encoding="utf-8")
     assert "<img:$" not in body and BLOCK_BEGIN not in body and "<$archimate_" in body
+
+
+def _body_of(result: dict) -> str:
+    return Path(str(result["path"])).read_text(encoding="utf-8").split("\n---\n", 1)[1]
+
+
+@pytest.mark.parametrize("manual_layout", [False, True], ids=["kept", "manual-layout"])
+def test_a_kept_body_gains_and_loses_an_icon_touching_only_that_declaration(repo: Path, manual_layout: bool) -> None:
+    first, second = _node(repo, "Cluster A"), _node(repo, "Cluster B")
+    created = _create(repo, [first, second], {})
+    diagram_id = str(created["artifact_id"])
+    # The body as an edit leaves it: the first edit states the refreshed header (backlog B72).
+    original = _body_of(
+        mcp.artifact_edit_diagram(artifact_id=diagram_id, name="Cluster view", dry_run=False, repo_root=str(repo))
+    )
+
+    gained = mcp.artifact_edit_diagram(
+        artifact_id=diagram_id, diagram_entities={"display_icons": {first: AKS}},
+        manual_layout=manual_layout or None, dry_run=False, repo_root=str(repo),
+    )
+    with_icon = _body_of(gained)
+    changed = [line for line in with_icon.splitlines() if line not in original.splitlines()]
+    assert gained["verification"]["valid"] is True, gained["verification"]
+    assert any("Cluster A" in line and "<img:$" in line for line in changed)
+    assert all("Cluster B" not in line for line in changed)
+
+    lost = mcp.artifact_edit_diagram(
+        artifact_id=diagram_id, diagram_entities={}, dry_run=False, repo_root=str(repo),
+    )
+    assert _body_of(lost) == original

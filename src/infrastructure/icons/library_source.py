@@ -10,11 +10,11 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from src.application.icons.effective_icons import ResolvedIcon
 from src.domain.icons.icon_file import IconFile, read_icon_file
 from src.domain.icons.icon_record import IconRecord
 from src.domain.icons.icon_ref import IconTarget, LocalIcon, SharedIcon
 from src.domain.icons.render_form import render_digest
+from src.domain.icons.resolved_icon import ResolvedIcon
 from src.infrastructure.icons.raster_codec import StoredPngInspector
 
 

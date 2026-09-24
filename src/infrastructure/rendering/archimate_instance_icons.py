@@ -13,15 +13,24 @@ from dataclasses import dataclass
 
 from src.application.artifacts.parsing import normalize_puml_alias
 from src.application.icons.effective_icons import (
-    IconSource,
     effective_icon,
     icon_assignments,
     names_most_specific_first,
 )
-from src.application.puml_icon_header import icon_key, icon_reference
+from src.application.puml_alias_declarations import alias_declared_on, picture_declared_on, with_label_picture
+from src.application.puml_icon_header import (
+    icon_key,
+    icon_reference,
+    is_icon_reference,
+    referenced_icon_keys,
+    with_icon_block,
+)
+from src.domain.diagrams.instance_statements import DiagramInstances
 from src.domain.icons.icon_ref import IconRef, library_icon_named
+from src.domain.icons.resolved_icon import IconSource
 from src.domain.ontology_representation.artifact_types import EntityRecord
 from src.domain.ontology_representation.specializations import SpecializationCatalog
+from src.infrastructure.rendering.archimate_occurrences import occurrence_entities
 
 #: The drawn height of a badge: the type glyph is a 16 px sprite at scale 1.2.
 BADGE_EDGE_PX = 20
@@ -83,3 +92,36 @@ def _default_for(entity: EntityRecord, specializations: SpecializationCatalog) -
 
 def _scale(edge_px: int) -> str:
     return f"{BADGE_EDGE_PX / edge_px:.3g}"
+
+
+def restate_instance_icons(
+    body: str,
+    instances: DiagramInstances,
+    glyph_of: Callable[[EntityRecord], str],
+    specializations: SpecializationCatalog,
+) -> str:
+    """*body* showing each instance's icon as the diagram now states it, for a body kept as written.
+
+    A declaration whose instance has an icon shows it; one that shows an icon the diagram no longer
+    assigns gets its type glyph back. Nothing else on any line changes, and an instance the body does
+    not declare is left alone — there is no line to change and nothing is invented.
+    """
+    entities = [entity for entity in map(instances.entity_of, instances.entity_ids) if entity is not None]
+    occurrences = occurrence_entities(instances.diagram_entities, {e.artifact_id: e for e in entities})
+    icons = instance_icons(instances.diagram_entities, entities, occurrences, instances.icon_source, specializations)
+    if not icons.by_alias and not referenced_icon_keys(body):
+        return body
+    glyph_by_alias = {normalize_puml_alias(e.display_alias): glyph_of(e) for e in [*entities, *occurrences]}
+    repictured = "\n".join(_repictured(line, icons, glyph_by_alias) for line in body.split("\n"))
+    return with_icon_block(repictured, icons.pictures)
+
+
+def _repictured(line: str, icons: InstanceIcons, glyph_by_alias: Mapping[str, str]) -> str:
+    declaration = alias_declared_on(line)
+    if declaration is None:
+        return line
+    if (icon := icons.by_alias.get(declaration.alias)) is not None:
+        return with_label_picture(line, icon)
+    if is_icon_reference(picture_declared_on(line)):
+        return with_label_picture(line, glyph_by_alias.get(declaration.alias, ""))
+    return line

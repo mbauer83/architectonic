@@ -5,6 +5,7 @@ from typing import Literal
 
 from src.application.ports import AmbiguousArtifactError, ResolvedArtifact, VerifierStorePort
 from src.domain.artifact_id import slug_of, stable_id
+from src.domain.icons.icon_record import IconRecord
 from src.domain.ontology_representation.artifact_types import (
     ConnectionRecord,
     DiagramRecord,
@@ -34,6 +35,9 @@ class ArtifactRegistry:
 
     def get_connection(self, artifact_id: str) -> ConnectionRecord | None:
         return self._store.get_connection(artifact_id)
+
+    def get_icon(self, artifact_id: str) -> IconRecord | None:
+        return self._store.get_icon(artifact_id)
 
     def entity_ids(self) -> set[str]:
         return self._store.entity_ids()
