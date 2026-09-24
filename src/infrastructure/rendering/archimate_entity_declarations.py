@@ -93,20 +93,12 @@ def entity_nest_declaration(
     label_attribute: str | None = None,
     instance_label: str | None = None,
 ) -> str:
-    if entity.artifact_type in junction_types:
-        return f'circle " " as {alias}'
-    label, stereotype, spec = entity_label_and_stereotype(
-        entity, registry, specialization_catalog, label_attribute=label_attribute, instance_label=instance_label
+    """The declaration of an element that contains others: the same line, opening its block."""
+    line = entity_declaration(
+        entity, alias, registry, junction_types, specialization_catalog,
+        label_attribute=label_attribute, instance_label=instance_label,
     )
-    icon_key, color_suffix, show_icon = _specialization_notation(stereotype, spec, entity_has_sprite(entity, registry))
-    if show_icon and icon_key:
-        return (
-            f'rectangle "<$archimate_{icon_key}{{scale={ICON_SCALE}}}> {label}" '
-            f'<<{stereotype}>> as {alias}{color_suffix} {{'
-        )
-    if stereotype:
-        return f'rectangle "{label}" <<{stereotype}>> as {alias}{color_suffix} {{'
-    return f'rectangle "{label}" as {alias}{color_suffix} {{'
+    return line if entity.artifact_type in junction_types else f"{line} {{"
 
 
 def _specialization_notation(

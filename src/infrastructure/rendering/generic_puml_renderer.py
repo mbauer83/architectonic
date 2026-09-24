@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from collections import defaultdict
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -15,7 +15,10 @@ from src.domain.ontology_representation.ontology_types import ConnectionTypeInfo
 from src.domain.ontology_representation.specializations import SpecializationCatalog, merge_specialization_catalogs
 from src.infrastructure.rendering import archimate_occurrences as instances
 from src.infrastructure.rendering._archimate_includes import inject_archimate_includes
-from src.infrastructure.rendering._authored_grouping_rendering import render_authored_groupings
+from src.infrastructure.rendering._authored_grouping_rendering import (
+    release_authored_members,
+    render_authored_groupings,
+)
 from src.infrastructure.rendering._component_canvas import render_component_canvas
 from src.infrastructure.rendering._component_grouping import collect_subtree_aliases
 from src.infrastructure.rendering._connection_line_rendering import render_connection_lines
@@ -123,23 +126,7 @@ class GenericPumlRenderer:
             entity_by_alias,
         )
         if authored_groupings:
-            from src.infrastructure.rendering._authored_grouping_rendering import (  # noqa: PLC0415
-                claimed_aliases,
-                resolve_authored_members,
-            )
-
-            authored_member_aliases = claimed_aliases(
-                resolve_authored_members(authored_groupings, render_entities)
-            )
-            # Declared membership in an authored group outranks modelled containment:
-            # the relation stays in the model, but the picture keeps the user's box.
-            nested_aliases -= authored_member_aliases
-            for parent_alias in list(children_map):
-                children_map[parent_alias] = [
-                    child
-                    for child in children_map[parent_alias]
-                    if normalize_puml_alias(child.display_alias) not in authored_member_aliases
-                ]
+            nested_aliases = release_authored_members(authored_groupings, render_entities, children_map, nested_aliases)
         for domain in list(domain_entities):
             domain_entities[domain] = [
                 entity
@@ -338,6 +325,11 @@ class GenericPumlRenderer:
 
     def refresh_generated_header(self, body: str, repo_root: Path) -> str:
         return refreshed_header(body, repo_root, self._config)
+
+    def restate_instance_presentation(
+        self, body: str, diagram_entities: Mapping[str, object], entity_of: Callable[[str], EntityRecord | None]
+    ) -> str:
+        return instances.restate_instance_presentation(body, diagram_entities, entity_of)
 
 
     def visible_connection_label(

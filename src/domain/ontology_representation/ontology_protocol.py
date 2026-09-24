@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, Protocol, TypeAlias, runtime_checkable
 
@@ -187,6 +187,25 @@ class GeneratedHeaderRefreshingRenderer(Protocol):
     """
 
     def refresh_generated_header(self, body: str, repo_root: Path) -> str: ...
+
+
+@runtime_checkable
+class InstancePresentationRestatingRenderer(Protocol):
+    """Optional capability for a renderer whose diagrams say how individual instances are shown.
+
+    A diagram may state, per instance, what this picture shows for it — a label other than the
+    element's name. A body the renderer produces honours that as it draws; a body that arrived already
+    written, supplied by a caller or kept as its author laid it out, hears about it only here. The
+    write path resolves nothing about instances itself: it hands over the diagram's statements and a
+    lookup of model entities, and the renderer decides which instances it needs.
+    """
+
+    def restate_instance_presentation(
+        self,
+        body: str,
+        diagram_entities: Mapping[str, object],
+        entity_of: Callable[[str], EntityRecord | None],
+    ) -> str: ...
 
 
 @runtime_checkable

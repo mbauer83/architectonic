@@ -14,9 +14,13 @@ renderer's own, restated rather than trusted because an author never wrote them.
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from src.infrastructure.diagram_type_registry import find_renderer, suppressed_stereotype_tokens
 from src.infrastructure.rendering.archimate_relation_rendering import strip_suppressed_relation_labels
+
+if TYPE_CHECKING:
+    from src.application.verification.artifact_verifier import ArtifactVerifier
 
 
 def _restate_generated_declarations(puml_body: str, repo_root: Path, diagram_type: str) -> str:
@@ -42,6 +46,28 @@ def _restate_generated_declarations(puml_body: str, repo_root: Path, diagram_typ
         return puml_body
     return renderer.refresh_generated_header(puml_body, repo_root)
 
+
+def _restate_instance_presentation(
+    puml_body: str, diagram_entities: object, diagram_type: str, verifier: ArtifactVerifier
+) -> str:
+    """Show each instance the way the diagram states it, in a body this write did not render.
+
+    A rendered body honours the same statements inside the renderer; this is the twin for a body
+    supplied by the caller or kept verbatim. Without a registry there is nothing to resolve the
+    instances against, and the body passes through untouched; so does a notation whose diagrams make
+    no such statements, which says so by not implementing the capability.
+    """
+    from src.domain.ontology_representation.ontology_protocol import (  # noqa: PLC0415
+        InstancePresentationRestatingRenderer,
+    )
+
+    renderer = find_renderer(diagram_type)
+    registry = verifier.registry
+    if renderer is None or not isinstance(renderer, InstancePresentationRestatingRenderer):
+        return puml_body
+    if registry is None or not isinstance(diagram_entities, dict):
+        return puml_body
+    return renderer.restate_instance_presentation(puml_body, diagram_entities, registry.get_entity)
 
 
 def _prepare_diagram_puml_body(puml_body: str, repo_root: Path, diagram_type: str) -> str:

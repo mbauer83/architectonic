@@ -9,7 +9,7 @@ grouping's members use, so every per-instance statement is keyed the one way.
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import replace
 
 from src.application.artifacts.parsing import normalize_puml_alias
@@ -171,3 +171,27 @@ def drawn_labels_by_instance(
         for instance_id, alias in _alias_by_instance(diagram_entities, entity_by_id).items()
         if alias in label_by_alias
     }
+
+
+def restate_instance_presentation(
+    body: str, diagram_entities: Mapping[str, object], entity_of: Callable[[str], EntityRecord | None]
+) -> str:
+    """*body* showing every instance the way this diagram states it, for a body the renderer did not write.
+
+    An instance is addressed by its entity's id or by an occurrence id, so the entities to resolve are
+    the ones the labels name and the ones the occurrences stand for.
+    """
+    if not display_label_overrides(diagram_entities):
+        return body
+    occurrences = diagram_entities.get("occurrence")
+    backing_ids = [
+        str(item.get("backing_entity_id") or "")
+        for item in (occurrences if isinstance(occurrences, list) else [])
+        if isinstance(item, dict)
+    ]
+    wanted = [*display_label_overrides(diagram_entities), *backing_ids]
+    entity_by_id = {
+        record.artifact_id: record for record in (entity_of(artifact_id) for artifact_id in wanted if artifact_id)
+        if record is not None
+    }
+    return relabel_instances_in_body(body, diagram_entities, entity_by_id)

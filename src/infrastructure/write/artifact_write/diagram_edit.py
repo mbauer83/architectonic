@@ -11,12 +11,12 @@ from src.application.repo_path_helpers import diagram_source_root, resolve_diagr
 from src.application.verification.artifact_verifier import ArtifactVerifier
 
 from ._diagram_group_move import _verification_to_dict, commit_diagram_write
-from ._diagram_instance_labels import relabelled_instances
 from .boundary import modification_stamp
 from .coerce import as_optional_str_list
 from .diagram_body_preparation import (
     _prepare_diagram_puml_body,
     _restate_generated_declarations,
+    _restate_instance_presentation,
 )
 from .diagram_references import (
     _collect_diagram_renderer_references,
@@ -353,7 +353,7 @@ def edit_diagram(
     # And what the *diagram* states about its instances: a label in `diagram-entities.display_labels`
     # reaches a rendered body through the renderer, and reaches a body that arrived already written —
     # supplied by the caller, or kept as the author left it — only here.
-    puml_body = relabelled_instances(puml_body, eff_diagram_entities, verifier)
+    puml_body = _restate_instance_presentation(puml_body, eff_diagram_entities, diagram_type, verifier)
 
     # One reconcile, above both ways a body arrives. They differ only in how the fresh reference set
     # was obtained — rendered from `diagram-entities`, or read off a supplied `puml` — and both end

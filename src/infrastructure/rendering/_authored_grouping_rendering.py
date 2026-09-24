@@ -75,6 +75,26 @@ def claimed_aliases(resolved: list[ResolvedGroup]) -> set[str]:
     return {alias for group in resolved for alias in group.all_aliases()}
 
 
+def release_authored_members(
+    authored_groupings: list[dict[str, object]],
+    render_entities: list[EntityRecord],
+    children_map: dict[str, list[EntityRecord]],
+    nested_aliases: set[str],
+) -> set[str]:
+    """Take every authored group's members out of modelled nesting; return the aliases still nested.
+
+    Declared membership in an authored group outranks modelled containment: the relation stays in
+    the model, but the picture keeps the user's box. *children_map* is updated in place, as the
+    renderer's nesting walk reads it afterwards.
+    """
+    claimed = claimed_aliases(resolve_authored_members(authored_groupings, render_entities))
+    for parent_alias in list(children_map):
+        children_map[parent_alias] = [
+            child for child in children_map[parent_alias] if normalize_puml_alias(child.display_alias) not in claimed
+        ]
+    return nested_aliases - claimed
+
+
 def group_stereotype(
     group: ResolvedGroup,
     *,
