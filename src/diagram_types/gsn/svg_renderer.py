@@ -187,6 +187,12 @@ def _place(nodes: list[GsnNode], edges: list[GsnEdge]) -> tuple[list[PlacedNode]
     side_nodes: list[GsnNode] = []
     for node in nodes:
         (side_nodes if node.alias in context_targets else layers[depths[node.alias]]).append(node)
+    # Side nodes sit in one column right of the argument, so a qualified node that is not rightmost in
+    # its rank has its connector drawn across the nodes beside it — which then read as the ones it
+    # qualifies. Qualified nodes go rightmost, next to the column; the order is otherwise kept.
+    qualified = {edge.source for edge in edges if edge.edge_type == "in-context-of" and edge.target in depths}
+    for depth, layer in layers.items():
+        layers[depth] = sorted(layer, key=lambda node: node.alias in qualified)
 
     horizontal_gap, vertical_gap, margin = 54.0, 84.0, 40.0
     layer_widths = [
@@ -197,28 +203,34 @@ def _place(nodes: list[GsnNode], edges: list[GsnEdge]) -> tuple[list[PlacedNode]
     side_width = max((_node_size(node)[0] for node in side_nodes), default=0.0)
     canvas_width = margin * 2 + main_width + (horizontal_gap + side_width if side_nodes else 0)
 
+    side_by_depth: dict[int, list[GsnNode]] = defaultdict(list)
+    for node in side_nodes:
+        side_by_depth[depths[node.alias]].append(node)
+    side_gap = 18.0
+    side_x = margin + main_width + horizontal_gap
+
     placed: list[PlacedNode] = []
     y = margin
-    layer_y: dict[int, float] = {}
-    for depth, layer in sorted(layers.items()):
+    for depth in sorted(set(layers) | set(side_by_depth)):
+        layer, stack = layers.get(depth, []), side_by_depth.get(depth, [])
         sizes = [_node_size(node) for node in layer]
-        layer_height = max((height for _, height in sizes), default=54.0)
+        stack_sizes = [_node_size(node) for node in stack]
+        layer_height = max((height for _, height in sizes), default=0.0)
+        stack_height = sum(height for _, height in stack_sizes) + side_gap * max(0, len(stack) - 1)
         total_width = sum(width for width, _ in sizes) + horizontal_gap * max(0, len(layer) - 1)
         x = margin + (main_width - total_width) / 2
-        layer_y[depth] = y + layer_height / 2
         for node, (width, height) in zip(layer, sizes, strict=True):
             placed.append(PlacedNode(node, x + width / 2, y + layer_height / 2, width, height))
             x += width + horizontal_gap
-        y += layer_height + vertical_gap
+        # A rank's side nodes stack downward from its top, and the rank is as tall as the taller of
+        # its main row and that stack. Stacking from the row's centre line inside a band sized for
+        # the row alone ran a second context into the next rank, under that rank's justification.
+        cursor = y
+        for node, (width, height) in zip(stack, stack_sizes, strict=True):
+            placed.append(PlacedNode(node, side_x + width / 2, cursor + height / 2, width, height))
+            cursor += height + side_gap
+        y += max(layer_height, stack_height, 54.0) + vertical_gap
 
-    side_counts: dict[int, int] = defaultdict(int)
-    side_x = margin + main_width + horizontal_gap
-    for node in side_nodes:
-        depth = depths[node.alias]
-        width, height = _node_size(node)
-        offset = side_counts[depth] * (height + 18)
-        placed.append(PlacedNode(node, side_x + width / 2, layer_y.get(depth, margin) + offset, width, height))
-        side_counts[depth] += 1
     canvas_height = max((node.y + node.height / 2 for node in placed), default=80.0) + margin
     return placed, canvas_width, canvas_height
 
