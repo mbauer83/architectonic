@@ -7,6 +7,7 @@ This module exists as a stable import path for MCP server code and tests.
 from typing import Literal
 
 from src.application.modeling.artifact_write import DiagramConnectionInferenceMode
+from src.domain.icons.normalised_icon import IconRefused
 from src.infrastructure.write.artifact_write import (
     IconUpload,
     SyncDiagramToModelResult,
@@ -31,6 +32,7 @@ from src.infrastructure.write.artifact_write import (
     rendered_membership,
     set_diagram_edge_label,
     sync_diagram_to_model,
+    upload_from_base64,
     write_help,
 )
 
@@ -63,4 +65,6 @@ __all__ = [
     "delete_document",
     "IconUpload",
     "create_icon",
+    "upload_from_base64",
+    "IconRefused",
 ]

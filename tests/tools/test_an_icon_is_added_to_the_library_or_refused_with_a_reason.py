@@ -96,3 +96,21 @@ def test_a_picture_the_library_holds_is_not_stored_twice(repo: Path) -> None:
     again = _create(repo, png_of(), source_format="png", name="Same picture")
 
     assert first["wrote"] is True and str(first["artifact_id"]).split(".")[0] in _refusal(again)
+
+
+def test_the_library_is_listed_for_what_an_agent_is_choosing(repo: Path) -> None:
+    from src.infrastructure.mcp.artifact_mcp.query_icon_tools import artifact_query_icons
+
+    def offered_for(target: str) -> list[str]:
+        return sorted(row["artifact_id"] for row in artifact_query_icons(applicable_to=target, repo_root=str(repo)))
+
+    node_icon = str(_create(repo)["artifact_id"])
+    unrestricted = _create(repo, png_of((9, 9, 9, 255)), source_format="png", name="Anywhere", applies_to=[])
+    anywhere = str(unrestricted["artifact_id"])
+
+    for_nodes, for_services = offered_for("technology-node"), offered_for("application-service")
+
+    assert sorted(for_nodes) == sorted([node_icon, anywhere]) and for_services == [anywhere]
+    row = artifact_query_icons(q="kubernetes", repo_root=str(repo))[0]
+    assert row["scope"] == "engagement" and row["baseline_standing"]["kind"] == "enterprise-baseline"
+    assert "png" not in row and "content" not in row

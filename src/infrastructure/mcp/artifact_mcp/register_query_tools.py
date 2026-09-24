@@ -4,6 +4,7 @@ from .aibom_read_tools import register_aibom_read_tools
 from .install_read_cache import install_read_result_cache
 from .query_datatype_tools import register_query_datatype_tools
 from .query_graph_tools import register_query_graph_tools
+from .query_icon_tools import register_query_icon_tools
 from .query_list_read_tools import register_query_list_read_tools
 from .query_scaffold_tools import register_query_scaffold_tools
 from .query_search_tools import register_query_search_tools
@@ -25,6 +26,7 @@ def register_query_tools(mcp: MCPServer) -> None:
     register_query_scaffold_tools(mcp)
     register_query_datatype_tools(mcp)
     register_query_viewpoint_tools(mcp)
+    register_query_icon_tools(mcp)
     register_aibom_read_tools(mcp)
 
     # Applied last, over the tools just registered: agent traffic re-asks the same questions

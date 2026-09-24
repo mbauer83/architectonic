@@ -9,6 +9,8 @@ every other artifact is, before it is written.
 
 from __future__ import annotations
 
+import base64
+import binascii
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -42,6 +44,24 @@ class IconUpload:
     applies_to: Sequence[str] = ()
     default_style: IconStyle = "badge"
     tags: Sequence[str] = ()
+
+
+def upload_from_base64(
+    content_base64: str,
+    *,
+    source_format: SourceFormat,
+    name: str,
+    attribution: str,
+    applies_to: Sequence[str] = (),
+    default_style: IconStyle = "badge",
+    tags: Sequence[str] = (),
+) -> IconUpload | IconRefused:
+    """An upload as the surfaces receive it — the file base64-encoded — or why it cannot be one."""
+    try:
+        content = base64.b64decode(content_base64, validate=True)
+    except (binascii.Error, ValueError):
+        return IconRefused("content_base64 is not base64")
+    return IconUpload(content, source_format, name, attribution, tuple(applies_to), default_style, tuple(tags))
 
 
 def create_icon(

@@ -39,6 +39,7 @@ looking entirely normal. See
 | `artifact_query_datatype_types` | Read-only | List available attribute types for datatype diagrams. |
 | `artifact_query_find_connections_for` | Read-only | Find connection records that touch a given entity_id. |
 | `artifact_query_find_neighbors` | Read-only | Graph traversal: return direct or derived neighbors within max_hops. |
+| `artifact_query_icons` | Read-only | List the icons of the library a diagram may show. |
 | `artifact_query_list_artifacts` | Read-only | List artifacts (metadata-only) with AND-semantics filters. |
 | `artifact_query_read_artifact` | Read-only | Read one artifact by artifact_id. |
 | `artifact_query_search_artifacts` | Read-only | Search artifacts by text query. |

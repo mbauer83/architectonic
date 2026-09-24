@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import base64
-import binascii
 from typing import Literal
 
 from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
@@ -31,20 +29,19 @@ def artifact_create_icon(
     dry_run: bool = True,
     repo_root: str | None = None,
 ) -> dict[str, object]:
-    try:
-        content = base64.b64decode(content_base64, validate=True)
-    except (binascii.Error, ValueError):
-        return {"ok": False, "error": "content_base64 is not base64"}
+    upload = artifact_write_ops.upload_from_base64(
+        content_base64, source_format=source_format, name=name, attribution=attribution,
+        applies_to=applies_to or (), default_style=default_style, tags=tags or (),
+    )
+    if isinstance(upload, artifact_write_ops.IconRefused):
+        return {"ok": False, "error": upload.reason}
     roots = resolve_repo_roots(repo_scope="engagement", repo_root=repo_root, repo_preset=None, enterprise_root=None)
     mutation_context, clear_repo_caches = authoritative_callbacks_for(roots)
     result = artifact_write_ops.create_icon(
         repo_root=roots[0],
         verifier=verifier_for(roots_key(roots), include_registry=False),
         clear_repo_caches=clear_repo_caches,
-        upload=artifact_write_ops.IconUpload(
-            content=content, source_format=source_format, name=name, attribution=attribution,
-            applies_to=tuple(applies_to or ()), default_style=default_style, tags=tuple(tags or ()),
-        ),
+        upload=upload,
         dry_run=dry_run,
     )
     if result.wrote and not dry_run:

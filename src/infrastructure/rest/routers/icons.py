@@ -2,20 +2,20 @@
 
 from __future__ import annotations
 
-import base64
-import binascii
 from collections.abc import Callable
 from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from pydantic import BaseModel, Field
 
+from src.application.icons.icon_rows import icon_fields
 from src.application.icons.library_query import offered_icons
 from src.application.modeling.proposal_standing import standing_subject
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.domain.baseline_standing import BASELINE_STANDING, BaselineStanding
 from src.domain.icons.icon_file import IconFile, read_icon_file
 from src.domain.icons.icon_record import IconRecord
+from src.domain.icons.normalised_icon import IconRefused
 from src.infrastructure.rest.contracts.icons import IconListResponse, IconSummary
 from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
 from src.infrastructure.rest.routers import state as s
@@ -88,18 +88,16 @@ _CREATE_RESPONSES: dict[int | str, Any] = {
 def create_icon(
     req: CreateIconRequest, response: Response, catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency)
 ) -> dict[str, Any]:
-    from src.infrastructure.write.artifact_write.icon import IconUpload  # noqa: PLC0415
     from src.infrastructure.write.artifact_write.icon import create_icon as _create  # noqa: PLC0415
+    from src.infrastructure.write.artifact_write.icon import upload_from_base64  # noqa: PLC0415
 
-    try:
-        content = base64.b64decode(req.content_base64, validate=True)
-    except (binascii.Error, ValueError) as exc:
-        raise HTTPException(422, "content_base64 is not base64") from exc
-    repo_root, _registry, verifier = s.get_write_deps(catalogs)
-    upload = IconUpload(
-        content=content, source_format=req.source_format, name=req.name, attribution=req.attribution,
-        applies_to=tuple(req.applies_to), default_style=req.default_style, tags=tuple(req.tags),
+    upload = upload_from_base64(
+        req.content_base64, source_format=req.source_format, name=req.name, attribution=req.attribution,
+        applies_to=req.applies_to, default_style=req.default_style, tags=req.tags,
     )
+    if isinstance(upload, IconRefused):
+        raise HTTPException(422, upload.reason)
+    repo_root, _registry, verifier = s.get_write_deps(catalogs)
     result = s.authorized_write(
         "icons_create_icon", _create, repo_root=repo_root, verifier=verifier,
         clear_repo_caches=s.clear_caches, upload=upload, dry_run=req.dry_run,
@@ -119,11 +117,8 @@ def _icon(artifact_id: str) -> IconRecord:
 
 
 def _summary(icon: IconRecord, standing_of: Callable[[str], BaselineStanding]) -> dict[str, Any]:
-    meta = icon.metadata
     return {
-        "artifact_id": meta.artifact_id, "name": meta.name, "attribution": meta.attribution,
-        "applies_to": meta.applies_to.as_list(), "default_style": meta.default_style, "tags": list(meta.tags),
-        "status": meta.status, "source_format": meta.source_format, "width": meta.width, "height": meta.height,
-        "render_digest": meta.render_digest, "is_global": s.is_global(icon.path),
+        **icon_fields(icon),
+        "is_global": s.is_global(icon.path),
         BASELINE_STANDING: standing_of(standing_subject(icon)).to_mapping(),
     }
