@@ -24,6 +24,20 @@ from src.domain.ontology_representation.artifact_types import EntityRecord
 DISPLAY_LABELS_KEY = "display_labels"
 
 
+def occurrence_id_of(entity: EntityRecord) -> str | None:
+    """The occurrence id a rendered record stands for, or None for an entity's base instance.
+
+    `occurrence_entities` keeps the backing entity's `artifact_id` on each further instance and carries
+    the occurrence id in `host_diagram_id`; this is the one reading of that.
+    """
+    return str(entity.host_diagram_id or "").strip() or None
+
+
+def instance_id_of(entity: EntityRecord) -> str:
+    """The id a per-instance statement names this record by: its occurrence id, else its entity's id."""
+    return occurrence_id_of(entity) or entity.artifact_id
+
+
 def occurrence_entities(
     diagram_entities: Mapping[str, object] | None,
     entity_by_id: Mapping[str, EntityRecord],
@@ -101,7 +115,7 @@ def instance_labels_by_alias(
         if label and entity.display_alias:
             by_alias[normalize_puml_alias(entity.display_alias)] = label
     for occurrence in occurrences:
-        label = overrides.get(occurrence.host_diagram_id or "")
+        label = overrides.get(instance_id_of(occurrence))
         if label and occurrence.display_alias:
             by_alias[normalize_puml_alias(occurrence.display_alias)] = label
     return by_alias
@@ -117,8 +131,8 @@ def _alias_by_instance(
         if entity.display_alias
     }
     for occurrence in occurrence_entities(diagram_entities, entity_by_id):
-        if occurrence.host_diagram_id:
-            by_instance[occurrence.host_diagram_id] = normalize_puml_alias(occurrence.display_alias)
+        if (occurrence_id := occurrence_id_of(occurrence)) is not None:
+            by_instance[occurrence_id] = normalize_puml_alias(occurrence.display_alias)
     return by_instance
 
 

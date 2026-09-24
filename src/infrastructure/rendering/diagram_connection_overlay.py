@@ -23,6 +23,7 @@ from collections.abc import Callable, Mapping, Sequence
 from src.application.artifacts.parsing import normalize_puml_alias
 from src.domain.artifact_id import stable_conn_id
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
+from src.infrastructure.rendering.archimate_occurrences import occurrence_id_of
 
 #: Resolves a connection to the arrows it draws — one alias pair each. Empty when neither endpoint
 #: is drawn. Usually one pair; more when a duplicated cluster draws the same relation in each copy.
@@ -69,7 +70,7 @@ def occurrence_alias_by_id(render_entities: Sequence[EntityRecord]) -> dict[str,
     """
     aliases: dict[str, str] = {}
     for entity in render_entities:
-        occurrence_id = str(entity.host_diagram_id or "").strip()
+        occurrence_id = occurrence_id_of(entity)
         if not occurrence_id:
             continue
         alias = normalize_puml_alias(entity.display_alias)

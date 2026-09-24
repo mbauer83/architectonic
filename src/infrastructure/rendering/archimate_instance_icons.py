@@ -36,7 +36,7 @@ from src.domain.icons.icon_ref import IconRef, IconStyle, library_icon_named
 from src.domain.icons.resolved_icon import IconSource
 from src.domain.ontology_representation.artifact_types import EntityRecord
 from src.domain.ontology_representation.specializations import SpecializationCatalog
-from src.infrastructure.rendering.archimate_occurrences import occurrence_entities
+from src.infrastructure.rendering.archimate_occurrences import instance_id_of, occurrence_entities
 
 #: The drawn height of a badge: the type glyph is a 16 px sprite at scale 1.2.
 BADGE_EDGE_PX = 20
@@ -78,9 +78,7 @@ def instance_icons(
     if source is None:
         return NO_ICONS
     assignments = icon_assignments(diagram_entities)
-    addressed = [(entity.artifact_id, entity) for entity in entities] + [
-        (occurrence.host_diagram_id or "", occurrence) for occurrence in occurrences
-    ]
+    addressed = [(instance_id_of(entity), entity) for entity in [*entities, *occurrences]]
     by_alias: dict[str, DrawnIcon] = {}
     pictures: dict[str, bytes] = {}
     for instance_id, entity in addressed:

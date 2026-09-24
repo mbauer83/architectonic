@@ -14,7 +14,7 @@ from src.domain.ontology_representation.artifact_types import EntityRecord
 from src.domain.ontology_representation.specializations import SpecializationCatalog
 from src.infrastructure.rendering.archimate_entity_declarations import entity_declaration, type_glyph
 from src.infrastructure.rendering.archimate_instance_icons import DrawnIcon
-from src.infrastructure.rendering.archimate_occurrences import display_label_overrides
+from src.infrastructure.rendering.archimate_occurrences import display_label_overrides, instance_id_of
 
 
 class ArchimateKeptDeclarations:
@@ -37,5 +37,5 @@ class ArchimateKeptDeclarations:
         """The declaration the renderer would write, with the label this diagram gives the instance."""
         return entity_declaration(
             entity, alias, self._registry, self._junction_types, self._specializations,
-            instance_label=self._labels.get(entity.host_diagram_id or entity.artifact_id), instance_icon=icon,
+            instance_label=self._labels.get(instance_id_of(entity)), instance_icon=icon,
         )

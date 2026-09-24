@@ -32,6 +32,7 @@ from src.domain.diagrams.recorded_references import (
 )
 from src.domain.ontology_representation.artifact_types import EntityRecord
 from src.infrastructure.rendering._diagram_layout import wrapped_grid_lines
+from src.infrastructure.rendering.archimate_occurrences import occurrence_id_of
 
 #: The look of a group whose members come from more than one domain: the ArchiMate grouping
 #: notation (dashed border, no fill), which is what the notation means when a box is not a layer.
@@ -268,7 +269,7 @@ def _member_index(render_entities: list[EntityRecord]) -> dict[str, EntityRecord
     """
     index: dict[str, EntityRecord] = {}
     for entity in render_entities:
-        occurrence_id = str(entity.host_diagram_id or "").strip()
+        occurrence_id = occurrence_id_of(entity)
         if occurrence_id:
             index[occurrence_id] = entity
             index.setdefault(stable_id(entity.artifact_id), entity)
