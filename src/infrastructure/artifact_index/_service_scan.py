@@ -45,6 +45,7 @@ from src.domain.ontology_representation.artifact_types import (
     EntityRecord,
     RepoMount,
 )
+from src.domain.repository.artifact_location import model_file_kind
 from src.domain.repository.repo_layout import SCRATCHPAD_SUFFIX
 from src.infrastructure.write.artifact_write.staged_workspace import overlay_paths
 
@@ -84,7 +85,7 @@ def _scan_model_records(mount: RepoMount, mem: _MemStore, *, domain_names: froze
     """Index entities and outgoing connections across every model root of a repo."""
     for model_root in all_model_roots(mount.root):
         for path in sorted(overlay_paths(model_root, ("*.md",))):
-            if path.name.endswith(".outgoing.md"):
+            if model_file_kind(path) != "entity":
                 continue
             entity = parse_entity(path, model_root, domain_names=domain_names)
             if entity is not None:

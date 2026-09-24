@@ -43,7 +43,7 @@ from tests.support.source_paths import REPO_ROOT, SRC, TOOLS, python_sources
 #: Calls that *locate* something in text, as against composing it. One set for substring and pattern
 #: searches alike, because both take the same evidence: a literal that spells the syntax.
 _LOCATING_CALLS = frozenset({
-    "find", "index", "rfind", "partition", "removeprefix", "startswith",
+    "find", "index", "rfind", "partition", "removeprefix", "startswith", "endswith", "removesuffix",
     "match", "fullmatch", "search", "sub", "subn", "compile", "split", "findall", "finditer",
 })
 
@@ -74,6 +74,10 @@ class SyntaxReader:
     #: Modules that legitimately read it anyway, each because of something this rule cannot see.
     exempt: frozenset[Path] = field(default_factory=frozenset)
 
+
+#: The outgoing-connections file name, as a test of what a file is. Writers compose the name
+#: (`with_suffix`, a glob) and are not readings; asking a name whether it ends so is.
+_OUTGOING_FILE = re.compile(r"^\.outgoing\.md$")
 
 #: Three dashes against a line boundary. Deliberately no bare start-of-string alternative: with one,
 #: every literal *beginning* `---` matched, which reported `artifact_id.split("---")` — the connection
@@ -167,6 +171,22 @@ SYNTAX_READERS: tuple[SyntaxReader, ...] = (
             "rewritten under another"
         ),
         literal_probe=_ANCHORED_FENCE,
+    ),
+    SyntaxReader(
+        syntax="which kind of artifact a repository file is, from where it sits and its name",
+        owners=(Path("src/domain/repository/artifact_location.py"),),
+        instead=(
+            "`src.domain.repository.artifact_location`: `artifact_kind_at` for a path relative to its "
+            "repository, `model_file_kind` for a file already known to sit under a model root"
+        ),
+        incident=(
+            "four readings of one question disagreed: the incremental index made every `.md` it did "
+            "not recognise an entity, so a README or a project note entered the index as one after "
+            "a single update while a full scan indexed nothing; `artifact_verify` took any `.puml` "
+            "for a diagram; the save dialog knew only the top-level `model/` and so listed no entity "
+            "under `projects/<slug>/model/`; the bulk inventory made every non-diagram an entity"
+        ),
+        literal_probe=_OUTGOING_FILE,
     ),
     SyntaxReader(
         syntax="how a YAML document is parsed",

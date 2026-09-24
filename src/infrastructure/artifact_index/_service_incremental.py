@@ -25,7 +25,7 @@ from src.application.repo_path_helpers import (
     group_fn_scratchpad,
 )
 from src.application.scratchpad.indexing import parse_scratchpad
-from src.config.repo_paths import DOCS, MODEL
+from src.config.repo_paths import MODEL
 from src.domain.ontology_representation.artifact_types import (
     ConnectionRecord,
     DiagramRecord,
@@ -35,7 +35,8 @@ from src.domain.ontology_representation.artifact_types import (
     ScratchpadNoteRecord,
     ScratchpadRecord,
 )
-from src.domain.repository.repo_layout import ARTIFACT_SOURCE_SUFFIXES, SCRATCHPAD_SUFFIX, SCRATCHPADS
+from src.domain.repository.artifact_location import ArtifactKind, artifact_kind_at
+from src.domain.repository.repo_layout import SCRATCHPAD_SUFFIX
 
 from ._mem_store import _MemStore
 from ._service_scan import _AttrTypeRefFn
@@ -65,37 +66,16 @@ def model_root_for_path(path: Path, mounts: list[RepoMount]) -> Path | None:
     return mount.root / MODEL
 
 
-def is_diagram_source_path(path: Path, mounts: list[RepoMount]) -> bool:
+def artifact_kind_for_path(path: Path, mounts: list[RepoMount]) -> ArtifactKind | None:
+    """The kind of artifact *path* holds within the repository mounted over it, or None."""
     mount = mount_for_path(path, mounts)
     if mount is None:
-        return False
+        return None
     try:
-        rel = path.resolve().relative_to(mount.root.resolve()).as_posix()
+        relative = path.resolve().relative_to(mount.root.resolve())
     except ValueError:
-        return False
-    return rel.startswith("diagram-catalog/diagrams/") and path.suffix in ARTIFACT_SOURCE_SUFFIXES
-
-
-def is_document_path(path: Path, mounts: list[RepoMount]) -> bool:
-    mount = mount_for_path(path, mounts)
-    if mount is None:
-        return False
-    try:
-        rel = path.resolve().relative_to(mount.root.resolve()).as_posix()
-    except ValueError:
-        return False
-    return rel.startswith(f"{DOCS}/") and path.suffix == ".md"
-
-
-def is_scratchpad_path(path: Path, mounts: list[RepoMount]) -> bool:
-    mount = mount_for_path(path, mounts)
-    if mount is None:
-        return False
-    try:
-        rel = path.resolve().relative_to(mount.root.resolve()).as_posix()
-    except ValueError:
-        return False
-    return rel.startswith(f"{SCRATCHPADS}/") and path.name.endswith(SCRATCHPAD_SUFFIX)
+        return None
+    return artifact_kind_at(relative)
 
 
 # ── Incremental updates ───────────────────────────────────────────────────────
@@ -163,18 +143,24 @@ def parse_scratchpad_for_path(
 def classify_path_change(
     path: Path, mounts: list[RepoMount], *, domain_names: frozenset[str]
 ) -> tuple[str, Path, object] | None:
-    """Return a (kind, path, parsed-data) triple or None if the path needs a full refresh."""
-    if path.name.endswith(".outgoing.md"):
-        return ("outgoing", path, parse_outgoing_for_path(path, mounts))
-    if is_diagram_source_path(path, mounts):
-        return ("diagram", path, parse_diagram_for_path(path, mounts))
-    if is_document_path(path, mounts):
-        return ("document", path, parse_document_for_path(path, mounts))
-    if is_scratchpad_path(path, mounts):
-        return ("scratchpad", path, parse_scratchpad_for_path(path, mounts))
-    if path.suffix == ".md":
-        return ("entity", path, parse_entity_for_path(path, mounts, domain_names=domain_names))
-    return None
+    """Return a (kind, path, parsed-data) triple, or None when a full refresh must answer instead.
+
+    A path that holds no artifact where it sits is None: a full scan would not index it either, so
+    only a refresh keeps the two views in agreement.
+    """
+    match artifact_kind_for_path(path, mounts):
+        case "connection":
+            return ("outgoing", path, parse_outgoing_for_path(path, mounts))
+        case "entity":
+            return ("entity", path, parse_entity_for_path(path, mounts, domain_names=domain_names))
+        case "diagram":
+            return ("diagram", path, parse_diagram_for_path(path, mounts))
+        case "document":
+            return ("document", path, parse_document_for_path(path, mounts))
+        case "scratchpad":
+            return ("scratchpad", path, parse_scratchpad_for_path(path, mounts))
+        case None:
+            return None
 
 
 def _touching_endpoints(entity_id: str, mem: _MemStore) -> set[str]:

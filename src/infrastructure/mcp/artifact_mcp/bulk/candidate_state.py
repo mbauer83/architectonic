@@ -9,7 +9,7 @@ from src.application.modeling.enterprise_reference import enterprise_target
 from src.application.ports import ArtifactStorePort, Candidate
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.application.verification.artifact_verifier_types import entity_id_from_path
-from src.config.repo_paths import DIAGRAM_CATALOG, DIAGRAMS, DOCS, MODEL
+from src.config.repo_paths import MODEL
 from src.domain.artifact_id import stable_conn_id, stable_id
 from src.domain.ontology_representation.artifact_types import (
     ArtifactSummary,
@@ -19,7 +19,7 @@ from src.domain.ontology_representation.artifact_types import (
     EntityRecord,
     ScratchpadRecord,
 )
-from src.domain.repository.repo_layout import ARTIFACT_SOURCE_SUFFIXES
+from src.domain.repository.artifact_location import artifact_kind_at, model_file_kind
 from src.infrastructure.mcp.artifact_mcp.bulk.candidate_lists import CandidateListMixin
 from src.infrastructure.write.artifact_write.staged_workspace import stage_live_path
 
@@ -56,26 +56,32 @@ class CandidateStore(CandidateListMixin):
         if rel is None:
             return
         live_path = self._live_root / rel
-        if path.name.endswith(".outgoing.md"):
-            self._deleted_connections.update(c.artifact_id for c in parse_outgoing_file(live_path))
-            self._connections.update((c.artifact_id, c) for c in parse_outgoing_file(path))
-        elif self._is_diagram_path(rel):
-            if (old := self._live.get_diagram(live_path.stem)) is not None:
-                self._deleted_diagrams.add(old.artifact_id)
-            if path.exists() and (new := parse_diagram(path)) is not None:
-                self._diagrams[new.artifact_id] = new
-        elif self._is_document_path(rel):
-            if (old := self._live.get_document(live_path.stem)) is not None:
-                self._deleted_documents.add(old.artifact_id)
-            if path.exists() and (new := parse_document(path)) is not None:
-                self._documents[new.artifact_id] = new
-        elif path.suffix == ".md":
-            self._deleted_entities.add(entity_id_from_path(live_path))
-            model_root = self._model_root_for(path)
-            if path.exists() and model_root is not None:
-                new = parse_entity(path, model_root, domain_names=domain_names)
-                if new is not None:
-                    self._entities[new.artifact_id] = new
+        match artifact_kind_at(rel):
+            case "connection":
+                self._deleted_connections.update(c.artifact_id for c in parse_outgoing_file(live_path))
+                self._connections.update((c.artifact_id, c) for c in parse_outgoing_file(path))
+            case "diagram":
+                if (old := self._live.get_diagram(live_path.stem)) is not None:
+                    self._deleted_diagrams.add(old.artifact_id)
+                if path.exists() and (new := parse_diagram(path)) is not None:
+                    self._diagrams[new.artifact_id] = new
+            case "document":
+                if (old_doc := self._live.get_document(live_path.stem)) is not None:
+                    self._deleted_documents.add(old_doc.artifact_id)
+                if path.exists() and (new_doc := parse_document(path)) is not None:
+                    self._documents[new_doc.artifact_id] = new_doc
+            case "entity":
+                self._absorb_entity(path, live_path, domain_names=domain_names)
+            case "scratchpad" | None:
+                return  # not model content a bulk write verifies
+
+    def _absorb_entity(self, path: Path, live_path: Path, *, domain_names: frozenset[str]) -> None:
+        self._deleted_entities.add(entity_id_from_path(live_path))
+        model_root = self._model_root_for(path)
+        if path.exists() and model_root is not None:
+            new = parse_entity(path, model_root, domain_names=domain_names)
+            if new is not None:
+                self._entities[new.artifact_id] = new
 
     def _rel_from_staged(self, path: Path) -> Path | None:
         try:
@@ -88,7 +94,7 @@ class CandidateStore(CandidateListMixin):
             staged_path = self._staged_root / path.resolve().relative_to(self._live_root)
         except ValueError:
             return path
-        if path.suffix == ".md" and not path.name.endswith(".outgoing.md"):
+        if model_file_kind(path) == "entity":
             stage_live_path(staged_path.with_suffix(".outgoing.md"), path.with_suffix(".outgoing.md"))
         return stage_live_path(staged_path, path)
 
@@ -98,14 +104,6 @@ class CandidateStore(CandidateListMixin):
             return None
         idx = parts.parts.index(MODEL)
         return self._staged_root.joinpath(*parts.parts[: idx + 1])
-
-    @staticmethod
-    def _is_diagram_path(rel: Path) -> bool:
-        return rel.parts[:2] == (DIAGRAM_CATALOG, DIAGRAMS) and rel.suffix in ARTIFACT_SOURCE_SUFFIXES
-
-    @staticmethod
-    def _is_document_path(rel: Path) -> bool:
-        return rel.parts[:1] == (DOCS,) and rel.suffix == ".md"
 
     def _map_entity(self, rec: EntityRecord | None) -> EntityRecord | None:
         return None if rec is None else replace(rec, path=self._staged_path_for_live(rec.path))

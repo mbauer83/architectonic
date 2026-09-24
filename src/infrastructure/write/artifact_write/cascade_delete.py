@@ -11,6 +11,7 @@ from pathlib import Path
 
 from src.application.repo_path_helpers import all_model_roots, diagram_source_root, docs_root
 from src.domain.diagrams.recorded_references import grouping_member_ids
+from src.domain.repository.artifact_location import model_file_kind
 from src.infrastructure.mutation_adapters import run_git
 from src.infrastructure.write.artifact_write._cascade_helpers import (
     conn_row_touches,
@@ -46,7 +47,7 @@ def _scan_owned(project_dir: Path, repo_root: Path) -> tuple[list[dict], list[di
     if not project_dir.exists():
         return owned_entities, owned_connections, owned_entity_ids, owned_paths
     for f in sorted(project_dir.rglob("*.md")):
-        if f.name.endswith(".outgoing.md"):
+        if model_file_kind(f) == "connection":
             owned_connections.append({"path": str(f.relative_to(repo_root))})
             continue
         fm = read_frontmatter_id_name(f)

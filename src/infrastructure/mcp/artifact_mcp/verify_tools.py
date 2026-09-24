@@ -5,9 +5,9 @@ from typing import Any, Literal
 from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
 from src.application.verification.artifact_verifier import ArtifactVerifier
-from src.application.verification.artifact_verifier_types import VerificationResult
+from src.application.verification.artifact_verifier_types import VerificationFileType, VerificationResult
 from src.application.verification.evaluation import PassCancellation
-from src.config.repo_paths import DIAGRAM_CATALOG, DIAGRAMS, DOCS
+from src.domain.repository.artifact_location import artifact_kind_at
 from src.infrastructure.mcp.artifact_mcp.context import RepoScope, resolve_repo_roots, roots_key, verifier_for
 from src.infrastructure.mcp.artifact_mcp.formatting import as_issue_dict, as_verification_result_dict
 from src.infrastructure.mcp.tool_annotations import READ_ONLY
@@ -18,10 +18,22 @@ from src.infrastructure.verification.pass_runner import (
 from src.infrastructure.workspace.mutation_gate import get_workspace_gate
 
 
+def _verifiable_kind_at(path: Path, roots: Sequence[Path]) -> VerificationFileType | None:
+    """The kind the repository layout gives *path* under whichever root holds it; None when none does."""
+    for root in roots:
+        if path.is_relative_to(root):
+            match artifact_kind_at(path.relative_to(root)):
+                case "entity" | "connection" | "diagram" | "document" as kind:
+                    return kind
+                case "scratchpad" | None:
+                    return None
+    return None
+
+
 async def artifact_verify(
     path: str | None = None,
     *,
-    file_type: Literal["entity", "connection", "diagram", "document"] | None = None,
+    file_type: VerificationFileType | None = None,
     include_diagrams: bool = True,
     return_mode: Literal["summary", "full"] = "summary",
     confirm_full_pass: bool = False,
@@ -42,14 +54,16 @@ async def artifact_verify(
         p = Path(path).expanduser()
         if not p.is_absolute():
             p = engagement_root / p
-        inferred = file_type
+        inferred = file_type or _verifiable_kind_at(p, roots)
         if inferred is None:
-            if p.suffix == ".puml" or (p.suffix == ".md" and DIAGRAM_CATALOG in p.parts and DIAGRAMS in p.parts):
-                inferred = "diagram"
-            elif p.suffix == ".md" and DOCS in p.parts:
-                inferred = "document"
-            else:
-                inferred = "connection" if "connections" in p.parts else "entity"
+            return {
+                "ok": False,
+                "error": "not an artifact file",
+                "message": (
+                    f"{p} holds no entity, connection, diagram or document where it sits in the "
+                    "repository layout; pass file_type to verify it as one anyway"
+                ),
+            }
         match inferred:
             case "entity":
                 result = verifier.verify_entity_file(p)
@@ -188,7 +202,7 @@ def _verify_every_root(
 async def artifact_verify_file(
     path: str,
     *,
-    file_type: Literal["entity", "connection", "diagram", "document"] | None = None,
+    file_type: VerificationFileType | None = None,
     repo_root: str | None = None,
     repo_scope: RepoScope = "both",
 ) -> dict[str, Any]:

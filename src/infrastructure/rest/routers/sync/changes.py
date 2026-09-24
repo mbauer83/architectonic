@@ -12,7 +12,8 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-from src.config.repo_paths import DIAGRAM_CATALOG, DOCS, MODEL
+from src.config.repo_paths import DIAGRAM_CATALOG
+from src.domain.repository.artifact_location import artifact_kind_at
 from src.domain.repository.frontmatter import Frontmatter, read_frontmatter
 from src.domain.yaml_documents import parse_yaml
 
@@ -89,19 +90,20 @@ def _git_show(repo: Path, git_rel: str) -> str | None:
 
 
 def _classify(rel: str) -> str | None:
-    parts = Path(rel).parts
-    if not parts:
-        return None
-    top = parts[0]
-    if top == MODEL:
-        if rel.endswith(".outgoing.md"):
+    """The kind of artifact a changed file is saved as part of, or None when it is not one.
+
+    Sources are classified by the layout's one reading. What else changes under the diagram catalog
+    (rendered pictures, generated includes) is derived output, saved with the diagrams it belongs to.
+    """
+    match artifact_kind_at(rel):
+        case "connection":
             return "connections"
-        return "entity" if rel.endswith(".md") else None
-    if top == DOCS:
-        return "document" if rel.endswith(".md") else None
-    if top == DIAGRAM_CATALOG:
-        return "diagram"
-    return None
+        case "entity" | "document" | "diagram" as kind:
+            return kind
+        case "scratchpad":
+            return None
+        case None:
+            return "diagram" if Path(rel).parts[:1] == (DIAGRAM_CATALOG,) else None
 
 
 # ─── Content helpers ──────────────────────────────────────────────────────────

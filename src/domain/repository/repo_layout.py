@@ -18,6 +18,8 @@ SCRATCHPADS = "scratchpads"  # SCRATCHPADS/<group-slug>/SCR@….scratchpad.yaml 
 #: also match a stray `.yaml` someone dropped beside them. Here rather than on the repository
 #: because it is a fact about the layout, and the index scans for it without owning the writing.
 SCRATCHPAD_SUFFIX = ".scratchpad.yaml"
+#: The file beside an entity's own that declares its outgoing connections.
+OUTGOING_SUFFIX = ".outgoing.md"
 #: The file extensions an artifact's source may carry. Entities, connections and documents are
 #: markdown; a diagram is `.puml` unless its notation *is* markdown, which the matrix type's is.
 #: Stated once because a reader that spells only `.md` sees no diagram at all — which is what kept

@@ -16,6 +16,7 @@ from typing import Literal
 from src.application.repo_path_helpers import all_model_roots
 from src.application.verification.artifact_verifier_parsing import parse_connection_refs, parse_diagram_refs
 from src.application.verification.artifact_verifier_types import entity_id_from_path
+from src.domain.repository.artifact_location import model_file_kind
 from src.domain.repository.repo_layout import DIAGRAM_CATALOG, DIAGRAMS
 
 
@@ -82,7 +83,7 @@ def _index_entity_files(inventory: FileInventory) -> None:
     # project-scoped entities from verification; the index scan uses all_model_roots too.
     for entity_root in all_model_roots(inventory.repo_path):
         for path in sorted(entity_root.rglob("*.md")):
-            if path.name.endswith(".outgoing.md"):
+            if model_file_kind(path) != "entity":
                 continue
             rel = _add_indexed_file(inventory, path, "entity")
             inventory.entity_relpaths.append(rel)

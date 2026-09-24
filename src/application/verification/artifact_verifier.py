@@ -62,6 +62,7 @@ from src.application.verification.verifier_ports import (
     VerifierScheduler,
 )
 from src.application.viewpoints.registry_snapshot import build_registry_snapshot as registry_snapshot
+from src.domain.repository.artifact_location import model_file_kind
 
 
 class ArtifactVerifier:
@@ -177,7 +178,7 @@ class ArtifactVerifier:
     def verify_connection_file(
         self, path: Path, *, snapshot: "RepositorySnapshot | None" = None
     ) -> VerificationResult:
-        if path.name.endswith(".outgoing.md"):
+        if model_file_kind(path) == "connection":
             return self.verify_outgoing_file(path, snapshot=snapshot)
         result = VerificationResult(path=path, file_type="connection")
         loc = str(path)
