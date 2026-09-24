@@ -20,6 +20,7 @@ from src.application.runtime_catalogs import RuntimeCatalogs
 from src.application.verification._verifier_contribution_runner import run_diagram_contributions
 from src.application.verification._verifier_rules_diagram_references import check_diagram_references_scoped
 from src.application.verification._verifier_rules_edge_labels import check_edge_label_overrides
+from src.application.verification._verifier_rules_icons import check_icon_assignments
 from src.application.verification._verifier_rules_puml_completeness import check_puml_relation_rules
 from src.application.verification._verifier_rules_puml_declarations import check_puml_alias_declarations
 from src.application.verification._verifier_rules_schema import check_frontmatter_schema
@@ -126,6 +127,7 @@ def verify_diagram(
             result=result,
             loc=loc,
         )
+        check_icon_assignments(fm, ctx.registry, ctx.catalogs, result, loc)
         if ctx.candidate_repo is not None and module is not None:
             run_diagram_contributions(
                 module=module,

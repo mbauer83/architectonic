@@ -22,6 +22,7 @@ having written nothing — which is the failure mode the fixture generator itsel
 
 from __future__ import annotations
 
+import base64
 import sys
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
@@ -49,6 +50,12 @@ ASSURANCE_MOUNT = "assurance-write"
 #: indistinguishable from one that is slow. A timeout turns "I waited eight minutes and learned
 #: nothing" into a named tool and a line number.
 CALL_TIMEOUT_SECONDS = 120
+
+#: A small mark in two flat colours, base64-encoded as an agent would send it.
+_ICON_SVG_BASE64 = base64.b64encode(
+    b'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">'
+    b'<rect width="16" height="16" rx="3" fill="#2b6cb0"/><circle cx="8" cy="8" r="4" fill="#fff"/></svg>'
+).decode("ascii")
 
 _ADR_BODY = (
     "## Context\n\nCreated by the MCP write walk.\n\n"
@@ -280,6 +287,19 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
         "artifact_delete_document",
         lambda c: {"artifact_id": c.created["document"], "dry_run": False},
     ),
+    # ── icons: one added to the library, then shown on the diagram below ─────────────────────────
+    WriteCall(
+        "artifact_create_icon",
+        lambda _c: {
+            "name": "MCP Walk Component Mark",
+            "attribution": "Drawn for the MCP write walk; no third-party mark",
+            "content_base64": _ICON_SVG_BASE64,
+            "source_format": "svg",
+            "applies_to": ["application-component"],
+            "dry_run": False,
+        },
+        captures=(Capture("icon", _artifact_id),),
+    ),
     # ── diagrams and matrices ────────────────────────────────────────────────────────────────────
     WriteCall(
         "artifact_create_diagram",
@@ -287,6 +307,7 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
             "diagram_type": "archimate-application",
             "name": "MCP Walk Application View",
             "entity_ids": [c.created["entity"], c.fixture_entity],
+            "diagram_entities": {"display_icons": {c.created["entity"]: c.created["icon"]}},
             "dry_run": False,
         },
         captures=(Capture("diagram", _artifact_id),),

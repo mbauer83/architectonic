@@ -83,6 +83,25 @@ def effective_icon(
     return None
 
 
+def malformed_icon_entries(diagram_entities: Mapping[str, object] | None) -> list[tuple[str, str, str]]:
+    """(statement, key, reason) for every entry `icon_assignments` would leave out, so it can be reported."""
+    source = diagram_entities or {}
+    problems: list[tuple[str, str, str]] = []
+    for statement in (DISPLAY_ICONS_KEY, TYPE_ICONS_KEY):
+        raw = source.get(statement)
+        if raw is None:
+            continue
+        if not isinstance(raw, Mapping):
+            problems.append((statement, "", "is not a mapping"))
+            continue
+        for key, value in raw.items():
+            try:
+                icon_ref_from(value)
+            except InvalidIconRefError as exc:
+                problems.append((statement, str(key), str(exc)))
+    return problems
+
+
 def _refs(raw: object) -> dict[str, IconRef]:
     if not isinstance(raw, Mapping):
         return {}
