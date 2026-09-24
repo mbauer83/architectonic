@@ -17,11 +17,14 @@ from .entity import create_entity
 from .entity_delete import delete_entity
 from .entity_edit import edit_entity, promote_entity
 from .help import write_help
+from .icon import IconUpload, create_icon
 from .matrix import create_matrix
 from .type_guidance import get_type_guidance
 from .types import SyncDiagramToModelResult, WriteResult
 
 __all__ = [
+    "IconUpload",
+    "create_icon",
     "SyncDiagramToModelResult",
     "WriteResult",
     "write_help",

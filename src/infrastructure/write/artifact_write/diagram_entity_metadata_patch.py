@@ -41,7 +41,7 @@ def _editable_field_names(
     type (and optional sub-part) — the single source of truth. Empty when the type is unknown or
     declares none, which then refuses every key (safe by construction)."""
     try:
-        module = verifier._runtime_catalogs.diagram_types.find_diagram_type(diagram_type)
+        module = verifier.runtime_catalogs.diagram_types.find_diagram_type(diagram_type)
     except Exception:  # noqa: BLE001 — an unknown/malformed diagram type yields no editable fields
         module = None
     if module is None:

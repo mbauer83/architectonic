@@ -20,6 +20,7 @@ from src.infrastructure.mcp.artifact_mcp.write.entity import (
     artifact_help,
 )
 from src.infrastructure.mcp.artifact_mcp.write.group import artifact_group
+from src.infrastructure.mcp.artifact_mcp.write.icon import artifact_create_icon
 from src.infrastructure.mcp.artifact_mcp.write.promote import artifact_promote_to_enterprise
 from src.infrastructure.mcp.artifact_mcp.write.viewpoint import artifact_viewpoint
 
@@ -33,6 +34,7 @@ __all__ = [
     "artifact_create_diagram",
     "artifact_create_document",
     "artifact_create_entity",
+    "artifact_create_icon",
     "artifact_create_matrix",
     "artifact_edit_document",
     "artifact_group",
@@ -50,6 +52,7 @@ def register_write_tools(mcp: MCPServer) -> None:
         document,
         entity,
         group,
+        icon,
         promote,
         viewpoint,
     )
@@ -58,6 +61,7 @@ def register_write_tools(mcp: MCPServer) -> None:
     connection.register(mcp)
     diagram.register(mcp)
     document.register(mcp)
+    icon.register(mcp)
     promote.register(mcp)
     group.register(mcp)
     viewpoint.register(mcp)

@@ -8,12 +8,14 @@ from typing import Literal
 
 from src.application.modeling.artifact_write import DiagramConnectionInferenceMode
 from src.infrastructure.write.artifact_write import (
+    IconUpload,
     SyncDiagramToModelResult,
     WriteResult,
     add_connection,
     create_diagram,
     create_document,
     create_entity,
+    create_icon,
     create_matrix,
     delete_diagram,
     delete_document,
@@ -59,4 +61,6 @@ __all__ = [
     "create_document",
     "edit_document",
     "delete_document",
+    "IconUpload",
+    "create_icon",
 ]

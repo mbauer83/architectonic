@@ -2,9 +2,9 @@ import os
 import tempfile
 from collections.abc import Callable
 from pathlib import Path
-from typing import Literal
 
 from src.application.verification.artifact_verifier import ArtifactVerifier, VerificationResult
+from src.application.verification.artifact_verifier_types import VerificationFileType
 from src.config.repo_paths import ARCH_REPO, DIAGRAM_CATALOG, DIAGRAMS, DOCS, MODEL, PROJECTS
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.verification.verifier_factory import build_artifact_verifier
@@ -65,7 +65,7 @@ def _document_temp_path(tmp_root: Path, desired_name: str, support_repo_root: Pa
 def verify_content_in_temp_path(
     *,
     verifier: ArtifactVerifier,
-    file_type: Literal["entity", "connection", "diagram", "document"],
+    file_type: VerificationFileType,
     desired_name: str,
     content: str,
     support_repo_root: Path | None = None,
@@ -103,6 +103,7 @@ def verify_content_in_temp_path(
         "connection": verifier.verify_connection_file,
         "document": verifier.verify_document_file,
         "diagram": verifier.verify_diagram_file,
+        "icon": verifier.verify_icon_file,
     }
     return dispatch[file_type](tmp_path)
 

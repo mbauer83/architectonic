@@ -56,6 +56,7 @@ from src.infrastructure.mcp.artifact_mcp.write_tools import (  # noqa: F401
     artifact_create_diagram,
     artifact_create_document,
     artifact_create_entity,
+    artifact_create_icon,
     artifact_create_matrix,
     artifact_edit_document,
     artifact_help,

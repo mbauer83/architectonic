@@ -7,6 +7,7 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Literal
 
+from src.application.icons.icon_vocabulary import icon_applicability_names
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.application.verification._verifier_adapters import _VerifierAdapters
 from src.application.verification._verifier_contribution_runner import (
@@ -91,6 +92,11 @@ class ArtifactVerifier(_VerifierAdapters):
         self._inventory_port = file_inventory
         self._incremental_port = incremental_state
         self._picture_inspector = picture_inspector
+
+    @property
+    def runtime_catalogs(self) -> RuntimeCatalogs:
+        """The catalogs this verifier checks against, for a write path that must decide by the same ones."""
+        return self._runtime_catalogs
 
     @functools.cached_property
     def _runtime_catalogs(self) -> RuntimeCatalogs:
@@ -323,7 +329,8 @@ class ArtifactVerifier(_VerifierAdapters):
         return self.verify_document_file(path, snapshot=snapshot)
 
     def verify_icon_file(self, path: Path, *, snapshot: "RepositorySnapshot | None" = None) -> VerificationResult:
-        return verify_icon(path, inspector=self._picture_inspector, snapshot=snapshot)
+        names = icon_applicability_names(self._catalogs) if self._catalogs is not None else None
+        return verify_icon(path, inspector=self._picture_inspector, known_names=names, snapshot=snapshot)
 
     def _verify_inventory_subset(
         self, inv: FileInventory, relpaths: set[str], *, evaluation: EvaluationContext = UNCONDITIONAL

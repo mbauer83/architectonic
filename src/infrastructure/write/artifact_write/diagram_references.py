@@ -260,7 +260,7 @@ def diagram_entities_are_authoritative(verifier, diagram_type: str) -> bool:
     treated as a render trigger for them.
     """
     try:
-        module = verifier._runtime_catalogs.diagram_types.find_diagram_type(diagram_type)
+        module = verifier.runtime_catalogs.diagram_types.find_diagram_type(diagram_type)
     except Exception:  # noqa: BLE001
         return False
     return bool(module is not None and module.body_is_rendered_from_diagram_entities)

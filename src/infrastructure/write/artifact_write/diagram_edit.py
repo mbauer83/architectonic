@@ -178,7 +178,7 @@ def edit_diagram(
             diagram_entities,  # type: ignore[arg-type]
             list(diagram_connections or []),
             list(bindings or []),
-            module_catalog=verifier._runtime_catalogs.diagram_types,
+            module_catalog=verifier.runtime_catalogs.diagram_types,
             allocator=get_default_allocator(),
         )
     eff_manual_layout = manual_layout if manual_layout is not None else fm.get("manual-layout") is True
@@ -222,7 +222,7 @@ def edit_diagram(
             validate_workspace_entity_ids,  # noqa: PLC0415
         )
         try:
-            _dt_module = verifier._runtime_catalogs.diagram_types.find_diagram_type(diagram_type)
+            _dt_module = verifier.runtime_catalogs.diagram_types.find_diagram_type(diagram_type)
         except Exception:  # noqa: BLE001
             _dt_module = None
         if _dt_module is not None:

@@ -141,6 +141,9 @@ class ArtifactRepository:
     ) -> list[DocumentRecord]:
         return self._store.list_documents(doc_type=doc_type, status=status, group=group)
 
+    def list_icons(self) -> list[IconRecord]:
+        return self._store.list_icons()
+
     def get_scratchpad_note(self, artifact_id: str) -> ScratchpadNoteRecord | None:
         return self._store.get_scratchpad_note(artifact_id)
 

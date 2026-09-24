@@ -53,6 +53,13 @@ class CombinedLookupMixin:
             lambda: self._enterprise.get_icon(artifact_id),
         )
 
+    def list_icons(self) -> list[IconRecord]:
+        """Both libraries, the engagement's copy of an icon the two share standing for it."""
+        engagement = self._engagement.list_icons()
+        held = {icon.artifact_id for icon in engagement}
+        merged = engagement + [icon for icon in self._enterprise.list_icons() if icon.artifact_id not in held]
+        return sorted(merged, key=lambda icon: icon.artifact_id)
+
     def read_artifact(
         self,
         artifact_id: str,

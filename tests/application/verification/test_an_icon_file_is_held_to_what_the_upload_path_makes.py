@@ -116,3 +116,11 @@ def test_verifying_one_icon_by_path_infers_its_kind(repo: Path) -> None:
 
     assert result["file_type"] == "icon" and result["valid"] is True
 
+
+
+def test_an_applies_to_name_the_product_does_not_know_is_w360_and_keeps_the_icon_valid(repo: Path) -> None:
+    path = write_icon(repo, icon_file(applies_to=("technology-node", "retired-type")))
+
+    result = verify_icon(path, inspector=StoredPngInspector(), known_names=frozenset({"technology-node"}))
+
+    assert [(i.code, i.severity) for i in result.issues] == [("W360", "warning")] and result.valid
