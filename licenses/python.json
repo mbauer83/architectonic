@@ -1,6 +1,6 @@
 {
   "ecosystem": "python",
-  "count": 91,
+  "count": 93,
   "components": [
     {
       "name": "aiosqlite",
@@ -357,6 +357,12 @@
       "bucket": "allow"
     },
     {
+      "name": "pillow",
+      "version": "12.3.0",
+      "license": "MIT-CMU",
+      "bucket": "allow"
+    },
+    {
       "name": "pycparser",
       "version": "3.0",
       "license": "BSD-3-Clause",
@@ -432,6 +438,12 @@
       "name": "requests",
       "version": "2.34.2",
       "license": "Apache Software License",
+      "bucket": "allow"
+    },
+    {
+      "name": "resvg-py",
+      "version": "0.5.0",
+      "license": "MIT",
       "bucket": "allow"
     },
     {

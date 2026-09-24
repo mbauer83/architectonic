@@ -75,6 +75,18 @@ _PLATFORM_OVERRIDES: dict[str, str] = {
 }
 
 
+# Packages whose installed metadata declares no license at all (no License-Expression, classifier
+# or License field), with the license their source repository states. Consulted only when the
+# metadata says nothing, so a release that starts declaring one is read from its metadata again.
+# Each entry names where it was read and when.
+_UNDECLARED_IN_METADATA: dict[str, str] = {
+    # github.com/baseplate-admin/resvg-py LICENSE (MIT), read 2026-09-24 for 0.5.0. The wheel
+    # statically links resvg 0.48 (Apache-2.0 OR MIT) and its crates; it is installed from PyPI,
+    # not conveyed by this project.
+    "resvg-py": "MIT",
+}
+
+
 # Explicitly reviewed, accepted non-``allow`` components: package -> rationale.
 # A ``review``/``deny`` bucket for a package listed here does NOT fail the gate.
 ACKNOWLEDGED: dict[str, str] = {
@@ -124,6 +136,8 @@ def collect_python() -> list[dict[str, str]]:
             lic = _license_of(im.distribution(name))
         except im.PackageNotFoundError:
             lic = _PLATFORM_OVERRIDES.get(name, "UNKNOWN")
+        if lic == "UNKNOWN":
+            lic = _UNDECLARED_IN_METADATA.get(name, lic)
         rows.append({
             "name": name,
             "version": versions[name],

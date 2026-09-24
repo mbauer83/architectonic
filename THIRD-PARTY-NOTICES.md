@@ -49,7 +49,7 @@ What follows is a disclosure inventory, for two purposes: to say what a build as
 - License text: licenses/texts/LGPL-3.0-or-later.txt + licenses/texts/GPL-3.0-or-later.txt
 - Obligation: Not conveyed by this project: it is a declared dependency that pip/uv installs from PyPI, so upstream is the distributor. Nothing is vendored and nothing is statically combined — cvss is an ordinary runtime import from site-packages, replaceable with a modified build by `pip install` alone. LGPLv3 §4's duties fall on whoever conveys a work containing the library; a redistributor who vendors or bundles it takes those on, including §4(a)-(b) notice and license texts.
 
-## Python dependencies (91)
+## Python dependencies (93)
 
 | Component | Version | License |
 |---|---|---|
@@ -112,6 +112,7 @@ What follows is a disclosure inventory, for two purposes: to say what a build as
 | opentelemetry-api | 1.44.0 | Apache-2.0 |
 | packageurl-python | 0.17.6 | MIT License |
 | packaging | 26.3 | Apache-2.0 OR BSD-2-Clause |
+| pillow | 12.3.0 | MIT-CMU |
 | pycparser | 3.0 | BSD-3-Clause |
 | pydantic | 2.13.5 | MIT |
 | pydantic-core | 2.46.5 | MIT |
@@ -125,6 +126,7 @@ What follows is a disclosure inventory, for two purposes: to say what a build as
 | pyyaml | 6.0.3 | MIT License |
 | referencing | 0.37.0 | MIT |
 | requests | 2.34.2 | Apache Software License |
+| resvg-py | 0.5.0 | MIT |
 | rpds-py | 2026.6.3 | MIT |
 | s3transfer | 0.19.2 | Apache Software License |
 | safetensors | 0.8.0 | Apache Software License |
