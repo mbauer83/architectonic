@@ -195,6 +195,10 @@ class AssuranceBaselineRecord(Closed):
 
     ``analysis_id`` is null for a store-wide seal: baselining the whole log is a different act from
     baselining one analysis's work, and defaulting it to something would misreport which was done.
+
+    ``timestamp_token_hex`` is the RFC 3161 token a time-stamping authority issued over the seal, when
+    one was requested: the third party's word that the seal existed at that time. Null when none was
+    requested; absent from an archive backend that keeps the token beside the record rather than in it.
     """
 
     baseline_id: str
@@ -203,6 +207,7 @@ class AssuranceBaselineRecord(Closed):
     head_hash: str
     notes: str
     analysis_id: str | None
+    timestamp_token_hex: str | None = None
 
 
 class AssuranceBaselineListResponse(Closed):

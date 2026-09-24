@@ -3871,6 +3871,10 @@ export interface components {
          *
          *     ``analysis_id`` is null for a store-wide seal: baselining the whole log is a different act from
          *     baselining one analysis's work, and defaulting it to something would misreport which was done.
+         *
+         *     ``timestamp_token_hex`` is the RFC 3161 token a time-stamping authority issued over the seal, when
+         *     one was requested: the third party's word that the seal existed at that time. Null when none was
+         *     requested; absent from an archive backend that keeps the token beside the record rather than in it.
          */
         AssuranceBaselineRecord: {
             /** Analysis Id */
@@ -3885,6 +3889,8 @@ export interface components {
             head_seq: number;
             /** Notes */
             notes: string;
+            /** Timestamp Token Hex */
+            timestamp_token_hex?: string | null;
         };
         /**
          * AssuranceBaselineSealedResponse

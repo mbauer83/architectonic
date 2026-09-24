@@ -107,6 +107,7 @@ export const AssuranceBaselineSchema = Schema.Struct({
   head_hash: Schema.String,
   notes: Schema.String,
   analysis_id: Schema.NullOr(Schema.String),
+  timestamp_token_hex: Schema.optional(Schema.NullOr(Schema.String)),
 })
 export type AssuranceBaseline = typeof AssuranceBaselineSchema.Type
 
