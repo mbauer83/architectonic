@@ -111,8 +111,10 @@ _APPENDED = "\\n<size:10>"
 
 #: The picture a rendered label opens with — the type's glyph, `<$archimate_goal{scale=1.2}> `, or an
 #: icon the diagram assigns the element, `<img:$ARCH_ICON_…{scale=…}> ` — rather than anything the
-#: element is called.
-_SPRITE_PREFIX = re.compile(rf"^(?:<\$[^>]*>|{ICON_REFERENCE_PATTERN})\s*")
+#: element is called. A picture that *is* the element (a figure) is followed by a line break, `\n`,
+#: with the name beneath it; a picture beside the name by a space.
+_ICON_PICTURE_RE = re.compile(ICON_REFERENCE_PATTERN)
+_SPRITE_PREFIX = re.compile(rf"^(?P<picture><\$[^>]*>|{ICON_REFERENCE_PATTERN})(?:\\n|\s)*")
 
 #: The specialization line the renderer appends under a label: a literal `\n` then guillemets.
 _GUILLEMET_SUFFIX = re.compile(r"\\n«[^»]*»$")
@@ -200,7 +202,13 @@ def with_label_picture(line: str, picture: str) -> str:
 def picture_declared_on(line: str) -> str:
     """The picture a declaration's label opens with, or an empty string where it opens with none."""
     quoted = _QUOTED.search(line) if alias_declared_on(line) is not None else None
-    return _label_parts(quoted.group(0)[1:-1])[0].strip() if quoted is not None else ""
+    match = _SPRITE_PREFIX.match(quoted.group(0)[1:-1]) if quoted is not None else None
+    return match.group("picture") if match is not None else ""
+
+
+def declaration_keyword(line: str) -> str | None:
+    """The element kind a declaration line opens with — `rectangle`, `label`, … — or None where it declares nothing."""
+    return line.split(maxsplit=1)[0] if alias_declared_on(line) is not None and line.strip() else None
 
 
 def overrides_colour(line: str) -> bool:
@@ -298,3 +306,12 @@ def restyled_declaration(
 
     indent = line[: len(line) - len(line.lstrip())]
     return f"{indent}{without_colour.lstrip()}{suffix}{trailer}"
+
+
+def declares_an_icon_figure(line: str) -> bool:
+    """Whether *line* declares an element drawn as an embedded icon with its name beneath — a figure.
+
+    A figure needs no stereotype skin: the picture is the element. The ArchiMate header check asks
+    this so that a diagram whose elements are all figures is not refused for carrying no stereotypes.
+    """
+    return declaration_keyword(line) == "label" and _ICON_PICTURE_RE.match(picture_declared_on(line)) is not None

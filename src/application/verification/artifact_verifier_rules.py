@@ -2,6 +2,7 @@ import re
 from pathlib import Path
 
 from src.application.artifacts.parsing import extract_declared_puml_aliases as _extract_declared_puml_aliases_shared
+from src.application.puml_alias_declarations import declares_an_icon_figure
 from src.application.verification._verifier_rules_puml_relations import (
     _extract_entity_display_alias,
     _normalize_puml_alias,
@@ -142,7 +143,7 @@ def check_puml_structure(content: str, fm: dict, result: VerificationResult, loc
         ) or "sprite $archimate_" in content
         has_inline_declarations = bool(
             re.search(r'rectangle\s+"[^"]*"\s+<<\w+>>', content)
-        )
+        ) or any(declares_an_icon_figure(line) for line in content.splitlines())
         if not has_stereotypes and not has_inlined_archimate and not has_inline_declarations:
             result.issues.append(
                 Issue(

@@ -10,6 +10,7 @@ from src.application.puml_directive_policy import find_unsafe_puml_directives
 from src.application.puml_icon_header import BLOCK_BEGIN, icon_key
 from src.domain.icons.render_form import render_digest
 from src.infrastructure.mcp import mcp_artifact_server as mcp
+from src.infrastructure.rendering.generate_static_includes import generate_static_includes
 from tests.support.icon_files import icon_file, png_of, write_icon
 
 AKS = "ICO@1790000000.aks001.azure-kubernetes-service"
@@ -21,6 +22,7 @@ def repo(tmp_path: Path) -> Path:
     root = tmp_path / "engagements" / "ENG-T" / "architecture-repository"
     for directory in ("model", "docs", "diagram-catalog/diagrams"):
         (root / directory).mkdir(parents=True)
+    generate_static_includes(root)  # a real repository carries them; E303 is satisfied through them
     write_icon(root, icon_file(AKS, png=PICTURE, applies_to=("technology-node",)))
     return root
 
@@ -103,3 +105,39 @@ def test_a_kept_body_gains_and_loses_an_icon_touching_only_that_declaration(repo
         artifact_id=diagram_id, diagram_entities={}, dry_run=False, repo_root=str(repo),
     )
     assert _body_of(lost) == original
+
+
+FIGURE_OF_A_NODE = {"type_icons": {"technology-node": {"icon": AKS, "style": "figure"}}}
+
+
+def test_a_figure_draws_the_icon_as_the_element_with_its_name_beneath(repo: Path) -> None:
+    node = _node(repo, "Cluster A")
+
+    result = _create(repo, [node], FIGURE_OF_A_NODE)
+
+    body = _body_of(result)
+    declaration = next(line for line in body.splitlines() if "Cluster A" in line and " as " in line)
+    assert declaration.lstrip().startswith('label "<img:$') and "\\nCluster A" in declaration
+    assert result["verification"]["valid"] is True, result["verification"]
+
+
+def test_a_kept_body_becomes_a_figure_and_back_byte_identical(repo: Path) -> None:
+    first, second = _node(repo, "Cluster A"), _node(repo, "Cluster B")
+    diagram_id = str(_create(repo, [first, second], {})["artifact_id"])
+    original = _body_of(
+        mcp.artifact_edit_diagram(artifact_id=diagram_id, name="Cluster view", dry_run=False, repo_root=str(repo))
+    )
+
+    figured = mcp.artifact_edit_diagram(
+        artifact_id=diagram_id, diagram_entities={"display_icons": {first: {"icon": AKS, "style": "figure"}}},
+        dry_run=False, repo_root=str(repo),
+    )
+    lines = _body_of(figured).splitlines()
+    assert any(line.lstrip().startswith('label "<img:$') and "Cluster A" in line for line in lines)
+    assert figured["verification"]["valid"] is True, figured["verification"]
+
+    restored = mcp.artifact_edit_diagram(
+        artifact_id=diagram_id, diagram_entities={}, dry_run=False, repo_root=str(repo)
+    )
+    assert _body_of(restored) == original
+

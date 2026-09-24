@@ -15,6 +15,7 @@ import pytest
 
 from src.application.puml_alias_declarations import (
     alias_declared_on,
+    declaration_keyword,
     label_declared_on,
     picture_declared_on,
     relabelled_declaration,
@@ -24,8 +25,12 @@ from src.application.puml_icon_header import icon_reference
 from src.domain.ontology_representation.artifact_types import EntityRecord
 from src.infrastructure.app_bootstrap import get_module_registry
 from src.infrastructure.rendering.archimate_entity_declarations import entity_declaration, entity_nest_declaration
+from src.infrastructure.rendering.archimate_instance_icons import DrawnIcon
 
 ICON = icon_reference("ARCH_ICON_0123456789ab", "0.156")
+FIGURE_ICON = icon_reference("ARCH_ICON_0123456789ab", "0.5")
+BADGE = DrawnIcon("badge", ICON, FIGURE_ICON)
+FIGURE = DrawnIcon("figure", ICON, FIGURE_ICON)
 GLYPH = "<$archimate_technology_node{scale=1.2}>"
 
 
@@ -37,7 +42,15 @@ def _node(name: str = "Cluster West") -> EntityRecord:
     )
 
 
-CASES = list(itertools.product((None, ICON), (entity_declaration, entity_nest_declaration), (None, "West Europe")))
+CASES = list(
+    itertools.product((None, BADGE, FIGURE), (entity_declaration, entity_nest_declaration), (None, "West Europe"))
+)
+
+
+def _expected_picture(icon: DrawnIcon | None, writer) -> str:
+    if icon is None:
+        return GLYPH
+    return icon.figure if icon.style == "figure" and writer is entity_declaration else icon.badge
 
 
 @pytest.mark.parametrize(("icon", "writer", "instance_label"), CASES)
@@ -46,7 +59,7 @@ def test_the_reader_reads_the_name_and_the_picture_the_writer_wrote(icon, writer
 
     assert alias_declared_on(line) is not None and alias_declared_on(line).alias == "N1"
     assert label_declared_on(line) == (instance_label or "Cluster West")
-    assert picture_declared_on(line) == (icon or GLYPH)
+    assert picture_declared_on(line) == _expected_picture(icon, writer)
 
 
 @pytest.mark.parametrize(("icon", "writer", "instance_label"), CASES)
@@ -56,15 +69,24 @@ def test_a_relabel_keeps_the_picture_and_a_new_picture_keeps_the_name(icon, writ
     relabelled = relabelled_declaration(line, "Renamed")
     repictured = with_label_picture(line, GLYPH if icon else ICON)
 
-    assert (label_declared_on(relabelled), picture_declared_on(relabelled)) == ("Renamed", icon or GLYPH)
+    expected = _expected_picture(icon, writer)
+    assert (label_declared_on(relabelled), picture_declared_on(relabelled)) == ("Renamed", expected)
     assert (label_declared_on(repictured), picture_declared_on(repictured)) == (
         instance_label or "Cluster West", GLYPH if icon else ICON
     )
     assert repictured.endswith(line[line.index('" ') :])  # stereotype, alias, colour and block untouched
 
 
+def test_a_figure_is_a_label_element_and_a_container_never_is() -> None:
+    leaf = entity_declaration(_node(), "N1", get_module_registry(), frozenset(), instance_icon=FIGURE)
+    nest = entity_nest_declaration(_node(), "N1", get_module_registry(), frozenset(), instance_icon=FIGURE)
+
+    assert declaration_keyword(leaf) == "label" and "<<" not in leaf
+    assert declaration_keyword(nest) == "rectangle" and nest.endswith("{")
+
+
 def test_removing_the_picture_leaves_the_name() -> None:
-    line = entity_declaration(_node(), "N1", get_module_registry(), frozenset(), instance_icon=ICON)
+    line = entity_declaration(_node(), "N1", get_module_registry(), frozenset(), instance_icon=BADGE)
 
     bare = with_label_picture(line, "")
 

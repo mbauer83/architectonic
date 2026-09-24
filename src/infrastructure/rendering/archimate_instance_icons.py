@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
+from typing import Protocol
 
 from src.application.artifacts.parsing import normalize_puml_alias
 from src.application.icons.effective_icons import (
@@ -17,7 +18,12 @@ from src.application.icons.effective_icons import (
     icon_assignments,
     names_most_specific_first,
 )
-from src.application.puml_alias_declarations import alias_declared_on, picture_declared_on, with_label_picture
+from src.application.puml_alias_declarations import (
+    alias_declared_on,
+    declaration_keyword,
+    picture_declared_on,
+    with_label_picture,
+)
 from src.application.puml_icon_header import (
     icon_key,
     icon_reference,
@@ -26,7 +32,7 @@ from src.application.puml_icon_header import (
     with_icon_block,
 )
 from src.domain.diagrams.instance_statements import DiagramInstances
-from src.domain.icons.icon_ref import IconRef, library_icon_named
+from src.domain.icons.icon_ref import IconRef, IconStyle, library_icon_named
 from src.domain.icons.resolved_icon import IconSource
 from src.domain.ontology_representation.artifact_types import EntityRecord
 from src.domain.ontology_representation.specializations import SpecializationCatalog
@@ -34,12 +40,27 @@ from src.infrastructure.rendering.archimate_occurrences import occurrence_entiti
 
 #: The drawn height of a badge: the type glyph is a 16 px sprite at scale 1.2.
 BADGE_EDGE_PX = 20
+#: The drawn height of a figure: the icon is the element, its name beneath.
+FIGURE_EDGE_PX = 64
+
+
+@dataclass(frozen=True, slots=True)
+class DrawnIcon:
+    """An icon as one declaration draws it: in its style, with the reference each style would use."""
+
+    style: IconStyle
+    badge: str
+    figure: str
+
+    def as_badge(self) -> DrawnIcon:
+        """The same icon beside the name — what an element that contains others shows, a figure being unable to."""
+        return DrawnIcon("badge", self.badge, self.figure)
 
 
 @dataclass(frozen=True, slots=True)
 class InstanceIcons:
-    #: alias → the `<img:$ARCH_ICON_…{scale=…}>` its declaration shows.
-    by_alias: Mapping[str, str]
+    #: alias → how its declaration draws its icon.
+    by_alias: Mapping[str, DrawnIcon]
     #: icon key → the picture the body's icon block embeds under it.
     pictures: Mapping[str, bytes]
 
@@ -60,7 +81,7 @@ def instance_icons(
     addressed = [(entity.artifact_id, entity) for entity in entities] + [
         (occurrence.host_diagram_id or "", occurrence) for occurrence in occurrences
     ]
-    by_alias: dict[str, str] = {}
+    by_alias: dict[str, DrawnIcon] = {}
     pictures: dict[str, bytes] = {}
     for instance_id, entity in addressed:
         alias = normalize_puml_alias(entity.display_alias)
@@ -75,8 +96,9 @@ def instance_icons(
         )
         if shown is None:
             continue
-        key = icon_key(shown.icon.render_digest)
-        by_alias[alias] = icon_reference(key, _scale(max(shown.icon.width, shown.icon.height)))
+        key, edge = icon_key(shown.icon.render_digest), max(shown.icon.width, shown.icon.height)
+        badge, figure = (icon_reference(key, _scale(drawn, edge)) for drawn in (BADGE_EDGE_PX, FIGURE_EDGE_PX))
+        by_alias[alias] = DrawnIcon(shown.style, badge, figure)
         pictures[key] = shown.icon.png
     return InstanceIcons(by_alias, pictures)
 
@@ -90,38 +112,57 @@ def _default_for(entity: EntityRecord, specializations: SpecializationCatalog) -
     return default
 
 
-def _scale(edge_px: int) -> str:
-    return f"{BADGE_EDGE_PX / edge_px:.3g}"
+def _scale(drawn_px: int, stored_px: int) -> str:
+    return f"{drawn_px / stored_px:.3g}"
+
+
+class KeptBodyDeclarations(Protocol):
+    """What the renderer states about one element of a kept body: its glyph, and its whole declaration."""
+
+    def glyph(self, entity: EntityRecord) -> str: ...
+
+    def declaration(self, entity: EntityRecord, alias: str, icon: DrawnIcon | None) -> str: ...
 
 
 def restate_instance_icons(
     body: str,
     instances: DiagramInstances,
-    glyph_of: Callable[[EntityRecord], str],
+    declarations: KeptBodyDeclarations,
     specializations: SpecializationCatalog,
 ) -> str:
     """*body* showing each instance's icon as the diagram now states it, for a body kept as written.
 
     A declaration whose instance has an icon shows it; one that shows an icon the diagram no longer
-    assigns gets its type glyph back. Nothing else on any line changes, and an instance the body does
-    not declare is left alone — there is no line to change and nothing is invented.
+    assigns gets its type glyph back. Only the picture changes — unless the element changes kind,
+    becoming a figure or ceasing to be one, when its declaration is stated afresh (keeping its
+    indentation). An instance the body does not declare is left alone: there is nothing to change and
+    nothing is invented.
     """
     entities = [entity for entity in map(instances.entity_of, instances.entity_ids) if entity is not None]
     occurrences = occurrence_entities(instances.diagram_entities, {e.artifact_id: e for e in entities})
     icons = instance_icons(instances.diagram_entities, entities, occurrences, instances.icon_source, specializations)
     if not icons.by_alias and not referenced_icon_keys(body):
         return body
-    glyph_by_alias = {normalize_puml_alias(e.display_alias): glyph_of(e) for e in [*entities, *occurrences]}
-    repictured = "\n".join(_repictured(line, icons, glyph_by_alias) for line in body.split("\n"))
+    by_alias = {normalize_puml_alias(e.display_alias): e for e in [*entities, *occurrences]}
+    repictured = "\n".join(_repictured(line, icons, by_alias, declarations) for line in body.split("\n"))
     return with_icon_block(repictured, icons.pictures)
 
 
-def _repictured(line: str, icons: InstanceIcons, glyph_by_alias: Mapping[str, str]) -> str:
+def _repictured(
+    line: str, icons: InstanceIcons, by_alias: Mapping[str, EntityRecord], declarations: KeptBodyDeclarations
+) -> str:
     declaration = alias_declared_on(line)
-    if declaration is None:
+    entity = by_alias.get(declaration.alias) if declaration is not None else None
+    if declaration is None or entity is None:
         return line
-    if (icon := icons.by_alias.get(declaration.alias)) is not None:
-        return with_label_picture(line, icon)
+    icon = icons.by_alias.get(declaration.alias)
+    opens_block = line.rstrip().endswith("{")
+    wants_figure = icon is not None and icon.style == "figure" and not opens_block
+    if wants_figure != (declaration_keyword(line) == "label"):
+        indent = line[: len(line) - len(line.lstrip())]
+        return indent + declarations.declaration(entity, declaration.alias, icon)
+    if icon is not None:
+        return with_label_picture(line, icon.badge)
     if is_icon_reference(picture_declared_on(line)):
-        return with_label_picture(line, glyph_by_alias.get(declaration.alias, ""))
+        return with_label_picture(line, declarations.glyph(entity))
     return line

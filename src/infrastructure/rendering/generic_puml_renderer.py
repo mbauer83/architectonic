@@ -34,9 +34,9 @@ from src.infrastructure.rendering.archimate_entity_declarations import (
     grouping_key,
     grouping_stereotype,
     ordered_domains,
-    type_glyph,
 )
 from src.infrastructure.rendering.archimate_instance_icons import instance_icons, restate_instance_icons
+from src.infrastructure.rendering.archimate_kept_declarations import ArchimateKeptDeclarations
 from src.infrastructure.rendering.archimate_relation_rendering import (
     format_multiplicity_label,
 )
@@ -155,13 +155,12 @@ class GenericPumlRenderer:
                 return []
             children = children_map.get(alias, [])
             decl_args = (entity, alias, _registry(), self._junction_types(), specialization_catalog)
-            label_args = {
-                "label_attribute": label_attribute,
-                "instance_label": label_by_alias.get(alias),
-                "instance_icon": icons.by_alias.get(alias),
-            }
+            label, icon = label_by_alias.get(alias), icons.by_alias.get(alias)
             if not children:
-                return [f"{indent}{entity_declaration(*decl_args, **label_args)}"]
+                declaration = entity_declaration(
+                    *decl_args, label_attribute=label_attribute, instance_label=label, instance_icon=icon
+                )
+                return [f"{indent}{declaration}"]
             inner = indent + "  "
             subtree = collect_subtree_aliases(entity, children_map)
             crossing_flow = any((src in subtree) != (tgt in subtree) for src, tgt in flow_edges)
@@ -172,7 +171,10 @@ class GenericPumlRenderer:
             else:
                 main_axis = "right" if chain_axis == "down" else "down"
             branch_axis = "down" if main_axis == "right" else "right"
-            rendered = [f"{indent}{entity_nest_declaration(*decl_args, **label_args)}"]
+            nest = entity_nest_declaration(
+                *decl_args, label_attribute=label_attribute, instance_label=label, instance_icon=icon
+            )
+            rendered = [f"{indent}{nest}"]
             for child in children:
                 rendered.extend(render_entity(child, inner, main_axis))
             child_als = [normalize_puml_alias(child.display_alias) for child in children if child.display_alias]
@@ -320,7 +322,7 @@ class GenericPumlRenderer:
 
     @property
     def icon_styles(self) -> tuple[IconStyle, ...]:
-        return ("badge",)
+        return ("badge", "figure")
 
     def inject_includes(self, body: str, repo_root: Path) -> str:
         return inject_archimate_includes(body, repo_root)
@@ -331,8 +333,8 @@ class GenericPumlRenderer:
     def restate_instance_presentation(self, body: str, stated: DiagramInstances) -> str:
         relabelled = instances.restate_instance_labels(body, stated.diagram_entities, stated.entity_of)
         catalog = self._specialization_catalog()
-        glyph = functools.partial(type_glyph, registry=_registry(), specialization_catalog=catalog)
-        return restate_instance_icons(relabelled, stated, glyph, catalog)
+        declarations = ArchimateKeptDeclarations(_registry(), self._junction_types(), catalog, stated.diagram_entities)
+        return restate_instance_icons(relabelled, stated, declarations, catalog)
 
 
     def visible_connection_label(
