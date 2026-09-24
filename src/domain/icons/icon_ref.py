@@ -116,3 +116,16 @@ def _style_from(style: object) -> IconStyle | None:
         if style == known:
             return known
     raise InvalidIconRefError(f"icon style '{style}' is not one of {', '.join(ICON_STYLES)}")
+
+
+def library_icon_named(value: str) -> SharedIcon | None:
+    """The library icon *value* names, or None — for a field that may hold an icon id or something else.
+
+    A specialization's `notation.icon` names either a glyph the static includes provide or, since
+    0.11.0, a library icon; the two spellings cannot collide, as a glyph key has no `@`.
+    """
+    try:
+        target = icon_target_from(value)
+    except InvalidIconRefError:
+        return None
+    return target if isinstance(target, SharedIcon) else None

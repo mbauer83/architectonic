@@ -16,6 +16,7 @@ from src.application.read_models import (
     EntityContextReadModel,
     ReadModelVersion,  # noqa: F401
 )
+from src.domain.icons.icon_record import IconRecord
 from src.domain.ontology_representation.artifact_types import (
     ArtifactSummary,
     ConnectionRecord,
@@ -117,6 +118,9 @@ class ArtifactRepository:
 
     def get_document(self, artifact_id: str) -> DocumentRecord | None:
         return self._store.get_document(artifact_id)
+
+    def get_icon(self, artifact_id: str) -> IconRecord | None:
+        return self._store.get_icon(artifact_id)
 
     def find_file_by_id(self, artifact_id: str) -> Path | None:
         """The file any artifact lives in, whatever kind it is and whichever tier holds it.

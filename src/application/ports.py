@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Callable, Literal, Protocol
 
 from src.application.read_models import EntityContextConnection, EntityContextReadModel, ReadModelVersion
+from src.domain.icons.icon_record import IconRecord
 from src.domain.ontology_representation.artifact_types import (
     ALL_SEARCHABLE_KINDS,
     ArtifactSummary,
@@ -58,6 +59,7 @@ class ArtifactLookup(Protocol):
     def get_connection(self, artifact_id: str) -> ConnectionRecord | None: ...
     def get_diagram(self, artifact_id: str) -> DiagramRecord | None: ...
     def get_document(self, artifact_id: str) -> DocumentRecord | None: ...
+    def get_icon(self, artifact_id: str) -> IconRecord | None: ...
     def read_artifact(
         self,
         artifact_id: str,

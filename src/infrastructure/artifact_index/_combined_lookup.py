@@ -5,6 +5,7 @@ from typing import Literal
 
 from src.application.ports import ReadableArtifactStore
 from src.application.read_models import EntityContextReadModel
+from src.domain.icons.icon_record import IconRecord
 from src.domain.ontology_representation.artifact_types import (
     ArtifactSummary,
     ConnectionRecord,
@@ -44,6 +45,12 @@ class CombinedLookupMixin:
         return first_not_none(
             self._engagement.get_document(artifact_id),
             lambda: self._enterprise.get_document(artifact_id),
+        )
+
+    def get_icon(self, artifact_id: str) -> IconRecord | None:
+        return first_not_none(
+            self._engagement.get_icon(artifact_id),
+            lambda: self._enterprise.get_icon(artifact_id),
         )
 
     def read_artifact(

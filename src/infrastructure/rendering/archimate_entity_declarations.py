@@ -6,6 +6,7 @@ from collections.abc import Mapping
 from typing import Any
 
 from src.application.puml_alias_declarations import quoted_label_text
+from src.domain.icons.icon_ref import library_icon_named
 from src.domain.modules.module_types import EntityTypeName
 from src.domain.ontology_representation.artifact_types import EntityRecord
 from src.domain.ontology_representation.ontology_types import EntityTypeInfo
@@ -66,13 +67,18 @@ def entity_declaration(
     *,
     label_attribute: str | None = None,
     instance_label: str | None = None,
+    instance_icon: str | None = None,
 ) -> str:
+    """One element's declaration. *instance_icon* is the embedded icon to show where the glyph sits."""
     if entity.artifact_type in junction_types:
         return f'circle " " as {alias}'
     label, stereotype, spec = entity_label_and_stereotype(
         entity, registry, specialization_catalog, label_attribute=label_attribute, instance_label=instance_label
     )
     icon_key, color_suffix, show_icon = _specialization_notation(stereotype, spec, entity_has_sprite(entity, registry))
+    shown = f"<<{stereotype}>> " if stereotype else ""
+    if instance_icon:
+        return f'rectangle "{instance_icon} {label}" {shown}as {alias}{color_suffix}'
     if show_icon and icon_key:
         return (
             f'rectangle "<$archimate_{icon_key}{{scale={ICON_SCALE}}}> {label}" '
@@ -92,11 +98,12 @@ def entity_nest_declaration(
     *,
     label_attribute: str | None = None,
     instance_label: str | None = None,
+    instance_icon: str | None = None,
 ) -> str:
     """The declaration of an element that contains others: the same line, opening its block."""
     line = entity_declaration(
         entity, alias, registry, junction_types, specialization_catalog,
-        label_attribute=label_attribute, instance_label=instance_label,
+        label_attribute=label_attribute, instance_label=instance_label, instance_icon=instance_icon,
     )
     return line if entity.artifact_type in junction_types else f"{line} {{"
 
@@ -108,7 +115,9 @@ def _specialization_notation(
     when declared, falling back to the parent type's stereotype key/sprite availability
     otherwise. A specialization's own icon is always shown even when the parent type has no
     sprite of its own; without one, showing the icon syntax at all depends on the parent."""
-    has_own_icon = spec is not None and bool(spec.notation.icon)
+    # A specialization whose `notation.icon` names a library icon has no glyph of its own: the icon is
+    # drawn as the element's embedded icon instead (`archimate_instance_icons`).
+    has_own_icon = spec is not None and bool(spec.notation.icon) and library_icon_named(spec.notation.icon) is None
     icon_key = spec.notation.icon if has_own_icon and spec is not None else stereotype
     color_suffix = f" #{spec.notation.color}" if spec is not None and spec.notation.color else ""
     return icon_key, color_suffix, has_own_icon or parent_has_sprite

@@ -16,8 +16,10 @@ from functools import lru_cache
 from pathlib import Path
 
 from src.application.artifacts.parsing import normalize_puml_alias
+from src.application.icons.effective_icons import IconSource
 from src.domain.modules.module_types import ConnectionTypeName, ElementClassName
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
+from src.domain.ontology_representation.ontology_protocol import IconPresentingRenderer
 from src.infrastructure.diagram_type_registry import get_diagram_type
 from src.infrastructure.rendering._diagram_nesting import build_visual_nesting
 from src.infrastructure.rendering.puml_runtime import (
@@ -153,9 +155,18 @@ def generate_archimate_puml_body(
     edge_labels: dict[str, str] | None = None,
     label_attribute: str | None = None,
     authored_groupings: list[dict[str, object]] | None = None,
+    icon_source: IconSource | None = None,
 ) -> str:
+    """The body an ArchiMate-family diagram draws for these elements.
+
+    *icon_source* is how an icon reference becomes a picture; a caller that holds the repository's
+    index passes one, and a renderer that presents icons draws and embeds them. Without it, every
+    element keeps its type glyph.
+    """
     diagram_type_mod = get_diagram_type(diagram_type)
     extra: dict[str, object] = {}
+    if icon_source is not None and isinstance(diagram_type_mod.renderer, IconPresentingRenderer):
+        extra["icon_source"] = icon_source
     if edge_labels:
         extra["edge_labels"] = edge_labels
     if label_attribute:

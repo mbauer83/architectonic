@@ -96,6 +96,7 @@ def artifact_create_diagram(
     entity_ids_used: list[str] | None = None
     connection_ids_used: list[str] | None = None
     if entity_ids:
+        from src.infrastructure.icons.library_source import LibraryIconSource  # noqa: PLC0415
         from src.infrastructure.mcp.artifact_mcp.context import expand_artifact_id  # noqa: PLC0415
         from src.infrastructure.rendering.diagram_builder import generate_archimate_puml_body  # noqa: PLC0415
         from src.infrastructure.rendering.diagram_selection import (  # noqa: PLC0415
@@ -134,6 +135,7 @@ def artifact_create_diagram(
                 diagram_entities=diagram_entities,
                 diagram_connections=diagram_connections,
                 authored_groupings=authored_groupings,
+                icon_source=LibraryIconSource(repo),
             )
 
     roots = resolve_repo_roots(

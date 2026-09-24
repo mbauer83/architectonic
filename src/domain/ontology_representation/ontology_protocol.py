@@ -16,6 +16,7 @@ from src.domain.diagrams.diagram_type_config import (
     diagram_type_ui_config_from_mapping,
     element_classes_from_config,
 )
+from src.domain.icons.icon_ref import IconStyle
 from src.domain.modules.bridges import BridgeDeclaration
 from src.domain.modules.module_types import (
     ConnectionTypeName,
@@ -187,6 +188,20 @@ class GeneratedHeaderRefreshingRenderer(Protocol):
     """
 
     def refresh_generated_header(self, body: str, repo_root: Path) -> str: ...
+
+
+@runtime_checkable
+class IconPresentingRenderer(Protocol):
+    """Optional capability for a renderer that draws the icons a diagram assigns its elements.
+
+    Such a renderer accepts `icon_source` in `render_body` — how a reference becomes a picture — and
+    embeds what it draws in the body. `icon_styles` are the presentations it can draw, so a surface
+    offers only those. A renderer without the capability is never handed a source, and a diagram of
+    its type cannot be given icons.
+    """
+
+    @property
+    def icon_styles(self) -> tuple[IconStyle, ...]: ...
 
 
 @runtime_checkable

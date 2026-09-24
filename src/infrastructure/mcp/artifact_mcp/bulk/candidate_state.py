@@ -11,6 +11,7 @@ from src.application.verification.artifact_verifier_registry import ArtifactRegi
 from src.application.verification.artifact_verifier_types import entity_id_from_path
 from src.config.repo_paths import MODEL
 from src.domain.artifact_id import stable_conn_id, stable_id
+from src.domain.icons.icon_record import IconRecord
 from src.domain.ontology_representation.artifact_types import (
     ArtifactSummary,
     ConnectionRecord,
@@ -186,6 +187,9 @@ class CandidateStore(CandidateListMixin):
         if artifact_id in self._deleted_documents:
             return None
         return self._documents.get(artifact_id) or self._map_document(self._live.get_document(artifact_id))
+
+    def get_icon(self, artifact_id: str) -> IconRecord | None:
+        return self._live.get_icon(artifact_id)  # icon bytes are immutable; a batch writes none yet
 
     def find_file_by_id(self, artifact_id: str) -> Path | None:
         if artifact_id in self._entities:

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import functools
 import re
 from collections import defaultdict
 from collections.abc import Callable, Mapping, Sequence
@@ -9,6 +10,9 @@ from pathlib import Path
 from typing import Any
 
 from src.application.artifacts.parsing import normalize_puml_alias
+from src.application.icons.effective_icons import IconSource
+from src.application.puml_icon_header import with_icon_block
+from src.domain.icons.icon_ref import IconStyle
 from src.domain.modules.module_types import ConnectionTypeName, ElementClassName
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
 from src.domain.ontology_representation.ontology_types import ConnectionTypeInfo
@@ -30,6 +34,7 @@ from src.infrastructure.rendering.archimate_entity_declarations import (
     grouping_stereotype,
     ordered_domains,
 )
+from src.infrastructure.rendering.archimate_instance_icons import instance_icons
 from src.infrastructure.rendering.archimate_relation_rendering import (
     format_multiplicity_label,
 )
@@ -71,6 +76,7 @@ class GenericPumlRenderer:
         edge_labels: dict[str, str] | None = None,
         label_attribute: str | None = None,
         authored_groupings: list[dict[str, object]] | None = None,
+        icon_source: IconSource | None = None,
     ) -> str:
         del repo_root
         diagram_name = re.sub(r"[^a-zA-Z0-9_-]", "-", name.lower()).strip("-") or "diagram"
@@ -135,6 +141,7 @@ class GenericPumlRenderer:
             ]
 
         specialization_catalog = self._specialization_catalog()
+        icons = instance_icons(diagram_entities, entities, occurrences, icon_source, specialization_catalog)
 
 
         def render_entity(entity: EntityRecord, indent: str, chain_axis: str = "down") -> list[str]:
@@ -146,7 +153,11 @@ class GenericPumlRenderer:
                 return []
             children = children_map.get(alias, [])
             decl_args = (entity, alias, _registry(), self._junction_types(), specialization_catalog)
-            label_args = {"label_attribute": label_attribute, "instance_label": label_by_alias.get(alias)}
+            label_args = {
+                "label_attribute": label_attribute,
+                "instance_label": label_by_alias.get(alias),
+                "instance_icon": icons.by_alias.get(alias),
+            }
             if not children:
                 return [f"{indent}{entity_declaration(*decl_args, **label_args)}"]
             inner = indent + "  "
@@ -209,25 +220,19 @@ class GenericPumlRenderer:
 
         group_index_by_alias: dict[str, int] = {}
         domain_rank_by_alias: dict[str, int] = {}
+        # What every component canvas of this diagram shares — the whole diagram's, or one per domain box.
+        canvas = functools.partial(
+            render_component_canvas,
+            connections=connections, alias_by_id=alias_by_id, children_map=children_map, flow_edges=flow_edges,
+            render_entity=render_entity, group_index_by_alias=group_index_by_alias,
+            nesting_conn_types=self._nesting_conn_types(), registry=_registry(), orders_upward=self._orders_upward,
+        )
         if single_domain and ordered_domain_keys:
             lines.insert(len(self._includes()) + 2, "top to bottom direction")
             lines.insert(len(self._includes()) + 3, "")
             domain = ordered_domain_keys[0]
-            lines.extend(
-                render_component_canvas(
-                    top_entities=domain_entities[domain],
-                    connections=connections,
-                    alias_by_id=alias_by_id,
-                    children_map=children_map,
-                    flow_edges=flow_edges,
-                    render_entity=render_entity,
-                    group_index_by_alias=group_index_by_alias,
-                    grouping=grouping_stereotype(self._config, domain),
-                    nesting_conn_types=self._nesting_conn_types(),
-                    registry=_registry(),
-                    orders_upward=self._orders_upward,
-                )
-            )
+            grouping = grouping_stereotype(self._config, domain)
+            lines.extend(canvas(top_entities=domain_entities[domain], grouping=grouping))
         else:
             # Domain boxes stack in the ontology's declared layer order (motivation
             # above strategy above business/common/application/technology); the alias
@@ -251,18 +256,9 @@ class GenericPumlRenderer:
                 # The same component canvas runs INSIDE each domain box — a domain used
                 # to emit its members unordered, which erased the flow entirely.
                 lines.extend(
-                    render_component_canvas(
+                    canvas(
                         top_entities=domain_entities[domain],
-                        connections=connections,
-                        alias_by_id=alias_by_id,
-                        children_map=children_map,
-                        flow_edges=flow_edges,
-                        render_entity=render_entity,
-                        group_index_by_alias=group_index_by_alias,
                         grouping=grouping_stereotype(self._config, domain),
-                        nesting_conn_types=self._nesting_conn_types(),
-                        registry=_registry(),
-                        orders_upward=self._orders_upward,
                         indent="  ",
                         alias_namespace=f"{re.sub(r'[^A-Za-z0-9_]', '_', domain)}_",
                     )
@@ -316,9 +312,13 @@ class GenericPumlRenderer:
         if len(render_entities) > 100:
             lines = [line for line in lines if "-[hidden]" not in line]
         body = "\n".join(lines)
-        threshold = configured_puml_size_warning_threshold(self._config)
-        warn_when_puml_exceeds_threshold(body, threshold=threshold)
-        return body
+        # Measured without the icon block: its pictures are data, not the diagram's complexity.
+        warn_when_puml_exceeds_threshold(body, threshold=configured_puml_size_warning_threshold(self._config))
+        return with_icon_block(body, icons.pictures)
+
+    @property
+    def icon_styles(self) -> tuple[IconStyle, ...]:
+        return ("badge",)
 
     def inject_includes(self, body: str, repo_root: Path) -> str:
         return inject_archimate_includes(body, repo_root)
