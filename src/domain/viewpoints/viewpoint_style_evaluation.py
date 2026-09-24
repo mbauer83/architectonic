@@ -54,16 +54,6 @@ class ItemStyleEvaluation:
     rule_hits: tuple[RuleItemHit, ...]
 
 
-def _item_tags(item: Item, item_kind: ItemKind) -> frozenset[str]:
-    # An item's tags are its type plus EVERY applied specialization (§15.2), so a style rule
-    # whose `applies_to` names any one of them matches — not only the primary.
-    if item_kind == "connection":
-        assert isinstance(item, ConnectionRecord)
-        return frozenset({item.conn_type, *item.specializations}) - {""}
-    assert isinstance(item, EntityRecord)
-    return frozenset({item.artifact_type, *item.specializations}) - {""}
-
-
 def _match_outcome(
     rule: StyleRule, item: Item, item_kind: ItemKind, *, read_access: CriteriaReadAccess, registries: RegistrySnapshot
 ) -> tuple[bool, frozenset[str]]:
@@ -222,7 +212,7 @@ def evaluate_item_style(
     if presentation is None:
         return ItemStyleEvaluation({}, frozenset(), ())
     context: CriteriaContext = item_kind
-    tags = _item_tags(item, item_kind)
+    tags = item.type_and_specializations
     resolved: dict[str, StyleValue] = {}
     decided: set[str] = set()
     drift: set[str] = set()

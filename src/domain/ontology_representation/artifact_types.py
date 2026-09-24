@@ -72,6 +72,12 @@ class EntityRecord:
     None for records with no stamp — diagram-only entities and pre-migration repos that
     predate the field. Surfaced through the REST/MCP summaries as `last_updated`."""
 
+    @property
+    def type_and_specializations(self) -> frozenset[str]:
+        """The names a presentation rule or an icon may apply to this entity by: its type and every
+        applied specialization, so naming any one of them matches, not only the primary."""
+        return frozenset({self.artifact_type, *self.specializations}) - {""}
+
     def __str__(self) -> str:
         return (
             f"[{self.artifact_id}] {self.name}  "
@@ -102,6 +108,11 @@ class ConnectionRecord:
     last_updated: str | None = None
     """The owning outgoing file's `last-updated` stamp (UTC ISO-8601); None when absent.
     Every connection declared in one file shares it — the file is the unit that is written."""
+
+    @property
+    def type_and_specializations(self) -> frozenset[str]:
+        """The names a presentation rule may apply to this connection by — see EntityRecord."""
+        return frozenset({self.conn_type, *self.specializations}) - {""}
 
     @property
     def source_ids(self) -> list[str]:

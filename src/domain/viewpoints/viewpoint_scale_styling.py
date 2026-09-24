@@ -26,16 +26,6 @@ ItemKind = Literal["entity", "connection"]
 Item = EntityRecord | ConnectionRecord
 
 
-def _item_tags(item: Item, item_kind: ItemKind) -> frozenset[str]:
-    # Type plus EVERY applied specialization (§15.2): a scale whose `applies_to` names any
-    # one of a concept's specializations matches it, not only the primary.
-    if item_kind == "connection":
-        assert isinstance(item, ConnectionRecord)
-        return frozenset({item.conn_type, *item.specializations}) - {""}
-    assert isinstance(item, EntityRecord)
-    return frozenset({item.artifact_type, *item.specializations}) - {""}
-
-
 @dataclass(frozen=True)
 class ScaleStyleValue:
     """Adapter-facing scale result: interpolate between tokens at ``position``."""
@@ -165,7 +155,7 @@ def calculate_scale_bounds(
             )
         values: list[float] = []
         for item, kind in items:
-            if rule.applies_to and not (rule.applies_to & _item_tags(item, kind)):
+            if rule.applies_to and not (rule.applies_to & item.type_and_specializations):
                 continue
             context: CriteriaContext = kind
             if not (entity_resolvable if context == "entity" else connection_resolvable):
