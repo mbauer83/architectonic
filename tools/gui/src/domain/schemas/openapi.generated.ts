@@ -2244,6 +2244,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/icons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the icons a picker offers */
+        get: operations["icons_list_icons"];
+        put?: never;
+        /** Add an icon to the library */
+        post: operations["icons_create_icon"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/icons/{artifact_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read an icon by id */
+        get: operations["icons_read_icon"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/icons/{artifact_id}/image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Serve an icon's picture */
+        get: operations["icons_read_icon_image"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/identifiers/allocate": {
         parameters: {
             query?: never;
@@ -5944,6 +5996,35 @@ export interface components {
              */
             type_filter: string[];
         };
+        /** CreateIconRequest */
+        CreateIconRequest: {
+            /** Applies To */
+            applies_to?: string[];
+            /** Attribution */
+            attribution: string;
+            /** Content Base64 */
+            content_base64: string;
+            /**
+             * Default Style
+             * @default badge
+             * @enum {string}
+             */
+            default_style: "badge" | "figure";
+            /**
+             * Dry Run
+             * @default true
+             */
+            dry_run: boolean;
+            /** Name */
+            name: string;
+            /**
+             * Source Format
+             * @enum {string}
+             */
+            source_format: "svg" | "png" | "jpeg" | "webp";
+            /** Tags */
+            tags?: string[];
+        };
         /** CreateMatrixBody */
         CreateMatrixBody: {
             /**
@@ -8885,6 +8966,54 @@ export interface components {
             hop: number;
             /** Items */
             items: components["schemas"]["EntityDisplayItemResponse"][];
+        };
+        /**
+         * IconListResponse
+         * @description The icons a picker offers for the question asked, and how many there are.
+         */
+        IconListResponse: {
+            /** Items */
+            items: components["schemas"]["IconSummary"][];
+            /** Total */
+            total: number;
+        };
+        /** IconSummary */
+        IconSummary: {
+            /** Applies To */
+            applies_to: string[];
+            /** Artifact Id */
+            artifact_id: string;
+            /** Attribution */
+            attribution: string;
+            /** Baseline Standing */
+            baseline_standing: components["schemas"]["EnterpriseBaselineStanding"] | components["schemas"]["ProposedStanding"];
+            /**
+             * Default Style
+             * @enum {string}
+             */
+            default_style: "badge" | "figure";
+            /** Height */
+            height: number;
+            /** Is Global */
+            is_global: boolean;
+            /** Name */
+            name: string;
+            /** Render Digest */
+            render_digest: string;
+            /**
+             * Source Format
+             * @enum {string}
+             */
+            source_format: "svg" | "png" | "jpeg" | "webp";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "active" | "retired";
+            /** Tags */
+            tags: string[];
+            /** Width */
+            width: number;
         };
         /**
          * IllegalConnectionTypeDetails
@@ -19936,6 +20065,236 @@ export interface operations {
             };
             /** @description Write temporarily rejected by the workspace gate (retryable) */
             423: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    icons_list_icons: {
+        parameters: {
+            query?: {
+                /** @description An entity id, or a type or specialization name */
+                applicable_to?: string | null;
+                include_retired?: boolean;
+                /** @description Matched against name and attribution */
+                q?: string | null;
+                tag?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IconListResponse"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    icons_create_icon: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateIconRequest"];
+            };
+        };
+        responses: {
+            /** @description Dry run or refusal; nothing was created */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WriteResultResponse"];
+                };
+            };
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WriteResultResponse"];
+                };
+            };
+            /** @description Validation error (bad or ambiguous write) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write forbidden (e.g. admin mode not enabled, or mutation denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write temporarily rejected by the workspace gate (retryable) */
+            423: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    icons_read_icon: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IconSummary"];
+                };
+            };
+            /** @description Artifact not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    icons_read_icon_image: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The icon's stored picture */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/png": unknown;
+                };
+            };
+            /** @description Artifact not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

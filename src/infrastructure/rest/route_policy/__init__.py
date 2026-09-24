@@ -41,6 +41,7 @@ from src.infrastructure.rest.route_policy._entities import (
     SEARCH_ROWS,
     TAXONOMY_ROWS,
 )
+from src.infrastructure.rest.route_policy._icons import ICON_ROWS
 from src.infrastructure.rest.route_policy._platform import ADMIN_ROWS, PROMOTION_ROWS, SYNC_ROWS
 from src.infrastructure.rest.route_policy._response_contracts import UNTYPED_RESPONSE_OPERATIONS
 from src.infrastructure.rest.route_policy._retired import RETIRED_ROUTES
@@ -70,6 +71,7 @@ ROUTE_POLICY: tuple[RouteRow, ...] = (
     *MATRIX_ROWS,
     *DIAGRAM_TYPE_ROWS,
     *SCRATCHPAD_ROWS,
+    *ICON_ROWS,
     *DOCUMENT_ROWS,
     *CHANGE_ROWS,
     *GROUP_ROWS,

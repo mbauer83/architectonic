@@ -59,6 +59,7 @@ _ENGAGEMENT_OPERATIONS: tuple[str, ...] = (
     "groups_rename_group",
     "groups_unarchive_group",
     "groups_update_group",
+    "icons_create_icon",
     "matrices_create_matrix",
     "matrices_replace_matrix",
     "scratchpads_create_scratchpad",

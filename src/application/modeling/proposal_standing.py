@@ -44,6 +44,7 @@ from src.domain.baseline_standing import (
     Proposed,
     ReviewStanding,
 )
+from src.domain.icons.icon_record import IconRecord
 
 if TYPE_CHECKING:
     from src.application.artifacts.query import ArtifactRepository
@@ -69,6 +70,7 @@ RevisionReader = Callable[[str], str | None]
 #: search returns them beside entities and every hit carries a standing.
 StandingBearer: TypeAlias = (
     EntityRecord | ConnectionRecord | DiagramRecord | DocumentRecord | ScratchpadRecord | ScratchpadNoteRecord
+    | IconRecord
 )
 
 
