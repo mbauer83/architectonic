@@ -75,6 +75,9 @@ class SyntaxReader:
     exempt: frozenset[Path] = field(default_factory=frozenset)
 
 
+#: The markers of the embedded-icon block at the top of a body.
+_ICON_BLOCK_MARKER = re.compile(r"arch-icons:(?:begin|end)")
+
 #: The fence an icon file's render form sits in.
 _ICON_RENDER_FENCE = re.compile(r"png-base64")
 
@@ -177,6 +180,20 @@ SYNTAX_READERS: tuple[SyntaxReader, ...] = (
             "rewritten under another"
         ),
         literal_probe=_ANCHORED_FENCE,
+    ),
+    SyntaxReader(
+        syntax="the block of embedded icon pictures at the top of a PlantUML body",
+        owners=(Path("src/application/puml_icon_header.py"),),
+        instead=(
+            "`src.application.puml_icon_header`: `with_icon_block` to write it, `embedded_icons` and "
+            "`referenced_icon_keys` to read it"
+        ),
+        incident=(
+            "none yet, and on purpose: the block is what the body policy trusts an icon variable by, "
+            "so a second reading that disagreed about where the block ends would let an assignment "
+            "outside it pass as one inside it"
+        ),
+        literal_probe=_ICON_BLOCK_MARKER,
     ),
     SyntaxReader(
         syntax="an icon file: its frontmatter fields and its fenced `png-base64` and `svg` blocks",

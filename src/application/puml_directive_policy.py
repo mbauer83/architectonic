@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import re
 
+from src.application.puml_icon_header import assignments_outside_the_block, embedded_icons
 from src.domain.embedded_image import embedded_image
 
 _MANAGED_INCLUDE_BASENAMES = frozenset({
@@ -66,12 +67,17 @@ def is_managed_include(basename: str) -> bool:
 
 
 def find_unsafe_puml_directives(puml_body: str) -> list[str]:
-    """The lines of a body that reference a file, a URL or an environment value (empty when none do)."""
-    offenders: list[str] = []
-    for raw in puml_body.splitlines():
-        line = raw.strip()
-        if _line_reaches_outside(line):
-            offenders.append(line)
+    """The lines of a body that reference a file, a URL or an environment value (empty when none do).
+
+    An image may also be an icon the body embeds itself: `<img:$ARCH_ICON_…>` is allowed when the
+    body's icon block assigns that variable an embedded image, and an icon variable assigned anywhere
+    else, or to anything else, is refused — otherwise a variable would be a way to name a file.
+    """
+    assigned = embedded_icons(puml_body)
+    embedded = frozenset(name for name, image in assigned.items() if image is not None)
+    offenders = [line for raw in puml_body.splitlines() if _line_reaches_outside(line := raw.strip(), embedded)]
+    offenders.extend(assignments_outside_the_block(puml_body))
+    offenders.extend(f"!${name} = (not an embedded image)" for name, image in assigned.items() if image is None)
     return offenders
 
 
@@ -88,10 +94,14 @@ def assert_user_puml_safe(puml_body: str) -> None:
         )
 
 
-def _line_reaches_outside(line: str) -> bool:
+def _is_embedded(target: str, embedded_icons: frozenset[str]) -> bool:
+    return embedded_image(target) is not None or target.removeprefix("$") in embedded_icons
+
+
+def _line_reaches_outside(line: str, embedded_icons: frozenset[str]) -> bool:
     if _THEME_FROM_RE.match(line) or _IO_BUILTIN_RE.search(line):
         return True
-    if any(embedded_image(target) is None for target in _IMAGE_TARGET_RE.findall(line)):
+    if not all(_is_embedded(target, embedded_icons) for target in _IMAGE_TARGET_RE.findall(line)):
         return True
     match = _SOURCE_DIRECTIVE_RE.match(line)
     if match is None:
