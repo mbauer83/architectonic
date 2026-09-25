@@ -30,6 +30,7 @@
       "/api/diagrams/{artifact_id}",
       "/api/diagrams/{artifact_id}/attribute-panel",
       "/api/diagrams/{artifact_id}/download",
+      "/api/diagrams/{artifact_id}/icons/{icon_key}/share",
       "/api/diagrams/{artifact_id}/svg",
       "/api/diagrams/{artifact_id}/sync",
       "/api/diagrams/{artifact_id}/viewpoint-projection",
@@ -61,6 +62,7 @@
     "derived-graph": [
       "^/api/assurance/analyses/[^/?#]+/diagrams/[^/?#]+/rendered(\\?|$)",
       "^/api/assurance/analyses/[^/?#]+/gsn/rendered(\\?|$)",
+      "^/api/diagrams/[^/?#]+/icons/[^/?#]+/share(\\?|$)",
       "^/api/assurance/arch\\-artifacts/[^/?#]+/security\\-snapshots(\\?|$)",
       "^/api/assurance/nodes/[^/?#]+/neighbors(\\?|$)",
       "^/api/diagrams/[^/?#]+/viewpoint\\-projection(\\?|$)",

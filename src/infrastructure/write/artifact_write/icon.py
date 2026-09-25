@@ -83,7 +83,7 @@ def create_icon(
             return refused_icon_write(path, artifact_id, reason)
         case NormalisedIcon() as normalised:
             pass
-    if (existing := _library_icon_with_digest(repo_root, normalised.digest)) is not None:
+    if (existing := library_icon_with_digest(repo_root, normalised.digest)) is not None:
         held = f"the library already holds this picture as {existing}; use that icon"
         return refused_icon_write(path, artifact_id, held)
     icon = IconFile(_metadata(artifact_id, upload, normalised), normalised.png, normalised.svg_source)
@@ -212,7 +212,8 @@ def _verified_write(
     return WriteResult(written, path, artifact_id, None if written else content, notes, verification)
 
 
-def _library_icon_with_digest(repo_root: Path, digest: str) -> str | None:
+def library_icon_with_digest(repo_root: Path, digest: str) -> str | None:
+    """The library icon already holding this picture, if any: one picture is never stored twice."""
     library = get_repository(repo_root).list_icons()
     return next((icon.artifact_id for icon in library if icon.metadata.render_digest == digest), None)
 

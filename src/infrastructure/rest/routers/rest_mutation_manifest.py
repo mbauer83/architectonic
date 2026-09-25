@@ -62,6 +62,7 @@ _ENGAGEMENT_OPERATIONS: tuple[str, ...] = (
     "icons_create_icon",
     "icons_delete_icon",
     "icons_replace_icon",
+    "icons_share_diagram_icon",
     "icons_update_icon",
     "matrices_create_matrix",
     "matrices_replace_matrix",

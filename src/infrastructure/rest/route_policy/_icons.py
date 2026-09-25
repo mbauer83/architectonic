@@ -38,6 +38,12 @@ ICON_ROWS: tuple[RouteRow, ...] = (
         identity_parameters=_ID, mutation_domain="repository",
     ),
     RouteRow(
+        # An icon a diagram holds for itself, moved into the library; the diagram is re-rendered with it.
+        "POST", "/api/diagrams/{artifact_id}/icons/{icon_key}/share", "operation", "icons_share_diagram_icon",
+        TYPED, identity_parameters=("artifact_id", "icon_key"), mutation_domain="repository",
+        timeout_class="derived-graph",
+    ),
+    RouteRow(
         "GET", "/api/icons/{artifact_id}/image", "subresource", "icons_read_icon_image", MEDIA,
         identity_parameters=_ID, cache_directive="private",
     ),

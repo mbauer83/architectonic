@@ -8,7 +8,9 @@ skips that check explicitly, and `build_artifact_verifier` is what supplies the 
 
 from __future__ import annotations
 
+import copy
 import functools
+from typing import Self
 
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.application.verification.verifier_ports import (
@@ -34,6 +36,14 @@ class _VerifierAdapters:
     def icon_library(self) -> IconLibrary | None:
         """Where icon references resolve: the library given, else this verifier's own registry."""
         return self._icon_library if self._icon_library is not None else self.registry
+
+    def with_icon_library(self, library: IconLibrary) -> Self:
+        """This verifier, resolving icon references in *library* — for a write whose own earlier step
+        added an icon the index has not been told of yet."""
+        other = copy.copy(self)
+        other._icon_library = library
+        other.__dict__.pop("_diagram_rules", None)  # the one cached reading that captured the library
+        return other
 
     @functools.cached_property
     def _puml_syntax(self) -> PumlSyntaxPort:

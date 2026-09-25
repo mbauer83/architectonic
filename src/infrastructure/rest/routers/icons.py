@@ -216,6 +216,34 @@ def replace_icon(
     return s.write_result_to_dict(result)
 
 
+class ShareIconRequest(BaseModel):
+    #: Whose mark it is, and on what terms it is used; the library requires it.
+    attribution: str
+    tags: list[str] = Field(default_factory=list)
+    dry_run: bool = True
+
+
+@router.post("/api/diagrams/{artifact_id}/icons/{icon_key}/share", tags=[TAG_ICONS],
+    summary="Move an icon a diagram holds for itself into the library",
+    response_model=WriteResultResponse, responses=WRITE_RESPONSES)
+def share_diagram_icon(
+    artifact_id: str, icon_key: str, req: ShareIconRequest,
+    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
+) -> dict[str, Any]:
+    from src.infrastructure.write.artifact_write.icon_share import share_icon  # noqa: PLC0415
+
+    repo_root, _registry, verifier = s.get_write_deps(catalogs)
+    try:
+        result = s.authorized_write(
+            "icons_share_diagram_icon", share_icon, repo_root=repo_root, verifier=verifier,
+            clear_repo_caches=s.clear_caches, diagram_id=artifact_id, icon_key=icon_key,
+            attribution=req.attribution, tags=req.tags, dry_run=req.dry_run,
+        )
+    except FileNotFoundError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    return s.write_result_to_dict(result)
+
+
 _DELETE_RESPONSES: dict[int | str, Any] = {
     **WRITE_RESPONSES,
     200: {"model": WriteResultResponse, "description": "Dry-run plan; nothing was deleted"},

@@ -71,6 +71,7 @@ looking entirely normal. See
 | Icons | `artifact_create_icon` | Write | Add an icon to the repository's shared library, for diagrams to show on their elements. |
 | Icons | `artifact_edit_icon` | Write | Change what a library icon says about itself: its name, attribution, the types and specializations it applies to, its default style, its tags, or its status. |
 | Icons | `artifact_replace_icon` | Destructive | Re-point every diagram showing a library icon at another icon, then delete the first, in one transaction. |
+| Icons | `artifact_share_icon` | Write | Move an icon a diagram holds for itself (diagram_entities.icons, named local:<icon_key>) into this repository's library, and have the diagram name the library icon instead. |
 | Icons | `artifact_delete_icon` | Destructive | Delete an icon from this repository's library. |
 | Scratchpads | `scratchpad_create` | Write | Create a scratchpad. |
 | Scratchpads | `scratchpad_replace` | Destructive | Replace a scratchpad whole. |

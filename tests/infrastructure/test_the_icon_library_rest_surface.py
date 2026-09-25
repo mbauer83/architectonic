@@ -221,3 +221,42 @@ def test_an_upload_the_normaliser_refuses_is_a_rejected_input(client: TestClient
     response = client.post("/api/icons/preview", json={"diagram_entities": entities, "instances": []})
 
     assert response.status_code == 400 and response.json()["detail"]["code"] == "validation_error"
+
+
+# ── moving a diagram's own icon into the library ────────────────────────────────────────────────
+
+
+def _diagram_with_its_own_icon(repo_root: Path) -> str:
+    from src.infrastructure.mcp import mcp_artifact_server as mcp  # noqa: PLC0415
+
+    node = str(mcp.artifact_create_entity(
+        artifact_type="technology-node", name="N", dry_run=False, repo_root=str(repo_root),
+    )["artifact_id"])
+    picture = base64.b64encode(png_of((7, 70, 140, 255))).decode()
+    diagram = mcp.artifact_create_diagram(
+        diagram_type="archimate-technology", name="Shared View", entity_ids=[node],
+        diagram_entities={"display_icons": {node: "local:logo"},
+                          "icons": {"logo": {"name": "Logo", "content_base64": picture, "source_format": "png"}}},
+        dry_run=False, repo_root=str(repo_root),
+    )
+    s.get_repo().refresh()
+    return str(diagram["artifact_id"])
+
+
+def test_a_diagrams_own_icon_is_shared_into_the_library(client: TestClient, repo_root: Path) -> None:
+    diagram = _diagram_with_its_own_icon(repo_root)
+
+    response = client.post(f"/api/diagrams/{diagram}/icons/logo/share",
+                           json={"attribution": "Drawn here", "dry_run": False})
+
+    assert response.status_code == 200, response.text
+    shared = response.json()["artifact_id"]
+    assert response.json()["wrote"] is True and client.get(f"/api/icons/{shared}").status_code == 200
+
+
+def test_sharing_an_icon_the_diagram_does_not_hold_is_404(client: TestClient, repo_root: Path) -> None:
+    diagram = _diagram_with_its_own_icon(repo_root)
+
+    response = client.post(f"/api/diagrams/{diagram}/icons/other/share", json={"attribution": "Drawn here"})
+
+    assert response.status_code == 404

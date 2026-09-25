@@ -226,6 +226,7 @@ def test_architecture_write_mount_annotations_match_expected_intent() -> None:
         "artifact_create_icon": (False, False, False, False),
         "artifact_edit_icon": (False, False, False, False),
         "artifact_replace_icon": (False, True, False, False),
+        "artifact_share_icon": (False, False, False, False),
         "artifact_delete_icon": (False, True, False, False),
         # The batch accepts edit_entity and edit_connection(operation=update|remove) items.
         "artifact_bulk_write": (False, True, False, False),

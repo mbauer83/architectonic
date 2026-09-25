@@ -111,6 +111,31 @@ def artifact_replace_icon(
     return _out(result, dry_run=dry_run)
 
 
+def artifact_share_icon(
+    *,
+    diagram_id: str,
+    icon_key: str,
+    attribution: str,
+    tags: list[str] | None = None,
+    dry_run: bool = True,
+    repo_root: str | None = None,
+) -> dict[str, object]:
+    roots = resolve_repo_roots(repo_scope="engagement", repo_root=repo_root, repo_preset=None, enterprise_root=None)
+    mutation_context, clear_repo_caches = authoritative_callbacks_for(roots)
+    try:
+        # It edits the diagram, and a diagram's body is restated through the registry.
+        result = artifact_write_ops.share_icon(
+            repo_root=roots[0], verifier=verifier_for(roots_key(roots), include_registry=True),
+            clear_repo_caches=clear_repo_caches, diagram_id=diagram_id, icon_key=icon_key,
+            attribution=attribution, tags=tags or (), dry_run=dry_run,
+        )
+    except FileNotFoundError as exc:
+        return {"ok": False, "error": str(exc)}
+    if result.wrote and not dry_run:
+        mutation_context.finalize()
+    return _out(result, dry_run=dry_run)
+
+
 def register(mcp: MCPServer) -> None:
     from src.infrastructure.mcp.artifact_mcp.mutation_registration import register_mutation_tool  # noqa: PLC0415
 
@@ -179,5 +204,19 @@ def register(mcp: MCPServer) -> None:
             "lists the diagrams it would re-point. Set dry_run=false to write."
         ),
         annotations=DESTRUCTIVE_LOCAL_WRITE,
+        structured_output=True,
+    )
+    register_mutation_tool(
+        mcp,
+        artifact_share_icon,
+        name="artifact_share_icon",
+        title="Artifact Write: Share Icon",
+        description=(
+            "Move an icon a diagram holds for itself (diagram_entities.icons, named local:<icon_key>) into "
+            "this repository's library, and have the diagram name the library icon instead. attribution "
+            "says whose mark it is and on what terms it is used. A picture the library already holds is "
+            "not added again: the diagram is pointed at that icon. Set dry_run=false to write."
+        ),
+        annotations=LOCAL_WRITE,
         structured_output=True,
     )

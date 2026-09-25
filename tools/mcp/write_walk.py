@@ -63,6 +63,12 @@ _REPLACEMENT_SVG_BASE64 = base64.b64encode(
     b'<rect width="16" height="16" rx="3" fill="#276749"/><rect x="4" y="4" width="8" height="8" fill="#fff"/></svg>'
 ).decode("ascii")
 
+#: A third, held by the diagram for itself until it is shared into the library.
+_OWN_SVG_BASE64 = base64.b64encode(
+    b'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">'
+    b'<rect width="16" height="16" rx="3" fill="#9b2c2c"/><path d="M4 8h8" stroke="#fff" stroke-width="2"/></svg>'
+).decode("ascii")
+
 _ADR_BODY = (
     "## Context\n\nCreated by the MCP write walk.\n\n"
     "## Decision\n\nInvoke the tool over the transport.\n\n"
@@ -329,7 +335,13 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
             "diagram_type": "archimate-application",
             "name": "MCP Walk Application View",
             "entity_ids": [c.created["entity"], c.fixture_entity],
-            "diagram_entities": {"display_icons": {c.created["entity"]: c.created["icon"]}},
+            "diagram_entities": {
+                "display_icons": {c.created["entity"]: c.created["icon"]},
+                "type_icons": {"application-component": "local:walk-own-mark"},
+                "icons": {"walk-own-mark": {
+                    "name": "MCP Walk Own Mark", "content_base64": _OWN_SVG_BASE64, "source_format": "svg",
+                }},
+            },
             "dry_run": False,
         },
         captures=(Capture("diagram", _artifact_id),),
@@ -341,6 +353,15 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
             "name": "MCP Walk Application View (edited)",
             "dry_run": False,
         },
+    ),
+    # The diagram's own mark moves into the library, and the diagram names it there.
+    WriteCall(
+        "artifact_share_icon",
+        lambda c: {
+            "diagram_id": c.created["diagram"], "icon_key": "walk-own-mark",
+            "attribution": "Drawn for the MCP write walk; no third-party mark", "dry_run": False,
+        },
+        captures=(Capture("shared_icon", _artifact_id),),
     ),
     # The diagram moves to the second mark and the first is deleted with it.
     WriteCall(
@@ -355,6 +376,10 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
     WriteCall(
         "artifact_delete_icon",
         lambda c: {"artifact_id": c.created["replacement_icon"], "dry_run": False},
+    ),
+    WriteCall(
+        "artifact_delete_icon",
+        lambda c: {"artifact_id": c.created["shared_icon"], "dry_run": False},
     ),
     WriteCall(
         "artifact_create_matrix",
