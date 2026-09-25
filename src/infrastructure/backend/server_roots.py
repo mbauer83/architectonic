@@ -19,7 +19,12 @@ def resolve_server_roots(
 
     Priority: explicit CLI arg > environment variable > arch-init state file.
     Environment variables: ARCH_REPO_ROOT, ARCH_ENTERPRISE_ROOT.
-    Returns (engagement_root, enterprise_root); either may be None.
+    Returns (engagement_root, enterprise_root), each absolute; either may be None.
+
+    Resolved here, against the directory the server was started in, because everything downstream
+    compares these roots with the absolute paths the index records: a relative `--repo-root` served
+    reads, and then failed a promotion on "is not in the subpath of" and reported every enterprise
+    artifact as not global.
     """
     from src.infrastructure.workspace.workspace_init import load_init_state
 
@@ -43,4 +48,4 @@ def resolve_server_roots(
         if ws and "enterprise_root" in ws
         else None
     )
-    return eng, ent
+    return (eng.resolve() if eng is not None else None), (ent.resolve() if ent is not None else None)
