@@ -17,4 +17,5 @@ def test_the_guidance_names_the_styles_the_type_draws(diagram_type: str, styles:
     icons = block.get("icons")
     assert (icons or {}).get("styles") == styles
     if icons:
-        assert {"display_icons", "type_icons"} <= set(icons["statements"]) and "artifact_query_icons" in icons["find"]
+        assert {"display_icons", "type_icons", "icons"} <= set(icons["statements"])
+        assert "artifact_query_icons" in icons["find"]
