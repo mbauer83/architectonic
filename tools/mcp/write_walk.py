@@ -57,6 +57,12 @@ _ICON_SVG_BASE64 = base64.b64encode(
     b'<rect width="16" height="16" rx="3" fill="#2b6cb0"/><circle cx="8" cy="8" r="4" fill="#fff"/></svg>'
 ).decode("ascii")
 
+#: A second mark, drawn differently so the library holds it as a picture of its own.
+_REPLACEMENT_SVG_BASE64 = base64.b64encode(
+    b'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">'
+    b'<rect width="16" height="16" rx="3" fill="#276749"/><rect x="4" y="4" width="8" height="8" fill="#fff"/></svg>'
+).decode("ascii")
+
 _ADR_BODY = (
     "## Context\n\nCreated by the MCP write walk.\n\n"
     "## Decision\n\nInvoke the tool over the transport.\n\n"
@@ -300,6 +306,22 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
         },
         captures=(Capture("icon", _artifact_id),),
     ),
+    WriteCall(
+        "artifact_create_icon",
+        lambda _c: {
+            "name": "MCP Walk Component Mark v2",
+            "attribution": "Drawn for the MCP write walk; no third-party mark",
+            "content_base64": _REPLACEMENT_SVG_BASE64,
+            "source_format": "svg",
+            "applies_to": ["application-component"],
+            "dry_run": False,
+        },
+        captures=(Capture("replacement_icon", _artifact_id),),
+    ),
+    WriteCall(
+        "artifact_edit_icon",
+        lambda c: {"artifact_id": c.created["icon"], "tags": ["mcp-walk"], "dry_run": False},
+    ),
     # ── diagrams and matrices ────────────────────────────────────────────────────────────────────
     WriteCall(
         "artifact_create_diagram",
@@ -320,6 +342,11 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
             "dry_run": False,
         },
     ),
+    # The diagram moves to the second mark and the first is deleted with it.
+    WriteCall(
+        "artifact_replace_icon",
+        lambda c: {"artifact_id": c.created["icon"], "replacement_id": c.created["replacement_icon"], "dry_run": False},
+    ),
     WriteCall(
         "artifact_delete_diagram",
         lambda c: {"artifact_id": c.created["diagram"], "dry_run": False},
@@ -327,7 +354,7 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
     # The diagram that showed the icon is gone, so nothing uses it and it may be deleted.
     WriteCall(
         "artifact_delete_icon",
-        lambda c: {"artifact_id": c.created["icon"], "dry_run": False},
+        lambda c: {"artifact_id": c.created["replacement_icon"], "dry_run": False},
     ),
     WriteCall(
         "artifact_create_matrix",

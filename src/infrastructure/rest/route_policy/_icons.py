@@ -20,6 +20,15 @@ ICON_ROWS: tuple[RouteRow, ...] = (
         identity_parameters=_ID, cache_directive="no-cache",
     ),
     RouteRow(
+        "PATCH", "/api/icons/{artifact_id}", "detail", "icons_update_icon", TYPED,
+        identity_parameters=_ID, mutation_domain="repository",
+    ),
+    RouteRow(
+        # Re-points every diagram showing the icon and renders each, so it is budgeted as rendering is.
+        "POST", "/api/icons/{artifact_id}/replace", "operation", "icons_replace_icon", TYPED,
+        identity_parameters=_ID, mutation_domain="repository", timeout_class="derived-graph",
+    ),
+    RouteRow(
         # 204 when deleted; a dry run answers 200 with its plan, and an icon still in use 409 with its users.
         "DELETE", "/api/icons/{artifact_id}", "detail", "icons_delete_icon", BODYLESS,
         identity_parameters=_ID, mutation_domain="repository",

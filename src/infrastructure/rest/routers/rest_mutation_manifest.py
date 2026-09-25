@@ -61,6 +61,8 @@ _ENGAGEMENT_OPERATIONS: tuple[str, ...] = (
     "groups_update_group",
     "icons_create_icon",
     "icons_delete_icon",
+    "icons_replace_icon",
+    "icons_update_icon",
     "matrices_create_matrix",
     "matrices_replace_matrix",
     "scratchpads_create_scratchpad",

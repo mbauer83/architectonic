@@ -21,7 +21,7 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Literal
 
-from src.domain.icons.icon_ref import IconRef, IconStyle, InvalidIconRefError, icon_ref_from
+from src.domain.icons.icon_ref import IconRef, IconStyle, IconTarget, InvalidIconRefError, icon_ref_from
 from src.domain.icons.resolved_icon import IconSource, ResolvedIcon
 
 DISPLAY_ICONS_KEY = "display_icons"
@@ -104,13 +104,33 @@ def malformed_icon_entries(diagram_entities: Mapping[str, object] | None) -> lis
     return problems
 
 
+def with_icon_repointed(
+    diagram_entities: Mapping[str, object], old: IconTarget, new: IconTarget
+) -> dict[str, object]:
+    """*diagram_entities* with every assignment of *old* naming *new* instead, each keeping its style.
+
+    An entry that is not a valid reference is kept as written, for the verifier to report.
+    """
+    repointed = dict(diagram_entities)
+    for statement in (DISPLAY_ICONS_KEY, TYPE_ICONS_KEY):
+        raw = diagram_entities.get(statement)
+        if isinstance(raw, Mapping):
+            repointed[statement] = {
+                key: IconRef(new, ref.style).as_stored() if ref is not None and ref.target == old else value
+                for key, value in raw.items()
+                for ref in [_ref_or_none(value)]
+            }
+    return repointed
+
+
+def _ref_or_none(value: object) -> IconRef | None:
+    try:
+        return icon_ref_from(value)
+    except InvalidIconRefError:
+        return None
+
+
 def _refs(raw: object) -> dict[str, IconRef]:
     if not isinstance(raw, Mapping):
         return {}
-    refs: dict[str, IconRef] = {}
-    for key, value in raw.items():
-        try:
-            refs[str(key)] = icon_ref_from(value)
-        except InvalidIconRefError:
-            continue
-    return refs
+    return {str(key): ref for key, value in raw.items() if (ref := _ref_or_none(value)) is not None}

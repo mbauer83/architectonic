@@ -1,4 +1,4 @@
-"""The icon library: list what a picker offers, add an icon, read one, serve its picture."""
+"""The icon library: list what a picker offers, add, edit, replace and delete an icon, serve its picture."""
 
 from __future__ import annotations
 
@@ -106,6 +106,69 @@ def create_icon(
         response.headers["Location"] = f"/api/icons/{result.artifact_id}"
     else:
         response.status_code = status.HTTP_200_OK
+    return s.write_result_to_dict(result)
+
+
+class UpdateIconRequest(BaseModel):
+    """What an icon says about itself; a field left out keeps its value. The picture is not editable."""
+
+    name: str | None = None
+    attribution: str | None = None
+    applies_to: list[str] | None = None
+    default_style: Literal["badge", "figure"] | None = None
+    tags: list[str] | None = None
+    status: Literal["active", "retired"] | None = None
+    dry_run: bool = True
+
+
+@router.patch("/api/icons/{artifact_id}", tags=[TAG_ICONS], summary="Edit an icon's name, attribution and use",
+    response_model=WriteResultResponse, responses=WRITE_RESPONSES)
+def update_icon(
+    artifact_id: str, req: UpdateIconRequest, catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency)
+) -> dict[str, Any]:
+    from src.infrastructure.write.artifact_write.icon import edit_icon  # noqa: PLC0415
+
+    repo_root, _registry, verifier = s.get_write_deps(catalogs)
+    try:
+        result = s.authorized_write(
+            "icons_update_icon", edit_icon, repo_root=repo_root, verifier=verifier,
+            clear_repo_caches=s.clear_caches, artifact_id=artifact_id, name=req.name,
+            attribution=req.attribution, applies_to=req.applies_to, default_style=req.default_style,
+            tags=req.tags, status=req.status, dry_run=req.dry_run,
+        )
+    except FileNotFoundError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    return s.write_result_to_dict(result)
+
+
+class ReplaceIconRequest(BaseModel):
+    #: An icon already in this library or the enterprise's; upload a new version first.
+    replacement_id: str
+    dry_run: bool = True
+
+
+@router.post("/api/icons/{artifact_id}/replace", tags=[TAG_ICONS],
+    summary="Re-point every diagram showing an icon at another, then delete it",
+    response_model=WriteResultResponse, responses=WRITE_RESPONSES)
+def replace_icon(
+    artifact_id: str, req: ReplaceIconRequest, catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency)
+) -> dict[str, Any]:
+    from src.infrastructure.write.artifact_write.icon import IconInUseError  # noqa: PLC0415
+    from src.infrastructure.write.artifact_write.icon_replace import replace_icon as _replace  # noqa: PLC0415
+
+    repo_root, _registry, verifier = s.get_write_deps(catalogs)
+    try:
+        result = s.authorized_write(
+            "icons_replace_icon", _replace, repo_root=repo_root, verifier=verifier,
+            clear_repo_caches=s.clear_caches, artifact_id=artifact_id, replacement_id=req.replacement_id,
+            dry_run=req.dry_run,
+        )
+    except FileNotFoundError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    except IconInUseError as exc:
+        raise HTTPException(409, str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
     return s.write_result_to_dict(result)
 
 

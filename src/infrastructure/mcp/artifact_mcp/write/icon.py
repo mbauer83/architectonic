@@ -1,4 +1,4 @@
-"""MCP write tool: add an icon to the repository's library."""
+"""MCP write tools: the repository's icon library — add, edit, replace and delete an icon."""
 
 from __future__ import annotations
 
@@ -64,6 +64,52 @@ def artifact_delete_icon(*, artifact_id: str, dry_run: bool = True, repo_root: s
     return _out(result, dry_run=dry_run)
 
 
+def artifact_edit_icon(
+    *,
+    artifact_id: str,
+    name: str | None = None,
+    attribution: str | None = None,
+    applies_to: list[str] | None = None,
+    default_style: Literal["badge", "figure"] | None = None,
+    tags: list[str] | None = None,
+    status: Literal["active", "retired"] | None = None,
+    dry_run: bool = True,
+    repo_root: str | None = None,
+) -> dict[str, object]:
+    roots = resolve_repo_roots(repo_scope="engagement", repo_root=repo_root, repo_preset=None, enterprise_root=None)
+    mutation_context, clear_repo_caches = authoritative_callbacks_for(roots)
+    try:
+        result = artifact_write_ops.edit_icon(
+            repo_root=roots[0], verifier=verifier_for(roots_key(roots), include_registry=False),
+            clear_repo_caches=clear_repo_caches, artifact_id=artifact_id, name=name, attribution=attribution,
+            applies_to=applies_to, default_style=default_style, tags=tags, status=status, dry_run=dry_run,
+        )
+    except FileNotFoundError as exc:
+        return {"ok": False, "error": str(exc)}
+    if result.wrote and not dry_run:
+        mutation_context.finalize()
+    return _out(result, dry_run=dry_run)
+
+
+def artifact_replace_icon(
+    *, artifact_id: str, replacement_id: str, dry_run: bool = True, repo_root: str | None = None
+) -> dict[str, object]:
+    roots = resolve_repo_roots(repo_scope="engagement", repo_root=repo_root, repo_preset=None, enterprise_root=None)
+    mutation_context, clear_repo_caches = authoritative_callbacks_for(roots)
+    try:
+        # It edits diagrams, and a diagram's body is restated through the registry.
+        result = artifact_write_ops.replace_icon(
+            repo_root=roots[0], verifier=verifier_for(roots_key(roots), include_registry=True),
+            clear_repo_caches=clear_repo_caches, artifact_id=artifact_id, replacement_id=replacement_id,
+            dry_run=dry_run,
+        )
+    except (FileNotFoundError, ValueError) as exc:
+        return {"ok": False, "error": str(exc)}
+    if result.wrote and not dry_run:
+        mutation_context.finalize()
+    return _out(result, dry_run=dry_run)
+
+
 def register(mcp: MCPServer) -> None:
     from src.infrastructure.mcp.artifact_mcp.mutation_registration import register_mutation_tool  # noqa: PLC0415
 
@@ -99,6 +145,37 @@ def register(mcp: MCPServer) -> None:
             "specialization defaults to it; the refusal names them, so they can be re-pointed or cleared "
             "first. An icon still shown that should no longer be offered is retired instead. Set "
             "dry_run=false to delete the file."
+        ),
+        annotations=DESTRUCTIVE_LOCAL_WRITE,
+        structured_output=True,
+    )
+    register_mutation_tool(
+        mcp,
+        artifact_edit_icon,
+        name="artifact_edit_icon",
+        title="Artifact Write: Edit Icon",
+        description=(
+            "Change what a library icon says about itself: its name, attribution, the types and "
+            "specializations it applies to, its default style, its tags, or its status. An argument left "
+            "out keeps its value. status='retired' stops the picker offering the icon while every diagram "
+            "showing it still does; 'active' reinstates it. The picture cannot be edited: upload the new "
+            "one with artifact_create_icon and move the users to it with artifact_replace_icon. Set "
+            "dry_run=false to write."
+        ),
+        annotations=LOCAL_WRITE,
+        structured_output=True,
+    )
+    register_mutation_tool(
+        mcp,
+        artifact_replace_icon,
+        name="artifact_replace_icon",
+        title="Artifact Write: Replace Icon",
+        description=(
+            "Re-point every diagram showing a library icon at another icon, then delete the first, in one "
+            "transaction. The replacement must already be in this library or the enterprise's — upload a "
+            "new version with artifact_create_icon first. Each diagram is re-verified; if any would not "
+            "verify, nothing changes. Refused while a specialization defaults to the icon. The dry run "
+            "lists the diagrams it would re-point. Set dry_run=false to write."
         ),
         annotations=DESTRUCTIVE_LOCAL_WRITE,
         structured_output=True,

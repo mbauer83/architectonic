@@ -17,7 +17,8 @@ from .entity import create_entity
 from .entity_delete import delete_entity
 from .entity_edit import edit_entity, promote_entity
 from .help import write_help
-from .icon import IconInUseError, IconUpload, create_icon, delete_icon, upload_from_base64
+from .icon import IconInUseError, IconUpload, create_icon, delete_icon, edit_icon, upload_from_base64
+from .icon_replace import replace_icon
 from .matrix import create_matrix
 from .type_guidance import get_type_guidance
 from .types import SyncDiagramToModelResult, WriteResult
@@ -26,6 +27,8 @@ __all__ = [
     "IconUpload",
     "create_icon",
     "delete_icon",
+    "edit_icon",
+    "replace_icon",
     "IconInUseError",
     "upload_from_base64",
     "SyncDiagramToModelResult",

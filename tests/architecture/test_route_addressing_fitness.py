@@ -54,6 +54,7 @@ _ACTION_SEGMENTS: dict[str, frozenset[str]] = {
     "preview": frozenset({"POST"}),
     "reload": frozenset({"POST"}),
     "rename": frozenset({"POST"}),
+    "replace": frozenset({"POST"}),
     "save": frozenset({"POST"}),
     "submit": frozenset({"POST"}),
     "summarize": frozenset({"POST"}),

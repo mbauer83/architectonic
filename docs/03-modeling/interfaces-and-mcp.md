@@ -69,6 +69,8 @@ looking entirely normal. See
 | Documents | `artifact_edit_document` | Destructive | Edit an existing architecture document's frontmatter or body. |
 | Documents | `artifact_delete_document` | Destructive | Delete a single architecture document. |
 | Icons | `artifact_create_icon` | Write | Add an icon to the repository's shared library, for diagrams to show on their elements. |
+| Icons | `artifact_edit_icon` | Write | Change what a library icon says about itself: its name, attribution, the types and specializations it applies to, its default style, its tags, or its status. |
+| Icons | `artifact_replace_icon` | Destructive | Re-point every diagram showing a library icon at another icon, then delete the first, in one transaction. |
 | Icons | `artifact_delete_icon` | Destructive | Delete an icon from this repository's library. |
 | Scratchpads | `scratchpad_create` | Write | Create a scratchpad. |
 | Scratchpads | `scratchpad_replace` | Destructive | Replace a scratchpad whole. |

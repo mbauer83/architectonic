@@ -133,6 +133,8 @@ MUTATION_TOOL_MANIFEST: dict[str, MutationToolManifestRow] = {
     "artifact_delete_document": _ENGAGEMENT_ROW,
     "artifact_create_icon": _ENGAGEMENT_ROW,
     "artifact_delete_icon": _ENGAGEMENT_ROW,
+    "artifact_edit_icon": _ENGAGEMENT_ROW,
+    "artifact_replace_icon": _ENGAGEMENT_ROW,
     "artifact_edit_entity": _ENGAGEMENT_ROW,
     "artifact_edit_connection": _ENGAGEMENT_ROW,
     "artifact_edit_diagram": _ENGAGEMENT_ROW,

@@ -1,4 +1,4 @@
-"""The icon library's REST surface, through the ASGI stack: list, add, read, and the picture itself."""
+"""The icon library's REST surface, through the ASGI stack: list, add, read, edit, replace, delete, the picture."""
 
 from __future__ import annotations
 
@@ -109,7 +109,7 @@ def test_a_dry_run_delete_reports_and_a_real_one_answers_204(client: TestClient)
     assert deleted.status_code == 204 and client.get(f"/api/icons/{generic}").status_code == 404
 
 
-def test_deleting_an_icon_in_use_is_409_naming_the_diagram(client: TestClient, repo_root: Path) -> None:
+def _diagram_showing_the_node_icon(repo_root: Path) -> None:
     diagram = repo_root / "diagram-catalog" / "diagrams" / "ARC@1790000005.dia001.view.puml"
     diagram.write_text(f"""---
 artifact-id: ARC@1790000005.dia001.view
@@ -128,6 +128,45 @@ title View
 """, encoding="utf-8")
     s.get_repo().refresh()
 
+
+def test_deleting_an_icon_in_use_is_409_naming_the_diagram(client: TestClient, repo_root: Path) -> None:
+    _diagram_showing_the_node_icon(repo_root)
+
     response = client.delete(f"/api/icons/{NODE_ICON}", params={"dry_run": "false"})
 
     assert response.status_code == 409 and "ARC@1790000005.dia001.view" in response.text
+
+
+def test_a_retired_icon_is_no_longer_offered(client: TestClient) -> None:
+    generic = "ICO@1790000001.any001.generic"
+
+    response = client.patch(f"/api/icons/{generic}", json={"status": "retired", "dry_run": False})
+
+    assert response.status_code == 200 and response.json()["wrote"] is True
+    assert generic not in _ids(client.get("/api/icons"))
+    assert generic in _ids(client.get("/api/icons", params={"include_retired": "true"}))
+
+
+def test_editing_an_unknown_icon_is_404(client: TestClient) -> None:
+    assert client.patch("/api/icons/ICO@1790000009.gone01", json={"name": "X"}).status_code == 404
+
+
+def test_a_dry_run_replacement_names_the_diagram_it_would_re_point(client: TestClient, repo_root: Path) -> None:
+    _diagram_showing_the_node_icon(repo_root)
+
+    response = client.post(
+        f"/api/icons/{NODE_ICON}/replace", json={"replacement_id": "ICO@1790000001.any001.generic"}
+    )
+
+    assert response.status_code == 200, response.text
+    assert response.json()["wrote"] is False and "ARC@1790000005.dia001.view" in response.text
+
+
+def test_a_replacement_the_library_does_not_hold_is_404(client: TestClient) -> None:
+    response = client.post(f"/api/icons/{NODE_ICON}/replace", json={"replacement_id": "ICO@1790000009.gone01"})
+
+    assert response.status_code == 404
+
+
+def test_an_icon_replacing_itself_is_400(client: TestClient) -> None:
+    assert client.post(f"/api/icons/{NODE_ICON}/replace", json={"replacement_id": NODE_ICON}).status_code == 400
